@@ -50,7 +50,7 @@ export default function QRCodeDisplay({ currentUrl, venueName = "Servio Café" }
         </CardTitle>
       </CardHeader>
       <CardContent className="space-y-4">
-        <p className="text-sm text-gray-600">
+        <p className="text-sm text-gray-900">
           Scan this QR code with your phone to experience the mobile ordering flow
         </p>
         
@@ -97,7 +97,7 @@ export default function QRCodeDisplay({ currentUrl, venueName = "Servio Café" }
               </Button>
             </div>
             
-            <div className="text-xs text-gray-500 text-center">
+            <div className="text-xs text-gray-900 text-center">
               <p>Point your phone camera at the QR code</p>
               <p>or save the image to scan later</p>
             </div>

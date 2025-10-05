@@ -247,11 +247,11 @@ export function BillSplittingDialog({
                     <div className="flex justify-between items-start mb-2">
                       <div>
                         <h4 className="font-medium">{order.customer_name}</h4>
-                        <p className="text-sm text-gray-600">Order #{order.id.slice(-6)}</p>
+                        <p className="text-sm text-gray-900">Order #{order.id.slice(-6)}</p>
                       </div>
                       <span className="font-semibold">£{order.total_amount.toFixed(2)}</span>
                     </div>
-                    <div className="text-sm text-gray-600 mb-3">
+                    <div className="text-sm text-gray-900 mb-3">
                       {order.items.length} item{order.items.length !== 1 ? 's' : ''}
                     </div>
                     <div className="flex gap-2">
@@ -297,7 +297,7 @@ export function BillSplittingDialog({
                           <div key={orderId} className="flex items-center justify-between p-2 bg-gray-50 rounded">
                             <div>
                               <p className="font-medium">{order.customer_name}</p>
-                              <p className="text-sm text-gray-600">#{order.id.slice(-6)}</p>
+                              <p className="text-sm text-gray-900">#{order.id.slice(-6)}</p>
                             </div>
                             <div className="flex items-center gap-2">
                               <span className="font-semibold">£{order.total_amount.toFixed(2)}</span>
@@ -314,7 +314,7 @@ export function BillSplittingDialog({
                       })}
                       
                       {split.orders.length === 0 && (
-                        <p className="text-gray-500 text-center py-4">
+                        <p className="text-gray-900 text-center py-4">
                           No orders assigned to this split
                         </p>
                       )}

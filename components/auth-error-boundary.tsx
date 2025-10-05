@@ -63,7 +63,7 @@ export class AuthErrorBoundary extends React.Component<AuthErrorBoundaryProps, A
                 Authentication Error
               </h1>
               
-              <p className="text-gray-600 mb-6">
+              <p className="text-gray-900 mb-6">
                 Something went wrong with the authentication process.
               </p>
               
@@ -100,7 +100,7 @@ export class AuthErrorBoundary extends React.Component<AuthErrorBoundaryProps, A
                 </button>
               </div>
 
-              <div className="mt-6 text-xs text-gray-500">
+              <div className="mt-6 text-xs text-gray-900">
                 <p>If this error persists, please:</p>
                 <ul className="mt-2 space-y-1 text-left">
                   <li>• Clear your browser cache and cookies</li>
@@ -112,7 +112,7 @@ export class AuthErrorBoundary extends React.Component<AuthErrorBoundaryProps, A
 
               {process.env.NODE_ENV === 'development' && this.state.errorInfo && (
                 <details className="mt-4 text-xs text-left">
-                  <summary className="cursor-pointer text-gray-600 hover:text-gray-800">
+                  <summary className="cursor-pointer text-gray-900 hover:text-gray-800">
                     Debug Information (Development Only)
                   </summary>
                   <pre className="mt-2 p-2 bg-gray-100 rounded text-xs overflow-auto max-h-32">

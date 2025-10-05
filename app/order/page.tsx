@@ -981,7 +981,7 @@ export default function CustomerOrderPage() {
                                       {item.name}
                                     </h3>
                                     {item.description && (
-                                      <p className="text-sm text-gray-600 dark:text-gray-300 mb-3 line-clamp-2">
+                                      <p className="text-sm text-gray-900 dark:text-gray-600 mb-3 line-clamp-2">
                                         {item.description}
                                       </p>
                                     )}
@@ -1021,13 +1021,13 @@ export default function CustomerOrderPage() {
                   <ShoppingCart className="mr-2 h-5 w-5 text-purple-600 dark:text-purple-400" />
                   Your Order
                 </CardTitle>
-                <CardDescription className="text-gray-600 dark:text-gray-300">
+                <CardDescription className="text-gray-900 dark:text-gray-600">
                   {getTotalItems()} items • £{getTotalPrice().toFixed(2)}
                 </CardDescription>
               </CardHeader>
               <CardContent>
                 {cart.length === 0 ? (
-                  <p className="text-gray-500 dark:text-gray-400 text-center py-8">
+                  <p className="text-gray-900 dark:text-gray-700 text-center py-8">
                     Your cart is empty. Add some items to get started!
                   </p>
                 ) : (
@@ -1039,7 +1039,7 @@ export default function CustomerOrderPage() {
                             <h4 className="font-medium text-gray-900 dark:text-white text-sm">
                               {item.name}
                             </h4>
-                            <p className="text-xs text-gray-600 dark:text-gray-300">
+                            <p className="text-xs text-gray-900 dark:text-gray-600">
                               £{item.price.toFixed(2)} each
                             </p>
                           </div>
@@ -1068,7 +1068,7 @@ export default function CustomerOrderPage() {
                               onClick={() => updateQuantity(item.id, item.quantity + 1)}
                               size="sm"
                               variant="outline"
-                              className="h-7 w-7 p-0 border-gray-300 dark:border-gray-500 text-gray-600 dark:text-gray-200"
+                              className="h-7 w-7 p-0 border-gray-300 dark:border-gray-500 text-gray-900 dark:text-gray-500"
                             >
                               <Plus className="h-3 w-3" />
                             </Button>
@@ -1079,7 +1079,7 @@ export default function CustomerOrderPage() {
                         </div>
                         
                         {item.specialInstructions && (
-                          <p className="text-xs text-gray-500 dark:text-gray-400 mb-2">
+                          <p className="text-xs text-gray-900 dark:text-gray-700 mb-2">
                             Note: {item.specialInstructions}
                           </p>
                         )}
@@ -1146,7 +1146,7 @@ export default function CustomerOrderPage() {
                 <div className="flex justify-between items-center">
                   <div className="min-w-0 flex-1">
                     <h3 className="text-lg font-semibold truncate text-gray-900 dark:text-white">Your Order</h3>
-                    <p className="text-sm text-gray-600 dark:text-gray-300">
+                    <p className="text-sm text-gray-900 dark:text-gray-600">
                       {getTotalItems()} items • £{getTotalPrice().toFixed(2)}
                     </p>
                   </div>
@@ -1154,7 +1154,7 @@ export default function CustomerOrderPage() {
                     variant="ghost"
                     size="sm"
                     onClick={() => setShowMobileCart(false)}
-                    className="ml-2 min-h-[44px] min-w-[44px] flex-shrink-0 text-gray-600 hover:text-gray-900"
+                    className="ml-2 min-h-[44px] min-w-[44px] flex-shrink-0 text-gray-900 hover:text-gray-900"
                   >
                     <X className="h-5 w-5" />
                   </Button>
@@ -1163,7 +1163,7 @@ export default function CustomerOrderPage() {
               
               <div className="flex-1 overflow-y-auto p-4">
                 {cart.length === 0 ? (
-                  <p className="text-gray-500 text-center py-8">
+                  <p className="text-gray-900 text-center py-8">
                     Your cart is empty. Add some items to get started!
                   </p>
                 ) : (
@@ -1175,7 +1175,7 @@ export default function CustomerOrderPage() {
                             <h4 className="font-medium text-gray-900 text-base">
                               {item.name}
                             </h4>
-                            <p className="text-sm text-gray-600">
+                            <p className="text-sm text-gray-900">
                               £{item.price.toFixed(2)} each
                             </p>
                           </div>
@@ -1215,7 +1215,7 @@ export default function CustomerOrderPage() {
                         </div>
                         
                         {item.specialInstructions && (
-                          <p className="text-xs text-gray-500 mb-2">
+                          <p className="text-xs text-gray-900 mb-2">
                             Note: {item.specialInstructions}
                           </p>
                         )}
@@ -1287,7 +1287,7 @@ export default function CustomerOrderPage() {
             <CardContent className="flex-1 overflow-y-auto space-y-4 sm:space-y-6">
               <div className="space-y-4">
                 <div>
-                  <label className="block text-sm font-medium text-gray-600 dark:text-gray-200 mb-2">
+                  <label className="block text-sm font-medium text-gray-900 dark:text-gray-500 mb-2">
                     Name *
                   </label>
                   <Input
@@ -1302,7 +1302,7 @@ export default function CustomerOrderPage() {
                 </div>
 
                 <div>
-                  <label className="block text-sm font-medium text-gray-600 dark:text-gray-200 mb-2">
+                  <label className="block text-sm font-medium text-gray-900 dark:text-gray-500 mb-2">
                     Phone Number *
                   </label>
                   <Input

@@ -71,7 +71,7 @@ export function CustomerFeedbackForm({
     if (rating >= 4) return 'text-green-600';
     if (rating >= 3) return 'text-yellow-600';
     if (rating >= 1) return 'text-red-600';
-    return 'text-gray-400';
+    return 'text-gray-700';
   };
 
   const submitFeedback = async () => {
@@ -150,7 +150,7 @@ export function CustomerFeedbackForm({
           <h3 className="text-xl font-semibold text-gray-900 mb-2">
             Thank You!
           </h3>
-          <p className="text-gray-600 mb-4">
+          <p className="text-gray-900 mb-4">
             Your feedback has been submitted successfully. We appreciate you taking the time to share your experience.
           </p>
           <div className="flex items-center justify-center space-x-1 mb-4">
@@ -158,13 +158,13 @@ export function CustomerFeedbackForm({
               <Star
                 key={star}
                 className={`h-5 w-5 ${
-                  star <= rating ? 'text-yellow-500 fill-current' : 'text-gray-300'
+                  star <= rating ? 'text-yellow-500 fill-current' : 'text-gray-600'
                 }`}
               />
             ))}
-            <span className="ml-2 text-sm text-gray-600">({rating})</span>
+            <span className="ml-2 text-sm text-gray-900">({rating})</span>
           </div>
-          <p className="text-sm text-gray-500">
+          <p className="text-sm text-gray-900">
             Your rating helps us improve our service for everyone.
           </p>
         </CardContent>
@@ -200,7 +200,7 @@ export function CustomerFeedbackForm({
                   className={`h-8 w-8 transition-colors ${
                     star <= (hoveredRating || rating) 
                       ? 'text-yellow-500 fill-current' 
-                      : 'text-gray-300'
+                      : 'text-gray-600'
                   }`}
                 />
               </button>
@@ -247,7 +247,7 @@ export function CustomerFeedbackForm({
             className="resize-none"
             maxLength={500}
           />
-          <div className="flex justify-between text-xs text-gray-500">
+          <div className="flex justify-between text-xs text-gray-900">
             <span>Your feedback helps us improve</span>
             <span>{comment.length}/500</span>
           </div>
@@ -280,7 +280,7 @@ export function CustomerFeedbackForm({
         </Button>
 
         {/* Optional Note */}
-        <p className="text-xs text-gray-500 text-center">
+        <p className="text-xs text-gray-900 text-center">
           * Required fields. Your feedback is anonymous and helps us improve our service.
         </p>
       </CardContent>

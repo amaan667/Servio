@@ -160,21 +160,21 @@ export default function FeedbackTestPage({ params }: { params: Promise<{ venueId
             <div className="space-y-2">
               <div className="flex items-center justify-between">
                 <span className="font-medium">Table Exists:</span>
-                <span className={tableExists === true ? 'text-green-600' : tableExists === false ? 'text-red-600' : 'text-gray-500'}>
+                <span className={tableExists === true ? 'text-green-600' : tableExists === false ? 'text-red-600' : 'text-gray-900'}>
                   {tableExists === true ? '✅ Yes' : tableExists === false ? '❌ No' : 'Testing...'}
                 </span>
               </div>
               
               <div className="flex items-center justify-between">
                 <span className="font-medium">Can Insert:</span>
-                <span className={canInsert === true ? 'text-green-600' : canInsert === false ? 'text-red-600' : 'text-gray-500'}>
+                <span className={canInsert === true ? 'text-green-600' : canInsert === false ? 'text-red-600' : 'text-gray-900'}>
                   {canInsert === true ? '✅ Yes' : canInsert === false ? '❌ No' : 'Testing...'}
                 </span>
               </div>
               
               <div className="flex items-center justify-between">
                 <span className="font-medium">Can Select:</span>
-                <span className={canSelect === true ? 'text-green-600' : canSelect === false ? 'text-red-600' : 'text-gray-500'}>
+                <span className={canSelect === true ? 'text-green-600' : canSelect === false ? 'text-red-600' : 'text-gray-900'}>
                   {canSelect === true ? '✅ Yes' : canSelect === false ? '❌ No' : 'Testing...'}
                 </span>
               </div>

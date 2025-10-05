@@ -220,7 +220,7 @@ const OrdersClient: React.FC<OrdersClientProps> = ({ venueId, initialOrders = []
   }, [venueId, loadVenueAndOrders]);
 
   if (loading) {
-    return <div className="text-center py-8 text-gray-600">Loading orders...</div>;
+    return <div className="text-center py-8 text-gray-900">Loading orders...</div>;
   }
 
   // Function to refresh orders - can be called from OrderCard
@@ -309,9 +309,9 @@ const OrdersClient: React.FC<OrdersClientProps> = ({ venueId, initialOrders = []
               {orders.length === 0 ? (
                 <Card>
                   <CardContent className="p-8 text-center">
-                    <Clock className="h-12 w-12 text-gray-400 mx-auto mb-4" />
+                    <Clock className="h-12 w-12 text-gray-700 mx-auto mb-4" />
                     <h3 className="text-lg font-medium text-gray-900 mb-2">No Live Orders</h3>
-                    <p className="text-gray-500">No orders placed in the last 30 minutes</p>
+                    <p className="text-gray-900">No orders placed in the last 30 minutes</p>
                   </CardContent>
                 </Card>
               ) : (
@@ -327,9 +327,9 @@ const OrdersClient: React.FC<OrdersClientProps> = ({ venueId, initialOrders = []
               {allTodayOrders.length === 0 ? (
                 <Card>
                   <CardContent className="p-8 text-center">
-                    <Clock className="h-12 w-12 text-gray-400 mx-auto mb-4" />
+                    <Clock className="h-12 w-12 text-gray-700 mx-auto mb-4" />
                     <h3 className="text-lg font-medium text-gray-900 mb-2">No Earlier Orders Today</h3>
-                    <p className="text-gray-500">No orders from earlier today (older than 30 minutes)</p>
+                    <p className="text-gray-900">No orders from earlier today (older than 30 minutes)</p>
                   </CardContent>
                 </Card>
               ) : (
@@ -345,9 +345,9 @@ const OrdersClient: React.FC<OrdersClientProps> = ({ venueId, initialOrders = []
               {historyOrders.length === 0 ? (
                 <Card>
                   <CardContent className="p-8 text-center">
-                    <Clock className="h-12 w-12 text-gray-400 mx-auto mb-4" />
+                    <Clock className="h-12 w-12 text-gray-700 mx-auto mb-4" />
                     <h3 className="text-lg font-medium text-gray-900 mb-2">No Historical Orders</h3>
-                    <p className="text-gray-500">No orders from previous days</p>
+                    <p className="text-gray-900">No orders from previous days</p>
                   </CardContent>
                 </Card>
               ) : (

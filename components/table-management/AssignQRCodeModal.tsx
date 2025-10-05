@@ -225,7 +225,7 @@ export function AssignQRCodeModal({
                 <div className="text-center space-y-3">
                   <div className="bg-white p-4 rounded-lg border-2 border-gray-200 inline-block">
                     <div className="w-32 h-32 bg-gray-100 rounded flex items-center justify-center">
-                      <QrCode className="h-16 w-16 text-gray-400" />
+                      <QrCode className="h-16 w-16 text-gray-700" />
                     </div>
                   </div>
                   

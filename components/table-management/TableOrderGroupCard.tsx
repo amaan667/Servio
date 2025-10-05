@@ -140,7 +140,7 @@ export function TableOrderGroupCard({ tableLabel, orders, venueId, onActionCompl
                 </Badge>
               )}
             </div>
-            <div className="text-sm text-gray-600">
+            <div className="text-sm text-gray-900">
               Latest: {getLatestOrderTime()}
               {hasMultipleOrders && (
                 <span className="ml-2">• {orders.length} active orders</span>
@@ -148,7 +148,7 @@ export function TableOrderGroupCard({ tableLabel, orders, venueId, onActionCompl
             </div>
           </div>
           <div className="text-right">
-            <div className="text-xs font-semibold text-gray-500 uppercase tracking-wide mb-2">Table Total</div>
+            <div className="text-xs font-semibold text-gray-900 uppercase tracking-wide mb-2">Table Total</div>
             <div className="text-4xl font-bold text-green-600 bg-green-50 px-4 py-3 rounded-lg">
               £{getTotalAmountForAllOrders()}
             </div>
@@ -174,12 +174,12 @@ export function TableOrderGroupCard({ tableLabel, orders, venueId, onActionCompl
             >
               {isExpanded ? (
                 <>
-                  <ChevronUp className="h-5 w-5 text-gray-600" />
+                  <ChevronUp className="h-5 w-5 text-gray-900" />
                   <span className="text-sm font-medium text-gray-700">Hide individual orders</span>
                 </>
               ) : (
                 <>
-                  <ChevronDown className="h-5 w-5 text-gray-600" />
+                  <ChevronDown className="h-5 w-5 text-gray-900" />
                   <span className="text-sm font-medium text-gray-700">Show {orders.length} individual orders</span>
                 </>
               )}
@@ -211,7 +211,7 @@ export function TableOrderGroupCard({ tableLabel, orders, venueId, onActionCompl
                       </div>
                     </div>
                     <div className="text-right">
-                      <div className="text-xs font-semibold text-gray-500 uppercase tracking-wide mb-1">Total</div>
+                      <div className="text-xs font-semibold text-gray-900 uppercase tracking-wide mb-1">Total</div>
                       <div className="text-3xl font-bold text-green-600 bg-green-50 px-3 py-2 rounded-lg">
                         £{getTotalAmount(order)}
                       </div>
@@ -221,15 +221,15 @@ export function TableOrderGroupCard({ tableLabel, orders, venueId, onActionCompl
                   {/* Customer Info - More prominent */}
                   {order.customer_name && (
                     <div className="mb-4 p-4 bg-gray-50 rounded-lg border border-gray-200">
-                      <div className="text-xs font-semibold text-gray-500 uppercase tracking-wide mb-2">Customer</div>
+                      <div className="text-xs font-semibold text-gray-900 uppercase tracking-wide mb-2">Customer</div>
                       <div className="flex items-center gap-3">
-                        <User className="h-6 w-6 text-gray-600" />
+                        <User className="h-6 w-6 text-gray-900" />
                         <div className="flex items-center gap-2">
                           <span className="text-lg font-bold text-gray-900">{order.customer_name}</span>
                           {order.customer_phone && (
                             <>
-                              <span className="text-gray-400">•</span>
-                              <span className="text-sm text-gray-600">{order.customer_phone}</span>
+                              <span className="text-gray-700">•</span>
+                              <span className="text-sm text-gray-900">{order.customer_phone}</span>
                             </>
                           )}
                         </div>

@@ -37,7 +37,7 @@ export default function CancelPage() {
               <XCircle className="w-8 h-8 text-red-600" />
             </div>
             <h2 className="text-xl font-semibold text-red-900">Payment Cancelled</h2>
-            <p className="text-gray-600">
+            <p className="text-gray-900">
               Your payment was cancelled. No charges have been made.
               {orderId && ` Your order #${orderId.slice(-6)} is still pending.`}
             </p>

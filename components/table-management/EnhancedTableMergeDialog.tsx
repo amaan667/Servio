@@ -165,7 +165,7 @@ export function EnhancedTableMergeDialog({
               </Badge>
             </div>
             {sourceTable.order_id && (
-              <div className="mt-2 text-sm text-gray-600">
+              <div className="mt-2 text-sm text-gray-900">
                 <span>Order #{sourceTable.order_id.slice(-6)}</span>
                 {sourceTable.total_amount && (
                   <span className="ml-2">£{(sourceTable.total_amount / 100).toFixed(2)}</span>
@@ -176,7 +176,7 @@ export function EnhancedTableMergeDialog({
               </div>
             )}
             {(sourceTable.reserved_now_id || sourceTable.reserved_later_id) && (
-              <div className="mt-2 text-sm text-gray-600">
+              <div className="mt-2 text-sm text-gray-900">
                 <span>Reserved for: {sourceTable.reserved_now_name || sourceTable.reserved_later_name}</span>
                 {(sourceTable.reserved_now_start || sourceTable.reserved_later_start) && (
                   <span className="ml-2">
@@ -229,7 +229,7 @@ export function EnhancedTableMergeDialog({
             </h4>
             <div className="flex-1 overflow-y-auto space-y-2">
               {mergeableTables.length === 0 ? (
-                <p className="text-sm text-gray-500 text-center py-4">
+                <p className="text-sm text-gray-900 text-center py-4">
                   {showAllTables 
                     ? 'No other tables available for merging'
                     : 'No free tables available for merging'
@@ -275,7 +275,7 @@ export function EnhancedTableMergeDialog({
                         <TooltipProvider>
                           <Tooltip>
                             <TooltipTrigger>
-                              <XCircle className="h-4 w-4 text-gray-400" />
+                              <XCircle className="h-4 w-4 text-gray-700" />
                             </TooltipTrigger>
                             <TooltipContent>
                               <p>{table.mergeScenario?.description || 'Cannot merge with this table'}</p>
@@ -286,7 +286,7 @@ export function EnhancedTableMergeDialog({
                     </div>
                     
                     {/* Table Details */}
-                    <div className="mt-2 text-sm text-gray-600 space-y-1">
+                    <div className="mt-2 text-sm text-gray-900 space-y-1">
                       {table.order_id && (
                         <div className="flex items-center gap-2">
                           <span>Order #{table.order_id.slice(-6)}</span>
@@ -311,7 +311,7 @@ export function EnhancedTableMergeDialog({
                       )}
                       
                       {table.opened_at && (
-                        <div className="flex items-center gap-1 text-xs text-gray-500">
+                        <div className="flex items-center gap-1 text-xs text-gray-900">
                           <Clock className="h-3 w-3" />
                           <span>Open {formatTime(table.opened_at)}</span>
                         </div>
@@ -320,7 +320,7 @@ export function EnhancedTableMergeDialog({
 
                     {/* Merge Scenario Description */}
                     {table.mergeScenario && (
-                      <div className="mt-2 text-xs text-gray-500 italic">
+                      <div className="mt-2 text-xs text-gray-900 italic">
                         {table.mergeScenario.description}
                       </div>
                     )}

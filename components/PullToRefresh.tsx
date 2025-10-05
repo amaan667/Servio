@@ -91,7 +91,7 @@ export default function PullToRefresh({
             ) : canRefresh ? (
               <p className="text-sm font-medium text-purple-600">Release to refresh</p>
             ) : (
-              <p className="text-sm text-gray-500">Pull to refresh</p>
+              <p className="text-sm text-gray-900">Pull to refresh</p>
             )}
           </div>
         </div>

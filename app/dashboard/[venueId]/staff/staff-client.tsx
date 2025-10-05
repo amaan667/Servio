@@ -593,7 +593,7 @@ export default function StaffClient({
                 <CardContent className="py-16">
                   <div className="text-center">
                     <div className="w-16 h-16 bg-gray-100 rounded-full flex items-center justify-center mx-auto mb-4">
-                      <Users className="h-8 w-8 text-gray-400" />
+                      <Users className="h-8 w-8 text-gray-700" />
                     </div>
                     <h3 className="text-lg font-semibold text-foreground mb-2">No team members yet</h3>
                     <p className="text-foreground/80 mb-6 max-w-md mx-auto">
@@ -646,7 +646,7 @@ export default function StaffClient({
                                   row.active ? 'bg-white' : 'bg-gray-200'
                                 }`}>
                                   <span className={`text-sm font-medium ${
-                                    row.active ? 'text-gray-800' : 'text-gray-600'
+                                    row.active ? 'text-gray-800' : 'text-gray-900'
                                   }`}>
                                     {row.name.charAt(0).toUpperCase()}
                                   </span>
@@ -656,7 +656,7 @@ export default function StaffClient({
                                     row.active ? 'text-foreground' : 'text-muted-foreground'
                                   }`}>
                                     {row.name}
-                                    {!row.active && <span className="ml-2 text-xs text-gray-400">(Inactive)</span>}
+                                    {!row.active && <span className="ml-2 text-xs text-gray-700">(Inactive)</span>}
                                   </p>
                                   <p className="staff-member-role text-sm text-foreground/80">{role}</p>
                                 </div>

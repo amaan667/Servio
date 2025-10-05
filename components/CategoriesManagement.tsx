@@ -502,7 +502,7 @@ export function CategoriesManagement({ venueId, onCategoriesUpdate }: Categories
                             <div className="flex items-center space-x-3">
                               <div
                                 {...provided.dragHandleProps}
-                                className="cursor-grab active:cursor-grabbing text-gray-400 hover:text-gray-600"
+                                className="cursor-grab active:cursor-grabbing text-gray-700 hover:text-gray-900"
                               >
                                 <GripVertical className="h-4 w-4" />
                               </div>

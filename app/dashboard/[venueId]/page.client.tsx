@@ -5,12 +5,16 @@ import { useRouter } from "next/navigation";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader } from "@/components/ui/card";
 import Link from "next/link";
-import { Clock, Users, TrendingUp, ShoppingBag, BarChart, QrCode, Settings, Plus, Table } from "lucide-react";
+import { Clock, Users, TrendingUp, ShoppingBag, BarChart, QrCode, Settings, Plus, Table, Wifi, WifiOff, AlertTriangle } from "lucide-react";
 import { createClient } from "@/lib/supabase/client";
 import NavigationBreadcrumb from "@/components/navigation-breadcrumb";
 import { todayWindowForTZ } from "@/lib/time";
 import { useDashboardPrefetch } from '@/hooks/usePrefetch';
 import PullToRefresh from '@/components/PullToRefresh';
+import { withSupabaseRetry } from '@/lib/retry';
+import { useConnectionMonitor } from '@/lib/connection-monitor';
+import { DashboardSkeleton } from '@/components/dashboard-skeleton';
+import { useRequestCancellation } from '@/lib/request-utils';
 
 interface DashboardCounts {
   live_count: number;
@@ -61,7 +65,14 @@ const VenueDashboardClient = React.memo(function VenueDashboardClient({
   const [stats, setStats] = useState<DashboardStats>(initialStats || { revenue: 0, menuItems: 0, unpaid: 0 });
   const [statsLoaded, setStatsLoaded] = useState(false);
   const [todayWindow, setTodayWindow] = useState<any>(null);
+  const [error, setError] = useState<string | null>(null);
   const router = useRouter();
+  
+  // Monitor connection status
+  const connectionState = useConnectionMonitor();
+  
+  // Request cancellation
+  const { createRequest, cancelRequest } = useRequestCancellation();
   
   // Enable intelligent prefetching for dashboard routes
   useDashboardPrefetch(venueId);
@@ -232,27 +243,33 @@ const VenueDashboardClient = React.memo(function VenueDashboardClient({
   }, [venueId, venue?.venue_id, todayWindow?.startUtcISO, venueTz]); // Use specific properties instead of objects to prevent unnecessary re-runs
 
 
-  // Function to refresh counts using the new RPC
+  // Function to refresh counts using the new RPC with retry logic
   const refreshCounts = async () => {
     try {
+      setError(null);
       const supabase = createClient();
-      const { data: newCounts, error } = await supabase
-        .rpc('dashboard_counts', { 
+      
+      // Use retry logic for dashboard counts
+      const { data: newCounts, error } = await withSupabaseRetry(
+        () => supabase.rpc('dashboard_counts', { 
           p_venue_id: venueId, 
           p_tz: venueTz, 
           p_live_window_mins: 30 
-        })
-        .single();
+        }).single()
+      );
       
       if (error) {
+        console.warn('[DASHBOARD] Failed to refresh counts:', error);
+        setError('Failed to refresh dashboard data');
         return;
       }
 
-      // Also get table counters for consistency
-      const { data: tableCounters, error: tableCountersError } = await supabase
-        .rpc('api_table_counters', {
+      // Also get table counters for consistency with retry
+      const { data: tableCounters, error: tableCountersError } = await withSupabaseRetry(
+        () => supabase.rpc('api_table_counters', {
           p_venue_id: venueId
-        });
+        })
+      );
 
       if (!tableCountersError && tableCounters?.[0]) {
         const tableCounter = tableCounters[0];
@@ -309,20 +326,34 @@ const VenueDashboardClient = React.memo(function VenueDashboardClient({
     }
 
     try {
+      setError(null);
+      const supabase = createClient();
 
-      const { data: orders } = await createClient()
-        .from("orders")
-        .select("total_amount, table_number, order_status, payment_status, created_at, items")
-        .eq("venue_id", vId)
-        .gte("created_at", window.startUtcISO)
-        .lt("created_at", window.endUtcISO);
+      // Use retry logic for both queries
+      const [ordersResult, menuItemsResult] = await Promise.all([
+        withSupabaseRetry(() => supabase
+          .from("orders")
+          .select("total_amount, table_number, order_status, payment_status, created_at, items")
+          .eq("venue_id", vId)
+          .gte("created_at", window.startUtcISO)
+          .lt("created_at", window.endUtcISO)
+        ),
+        withSupabaseRetry(() => supabase
+          .from("menu_items")
+          .select("id")
+          .eq("venue_id", vId)
+          .eq("available", true)
+        )
+      ]);
 
+      const { data: orders, error: ordersError } = ordersResult;
+      const { data: menuItems, error: menuItemsError } = menuItemsResult;
 
-      const { data: menuItems } = await createClient()
-        .from("menu_items")
-        .select("id")
-        .eq("venue_id", vId)
-        .eq("available", true);
+      if (ordersError || menuItemsError) {
+        console.warn('[DASHBOARD] Failed to load stats:', { ordersError, menuItemsError });
+        setError('Failed to load dashboard statistics');
+        return;
+      }
 
       // Calculate revenue from today's paid orders only (robust amount fallback)
       const todayRevenue = (orders ?? []).reduce((sum: number, order: any) => {
@@ -348,31 +379,15 @@ const VenueDashboardClient = React.memo(function VenueDashboardClient({
       
       setStatsLoaded(true);
     } catch (error) {
-      // Silent error handling
+      console.error('[DASHBOARD] Error loading stats:', error);
+      setError('Failed to load dashboard statistics');
     }
   }, [initialStats, statsLoaded]);
 
 
-  if (!venue) {
-    return (
-      <div className="flex min-h-screen items-center justify-center">
-        <div className="text-center">
-          <div className="text-red-500 mb-4">
-            <svg className="w-12 h-12 mx-auto" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-2.5L13.732 4c-.77-.833-1.964-.833-2.732 0L3.732 16.5c-.77.833.192 2.5 1.732 2.5z" />
-            </svg>
-          </div>
-          <h2 className="text-xl font-semibold text-gray-900 mb-2">Unable to load venue</h2>
-          <p className="text-gray-700 dark:text-gray-300 mb-4">The venue data could not be loaded. Please try refreshing the page.</p>
-          <button 
-            onClick={() => window.location.reload()} 
-            className="px-4 py-2 bg-purple-600 text-white rounded-md hover:bg-purple-700"
-          >
-            Refresh Page
-          </button>
-        </div>
-      </div>
-    );
+  // Show skeleton while loading or if no venue data
+  if (loading || !venue) {
+    return <DashboardSkeleton />;
   }
 
   const handleRefresh = async () => {
@@ -389,10 +404,50 @@ const VenueDashboardClient = React.memo(function VenueDashboardClient({
         <NavigationBreadcrumb venueId={venueId} />
         
         <div className="mb-6 sm:mb-8">
-          <h2 className="text-xl sm:text-2xl font-bold text-foreground mb-2">
-            Welcome back, {userName}!
-          </h2>
-          <p className="text-foreground/80 text-sm sm:text-base font-medium">Here's what's happening at {venue?.name || "your venue"} today</p>
+          <div className="flex items-start justify-between">
+            <div>
+              <h2 className="text-xl sm:text-2xl font-bold text-foreground mb-2">
+                Welcome back, {userName}!
+              </h2>
+              <p className="text-foreground/80 text-sm sm:text-base font-medium">Here's what's happening at {venue?.name || "your venue"} today</p>
+            </div>
+            
+            {/* Connection Status Indicator */}
+            <div className="flex items-center gap-2 text-xs">
+              {!connectionState.isOnline ? (
+                <div className="flex items-center gap-1 text-red-600">
+                  <WifiOff className="h-4 w-4" />
+                  <span>Offline</span>
+                </div>
+              ) : connectionState.isSlowConnection ? (
+                <div className="flex items-center gap-1 text-yellow-600">
+                  <AlertTriangle className="h-4 w-4" />
+                  <span>Slow</span>
+                </div>
+              ) : (
+                <div className="flex items-center gap-1 text-green-600">
+                  <Wifi className="h-4 w-4" />
+                  <span>Online</span>
+                </div>
+              )}
+            </div>
+          </div>
+          
+          {/* Error Banner */}
+          {error && (
+            <div className="mt-4 p-3 bg-red-50 border border-red-200 rounded-lg">
+              <div className="flex items-center gap-2">
+                <AlertTriangle className="h-4 w-4 text-red-600" />
+                <span className="text-sm text-red-800">{error}</span>
+                <button
+                  onClick={handleRefresh}
+                  className="ml-auto text-xs bg-red-100 hover:bg-red-200 px-2 py-1 rounded"
+                >
+                  Retry
+                </button>
+              </div>
+            </div>
+          )}
         </div>
 
         {/* Stats Overview */}

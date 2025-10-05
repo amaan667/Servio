@@ -34,7 +34,7 @@ export function POSDashboardClient({ venueId }: POSDashboardClientProps) {
             <div className="flex items-center">
               <Table className="h-8 w-8 text-blue-600" />
               <div className="ml-4">
-                <p className="text-sm font-medium text-gray-600">Active Tables</p>
+                <p className="text-sm font-medium text-gray-900">Active Tables</p>
                 <p className="text-2xl font-bold text-gray-900">12</p>
               </div>
             </div>
@@ -46,7 +46,7 @@ export function POSDashboardClient({ venueId }: POSDashboardClientProps) {
             <div className="flex items-center">
               <Clock className="h-8 w-8 text-yellow-600" />
               <div className="ml-4">
-                <p className="text-sm font-medium text-gray-600">Orders in Prep</p>
+                <p className="text-sm font-medium text-gray-900">Orders in Prep</p>
                 <p className="text-2xl font-bold text-gray-900">8</p>
               </div>
             </div>
@@ -58,7 +58,7 @@ export function POSDashboardClient({ venueId }: POSDashboardClientProps) {
             <div className="flex items-center">
               <CreditCard className="h-8 w-8 text-green-600" />
               <div className="ml-4">
-                <p className="text-sm font-medium text-gray-600">Unpaid Orders</p>
+                <p className="text-sm font-medium text-gray-900">Unpaid Orders</p>
                 <p className="text-2xl font-bold text-gray-900">3</p>
               </div>
             </div>
@@ -70,7 +70,7 @@ export function POSDashboardClient({ venueId }: POSDashboardClientProps) {
             <div className="flex items-center">
               <TrendingUp className="h-8 w-8 text-purple-600" />
               <div className="ml-4">
-                <p className="text-sm font-medium text-gray-600">Today's Revenue</p>
+                <p className="text-sm font-medium text-gray-900">Today's Revenue</p>
                 <p className="text-2xl font-bold text-gray-900">£1,247</p>
               </div>
             </div>
@@ -102,7 +102,7 @@ export function POSDashboardClient({ venueId }: POSDashboardClientProps) {
                 <Table className="h-5 w-5" />
                 Table & Counter Management
               </CardTitle>
-              <p className="text-sm text-gray-600">
+              <p className="text-sm text-gray-900">
                 Manage seating, tabs, and payments at the entity level
               </p>
             </CardHeader>
@@ -119,7 +119,7 @@ export function POSDashboardClient({ venueId }: POSDashboardClientProps) {
                 <Receipt className="h-5 w-5" />
                 Live Orders - Kitchen Display System
               </CardTitle>
-              <p className="text-sm text-gray-600">
+              <p className="text-sm text-gray-900">
                 Manage order preparation, status updates, and kitchen workflow
               </p>
             </CardHeader>
@@ -136,15 +136,15 @@ export function POSDashboardClient({ venueId }: POSDashboardClientProps) {
                 <Users className="h-5 w-5" />
                 Counter Orders
               </CardTitle>
-              <p className="text-sm text-gray-600">
+              <p className="text-sm text-gray-900">
                 Fast-moving counter service orders and pickup management
               </p>
             </CardHeader>
             <CardContent>
               <div className="text-center py-12">
-                <Users className="h-12 w-12 text-gray-400 mx-auto mb-4" />
+                <Users className="h-12 w-12 text-gray-700 mx-auto mb-4" />
                 <h3 className="text-lg font-medium text-gray-900 mb-2">Counter Orders</h3>
-                <p className="text-gray-600 mb-4">
+                <p className="text-gray-900 mb-4">
                   Counter orders are displayed in the Live Orders tab with proper filtering.
                 </p>
                 <Button onClick={() => setActiveTab('orders')}>

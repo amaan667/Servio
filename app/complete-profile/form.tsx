@@ -172,7 +172,7 @@ export default function CompleteProfileForm({ user }: CompleteProfileFormProps) 
         
         <div className="text-center">
           <h2 className="text-3xl font-bold text-gray-900">Complete Your Profile</h2>
-          <p className="mt-2 text-sm text-gray-600">
+          <p className="mt-2 text-sm text-gray-900">
             Set up your business details to get started
           </p>
         </div>
@@ -276,7 +276,7 @@ export default function CompleteProfileForm({ user }: CompleteProfileFormProps) 
                 <>
                   <div className="border-t pt-4 mt-4">
                     <h3 className="text-lg font-medium text-gray-900 mb-3">Set Up Password *</h3>
-                    <p className="text-sm text-gray-600 mb-4">
+                    <p className="text-sm text-gray-900 mb-4">
                       Set a password so you can also sign in with your email and password in the future.
                     </p>
                   </div>

@@ -126,11 +126,11 @@ export function DailyResetSettings({
               className="w-32"
               disabled={isSaving}
             />
-            <span className="text-sm text-gray-500">
+            <span className="text-sm text-gray-900">
               ({formatTimeForDisplay(resetTime)})
             </span>
           </div>
-          <p className="text-xs text-gray-500">
+          <p className="text-xs text-gray-900">
             Enter the time when you want the automatic daily reset to run each day.
           </p>
         </div>
@@ -182,7 +182,7 @@ export function DailyResetSettings({
         </div>
 
         {/* Help Text */}
-        <div className="text-xs text-gray-500 space-y-1">
+        <div className="text-xs text-gray-900 space-y-1">
           <p><strong>Recommended times:</strong></p>
           <ul className="list-disc list-inside space-y-1 ml-2">
             <li><strong>00:00 (Midnight)</strong> - Standard reset at start of day</li>

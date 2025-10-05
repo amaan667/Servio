@@ -107,7 +107,7 @@ export function MergeConfirmationDialog({
                 </div>
                 
                 {sourceTable.order_id && (
-                  <div className="text-sm text-gray-600">
+                  <div className="text-sm text-gray-900">
                     <div className="flex items-center gap-2">
                       <Receipt className="h-3 w-3" />
                       <span>Order #{sourceTable.order_id.slice(-6)}</span>
@@ -126,7 +126,7 @@ export function MergeConfirmationDialog({
                 )}
                 
                 {(sourceTable.reserved_now_name || sourceTable.reserved_later_name) && (
-                  <div className="text-sm text-gray-600">
+                  <div className="text-sm text-gray-900">
                     <div className="flex items-center gap-2">
                       <Calendar className="h-3 w-3" />
                       <span>{sourceTable.reserved_now_name || sourceTable.reserved_later_name}</span>
@@ -149,7 +149,7 @@ export function MergeConfirmationDialog({
                 </div>
                 
                 {targetTable.order_id && (
-                  <div className="text-sm text-gray-600">
+                  <div className="text-sm text-gray-900">
                     <div className="flex items-center gap-2">
                       <Receipt className="h-3 w-3" />
                       <span>Order #{targetTable.order_id.slice(-6)}</span>
@@ -168,7 +168,7 @@ export function MergeConfirmationDialog({
                 )}
                 
                 {(targetTable.reserved_now_name || targetTable.reserved_later_name) && (
-                  <div className="text-sm text-gray-600">
+                  <div className="text-sm text-gray-900">
                     <div className="flex items-center gap-2">
                       <Calendar className="h-3 w-3" />
                       <span>{targetTable.reserved_now_name || targetTable.reserved_later_name}</span>

@@ -233,7 +233,7 @@ export default function UploadMenuCard({ venueId }: { venueId: string }) {
           <Upload className="h-5 w-5" />
           Upload PDF Menu
         </CardTitle>
-        <CardDescription>
+        <CardDescription className="text-gray-900">
           Upload, parse and preview a PDF menu. OCR is used only if needed.
         </CardDescription>
       </CardHeader>
@@ -246,7 +246,7 @@ export default function UploadMenuCard({ venueId }: { venueId: string }) {
             onChange={(e) => setFile(e.target.files?.[0] || null)} 
           />
           {file && (
-            <div className="flex items-center gap-2 text-sm text-gray-600">
+            <div className="flex items-center gap-2 text-sm text-gray-900">
               <FileText className="h-4 w-4" />
               {file.name} ({(file.size / 1024 / 1024).toFixed(2)} MB)
             </div>
@@ -313,7 +313,7 @@ export default function UploadMenuCard({ venueId }: { venueId: string }) {
             </div>
 
             {/* Processing Stats */}
-            <div className="flex gap-4 text-sm text-gray-600">
+            <div className="flex gap-4 text-sm text-gray-900">
               <Badge variant="outline">
                 <Eye className="h-3 w-3 mr-1" />
                 {editedMenu.pages} pages processed
@@ -379,7 +379,7 @@ export default function UploadMenuCard({ venueId }: { venueId: string }) {
                             <div className="flex-1">
                               <div className="font-medium">{item.name}</div>
                               {item.description && (
-                                <div className="text-sm text-gray-600">{item.description}</div>
+                                <div className="text-sm text-gray-900">{item.description}</div>
                               )}
                             </div>
                             <div className="flex items-center gap-2">
@@ -417,7 +417,7 @@ export default function UploadMenuCard({ venueId }: { venueId: string }) {
             <div className="max-h-40 overflow-auto border rounded p-3 text-sm bg-gray-50">
               <pre className="whitespace-pre-wrap">{parsed.preview}</pre>
             </div>
-            <p className="text-sm text-gray-600">
+            <p className="text-sm text-gray-900">
               Review the extracted text above. If this looks like a menu, you can manually edit and commit it.
             </p>
           </div>

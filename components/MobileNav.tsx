@@ -243,7 +243,7 @@ export default function MobileNav({ venueId, venueName, counts = {} }: MobileNav
                         <div className="flex items-center space-x-4">
                           <div className="relative">
                             <item.icon className={`h-6 w-6 ${
-                              item.isActive ? 'text-purple-600' : 'text-gray-600'
+                              item.isActive ? 'text-purple-600' : 'text-gray-900'
                             }`} />
                             {item.badge && item.badge > 0 && (
                               <Badge 
@@ -256,10 +256,10 @@ export default function MobileNav({ venueId, venueName, counts = {} }: MobileNav
                           </div>
                           <div className="text-left">
                             <div className="font-medium">{item.label}</div>
-                            <div className="text-sm text-gray-600 font-medium">{item.description}</div>
+                            <div className="text-sm text-gray-900 font-medium">{item.description}</div>
                           </div>
                         </div>
-                        <ChevronRight className="h-5 w-5 text-gray-600" />
+                        <ChevronRight className="h-5 w-5 text-gray-900" />
                       </button>
                     ))}
                   </div>
@@ -268,7 +268,7 @@ export default function MobileNav({ venueId, venueName, counts = {} }: MobileNav
                 {/* Footer */}
                 <div className="p-4 border-t border-gray-200">
                   <div className="text-center">
-                    <p className="text-xs text-gray-600 font-medium">
+                    <p className="text-xs text-gray-900 font-medium">
                       Servio Home
                     </p>
                   </div>

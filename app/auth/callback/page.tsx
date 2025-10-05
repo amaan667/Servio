@@ -358,7 +358,7 @@ function CallbackContent() {
               </button>
             </div>
             {debugLogs.length > 0 && (
-              <div className="mt-4 text-xs text-gray-500 text-left max-h-32 overflow-y-auto">
+              <div className="mt-4 text-xs text-gray-900 text-left max-h-32 overflow-y-auto">
                 <p className="font-medium mb-1">Debug Logs:</p>
                 {debugLogs.slice(-5).map((log, index) => (
                   <div key={index} className="mb-1">{log}</div>

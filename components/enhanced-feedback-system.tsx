@@ -260,8 +260,8 @@ export function EnhancedFeedbackSystem({ venueId }: FeedbackSystemProps) {
   if (loading) {
     return (
       <div className="flex items-center justify-center py-8">
-        <RefreshCw className="h-8 w-8 animate-spin text-gray-400" />
-        <span className="ml-2 text-gray-600">Loading feedback...</span>
+        <RefreshCw className="h-8 w-8 animate-spin text-gray-700" />
+        <span className="ml-2 text-gray-900">Loading feedback...</span>
       </div>
     );
   }
@@ -356,7 +356,7 @@ export function EnhancedFeedbackSystem({ venueId }: FeedbackSystemProps) {
                               <Star className="h-4 w-4 text-yellow-500 ml-1" />
                             </div>
                             <Progress value={percentage} className="flex-1 h-2" />
-                            <span className="text-sm text-gray-600 w-16 text-right">
+                            <span className="text-sm text-gray-900 w-16 text-right">
                               {count} ({percentage.toFixed(1)}%)
                             </span>
                           </div>
@@ -376,7 +376,7 @@ export function EnhancedFeedbackSystem({ venueId }: FeedbackSystemProps) {
                           <div key={category} className="flex items-center justify-between p-3 border rounded-lg">
                             <div>
                               <p className="font-medium">{category}</p>
-                              <p className="text-sm text-gray-600">{count} feedback items</p>
+                              <p className="text-sm text-gray-900">{count} feedback items</p>
                             </div>
                             <div className="flex items-center">
                               <span className="text-sm font-medium mr-2">{avgRating.toFixed(1)}</span>
@@ -404,9 +404,9 @@ export function EnhancedFeedbackSystem({ venueId }: FeedbackSystemProps) {
                 <CardContent>
                   {questions.length === 0 ? (
                     <div className="text-center py-8">
-                      <MessageSquare className="h-12 w-12 text-gray-400 mx-auto mb-4" />
-                      <p className="text-gray-600 mb-4">No custom questions created yet</p>
-                      <p className="text-sm text-gray-500">
+                      <MessageSquare className="h-12 w-12 text-gray-700 mx-auto mb-4" />
+                      <p className="text-gray-900 mb-4">No custom questions created yet</p>
+                      <p className="text-sm text-gray-900">
                         Customers will see generic questions until you create custom ones.
                       </p>
                       <Button 
@@ -422,7 +422,7 @@ export function EnhancedFeedbackSystem({ venueId }: FeedbackSystemProps) {
                         <div key={question.id} className="flex items-center justify-between p-4 border rounded-lg">
                           <div className="flex-1">
                             <div className="flex items-center space-x-3">
-                              <span className="text-sm font-medium text-gray-500">#{index + 1}</span>
+                              <span className="text-sm font-medium text-gray-900">#{index + 1}</span>
                               <span className="font-medium">{question.prompt}</span>
                               <Badge variant={question.is_active ? "default" : "secondary"}>
                                 {question.type}
@@ -510,11 +510,11 @@ export function EnhancedFeedbackSystem({ venueId }: FeedbackSystemProps) {
                                 <Star
                                   key={star}
                                   className={`h-4 w-4 ${
-                                    star <= item.rating ? 'text-yellow-500 fill-current' : 'text-gray-300'
+                                    star <= item.rating ? 'text-yellow-500 fill-current' : 'text-gray-900'
                                   }`}
                                 />
                               ))}
-                              <span className="ml-2 text-sm text-gray-600">({item.rating})</span>
+                              <span className="ml-2 text-sm text-gray-900">({item.rating})</span>
                             </div>
                             <Badge className={getSentimentColor(item.sentiment_label || 'neutral')}>
                               {getSentimentIcon(item.sentiment_label || 'neutral')}
@@ -527,7 +527,7 @@ export function EnhancedFeedbackSystem({ venueId }: FeedbackSystemProps) {
                           
                           <p className="text-gray-700 mb-2">{item.comment}</p>
                           
-                          <div className="flex items-center justify-between text-sm text-gray-500">
+                          <div className="flex items-center justify-between text-sm text-gray-900">
                             <span>{new Date(item.created_at).toLocaleDateString()}</span>
                           </div>
                         </div>
@@ -539,8 +539,8 @@ export function EnhancedFeedbackSystem({ venueId }: FeedbackSystemProps) {
                 ))}
 
                 {feedback.length === 0 && (
-                  <div className="text-center py-8 text-gray-500">
-                    <MessageSquare className="h-12 w-12 mx-auto mb-4 text-gray-300" />
+                  <div className="text-center py-8 text-gray-900">
+                    <MessageSquare className="h-12 w-12 mx-auto mb-4 text-gray-900" />
                     <p>No feedback found matching your criteria.</p>
                   </div>
                 )}

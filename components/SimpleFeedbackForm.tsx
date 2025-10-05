@@ -63,14 +63,14 @@ export default function SimpleFeedbackForm({ venueId, orderId, onSubmit }: Simpl
               className={`h-6 w-6 ${
                 star <= value
                   ? 'text-yellow-400 fill-current'
-                  : 'text-gray-300'
+                  : 'text-gray-600'
               }`}
             />
           </button>
         ))}
       </div>
       {value > 0 && (
-        <p className="text-sm text-gray-500">
+        <p className="text-sm text-gray-900">
           {value} star{value > 1 ? 's' : ''} selected
         </p>
       )}
@@ -119,7 +119,7 @@ export default function SimpleFeedbackForm({ venueId, orderId, onSubmit }: Simpl
               rows={3}
               maxLength={600}
             />
-            <p className="text-sm text-gray-500">
+            <p className="text-sm text-gray-900">
               {comments.length}/600 characters
             </p>
           </div>

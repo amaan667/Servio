@@ -60,7 +60,7 @@ export default async function POSPage({ params }: POSPageProps) {
           </p>
         </div>
         
-        <Suspense fallback={<div className="text-center py-8 text-gray-600">Loading POS system...</div>}>
+        <Suspense fallback={<div className="text-center py-8 text-gray-900">Loading POS system...</div>}>
           <POSDashboardClient venueId={venueId} />
         </Suspense>
       </div>

@@ -366,8 +366,8 @@ export function AccountMigrator() {
           </div>
 
           {localAccounts.length === 0 ? (
-            <div className="text-center py-8 text-gray-500">
-              <Users className="h-12 w-12 mx-auto mb-4 text-gray-300" />
+            <div className="text-center py-8 text-gray-900">
+              <Users className="h-12 w-12 mx-auto mb-4 text-gray-600" />
               <p>No local accounts found</p>
             </div>
           ) : (
@@ -380,7 +380,7 @@ export function AccountMigrator() {
                   <div className="flex items-center justify-between">
                     <div>
                       <h4 className="font-semibold">{account.contactName}</h4>
-                      <p className="text-sm text-gray-600">
+                      <p className="text-sm text-gray-900">
                         {account.contactEmail}
                       </p>
                     </div>

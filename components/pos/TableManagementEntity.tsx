@@ -228,7 +228,7 @@ export function TableManagementEntity({ venueId }: TableManagementEntityProps) {
                     <span className="ml-1">{table.session_status}</span>
                   </Badge>
                 </div>
-                <div className="text-sm text-gray-600">
+                <div className="text-sm text-gray-900">
                   {table.area} • {table.seat_count} seats
                 </div>
               </CardHeader>
@@ -238,11 +238,11 @@ export function TableManagementEntity({ venueId }: TableManagementEntityProps) {
                 {table.session_id && (
                   <div className="space-y-2">
                     <div className="flex items-center gap-2 text-sm">
-                      <Users className="h-4 w-4 text-gray-500" />
+                      <Users className="h-4 w-4 text-gray-900" />
                       <span>{table.guest_count} guests</span>
                     </div>
                     <div className="flex items-center gap-2 text-sm">
-                      <Timer className="h-4 w-4 text-gray-500" />
+                      <Timer className="h-4 w-4 text-gray-900" />
                       <span>{formatTime(table.opened_at || table.last_order_at)}</span>
                     </div>
                   </div>
@@ -375,7 +375,7 @@ export function TableManagementEntity({ venueId }: TableManagementEntityProps) {
                     <span className="ml-1">{counter.session_status}</span>
                   </Badge>
                 </div>
-                <div className="text-sm text-gray-600">
+                <div className="text-sm text-gray-900">
                   {counter.area}
                 </div>
               </CardHeader>
@@ -384,7 +384,7 @@ export function TableManagementEntity({ venueId }: TableManagementEntityProps) {
                 {/* Session Info */}
                 {counter.session_id && (
                   <div className="flex items-center gap-2 text-sm">
-                    <Timer className="h-4 w-4 text-gray-500" />
+                    <Timer className="h-4 w-4 text-gray-900" />
                     <span>{formatTime(counter.opened_at || counter.last_order_at)}</span>
                   </div>
                 )}

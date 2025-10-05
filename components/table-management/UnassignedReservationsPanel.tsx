@@ -116,7 +116,7 @@ export function UnassignedReservationsPanel({
                         <AlertCircle className="h-4 w-4 text-red-500" />
                       )}
                     </div>
-                    <div className="text-sm text-gray-500">
+                    <div className="text-sm text-gray-900">
                       {formatDistanceToNow(new Date(reservation.start_at), { addSuffix: true })}
                     </div>
                   </div>
@@ -125,18 +125,18 @@ export function UnassignedReservationsPanel({
                   <div className="space-y-2 mb-4">
                     {reservation.name && (
                       <div className="flex items-center gap-2 text-sm">
-                        <UserCheck className="h-4 w-4 text-gray-400" />
+                        <UserCheck className="h-4 w-4 text-gray-700" />
                         <span className="font-medium">{reservation.name}</span>
                       </div>
                     )}
                     {reservation.phone && (
-                      <div className="flex items-center gap-2 text-sm text-gray-600">
-                        <Phone className="h-4 w-4 text-gray-400" />
+                      <div className="flex items-center gap-2 text-sm text-gray-900">
+                        <Phone className="h-4 w-4 text-gray-700" />
                         {reservation.phone}
                       </div>
                     )}
-                    <div className="flex items-center gap-2 text-sm text-gray-600">
-                      <Clock className="h-4 w-4 text-gray-400" />
+                    <div className="flex items-center gap-2 text-sm text-gray-900">
+                      <Clock className="h-4 w-4 text-gray-700" />
                       {new Date(reservation.start_at).toLocaleTimeString([], { 
                         hour: '2-digit', 
                         minute: '2-digit' 

@@ -52,7 +52,7 @@ const ToggleSwitch = React.forwardRef<
       {showLabels && (
         <span className={cn(
           "text-sm font-semibold transition-colors",
-          checked ? "text-servio-purple" : "text-gray-600"
+          checked ? "text-servio-purple" : "text-gray-900"
         )}>
           {checked ? onLabel : offLabel}
         </span>

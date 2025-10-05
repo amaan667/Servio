@@ -447,7 +447,7 @@ export default function HomePage() {
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="grid grid-cols-1 md:grid-cols-4 gap-8">
             <div className="col-span-1 md:col-span-2">
-              <p className="text-gray-400 mb-6 max-w-md">
+              <p className="text-gray-700 mb-6 max-w-md">
                 Servio makes QR code ordering simple and effective for
                 businesses of all sizes. Transform your customer experience
                 today.
@@ -456,7 +456,7 @@ export default function HomePage() {
                 <Button
                   variant="ghost"
                   size="icon"
-                  className="text-gray-400 hover:text-white"
+                  className="text-gray-700 hover:text-white"
                 >
                   <span className="sr-only">Facebook</span>
                   <svg
@@ -474,7 +474,7 @@ export default function HomePage() {
                 <Button
                   variant="ghost"
                   size="icon"
-                  className="text-gray-400 hover:text-white"
+                  className="text-gray-700 hover:text-white"
                 >
                   <span className="sr-only">Twitter</span>
                   <svg
@@ -488,7 +488,7 @@ export default function HomePage() {
                 <Button
                   variant="ghost"
                   size="icon"
-                  className="text-gray-400 hover:text-white"
+                  className="text-gray-700 hover:text-white"
                 >
                   <span className="sr-only">LinkedIn</span>
                   <svg
@@ -511,7 +511,7 @@ export default function HomePage() {
                 <li>
                   <Link
                     href="#features"
-                    className="text-gray-400 hover:text-white transition-colors"
+                    className="text-gray-700 hover:text-white transition-colors"
                   >
                     Features
                   </Link>
@@ -519,7 +519,7 @@ export default function HomePage() {
                 <li>
                   <Link
                     href="#pricing"
-                    className="text-gray-400 hover:text-white transition-colors"
+                    className="text-gray-700 hover:text-white transition-colors"
                   >
                     Pricing
                   </Link>
@@ -527,7 +527,7 @@ export default function HomePage() {
                 <li>
                   <Link
                     href="/order?venue=demo-cafe&table=1"
-                    className="text-gray-400 hover:text-white transition-colors"
+                    className="text-gray-700 hover:text-white transition-colors"
                   >
                     Demo
                   </Link>
@@ -535,7 +535,7 @@ export default function HomePage() {
                 <li>
                   <Link
                     href="#"
-                    className="text-gray-400 hover:text-white transition-colors"
+                    className="text-gray-700 hover:text-white transition-colors"
                   >
                     API
                   </Link>
@@ -548,7 +548,7 @@ export default function HomePage() {
                 <li>
                   <Link
                     href="#"
-                    className="text-gray-400 hover:text-white transition-colors"
+                    className="text-gray-700 hover:text-white transition-colors"
                   >
                     Help Center
                   </Link>
@@ -556,7 +556,7 @@ export default function HomePage() {
                 <li>
                   <Link
                     href="#"
-                    className="text-gray-400 hover:text-white transition-colors"
+                    className="text-gray-700 hover:text-white transition-colors"
                   >
                     Contact Us
                   </Link>
@@ -564,7 +564,7 @@ export default function HomePage() {
                 <li>
                   <Link
                     href="#"
-                    className="text-gray-400 hover:text-white transition-colors"
+                    className="text-gray-700 hover:text-white transition-colors"
                   >
                     Status
                   </Link>
@@ -572,7 +572,7 @@ export default function HomePage() {
                 <li>
                   <Link
                     href="#"
-                    className="text-gray-400 hover:text-white transition-colors"
+                    className="text-gray-700 hover:text-white transition-colors"
                   >
                     Privacy Policy
                   </Link>
@@ -580,7 +580,7 @@ export default function HomePage() {
               </ul>
             </div>
           </div>
-          <div className="border-t border-gray-800 mt-12 pt-8 text-center text-gray-400">
+          <div className="border-t border-gray-800 mt-12 pt-8 text-center text-gray-700">
             <p>&copy; 2024 Servio. All rights reserved.</p>
           </div>
         </div>

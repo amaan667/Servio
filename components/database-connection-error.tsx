@@ -35,7 +35,7 @@ export function DatabaseConnectionError() {
               </p>
             </AlertDescription>
           </Alert>
-          <div className="text-xs text-gray-500">
+          <div className="text-xs text-gray-900">
             <p className="font-semibold">Running locally?</p>
             <p>
               Create a <code>.env.local</code> file in your project's root

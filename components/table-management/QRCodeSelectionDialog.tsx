@@ -137,7 +137,7 @@ export function QRCodeSelectionDialog({
                   ))}
                 </div>
               ) : (
-                <p className="text-sm text-gray-500">No tables selected</p>
+                <p className="text-sm text-gray-900">No tables selected</p>
               )}
             </CardContent>
           </Card>
@@ -185,7 +185,7 @@ export function QRCodeSelectionDialog({
         </div>
 
         <DialogFooter className="flex items-center justify-between">
-          <div className="text-sm text-gray-500">
+          <div className="text-sm text-gray-900">
             {selectedTables.length > 0 && (
               <span>
                 {selectedTables.length} table{selectedTables.length !== 1 ? 's' : ''} selected

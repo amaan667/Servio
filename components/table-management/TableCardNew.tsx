@@ -453,7 +453,7 @@ export function TableCardNew({ table, venueId, onActionComplete, availableTables
           </div>
           
           {table.order_id && (
-            <div className="text-sm text-gray-600 space-y-1">
+            <div className="text-sm text-gray-900 space-y-1">
               <div className="flex items-center gap-2">
                 <span className="font-medium">Order #{table.order_id.slice(-6)}</span>
               </div>
@@ -470,7 +470,7 @@ export function TableCardNew({ table, venueId, onActionComplete, availableTables
               )}
               
               {table.opened_at && (
-                <div className="flex items-center gap-1 text-xs text-gray-500">
+                <div className="flex items-center gap-1 text-xs text-gray-900">
                   <Clock className="h-3 w-3" />
                   <span>Open {formatTime(table.opened_at)}</span>
                   <span>• {getTimeElapsed(table.opened_at)} ago</span>
@@ -480,13 +480,13 @@ export function TableCardNew({ table, venueId, onActionComplete, availableTables
           )}
           
           {!table.order_id && table.session_status === 'FREE' && (
-            <div className="text-sm text-gray-500">
+            <div className="text-sm text-gray-900">
               Available for seating
             </div>
           )}
           
           {table.session_status === 'RESERVED' && (
-            <div className="text-sm text-gray-500">
+            <div className="text-sm text-gray-900">
               {table.reservation_status === 'RESERVED_NOW' ? 'Reserved - Check in available' : 'Reserved for later'}
             </div>
           )}

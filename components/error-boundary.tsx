@@ -66,7 +66,7 @@ export class ErrorBoundary extends React.Component<ErrorBoundaryProps, ErrorBoun
               <h1 className="text-xl font-semibold text-gray-900 mb-2">
                 Something went wrong
               </h1>
-              <p className="text-gray-600 mb-4">
+              <p className="text-gray-900 mb-4">
                 {isAuthError 
                   ? 'There was an authentication error. This might be due to a session issue.'
                   : 'An unexpected error occurred. Please try again.'
@@ -75,7 +75,7 @@ export class ErrorBoundary extends React.Component<ErrorBoundaryProps, ErrorBoun
               
               {process.env.NODE_ENV === 'development' && this.state.error && (
                 <details className="mb-4 text-left">
-                  <summary className="cursor-pointer text-sm text-gray-500 hover:text-gray-700">
+                  <summary className="cursor-pointer text-sm text-gray-900 hover:text-gray-700">
                     Error Details (Development)
                   </summary>
                   <div className="mt-2 p-3 bg-gray-100 rounded text-xs font-mono text-gray-800 overflow-auto max-h-32">
@@ -119,7 +119,7 @@ export class ErrorBoundary extends React.Component<ErrorBoundaryProps, ErrorBoun
               </Button>
             </div>
 
-            <div className="mt-6 text-xs text-gray-500">
+            <div className="mt-6 text-xs text-gray-900">
               <p>If this problem persists, please contact support.</p>
               <p className="mt-1">Error ID: {this.state.error?.name || 'unknown'}</p>
             </div>

@@ -60,7 +60,7 @@ export default function ThemeToggleFloat() {
         {currentTheme === 'dark' ? (
           <Sun className="h-5 w-5 text-yellow-500" />
         ) : (
-          <Moon className="h-5 w-5 text-gray-700 dark:text-gray-300" />
+          <Moon className="h-5 w-5 text-gray-700 dark:text-gray-600" />
         )}
       </div>
     </button>

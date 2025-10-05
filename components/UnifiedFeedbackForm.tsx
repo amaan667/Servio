@@ -257,7 +257,7 @@ export default function UnifiedFeedbackForm({
               className={`h-6 w-6 ${
                 star <= value
                   ? 'text-yellow-400 fill-current'
-                  : 'text-gray-300'
+                  : 'text-gray-600'
               }`}
             />
           </button>
@@ -272,7 +272,7 @@ export default function UnifiedFeedbackForm({
         <CardContent className="p-6">
           <div className="text-center">
             <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-purple-600 mx-auto mb-4"></div>
-            <p className="text-gray-600">Loading feedback form...</p>
+            <p className="text-gray-900">Loading feedback form...</p>
           </div>
         </CardContent>
       </Card>
@@ -287,7 +287,7 @@ export default function UnifiedFeedbackForm({
             <CheckCircle className="h-8 w-8 text-green-600" />
           </div>
           <h3 className="text-lg font-semibold text-gray-900 mb-2">Thank you!</h3>
-          <p className="text-gray-600">Your feedback has been submitted successfully.</p>
+          <p className="text-gray-900">Your feedback has been submitted successfully.</p>
         </CardContent>
       </Card>
     );
@@ -344,7 +344,7 @@ export default function UnifiedFeedbackForm({
                     maxLength={600}
                     className="resize-none"
                   />
-                  <p className="text-xs text-gray-500">
+                  <p className="text-xs text-gray-900">
                     {(answers[question.id] || '').length}/600 characters
                   </p>
                 </div>

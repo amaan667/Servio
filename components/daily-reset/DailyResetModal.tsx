@@ -67,7 +67,7 @@ export function DailyResetModal({
               <CheckCircle2 className="h-4 w-4 text-green-500 mt-0.5 flex-shrink-0" />
               <div>
                 <p className="text-sm font-medium">Complete all active orders</p>
-                <p className="text-xs text-gray-500">Mark all pending orders as completed</p>
+                <p className="text-xs text-gray-900">Mark all pending orders as completed</p>
               </div>
             </div>
             
@@ -75,7 +75,7 @@ export function DailyResetModal({
               <CheckCircle2 className="h-4 w-4 text-green-500 mt-0.5 flex-shrink-0" />
               <div>
                 <p className="text-sm font-medium">Cancel all reservations</p>
-                <p className="text-xs text-gray-500">Mark all active reservations as cancelled</p>
+                <p className="text-xs text-gray-900">Mark all active reservations as cancelled</p>
               </div>
             </div>
             
@@ -83,7 +83,7 @@ export function DailyResetModal({
               <CheckCircle2 className="h-4 w-4 text-green-500 mt-0.5 flex-shrink-0" />
               <div>
                 <p className="text-sm font-medium">Delete all tables</p>
-                <p className="text-xs text-gray-500">Remove all tables from the system</p>
+                <p className="text-xs text-gray-900">Remove all tables from the system</p>
               </div>
             </div>
           </div>
@@ -130,7 +130,7 @@ export function DailyResetModal({
               disabled={isResetting}
               className="rounded border-gray-300"
             />
-            <span className="text-gray-600">
+            <span className="text-gray-900">
               I understand this will permanently delete all tables and complete all orders
             </span>
           </label>

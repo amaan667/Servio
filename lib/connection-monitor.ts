@@ -1,0 +1,146 @@
+/**
+ * Connection monitoring and offline handling utilities
+ */
+
+import React from 'react';
+
+export interface ConnectionState {
+  isOnline: boolean;
+  isSlowConnection: boolean;
+  lastChecked: Date;
+}
+
+class ConnectionMonitor {
+  private listeners: Set<(state: ConnectionState) => void> = new Set();
+  private state: ConnectionState = {
+    isOnline: navigator.onLine,
+    isSlowConnection: false,
+    lastChecked: new Date()
+  };
+  private checkInterval: NodeJS.Timeout | null = null;
+
+  constructor() {
+    if (typeof window === 'undefined') return;
+    
+    this.setupEventListeners();
+    this.startPeriodicCheck();
+  }
+
+  private setupEventListeners() {
+    window.addEventListener('online', () => this.handleOnline());
+    window.addEventListener('offline', () => this.handleOffline());
+  }
+
+  private async handleOnline() {
+    console.log('[CONNECTION] Network is back online');
+    await this.checkConnectionQuality();
+  }
+
+  private handleOffline() {
+    console.warn('[CONNECTION] Network is offline');
+    this.updateState({ isOnline: false, isSlowConnection: false });
+  }
+
+  private async checkConnectionQuality() {
+    try {
+      const startTime = Date.now();
+      
+      // Try to fetch a small resource to test connection quality
+      const response = await fetch('/api/auth/health', {
+        method: 'HEAD',
+        cache: 'no-cache',
+        signal: AbortSignal.timeout(5000) // 5 second timeout
+      });
+
+      const responseTime = Date.now() - startTime;
+      const isSlowConnection = responseTime > 3000; // Consider slow if > 3 seconds
+
+      this.updateState({
+        isOnline: response.ok,
+        isSlowConnection,
+        lastChecked: new Date()
+      });
+
+    } catch (error) {
+      console.warn('[CONNECTION] Connection check failed:', error);
+      this.updateState({
+        isOnline: false,
+        isSlowConnection: false,
+        lastChecked: new Date()
+      });
+    }
+  }
+
+  private updateState(newState: Partial<ConnectionState>) {
+    this.state = { ...this.state, ...newState };
+    this.listeners.forEach(listener => listener(this.state));
+  }
+
+  private startPeriodicCheck() {
+    // Check connection quality every 30 seconds
+    this.checkInterval = setInterval(() => {
+      this.checkConnectionQuality();
+    }, 30000);
+  }
+
+  public subscribe(listener: (state: ConnectionState) => void): () => void {
+    this.listeners.add(listener);
+    
+    // Immediately call with current state
+    listener(this.state);
+
+    return () => {
+      this.listeners.delete(listener);
+    };
+  }
+
+  public getState(): ConnectionState {
+    return { ...this.state };
+  }
+
+  public async forceCheck(): Promise<ConnectionState> {
+    await this.checkConnectionQuality();
+    return this.getState();
+  }
+
+  public destroy() {
+    if (this.checkInterval) {
+      clearInterval(this.checkInterval);
+      this.checkInterval = null;
+    }
+    this.listeners.clear();
+  }
+}
+
+// Singleton instance
+let connectionMonitor: ConnectionMonitor | null = null;
+
+export function getConnectionMonitor(): ConnectionMonitor {
+  if (!connectionMonitor && typeof window !== 'undefined') {
+    connectionMonitor = new ConnectionMonitor();
+  }
+  return connectionMonitor!;
+}
+
+// React hook for connection monitoring
+export function useConnectionMonitor() {
+  const [state, setState] = React.useState<ConnectionState>(() => {
+    if (typeof window === 'undefined') {
+      return { isOnline: true, isSlowConnection: false, lastChecked: new Date() };
+    }
+    return getConnectionMonitor().getState();
+  });
+
+  React.useEffect(() => {
+    const monitor = getConnectionMonitor();
+    const unsubscribe = monitor.subscribe(setState);
+    return unsubscribe;
+  }, []);
+
+  return state;
+}
+
+// Utility to detect if we should use reduced functionality
+export function shouldUseOfflineMode(connectionState: ConnectionState): boolean {
+  return !connectionState.isOnline || connectionState.isSlowConnection;
+}

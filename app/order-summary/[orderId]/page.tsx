@@ -401,13 +401,13 @@ export default function OrderSummaryPage() {
               className={`h-8 w-8 ${
                 star <= currentRating
                   ? 'text-yellow-400 fill-current'
-                  : 'text-gray-300'
+                  : 'text-gray-600'
               }`}
             />
           </button>
         ))}
         {currentRating > 0 && (
-          <span className="ml-2 text-sm text-gray-600">
+          <span className="ml-2 text-sm text-gray-900">
             {currentRating} star{currentRating !== 1 ? 's' : ''}
           </span>
         )}
@@ -453,7 +453,7 @@ export default function OrderSummaryPage() {
     return (
       <div className="min-h-screen bg-gray-50 flex items-center justify-center">
         <div className="text-center">
-          <p className="text-gray-600">Loading order details...</p>
+          <p className="text-gray-900">Loading order details...</p>
         </div>
       </div>
     );
@@ -465,7 +465,7 @@ export default function OrderSummaryPage() {
         <div className="text-center">
           <XCircle className="h-16 w-16 text-red-500 mx-auto mb-4" />
           <h1 className="text-2xl font-bold text-gray-900 mb-2">Order Not Found</h1>
-          <p className="text-gray-600 mb-4">{error || 'The order you are looking for could not be found.'}</p>
+          <p className="text-gray-900 mb-4">{error || 'The order you are looking for could not be found.'}</p>
           <Button onClick={() => window.history.back()}>Go Back</Button>
         </div>
       </div>
@@ -481,7 +481,7 @@ export default function OrderSummaryPage() {
         {/* Header */}
         <div className="text-center mb-6 sm:mb-8">
           <h1 className="text-2xl sm:text-3xl font-bold text-gray-900 mb-2">Order Summary</h1>
-          <p className="text-gray-600 text-sm sm:text-base">Track your order and share your feedback</p>
+          <p className="text-gray-900 text-sm sm:text-base">Track your order and share your feedback</p>
         </div>
 
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
@@ -500,26 +500,26 @@ export default function OrderSummaryPage() {
               <CardContent className="space-y-4">
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 text-sm">
                   <div>
-                    <span className="font-medium text-gray-500">Customer:</span>
+                    <span className="font-medium text-gray-900">Customer:</span>
                     <p className="text-gray-900">{order.customer_name}</p>
                   </div>
                   <div>
-                    <span className="font-medium text-gray-500">Total:</span>
+                    <span className="font-medium text-gray-900">Total:</span>
                     <p className="text-gray-900 font-semibold">{formatCurrency(order.total_amount)}</p>
                   </div>
                   <div>
-                    <span className="font-medium text-gray-500">Placed:</span>
+                    <span className="font-medium text-gray-900">Placed:</span>
                     <p className="text-gray-900">{formatTime(order.created_at)}</p>
                   </div>
                   <div>
-                    <span className="font-medium text-gray-500">Last Updated:</span>
+                    <span className="font-medium text-gray-900">Last Updated:</span>
                     <p className="text-gray-900">{formatTime(order.updated_at)}</p>
                   </div>
                 </div>
                 
                 {order.notes && (
                   <div>
-                    <span className="font-medium text-gray-500">Special Instructions:</span>
+                    <span className="font-medium text-gray-900">Special Instructions:</span>
                     <p className="text-gray-900 mt-1">{order.notes}</p>
                   </div>
                 )}
@@ -551,7 +551,7 @@ export default function OrderSummaryPage() {
                             ? 'bg-red-500 text-white'
                             : isCompleted 
                               ? 'bg-servio-purple text-white' 
-                              : 'bg-gray-200 text-gray-400'
+                              : 'bg-gray-200 text-gray-700'
                         }`}>
                           {isGreyedOut ? (
                             <XCircle className="h-5 w-5" />
@@ -585,7 +585,7 @@ export default function OrderSummaryPage() {
                             )}
                           </div>
                           <p className={`text-sm mt-1 ${
-                            isGreyedOut ? 'text-red-500' : 'text-gray-600'
+                            isGreyedOut ? 'text-red-500' : 'text-gray-900'
                           }`}>
                             {status.description}
                           </p>
@@ -609,10 +609,10 @@ export default function OrderSummaryPage() {
                       <div className="flex-1">
                         <div className="flex items-center space-x-2">
                           <span className="font-medium text-gray-900">{item.item_name}</span>
-                          <span className="text-sm text-gray-500">×{item.quantity}</span>
+                          <span className="text-sm text-gray-900">×{item.quantity}</span>
                         </div>
                         {item.specialInstructions && (
-                          <p className="text-sm text-gray-600 mt-1 italic">
+                          <p className="text-sm text-gray-900 mt-1 italic">
                             "{item.specialInstructions}"
                           </p>
                         )}
@@ -641,7 +641,7 @@ export default function OrderSummaryPage() {
                   <div className="text-center py-8">
                     <CheckCircle className="h-16 w-16 text-green-500 mx-auto mb-4" />
                     <h3 className="text-lg font-semibold text-gray-900 mb-2">Thank You!</h3>
-                    <p className="text-gray-600">Your feedback has been submitted successfully.</p>
+                    <p className="text-gray-900">Your feedback has been submitted successfully.</p>
                   </div>
                 ) : (
                   <div className="space-y-6">
@@ -672,7 +672,7 @@ export default function OrderSummaryPage() {
         </div>
 
         {/* Footer */}
-        <div className="text-center text-sm text-gray-500 mt-8">
+        <div className="text-center text-sm text-gray-900 mt-8">
           <p>Last updated: {lastUpdate.toLocaleTimeString()}</p>
           <p className="mt-1">This page updates automatically</p>
         </div>

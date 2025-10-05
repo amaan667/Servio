@@ -229,7 +229,7 @@ export function LiveOrdersPOS({ venueId }: LiveOrdersPOSProps) {
         <CardHeader className="pb-3">
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-2">
-              <Hash className="h-4 w-4 text-gray-500" />
+              <Hash className="h-4 w-4 text-gray-900" />
               <span className="font-semibold">#{order.id.slice(-6)}</span>
               <Badge className={ORDER_STATUSES[order.order_status]?.color}>
                 <StatusIcon className="h-3 w-3 mr-1" />
@@ -237,7 +237,7 @@ export function LiveOrdersPOS({ venueId }: LiveOrdersPOSProps) {
               </Badge>
             </div>
             <div className="text-right">
-              <div className="text-sm text-gray-600">
+              <div className="text-sm text-gray-900">
                 {order.source === 'counter' ? `Counter ${order.table_number}` : 
                  order.table_label ? order.table_label : `Table ${order.table_number}`}
               </div>
@@ -251,7 +251,7 @@ export function LiveOrdersPOS({ venueId }: LiveOrdersPOSProps) {
         <CardContent className="space-y-3">
           {/* Customer Info */}
           <div className="flex items-center gap-2 text-sm">
-            <User className="h-4 w-4 text-gray-500" />
+            <User className="h-4 w-4 text-gray-900" />
             <span>{order.customer_name}</span>
             {order.customer_phone && (
               <>
@@ -262,7 +262,7 @@ export function LiveOrdersPOS({ venueId }: LiveOrdersPOSProps) {
           </div>
 
           {/* Time Info */}
-          <div className="flex items-center gap-4 text-sm text-gray-600">
+          <div className="flex items-center gap-4 text-sm text-gray-900">
             <div className="flex items-center gap-1">
               <Clock className="h-4 w-4" />
               <span>Placed: {formatTime(order.created_at)}</span>
@@ -374,7 +374,7 @@ export function LiveOrdersPOS({ venueId }: LiveOrdersPOSProps) {
       {/* Filters */}
       <div className="flex flex-wrap gap-4 items-center">
         <div className="relative flex-1 min-w-64">
-          <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-gray-400" />
+          <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-gray-700" />
           <Input
             placeholder="Search orders, customers, tables..."
             value={searchQuery}

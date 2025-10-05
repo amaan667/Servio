@@ -193,7 +193,7 @@ export function TableOrderCard({ order, venueId, onActionComplete }: TableOrderC
           <div className="flex-1 min-w-0">
             {/* Order ID - Prominently displayed */}
             <div className="mb-3">
-              <div className="text-xs font-semibold text-gray-500 uppercase tracking-wide mb-1">Order ID</div>
+              <div className="text-xs font-semibold text-gray-900 uppercase tracking-wide mb-1">Order ID</div>
               <div className="text-xl font-bold text-blue-600 bg-blue-50 px-3 py-1 rounded-lg inline-block">
                 #{order.id.slice(-6).toUpperCase()}
               </div>
@@ -217,12 +217,12 @@ export function TableOrderCard({ order, venueId, onActionComplete }: TableOrderC
                 )}
               </Badge>
             </div>
-            <div className="text-sm text-gray-500">{formatTime(order.created_at)}</div>
+            <div className="text-sm text-gray-900">{formatTime(order.created_at)}</div>
           </div>
           <div className="text-right flex items-center gap-2">
             {/* Total Amount - More prominent */}
             <div className="text-right">
-              <div className="text-xs font-semibold text-gray-500 uppercase tracking-wide mb-1">Total</div>
+              <div className="text-xs font-semibold text-gray-900 uppercase tracking-wide mb-1">Total</div>
               <div className="text-3xl font-bold text-green-600 bg-green-50 px-4 py-2 rounded-lg">
                 £{getTotalAmount()}
               </div>
@@ -254,12 +254,12 @@ export function TableOrderCard({ order, venueId, onActionComplete }: TableOrderC
         {/* Customer Info - More prominent */}
         {order.customer_name && (
           <div className="mb-4 p-3 bg-gray-50 rounded-lg border border-gray-200">
-            <div className="text-xs font-semibold text-gray-500 uppercase tracking-wide mb-1">Customer</div>
+            <div className="text-xs font-semibold text-gray-900 uppercase tracking-wide mb-1">Customer</div>
             <div className="flex items-center gap-2">
-              <User className="h-5 w-5 text-gray-600" />
+              <User className="h-5 w-5 text-gray-900" />
               <span className="text-lg font-bold text-gray-900">{order.customer_name}</span>
               {order.customer_phone && (
-                <span className="text-sm text-gray-600 ml-2">• {order.customer_phone}</span>
+                <span className="text-sm text-gray-900 ml-2">• {order.customer_phone}</span>
               )}
             </div>
           </div>
@@ -283,7 +283,7 @@ export function TableOrderCard({ order, venueId, onActionComplete }: TableOrderC
               {order.items.map((item, index) => (
                 <div key={index} className="flex items-center justify-between p-3 bg-gray-50 rounded-lg border border-gray-100">
                   <div className="flex items-center gap-3">
-                    <div className="w-8 h-8 bg-white rounded-full flex items-center justify-center text-xs font-bold text-gray-600 border border-gray-200">
+                    <div className="w-8 h-8 bg-white rounded-full flex items-center justify-center text-xs font-bold text-gray-900 border border-gray-200">
                       {item.quantity}
                     </div>
                     <span className="font-medium text-gray-900">{item.item_name}</span>
@@ -299,7 +299,7 @@ export function TableOrderCard({ order, venueId, onActionComplete }: TableOrderC
         {order.payment_status === 'UNPAID' && (
           <div className="mt-6 pt-4 border-t border-gray-200">
             <div className="flex items-center justify-between">
-              <div className="text-sm text-gray-600">
+              <div className="text-sm text-gray-900">
                 <span className="font-medium">Payment Required:</span> £{getTotalAmount()}
               </div>
               <div className="flex gap-2">

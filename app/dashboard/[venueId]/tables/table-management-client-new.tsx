@@ -324,7 +324,7 @@ export function TableManagementClientNew({ venueId }: TableManagementClientNewPr
         <div className="flex items-center justify-center py-12">
           <div className="text-center">
             <Loader2 className="h-8 w-8 text-purple-600 mx-auto mb-4 animate-spin" />
-            <p className="text-gray-600">Loading table management...</p>
+            <p className="text-gray-900">Loading table management...</p>
           </div>
         </div>
       </div>
@@ -342,7 +342,7 @@ export function TableManagementClientNew({ venueId }: TableManagementClientNewPr
           
           <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-2 sm:ml-auto w-full sm:w-auto">
             <div className="relative">
-              <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-gray-400" />
+              <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-gray-700" />
               <Input
                 placeholder="Search tables…"
                 value={searchQuery}
@@ -377,7 +377,7 @@ export function TableManagementClientNew({ venueId }: TableManagementClientNewPr
         <section className="mt-6">
           <div className="mb-4">
             <h2 className="text-xl font-bold text-gray-900 mb-2">Counter Orders</h2>
-            <p className="text-sm text-gray-600">
+            <p className="text-sm text-gray-900">
               Fast-moving orders from counter service - work FIFO ({counterOrders.length} active)
             </p>
           </div>
@@ -429,7 +429,7 @@ export function TableManagementClientNew({ venueId }: TableManagementClientNewPr
             <div className="bg-gray-50 border border-gray-200 rounded-lg p-3">
               <div className="text-center">
                 <p className="text-sm font-medium text-gray-800">Total</p>
-                <p className="text-xl font-bold text-gray-600">{counterOrders.length}</p>
+                <p className="text-xl font-bold text-gray-900">{counterOrders.length}</p>
               </div>
             </div>
           </div>
@@ -438,7 +438,7 @@ export function TableManagementClientNew({ venueId }: TableManagementClientNewPr
         <section className="mt-6">
           <Card>
             <CardContent className="py-10">
-              <div className="text-center text-sm text-gray-600">
+              <div className="text-center text-sm text-gray-900">
                 <p>Currently no counter orders.</p>
               </div>
             </CardContent>
@@ -451,7 +451,7 @@ export function TableManagementClientNew({ venueId }: TableManagementClientNewPr
         <section className="mt-8">
           <div className="mb-6">
             <h2 className="text-xl font-bold text-gray-900 mb-2">Table Orders (Active Only)</h2>
-            <p className="text-sm text-gray-600">
+            <p className="text-sm text-gray-900">
               Dine-in orders requiring staff attention - grouped by table ({Object.values(groupedTableOrders).flat().length} active orders)
             </p>
           </div>
@@ -464,7 +464,7 @@ export function TableManagementClientNew({ venueId }: TableManagementClientNewPr
                   <h3 className="font-semibold text-gray-900">{tableLabel}</h3>
                   <div className="flex items-center space-x-1">
                     <div className="w-2 h-2 bg-green-500 rounded-full"></div>
-                    <span className="text-xs text-gray-600">{orders.length} active</span>
+                    <span className="text-xs text-gray-900">{orders.length} active</span>
                   </div>
                 </div>
                 
@@ -500,16 +500,16 @@ export function TableManagementClientNew({ venueId }: TableManagementClientNewPr
                   {orders.slice(0, 2).map((order) => (
                     <div key={order.id} className="text-sm">
                       <div className="flex justify-between">
-                        <span className="text-gray-600">#{order.id.slice(-6).toUpperCase()}</span>
+                        <span className="text-gray-900">#{order.id.slice(-6).toUpperCase()}</span>
                         <span className="font-medium">£{order.total_amount?.toFixed(2) || '0.00'}</span>
                       </div>
-                      <div className="text-xs text-gray-500">
+                      <div className="text-xs text-gray-900">
                         {new Date(order.created_at).toLocaleTimeString()}
                       </div>
                     </div>
                   ))}
                   {orders.length > 2 && (
-                    <div className="text-xs text-gray-500 text-center">
+                    <div className="text-xs text-gray-900 text-center">
                       +{orders.length - 2} more orders
                     </div>
                   )}
@@ -602,7 +602,7 @@ export function TableManagementClientNew({ venueId }: TableManagementClientNewPr
             <div className="bg-gray-50 border border-gray-200 rounded-lg p-3">
               <div className="text-center">
                 <p className="text-sm font-medium text-gray-800">Total</p>
-                <p className="text-xl font-bold text-gray-600">{tableOrders.length}</p>
+                <p className="text-xl font-bold text-gray-900">{tableOrders.length}</p>
               </div>
             </div>
           </div>
@@ -611,7 +611,7 @@ export function TableManagementClientNew({ venueId }: TableManagementClientNewPr
         <section className="mt-8">
           <Card>
             <CardContent className="py-10">
-              <div className="text-center text-sm text-gray-600">
+              <div className="text-center text-sm text-gray-900">
                 <p>Currently no table orders.</p>
               </div>
             </CardContent>
@@ -623,7 +623,7 @@ export function TableManagementClientNew({ venueId }: TableManagementClientNewPr
       <section className="mt-8">
         <div className="mb-4">
           <h2 className="text-lg font-semibold text-gray-900 mb-2">Table Management</h2>
-          <p className="text-sm text-gray-600">
+          <p className="text-sm text-gray-900">
             Configure table setup and seating layout ({filterCounts.all} tables set up)
           </p>
         </div>
@@ -648,7 +648,7 @@ export function TableManagementClientNew({ venueId }: TableManagementClientNewPr
               <CardContent className="py-16">
                 <div className="text-center">
                   <div className="w-16 h-16 bg-gray-100 rounded-full flex items-center justify-center mx-auto mb-4">
-                    <Users className="h-8 w-8 text-gray-400" />
+                    <Users className="h-8 w-8 text-gray-700" />
                   </div>
                   <h3 className="text-lg font-semibold text-foreground mb-2">No tables yet</h3>
                   <p className="text-muted-foreground mb-6 max-w-md mx-auto">
@@ -663,7 +663,7 @@ export function TableManagementClientNew({ venueId }: TableManagementClientNewPr
               <CardContent className="py-16">
                 <div className="text-center">
                   <div className="w-16 h-16 bg-gray-100 rounded-full flex items-center justify-center mx-auto mb-4">
-                    <Search className="h-8 w-8 text-gray-400" />
+                    <Search className="h-8 w-8 text-gray-700" />
                   </div>
                   <h3 className="text-lg font-semibold text-foreground mb-2">No tables found</h3>
                   <p className="text-muted-foreground mb-6 max-w-md mx-auto">
@@ -713,10 +713,10 @@ export function TableManagementClientNew({ venueId }: TableManagementClientNewPr
               <CardContent className="p-4">
                 <div className="flex items-center justify-between">
                   <div>
-                    <p className="text-sm font-medium text-gray-600">Total Tables</p>
+                    <p className="text-sm font-medium text-gray-900">Total Tables</p>
                     <p className="text-2xl font-bold">{filterCounts.all}</p>
                   </div>
-                  <Users className="h-8 w-8 text-gray-400" />
+                  <Users className="h-8 w-8 text-gray-700" />
                 </div>
               </CardContent>
             </Card>
@@ -725,7 +725,7 @@ export function TableManagementClientNew({ venueId }: TableManagementClientNewPr
               <CardContent className="p-4">
                 <div className="flex items-center justify-between">
                   <div>
-                    <p className="text-sm font-medium text-gray-600">Available</p>
+                    <p className="text-sm font-medium text-gray-900">Available</p>
                     <p className="text-2xl font-bold text-green-600">{filterCounts.free}</p>
                   </div>
                   <Clock className="h-8 w-8 text-green-400" />
@@ -737,7 +737,7 @@ export function TableManagementClientNew({ venueId }: TableManagementClientNewPr
               <CardContent className="p-4">
                 <div className="flex items-center justify-between">
                   <div>
-                    <p className="text-sm font-medium text-gray-600">Occupied</p>
+                    <p className="text-sm font-medium text-gray-900">Occupied</p>
                     <p className="text-2xl font-bold text-amber-600">{filterCounts.occupied}</p>
                   </div>
                   <Users className="h-8 w-8 text-amber-400" />
@@ -749,7 +749,7 @@ export function TableManagementClientNew({ venueId }: TableManagementClientNewPr
               <CardContent className="p-4">
                 <div className="flex items-center justify-between">
                   <div>
-                    <p className="text-sm font-medium text-gray-600">Reserved</p>
+                    <p className="text-sm font-medium text-gray-900">Reserved</p>
                     <p className="text-2xl font-bold text-blue-600">{filterCounts.reserved}</p>
                   </div>
                   <Clock className="h-8 w-8 text-blue-400" />

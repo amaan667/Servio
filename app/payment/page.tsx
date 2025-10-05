@@ -282,8 +282,8 @@ export default function PaymentPage() {
     return (
       <div className="min-h-screen bg-gray-50 flex items-center justify-center">
         <div className="text-center">
-          <Loader2 className="h-8 w-8 animate-spin mx-auto mb-4 text-gray-600" />
-          <p className="text-gray-600">Loading checkout...</p>
+          <Loader2 className="h-8 w-8 animate-spin mx-auto mb-4 text-gray-900" />
+          <p className="text-gray-900">Loading checkout...</p>
         </div>
       </div>
     );
@@ -304,21 +304,21 @@ export default function PaymentPage() {
               <h2 className="text-2xl font-bold text-gray-900 mb-2">
                 {successMsg.title}
               </h2>
-              <p className="text-gray-600 mb-4">
+              <p className="text-gray-900 mb-4">
                 {successMsg.description}
               </p>
               <div className="bg-gray-50 p-4 rounded-lg mb-6">
-                <p className="text-sm text-gray-600">Order Number</p>
+                <p className="text-sm text-gray-900">Order Number</p>
                 <p className="font-bold text-lg text-servio-purple">
                   {orderNumber}
                 </p>
-                <p className="text-sm text-gray-600 mt-2">
+                <p className="text-sm text-gray-900 mt-2">
                   {checkoutData.orderType === 'counter' ? 'Counter' : 'Table'} {checkoutData.tableNumber}
                 </p>
                 <div className="mt-3 pt-3 border-t border-gray-200">
-                  <p className="text-sm text-gray-600">Customer</p>
+                  <p className="text-sm text-gray-900">Customer</p>
                   <p className="font-medium text-gray-900">{checkoutData.customerName || 'Customer'}</p>
-                  <p className="text-sm text-gray-600 mt-1">Phone</p>
+                  <p className="text-sm text-gray-900 mt-1">Phone</p>
                   <p className="font-medium text-gray-900">{checkoutData.customerPhone || 'Not provided'}</p>
                 </div>
                 <p className="text-lg font-bold text-green-600 mt-3">
@@ -392,7 +392,7 @@ export default function PaymentPage() {
               variant="ghost"
               size="icon"
               onClick={() => router.back()}
-              className="text-gray-600 hover:text-gray-900"
+              className="text-gray-900 hover:text-gray-900"
             >
               <ArrowLeft className="h-5 w-5" />
               <span className="sr-only">Back</span>
@@ -403,7 +403,7 @@ export default function PaymentPage() {
           
           {/* Venue Info */}
           <div className="text-center mt-2">
-            <p className="text-sm text-gray-600">{checkoutData.venueName || 'Restaurant'}</p>
+            <p className="text-sm text-gray-900">{checkoutData.venueName || 'Restaurant'}</p>
             <div className="flex items-center justify-center gap-1 mt-1">
               <Shield className="h-3 w-3 text-green-600" />
               <span className="text-xs text-green-600">🔒 Secure checkout</span>
@@ -420,7 +420,7 @@ export default function PaymentPage() {
           </CardHeader>
           <CardContent className="space-y-3">
             <div className="flex justify-between text-sm">
-              <span className="text-gray-600">
+              <span className="text-gray-900">
                 Your {checkoutData.orderType === 'counter' ? 'Counter' : 'Table'}: {checkoutData.tableNumber}
               </span>
               <span className="font-medium">
@@ -431,11 +431,11 @@ export default function PaymentPage() {
             {/* Customer Information */}
             <div className="space-y-2 pt-2 border-t">
               <div className="flex justify-between text-sm">
-                <span className="text-gray-600">Customer:</span>
+                <span className="text-gray-900">Customer:</span>
                 <span className="font-medium">{checkoutData.customerName || 'Customer'}</span>
               </div>
               <div className="flex justify-between text-sm">
-                <span className="text-gray-600">Phone:</span>
+                <span className="text-gray-900">Phone:</span>
                 <span className="font-medium">{checkoutData.customerPhone || 'Not provided'}</span>
               </div>
             </div>
@@ -443,7 +443,7 @@ export default function PaymentPage() {
             <div className="border-t pt-3">
               {checkoutData.cart.map((item, index) => (
                 <div key={index} className="flex justify-between text-sm mb-2">
-                  <span className="text-gray-600">
+                  <span className="text-gray-900">
                     {item.quantity}× {item.name}
                   </span>
                   <span className="font-medium">
@@ -463,7 +463,7 @@ export default function PaymentPage() {
                 variant="ghost"
                 size="sm"
                 onClick={() => router.back()}
-                className="text-xs text-gray-500 hover:text-gray-700"
+                className="text-xs text-gray-900 hover:text-gray-700"
               >
                 Change order
               </Button>
@@ -512,7 +512,7 @@ export default function PaymentPage() {
             onClick={() => handlePayment('later')}
             disabled={isProcessing}
             variant="outline"
-            className="w-full border-2 border-gray-400 text-gray-600 hover:bg-gray-100"
+            className="w-full border-2 border-gray-400 text-gray-900 hover:bg-gray-100"
           >
             <Clock className="h-4 w-4 mr-2" />
             Pay Later £{checkoutData.total.toFixed(2)}
@@ -521,7 +521,7 @@ export default function PaymentPage() {
 
 
         {/* Payment Note */}
-        <p className="text-xs text-gray-500 text-center">
+        <p className="text-xs text-gray-900 text-center">
           Secure payment processing powered by Stripe. Pay at Till sends the bill to staff for payment at the counter.
         </p>
       </main>

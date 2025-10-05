@@ -74,7 +74,7 @@ export default function PaymentSimulation({ amount, onPaymentComplete }: Payment
       default:
         return {
           icon: Clock,
-          color: 'text-gray-600',
+          color: 'text-gray-900',
           bgColor: 'bg-gray-50',
           text: 'Select payment method'
         };
@@ -206,7 +206,7 @@ export default function PaymentSimulation({ amount, onPaymentComplete }: Payment
                     Google
                   </div>
                 </div>
-                <p className="text-sm text-gray-600">
+                <p className="text-sm text-gray-900">
                   Tap your phone or watch to complete payment
                 </p>
               </div>
@@ -230,7 +230,7 @@ export default function PaymentSimulation({ amount, onPaymentComplete }: Payment
         {paymentStatus === 'processing' && (
           <div className="text-center py-4">
             <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-purple-600 mx-auto mb-2"></div>
-            <p className="text-sm text-gray-600">Processing your payment...</p>
+            <p className="text-sm text-gray-900">Processing your payment...</p>
           </div>
         )}
 
@@ -252,7 +252,7 @@ export default function PaymentSimulation({ amount, onPaymentComplete }: Payment
           </div>
         )}
 
-        <div className="text-xs text-gray-500 text-center pt-2 border-t">
+        <div className="text-xs text-gray-900 text-center pt-2 border-t">
           <p>This is a payment simulation for demo purposes</p>
           <p>No real charges will be made</p>
         </div>

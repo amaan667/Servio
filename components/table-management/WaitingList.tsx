@@ -180,7 +180,7 @@ export function WaitingList({ venueId, availableTables, onPartySeated }: Waiting
       <div className="flex items-center justify-between">
         <div>
           <h3 className="text-lg font-semibold">Waiting List</h3>
-          <p className="text-sm text-gray-600">
+          <p className="text-sm text-gray-900">
             {waitingParties.length} {waitingParties.length === 1 ? 'party' : 'parties'} waiting
           </p>
         </div>
@@ -195,9 +195,9 @@ export function WaitingList({ venueId, availableTables, onPartySeated }: Waiting
         <Card>
           <CardContent className="py-8">
             <div className="text-center">
-              <Users className="h-12 w-12 text-gray-400 mx-auto mb-4" />
+              <Users className="h-12 w-12 text-gray-700 mx-auto mb-4" />
               <h4 className="text-lg font-medium mb-2">No parties waiting</h4>
-              <p className="text-gray-600 mb-4">
+              <p className="text-gray-900 mb-4">
                 Add parties to the waiting list when they arrive
               </p>
               <Button onClick={() => setShowAddDialog(true)}>
@@ -226,7 +226,7 @@ export function WaitingList({ venueId, availableTables, onPartySeated }: Waiting
                       </Badge>
                     </div>
                     {party.customer_phone && (
-                      <p className="text-sm text-gray-600">{party.customer_phone}</p>
+                      <p className="text-sm text-gray-900">{party.customer_phone}</p>
                     )}
                   </div>
                   

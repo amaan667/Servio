@@ -373,7 +373,7 @@ export default function QuestionsClient({ venueId, venueName, mode = 'full' }: Q
         Active
       </Badge>
     ) : (
-      <Badge variant="secondary" className="bg-gray-100 text-gray-600 hover:bg-gray-100">
+      <Badge variant="secondary" className="bg-gray-100 text-gray-900 hover:bg-gray-100">
         <EyeOff className="h-3 w-3 mr-1" />
         Inactive
       </Badge>
@@ -533,7 +533,7 @@ export default function QuestionsClient({ venueId, venueName, mode = 'full' }: Q
               <CardContent className="p-12 text-center">
                 <div className="flex flex-col items-center space-y-4">
                   <div className="w-16 h-16 bg-gray-100 dark:bg-gray-800 rounded-full flex items-center justify-center">
-                    <MessageSquare className="h-8 w-8 text-gray-400" />
+                    <MessageSquare className="h-8 w-8 text-gray-700" />
                   </div>
                   <div>
                     <h4 className="text-lg font-medium text-gray-900 dark:text-gray-100">No questions yet</h4>

@@ -7,6 +7,7 @@ import { hasServerAuthCookie } from '@/lib/server-utils';
 import { log } from '@/lib/debug';
 import DashboardClient from './page.client';
 import { todayWindowForTZ } from '@/lib/time';
+import { EnhancedErrorBoundary } from '@/components/enhanced-error-boundary';
 
 export default async function VenuePage({ params }: { params: Promise<{ venueId: string }> }) {
   const { venueId } = await params;
@@ -134,15 +135,17 @@ export default async function VenuePage({ params }: { params: Promise<{ venueId:
     };
 
     return (
-      <DashboardClient 
-        venueId={venueId} 
-        userId={user.id}
-        venue={venue}
-        userName={user.user_metadata?.full_name || user.email?.split('@')[0] || 'User'}
-        venueTz={venueTz}
-        initialCounts={counts}
-        initialStats={initialStats}
-      />
+      <EnhancedErrorBoundary>
+        <DashboardClient 
+          venueId={venueId} 
+          userId={user.id}
+          venue={venue}
+          userName={user.user_metadata?.full_name || user.email?.split('@')[0] || 'User'}
+          venueTz={venueTz}
+          initialCounts={counts}
+          initialStats={initialStats}
+        />
+      </EnhancedErrorBoundary>
     );
   } catch (error) {
     redirect('/sign-in');

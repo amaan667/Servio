@@ -258,7 +258,7 @@ const SimpleStaffGrid: React.FC<SimpleStaffGridProps> = ({ shifts, venueId }) =>
                 // Month view header with day names
                 ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'].map((dayName, index) => (
                   <div key={index} className="text-center p-2 bg-gray-50 rounded-lg">
-                    <div className="text-sm font-medium text-gray-600">
+                    <div className="text-sm font-medium text-gray-900">
                       {dayName}
                     </div>
                   </div>
@@ -267,7 +267,7 @@ const SimpleStaffGrid: React.FC<SimpleStaffGridProps> = ({ shifts, venueId }) =>
                 // Today/Week view header
                 displayDates.map((date, index) => (
                   <div key={index} className="text-center p-2 bg-gray-50 rounded-lg">
-                    <div className="text-sm font-medium text-gray-600">
+                    <div className="text-sm font-medium text-gray-900">
                       {date?.toLocaleDateString('en-US', { weekday: 'short' })}
                     </div>
                     <div className="text-lg font-bold">
@@ -299,7 +299,7 @@ const SimpleStaffGrid: React.FC<SimpleStaffGridProps> = ({ shifts, venueId }) =>
                     </div>
                     <div className="space-y-1">
                       {dayShifts.length === 0 ? (
-                        <div className="text-center text-gray-400 text-xs py-4">
+                        <div className="text-center text-gray-700 text-xs py-4">
                           No shifts
                         </div>
                       ) : (

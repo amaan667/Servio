@@ -216,7 +216,7 @@ export default function OrderSummaryPage() {
     return (
       <div className="min-h-screen bg-gray-50 flex items-center justify-center">
         <div className="text-center">
-          <p className="text-gray-600">Loading order summary...</p>
+          <p className="text-gray-900">Loading order summary...</p>
         </div>
       </div>
     );
@@ -227,7 +227,7 @@ export default function OrderSummaryPage() {
       <div className="min-h-screen bg-gray-50 flex items-center justify-center">
         <div className="text-center">
           <h2 className="text-xl font-semibold text-gray-900 mb-2">No order found</h2>
-          <p className="text-gray-600 mb-4">Please start a new order.</p>
+          <p className="text-gray-900 mb-4">Please start a new order.</p>
           <Button onClick={() => router.push('/order')}>
             Start New Order
           </Button>
@@ -271,7 +271,7 @@ export default function OrderSummaryPage() {
             <Receipt className="w-8 h-8 text-blue-600" />
           </div>
           <h1 className="text-2xl font-bold text-gray-900 mb-2">Order Summary</h1>
-          <p className="text-gray-600">Review your order and choose how to pay</p>
+          <p className="text-gray-900">Review your order and choose how to pay</p>
         </div>
 
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
@@ -287,11 +287,11 @@ export default function OrderSummaryPage() {
               <CardContent>
                 <div className="space-y-4">
                   <div className="flex justify-between">
-                    <span className="text-gray-600">Venue:</span>
+                    <span className="text-gray-900">Venue:</span>
                     <span className="font-medium">{orderData.venueName}</span>
                   </div>
                   <div className="flex justify-between">
-                    <span className="text-gray-600">{orderData.orderType === 'counter' ? 'Counter:' : 'Table:'}</span>
+                    <span className="text-gray-900">{orderData.orderType === 'counter' ? 'Counter:' : 'Table:'}</span>
                     <span className="font-medium">{orderData.orderLocation || orderData.tableNumber}</span>
                   </div>
                   
@@ -309,7 +309,7 @@ export default function OrderSummaryPage() {
                   
                   {orderData.orderId && (
                     <div className="flex justify-between">
-                      <span className="text-gray-600">Order ID:</span>
+                      <span className="text-gray-900">Order ID:</span>
                       <span className="font-medium">#{orderData.orderId.slice(-6)}</span>
                     </div>
                   )}
@@ -330,9 +330,9 @@ export default function OrderSummaryPage() {
                     <div key={item.id} className="flex justify-between items-start">
                       <div className="flex-1">
                         <p className="font-medium">{item.name}</p>
-                        <p className="text-sm text-gray-600">Qty: {item.quantity}</p>
+                        <p className="text-sm text-gray-900">Qty: {item.quantity}</p>
                         {item.specialInstructions && (
-                          <p className="text-xs text-gray-500">Note: {item.specialInstructions}</p>
+                          <p className="text-xs text-gray-900">Note: {item.specialInstructions}</p>
                         )}
                       </div>
                       <span className="font-medium">£{(item.price * item.quantity).toFixed(2)}</span>
@@ -481,7 +481,7 @@ export default function OrderSummaryPage() {
               <Card>
                 <CardContent className="p-4">
                   <div className="flex items-center justify-between">
-                    <span className="text-sm text-gray-600">Order Status:</span>
+                    <span className="text-sm text-gray-900">Order Status:</span>
                     <Badge variant="outline" className="bg-yellow-50 text-yellow-700 border-yellow-200">
                       <Clock className="w-3 h-3 mr-1" />
                       Payment Pending

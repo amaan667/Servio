@@ -206,7 +206,7 @@ export function RealTimeOrderTimeline({ orderId, venueId, className }: RealTimeO
         </CardHeader>
         <CardContent>
           <div className="text-center py-8">
-            <p className="text-gray-600">Loading order timeline...</p>
+            <p className="text-gray-900">Loading order timeline...</p>
           </div>
         </CardContent>
       </Card>
@@ -247,7 +247,7 @@ export function RealTimeOrderTimeline({ orderId, venueId, className }: RealTimeO
         </CardHeader>
         <CardContent>
           <div className="text-center py-8">
-            <p className="text-gray-600">No order data available</p>
+            <p className="text-gray-900">No order data available</p>
           </div>
         </CardContent>
       </Card>
@@ -291,7 +291,7 @@ export function RealTimeOrderTimeline({ orderId, venueId, className }: RealTimeO
                         ? 'bg-red-500 text-white'
                         : isCompleted 
                           ? 'bg-green-500 text-white' 
-                          : 'bg-gray-200 text-gray-400'
+                          : 'bg-gray-200 text-gray-700'
                     }`}>
                       <Icon className="h-4 w-4" />
                     </div>
@@ -304,7 +304,7 @@ export function RealTimeOrderTimeline({ orderId, venueId, className }: RealTimeO
                             ? 'text-red-600'
                             : isCompleted 
                               ? 'text-green-600' 
-                              : 'text-gray-500'
+                              : 'text-gray-900'
                         }`}>
                           {status.label}
                         </p>
@@ -325,7 +325,7 @@ export function RealTimeOrderTimeline({ orderId, venueId, className }: RealTimeO
                         )}
                       </div>
                       <p className={`text-xs mt-1 ${
-                        isGreyedOut ? 'text-red-500' : 'text-gray-500'
+                        isGreyedOut ? 'text-red-500' : 'text-gray-900'
                       }`}>
                         {status.description}
                       </p>
@@ -345,7 +345,7 @@ export function RealTimeOrderTimeline({ orderId, venueId, className }: RealTimeO
 
           {/* Last Update Info */}
           <div className="bg-gray-50 p-3 rounded-lg">
-            <p className="text-xs text-gray-600">
+            <p className="text-xs text-gray-900">
               Last updated: {lastUpdate.toLocaleTimeString()}
             </p>
           </div>

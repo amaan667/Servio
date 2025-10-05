@@ -67,7 +67,7 @@ export function OrderTimeline({ orderId, currentStatus = 'PLACED', estimatedTime
       <CardContent className="space-y-4">
         {/* Order ID Display */}
         <div className="bg-gray-50 p-3 rounded-lg">
-          <p className="text-sm text-gray-600">Order ID</p>
+          <p className="text-sm text-gray-900">Order ID</p>
           <p className="font-mono text-sm font-medium text-gray-900">{orderId}</p>
         </div>
 
@@ -94,7 +94,7 @@ export function OrderTimeline({ orderId, currentStatus = 'PLACED', estimatedTime
                   <div className={`flex-shrink-0 w-8 h-8 rounded-full flex items-center justify-center ${
                     isCompleted 
                       ? `${status.color} text-white` 
-                      : 'bg-gray-200 text-gray-400'
+                      : 'bg-gray-200 text-gray-700'
                   }`}>
                     <IconComponent className="h-4 w-4" />
                   </div>
@@ -103,7 +103,7 @@ export function OrderTimeline({ orderId, currentStatus = 'PLACED', estimatedTime
                   <div className="flex-1 min-w-0">
                     <div className="flex items-center space-x-2">
                       <p className={`text-sm font-medium ${
-                        isCompleted ? status.textColor : 'text-gray-500'
+                        isCompleted ? status.textColor : 'text-gray-900'
                       }`}>
                         {status.label}
                       </p>
@@ -118,7 +118,7 @@ export function OrderTimeline({ orderId, currentStatus = 'PLACED', estimatedTime
                         </Badge>
                       )}
                     </div>
-                    <p className="text-xs text-gray-500 mt-1">
+                    <p className="text-xs text-gray-900 mt-1">
                       {status.description}
                     </p>
                   </div>
@@ -137,7 +137,7 @@ export function OrderTimeline({ orderId, currentStatus = 'PLACED', estimatedTime
 
         {/* Status Note */}
         <div className="bg-gray-50 p-3 rounded-lg">
-          <p className="text-xs text-gray-600">
+          <p className="text-xs text-gray-900">
             You'll receive updates as your order progresses. 
             The kitchen team is working hard to prepare your meal!
           </p>

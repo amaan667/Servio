@@ -217,7 +217,7 @@ export default function OrderSummary({ orderId, sessionId, orderData, isDemo = f
             <h2 className="text-xl font-semibold text-gray-900 mb-2">
               Loading your order...
             </h2>
-            <p className="text-gray-600">
+            <p className="text-gray-900">
               Please wait while we fetch your order details.
             </p>
           </CardContent>
@@ -237,7 +237,7 @@ export default function OrderSummary({ orderId, sessionId, orderData, isDemo = f
             <h2 className="text-xl font-semibold text-gray-900 mb-2">
               Order Not Found
             </h2>
-            <p className="text-gray-600 mb-4">{error || 'We couldn\'t find your order details.'}</p>
+            <p className="text-gray-900 mb-4">{error || 'We couldn\'t find your order details.'}</p>
             <Button 
               onClick={() => window.location.href = '/order'}
               className="w-full"
@@ -282,21 +282,21 @@ export default function OrderSummary({ orderId, sessionId, orderData, isDemo = f
           <CardContent className="space-y-4">
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               <div>
-                <p className="text-sm text-gray-600">Customer Name</p>
+                <p className="text-sm text-gray-900">Customer Name</p>
                 <p className="font-semibold">{order.customer_name || 'Not provided'}</p>
               </div>
               {order.customer_phone && (
                 <div>
-                  <p className="text-sm text-gray-600">Phone Number</p>
+                  <p className="text-sm text-gray-900">Phone Number</p>
                   <p className="font-semibold">{order.customer_phone}</p>
                 </div>
               )}
               <div>
-                <p className="text-sm text-gray-600">Order Number</p>
+                <p className="text-sm text-gray-900">Order Number</p>
                 <p className="font-semibold">#{getShortOrderNumber(order.id)}</p>
               </div>
               <div>
-                <p className="text-sm text-gray-600">Table</p>
+                <p className="text-sm text-gray-900">Table</p>
                 <p className="font-semibold">{order.table_number || 'N/A'}</p>
               </div>
             </div>
@@ -345,7 +345,7 @@ export default function OrderSummary({ orderId, sessionId, orderData, isDemo = f
                         )}
                         <div>
                           <p className="font-medium">{item.item_name || `Item ${index + 1}`}</p>
-                          <p className="text-sm text-gray-600">Quantity: {item.quantity}</p>
+                          <p className="text-sm text-gray-900">Quantity: {item.quantity}</p>
                           {item.special_instructions && (
                             <p className="text-sm text-blue-600 italic">Note: {item.special_instructions}</p>
                           )}
@@ -354,7 +354,7 @@ export default function OrderSummary({ orderId, sessionId, orderData, isDemo = f
                     </div>
                     <div className="text-right">
                       <p className="font-semibold">£{(item.price * item.quantity).toFixed(2)}</p>
-                      <p className="text-sm text-gray-500">£{item.price.toFixed(2)} each</p>
+                      <p className="text-sm text-gray-900">£{item.price.toFixed(2)} each</p>
                     </div>
                   </div>
                 ))}
@@ -390,13 +390,13 @@ export default function OrderSummary({ orderId, sessionId, orderData, isDemo = f
                         ? 'bg-green-100 text-green-600' 
                         : item.current 
                         ? 'bg-blue-100 text-blue-600' 
-                        : 'bg-gray-100 text-gray-400'
+                        : 'bg-gray-100 text-gray-700'
                     }`}>
                       <Icon className="h-5 w-5" />
                     </div>
                     <div className="flex-1">
                       <p className={`font-medium ${
-                        item.completed ? 'text-green-800' : item.current ? 'text-blue-800' : 'text-gray-500'
+                        item.completed ? 'text-green-800' : item.current ? 'text-blue-800' : 'text-gray-900'
                       }`}>
                         {item.label}
                       </p>
@@ -411,7 +411,7 @@ export default function OrderSummary({ orderId, sessionId, orderData, isDemo = f
                 );
               })}
             </div>
-            <div className="mt-4 text-xs text-gray-500 text-center">
+            <div className="mt-4 text-xs text-gray-900 text-center">
               Last updated: {lastUpdate.toLocaleTimeString()}
             </div>
           </CardContent>
@@ -423,7 +423,7 @@ export default function OrderSummary({ orderId, sessionId, orderData, isDemo = f
             <CardContent className="p-6 text-center">
               <Star className="h-8 w-8 text-yellow-500 mx-auto mb-3" />
               <h3 className="text-lg font-semibold mb-2">How was your experience?</h3>
-              <p className="text-gray-600 mb-4">
+              <p className="text-gray-900 mb-4">
                 We'd love to hear your feedback to help us improve our service.
               </p>
               <Button 

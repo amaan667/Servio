@@ -15,7 +15,7 @@ const MenuItemImage = memo(function MenuItemImage({
   src, 
   alt, 
   className = "w-20 h-20 rounded-lg object-cover border border-gray-200",
-  fallbackIcon = <UtensilsCrossed className="w-8 w-8 text-gray-400" />,
+  fallbackIcon = <UtensilsCrossed className="w-8 w-8 text-gray-700" />,
   showLoadingState = true
 }: MenuItemImageProps) {
   const [hasError, setHasError] = useState(false);
@@ -45,8 +45,8 @@ const MenuItemImage = memo(function MenuItemImage({
     return (
       <div className={`${className} bg-gray-100 flex items-center justify-center`}>
         <div className="text-center">
-          <ImageOff className="w-6 h-6 text-gray-400 mx-auto mb-1" />
-          <span className="text-xs text-gray-500">Image unavailable</span>
+          <ImageOff className="w-6 h-6 text-gray-700 mx-auto mb-1" />
+          <span className="text-xs text-gray-900">Image unavailable</span>
         </div>
       </div>
     );

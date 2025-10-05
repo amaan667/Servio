@@ -241,7 +241,7 @@ export function MenuUploadCard({ venueId, onSuccess }: MenuUploadCardProps) {
           <Upload className="h-5 w-5" />
           Upload Menu
         </CardTitle>
-        <CardDescription>Upload and parse PDF menus using advanced OCR and AI processing.</CardDescription>
+        <CardDescription className="text-gray-900">Upload and parse PDF menus using advanced OCR and AI processing.</CardDescription>
       </CardHeader>
       <CardContent className="space-y-4">
         {/* Replace vs Append Toggle */}
@@ -252,7 +252,7 @@ export function MenuUploadCard({ venueId, onSuccess }: MenuUploadCardProps) {
             onCheckedChange={setIsReplacing}
             disabled={isProcessing}
           />
-          <Label htmlFor="replace-mode" className="text-sm font-medium">
+          <Label htmlFor="replace-mode" className="text-sm font-medium text-gray-900">
             {isReplacing ? 'Replace Catalog' : 'Append to Catalog'}
           </Label>
         </div>
@@ -270,8 +270,8 @@ export function MenuUploadCard({ venueId, onSuccess }: MenuUploadCardProps) {
             onDragLeave={handleDragLeave}
             onDrop={handleDrop}
           >
-            <FileText className="h-8 w-8 mx-auto mb-2 text-gray-400" />
-            <p className="text-sm text-gray-600 mb-2">
+            <FileText className="h-8 w-8 mx-auto mb-2 text-gray-900" />
+            <p className="text-sm text-gray-900 mb-2">
               Drag and drop your menu file here, or
             </p>
             <Button
@@ -303,14 +303,14 @@ export function MenuUploadCard({ venueId, onSuccess }: MenuUploadCardProps) {
             </Button>
           </div>
           
-          <div className="text-sm text-gray-500">
+          <div className="text-sm text-gray-900">
             Supported formats: PDF (max 10MB), TXT, MD, JSON (max 1MB)
           </div>
         </div>
 
         <Alert>
           <Info className="h-4 w-4" />
-          <AlertDescription>
+          <AlertDescription className="text-gray-900">
             <div className="space-y-2">
               <p>PDF processing uses Google Vision OCR for accurate text extraction from scanned documents and images.</p>
               <p>For best results, ensure your PDF has clear, readable text and good contrast.</p>

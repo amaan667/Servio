@@ -189,7 +189,7 @@ export function TableSelectionDialog({
               </Badge>
             </div>
             {sourceTable.order_id && (
-              <div className="mt-2 text-sm text-gray-600">
+              <div className="mt-2 text-sm text-gray-900">
                 <span>Order #{sourceTable.order_id.slice(-6)}</span>
                 {sourceTable.total_amount && (
                   <span className="ml-2">£{(sourceTable.total_amount / 100).toFixed(2)}</span>
@@ -205,7 +205,7 @@ export function TableSelectionDialog({
             </h4>
             <div className="space-y-2 max-h-60 overflow-y-auto">
               {filteredTables.length === 0 ? (
-                <p className="text-sm text-gray-500 text-center py-4">
+                <p className="text-sm text-gray-900 text-center py-4">
                   {action === 'move' 
                     ? 'No available tables for moving'
                     : 'No other tables available for merging'
@@ -242,7 +242,7 @@ export function TableSelectionDialog({
                     </div>
                     
                     {table.order_id && (
-                      <div className="mt-2 text-sm text-gray-600">
+                      <div className="mt-2 text-sm text-gray-900">
                         <span>Order #{table.order_id.slice(-6)}</span>
                         {table.total_amount && (
                           <span className="ml-2">£{(table.total_amount / 100).toFixed(2)}</span>

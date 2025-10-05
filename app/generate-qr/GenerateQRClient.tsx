@@ -771,7 +771,7 @@ export default function GenerateQRClient({ venueId, venueName, activeTablesCount
             </svg>
           </div>
           <h2 className="text-xl font-semibold text-gray-900 mb-2">Error Loading QR Codes</h2>
-          <p className="text-gray-600 mb-4">{error}</p>
+          <p className="text-gray-900 mb-4">{error}</p>
           <button 
             onClick={() => window.location.reload()}
             className="px-4 py-2 bg-purple-600 text-white rounded-md hover:bg-purple-700"

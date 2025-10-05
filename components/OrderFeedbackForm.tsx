@@ -283,7 +283,7 @@ export default function OrderFeedbackForm({ venueId, orderId }: OrderFeedbackFor
             className={`h-6 w-6 ${
               star <= value
                 ? 'text-yellow-400 fill-current'
-                : 'text-gray-300'
+                : 'text-gray-600'
             }`}
           />
         </button>
@@ -338,7 +338,7 @@ export default function OrderFeedbackForm({ venueId, orderId }: OrderFeedbackFor
                         value={answers[question.id] || 0}
                         onChange={(rating) => setAnswers(prev => ({ ...prev, [question.id]: rating }))}
                       />
-                      <p className="text-sm text-gray-500">
+                      <p className="text-sm text-gray-900">
                         {answers[question.id] ? `${answers[question.id]} star${answers[question.id] > 1 ? 's' : ''} selected` : 'Please select a rating'}
                       </p>
                     </div>
@@ -369,7 +369,7 @@ export default function OrderFeedbackForm({ venueId, orderId }: OrderFeedbackFor
                         rows={3}
                         maxLength={600}
                       />
-                      <p className="text-sm text-gray-500">
+                      <p className="text-sm text-gray-900">
                         {(answers[question.id] || '').length}/600 characters
                       </p>
                     </div>

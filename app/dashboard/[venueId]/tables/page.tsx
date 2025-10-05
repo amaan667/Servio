@@ -9,7 +9,7 @@ const TableManagementClientNew = dynamicImport(() => import('./table-management-
       <div className="text-center">
         <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-purple-600 mx-auto mb-4"></div>
         <h2 className="text-xl font-semibold text-gray-900 mb-2">Loading Tables</h2>
-        <p className="text-gray-600">Setting up table management...</p>
+        <p className="text-gray-900">Setting up table management...</p>
       </div>
     </div>
   )
@@ -27,7 +27,7 @@ export default async function TableManagementPage({ params }: TableManagementPag
     <div className="min-h-screen bg-background">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 pb-24 md:pb-8">
         <NavigationBreadcrumb venueId={venueId} />
-        <Suspense fallback={<div className="text-center py-8 text-gray-600">Loading tables...</div>}>
+        <Suspense fallback={<div className="text-center py-8 text-gray-900">Loading tables...</div>}>
           <TableManagementClientNew venueId={venueId} />
         </Suspense>
       </div>

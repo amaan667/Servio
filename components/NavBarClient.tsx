@@ -44,8 +44,8 @@ export default function NavBarClient() {
 
       {/* Right */}
       <div className="flex items-center space-x-4">
-        <Link href={homeHref} className="text-gray-600 hover:text-gray-900 font-medium">Home</Link>
-        <Link href={settingsHref} className="text-gray-600 hover:text-gray-900">
+        <Link href={homeHref} className="text-gray-900 hover:text-gray-900 font-medium">Home</Link>
+        <Link href={settingsHref} className="text-gray-900 hover:text-gray-900">
           <Button variant="outline" className="flex items-center">
             <Settings className="mr-2 h-4 w-4" />
             Settings

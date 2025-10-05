@@ -207,7 +207,7 @@ function FeedbackForm({ venueId, orderId, onFeedbackComplete }: { venueId: strin
     return (
       <div className="text-center py-4">
         <Loader2 className="w-6 h-6 animate-spin mx-auto mb-2 text-purple-600" />
-        <p className="text-sm text-gray-600">Loading feedback form...</p>
+        <p className="text-sm text-gray-900">Loading feedback form...</p>
       </div>
     );
   }
@@ -215,8 +215,8 @@ function FeedbackForm({ venueId, orderId, onFeedbackComplete }: { venueId: strin
   if (!showForm) {
     return (
       <div className="text-center py-6">
-        <MessageSquare className="w-12 h-12 text-gray-400 mx-auto mb-4" />
-        <p className="text-gray-600 mb-4">We'd love to hear about your experience!</p>
+        <MessageSquare className="w-12 h-12 text-gray-700 mx-auto mb-4" />
+        <p className="text-gray-900 mb-4">We'd love to hear about your experience!</p>
         <Button onClick={() => setShowForm(true)}>
           <MessageSquare className="w-4 h-4 mr-2" />
           Leave Feedback
@@ -246,7 +246,7 @@ function FeedbackForm({ venueId, orderId, onFeedbackComplete }: { venueId: strin
                     className={`h-6 w-6 ${
                       star <= (answers[question.id] || 0)
                         ? 'text-yellow-400 fill-current'
-                        : 'text-gray-300'
+                        : 'text-gray-600'
                     }`}
                   />
                 </button>
@@ -519,8 +519,8 @@ function StripePaymentForm({
     return (
       <div className="space-y-4">
         <div className="text-center py-8">
-          <p className="text-gray-600">Loading secure payment form...</p>
-          <p className="text-sm text-gray-500 mt-2">Please wait while we initialize Stripe</p>
+          <p className="text-gray-900">Loading secure payment form...</p>
+          <p className="text-sm text-gray-900 mt-2">Please wait while we initialize Stripe</p>
         </div>
       </div>
     );
@@ -955,7 +955,7 @@ export default function CheckoutPage() {
       default:
         return {
           icon: Clock,
-          color: 'text-gray-600',
+          color: 'text-gray-900',
           bgColor: 'bg-gray-50',
           text: 'Select payment method'
         };
@@ -966,8 +966,8 @@ export default function CheckoutPage() {
     return (
     <div className="min-h-screen bg-gray-50 flex items-center justify-center">
       <div className="text-center">
-        <p className="text-gray-600">Loading checkout...</p>
-        <p className="text-sm text-gray-500 mt-2">Preparing your order details...</p>
+        <p className="text-gray-900">Loading checkout...</p>
+        <p className="text-sm text-gray-900 mt-2">Preparing your order details...</p>
       </div>
       </div>
     );
@@ -979,7 +979,7 @@ export default function CheckoutPage() {
         <div className="text-center">
           <X className="w-8 h-8 text-red-600 mx-auto mb-4" />
           <h2 className="text-xl font-semibold text-gray-900 mb-2">Error</h2>
-          <p className="text-gray-600 mb-4">{error}</p>
+          <p className="text-gray-900 mb-4">{error}</p>
           <Button onClick={() => {
             if (checkoutData && 'venueId' in checkoutData && 'tableNumber' in checkoutData) {
               const data = checkoutData as CheckoutData;
@@ -1004,7 +1004,7 @@ export default function CheckoutPage() {
               <Check className="w-8 h-8 text-green-600" />
             </div>
             <h1 className="text-2xl font-bold text-gray-900 mb-2">Order Confirmed!</h1>
-            <p className="text-gray-600">Your order has been successfully placed and payment processed.</p>
+            <p className="text-gray-900">Your order has been successfully placed and payment processed.</p>
           </div>
 
           <Card className="mb-6">
@@ -1017,19 +1017,19 @@ export default function CheckoutPage() {
             <CardContent>
               <div className="space-y-4">
                 <div className="flex justify-between">
-                  <span className="text-gray-600">Order ID:</span>
+                  <span className="text-gray-900">Order ID:</span>
                   <span className="font-medium">{order?.id}</span>
                 </div>
                 <div className="flex justify-between">
-                  <span className="text-gray-600">Venue:</span>
+                  <span className="text-gray-900">Venue:</span>
                   <span className="font-medium">{checkoutData?.venueName}</span>
                 </div>
                 <div className="flex justify-between">
-                  <span className="text-gray-600">Table:</span>
+                  <span className="text-gray-900">Table:</span>
                   <span className="font-medium">{checkoutData?.tableNumber}</span>
                 </div>
                 <div className="flex justify-between">
-                  <span className="text-gray-600">Customer:</span>
+                  <span className="text-gray-900">Customer:</span>
                   <span className="font-medium">{checkoutData?.customerName}</span>
                 </div>
                 <Separator />
@@ -1109,7 +1109,7 @@ export default function CheckoutPage() {
               <Check className="w-8 h-8 text-green-600" />
             </div>
             <h1 className="text-2xl font-bold text-gray-900 mb-2">Payment Successful!</h1>
-            <p className="text-gray-600">Your order has been confirmed and payment processed.</p>
+            <p className="text-gray-900">Your order has been confirmed and payment processed.</p>
           </div>
 
           {/* Order Summary */}
@@ -1123,19 +1123,19 @@ export default function CheckoutPage() {
             <CardContent>
           <div className="space-y-4">
                 <div className="flex justify-between">
-                  <span className="text-gray-600">Order ID:</span>
+                  <span className="text-gray-900">Order ID:</span>
                   <span className="font-medium">{order?.id}</span>
             </div>
                 <div className="flex justify-between">
-                  <span className="text-gray-600">Venue:</span>
+                  <span className="text-gray-900">Venue:</span>
                   <span className="font-medium">{checkoutData?.venueName}</span>
                 </div>
                 <div className="flex justify-between">
-                  <span className="text-gray-600">Table:</span>
+                  <span className="text-gray-900">Table:</span>
                   <span className="font-medium">{checkoutData?.tableNumber}</span>
                 </div>
                 <div className="flex justify-between">
-                  <span className="text-gray-600">Customer:</span>
+                  <span className="text-gray-900">Customer:</span>
                   <span className="font-medium">{checkoutData?.customerName}</span>
                 </div>
                 <Separator />
@@ -1220,7 +1220,7 @@ export default function CheckoutPage() {
               <Check className="w-8 h-8 text-green-600" />
             </div>
             <h1 className="text-2xl font-bold text-gray-900 mb-2">Payment Successful!</h1>
-            <p className="text-gray-600">Your order has been confirmed and payment processed.</p>
+            <p className="text-gray-900">Your order has been confirmed and payment processed.</p>
           </div>
 
           {/* Order Summary */}
@@ -1234,19 +1234,19 @@ export default function CheckoutPage() {
             <CardContent>
               <div className="space-y-4">
                 <div className="flex justify-between">
-                  <span className="text-gray-600">Order ID:</span>
+                  <span className="text-gray-900">Order ID:</span>
                   <span className="font-medium">{order?.id}</span>
                 </div>
                 <div className="flex justify-between">
-                  <span className="text-gray-600">Venue:</span>
+                  <span className="text-gray-900">Venue:</span>
                   <span className="font-medium">{checkoutData?.venueName}</span>
                 </div>
                 <div className="flex justify-between">
-                  <span className="text-gray-600">Table:</span>
+                  <span className="text-gray-900">Table:</span>
                   <span className="font-medium">{checkoutData?.tableNumber}</span>
                 </div>
                 <div className="flex justify-between">
-                  <span className="text-gray-600">Customer:</span>
+                  <span className="text-gray-900">Customer:</span>
                   <span className="font-medium">{checkoutData?.customerName}</span>
                 </div>
                 <Separator />
@@ -1364,7 +1364,7 @@ export default function CheckoutPage() {
               <X className="w-8 h-8 text-red-600" />
             </div>
             <h1 className="text-2xl font-bold text-gray-900 mb-2">Payment Failed</h1>
-            <p className="text-gray-600">{error}</p>
+            <p className="text-gray-900">{error}</p>
           </div>
 
           <div className="flex space-x-4">
@@ -1439,7 +1439,7 @@ export default function CheckoutPage() {
       <div className="max-w-4xl mx-auto px-4 py-8">
         <div className="mb-6">
           <h1 className="text-3xl font-bold text-gray-900">Checkout</h1>
-          <p className="text-gray-600 mt-2">Review your order and complete payment</p>
+          <p className="text-gray-900 mt-2">Review your order and complete payment</p>
         </div>
 
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
@@ -1455,19 +1455,19 @@ export default function CheckoutPage() {
               <CardContent>
                 <div className="space-y-4">
                   <div className="flex justify-between">
-                    <span className="text-gray-600">Venue:</span>
+                    <span className="text-gray-900">Venue:</span>
                     <span className="font-medium">{checkoutData?.venueName}</span>
                   </div>
                   <div className="flex justify-between">
-                    <span className="text-gray-600">Table:</span>
+                    <span className="text-gray-900">Table:</span>
                     <span className="font-medium">{checkoutData?.tableNumber}</span>
                   </div>
                   <div className="flex justify-between">
-                    <span className="text-gray-600">Customer:</span>
+                    <span className="text-gray-900">Customer:</span>
                     <span className="font-medium">{checkoutData?.customerName}</span>
                   </div>
                   <div className="flex justify-between">
-                    <span className="text-gray-600">Phone:</span>
+                    <span className="text-gray-900">Phone:</span>
                     <span className="font-medium">{checkoutData?.customerPhone}</span>
                   </div>
                 </div>
@@ -1484,9 +1484,9 @@ export default function CheckoutPage() {
                     <div key={item.id} className="flex justify-between items-center">
                   <div>
                     <p className="font-medium">{item.name}</p>
-                    <p className="text-sm text-gray-600">Qty: {item.quantity}</p>
+                    <p className="text-sm text-gray-900">Qty: {item.quantity}</p>
                         {item.specialInstructions && (
-                          <p className="text-xs text-gray-500">Note: {item.specialInstructions}</p>
+                          <p className="text-xs text-gray-900">Note: {item.specialInstructions}</p>
                         )}
                   </div>
                       <span className="font-medium">£{(item.price * item.quantity).toFixed(2)}</span>
@@ -1529,7 +1529,7 @@ export default function CheckoutPage() {
                 {paymentStatus === 'pending' && !paymentMethod && (
                   <div className="space-y-3">
                     <div className="text-center mb-4">
-                      <p className="text-sm text-gray-600">
+                      <p className="text-sm text-gray-900">
                         {isDemo ? 'Choose your payment method' : 'Secure payment processing'}
                       </p>
                     </div>
@@ -1542,7 +1542,7 @@ export default function CheckoutPage() {
                         >
                           <CreditCard className="h-6 w-6" />
                           <span className="text-sm">Real Payment</span>
-                          <span className="text-xs text-gray-500">Stripe</span>
+                          <span className="text-xs text-gray-900">Stripe</span>
                         </Button>
                         
                         <Button
@@ -1555,7 +1555,7 @@ export default function CheckoutPage() {
                             <div className="w-6 h-6 bg-blue-600 rounded"></div>
                           </div>
                           <span className="text-sm">Demo Mode</span>
-                          <span className="text-xs text-gray-500">Simulation</span>
+                          <span className="text-xs text-gray-900">Simulation</span>
                         </Button>
                       </div>
                     ) : (
@@ -1703,7 +1703,7 @@ export default function CheckoutPage() {
                             Google
                           </div>
                         </div>
-                        <p className="text-sm text-gray-600">
+                        <p className="text-sm text-gray-900">
                           Tap your phone or watch to complete payment
                         </p>
                       </div>
@@ -1727,7 +1727,7 @@ export default function CheckoutPage() {
                 {paymentStatus === 'processing' && (
                   <div className="text-center py-4">
                     <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-purple-600 mx-auto mb-2"></div>
-                    <p className="text-sm text-gray-600">Processing your payment...</p>
+                    <p className="text-sm text-gray-900">Processing your payment...</p>
                   </div>
                 )}
 
@@ -1749,7 +1749,7 @@ export default function CheckoutPage() {
                   </div>
                 )}
 
-                <div className="text-xs text-gray-500 text-center pt-2 border-t">
+                <div className="text-xs text-gray-900 text-center pt-2 border-t">
                   {paymentMethod === 'simulation' ? (
                     <>
                       <p>This is a payment simulation for demo purposes</p>

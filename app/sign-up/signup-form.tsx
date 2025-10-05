@@ -218,7 +218,7 @@ export default function SignUpForm({ onGoogleSignIn, isSigningUp = false }: Sign
               <span className="w-full border-t" />
             </div>
             <div className="relative flex justify-center text-xs uppercase">
-              <span className="bg-white px-2 text-gray-500">Or continue with email</span>
+              <span className="bg-white px-2 text-gray-900">Or continue with email</span>
             </div>
           </div>
 
@@ -314,7 +314,7 @@ export default function SignUpForm({ onGoogleSignIn, isSigningUp = false }: Sign
             </Button>
           </form>
 
-          <div className="text-center text-sm text-gray-600">
+          <div className="text-center text-sm text-gray-900">
             Already have an account?{' '}
             <Link href="/sign-in" className="text-purple-600 hover:text-purple-500 font-medium">
               Sign in here

@@ -322,7 +322,7 @@ export function EnhancedOrderLifecycle({ venueId, order, onUpdate }: OrderLifecy
     normal: 'text-green-600',
     warning: 'text-orange-600',
     critical: 'text-red-600',
-    none: 'text-gray-600'
+    none: 'text-gray-900'
   };
 
   const urgencyIcons = {
@@ -353,18 +353,18 @@ export function EnhancedOrderLifecycle({ venueId, order, onUpdate }: OrderLifecy
         <div className="space-y-2">
           <div className="flex items-center justify-between text-sm">
             <span>Order Progress</span>
-            <span className="text-gray-600">{Math.round(getStatusProgress())}%</span>
+            <span className="text-gray-900">{Math.round(getStatusProgress())}%</span>
           </div>
           <Progress value={getStatusProgress()} className="h-2" />
           
           {/* Status Timeline */}
-          <div className="flex justify-between text-xs text-gray-500 mt-2">
+          <div className="flex justify-between text-xs text-gray-900 mt-2">
             {['PLACED', 'ACCEPTED', 'IN_PREP', 'READY', 'SERVING', 'COMPLETED'].map((status, index) => {
               const isActive = status === order.order_status;
               const isCompleted = ['PLACED', 'ACCEPTED', 'IN_PREP', 'READY', 'SERVING', 'COMPLETED'].indexOf(order.order_status) >= index;
               
               return (
-                <div key={status} className={`flex flex-col items-center ${isActive ? 'text-blue-600' : isCompleted ? 'text-green-600' : 'text-gray-400'}`}>
+                <div key={status} className={`flex flex-col items-center ${isActive ? 'text-blue-600' : isCompleted ? 'text-green-600' : 'text-gray-700'}`}>
                   <div className={`w-2 h-2 rounded-full mb-1 ${isActive ? 'bg-blue-600' : isCompleted ? 'bg-green-600' : 'bg-gray-300'}`} />
                   <span className="text-center">{ORDER_STATUSES[status as keyof typeof ORDER_STATUSES]?.label || status}</span>
                 </div>
@@ -376,21 +376,21 @@ export function EnhancedOrderLifecycle({ venueId, order, onUpdate }: OrderLifecy
         {/* Current Status Info */}
         <div className="grid grid-cols-2 gap-4 p-3 bg-gray-50 rounded-lg">
           <div>
-            <div className="text-sm text-gray-600">Time in Status</div>
+            <div className="text-sm text-gray-900">Time in Status</div>
             <div className="font-semibold">{formatTime(timeInCurrentStatus)}</div>
           </div>
           <div>
-            <div className="text-sm text-gray-600">Estimated Time</div>
+            <div className="text-sm text-gray-900">Estimated Time</div>
             <div className="font-semibold">
               {currentStatus?.estimatedTime ? formatTime(currentStatus.estimatedTime) : 'N/A'}
             </div>
           </div>
           <div>
-            <div className="text-sm text-gray-600">Time to Complete</div>
+            <div className="text-sm text-gray-900">Time to Complete</div>
             <div className="font-semibold">{formatTime(getEstimatedCompletionTime())}</div>
           </div>
           <div>
-            <div className="text-sm text-gray-600">Urgency</div>
+            <div className="text-sm text-gray-900">Urgency</div>
             <div className={`flex items-center ${urgencyColors[getUrgencyLevel() as keyof typeof urgencyColors]}`}>
               <UrgencyIcon className="h-4 w-4 mr-1" />
               <span className="capitalize">{getUrgencyLevel()}</span>
@@ -504,19 +504,19 @@ export function EnhancedOrderLifecycle({ venueId, order, onUpdate }: OrderLifecy
           <div className="text-sm font-medium">Order Details</div>
           <div className="grid grid-cols-2 gap-4 text-sm">
             <div>
-              <span className="text-gray-600">{isCounterOrder(order) ? 'Counter' : 'Table'}:</span>
+              <span className="text-gray-900">{isCounterOrder(order) ? 'Counter' : 'Table'}:</span>
               <span className="ml-2 font-medium">{order.table_number}</span>
             </div>
             <div>
-              <span className="text-gray-600">Customer:</span>
+              <span className="text-gray-900">Customer:</span>
               <span className="ml-2 font-medium">{order.customer_name}</span>
             </div>
             <div>
-              <span className="text-gray-600">Total:</span>
+              <span className="text-gray-900">Total:</span>
               <span className="ml-2 font-medium text-green-600">£{order.total_amount.toFixed(2)}</span>
             </div>
             <div>
-              <span className="text-gray-600">Items:</span>
+              <span className="text-gray-900">Items:</span>
               <span className="ml-2 font-medium">{order.items.length}</span>
             </div>
           </div>

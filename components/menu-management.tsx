@@ -741,7 +741,7 @@ export function MenuManagement({ venueId, session, refreshTrigger }: MenuManagem
               >
                 Reset to PDF Order
               </Button>
-              <span className="text-sm text-gray-500">
+              <span className="text-sm text-gray-900">
                 {categoryOrder ? `PDF order: ${categoryOrder.join(', ')}` : 'No PDF order available'}
               </span>
             </div>
@@ -759,7 +759,7 @@ export function MenuManagement({ venueId, session, refreshTrigger }: MenuManagem
                     >
                       <div className="flex items-center space-x-2">
                         <span className="font-medium text-sm">{name}</span>
-                        <span className="text-xs text-gray-500">({itemCount})</span>
+                        <span className="text-xs text-gray-900">({itemCount})</span>
                       </div>
                       <Button
                         variant="ghost"
@@ -801,12 +801,12 @@ export function MenuManagement({ venueId, session, refreshTrigger }: MenuManagem
         <CardContent>
           {loading ? (
             <div className="text-center py-8">
-              <p className="text-gray-600">Loading menu items...</p>
+              <p className="text-gray-900">Loading menu items...</p>
             </div>
           ) : menuItems.length === 0 ? (
             <div className="text-center py-8">
-              <FileText className="h-12 w-12 mx-auto text-gray-400 mb-4" />
-              <p className="text-gray-600 mb-4">
+              <FileText className="h-12 w-12 mx-auto text-gray-700 mb-4" />
+              <p className="text-gray-900 mb-4">
                 No menu items found. Add some items above to get started.
               </p>
             </div>
@@ -824,14 +824,14 @@ export function MenuManagement({ venueId, session, refreshTrigger }: MenuManagem
                     >
                       <div className="flex items-center space-x-2">
                         {isExpanded ? (
-                          <ChevronDown className="h-4 w-4 text-gray-600" />
+                          <ChevronDown className="h-4 w-4 text-gray-900" />
                         ) : (
-                          <ChevronRight className="h-4 w-4 text-gray-600" />
+                          <ChevronRight className="h-4 w-4 text-gray-900" />
                         )}
                         <h3 className="font-semibold text-lg text-servio-purple">
                           {name}
                         </h3>
-                        <span className="text-sm text-gray-500">({itemCount} items)</span>
+                        <span className="text-sm text-gray-900">({itemCount} items)</span>
                       </div>
                     </div>
                     
@@ -912,9 +912,9 @@ export function MenuManagement({ venueId, session, refreshTrigger }: MenuManagem
                             <div className="flex items-center space-x-3">
                               <h4 className="font-semibold text-lg">{item.name}</h4>
                               <span className="text-lg font-bold text-green-600">£{item.price.toFixed(2)}</span>
-                              <span className="text-xs text-gray-500">{item.category}</span>
-                              {item.description && <span className="text-xs text-gray-500">{item.description}</span>}
-                              <span className="text-xs text-gray-500">{item.available ? "Available" : "Unavailable"}</span>
+                              <span className="text-xs text-gray-900">{item.category}</span>
+                              {item.description && <span className="text-xs text-gray-900">{item.description}</span>}
+                              <span className="text-xs text-gray-900">{item.available ? "Available" : "Unavailable"}</span>
                             </div>
                           )}
                         </div>

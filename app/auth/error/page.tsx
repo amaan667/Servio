@@ -75,10 +75,10 @@ function AuthErrorContent() {
             </Button>
           </div>
 
-          <div className="text-center text-sm text-gray-600">
+          <div className="text-center text-sm text-gray-900">
             <p>If this problem persists, please contact support.</p>
             {reason && (
-              <p className="mt-2 text-xs text-gray-500">
+              <p className="mt-2 text-xs text-gray-900">
                 Error code: {reason}
               </p>
             )}

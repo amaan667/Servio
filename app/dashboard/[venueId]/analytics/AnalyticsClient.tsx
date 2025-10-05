@@ -418,7 +418,7 @@ export default function AnalyticsClient({ venueId, venueName }: { venueId: strin
             <BarChart className="h-12 w-12 mx-auto" />
           </div>
           <h2 className="text-xl font-semibold text-gray-900 mb-2">Error Loading Analytics</h2>
-          <p className="text-gray-600 mb-4">{error}</p>
+          <p className="text-gray-900 mb-4">{error}</p>
           <Button onClick={fetchAnalyticsData} variant="outline">
             Retry
           </Button>
@@ -686,10 +686,10 @@ export default function AnalyticsClient({ venueId, venueName }: { venueId: strin
                       <div className="text-sm font-medium text-gray-900">
                         {formatTooltipDate(analyticsData.revenueOverTime[hoveredPoint].date, timePeriod)}
                       </div>
-                      <div className="text-sm text-gray-600 mt-1">
+                      <div className="text-sm text-gray-900 mt-1">
                         Revenue: £{analyticsData.revenueOverTime[hoveredPoint].revenue.toFixed(2)}
                       </div>
-                      <div className="text-sm text-gray-600">
+                      <div className="text-sm text-gray-900">
                         Orders: {analyticsData.revenueOverTime[hoveredPoint].orders}
                       </div>
                     </div>
@@ -698,9 +698,9 @@ export default function AnalyticsClient({ venueId, venueName }: { venueId: strin
               ) : (
                 <div className="h-full flex items-center justify-center">
                   <div className="text-center">
-                    <BarChart className="h-12 w-12 text-gray-400 mx-auto mb-2" />
-                    <p className="text-gray-500">No revenue data available</p>
-                    <p className="text-sm text-gray-400 mt-1">Try selecting a different time period</p>
+                    <BarChart className="h-12 w-12 text-gray-700 mx-auto mb-2" />
+                    <p className="text-gray-900">No revenue data available</p>
+                    <p className="text-sm text-gray-700 mt-1">Try selecting a different time period</p>
                   </div>
                 </div>
               )}
@@ -761,8 +761,8 @@ export default function AnalyticsClient({ venueId, venueName }: { venueId: strin
               ) : (
                 <div className="h-full flex items-center justify-center">
                   <div className="text-center">
-                    <ShoppingBag className="h-12 w-12 text-gray-400 mx-auto mb-2" />
-                    <p className="text-gray-500">No sales data available</p>
+                    <ShoppingBag className="h-12 w-12 text-gray-700 mx-auto mb-2" />
+                    <p className="text-gray-900">No sales data available</p>
                   </div>
                 </div>
               )}
@@ -775,9 +775,9 @@ export default function AnalyticsClient({ venueId, venueName }: { venueId: strin
       {analyticsData.totalOrders === 0 && (
         <Card>
           <CardContent className="p-12 text-center">
-            <BarChart className="h-16 w-16 text-gray-400 mx-auto mb-6" />
+            <BarChart className="h-16 w-16 text-gray-700 mx-auto mb-6" />
             <h3 className="text-xl font-semibold text-gray-900 mb-2">No Analytics Data Yet</h3>
-            <p className="text-gray-600 mb-6 max-w-md mx-auto">
+            <p className="text-gray-900 mb-6 max-w-md mx-auto">
               Analytics will appear here once you start receiving orders. 
               Generate QR codes and start taking orders to see your business insights.
             </p>

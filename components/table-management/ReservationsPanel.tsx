@@ -130,8 +130,8 @@ export function ReservationsPanel({ venueId, reservations, onActionComplete }: R
         </CardHeader>
         <CardContent>
           <div className="text-center py-8">
-            <Calendar className="h-12 w-12 text-gray-400 mx-auto mb-4" />
-            <p className="text-gray-500">No active reservations</p>
+            <Calendar className="h-12 w-12 text-gray-700 mx-auto mb-4" />
+            <p className="text-gray-900">No active reservations</p>
           </div>
         </CardContent>
       </Card>
@@ -162,7 +162,7 @@ export function ReservationsPanel({ venueId, reservations, onActionComplete }: R
                 </Badge>
               </div>
               
-              <div className="flex items-center gap-4 text-sm text-gray-600">
+              <div className="flex items-center gap-4 text-sm text-gray-900">
                 <div className="flex items-center gap-1">
                   <Clock className="h-3 w-3" />
                   {formatDate(reservation.start_at)} at {formatTime(reservation.start_at)}
