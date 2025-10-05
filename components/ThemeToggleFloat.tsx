@@ -8,23 +8,37 @@ export default function ThemeToggleFloat() {
   const { theme, setTheme } = useTheme();
   const [mounted, setMounted] = useState(false);
   const [showOnScroll, setShowOnScroll] = useState(false);
+  const [isMobile, setIsMobile] = useState(false);
   const pathname = usePathname();
 
   // Ensure component is mounted before rendering
   useEffect(() => {
     setMounted(true);
+    
+    // Check if device is mobile
+    const checkMobile = () => {
+      setIsMobile(window.innerWidth < 768); // md breakpoint
+    };
+    
+    checkMobile();
+    window.addEventListener('resize', checkMobile);
+    
+    return () => window.removeEventListener('resize', checkMobile);
   }, []);
 
-  // Handle scroll detection for all pages
+  // Handle scroll detection with improved logic
   useEffect(() => {
     const handleScroll = () => {
       const scrollTop = window.scrollY || document.documentElement.scrollTop;
-      setShowOnScroll(scrollTop > 100); // Show when scrolled down more than 100px
+      
+      // Different scroll thresholds for mobile vs desktop
+      const scrollThreshold = isMobile ? 150 : 100;
+      setShowOnScroll(scrollTop > scrollThreshold);
     };
 
-    window.addEventListener('scroll', handleScroll);
+    window.addEventListener('scroll', handleScroll, { passive: true });
     return () => window.removeEventListener('scroll', handleScroll);
-  }, []);
+  }, [isMobile]);
 
   // Only show theme toggle on dashboard, settings, and order pages
   const shouldShowToggle = pathname?.startsWith('/dashboard') || 
@@ -43,10 +57,17 @@ export default function ThemeToggleFloat() {
 
   const currentTheme = theme || 'light';
 
-  // Adjust positioning based on the page to avoid conflicts
+  // Improved positioning logic for desktop vs mobile
   const getPositionClasses = () => {
-    // Only show when scrolled on all pages, positioned in center-right to avoid header overlap
-    return showOnScroll ? "fixed top-20 right-1/2 transform translate-x-1/2 z-50" : "hidden";
+    if (!showOnScroll) return "hidden";
+    
+    if (isMobile) {
+      // Mobile: Center position to avoid conflicts
+      return "fixed top-24 right-1/2 transform translate-x-1/2 z-50";
+    } else {
+      // Desktop: Right side positioning with proper spacing
+      return "fixed top-20 right-6 z-50";
+    }
   };
 
   return (
@@ -54,13 +75,13 @@ export default function ThemeToggleFloat() {
       type="button"
       onClick={toggle}
       aria-label="Toggle theme"
-      className={`${getPositionClasses()} z-50 rounded-full border-2 border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-800 px-4 py-4 shadow-lg hover:shadow-xl hover:scale-105 transition-all duration-200 dark:shadow-gray-900/50 backdrop-blur-sm bg-white/90 dark:bg-gray-800/90`}
+      className={`${getPositionClasses()} rounded-full border-2 border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-800 p-3 shadow-lg hover:shadow-xl hover:scale-105 transition-all duration-300 backdrop-blur-sm bg-white/95 dark:bg-gray-800/95 hover:bg-gray-50 dark:hover:bg-gray-700`}
     >
       <div className="flex items-center justify-center">
         {currentTheme === 'dark' ? (
           <Sun className="h-5 w-5 text-yellow-500" />
         ) : (
-          <Moon className="h-5 w-5 text-gray-700 dark:text-gray-600" />
+          <Moon className="h-5 w-5 text-gray-700 dark:text-gray-300" />
         )}
       </div>
     </button>
