@@ -157,32 +157,34 @@ export default function GlobalBottomNav({ venueId, counts = {} }: GlobalBottomNa
   return (
     <>
       {/* Bottom Navigation Bar */}
-      <div className={`fixed bottom-0 left-0 right-0 z-50 bg-white border-t border-gray-200 transition-transform duration-300 ${
+      <div className={`fixed bottom-0 left-0 right-0 z-50 bg-white/95 backdrop-blur-md border-t border-gray-100 shadow-lg transition-transform duration-300 ${
         isVisible ? 'translate-y-0' : 'translate-y-full'
       }`} style={{ paddingBottom: 'env(safe-area-inset-bottom)' }}>
-        <div className="grid grid-cols-4 h-20">
+        <div className="grid grid-cols-4 h-16">
           {navItems.map((item) => (
             <button
               key={item.id}
               onClick={() => handleNavigation(item.href)}
-              className={`flex flex-col items-center justify-center p-2 relative ${
+              className={`flex flex-col items-center justify-center p-2 relative transition-all duration-200 ${
                 item.isActive 
-                  ? 'text-purple-600 bg-purple-50' 
-                  : 'text-gray-600 hover:text-gray-900 hover:bg-gray-50'
+                  ? 'text-servio-purple bg-servio-purple/10' 
+                  : 'text-gray-500 hover:text-gray-700 hover:bg-gray-50/80'
               }`}
             >
               <div className="relative mb-1">
-                <item.icon className="h-5 w-5" />
+                <item.icon className={`h-5 w-5 transition-colors ${item.isActive ? 'text-servio-purple' : 'text-gray-500'}`} />
                 {item.badge && item.badge > 0 && (
                   <Badge 
                     variant="destructive" 
-                    className="absolute -top-2 -right-2 h-5 w-5 p-0 text-xs flex items-center justify-center"
+                    className="absolute -top-2 -right-2 h-4 w-4 p-0 text-xs flex items-center justify-center bg-red-500 text-white"
                   >
                     {item.badge > 99 ? '99+' : item.badge}
                   </Badge>
                 )}
               </div>
-              <span className="text-xs leading-tight text-center px-1" style={{ lineHeight: '1.1', fontSize: '11px' }}>
+              <span className={`text-xs leading-tight text-center px-1 font-medium transition-colors ${
+                item.isActive ? 'text-servio-purple' : 'text-gray-500'
+              }`} style={{ lineHeight: '1.2', fontSize: '10px' }}>
                 {item.label}
               </span>
             </button>
@@ -195,10 +197,10 @@ export default function GlobalBottomNav({ venueId, counts = {} }: GlobalBottomNa
         <div className={`fixed top-4 left-1/2 transform -translate-x-1/2 z-30 transition-transform duration-300 ${
           isVisible ? 'translate-y-0' : '-translate-y-full'
         }`}>
-          <div className="bg-white/90 backdrop-blur-sm border border-gray-200 rounded-full px-4 py-2 shadow-lg">
+          <div className="bg-white/95 backdrop-blur-md border border-gray-100 rounded-full px-4 py-2 shadow-lg">
             <div className="flex items-center space-x-2">
-              <activeItem.icon className="h-4 w-4 text-purple-600" />
-              <span className="text-sm font-medium text-gray-700">
+              <activeItem.icon className="h-4 w-4 text-servio-purple" />
+              <span className="text-sm font-semibold text-gray-800">
                 {activeItem.label}
               </span>
             </div>
@@ -207,7 +209,7 @@ export default function GlobalBottomNav({ venueId, counts = {} }: GlobalBottomNa
       )}
 
       {/* Bottom Padding for Fixed Navigation */}
-      <div className="h-20" />
+      <div className="h-16" />
     </>
   );
 }

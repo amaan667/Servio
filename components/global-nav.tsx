@@ -276,8 +276,8 @@ export default function GlobalNav() {
 
       {/* Mobile Navigation */}
       {mobileMenuOpen && (
-        <div className="md:hidden border-t border-border bg-background shadow-lg">
-          <div className="px-3 pt-3 pb-4 space-y-2 max-h-[calc(100vh-4rem)] overflow-y-auto">
+        <div className="md:hidden border-t border-gray-100 bg-white/95 backdrop-blur-md shadow-lg">
+          <div className="px-4 pt-4 pb-6 space-y-1 max-h-[calc(100vh-4rem)] overflow-y-auto">
             {isAuthenticated ? (
               // Signed in mobile navigation
               <>
@@ -285,18 +285,18 @@ export default function GlobalNav() {
                   <>
                     <Link
                       href="/"
-                      className="flex items-center px-4 py-4 text-base font-medium text-foreground hover:text-primary hover:bg-accent rounded-lg transition-colors min-h-[48px]"
+                      className="flex items-center px-4 py-3 text-base font-semibold text-gray-800 hover:text-servio-purple hover:bg-servio-purple/5 rounded-xl transition-all duration-200 min-h-[48px]"
                       onClick={() => setMobileMenuOpen(false)}
                     >
-                      <Home className="mr-3 h-5 w-5 flex-shrink-0" />
+                      <Home className="mr-3 h-5 w-5 flex-shrink-0 text-gray-600" />
                       <span>Home</span>
                     </Link>
                     <Link
                       href={primaryVenueId ? `/dashboard/${primaryVenueId}/settings` : '/dashboard'}
-                      className="flex items-center px-4 py-4 text-base font-medium text-foreground hover:text-primary hover:bg-accent rounded-lg transition-colors min-h-[48px]"
+                      className="flex items-center px-4 py-3 text-base font-semibold text-gray-800 hover:text-servio-purple hover:bg-servio-purple/5 rounded-xl transition-all duration-200 min-h-[48px]"
                       onClick={() => setMobileMenuOpen(false)}
                     >
-                      <Settings className="mr-3 h-5 w-5 flex-shrink-0" />
+                      <Settings className="mr-3 h-5 w-5 flex-shrink-0 text-gray-600" />
                       <span>Settings</span>
                     </Link>
                   </>
@@ -304,18 +304,18 @@ export default function GlobalNav() {
                   <>
                     <Link
                       href="/dashboard"
-                      className="flex items-center px-4 py-4 text-base font-medium text-foreground hover:text-primary hover:bg-accent rounded-lg transition-colors min-h-[48px]"
+                      className="flex items-center px-4 py-3 text-base font-semibold text-gray-800 hover:text-servio-purple hover:bg-servio-purple/5 rounded-xl transition-all duration-200 min-h-[48px]"
                       onClick={() => setMobileMenuOpen(false)}
                     >
-                      <LayoutDashboard className="mr-3 h-5 w-5 flex-shrink-0" />
+                      <LayoutDashboard className="mr-3 h-5 w-5 flex-shrink-0 text-gray-600" />
                       <span>Dashboard</span>
                     </Link>
                     <Link
                       href={primaryVenueId ? `/dashboard/${primaryVenueId}/settings` : '/dashboard'}
-                      className="flex items-center px-4 py-4 text-base font-medium text-foreground hover:text-primary hover:bg-accent rounded-lg transition-colors min-h-[48px]"
+                      className="flex items-center px-4 py-3 text-base font-semibold text-gray-800 hover:text-servio-purple hover:bg-servio-purple/5 rounded-xl transition-all duration-200 min-h-[48px]"
                       onClick={() => setMobileMenuOpen(false)}
                     >
-                      <Settings className="mr-3 h-5 w-5 flex-shrink-0" />
+                      <Settings className="mr-3 h-5 w-5 flex-shrink-0 text-gray-600" />
                       <span>Settings</span>
                     </Link>
                   </>
@@ -323,18 +323,18 @@ export default function GlobalNav() {
                   <>
                     <Link
                       href="/dashboard"
-                      className="flex items-center px-4 py-4 text-base font-medium text-foreground hover:text-primary hover:bg-accent rounded-lg transition-colors min-h-[48px]"
+                      className="flex items-center px-4 py-3 text-base font-semibold text-gray-800 hover:text-servio-purple hover:bg-servio-purple/5 rounded-xl transition-all duration-200 min-h-[48px]"
                       onClick={() => setMobileMenuOpen(false)}
                     >
-                      <LayoutDashboard className="mr-3 h-5 w-5 flex-shrink-0" />
+                      <LayoutDashboard className="mr-3 h-5 w-5 flex-shrink-0 text-gray-600" />
                       <span>Dashboard</span>
                     </Link>
                     <Link
                       href="/"
-                      className="flex items-center px-4 py-4 text-base font-medium text-foreground hover:text-primary hover:bg-accent rounded-lg transition-colors min-h-[48px]"
+                      className="flex items-center px-4 py-3 text-base font-semibold text-gray-800 hover:text-servio-purple hover:bg-servio-purple/5 rounded-xl transition-all duration-200 min-h-[48px]"
                       onClick={() => setMobileMenuOpen(false)}
                     >
-                      <Home className="mr-3 h-5 w-5 flex-shrink-0" />
+                      <Home className="mr-3 h-5 w-5 flex-shrink-0 text-gray-600" />
                       <span>Home</span>
                     </Link>
                   </>
@@ -342,68 +342,65 @@ export default function GlobalNav() {
                   <>
                     <Link
                       href="/dashboard"
-                      className="flex items-center px-4 py-4 text-base font-medium text-foreground hover:text-primary hover:bg-accent rounded-lg transition-colors min-h-[48px]"
+                      className="flex items-center px-4 py-3 text-base font-semibold text-gray-800 hover:text-servio-purple hover:bg-servio-purple/5 rounded-xl transition-all duration-200 min-h-[48px]"
                       onClick={() => setMobileMenuOpen(false)}
                     >
-                      <LayoutDashboard className="mr-3 h-5 w-5 flex-shrink-0" />
+                      <LayoutDashboard className="mr-3 h-5 w-5 flex-shrink-0 text-gray-600" />
                       <span>Dashboard</span>
                     </Link>
                     <Link
                       href={primaryVenueId ? `/dashboard/${primaryVenueId}/settings` : '/dashboard'}
-                      className="flex items-center px-4 py-4 text-base font-medium text-foreground hover:text-primary hover:bg-accent rounded-lg transition-colors min-h-[48px]"
+                      className="flex items-center px-4 py-3 text-base font-semibold text-gray-800 hover:text-servio-purple hover:bg-servio-purple/5 rounded-xl transition-all duration-200 min-h-[48px]"
                       onClick={() => setMobileMenuOpen(false)}
                     >
-                      <Settings className="mr-3 h-5 w-5 flex-shrink-0" />
+                      <Settings className="mr-3 h-5 w-5 flex-shrink-0 text-gray-600" />
                       <span>Settings</span>
                     </Link>
                   </>
                 )}
-                <div className="w-full h-px bg-border my-3"></div>
-                <Button
-                  variant="destructive"
+                <div className="w-full h-px bg-gray-100 my-4"></div>
+                <button
                   onClick={handleSignOut}
-                  className="flex items-center w-full px-4 py-4 text-base font-medium text-white bg-red-600 hover:bg-red-700 rounded-lg transition-colors min-h-[48px] justify-start text-white"
+                  className="flex items-center w-full px-4 py-3 text-base font-semibold text-red-600 hover:text-red-700 hover:bg-red-50 rounded-xl transition-all duration-200 min-h-[48px] justify-start"
                 >
-                  <LogOut className="mr-3 h-5 w-5 flex-shrink-0 text-white" />
-                  <span className="text-white">Sign Out</span>
-                </Button>
+                  <LogOut className="mr-3 h-5 w-5 flex-shrink-0" />
+                  <span>Sign Out</span>
+                </button>
               </>
             ) : (
               // Not signed in mobile navigation
               <>
                 <Link
                   href="/"
-                  className="block px-4 py-4 text-base font-medium text-foreground hover:text-primary hover:bg-accent rounded-lg transition-colors min-h-[48px] flex items-center"
+                  className="block px-4 py-3 text-base font-semibold text-gray-800 hover:text-servio-purple hover:bg-servio-purple/5 rounded-xl transition-all duration-200 min-h-[48px] flex items-center"
                   onClick={() => setMobileMenuOpen(false)}
                 >
                   Home
                 </Link>
                 <Link
                   href="#features"
-                  className="block px-4 py-4 text-base font-medium text-foreground hover:text-primary hover:bg-accent rounded-lg transition-colors min-h-[48px] flex items-center"
+                  className="block px-4 py-3 text-base font-semibold text-gray-800 hover:text-servio-purple hover:bg-servio-purple/5 rounded-xl transition-all duration-200 min-h-[48px] flex items-center"
                   onClick={() => setMobileMenuOpen(false)}
                 >
                   Features
                 </Link>
                 <Link
                   href="#pricing"
-                  className="block px-4 py-4 text-base font-medium text-foreground hover:text-primary hover:bg-accent rounded-lg transition-colors min-h-[48px] flex items-center"
+                  className="block px-4 py-3 text-base font-semibold text-gray-800 hover:text-servio-purple hover:bg-servio-purple/5 rounded-xl transition-all duration-200 min-h-[48px] flex items-center"
                   onClick={() => setMobileMenuOpen(false)}
                 >
                   Pricing
                 </Link>
-                <div className="w-full h-px bg-border my-3"></div>
-                <Button
+                <div className="w-full h-px bg-gray-100 my-4"></div>
+                <button
                   onClick={() => {
                     setMobileMenuOpen(false);
                     router.push('/sign-in');
                   }}
-                  variant="servio"
-                  size="mobile"
-                  className="w-full"
+                  className="w-full px-4 py-3 text-base font-semibold text-white bg-servio-purple hover:bg-servio-purple-dark rounded-xl transition-all duration-200 min-h-[48px] flex items-center justify-center"
                 >
                   Sign In
-                </Button>
+                </button>
               </>
             )}
           </div>

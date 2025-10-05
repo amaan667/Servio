@@ -164,6 +164,82 @@
   @apply text-foreground/60;
 }
 
+/* Desktop-specific text readability improvements */
+@media (min-width: 769px) {
+  /* Ensure all text is readable on desktop too */
+  .text-muted-foreground {
+    color: #374151 !important; /* Dark gray for better readability */
+  }
+  
+  .text-foreground\/80 {
+    color: #374151 !important; /* Dark instead of 80% opacity */
+  }
+  
+  .text-gray-400 {
+    color: #6b7280 !important; /* Darker for better visibility */
+  }
+  
+  .text-gray-500 {
+    color: #4b5563 !important; /* Darker for better visibility */
+  }
+  
+  /* Enhanced toggle switch styling for desktop */
+  [data-radix-switch-root] {
+    height: 24px !important;
+    width: 44px !important;
+    min-height: 24px !important;
+    min-width: 44px !important;
+  }
+  
+  [data-radix-switch-thumb] {
+    height: 20px !important;
+    width: 20px !important;
+  }
+  
+  /* Enhanced form labels on desktop */
+  label {
+    color: #1f2937 !important; /* Very dark for maximum readability */
+    font-weight: 600 !important;
+  }
+  
+  /* Enhanced desktop button consistency */
+  button {
+    min-height: 44px !important;
+    min-width: 44px !important;
+    border-radius: 12px !important;
+    font-weight: 600 !important;
+    transition: all 0.2s ease !important;
+  }
+  
+  /* Enhanced desktop servio button styling */
+  button[class*="servio"] {
+    background-color: hsl(var(--servio-purple)) !important;
+    color: #ffffff !important;
+    font-weight: 600 !important;
+    border: none !important;
+    box-shadow: 0 2px 4px rgba(124, 58, 237, 0.2) !important;
+  }
+  
+  button[class*="servio"]:hover {
+    background-color: hsl(var(--servio-purple-dark)) !important;
+    box-shadow: 0 4px 8px rgba(124, 58, 237, 0.3) !important;
+  }
+  
+  /* Enhanced desktop destructive button styling */
+  button[class*="destructive"] {
+    background-color: #dc2626 !important;
+    color: #ffffff !important;
+    font-weight: 600 !important;
+    border: none !important;
+    box-shadow: 0 2px 4px rgba(220, 38, 38, 0.2) !important;
+  }
+  
+  button[class*="destructive"]:hover {
+    background-color: #b91c1c !important;
+    box-shadow: 0 4px 8px rgba(220, 38, 38, 0.3) !important;
+  }
+}
+
 /* Ensure all headings are visible */
 h1, h2, h3, h4, h5, h6 {
   @apply text-foreground;
@@ -172,6 +248,33 @@ h1, h2, h3, h4, h5, h6 {
 /* Ensure all paragraphs and text are visible */
 p, span, div {
   @apply text-foreground;
+}
+
+/* Global text readability fixes - catch any remaining greyed-out text */
+.text-gray-400, .text-slate-400 {
+  color: #6b7280 !important; /* Much darker for better visibility */
+}
+
+.text-gray-500, .text-slate-500 {
+  color: #4b5563 !important; /* Darker for better visibility */
+}
+
+.text-muted-foreground {
+  color: #374151 !important; /* Dark gray instead of muted */
+}
+
+.text-foreground\/80, .text-foreground\/70, .text-foreground\/60 {
+  color: #374151 !important; /* Dark instead of opacity */
+}
+
+/* Enhanced component-specific text readability */
+.staff-member-role, .staff-role-header p {
+  color: #4b5563 !important; /* Darker for better readability */
+}
+
+/* Fix any remaining icon colors */
+.text-gray-400 svg, .text-slate-400 svg {
+  color: #6b7280 !important;
 }
 
 /* Mobile text size improvements */
@@ -345,7 +448,7 @@ p, span, div {
 @media (max-width: 768px) {
   /* Enhanced text visibility on mobile - ensure proper contrast */
   .text-muted-foreground {
-    color: #374151 !important; /* Darker gray for better visibility */
+    color: #1f2937 !important; /* Very dark gray for maximum visibility */
   }
   
   .text-gray-500 {
@@ -362,11 +465,11 @@ p, span, div {
   
   /* Enhanced mobile text contrast for card descriptions */
   .text-gray-700 {
-    color: #374151 !important; /* Darker for better mobile visibility */
+    color: #1f2937 !important; /* Very dark for maximum mobile visibility */
   }
   
   .text-gray-600 {
-    color: #4b5563 !important; /* Darker for better mobile visibility */
+    color: #374151 !important; /* Darker for better mobile visibility */
   }
   
   /* Dark mode text fixes for better readability */
@@ -450,6 +553,23 @@ p, span, div {
   
   /* Enhanced description text visibility */
   .description-text {
+    color: #1f2937 !important;
+    font-weight: 500 !important;
+  }
+  
+  /* Enhanced card text visibility for all mobile components */
+  .card {
+    background: #ffffff !important;
+    border: 1px solid #e5e7eb !important;
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1) !important;
+  }
+  
+  .card h1, .card h2, .card h3, .card h4, .card h5, .card h6 {
+    color: #1f2937 !important;
+    font-weight: 700 !important;
+  }
+  
+  .card p, .card span, .card div:not(.text-servio-purple) {
     color: #374151 !important;
     font-weight: 500 !important;
   }
@@ -473,11 +593,39 @@ p, span, div {
   }
   
   .text-gray-400 {
-    color: #6b7280 !important; /* Darker for better mobile visibility */
+    color: #6b7280 !important; /* Much darker for better visibility */
   }
   
   .text-gray-300 {
     color: #9ca3af !important; /* Darker for better mobile visibility */
+  }
+  
+  /* Fix all greyed-out text issues */
+  .text-muted-foreground {
+    color: #374151 !important; /* Dark gray instead of muted */
+  }
+  
+  .text-foreground\/80 {
+    color: #374151 !important; /* Dark instead of 80% opacity */
+  }
+  
+  /* Enhanced toggle switch styling for mobile */
+  [data-radix-switch-root] {
+    height: 24px !important;
+    width: 44px !important;
+    min-height: 24px !important;
+    min-width: 44px !important;
+  }
+  
+  [data-radix-switch-thumb] {
+    height: 20px !important;
+    width: 20px !important;
+  }
+  
+  /* Enhanced form labels */
+  label {
+    color: #1f2937 !important; /* Very dark for maximum readability */
+    font-weight: 600 !important;
   }
   
   /* Enhanced form field visibility */
@@ -1083,30 +1231,69 @@ p, span, div {
   /* Enhanced mobile button visibility */
   button[class*="outline"] {
     border-width: 2px !important;
-    border-color: #6b7280 !important;
-    color: #374151 !important;
+    border-color: #d1d5db !important;
+    color: #1f2937 !important;
     font-weight: 600 !important;
     background-color: #ffffff !important;
     box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1) !important;
   }
   
   button[class*="outline"]:hover {
-    border-color: #4b5563 !important;
+    border-color: #9ca3af !important;
     color: #111827 !important;
     background-color: #f9fafb !important;
     box-shadow: 0 2px 4px rgba(0, 0, 0, 0.15) !important;
   }
   
+  /* Enhanced mobile button text for all variants */
   button[class*="ghost"] {
-    color: #374151 !important;
+    color: #1f2937 !important;
     font-weight: 600 !important;
-    min-width: 48px !important;
-    min-height: 48px !important;
+    background-color: transparent !important;
   }
   
   button[class*="ghost"]:hover {
     color: #111827 !important;
     background-color: #f3f4f6 !important;
+  }
+  
+  /* Enhanced mobile servio button styling */
+  button[class*="servio"] {
+    background-color: hsl(var(--servio-purple)) !important;
+    color: #ffffff !important;
+    font-weight: 600 !important;
+    border: none !important;
+    box-shadow: 0 2px 4px rgba(124, 58, 237, 0.2) !important;
+    min-height: 44px !important;
+    min-width: 44px !important;
+  }
+  
+  button[class*="servio"]:hover {
+    background-color: hsl(var(--servio-purple-dark)) !important;
+    box-shadow: 0 4px 8px rgba(124, 58, 237, 0.3) !important;
+  }
+  
+  /* Enhanced mobile button consistency */
+  button {
+    min-height: 44px !important;
+    min-width: 44px !important;
+    border-radius: 12px !important;
+    font-weight: 600 !important;
+    transition: all 0.2s ease !important;
+  }
+  
+  /* Enhanced mobile destructive button styling */
+  button[class*="destructive"] {
+    background-color: #dc2626 !important;
+    color: #ffffff !important;
+    font-weight: 600 !important;
+    border: none !important;
+    box-shadow: 0 2px 4px rgba(220, 38, 38, 0.2) !important;
+  }
+  
+  button[class*="destructive"]:hover {
+    background-color: #b91c1c !important;
+    box-shadow: 0 4px 8px rgba(220, 38, 38, 0.3) !important;
   }
   
   /* Enhanced icon visibility */
@@ -1263,6 +1450,45 @@ p, span, div {
     max-width: 100%;
     height: auto;
     border-radius: 8px;
+  }
+  
+  /* Enhanced Servio logo visibility on mobile */
+  .servio-logo {
+    filter: none !important;
+    opacity: 1 !important;
+  }
+  
+  /* Enhanced mobile header with better Servio branding */
+  .mobile-header {
+    background: #ffffff !important;
+    border-bottom: 1px solid #e5e7eb !important;
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1) !important;
+  }
+  
+  /* Enhanced mobile navigation with Servio branding */
+  .mobile-nav {
+    background: rgba(255, 255, 255, 0.95) !important;
+    backdrop-filter: blur(12px) !important;
+    border-top: 1px solid #e5e7eb !important;
+  }
+  
+  /* Enhanced mobile card styling with Servio theme */
+  .mobile-card {
+    background: #ffffff !important;
+    border: 1px solid #e5e7eb !important;
+    border-radius: 12px !important;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08) !important;
+  }
+  
+  /* Enhanced mobile text with better contrast */
+  .mobile-text {
+    color: #1f2937 !important;
+    font-weight: 500 !important;
+  }
+  
+  .mobile-text-muted {
+    color: #4b5563 !important;
+    font-weight: 400 !important;
   }
   
   /* Improved list items */

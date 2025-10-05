@@ -256,7 +256,7 @@ export default function ClientNavBar() {
       {/* Mobile Navigation */}
       {mobileMenuOpen && (
         <div className="md:hidden">
-          <div className="px-2 pt-2 pb-3 space-y-1 sm:px-3 bg-white/95 backdrop-blur border-t">
+          <div className="px-4 pt-4 pb-6 space-y-1 bg-white/95 backdrop-blur-md border-t border-gray-100 shadow-lg">
             {isAuthenticated ? (
               // Signed in mobile navigation - different based on current page
               <>
@@ -265,17 +265,17 @@ export default function ClientNavBar() {
                   <>
                     <Link
                       href="/dashboard"
-                      className="text-gray-600 hover:text-gray-900 block px-3 py-2 rounded-md text-base font-medium transition-colors"
+                      className="text-gray-800 hover:text-servio-purple hover:bg-servio-purple/5 block px-4 py-3 rounded-xl text-base font-semibold transition-all duration-200"
                       onClick={() => setMobileMenuOpen(false)}
                     >
                       Home
                     </Link>
                     <Link
                       href={venueId ? `/dashboard/${venueId}/settings` : "/dashboard"}
-                      className="text-gray-600 hover:text-gray-900 block px-3 py-2 rounded-md text-base font-medium transition-colors flex items-center"
+                      className="text-gray-800 hover:text-servio-purple hover:bg-servio-purple/5 block px-4 py-3 rounded-xl text-base font-semibold transition-all duration-200 flex items-center"
                       onClick={() => setMobileMenuOpen(false)}
                     >
-                      <Settings className="mr-2 h-4 w-4" />
+                      <Settings className="mr-3 h-5 w-5 text-gray-600" />
                       Settings
                     </Link>
                   </>
@@ -284,55 +284,56 @@ export default function ClientNavBar() {
                   <>
                     <Link
                       href="/dashboard"
-                      className="text-gray-600 hover:text-gray-900 block px-3 py-2 rounded-md text-base font-medium transition-colors"
+                      className="text-gray-800 hover:text-servio-purple hover:bg-servio-purple/5 block px-4 py-3 rounded-xl text-base font-semibold transition-all duration-200"
                       onClick={() => setMobileMenuOpen(false)}
                     >
                       Dashboard
                     </Link>
                     <Link
                       href="/dashboard"
-                      className="text-gray-600 hover:text-gray-900 block px-3 py-2 rounded-md text-base font-medium transition-colors"
+                      className="text-gray-800 hover:text-servio-purple hover:bg-servio-purple/5 block px-4 py-3 rounded-xl text-base font-semibold transition-all duration-200"
                       onClick={() => setMobileMenuOpen(false)}
                     >
                       Settings
                     </Link>
                   </>
                 )}
-                <Button
-                  variant="destructive"
+                <div className="w-full h-px bg-gray-100 my-4"></div>
+                <button
                   onClick={() => {
                     handleSignOut();
                     setMobileMenuOpen(false);
                   }}
-                  className="w-full text-left transition-colors bg-red-600 hover:bg-red-700 text-white font-medium px-3 py-2 rounded-md text-white"
+                  className="w-full text-left px-4 py-3 text-base font-semibold text-red-600 hover:text-red-700 hover:bg-red-50 rounded-xl transition-all duration-200"
                 >
                   Sign Out
-                </Button>
+                </button>
               </>
             ) : (
               // Not signed in mobile navigation - only show public links
               <>
                 <Link
                   href="/"
-                  className="text-gray-600 hover:text-gray-900 block px-3 py-2 rounded-md text-base font-medium transition-colors"
+                  className="text-gray-800 hover:text-servio-purple hover:bg-servio-purple/5 block px-4 py-3 rounded-xl text-base font-semibold transition-all duration-200"
                   onClick={() => setMobileMenuOpen(false)}
                 >
                   Home
                 </Link>
                 <Link
                   href="#features"
-                  className="text-gray-600 hover:text-gray-900 block px-3 py-2 rounded-md text-base font-medium transition-colors"
+                  className="text-gray-800 hover:text-servio-purple hover:bg-servio-purple/5 block px-4 py-3 rounded-xl text-base font-semibold transition-all duration-200"
                   onClick={() => setMobileMenuOpen(false)}
                 >
                   Features
                 </Link>
                 <Link
                   href="#pricing"
-                  className="text-gray-600 hover:text-gray-900 block px-3 py-2 rounded-md text-base font-medium transition-colors"
+                  className="text-gray-800 hover:text-servio-purple hover:bg-servio-purple/5 block px-4 py-3 rounded-xl text-base font-semibold transition-all duration-200"
                   onClick={() => setMobileMenuOpen(false)}
                 >
                   Pricing
                 </Link>
+                <div className="w-full h-px bg-gray-100 my-4"></div>
                 <div onClick={() => setMobileMenuOpen(false)}>
                   <SignInButton />
                 </div>
