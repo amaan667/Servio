@@ -157,7 +157,7 @@ export default function GlobalBottomNav({ venueId, counts = {} }: GlobalBottomNa
   return (
     <>
       {/* Bottom Navigation Bar */}
-      <div className={`fixed bottom-0 left-0 right-0 z-50 bg-white/95 backdrop-blur-md border-t border-gray-100 shadow-lg transition-transform duration-300 ${
+      <div className={`fixed bottom-0 left-0 right-0 z-50 bg-white/98 backdrop-blur-sm border-t border-gray-200 shadow-lg transition-transform duration-300 mobile-nav ${
         isVisible ? 'translate-y-0' : 'translate-y-full'
       }`} style={{ paddingBottom: 'env(safe-area-inset-bottom)' }}>
         <div className="grid grid-cols-4 h-16">
@@ -166,13 +166,13 @@ export default function GlobalBottomNav({ venueId, counts = {} }: GlobalBottomNa
               key={item.id}
               onClick={() => handleNavigation(item.href)}
               className={`flex flex-col items-center justify-center p-2 relative transition-all duration-200 ${
-                item.isActive 
-                  ? 'text-servio-purple bg-servio-purple/15' 
-                  : 'text-black hover:text-servio-purple hover:bg-gray-50/80'
+                item.isActive
+                  ? 'text-servio-purple bg-servio-purple/15'
+                  : 'text-gray-900 hover:text-servio-purple hover:bg-gray-50/80'
               }`}
             >
               <div className="relative mb-1">
-                <item.icon className={`h-5 w-5 transition-colors ${item.isActive ? 'text-servio-purple' : 'text-black'}`} />
+                <item.icon className={`h-5 w-5 transition-colors ${item.isActive ? 'text-servio-purple' : 'text-gray-900'}`} />
                 {item.badge && item.badge > 0 && (
                   <Badge 
                     variant="destructive" 
@@ -183,8 +183,8 @@ export default function GlobalBottomNav({ venueId, counts = {} }: GlobalBottomNa
                 )}
               </div>
               <span className={`text-xs leading-tight text-center px-1 font-bold transition-colors ${
-                item.isActive ? 'text-servio-purple' : 'text-black'
-              }`} style={{ lineHeight: '1.2', fontSize: '11px' }}>
+                item.isActive ? 'text-servio-purple' : 'text-gray-900'
+              }`} style={{ lineHeight: '1.2', fontSize: '11px', fontWeight: '700' }}>
                 {item.label}
               </span>
             </button>
