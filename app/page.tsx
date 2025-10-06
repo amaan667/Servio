@@ -103,17 +103,19 @@ export default function HomePage() {
     <div className="min-h-screen bg-white">
       {/* Hero Section */}
       <section className="relative bg-gradient-to-br from-[#7c3aed] via-[#7a3bec] to-[#6d28d9] text-white overflow-hidden">
+        {/* Add subtle overlay for better text contrast */}
+        <div className="absolute inset-0 bg-gradient-to-b from-black/20 to-black/0 pointer-events-none"></div>
         <div className="relative max-w-screen-xl mx-auto px-6 py-24 lg:py-32">
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-12 items-center">
             <div className="max-w-3xl sm:max-w-xl md:max-w-2xl">
-              <Badge className="bg-white/20 text-white border-white/30 mb-6">
+              <Badge className="bg-white/25 text-white border-white/40 mb-6 drop-shadow-sm">
                 <QrCode className="w-4 h-4 mr-2" />
                 Transform Your Business
               </Badge>
-              <h1 className="text-white text-[clamp(2rem,6vw,4.5rem)] leading-[1.05] tracking-tight font-extrabold drop-shadow-sm">
+              <h1 className="text-white text-[clamp(2rem,6vw,4.5rem)] leading-[1.05] tracking-tight font-extrabold drop-shadow-lg">
                 QR Code Ordering Made Simple
               </h1>
-              <p className="mt-5 text-white/85 text-[clamp(1rem,2.2vw,1.25rem)] leading-relaxed max-w-[45ch]">
+              <p className="mt-5 text-white/95 text-[clamp(1rem,2.2vw,1.25rem)] leading-relaxed max-w-[45ch] drop-shadow-md">
                 Streamline your business operations with contactless QR code ordering. Customers scan, order, and pay — all from their phones. You focus on great food and service.
               </p>
               <div className="mt-8 flex items-center gap-4 flex-wrap">
@@ -146,18 +148,18 @@ export default function HomePage() {
                   View Demo
                 </Button>
               </div>
-              <div className="flex items-center space-x-8 text-white">
+              <div className="flex items-center space-x-8 text-white/95 drop-shadow-md">
                 <div className="flex items-center">
-                  <CheckCircle className="h-5 w-5 mr-2" />
-                  <span>14-day free trial</span>
+                  <CheckCircle className="h-5 w-5 mr-2 text-green-300" />
+                  <span className="font-medium">14-day free trial</span>
                 </div>
                 <div className="flex items-center">
-                  <CheckCircle className="h-5 w-5 mr-2" />
-                  <span>No setup fees</span>
+                  <CheckCircle className="h-5 w-5 mr-2 text-green-300" />
+                  <span className="font-medium">No setup fees</span>
                 </div>
                 <div className="flex items-center">
-                  <CheckCircle className="h-5 w-5 mr-2" />
-                  <span>Cancel anytime</span>
+                  <CheckCircle className="h-5 w-5 mr-2 text-green-300" />
+                  <span className="font-medium">Cancel anytime</span>
                 </div>
               </div>
             </div>
