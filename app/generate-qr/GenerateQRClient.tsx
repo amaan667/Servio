@@ -986,16 +986,17 @@ export default function GenerateQRClient({ venueId, venueName, activeTablesCount
             ) : (
               <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3 sm:gap-4 mb-4">
                 {currentSelection.map((itemNumber, index) => {
-                  const itemOrderUrl = `${siteOrigin()}/order?venue=${venueId}&${qrType}=${itemNumber}`;
+                  const itemOrderUrl = `${siteOrigin()}/order?venue=${venueId}&${qrType}=${encodeURIComponent(itemNumber)}`;
                   const cleanName = qrType === 'table' ? cleanTableName(itemNumber) : cleanCounterName(itemNumber);
                   const label = qrType === 'table' ? 'Table' : 'Counter';
                   return (
-                    <div key={index} className="text-center p-2 sm:p-3 border rounded-lg bg-card relative">
+                    <div key={index} className="group text-center p-2 sm:p-3 border rounded-lg bg-card relative">
                       <Button
                         onClick={() => qrType === 'table' ? removeTable(itemNumber) : removeCounter(itemNumber)}
                         variant="ghost"
-                        size="sm"
-                        className="absolute top-1 right-1 h-6 w-6 p-0 text-foreground hover:text-destructive"
+                        size="icon"
+                        className="absolute top-1 right-1 h-5 w-5 p-0 text-foreground hover:text-destructive opacity-0 group-hover:opacity-100 focus:opacity-100 transition-opacity"
+                        aria-label="Remove QR"
                       >
                         <X className="h-3 w-3" />
                       </Button>

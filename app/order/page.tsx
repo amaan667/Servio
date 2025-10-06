@@ -1,4 +1,6 @@
 "use client";
+export const dynamic = 'force-dynamic';
+export const revalidate = 0;
 
 import { useState, useEffect } from "react";
 import { useSearchParams } from "next/navigation";
@@ -11,7 +13,6 @@ import { Textarea } from "@/components/ui/textarea";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { Loader2, ShoppingCart, Plus, Minus, X, CreditCard, Table, Receipt } from "lucide-react";
 import { supabase } from "@/lib/supabase/client";
-import { createClient } from "@/lib/supabase/server";
 import React from "react";
 import { demoMenuItems } from "@/data/demoMenuItems";
 
