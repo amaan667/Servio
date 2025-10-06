@@ -1,7 +1,9 @@
 // Service Worker for Servio PWA
-const CACHE_NAME = 'servio-v1.0.0';
-const STATIC_CACHE = 'servio-static-v1';
-const DYNAMIC_CACHE = 'servio-dynamic-v1';
+// Bump these versions on deploys to invalidate old caches
+const VERSION = 'v1.0.1';
+const CACHE_NAME = `servio-${VERSION}`;
+const STATIC_CACHE = `servio-static-${VERSION}`;
+const DYNAMIC_CACHE = `servio-dynamic-${VERSION}`;
 
 // Files to cache immediately
 const STATIC_FILES = [
@@ -93,7 +95,7 @@ self.addEventListener('fetch', (event) => {
     return;
   }
 
-  // For static assets, use cache-first strategy
+// For JS/CSS/HTML, use network-first to avoid stale bundles
   if (request.destination === 'image' || 
       request.destination === 'style' || 
       request.destination === 'script' ||
@@ -102,48 +104,46 @@ self.addEventListener('fetch', (event) => {
       url.pathname.endsWith('.png') ||
       url.pathname.endsWith('.jpg') ||
       url.pathname.endsWith('.svg')) {
-    
-    event.respondWith(
-      caches.match(request)
-        .then((response) => {
-          if (response) {
+    // For scripts/styles/HTML use network-first; for images cache-first
+    const isCode = request.destination === 'style' || request.destination === 'script' || url.pathname.endsWith('.css') || url.pathname.endsWith('.js');
+
+    if (isCode) {
+      event.respondWith(
+        fetch(request)
+          .then((response) => {
+            if (response && response.ok) {
+              const responseClone = response.clone();
+              caches.open(STATIC_CACHE).then(cache => cache.put(request, responseClone));
+            }
             return response;
+          })
+          .catch(() => caches.match(request))
+      );
+    } else {
+      event.respondWith(
+        caches.match(request).then(resp => resp || fetch(request).then(response => {
+          if (response && response.ok) {
+            const clone = response.clone();
+            caches.open(STATIC_CACHE).then(cache => cache.put(request, clone));
           }
-          return fetch(request)
-            .then((response) => {
-              if (response.ok) {
-                const responseClone = response.clone();
-                caches.open(STATIC_CACHE)
-                  .then((cache) => {
-                    cache.put(request, responseClone);
-                  });
-              }
-              return response;
-            });
-        })
-    );
+          return response;
+        }))
+      );
+    }
     return;
   }
 
-  // For pages, use stale-while-revalidate strategy
+  // For navigation/page requests, use network-first so new HTML pulls new bundles
   event.respondWith(
-    caches.match(request)
+    fetch(request)
       .then((response) => {
-        const fetchPromise = fetch(request)
-          .then((response) => {
-            if (response.ok) {
-              const responseClone = response.clone();
-              caches.open(DYNAMIC_CACHE)
-                .then((cache) => {
-                  cache.put(request, responseClone);
-                });
-            }
-            return response;
-          });
-
-        // Return cached version immediately, then update in background
-        return response || fetchPromise;
+        if (response.ok) {
+          const responseClone = response.clone();
+          caches.open(DYNAMIC_CACHE).then((cache) => cache.put(request, responseClone));
+        }
+        return response;
       })
+      .catch(() => caches.match(request))
   );
 });
 
