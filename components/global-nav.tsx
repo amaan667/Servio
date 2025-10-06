@@ -22,9 +22,11 @@ export default function GlobalNav() {
   const supabase = createClient();
 
 
-  // Show authenticated navigation if we have a session, even if still loading
-  // This prevents the flash of unauthenticated content
+  // Prefer NOT flashing the unauthenticated header. Treat the user as
+  // potentially authenticated while loading and only show public actions
+  // when we definitively know there is no session.
   const isAuthenticated = !!session?.user && !!session?.access_token;
+  const isLoadingAuth = !!loading;
 
   // Determine if we're on an authenticated route that supports dark mode
   const isAuthenticatedRoute = pathname?.startsWith('/dashboard') || 
@@ -33,6 +35,10 @@ export default function GlobalNav() {
                                pathname?.startsWith('/complete-profile') ||
                                pathname?.startsWith('/sign-in') ||
                                pathname?.startsWith('/sign-up');
+
+  // If we're on an authenticated route, suppress public-only actions even if
+  // the auth state is still loading to avoid the "Sign In" flash.
+  const shouldHidePublicActions = isAuthenticatedRoute || isLoadingAuth;
 
   // Use theme-aware colors for authenticated routes, light mode colors for public pages
   const navClasses = isAuthenticatedRoute 
@@ -224,7 +230,7 @@ export default function GlobalNav() {
                   Sign Out
                 </Button>
               </div>
-            ) : (
+            ) : shouldHidePublicActions ? null : (
               // Not signed in navigation - modern SaaS style
               <div className="flex items-center space-x-2">
                 <Link

@@ -114,7 +114,7 @@ export default function HomePage() {
                 <span className="block text-white drop-shadow-[0_2px_8px_rgba(0,0,0,0.35)]">QR Code Ordering</span>
                 <span className="block text-white drop-shadow-[0_2px_8px_rgba(0,0,0,0.35)]">Made Simple</span>
               </h1>
-              <p className="text-xl text-white mb-8 leading-relaxed drop-shadow-[0_1px_4px_rgba(0,0,0,0.25)]">
+              <p className="text-xl text-white mb-8 leading-relaxed drop-shadow-[0_2px_8px_rgba(0,0,0,0.35)]">
                 Streamline your business operations with contactless QR code
                 ordering. Customers scan, order, and pay - all from their
                 phones. You focus on great food and service.

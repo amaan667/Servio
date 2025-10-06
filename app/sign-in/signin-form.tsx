@@ -33,7 +33,8 @@ export default function SignInForm({ onGoogleSignIn, isLoading = false, error: p
 
     try {
       
-      const { data, error } = await supabaseBrowser().auth.signInWithPassword({
+      const sb = supabaseBrowser();
+      const { data, error } = await sb.auth.signInWithPassword({
         email,
         password,
       });
@@ -45,8 +46,10 @@ export default function SignInForm({ onGoogleSignIn, isLoading = false, error: p
       }
 
       if (data.user) {
-        // Redirect to home page
-        router.push('/');
+        // Ensure session cookie is set and immediately available
+        await sb.auth.getSession();
+        // Use full reload to hydrate header with authenticated state
+        window.location.assign('/dashboard');
       }
     } catch (err: any) {
       setError(err.message || 'Sign-in failed. Please try again.');

@@ -123,8 +123,9 @@ export default function SignUpForm({ onGoogleSignIn, isSigningUp = false }: Sign
         const { data: { user: currentUser } } = await supabaseBrowser().auth.getUser();
         
         if (currentUser) {
-          // User is immediately authenticated, redirect to home
-          router.push('/');
+          // Force session materialization and move to dashboard
+          await supabaseBrowser().auth.getSession();
+          window.location.assign('/dashboard');
         } else {
           // User is not authenticated after sign-up attempt
           // This could mean either:
