@@ -1476,14 +1476,20 @@ p, span, div {
   .mobile-nav span,
   .mobile-nav button span,
   .mobile-nav .text-xs {
-    color: #111827 !important; /* Very dark gray for maximum contrast */
+    color: #111827 !important; /* Default dark text */
     font-weight: 700 !important;
   }
 
+  /* Force readable contrast for active/selected nav buttons */
+  .mobile-nav button.bg-purple-600 span,
+  .mobile-nav button.bg-purple-600 svg {
+    color: #ffffff !important;
+  }
+
+  /* Keep legacy selector fallback if any component adds an "active" class */
   .mobile-nav button[class*="active"] span,
-  .mobile-nav .text-servio-purple {
-    color: hsl(var(--servio-purple)) !important;
-    font-weight: 700 !important;
+  .mobile-nav button[class*="active"] svg {
+    color: #ffffff !important;
   }
 
   /* Enhanced mobile navigation icon visibility */
