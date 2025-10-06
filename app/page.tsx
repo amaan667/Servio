@@ -401,10 +401,10 @@ export default function HomePage() {
       {/* Pricing Section */}
       <section className="py-24 bg-gradient-to-r from-purple-600 to-purple-700 text-white">
         <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 text-center">
-          <h2 className="text-4xl font-bold mb-6">
+          <h2 className="text-4xl font-bold mb-6 !text-white">
             Ready to Transform Your Business?
           </h2>
-          <p className="text-xl text-white mb-8">
+          <p className="text-xl !text-white mb-8">
             Join businesses across the UK who use Servio to simplify ordering and improve customer experience.
           </p>
           <div className="flex flex-col sm:flex-row gap-4 justify-center">
