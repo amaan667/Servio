@@ -102,7 +102,7 @@ export default function HomePage() {
   return (
     <div className="min-h-screen bg-white">
       {/* Hero Section */}
-      <section className="relative bg-gradient-to-br from-purple-400 via-purple-500 to-purple-600 text-white overflow-hidden">
+      <section className="relative bg-gradient-to-br from-[#7c3aed] via-[#7a3bec] to-[#6d28d9] text-white overflow-hidden">
         <div className="relative max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-24 lg:py-32">
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-12 items-center">
             <div>
@@ -110,12 +110,11 @@ export default function HomePage() {
                 <QrCode className="w-4 h-4 mr-2" />
                 Transform Your Business
               </Badge>
-              <h1 className="text-5xl lg:text-6xl font-bold mb-6 leading-tight">
-                QR Code Ordering
-                <br />
-                <span className="text-white">Made Simple</span>
+              <h1 className="text-5xl lg:text-6xl font-extrabold mb-6 leading-tight drop-shadow-[0_2px_8px_rgba(0,0,0,0.25)]">
+                <span className="block text-white">QR Code Ordering</span>
+                <span className="block text-white">Made Simple</span>
               </h1>
-              <p className="text-xl text-white mb-8 leading-relaxed">
+              <p className="text-xl text-white mb-8 leading-relaxed drop-shadow-[0_1px_4px_rgba(0,0,0,0.25)]">
                 Streamline your business operations with contactless QR code
                 ordering. Customers scan, order, and pay - all from their
                 phones. You focus on great food and service.
