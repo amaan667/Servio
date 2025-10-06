@@ -64,6 +64,8 @@ export function AnalyticsDashboard({ venueId }: AnalyticsDashboardProps) {
   const [topItems, setTopItems] = useState<ChartData[]>([]);
   const [customerFrequency, setCustomerFrequency] = useState<ChartData[]>([]);
   const [revenueTrend, setRevenueTrend] = useState<ChartData[]>([]);
+  const [dayOfWeekData, setDayOfWeekData] = useState<ChartData[]>([]);
+  const [categoryPerformance, setCategoryPerformance] = useState<ChartData[]>([]);
 
   const COLORS = ['#0088FE', '#00C49F', '#FFBB28', '#FF8042', '#8884D8'];
 
@@ -105,6 +107,15 @@ export function AnalyticsDashboard({ venueId }: AnalyticsDashboardProps) {
       }
 
       const orders: OrderWithItems[] = ordersData || [];
+      // Map menu item id -> category for category performance
+      const { data: menuItems } = await supabase
+        .from("menu_items")
+        .select("id, category")
+        .eq("venue_id", venueId);
+      const itemIdToCategory = new Map<string, string>();
+      (menuItems || []).forEach((mi: any) => {
+        if (mi?.id) itemIdToCategory.set(mi.id, mi.category || 'Other');
+      });
       const filteredOrders = orders.filter((order) => {
         const orderDate = new Date(order.created_at);
         return orderDate >= startDate && order.order_status !== "CANCELLED";
@@ -170,6 +181,7 @@ export function AnalyticsDashboard({ venueId }: AnalyticsDashboardProps) {
 
       // Calculate top-selling items
       const itemStats: { [key: string]: { quantity: number; revenue: number } } = {};
+      const categoryStats: { [key: string]: { quantity: number; revenue: number } } = {};
       filteredOrders.forEach(order => {
         order.items.forEach(item => {
           if (!itemStats[item.item_name]) {
@@ -177,6 +189,11 @@ export function AnalyticsDashboard({ venueId }: AnalyticsDashboardProps) {
           }
           itemStats[item.item_name].quantity += item.quantity;
           itemStats[item.item_name].revenue += item.quantity * item.price;
+
+          const cat = itemIdToCategory.get(item.menu_item_id) || 'Other';
+          if (!categoryStats[cat]) categoryStats[cat] = { quantity: 0, revenue: 0 };
+          categoryStats[cat].quantity += item.quantity;
+          categoryStats[cat].revenue += item.quantity * item.price;
         });
       });
 
@@ -190,6 +207,13 @@ export function AnalyticsDashboard({ venueId }: AnalyticsDashboardProps) {
         .slice(0, 10);
 
       setTopItems(topItemsData);
+
+      // Category performance
+      const categoryData = Object.entries(categoryStats)
+        .map(([name, stats]) => ({ name, value: stats.quantity, revenue: stats.revenue }))
+        .sort((a, b) => b.revenue - a.revenue)
+        .slice(0, 10);
+      setCategoryPerformance(categoryData);
 
       // Calculate customer frequency
       const customerStats: { [key: string]: number } = {};
@@ -239,6 +263,21 @@ export function AnalyticsDashboard({ venueId }: AnalyticsDashboardProps) {
 
         setRevenueTrend(revenueTrendData);
       }
+
+      // Day-of-week breakdown
+      const days = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
+      const dow = new Array(7).fill(null).map((_, i) => ({ name: days[i], value: 0, revenue: 0, orders: 0 }));
+      filteredOrders.forEach(order => {
+        const d = new Date(order.created_at).getDay();
+        dow[d].orders += 1;
+        dow[d].value += 1;
+        let amt = order.total_amount;
+        if (!amt || amt <= 0) {
+          amt = order.items.reduce((s, it) => s + (Number(it.quantity) || 0) * (Number(it.price) || 0), 0);
+        }
+        dow[d].revenue += amt;
+      });
+      setDayOfWeekData(dow);
 
     } catch (error) {
       console.error("Error calculating stats:", error);
@@ -441,15 +480,16 @@ export function AnalyticsDashboard({ venueId }: AnalyticsDashboardProps) {
           </CardContent>
         </Card>
 
-        {/* Top Selling Items */}
+        {/* Top Selling Items (quantity and revenue side-by-side) */}
         <Card>
           <CardHeader>
             <CardTitle>Top Selling Items</CardTitle>
-            <CardDescription>Most ordered items by quantity</CardDescription>
+            <CardDescription>Quantity and revenue</CardDescription>
           </CardHeader>
           <CardContent>
             <ChartContainer config={{
-              items: { color: "#8b5cf6" }
+              qty: { color: "#8b5cf6" },
+              rev: { color: "#10b981" }
             }}>
               <ResponsiveContainer width="100%" height={300}>
                 <BarChart data={topItems} layout="horizontal">
@@ -457,7 +497,8 @@ export function AnalyticsDashboard({ venueId }: AnalyticsDashboardProps) {
                   <XAxis type="number" />
                   <YAxis dataKey="name" type="category" width={80} />
                   <Tooltip />
-                  <Bar dataKey="value" fill="#8b5cf6" />
+                  <Bar dataKey="value" fill="#8b5cf6" name="Qty" />
+                  <Bar dataKey="revenue" fill="#10b981" name="Revenue (£)" />
                 </BarChart>
               </ResponsiveContainer>
             </ChartContainer>
@@ -517,6 +558,51 @@ export function AnalyticsDashboard({ venueId }: AnalyticsDashboardProps) {
                   </Pie>
                   <Tooltip />
                 </PieChart>
+              </ResponsiveContainer>
+            </ChartContainer>
+          </CardContent>
+        </Card>
+
+        {/* Day-of-week breakdown */}
+        <Card>
+          <CardHeader>
+            <CardTitle>Day-of-Week Performance</CardTitle>
+            <CardDescription>Which day performs best</CardDescription>
+          </CardHeader>
+          <CardContent>
+            <ChartContainer config={{ orders: { color: '#6366f1' }, revenue: { color: '#10b981' } }}>
+              <ResponsiveContainer width="100%" height={300}>
+                <BarChart data={dayOfWeekData}>
+                  <CartesianGrid strokeDasharray="3 3" />
+                  <XAxis dataKey="name" />
+                  <YAxis yAxisId="left" />
+                  <YAxis yAxisId="right" orientation="right" />
+                  <Tooltip />
+                  <Bar yAxisId="left" dataKey="orders" fill="#6366f1" name="Orders" />
+                  <Bar yAxisId="right" dataKey="revenue" fill="#10b981" name="Revenue" />
+                </BarChart>
+              </ResponsiveContainer>
+            </ChartContainer>
+          </CardContent>
+        </Card>
+
+        {/* Category performance */}
+        <Card>
+          <CardHeader>
+            <CardTitle>Category Performance</CardTitle>
+            <CardDescription>Drinks vs Mains vs Desserts</CardDescription>
+          </CardHeader>
+          <CardContent>
+            <ChartContainer config={{ qty: { color: '#8b5cf6' }, revenue: { color: '#10b981' } }}>
+              <ResponsiveContainer width="100%" height={300}>
+                <BarChart data={categoryPerformance} layout="horizontal">
+                  <CartesianGrid strokeDasharray="3 3" />
+                  <XAxis type="number" />
+                  <YAxis dataKey="name" type="category" width={100} />
+                  <Tooltip />
+                  <Bar dataKey="value" fill="#8b5cf6" name="Qty" />
+                  <Bar dataKey="revenue" fill="#10b981" name="Revenue (£)" />
+                </BarChart>
               </ResponsiveContainer>
             </ChartContainer>
           </CardContent>

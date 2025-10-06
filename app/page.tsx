@@ -111,10 +111,10 @@ export default function HomePage() {
                 Transform Your Business
               </Badge>
               <h1 className="text-5xl lg:text-6xl font-extrabold mb-6 leading-tight">
-                <span className="block text-white drop-shadow-[0_2px_8px_rgba(0,0,0,0.35)]">QR Code Ordering</span>
-                <span className="block text-white drop-shadow-[0_2px_8px_rgba(0,0,0,0.35)]">Made Simple</span>
+                <span className="block text-white drop-shadow-[0_1px_3px_rgba(0,0,0,0.25)]">QR Code Ordering</span>
+                <span className="block text-white drop-shadow-[0_1px_3px_rgba(0,0,0,0.25)]">Made Simple</span>
               </h1>
-              <p className="text-xl text-white mb-8 leading-relaxed drop-shadow-[0_2px_8px_rgba(0,0,0,0.35)]">
+              <p className="text-xl text-white mb-8 leading-relaxed drop-shadow-[0_1px_3px_rgba(0,0,0,0.25)]">
                 Streamline your business operations with contactless QR code
                 ordering. Customers scan, order, and pay - all from their
                 phones. You focus on great food and service.
