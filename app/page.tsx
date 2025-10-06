@@ -429,10 +429,10 @@ export default function HomePage() {
             )}
             <Button
               size="lg"
-              variant="outline"
-              className="border-white text-white hover:bg-white hover:text-purple-600 text-lg px-8 py-4 bg-transparent"
               onClick={handleDemo}
+              className="bg-white text-purple-600 hover:bg-gray-100 hover:text-purple-700 text-lg px-8 py-4"
             >
+              <QrCode className="mr-2 h-5 w-5" />
               Try the Demo
             </Button>
           </div>
@@ -440,7 +440,7 @@ export default function HomePage() {
       </section>
 
       {/* Footer */}
-      <footer className="bg-servio-purple text-white py-16">
+      <footer className="bg-gray-900 text-white py-16">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="grid grid-cols-1 md:grid-cols-4 gap-8">
             <div className="col-span-1 md:col-span-2">
@@ -453,7 +453,7 @@ export default function HomePage() {
                 <Button
                   variant="ghost"
                   size="icon"
-                  className="text-gray-700 hover:text-white"
+                  className="text-gray-300 hover:text-white"
                 >
                   <span className="sr-only">Facebook</span>
                   <svg
@@ -471,7 +471,7 @@ export default function HomePage() {
                 <Button
                   variant="ghost"
                   size="icon"
-                  className="text-gray-700 hover:text-white"
+                  className="text-gray-300 hover:text-white"
                 >
                   <span className="sr-only">Twitter</span>
                   <svg
@@ -485,7 +485,7 @@ export default function HomePage() {
                 <Button
                   variant="ghost"
                   size="icon"
-                  className="text-gray-700 hover:text-white"
+                  className="text-gray-300 hover:text-white"
                 >
                   <span className="sr-only">LinkedIn</span>
                   <svg
