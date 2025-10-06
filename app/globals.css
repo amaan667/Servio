@@ -1486,6 +1486,11 @@ p, span, div {
     color: #ffffff !important;
   }
 
+  /* Safety: hide any legacy inline count under bottom-nav icons */
+  .mobile-nav button .mt-1.text-xs.font-bold {
+    display: none !important;
+  }
+
   /* Keep legacy selector fallback if any component adds an "active" class */
   .mobile-nav button[class*="active"] span,
   .mobile-nav button[class*="active"] svg {
