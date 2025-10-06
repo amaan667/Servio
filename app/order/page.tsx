@@ -217,6 +217,8 @@ export default function CustomerOrderPage() {
           if (data.groupSessionId) {
             setGroupSessionId(data.groupSessionId);
             setGroupSize(data.totalGroupSize || 1);
+            // Still show modal to allow updating group size
+            setShowGroupSizeModal(true);
           } else {
             // No existing group session, show modal immediately
             setShowGroupSizeModal(true);
@@ -229,7 +231,13 @@ export default function CustomerOrderPage() {
       }
     };
 
-    checkGroupSession();
+    // For table orders, always show group size modal on initial load
+    if (!isCounterOrder) {
+      checkGroupSession();
+    } else {
+      // For counter orders, still show group size modal
+      setShowGroupSizeModal(true);
+    }
 
     // Check for existing unpaid orders
     const checkUnpaidOrders = async () => {
