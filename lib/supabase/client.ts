@@ -35,14 +35,19 @@ function getOrCreateClient() {
     return supabaseInstance;
   }
 
-  supabaseInstance = createBrowserClient(url, anon, {
-    auth: {
-      persistSession: true, // Enable session persistence for mobile compatibility
-      autoRefreshToken: true, // Enable auto token refresh
-      detectSessionInUrl: true, // Detect session in URL for OAuth flows
-      flowType: 'pkce',
-    },
-  });
+  try {
+    supabaseInstance = createBrowserClient(url, anon, {
+      auth: {
+        persistSession: true,
+        autoRefreshToken: true,
+        detectSessionInUrl: true,
+        flowType: 'pkce',
+      },
+    });
+  } catch (error) {
+    // Fallback to mock if the browser client throws during initialization
+    supabaseInstance = createMockClient();
+  }
   return supabaseInstance;
 }
 

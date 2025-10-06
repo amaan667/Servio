@@ -308,11 +308,17 @@ export default function CustomerOrderPage() {
 
     checkUnpaidOrders();
 
-    const { data: { subscription } } = supabase.auth.onAuthStateChange((_event: any, session: any) => {
-      setSession(session);
-    });
-
-    return () => subscription.unsubscribe();
+    try {
+      if (supabase?.auth?.onAuthStateChange) {
+        const { data: { subscription } } = supabase.auth.onAuthStateChange((_event: any, session: any) => {
+          setSession(session);
+        });
+        return () => subscription?.unsubscribe?.();
+      }
+    } catch (err) {
+      console.log('[AUTH DEBUG] onAuthStateChange setup failed:', err);
+    }
+    return () => {};
   }, []);
 
   const isLoggedIn = !!session;
