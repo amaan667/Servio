@@ -112,10 +112,10 @@ export default function HomePage() {
                 <QrCode className="w-4 h-4 mr-2" />
                 Transform Your Business
               </Badge>
-              <h1 className="text-white text-[clamp(2rem,6vw,4.5rem)] leading-[1.05] tracking-tight font-extrabold drop-shadow-lg">
+              <h1 className="!text-white text-[clamp(2rem,6vw,4.5rem)] leading-[1.05] tracking-tight font-extrabold drop-shadow-lg">
                 QR Code Ordering Made Simple
               </h1>
-              <p className="mt-5 text-white text-[clamp(1rem,2.2vw,1.25rem)] leading-relaxed max-w-[45ch] drop-shadow-md">
+              <p className="mt-5 !text-white text-[clamp(1rem,2.2vw,1.25rem)] leading-relaxed max-w-[45ch] drop-shadow-md">
                 Streamline your business operations with contactless QR code ordering. Customers scan, order, and pay — all from their phones. You focus on great food and service.
               </p>
               <div className="mt-8 flex items-center gap-4 flex-wrap">
@@ -148,18 +148,18 @@ export default function HomePage() {
                   View Demo
                 </Button>
               </div>
-              <div className="mt-12 flex items-center space-x-8 text-white">
+              <div className="mt-12 flex items-center space-x-8 !text-white">
                 <div className="flex items-center">
                   <CheckCircle className="h-5 w-5 mr-2 text-green-400" />
-                  <span className="font-semibold text-white drop-shadow-sm">14-day free trial</span>
+                  <span className="font-semibold !text-white drop-shadow-sm">14-day free trial</span>
                 </div>
                 <div className="flex items-center">
                   <CheckCircle className="h-5 w-5 mr-2 text-green-400" />
-                  <span className="font-semibold text-white drop-shadow-sm">No setup fees</span>
+                  <span className="font-semibold !text-white drop-shadow-sm">No setup fees</span>
                 </div>
                 <div className="flex items-center">
                   <CheckCircle className="h-5 w-5 mr-2 text-green-400" />
-                  <span className="font-semibold text-white drop-shadow-sm">Cancel anytime</span>
+                  <span className="font-semibold !text-white drop-shadow-sm">Cancel anytime</span>
                 </div>
               </div>
             </div>
