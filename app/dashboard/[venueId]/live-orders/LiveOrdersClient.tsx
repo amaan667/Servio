@@ -892,26 +892,26 @@ export default function LiveOrdersClient({ venueId, venueName: venueNameProp }: 
 
   const getStatusColor = (status: string) => {
     switch (status) {
-      case 'PLACED': return 'bg-yellow-100 text-white';
-      case 'IN_PREP': return 'bg-blue-100 text-white';
-      case 'READY': return 'bg-green-100 text-white';
-      case 'COMPLETED': return 'bg-green-100 text-white';
-      case 'MIXED': return 'bg-purple-100 text-white';
-      case 'MIXED_READY': return 'bg-emerald-100 text-white';
-      case 'MIXED_PREP': return 'bg-indigo-100 text-white';
-      default: return 'bg-gray-100 text-white';
+      case 'PLACED': return 'bg-yellow-100 text-yellow-800';
+      case 'IN_PREP': return 'bg-blue-100 text-blue-800';
+      case 'READY': return 'bg-green-100 text-green-800';
+      case 'COMPLETED': return 'bg-green-100 text-green-800';
+      case 'MIXED': return 'bg-purple-100 text-purple-800';
+      case 'MIXED_READY': return 'bg-emerald-100 text-emerald-800';
+      case 'MIXED_PREP': return 'bg-indigo-100 text-indigo-800';
+      default: return 'bg-gray-100 text-gray-800';
     }
   };
 
   const getPaymentStatusColor = (paymentStatus: string) => {
     switch (paymentStatus) {
-      case 'PAID': return 'bg-green-100 text-white';
-      case 'UNPAID': return 'bg-red-100 text-white';
-      case 'PAY_LATER': return 'bg-blue-100 text-white';
-      case 'IN_PROGRESS': return 'bg-blue-100 text-white';
-      case 'REFUNDED': return 'bg-red-100 text-white';
-      case 'MIXED': return 'bg-amber-100 text-white';
-      default: return 'bg-gray-100 text-white';
+      case 'PAID': return 'bg-green-100 text-green-800';
+      case 'UNPAID': return 'bg-red-100 text-red-800';
+      case 'PAY_LATER': return 'bg-blue-100 text-blue-800';
+      case 'IN_PROGRESS': return 'bg-blue-100 text-blue-800';
+      case 'REFUNDED': return 'bg-red-100 text-red-800';
+      case 'MIXED': return 'bg-amber-100 text-amber-800';
+      default: return 'bg-gray-100 text-gray-800';
     }
   };
 
@@ -1015,17 +1015,17 @@ export default function LiveOrdersClient({ venueId, venueName: venueNameProp }: 
                 }`}>
                   <Clock className={`h-6 w-6 ${
                     isCounterOrder(earliestOrder) 
-                      ? 'text-white' 
-                      : 'text-white'
+                      ? 'text-orange-600' 
+                      : 'text-blue-600'
                   }`} />
                 </div>
                 <div>
-                  <div className="text-sm font-medium text-white">Order Time</div>
-                  <div className="text-lg font-semibold text-white">
+                  <div className="text-sm font-medium text-gray-800">Order Time</div>
+                  <div className="text-lg font-semibold text-gray-900">
                     {formatTime(earliestOrder.created_at)}
                   </div>
                   {orders.length > 1 && (
-                    <div className="text-xs text-white">
+                    <div className="text-xs text-gray-800">
                       Latest: {formatTime(latestOrder.created_at)}
                     </div>
                   )}
@@ -1040,23 +1040,23 @@ export default function LiveOrdersClient({ venueId, venueName: venueNameProp }: 
                 }`}>
                   <span className={`text-lg font-bold ${
                     isCounterOrder(earliestOrder) 
-                      ? 'text-white' 
-                      : 'text-white'
+                      ? 'text-orange-600' 
+                      : 'text-green-600'
                   }`}>
                     {isCounterOrder(earliestOrder) ? 'C' : 'T'}
                   </span>
                 </div>
                 <div>
-                  <div className="text-sm font-medium text-white">
+                  <div className="text-sm font-medium text-gray-800">
                     {isCounterOrder(earliestOrder) ? 'Counter Number' : 'Table Number'}
                   </div>
-                  <div className="text-2xl font-bold text-white">
+                  <div className="text-2xl font-bold text-gray-900">
                     {isCounterOrder(earliestOrder) ? `Counter ${tableNumber}` : `Table ${tableNumber}`}
                   </div>
                   <div className={`text-xs px-2 py-1 rounded-full font-medium w-fit ${
                     isCounterOrder(earliestOrder) 
-                      ? 'bg-orange-50 text-white' 
-                      : 'bg-blue-50 text-white'
+                      ? 'bg-orange-50 text-orange-700' 
+                      : 'bg-blue-50 text-blue-700'
                   }`}>
                     {isCounterOrder(earliestOrder) ? 'Counter Order' : 'QR Table'}
                   </div>
@@ -1069,15 +1069,15 @@ export default function LiveOrdersClient({ venueId, venueName: venueNameProp }: 
               {earliestOrder.customer_name && (
                 <div className="flex items-center gap-3">
                   <div className="w-12 h-12 bg-purple-100 rounded-lg flex items-center justify-center">
-                    <User className="h-6 w-6 text-white" />
+                    <User className="h-6 w-6 text-purple-600" />
                   </div>
                   <div>
-                    <div className="text-sm font-medium text-white">Customer</div>
-                    <div className="text-lg font-semibold text-white">
+                    <div className="text-sm font-medium text-gray-800">Customer</div>
+                    <div className="text-lg font-semibold text-gray-900">
                       {earliestOrder.customer_name}
                     </div>
                     {earliestOrder.customer_phone && (
-                      <div className="text-sm text-white">
+                      <div className="text-sm text-gray-800">
                         {earliestOrder.customer_phone}
                       </div>
                     )}
@@ -1087,11 +1087,11 @@ export default function LiveOrdersClient({ venueId, venueName: venueNameProp }: 
               
               <div className="flex items-center gap-3">
                 <div className="w-12 h-12 bg-orange-100 rounded-lg flex items-center justify-center">
-                  <span className="text-lg font-bold text-white">#</span>
+                  <span className="text-lg font-bold text-orange-600">#</span>
                 </div>
                 <div>
-                  <div className="text-sm font-medium text-white">Orders</div>
-                  <div className="text-lg font-semibold text-white">
+                  <div className="text-sm font-medium text-gray-800">Orders</div>
+                  <div className="text-lg font-semibold text-gray-900">
                     {summary.orderCount} order{summary.orderCount > 1 ? 's' : ''}
                   </div>
                 </div>
@@ -1102,11 +1102,11 @@ export default function LiveOrdersClient({ venueId, venueName: venueNameProp }: 
             <div className="space-y-4">
               <div className="flex items-center gap-3">
                 <div className="w-12 h-12 bg-emerald-100 rounded-lg flex items-center justify-center">
-                  <span className="text-lg font-bold text-white">£</span>
+                  <span className="text-lg font-bold text-emerald-600">£</span>
                 </div>
                 <div>
-                  <div className="text-sm font-medium text-white">Total Amount</div>
-                  <div className="text-3xl font-bold text-white">
+                  <div className="text-sm font-medium text-gray-800">Total Amount</div>
+                  <div className="text-3xl font-bold text-gray-900">
                     £{formatPrice(summary.total)}
                   </div>
                 </div>
@@ -1114,10 +1114,10 @@ export default function LiveOrdersClient({ venueId, venueName: venueNameProp }: 
               
               <div className="flex items-center gap-3">
                 <div className="w-12 h-12 bg-gray-100 rounded-lg flex items-center justify-center">
-                  <span className="text-lg font-bold text-white">✓</span>
+                  <span className="text-lg font-bold text-gray-800">✓</span>
                 </div>
                 <div>
-                  <div className="text-sm font-medium text-white">Status</div>
+                  <div className="text-sm font-medium text-gray-800">Status</div>
                   <div className="flex items-center gap-2">
                     <Badge className={`${getStatusColor(summary.overallStatus)} text-xs font-semibold px-3 py-1.5 rounded-full`}>
                       {summary.overallStatus.replace('_', ' ').toLowerCase()}
@@ -1135,7 +1135,7 @@ export default function LiveOrdersClient({ venueId, venueName: venueNameProp }: 
           <div className="mt-6 pt-4 border-t border-gray-100">
             <button
               onClick={() => toggleTableExpansion(tableNumber)}
-              className="w-full flex items-center justify-center gap-2 px-4 py-3 text-sm font-medium text-white hover:text-white hover:bg-gray-50 rounded-lg transition-colors"
+              className="w-full flex items-center justify-center gap-2 px-4 py-3 text-sm font-medium text-gray-800 hover:text-gray-900 hover:bg-gray-50 rounded-lg transition-colors"
             >
               <span>{isExpanded ? 'Hide' : 'Show'} individual orders</span>
               <svg
@@ -1154,7 +1154,7 @@ export default function LiveOrdersClient({ venueId, venueName: venueNameProp }: 
         {isExpanded && (
           <div className="p-6 pt-4">
             <div className="space-y-6">
-              <h4 className="text-lg font-semibold text-white mb-4 flex items-center gap-2">
+              <h4 className="text-lg font-semibold text-gray-700 mb-4 flex items-center gap-2">
                 <span className="h-2 w-2 rounded-full bg-blue-500"></span>
                 Individual Orders
               </h4>
@@ -1165,14 +1165,14 @@ export default function LiveOrdersClient({ venueId, venueName: venueNameProp }: 
                     {/* Order Info */}
                     <div className="flex items-center gap-3">
                       <div className="w-10 h-10 bg-blue-100 rounded-lg flex items-center justify-center">
-                        <span className="text-sm font-bold text-white">#{index + 1}</span>
+                        <span className="text-sm font-bold text-blue-600">#{index + 1}</span>
                       </div>
                       <div>
-                        <div className="text-sm font-medium text-white">Order Time</div>
-                        <div className="text-lg font-semibold text-white">
+                        <div className="text-sm font-medium text-gray-800">Order Time</div>
+                        <div className="text-lg font-semibold text-gray-900">
                           {formatTime(order.created_at)}
                         </div>
-                        <div className="text-xs text-white">
+                        <div className="text-xs text-gray-800">
                           Order #{getShortOrderNumber(order.id)}
                         </div>
                       </div>
@@ -1182,15 +1182,15 @@ export default function LiveOrdersClient({ venueId, venueName: venueNameProp }: 
                     {order.customer_name && (
                       <div className="flex items-center gap-3">
                         <div className="w-10 h-10 bg-purple-100 rounded-lg flex items-center justify-center">
-                          <User className="h-5 w-5 text-white" />
+                          <User className="h-5 w-5 text-purple-600" />
                         </div>
                         <div>
-                          <div className="text-sm font-medium text-white">Customer</div>
-                          <div className="text-lg font-semibold text-white">
+                          <div className="text-sm font-medium text-gray-800">Customer</div>
+                          <div className="text-lg font-semibold text-gray-900">
                             {order.customer_name}
                           </div>
                           {order.customer_phone && (
-                            <div className="text-sm text-white">
+                            <div className="text-sm text-gray-800">
                               {order.customer_phone}
                             </div>
                           )}
@@ -1201,11 +1201,11 @@ export default function LiveOrdersClient({ venueId, venueName: venueNameProp }: 
                     {/* Total Amount */}
                     <div className="flex items-center gap-3">
                       <div className="w-10 h-10 bg-emerald-100 rounded-lg flex items-center justify-center">
-                        <span className="text-sm font-bold text-white">£</span>
+                        <span className="text-sm font-bold text-emerald-600">£</span>
                       </div>
                       <div>
-                        <div className="text-sm font-medium text-white">Total</div>
-                        <div className="text-2xl font-bold text-white">
+                        <div className="text-sm font-medium text-gray-800">Total</div>
+                        <div className="text-2xl font-bold text-gray-900">
                           £{formatPrice(calculateOrderTotal({ total_amount: order.total_amount, items: order.items }))}
                         </div>
                       </div>
@@ -1226,7 +1226,7 @@ export default function LiveOrdersClient({ venueId, venueName: venueNameProp }: 
 
                   {/* Order Items */}
                   <div className="space-y-4">
-                    <h5 className="text-base font-semibold text-white flex items-center gap-2">
+                    <h5 className="text-base font-semibold text-gray-700 flex items-center gap-2">
                       <span className="h-2 w-2 rounded-full bg-orange-500"></span>
                       Order Items ({order.items.length})
                     </h5>
@@ -1234,12 +1234,12 @@ export default function LiveOrdersClient({ venueId, venueName: venueNameProp }: 
                       {order.items.map((item, itemIndex) => (
                         <div key={itemIndex} className="flex items-center justify-between p-4 bg-gray-50 rounded-lg border border-gray-100">
                           <div className="flex items-center gap-4">
-                            <div className="w-8 h-8 bg-white rounded-full flex items-center justify-center text-sm font-bold text-white border border-gray-200">
+                            <div className="w-8 h-8 bg-white rounded-full flex items-center justify-center text-sm font-bold text-gray-800 border border-gray-200">
                               {item.quantity}
                             </div>
-                            <span className="text-white font-medium text-base">{item.item_name}</span>
+                            <span className="text-gray-900 font-medium text-base">{item.item_name}</span>
                           </div>
-                          <span className="font-semibold text-white text-lg">£{(item.quantity * item.price).toFixed(2)}</span>
+                          <span className="font-semibold text-gray-900 text-lg">£{(item.quantity * item.price).toFixed(2)}</span>
                         </div>
                       ))}
                     </div>
@@ -1292,7 +1292,7 @@ export default function LiveOrdersClient({ venueId, venueName: venueNameProp }: 
   {/* NavBar is rendered by the server component */}
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
           <div className="flex items-center justify-center h-64">
-            <div className="text-white">Loading orders...</div>
+            <div className="text-gray-800">Loading orders...</div>
           </div>
         </div>
       </div>
@@ -1304,8 +1304,8 @@ export default function LiveOrdersClient({ venueId, venueName: venueNameProp }: 
         {/* Modern Header */}
         <section className="flex flex-col gap-3 sm:gap-4 mb-4 sm:mb-6">
           {/* Status row */}
-          <div className="flex flex-col sm:flex-row sm:flex-wrap items-start sm:items-center gap-2 sm:gap-3 text-sm text-white">
-            <span className="inline-flex items-center gap-2 rounded-full bg-emerald-50 px-3 py-1 text-white ring-1 ring-emerald-100 text-xs sm:text-sm">
+          <div className="flex flex-col sm:flex-row sm:flex-wrap items-start sm:items-center gap-2 sm:gap-3 text-sm text-gray-600">
+            <span className="inline-flex items-center gap-2 rounded-full bg-emerald-50 px-3 py-1 text-emerald-700 ring-1 ring-emerald-100 text-xs sm:text-sm">
               <span className="h-2 w-2 rounded-full bg-emerald-500 animate-pulse" /> Real-time monitoring active
             </span>
             <div className="flex flex-col sm:flex-row items-start sm:items-center gap-2 sm:gap-3 text-xs sm:text-sm">
@@ -1315,7 +1315,7 @@ export default function LiveOrdersClient({ venueId, venueName: venueNameProp }: 
 
             <div className="flex flex-col sm:flex-row items-start sm:items-center gap-3 sm:gap-2 sm:ml-auto">
               <div className="flex items-center gap-2">
-                <label className="text-white text-sm font-medium">Auto-refresh:</label>
+                <label className="text-gray-600 text-sm font-medium">Auto-refresh:</label>
                 <select
                   className="rounded-md border-slate-200 bg-white px-3 py-2 text-sm shadow-sm focus:outline-none focus:ring-2 focus:ring-violet-200 min-h-[40px] min-w-[60px]"
                   value={refreshInterval / 1000}
