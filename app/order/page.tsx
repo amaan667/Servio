@@ -61,7 +61,7 @@ export default function CustomerOrderPage() {
         isDemo,
         url: window.location.href
       })
-    });
+    }).catch(() => {});
 
     // Check for existing unpaid orders for this table/session
     checkForExistingOrder();
@@ -168,7 +168,7 @@ export default function CustomerOrderPage() {
 
   const [menuItems, setMenuItems] = useState<MenuItem[]>([]);
   const [cart, setCart] = useState<CartItem[]>([]);
-  const [loadingMenu, setLoadingMenu] = useState(false); // Start with false for instant loading
+  const [loadingMenu, setLoadingMenu] = useState(true);
   const [menuError, setMenuError] = useState<string | null>(null);
   const [categoryOrder, setCategoryOrder] = useState<string[] | null>(null);
   const [isDemoFallback, setIsDemoFallback] = useState(false);
