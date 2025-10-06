@@ -158,7 +158,7 @@ export function CustomerFeedbackForm({
               <Star
                 key={star}
                 className={`h-5 w-5 ${
-                  star <= rating ? 'text-yellow-500 fill-current' : 'text-gray-600'
+                  star <= rating ? 'text-yellow-500 fill-current' : 'text-gray-700'
                 }`}
               />
             ))}
@@ -200,7 +200,7 @@ export function CustomerFeedbackForm({
                   className={`h-8 w-8 transition-colors ${
                     star <= (hoveredRating || rating) 
                       ? 'text-yellow-500 fill-current' 
-                      : 'text-gray-600'
+                      : 'text-gray-700'
                   }`}
                 />
               </button>

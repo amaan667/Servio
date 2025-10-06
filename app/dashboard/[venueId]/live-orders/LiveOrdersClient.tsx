@@ -1328,7 +1328,7 @@ export default function LiveOrdersClient({ venueId, venueName: venueNameProp }: 
 
               {/* Switch */}
               <div className="flex items-center gap-2">
-                <span className="text-sm text-white font-medium">Enable:</span>
+                <span className="text-sm text-gray-600 font-medium">Enable:</span>
                 <ToggleSwitch
                   checked={autoRefreshEnabled}
                   onCheckedChange={toggleAutoRefresh}

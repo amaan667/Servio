@@ -416,7 +416,7 @@ const VenueDashboardClient = React.memo(function VenueDashboardClient({
               <h2 className="text-xl sm:text-2xl font-bold text-foreground mb-2">
                 Welcome back, {userName}!
               </h2>
-              <p className="text-foreground/80 text-sm sm:text-base font-medium">Here's what's happening at {venue?.name || "your venue"} today</p>
+              <p className="text-gray-700 text-sm sm:text-base font-medium">Here's what's happening at {venue?.name || "your venue"} today</p>
             </div>
             
             {/* Connection Status Indicator */}
@@ -464,7 +464,7 @@ const VenueDashboardClient = React.memo(function VenueDashboardClient({
               <CardContent className="p-4 sm:p-6">
                 <div className="flex items-center justify-between">
                   <div>
-                    <p className="text-xs sm:text-sm font-medium text-foreground/80">Today's Orders</p>
+                    <p className="text-xs sm:text-sm font-medium text-gray-700">Today's Orders</p>
                     <p className="text-xl sm:text-2xl font-bold text-foreground">{counts.today_orders_count}</p>
                   </div>
                   <div className="w-10 h-10 sm:w-12 sm:h-12 bg-blue-100 rounded-lg flex items-center justify-center">
@@ -480,7 +480,7 @@ const VenueDashboardClient = React.memo(function VenueDashboardClient({
               <CardContent className="p-4 sm:p-6">
                 <div className="flex items-center justify-between">
                   <div>
-                    <p className="text-xs sm:text-sm font-medium text-foreground/80">Revenue</p>
+                    <p className="text-xs sm:text-sm font-medium text-gray-700">Revenue</p>
                     <p className="text-xl sm:text-2xl font-bold text-foreground">£{stats.revenue.toFixed(2)}</p>
                   </div>
                   <div className="w-10 h-10 sm:w-12 sm:h-12 bg-green-100 rounded-lg flex items-center justify-center">
@@ -497,7 +497,7 @@ const VenueDashboardClient = React.memo(function VenueDashboardClient({
               <CardContent className="p-4 sm:p-6">
                 <div className="flex items-center justify-between">
                   <div>
-                    <p className="text-xs sm:text-sm font-medium text-foreground/80">Tables Set Up</p>
+                    <p className="text-xs sm:text-sm font-medium text-gray-700">Tables Set Up</p>
                     <p className="text-xl sm:text-2xl font-bold text-foreground">{counts.tables_set_up}</p>
                   </div>
                   <div className="w-10 h-10 sm:w-12 sm:h-12 bg-purple-100 rounded-lg flex items-center justify-center">
@@ -513,7 +513,7 @@ const VenueDashboardClient = React.memo(function VenueDashboardClient({
               <CardContent className="p-4 sm:p-6">
                 <div className="flex items-center justify-between">
                   <div>
-                    <p className="text-xs sm:text-sm font-medium text-foreground/80">Menu Items</p>
+                    <p className="text-xs sm:text-sm font-medium text-gray-700">Menu Items</p>
                     <p className="text-xl sm:text-2xl font-bold text-foreground">{stats.menuItems}</p>
                   </div>
                   <div className="w-10 h-10 sm:w-12 sm:h-12 bg-orange-100 rounded-lg flex items-center justify-center">
@@ -534,7 +534,7 @@ const VenueDashboardClient = React.memo(function VenueDashboardClient({
                   <Clock className="h-5 w-5 sm:h-6 sm:w-6 text-blue-600" />
                 </div>
                 <h3 className="text-base sm:text-lg font-semibold mb-2 text-foreground">Live Orders</h3>
-                <p className="text-foreground/80 text-xs sm:text-sm font-medium">Monitor and manage incoming orders in real-time</p>
+                <p className="text-gray-700 text-xs sm:text-sm font-medium">Monitor and manage incoming orders in real-time</p>
               </CardContent>
             </Card>
           </Link>
@@ -546,7 +546,7 @@ const VenueDashboardClient = React.memo(function VenueDashboardClient({
                   <ShoppingBag className="h-5 w-5 sm:h-6 sm:w-6 text-orange-600" />
                 </div>
                 <h3 className="text-base sm:text-lg font-semibold mb-2 text-foreground">Menu Management</h3>
-                <p className="text-foreground/80 text-xs sm:text-sm font-medium">Update your menu items and manage categories</p>
+                <p className="text-gray-700 text-xs sm:text-sm font-medium">Update your menu items and manage categories</p>
               </CardContent>
             </Card>
           </Link>
@@ -558,7 +558,7 @@ const VenueDashboardClient = React.memo(function VenueDashboardClient({
                   <QrCode className="h-5 w-5 sm:h-6 sm:w-6 text-purple-600" />
                 </div>
                 <h3 className="text-base sm:text-lg font-semibold mb-2 text-foreground">QR Codes</h3>
-                <p className="text-foreground/80 text-xs sm:text-sm font-medium">Generate and manage QR codes for your tables</p>
+                <p className="text-gray-700 text-xs sm:text-sm font-medium">Generate and manage QR codes for your tables</p>
               </CardContent>
             </Card>
           </Link>
@@ -576,7 +576,7 @@ const VenueDashboardClient = React.memo(function VenueDashboardClient({
                     <Table className="h-5 w-5 sm:h-6 sm:w-6 text-indigo-600" />
                   </div>
                   <h3 className="text-base sm:text-lg font-semibold mb-2 text-foreground">Table Management</h3>
-                  <p className="text-foreground/80 text-xs sm:text-sm font-medium">Monitor table status and manage service flow</p>
+                  <p className="text-gray-700 text-xs sm:text-sm font-medium">Monitor table status and manage service flow</p>
                 </CardContent>
               </Card>
             </Link>
@@ -589,7 +589,7 @@ const VenueDashboardClient = React.memo(function VenueDashboardClient({
                   <BarChart className="h-5 w-5 sm:h-6 sm:w-6 text-green-600" />
                 </div>
                 <h3 className="text-base sm:text-lg font-semibold mb-2 text-foreground">Analytics</h3>
-                <p className="text-foreground/80 text-xs sm:text-sm font-medium">View detailed reports and business insights</p>
+                <p className="text-gray-700 text-xs sm:text-sm font-medium">View detailed reports and business insights</p>
               </CardContent>
             </Card>
           </Link>
@@ -601,7 +601,7 @@ const VenueDashboardClient = React.memo(function VenueDashboardClient({
                   <BarChart className="h-5 w-5 sm:h-6 sm:w-6 text-yellow-600" />
                 </div>
                 <h3 className="text-base sm:text-lg font-semibold mb-2 text-foreground">Feedback</h3>
-                <p className="text-foreground/80 text-xs sm:text-sm font-medium">See customer reviews and ratings</p>
+                <p className="text-gray-700 text-xs sm:text-sm font-medium">See customer reviews and ratings</p>
               </CardContent>
             </Card>
           </Link>
@@ -613,7 +613,7 @@ const VenueDashboardClient = React.memo(function VenueDashboardClient({
                   <Users className="h-5 w-5 sm:h-6 sm:w-6 text-slate-700" />
                 </div>
                 <h3 className="text-base sm:text-lg font-semibold mb-2 text-foreground">Staff Management</h3>
-                <p className="text-foreground/80 text-xs sm:text-sm font-medium">Add staff and manage roles</p>
+                <p className="text-gray-700 text-xs sm:text-sm font-medium">Add staff and manage roles</p>
               </CardContent>
             </Card>
           </Link>
@@ -626,7 +626,7 @@ const VenueDashboardClient = React.memo(function VenueDashboardClient({
           <Card>
             <CardHeader>
               <h3 className="text-lg font-semibold text-foreground">Getting Started</h3>
-              <p className="text-foreground/80 font-medium">Complete these steps to set up your venue</p>
+              <p className="text-gray-700 font-medium">Complete these steps to set up your venue</p>
             </CardHeader>
             <CardContent className="space-y-4">
               <div className="flex items-center justify-between p-4 bg-muted rounded-lg">
@@ -636,7 +636,7 @@ const VenueDashboardClient = React.memo(function VenueDashboardClient({
                   </div>
                   <div>
                     <h4 className="font-medium text-foreground">Add Menu Items</h4>
-                    <p className="text-sm text-foreground/80 font-medium">Upload your menu or add items manually</p>
+                    <p className="text-sm text-gray-700 font-medium">Upload your menu or add items manually</p>
                   </div>
                 </div>
                 <Button variant="outline" asChild>
@@ -651,7 +651,7 @@ const VenueDashboardClient = React.memo(function VenueDashboardClient({
                   </div>
                   <div>
                     <h4 className="font-medium text-foreground">Generate QR Codes</h4>
-                    <p className="text-sm text-foreground/80 font-medium">Create QR codes for your tables</p>
+                    <p className="text-sm text-gray-700 font-medium">Create QR codes for your tables</p>
                   </div>
                 </div>
                 <Button variant="outline" asChild>
@@ -666,7 +666,7 @@ const VenueDashboardClient = React.memo(function VenueDashboardClient({
                   </div>
                   <div>
                     <h4 className="font-medium text-foreground">Configure Settings</h4>
-                    <p className="text-sm text-gray-800 dark:text-gray-100 font-medium">Customize your venue settings</p>
+                    <p className="text-sm text-gray-900 font-medium">Customize your venue settings</p>
                   </div>
                 </div>
                 <Button variant="outline" asChild>

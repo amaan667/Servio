@@ -171,11 +171,11 @@ export default function GlobalBottomNav({ venueId, counts = {} }: GlobalBottomNa
               className={`flex flex-col items-center justify-center p-2 relative transition-all duration-200 ${
                 item.isActive
                   ? 'text-white bg-purple-600'
-                  : 'text-white hover:text-purple-600 hover:bg-gray-50/80'
+                  : 'text-gray-700 hover:text-purple-600 hover:bg-gray-50/80'
               }`}
             >
               <div className="relative mb-1">
-                <item.icon className={`h-5 w-5 transition-colors ${item.isActive ? 'text-white' : 'text-white'}`} />
+                <item.icon className={`h-5 w-5 transition-colors ${item.isActive ? 'text-white' : 'text-gray-700'}`} />
                 {item.badge && item.badge > 0 && (
                   <Badge 
                     variant="destructive" 
@@ -187,7 +187,7 @@ export default function GlobalBottomNav({ venueId, counts = {} }: GlobalBottomNa
                 )}
               </div>
               <span
-                className={`${item.isActive ? 'text-white' : 'text-white'} 
+                className={`${item.isActive ? 'text-white' : 'text-gray-700'} 
                   font-bold text-center px-1 transition-colors 
                   leading-snug text-[12px] sm:text-[13px] max-w-[92px] whitespace-nowrap`}
               >
