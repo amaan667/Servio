@@ -1304,7 +1304,7 @@ export default function LiveOrdersClient({ venueId, venueName: venueNameProp }: 
         {/* Modern Header */}
         <section className="flex flex-col gap-3 sm:gap-4 mb-4 sm:mb-6">
           {/* Status row */}
-          <div className="flex flex-col sm:flex-row sm:flex-wrap items-start sm:items-center gap-2 sm:gap-3 text-sm text-slate-600">
+          <div className="flex flex-col sm:flex-row sm:flex-wrap items-start sm:items-center gap-2 sm:gap-3 text-sm text-gray-600">
             <span className="inline-flex items-center gap-2 rounded-full bg-emerald-50 px-3 py-1 text-emerald-700 ring-1 ring-emerald-100 text-xs sm:text-sm">
               <span className="h-2 w-2 rounded-full bg-emerald-500 animate-pulse" /> Real-time monitoring active
             </span>
@@ -1315,7 +1315,7 @@ export default function LiveOrdersClient({ venueId, venueName: venueNameProp }: 
 
             <div className="flex flex-col sm:flex-row items-start sm:items-center gap-3 sm:gap-2 sm:ml-auto">
               <div className="flex items-center gap-2">
-                <label className="text-slate-600 text-sm font-medium">Auto-refresh:</label>
+                <label className="text-gray-600 text-sm font-medium">Auto-refresh:</label>
                 <select
                   className="rounded-md border-slate-200 bg-white px-3 py-2 text-sm shadow-sm focus:outline-none focus:ring-2 focus:ring-violet-200 min-h-[40px] min-w-[60px]"
                   value={refreshInterval / 1000}
@@ -1328,7 +1328,7 @@ export default function LiveOrdersClient({ venueId, venueName: venueNameProp }: 
 
               {/* Switch */}
               <div className="flex items-center gap-2">
-                <span className="text-sm text-slate-600 font-medium">Enable:</span>
+                <span className="text-sm text-gray-600 font-medium">Enable:</span>
                 <ToggleSwitch
                   checked={autoRefreshEnabled}
                   onCheckedChange={toggleAutoRefresh}
@@ -1379,7 +1379,7 @@ export default function LiveOrdersClient({ venueId, venueName: venueNameProp }: 
                   </span>
                   <span className={`
                     mt-0.5 text-xs hidden sm:block
-                    ${activeTab === tab.key ? 'text-violet-100' : 'text-slate-400'}
+                    ${activeTab === tab.key ? 'text-violet-100' : 'text-gray-500'}
                   `}>
                     {tab.hint}
                   </span>
@@ -1426,10 +1426,10 @@ export default function LiveOrdersClient({ venueId, venueName: venueNameProp }: 
           {activeTab === 'live' && (
             <div className="space-y-6">
               {orders.length === 0 ? (
-                <div className="rounded-2xl border border-dashed border-slate-200 bg-slate-50 p-10 text-center text-slate-500">
-                  <Clock className="h-12 w-12 text-slate-400 mx-auto mb-4" />
+                <div className="rounded-2xl border border-dashed border-slate-200 bg-slate-50 p-10 text-center text-gray-600">
+                  <Clock className="h-12 w-12 text-gray-500 mx-auto mb-4" />
                   <h3 className="text-lg font-medium text-slate-900 mb-2">No Live Orders</h3>
-                  <p className="text-slate-500">Recent orders will appear here</p>
+                  <p className="text-gray-600">Recent orders will appear here</p>
                 </div>
               ) : (
                 <>
@@ -1506,10 +1506,10 @@ export default function LiveOrdersClient({ venueId, venueName: venueNameProp }: 
           {activeTab === 'all' && (
             <div className="space-y-6">
               {allTodayOrders.length === 0 ? (
-                <div className="rounded-2xl border border-dashed border-slate-200 bg-slate-50 p-10 text-center text-slate-500">
-                  <Clock className="h-12 w-12 text-slate-400 mx-auto mb-4" />
+                <div className="rounded-2xl border border-dashed border-slate-200 bg-slate-50 p-10 text-center text-gray-600">
+                  <Clock className="h-12 w-12 text-gray-500 mx-auto mb-4" />
                   <h3 className="text-lg font-medium text-slate-900 mb-2">No Earlier Orders Today</h3>
-                  <p className="text-slate-500">Orders from earlier today will appear here</p>
+                  <p className="text-gray-600">Orders from earlier today will appear here</p>
                 </div>
               ) : (
                 <>
@@ -1576,17 +1576,17 @@ export default function LiveOrdersClient({ venueId, venueName: venueNameProp }: 
           {activeTab === 'history' && (
             <div className="space-y-6">
               {Object.keys(groupedHistoryOrders).length === 0 ? (
-                <div className="rounded-2xl border border-dashed border-slate-200 bg-slate-50 p-10 text-center text-slate-500">
-                  <Clock className="h-12 w-12 text-slate-400 mx-auto mb-4" />
+                <div className="rounded-2xl border border-dashed border-slate-200 bg-slate-50 p-10 text-center text-gray-600">
+                  <Clock className="h-12 w-12 text-gray-500 mx-auto mb-4" />
                   <h3 className="text-lg font-medium text-slate-900 mb-2">No Historical Orders</h3>
-                  <p className="text-slate-500">Previous orders will appear here</p>
+                  <p className="text-gray-600">Previous orders will appear here</p>
                 </div>
               ) : (
                 Object.entries(groupedHistoryOrders).map(([date, orders]) => (
                   <div key={date} className="space-y-4">
                     <div className="flex items-center space-x-2">
                       <h3 className="text-lg font-semibold text-slate-900">{date}</h3>
-                      <span className="bg-slate-100 text-slate-600 text-xs px-2 py-1 rounded-full">{orders.length} orders</span>
+                      <span className="bg-slate-100 text-gray-700 text-xs px-2 py-1 rounded-full">{orders.length} orders</span>
                     </div>
                     
                     {/* Counter Orders for this date - FIXED: Added table filtering */}
