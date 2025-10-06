@@ -102,69 +102,81 @@ export default function HomePage() {
   return (
     <div className="min-h-screen bg-white">
       {/* Hero Section */}
-      <section className="relative bg-gradient-to-br from-[#7c3aed] via-[#7a3bec] to-[#6d28d9] text-white overflow-hidden">
-        {/* Add subtle overlay for better text contrast */}
-        <div className="absolute inset-0 bg-gradient-to-b from-black/20 to-black/0 pointer-events-none"></div>
-        <div className="relative max-w-screen-xl mx-auto px-6 py-24 lg:py-32">
-          <div className="grid grid-cols-1 lg:grid-cols-2 gap-12 items-center">
-            <div className="max-w-3xl sm:max-w-xl md:max-w-2xl">
-              <Badge className="bg-white/25 text-white border-white/40 mb-6">
+      <section className="bg-gradient-to-br from-purple-600 to-purple-800 text-white">
+        <div className="max-w-7xl mx-auto px-6 py-20 lg:py-32">
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-16 items-center">
+            {/* Left Content */}
+            <div className="space-y-8">
+              {/* Badge */}
+              <div className="inline-flex items-center px-4 py-2 bg-white/20 rounded-full text-white">
                 <QrCode className="w-4 h-4 mr-2" />
                 Transform Your Business
-              </Badge>
-              <h1 className="text-white text-[clamp(2rem,6vw,4.5rem)] leading-[1.05] tracking-tight font-extrabold">
+              </div>
+              
+              {/* Main Heading */}
+              <h1 className="text-5xl lg:text-6xl font-bold text-white leading-tight">
                 QR Code Ordering Made Simple
               </h1>
-              <p className="mt-5 text-white text-[clamp(1rem,2.2vw,1.25rem)] leading-relaxed max-w-[45ch]">
+              
+              {/* Description */}
+              <p className="text-xl text-white/90 leading-relaxed max-w-lg">
                 Streamline your business operations with contactless QR code ordering. Customers scan, order, and pay — all from their phones. You focus on great food and service.
               </p>
-              <div className="mt-8 flex items-center gap-4 flex-wrap">
+              
+              {/* CTA Buttons */}
+              <div className="flex flex-col sm:flex-row gap-4">
                 <Button
                   size="lg"
                   onClick={handleGetStarted}
-                  className="bg-white text-purple-600 hover:bg-gray-100 text-lg px-8 py-4"
+                  className="bg-white text-purple-600 hover:bg-gray-50 text-lg px-8 py-4 h-auto"
                   disabled={authLoading}
                 >
                   {authLoading ? 'Loading...' : (user ? 'Go to Dashboard' : 'Start Free Trial')}
                   <ArrowRight className="ml-2 h-5 w-5" />
                 </Button>
+                
                 {!authLoading && !user && (
                   <Button
                     size="lg"
                     variant="outline"
-                    className="border-white text-white hover:bg-white hover:text-purple-600 text-lg px-8 py-4 bg-transparent"
+                    className="border-2 border-white text-white hover:bg-white hover:text-purple-600 text-lg px-8 py-4 h-auto"
                     onClick={handleSignIn}
                   >
                     Sign In
                   </Button>
                 )}
+                
                 <Button
                   size="lg"
                   variant="outline"
-                  className="border-white text-white hover:bg-white hover:text-purple-600 text-lg px-8 py-4 bg-white/20 backdrop-blur-sm"
+                  className="border-2 border-white text-white hover:bg-white hover:text-purple-600 text-lg px-8 py-4 h-auto bg-white/10"
                   onClick={handleDemo}
                 >
                   <QrCode className="mr-2 h-5 w-5" />
                   View Demo
                 </Button>
               </div>
-              <div className="mt-12 flex items-center space-x-8 text-white">
-                <div className="flex items-center">
-                  <CheckCircle className="h-5 w-5 mr-2 text-green-400" />
-                  <span className="font-semibold text-white">14-day free trial</span>
+              
+              {/* Features */}
+              <div className="flex flex-wrap gap-8 pt-8">
+                <div className="flex items-center text-white">
+                  <CheckCircle className="h-5 w-5 mr-3 text-green-300" />
+                  <span className="font-medium">14-day free trial</span>
                 </div>
-                <div className="flex items-center">
-                  <CheckCircle className="h-5 w-5 mr-2 text-green-400" />
-                  <span className="font-semibold text-white">No setup fees</span>
+                <div className="flex items-center text-white">
+                  <CheckCircle className="h-5 w-5 mr-3 text-green-300" />
+                  <span className="font-medium">No setup fees</span>
                 </div>
-                <div className="flex items-center">
-                  <CheckCircle className="h-5 w-5 mr-2 text-green-400" />
-                  <span className="font-semibold text-white">Cancel anytime</span>
+                <div className="flex items-center text-white">
+                  <CheckCircle className="h-5 w-5 mr-3 text-green-300" />
+                  <span className="font-medium">Cancel anytime</span>
                 </div>
               </div>
             </div>
-            <div className="relative">
-              <div className="bg-white rounded-2xl shadow-2xl p-8 transform rotate-3 hover:rotate-0 transition-transform duration-300">
+            
+            {/* Right Content - QR Demo */}
+            <div className="flex justify-center lg:justify-end">
+              <div className="bg-white rounded-3xl shadow-2xl p-8 transform rotate-2 hover:rotate-0 transition-transform duration-300 max-w-sm">
                 <div className="text-center">
                   <div className="w-32 h-32 bg-purple-100 rounded-2xl mx-auto mb-6 flex items-center justify-center">
                     <QrCode className="w-16 h-16 text-purple-600" />
@@ -172,12 +184,12 @@ export default function HomePage() {
                   <h3 className="text-2xl font-bold text-gray-900 mb-2">
                     Table 5
                   </h3>
-                  <p className="text-gray-800 mb-4">
+                  <p className="text-gray-600 mb-4">
                     Scan to view menu & order
                   </p>
-                  <Badge className="bg-green-100 text-green-800">
+                  <div className="inline-flex items-center px-4 py-2 bg-green-100 text-green-800 rounded-full text-sm font-medium">
                     Ready to Order
-                  </Badge>
+                  </div>
                 </div>
               </div>
             </div>
