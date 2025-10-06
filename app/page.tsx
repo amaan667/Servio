@@ -77,11 +77,11 @@ export default function HomePage() {
 
   const handleGetStarted = () => {
     if (user) {
-      // User is signed in, redirect to their dashboard
+      // User is signed in, redirect to their account/dashboard
       router.push("/dashboard");
     } else {
-      // User is not signed in, redirect to sign-in
-      router.push("/sign-in");
+      // User is not signed in, redirect to sign-up for free trial
+      router.push("/sign-up");
     }
   };
 
@@ -102,13 +102,14 @@ export default function HomePage() {
   return (
     <div className="min-h-screen bg-white">
       {/* Hero Section */}
-      <section className="bg-gradient-to-br from-purple-600 to-purple-800 text-white">
-        <div className="max-w-7xl mx-auto px-6 py-20 lg:py-32">
+      <section className="relative bg-gradient-to-br from-purple-700 to-purple-900 text-white">
+        <div className="absolute inset-0 bg-black/30 pointer-events-none" />
+        <div className="relative max-w-7xl mx-auto px-6 py-20 lg:py-32">
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-16 items-center">
             {/* Left Content */}
-            <div className="space-y-8">
+            <div className="space-y-8 bg-black/30 backdrop-blur-sm rounded-2xl p-6 md:p-8">
               {/* Badge */}
-              <div className="inline-flex items-center px-4 py-2 bg-white/20 rounded-full text-white">
+              <div className="inline-flex items-center px-4 py-2 bg-white/30 rounded-full text-white">
                 <QrCode className="w-4 h-4 mr-2" />
                 Transform Your Business
               </div>
@@ -119,7 +120,7 @@ export default function HomePage() {
               </h1>
               
               {/* Description */}
-              <p className="text-xl text-white/90 leading-relaxed max-w-lg">
+              <p className="text-xl text-white leading-relaxed max-w-lg">
                 Streamline your business operations with contactless QR code ordering. Customers scan, order, and pay — all from their phones. You focus on great food and service.
               </p>
               
@@ -131,7 +132,7 @@ export default function HomePage() {
                   className="bg-white text-purple-600 hover:bg-gray-50 text-lg px-8 py-4 h-auto"
                   disabled={authLoading}
                 >
-                  {authLoading ? 'Loading...' : (user ? 'Go to Dashboard' : 'Start Free Trial')}
+                  {authLoading ? 'Loading...' : (user ? 'Go to Account' : 'Start Free Trial')}
                   <ArrowRight className="ml-2 h-5 w-5" />
                 </Button>
                 
@@ -148,9 +149,8 @@ export default function HomePage() {
                 
                 <Button
                   size="lg"
-                  variant="outline"
-                  className="border-2 border-white text-white hover:bg-white hover:text-purple-600 text-lg px-8 py-4 h-auto bg-white/10"
                   onClick={handleDemo}
+                  className="bg-white text-purple-600 hover:bg-gray-50 text-lg px-8 py-4 h-auto"
                 >
                   <QrCode className="mr-2 h-5 w-5" />
                   View Demo
