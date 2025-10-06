@@ -1005,7 +1005,7 @@ export default function CustomerOrderPage() {
                                       <Button
                                         onClick={() => addToCart(item)}
                                         size="sm"
-                                        className="bg-purple-600 hover:bg-purple-700 dark:bg-purple-700 dark:hover:bg-purple-600 text-white px-4 py-2"
+                                        className="bg-purple-600 hover:bg-purple-700 dark:bg-purple-600 dark:hover:bg-purple-700 text-white font-medium px-4 py-2 shadow-sm"
                                       >
                                         <Plus className="h-4 w-4 mr-2" />
                                         Add to Cart
@@ -1421,8 +1421,8 @@ export default function CustomerOrderPage() {
                       max="50"
                       value={customGroupSize}
                       onChange={(e) => setCustomGroupSize(e.target.value)}
-                      placeholder="Enter number of people"
-                      className="h-10 sm:h-12 text-center text-lg"
+                      placeholder="Enter number of people (9-50)"
+                      className="h-10 sm:h-12 text-center text-lg border-2 focus:border-purple-500"
                     />
                   </div>
                   <Button
@@ -1459,8 +1459,8 @@ export default function CustomerOrderPage() {
                       setCustomGroupSize('');
                     }
                   }}
-                  className="flex-1 h-10 sm:h-12 bg-purple-600 hover:bg-purple-700"
-                  disabled={showCustomGroupSize && (!customGroupSize || parseInt(customGroupSize) < 9)}
+                  className="flex-1 h-10 sm:h-12 bg-purple-600 hover:bg-purple-700 text-white font-medium shadow-sm"
+                  disabled={showCustomGroupSize && (!customGroupSize || parseInt(customGroupSize) < 9 || isNaN(parseInt(customGroupSize)))}
                 >
                   Continue
                 </Button>
