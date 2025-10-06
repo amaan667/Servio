@@ -28,8 +28,8 @@ export function MenuUploadCard({ venueId, onSuccess }: MenuUploadCardProps) {
       return;
     }
 
-    // Validate file type
-    const validTypes = ['.txt', '.md', '.json', '.pdf'];
+    // Validate file type (now accepts common image formats)
+    const validTypes = ['.txt', '.md', '.json', '.pdf', '.png', '.jpg', '.jpeg', '.webp', '.heic'];
     const fileExtension = file.name.toLowerCase().substring(file.name.lastIndexOf('.'));
     
     if (!validTypes.includes(fileExtension)) {
@@ -41,8 +41,10 @@ export function MenuUploadCard({ venueId, onSuccess }: MenuUploadCardProps) {
       return;
     }
 
-    // Validate file size (max 10MB for PDF, 1MB for text files)
-    const maxSize = fileExtension === '.pdf' ? 10 * 1024 * 1024 : 1024 * 1024;
+    // Validate file size (max 10MB for PDF/images, 1MB for text files)
+    const maxSize = (fileExtension === '.pdf' || ['.png', '.jpg', '.jpeg', '.webp', '.heic'].includes(fileExtension))
+      ? 10 * 1024 * 1024
+      : 1024 * 1024;
     if (file.size > maxSize) {
       toast({
         title: 'File too large',
@@ -115,7 +117,7 @@ export function MenuUploadCard({ venueId, onSuccess }: MenuUploadCardProps) {
           }
         }
         
-      } else {
+      } else if (['.txt', '.md', '.json'].includes(fileExtension)) {
         // For text files, read and send directly
         const text = await file.text();
         
@@ -147,6 +149,29 @@ export function MenuUploadCard({ venueId, onSuccess }: MenuUploadCardProps) {
         } else {
           throw new Error(`Text processing failed: ${result.error}`);
         }
+      } else {
+        // Image flow: upload then process (same endpoint as PDF now supports images)
+        const formData = new FormData();
+        formData.append('file', file);
+        formData.append('venue_id', venueId);
+
+        const up = await fetch('/api/menu/upload', { method: 'POST', body: formData });
+        const uj = await up.json();
+        if (!up.ok || !uj?.ok) {
+          throw new Error(uj?.error || 'Upload failed');
+        }
+
+        const pr = await fetch('/api/menu/process', {
+          method: 'POST',
+          headers: { 'content-type': 'application/json' },
+          body: JSON.stringify({ uploadId: uj.upload_id })
+        });
+        const pj = await pr.json();
+        if (!pr.ok || !pj?.ok) {
+          throw new Error(pj?.error || 'Image processing failed');
+        }
+        toast({ title: 'Menu imported successfully', description: `${(pj.items || []).length} items extracted` });
+        onSuccess?.();
       }
       
     } catch (error: any) {

@@ -25,7 +25,7 @@ export async function POST(req: NextRequest) {
     }
 
 
-    // Download PDF from Supabase Storage
+    // Download original file from Supabase Storage (pdf or image)
     const storagePath = row.filename || `${row.venue_id}/${row.sha256}.pdf`;
     
     const { data: file, error: dlErr } = await supa.storage.from('menus').download(storagePath);
@@ -35,25 +35,36 @@ export async function POST(req: NextRequest) {
     }
 
 
-    // Extract PDF pages using pdf-lib
-    const pdfBytes = await file.arrayBuffer();
-    const pdfDoc = await PDFDocument.load(pdfBytes);
-    const pageCount = pdfDoc.getPageCount();
-    
+    const fileBytes = await file.arrayBuffer();
 
-    const pdfPages: string[] = [];
-    const maxPages = Math.min(pageCount, 6); // Limit to first 6 pages
+    const isPdf = storagePath.toLowerCase().endsWith('.pdf');
+    let pdfPages: string[] = [];
+    let maxPages = 1;
 
-    for (let i = 0; i < maxPages; i++) {
-      // Create a new PDF with just this page
-      const singlePagePdf = await PDFDocument.create();
-      const [copiedPage] = await singlePagePdf.copyPages(pdfDoc, [i]);
-      singlePagePdf.addPage(copiedPage);
-      
-      const singlePageBytes = await singlePagePdf.save();
-      const base64 = Buffer.from(singlePageBytes).toString('base64');
-      pdfPages.push(`data:application/pdf;base64,${base64}`);
-      
+    if (isPdf) {
+      const pdfDoc = await PDFDocument.load(fileBytes);
+      const pageCount = pdfDoc.getPageCount();
+      maxPages = Math.min(pageCount, 6);
+      for (let i = 0; i < maxPages; i++) {
+        const singlePagePdf = await PDFDocument.create();
+        const [copiedPage] = await singlePagePdf.copyPages(pdfDoc, [i]);
+        singlePagePdf.addPage(copiedPage);
+        const singlePageBytes = await singlePagePdf.save();
+        const base64 = Buffer.from(singlePageBytes).toString('base64');
+        pdfPages.push(`data:application/pdf;base64,${base64}`);
+      }
+    } else {
+      const lower = storagePath.toLowerCase();
+      const mime = lower.endsWith('.png')
+        ? 'image/png'
+        : lower.endsWith('.webp')
+        ? 'image/webp'
+        : lower.endsWith('.heic')
+        ? 'image/heic'
+        : 'image/jpeg';
+      const base64 = Buffer.from(fileBytes).toString('base64');
+      pdfPages = [`data:${mime};base64,${base64}`];
+      maxPages = 1;
     }
 
     // Try to extract text from first page for menu-likeness check
@@ -66,7 +77,7 @@ export async function POST(req: NextRequest) {
           {
             role: 'user',
             content: [
-              { type: 'text', text: 'Extract all text from this PDF page. Return only the raw text, no formatting or structure.' },
+              { type: 'text', text: 'Extract all text from this page/image. Return only the raw text, no formatting or structure.' },
               { type: 'image_url', image_url: { url: firstPage } }
             ]
           }
@@ -103,7 +114,7 @@ export async function POST(req: NextRequest) {
       });
     }
 
-    // Process all PDF pages with OpenAI Vision
+    // Process pages/images with OpenAI Vision
     
     const allMenuItems: any[] = [];
     let totalTokens = 0;
@@ -121,7 +132,7 @@ export async function POST(req: NextRequest) {
             {
               role: 'user',
               content: [
-                { type: 'text', text: 'Extract menu items from this PDF page. Return valid JSON array only.' },
+                { type: 'text', text: 'Extract menu items from this page/image. Return valid JSON array only.' },
                 { type: 'image_url', image_url: { url: page } }
               ]
             }

@@ -242,7 +242,7 @@ export default function UploadMenuCard({ venueId }: { venueId: string }) {
         <div className="space-y-2">
           <Input 
             type="file" 
-            accept="application/pdf" 
+            accept="application/pdf,image/png,image/jpeg,image/webp,image/heic" 
             onChange={(e) => setFile(e.target.files?.[0] || null)} 
           />
           {file && (

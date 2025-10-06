@@ -67,7 +67,22 @@ export async function POST(req: Request) {
 
     const arrayBuf = await file.arrayBuffer();
     const hash = await sha256(arrayBuf);
-    const path = `${venueId}/${hash}.pdf`;
+    // Preserve original extension for routing (pdf vs images vs text)
+    const originalName = file.name || `${hash}`;
+    const lower = originalName.toLowerCase();
+    const ext = lower.includes('.') ? lower.substring(lower.lastIndexOf('.')) : '.pdf';
+    const safeExt = ['.pdf', '.png', '.jpg', '.jpeg', '.webp', '.heic'].includes(ext) ? ext : '.pdf';
+    const contentType =
+      safeExt === '.pdf'
+        ? 'application/pdf'
+        : safeExt === '.png'
+        ? 'image/png'
+        : safeExt === '.webp'
+        ? 'image/webp'
+        : safeExt === '.heic'
+        ? 'image/heic'
+        : 'image/jpeg';
+    const path = `${venueId}/${hash}${safeExt}`;
 
     // Check cache
     const { data: existing, error: selErr } = await supa
@@ -81,7 +96,7 @@ export async function POST(req: Request) {
     }
     let uploadId: string | null = existing?.id ?? null;
     if (!existing) {
-      const { error: upErr } = await supa.storage.from('menus').upload(path, new Blob([arrayBuf]), { upsert: true, contentType: 'application/pdf' });
+      const { error: upErr } = await supa.storage.from('menus').upload(path, new Blob([arrayBuf]), { upsert: true, contentType });
       if (upErr) return NextResponse.json({ ok: false, error: upErr.message }, { status: 400 });
 
       const { data: ins, error: insErr } = await supa
