@@ -1078,7 +1078,7 @@ export default function CheckoutPage() {
                     alt="Servio"
                     width={300}
                     height={90}
-                    className="h-20 sm:h-24 md:h-28 lg:h-32 xl:h-36 w-auto"
+                    className="h-12 sm:h-14 md:h-16 lg:h-18 xl:h-20 w-auto"
                     priority
                   />
                 </div>
@@ -1189,7 +1189,7 @@ export default function CheckoutPage() {
                     alt="Servio"
                     width={300}
                     height={90}
-                    className="h-20 sm:h-24 md:h-28 lg:h-32 xl:h-36 w-auto"
+                    className="h-12 sm:h-14 md:h-16 lg:h-18 xl:h-20 w-auto"
                     priority
                   />
                 </div>
@@ -1300,7 +1300,7 @@ export default function CheckoutPage() {
                     alt="Servio"
                     width={300}
                     height={90}
-                    className="h-20 sm:h-24 md:h-28 lg:h-32 xl:h-36 w-auto"
+                    className="h-12 sm:h-14 md:h-16 lg:h-18 xl:h-20 w-auto"
                     priority
                   />
                 </div>
@@ -1551,7 +1551,7 @@ export default function CheckoutPage() {
                           className="h-20 flex-col gap-2"
                         >
                           <div className="flex gap-1">
-                            <div className="w-6 h-6 bg-black rounded"></div>
+                            <div className="w-6 h-6 bg-servio-purple rounded"></div>
                             <div className="w-6 h-6 bg-blue-600 rounded"></div>
                           </div>
                           <span className="text-sm">Demo Mode</span>
@@ -1634,7 +1634,7 @@ export default function CheckoutPage() {
                           className="h-20 flex-col gap-2"
                         >
                           <div className="flex gap-1">
-                            <div className="w-6 h-6 bg-black rounded"></div>
+                            <div className="w-6 h-6 bg-servio-purple rounded"></div>
                             <div className="w-6 h-6 bg-blue-600 rounded"></div>
                           </div>
                           <span className="text-sm">Digital Wallet</span>
@@ -1696,7 +1696,7 @@ export default function CheckoutPage() {
                     {simulationMethod === 'digital-wallet' && !showCardForm && (
                       <div className="p-4 border rounded-lg bg-gray-50 text-center">
                         <div className="flex justify-center gap-4 mb-4">
-                          <div className="w-12 h-8 bg-black rounded flex items-center justify-center text-white text-xs font-bold">
+                          <div className="w-12 h-8 bg-servio-purple rounded flex items-center justify-center text-white text-xs font-bold">
                             Apple
                           </div>
                           <div className="w-12 h-8 bg-blue-600 rounded flex items-center justify-center text-white text-xs font-bold">

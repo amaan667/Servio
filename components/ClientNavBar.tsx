@@ -112,23 +112,23 @@ export default function ClientNavBar() {
     return (
       <nav className="bg-white/90 backdrop-blur-sm shadow-sm border-b sticky top-0 z-50">
         <div className="max-w-7xl mx-auto px-0 sm:px-1 lg:px-2">
-          <div className="flex justify-between items-center h-32 sm:h-36 md:h-40 lg:h-56 xl:h-64 2xl:h-72">
-            {/* Logo */}
-            <div className="flex-shrink-0 -ml-4">
-              <Link href="/" className="flex items-center group">
-                <Image
-                  src="/assets/servio-logo-updated.png"
-                  alt="Servio"
-                  width={800}
-                  height={250}
-                  className="h-28 sm:h-32 md:h-36 lg:h-56 xl:h-64 2xl:h-72 w-auto transition-all duration-300 group-hover:scale-105 drop-shadow-xl filter brightness-110 contrast-110"
-                  priority
-                />
-              </Link>
-            </div>
+        <div className="relative flex justify-center items-center h-16 sm:h-20 md:h-24">
+          {/* Logo - Centered and smaller */}
+          <div className="flex-shrink-0">
+            <Link href="/" className="flex items-center group">
+              <Image
+                src="/assets/servio-logo-updated.png"
+                alt="Servio"
+                width={800}
+                height={250}
+                className="h-12 sm:h-14 md:h-16 lg:h-18 xl:h-20 w-auto transition-all duration-300 group-hover:scale-105 drop-shadow-xl filter brightness-110 contrast-110"
+                priority
+              />
+            </Link>
+          </div>
             
-            {/* Loading indicator */}
-            <div className="flex items-center">
+            {/* Loading indicator - Positioned absolutely on the right */}
+            <div className="absolute right-0 flex items-center">
               <div className="animate-spin rounded-full h-6 w-6 border-b-2 border-purple-600"></div>
             </div>
           </div>
@@ -149,15 +149,15 @@ export default function ClientNavBar() {
                 alt="Servio"
                 width={800}
                 height={250}
-                className="h-16 sm:h-20 md:h-24 lg:h-28 xl:h-32 w-auto transition-all duration-300 group-hover:scale-105 drop-shadow-xl filter brightness-110 contrast-110"
+                className="h-12 sm:h-14 md:h-16 lg:h-18 xl:h-20 w-auto transition-all duration-300 group-hover:scale-105 drop-shadow-xl filter brightness-110 contrast-110"
                 priority
               />
             </Link>
           </div>
 
-          {/* Desktop Navigation */}
-          <div className="hidden md:block">
-            <div className="ml-6 lg:ml-10 flex items-center space-x-4 lg:space-x-6">
+          {/* Desktop Navigation - Positioned absolutely on the right */}
+          <div className="absolute right-0 hidden md:block">
+            <div className="flex items-center space-x-4 lg:space-x-6">
               {isAuthenticated ? (
                 // Signed in navigation - different based on current page
                 <>
@@ -236,8 +236,8 @@ export default function ClientNavBar() {
             </div>
           </div>
 
-          {/* Mobile menu button */}
-          <div className="md:hidden">
+          {/* Mobile menu button - Positioned absolutely on the right */}
+          <div className="absolute right-0 md:hidden">
             <Button
               variant="ghost"
               onClick={() => setMobileMenuOpen(!mobileMenuOpen)}

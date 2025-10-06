@@ -832,14 +832,14 @@ export default function CustomerOrderPage() {
           
           <div className="flex items-center justify-between">
             <div className="flex items-center space-x-2 sm:space-x-4 flex-1 min-w-0">
-              {/* Servio Logo - Large and prominent */}
+              {/* Servio Logo - Smaller and centered */}
               <div className="flex items-center flex-shrink-0">
                 <Image
                   src="/assets/servio-logo-updated.png"
                   alt="Servio"
                   width={800}
                   height={250}
-                  className="h-16 sm:h-20 md:h-24 lg:h-28 xl:h-32 w-auto"
+                  className="h-12 sm:h-14 md:h-16 lg:h-18 xl:h-20 w-auto"
                   priority
                 />
               </div>

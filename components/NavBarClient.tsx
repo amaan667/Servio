@@ -37,13 +37,13 @@ export default function NavBarClient() {
             width={800}
             height={250}
             priority
-            className="h-16 sm:h-20 md:h-24 lg:h-28 xl:h-32 w-auto hover:opacity-80 transition-opacity"
+            className="h-12 sm:h-14 md:h-16 lg:h-18 xl:h-20 w-auto hover:opacity-80 transition-opacity"
           />
         </Link>
       </div>
 
-      {/* Right */}
-      <div className="flex items-center space-x-4">
+      {/* Right - Positioned absolutely */}
+      <div className="absolute right-0 flex items-center space-x-4">
         <Link href={homeHref} className="text-gray-900 hover:text-gray-900 font-medium">Home</Link>
         <Link href={settingsHref} className="text-gray-900 hover:text-gray-900">
           <Button variant="outline" className="flex items-center">

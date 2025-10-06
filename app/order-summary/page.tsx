@@ -248,7 +248,7 @@ export default function OrderSummaryPage() {
                 alt="Servio"
                 width={800}
                 height={250}
-                className="h-32 sm:h-40 md:h-48 lg:h-56 xl:h-64 w-auto"
+                className="h-12 sm:h-14 md:h-16 lg:h-18 xl:h-20 w-auto"
                 priority
               />
             </div>

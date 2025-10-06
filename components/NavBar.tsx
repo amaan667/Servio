@@ -18,12 +18,12 @@ export default async function NavBar({ showActions = true, venueId }: { showActi
             alt="Servio logo"
             width={800}
             height={250}
-            className="h-16 sm:h-20 md:h-24 lg:h-28 xl:h-32 w-auto"
+            className="h-12 sm:h-14 md:h-16 lg:h-18 xl:h-20 w-auto"
             priority
           />
         </Link>
       </div>
-      <div className="flex items-center space-x-4">
+      <div className="absolute right-0 flex items-center space-x-4">
         <Link href={homeHref} className="text-foreground/80 hover:text-foreground">Home</Link>
         <Link href="/dashboard" className="text-foreground/80 hover:text-foreground">Dashboard</Link>
         {showActions && (

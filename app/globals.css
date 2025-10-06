@@ -33,7 +33,7 @@
     --card-foreground: 222.2 84% 4.9%;
     --popover: 0 0% 100%;
     --popover-foreground: 222.2 84% 4.9%;
-    --primary: 222.2 47.4% 11.2%;
+    --primary: 262 83% 58%;
     --primary-foreground: 210 40% 98%;
     --secondary: 210 40% 96%;
     --secondary-foreground: 222.2 47.4% 11.2%;
@@ -98,6 +98,45 @@
   body {
     @apply bg-background text-foreground;
   }
+}
+
+/* Custom height classes for enlarged logo */
+.h-80 { height: 20rem; } /* 320px */
+.h-100 { height: 25rem; } /* 400px */
+.h-120 { height: 30rem; } /* 480px */
+.h-140 { height: 35rem; } /* 560px */
+.h-160 { height: 40rem; } /* 640px */
+.h-180 { height: 45rem; } /* 720px */
+.h-200 { height: 50rem; } /* 800px */
+.h-280 { height: 70rem; } /* 1120px */
+.h-320 { height: 80rem; } /* 1280px */
+.h-360 { height: 90rem; } /* 1440px */
+
+/* Responsive height classes */
+@media (min-width: 640px) {
+  .sm\:h-100 { height: 25rem; }
+  .sm\:h-160 { height: 40rem; }
+  .sm\:h-180 { height: 45rem; }
+}
+
+@media (min-width: 768px) {
+  .md\:h-120 { height: 30rem; }
+  .md\:h-180 { height: 45rem; }
+  .md\:h-200 { height: 50rem; }
+}
+
+@media (min-width: 1024px) {
+  .lg\:h-140 { height: 35rem; }
+  .lg\:h-280 { height: 70rem; }
+}
+
+@media (min-width: 1280px) {
+  .xl\:h-160 { height: 40rem; }
+  .xl\:h-320 { height: 80rem; }
+}
+
+@media (min-width: 1536px) {
+  .2xl\:h-360 { height: 90rem; }
 }
 
 /* Enhanced Button Visibility */

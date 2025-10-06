@@ -136,14 +136,14 @@ export default function GlobalNav() {
                 alt="Servio"
                 width={800}
                 height={250}
-                className="h-16 sm:h-20 md:h-24 lg:h-28 xl:h-32 w-auto transition-all duration-300 group-hover:scale-105"
+                className="h-[120px] sm:h-[140px] md:h-[160px] lg:h-[180px] xl:h-[200px] w-auto transition-all duration-300 group-hover:scale-105"
                 priority
               />
             </Link>
           </div>
 
-          {/* Desktop Navigation - Properly aligned to right corner */}
-          <div className="hidden md:flex items-center space-x-2">
+          {/* Desktop Navigation - Positioned absolutely on the right */}
+          <div className="absolute right-0 hidden md:flex items-center space-x-2">
             {isAuthenticated ? (
               // Signed in navigation - modern SaaS style
               <div className="flex items-center space-x-2">
@@ -263,8 +263,8 @@ export default function GlobalNav() {
             )}
           </div>
 
-          {/* Mobile menu button */}
-          <div className="md:hidden">
+          {/* Mobile menu button - Positioned absolutely on the right */}
+          <div className="absolute right-0 md:hidden">
             <Button
               variant="ghost"
               onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
