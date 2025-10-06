@@ -171,6 +171,39 @@
 .text-foreground\/80, .text-foreground\/70, .text-foreground\/60 { color: #1f2937 !important; }
 .text-muted-foreground { color: #1f2937 !important; }
 
+/* Contrast guarantees for dark buttons and controls across the app */
+button.bg-black,
+button.bg-gray-900, button.bg-gray-800,
+button.bg-neutral-900, button.bg-neutral-800,
+button.bg-slate-900, button.bg-slate-800,
+[role="button"].bg-black,
+[role="button"].bg-gray-900, [role="button"].bg-gray-800,
+[role="button"].bg-neutral-900, [role="button"].bg-neutral-800,
+[role="button"].bg-slate-900, [role="button"].bg-slate-800,
+.bg-black > button, .bg-gray-900 > button, .bg-gray-800 > button,
+.bg-neutral-900 > button, .bg-neutral-800 > button,
+.bg-slate-900 > button, .bg-slate-800 > button,
+.SelectTrigger.bg-gray-900, .SelectTrigger.bg-gray-800,
+.SelectTrigger.bg-neutral-900, .SelectTrigger.bg-neutral-800,
+.SelectTrigger.bg-slate-900, .SelectTrigger.bg-slate-800 {
+  color: #ffffff !important;
+}
+
+/* Ensure icons inside dark buttons are also white */
+button.bg-black svg,
+button.bg-gray-900 svg, button.bg-gray-800 svg,
+button.bg-neutral-900 svg, button.bg-neutral-800 svg,
+button.bg-slate-900 svg, button.bg-slate-800 svg,
+[role="button"].bg-black svg,
+[role="button"].bg-gray-900 svg, [role="button"].bg-gray-800 svg,
+[role="button"].bg-neutral-900 svg, [role="button"].bg-neutral-800 svg,
+[role="button"].bg-slate-900 svg, [role="button"].bg-slate-800 svg,
+.SelectTrigger.bg-gray-900 svg, .SelectTrigger.bg-gray-800 svg,
+.SelectTrigger.bg-neutral-900 svg, .SelectTrigger.bg-neutral-800 svg,
+.SelectTrigger.bg-slate-900 svg, .SelectTrigger.bg-slate-800 svg {
+  color: #ffffff !important;
+}
+
 /* Desktop-specific text readability improvements */
 @media (min-width: 769px) {
   /* Ensure all text is readable on desktop too */
