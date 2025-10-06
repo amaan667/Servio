@@ -108,11 +108,11 @@ export default function HomePage() {
         <div className="relative max-w-screen-xl mx-auto px-6 py-24 lg:py-32">
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-12 items-center">
             <div className="max-w-3xl sm:max-w-xl md:max-w-2xl">
-              <Badge className="bg-white/25 text-white border-white/40 mb-6">
+              <Badge className="bg-white/40 text-white border-white/60 mb-6 drop-shadow-md">
                 <QrCode className="w-4 h-4 mr-2" />
                 Transform Your Business
               </Badge>
-              <h1 className="!text-white text-[clamp(2rem,6vw,4.5rem)] leading-[1.05] tracking-tight font-extrabold drop-shadow-lg">
+              <h1 className="!text-white text-[clamp(2rem,6vw,4.5rem)] leading-[1.05] tracking-tight font-extrabold drop-shadow-2xl">
                 QR Code Ordering Made Simple
               </h1>
               <p className="mt-5 !text-white text-[clamp(1rem,2.2vw,1.25rem)] leading-relaxed max-w-[45ch] drop-shadow-md">
@@ -140,9 +140,8 @@ export default function HomePage() {
                 )}
                 <Button
                   size="lg"
-                  variant="outline"
-                  className="border-white text-white hover:bg-white hover:text-purple-600 text-lg px-8 py-4 bg-white/20 backdrop-blur-sm"
                   onClick={handleDemo}
+                  className="bg-white text-purple-600 hover:bg-gray-100 text-lg px-8 py-4"
                 >
                   <QrCode className="mr-2 h-5 w-5" />
                   View Demo
