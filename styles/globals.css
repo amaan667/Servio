@@ -102,7 +102,7 @@ body {
   }
   
   .dark p, .dark span, .dark div, .dark label {
-    @apply text-gray-100;
+    @apply text-white;
   }
   
   .dark input, .dark textarea, .dark select {
@@ -114,15 +114,15 @@ body {
   }
   
   .dark .text-gray-900 {
-    @apply text-gray-100;
+    @apply text-white;
   }
   
   .dark .text-gray-800 {
-    @apply text-gray-200;
+    @apply text-white;
   }
   
   .dark .text-gray-700 {
-    @apply text-gray-300;
+    @apply text-white;
   }
   
   .dark .bg-white {

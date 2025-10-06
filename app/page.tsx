@@ -115,7 +115,7 @@ export default function HomePage() {
                 <br />
                 <span className="text-white">Made Simple</span>
               </h1>
-              <p className="text-xl text-purple-100 mb-8 leading-relaxed">
+              <p className="text-xl text-white mb-8 leading-relaxed">
                 Streamline your business operations with contactless QR code
                 ordering. Customers scan, order, and pay - all from their
                 phones. You focus on great food and service.
@@ -124,7 +124,7 @@ export default function HomePage() {
                 <Button
                   size="lg"
                   onClick={handleGetStarted}
-                  className="bg-white text-purple-600 hover:bg-gray-100 text-lg px-8 py-4"
+                  className="bg-white text-white hover:bg-gray-100 text-lg px-8 py-4"
                   disabled={authLoading}
                 >
                   {authLoading ? 'Loading...' : (user ? 'Go to Dashboard' : 'Start Free Trial')}
@@ -134,7 +134,7 @@ export default function HomePage() {
                   <Button
                     size="lg"
                     variant="outline"
-                    className="border-white text-white hover:bg-white hover:text-purple-600 text-lg px-8 py-4 bg-transparent"
+                    className="border-white text-white hover:bg-white hover:text-white text-lg px-8 py-4 bg-transparent"
                     onClick={handleSignIn}
                   >
                     Sign In
@@ -143,14 +143,14 @@ export default function HomePage() {
                 <Button
                   size="lg"
                   variant="outline"
-                  className="border-white text-white hover:bg-white hover:text-purple-600 text-lg px-8 py-4 bg-transparent"
+                  className="border-white text-white hover:bg-white hover:text-white text-lg px-8 py-4 bg-transparent"
                   onClick={handleDemo}
                 >
                   <QrCode className="mr-2 h-5 w-5" />
                   View Demo
                 </Button>
               </div>
-              <div className="flex items-center space-x-8 text-purple-100">
+              <div className="flex items-center space-x-8 text-white">
                 <div className="flex items-center">
                   <CheckCircle className="h-5 w-5 mr-2" />
                   <span>14-day free trial</span>
@@ -169,15 +169,15 @@ export default function HomePage() {
               <div className="bg-white rounded-2xl shadow-2xl p-8 transform rotate-3 hover:rotate-0 transition-transform duration-300">
                 <div className="text-center">
                   <div className="w-32 h-32 bg-purple-100 rounded-2xl mx-auto mb-6 flex items-center justify-center">
-                    <QrCode className="w-16 h-16 text-purple-600" />
+                    <QrCode className="w-16 h-16 text-white" />
                   </div>
-                  <h3 className="text-2xl font-bold text-gray-900 mb-2">
+                  <h3 className="text-2xl font-bold text-white mb-2">
                     Table 5
                   </h3>
-                  <p className="text-gray-800 mb-4">
+                  <p className="text-white mb-4">
                     Scan to view menu & order
                   </p>
-                  <Badge className="bg-green-100 text-green-800">
+                  <Badge className="bg-green-100 text-white">
                     Ready to Order
                   </Badge>
                 </div>
@@ -191,10 +191,10 @@ export default function HomePage() {
       <section id="features" className="py-24 bg-gray-50">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="text-center mb-16">
-            <h2 className="text-4xl font-bold text-gray-900 mb-4">
+            <h2 className="text-4xl font-bold text-white mb-4">
               Everything You Need to Modernize Your Business
             </h2>
-            <p className="text-xl text-gray-800 max-w-3xl mx-auto">
+            <p className="text-xl text-white max-w-3xl mx-auto">
               From QR code generation to real-time order management, Servio
               provides all the tools you need to create a seamless dining
               experience.
@@ -205,12 +205,12 @@ export default function HomePage() {
             <Card className="border-0 shadow-lg hover:shadow-xl transition-shadow">
               <CardContent className="p-8">
                 <div className="w-12 h-12 bg-purple-100 rounded-lg flex items-center justify-center mb-6">
-                  <QrCode className="h-6 w-6 text-purple-600" />
+                  <QrCode className="h-6 w-6 text-white" />
                 </div>
-                <h3 className="text-xl font-semibold text-gray-900 mb-4">
+                <h3 className="text-xl font-semibold text-white mb-4">
                   QR Code Generation
                 </h3>
-                <p className="text-gray-800">
+                <p className="text-white">
                   Generate unique QR codes for each table. Customers scan to
                   instantly access your menu and start ordering.
                 </p>
@@ -222,10 +222,10 @@ export default function HomePage() {
                 <div className="w-12 h-12 bg-blue-100 rounded-lg flex items-center justify-center mb-6">
                   <Smartphone className="h-6 w-6 text-blue-600" />
                 </div>
-                <h3 className="text-xl font-semibold text-gray-900 mb-4">
+                <h3 className="text-xl font-semibold text-white mb-4">
                   Mobile-First Design
                 </h3>
-                <p className="text-gray-800">
+                <p className="text-white">
                   Beautiful, responsive interface optimized for mobile devices.
                   Your customers will love the smooth ordering experience.
                 </p>
@@ -237,10 +237,10 @@ export default function HomePage() {
                 <div className="w-12 h-12 bg-green-100 rounded-lg flex items-center justify-center mb-6">
                   <Clock className="h-6 w-6 text-green-600" />
                 </div>
-                <h3 className="text-xl font-semibold text-gray-900 mb-4">
+                <h3 className="text-xl font-semibold text-white mb-4">
                   Real-Time Orders
                 </h3>
-                <p className="text-gray-800">
+                <p className="text-white">
                   Receive orders instantly in your dashboard. Track order status
                   and manage your kitchen workflow efficiently.
                 </p>
@@ -252,10 +252,10 @@ export default function HomePage() {
                 <div className="w-12 h-12 bg-yellow-100 rounded-lg flex items-center justify-center mb-6">
                   <CreditCard className="h-6 w-6 text-yellow-600" />
                 </div>
-                <h3 className="text-xl font-semibold text-gray-900 mb-4">
+                <h3 className="text-xl font-semibold text-white mb-4">
                   Payment Integration
                 </h3>
-                <p className="text-gray-800">
+                <p className="text-white">
                   Secure payment processing built-in. Accept all major credit
                   cards and digital wallets seamlessly.
                 </p>
@@ -267,10 +267,10 @@ export default function HomePage() {
                 <div className="w-12 h-12 bg-red-100 rounded-lg flex items-center justify-center mb-6">
                   <BarChart3 className="h-6 w-6 text-red-600" />
                 </div>
-                <h3 className="text-xl font-semibold text-gray-900 mb-4">
+                <h3 className="text-xl font-semibold text-white mb-4">
                   Analytics & Insights
                 </h3>
-                <p className="text-gray-800">
+                <p className="text-white">
                   Detailed analytics on sales, popular items, and customer
                   behavior to help you make data-driven decisions.
                 </p>
@@ -282,10 +282,10 @@ export default function HomePage() {
                 <div className="w-12 h-12 bg-indigo-100 rounded-lg flex items-center justify-center mb-6">
                   <Users className="h-6 w-6 text-indigo-600" />
                 </div>
-                <h3 className="text-xl font-semibold text-gray-900 mb-4">
+                <h3 className="text-xl font-semibold text-white mb-4">
                   Staff Management
                 </h3>
-                <p className="text-gray-800">
+                <p className="text-white">
                   Manage your team with role-based access. Kitchen staff,
                   servers, and managers each get the tools they need.
                 </p>
@@ -299,10 +299,10 @@ export default function HomePage() {
       <section id="testimonials" className="py-24 bg-white">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="text-center mb-16">
-            <h2 className="text-4xl font-bold text-gray-900 mb-4">
+            <h2 className="text-4xl font-bold text-white mb-4">
               Loved by Businesses Everywhere
             </h2>
-            <p className="text-xl text-gray-800">
+            <p className="text-xl text-white">
               See what business owners are saying about Servio
             </p>
           </div>
@@ -318,20 +318,20 @@ export default function HomePage() {
                     />
                   ))}
                 </div>
-                <p className="text-gray-800 mb-6">
+                <p className="text-white mb-6">
                   "Servio transformed our cafe completely. Orders are faster,
                   more accurate, and our customers love the convenience. Revenue
                   is up 30%!"
                 </p>
                 <div className="flex items-center">
                   <div className="w-12 h-12 bg-purple-100 rounded-full flex items-center justify-center mr-4">
-                    <span className="text-purple-600 font-semibold">SM</span>
+                    <span className="text-white font-semibold">SM</span>
                   </div>
                   <div>
-                    <p className="font-semibold text-gray-900">
+                    <p className="font-semibold text-white">
                       Sarah Mitchell
                     </p>
-                    <p className="text-gray-800">Owner, Corner Cafe</p>
+                    <p className="text-white">Owner, Corner Cafe</p>
                   </div>
                 </div>
               </CardContent>
@@ -347,7 +347,7 @@ export default function HomePage() {
                     />
                   ))}
                 </div>
-                <p className="text-gray-800 mb-6">
+                <p className="text-white mb-6">
                   "The setup was incredibly easy. Within an hour, we had QR
                   codes on all our tables. The real-time order management is a
                   game-changer."
@@ -357,10 +357,10 @@ export default function HomePage() {
                     <span className="text-blue-600 font-semibold">MR</span>
                   </div>
                   <div>
-                    <p className="font-semibold text-gray-900">
+                    <p className="font-semibold text-white">
                       Mike Rodriguez
                     </p>
-                    <p className="text-gray-800">Manager, Pizza Palace</p>
+                    <p className="text-white">Manager, Pizza Palace</p>
                   </div>
                 </div>
               </CardContent>
@@ -376,7 +376,7 @@ export default function HomePage() {
                     />
                   ))}
                 </div>
-                <p className="text-gray-800 mb-6">
+                <p className="text-white mb-6">
                   "Our staff can focus on food quality instead of taking orders.
                   Customer satisfaction has improved dramatically since we
                   started using Servio."
@@ -386,8 +386,8 @@ export default function HomePage() {
                     <span className="text-green-600 font-semibold">LC</span>
                   </div>
                   <div>
-                    <p className="font-semibold text-gray-900">Lisa Chen</p>
-                    <p className="text-gray-800">Chef, Bistro 42</p>
+                    <p className="font-semibold text-white">Lisa Chen</p>
+                    <p className="text-white">Chef, Bistro 42</p>
                   </div>
                 </div>
               </CardContent>
@@ -407,14 +407,14 @@ export default function HomePage() {
           <h2 className="text-4xl font-bold mb-6">
             Ready to Transform Your Business?
           </h2>
-          <p className="text-xl text-purple-100 mb-8">
+          <p className="text-xl text-white mb-8">
             Join businesses across the UK who use Servio to simplify ordering and improve customer experience.
           </p>
           <div className="flex flex-col sm:flex-row gap-4 justify-center">
             <Button
               size="lg"
               onClick={handleGetStarted}
-              className="bg-white text-purple-600 hover:bg-gray-100 text-lg px-8 py-4"
+              className="bg-white text-white hover:bg-gray-100 text-lg px-8 py-4"
               disabled={authLoading}
             >
               {authLoading ? 'Loading...' : (user ? 'Go to Dashboard' : 'Start Your Free Trial')}
@@ -424,7 +424,7 @@ export default function HomePage() {
               <Button
                 size="lg"
                 variant="outline"
-                className="border-white text-white hover:bg-white hover:text-purple-600 text-lg px-8 py-4 bg-transparent"
+                className="border-white text-white hover:bg-white hover:text-white text-lg px-8 py-4 bg-transparent"
                 onClick={handleSignIn}
               >
                 Sign In
@@ -433,7 +433,7 @@ export default function HomePage() {
             <Button
               size="lg"
               variant="outline"
-              className="border-white text-white hover:bg-white hover:text-purple-600 text-lg px-8 py-4 bg-transparent"
+              className="border-white text-white hover:bg-white hover:text-white text-lg px-8 py-4 bg-transparent"
               onClick={handleDemo}
             >
               Try the Demo

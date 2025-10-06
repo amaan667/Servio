@@ -199,7 +199,7 @@ export default function SignUpForm({ onGoogleSignIn, isSigningUp = false }: Sign
           <Button
             onClick={handleGoogleSignUp}
             disabled={loading || isSigningUp}
-            className="w-full bg-white border border-gray-300 text-black hover:bg-gray-50 flex items-center justify-center gap-2"
+            className="w-full bg-white border border-gray-300 text-white hover:bg-gray-50 flex items-center justify-center gap-2"
           >
             <svg className="w-5 h-5" viewBox="0 0 48 48">
               <g>
@@ -218,7 +218,7 @@ export default function SignUpForm({ onGoogleSignIn, isSigningUp = false }: Sign
               <span className="w-full border-t" />
             </div>
             <div className="relative flex justify-center text-xs uppercase">
-              <span className="bg-white px-2 text-gray-900">Or continue with email</span>
+              <span className="bg-white px-2 text-white">Or continue with email</span>
             </div>
           </div>
 
@@ -314,9 +314,9 @@ export default function SignUpForm({ onGoogleSignIn, isSigningUp = false }: Sign
             </Button>
           </form>
 
-          <div className="text-center text-sm text-gray-900">
+          <div className="text-center text-sm text-white">
             Already have an account?{' '}
-            <Link href="/sign-in" className="text-purple-600 hover:text-purple-500 font-medium">
+            <Link href="/sign-in" className="text-white hover:text-gray-200 font-medium">
               Sign in here
             </Link>
           </div>

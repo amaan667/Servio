@@ -273,7 +273,7 @@ export default function GenerateQRClient({ venueId, venueName, activeTablesCount
               .venue-name { 
                 font-size: 32px; 
                 font-weight: bold; 
-                color: #333;
+                color: #ffffff;
                 margin-bottom: 15px;
                 text-transform: uppercase;
                 letter-spacing: 1px;
@@ -282,7 +282,7 @@ export default function GenerateQRClient({ venueId, venueName, activeTablesCount
               .table-number { 
                 font-size: 28px; 
                 font-weight: bold; 
-                color: #333;
+                color: #ffffff;
                 margin-bottom: 20px;
                 background: #f0f0f0;
                 padding: 10px 20px;
@@ -307,14 +307,14 @@ export default function GenerateQRClient({ venueId, venueName, activeTablesCount
               
               .scan-text { 
                 font-size: 24px; 
-                color: #666;
+                color: #ffffff;
                 margin-bottom: 15px;
                 font-weight: 500;
               }
               
               .venue-info { 
                 font-size: 20px; 
-                color: #333;
+                color: #ffffff;
                 font-weight: 600;
                 margin-bottom: 20px;
               }
@@ -349,7 +349,7 @@ export default function GenerateQRClient({ venueId, venueName, activeTablesCount
               .footer { 
                 margin-top: 30px; 
                 text-align: center; 
-                color: #999; 
+                color: #ffffff; 
                 font-size: 14px;
                 border-top: 1px solid #eee;
                 padding-top: 20px;
@@ -472,13 +472,13 @@ export default function GenerateQRClient({ venueId, venueName, activeTablesCount
               .venue-name { 
                 font-size: 24px; 
                 font-weight: bold; 
-                color: #333;
+                color: #ffffff;
                 margin-bottom: 5px;
               }
               
               .venue-subtitle { 
                 font-size: 14px; 
-                color: #666;
+                color: #ffffff;
                 margin-bottom: 10px;
               }
               
@@ -500,7 +500,7 @@ export default function GenerateQRClient({ venueId, venueName, activeTablesCount
               
               .page-footer {
                 text-align: center; 
-                color: #999; 
+                color: #ffffff; 
                 font-size: 10px;
                 border-top: 1px solid #eee;
                 padding: 10px;
@@ -538,7 +538,7 @@ export default function GenerateQRClient({ venueId, venueName, activeTablesCount
               .table-number { 
                 font-size: 18px; 
                 font-weight: bold; 
-                color: #333;
+                color: #ffffff;
                 margin-bottom: 10px;
                 background: #f0f0f0;
                 padding: 5px 10px;
@@ -563,14 +563,14 @@ export default function GenerateQRClient({ venueId, venueName, activeTablesCount
               
               .scan-text { 
                 font-size: 14px; 
-                color: #666;
+                color: #ffffff;
                 margin-bottom: 5px;
                 font-weight: 500;
               }
               
               .venue-info { 
                 font-size: 12px; 
-                color: #333;
+                color: #ffffff;
                 font-weight: 500;
               }
               

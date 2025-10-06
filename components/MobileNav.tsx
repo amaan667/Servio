@@ -173,15 +173,16 @@ export default function MobileNav({ venueId, venueName, counts = {} }: MobileNav
               className={`flex flex-col items-center justify-center p-2 relative ${
                 item.isActive 
                   ? 'text-white bg-purple-600' 
-                  : 'text-black hover:text-purple-600 hover:bg-gray-50 font-bold'
+                  : 'text-white hover:text-purple-600 hover:bg-gray-50 font-bold'
               }`}
             >
               <div className="relative mb-1">
-                <item.icon className="h-5 w-5" />
+                <item.icon className="h-5 w-5 text-white" />
                 {item.badge && item.badge > 0 && (
                   <Badge 
                     variant="destructive" 
                     className="absolute -top-2 -right-2 h-5 w-5 p-0 text-xs flex items-center justify-center"
+                    style={{ color: 'white' }}
                   >
                     {item.badge > 99 ? '99+' : item.badge}
                   </Badge>
@@ -212,10 +213,10 @@ export default function MobileNav({ venueId, venueName, counts = {} }: MobileNav
                 <div className="p-6 border-b border-gray-200">
                   <div className="flex items-center justify-between">
                     <div>
-                      <h2 className="text-lg font-semibold text-gray-900">
+                      <h2 className="text-lg font-semibold text-white">
                         {venueName || 'Home'}
                       </h2>
-                      <p className="text-sm text-gray-700 font-medium">Quick navigation</p>
+                      <p className="text-sm text-white font-medium">Quick navigation</p>
                     </div>
                     <Button
                       variant="ghost"
@@ -236,30 +237,31 @@ export default function MobileNav({ venueId, venueName, counts = {} }: MobileNav
                         onClick={() => handleNavigation(item.href)}
                         className={`w-full flex items-center justify-between p-4 rounded-xl transition-colors ${
                           item.isActive 
-                            ? 'bg-purple-100 text-purple-600 border-2 border-purple-300' 
-                            : 'hover:bg-gray-50 text-black font-bold'
+                            ? 'bg-purple-100 text-white border-2 border-purple-300' 
+                            : 'hover:bg-gray-50 text-white font-bold'
                         }`}
                       >
                         <div className="flex items-center space-x-4">
                           <div className="relative">
                             <item.icon className={`h-6 w-6 ${
-                              item.isActive ? 'text-purple-600' : 'text-black'
+                              item.isActive ? 'text-white' : 'text-white'
                             }`} />
                             {item.badge && item.badge > 0 && (
                               <Badge 
                                 variant="destructive" 
                                 className="absolute -top-2 -right-2 h-5 w-5 p-0 text-xs flex items-center justify-center"
+                                style={{ color: 'white' }}
                               >
                                 {item.badge > 99 ? '99+' : item.badge}
                               </Badge>
                             )}
                           </div>
                           <div className="text-left">
-                            <div className="font-bold">{item.label}</div>
-                            <div className="text-sm text-black font-medium">{item.description}</div>
+                            <div className="font-bold text-white">{item.label}</div>
+                            <div className="text-sm text-white font-medium">{item.description}</div>
                           </div>
                         </div>
-                        <ChevronRight className="h-5 w-5 text-black" />
+                        <ChevronRight className="h-5 w-5 text-white" />
                       </button>
                     ))}
                   </div>
@@ -268,7 +270,7 @@ export default function MobileNav({ venueId, venueName, counts = {} }: MobileNav
                 {/* Footer */}
                 <div className="p-4 border-t border-gray-200">
                   <div className="text-center">
-                    <p className="text-xs text-gray-900 font-medium">
+                    <p className="text-xs text-white font-medium">
                       Servio Home
                     </p>
                   </div>
@@ -285,10 +287,10 @@ export default function MobileNav({ venueId, venueName, counts = {} }: MobileNav
         <div className={`fixed top-4 left-1/2 transform -translate-x-1/2 z-30 transition-transform duration-300 ${
           isVisible ? 'translate-y-0' : '-translate-y-full'
         }`}>
-          <div className="bg-purple-100 backdrop-blur-md border-2 border-purple-300 rounded-full px-4 py-2 shadow-lg">
+          <div className="bg-purple-600 backdrop-blur-md border-2 border-purple-300 rounded-full px-4 py-2 shadow-lg">
             <div className="flex items-center space-x-2">
-              <activeItem.icon className="h-4 w-4 text-purple-600" />
-              <span className="text-sm font-bold text-purple-600">
+              <activeItem.icon className="h-4 w-4 text-white" />
+              <span className="text-sm font-bold text-white">
                 {activeItem.label}
               </span>
             </div>
