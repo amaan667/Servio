@@ -20,13 +20,13 @@ const LiveOrdersList = React.memo(function LiveOrdersList({ venueId }: { venueId
           <span className="font-semibold">£{o.total_amount.toFixed(2)}</span>
           <span className="rounded-full border px-2 py-0.5 text-xs">{o.order_status}</span>
         </div>
-        <div className="mt-1 text-sm text-slate-600">
+        <div className="mt-1 text-sm text-gray-700">
           {o.table_number ? `Table ${o.table_number}` : '—'}
         </div>
-        <div className="mt-1 text-sm text-slate-600">
+        <div className="mt-1 text-sm text-gray-700">
           {o.customer_name}
         </div>
-        <div className="mt-1 text-xs text-slate-400">
+        <div className="mt-1 text-xs text-gray-600">
           {new Date(o.created_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
         </div>
       </article>
@@ -45,7 +45,7 @@ const LiveOrdersList = React.memo(function LiveOrdersList({ venueId }: { venueId
 
   if (!debouncedData || debouncedData.length === 0) {
     return (
-      <div className="text-slate-500">
+      <div className="text-gray-600">
         <div>No active orders at the moment.</div>
       </div>
     )
