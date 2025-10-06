@@ -27,9 +27,9 @@ export default function NavBarClient() {
 
 
   return (
-    <nav className="flex items-center justify-between h-20 sm:h-24 md:h-28 px-0 bg-white border-b shadow-lg sticky top-0 z-20">
-      {/* Left (Logo + Home) */}
-      <div className="flex items-center -ml-4">
+    <nav className="relative flex items-center justify-center h-16 sm:h-20 md:h-24 px-0 bg-white border-b shadow-lg sticky top-0 z-20">
+      {/* Logo - Centered and smaller */}
+      <div className="flex items-center">
         <Link href={homeHref} className="flex items-center" aria-label="Home">
           <Image
             src="/assets/servio-logo-updated.png"
@@ -37,13 +37,13 @@ export default function NavBarClient() {
             width={800}
             height={250}
             priority
-            className="h-16 sm:h-20 md:h-24 lg:h-28 xl:h-32 w-auto hover:opacity-80 transition-opacity"
+            className="h-12 sm:h-14 md:h-16 lg:h-18 xl:h-20 w-auto hover:opacity-80 transition-opacity"
           />
         </Link>
       </div>
 
-      {/* Right */}
-      <div className="flex items-center space-x-4">
+      {/* Right - Positioned absolutely */}
+      <div className="absolute right-0 flex items-center space-x-4">
         <Link href={homeHref} className="text-gray-900 hover:text-gray-900 font-medium">Home</Link>
         <Link href={settingsHref} className="text-gray-900 hover:text-gray-900">
           <Button variant="outline" className="flex items-center">

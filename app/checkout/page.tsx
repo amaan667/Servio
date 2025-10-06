@@ -1078,7 +1078,7 @@ export default function CheckoutPage() {
                     alt="Servio"
                     width={300}
                     height={90}
-                    className="h-20 sm:h-24 md:h-28 lg:h-32 xl:h-36 w-auto"
+                    className="h-12 sm:h-14 md:h-16 lg:h-18 xl:h-20 w-auto"
                     priority
                   />
                 </div>
@@ -1189,7 +1189,7 @@ export default function CheckoutPage() {
                     alt="Servio"
                     width={300}
                     height={90}
-                    className="h-20 sm:h-24 md:h-28 lg:h-32 xl:h-36 w-auto"
+                    className="h-12 sm:h-14 md:h-16 lg:h-18 xl:h-20 w-auto"
                     priority
                   />
                 </div>
@@ -1300,7 +1300,7 @@ export default function CheckoutPage() {
                     alt="Servio"
                     width={300}
                     height={90}
-                    className="h-20 sm:h-24 md:h-28 lg:h-32 xl:h-36 w-auto"
+                    className="h-12 sm:h-14 md:h-16 lg:h-18 xl:h-20 w-auto"
                     priority
                   />
                 </div>
