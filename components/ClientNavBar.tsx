@@ -141,8 +141,8 @@ export default function ClientNavBar() {
     <nav className="bg-white/90 backdrop-blur-sm shadow-sm border-b sticky top-0 z-50">
       <div className="max-w-7xl mx-auto px-0 sm:px-1 lg:px-2">
         <div className="flex justify-between items-center h-20 sm:h-24 md:h-28">
-          {/* Logo */}
-          <div className="flex-shrink-0 -ml-4">
+          {/* Logo - Top-left on desktop, centered on mobile */}
+          <div className="flex-shrink-0 md:-ml-4 flex justify-center md:justify-start w-full md:w-auto">
             <Link href={isAuthenticated ? (venueId ? `/dashboard/${venueId}` : "/dashboard") : "/"} className="flex items-center group">
               <Image
                 src="/assets/servio-logo-updated.png"

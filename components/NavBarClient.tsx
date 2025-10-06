@@ -28,8 +28,8 @@ export default function NavBarClient() {
 
   return (
     <nav className="flex items-center justify-between h-20 sm:h-24 md:h-28 px-0 bg-white border-b shadow-lg sticky top-0 z-20">
-      {/* Left (Logo + Home) */}
-      <div className="flex items-center -ml-4">
+      {/* Logo - Top-left on desktop, centered on mobile */}
+      <div className="flex items-center md:-ml-4 flex justify-center md:justify-start w-full md:w-auto">
         <Link href={homeHref} className="flex items-center" aria-label="Home">
           <Image
             src="/assets/servio-logo-updated.png"

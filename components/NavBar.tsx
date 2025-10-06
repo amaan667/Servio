@@ -11,7 +11,7 @@ export default async function NavBar({ showActions = true, venueId }: { showActi
   // Avoid dumping cookies in production logs and mutating them here
   return (
     <nav className="flex items-center justify-between h-20 sm:h-24 md:h-28 px-2 sm:px-4 lg:px-6 bg-white border-b shadow-lg sticky top-0 z-20">
-      <div className="flex items-center -ml-2 sm:-ml-1">
+      <div className="flex items-center md:-ml-2 sm:-ml-1 flex justify-center md:justify-start w-full md:w-auto">
         <Link href={homeHref} className="flex items-center">
           <Image
             src="/assets/servio-logo-updated.png"
