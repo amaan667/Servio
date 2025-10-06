@@ -349,7 +349,7 @@ export default function GenerateQRClient({ venueId, venueName, activeTablesCount
               .footer { 
                 margin-top: 30px; 
                 text-align: center; 
-                color: #999; 
+                color: #ffffff; 
                 font-size: 14px;
                 border-top: 1px solid #eee;
                 padding-top: 20px;
@@ -500,7 +500,7 @@ export default function GenerateQRClient({ venueId, venueName, activeTablesCount
               
               .page-footer {
                 text-align: center; 
-                color: #999; 
+                color: #ffffff; 
                 font-size: 10px;
                 border-top: 1px solid #eee;
                 padding: 10px;
