@@ -115,7 +115,7 @@ export default function HomePage() {
               <h1 className="text-white text-[clamp(2rem,6vw,4.5rem)] leading-[1.05] tracking-tight font-extrabold">
                 QR Code Ordering Made Simple
               </h1>
-              <p className="mt-5 text-white/95 text-[clamp(1rem,2.2vw,1.25rem)] leading-relaxed max-w-[45ch] drop-shadow-md">
+              <p className="mt-5 text-white text-[clamp(1rem,2.2vw,1.25rem)] leading-relaxed max-w-[45ch]">
                 Streamline your business operations with contactless QR code ordering. Customers scan, order, and pay — all from their phones. You focus on great food and service.
               </p>
               <div className="mt-8 flex items-center gap-4 flex-wrap">
