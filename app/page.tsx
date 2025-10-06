@@ -103,23 +103,20 @@ export default function HomePage() {
     <div className="min-h-screen bg-white">
       {/* Hero Section */}
       <section className="relative bg-gradient-to-br from-[#7c3aed] via-[#7a3bec] to-[#6d28d9] text-white overflow-hidden">
-        <div className="relative max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-24 lg:py-32">
+        <div className="relative max-w-screen-xl mx-auto px-6 py-24 lg:py-32">
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-12 items-center">
-            <div>
+            <div className="max-w-3xl sm:max-w-xl md:max-w-2xl">
               <Badge className="bg-white/20 text-white border-white/30 mb-6">
                 <QrCode className="w-4 h-4 mr-2" />
                 Transform Your Business
               </Badge>
-              <h1 className="text-5xl lg:text-6xl font-extrabold mb-6 leading-tight">
-                <span className="block text-white drop-shadow-[0_1px_3px_rgba(0,0,0,0.25)]">QR Code Ordering</span>
-                <span className="block text-white drop-shadow-[0_1px_3px_rgba(0,0,0,0.25)]">Made Simple</span>
+              <h1 className="text-white text-[clamp(2rem,6vw,4.5rem)] leading-[1.05] tracking-tight font-extrabold drop-shadow-sm">
+                QR Code Ordering Made Simple
               </h1>
-              <p className="text-xl text-white mb-8 leading-relaxed drop-shadow-[0_1px_3px_rgba(0,0,0,0.25)]">
-                Streamline your business operations with contactless QR code
-                ordering. Customers scan, order, and pay - all from their
-                phones. You focus on great food and service.
+              <p className="mt-5 text-white/85 text-[clamp(1rem,2.2vw,1.25rem)] leading-relaxed max-w-[45ch]">
+                Streamline your business operations with contactless QR code ordering. Customers scan, order, and pay — all from their phones. You focus on great food and service.
               </p>
-              <div className="flex flex-col sm:flex-row gap-4 mb-8">
+              <div className="mt-8 flex items-center gap-4 flex-wrap">
                 <Button
                   size="lg"
                   onClick={handleGetStarted}
