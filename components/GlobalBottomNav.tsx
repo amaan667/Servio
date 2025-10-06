@@ -193,7 +193,7 @@ export default function GlobalBottomNav({ venueId, counts = {} }: GlobalBottomNa
               >
                 {item.id === 'live-orders' ? (
                   <>
-                    Live Orders <span className="ml-1" style={{ color: '#ffffff' }}>({liveOrdersCount})</span>
+                    Live Orders <span className="ml-1 text-white">({liveOrdersCount})</span>
                   </>
                 ) : (
                   item.label

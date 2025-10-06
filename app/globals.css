@@ -175,13 +175,7 @@
     color: #374151 !important; /* Dark instead of 80% opacity */
   }
   
-  .text-white {
-    color: #6b7280 !important; /* Darker for better visibility */
-  }
-  
-  .text-white {
-    color: #4b5563 !important; /* Darker for better visibility */
-  }
+  /* Do NOT override .text-white globally on desktop. Many components rely on real white. */
   
   /* Enhanced toggle switch styling for desktop */
   [data-radix-switch-root] {
