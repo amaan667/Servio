@@ -112,7 +112,7 @@ export default function HomePage() {
                 <QrCode className="w-4 h-4 mr-2" />
                 Transform Your Business
               </Badge>
-              <h1 className="text-white text-[clamp(2rem,6vw,4.5rem)] leading-[1.05] tracking-tight font-extrabold drop-shadow-lg">
+              <h1 className="text-white text-[clamp(2rem,6vw,4.5rem)] leading-[1.05] tracking-tight font-extrabold">
                 QR Code Ordering Made Simple
               </h1>
               <p className="mt-5 text-white/95 text-[clamp(1rem,2.2vw,1.25rem)] leading-relaxed max-w-[45ch] drop-shadow-md">
@@ -141,25 +141,25 @@ export default function HomePage() {
                 <Button
                   size="lg"
                   variant="outline"
-                  className="border-white text-white hover:bg-white hover:text-purple-600 text-lg px-8 py-4 bg-transparent"
+                  className="border-white text-white hover:bg-white hover:text-purple-600 text-lg px-8 py-4 bg-white/10 backdrop-blur-sm"
                   onClick={handleDemo}
                 >
                   <QrCode className="mr-2 h-5 w-5" />
                   View Demo
                 </Button>
               </div>
-              <div className="flex items-center space-x-8 text-white/95 drop-shadow-md">
+              <div className="mt-12 flex items-center space-x-8 text-white">
                 <div className="flex items-center">
-                  <CheckCircle className="h-5 w-5 mr-2 text-green-300" />
-                  <span className="font-medium">14-day free trial</span>
+                  <CheckCircle className="h-5 w-5 mr-2 text-green-400" />
+                  <span className="font-semibold text-white">14-day free trial</span>
                 </div>
                 <div className="flex items-center">
-                  <CheckCircle className="h-5 w-5 mr-2 text-green-300" />
-                  <span className="font-medium">No setup fees</span>
+                  <CheckCircle className="h-5 w-5 mr-2 text-green-400" />
+                  <span className="font-semibold text-white">No setup fees</span>
                 </div>
                 <div className="flex items-center">
-                  <CheckCircle className="h-5 w-5 mr-2 text-green-300" />
-                  <span className="font-medium">Cancel anytime</span>
+                  <CheckCircle className="h-5 w-5 mr-2 text-green-400" />
+                  <span className="font-semibold text-white">Cancel anytime</span>
                 </div>
               </div>
             </div>
