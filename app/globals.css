@@ -17,7 +17,7 @@
   }
   
   .btn-unified-outline {
-    @apply border-2 border-gray-300 bg-background text-gray-600 hover:bg-gray-50 hover:border-gray-400 hover:text-gray-900 dark:border-gray-600 dark:text-gray-200 dark:hover:bg-gray-800 dark:hover:border-gray-500 dark:hover:text-gray-100 shadow-sm hover:shadow-md;
+    @apply border-2 border-gray-300 bg-background text-white hover:bg-gray-50 hover:border-gray-400 hover:text-white dark:border-gray-600 dark:text-white dark:hover:bg-gray-800 dark:hover:border-gray-500 dark:hover:text-white shadow-sm hover:shadow-md;
   }
   
   .btn-unified-servio {
@@ -175,11 +175,11 @@
     color: #374151 !important; /* Dark instead of 80% opacity */
   }
   
-  .text-gray-400 {
+  .text-white {
     color: #6b7280 !important; /* Darker for better visibility */
   }
   
-  .text-gray-500 {
+  .text-white {
     color: #4b5563 !important; /* Darker for better visibility */
   }
   
@@ -251,11 +251,11 @@ p, span, div {
 }
 
 /* Global text readability fixes - catch any remaining greyed-out text */
-.text-gray-400, .text-slate-400 {
+.text-white, .text-slate-400 {
   color: #6b7280 !important; /* Much darker for better visibility */
 }
 
-.text-gray-500, .text-slate-500 {
+.text-white, .text-slate-500 {
   color: #4b5563 !important; /* Darker for better visibility */
 }
 
@@ -273,7 +273,7 @@ p, span, div {
 }
 
 /* Fix any remaining icon colors */
-.text-gray-400 svg, .text-slate-400 svg {
+.text-white svg, .text-slate-400 svg {
   color: #6b7280 !important;
 }
 
@@ -451,24 +451,24 @@ p, span, div {
     color: #1f2937 !important; /* Very dark gray for maximum visibility */
   }
   
-  .text-gray-500 {
+  .text-white {
     color: #374151 !important; /* Darker gray for better visibility */
   }
   
-  .text-gray-400 {
+  .text-white {
     color: #4b5563 !important; /* Darker gray for better visibility */
   }
   
-  .text-gray-300 {
+  .text-white {
     color: #6b7280 !important; /* Darker gray for better visibility */
   }
   
   /* Enhanced mobile text contrast for card descriptions */
-  .text-gray-700 {
+  .text-white {
     color: #1f2937 !important; /* Very dark for maximum mobile visibility */
   }
   
-  .text-gray-600 {
+  .text-white {
     color: #374151 !important; /* Darker for better mobile visibility */
   }
   
@@ -477,23 +477,23 @@ p, span, div {
     color: #d1d5db !important; /* Light gray for dark mode */
   }
   
-  .dark .text-gray-500 {
+  .dark .text-white {
     color: #d1d5db !important; /* Light gray for dark mode */
   }
   
-  .dark .text-gray-400 {
+  .dark .text-white {
     color: #9ca3af !important; /* Medium gray for dark mode */
   }
   
-  .dark .text-gray-300 {
+  .dark .text-white {
     color: #d1d5db !important; /* Light gray for dark mode */
   }
   
-  .dark .text-gray-700 {
+  .dark .text-white {
     color: #f3f4f6 !important; /* Very light gray for dark mode */
   }
   
-  .dark .text-gray-800 {
+  .dark .text-white {
     color: #f9fafb !important; /* Almost white for dark mode */
   }
   
@@ -512,11 +512,11 @@ p, span, div {
   }
   
   /* Dashboard card labels and descriptions */
-  .card .text-gray-700 {
+  .card .text-white {
     color: #374151 !important;
   }
   
-  .dark .card .text-gray-700 {
+  .dark .card .text-white {
     color: #d1d5db !important;
   }
   
@@ -579,24 +579,24 @@ p, span, div {
     color: #374151 !important;
   }
   
-  .card .text-gray-700 {
+  .card .text-white {
     color: #374151 !important;
   }
   
-  .card .text-gray-600 {
+  .card .text-white {
     color: #4b5563 !important;
   }
   
   /* Enhanced mobile text visibility for all components */
-  .text-gray-500 {
+  .text-white {
     color: #4b5563 !important; /* Darker for better mobile visibility */
   }
   
-  .text-gray-400 {
+  .text-white {
     color: #6b7280 !important; /* Much darker for better visibility */
   }
   
-  .text-gray-300 {
+  .text-white {
     color: #9ca3af !important; /* Darker for better mobile visibility */
   }
   
@@ -1543,12 +1543,12 @@ p, span, div {
 
   /* Mobile navigation text visibility fixes */
   .mobile-nav-text {
-    color: #000000 !important;
+    color: #ffffff !important;
     font-weight: 700 !important;
   }
   
   .mobile-nav-text-inactive {
-    color: #000000 !important;
+    color: #ffffff !important;
     font-weight: 600 !important;
   }
   
@@ -1559,7 +1559,7 @@ p, span, div {
   
   /* Ensure mobile navigation icons are visible */
   .mobile-nav-icon {
-    color: #000000 !important;
+    color: #ffffff !important;
   }
   
   .mobile-nav-icon-active {
@@ -1673,23 +1673,23 @@ p, span, div {
     color: #d1d5db !important; /* Light gray for dark mode */
   }
   
-  .text-gray-500 {
+  .text-white {
     color: #d1d5db !important; /* Light gray for dark mode */
   }
   
-  .text-gray-400 {
+  .text-white {
     color: #9ca3af !important; /* Medium gray for dark mode */
   }
   
-  .text-gray-300 {
+  .text-white {
     color: #d1d5db !important; /* Light gray for dark mode */
   }
   
-  .text-gray-700 {
+  .text-white {
     color: #f3f4f6 !important; /* Very light gray for dark mode */
   }
   
-  .text-gray-800 {
+  .text-white {
     color: #f9fafb !important; /* Almost white for dark mode */
   }
   

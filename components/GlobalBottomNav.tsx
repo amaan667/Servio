@@ -171,11 +171,11 @@ export default function GlobalBottomNav({ venueId, counts = {} }: GlobalBottomNa
               className={`flex flex-col items-center justify-center p-2 relative transition-all duration-200 ${
                 item.isActive
                   ? 'text-white bg-purple-600'
-                  : 'text-gray-900 hover:text-purple-600 hover:bg-gray-50/80'
+                  : 'text-white hover:text-purple-600 hover:bg-gray-50/80'
               }`}
             >
               <div className="relative mb-1">
-                <item.icon className={`h-5 w-5 transition-colors ${item.isActive ? 'text-white' : 'text-gray-900'}`} />
+                <item.icon className={`h-5 w-5 transition-colors ${item.isActive ? 'text-white' : 'text-white'}`} />
                 {item.badge && item.badge > 0 && (
                   <Badge 
                     variant="destructive" 
@@ -186,7 +186,7 @@ export default function GlobalBottomNav({ venueId, counts = {} }: GlobalBottomNa
                 )}
               </div>
               <span
-                className={`${item.isActive ? 'text-white' : 'text-gray-950'} 
+                className={`${item.isActive ? 'text-white' : 'text-white'} 
                   font-bold text-center px-1 transition-colors 
                   leading-snug text-[12px] sm:text-[13px] max-w-[92px] whitespace-nowrap`}
               >
@@ -204,8 +204,8 @@ export default function GlobalBottomNav({ venueId, counts = {} }: GlobalBottomNa
         }`}>
           <div className="bg-purple-100 backdrop-blur-md border-2 border-purple-300 rounded-full px-4 py-2 shadow-lg">
             <div className="flex items-center space-x-2">
-              <activeItem.icon className="h-4 w-4 text-purple-600" />
-              <span className="text-sm font-bold text-purple-600">
+              <activeItem.icon className="h-4 w-4 text-white" />
+              <span className="text-sm font-bold text-white">
                 {activeItem.label}
               </span>
             </div>

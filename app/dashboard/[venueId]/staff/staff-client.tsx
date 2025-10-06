@@ -330,7 +330,7 @@ export default function StaffClient({
           <div className="mt-4 p-4 bg-gray-50 rounded-lg space-y-4">
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">Date</label>
+                <label className="block text-sm font-medium text-white mb-2">Date</label>
                 <input 
                   type="date" 
                   className="w-full rounded-md border border-gray-300 px-3 py-3 text-sm focus:ring-2 focus:ring-purple-500 focus:border-transparent" 
@@ -339,15 +339,15 @@ export default function StaffClient({
                 />
               </div>
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">Start Time</label>
+                <label className="block text-sm font-medium text-white mb-2">Start Time</label>
                 <TimeField24 value={start} onChange={setStart} />
               </div>
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">End Time</label>
+                <label className="block text-sm font-medium text-white mb-2">End Time</label>
                 <TimeField24 value={end} onChange={setEnd} />
               </div>
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">Area</label>
+                <label className="block text-sm font-medium text-white mb-2">Area</label>
                 <select 
                   className="w-full rounded-md border border-gray-300 px-3 py-3 text-sm focus:ring-2 focus:ring-purple-500 focus:border-transparent" 
                   value={area} 
@@ -372,13 +372,13 @@ export default function StaffClient({
                 <Button 
                   variant="outline" 
                   onClick={onClose}
-                  className="px-6 py-3 rounded-md border border-gray-300 text-gray-700 hover:bg-gray-50 min-h-[44px]"
+                  className="px-6 py-3 rounded-md border border-gray-300 text-white hover:bg-gray-50 min-h-[44px]"
                 >
                   Cancel
                 </Button>
               )}
             </div>
-            {err && <div className="text-sm text-red-600 bg-red-50 p-2 rounded">{err}</div>}
+            {err && <div className="text-sm text-white bg-red-50 p-2 rounded">{err}</div>}
           </div>
         )}
       </div>
@@ -433,7 +433,7 @@ export default function StaffClient({
               <CardContent className="p-3 sm:p-6">
                 <div className="flex items-center justify-between">
                   <div>
-                    <p className="text-sm font-medium text-blue-600">Total Staff</p>
+                    <p className="text-sm font-medium text-white">Total Staff</p>
                     <p className="text-2xl font-bold text-foreground">
                       {loading && !initialCounts && staff.length === 0 && (!initialStaff || initialStaff.length === 0) ? (
                         <div className="animate-pulse bg-blue-200 h-8 w-12 rounded"></div>
@@ -453,7 +453,7 @@ export default function StaffClient({
               <CardContent className="p-3 sm:p-6">
                 <div className="flex items-center justify-between">
                   <div>
-                    <p className="text-sm font-medium text-green-600">Active Staff</p>
+                    <p className="text-sm font-medium text-white">Active Staff</p>
                     <p className="text-2xl font-bold text-foreground">
                       {loading && !initialCounts && staff.length === 0 && (!initialStaff || initialStaff.length === 0) ? (
                         <div className="animate-pulse bg-green-200 h-8 w-12 rounded"></div>
@@ -473,7 +473,7 @@ export default function StaffClient({
               <CardContent className="p-3 sm:p-6">
                 <div className="flex items-center justify-between">
                   <div>
-                    <p className="text-sm font-medium text-purple-600">Roles</p>
+                    <p className="text-sm font-medium text-white">Roles</p>
                     <p className="text-2xl font-bold text-foreground">
                       {loading && !initialCounts && staff.length === 0 && (!initialStaff || initialStaff.length === 0) ? (
                         <div className="animate-pulse bg-purple-200 h-8 w-12 rounded"></div>
@@ -493,7 +493,7 @@ export default function StaffClient({
               <CardContent className="p-3 sm:p-6">
                 <div className="flex items-center justify-between">
                   <div>
-                    <p className="text-sm font-medium text-orange-600">Active Shifts</p>
+                    <p className="text-sm font-medium text-white">Active Shifts</p>
                     <p className="text-2xl font-bold text-foreground">
                       {loading && !initialCounts && staff.length === 0 && (!initialStaff || initialStaff.length === 0) ? (
                         <div className="animate-pulse bg-orange-200 h-8 w-12 rounded"></div>
@@ -533,7 +533,7 @@ export default function StaffClient({
                         if (!res.ok || j?.error) { alert(j?.error || 'Failed to clear'); return; }
                         setStaff([]);
                       }}
-                      className="text-red-600 hover:text-red-700"
+                      className="text-white hover:text-white"
                     >
                       Clear All
                     </Button>
@@ -587,7 +587,7 @@ export default function StaffClient({
                 </div>
                 {error && (
                   <div className="mt-3 p-3 bg-red-50 border border-red-200 rounded-md">
-                    <span className="text-red-600 text-sm">{error}</span>
+                    <span className="text-white text-sm">{error}</span>
                   </div>
                 )}
               </CardContent>
@@ -600,7 +600,7 @@ export default function StaffClient({
                 <CardContent className="py-16">
                   <div className="text-center">
                     <div className="w-16 h-16 bg-gray-100 rounded-full flex items-center justify-center mx-auto mb-4">
-                      <Users className="h-8 w-8 text-gray-700" />
+                      <Users className="h-8 w-8 text-white" />
                     </div>
                     <h3 className="text-lg font-semibold text-foreground mb-2">No team members yet</h3>
                     <p className="text-foreground/80 mb-6 max-w-md mx-auto">
@@ -653,7 +653,7 @@ export default function StaffClient({
                                   row.active ? 'bg-white' : 'bg-gray-200'
                                 }`}>
                                   <span className={`text-sm font-medium ${
-                                    row.active ? 'text-gray-800' : 'text-gray-900'
+                                    row.active ? 'text-white' : 'text-white'
                                   }`}>
                                     {row.name.charAt(0).toUpperCase()}
                                   </span>
@@ -663,7 +663,7 @@ export default function StaffClient({
                                     row.active ? 'text-foreground' : 'text-muted-foreground'
                                   }`}>
                                     {row.name}
-                                    {!row.active && <span className="ml-2 text-xs text-gray-700">(Inactive)</span>}
+                                    {!row.active && <span className="ml-2 text-xs text-white">(Inactive)</span>}
                                   </p>
                                   <p className="staff-member-role text-sm text-foreground/80">{role}</p>
                                 </div>
@@ -686,7 +686,7 @@ export default function StaffClient({
                                     onClick={() => {
                                       setEditingShiftFor(editingShiftFor === row.id ? null : row.id);
                                     }}
-                                    className="h-8 sm:h-9 px-2 sm:px-3 text-xs sm:text-sm border-blue-200 text-blue-600 hover:text-blue-700 hover:bg-blue-50"
+                                    className="h-8 sm:h-9 px-2 sm:px-3 text-xs sm:text-sm border-blue-200 text-white hover:text-white hover:bg-blue-50"
                                   >
                                     <Clock className="w-3 h-3 sm:w-4 sm:h-4 mr-1" />
                                     <span className="hidden sm:inline">{editingShiftFor === row.id ? 'Cancel' : 'Add Shift'}</span>
@@ -696,7 +696,7 @@ export default function StaffClient({
                                     size="sm"
                                     variant="outline"
                                     onClick={() => onDelete(row)}
-                                    className="h-8 sm:h-9 px-2 sm:px-3 text-xs sm:text-sm border-red-200 text-red-600 hover:text-red-700 hover:bg-red-50"
+                                    className="h-8 sm:h-9 px-2 sm:px-3 text-xs sm:text-sm border-red-200 text-white hover:text-white hover:bg-red-50"
                                   >
                                     Delete
                                   </Button>
