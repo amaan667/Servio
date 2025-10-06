@@ -155,8 +155,8 @@ export default function ClientNavBar() {
             </Link>
           </div>
 
-          {/* Desktop Navigation - Positioned absolutely on the right */}
-          <div className="absolute right-0 hidden md:block">
+          {/* Desktop Navigation - Properly spaced from right edge */}
+          <div className="hidden md:block pr-4">
             <div className="flex items-center space-x-4 lg:space-x-6">
               {isAuthenticated ? (
                 // Signed in navigation - different based on current page

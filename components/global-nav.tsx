@@ -142,8 +142,8 @@ export default function GlobalNav() {
             </Link>
           </div>
 
-          {/* Desktop Navigation - Positioned absolutely on the right */}
-          <div className="absolute right-0 hidden md:flex items-center space-x-2">
+          {/* Desktop Navigation - Properly spaced from right edge */}
+          <div className="hidden md:flex items-center space-x-2 pr-4">
             {isAuthenticated ? (
               // Signed in navigation - modern SaaS style
               <div className="flex items-center space-x-2">
