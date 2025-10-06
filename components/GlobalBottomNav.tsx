@@ -174,8 +174,13 @@ export default function GlobalBottomNav({ venueId, counts = {} }: GlobalBottomNa
                   : 'text-gray-700 hover:text-purple-600 hover:bg-gray-50/80'
               }`}
             >
-              <div className="relative mb-1">
+              <div className="relative mb-1 flex flex-col items-center">
                 <item.icon className={`h-5 w-5 transition-colors ${item.isActive ? 'text-white' : 'text-gray-700'}`} />
+                {item.id === 'live-orders' && (
+                  <div className="mt-1 text-xs font-bold" style={{ color: '#ffffff' }}>
+                    {liveOrdersCount}
+                  </div>
+                )}
                 {item.badge && item.badge > 0 && (
                   <Badge 
                     variant="destructive" 
