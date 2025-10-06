@@ -505,8 +505,8 @@ export default function AnalyticsClient({ venueId, venueName }: { venueId: strin
           </div>
         </div>
         <div className="flex items-center space-x-2">
-          <span className="text-sm text-foreground">Last updated:</span>
-          <span className="text-sm font-medium">{new Date().toLocaleTimeString()}</span>
+          <span className="text-sm text-gray-900">Last updated:</span>
+          <span className="text-sm font-medium text-gray-900">{new Date().toLocaleTimeString()}</span>
         </div>
       </div>
 
@@ -516,7 +516,7 @@ export default function AnalyticsClient({ venueId, venueName }: { venueId: strin
           <CardContent className="p-6">
             <div className="flex items-center justify-between">
               <div>
-                <p className="text-sm font-medium text-muted-foreground">Total Orders</p>
+                <p className="text-sm font-semibold text-gray-900">Total Orders</p>
                 <p className="text-2xl font-bold text-foreground">{analyticsData.totalOrders}</p>
               </div>
               <div className="w-12 h-12 bg-blue-100 rounded-lg flex items-center justify-center">
@@ -530,7 +530,7 @@ export default function AnalyticsClient({ venueId, venueName }: { venueId: strin
           <CardContent className="p-6">
             <div className="flex items-center justify-between">
               <div>
-                <p className="text-sm font-medium text-muted-foreground">Total Revenue</p>
+                <p className="text-sm font-semibold text-gray-900">Total Revenue</p>
                 <p className="text-2xl font-bold text-foreground">£{analyticsData.totalRevenue.toFixed(2)}</p>
               </div>
               <div className="w-12 h-12 bg-green-100 rounded-lg flex items-center justify-center">
@@ -544,7 +544,7 @@ export default function AnalyticsClient({ venueId, venueName }: { venueId: strin
           <CardContent className="p-6">
             <div className="flex items-center justify-between">
               <div>
-                <p className="text-sm font-medium text-muted-foreground">Average Order</p>
+                <p className="text-sm font-semibold text-gray-900">Average Order</p>
                 <p className="text-2xl font-bold text-foreground">£{analyticsData.averageOrderValue.toFixed(2)}</p>
               </div>
               <div className="w-12 h-12 bg-purple-100 rounded-lg flex items-center justify-center">
@@ -558,7 +558,7 @@ export default function AnalyticsClient({ venueId, venueName }: { venueId: strin
           <CardContent className="p-6">
             <div className="flex items-center justify-between">
               <div>
-                <p className="text-sm font-medium text-muted-foreground">Menu Items</p>
+                <p className="text-sm font-semibold text-gray-900">Menu Items</p>
                 <p className="text-2xl font-bold text-foreground">{analyticsData.menuItemsCount}</p>
               </div>
               <div className="w-12 h-12 bg-orange-100 rounded-lg flex items-center justify-center">
