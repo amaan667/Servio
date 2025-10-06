@@ -112,7 +112,7 @@ export default function HomePage() {
                 <QrCode className="w-4 h-4 mr-2" />
                 Transform Your Business
               </Badge>
-              <h1 className="!text-white text-[clamp(2rem,6vw,4.5rem)] leading-[1.05] tracking-tight font-extrabold drop-shadow-2xl shadow-2xl filter brightness-110 contrast-125 transform hover:scale-105 transition-all duration-300">
+              <h1 className="!text-white text-[clamp(2rem,6vw,4.5rem)] leading-[1.05] tracking-tight font-extrabold drop-shadow-2xl" style={{textShadow: '0 0 20px rgba(0,0,0,0.5), 0 0 40px rgba(0,0,0,0.3), 0 4px 8px rgba(0,0,0,0.4)'}}>
                 QR Code Ordering Made Simple
               </h1>
               <p className="mt-5 !text-white text-[clamp(1rem,2.2vw,1.25rem)] leading-relaxed max-w-[45ch] drop-shadow-md">
