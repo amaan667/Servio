@@ -112,7 +112,7 @@ export default async function StaffPage({
             <h1 className="text-3xl font-bold tracking-tight text-foreground">
               Staff Management for {venue.name}
             </h1>
-            <p className="text-lg text-gray-700 mt-2">
+            <p className="text-lg text-foreground mt-2">
               Add staff and manage roles
             </p>
           </div>

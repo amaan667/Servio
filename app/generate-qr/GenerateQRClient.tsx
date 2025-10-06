@@ -751,8 +751,8 @@ export default function GenerateQRClient({ venueId, venueName, activeTablesCount
     return (
       <div className="flex items-center justify-center py-8">
         <div className="text-center">
-          <p className="mt-2 text-muted-foreground">Loading QR codes...</p>
-          <p className="text-xs text-muted-foreground mt-2">
+          <p className="mt-2 text-foreground">Loading QR codes...</p>
+          <p className="text-xs text-foreground mt-2">
             Debug: activeTablesCount={activeTablesCount}, venueId={venueId}
           </p>
         </div>
@@ -803,9 +803,9 @@ export default function GenerateQRClient({ venueId, venueName, activeTablesCount
           <CardContent className="p-4 sm:p-6">
             <div className="flex items-center justify-between">
               <div>
-                <p className="text-xs sm:text-sm font-medium text-muted-foreground">Tables Set Up</p>
+                <p className="text-xs sm:text-sm font-medium text-foreground">Tables Set Up</p>
                 <p className="text-xl sm:text-2xl font-bold text-foreground">{activeTablesCount}</p>
-                <p className="text-xs text-muted-foreground mt-1">Tables configured in your venue</p>
+                <p className="text-xs text-foreground mt-1">Tables configured in your venue</p>
               </div>
             </div>
           </CardContent>
@@ -839,7 +839,7 @@ export default function GenerateQRClient({ venueId, venueName, activeTablesCount
                   Counters
                 </Button>
               </div>
-              <p className="text-xs text-muted-foreground mt-1">
+              <p className="text-xs text-foreground mt-1">
                 {qrType === 'table' 
                   ? 'Generate QR codes for table service (dine-in restaurants)' 
                   : 'Generate QR codes for counter service (food trucks, cafes, pickup)'
@@ -851,7 +851,7 @@ export default function GenerateQRClient({ venueId, venueName, activeTablesCount
               <Label>{qrType === 'table' ? 'Table' : 'Counter'} Numbers</Label>
               <div className="mt-2 space-y-4">
                 <div className="flex items-center justify-between">
-                  <div className="text-sm text-muted-foreground">
+                  <div className="text-sm text-foreground">
                     {currentSelection.length === 0 
                       ? `No ${qrType}s selected - click the buttons below to add ${qrType}s for QR code generation`
                       : `Currently generating QR codes for ${currentSelection.length} active ${qrType}${currentSelection.length !== 1 ? 's' : ''}`
@@ -908,7 +908,7 @@ export default function GenerateQRClient({ venueId, venueName, activeTablesCount
               <Label>Venue</Label>
               <div className="mt-1 p-3 bg-muted rounded-md">
                 <p className="font-medium">{venueName || "My Venue"}</p>
-                <p className="text-sm text-muted-foreground">Venue ID: {venueId}</p>
+                <p className="text-sm text-foreground">Venue ID: {venueId}</p>
               </div>
             </div>
 
@@ -919,7 +919,7 @@ export default function GenerateQRClient({ venueId, venueName, activeTablesCount
               </Label>
               <div className="mt-2 space-y-3">
                 <div className="flex items-center justify-between">
-                  <span className="text-sm text-muted-foreground">QR Code Size:</span>
+                  <span className="text-sm text-foreground">QR Code Size:</span>
                   <select 
                     value={printSettings.qrSize} 
                     onChange={(e) => setPrintSettings(prev => ({...prev, qrSize: parseInt(e.target.value)}))}
@@ -931,7 +931,7 @@ export default function GenerateQRClient({ venueId, venueName, activeTablesCount
                   </select>
                 </div>
                 <div className="flex items-center justify-between">
-                  <span className="text-sm text-muted-foreground">Include Instructions:</span>
+                  <span className="text-sm text-foreground">Include Instructions:</span>
                   <input 
                     type="checkbox" 
                     checked={printSettings.includeInstructions}
@@ -940,7 +940,7 @@ export default function GenerateQRClient({ venueId, venueName, activeTablesCount
                   />
                 </div>
                 <div className="flex items-center justify-between">
-                  <span className="text-sm text-muted-foreground">Include Venue Info:</span>
+                  <span className="text-sm text-foreground">Include Venue Info:</span>
                   <input 
                     type="checkbox" 
                     checked={printSettings.includeVenueInfo}
@@ -963,7 +963,7 @@ export default function GenerateQRClient({ venueId, venueName, activeTablesCount
           <CardContent>
             {currentSelection.length === 0 ? (
               <div className="text-center py-8">
-                <div className="text-muted-foreground mb-4">
+                <div className="text-foreground mb-4">
                   <QrCode className="h-12 w-12 mx-auto mb-2 opacity-50" />
                   <p className="text-lg font-medium">No QR Codes Generated</p>
                   <p className="text-sm">
@@ -995,7 +995,7 @@ export default function GenerateQRClient({ venueId, venueName, activeTablesCount
                         onClick={() => qrType === 'table' ? removeTable(itemNumber) : removeCounter(itemNumber)}
                         variant="ghost"
                         size="sm"
-                        className="absolute top-1 right-1 h-6 w-6 p-0 text-muted-foreground hover:text-destructive"
+                        className="absolute top-1 right-1 h-6 w-6 p-0 text-foreground hover:text-destructive"
                       >
                         <X className="h-3 w-3" />
                       </Button>
@@ -1009,7 +1009,7 @@ export default function GenerateQRClient({ venueId, venueName, activeTablesCount
                       <div className="mt-2">
                         <Badge variant="secondary">{label} {cleanName}</Badge>
                       </div>
-                      <div className="mt-2 text-xs text-muted-foreground break-all">
+                      <div className="mt-2 text-xs text-foreground break-all">
                         <code className="text-xs">{itemOrderUrl}</code>
                       </div>
                     </div>
@@ -1056,7 +1056,7 @@ export default function GenerateQRClient({ venueId, venueName, activeTablesCount
               </div>
               <div>
                 <h4 className="font-medium">Generate QR Codes</h4>
-                <p className="text-sm text-muted-foreground">
+                <p className="text-sm text-foreground">
                   Create QR codes for tables (dine-in) or counters (pickup/food trucks) in your venue
                 </p>
               </div>
@@ -1067,7 +1067,7 @@ export default function GenerateQRClient({ venueId, venueName, activeTablesCount
               </div>
               <div>
                 <h4 className="font-medium">Print and Display</h4>
-                <p className="text-sm text-muted-foreground">
+                <p className="text-sm text-foreground">
                   Print the QR codes and place them on tables or at counter locations
                 </p>
               </div>
@@ -1078,7 +1078,7 @@ export default function GenerateQRClient({ venueId, venueName, activeTablesCount
               </div>
               <div>
                 <h4 className="font-medium">Customers Order</h4>
-                <p className="text-sm text-muted-foreground">
+                <p className="text-sm text-foreground">
                   Customers scan the QR code to view your menu and place orders for pickup or delivery
                 </p>
               </div>

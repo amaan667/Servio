@@ -77,7 +77,7 @@ export default async function GenerateQRPage() {
           <h1 className="text-2xl sm:text-3xl font-bold tracking-tight text-foreground">
             QR Codes for {venue.name}
           </h1>
-          <p className="text-base sm:text-lg text-muted-foreground mt-2">
+          <p className="text-base sm:text-lg text-foreground mt-2">
             Generate and manage QR codes for your tables
           </p>
         </div>

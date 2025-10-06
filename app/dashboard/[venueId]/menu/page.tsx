@@ -63,7 +63,7 @@ export default async function MenuPage({
           <h1 className="text-3xl font-bold tracking-tight text-foreground">
             Menu for {venue.name}
           </h1>
-        <p className="text-lg text-gray-700 mt-2">
+        <p className="text-lg text-foreground mt-2">
           Manage your menu items and categories
         </p>
         </div>
