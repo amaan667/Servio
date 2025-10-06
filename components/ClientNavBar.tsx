@@ -112,7 +112,7 @@ export default function ClientNavBar() {
     return (
       <nav className="bg-white/90 backdrop-blur-sm shadow-sm border-b sticky top-0 z-50">
         <div className="max-w-7xl mx-auto px-0 sm:px-1 lg:px-2">
-          <div className="flex justify-between items-center h-32 sm:h-36 md:h-40 lg:h-56 xl:h-64 2xl:h-72">
+          <div className="flex justify-between items-center h-160 sm:h-180 md:h-200 lg:h-280 xl:h-320 2xl:h-360">
             {/* Logo */}
             <div className="flex-shrink-0 -ml-4">
               <Link href="/" className="flex items-center group">
@@ -121,7 +121,7 @@ export default function ClientNavBar() {
                   alt="Servio"
                   width={800}
                   height={250}
-                  className="h-28 sm:h-32 md:h-36 lg:h-56 xl:h-64 2xl:h-72 w-auto transition-all duration-300 group-hover:scale-105 drop-shadow-xl filter brightness-110 contrast-110"
+                  className="h-140 sm:h-160 md:h-180 lg:h-280 xl:h-320 2xl:h-360 w-auto transition-all duration-300 group-hover:scale-105 drop-shadow-xl filter brightness-110 contrast-110"
                   priority
                 />
               </Link>
@@ -140,7 +140,7 @@ export default function ClientNavBar() {
   return (
     <nav className="bg-white/90 backdrop-blur-sm shadow-sm border-b sticky top-0 z-50">
       <div className="max-w-7xl mx-auto px-0 sm:px-1 lg:px-2">
-        <div className="flex justify-between items-center h-20 sm:h-24 md:h-28">
+        <div className="flex justify-between items-center h-80 sm:h-100 md:h-120">
           {/* Logo */}
           <div className="flex-shrink-0 -ml-4">
             <Link href={isAuthenticated ? (venueId ? `/dashboard/${venueId}` : "/dashboard") : "/"} className="flex items-center group">
@@ -149,7 +149,7 @@ export default function ClientNavBar() {
                 alt="Servio"
                 width={800}
                 height={250}
-                className="h-16 sm:h-20 md:h-24 lg:h-28 xl:h-32 w-auto transition-all duration-300 group-hover:scale-105 drop-shadow-xl filter brightness-110 contrast-110"
+                className="h-80 sm:h-100 md:h-120 lg:h-140 xl:h-160 w-auto transition-all duration-300 group-hover:scale-105 drop-shadow-xl filter brightness-110 contrast-110"
                 priority
               />
             </Link>
