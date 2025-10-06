@@ -108,7 +108,7 @@ export default function HomePage() {
         <div className="relative max-w-screen-xl mx-auto px-6 py-24 lg:py-32">
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-12 items-center">
             <div className="max-w-3xl sm:max-w-xl md:max-w-2xl">
-              <Badge className="bg-white/25 text-white border-white/40 mb-6 drop-shadow-sm">
+              <Badge className="bg-white/25 text-white border-white/40 mb-6">
                 <QrCode className="w-4 h-4 mr-2" />
                 Transform Your Business
               </Badge>
@@ -141,7 +141,7 @@ export default function HomePage() {
                 <Button
                   size="lg"
                   variant="outline"
-                  className="border-white text-white hover:bg-white hover:text-purple-600 text-lg px-8 py-4 bg-white/10 backdrop-blur-sm"
+                  className="border-white text-white hover:bg-white hover:text-purple-600 text-lg px-8 py-4 bg-white/20 backdrop-blur-sm"
                   onClick={handleDemo}
                 >
                   <QrCode className="mr-2 h-5 w-5" />
