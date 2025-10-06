@@ -26,7 +26,7 @@ const LiveOrdersList = React.memo(function LiveOrdersList({ venueId }: { venueId
         <div className="mt-1 text-sm text-gray-700">
           {o.customer_name}
         </div>
-        <div className="mt-1 text-xs text-gray-600">
+        <div className="mt-1 text-xs text-gray-700">
           {new Date(o.created_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
         </div>
       </article>
@@ -45,7 +45,7 @@ const LiveOrdersList = React.memo(function LiveOrdersList({ venueId }: { venueId
 
   if (!debouncedData || debouncedData.length === 0) {
     return (
-      <div className="text-gray-600">
+      <div className="text-gray-700">
         <div>No active orders at the moment.</div>
       </div>
     )
