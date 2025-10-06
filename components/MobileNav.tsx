@@ -177,7 +177,7 @@ export default function MobileNav({ venueId, venueName, counts = {} }: MobileNav
               }`}
             >
               <div className="relative mb-1">
-                <item.icon className="h-5 w-5" />
+                <item.icon className="h-5 w-5 text-white" />
                 {item.badge && item.badge > 0 && (
                   <Badge 
                     variant="destructive" 
@@ -237,14 +237,14 @@ export default function MobileNav({ venueId, venueName, counts = {} }: MobileNav
                         onClick={() => handleNavigation(item.href)}
                         className={`w-full flex items-center justify-between p-4 rounded-xl transition-colors ${
                           item.isActive 
-                            ? 'bg-purple-100 text-purple-600 border-2 border-purple-300' 
+                            ? 'bg-purple-100 text-white border-2 border-purple-300' 
                             : 'hover:bg-gray-50 text-white font-bold'
                         }`}
                       >
                         <div className="flex items-center space-x-4">
                           <div className="relative">
                             <item.icon className={`h-6 w-6 ${
-                              item.isActive ? 'text-purple-600' : 'text-white'
+                              item.isActive ? 'text-white' : 'text-white'
                             }`} />
                             {item.badge && item.badge > 0 && (
                               <Badge 
@@ -257,7 +257,7 @@ export default function MobileNav({ venueId, venueName, counts = {} }: MobileNav
                             )}
                           </div>
                           <div className="text-left">
-                            <div className="font-bold">{item.label}</div>
+                            <div className="font-bold text-white">{item.label}</div>
                             <div className="text-sm text-white font-medium">{item.description}</div>
                           </div>
                         </div>
@@ -287,7 +287,7 @@ export default function MobileNav({ venueId, venueName, counts = {} }: MobileNav
         <div className={`fixed top-4 left-1/2 transform -translate-x-1/2 z-30 transition-transform duration-300 ${
           isVisible ? 'translate-y-0' : '-translate-y-full'
         }`}>
-          <div className="bg-purple-100 backdrop-blur-md border-2 border-purple-300 rounded-full px-4 py-2 shadow-lg">
+          <div className="bg-purple-600 backdrop-blur-md border-2 border-purple-300 rounded-full px-4 py-2 shadow-lg">
             <div className="flex items-center space-x-2">
               <activeItem.icon className="h-4 w-4 text-white" />
               <span className="text-sm font-bold text-white">
