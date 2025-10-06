@@ -179,7 +179,8 @@ export default function GlobalBottomNav({ venueId, counts = {} }: GlobalBottomNa
                 {item.badge && item.badge > 0 && (
                   <Badge 
                     variant="destructive" 
-                    className="absolute -top-2 -right-2 h-4 w-4 p-0 text-xs flex items-center justify-center bg-red-500 text-white"
+                    className="absolute -top-2 -right-2 h-4 w-4 p-0 text-xs flex items-center justify-center bg-red-500"
+                    style={{ color: 'white' }}
                   >
                     {item.badge > 99 ? '99+' : item.badge}
                   </Badge>

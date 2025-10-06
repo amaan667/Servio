@@ -182,6 +182,7 @@ export default function MobileNav({ venueId, venueName, counts = {} }: MobileNav
                   <Badge 
                     variant="destructive" 
                     className="absolute -top-2 -right-2 h-5 w-5 p-0 text-xs flex items-center justify-center"
+                    style={{ color: 'white' }}
                   >
                     {item.badge > 99 ? '99+' : item.badge}
                   </Badge>
@@ -249,6 +250,7 @@ export default function MobileNav({ venueId, venueName, counts = {} }: MobileNav
                               <Badge 
                                 variant="destructive" 
                                 className="absolute -top-2 -right-2 h-5 w-5 p-0 text-xs flex items-center justify-center"
+                                style={{ color: 'white' }}
                               >
                                 {item.badge > 99 ? '99+' : item.badge}
                               </Badge>
