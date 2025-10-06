@@ -164,6 +164,13 @@
   @apply text-foreground/60;
 }
 
+/* Global readability overrides: ensure dark, readable body text on all pages */
+.text-gray-400, .text-slate-400 { color: #6b7280 !important; }
+.text-gray-500, .text-slate-500 { color: #374151 !important; }
+.text-gray-600, .text-slate-600 { color: #1f2937 !important; }
+.text-foreground\/80, .text-foreground\/70, .text-foreground\/60 { color: #1f2937 !important; }
+.text-muted-foreground { color: #1f2937 !important; }
+
 /* Desktop-specific text readability improvements */
 @media (min-width: 769px) {
   /* Ensure all text is readable on desktop too */
