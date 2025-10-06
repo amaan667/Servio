@@ -127,23 +127,23 @@ export default function GlobalNav() {
   return (
     <nav className={navClasses}>
       <div className="w-full px-2 sm:px-4 lg:px-6">
-        <div className="flex justify-between items-center h-80 sm:h-100 md:h-120">
-          {/* Logo - Large and prominent */}
-          <div className="flex-shrink-0 -ml-2 sm:-ml-1">
+        <div className="relative flex justify-center items-center h-16 sm:h-20 md:h-24">
+          {/* Logo - Centered and smaller */}
+          <div className="flex-shrink-0">
             <Link href={isAuthenticated ? (venueId ? `/dashboard/${venueId}` : "/dashboard") : "/"} className="flex items-center group">
               <Image
                 src="/assets/servio-logo-updated.png"
                 alt="Servio"
                 width={800}
                 height={250}
-                className="h-80 sm:h-100 md:h-120 lg:h-140 xl:h-160 w-auto transition-all duration-300 group-hover:scale-105"
+                className="h-12 sm:h-14 md:h-16 lg:h-18 xl:h-20 w-auto transition-all duration-300 group-hover:scale-105"
                 priority
               />
             </Link>
           </div>
 
-          {/* Desktop Navigation - Properly aligned to right corner */}
-          <div className="hidden md:flex items-center space-x-2">
+          {/* Desktop Navigation - Positioned absolutely on the right */}
+          <div className="absolute right-0 hidden md:flex items-center space-x-2">
             {isAuthenticated ? (
               // Signed in navigation - modern SaaS style
               <div className="flex items-center space-x-2">
@@ -263,8 +263,8 @@ export default function GlobalNav() {
             )}
           </div>
 
-          {/* Mobile menu button */}
-          <div className="md:hidden">
+          {/* Mobile menu button - Positioned absolutely on the right */}
+          <div className="absolute right-0 md:hidden">
             <Button
               variant="ghost"
               onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
