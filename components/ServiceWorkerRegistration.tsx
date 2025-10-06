@@ -12,7 +12,8 @@ interface ServiceWorkerRegistrationProps {
 export default function ServiceWorkerRegistration({ children }: ServiceWorkerRegistrationProps) {
   const [isOnline, setIsOnline] = useState(true);
   const [swRegistration, setSwRegistration] = useState<ServiceWorkerRegistration | null>(null);
-  const [updateAvailable, setUpdateAvailable] = useState(false);
+  // Update banner removed – we no longer surface a UI prompt for updates
+  const [updateAvailable] = useState(false);
   const [isInstalling, setIsInstalling] = useState(false);
 
   useEffect(() => {
@@ -31,25 +32,14 @@ export default function ServiceWorkerRegistration({ children }: ServiceWorkerReg
           console.log('[SW] Service worker registered successfully:', registration);
           setSwRegistration(registration);
 
-          // Check for updates
+          // Previously: show update banner when updatefound. Now we silently allow the
+          // new SW to install/activate without surfacing UI to the user.
           registration.addEventListener('updatefound', () => {
-            console.log('[SW] Update found, installing...');
-            setIsInstalling(true);
-            
-            const newWorker = registration.installing;
-            if (newWorker) {
-              newWorker.addEventListener('statechange', () => {
-                if (newWorker.state === 'installed') {
-                  if (navigator.serviceWorker.controller) {
-                    // New content is available
-                    console.log('[SW] New content available');
-                    setUpdateAvailable(true);
-                    setIsInstalling(false);
-                  } else {
-                    // Content is cached for offline use
-                    console.log('[SW] Content cached for offline use');
-                    setIsInstalling(false);
-                  }
+            const installing = registration.installing;
+            if (installing) {
+              installing.addEventListener('statechange', () => {
+                if (installing.state === 'installed') {
+                  setIsInstalling(false);
                 }
               });
             }
@@ -80,12 +70,7 @@ export default function ServiceWorkerRegistration({ children }: ServiceWorkerReg
     };
   }, []);
 
-  const handleUpdate = () => {
-    if (swRegistration && swRegistration.waiting) {
-      // Tell the service worker to skip waiting
-      swRegistration.waiting.postMessage({ type: 'SKIP_WAITING' });
-    }
-  };
+  const handleUpdate = () => {};
 
 
   return (
@@ -102,32 +87,7 @@ export default function ServiceWorkerRegistration({ children }: ServiceWorkerReg
         </div>
       )}
 
-      {/* Update Available Banner */}
-      {updateAvailable && (
-        <div className="fixed top-0 left-0 right-0 z-50 bg-blue-600 text-white p-3">
-          <Card className="bg-transparent border-none shadow-none text-white">
-            <CardContent className="p-0">
-              <div className="flex items-center justify-between">
-                <div className="flex items-center space-x-3">
-                  <RefreshCw className="h-5 w-5" />
-                  <div>
-                    <p className="font-medium">App Update Available</p>
-                    <p className="text-sm text-blue-100">New features and improvements are ready!</p>
-                  </div>
-                </div>
-                <Button
-                  onClick={handleUpdate}
-                  variant="secondary"
-                  size="sm"
-                  className="bg-white text-blue-600 hover:bg-blue-50"
-                >
-                  Update Now
-                </Button>
-              </div>
-            </CardContent>
-          </Card>
-        </div>
-      )}
+      {/* Update banner intentionally removed */}
 
       {/* Installing Indicator */}
       {isInstalling && (

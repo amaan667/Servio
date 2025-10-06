@@ -110,9 +110,9 @@ export default function HomePage() {
                 <QrCode className="w-4 h-4 mr-2" />
                 Transform Your Business
               </Badge>
-              <h1 className="text-5xl lg:text-6xl font-extrabold mb-6 leading-tight drop-shadow-[0_2px_8px_rgba(0,0,0,0.25)]">
-                <span className="block text-white">QR Code Ordering</span>
-                <span className="block text-white">Made Simple</span>
+              <h1 className="text-5xl lg:text-6xl font-extrabold mb-6 leading-tight">
+                <span className="block text-white drop-shadow-[0_2px_8px_rgba(0,0,0,0.35)]">QR Code Ordering</span>
+                <span className="block text-white drop-shadow-[0_2px_8px_rgba(0,0,0,0.35)]">Made Simple</span>
               </h1>
               <p className="text-xl text-white mb-8 leading-relaxed drop-shadow-[0_1px_4px_rgba(0,0,0,0.25)]">
                 Streamline your business operations with contactless QR code
