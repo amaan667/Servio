@@ -102,14 +102,13 @@ export default function HomePage() {
   return (
     <div className="min-h-screen bg-white">
       {/* Hero Section */}
-      <section className="relative bg-gradient-to-br from-purple-700 to-purple-900 text-white">
-        <div className="absolute inset-0 bg-black/30 pointer-events-none" />
-        <div className="relative max-w-7xl mx-auto px-6 py-20 lg:py-32">
+      <section className="bg-gradient-to-br from-purple-600 to-purple-800 text-white">
+        <div className="max-w-7xl mx-auto px-6 py-20 lg:py-32">
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-16 items-center">
             {/* Left Content */}
-            <div className="space-y-8 bg-black/30 backdrop-blur-sm rounded-2xl p-6 md:p-8">
+            <div className="space-y-8">
               {/* Badge */}
-              <div className="inline-flex items-center px-4 py-2 bg-white/30 rounded-full text-white">
+              <div className="inline-flex items-center px-4 py-2 bg-white/20 rounded-full text-white">
                 <QrCode className="w-4 h-4 mr-2" />
                 Transform Your Business
               </div>
