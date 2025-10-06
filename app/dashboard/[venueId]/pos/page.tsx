@@ -55,7 +55,7 @@ export default async function POSPage({ params }: POSPageProps) {
           <h1 className="text-2xl sm:text-3xl font-bold tracking-tight text-foreground">
             POS System
           </h1>
-          <p className="text-base sm:text-lg text-muted-foreground mt-2">
+          <p className="text-base sm:text-lg text-foreground mt-2">
             Complete point-of-sale and kitchen display system
           </p>
         </div>

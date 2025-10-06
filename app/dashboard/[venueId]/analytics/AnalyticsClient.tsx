@@ -404,7 +404,7 @@ export default function AnalyticsClient({ venueId, venueName }: { venueId: strin
     return (
       <div className="flex items-center justify-center py-8">
         <div className="text-center">
-          <p className="mt-2 text-muted-foreground">Loading analytics...</p>
+          <p className="mt-2 text-foreground">Loading analytics...</p>
         </div>
       </div>
     );
@@ -505,7 +505,7 @@ export default function AnalyticsClient({ venueId, venueName }: { venueId: strin
           </div>
         </div>
         <div className="flex items-center space-x-2">
-          <span className="text-sm text-muted-foreground">Last updated:</span>
+          <span className="text-sm text-foreground">Last updated:</span>
           <span className="text-sm font-medium">{new Date().toLocaleTimeString()}</span>
         </div>
       </div>
