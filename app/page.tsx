@@ -114,12 +114,12 @@ export default function HomePage() {
               </div>
               
               {/* Main Heading */}
-              <h1 className="text-5xl lg:text-6xl font-bold text-white leading-tight">
+              <h1 className="text-5xl lg:text-6xl font-bold text-white leading-tight drop-shadow-lg">
                 QR Code Ordering Made Simple
               </h1>
               
               {/* Description */}
-              <p className="text-xl text-white leading-relaxed max-w-lg">
+              <p className="text-xl text-white leading-relaxed max-w-lg drop-shadow-md">
                 Streamline your business operations with contactless QR code ordering. Customers scan, order, and pay — all from their phones. You focus on great food and service.
               </p>
               
@@ -160,15 +160,15 @@ export default function HomePage() {
               <div className="flex flex-wrap gap-8 pt-8">
                 <div className="flex items-center text-white">
                   <CheckCircle className="h-5 w-5 mr-3 text-green-300" />
-                  <span className="font-medium">14-day free trial</span>
+                  <span className="font-medium drop-shadow-sm">14-day free trial</span>
                 </div>
                 <div className="flex items-center text-white">
                   <CheckCircle className="h-5 w-5 mr-3 text-green-300" />
-                  <span className="font-medium">No setup fees</span>
+                  <span className="font-medium drop-shadow-sm">No setup fees</span>
                 </div>
                 <div className="flex items-center text-white">
                   <CheckCircle className="h-5 w-5 mr-3 text-green-300" />
-                  <span className="font-medium">Cancel anytime</span>
+                  <span className="font-medium drop-shadow-sm">Cancel anytime</span>
                 </div>
               </div>
             </div>
