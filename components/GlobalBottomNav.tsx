@@ -176,11 +176,6 @@ export default function GlobalBottomNav({ venueId, counts = {} }: GlobalBottomNa
             >
               <div className="relative mb-1 flex flex-col items-center">
                 <item.icon className={`h-5 w-5 transition-colors ${item.isActive ? 'text-white' : 'text-gray-700'}`} />
-                {item.id === 'live-orders' && (
-                  <div className="mt-1 text-xs font-bold" style={{ color: '#ffffff' }}>
-                    {liveOrdersCount}
-                  </div>
-                )}
                 {item.badge && item.badge > 0 && (
                   <Badge 
                     variant="destructive" 
@@ -194,9 +189,15 @@ export default function GlobalBottomNav({ venueId, counts = {} }: GlobalBottomNa
               <span
                 className={`${item.isActive ? 'text-white' : 'text-gray-700'} 
                   font-bold text-center px-1 transition-colors 
-                  leading-snug text-[12px] sm:text-[13px] max-w-[92px] whitespace-nowrap`}
+                  leading-snug text-[12px] sm:text-[13px] max-w-[120px] whitespace-nowrap`}
               >
-                {item.label}
+                {item.id === 'live-orders' ? (
+                  <>
+                    Live Orders <span className="ml-1" style={{ color: '#ffffff' }}>({liveOrdersCount})</span>
+                  </>
+                ) : (
+                  item.label
+                )}
               </span>
             </button>
           ))}
