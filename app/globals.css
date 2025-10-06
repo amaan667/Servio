@@ -1492,6 +1492,10 @@ p, span, div {
     display: none !important;
   }
 
+  /* Last-resort: prevent stray text nodes under icons from rendering */
+  .mobile-nav button .relative { font-size: 0 !important; }
+  .mobile-nav button .relative .text-xs { font-size: 10px !important; }
+
   /* Keep legacy selector fallback if any component adds an "active" class */
   .mobile-nav button[class*="active"] span,
   .mobile-nav button[class*="active"] svg {
