@@ -1362,7 +1362,7 @@ export default function LiveOrdersClient({ venueId, venueName: venueNameProp }: 
                   }}
                   className={`
                     group relative grid grid-rows-[1fr_auto] rounded-xl px-3 py-2 sm:px-4 text-left transition min-w-[5rem] sm:w-[11rem]
-                    ${activeTab === tab.key ? 'bg-violet-600 text-white' : 'text-white hover:bg-slate-50'}
+                    ${activeTab === tab.key ? 'bg-violet-600 text-white' : 'text-slate-700 hover:bg-slate-50'}
                   `}
                 >
                   <span className="flex items-center justify-between">
@@ -1372,14 +1372,14 @@ export default function LiveOrdersClient({ venueId, venueName: venueNameProp }: 
                     </span>
                     <span className={`
                       ml-2 inline-flex min-w-[1.5rem] items-center justify-center rounded-full px-1.5 sm:px-2 text-xs
-                      ${activeTab === tab.key ? 'bg-violet-500/70 text-white' : 'bg-slate-200 text-white'}
+                      ${activeTab === tab.key ? 'bg-violet-500/70 text-white' : 'bg-slate-200 text-slate-700'}
                     `}>
                       {tab.count}
                     </span>
                   </span>
                   <span className={`
                     mt-0.5 text-xs hidden sm:block
-                    ${activeTab === tab.key ? 'text-white' : 'text-white'}
+                    ${activeTab === tab.key ? 'text-white/90' : 'text-slate-500'}
                   `}>
                     {tab.hint}
                   </span>
