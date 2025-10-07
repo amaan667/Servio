@@ -39,7 +39,7 @@ export default function DemoPage() {
                 variant={viewMode === 'customer' ? 'default' : 'ghost'}
                 className={`${
                   viewMode === 'customer'
-                    ? 'bg-purple-600 text-white hover:bg-purple-700'
+                    ? 'bg-purple-600 !text-white hover:bg-purple-700'
                     : 'text-gray-700 hover:bg-gray-200'
                 }`}
               >
@@ -51,7 +51,7 @@ export default function DemoPage() {
                 variant={viewMode === 'owner' ? 'default' : 'ghost'}
                 className={`${
                   viewMode === 'owner'
-                    ? 'bg-purple-600 text-white hover:bg-purple-700'
+                    ? 'bg-purple-600 !text-white hover:bg-purple-700'
                     : 'text-gray-700 hover:bg-gray-200'
                 }`}
               >
@@ -93,7 +93,7 @@ function CustomerDemoView() {
           </p>
           <div className="flex flex-col sm:flex-row gap-4">
             <Link href="/order?venue=demo-cafe&table=1" className="flex-1">
-              <Button className="w-full bg-purple-600 hover:bg-purple-700 h-14 text-lg">
+              <Button className="w-full bg-purple-600 hover:bg-purple-700 !text-white h-14 text-lg">
                 Start Your Order
                 <ArrowRight className="ml-2 w-5 h-5" />
               </Button>
@@ -247,7 +247,7 @@ function OwnerDemoView() {
       {/* CTA */}
       <Card className="bg-gradient-to-r from-purple-600 to-purple-800 text-white border-0">
         <CardContent className="py-8 text-center">
-          <h3 className="text-2xl font-bold mb-2">Ready to get started?</h3>
+          <h3 className="text-2xl font-bold mb-2 !text-white">Ready to get started?</h3>
           <p className="text-purple-100 mb-6">
             Create your account and have your venue live in minutes
           </p>
@@ -258,7 +258,7 @@ function OwnerDemoView() {
               </Button>
             </Link>
             <Link href="/sign-in">
-              <Button variant="outline" className="border-white text-white hover:bg-purple-700">
+              <Button variant="outline" className="border-white !text-white hover:bg-purple-700">
                 Sign In
               </Button>
             </Link>
