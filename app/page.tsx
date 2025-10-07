@@ -81,23 +81,6 @@ export default function HomePage() {
   const router = useRouter();
   const { user, loading: authLoading } = useAuth();
 
-  console.log('[HOME DEBUG] HomePage render', {
-    timestamp: new Date().toISOString(),
-    hasUser: !!user,
-    userId: user?.id,
-    authLoading,
-  });
-
-  // Debug authentication state
-  useEffect(() => {
-    console.log('[HOME DEBUG] Auth state changed', {
-      timestamp: new Date().toISOString(),
-      hasUser: !!user,
-      userId: user?.id,
-      authLoading,
-    });
-  }, [user, authLoading]);
-
   const handleGetStarted = () => {
     if (user) {
       // User is signed in, redirect to their dashboard
@@ -119,13 +102,6 @@ export default function HomePage() {
   };
 
   const handleDemo = () => {
-    const timestamp = new Date().toISOString();
-    console.log('[DEMO DEBUG] handleDemo clicked', {
-      timestamp,
-      user: user ? { id: user.id, email: user.email } : null,
-      authLoading,
-    });
-    
     // Log to server for Railway logs
     fetch('/api/log-demo-access', {
       method: 'POST',
@@ -134,7 +110,7 @@ export default function HomePage() {
         action: 'view_demo_clicked',
         url: window.location.href,
         referrer: document.referrer,
-        timestamp,
+        timestamp: new Date().toISOString(),
         userAgent: navigator.userAgent,
         user: user ? { id: user.id, email: user.email } : null
       })
