@@ -109,8 +109,9 @@ body {
     @apply bg-gray-800 border-gray-600 text-white placeholder-gray-400;
   }
   
+  /* Preserve brand button styling in dark mode */
   .dark button {
-    @apply text-white;
+    @apply text-inherit;
   }
   
   .dark .text-gray-900 {
@@ -125,16 +126,17 @@ body {
     @apply text-white;
   }
   
+  /* Do not override explicit white backgrounds in dark mode */
   .dark .bg-white {
-    @apply bg-gray-800;
+    @apply bg-white;
   }
   
   .dark .bg-gray-50 {
-    @apply bg-gray-900;
+    @apply bg-gray-50;
   }
   
   .dark .bg-gray-100 {
-    @apply bg-gray-800;
+    @apply bg-gray-100;
   }
   
   .dark .border-gray-200 {
