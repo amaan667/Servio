@@ -102,6 +102,10 @@ export default function HomePage() {
   };
 
   const handleDemo = () => {
+    console.log('[DEMO DEBUG] View Demo button clicked');
+    console.log('[DEMO DEBUG] Current user:', user ? { id: user.id, email: user.email } : 'No user');
+    console.log('[DEMO DEBUG] Window location:', window.location.href);
+    
     // Log to server for Railway logs using sendBeacon (guaranteed to send even during navigation)
     const logData = {
       action: 'view_demo_clicked',
@@ -112,21 +116,38 @@ export default function HomePage() {
       user: user ? { id: user.id, email: user.email } : null
     };
     
+    console.log('[DEMO DEBUG] Prepared log data:', logData);
+    
     // Try sendBeacon first (best for navigation scenarios)
     const blob = new Blob([JSON.stringify(logData)], { type: 'application/json' });
     const sent = navigator.sendBeacon('/api/log-demo-access', blob);
     
+    console.log('[DEMO DEBUG] SendBeacon result:', sent ? 'SUCCESS' : 'FAILED');
+    
     // Fallback to fetch if sendBeacon fails
     if (!sent) {
+      console.log('[DEMO DEBUG] Attempting fetch fallback...');
       fetch('/api/log-demo-access', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(logData),
         keepalive: true
-      }).catch(() => {});
+      })
+      .then(response => {
+        console.log('[DEMO DEBUG] Fetch response status:', response.status);
+        return response.text();
+      })
+      .then(text => {
+        console.log('[DEMO DEBUG] Fetch response body:', text);
+      })
+      .catch(error => {
+        console.log('[DEMO DEBUG] Fetch error:', error);
+      });
     }
     
+    console.log('[DEMO DEBUG] Navigating to /demo...');
     router.push("/demo");
+    console.log('[DEMO DEBUG] Router.push called');
   };
 
   const handlePricingPrimary = () => {
