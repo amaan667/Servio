@@ -767,80 +767,91 @@ export default function CheckoutPage() {
     setPhase('processing');
     
     try {
-    
-    // Remove artificial payment delay - process immediately
-    
-    // Simulate 95% success rate
-    const isSuccess = Math.random() > 0.05;
-    
-    if (isSuccess) {
+      // Simulate payment processing delay
+      await new Promise(resolve => setTimeout(resolve, 1500));
       
-        // Create demo order using the same API structure as Stripe payments
-        // Convert total from pounds to pence for consistency with Stripe
-        const totalInPence = Math.round((checkoutData?.total || 0) * 100);
-        
-        const orderRequestBody = {
-          venue_id: checkoutData?.venueId,
-          table_number: checkoutData?.tableNumber,
-          customer_name: checkoutData?.customerName,
-          customer_phone: checkoutData?.customerPhone,
-          items: (checkoutData?.cart || []).map(item => ({
-            menu_item_id: item.id,
-            quantity: item.quantity,
-            price: item.price,
-            item_name: item.name,
-            specialInstructions: item.specialInstructions || null
-          })),
-          total_amount: totalInPence,
-          order_status: 'PLACED',
-          payment_status: 'PAID',
-          source: checkoutData?.orderType === 'counter' ? 'counter' : 'qr',
-          notes: 'Demo payment order'
-        };
-        
-        console.log('[DEMO ORDER CREATION] Creating order...');
-        
-        const orderResponse = await fetch('/api/orders', {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-          },
-          body: JSON.stringify(orderRequestBody),
-        });
-
-        if (!orderResponse.ok) {
-          const orderErrorText = await orderResponse.text();
-          console.error('[DEMO ORDER CREATION] Order creation failed:', orderErrorText);
-          throw new Error(`Failed to create order: ${orderResponse.status}`);
-        }
-
-        const orderData = await orderResponse.json();
-        console.log('[DEMO ORDER CREATION] Order created successfully:', orderData.order?.id);
+      // For demo-cafe, skip database and go straight to success
+      if (checkoutData?.venueId === 'demo-cafe' || isDemo) {
+        const demoOrderId = `demo-order-${Date.now()}`;
         
         setPaymentStatus('success');
         setOrder({
-          id: orderData.order?.id,
-          orderId: orderData.order?.id,
-          status: orderData.order?.order_status,
-          total: orderData.order?.total_amount ? orderData.order.total_amount / 100 : checkoutData?.total,
-          createdAt: orderData.order?.created_at,
-          venueId: orderData.order?.venue_id,
-          tableNumber: orderData.order?.table_number,
-          customerName: orderData.order?.customer_name
+          id: demoOrderId,
+          orderId: demoOrderId,
+          status: 'PLACED',
+          total: checkoutData?.total || 0,
+          createdAt: new Date().toISOString(),
+          venueId: 'demo-cafe',
+          tableNumber: checkoutData?.tableNumber || 1,
+          customerName: checkoutData?.customerName || 'Demo Customer'
         });
-        setPhase('feedback');
         
         // Clear stored data
         localStorage.removeItem('pending-order-data');
         localStorage.removeItem('servio-checkout-data');
+        localStorage.removeItem('servio-pending-order');
         
-    } else {
-      setPaymentStatus('failed');
-      setPhase('error');
-      setError('Payment simulation failed. Please try again.');
-    }
+        // Redirect to success page
+        router.push(`/payment/success?session_id=${demoOrderId}&demo=1`);
+        return;
+      }
+      
+      // For real venues, create actual order
+      const totalInPence = Math.round((checkoutData?.total || 0) * 100);
+      
+      const orderRequestBody = {
+        venue_id: checkoutData?.venueId,
+        table_number: checkoutData?.tableNumber,
+        customer_name: checkoutData?.customerName,
+        customer_phone: checkoutData?.customerPhone,
+        items: (checkoutData?.cart || []).map(item => ({
+          menu_item_id: item.id,
+          quantity: item.quantity,
+          price: item.price,
+          item_name: item.name,
+          specialInstructions: item.specialInstructions || null
+        })),
+        total_amount: totalInPence,
+        order_status: 'PLACED',
+        payment_status: 'PAID',
+        source: checkoutData?.orderType === 'counter' ? 'counter' : 'qr',
+        notes: 'Simulated payment order'
+      };
+      
+      const orderResponse = await fetch('/api/orders', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(orderRequestBody),
+      });
+
+      if (!orderResponse.ok) {
+        const orderErrorText = await orderResponse.text();
+        console.error('[ORDER CREATION] Order creation failed:', orderErrorText);
+        throw new Error(`Failed to create order: ${orderResponse.status}`);
+      }
+
+      const orderData = await orderResponse.json();
+      
+      setPaymentStatus('success');
+      setOrder({
+        id: orderData.order?.id,
+        orderId: orderData.order?.id,
+        status: orderData.order?.order_status,
+        total: orderData.order?.total_amount ? orderData.order.total_amount / 100 : checkoutData?.total,
+        createdAt: orderData.order?.created_at,
+        venueId: orderData.order?.venue_id,
+        tableNumber: orderData.order?.table_number,
+        customerName: orderData.order?.customer_name
+      });
+      setPhase('feedback');
+      
+      localStorage.removeItem('pending-order-data');
+      localStorage.removeItem('servio-checkout-data');
+        
     } catch (error) {
-      console.error('[DEMO PAYMENT] Error during demo payment:', error);
+      console.error('[PAYMENT] Error during payment:', error);
       setPaymentStatus('failed');
       setPhase('error');
       setError(error instanceof Error ? error.message : 'Payment failed. Please try again.');
