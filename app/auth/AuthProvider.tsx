@@ -35,10 +35,18 @@ export default function AuthProvider({
   const [loading, setLoading] = useState(!initialSession);
 
   useEffect(() => {
+    console.log('[AUTH DEBUG] AuthProvider useEffect starting', {
+      timestamp: new Date().toISOString(),
+      hasInitialSession: !!initialSession,
+      initialSessionUserId: initialSession?.user?.id,
+    });
+
     let supabase;
     try {
       supabase = supabaseBrowser();
+      console.log('[AUTH DEBUG] Supabase browser client initialized successfully');
     } catch (error) {
+      console.error('[AUTH DEBUG] Error initializing Supabase browser client:', error);
       setSession(null);
       setUser(null);
       setLoading(false);
@@ -49,17 +57,27 @@ export default function AuthProvider({
     const getInitialSession = async () => {
       if (initialSession) {
         // We already have a session, no need to fetch
+        console.log('[AUTH DEBUG] Using initial session from server', {
+          userId: initialSession.user.id,
+        });
         setLoading(false);
         return;
       }
       
+      console.log('[AUTH DEBUG] Fetching session from client');
       try {
         const { data: { session: currentSession } } = await supabase.auth.getSession();
+        
+        console.log('[AUTH DEBUG] Client session fetched', {
+          hasSession: !!currentSession,
+          userId: currentSession?.user?.id,
+        });
         
         setSession(currentSession);
         setUser(currentSession?.user || null);
         setLoading(false);
       } catch (error) {
+        console.error('[AUTH DEBUG] Error fetching client session:', error);
         setSession(null);
         setUser(null);
         setLoading(false);
@@ -73,6 +91,13 @@ export default function AuthProvider({
     let subscription: any;
     try {
       const { data } = supabase.auth.onAuthStateChange(async (event: any, newSession: any) => {
+        console.log('[AUTH DEBUG] Auth state changed', {
+          event,
+          hasSession: !!newSession,
+          userId: newSession?.user?.id,
+          timestamp: new Date().toISOString(),
+        });
+
         switch (event) {
           case 'SIGNED_IN':
             setSession(newSession);
@@ -101,7 +126,9 @@ export default function AuthProvider({
         }
       });
       subscription = data?.subscription;
+      console.log('[AUTH DEBUG] Auth state change listener registered');
     } catch (error) {
+      console.error('[AUTH DEBUG] Error setting up auth state listener:', error);
       setLoading(false);
     }
     

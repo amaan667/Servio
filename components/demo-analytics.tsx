@@ -132,6 +132,10 @@ const aiInsights = [
 ];
 
 export default function DemoAnalytics() {
+  console.log('[DEMO DEBUG] DemoAnalytics component rendering', {
+    timestamp: new Date().toISOString(),
+  });
+
   const [chartsLoaded, setChartsLoaded] = useState(false);
   const [chartsError, setChartsError] = useState(false);
 

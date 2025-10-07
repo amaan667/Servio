@@ -65,7 +65,18 @@ export default function DemoPage() {
     checkAuth();
   }, []);
 
+  console.log('[DEMO DEBUG] DemoPage render', {
+    timestamp: new Date().toISOString(),
+    viewMode,
+    mounted,
+    location: typeof window !== 'undefined' ? window.location.href : 'server',
+  });
+
   useEffect(() => {
+    console.log('[DEMO DEBUG] DemoPage mounted', {
+      timestamp: new Date().toISOString(),
+      location: window.location.href,
+    });
     setMounted(true);
   }, []);
 

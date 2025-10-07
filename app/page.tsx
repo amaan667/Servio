@@ -81,8 +81,21 @@ export default function HomePage() {
   const router = useRouter();
   const { user, loading: authLoading } = useAuth();
 
+  console.log('[HOME DEBUG] HomePage render', {
+    timestamp: new Date().toISOString(),
+    hasUser: !!user,
+    userId: user?.id,
+    authLoading,
+  });
+
   // Debug authentication state
   useEffect(() => {
+    console.log('[HOME DEBUG] Auth state changed', {
+      timestamp: new Date().toISOString(),
+      hasUser: !!user,
+      userId: user?.id,
+      authLoading,
+    });
   }, [user, authLoading]);
 
   const handleGetStarted = () => {
@@ -106,6 +119,11 @@ export default function HomePage() {
   };
 
   const handleDemo = () => {
+    console.log('[DEMO DEBUG] handleDemo clicked', {
+      timestamp: new Date().toISOString(),
+      user: user ? { id: user.id, email: user.email } : null,
+      authLoading,
+    });
     router.push("/demo");
   };
 

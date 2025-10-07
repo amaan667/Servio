@@ -61,13 +61,22 @@ export default async function RootLayout({
 }: {
   children: React.ReactNode;
 }) {
+  console.log('[LAYOUT DEBUG] RootLayout rendering (server)', {
+    timestamp: new Date().toISOString(),
+  });
+
   // Get the actual session from the server efficiently using secure method
   let session = null;
   try {
     const supabase = await createServerSupabase();
     const { data: { session: serverSession } } = await supabase.auth.getSession();
     session = serverSession;
+    console.log('[LAYOUT DEBUG] Server session fetched', {
+      hasSession: !!serverSession,
+      userId: serverSession?.user?.id,
+    });
   } catch (error) {
+    console.error('[LAYOUT DEBUG] Error fetching server session:', error);
     // Silent error handling
   }
 
