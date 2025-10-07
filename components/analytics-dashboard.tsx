@@ -491,11 +491,11 @@ export function AnalyticsDashboard({ venueId }: AnalyticsDashboardProps) {
               qty: { color: "#8b5cf6" },
               rev: { color: "#10b981" }
             }}>
-              <ResponsiveContainer width="100%" height={300}>
+              <ResponsiveContainer width="100%" height={400}>
                 <BarChart data={topItems} layout="horizontal">
                   <CartesianGrid strokeDasharray="3 3" />
                   <XAxis type="number" />
-                  <YAxis dataKey="name" type="category" width={80} />
+                  <YAxis dataKey="name" type="category" width={100} />
                   <Tooltip />
                   <Bar dataKey="value" fill="#8b5cf6" name="Qty" />
                   <Bar dataKey="revenue" fill="#10b981" name="Revenue (£)" />

@@ -215,7 +215,7 @@ export default function DemoAnalytics() {
           <CardDescription>Performance by item</CardDescription>
         </CardHeader>
         <CardContent>
-          <div className="h-[400px]">
+          <div className="h-[500px]">
             <ChartContainer config={{
               qty: { color: '#8b5cf6' },
               revenue: { color: '#10b981' }

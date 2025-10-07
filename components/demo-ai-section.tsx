@@ -168,28 +168,28 @@ export default function DemoAISection() {
 
         {/* Input Area */}
         <div className="space-y-4">
-          <div className="flex gap-2">
+          <div className="flex flex-col sm:flex-row gap-2">
             <input
               type="text"
               value={customPrompt}
               onChange={(e) => setCustomPrompt(e.target.value)}
               placeholder="💬 Ask Servio to update your menu..."
-              className="flex-1 px-4 py-3 border-2 border-purple-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-transparent"
+              className="flex-1 px-4 py-3 border-2 border-purple-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-transparent bg-white text-gray-900"
             />
             <Button
               onClick={() => handleRunPreview(customPrompt)}
               disabled={!customPrompt || isProcessing}
-              className="bg-purple-600 hover:bg-purple-700 px-6"
+              className="bg-purple-600 hover:bg-purple-700 px-6 py-3 whitespace-nowrap min-w-fit"
             >
               {isProcessing ? (
                 <>
                   <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white mr-2"></div>
-                  Processing...
+                  <span>Processing...</span>
                 </>
               ) : (
                 <>
                   <Send className="w-4 h-4 mr-2" />
-                  Run Preview
+                  <span>Run Preview</span>
                 </>
               )}
             </Button>
