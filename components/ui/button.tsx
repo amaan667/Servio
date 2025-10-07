@@ -9,16 +9,16 @@ const buttonVariants = cva(
   {
     variants: {
       variant: {
-        default: "bg-white text-servio-purple hover:bg-gray-50 hover:text-servio-purple-dark shadow-md hover:shadow-lg border-2 border-servio-purple font-semibold",
+        default: "bg-white text-servio-purple hover:bg-gray-50 hover:text-servio-purple-dark shadow-md hover:shadow-lg border-2 border-servio-purple font-semibold dark:bg-white dark:text-servio-purple dark:hover:bg-gray-50",
         destructive:
           "bg-red-600 text-white hover:bg-red-700 shadow-sm hover:shadow-md border-2 border-red-600 font-semibold [&_svg]:text-white",
         outline:
-          "bg-white text-servio-purple hover:bg-gray-50 hover:text-servio-purple-dark shadow-md hover:shadow-lg border-2 border-servio-purple font-semibold",
+          "bg-white text-servio-purple hover:bg-gray-50 hover:text-servio-purple-dark shadow-md hover:shadow-lg border-2 border-servio-purple font-semibold dark:bg-white dark:text-servio-purple dark:hover:bg-gray-50",
         secondary:
-          "bg-white text-servio-purple hover:bg-gray-50 hover:text-servio-purple-dark shadow-md hover:shadow-lg border-2 border-servio-purple font-semibold",
-        ghost: "bg-white text-servio-purple hover:bg-gray-50 hover:text-servio-purple-dark shadow-md hover:shadow-lg border-2 border-servio-purple font-semibold",
+          "bg-white text-servio-purple hover:bg-gray-50 hover:text-servio-purple-dark shadow-md hover:shadow-lg border-2 border-servio-purple font-semibold dark:bg-white dark:text-servio-purple dark:hover:bg-gray-50",
+        ghost: "bg-white text-servio-purple hover:bg-gray-50 hover:text-servio-purple-dark shadow-md hover:shadow-lg border-2 border-servio-purple font-semibold dark:bg-white dark:text-servio-purple dark:hover:bg-gray-50",
         link: "text-servio-purple underline-offset-4 hover:underline font-semibold",
-        servio: "bg-white text-servio-purple hover:bg-gray-50 hover:text-servio-purple-dark shadow-md hover:shadow-lg border-2 border-servio-purple font-semibold",
+        servio: "bg-white text-servio-purple hover:bg-gray-50 hover:text-servio-purple-dark shadow-md hover:shadow-lg border-2 border-servio-purple font-semibold dark:bg-white dark:text-servio-purple dark:hover:bg-gray-50",
       },
       size: {
         default: "h-10 px-4 py-2 min-h-[44px] min-w-[44px]",
