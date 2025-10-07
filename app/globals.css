@@ -175,6 +175,25 @@
   .btn-enhanced-icon {
     @apply text-foreground/80 hover:text-foreground hover:bg-accent;
   }
+  
+  /* Hero section buttons - purple with white text on mobile */
+  section button.bg-purple-600,
+  section button.bg-white {
+    background-color: hsl(var(--servio-purple)) !important;
+    color: #ffffff !important;
+  }
+  
+  section button.bg-purple-600:hover,
+  section button.bg-white:hover {
+    background-color: hsl(var(--servio-purple-dark)) !important;
+    color: #ffffff !important;
+  }
+  
+  /* Ensure icons in hero buttons are also white on mobile */
+  section button.bg-purple-600 svg,
+  section button.bg-white svg {
+    color: #ffffff !important;
+  }
 }
 
 /* Custom Servio styles */

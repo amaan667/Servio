@@ -122,7 +122,7 @@ export default function HomePage() {
                 <Button
                   size="lg"
                   onClick={handleGetStarted}
-                  className="bg-white text-purple-600 hover:bg-gray-100 hover:text-purple-700 text-lg px-8 py-4"
+                  className="bg-purple-600 text-white hover:bg-purple-700 hover:text-white text-lg px-8 py-4"
                   disabled={authLoading}
                 >
                   {authLoading ? 'Loading...' : (user ? 'Go to Dashboard' : 'Start Free Trial')}
@@ -141,7 +141,7 @@ export default function HomePage() {
                 <Button
                   size="lg"
                   onClick={handleDemo}
-                  className="bg-white text-purple-600 hover:bg-gray-100 hover:text-purple-700 text-lg px-8 py-4"
+                  className="bg-purple-600 text-white hover:bg-purple-700 hover:text-white text-lg px-8 py-4"
                 >
                   <QrCode className="mr-2 h-5 w-5" />
                   View Demo
@@ -411,7 +411,7 @@ export default function HomePage() {
             <Button
               size="lg"
               onClick={handleGetStarted}
-              className="bg-white text-purple-600 hover:bg-gray-100 hover:text-purple-700 text-lg px-8 py-4"
+              className="bg-purple-600 text-white hover:bg-purple-700 hover:text-white text-lg px-8 py-4"
               disabled={authLoading}
             >
               {authLoading ? 'Loading...' : (user ? 'Go to Dashboard' : 'Start Your Free Trial')}
@@ -430,7 +430,7 @@ export default function HomePage() {
             <Button
               size="lg"
               onClick={handleDemo}
-              className="bg-white text-purple-600 hover:bg-gray-100 hover:text-purple-700 text-lg px-8 py-4"
+              className="bg-purple-600 text-white hover:bg-purple-700 hover:text-white text-lg px-8 py-4"
             >
               <QrCode className="mr-2 h-5 w-5" />
               Try the Demo
