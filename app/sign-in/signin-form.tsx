@@ -21,6 +21,7 @@ export default function SignInForm({ onGoogleSignIn, isLoading = false, error: p
   const [password, setPassword] = useState('');
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [cooldownUntil, setCooldownUntil] = useState<number | null>(null);
   const router = useRouter();
   
   // Use prop error if provided, otherwise use local error
@@ -28,6 +29,9 @@ export default function SignInForm({ onGoogleSignIn, isLoading = false, error: p
 
   const handleEmailSignIn = async (e: React.FormEvent) => {
     e.preventDefault();
+    if (cooldownUntil && Date.now() < cooldownUntil) {
+      return; // Prevent attempts during cooldown
+    }
     setLoading(true);
     setError(null);
 
@@ -40,7 +44,14 @@ export default function SignInForm({ onGoogleSignIn, isLoading = false, error: p
       });
 
       if (error) {
-        setError(error.message);
+        const msg = error.message || 'Sign-in failed. Please try again.';
+        // If we hit rate limits, place a brief cooldown to avoid repeated 429s
+        if (/rate limit/i.test(msg)) {
+          const waitMs = 30_000; // 30s cooldown
+          setCooldownUntil(Date.now() + waitMs);
+          setTimeout(() => setCooldownUntil(null), waitMs);
+        }
+        setError(msg);
         setLoading(false);
         return;
       }
@@ -52,7 +63,13 @@ export default function SignInForm({ onGoogleSignIn, isLoading = false, error: p
         window.location.assign('/dashboard');
       }
     } catch (err: any) {
-      setError(err.message || 'Sign-in failed. Please try again.');
+      const msg = err?.message || 'Sign-in failed. Please try again.';
+      if (/rate limit/i.test(msg)) {
+        const waitMs = 30_000;
+        setCooldownUntil(Date.now() + waitMs);
+        setTimeout(() => setCooldownUntil(null), waitMs);
+      }
+      setError(msg);
       setLoading(false);
     }
   };
@@ -60,8 +77,8 @@ export default function SignInForm({ onGoogleSignIn, isLoading = false, error: p
   return (
     <div className="w-full bg-white rounded-lg shadow-md p-4 sm:p-6 lg:p-8">
       <div className="text-center mb-6 sm:mb-8">
-        <h1 className="text-xl sm:text-2xl font-bold text-white mb-2">Welcome to Servio</h1>
-        <p className="text-sm sm:text-base text-white">Sign in to manage your venue</p>
+        <h1 className="text-xl sm:text-2xl font-bold text-gray-900 mb-2">Welcome to Servio</h1>
+        <p className="text-sm sm:text-base text-gray-700">Sign in to manage your venue</p>
       </div>
       
       {displayError && (
@@ -84,7 +101,7 @@ export default function SignInForm({ onGoogleSignIn, isLoading = false, error: p
       <Button
         onClick={onGoogleSignIn}
         disabled={isLoading || loading}
-        className="w-full bg-white border border-gray-300 text-white hover:bg-gray-50 flex items-center justify-center gap-2 mb-4 sm:mb-6 h-10 sm:h-11 font-medium"
+        className="w-full flex items-center justify-center gap-2 mb-4 sm:mb-6 h-10 sm:h-11 font-medium"
       >
         <svg className="w-4 h-4 sm:w-5 sm:h-5" viewBox="0 0 24 24">
           <path fill="#4285F4" d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z"/>
@@ -92,7 +109,7 @@ export default function SignInForm({ onGoogleSignIn, isLoading = false, error: p
           <path fill="#FBBC05" d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l2.85-2.22.81-.62z"/>
           <path fill="#EA4335" d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z"/>
         </svg>
-        <span className="text-sm sm:text-base font-medium text-white">{isLoading ? 'Signing in...' : 'Sign in with Google'}</span>
+        <span className="text-sm sm:text-base font-medium">{isLoading ? 'Signing in...' : 'Sign in with Google'}</span>
       </Button>
 
       <div className="relative mb-4 sm:mb-6">
@@ -100,7 +117,7 @@ export default function SignInForm({ onGoogleSignIn, isLoading = false, error: p
           <span className="w-full border-t" />
         </div>
         <div className="relative flex justify-center text-xs uppercase">
-          <span className="bg-white px-2 text-white">Or continue with email</span>
+          <span className="bg-white px-2 text-gray-600">Or continue with email</span>
         </div>
       </div>
 
@@ -144,9 +161,9 @@ export default function SignInForm({ onGoogleSignIn, isLoading = false, error: p
       </form>
 
       <div className="mt-4 sm:mt-6 text-center">
-        <p className="text-sm text-white">
+        <p className="text-sm text-gray-700">
           Don't have an account?{' '}
-          <Link href="/sign-up" className="text-white hover:text-gray-200 font-medium">
+          <Link href="/sign-up" className="text-servio-purple hover:opacity-80 font-medium">
             Sign up
           </Link>
         </p>

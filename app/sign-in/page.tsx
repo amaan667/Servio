@@ -75,7 +75,13 @@ function SignInPageContent() {
       
       if (error) {
         console.error('OAuth sign in error:', error);
-        alert(`Sign in failed: ${error.message}`);
+        const msg = error?.message || 'Sign in failed.';
+        // If rate limited, display a friendlier message
+        if (/rate limit/i.test(msg)) {
+          alert('Too many attempts. Please wait ~30 seconds and try again.');
+        } else {
+          alert(`Sign in failed: ${msg}`);
+        }
         setIsSigningIn(false);
         return;
       }
