@@ -6,6 +6,7 @@ import { useState } from 'react';
 import ServiceWorkerRegistration from '@/components/ServiceWorkerRegistration';
 
 export default function Providers({ children }: { children: React.ReactNode }) {
+  // ALL HOOKS MUST BE CALLED BEFORE ANY CONDITIONAL LOGIC
   const pathname = usePathname();
   
   // Create QueryClient instance
@@ -28,24 +29,20 @@ export default function Providers({ children }: { children: React.ReactNode }) {
                                pathname?.startsWith('/sign-in') ||
                                pathname?.startsWith('/sign-up');
 
-  if (isAuthenticatedRoute) {
-    return (
-      <QueryClientProvider client={queryClient}>
+  // Use conditional rendering within a single return statement instead of multiple returns
+  return (
+    <QueryClientProvider client={queryClient}>
+      {isAuthenticatedRoute ? (
         <ThemeProvider attribute="class" defaultTheme="light" enableSystem>
           <ServiceWorkerRegistration>
             {children}
           </ServiceWorkerRegistration>
         </ThemeProvider>
-      </QueryClientProvider>
-    );
-  }
-
-  // For homepage and other public pages, render with QueryClient but without theme provider
-  return (
-    <QueryClientProvider client={queryClient}>
-      <ServiceWorkerRegistration>
-        {children}
-      </ServiceWorkerRegistration>
+      ) : (
+        <ServiceWorkerRegistration>
+          {children}
+        </ServiceWorkerRegistration>
+      )}
     </QueryClientProvider>
   );
 }
