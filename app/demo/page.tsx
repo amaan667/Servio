@@ -39,7 +39,7 @@ export default function DemoPage() {
                 variant={viewMode === 'customer' ? 'default' : 'ghost'}
                 className={`${
                   viewMode === 'customer'
-                    ? 'bg-purple-600 !text-white hover:bg-purple-700'
+                    ? 'bg-purple-600 text-white hover:bg-purple-700'
                     : 'text-gray-700 hover:bg-gray-200'
                 }`}
               >
@@ -51,7 +51,7 @@ export default function DemoPage() {
                 variant={viewMode === 'owner' ? 'default' : 'ghost'}
                 className={`${
                   viewMode === 'owner'
-                    ? 'bg-purple-600 !text-white hover:bg-purple-700'
+                    ? 'bg-purple-600 text-white hover:bg-purple-700'
                     : 'text-gray-700 hover:bg-gray-200'
                 }`}
               >
