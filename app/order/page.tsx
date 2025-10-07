@@ -337,8 +337,8 @@ export default function CustomerOrderPage() {
     setMenuError(null);
     setIsDemoFallback(false);
 
-    // Explicit demo only
-    if (isDemo) {
+    // Check if this is demo mode (either demo=1 param or demo-cafe venue)
+    if (isDemo || venueSlug === 'demo-cafe') {
       const mappedItems = demoMenuItems.map((item, idx) => ({
         ...item,
         id: `demo-${idx}`,
@@ -348,6 +348,7 @@ export default function CustomerOrderPage() {
         image: item.image || undefined,
       }));
       setMenuItems(mappedItems);
+      setVenueName('Servio Café');
       setLoadingMenu(false);
       return;
     }

@@ -1,33 +1,30 @@
 'use client';
 
-import React, { useState } from 'react';
+import React, { useState, Suspense } from 'react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { User, Briefcase, ArrowRight, RefreshCw } from 'lucide-react';
 import Link from 'next/link';
-import DemoAnalytics from '@/components/demo-analytics';
-import DemoAISection from '@/components/demo-ai-section';
+import dynamic from 'next/dynamic';
 import { demoMenuItems } from '@/data/demoMenuItems';
+
+// Dynamically import heavy components to avoid hydration issues
+const DemoAnalytics = dynamic(() => import('@/components/demo-analytics'), {
+  ssr: false,
+  loading: () => <div className="animate-pulse h-96 bg-gray-100 rounded-lg"></div>
+});
+
+const DemoAISection = dynamic(() => import('@/components/demo-ai-section'), {
+  ssr: false,
+  loading: () => <div className="animate-pulse h-96 bg-gray-100 rounded-lg"></div>
+});
 
 export default function DemoPage() {
   const [viewMode, setViewMode] = useState<'customer' | 'owner'>('customer');
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-purple-50 via-white to-purple-50">
-      {/* Demo Banner */}
-      <div className="bg-gradient-to-r from-purple-600 to-purple-800 text-white py-3 px-4 shadow-md">
-        <div className="max-w-7xl mx-auto flex items-center justify-between">
-          <div className="flex items-center space-x-2">
-            <div className="h-2 w-2 bg-green-400 rounded-full animate-pulse"></div>
-            <span className="text-sm font-medium">Demo Mode Active</span>
-          </div>
-          <Badge variant="secondary" className="bg-white/20 text-white border-0">
-            💡 Payments are simulated — no real charges
-          </Badge>
-        </div>
-      </div>
-
       {/* View Toggle */}
       <div className="sticky top-0 z-40 bg-white border-b shadow-sm">
         <div className="max-w-7xl mx-auto px-4 py-4">
