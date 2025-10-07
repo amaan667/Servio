@@ -29,7 +29,9 @@ const buttonVariants = cva(
       },
     },
     defaultVariants: {
-      variant: "default",
+      // Use Servio brand styling as the default across the app to ensure
+      // consistent button appearance on all feature pages.
+      variant: "servio",
       size: "default",
     },
   },
