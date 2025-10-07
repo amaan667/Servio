@@ -131,12 +131,12 @@ export default function DemoPage() {
           <div className="flex items-center justify-between">
             <div>
               <h1 className="text-2xl font-bold text-gray-900 flex items-center gap-2">
+                Try
                 <img 
                   src="/assets/servio-logo-updated.png"
                   alt="Servio"
                   className="h-6 w-auto"
                 />
-                Try Servio
               </h1>
               <p className="text-sm text-gray-600">Experience both perspectives</p>
             </div>
