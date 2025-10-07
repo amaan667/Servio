@@ -19,7 +19,13 @@ import {
 } from "lucide-react";
 import { useAuth } from "@/app/auth/AuthProvider";
 
-function PricingQuickCompare() {
+function PricingQuickCompare({
+  isSignedIn,
+  onPrimaryClick,
+}: {
+  isSignedIn: boolean;
+  onPrimaryClick: () => void;
+}) {
   return (
     <div className="w-full flex flex-col items-center gap-8 py-10">
       <h2 className="text-3xl font-bold mb-4">Choose the plan that works best for your business</h2>
@@ -33,7 +39,9 @@ function PricingQuickCompare() {
             <li>✔ QR ordering</li>
             <li>✔ 14-day free trial</li>
           </ul>
-          <Button variant="servio" className="w-full">Start Free Trial</Button>
+          <Button variant="servio" className="w-full" onClick={onPrimaryClick}>
+            {isSignedIn ? 'Manage Subscription' : 'Start Free Trial'}
+          </Button>
         </Card>
         {/* Standard */}
         <Card className="flex flex-col items-center p-6 gap-4 border-2 border-purple-500 shadow-lg scale-105">
@@ -48,7 +56,9 @@ function PricingQuickCompare() {
             <li>✔ Full analytics dashboard</li>
             <li>✔ Email support</li>
           </ul>
-          <Button variant="servio" className="w-full">Start Free Trial</Button>
+          <Button variant="servio" className="w-full" onClick={onPrimaryClick}>
+            {isSignedIn ? 'Manage Subscription' : 'Start Free Trial'}
+          </Button>
         </Card>
         {/* Premium */}
         <Card className="flex flex-col items-center p-6 gap-4">
@@ -97,6 +107,12 @@ export default function HomePage() {
 
   const handleDemo = () => {
     router.push("/order?demo=1");
+  };
+
+  const handlePricingPrimary = () => {
+    // If signed in, send to dashboard/billing; if not, to sign-in
+    if (user) router.push('/dashboard');
+    else router.push('/sign-in');
   };
 
   return (
@@ -397,7 +413,7 @@ export default function HomePage() {
 
       {/* PricingQuickCompare Section */}
       <section id="pricing" className="py-24 bg-white">
-        <PricingQuickCompare />
+        <PricingQuickCompare isSignedIn={!!user} onPrimaryClick={handlePricingPrimary} />
       </section>
 
       {/* Pricing Section */}
