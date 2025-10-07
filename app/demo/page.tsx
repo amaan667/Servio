@@ -20,25 +20,31 @@ const DemoAISection = dynamic(() => import('@/components/demo-ai-section'), {
   loading: () => <div className="animate-pulse h-96 bg-gray-100 rounded-lg"></div>
 });
 
-// Error boundary component for demo sections
-function DemoErrorBoundary({ children, fallback }: { children: React.ReactNode; fallback: React.ReactNode }) {
-  const [hasError, setHasError] = React.useState(false);
-
-  React.useEffect(() => {
-    const handleError = (error: ErrorEvent) => {
-      console.error('Demo component error:', error);
-      setHasError(true);
-    };
-
-    window.addEventListener('error', handleError);
-    return () => window.removeEventListener('error', handleError);
-  }, []);
-
-  if (hasError) {
-    return <>{fallback}</>;
+// Error boundary component for demo sections - using class component to avoid hook issues
+class DemoErrorBoundary extends React.Component<
+  { children: React.ReactNode; fallback: React.ReactNode },
+  { hasError: boolean }
+> {
+  constructor(props: { children: React.ReactNode; fallback: React.ReactNode }) {
+    super(props);
+    this.state = { hasError: false };
   }
 
-  return <>{children}</>;
+  static getDerivedStateFromError() {
+    return { hasError: true };
+  }
+
+  componentDidCatch(error: Error, errorInfo: React.ErrorInfo) {
+    console.error('Demo component error:', error, errorInfo);
+  }
+
+  render() {
+    if (this.state.hasError) {
+      return this.props.fallback;
+    }
+
+    return this.props.children;
+  }
 }
 
 export default function DemoPage() {
@@ -46,6 +52,15 @@ export default function DemoPage() {
   const [mounted, setMounted] = useState(false);
   const [isAuthenticated, setIsAuthenticated] = useState(false);
   const [hasError, setHasError] = useState(false);
+  
+  console.log('[DEMO DEBUG] DemoPage render', {
+    timestamp: new Date().toISOString(),
+    viewMode,
+    mounted,
+    location: typeof window !== 'undefined' ? window.location.href : 'server',
+  });
+
+  // ALL HOOKS MUST BE CALLED BEFORE ANY CONDITIONAL RETURNS
   
   // Check auth status safely after component mounts
   useEffect(() => {
@@ -64,13 +79,6 @@ export default function DemoPage() {
     
     checkAuth();
   }, []);
-
-  console.log('[DEMO DEBUG] DemoPage render', {
-    timestamp: new Date().toISOString(),
-    viewMode,
-    mounted,
-    location: typeof window !== 'undefined' ? window.location.href : 'server',
-  });
 
   useEffect(() => {
     console.log('[DEMO DEBUG] DemoPage mounted', {
@@ -91,6 +99,7 @@ export default function DemoPage() {
     return () => window.removeEventListener('error', handleError);
   }, []);
 
+  // NOW we can do conditional rendering after all hooks are called
   if (!mounted) {
     return (
       <div className="min-h-screen bg-gradient-to-br from-purple-50 via-white to-purple-50 flex items-center justify-center">
