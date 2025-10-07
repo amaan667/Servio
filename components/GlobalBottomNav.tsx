@@ -160,15 +160,15 @@ export default function GlobalBottomNav({ venueId, counts = {} }: GlobalBottomNa
   return (
     <>
       {/* Bottom Navigation Bar */}
-      <div className={`fixed bottom-0 left-0 right-0 z-50 bg-white border-t border-gray-200 shadow-lg transition-transform duration-300 mobile-nav ${
+      <div className={`fixed bottom-0 left-0 right-0 z-50 bg-white border-t border-gray-200 shadow-lg transition-transform duration-300 mobile-nav pt-2 ${
         isVisible ? 'translate-y-0' : 'translate-y-full'
       }`} style={{ paddingBottom: 'env(safe-area-inset-bottom)' }}>
-        <div className="grid grid-cols-4 h-20">
+        <div className="grid grid-cols-4 h-20 gap-3 px-3 pb-2">
           {navItems.map((item) => (
             <button
               key={item.id}
               onClick={() => handleNavigation(item.href)}
-              className={`flex flex-col items-center justify-center p-2 relative transition-all duration-200 rounded-2xl bg-white border-2 border-servio-purple shadow-md`}
+              className={`flex flex-col items-center justify-center p-2 relative transition-all duration-200 rounded-2xl bg-white border-2 border-servio-purple shadow-md mx-1`}
             >
               <div className="relative mb-1 flex flex-col items-center">
                 <item.icon className={`h-5 w-5 transition-colors text-servio-purple`} />
