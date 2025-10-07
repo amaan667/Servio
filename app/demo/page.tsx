@@ -24,8 +24,16 @@ const DemoAISection = dynamic(() => import('@/components/demo-ai-section'), {
 export default function DemoPage() {
   const [viewMode, setViewMode] = useState<'customer' | 'owner'>('customer');
   const [mounted, setMounted] = useState(false);
-  const { session } = useAuth();
-  const isAuthenticated = !!session?.user;
+  
+  // Safely use auth with fallback - demo page should work even if auth fails
+  let isAuthenticated = false;
+  try {
+    const auth = useAuth();
+    isAuthenticated = !!auth?.session?.user;
+  } catch (error) {
+    // If auth fails, continue without authentication
+    console.warn('[DEMO] Auth not available, continuing as unauthenticated user');
+  }
 
   useEffect(() => {
     setMounted(true);
