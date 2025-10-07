@@ -100,12 +100,16 @@ export default function AuthProvider({
             setLoading(false);
         }
       });
-      subscription = data.subscription;
+      subscription = data?.subscription;
     } catch (error) {
       setLoading(false);
     }
     
-    return () => subscription.subscription?.unsubscribe();
+    return () => {
+      if (subscription) {
+        subscription.unsubscribe();
+      }
+    };
   }, []);
 
   const signOut = async () => {
