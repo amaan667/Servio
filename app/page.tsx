@@ -102,20 +102,29 @@ export default function HomePage() {
   };
 
   const handleDemo = () => {
-    // Log to server for Railway logs (fire and forget - don't block navigation)
-    fetch('/api/log-demo-access', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({
-        action: 'view_demo_clicked',
-        url: window.location.href,
-        referrer: document.referrer,
-        timestamp: new Date().toISOString(),
-        userAgent: navigator.userAgent,
-        user: user ? { id: user.id, email: user.email } : null
-      }),
-      keepalive: true // Ensures request completes even if page navigates away
-    }).catch(() => {}); // Silent fail - don't block navigation
+    // Log to server for Railway logs using sendBeacon (guaranteed to send even during navigation)
+    const logData = {
+      action: 'view_demo_clicked',
+      url: window.location.href,
+      referrer: document.referrer,
+      timestamp: new Date().toISOString(),
+      userAgent: navigator.userAgent,
+      user: user ? { id: user.id, email: user.email } : null
+    };
+    
+    // Try sendBeacon first (best for navigation scenarios)
+    const blob = new Blob([JSON.stringify(logData)], { type: 'application/json' });
+    const sent = navigator.sendBeacon('/api/log-demo-access', blob);
+    
+    // Fallback to fetch if sendBeacon fails
+    if (!sent) {
+      fetch('/api/log-demo-access', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(logData),
+        keepalive: true
+      }).catch(() => {});
+    }
     
     router.push("/demo");
   };
