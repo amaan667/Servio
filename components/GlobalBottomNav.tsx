@@ -168,14 +168,10 @@ export default function GlobalBottomNav({ venueId, counts = {} }: GlobalBottomNa
             <button
               key={item.id}
               onClick={() => handleNavigation(item.href)}
-              className={`flex flex-col items-center justify-center p-2 relative transition-all duration-200 rounded-2xl bg-white border-2 ${
-                item.isActive
-                  ? 'border-servio-purple shadow-md'
-                  : 'border-gray-200 hover:border-servio-purple/60 hover:bg-gray-50'
-              }`}
+              className={`flex flex-col items-center justify-center p-2 relative transition-all duration-200 rounded-2xl bg-white border-2 border-servio-purple shadow-md`}
             >
               <div className="relative mb-1 flex flex-col items-center">
-                <item.icon className={`h-5 w-5 transition-colors ${item.isActive ? 'text-servio-purple' : 'text-gray-900'}`} />
+                <item.icon className={`h-5 w-5 transition-colors text-servio-purple`} />
                 {item.badge && item.badge > 0 && (
                   <Badge 
                     variant="destructive" 
@@ -187,13 +183,12 @@ export default function GlobalBottomNav({ venueId, counts = {} }: GlobalBottomNa
                 )}
               </div>
               <span
-                className={`${item.isActive ? 'text-servio-purple' : 'text-gray-900'} 
-                  font-bold text-center px-1 transition-colors 
+                className={`text-servio-purple font-bold text-center px-1 transition-colors 
                   leading-snug text-[12px] sm:text-[13px] max-w-[120px] whitespace-nowrap`}
               >
                 {item.id === 'live-orders' ? (
                   <>
-                    Live Orders <span className="ml-1 ${item.isActive ? 'text-servio-purple' : 'text-gray-900'}">({liveOrdersCount})</span>
+                    Live Orders <span className="ml-1 text-servio-purple">({liveOrdersCount})</span>
                   </>
                 ) : (
                   item.label
