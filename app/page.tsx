@@ -119,11 +119,27 @@ export default function HomePage() {
   };
 
   const handleDemo = () => {
+    const timestamp = new Date().toISOString();
     console.log('[DEMO DEBUG] handleDemo clicked', {
-      timestamp: new Date().toISOString(),
+      timestamp,
       user: user ? { id: user.id, email: user.email } : null,
       authLoading,
     });
+    
+    // Log to server for Railway logs
+    fetch('/api/log-demo-access', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        action: 'view_demo_clicked',
+        url: window.location.href,
+        referrer: document.referrer,
+        timestamp,
+        userAgent: navigator.userAgent,
+        user: user ? { id: user.id, email: user.email } : null
+      })
+    }).catch(() => {});
+    
     router.push("/demo");
   };
 

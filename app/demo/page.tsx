@@ -81,10 +81,26 @@ export default function DemoPage() {
   }, []);
 
   useEffect(() => {
+    const timestamp = new Date().toISOString();
     console.log('[DEMO DEBUG] DemoPage mounted', {
-      timestamp: new Date().toISOString(),
+      timestamp,
       location: window.location.href,
     });
+    
+    // Log to server for Railway logs
+    fetch('/api/log-demo-access', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        action: 'demo_page_loaded',
+        viewMode: 'customer', // default view mode
+        url: window.location.href,
+        referrer: document.referrer,
+        timestamp,
+        userAgent: navigator.userAgent
+      })
+    }).catch(() => {});
+    
     setMounted(true);
   }, []);
 
@@ -162,7 +178,21 @@ export default function DemoPage() {
             </div>
             <div className="flex items-center space-x-2 bg-gray-100 rounded-lg p-1">
               <Button
-                onClick={() => setViewMode('customer')}
+                onClick={() => {
+                  setViewMode('customer');
+                  // Log view mode change to server
+                  fetch('/api/log-demo-access', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                      action: 'view_mode_changed',
+                      viewMode: 'customer',
+                      url: window.location.href,
+                      timestamp: new Date().toISOString(),
+                      userAgent: navigator.userAgent
+                    })
+                  }).catch(() => {});
+                }}
                 variant={viewMode === 'customer' ? 'default' : 'ghost'}
                 className={`${
                   viewMode === 'customer'
@@ -174,7 +204,21 @@ export default function DemoPage() {
                 Customer 👤
               </Button>
               <Button
-                onClick={() => setViewMode('owner')}
+                onClick={() => {
+                  setViewMode('owner');
+                  // Log view mode change to server
+                  fetch('/api/log-demo-access', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                      action: 'view_mode_changed',
+                      viewMode: 'owner',
+                      url: window.location.href,
+                      timestamp: new Date().toISOString(),
+                      userAgent: navigator.userAgent
+                    })
+                  }).catch(() => {});
+                }}
                 variant={viewMode === 'owner' ? 'default' : 'ghost'}
                 className={`${
                   viewMode === 'owner'
@@ -219,7 +263,25 @@ function CustomerDemoView() {
             we'll take you straight to the menu.
           </p>
           <div className="flex flex-col sm:flex-row gap-4">
-            <Link href="/order?venue=demo-cafe&table=1" className="flex-1">
+            <Link 
+              href="/order?venue=demo-cafe&table=1" 
+              className="flex-1"
+              onClick={() => {
+                // Log to server for Railway logs
+                fetch('/api/log-demo-access', {
+                  method: 'POST',
+                  headers: { 'Content-Type': 'application/json' },
+                  body: JSON.stringify({
+                    action: 'start_demo_order_clicked',
+                    viewMode: 'customer',
+                    destination: '/order?venue=demo-cafe&table=1',
+                    url: window.location.href,
+                    timestamp: new Date().toISOString(),
+                    userAgent: navigator.userAgent
+                  })
+                }).catch(() => {});
+              }}
+            >
               <Button className="w-full bg-purple-600 hover:bg-purple-700 !text-white h-14 text-lg">
                 Start Your Order
                 <ArrowRight className="ml-2 w-5 h-5" />

@@ -105,13 +105,13 @@ export default function GlobalBottomNav({ venueId, counts = {} }: GlobalBottomNa
     const channel = supabase
       .channel(`live-orders-count-${venueId}`)
       .on('postgres_changes',
-        {
-          event: '*',
-          schema: 'public',
+        { 
+          event: '*', 
+          schema: 'public', 
           table: 'orders',
           filter: `venue_id=eq.${venueId}`
-        },
-        async (payload) => {
+        }, 
+        async (payload: any) => {
           if (!isSubscribed || !isMountedRef.current) return;
 
           // Debounce the updates to prevent rapid state changes
