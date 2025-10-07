@@ -131,9 +131,8 @@ export default function HomePage() {
                 {!authLoading && !user && (
                   <Button
                     size="lg"
-                    variant="outline"
-                    className="border-white text-white hover:bg-white hover:text-purple-600 text-lg px-8 py-4 bg-transparent"
                     onClick={handleSignIn}
+                    className="bg-white text-purple-600 hover:bg-gray-100 hover:text-purple-700 text-lg px-8 py-4"
                   >
                     Sign In
                   </Button>
@@ -420,9 +419,8 @@ export default function HomePage() {
             {!authLoading && !user && (
               <Button
                 size="lg"
-                variant="outline"
-                className="border-white text-white hover:bg-white hover:text-purple-600 text-lg px-8 py-4 bg-transparent"
                 onClick={handleSignIn}
+                className="bg-white text-purple-600 hover:bg-gray-100 hover:text-purple-700 text-lg px-8 py-4"
               >
                 Sign In
               </Button>
