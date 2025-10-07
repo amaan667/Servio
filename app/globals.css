@@ -1954,3 +1954,32 @@ p, span, div {
     margin-top: 1rem;
   }
 }
+
+/* Force consistent Servio button theme globally */
+button,
+[role="button"],
+input[type="button"],
+input[type="submit"],
+input[type="reset"] {
+  background-color: #ffffff !important;
+  color: hsl(var(--servio-purple)) !important;
+  border: 2px solid hsl(var(--servio-purple)) !important;
+  border-radius: 12px !important;
+  font-weight: 600 !important;
+}
+
+button:hover,
+[role="button"]:hover,
+input[type="button"]:hover,
+input[type="submit"]:hover,
+input[type="reset"]:hover {
+  background-color: #f9fafb !important;
+  color: hsl(var(--servio-purple)) !important;
+}
+
+/* Destructive stays red but keep white bg by default unless explicitly set */
+button[class*="destructive"],
+[role="button"][class*="destructive"] {
+  border-color: #ef4444 !important;
+  color: #ef4444 !important;
+}
