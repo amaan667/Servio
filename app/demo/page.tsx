@@ -23,23 +23,17 @@ const DemoAISection = dynamic(() => import('@/components/demo-ai-section'), {
 export default function DemoPage() {
   const [viewMode, setViewMode] = useState<'customer' | 'owner'>('customer');
   const [mounted, setMounted] = useState(false);
-  const [error, setError] = useState<Error | null>(null);
 
   useEffect(() => {
-    try {
-      setMounted(true);
-    } catch (e) {
-      console.error('[DEMO PAGE] Mount error:', e);
-      setError(e as Error);
-    }
+    setMounted(true);
   }, []);
 
-  if (error) {
-    throw error;
-  }
-
   if (!mounted) {
-    return null; // Return null instead of skeleton to match SSR
+    return (
+      <div className="min-h-screen bg-gradient-to-br from-purple-50 via-white to-purple-50 flex items-center justify-center">
+        <div className="animate-pulse h-32 w-32 rounded-lg bg-gray-100" />
+      </div>
+    );
   }
 
   return (
