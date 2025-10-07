@@ -222,9 +222,9 @@ export default function GlobalNav() {
                 )}
                 <div className="w-px h-8 bg-border mx-2"></div>
                 <Button
-                  variant="ghost"
+                  variant="destructive"
                   onClick={handleSignOut}
-                  className="flex items-center px-4 py-3 text-base font-medium text-destructive hover:text-destructive hover:bg-destructive/10 rounded-md transition-all duration-200"
+                  className="flex items-center px-4 py-3 text-base font-medium bg-red-600 text-white hover:bg-red-700 rounded-md transition-all duration-200"
                 >
                   <LogOut className="mr-3 h-5 w-5" />
                   Sign Out

@@ -569,7 +569,7 @@ export default function StaffClient({
                     <Button 
                       onClick={onAdd} 
                       disabled={adding || !name.trim()}
-                      className="h-11 px-8 bg-gradient-to-r from-purple-600 to-purple-700 hover:from-purple-700 hover:to-purple-800"
+                      className="h-11 px-8 bg-gradient-to-r from-purple-600 to-purple-700 hover:from-purple-700 hover:to-purple-800 text-white"
                     >
                       {adding ? (
                         <>
@@ -650,11 +650,9 @@ export default function StaffClient({
                             }`}>
                               <div className="staff-member-info staff-info flex items-center gap-3">
                                 <div className={`staff-member-avatar w-8 h-8 rounded-full flex items-center justify-center shadow-sm ${
-                                  row.active ? 'bg-white' : 'bg-gray-200'
+                                  row.active ? 'bg-purple-600' : 'bg-gray-400'
                                 }`}>
-                                  <span className={`text-sm font-medium ${
-                                    row.active ? 'text-white' : 'text-white'
-                                  }`}>
+                                  <span className="text-sm font-medium text-white">
                                     {row.name.charAt(0).toUpperCase()}
                                   </span>
                                 </div>
