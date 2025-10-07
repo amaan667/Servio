@@ -61,6 +61,24 @@ export default async function VenuePage({ params }: { params: Promise<{ venueId:
       }
     }
 
+    // Check if user needs onboarding (new signup with no menu/tables)
+    const { data: menuItems } = await supabase
+      .from('menu_items')
+      .select('id')
+      .eq('venue_id', venueId)
+      .limit(1);
+
+    const { data: tables } = await supabase
+      .from('tables')
+      .select('id')
+      .eq('venue_id', venueId)
+      .limit(1);
+
+    // If no menu items AND no tables, redirect to onboarding
+    if ((!menuItems || menuItems.length === 0) && (!tables || tables.length === 0)) {
+      redirect('/onboarding');
+    }
+
     // Get authoritative dashboard counts from the new RPC function
     const venueTz = 'Europe/London'; // pull from DB/config if you store it
     const { data: counts, error: countsError } = await supabase

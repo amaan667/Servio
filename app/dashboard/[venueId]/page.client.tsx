@@ -15,6 +15,7 @@ import { withSupabaseRetry } from '@/lib/retry';
 import { useConnectionMonitor } from '@/lib/connection-monitor';
 import { DashboardSkeleton } from '@/components/dashboard-skeleton';
 import { useRequestCancellation } from '@/lib/request-utils';
+import OnboardingCompletionBanner from '@/components/onboarding-completion-banner';
 
 interface DashboardCounts {
   live_count: number;
@@ -409,6 +410,9 @@ const VenueDashboardClient = React.memo(function VenueDashboardClient({
         <div className="max-w-7xl mx-auto px-3 sm:px-4 lg:px-8 py-4 sm:py-6 lg:py-8 pb-24 md:pb-8">
         {/* Simple breadcrumb for main dashboard */}
         <NavigationBreadcrumb venueId={venueId} />
+        
+        {/* Onboarding completion banner */}
+        <OnboardingCompletionBanner />
         
         <div className="mb-6 sm:mb-8">
           <div className="flex items-start justify-between">
