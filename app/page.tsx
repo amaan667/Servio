@@ -57,7 +57,7 @@ function PricingQuickCompare({
             <li>✔ Email support</li>
           </ul>
           <Button variant="servio" className="w-full" onClick={onPrimaryClick}>
-            {isSignedIn ? 'Manage Subscription' : 'Start Free Trial'}
+            {isSignedIn ? 'Upgrade' : 'Start Free Trial'}
           </Button>
         </Card>
         {/* Premium */}
