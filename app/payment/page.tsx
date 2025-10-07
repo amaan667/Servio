@@ -88,21 +88,19 @@ export default function PaymentPage() {
       // Handle different payment types
       if (action === 'stripe') {
         
-        // Store checkout data for webhook to create order after successful payment
-        const stripeCheckoutData = {
-          ...checkoutData,
-          paymentMethod: 'stripe',
-          timestamp: Date.now()
-        };
-        localStorage.setItem('servio-stripe-checkout-data', JSON.stringify(stripeCheckoutData));
+        // Check if we already have an order ID (we should!)
+        if (!checkoutData.orderId) {
+          throw new Error('No order ID found. Please try submitting your order again.');
+        }
+
+        console.log('[PAYMENT DEBUG] Using existing order ID for Stripe:', checkoutData.orderId);
         
-        // Create Stripe checkout session with temporary order ID
-        const tempOrderId = `temp-${Date.now()}`;
+        // Create Stripe checkout session with the existing order ID
         const checkoutResponse = await fetch('/api/checkout', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({ 
-            orderId: tempOrderId, 
+            orderId: checkoutData.orderId, // Use the real order ID that was created
             total: checkoutData.total, 
             currency: 'GBP',
             venueId: checkoutData.venueId,
@@ -125,10 +123,9 @@ export default function PaymentPage() {
           throw new Error(checkoutErr || 'Checkout failed');
         }
 
-        // Store session ID for webhook
-        localStorage.setItem('servio-stripe-session-id', sessionId);
+        console.log('[PAYMENT DEBUG] Stripe session created:', sessionId, 'for order:', checkoutData.orderId);
 
-        // Redirect to Stripe checkout - order will be created by webhook after successful payment
+        // Redirect to Stripe checkout - payment will mark existing order as PAID
         if (url) {
           window.location.assign(url);
           return; // Don't continue to order creation

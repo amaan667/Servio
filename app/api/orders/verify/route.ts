@@ -1,64 +1,104 @@
 import { NextResponse } from 'next/server';
-import { supabaseAdmin } from '@/lib/supabaseAdmin';
 import Stripe from 'stripe';
+import { createClient } from '@/lib/supabase/server';
 
 export const runtime = 'nodejs';
 export const dynamic = 'force-dynamic';
-export const revalidate = 0;
 
-const stripe = new Stripe(process.env.STRIPE_SECRET_KEY!, { apiVersion: '2025-08-27.basil' });
+const stripe = new Stripe(process.env.STRIPE_SECRET_KEY!, { 
+  apiVersion: "2025-08-27.basil"
+});
 
 export async function GET(req: Request) {
-  const { searchParams } = new URL(req.url);
-  const sessionId = searchParams.get('sessionId');
-  if (!sessionId) return NextResponse.json({ error: 'Missing sessionId' }, { status: 400 });
+  try {
+    const { searchParams } = new URL(req.url);
+    const sessionId = searchParams.get('sessionId');
+    
+    console.log('[VERIFY] Starting verification for session:', sessionId);
 
-  // Poll briefly for the webhook-created order
-  const started = Date.now();
-  while (Date.now() - started < 6000) {
-    const { data: order } = await supabaseAdmin
+    if (!sessionId) {
+      return NextResponse.json({ error: 'Session ID is required' }, { status: 400 });
+    }
+
+    // Retrieve the Stripe session
+    const session = await stripe.checkout.sessions.retrieve(sessionId);
+    console.log('[VERIFY] Stripe session retrieved:', {
+      id: session.id,
+      paymentStatus: session.payment_status,
+      metadata: session.metadata
+    });
+
+    if (session.payment_status !== 'paid') {
+      return NextResponse.json({ 
+        error: 'Payment not completed' 
+      }, { status: 400 });
+    }
+
+    // Get metadata from session
+    const metadata = session.metadata || {};
+    const orderId = metadata.orderId;
+    
+    console.log('[VERIFY] Order ID from metadata:', orderId);
+
+    if (!orderId) {
+      return NextResponse.json({ 
+        error: 'No order ID in session metadata' 
+      }, { status: 400 });
+    }
+
+    // Fetch the existing order (should have been created in order page)
+    console.log('[VERIFY] Fetching existing order:', orderId);
+    
+    const supabase = await createClient();
+    
+    const { data: order, error: fetchError } = await supabase
       .from('orders')
       .select('*')
-      .eq('stripe_session_id', sessionId)
-      .maybeSingle();
+      .eq('id', orderId)
+      .single();
 
-    if (order) return NextResponse.json({ order });
+    if (fetchError || !order) {
+      console.error('[VERIFY] Failed to fetch order:', fetchError);
+      return NextResponse.json({ 
+        error: 'Order not found. The order may not have been created properly.',
+        details: fetchError?.message 
+      }, { status: 404 });
+    }
 
-    await new Promise(r => setTimeout(r, 500));
-  }
-
-  // Rescue path: if webhook is late but session is paid, create/upsert now
-  const session = await stripe.checkout.sessions.retrieve(sessionId);
-  if (session.payment_status === 'paid') {
-    const items = (() => {
-      try { return JSON.parse(session.metadata?.items ?? '[]'); } catch { return []; }
-    })();
-
-    const payload = {
-      venue_id: session.metadata?.venueId ?? 'venue-1e02af4d',
-      table_number: Number(session.metadata?.tableNumber ?? session.metadata?.table ?? 0) || null,
-      customer_name: session.customer_details?.name ?? session.metadata?.customerName ?? null,
-      customer_phone: session.customer_details?.phone ?? session.metadata?.customerPhone ?? null,
-      items,
-      total_amount: (session.amount_total ?? 0) / 100,
-      order_status: 'PLACED',
-      payment_status: 'PAID',
-      payment_method: 'stripe',
-      payment_mode: 'online',
-      source: session.metadata?.source ?? 'qr',
-      stripe_session_id: session.id,
-      stripe_payment_intent_id: String(session.payment_intent ?? ''),
-    };
-
-    const { data, error } = await supabaseAdmin
+    // Update payment status to PAID
+    console.log('[VERIFY] Updating order payment status to PAID for order:', orderId);
+    
+    const { data: updatedOrder, error: updateError } = await supabase
       .from('orders')
-      .upsert(payload, { onConflict: 'stripe_session_id' }) // requires unique index
-      .select('*')
-      .maybeSingle();
+      .update({ 
+        payment_status: 'PAID',
+        payment_method: 'stripe',
+        stripe_payment_intent_id: session.payment_intent as string
+      })
+      .eq('id', orderId)
+      .select()
+      .single();
 
-    if (data) return NextResponse.json({ order: data, recovered: true });
-    if (error) return NextResponse.json({ error: error.message }, { status: 500 });
+    if (updateError) {
+      console.error('[VERIFY] Failed to update payment status:', updateError);
+      return NextResponse.json({ 
+        error: 'Failed to update order payment status',
+        details: updateError.message 
+      }, { status: 500 });
+    }
+
+    console.log('[VERIFY] Payment status updated successfully for order:', orderId);
+
+    return NextResponse.json({ 
+      order: updatedOrder,
+      updated: true 
+    });
+
+  } catch (error) {
+    console.error('[VERIFY] Error:', error);
+    return NextResponse.json({ 
+      error: 'Internal server error',
+      details: error instanceof Error ? error.message : 'Unknown error'
+    }, { status: 500 });
   }
-
-  return NextResponse.json({ error: 'Order not ready' }, { status: 404 });
 }
