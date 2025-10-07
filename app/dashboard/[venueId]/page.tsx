@@ -62,20 +62,20 @@ export default async function VenuePage({ params }: { params: Promise<{ venueId:
     }
 
     // Check if user needs onboarding (new signup with no menu/tables)
-    const { data: menuItems } = await supabase
+    const { data: onboardingMenuCheck } = await supabase
       .from('menu_items')
       .select('id')
       .eq('venue_id', venueId)
       .limit(1);
 
-    const { data: tables } = await supabase
+    const { data: onboardingTablesCheck } = await supabase
       .from('tables')
       .select('id')
       .eq('venue_id', venueId)
       .limit(1);
 
     // If no menu items AND no tables, redirect to onboarding
-    if ((!menuItems || menuItems.length === 0) && (!tables || tables.length === 0)) {
+    if ((!onboardingMenuCheck || onboardingMenuCheck.length === 0) && (!onboardingTablesCheck || onboardingTablesCheck.length === 0)) {
       redirect('/onboarding');
     }
 
