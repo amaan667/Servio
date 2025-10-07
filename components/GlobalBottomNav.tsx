@@ -157,6 +157,10 @@ export default function GlobalBottomNav({ venueId, counts = {} }: GlobalBottomNa
 
   if (!isMobile) return null;
 
+  // Only show on dashboard and QR pages
+  const shouldShowNav = isOnDashboard || isOnQRPage;
+  if (!shouldShowNav) return null;
+
   return (
     <>
       {/* Bottom Navigation Bar */}
