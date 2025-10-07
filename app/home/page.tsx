@@ -46,7 +46,7 @@ const HomePage = React.memo(function HomePage() {
 
     // Listen for auth state changes
     const supabase = createClient();
-    const { data: { subscription } } = supabase.auth.onAuthStateChange((event: any, session: any) => {
+    const result = supabase?.auth?.onAuthStateChange?.((event: any, session: any) => {
       if (session?.user) {
         setUser(session.user);
       } else {
@@ -57,7 +57,9 @@ const HomePage = React.memo(function HomePage() {
 
     // Cleanup subscription on unmount
     return () => {
-      subscription.unsubscribe();
+      try {
+        (result as any)?.data?.subscription?.unsubscribe?.();
+      } catch {}
     };
   }, [router]);
 

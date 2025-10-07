@@ -318,10 +318,14 @@ export default function CustomerOrderPage() {
 
     try {
       if (supabase?.auth?.onAuthStateChange) {
-        const { data: { subscription } } = supabase.auth.onAuthStateChange((_event: any, session: any) => {
+        const result = supabase.auth.onAuthStateChange((_event: any, session: any) => {
           setSession(session);
         });
-        return () => subscription?.unsubscribe?.();
+        return () => {
+          try {
+            (result as any)?.data?.subscription?.unsubscribe?.();
+          } catch {}
+        };
       }
     } catch (err) {
       console.log('[AUTH DEBUG] onAuthStateChange setup failed:', err);

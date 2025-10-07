@@ -84,7 +84,9 @@ export function useAuth() {
     checkUser();
 
     // Set up auth state listener
-    const { data: { subscription } } = supabase.auth.onAuthStateChange(
+    const onChange = supabase?.auth?.onAuthStateChange?.bind(supabase?.auth);
+    const result = onChange
+      ? onChange(
       async (event: any, session: any) => {
         
         if (event === 'SIGNED_IN' || event === 'TOKEN_REFRESHED') {
@@ -99,10 +101,15 @@ export function useAuth() {
           setAuthState({ user: null, loading: false, error: null });
         }
       }
-    );
+    )
+      : undefined;
+
+    const subscription = (result as any)?.data?.subscription;
 
     return () => {
-      subscription.unsubscribe();
+      try {
+        subscription?.unsubscribe?.();
+      } catch {}
     };
   }, [checkUser]);
 
