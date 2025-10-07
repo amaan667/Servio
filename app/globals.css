@@ -1589,8 +1589,8 @@ p, span, div {
   
   /* Enhanced mobile navigation with Servio branding */
   .mobile-nav {
-    background: rgba(255, 255, 255, 0.95) !important;
-    backdrop-filter: blur(12px) !important;
+    background: #ffffff !important; /* Force full white bar */
+    backdrop-filter: none !important;
     border-top: 1px solid #e5e7eb !important;
   }
   
@@ -1598,7 +1598,7 @@ p, span, div {
   .mobile-nav span,
   .mobile-nav button span,
   .mobile-nav .text-xs {
-    color: #111827 !important; /* Default dark text */
+    color: hsl(var(--servio-purple)) !important; /* Always Servio purple */
     font-weight: 700 !important;
   }
 
@@ -1620,12 +1620,12 @@ p, span, div {
   /* Keep legacy selector fallback if any component adds an "active" class */
   .mobile-nav button[class*="active"] span,
   .mobile-nav button[class*="active"] svg {
-    color: #ffffff !important;
+    color: hsl(var(--servio-purple)) !important;
   }
 
   /* Enhanced mobile navigation icon visibility */
   .mobile-nav svg {
-    color: #111827 !important; /* Very dark gray for maximum contrast */
+    color: hsl(var(--servio-purple)) !important; /* Icons always purple */
   }
 
   .mobile-nav button[class*="active"] svg,
@@ -1635,27 +1635,24 @@ p, span, div {
 
   /* Enhanced mobile navigation background and borders */
   .mobile-nav {
-    background: rgba(255, 255, 255, 0.98) !important;
-    backdrop-filter: blur(8px) !important;
+    background: #ffffff !important;
+    backdrop-filter: none !important;
     border-top: 1px solid #e5e7eb !important;
-    box-shadow: 0 -2px 8px rgba(0, 0, 0, 0.12) !important;
+    box-shadow: 0 -2px 8px rgba(0, 0, 0, 0.08) !important;
   }
 
   /* Dark mode mobile navigation support */
   @media (prefers-color-scheme: dark) {
     .mobile-nav {
-      background: rgba(17, 24, 39, 0.98) !important;
-      border-top: 1px solid #374151 !important;
-      box-shadow: 0 -2px 8px rgba(0, 0, 0, 0.3) !important;
+      background: #ffffff !important; /* Keep white in dark mode too */
+      border-top: 1px solid #e5e7eb !important;
+      box-shadow: 0 -2px 8px rgba(0, 0, 0, 0.12) !important;
     }
 
     .mobile-nav span,
-    .mobile-nav button span {
-      color: #f9fafb !important;
-    }
-
+    .mobile-nav button span,
     .mobile-nav svg {
-      color: #f9fafb !important;
+      color: hsl(var(--servio-purple)) !important;
     }
   }
   
