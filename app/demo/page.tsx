@@ -8,6 +8,7 @@ import { User, Briefcase, ArrowRight, RefreshCw } from 'lucide-react';
 import Link from 'next/link';
 import dynamic from 'next/dynamic';
 import { demoMenuItems } from '@/data/demoMenuItems';
+import { useAuth } from '@/app/auth/AuthProvider';
 
 // Dynamically import heavy components to avoid hydration issues
 const DemoAnalytics = dynamic(() => import('@/components/demo-analytics'), {
@@ -23,6 +24,8 @@ const DemoAISection = dynamic(() => import('@/components/demo-ai-section'), {
 export default function DemoPage() {
   const [viewMode, setViewMode] = useState<'customer' | 'owner'>('customer');
   const [mounted, setMounted] = useState(false);
+  const { session } = useAuth();
+  const isAuthenticated = !!session?.user;
 
   useEffect(() => {
     setMounted(true);
@@ -81,7 +84,7 @@ export default function DemoPage() {
         {viewMode === 'customer' ? (
           <CustomerDemoView />
         ) : (
-          <OwnerDemoView />
+          <OwnerDemoView isAuthenticated={isAuthenticated} />
         )}
       </div>
     </div>
@@ -166,7 +169,7 @@ function CustomerDemoView() {
   );
 }
 
-function OwnerDemoView() {
+function OwnerDemoView({ isAuthenticated }: { isAuthenticated: boolean }) {
   return (
     <div className="space-y-8">
       {/* Owner Hero */}
@@ -260,21 +263,43 @@ function OwnerDemoView() {
       {/* CTA */}
       <Card className="bg-gradient-to-r from-purple-600 to-purple-800 text-white border-0">
         <CardContent className="py-8 text-center">
-          <h3 className="text-2xl font-bold mb-2 !text-white">Ready to get started?</h3>
+          <h3 className="text-2xl font-bold mb-2 !text-white">
+            {isAuthenticated ? "Ready to manage your venue?" : "Ready to get started?"}
+          </h3>
           <p className="text-purple-100 mb-6">
-            Create your account and have your venue live in minutes
+            {isAuthenticated 
+              ? "Access your dashboard to manage orders, analytics, and more"
+              : "Create your account and have your venue live in minutes"
+            }
           </p>
           <div className="flex flex-col sm:flex-row gap-4 justify-center">
-            <Link href="/sign-up">
-              <Button className="bg-white text-purple-600 hover:bg-gray-100">
-                Start Free Trial
-              </Button>
-            </Link>
-            <Link href="/sign-in">
-              <Button variant="outline" className="border-white !text-white hover:bg-purple-700">
-                Sign In
-              </Button>
-            </Link>
+            {isAuthenticated ? (
+              <>
+                <Link href="/dashboard">
+                  <Button className="bg-white text-purple-600 hover:bg-gray-100">
+                    Go to Dashboard
+                  </Button>
+                </Link>
+                <Link href="/">
+                  <Button variant="outline" className="border-white !text-white hover:bg-purple-700">
+                    Home
+                  </Button>
+                </Link>
+              </>
+            ) : (
+              <>
+                <Link href="/sign-up">
+                  <Button className="bg-white text-purple-600 hover:bg-gray-100">
+                    Start Free Trial
+                  </Button>
+                </Link>
+                <Link href="/sign-in">
+                  <Button variant="outline" className="border-white !text-white hover:bg-purple-700">
+                    Sign In
+                  </Button>
+                </Link>
+              </>
+            )}
           </div>
         </CardContent>
       </Card>
