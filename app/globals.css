@@ -4,7 +4,7 @@
 
 @layer components {
   .btn-servio {
-    @apply bg-servio-purple text-white rounded-lg py-2 px-4 font-semibold shadow hover:bg-servio-purple-dark transition;
+    @apply bg-white text-servio-purple border-2 border-servio-purple rounded-lg py-2 px-4 font-semibold shadow-md hover:bg-gray-50 hover:text-servio-purple-dark hover:shadow-lg transition;
   }
   
   /* Unified button styles for all devices */
@@ -13,15 +13,15 @@
   }
   
   .btn-unified-primary {
-    @apply bg-primary text-primary-foreground hover:bg-primary/90 shadow-sm hover:shadow-md;
+    @apply bg-white text-servio-purple border-2 border-servio-purple hover:bg-gray-50 hover:text-servio-purple-dark shadow-md hover:shadow-lg;
   }
   
   .btn-unified-outline {
-    @apply border-2 border-gray-300 bg-background text-white hover:bg-gray-50 hover:border-gray-400 hover:text-white dark:border-gray-600 dark:text-white dark:hover:bg-gray-800 dark:hover:border-gray-500 dark:hover:text-white shadow-sm hover:shadow-md;
+    @apply border-2 border-servio-purple bg-white text-servio-purple hover:bg-gray-50 hover:border-servio-purple-dark hover:text-servio-purple-dark shadow-md hover:shadow-lg dark:border-servio-purple dark:text-servio-purple dark:hover:bg-gray-800 dark:hover:border-servio-purple-dark dark:hover:text-servio-purple-dark;
   }
   
   .btn-unified-servio {
-    @apply bg-servio-purple text-white hover:bg-servio-purple-dark shadow-sm hover:shadow-md;
+    @apply bg-white text-servio-purple border-2 border-servio-purple hover:bg-gray-50 hover:text-servio-purple-dark shadow-md hover:shadow-lg;
   }
 }
 
@@ -176,23 +176,25 @@
     @apply text-foreground/80 hover:text-foreground hover:bg-accent;
   }
   
-  /* Hero section buttons - purple with white text on mobile */
+  /* Hero section buttons - white background with purple text */
   section button.bg-purple-600,
   section button.bg-white {
-    background-color: hsl(var(--servio-purple)) !important;
-    color: #ffffff !important;
+    background-color: #ffffff !important;
+    color: hsl(var(--servio-purple)) !important;
+    border: 2px solid hsl(var(--servio-purple)) !important;
   }
   
   section button.bg-purple-600:hover,
   section button.bg-white:hover {
-    background-color: hsl(var(--servio-purple-dark)) !important;
-    color: #ffffff !important;
+    background-color: #f9fafb !important;
+    color: hsl(var(--servio-purple-dark)) !important;
+    border: 2px solid hsl(var(--servio-purple-dark)) !important;
   }
   
-  /* Ensure icons in hero buttons are also white on mobile */
+  /* Ensure icons in hero buttons are also purple */
   section button.bg-purple-600 svg,
   section button.bg-white svg {
-    color: #ffffff !important;
+    color: hsl(var(--servio-purple)) !important;
   }
 }
 
@@ -305,16 +307,26 @@ button.bg-slate-900 svg, button.bg-slate-800 svg,
   
   /* Enhanced desktop servio button styling */
   button[class*="servio"] {
-    background-color: hsl(var(--servio-purple)) !important;
-    color: #ffffff !important;
+    background-color: #ffffff !important;
+    color: hsl(var(--servio-purple)) !important;
     font-weight: 600 !important;
-    border: none !important;
-    box-shadow: 0 2px 4px rgba(124, 58, 237, 0.2) !important;
+    border: 2px solid hsl(var(--servio-purple)) !important;
+    box-shadow: 0 2px 8px rgba(124, 58, 237, 0.15) !important;
   }
   
   button[class*="servio"]:hover {
-    background-color: hsl(var(--servio-purple-dark)) !important;
-    box-shadow: 0 4px 8px rgba(124, 58, 237, 0.3) !important;
+    background-color: #f9fafb !important;
+    color: hsl(var(--servio-purple-dark)) !important;
+    border-color: hsl(var(--servio-purple-dark)) !important;
+    box-shadow: 0 4px 12px rgba(124, 58, 237, 0.2) !important;
+  }
+  
+  button[class*="servio"] svg {
+    color: hsl(var(--servio-purple)) !important;
+  }
+  
+  button[class*="servio"]:hover svg {
+    color: hsl(var(--servio-purple-dark)) !important;
   }
   
   /* Enhanced desktop destructive button styling */
@@ -1351,18 +1363,28 @@ p, span, div {
   
   /* Enhanced mobile servio button styling */
   button[class*="servio"] {
-    background-color: hsl(var(--servio-purple)) !important;
-    color: #ffffff !important;
+    background-color: #ffffff !important;
+    color: hsl(var(--servio-purple)) !important;
     font-weight: 600 !important;
-    border: none !important;
-    box-shadow: 0 2px 4px rgba(124, 58, 237, 0.2) !important;
+    border: 2px solid hsl(var(--servio-purple)) !important;
+    box-shadow: 0 2px 8px rgba(124, 58, 237, 0.15) !important;
     min-height: 44px !important;
     min-width: 44px !important;
   }
   
   button[class*="servio"]:hover {
-    background-color: hsl(var(--servio-purple-dark)) !important;
-    box-shadow: 0 4px 8px rgba(124, 58, 237, 0.3) !important;
+    background-color: #f9fafb !important;
+    color: hsl(var(--servio-purple-dark)) !important;
+    border-color: hsl(var(--servio-purple-dark)) !important;
+    box-shadow: 0 4px 12px rgba(124, 58, 237, 0.2) !important;
+  }
+  
+  button[class*="servio"] svg {
+    color: hsl(var(--servio-purple)) !important;
+  }
+  
+  button[class*="servio"]:hover svg {
+    color: hsl(var(--servio-purple-dark)) !important;
   }
   
   /* Enhanced mobile button consistency */
@@ -1575,7 +1597,7 @@ p, span, div {
   /* Force readable contrast for active/selected nav buttons */
   .mobile-nav button.bg-purple-600 span,
   .mobile-nav button.bg-purple-600 svg {
-    color: #ffffff !important;
+    color: hsl(var(--servio-purple)) !important;
   }
 
   /* Safety: hide any legacy inline count under bottom-nav icons */

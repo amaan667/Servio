@@ -54,8 +54,8 @@ export default function GlobalNav() {
     : "border-gray-200";
 
   const primaryButtonClasses = isAuthenticatedRoute
-    ? "bg-primary hover:bg-primary/90 text-primary-foreground"
-    : "bg-purple-600 hover:bg-purple-700 text-white";
+    ? "bg-white text-servio-purple border-2 border-servio-purple hover:bg-gray-50 hover:text-servio-purple-dark"
+    : "bg-white text-servio-purple border-2 border-servio-purple hover:bg-gray-50 hover:text-servio-purple-dark";
 
 
   // Determine if we're on dashboard pages

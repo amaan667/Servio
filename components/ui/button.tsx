@@ -9,7 +9,7 @@ const buttonVariants = cva(
   {
     variants: {
       variant: {
-        default: "bg-primary text-primary-foreground hover:bg-primary/90 shadow-sm hover:shadow-md",
+        default: "bg-white text-servio-purple hover:bg-gray-50 hover:text-servio-purple-dark shadow-md hover:shadow-lg border-2 border-servio-purple",
         destructive:
           "bg-red-600 text-white hover:bg-red-700 shadow-sm hover:shadow-md",
         outline:
@@ -18,7 +18,7 @@ const buttonVariants = cva(
           "bg-gray-100 text-gray-900 hover:bg-gray-200 shadow-sm hover:shadow-md",
         ghost: "text-gray-700 hover:bg-gray-100 hover:text-gray-900 dark:text-gray-500 dark:hover:bg-gray-800 dark:hover:text-gray-100",
         link: "text-servio-purple underline-offset-4 hover:underline",
-        servio: "bg-servio-purple text-white hover:bg-servio-purple-dark shadow-sm hover:shadow-md",
+        servio: "bg-white text-servio-purple hover:bg-gray-50 hover:text-servio-purple-dark shadow-md hover:shadow-lg border-2 border-servio-purple",
       },
       size: {
         default: "h-10 px-4 py-2 min-h-[44px] min-w-[44px]",

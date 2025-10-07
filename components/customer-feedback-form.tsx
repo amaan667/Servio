@@ -264,11 +264,12 @@ export function CustomerFeedbackForm({
         <Button
           onClick={submitFeedback}
           disabled={isSubmitting || rating === 0 || !comment.trim() || !selectedCategory}
-          className="w-full bg-blue-600 hover:bg-blue-700 disabled:bg-gray-300"
+          variant="servio"
+          className="w-full"
         >
           {isSubmitting ? (
             <>
-              <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white mr-2"></div>
+              <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-servio-purple mr-2"></div>
               Submitting...
             </>
           ) : (
