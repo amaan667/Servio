@@ -1426,10 +1426,10 @@ export default function LiveOrdersClient({ venueId, venueName: venueNameProp }: 
           {activeTab === 'live' && (
             <div className="space-y-6">
               {orders.length === 0 ? (
-                <div className="rounded-2xl border border-dashed border-slate-200 bg-slate-50 p-10 text-center text-white">
-                  <Clock className="h-12 w-12 text-white mx-auto mb-4" />
-                  <h3 className="text-lg font-medium text-white mb-2">No Live Orders</h3>
-                  <p className="text-white">Recent orders will appear here</p>
+                <div className="rounded-2xl border border-dashed border-slate-200 bg-slate-50 p-10 text-center text-gray-900">
+                  <Clock className="h-12 w-12 text-gray-700 mx-auto mb-4" />
+                  <h3 className="text-lg font-medium text-gray-900 mb-2">No Live Orders</h3>
+                  <p className="text-gray-700">Recent orders will appear here</p>
                 </div>
               ) : (
                 <>
@@ -1459,7 +1459,7 @@ export default function LiveOrdersClient({ venueId, venueName: venueNameProp }: 
                   {/* Counter Orders */}
                   {orders.filter(order => isCounterOrder(order) && (!parsedTableFilter || order.table_number?.toString() === parsedTableFilter)).length > 0 && (
                     <div>
-                      <h3 className="text-lg font-semibold text-white mb-4 flex items-center gap-2">
+                      <h3 className="text-lg font-semibold text-gray-900 mb-4 flex items-center gap-2">
                         <span className="h-2 w-2 rounded-full bg-orange-500"></span>
                         Counter Orders ({orders.filter(order => isCounterOrder(order) && (!parsedTableFilter || order.table_number?.toString() === parsedTableFilter)).length})
                       </h3>
@@ -1488,7 +1488,7 @@ export default function LiveOrdersClient({ venueId, venueName: venueNameProp }: 
                     });
                     return sortedTableOrders.length > 0 && (
                       <div>
-                        <h3 className="text-lg font-semibold text-white mb-4 flex items-center gap-2">
+                        <h3 className="text-lg font-semibold text-gray-900 mb-4 flex items-center gap-2">
                           <span className="h-2 w-2 rounded-full bg-blue-500"></span>
                           Table Orders ({sortedTableOrders.length})
                         </h3>
@@ -1506,10 +1506,10 @@ export default function LiveOrdersClient({ venueId, venueName: venueNameProp }: 
           {activeTab === 'all' && (
             <div className="space-y-6">
               {allTodayOrders.length === 0 ? (
-                <div className="rounded-2xl border border-dashed border-slate-200 bg-slate-50 p-10 text-center text-white">
-                  <Clock className="h-12 w-12 text-white mx-auto mb-4" />
-                  <h3 className="text-lg font-medium text-white mb-2">No Earlier Orders Today</h3>
-                  <p className="text-white">Orders from earlier today will appear here</p>
+                <div className="rounded-2xl border border-dashed border-slate-200 bg-slate-50 p-10 text-center text-gray-900">
+                  <Clock className="h-12 w-12 text-gray-700 mx-auto mb-4" />
+                  <h3 className="text-lg font-medium text-gray-900 mb-2">No Earlier Orders Today</h3>
+                  <p className="text-gray-700">Orders from earlier today will appear here</p>
                 </div>
               ) : (
                 <>
@@ -1538,7 +1538,7 @@ export default function LiveOrdersClient({ venueId, venueName: venueNameProp }: 
                   {/* Counter Orders - FIXED: Added table filtering */}
                   {allTodayOrders.filter(order => isCounterOrder(order) && (!parsedTableFilter || order.table_number?.toString() === parsedTableFilter)).length > 0 && (
                     <div>
-                      <h3 className="text-lg font-semibold text-white mb-4 flex items-center gap-2">
+                      <h3 className="text-lg font-semibold text-gray-900 mb-4 flex items-center gap-2">
                         <span className="h-2 w-2 rounded-full bg-orange-500"></span>
                         Counter Orders ({allTodayOrders.filter(order => isCounterOrder(order) && (!parsedTableFilter || order.table_number?.toString() === parsedTableFilter)).length})
                       </h3>
@@ -1558,7 +1558,7 @@ export default function LiveOrdersClient({ venueId, venueName: venueNameProp }: 
                     );
                     return earlierTableOrders.length > 0 && (
                       <div>
-                        <h3 className="text-lg font-semibold text-white mb-4 flex items-center gap-2">
+                        <h3 className="text-lg font-semibold text-gray-900 mb-4 flex items-center gap-2">
                           <span className="h-2 w-2 rounded-full bg-blue-500"></span>
                           Table Orders ({earlierTableOrders.length})
                         </h3>
@@ -1576,23 +1576,23 @@ export default function LiveOrdersClient({ venueId, venueName: venueNameProp }: 
           {activeTab === 'history' && (
             <div className="space-y-6">
               {Object.keys(groupedHistoryOrders).length === 0 ? (
-                <div className="rounded-2xl border border-dashed border-slate-200 bg-slate-50 p-10 text-center text-white">
-                  <Clock className="h-12 w-12 text-white mx-auto mb-4" />
-                  <h3 className="text-lg font-medium text-white mb-2">No Historical Orders</h3>
-                  <p className="text-white">Previous orders will appear here</p>
+                <div className="rounded-2xl border border-dashed border-slate-200 bg-slate-50 p-10 text-center text-gray-900">
+                  <Clock className="h-12 w-12 text-gray-700 mx-auto mb-4" />
+                  <h3 className="text-lg font-medium text-gray-900 mb-2">No Historical Orders</h3>
+                  <p className="text-gray-700">Previous orders will appear here</p>
                 </div>
               ) : (
                 Object.entries(groupedHistoryOrders).map(([date, orders]) => (
                   <div key={date} className="space-y-4">
                     <div className="flex items-center space-x-2">
-                      <h3 className="text-lg font-semibold text-white">{date}</h3>
-                      <span className="bg-slate-100 text-white text-xs px-2 py-1 rounded-full">{orders.length} orders</span>
+                      <h3 className="text-lg font-semibold text-gray-900">{date}</h3>
+                      <span className="bg-slate-100 text-gray-700 text-xs px-2 py-1 rounded-full">{orders.length} orders</span>
                     </div>
                     
                     {/* Counter Orders for this date - FIXED: Added table filtering */}
                     {orders.filter(order => isCounterOrder(order) && (!parsedTableFilter || order.table_number?.toString() === parsedTableFilter)).length > 0 && (
                       <div className="space-y-3">
-                        <h4 className="text-md font-medium text-white flex items-center gap-2">
+                        <h4 className="text-md font-medium text-gray-900 flex items-center gap-2">
                           <span className="h-2 w-2 rounded-full bg-orange-500"></span>
                           Counter Orders ({orders.filter(order => isCounterOrder(order) && (!parsedTableFilter || order.table_number?.toString() === parsedTableFilter)).length})
                         </h4>
@@ -1605,7 +1605,7 @@ export default function LiveOrdersClient({ venueId, venueName: venueNameProp }: 
                     {/* Table Orders for this date - FIXED: Added table filtering */}
                     {orders.filter(order => !isCounterOrder(order) && (!parsedTableFilter || order.table_number?.toString() === parsedTableFilter)).length > 0 && (
                       <div className="space-y-3">
-                        <h4 className="text-md font-medium text-white flex items-center gap-2">
+                        <h4 className="text-md font-medium text-gray-900 flex items-center gap-2">
                           <span className="h-2 w-2 rounded-full bg-blue-500"></span>
                           Table Orders ({orders.filter(order => !isCounterOrder(order) && (!parsedTableFilter || order.table_number?.toString() === parsedTableFilter)).length})
                         </h4>
