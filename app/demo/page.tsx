@@ -61,8 +61,14 @@ export default function DemoPage() {
         <div className="max-w-7xl mx-auto px-4 py-4">
           <div className="flex items-center justify-between">
             <div>
-              <h1 className="text-2xl font-bold text-gray-900">Try Servio</h1>
-              <p className="text-sm text-gray-600">Experience both perspectives</p>
+              <div className="flex items-center justify-center mb-2">
+                <img 
+                  src="/assets/servio-logo-updated.png"
+                  alt="Servio"
+                  className="h-12 w-auto"
+                />
+              </div>
+              <p className="text-sm text-gray-600 text-center">Experience both perspectives</p>
             </div>
             <div className="flex items-center space-x-2 bg-gray-100 rounded-lg p-1">
               <Button
