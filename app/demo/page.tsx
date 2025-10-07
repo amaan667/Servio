@@ -135,7 +135,7 @@ export default function DemoPage() {
                 <img 
                   src="/assets/servio-logo-updated.png"
                   alt="Servio"
-                  className="h-6 w-auto"
+                  className="h-8 w-auto"
                 />
               </h1>
               <p className="text-sm text-gray-600">Experience both perspectives</p>
