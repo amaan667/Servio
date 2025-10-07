@@ -41,7 +41,8 @@ export async function POST(req: Request) {
     // If this is a table order, check if reservations should be auto-completed
     if (order.table_id) {
       try {
-        const completionResponse = await fetch(`${process.env.NEXT_PUBLIC_SITE_URL || 'http://localhost:3000'}/api/reservations/check-completion`, {
+        const baseUrl = process.env.NEXT_PUBLIC_SITE_URL || 'https://servio-production.up.railway.app';
+        const completionResponse = await fetch(`${baseUrl}/api/reservations/check-completion`, {
           method: 'POST',
           headers: {
             'Content-Type': 'application/json',
