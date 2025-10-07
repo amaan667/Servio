@@ -5,7 +5,7 @@ const AUTH_COOKIE_PREFIXES = ['sb-', 'supabase.auth.token', 'supabase-auth-token
 
 export function getOriginFromHeaders(h: any) {
   const proto = h.get('x-forwarded-proto') ?? 'https';
-  const host  = h.get('host') ?? 'localhost';
+  const host  = h.get('host') ?? 'servio-production.up.railway.app';
   return `${proto}://${host}`;
 }
 
