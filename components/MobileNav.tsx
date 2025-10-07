@@ -172,8 +172,8 @@ export default function MobileNav({ venueId, venueName, counts = {} }: MobileNav
               onClick={() => handleNavigation(item.href)}
               className={`flex flex-col items-center justify-center p-2 relative ${
                 item.isActive 
-                  ? 'text-white bg-purple-600' 
-                  : 'text-gray-700 hover:text-purple-600 hover:bg-gray-50 font-bold'
+                  ? 'text-white bg-servio-purple' 
+                  : 'text-gray-700 hover:text-servio-purple hover:bg-gray-50 font-bold'
               }`}
             >
               <div className="relative mb-1">
@@ -237,14 +237,14 @@ export default function MobileNav({ venueId, venueName, counts = {} }: MobileNav
                         onClick={() => handleNavigation(item.href)}
                         className={`w-full flex items-center justify-between p-4 rounded-xl transition-colors ${
                           item.isActive 
-                            ? 'bg-purple-100 text-purple-800 border-2 border-purple-300' 
+                            ? 'bg-servio-purple-light text-white border-2 border-servio-purple' 
                             : 'hover:bg-gray-50 text-gray-900 font-bold'
                         }`}
                       >
                         <div className="flex items-center space-x-4">
                           <div className="relative">
                             <item.icon className={`h-6 w-6 ${
-                              item.isActive ? 'text-purple-600' : 'text-gray-700'
+                              item.isActive ? 'text-white' : 'text-gray-700'
                             }`} />
                             {item.badge && item.badge > 0 && (
                               <Badge 
@@ -287,7 +287,7 @@ export default function MobileNav({ venueId, venueName, counts = {} }: MobileNav
         <div className={`fixed top-4 left-1/2 transform -translate-x-1/2 z-30 transition-transform duration-300 ${
           isVisible ? 'translate-y-0' : '-translate-y-full'
         }`}>
-          <div className="bg-purple-600 backdrop-blur-md border-2 border-purple-300 rounded-full px-4 py-2 shadow-lg">
+          <div className="bg-servio-purple backdrop-blur-md border-2 border-servio-purple-light rounded-full px-4 py-2 shadow-lg">
             <div className="flex items-center space-x-2">
               <activeItem.icon className="h-4 w-4 text-white" />
               <span className="text-sm font-bold text-white">

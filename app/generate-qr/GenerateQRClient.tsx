@@ -774,7 +774,7 @@ export default function GenerateQRClient({ venueId, venueName, activeTablesCount
           <p className="text-gray-900 mb-4">{error}</p>
           <button 
             onClick={() => window.location.reload()}
-            className="px-4 py-2 bg-purple-600 text-white rounded-md hover:bg-purple-700"
+            className="px-4 py-2 bg-servio-purple text-white rounded-md hover:bg-servio-purple-dark"
           >
             Retry
           </button>
@@ -1052,8 +1052,8 @@ export default function GenerateQRClient({ venueId, venueName, activeTablesCount
         <CardContent>
           <div className="space-y-4">
             <div className="flex items-start space-x-4">
-              <div className="w-8 h-8 bg-purple-100 rounded-full flex items-center justify-center flex-shrink-0">
-                <span className="text-purple-600 font-semibold">1</span>
+              <div className="w-8 h-8 bg-servio-purple-light rounded-full flex items-center justify-center flex-shrink-0">
+                <span className="text-servio-purple font-semibold">1</span>
               </div>
               <div>
                 <h4 className="font-medium">Generate QR Codes</h4>
