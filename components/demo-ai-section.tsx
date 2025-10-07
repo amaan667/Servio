@@ -23,7 +23,7 @@ const examplePrompts = [
 const demoResponses: { [key: string]: any } = {
   "Rename all Coffee items to include '12oz'": {
     success: true,
-    changes: 7,
+    changes: 5,
     preview: [
       { old: 'Cappuccino', new: 'Cappuccino 12oz' },
       { old: 'Latte', new: 'Latte 12oz' },
@@ -31,7 +31,7 @@ const demoResponses: { [key: string]: any } = {
       { old: 'Mocha', new: 'Mocha 12oz' },
       { old: 'Flat White', new: 'Flat White 12oz' },
     ],
-    message: "Servio would rename 7 coffee items to include size information"
+    message: "Servio would rename 5 coffee items to include size information"
   },
   "Increase pastry prices by 10%": {
     success: true,
