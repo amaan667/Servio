@@ -4,13 +4,18 @@ import { createClient } from '@supabase/supabase-js';
 import { ENV } from '@/lib/env';
 import { v4 as uuidv4 } from 'uuid';
 
-const stripe = new Stripe(ENV.STRIPE_SECRET_KEY || '', {
-  apiVersion: '2025-08-27.basil',
-});
+// Initialize Stripe only if secret key is available
+const stripe = ENV.STRIPE_SECRET_KEY 
+  ? new Stripe(ENV.STRIPE_SECRET_KEY, { apiVersion: '2025-08-27.basil' })
+  : null;
+
+// Use dummy values during build if env vars are not set
+const supabaseUrl = ENV.SUPABASE_URL || 'https://placeholder.supabase.co';
+const supabaseServiceKey = ENV.SUPABASE_SERVICE_ROLE_KEY || 'placeholder-key';
 
 const supabase = createClient(
-  ENV.SUPABASE_URL,
-  ENV.SUPABASE_SERVICE_ROLE_KEY || ''
+  supabaseUrl,
+  supabaseServiceKey
 );
 
 interface CreateOrderRequest {
@@ -34,6 +39,14 @@ export async function POST(req: NextRequest) {
     // Handle demo mode
     if (paymentIntentId.startsWith('demo-')) {
       return await createDemoOrder(cartId);
+    }
+
+    // Ensure stripe is initialized
+    if (!stripe) {
+      return NextResponse.json(
+        { ok: false, message: 'Stripe not configured' },
+        { status: 500 }
+      );
     }
 
     // Retrieve payment intent from Stripe

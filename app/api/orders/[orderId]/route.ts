@@ -15,6 +15,24 @@ export async function GET(
       return NextResponse.json({ error: 'Order ID is required' }, { status: 400 });
     }
 
+    // Handle demo orders (orderId starts with 'demo-')
+    if (orderId.startsWith('demo-')) {
+      const demoOrder = {
+        id: orderId,
+        venue_id: 'demo-cafe',
+        table_number: 1,
+        customer_name: 'Demo Customer',
+        customer_phone: '',
+        order_status: 'PLACED',
+        total_amount: 0,
+        payment_method: 'demo',
+        payment_status: 'PAID',
+        items: [],
+        created_at: new Date().toISOString(),
+        updated_at: new Date().toISOString()
+      };
+      return NextResponse.json({ order: demoOrder });
+    }
 
     // Fetch order with items
     const { data: order, error: orderError } = await supabaseAdmin

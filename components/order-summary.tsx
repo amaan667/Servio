@@ -119,8 +119,48 @@ export default function OrderSummary({ orderId, sessionId, orderData, isDemo = f
       try {
         setLoading(true);
         
-        if (sessionId) {
-          // Fetch order by Stripe session ID
+        // Handle demo orders - check if sessionId or orderId starts with 'demo-'
+        const isDemoOrder = (sessionId && sessionId.startsWith('demo-')) || (orderId && orderId.startsWith('demo-'));
+        
+        if (isDemo || isDemoOrder) {
+          // For demo orders, create mock order data from localStorage
+          const checkoutData = localStorage.getItem('servio-checkout-data');
+          if (checkoutData) {
+            const data = JSON.parse(checkoutData);
+            const demoOrder = {
+              id: sessionId || orderId || `demo-order-${Date.now()}`,
+              venue_id: data.venueId || 'demo-cafe',
+              table_number: data.tableNumber || 1,
+              customer_name: data.customerName || 'Demo Customer',
+              customer_phone: data.customerPhone || '',
+              order_status: 'PLACED',
+              total_amount: data.total || 0,
+              payment_method: 'demo',
+              payment_status: 'PAID',
+              items: data.cart || [],
+              created_at: new Date().toISOString(),
+              updated_at: new Date().toISOString()
+            };
+            setOrder(demoOrder);
+          } else {
+            // Fallback demo order if no data in localStorage
+            setOrder({
+              id: sessionId || orderId || `demo-order-${Date.now()}`,
+              venue_id: 'demo-cafe',
+              table_number: 1,
+              customer_name: 'Demo Customer',
+              customer_phone: '',
+              order_status: 'PLACED',
+              total_amount: 0,
+              payment_method: 'demo',
+              payment_status: 'PAID',
+              items: [],
+              created_at: new Date().toISOString(),
+              updated_at: new Date().toISOString()
+            });
+          }
+        } else if (sessionId) {
+          // Fetch order by Stripe session ID (real orders only)
           const res = await fetch(`/api/orders/verify?sessionId=${sessionId}`);
           if (res.ok) {
             const data = await res.json();
@@ -129,7 +169,7 @@ export default function OrderSummary({ orderId, sessionId, orderData, isDemo = f
             throw new Error('Failed to verify order');
           }
         } else if (orderId) {
-          // Fetch order by ID
+          // Fetch order by ID (real orders only)
           const res = await fetch(`/api/orders/${orderId}`);
           if (res.ok) {
             const data = await res.json();
@@ -147,7 +187,7 @@ export default function OrderSummary({ orderId, sessionId, orderData, isDemo = f
     };
 
     fetchOrder();
-  }, [orderId, sessionId, orderData]);
+  }, [orderId, sessionId, orderData, isDemo]);
 
   // Set up real-time subscription for order updates
   useEffect(() => {

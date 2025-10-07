@@ -6,9 +6,17 @@ export const runtime = 'nodejs';            // ensure Node runtime (not Edge)
 export const dynamic = 'force-dynamic';
 export const revalidate = 0;
 
-const stripe = new Stripe(process.env.STRIPE_SECRET_KEY!, { apiVersion: '2025-08-27.basil' });
+// Initialize Stripe only if secret key is available
+const stripe = process.env.STRIPE_SECRET_KEY
+  ? new Stripe(process.env.STRIPE_SECRET_KEY, { apiVersion: '2025-08-27.basil' })
+  : null;
 
 export async function POST(req: Request) {
+  // If Stripe is not configured, return error
+  if (!stripe) {
+    return new NextResponse('Stripe not configured', { status: 503 });
+  }
+
   const sig = req.headers.get('stripe-signature');
   if (!sig) return new NextResponse('Missing stripe-signature', { status: 400 });
 
@@ -17,7 +25,11 @@ export async function POST(req: Request) {
 
   let event: Stripe.Event;
   try {
-    event = stripe.webhooks.constructEvent(raw, sig, process.env.STRIPE_WEBHOOK_SECRET!);
+    const webhookSecret = process.env.STRIPE_WEBHOOK_SECRET;
+    if (!webhookSecret) {
+      return new NextResponse('Webhook secret not configured', { status: 503 });
+    }
+    event = stripe.webhooks.constructEvent(raw, sig, webhookSecret);
   } catch (err: any) {
     return new NextResponse(`Webhook Error: ${err.message}`, { status: 400 });
   }

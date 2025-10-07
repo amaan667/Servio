@@ -462,8 +462,8 @@ export function AnalyticsDashboard({ venueId }: AnalyticsDashboardProps) {
           </CardHeader>
           <CardContent>
             <ChartContainer config={{
-              orders: { color: "#3b82f6" },
-              revenue: { color: "#10b981" }
+              orders: { label: "Orders", color: "#3b82f6" },
+              revenue: { label: "Revenue", color: "#10b981" }
             }}>
               <ResponsiveContainer width="100%" height={300}>
                 <BarChart data={hourlyData}>
@@ -488,8 +488,8 @@ export function AnalyticsDashboard({ venueId }: AnalyticsDashboardProps) {
           </CardHeader>
           <CardContent>
             <ChartContainer config={{
-              qty: { color: "#8b5cf6" },
-              rev: { color: "#10b981" }
+              value: { label: "Quantity", color: "#8b5cf6" },
+              revenue: { label: "Revenue", color: "#10b981" }
             }}>
               <ResponsiveContainer width="100%" height={400}>
                 <BarChart data={topItems} layout="horizontal">
@@ -514,7 +514,7 @@ export function AnalyticsDashboard({ venueId }: AnalyticsDashboardProps) {
             </CardHeader>
             <CardContent>
               <ChartContainer config={{
-                revenue: { color: "#10b981" }
+                value: { label: "Revenue", color: "#10b981" }
               }}>
                 <ResponsiveContainer width="100%" height={300}>
                   <LineChart data={revenueTrend}>
@@ -538,7 +538,7 @@ export function AnalyticsDashboard({ venueId }: AnalyticsDashboardProps) {
           </CardHeader>
           <CardContent>
             <ChartContainer config={{
-              customers: { color: "#f59e0b" }
+              value: { label: "Orders", color: "#f59e0b" }
             }}>
               <ResponsiveContainer width="100%" height={300}>
                 <PieChart>
@@ -570,7 +570,7 @@ export function AnalyticsDashboard({ venueId }: AnalyticsDashboardProps) {
             <CardDescription>Which day performs best</CardDescription>
           </CardHeader>
           <CardContent>
-            <ChartContainer config={{ orders: { color: '#6366f1' }, revenue: { color: '#10b981' } }}>
+            <ChartContainer config={{ orders: { label: 'Orders', color: '#6366f1' }, revenue: { label: 'Revenue', color: '#10b981' } }}>
               <ResponsiveContainer width="100%" height={300}>
                 <BarChart data={dayOfWeekData}>
                   <CartesianGrid strokeDasharray="3 3" />
@@ -593,7 +593,7 @@ export function AnalyticsDashboard({ venueId }: AnalyticsDashboardProps) {
             <CardDescription>Drinks vs Mains vs Desserts</CardDescription>
           </CardHeader>
           <CardContent>
-            <ChartContainer config={{ qty: { color: '#8b5cf6' }, revenue: { color: '#10b981' } }}>
+            <ChartContainer config={{ value: { label: 'Quantity', color: '#8b5cf6' }, revenue: { label: 'Revenue', color: '#10b981' } }}>
               <ResponsiveContainer width="100%" height={300}>
                 <BarChart data={categoryPerformance} layout="horizontal">
                   <CartesianGrid strokeDasharray="3 3" />
