@@ -170,8 +170,8 @@ export default function GlobalBottomNav({ venueId, counts = {} }: GlobalBottomNa
               onClick={() => handleNavigation(item.href)}
               className={`flex flex-col items-center justify-center p-2 relative transition-all duration-200 ${
                 item.isActive
-                  ? 'text-white bg-purple-600'
-                  : 'text-gray-700 hover:text-purple-600 hover:bg-gray-50/80'
+                  ? 'text-white bg-servio-purple'
+                  : 'text-gray-700 hover:text-servio-purple hover:bg-gray-50/80'
               }`}
             >
               <div className="relative mb-1 flex flex-col items-center">
@@ -209,7 +209,7 @@ export default function GlobalBottomNav({ venueId, counts = {} }: GlobalBottomNa
         <div className={`fixed top-4 left-1/2 transform -translate-x-1/2 z-30 transition-transform duration-300 ${
           isVisible ? 'translate-y-0' : '-translate-y-full'
         }`}>
-          <div className="bg-purple-600 backdrop-blur-md border-2 border-purple-300 rounded-full px-4 py-2 shadow-lg">
+          <div className="bg-servio-purple backdrop-blur-md border-2 border-servio-purple-light rounded-full px-4 py-2 shadow-lg">
             <div className="flex items-center space-x-2">
               <activeItem.icon className="h-4 w-4 text-white" />
               <span className="text-sm font-bold text-white">

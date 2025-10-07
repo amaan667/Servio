@@ -219,19 +219,19 @@ const SimpleStaffGrid: React.FC<SimpleStaffGridProps> = ({ shifts, venueId }) =>
             {/* View toggle */}
             <div className="hidden sm:flex rounded-md border overflow-hidden">
               <button
-                className={`px-3 py-1 text-sm ${calendarView === 'today' ? 'bg-purple-600 text-white' : 'bg-background'}`}
+                className={`px-3 py-1 text-sm ${calendarView === 'today' ? 'bg-servio-purple text-white' : 'bg-background'}`}
                 onClick={() => setCalendarView('today')}
               >
                 Today
               </button>
               <button
-                className={`px-3 py-1 text-sm border-l ${calendarView === 'week' ? 'bg-purple-600 text-white' : 'bg-background'}`}
+                className={`px-3 py-1 text-sm border-l ${calendarView === 'week' ? 'bg-servio-purple text-white' : 'bg-background'}`}
                 onClick={() => setCalendarView('week')}
               >
                 Week
               </button>
               <button
-                className={`px-3 py-1 text-sm border-l ${calendarView === 'month' ? 'bg-purple-600 text-white' : 'bg-background'}`}
+                className={`px-3 py-1 text-sm border-l ${calendarView === 'month' ? 'bg-servio-purple text-white' : 'bg-background'}`}
                 onClick={() => setCalendarView('month')}
               >
                 Month

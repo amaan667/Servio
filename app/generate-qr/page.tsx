@@ -104,7 +104,7 @@ export default async function GenerateQRPage() {
           <p className="text-gray-900 mb-4">{error.message}</p>
           <button 
             onClick={() => window.location.reload()}
-            className="px-4 py-2 bg-purple-600 text-white rounded-md hover:bg-purple-700"
+            className="px-4 py-2 bg-servio-purple text-white rounded-md hover:bg-servio-purple-dark"
           >
             Retry
           </button>

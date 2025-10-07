@@ -33,7 +33,7 @@ function PricingQuickCompare() {
             <li>✔ QR ordering</li>
             <li>✔ 14-day free trial</li>
           </ul>
-          <Button className="w-full bg-purple-600 text-white hover:bg-purple-700">Start Free Trial</Button>
+          <Button variant="servio" className="w-full">Start Free Trial</Button>
         </Card>
         {/* Standard */}
         <Card className="flex flex-col items-center p-6 gap-4 border-2 border-purple-500 shadow-lg scale-105">
@@ -48,7 +48,7 @@ function PricingQuickCompare() {
             <li>✔ Full analytics dashboard</li>
             <li>✔ Email support</li>
           </ul>
-          <Button className="w-full bg-purple-600 text-white hover:bg-purple-700">Start Free Trial</Button>
+          <Button variant="servio" className="w-full">Start Free Trial</Button>
         </Card>
         {/* Premium */}
         <Card className="flex flex-col items-center p-6 gap-4">
@@ -60,7 +60,7 @@ function PricingQuickCompare() {
             <li>✔ Priority support</li>
             <li>✔ Custom onboarding & integrations</li>
           </ul>
-          <Button className="w-full bg-purple-600 text-white hover:bg-purple-700">Contact Sales</Button>
+          <Button variant="servio" className="w-full">Contact Sales</Button>
         </Card>
       </div>
     </div>

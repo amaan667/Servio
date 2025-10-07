@@ -364,7 +364,8 @@ export default function StaffClient({
               <Button 
                 onClick={save} 
                 disabled={saving} 
-                className="px-6 py-3 rounded-md bg-purple-600 text-white font-medium disabled:opacity-60 hover:bg-purple-700 min-h-[44px]"
+                variant="servio"
+                className="px-6 py-3 min-h-[44px]"
               >
                 {saving ? 'Saving…' : 'Save Shift'}
               </Button>
@@ -398,12 +399,8 @@ export default function StaffClient({
             <div className="flex items-center space-x-2 sm:space-x-3">
               <Button 
                 onClick={() => setActiveTab('staff')} 
-                variant={activeTab === 'staff' ? 'default' : 'outline'}
-                className={`px-3 sm:px-6 text-sm sm:text-base flex-1 sm:flex-none transition-colors ${
-                  activeTab === 'staff' 
-                    ? 'bg-purple-600 text-white hover:bg-purple-700' 
-                    : 'hover:bg-accent hover:text-accent-foreground'
-                }`}
+                variant={activeTab === 'staff' ? 'servio' : 'outline'}
+                className="px-3 sm:px-6 text-sm sm:text-base flex-1 sm:flex-none"
                 disabled={loading}
               >
                 <Users className="w-4 h-4 mr-1 sm:mr-2" />
@@ -412,12 +409,8 @@ export default function StaffClient({
               </Button>
               <Button 
                 onClick={() => setActiveTab('calendar')} 
-                variant={activeTab === 'calendar' ? 'default' : 'outline'}
-                className={`px-3 sm:px-6 text-sm sm:text-base flex-1 sm:flex-none transition-colors ${
-                  activeTab === 'calendar' 
-                    ? 'bg-purple-600 text-white hover:bg-purple-700' 
-                    : 'hover:bg-accent hover:text-accent-foreground'
-                }`}
+                variant={activeTab === 'calendar' ? 'servio' : 'outline'}
+                className="px-3 sm:px-6 text-sm sm:text-base flex-1 sm:flex-none"
                 disabled={loading}
               >
                 <Calendar className="w-4 h-4 mr-1 sm:mr-2" />
@@ -524,7 +517,7 @@ export default function StaffClient({
                   </div>
                   <div className="flex items-center space-x-2">
                     <Button 
-                      variant="outline" 
+                      variant="servio" 
                       size="sm"
                       onClick={async ()=>{
                         if (!confirm('This will delete all staff for this venue. Continue?')) return;
@@ -533,7 +526,6 @@ export default function StaffClient({
                         if (!res.ok || j?.error) { alert(j?.error || 'Failed to clear'); return; }
                         setStaff([]);
                       }}
-                      className="text-white hover:text-white"
                     >
                       Clear All
                     </Button>
@@ -569,7 +561,8 @@ export default function StaffClient({
                     <Button 
                       onClick={onAdd} 
                       disabled={adding || !name.trim()}
-                      className="h-11 px-8 bg-gradient-to-r from-purple-600 to-purple-700 hover:from-purple-700 hover:to-purple-800"
+                      variant="servio"
+                      className="h-11 px-8"
                     >
                       {adding ? (
                         <>
