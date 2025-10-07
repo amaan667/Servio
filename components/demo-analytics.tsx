@@ -301,7 +301,7 @@ export default function DemoAnalytics() {
           <CardDescription>Performance by item</CardDescription>
         </CardHeader>
         <CardContent>
-          <div className="h-[350px] md:h-[280px]">
+          <div className="h-[250px] md:h-[180px]">
             {chartsLoaded && ChartContainer && ResponsiveContainer ? (
               <ChartContainer config={{
                 qty: { color: '#8b5cf6' },
@@ -311,7 +311,7 @@ export default function DemoAnalytics() {
                   <BarChart data={topItems} layout="vertical" margin={{ left: 5, right: 5, top: 5, bottom: 5 }}>
                     <CartesianGrid strokeDasharray="3 3" />
                     <XAxis type="number" />
-                    <YAxis dataKey="name" type="category" width={90} />
+                    <YAxis dataKey="name" type="category" width={85} />
                     <Tooltip />
                     <Bar dataKey="quantity" fill="#8b5cf6" name="Quantity" />
                     <Bar dataKey="revenue" fill="#10b981" name="Revenue (£)" />

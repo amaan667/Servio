@@ -160,12 +160,12 @@ export default function DemoPage() {
         <div className="max-w-7xl mx-auto px-4 py-4">
           <div className="flex items-center justify-between">
             <div>
-              <h1 className="text-2xl font-bold text-gray-900 flex items-center gap-2">
+              <h1 className="text-2xl font-bold text-gray-900 flex items-center gap-1">
                 Try
                 <img 
                   src="/assets/servio-logo-updated.png"
                   alt="Servio"
-                  className="h-24 w-auto inline-block align-baseline"
+                  className="h-24 w-auto inline-block align-baseline ml-1"
                 />
               </h1>
               <p className="text-sm text-gray-600">Experience both perspectives</p>
