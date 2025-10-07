@@ -137,7 +137,8 @@ export default function AuthProvider({
         subscription.unsubscribe();
       }
     };
-  }, []);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []); // Empty deps is intentional - we only want to run once on mount
 
   const signOut = async () => {
     try {
