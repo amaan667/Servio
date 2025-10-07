@@ -102,7 +102,7 @@ export default function HomePage() {
   };
 
   const handleDemo = () => {
-    // Log to server for Railway logs
+    // Log to server for Railway logs (fire and forget - don't block navigation)
     fetch('/api/log-demo-access', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
@@ -113,10 +113,9 @@ export default function HomePage() {
         timestamp: new Date().toISOString(),
         userAgent: navigator.userAgent,
         user: user ? { id: user.id, email: user.email } : null
-      })
-    })
-    .then(res => console.log('[CLIENT] Demo access logged:', res.status))
-    .catch(err => console.error('[CLIENT] Failed to log demo access:', err));
+      }),
+      keepalive: true // Ensures request completes even if page navigates away
+    }).catch(() => {}); // Silent fail - don't block navigation
     
     router.push("/demo");
   };
