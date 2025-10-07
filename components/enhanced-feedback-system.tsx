@@ -26,6 +26,7 @@ import {
 } from "lucide-react";
 import { createClient } from "@/lib/supabase/client";
 import { logger } from "@/lib/logger";
+import QuestionsClient from "@/app/dashboard/[venueId]/feedback/QuestionsClient";
 
 interface Feedback {
   id: string;
@@ -71,13 +72,6 @@ export function EnhancedFeedbackSystem({ venueId }: FeedbackSystemProps) {
     dateRange: '30d'
   });
   const [searchQuery, setSearchQuery] = useState('');
-  const [newQuestion, setNewQuestion] = useState({
-    prompt: '',
-    type: 'stars' as 'stars' | 'multiple_choice' | 'paragraph',
-    choices: [] as string[],
-    is_active: true
-  });
-  const [creatingQuestion, setCreatingQuestion] = useState(false);
 
   const fetchQuestions = useCallback(async () => {
     try {
@@ -256,6 +250,20 @@ export function EnhancedFeedbackSystem({ venueId }: FeedbackSystemProps) {
     fetchFeedback();
     fetchQuestions();
   }, [fetchFeedback, fetchQuestions]);
+
+  // Add listener for when questions are updated from the Create tab
+  useEffect(() => {
+    const handleQuestionsUpdated = () => {
+      fetchQuestions();
+    };
+    
+    // Listen for custom event when questions are created/updated
+    window.addEventListener('feedbackQuestionsUpdated', handleQuestionsUpdated);
+    
+    return () => {
+      window.removeEventListener('feedbackQuestionsUpdated', handleQuestionsUpdated);
+    };
+  }, [fetchQuestions]);
 
   if (loading) {
     return (
@@ -548,72 +556,10 @@ export function EnhancedFeedbackSystem({ venueId }: FeedbackSystemProps) {
             </TabsContent>
 
             <TabsContent value="create" className="space-y-6 mt-6">
-              <Card>
-                <CardHeader>
-                  <CardTitle>Create New Question</CardTitle>
-                  <CardDescription>
-                    Add a new question to your feedback system.
-                  </CardDescription>
-                </CardHeader>
-                <CardContent>
-                  <div className="space-y-4">
-                    <div>
-                      <label htmlFor="prompt" className="block text-sm font-medium text-gray-700 mb-1">
-                        Question Prompt
-                      </label>
-                      <Input
-                        id="prompt"
-                        value={newQuestion.prompt}
-                        onChange={(e) => setNewQuestion(prev => ({ ...prev, prompt: e.target.value }))}
-                        placeholder="e.g., How was your overall experience?"
-                        className="w-full"
-                      />
-                    </div>
-                    <div>
-                      <label htmlFor="type" className="block text-sm font-medium text-gray-700 mb-1">
-                        Question Type
-                      </label>
-                      <select
-                        id="type"
-                        value={newQuestion.type}
-                        onChange={(e) => setNewQuestion(prev => ({ ...prev, type: e.target.value as 'stars' | 'multiple_choice' | 'paragraph' }))}
-                        className="border rounded px-3 py-2 text-sm w-full"
-                      >
-                        <option value="stars">Stars (1-5)</option>
-                        <option value="multiple_choice">Multiple Choice</option>
-                        <option value="paragraph">Paragraph</option>
-                      </select>
-                    </div>
-                    {newQuestion.type === 'multiple_choice' && (
-                      <div>
-                        <label htmlFor="choices" className="block text-sm font-medium text-gray-700 mb-1">
-                          Choices (comma-separated)
-                        </label>
-                        <Input
-                          id="choices"
-                          value={newQuestion.choices.join(', ')}
-                          onChange={(e) => setNewQuestion(prev => ({ ...prev, choices: e.target.value.split(',').map(c => c.trim()) }))}
-                          placeholder="e.g., Great, Good, Poor"
-                          className="w-full"
-                        />
-                      </div>
-                    )}
-                    <div className="flex justify-end">
-                      <Button
-                        onClick={() => {
-                          setCreatingQuestion(true);
-                          // In a real app, you'd send this to your backend to save
-                          setNewQuestion({ prompt: '', type: 'stars', choices: [], is_active: true });
-                          setCreatingQuestion(false);
-                        }}
-                        disabled={!newQuestion.prompt.trim() || (newQuestion.type === 'multiple_choice' && !newQuestion.choices.length)}
-                      >
-                        {creatingQuestion ? 'Creating...' : 'Create Question'}
-                      </Button>
-                    </div>
-                  </div>
-                </CardContent>
-              </Card>
+              <QuestionsClient 
+                venueId={venueId} 
+                mode="full"
+              />
             </TabsContent>
           </Tabs>
         </CardContent>

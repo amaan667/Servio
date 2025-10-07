@@ -143,6 +143,11 @@ export default function QuestionsClient({ venueId, venueName, mode = 'full' }: Q
         });
         resetForm();
         fetchQuestions();
+        
+        // Dispatch event to notify other components
+        if (typeof window !== 'undefined') {
+          window.dispatchEvent(new CustomEvent('feedbackQuestionsUpdated'));
+        }
       } else {
         const error = await response.json();
         
@@ -198,6 +203,11 @@ export default function QuestionsClient({ venueId, venueName, mode = 'full' }: Q
         });
         resetForm();
         fetchQuestions();
+        
+        // Dispatch event to notify other components
+        if (typeof window !== 'undefined') {
+          window.dispatchEvent(new CustomEvent('feedbackQuestionsUpdated'));
+        }
       } else {
         const error = await response.json();
         toast({
@@ -267,6 +277,11 @@ export default function QuestionsClient({ venueId, venueName, mode = 'full' }: Q
         }
         
         fetchQuestions();
+        
+        // Dispatch event to notify other components
+        if (typeof window !== 'undefined') {
+          window.dispatchEvent(new CustomEvent('feedbackQuestionsUpdated'));
+        }
       } else {
         toast({
           title: "Error",
