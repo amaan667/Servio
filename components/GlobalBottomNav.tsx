@@ -39,9 +39,15 @@ export default function GlobalBottomNav({ venueId, counts = {} }: GlobalBottomNa
   const pathname = usePathname();
   const isMobile = useIsMobile();
 
+  // Determine if we're on dashboard pages
+  const isOnDashboard = pathname?.startsWith('/dashboard');
+  const isOnHomePage = pathname === '/';
+  const isOnQRPage = pathname?.includes('/generate-qr');
+  const shouldShowNav = isOnDashboard || isOnQRPage;
+
   // Show/hide navigation based on scroll
   useEffect(() => {
-    if (!isMobile) return;
+    if (!isMobile || !shouldShowNav) return;
 
     let lastScrollY = window.scrollY;
     const handleScroll = () => {
@@ -64,7 +70,7 @@ export default function GlobalBottomNav({ venueId, counts = {} }: GlobalBottomNa
 
   // Update live orders count in real-time
   useEffect(() => {
-    if (!venueId) return;
+    if (!venueId || !shouldShowNav) return;
 
     const supabase = createClient();
     const channel = supabase
@@ -100,12 +106,7 @@ export default function GlobalBottomNav({ venueId, counts = {} }: GlobalBottomNa
     return () => {
       supabase.removeChannel(channel);
     };
-  }, [venueId]);
-
-  // Determine if we're on dashboard pages
-  const isOnDashboard = pathname?.startsWith('/dashboard');
-  const isOnHomePage = pathname === '/';
-  const isOnQRPage = pathname?.includes('/generate-qr');
+  }, [venueId, shouldShowNav]);
   
   // Check if we're on the dashboard root page (not a feature page)
   const isDashboardRoot = pathname?.match(/^\/dashboard\/(?:[^/]+)\/?$/);
@@ -155,11 +156,7 @@ export default function GlobalBottomNav({ venueId, counts = {} }: GlobalBottomNa
 
   const activeItem = navItems.find(item => item.isActive);
 
-  if (!isMobile) return null;
-
-  // Only show on dashboard and QR pages
-  const shouldShowNav = isOnDashboard || isOnQRPage;
-  if (!shouldShowNav) return null;
+  if (!isMobile || !shouldShowNav) return null;
 
   return (
     <>
