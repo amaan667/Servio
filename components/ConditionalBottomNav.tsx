@@ -14,15 +14,17 @@ export default function ConditionalBottomNav() {
     notifications: 0
   });
 
-  // Don't show bottom nav on customer-facing pages or home page
+  // Don't show bottom nav on customer-facing pages, auth pages, or home page
   const isCustomerOrderPage = pathname?.startsWith('/order');
   const isCheckoutPage = pathname?.startsWith('/checkout');
   const isPaymentPage = pathname?.startsWith('/payment');
   const isOrderSummaryPage = pathname?.startsWith('/order-summary');
   const isOrderTrackingPage = pathname?.startsWith('/order-tracking');
   const isHomePage = pathname === '/';
+  const isAuthPage = pathname?.startsWith('/sign-in') || pathname?.startsWith('/sign-up') || pathname?.startsWith('/auth');
+  const isCompleteProfilePage = pathname?.startsWith('/complete-profile');
   
-  if (isCustomerOrderPage || isCheckoutPage || isPaymentPage || isOrderSummaryPage || isOrderTrackingPage || isHomePage) {
+  if (isCustomerOrderPage || isCheckoutPage || isPaymentPage || isOrderSummaryPage || isOrderTrackingPage || isHomePage || isAuthPage || isCompleteProfilePage) {
     return null;
   }
 
