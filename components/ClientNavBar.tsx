@@ -5,7 +5,7 @@ import Link from "next/link";
 import Image from "next/image";
 import { Button } from "@/components/ui/button";
 import { createClient } from "@/lib/supabase/client";
-import { Menu, X, Settings } from "lucide-react";
+import { Menu, X, Settings, LogOut } from "lucide-react";
 import { useAuth } from "@/app/auth/AuthProvider";
 import { useRouter, usePathname } from "next/navigation";
 import SignInButton from "@/app/components/SignInButton";
@@ -304,9 +304,10 @@ export default function ClientNavBar() {
                     handleSignOut();
                     setMobileMenuOpen(false);
                   }}
-                  className="w-full text-left px-4 py-3 text-base font-semibold bg-red-600 hover:bg-red-700 text-white rounded-xl transition-all duration-200"
+                  className="flex items-center w-full px-4 py-3 text-base font-semibold bg-red-600 hover:bg-red-700 text-white rounded-xl transition-all duration-200 min-h-[48px] justify-start"
                 >
-                  Sign Out
+                  <LogOut className="mr-3 h-5 w-5 flex-shrink-0 text-white" />
+                  <span>Sign Out</span>
                 </button>
               </>
             ) : (
