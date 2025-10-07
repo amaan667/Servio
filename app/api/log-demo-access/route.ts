@@ -7,10 +7,25 @@ export async function POST(req: Request) {
   // Log immediately when endpoint is hit
   console.log('================================================================================');
   console.log('[DEMO ACCESS] API ENDPOINT HIT - Starting to process request');
+  console.log('[DEMO ACCESS] Request URL:', req.url);
+  console.log('[DEMO ACCESS] Content-Type:', req.headers.get('content-type'));
   console.log('================================================================================');
   
   try {
-    const body = await req.json();
+    // Get the raw body first
+    const text = await req.text();
+    console.log('[DEMO ACCESS] Raw body received:', text.substring(0, 200));
+    
+    // Parse the JSON
+    let body;
+    try {
+      body = JSON.parse(text);
+    } catch (parseError) {
+      console.error('[DEMO ACCESS ERROR] Failed to parse JSON:', parseError);
+      console.error('[DEMO ACCESS ERROR] Body text:', text);
+      throw parseError;
+    }
+    
     const { 
       action, 
       viewMode, 
