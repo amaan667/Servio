@@ -509,14 +509,17 @@ export default function QuestionsClient({ venueId, venueName, mode = 'full' }: Q
                     </div>
                   )}
 
-                  <div className="flex items-center space-x-2">
-                    <ToggleSwitch
-                      checked={formData.is_active}
-                      onCheckedChange={(checked) => setFormData(prev => ({ ...prev, is_active: checked }))}
-                      showLabels={true}
-                      onLabel="Active"
-                      offLabel="Inactive"
-                    />
+                  <div className="flex items-center gap-3">
+                    <Label className="text-sm font-medium text-gray-700">Status</Label>
+                    <div className="flex items-center gap-2">
+                      <ToggleSwitch
+                        checked={formData.is_active}
+                        onCheckedChange={(checked) => setFormData(prev => ({ ...prev, is_active: checked }))}
+                      />
+                      <span className="text-sm font-medium text-gray-700">
+                        {formData.is_active ? 'Active' : 'Inactive'}
+                      </span>
+                    </div>
                   </div>
 
                   <div className="flex gap-2 pt-2">

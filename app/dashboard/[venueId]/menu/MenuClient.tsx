@@ -384,14 +384,17 @@ export default function MenuClient({ venueId, venueName }: { venueId: string; ve
                     required
                   />
                 </div>
-                <div className="flex items-center space-x-2">
-                  <ToggleSwitch
-                    checked={formData.available}
-                    onCheckedChange={(checked) => setFormData(prev => ({ ...prev, available: checked }))}
-                    showLabels={true}
-                    onLabel="Available"
-                    offLabel="Unavailable"
-                  />
+                <div className="flex items-center gap-3">
+                  <Label className="text-sm font-medium text-gray-700">Availability</Label>
+                  <div className="flex items-center gap-2">
+                    <ToggleSwitch
+                      checked={formData.available}
+                      onCheckedChange={(checked) => setFormData(prev => ({ ...prev, available: checked }))}
+                    />
+                    <span className="text-sm font-medium text-gray-700">
+                      {formData.available ? 'Available' : 'Unavailable'}
+                    </span>
+                  </div>
                 </div>
                 <div className="flex justify-end space-x-2">
                   <Button type="button" variant="outline" onClick={() => setIsAddModalOpen(false)}>
@@ -538,16 +541,14 @@ export default function MenuClient({ venueId, venueName }: { venueId: string; ve
                               {item.description && (
                                 <p className="text-gray-800 text-sm mb-2">{item.description}</p>
                               )}
-                              <div className="flex items-center space-x-4">
-                                <div className="flex items-center space-x-2">
-                                  <ToggleSwitch
-                                    checked={item.available}
-                                    onCheckedChange={(checked) => handleToggleAvailable(item.id, checked)}
-                                    showLabels={true}
-                                    onLabel="Available"
-                                    offLabel="Unavailable"
-                                  />
-                                </div>
+                              <div className="flex items-center gap-3">
+                                <ToggleSwitch
+                                  checked={item.available}
+                                  onCheckedChange={(checked) => handleToggleAvailable(item.id, checked)}
+                                />
+                                <span className="text-sm font-medium text-gray-700">
+                                  {item.available ? 'Available' : 'Unavailable'}
+                                </span>
                               </div>
                             </div>
                             <div className="flex space-x-2">

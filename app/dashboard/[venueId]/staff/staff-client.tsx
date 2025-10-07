@@ -10,7 +10,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { ToggleSwitch } from '@/components/ui/toggle-switch';
 import TimeField24, { TimeValue24 } from '@/components/inputs/TimeField24';
 import { buildIsoFromLocal, isOvernight, addDaysISO } from '@/lib/time';
-import { Users, Clock, Calendar, ChevronLeft, ChevronRight } from 'lucide-react';
+import { Users, Clock, Calendar, ChevronLeft, ChevronRight, Plus } from 'lucide-react';
 import SimpleStaffGrid from '@/components/staff/SimpleStaffGrid';
 
 
@@ -330,7 +330,7 @@ export default function StaffClient({
           <div className="mt-4 p-4 bg-gray-50 rounded-lg space-y-4">
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
               <div>
-                <label className="block text-sm font-medium text-white mb-2">Date</label>
+                <label className="block text-sm font-medium text-gray-700 mb-2">Date</label>
                 <input 
                   type="date" 
                   className="w-full rounded-md border border-gray-300 px-3 py-3 text-sm focus:ring-2 focus:ring-purple-500 focus:border-transparent" 
@@ -339,15 +339,15 @@ export default function StaffClient({
                 />
               </div>
               <div>
-                <label className="block text-sm font-medium text-white mb-2">Start Time</label>
+                <label className="block text-sm font-medium text-gray-700 mb-2">Start Time</label>
                 <TimeField24 value={start} onChange={setStart} />
               </div>
               <div>
-                <label className="block text-sm font-medium text-white mb-2">End Time</label>
+                <label className="block text-sm font-medium text-gray-700 mb-2">End Time</label>
                 <TimeField24 value={end} onChange={setEnd} />
               </div>
               <div>
-                <label className="block text-sm font-medium text-white mb-2">Area</label>
+                <label className="block text-sm font-medium text-gray-700 mb-2">Area</label>
                 <select 
                   className="w-full rounded-md border border-gray-300 px-3 py-3 text-sm focus:ring-2 focus:ring-purple-500 focus:border-transparent" 
                   value={area} 
@@ -372,13 +372,13 @@ export default function StaffClient({
                 <Button 
                   variant="outline" 
                   onClick={onClose}
-                  className="px-6 py-3 rounded-md border border-gray-300 text-white hover:bg-gray-50 min-h-[44px]"
+                  className="px-6 py-3 rounded-md border border-gray-300 text-gray-700 hover:bg-gray-50 min-h-[44px]"
                 >
                   Cancel
                 </Button>
               )}
             </div>
-            {err && <div className="text-sm text-white bg-red-50 p-2 rounded">{err}</div>}
+            {err && <div className="text-sm text-red-600 bg-red-50 p-2 rounded">{err}</div>}
           </div>
         )}
       </div>
@@ -433,7 +433,7 @@ export default function StaffClient({
               <CardContent className="p-3 sm:p-6">
                 <div className="flex items-center justify-between">
                   <div>
-                    <p className="text-sm font-medium text-white">Total Staff</p>
+                    <p className="text-sm font-medium text-gray-700">Total Staff</p>
                     <p className="text-2xl font-bold text-foreground">
                       {loading && !initialCounts && staff.length === 0 && (!initialStaff || initialStaff.length === 0) ? (
                         <div className="animate-pulse bg-blue-200 h-8 w-12 rounded"></div>
@@ -453,7 +453,7 @@ export default function StaffClient({
               <CardContent className="p-3 sm:p-6">
                 <div className="flex items-center justify-between">
                   <div>
-                    <p className="text-sm font-medium text-white">Active Staff</p>
+                    <p className="text-sm font-medium text-gray-700">Active Staff</p>
                     <p className="text-2xl font-bold text-foreground">
                       {loading && !initialCounts && staff.length === 0 && (!initialStaff || initialStaff.length === 0) ? (
                         <div className="animate-pulse bg-green-200 h-8 w-12 rounded"></div>
@@ -473,7 +473,7 @@ export default function StaffClient({
               <CardContent className="p-3 sm:p-6">
                 <div className="flex items-center justify-between">
                   <div>
-                    <p className="text-sm font-medium text-white">Roles</p>
+                    <p className="text-sm font-medium text-gray-700">Roles</p>
                     <p className="text-2xl font-bold text-foreground">
                       {loading && !initialCounts && staff.length === 0 && (!initialStaff || initialStaff.length === 0) ? (
                         <div className="animate-pulse bg-purple-200 h-8 w-12 rounded"></div>
@@ -493,7 +493,7 @@ export default function StaffClient({
               <CardContent className="p-3 sm:p-6">
                 <div className="flex items-center justify-between">
                   <div>
-                    <p className="text-sm font-medium text-white">Active Shifts</p>
+                    <p className="text-sm font-medium text-gray-700">Active Shifts</p>
                     <p className="text-2xl font-bold text-foreground">
                       {loading && !initialCounts && staff.length === 0 && (!initialStaff || initialStaff.length === 0) ? (
                         <div className="animate-pulse bg-orange-200 h-8 w-12 rounded"></div>
@@ -518,26 +518,29 @@ export default function StaffClient({
             <Card className="border-0 shadow-sm">
               <CardHeader className="pb-4">
                 <div className="flex items-center justify-between">
-                  <div>
-                    <h3 className="text-lg font-semibold text-foreground">Add Team Member</h3>
-                    <p className="text-sm text-foreground/80">Add new staff members to your team</p>
+                  <div className="flex items-center gap-3">
+                    <div className="w-10 h-10 bg-purple-100 rounded-lg flex items-center justify-center">
+                      <Users className="h-5 w-5 text-purple-600" />
+                    </div>
+                    <div>
+                      <h3 className="text-lg font-semibold text-foreground">Add Team Member</h3>
+                      <p className="text-sm text-muted-foreground">Add new staff members to your team</p>
+                    </div>
                   </div>
-                  <div className="flex items-center space-x-2">
-                    <Button 
-                      variant="outline" 
-                      size="sm"
-                      onClick={async ()=>{
-                        if (!confirm('This will delete all staff for this venue. Continue?')) return;
-                        const res = await fetch('/api/staff/clear', { method:'POST', headers:{'content-type':'application/json'}, body: JSON.stringify({ venue_id: venueId })});
-                        const j = await res.json().catch(()=>({}));
-                        if (!res.ok || j?.error) { alert(j?.error || 'Failed to clear'); return; }
-                        setStaff([]);
-                      }}
-                      className="text-white hover:text-white"
-                    >
-                      Clear All
-                    </Button>
-                  </div>
+                  <Button 
+                    variant="outline" 
+                    size="sm"
+                    onClick={async ()=>{
+                      if (!confirm('This will delete all staff for this venue. Continue?')) return;
+                      const res = await fetch('/api/staff/clear', { method:'POST', headers:{'content-type':'application/json'}, body: JSON.stringify({ venue_id: venueId })});
+                      const j = await res.json().catch(()=>({}));
+                      if (!res.ok || j?.error) { alert(j?.error || 'Failed to clear'); return; }
+                      setStaff([]);
+                    }}
+                    className="text-red-600 hover:text-red-700 hover:bg-red-50"
+                  >
+                    Clear All
+                  </Button>
                 </div>
               </CardHeader>
               <CardContent>
@@ -569,7 +572,7 @@ export default function StaffClient({
                     <Button 
                       onClick={onAdd} 
                       disabled={adding || !name.trim()}
-                      className="h-11 px-8 bg-gradient-to-r from-purple-600 to-purple-700 hover:from-purple-700 hover:to-purple-800 text-white"
+                      className="h-11 px-6 bg-servio-purple hover:bg-purple-700 text-white font-medium"
                     >
                       {adding ? (
                         <>
@@ -578,7 +581,7 @@ export default function StaffClient({
                         </>
                       ) : (
                         <>
-                          <Users className="w-4 h-4 mr-2" />
+                          <Plus className="w-4 h-4 mr-2" />
                           Add Member
                         </>
                       )}
@@ -587,7 +590,7 @@ export default function StaffClient({
                 </div>
                 {error && (
                   <div className="mt-3 p-3 bg-red-50 border border-red-200 rounded-md">
-                    <span className="text-white text-sm">{error}</span>
+                    <span className="text-red-600 text-sm">{error}</span>
                   </div>
                 )}
               </CardContent>
@@ -602,8 +605,8 @@ export default function StaffClient({
                     <div className="w-16 h-16 bg-gray-100 rounded-full flex items-center justify-center mx-auto mb-4">
                       <Users className="h-8 w-8 text-white" />
                     </div>
-                    <h3 className="text-lg font-semibold text-foreground mb-2">No team members yet</h3>
-                    <p className="text-foreground/80 mb-6 max-w-md mx-auto">
+                    <h3 className="text-lg font-semibold text-gray-900 mb-2">No team members yet</h3>
+                    <p className="text-gray-600 mb-6 max-w-md mx-auto">
                       Start building your team by adding staff members above. You'll be able to assign shifts and manage schedules once you have team members.
                     </p>
                     <Button 
@@ -666,35 +669,31 @@ export default function StaffClient({
                                   <p className="staff-member-role text-sm text-foreground/80">{role}</p>
                                 </div>
                               </div>
-                              <div className="flex flex-row items-center justify-between sm:justify-end gap-2 sm:gap-3">
+                              <div className="flex flex-row items-center justify-between sm:justify-end gap-3 sm:gap-4">
                                 <div className="flex items-center gap-2">
-                                  <span className="text-xs sm:text-sm text-foreground/80 font-medium">Active:</span>
                                   <ToggleSwitch
                                     checked={row.active}
                                     onCheckedChange={() => onToggleActive(row)}
-                                    showLabels={true}
-                                    onLabel="On"
-                                    offLabel="Off"
                                   />
                                 </div>
-                                <div className="flex gap-1 sm:gap-2">
+                                <div className="flex gap-2">
                                   <Button
                                     size="sm"
                                     variant="outline"
                                     onClick={() => {
                                       setEditingShiftFor(editingShiftFor === row.id ? null : row.id);
                                     }}
-                                    className="h-8 sm:h-9 px-2 sm:px-3 text-xs sm:text-sm border-blue-200 text-white hover:text-white hover:bg-blue-50"
+                                    className="h-9 px-3 text-sm text-blue-600 hover:text-blue-700 hover:bg-blue-50 border-blue-200"
                                   >
-                                    <Clock className="w-3 h-3 sm:w-4 sm:h-4 mr-1" />
+                                    <Clock className="w-4 h-4 mr-1.5" />
                                     <span className="hidden sm:inline">{editingShiftFor === row.id ? 'Cancel' : 'Add Shift'}</span>
-                                    <span className="sm:hidden">{editingShiftFor === row.id ? 'Cancel' : 'Shift'}</span>
+                                    <span className="sm:hidden">{editingShiftFor === row.id ? 'X' : '+'}</span>
                                   </Button>
                                   <Button
                                     size="sm"
                                     variant="outline"
                                     onClick={() => onDelete(row)}
-                                    className="h-8 sm:h-9 px-2 sm:px-3 text-xs sm:text-sm border-red-200 text-white hover:text-white hover:bg-red-50"
+                                    className="h-9 px-3 text-sm text-red-600 hover:text-red-700 hover:bg-red-50 border-red-200"
                                   >
                                     Delete
                                   </Button>
