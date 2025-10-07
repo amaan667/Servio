@@ -1,0 +1,273 @@
+'use client';
+
+import React, { useState } from 'react';
+import { Button } from '@/components/ui/button';
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
+import { Badge } from '@/components/ui/badge';
+import { User, Briefcase, ArrowRight, RefreshCw } from 'lucide-react';
+import Link from 'next/link';
+import DemoAnalytics from '@/components/demo-analytics';
+import DemoAISection from '@/components/demo-ai-section';
+import { demoMenuItems } from '@/data/demoMenuItems';
+
+export default function DemoPage() {
+  const [viewMode, setViewMode] = useState<'customer' | 'owner'>('customer');
+
+  return (
+    <div className="min-h-screen bg-gradient-to-br from-purple-50 via-white to-purple-50">
+      {/* Demo Banner */}
+      <div className="bg-gradient-to-r from-purple-600 to-purple-800 text-white py-3 px-4 shadow-md">
+        <div className="max-w-7xl mx-auto flex items-center justify-between">
+          <div className="flex items-center space-x-2">
+            <div className="h-2 w-2 bg-green-400 rounded-full animate-pulse"></div>
+            <span className="text-sm font-medium">Demo Mode Active</span>
+          </div>
+          <Badge variant="secondary" className="bg-white/20 text-white border-0">
+            💡 Payments are simulated — no real charges
+          </Badge>
+        </div>
+      </div>
+
+      {/* View Toggle */}
+      <div className="sticky top-0 z-40 bg-white border-b shadow-sm">
+        <div className="max-w-7xl mx-auto px-4 py-4">
+          <div className="flex items-center justify-between">
+            <div>
+              <h1 className="text-2xl font-bold text-gray-900">Try Servio</h1>
+              <p className="text-sm text-gray-600">Experience both perspectives</p>
+            </div>
+            <div className="flex items-center space-x-2 bg-gray-100 rounded-lg p-1">
+              <Button
+                onClick={() => setViewMode('customer')}
+                variant={viewMode === 'customer' ? 'default' : 'ghost'}
+                className={`${
+                  viewMode === 'customer'
+                    ? 'bg-purple-600 text-white hover:bg-purple-700'
+                    : 'text-gray-700 hover:bg-gray-200'
+                }`}
+              >
+                <User className="w-4 h-4 mr-2" />
+                Customer 👤
+              </Button>
+              <Button
+                onClick={() => setViewMode('owner')}
+                variant={viewMode === 'owner' ? 'default' : 'ghost'}
+                className={`${
+                  viewMode === 'owner'
+                    ? 'bg-purple-600 text-white hover:bg-purple-700'
+                    : 'text-gray-700 hover:bg-gray-200'
+                }`}
+              >
+                <Briefcase className="w-4 h-4 mr-2" />
+                Owner 🧑‍💼
+              </Button>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      {/* Content Area */}
+      <div className="max-w-7xl mx-auto px-4 py-8">
+        {viewMode === 'customer' ? (
+          <CustomerDemoView />
+        ) : (
+          <OwnerDemoView />
+        )}
+      </div>
+    </div>
+  );
+}
+
+function CustomerDemoView() {
+  return (
+    <div className="space-y-8">
+      {/* Hero Section */}
+      <Card className="border-2 border-purple-200 bg-gradient-to-br from-white to-purple-50">
+        <CardHeader>
+          <CardTitle className="text-3xl">Welcome to Servio Café</CardTitle>
+          <CardDescription className="text-lg">
+            Experience seamless mobile ordering with QR code scanning
+          </CardDescription>
+        </CardHeader>
+        <CardContent className="space-y-4">
+          <p className="text-gray-700">
+            In the real experience, you'd scan a QR code at your table. For this demo, 
+            we'll take you straight to the menu.
+          </p>
+          <div className="flex flex-col sm:flex-row gap-4">
+            <Link href="/order?venue=demo-cafe&table=1" className="flex-1">
+              <Button className="w-full bg-purple-600 hover:bg-purple-700 h-14 text-lg">
+                Start Your Order
+                <ArrowRight className="ml-2 w-5 h-5" />
+              </Button>
+            </Link>
+          </div>
+          
+          <div className="bg-blue-50 border border-blue-200 rounded-lg p-4 mt-4">
+            <h4 className="font-semibold text-blue-900 mb-2">What you'll experience:</h4>
+            <ul className="space-y-2 text-sm text-blue-800">
+              <li className="flex items-start">
+                <span className="mr-2">✅</span>
+                <span>Browse a full menu with categories and images</span>
+              </li>
+              <li className="flex items-start">
+                <span className="mr-2">✅</span>
+                <span>Add items to cart with special instructions</span>
+              </li>
+              <li className="flex items-start">
+                <span className="mr-2">✅</span>
+                <span>Complete checkout with simulated Stripe payment</span>
+              </li>
+              <li className="flex items-start">
+                <span className="mr-2">✅</span>
+                <span>Receive order confirmation and track status</span>
+              </li>
+            </ul>
+          </div>
+        </CardContent>
+      </Card>
+
+      {/* Sample Menu Preview */}
+      <Card>
+        <CardHeader>
+          <CardTitle>Sample Menu Items</CardTitle>
+          <CardDescription>Just a taste of what you'll see</CardDescription>
+        </CardHeader>
+        <CardContent>
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+            {demoMenuItems.slice(0, 6).map((item) => (
+              <div key={item.id} className="border rounded-lg overflow-hidden hover:shadow-lg transition-shadow">
+                <img 
+                  src={item.image} 
+                  alt={item.name}
+                  className="w-full h-32 object-cover"
+                />
+                <div className="p-3">
+                  <h4 className="font-semibold text-gray-900">{item.name}</h4>
+                  <p className="text-sm text-gray-600 line-clamp-2">{item.description}</p>
+                  <p className="text-lg font-bold text-purple-600 mt-2">£{item.price.toFixed(2)}</p>
+                </div>
+              </div>
+            ))}
+          </div>
+        </CardContent>
+      </Card>
+    </div>
+  );
+}
+
+function OwnerDemoView() {
+  return (
+    <div className="space-y-8">
+      {/* Owner Hero */}
+      <Card className="border-2 border-purple-200 bg-gradient-to-br from-white to-purple-50">
+        <CardHeader>
+          <CardTitle className="text-3xl">Owner Dashboard Preview</CardTitle>
+          <CardDescription className="text-lg">
+            See what you'd have access to as a Servio venue owner
+          </CardDescription>
+        </CardHeader>
+        <CardContent className="space-y-4">
+          <p className="text-gray-700">
+            This demo showcases the powerful tools available to restaurant and café owners 
+            using Servio's platform.
+          </p>
+          
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mt-6">
+            <div className="bg-white border-2 border-purple-200 rounded-lg p-4 hover:shadow-lg transition-shadow">
+              <div className="text-3xl mb-2">📊</div>
+              <h4 className="font-bold text-gray-900">Live Analytics</h4>
+              <p className="text-sm text-gray-600">Real-time insights into orders, revenue, and trends</p>
+            </div>
+            <div className="bg-white border-2 border-purple-200 rounded-lg p-4 hover:shadow-lg transition-shadow">
+              <div className="text-3xl mb-2">🤖</div>
+              <h4 className="font-bold text-gray-900">AI-Powered Insights</h4>
+              <p className="text-sm text-gray-600">Smart suggestions for menu optimization</p>
+            </div>
+            <div className="bg-white border-2 border-purple-200 rounded-lg p-4 hover:shadow-lg transition-shadow">
+              <div className="text-3xl mb-2">📱</div>
+              <h4 className="font-bold text-gray-900">Live Order Management</h4>
+              <p className="text-sm text-gray-600">Track and manage orders in real-time</p>
+            </div>
+          </div>
+        </CardContent>
+      </Card>
+
+      {/* Demo Analytics */}
+      <DemoAnalytics />
+
+      {/* AI Demo Section */}
+      <DemoAISection />
+
+      {/* Feature Highlights */}
+      <Card>
+        <CardHeader>
+          <CardTitle>Additional Features</CardTitle>
+          <CardDescription>Everything you need to run your business</CardDescription>
+        </CardHeader>
+        <CardContent>
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <div className="flex items-start space-x-3 p-4 bg-gray-50 rounded-lg">
+              <div className="text-2xl">📋</div>
+              <div>
+                <h4 className="font-semibold text-gray-900">Menu Management</h4>
+                <p className="text-sm text-gray-600">
+                  Easy-to-use interface for updating items, prices, and availability
+                </p>
+              </div>
+            </div>
+            <div className="flex items-start space-x-3 p-4 bg-gray-50 rounded-lg">
+              <div className="text-2xl">💳</div>
+              <div>
+                <h4 className="font-semibold text-gray-900">Payment Processing</h4>
+                <p className="text-sm text-gray-600">
+                  Secure Stripe integration for online and in-person payments
+                </p>
+              </div>
+            </div>
+            <div className="flex items-start space-x-3 p-4 bg-gray-50 rounded-lg">
+              <div className="text-2xl">👥</div>
+              <div>
+                <h4 className="font-semibold text-gray-900">Staff Management</h4>
+                <p className="text-sm text-gray-600">
+                  Add team members and manage permissions
+                </p>
+              </div>
+            </div>
+            <div className="flex items-start space-x-3 p-4 bg-gray-50 rounded-lg">
+              <div className="text-2xl">🎯</div>
+              <div>
+                <h4 className="font-semibold text-gray-900">Table Management</h4>
+                <p className="text-sm text-gray-600">
+                  QR codes for each table with real-time occupancy tracking
+                </p>
+              </div>
+            </div>
+          </div>
+        </CardContent>
+      </Card>
+
+      {/* CTA */}
+      <Card className="bg-gradient-to-r from-purple-600 to-purple-800 text-white border-0">
+        <CardContent className="py-8 text-center">
+          <h3 className="text-2xl font-bold mb-2">Ready to get started?</h3>
+          <p className="text-purple-100 mb-6">
+            Create your account and have your venue live in minutes
+          </p>
+          <div className="flex flex-col sm:flex-row gap-4 justify-center">
+            <Link href="/sign-up">
+              <Button className="bg-white text-purple-600 hover:bg-gray-100">
+                Start Free Trial
+              </Button>
+            </Link>
+            <Link href="/sign-in">
+              <Button variant="outline" className="border-white text-white hover:bg-purple-700">
+                Sign In
+              </Button>
+            </Link>
+          </div>
+        </CardContent>
+      </Card>
+    </div>
+  );
+}

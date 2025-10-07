@@ -106,7 +106,7 @@ export default function HomePage() {
   };
 
   const handleDemo = () => {
-    router.push("/order?demo=1");
+    router.push("/demo");
   };
 
   const handlePricingPrimary = () => {
@@ -549,7 +549,7 @@ export default function HomePage() {
                 </li>
                 <li>
                   <Link
-                    href="/order?venue=demo-cafe&table=1"
+                    href="/demo"
                     className="text-gray-300 hover:text-white transition-colors"
                   >
                     Demo

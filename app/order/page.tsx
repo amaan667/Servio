@@ -790,29 +790,24 @@ export default function CustomerOrderPage() {
 
   return (
     <div className="min-h-screen bg-gray-50 dark:bg-gray-900">
-        {/* Demo Fallback Notification */}
+        {/* Demo Mode Banner */}
         {isDemo && (
-          <div className="bg-gradient-to-r from-purple-50 to-blue-50 dark:from-purple-900/20 dark:to-blue-900/20 border-b border-purple-200 dark:border-purple-700">
-            <div className="max-w-7xl mx-auto px-4 py-3">
-                <div className="flex items-center justify-between">
-                  <div className="flex items-center text-sm">
-                    <span className="font-medium text-purple-700 dark:text-purple-300">🎯 Demo Mode:</span>
-                    <span className="ml-2 text-purple-600 dark:text-purple-400">Experience Servio Café's full ordering flow with payment simulation</span>
-                    <span className="ml-2 text-xs bg-purple-100 dark:bg-purple-800 text-purple-700 dark:text-purple-200 px-2 py-1 rounded-full">Interactive Preview</span>
-                  </div>
-                  <div className="flex gap-2">
-                    <Button
-                      variant="outline"
-                      size="sm"
-                      onClick={resetCart}
-                      className="text-xs"
-                    >
-                      Reset Cart
-                    </Button>
-                  </div>
-                </div>
+          <div className="bg-gradient-to-r from-purple-600 to-purple-800 text-white py-3 px-4 shadow-md">
+            <div className="max-w-7xl mx-auto flex items-center justify-between">
+              <div className="flex items-center space-x-3">
+                <div className="h-2 w-2 bg-green-400 rounded-full animate-pulse"></div>
+                <span className="text-sm font-medium">💡 Demo Mode Active — Experience full ordering flow with payment simulation</span>
               </div>
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={resetCart}
+                className="text-white border-white/30 hover:bg-white/20 text-xs hidden sm:flex"
+              >
+                Reset Cart
+              </Button>
             </div>
+          </div>
           )}
 
       {/* Header */}

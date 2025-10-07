@@ -1326,6 +1326,16 @@ export default function CheckoutPage() {
 
   return (
     <div className="min-h-screen bg-gray-50">
+      {/* Demo Mode Banner */}
+      {isDemo && (
+        <div className="bg-gradient-to-r from-purple-600 to-purple-800 text-white py-3 px-4 shadow-md">
+          <div className="max-w-4xl mx-auto flex items-center justify-center space-x-3">
+            <div className="h-2 w-2 bg-green-400 rounded-full animate-pulse"></div>
+            <span className="text-sm font-medium">💡 Demo Mode Active — Payments are simulated • No real charges</span>
+          </div>
+        </div>
+      )}
+      
       {/* Header with Logo */}
       <div className="bg-white shadow-sm border-b">
         <div className="max-w-4xl mx-auto px-4 py-4">
@@ -1474,14 +1484,14 @@ export default function CheckoutPage() {
                         <Button
                           variant="outline"
                           onClick={() => handlePaymentMethodSelect('simulation')}
-                          className="h-20 flex-col gap-2"
+                          className="h-20 flex-col gap-2 border-purple-300 hover:bg-purple-50"
                         >
                           <div className="flex gap-1">
                             <div className="w-6 h-6 bg-servio-purple rounded"></div>
                             <div className="w-6 h-6 bg-blue-600 rounded"></div>
                           </div>
-                          <span className="text-sm">Demo Mode</span>
-                          <span className="text-xs text-gray-900">Simulation</span>
+                          <span className="text-sm font-medium">Demo Mode</span>
+                          <span className="text-xs text-gray-600">✨ Simulated Payment</span>
                         </Button>
                       </div>
                     ) : (
