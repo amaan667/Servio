@@ -155,8 +155,7 @@ export default function DemoPage() {
                 <img 
                   src="/assets/servio-logo-updated.png"
                   alt="Servio"
-                  className="h-[1.5rem] w-auto inline-block align-baseline"
-                  style={{ height: '1em' }}
+                  className="h-8 w-auto inline-block align-baseline"
                 />
               </h1>
               <p className="text-sm text-gray-600">Experience both perspectives</p>
