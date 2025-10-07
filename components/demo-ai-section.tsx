@@ -14,7 +14,7 @@ import { Sparkles, Send, CheckCircle, AlertCircle } from 'lucide-react';
 
 const examplePrompts = [
   "Rename all Coffee items to include '12oz'",
-  "Increase brunch prices by 10%",
+  "Increase pastry prices by 10%",
   "Hide items with no orders this week",
   "Add 'Vegan' label to plant-based items",
   "Create a happy hour discount for Cold Drinks",
@@ -33,17 +33,29 @@ const demoResponses: { [key: string]: any } = {
     ],
     message: "Servio would rename 7 coffee items to include size information"
   },
+  "Increase pastry prices by 10%": {
+    success: true,
+    changes: 5,
+    preview: [
+      { item: 'Avocado Toast', old: '£6.50', new: '£7.15' },
+      { item: 'Croissant', old: '£2.50', new: '£2.75' },
+      { item: 'Pain au Chocolat', old: '£3.25', new: '£3.58' },
+      { item: 'Blueberry Muffin', old: '£3.00', new: '£3.30' },
+      { item: 'Cinnamon Roll', old: '£4.50', new: '£4.95' },
+    ],
+    message: "Servio would adjust 5 pastry items with a 10% price increase"
+  },
   "Increase brunch prices by 10%": {
     success: true,
     changes: 5,
     preview: [
       { item: 'Avocado Toast', old: '£6.50', new: '£7.15' },
-      { item: 'Eggs Benedict', old: '£8.50', new: '£9.35' },
-      { item: 'Pancake Stack', old: '£7.00', new: '£7.70' },
-      { item: 'Full English', old: '£9.50', new: '£10.45' },
-      { item: 'Smoked Salmon Bagel', old: '£8.00', new: '£8.80' },
+      { item: 'Croissant', old: '£2.50', new: '£2.75' },
+      { item: 'Pain au Chocolat', old: '£3.25', new: '£3.58' },
+      { item: 'Blueberry Muffin', old: '£3.00', new: '£3.30' },
+      { item: 'Cinnamon Roll', old: '£4.50', new: '£4.95' },
     ],
-    message: "Servio would adjust 5 brunch items with a 10% price increase"
+    message: "Servio would adjust 5 pastry items with a 10% price increase"
   },
   "Hide items with no orders this week": {
     success: true,
