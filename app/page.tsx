@@ -114,7 +114,9 @@ export default function HomePage() {
         userAgent: navigator.userAgent,
         user: user ? { id: user.id, email: user.email } : null
       })
-    }).catch(() => {});
+    })
+    .then(res => console.log('[CLIENT] Demo access logged:', res.status))
+    .catch(err => console.error('[CLIENT] Failed to log demo access:', err));
     
     router.push("/demo");
   };
