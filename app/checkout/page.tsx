@@ -1489,20 +1489,11 @@ export default function CheckoutPage() {
                         </div>
                         <Button
                           onClick={simulatePayment}
-                          disabled={paymentStatus === 'processing'}
+                          disabled={false}
                           className="w-full h-16 bg-purple-600 hover:bg-purple-700 text-white text-lg"
                         >
-                          {paymentStatus === 'processing' ? (
-                            <div className="flex items-center space-x-2">
-                              <div className="animate-spin rounded-full h-5 w-5 border-b-2 border-white"></div>
-                              <span>Processing...</span>
-                            </div>
-                          ) : (
-                            <>
-                              <CreditCard className="h-6 w-6 mr-2" />
-                              Complete Demo Order
-                            </>
-                          )}
+                          <CreditCard className="h-6 w-6 mr-2" />
+                          Complete Demo Order
                         </Button>
                       </div>
                     ) : (
