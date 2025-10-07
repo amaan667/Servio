@@ -3,7 +3,7 @@
 @tailwind utilities;
 
 @layer components {
-  .btn-servio {
+  .btn-servio, .btn-primary, .btn-outline, .btn-secondary, .btn-ghost {
     @apply bg-white text-servio-purple border-2 border-servio-purple rounded-lg py-2 px-4 font-semibold shadow-md hover:bg-gray-50 hover:text-servio-purple-dark hover:shadow-lg transition;
   }
   
@@ -12,15 +12,7 @@
     @apply inline-flex items-center justify-center gap-2 whitespace-nowrap rounded-md text-sm font-medium transition-all duration-200 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-70 touch-manipulation min-h-[44px] min-w-[44px];
   }
   
-  .btn-unified-primary {
-    @apply bg-white text-servio-purple border-2 border-servio-purple hover:bg-gray-50 hover:text-servio-purple-dark shadow-md hover:shadow-lg;
-  }
-  
-  .btn-unified-outline {
-    @apply border-2 border-servio-purple bg-white text-servio-purple hover:bg-gray-50 hover:border-servio-purple-dark hover:text-servio-purple-dark shadow-md hover:shadow-lg dark:border-servio-purple dark:text-servio-purple dark:hover:bg-gray-800 dark:hover:border-servio-purple-dark dark:hover:text-servio-purple-dark;
-  }
-  
-  .btn-unified-servio {
+  .btn-unified-primary, .btn-unified-outline, .btn-unified-servio, .btn-unified-secondary, .btn-unified-ghost {
     @apply bg-white text-servio-purple border-2 border-servio-purple hover:bg-gray-50 hover:text-servio-purple-dark shadow-md hover:shadow-lg;
   }
 }
@@ -305,8 +297,8 @@ button.bg-slate-900 svg, button.bg-slate-800 svg,
     transition: all 0.2s ease !important;
   }
   
-  /* Enhanced desktop servio button styling */
-  button[class*="servio"] {
+  /* Enhanced desktop button styling - ALL variants get white bg with purple text */
+  button[class*="servio"], button[class*="default"], button[class*="outline"], button[class*="secondary"], button[class*="ghost"] {
     background-color: #ffffff !important;
     color: hsl(var(--servio-purple)) !important;
     font-weight: 600 !important;
@@ -314,18 +306,18 @@ button.bg-slate-900 svg, button.bg-slate-800 svg,
     box-shadow: 0 2px 8px rgba(124, 58, 237, 0.15) !important;
   }
   
-  button[class*="servio"]:hover {
+  button[class*="servio"]:hover, button[class*="default"]:hover, button[class*="outline"]:hover, button[class*="secondary"]:hover, button[class*="ghost"]:hover {
     background-color: #f9fafb !important;
     color: hsl(var(--servio-purple-dark)) !important;
     border-color: hsl(var(--servio-purple-dark)) !important;
     box-shadow: 0 4px 12px rgba(124, 58, 237, 0.2) !important;
   }
   
-  button[class*="servio"] svg {
+  button[class*="servio"] svg, button[class*="default"] svg, button[class*="outline"] svg, button[class*="secondary"] svg, button[class*="ghost"] svg {
     color: hsl(var(--servio-purple)) !important;
   }
   
-  button[class*="servio"]:hover svg {
+  button[class*="servio"]:hover svg, button[class*="default"]:hover svg, button[class*="outline"]:hover svg, button[class*="secondary"]:hover svg, button[class*="ghost"]:hover svg {
     color: hsl(var(--servio-purple-dark)) !important;
   }
   
@@ -1361,8 +1353,8 @@ p, span, div {
     background-color: #f3f4f6 !important;
   }
   
-  /* Enhanced mobile servio button styling */
-  button[class*="servio"] {
+  /* Enhanced mobile button styling - ALL variants get white bg with purple text */
+  button[class*="servio"], button[class*="default"], button[class*="outline"], button[class*="secondary"], button[class*="ghost"] {
     background-color: #ffffff !important;
     color: hsl(var(--servio-purple)) !important;
     font-weight: 600 !important;
@@ -1372,18 +1364,18 @@ p, span, div {
     min-width: 44px !important;
   }
   
-  button[class*="servio"]:hover {
+  button[class*="servio"]:hover, button[class*="default"]:hover, button[class*="outline"]:hover, button[class*="secondary"]:hover, button[class*="ghost"]:hover {
     background-color: #f9fafb !important;
     color: hsl(var(--servio-purple-dark)) !important;
     border-color: hsl(var(--servio-purple-dark)) !important;
     box-shadow: 0 4px 12px rgba(124, 58, 237, 0.2) !important;
   }
   
-  button[class*="servio"] svg {
+  button[class*="servio"] svg, button[class*="default"] svg, button[class*="outline"] svg, button[class*="secondary"] svg, button[class*="ghost"] svg {
     color: hsl(var(--servio-purple)) !important;
   }
   
-  button[class*="servio"]:hover svg {
+  button[class*="servio"]:hover svg, button[class*="default"]:hover svg, button[class*="outline"]:hover svg, button[class*="secondary"]:hover svg, button[class*="ghost"]:hover svg {
     color: hsl(var(--servio-purple-dark)) !important;
   }
   

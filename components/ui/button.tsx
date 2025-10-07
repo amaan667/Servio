@@ -9,16 +9,16 @@ const buttonVariants = cva(
   {
     variants: {
       variant: {
-        default: "bg-white text-servio-purple hover:bg-gray-50 hover:text-servio-purple-dark shadow-md hover:shadow-lg border-2 border-servio-purple",
+        default: "bg-white text-servio-purple hover:bg-gray-50 hover:text-servio-purple-dark shadow-md hover:shadow-lg border-2 border-servio-purple font-semibold",
         destructive:
-          "bg-red-600 text-white hover:bg-red-700 shadow-sm hover:shadow-md",
+          "bg-red-600 text-white hover:bg-red-700 shadow-sm hover:shadow-md border-2 border-red-600 font-semibold",
         outline:
-          "border-2 border-gray-200 bg-white text-gray-700 hover:bg-gray-50 hover:border-gray-300 hover:text-gray-900 dark:border-gray-600 dark:text-gray-500 dark:hover:bg-gray-800 dark:hover:border-gray-500 dark:hover:text-gray-100 shadow-sm hover:shadow-md",
+          "bg-white text-servio-purple hover:bg-gray-50 hover:text-servio-purple-dark shadow-md hover:shadow-lg border-2 border-servio-purple font-semibold",
         secondary:
-          "bg-gray-100 text-gray-900 hover:bg-gray-200 shadow-sm hover:shadow-md",
-        ghost: "text-gray-700 hover:bg-gray-100 hover:text-gray-900 dark:text-gray-500 dark:hover:bg-gray-800 dark:hover:text-gray-100",
-        link: "text-servio-purple underline-offset-4 hover:underline",
-        servio: "bg-white text-servio-purple hover:bg-gray-50 hover:text-servio-purple-dark shadow-md hover:shadow-lg border-2 border-servio-purple",
+          "bg-white text-servio-purple hover:bg-gray-50 hover:text-servio-purple-dark shadow-md hover:shadow-lg border-2 border-servio-purple font-semibold",
+        ghost: "bg-white text-servio-purple hover:bg-gray-50 hover:text-servio-purple-dark shadow-md hover:shadow-lg border-2 border-servio-purple font-semibold",
+        link: "text-servio-purple underline-offset-4 hover:underline font-semibold",
+        servio: "bg-white text-servio-purple hover:bg-gray-50 hover:text-servio-purple-dark shadow-md hover:shadow-lg border-2 border-servio-purple font-semibold",
       },
       size: {
         default: "h-10 px-4 py-2 min-h-[44px] min-w-[44px]",
