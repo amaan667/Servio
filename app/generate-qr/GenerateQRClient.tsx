@@ -9,6 +9,7 @@ import { Badge } from "@/components/ui/badge";
 import { Printer, Copy, Check, Download, Settings, X, Plus, QrCode } from "lucide-react";
 import { supabase } from "@/lib/supabase/client";
 import { siteOrigin } from "@/lib/site";
+import { toast } from "@/hooks/use-toast";
 
 interface Props {
   venueId: string;
@@ -124,6 +125,10 @@ export default function GenerateQRClient({ venueId, venueName, activeTablesCount
         // Copy the single item's URL
         const itemOrderUrl = `${siteOrigin()}/order?venue=${venueId}&${qrType}=${currentSelection[0]}`;
         await navigator.clipboard.writeText(itemOrderUrl);
+        toast({
+          title: "QR Code URL Copied!",
+          description: `${qrType === 'table' ? 'Table' : 'Counter'} ${currentSelection[0]} URL copied to clipboard.`,
+        });
       } else {
         // Copy all URLs in a formatted list
         const allUrls = currentSelection.map(itemNumber => {
@@ -132,11 +137,20 @@ export default function GenerateQRClient({ venueId, venueName, activeTablesCount
           return `${label} ${cleanName}: ${siteOrigin()}/order?venue=${venueId}&${qrType}=${itemNumber}`;
         }).join('\n');
         await navigator.clipboard.writeText(allUrls);
+        toast({
+          title: "QR Code URLs Copied!",
+          description: `${currentSelection.length} ${qrType} URLs copied to clipboard.`,
+        });
       }
       setCopied(true);
       setTimeout(() => setCopied(false), 2000);
     } catch (err) {
       console.error("Failed to copy:", err);
+      toast({
+        title: "Copy Failed",
+        description: "Failed to copy QR code URL. Please try again.",
+        variant: "destructive",
+      });
     }
   };
 
@@ -216,6 +230,12 @@ export default function GenerateQRClient({ venueId, venueName, activeTablesCount
   };
 
   const handlePrint = () => {
+    // Show success toast
+    toast({
+      title: "Generating QR Code for Print",
+      description: `Preparing ${qrType === 'table' ? 'Table' : 'Counter'} ${currentSelection[0]} QR code for printing...`,
+    });
+    
     // Create a new window for printing instead of iframe
     const printWindow = window.open('', '_blank', 'width=800,height=600');
     
@@ -401,6 +421,12 @@ export default function GenerateQRClient({ venueId, venueName, activeTablesCount
   };
 
   const handlePrintAll = () => {
+    // Show success toast
+    toast({
+      title: "Generating Multiple QR Codes",
+      description: `Preparing ${currentSelection.length} ${qrType} QR codes for printing...`,
+    });
+    
     // Create a new window for printing multiple QR codes
     const printWindow = window.open('', '_blank', 'width=1000,height=800');
     

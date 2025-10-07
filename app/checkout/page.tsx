@@ -434,65 +434,10 @@ function StripePaymentForm({
         throw new Error(stripeError.message || 'Payment failed');
       }
 
-      
-      // Create order from paid intent
-      
-      const orderRequestBody = {
-        venue_id: checkoutData.venueId,
-        table_number: checkoutData.tableNumber,
-        customer_name: checkoutData.customerName,
-        customer_phone: checkoutData.customerPhone,
-        items: checkoutData.cart.map(item => ({
-          menu_item_id: item.id,
-          quantity: item.quantity,
-          price: item.price,
-          item_name: item.name,
-          specialInstructions: item.specialInstructions || null
-        })),
-        total_amount: totalInPence, // Use pence for consistency
-        order_status: 'PLACED',
-        payment_status: 'PAID',
-        source: checkoutData.orderType === 'counter' ? 'counter' : 'qr', // Set source based on order type
-        notes: `Stripe payment order - Payment Intent: ${clientSecret?.split('_secret_')[0] || 'unknown'}`
-      };
-      
-      const orderStartTime = Date.now();
-      
-      const orderResponse = await fetch('/api/orders', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify(orderRequestBody),
-      });
-
-      const orderEndTime = Date.now();
-
-      if (!orderResponse.ok) {
-        const orderErrorText = await orderResponse.text();
-        console.error('[STRIPE ORDER CREATION] Order creation failed:', {
-          status: orderResponse.status,
-          error: orderErrorText
-        });
-        throw new Error(`Failed to create order: ${orderResponse.status}`);
-      }
-
-      const orderData = await orderResponse.json();
-      
-      
-      // Format order data to match expected structure
-      const formattedOrderData = {
-        id: orderData.order?.id,
-        orderId: orderData.order?.id,
-        status: orderData.order?.order_status,
-        total: orderData.order?.total_amount ? orderData.order.total_amount / 100 : checkoutData.total, // Convert back to pounds
-        createdAt: orderData.order?.created_at,
-        venueId: orderData.order?.venue_id,
-        tableNumber: orderData.order?.table_number,
-        customerName: orderData.order?.customer_name
-      };
-      
-      onSuccess(formattedOrderData);
+      // Payment confirmed - webhook will create the order
+      // Just show success state and let the redirect handler fetch the order
+      console.log('[STRIPE PAYMENT] Payment confirmed, redirecting to success page...');
+      // Stripe will redirect automatically with payment_intent in URL
     } catch (err) {
       console.error('[STRIPE PAYMENT ERROR] Payment flow failed:', {
         error: err,
@@ -647,73 +592,70 @@ export default function CheckoutPage() {
     
     if (isPaymentSuccessful && checkoutData) {
       
-      // Create the order in the database
-      const createOrder = async () => {
+      // Wait for webhook to create the order, then fetch it
+      const waitForOrder = async () => {
         try {
           setPaymentStatus('success');
+          console.log('[PAYMENT SUCCESS] Payment successful, waiting for webhook to create order...');
           
-          // Prepare order data - convert total to pence for consistency
-          const totalInPence = Math.round(checkoutData.total * 100);
-          const orderPayload = {
-            venue_id: checkoutData.venueId,
-            table_number: checkoutData.tableNumber,
-            customer_name: checkoutData.customerName,
-            customer_phone: checkoutData.customerPhone,
-            items: checkoutData.cart.map(item => ({
-              menu_item_id: item.id,
-              quantity: item.quantity,
-              price: item.price,
-              item_name: item.name,
-              specialInstructions: item.specialInstructions || null
-            })),
-            total_amount: totalInPence, // Use pence for consistency
-            order_status: 'PLACED',
-            payment_status: 'PAID',
-            source: checkoutData.orderType === 'counter' ? 'counter' : 'qr', // Set source based on order type
-            notes: `Stripe payment order - Payment Intent: ${paymentIntent}`
-          };
-
-
-          const response = await fetch('/api/orders', {
-            method: 'POST',
-            headers: {
-              'Content-Type': 'application/json',
-            },
-            body: JSON.stringify(orderPayload),
-          });
-
-          if (!response.ok) {
-            throw new Error(`Failed to create order: ${response.statusText}`);
+          // Poll for the order created by the webhook
+          let retries = 0;
+          const maxRetries = 10;
+          let orderFound = false;
+          
+          while (retries < maxRetries && !orderFound) {
+            await new Promise(resolve => setTimeout(resolve, 2000)); // Wait 2 seconds between attempts
+            
+            // Try to find the order by payment intent
+            const response = await fetch(`/api/orders/search?venue_id=${checkoutData.venueId}&payment_intent=${paymentIntent}`);
+            
+            if (response.ok) {
+              const data = await response.json();
+              if (data.orders && data.orders.length > 0) {
+                const orderData = data.orders[0];
+                
+                // Set the order data and progress to feedback phase
+                setOrder({
+                  id: orderData.id,
+                  orderId: orderData.id,
+                  status: orderData.order_status,
+                  total: orderData.total_amount / 100,
+                  createdAt: orderData.created_at,
+                  venueId: orderData.venue_id,
+                  tableNumber: orderData.table_number,
+                  customerName: orderData.customer_name
+                });
+                
+                setPhase('feedback');
+                orderFound = true;
+                
+                // Clear stored data since order is now created in database
+                localStorage.removeItem('pending-order-data');
+                localStorage.removeItem('servio-checkout-data');
+                
+                console.log('[PAYMENT SUCCESS] Order found and loaded:', orderData.id);
+                break;
+              }
+            }
+            
+            retries++;
+            console.log(`[PAYMENT SUCCESS] Waiting for order... Attempt ${retries}/${maxRetries}`);
           }
-
-          const orderData = await response.json();
-
-          // Set the order data and progress to feedback phase
-          setOrder({
-            id: orderData.order?.id,
-            orderId: orderData.order?.id,
-            status: orderData.order?.order_status,
-            total: orderData.order?.total_amount ? orderData.order.total_amount / 100 : checkoutData.total, // Convert back to pounds
-            createdAt: orderData.order?.created_at,
-            venueId: orderData.order?.venue_id,
-            tableNumber: orderData.order?.table_number,
-            customerName: orderData.order?.customer_name
-          });
           
-          setPhase('feedback');
-          
-          // Clear stored data since order is now created in database
-          localStorage.removeItem('pending-order-data');
-          localStorage.removeItem('servio-checkout-data');
+          if (!orderFound) {
+            console.error('[PAYMENT SUCCESS] Order not found after polling');
+            setError('Payment successful but order not found. Please contact support with payment intent: ' + paymentIntent);
+            setPhase('error');
+          }
           
         } catch (error) {
-          console.error('[PAYMENT SUCCESS] Error creating order:', error);
-          setError('Failed to create order after payment. Please contact support.');
+          console.error('[PAYMENT SUCCESS] Error fetching order:', error);
+          setError('Payment successful but failed to load order. Please contact support.');
           setPhase('error');
         }
       };
 
-      createOrder();
+      waitForOrder();
       
       // Clear URL parameters to avoid re-triggering
       const url = new URL(window.location.href);
@@ -833,7 +775,7 @@ export default function CheckoutPage() {
     
     if (isSuccess) {
       
-        // Create real order using the same API structure as Stripe payments
+        // Create demo order using the same API structure as Stripe payments
         // Convert total from pounds to pence for consistency with Stripe
         const totalInPence = Math.round((checkoutData?.total || 0) * 100);
         
@@ -849,22 +791,14 @@ export default function CheckoutPage() {
             item_name: item.name,
             specialInstructions: item.specialInstructions || null
           })),
-          total_amount: totalInPence, // Use pence for consistency with Stripe
+          total_amount: totalInPence,
           order_status: 'PLACED',
           payment_status: 'PAID',
-          source: checkoutData?.orderType === 'counter' ? 'counter' : 'qr', // Set source based on order type
+          source: checkoutData?.orderType === 'counter' ? 'counter' : 'qr',
           notes: 'Demo payment order'
         };
         
-        console.log('[DEMO ORDER CREATION] Creating order with data:', {
-          venue_id: orderRequestBody.venue_id,
-          table_number: orderRequestBody.table_number,
-          customer_name: orderRequestBody.customer_name,
-          customer_phone: orderRequestBody.customer_phone,
-          itemsCount: orderRequestBody.items.length,
-          total_amount: orderRequestBody.total_amount,
-          total_amount_gbp: (orderRequestBody.total_amount / 100).toFixed(2)
-        });
+        console.log('[DEMO ORDER CREATION] Creating order...');
         
         const orderResponse = await fetch('/api/orders', {
           method: 'POST',
@@ -874,29 +808,21 @@ export default function CheckoutPage() {
           body: JSON.stringify(orderRequestBody),
         });
 
-
         if (!orderResponse.ok) {
           const orderErrorText = await orderResponse.text();
-          console.error('[DEMO ORDER CREATION] Order creation failed:', {
-            status: orderResponse.status,
-            error: orderErrorText
-          });
+          console.error('[DEMO ORDER CREATION] Order creation failed:', orderErrorText);
           throw new Error(`Failed to create order: ${orderResponse.status}`);
         }
 
         const orderData = await orderResponse.json();
-        console.log('[DEMO ORDER CREATION] Order created successfully:', {
-          orderId: orderData.order?.id,
-          status: orderData.order?.order_status,
-          total: orderData.order?.total_amount
-        });
+        console.log('[DEMO ORDER CREATION] Order created successfully:', orderData.order?.id);
         
         setPaymentStatus('success');
         setOrder({
           id: orderData.order?.id,
           orderId: orderData.order?.id,
           status: orderData.order?.order_status,
-          total: orderData.order?.total_amount ? orderData.order.total_amount / 100 : checkoutData?.total, // Convert back to pounds
+          total: orderData.order?.total_amount ? orderData.order.total_amount / 100 : checkoutData?.total,
           createdAt: orderData.order?.created_at,
           venueId: orderData.order?.venue_id,
           tableNumber: orderData.order?.table_number,
@@ -904,7 +830,7 @@ export default function CheckoutPage() {
         });
         setPhase('feedback');
         
-        // Clear stored data since order is now created in database
+        // Clear stored data
         localStorage.removeItem('pending-order-data');
         localStorage.removeItem('servio-checkout-data');
         

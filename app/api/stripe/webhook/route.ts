@@ -55,6 +55,7 @@ export async function POST(req: Request) {
     source: session.metadata?.source ?? 'qr',
     stripe_session_id: session.id,
     stripe_payment_intent_id: String(session.payment_intent ?? ''),
+    notes: `Stripe payment - Session: ${session.id}`
   };
 
   // Insert without .single() to avoid PGRST116 on 0 rows

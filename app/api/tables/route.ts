@@ -269,7 +269,8 @@ export async function POST(req: Request) {
 
     return NextResponse.json({
       ok: true,
-      table: table
+      table: table,
+      message: `Table "${label}" created successfully!`
     });
 
   } catch (error) {

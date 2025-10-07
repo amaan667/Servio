@@ -16,6 +16,7 @@ import { Label } from '@/components/ui/label';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import { Plus, AlertTriangle } from 'lucide-react';
 import { useTableManagement } from '@/hooks/useTableManagement';
+import { toast } from '@/hooks/use-toast';
 
 interface AddTableDialogProps {
   venueId: string;
@@ -46,6 +47,11 @@ export function AddTableDialog({ venueId, onTableAdded }: AddTableDialogProps) {
     try {
       const result = await createTable(tableData);
       
+      // Show success toast
+      toast({
+        title: "Table Created Successfully",
+        description: `Table "${label.trim()}" has been created with ${seatCount} seats.`,
+      });
       
       setLabel('');
       setSeatCount(2);
