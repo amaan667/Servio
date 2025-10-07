@@ -24,11 +24,9 @@ export default function ConditionalBottomNav() {
   const isAuthPage = pathname?.startsWith('/sign-in') || pathname?.startsWith('/sign-up') || pathname?.startsWith('/auth');
   const isCompleteProfilePage = pathname?.startsWith('/complete-profile');
   
-  if (isCustomerOrderPage || isCheckoutPage || isPaymentPage || isOrderSummaryPage || isOrderTrackingPage || isHomePage || isAuthPage || isCompleteProfilePage) {
-    return null;
-  }
+  const shouldHide = isCustomerOrderPage || isCheckoutPage || isPaymentPage || isOrderSummaryPage || isOrderTrackingPage || isHomePage || isAuthPage || isCompleteProfilePage;
 
-  // Get venue ID from pathname
+  // Get venue ID from pathname - MUST be called before any returns
   useEffect(() => {
     const venueIdFromPath = pathname?.match(/\/dashboard\/([^/]+)/)?.[1];
     if (venueIdFromPath) {
@@ -61,6 +59,11 @@ export default function ConditionalBottomNav() {
       loadCounts();
     }
   }, [pathname]);
+
+  // Return null AFTER all hooks have been called
+  if (shouldHide) {
+    return null;
+  }
 
   return <GlobalBottomNav venueId={venueId || undefined} counts={counts} />;
 }
