@@ -1661,7 +1661,7 @@ export default function CheckoutPage() {
                       <Button 
                         onClick={simulatePayment}
                         className="w-full bg-purple-600 hover:bg-purple-700"
-                        disabled={paymentStatus !== 'pending'}
+                        disabled={false}
                       >
                         <Lock className="h-4 w-4 mr-2" />
                         Pay £{getTotalPrice().toFixed(2)}
