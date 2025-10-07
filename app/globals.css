@@ -334,6 +334,14 @@ button.bg-slate-900 svg, button.bg-slate-800 svg,
     background-color: #b91c1c !important;
     box-shadow: 0 4px 8px rgba(220, 38, 38, 0.3) !important;
   }
+  
+  button[class*="destructive"] svg {
+    color: #ffffff !important;
+  }
+  
+  button[class*="destructive"]:hover svg {
+    color: #ffffff !important;
+  }
 }
 
 /* Ensure all headings are visible */
@@ -1400,6 +1408,14 @@ p, span, div {
   button[class*="destructive"]:hover {
     background-color: #b91c1c !important;
     box-shadow: 0 4px 8px rgba(220, 38, 38, 0.3) !important;
+  }
+  
+  button[class*="destructive"] svg {
+    color: #ffffff !important;
+  }
+  
+  button[class*="destructive"]:hover svg {
+    color: #ffffff !important;
   }
   
   /* Enhanced icon visibility */

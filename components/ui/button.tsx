@@ -11,7 +11,7 @@ const buttonVariants = cva(
       variant: {
         default: "bg-white text-servio-purple hover:bg-gray-50 hover:text-servio-purple-dark shadow-md hover:shadow-lg border-2 border-servio-purple font-semibold",
         destructive:
-          "bg-red-600 text-white hover:bg-red-700 shadow-sm hover:shadow-md border-2 border-red-600 font-semibold",
+          "bg-red-600 text-white hover:bg-red-700 shadow-sm hover:shadow-md border-2 border-red-600 font-semibold [&_svg]:text-white",
         outline:
           "bg-white text-servio-purple hover:bg-gray-50 hover:text-servio-purple-dark shadow-md hover:shadow-lg border-2 border-servio-purple font-semibold",
         secondary:
