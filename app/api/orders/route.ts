@@ -150,18 +150,16 @@ export async function POST(req: Request) {
         } catch (groupError) {
         }
         
-        // Use UPSERT to prevent duplicate table creation
+        // Insert new table. Avoid UPSERT because the database may not have
+        // a unique constraint on (venue_id, label) in some environments.
         const { data: newTable, error: tableCreateErr } = await supabase
           .from('tables')
-          .upsert({
+          .insert({
             venue_id: body.venue_id,
             label: body.table_number.toString(),
-            seat_count: seatCount, // Use group size or default
+            seat_count: seatCount,
             area: null,
             is_active: true
-          }, {
-            onConflict: 'venue_id,label',
-            ignoreDuplicates: false
           })
           .select('id, label')
           .single();

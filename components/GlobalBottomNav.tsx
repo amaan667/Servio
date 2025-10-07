@@ -160,7 +160,7 @@ export default function GlobalBottomNav({ venueId, counts = {} }: GlobalBottomNa
   return (
     <>
       {/* Bottom Navigation Bar */}
-      <div className={`fixed bottom-0 left-0 right-0 z-50 bg-white/98 backdrop-blur-sm border-t border-gray-200 shadow-lg transition-transform duration-300 mobile-nav ${
+      <div className={`fixed bottom-0 left-0 right-0 z-50 bg-white border-t border-gray-200 shadow-lg transition-transform duration-300 mobile-nav ${
         isVisible ? 'translate-y-0' : 'translate-y-full'
       }`} style={{ paddingBottom: 'env(safe-area-inset-bottom)' }}>
         <div className="grid grid-cols-4 h-20">
@@ -168,14 +168,14 @@ export default function GlobalBottomNav({ venueId, counts = {} }: GlobalBottomNa
             <button
               key={item.id}
               onClick={() => handleNavigation(item.href)}
-              className={`flex flex-col items-center justify-center p-2 relative transition-all duration-200 ${
+              className={`flex flex-col items-center justify-center p-2 relative transition-all duration-200 rounded-2xl bg-white border-2 ${
                 item.isActive
-                  ? 'text-servio-purple bg-white border-2 border-servio-purple shadow-md'
-                  : 'text-gray-700 hover:text-servio-purple hover:bg-gray-50/80'
+                  ? 'border-servio-purple shadow-md'
+                  : 'border-gray-200 hover:border-servio-purple/60 hover:bg-gray-50'
               }`}
             >
               <div className="relative mb-1 flex flex-col items-center">
-                <item.icon className={`h-5 w-5 transition-colors ${item.isActive ? 'text-servio-purple' : 'text-gray-700'}`} />
+                <item.icon className={`h-5 w-5 transition-colors ${item.isActive ? 'text-servio-purple' : 'text-gray-900'}`} />
                 {item.badge && item.badge > 0 && (
                   <Badge 
                     variant="destructive" 
@@ -187,13 +187,13 @@ export default function GlobalBottomNav({ venueId, counts = {} }: GlobalBottomNa
                 )}
               </div>
               <span
-                className={`${item.isActive ? 'text-servio-purple' : 'text-gray-700'} 
+                className={`${item.isActive ? 'text-servio-purple' : 'text-gray-900'} 
                   font-bold text-center px-1 transition-colors 
                   leading-snug text-[12px] sm:text-[13px] max-w-[120px] whitespace-nowrap`}
               >
                 {item.id === 'live-orders' ? (
                   <>
-                    Live Orders <span className="ml-1 text-servio-purple">({liveOrdersCount})</span>
+                    Live Orders <span className="ml-1 ${item.isActive ? 'text-servio-purple' : 'text-gray-900'}">({liveOrdersCount})</span>
                   </>
                 ) : (
                   item.label
@@ -209,7 +209,7 @@ export default function GlobalBottomNav({ venueId, counts = {} }: GlobalBottomNa
         <div className={`fixed top-4 left-1/2 transform -translate-x-1/2 z-30 transition-transform duration-300 ${
           isVisible ? 'translate-y-0' : '-translate-y-full'
         }`}>
-          <div className="bg-white backdrop-blur-md border-2 border-servio-purple rounded-full px-4 py-2 shadow-lg">
+          <div className="bg-white border-2 border-servio-purple rounded-full px-4 py-2 shadow-lg">
             <div className="flex items-center space-x-2">
               <activeItem.icon className="h-4 w-4 text-servio-purple" />
               <span className="text-sm font-bold text-servio-purple">
