@@ -8,7 +8,6 @@ import { User, Briefcase, ArrowRight, RefreshCw } from 'lucide-react';
 import Link from 'next/link';
 import dynamic from 'next/dynamic';
 import { demoMenuItems } from '@/data/demoMenuItems';
-import { useAuth } from '@/app/auth/AuthProvider';
 
 // Dynamically import heavy components to avoid hydration issues
 const DemoAnalytics = dynamic(() => import('@/components/demo-analytics'), {
@@ -24,16 +23,24 @@ const DemoAISection = dynamic(() => import('@/components/demo-ai-section'), {
 export default function DemoPage() {
   const [viewMode, setViewMode] = useState<'customer' | 'owner'>('customer');
   const [mounted, setMounted] = useState(false);
+  const [isAuthenticated, setIsAuthenticated] = useState(false);
   
-  // Safely use auth with fallback - demo page should work even if auth fails
-  let isAuthenticated = false;
-  try {
-    const auth = useAuth();
-    isAuthenticated = !!auth?.session?.user;
-  } catch (error) {
-    // If auth fails, continue without authentication
-    console.warn('[DEMO] Auth not available, continuing as unauthenticated user');
-  }
+  // Check auth status safely after component mounts
+  useEffect(() => {
+    const checkAuth = async () => {
+      try {
+        // Check if user has auth cookies without using the hook during render
+        const hasAuthCookies = document.cookie.includes('sb-') || 
+                              document.cookie.includes('supabase');
+        setIsAuthenticated(hasAuthCookies);
+      } catch (error) {
+        // If auth check fails, default to unauthenticated
+        setIsAuthenticated(false);
+      }
+    };
+    
+    checkAuth();
+  }, []);
 
   useEffect(() => {
     setMounted(true);
