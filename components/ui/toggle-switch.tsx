@@ -34,9 +34,8 @@ const ToggleSwitch = React.forwardRef<
         onCheckedChange={onCheckedChange}
         disabled={disabled}
         className={cn(
-          "peer inline-flex h-6 w-11 sm:h-6 sm:w-11 shrink-0 cursor-pointer items-center rounded-full border-2 border-transparent transition-all duration-200 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background disabled:cursor-not-allowed disabled:opacity-50 touch-manipulation",
-          "data-[state=checked]:bg-servio-purple data-[state=unchecked]:bg-gray-300 dark:data-[state=unchecked]:bg-gray-600",
-          "hover:shadow-md active:scale-95",
+          "peer inline-flex h-6 w-11 sm:h-6 sm:w-11 shrink-0 cursor-pointer items-center rounded-full transition-all duration-200 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background disabled:cursor-not-allowed disabled:opacity-50 touch-manipulation",
+          "data-[state=checked]:bg-servio-purple data-[state=unchecked]:bg-gray-300 dark:data-[state=unchecked]:bg-gray-400",
           className
         )}
         {...props}
@@ -51,8 +50,8 @@ const ToggleSwitch = React.forwardRef<
       </SwitchPrimitives.Root>
       {showLabels && (
         <span className={cn(
-          "text-sm font-semibold transition-colors",
-          checked ? "text-servio-purple" : "text-gray-900"
+          "text-sm font-medium transition-colors",
+          checked ? "text-servio-purple" : "text-gray-500"
         )}>
           {checked ? onLabel : offLabel}
         </span>
