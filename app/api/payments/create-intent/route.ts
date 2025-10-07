@@ -2,9 +2,10 @@ import { NextRequest, NextResponse } from 'next/server';
 import Stripe from 'stripe';
 import { ENV } from '@/lib/env';
 
-const stripe = new Stripe(ENV.STRIPE_SECRET_KEY || '', {
-  apiVersion: '2025-08-27.basil',
-});
+// Initialize Stripe only if secret key is available
+const stripe = ENV.STRIPE_SECRET_KEY 
+  ? new Stripe(ENV.STRIPE_SECRET_KEY, { apiVersion: '2025-08-27.basil' })
+  : null;
 
 interface CreateIntentRequest {
   cartId: string;
@@ -52,6 +53,15 @@ export async function POST(req: NextRequest) {
       );
     }
 
+    // Handle demo mode or when Stripe is not configured
+    if (!stripe) {
+      // Return a demo client secret
+      const demoSecret = `demo_secret_${cartId}_${Date.now()}`;
+      return NextResponse.json({
+        clientSecret: demoSecret,
+        paymentIntentId: `demo_${cartId}`,
+      });
+    }
 
     // Store cart data for later retrieval
     const cartData = {

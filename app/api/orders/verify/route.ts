@@ -6,12 +6,40 @@ export const runtime = 'nodejs';
 export const dynamic = 'force-dynamic';
 export const revalidate = 0;
 
-const stripe = new Stripe(process.env.STRIPE_SECRET_KEY!, { apiVersion: '2025-08-27.basil' });
+// Initialize Stripe only if secret key is available
+const stripe = process.env.STRIPE_SECRET_KEY
+  ? new Stripe(process.env.STRIPE_SECRET_KEY, { apiVersion: '2025-08-27.basil' })
+  : null;
 
 export async function GET(req: Request) {
   const { searchParams } = new URL(req.url);
   const sessionId = searchParams.get('sessionId');
   if (!sessionId) return NextResponse.json({ error: 'Missing sessionId' }, { status: 400 });
+
+  // Handle demo orders (session ID starts with 'demo-')
+  if (sessionId.startsWith('demo-')) {
+    // For demo orders, return a mock order structure
+    const demoOrder = {
+      id: sessionId,
+      venue_id: 'demo-cafe',
+      table_number: 1,
+      customer_name: 'Demo Customer',
+      customer_phone: '',
+      order_status: 'PLACED',
+      total_amount: 0,
+      payment_method: 'demo',
+      payment_status: 'PAID',
+      items: [],
+      created_at: new Date().toISOString(),
+      updated_at: new Date().toISOString()
+    };
+    return NextResponse.json({ order: demoOrder, isDemo: true });
+  }
+
+  // For real Stripe payments, ensure stripe is initialized
+  if (!stripe) {
+    return NextResponse.json({ error: 'Stripe not configured' }, { status: 500 });
+  }
 
   // Poll briefly for the webhook-created order
   const started = Date.now();

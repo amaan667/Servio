@@ -4,7 +4,10 @@ import { createServerClient } from '@supabase/ssr';
 
 export const runtime = 'nodejs';
 
-const stripe = new Stripe(process.env.STRIPE_SECRET_KEY!, { apiVersion: "2025-08-27.basil" });
+// Initialize Stripe only if secret key is available
+const stripe = process.env.STRIPE_SECRET_KEY 
+  ? new Stripe(process.env.STRIPE_SECRET_KEY, { apiVersion: "2025-08-27.basil" })
+  : null;
 
 export async function GET(req: Request) {
   try {
@@ -13,6 +16,15 @@ export async function GET(req: Request) {
     const sessionId = searchParams.get("sessionId")!;
     if (!orderId || !sessionId) return NextResponse.json({ error: "Missing params" }, { status: 400 });
 
+    // Handle demo orders (session ID starts with 'demo-')
+    if (sessionId.startsWith('demo-')) {
+      return NextResponse.json({ paid: true, orderId: sessionId, isDemo: true }, { status: 200 });
+    }
+
+    // For real Stripe payments, ensure stripe is initialized
+    if (!stripe) {
+      return NextResponse.json({ error: "Stripe not configured" }, { status: 500 });
+    }
 
     const session = await stripe.checkout.sessions.retrieve(sessionId);
     const paid = session.payment_status === "paid";

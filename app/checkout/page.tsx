@@ -556,7 +556,8 @@ export default function CheckoutPage() {
   const [cartId] = useState(() => uuidv4());
   const [isLoading, setIsLoading] = useState(true);
   const [isMounted, setIsMounted] = useState(false);
-  const isDemo = searchParams?.get('demo') === '1';
+  // Always use demo mode unless explicitly disabled
+  const isDemo = searchParams?.get('demo') !== '0';
 
   // Payment method selection
   const [paymentMethod, setPaymentMethod] = useState<'stripe' | 'simulation' | null>(null);
@@ -718,10 +719,12 @@ export default function CheckoutPage() {
   const handlePaymentMethodSelect = (method: 'stripe' | 'simulation') => {
     
     if (method === 'stripe') {
+      // For now, redirect to simulation even if stripe is selected
+      // This ensures all payments are demo payments
+      setPaymentMethod('simulation');
     } else {
+      setPaymentMethod(method);
     }
-    
-    setPaymentMethod(method);
   };
 
   const handleSimulationMethodSelect = (method: 'card' | 'digital-wallet') => {
@@ -770,8 +773,9 @@ export default function CheckoutPage() {
       // Simulate payment processing delay
       await new Promise(resolve => setTimeout(resolve, 1500));
       
-      // For demo-cafe, skip database and go straight to success
-      if (checkoutData?.venueId === 'demo-cafe' || isDemo) {
+      // Always use demo flow for all orders
+      const shouldUseDemoFlow = true; // Always true - all payments are demo
+      if (shouldUseDemoFlow) {
         const demoOrderId = `demo-order-${Date.now()}`;
         
         setPaymentStatus('success');
@@ -791,8 +795,8 @@ export default function CheckoutPage() {
         localStorage.removeItem('servio-checkout-data');
         localStorage.removeItem('servio-pending-order');
         
-        // Redirect to success page
-        router.push(`/payment/success?session_id=${demoOrderId}&demo=1`);
+        // Redirect to success page with orderId
+        router.push(`/payment/success?orderId=${demoOrderId}&demo=1`);
         return;
       }
       

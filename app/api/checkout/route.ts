@@ -3,7 +3,10 @@ import Stripe from "stripe";
 
 export const runtime = 'nodejs';
 
-const stripe = new Stripe(process.env.STRIPE_SECRET_KEY!, { apiVersion: "2025-08-27.basil" });
+// Initialize Stripe only if secret key is available
+const stripe = process.env.STRIPE_SECRET_KEY
+  ? new Stripe(process.env.STRIPE_SECRET_KEY, { apiVersion: "2025-08-27.basil" })
+  : null;
 
 export async function POST(req: Request) {
   try {
@@ -21,6 +24,15 @@ export async function POST(req: Request) {
     
     if (!orderId || typeof total !== "number") {
       return NextResponse.json({ error: "orderId and total are required" }, { status: 400 });
+    }
+
+    // For demo mode or when Stripe is not configured, return demo session
+    if (!stripe) {
+      const demoSessionId = `demo-session-${Date.now()}`;
+      return NextResponse.json({ 
+        url: `/payment/success?orderId=${orderId}&demo=1`, 
+        sessionId: demoSessionId 
+      }, { status: 200 });
     }
 
     const base = process.env.NEXT_PUBLIC_APP_URL; // MUST match the domain customers use
