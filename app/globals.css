@@ -1613,9 +1613,8 @@ p, span, div {
     display: none !important;
   }
 
-  /* Last-resort: prevent stray text nodes under icons from rendering */
-  .mobile-nav button .relative { font-size: 0 !important; }
-  .mobile-nav button .relative .text-xs { font-size: 10px !important; }
+  /* Ensure proper text sizing for navigation elements */
+  .mobile-nav button .relative .text-xs { font-size: 12px !important; }
 
   /* Keep legacy selector fallback if any component adds an "active" class */
   .mobile-nav button[class*="active"] span,
@@ -1639,6 +1638,8 @@ p, span, div {
     backdrop-filter: none !important;
     border-top: 1px solid #e5e7eb !important;
     box-shadow: 0 -2px 8px rgba(0, 0, 0, 0.08) !important;
+    min-height: 80px !important;
+    height: auto !important;
   }
 
   /* Dark mode mobile navigation support */
@@ -1647,6 +1648,8 @@ p, span, div {
       background: #ffffff !important; /* Keep white in dark mode too */
       border-top: 1px solid #e5e7eb !important;
       box-shadow: 0 -2px 8px rgba(0, 0, 0, 0.12) !important;
+      min-height: 80px !important;
+      height: auto !important;
     }
 
     .mobile-nav span,
