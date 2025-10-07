@@ -185,16 +185,10 @@ export default function GlobalBottomNav({ venueId, counts = {} }: GlobalBottomNa
               </div>
               <span
                 className={`text-servio-purple font-bold text-center px-1 transition-colors 
-                  leading-tight text-[10px] sm:text-[11px] max-w-[95%] inline-block mx-auto break-words`}
+                  leading-tight text-[9px] sm:text-[10px] max-w-[95%] inline-block mx-auto whitespace-nowrap overflow-hidden text-ellipsis`}
                 style={{ transform: 'translateY(1px)' }}
               >
-                {item.id === 'live-orders' ? (
-                  <>
-                    Live<br className="sm:hidden"/>Orders ({liveOrdersCount})
-                  </>
-                ) : (
-                  item.label
-                )}
+                {item.id === 'live-orders' ? `Live (${liveOrdersCount})` : item.label}
               </span>
             </button>
           ))}
