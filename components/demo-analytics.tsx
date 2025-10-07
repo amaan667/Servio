@@ -1,6 +1,6 @@
 'use client';
 
-import React from 'react';
+import React, { useState, useEffect } from 'react';
 import {
   Card,
   CardContent,
@@ -10,8 +10,44 @@ import {
 } from '@/components/ui/card';
 import { TrendingUp, ShoppingBag, Users, Clock, Star, TrendingDown, Zap, AlertTriangle } from 'lucide-react';
 import { Badge } from '@/components/ui/badge';
-import { ChartContainer } from '@/components/ui/chart';
-import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, BarChart, Bar } from 'recharts';
+
+// Safe dynamic imports for recharts
+let ChartContainer: any = null;
+let ResponsiveContainer: any = null;
+let LineChart: any = null;
+let BarChart: any = null;
+let Bar: any = null;
+let Line: any = null;
+let XAxis: any = null;
+let YAxis: any = null;
+let CartesianGrid: any = null;
+let Tooltip: any = null;
+
+// Function to safely load recharts components
+const loadRechartsComponents = async () => {
+  try {
+    const [
+      chartModule,
+      rechartsModule
+    ] = await Promise.all([
+      import('@/components/ui/chart'),
+      import('recharts')
+    ]);
+
+    ChartContainer = chartModule.ChartContainer;
+    ResponsiveContainer = rechartsModule.ResponsiveContainer;
+    LineChart = rechartsModule.LineChart;
+    BarChart = rechartsModule.BarChart;
+    Bar = rechartsModule.Bar;
+    Line = rechartsModule.Line;
+    XAxis = rechartsModule.XAxis;
+    YAxis = rechartsModule.YAxis;
+    CartesianGrid = rechartsModule.CartesianGrid;
+    Tooltip = rechartsModule.Tooltip;
+  } catch (error) {
+    console.error('Failed to load recharts components:', error);
+  }
+};
 
 // Demo data - realistic but fake
 const demoStats = {
@@ -96,6 +132,15 @@ const aiInsights = [
 ];
 
 export default function DemoAnalytics() {
+  const [chartsLoaded, setChartsLoaded] = useState(false);
+  const [chartsError, setChartsError] = useState(false);
+
+  useEffect(() => {
+    loadRechartsComponents()
+      .then(() => setChartsLoaded(true))
+      .catch(() => setChartsError(true));
+  }, []);
+
   const StatCard = ({ title, value, icon: Icon, subtitle, trend }: any) => (
     <Card>
       <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
@@ -114,6 +159,31 @@ export default function DemoAnalytics() {
       </CardContent>
     </Card>
   );
+
+  if (chartsError) {
+    return (
+      <div className="space-y-6">
+        <div className="flex items-center justify-between">
+          <div>
+            <h2 className="text-2xl font-bold text-gray-900">Analytics Dashboard</h2>
+            <p className="text-gray-600">Demo data showing this week's performance</p>
+          </div>
+          <Badge className="bg-purple-100 text-purple-800 border-purple-300">
+            Demo Mode
+          </Badge>
+        </div>
+        <Card>
+          <CardHeader>
+            <CardTitle>Charts Temporarily Unavailable</CardTitle>
+            <CardDescription>Interactive charts are loading...</CardDescription>
+          </CardHeader>
+          <CardContent>
+            <p className="text-gray-600">Please refresh the page to try again.</p>
+          </CardContent>
+        </Card>
+      </div>
+    );
+  }
 
   return (
     <div className="space-y-6">
@@ -165,22 +235,28 @@ export default function DemoAnalytics() {
             <CardDescription>Orders and revenue by hour</CardDescription>
           </CardHeader>
           <CardContent>
-            <ChartContainer config={{
-              orders: { color: '#8b5cf6' },
-              revenue: { color: '#10b981' }
-            }}>
-              <ResponsiveContainer width="100%" height={250}>
-                <BarChart data={hourlyData}>
-                  <CartesianGrid strokeDasharray="3 3" />
-                  <XAxis dataKey="name" />
-                  <YAxis yAxisId="left" />
-                  <YAxis yAxisId="right" orientation="right" />
-                  <Tooltip />
-                  <Bar yAxisId="left" dataKey="orders" fill="#8b5cf6" name="Orders" />
-                  <Bar yAxisId="right" dataKey="revenue" fill="#10b981" name="Revenue (£)" />
-                </BarChart>
-              </ResponsiveContainer>
-            </ChartContainer>
+            {chartsLoaded && ChartContainer && ResponsiveContainer ? (
+              <ChartContainer config={{
+                orders: { color: '#8b5cf6' },
+                revenue: { color: '#10b981' }
+              }}>
+                <ResponsiveContainer width="100%" height={250}>
+                  <BarChart data={hourlyData}>
+                    <CartesianGrid strokeDasharray="3 3" />
+                    <XAxis dataKey="name" />
+                    <YAxis yAxisId="left" />
+                    <YAxis yAxisId="right" orientation="right" />
+                    <Tooltip />
+                    <Bar yAxisId="left" dataKey="orders" fill="#8b5cf6" name="Orders" />
+                    <Bar yAxisId="right" dataKey="revenue" fill="#10b981" name="Revenue (£)" />
+                  </BarChart>
+                </ResponsiveContainer>
+              </ChartContainer>
+            ) : (
+              <div className="h-[250px] flex items-center justify-center bg-gray-50 rounded-lg">
+                <p className="text-gray-500">Loading chart...</p>
+              </div>
+            )}
           </CardContent>
         </Card>
 
@@ -191,19 +267,25 @@ export default function DemoAnalytics() {
             <CardDescription>Last 7 days performance</CardDescription>
           </CardHeader>
           <CardContent>
-            <ChartContainer config={{
-              revenue: { color: '#10b981' }
-            }}>
-              <ResponsiveContainer width="100%" height={250}>
-                <LineChart data={weeklyTrend}>
-                  <CartesianGrid strokeDasharray="3 3" />
-                  <XAxis dataKey="name" />
-                  <YAxis />
-                  <Tooltip />
-                  <Line type="monotone" dataKey="revenue" stroke="#10b981" strokeWidth={2} />
-                </LineChart>
-              </ResponsiveContainer>
-            </ChartContainer>
+            {chartsLoaded && ChartContainer && ResponsiveContainer ? (
+              <ChartContainer config={{
+                revenue: { color: '#10b981' }
+              }}>
+                <ResponsiveContainer width="100%" height={250}>
+                  <LineChart data={weeklyTrend}>
+                    <CartesianGrid strokeDasharray="3 3" />
+                    <XAxis dataKey="name" />
+                    <YAxis />
+                    <Tooltip />
+                    <Line type="monotone" dataKey="revenue" stroke="#10b981" strokeWidth={2} />
+                  </LineChart>
+                </ResponsiveContainer>
+              </ChartContainer>
+            ) : (
+              <div className="h-[250px] flex items-center justify-center bg-gray-50 rounded-lg">
+                <p className="text-gray-500">Loading chart...</p>
+              </div>
+            )}
           </CardContent>
         </Card>
       </div>
@@ -216,21 +298,27 @@ export default function DemoAnalytics() {
         </CardHeader>
         <CardContent>
           <div className="h-[500px]">
-            <ChartContainer config={{
-              qty: { color: '#8b5cf6' },
-              revenue: { color: '#10b981' }
-            }}>
-              <ResponsiveContainer width="100%" height="100%">
-                <BarChart data={topItems} layout="vertical" margin={{ left: 20, right: 20, top: 20, bottom: 20 }}>
-                  <CartesianGrid strokeDasharray="3 3" />
-                  <XAxis type="number" />
-                  <YAxis dataKey="name" type="category" width={120} />
-                  <Tooltip />
-                  <Bar dataKey="quantity" fill="#8b5cf6" name="Quantity" />
-                  <Bar dataKey="revenue" fill="#10b981" name="Revenue (£)" />
-                </BarChart>
-              </ResponsiveContainer>
-            </ChartContainer>
+            {chartsLoaded && ChartContainer && ResponsiveContainer ? (
+              <ChartContainer config={{
+                qty: { color: '#8b5cf6' },
+                revenue: { color: '#10b981' }
+              }}>
+                <ResponsiveContainer width="100%" height="100%">
+                  <BarChart data={topItems} layout="vertical" margin={{ left: 20, right: 20, top: 20, bottom: 20 }}>
+                    <CartesianGrid strokeDasharray="3 3" />
+                    <XAxis type="number" />
+                    <YAxis dataKey="name" type="category" width={120} />
+                    <Tooltip />
+                    <Bar dataKey="quantity" fill="#8b5cf6" name="Quantity" />
+                    <Bar dataKey="revenue" fill="#10b981" name="Revenue (£)" />
+                  </BarChart>
+                </ResponsiveContainer>
+              </ChartContainer>
+            ) : (
+              <div className="h-full flex items-center justify-center bg-gray-50 rounded-lg">
+                <p className="text-gray-500">Loading chart...</p>
+              </div>
+            )}
           </div>
         </CardContent>
       </Card>

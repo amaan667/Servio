@@ -20,10 +20,32 @@ const DemoAISection = dynamic(() => import('@/components/demo-ai-section'), {
   loading: () => <div className="animate-pulse h-96 bg-gray-100 rounded-lg"></div>
 });
 
+// Error boundary component for demo sections
+function DemoErrorBoundary({ children, fallback }: { children: React.ReactNode; fallback: React.ReactNode }) {
+  const [hasError, setHasError] = React.useState(false);
+
+  React.useEffect(() => {
+    const handleError = (error: ErrorEvent) => {
+      console.error('Demo component error:', error);
+      setHasError(true);
+    };
+
+    window.addEventListener('error', handleError);
+    return () => window.removeEventListener('error', handleError);
+  }, []);
+
+  if (hasError) {
+    return <>{fallback}</>;
+  }
+
+  return <>{children}</>;
+}
+
 export default function DemoPage() {
   const [viewMode, setViewMode] = useState<'customer' | 'owner'>('customer');
   const [mounted, setMounted] = useState(false);
   const [isAuthenticated, setIsAuthenticated] = useState(false);
+  const [hasError, setHasError] = useState(false);
   
   // Check auth status safely after component mounts
   useEffect(() => {
@@ -34,6 +56,7 @@ export default function DemoPage() {
                               document.cookie.includes('supabase');
         setIsAuthenticated(hasAuthCookies);
       } catch (error) {
+        console.error('Auth check error:', error);
         // If auth check fails, default to unauthenticated
         setIsAuthenticated(false);
       }
@@ -46,10 +69,56 @@ export default function DemoPage() {
     setMounted(true);
   }, []);
 
+  // Global error handler
+  useEffect(() => {
+    const handleError = (error: ErrorEvent) => {
+      console.error('Demo page error:', error);
+      setHasError(true);
+    };
+
+    window.addEventListener('error', handleError);
+    return () => window.removeEventListener('error', handleError);
+  }, []);
+
   if (!mounted) {
     return (
       <div className="min-h-screen bg-gradient-to-br from-purple-50 via-white to-purple-50 flex items-center justify-center">
         <div className="animate-pulse h-32 w-32 rounded-lg bg-gray-100" />
+      </div>
+    );
+  }
+
+  if (hasError) {
+    return (
+      <div className="min-h-screen bg-gradient-to-br from-purple-50 via-white to-purple-50 flex items-center justify-center">
+        <Card className="max-w-md w-full mx-4">
+          <CardHeader>
+            <CardTitle className="text-center">Demo Temporarily Unavailable</CardTitle>
+            <CardDescription className="text-center">
+              We're experiencing some technical difficulties with the demo.
+            </CardDescription>
+          </CardHeader>
+          <CardContent className="space-y-4">
+            <p className="text-sm text-gray-600 text-center">
+              Please try refreshing the page or come back later.
+            </p>
+            <div className="flex gap-2">
+              <Button 
+                onClick={() => window.location.reload()} 
+                className="flex-1"
+              >
+                Refresh Page
+              </Button>
+              <Button 
+                onClick={() => window.location.href = '/'} 
+                variant="outline" 
+                className="flex-1"
+              >
+                Go Home
+              </Button>
+            </div>
+          </CardContent>
+        </Card>
       </div>
     );
   }
@@ -61,14 +130,15 @@ export default function DemoPage() {
         <div className="max-w-7xl mx-auto px-4 py-4">
           <div className="flex items-center justify-between">
             <div>
-              <div className="flex items-center justify-center mb-2">
+              <h1 className="text-2xl font-bold text-gray-900 flex items-center gap-2">
                 <img 
                   src="/assets/servio-logo-updated.png"
                   alt="Servio"
-                  className="h-12 w-auto"
+                  className="h-6 w-auto"
                 />
-              </div>
-              <p className="text-sm text-gray-600 text-center">Experience both perspectives</p>
+                Try Servio
+              </h1>
+              <p className="text-sm text-gray-600">Experience both perspectives</p>
             </div>
             <div className="flex items-center space-x-2 bg-gray-100 rounded-lg p-1">
               <Button
@@ -228,10 +298,34 @@ function OwnerDemoView({ isAuthenticated }: { isAuthenticated: boolean }) {
       </Card>
 
       {/* Demo Analytics */}
-      <DemoAnalytics />
+      <DemoErrorBoundary fallback={
+        <Card>
+          <CardHeader>
+            <CardTitle>Analytics Preview</CardTitle>
+            <CardDescription>Analytics features coming soon</CardDescription>
+          </CardHeader>
+          <CardContent>
+            <p className="text-gray-600">Real-time analytics and insights will be available here.</p>
+          </CardContent>
+        </Card>
+      }>
+        <DemoAnalytics />
+      </DemoErrorBoundary>
 
       {/* AI Demo Section */}
-      <DemoAISection />
+      <DemoErrorBoundary fallback={
+        <Card>
+          <CardHeader>
+            <CardTitle>AI Features Preview</CardTitle>
+            <CardDescription>AI-powered insights coming soon</CardDescription>
+          </CardHeader>
+          <CardContent>
+            <p className="text-gray-600">AI-powered menu optimization and insights will be available here.</p>
+          </CardContent>
+        </Card>
+      }>
+        <DemoAISection />
+      </DemoErrorBoundary>
 
       {/* Feature Highlights */}
       <Card>
