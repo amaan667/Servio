@@ -1956,11 +1956,12 @@ p, span, div {
 }
 
 /* Force consistent Servio button theme globally */
-button,
-[role="button"],
-input[type="button"],
-input[type="submit"],
-input[type="reset"] {
+/* Brand default button (exclude destructive) */
+button:not([class*="destructive"]),
+[role="button"]:not([class*="destructive"]),
+input[type="button"]:not([class*="destructive"]),
+input[type="submit"]:not([class*="destructive"]),
+input[type="reset"]:not([class*="destructive"]) {
   background-color: #ffffff !important;
   color: hsl(var(--servio-purple)) !important;
   border: 2px solid hsl(var(--servio-purple)) !important;
@@ -1968,18 +1969,25 @@ input[type="reset"] {
   font-weight: 600 !important;
 }
 
-button:hover,
-[role="button"]:hover,
-input[type="button"]:hover,
-input[type="submit"]:hover,
-input[type="reset"]:hover {
+button:not([class*="destructive"]):hover,
+[role="button"]:not([class*="destructive"]):hover,
+input[type="button"]:not([class*="destructive"]):hover,
+input[type="submit"]:not([class*="destructive"]):hover,
+input[type="reset"]:not([class*="destructive"]):hover {
   background-color: #f9fafb !important;
   color: hsl(var(--servio-purple)) !important;
 }
 
-/* Destructive stays red but keep white bg by default unless explicitly set */
+/* Destructive buttons: red background, white text, red border */
 button[class*="destructive"],
 [role="button"][class*="destructive"] {
-  border-color: #ef4444 !important;
-  color: #ef4444 !important;
+  background-color: #ef4444 !important;
+  color: #ffffff !important;
+  border: 2px solid #ef4444 !important;
+}
+button[class*="destructive"]:hover,
+[role="button"][class*="destructive"]:hover {
+  background-color: #dc2626 !important;
+  color: #ffffff !important;
+  border-color: #dc2626 !important;
 }
