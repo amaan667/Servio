@@ -1477,32 +1477,32 @@ export default function CheckoutPage() {
                   <div className="space-y-3">
                     <div className="text-center mb-4">
                       <p className="text-sm text-gray-900">
-                        {isDemo ? 'Choose your payment method' : 'Secure payment processing'}
+                        {isDemo || checkoutData?.venueId === 'demo-cafe' ? 'Demo Payment' : 'Secure payment processing'}
                       </p>
                     </div>
-                    {isDemo ? (
-                      <div className="grid grid-cols-2 gap-3">
+                    {isDemo || checkoutData?.venueId === 'demo-cafe' ? (
+                      <div className="space-y-4">
+                        <div className="bg-purple-50 border border-purple-200 rounded-lg p-4 text-center">
+                          <p className="text-sm text-purple-900 font-medium">
+                            💡 Demo Mode - Payment will be simulated
+                          </p>
+                        </div>
                         <Button
-                          variant="outline"
-                          onClick={() => handlePaymentMethodSelect('stripe')}
-                          className="h-20 flex-col gap-2"
+                          onClick={simulatePayment}
+                          disabled={paymentStatus === 'processing'}
+                          className="w-full h-16 bg-purple-600 hover:bg-purple-700 text-white text-lg"
                         >
-                          <CreditCard className="h-6 w-6" />
-                          <span className="text-sm">Real Payment</span>
-                          <span className="text-xs text-gray-900">Stripe</span>
-                        </Button>
-                        
-                        <Button
-                          variant="outline"
-                          onClick={() => handlePaymentMethodSelect('simulation')}
-                          className="h-20 flex-col gap-2 border-purple-300 hover:bg-purple-50"
-                        >
-                          <div className="flex gap-1">
-                            <div className="w-6 h-6 bg-servio-purple rounded"></div>
-                            <div className="w-6 h-6 bg-blue-600 rounded"></div>
-                          </div>
-                          <span className="text-sm font-medium">Demo Mode</span>
-                          <span className="text-xs text-gray-600">✨ Simulated Payment</span>
+                          {paymentStatus === 'processing' ? (
+                            <div className="flex items-center space-x-2">
+                              <div className="animate-spin rounded-full h-5 w-5 border-b-2 border-white"></div>
+                              <span>Processing...</span>
+                            </div>
+                          ) : (
+                            <>
+                              <CreditCard className="h-6 w-6 mr-2" />
+                              Complete Demo Order
+                            </>
+                          )}
                         </Button>
                       </div>
                     ) : (
