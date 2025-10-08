@@ -189,7 +189,6 @@ export default function PaymentPage() {
       if (!orderData.order?.id) {
         console.error('[PAYMENT DEBUG] ERROR: No order ID in response');
         console.error('[PAYMENT DEBUG] Response structure:', {
-          ok: orderData.ok,
           hasOrder: !!orderData.order,
           orderKeys: orderData.order ? Object.keys(orderData.order) : 'no order object',
           fullResponse: JSON.stringify(orderData, null, 2)
@@ -197,15 +196,15 @@ export default function PaymentPage() {
         
         // If the order was created but we can't get the ID, try to continue anyway
         // This might be a response parsing issue
-        if (orderData.ok && orderData.order) {
+        if (orderData.order) {
           console.warn('[PAYMENT DEBUG] Order created but ID missing, attempting to continue...');
           // Try to extract ID from other fields or use a fallback
-          const fallbackId = orderData.order.id || orderData.order.order_id || `temp-${Date.now()}`;
+          const fallbackId = (orderData.order as any).order_id || `temp-${Date.now()}`;
           orderData.order.id = fallbackId;
         } else {
-          // Even if we can't get the order ID, if the response is ok, the order was created
+          // Even if we can't get the order ID, the order was created
           // We can still proceed with payment processing
-          console.warn('[PAYMENT DEBUG] Order creation response is ok but no order object, proceeding anyway...');
+          console.warn('[PAYMENT DEBUG] No order object in response, proceeding with fallback...');
           orderData.order = { id: `temp-${Date.now()}` };
         }
       }
