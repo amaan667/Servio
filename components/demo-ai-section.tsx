@@ -325,6 +325,99 @@ export default function DemoAISection() {
           </div>
         )}
 
+        {/* Confirmed Changes Display */}
+        {confirmedChanges && showConfirmation && (
+          <div className="border-2 border-green-300 bg-green-50 rounded-lg p-6">
+            <div className="flex items-start space-x-3 mb-4">
+              <CheckCircle className="w-6 h-6 text-green-600 mt-1" />
+              <div className="flex-1">
+                <h4 className="font-bold text-lg text-green-900">
+                  Changes Applied Successfully!
+                </h4>
+                <p className="text-sm mt-1 text-green-800">
+                  Your menu has been updated with the AI-powered changes.
+                </p>
+              </div>
+            </div>
+
+            {/* Applied Changes */}
+            {confirmedChanges.preview && (
+              <div className="mt-4 bg-white rounded-lg border border-gray-200 overflow-hidden">
+                <div className="bg-green-100 px-4 py-2 border-b border-gray-200">
+                  <h5 className="font-semibold text-green-900">Applied Changes:</h5>
+                </div>
+                <div className="divide-y divide-gray-200">
+                  {confirmedChanges.preview.map((change: any, index: number) => (
+                    <div key={index} className="px-4 py-3 hover:bg-gray-50">
+                      {change.old && change.new ? (
+                        <div className="flex items-center justify-between">
+                          <span className="text-gray-600 line-through">{change.old}</span>
+                          <span className="text-green-600 font-medium">✓ {change.new}</span>
+                        </div>
+                      ) : change.item && change.old && change.new ? (
+                        <div className="space-y-1">
+                          <div className="font-medium text-gray-900">{change.item}</div>
+                          <div className="flex items-center space-x-2 text-sm">
+                            <span className="text-gray-600 line-through">{change.old}</span>
+                            <span className="text-green-600 font-medium">✓ {change.new}</span>
+                          </div>
+                        </div>
+                      ) : change.item && change.status ? (
+                        <div className="flex items-center justify-between">
+                          <span className="text-gray-900">{change.item}</span>
+                          <Badge className="bg-green-100 text-green-800 border-green-300">
+                            ✓ {change.status}
+                          </Badge>
+                        </div>
+                      ) : change.item && change.label ? (
+                        <div className="flex items-center justify-between">
+                          <span className="text-gray-900">{change.item}</span>
+                          <Badge className="bg-green-100 text-green-800 border-green-300">
+                            ✓ {change.label}
+                          </Badge>
+                        </div>
+                      ) : change.promotion ? (
+                        <div className="space-y-2">
+                          <div className="font-semibold text-green-900">✓ {change.promotion}</div>
+                          <div className="grid grid-cols-3 gap-2 text-sm">
+                            <div>
+                              <span className="text-gray-600">Discount: </span>
+                              <span className="font-medium">{change.discount}</span>
+                            </div>
+                            <div>
+                              <span className="text-gray-600">Time: </span>
+                              <span className="font-medium">{change.time}</span>
+                            </div>
+                            <div>
+                              <span className="text-gray-600">{change.items}</span>
+                            </div>
+                          </div>
+                        </div>
+                      ) : null}
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
+
+            {/* Reset Button */}
+            <div className="mt-4 flex justify-end">
+              <Button
+                onClick={() => {
+                  setConfirmedChanges(null);
+                  setShowConfirmation(false);
+                  setCustomPrompt('');
+                  setSelectedPrompt('');
+                }}
+                variant="outline"
+                className="border-gray-300 text-gray-700 hover:bg-gray-100"
+              >
+                Try Another Request
+              </Button>
+            </div>
+          </div>
+        )}
+
         {/* Footer Note */}
         <div className="bg-purple-100 border border-purple-300 rounded-lg p-4 mt-6">
           <p className="text-sm text-purple-900">
