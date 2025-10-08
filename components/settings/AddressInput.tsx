@@ -4,7 +4,7 @@ import { useState, useEffect, useRef } from "react";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Button } from "@/components/ui/button";
-import { MapPin, Loader2, Search, Edit3, X } from "lucide-react";
+import { MapPin, Loader2, X } from "lucide-react";
 import { Card } from "@/components/ui/card";
 import { loadGoogleMapsAPI } from "@/lib/google-maps";
 
@@ -22,7 +22,6 @@ export function AddressInput({ value, onChange, onCoordinatesChange }: AddressIn
   const [mapUrl, setMapUrl] = useState<string | null>(null);
   const [isLoadingMap, setIsLoadingMap] = useState(false);
   const [hasGoogleMaps, setHasGoogleMaps] = useState(false);
-  const [autocompleteEnabled, setAutocompleteEnabled] = useState(false);
   const inputRef = useRef<HTMLInputElement>(null);
   const autocompleteRef = useRef<google.maps.places.Autocomplete | null>(null);
 
@@ -42,7 +41,7 @@ export function AddressInput({ value, onChange, onCoordinatesChange }: AddressIn
 
   // Initialize Google Places Autocomplete
   useEffect(() => {
-    if (!hasGoogleMaps || !inputRef.current || autocompleteRef.current || !autocompleteEnabled) return;
+    if (!hasGoogleMaps || !inputRef.current || autocompleteRef.current) return;
 
     console.log('AddressInput: Initializing Google Places Autocomplete...');
     try {
@@ -78,19 +77,11 @@ export function AddressInput({ value, onChange, onCoordinatesChange }: AddressIn
       console.error('AddressInput: Error initializing Google Places:', error);
       setHasGoogleMaps(false);
     }
-  }, [hasGoogleMaps, autocompleteEnabled, onChange, onCoordinatesChange]);
-
-  // Clean up autocomplete when disabled
-  useEffect(() => {
-    if (!autocompleteEnabled && autocompleteRef.current) {
-      // Clear the autocomplete
-      autocompleteRef.current = null;
-    }
-  }, [autocompleteEnabled]);
+  }, [hasGoogleMaps, onChange, onCoordinatesChange]);
 
   // Reinitialize autocomplete when input ref changes (e.g., after clearing)
   useEffect(() => {
-    if (autocompleteEnabled && hasGoogleMaps && inputRef.current && !autocompleteRef.current) {
+    if (hasGoogleMaps && inputRef.current && !autocompleteRef.current) {
       console.log('AddressInput: Reinitializing autocomplete after field change...');
       try {
         const autocomplete = new google.maps.places.Autocomplete(inputRef.current, {
@@ -124,7 +115,7 @@ export function AddressInput({ value, onChange, onCoordinatesChange }: AddressIn
         console.error('AddressInput: Error reinitializing autocomplete:', error);
       }
     }
-  }, [autocompleteEnabled, hasGoogleMaps, value, onChange, onCoordinatesChange]);
+  }, [hasGoogleMaps, value, onChange, onCoordinatesChange]);
 
   // Update map preview when address changes
   const updateMapPreview = async (lat: number, lng: number) => {
@@ -191,48 +182,25 @@ export function AddressInput({ value, onChange, onCoordinatesChange }: AddressIn
             <MapPin className="h-4 w-4" />
             Venue Address
           </Label>
-          <div className="flex gap-2">
-            {value && (
-              <Button
-                type="button"
-                variant="outline"
-                size="sm"
-                onClick={() => {
-                  onChange('');
-                  setMapUrl(null);
-                  // Reset autocomplete to allow fresh suggestions
-                  if (autocompleteRef.current) {
-                    autocompleteRef.current = null;
-                  }
-                }}
-                className="h-7 px-2 text-xs"
-                title="Clear address"
-              >
-                <X className="h-3 w-3" />
-              </Button>
-            )}
-            {hasGoogleMaps && (
-              <Button
-                type="button"
-                variant="outline"
-                size="sm"
-                onClick={() => setAutocompleteEnabled(!autocompleteEnabled)}
-                className="h-7 px-2 text-xs"
-              >
-                {autocompleteEnabled ? (
-                  <>
-                    <Edit3 className="h-3 w-3 mr-1" />
-                    Manual
-                  </>
-                ) : (
-                  <>
-                    <Search className="h-3 w-3 mr-1" />
-                    Autocomplete
-                  </>
-                )}
-              </Button>
-            )}
-          </div>
+          {value && (
+            <Button
+              type="button"
+              variant="outline"
+              size="sm"
+              onClick={() => {
+                onChange('');
+                setMapUrl(null);
+                // Reset autocomplete to allow fresh suggestions
+                if (autocompleteRef.current) {
+                  autocompleteRef.current = null;
+                }
+              }}
+              className="h-7 px-2 text-xs"
+              title="Clear address"
+            >
+              <X className="h-3 w-3" />
+            </Button>
+          )}
         </div>
         
         <Input
@@ -243,25 +211,10 @@ export function AddressInput({ value, onChange, onCoordinatesChange }: AddressIn
             // Always allow manual typing, even with autocomplete enabled
             onChange(e.target.value);
           }}
-          placeholder={
-            autocompleteEnabled 
-              ? "Start typing to search for addresses..." 
-              : "Enter full venue address manually"
-          }
+          placeholder="Start typing to search for addresses..."
           className="rounded-lg border-gray-200"
           autoComplete="off" // Prevent browser autocomplete interference
         />
-        
-        <p className="text-xs text-muted-foreground mt-1">
-          {autocompleteEnabled 
-            ? "💡 Autocomplete enabled - type to see address suggestions"
-            : "✏️ Manual mode - type your address directly"}
-        </p>
-        
-        {/* Debug info - remove in production */}
-        <p className="text-xs text-gray-500 mt-1">
-          Debug: Google Maps {hasGoogleMaps ? '✅ Loaded' : '❌ Not loaded'} | API Key: {process.env.NEXT_PUBLIC_GOOGLE_MAPS_API_KEY ? '✅ Set' : '❌ Missing'} | Autocomplete: {autocompleteEnabled ? '✅ On' : '❌ Off'}
-        </p>
       </div>
 
       {/* Map Preview */}

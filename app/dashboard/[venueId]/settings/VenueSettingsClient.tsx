@@ -416,7 +416,7 @@ export default function VenueSettingsClient({ user, venue, venues }: VenueSettin
                     disabled
                     className="bg-gray-50 border-gray-200 rounded-lg mt-1"
                   />
-                  <p className="text-sm text-muted-foreground mt-1">Email address cannot be changed - it's associated with your Gmail account</p>
+                  <p className="text-sm text-gray-600 mt-1">Email address cannot be changed - it's associated with your Gmail account</p>
                 </div>
                 
                 <div>
@@ -454,7 +454,7 @@ export default function VenueSettingsClient({ user, venue, venues }: VenueSettin
                     </AccordionTrigger>
                     <AccordionContent>
                       <div className="space-y-4 pt-4">
-                        <p className="text-sm text-muted-foreground">
+                        <p className="text-sm text-gray-600">
                           {shouldShowSetPassword 
                             ? 'Set a password so you can also sign in with your email and password'
                             : 'Update your account password'
@@ -542,13 +542,13 @@ export default function VenueSettingsClient({ user, venue, venues }: VenueSettin
                     </AccordionTrigger>
                     <AccordionContent>
                       <div className="space-y-4 pt-4">
-                        <p className="text-sm text-muted-foreground">
+                        <p className="text-sm text-gray-600">
                           Add an extra layer of security to your account (Coming Soon)
                         </p>
                         <div className="flex items-center justify-between p-4 bg-gray-50 rounded-lg">
                           <div className="flex-1">
                             <p className="font-medium text-sm">Enable 2FA</p>
-                            <p className="text-xs text-muted-foreground">This feature will be available soon</p>
+                            <p className="text-xs text-gray-600">This feature will be available soon</p>
                           </div>
                           <Switch 
                             checked={twoFactorEnabled} 
@@ -643,7 +643,7 @@ export default function VenueSettingsClient({ user, venue, venues }: VenueSettin
                       ))}
                     </SelectContent>
                   </Select>
-                  <p className="text-xs text-muted-foreground mt-1">Auto-detected from your browser</p>
+                  <p className="text-xs text-gray-600 mt-1">Auto-detected from your browser</p>
                 </div>
 
                 <div>
@@ -745,7 +745,7 @@ export default function VenueSettingsClient({ user, venue, venues }: VenueSettin
           </CardHeader>
           <CardContent className="pt-6">
             <div className="space-y-4">
-              <p className="text-sm text-muted-foreground">
+              <p className="text-sm text-gray-600">
                 This action cannot be undone. This will permanently delete your account and all associated data including venues, orders, and menu items.
               </p>
               
@@ -818,7 +818,7 @@ export default function VenueSettingsClient({ user, venue, venues }: VenueSettin
           <Button 
             onClick={updateVenueSettings} 
             disabled={loading}
-            className="bg-gradient-to-r from-purple-600 to-pink-600 hover:from-purple-700 hover:to-pink-700 shadow-2xl rounded-xl px-6 py-6 text-lg"
+            className="bg-gradient-to-r from-purple-600 to-pink-600 hover:from-purple-700 hover:to-pink-700 shadow-2xl rounded-xl px-6 py-6 text-lg text-white"
             size="lg"
           >
             <Save className="h-5 w-5 mr-2" />
@@ -833,7 +833,7 @@ export default function VenueSettingsClient({ user, venue, venues }: VenueSettin
           <Button 
             onClick={updateVenueSettings} 
             disabled={loading}
-            className="w-full bg-gradient-to-r from-purple-600 to-pink-600 hover:from-purple-700 hover:to-pink-700 rounded-xl py-6"
+            className="w-full bg-gradient-to-r from-purple-600 to-pink-600 hover:from-purple-700 hover:to-pink-700 rounded-xl py-6 text-white"
             size="lg"
           >
             <Save className="h-5 w-5 mr-2" />
