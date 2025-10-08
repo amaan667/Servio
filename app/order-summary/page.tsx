@@ -104,14 +104,22 @@ export default function OrderSummaryPage() {
 
       // Store demo order data for the success page
       console.log('[ORDER SUMMARY DEBUG] Storing demo order data:', demoOrderData);
-      sessionStorage.setItem('demo-order-data', JSON.stringify(demoOrderData));
-      
-      // Verify storage
-      const stored = sessionStorage.getItem('demo-order-data');
-      console.log('[ORDER SUMMARY DEBUG] Verified storage:', stored);
-      
-      // Redirect to payment success page
-      window.location.href = `/payment/success?orderId=${demoOrderId}&demo=1&paymentMethod=demo`;
+      try {
+        sessionStorage.setItem('demo-order-data', JSON.stringify(demoOrderData));
+        
+        // Verify storage
+        const stored = sessionStorage.getItem('demo-order-data');
+        console.log('[ORDER SUMMARY DEBUG] Verified storage:', stored);
+        
+        // Small delay to ensure storage is complete
+        setTimeout(() => {
+          window.location.href = `/payment/success?orderId=${demoOrderId}&demo=1&paymentMethod=demo`;
+        }, 100);
+      } catch (error) {
+        console.error('[ORDER SUMMARY DEBUG] Error storing demo order data:', error);
+        // Fallback: redirect anyway and let the success page handle the error
+        window.location.href = `/payment/success?orderId=${demoOrderId}&demo=1&paymentMethod=demo`;
+      }
       return;
     }
     
@@ -222,14 +230,22 @@ export default function OrderSummaryPage() {
 
       // Store demo order data for the success page
       console.log('[ORDER SUMMARY DEBUG] Storing demo order data (pay later):', demoOrderData);
-      sessionStorage.setItem('demo-order-data', JSON.stringify(demoOrderData));
-      
-      // Verify storage
-      const stored = sessionStorage.getItem('demo-order-data');
-      console.log('[ORDER SUMMARY DEBUG] Verified storage (pay later):', stored);
-      
-      // Redirect to payment success page
-      window.location.href = `/payment/success?orderId=${demoOrderId}&demo=1&paymentMethod=later`;
+      try {
+        sessionStorage.setItem('demo-order-data', JSON.stringify(demoOrderData));
+        
+        // Verify storage
+        const stored = sessionStorage.getItem('demo-order-data');
+        console.log('[ORDER SUMMARY DEBUG] Verified storage (pay later):', stored);
+        
+        // Small delay to ensure storage is complete
+        setTimeout(() => {
+          window.location.href = `/payment/success?orderId=${demoOrderId}&demo=1&paymentMethod=later`;
+        }, 100);
+      } catch (error) {
+        console.error('[ORDER SUMMARY DEBUG] Error storing demo order data (pay later):', error);
+        // Fallback: redirect anyway and let the success page handle the error
+        window.location.href = `/payment/success?orderId=${demoOrderId}&demo=1&paymentMethod=later`;
+      }
       return;
     }
 

@@ -16,22 +16,37 @@ export default function PaymentSuccessPage() {
   // Load demo order data from sessionStorage
   useEffect(() => {
     if (isDemo && orderId) {
-      const storedData = sessionStorage.getItem("demo-order-data");
-      console.log('[PAYMENT SUCCESS] Loading demo order data:', storedData);
-      console.log('[PAYMENT SUCCESS] OrderId:', orderId, 'isDemo:', isDemo);
-      if (storedData) {
-        try {
-          const data = JSON.parse(storedData);
-          console.log('[PAYMENT SUCCESS] Parsed demo order:', data);
-          setDemoOrderData(data);
-          // Clean up after loading
-          sessionStorage.removeItem("demo-order-data");
-        } catch (error) {
-          console.error('[PAYMENT SUCCESS] Error parsing demo order data:', error);
+      console.log('[PAYMENT SUCCESS] Loading demo order data for orderId:', orderId);
+      console.log('[PAYMENT SUCCESS] isDemo:', isDemo);
+      
+      // Try multiple times to get the data (in case of timing issues)
+      let attempts = 0;
+      const maxAttempts = 5;
+      
+      const tryLoadData = () => {
+        const storedData = sessionStorage.getItem("demo-order-data");
+        console.log('[PAYMENT SUCCESS] Attempt', attempts + 1, '- Found data:', !!storedData);
+        
+        if (storedData) {
+          try {
+            const data = JSON.parse(storedData);
+            console.log('[PAYMENT SUCCESS] Parsed demo order:', data);
+            setDemoOrderData(data);
+            // Clean up after loading
+            sessionStorage.removeItem("demo-order-data");
+          } catch (error) {
+            console.error('[PAYMENT SUCCESS] Error parsing demo order data:', error);
+          }
+        } else if (attempts < maxAttempts) {
+          // Try again after a short delay
+          attempts++;
+          setTimeout(tryLoadData, 200);
+        } else {
+          console.error('[PAYMENT SUCCESS] No demo order data found in sessionStorage after', maxAttempts, 'attempts');
         }
-      } else {
-        console.error('[PAYMENT SUCCESS] No demo order data found in sessionStorage');
-      }
+      };
+      
+      tryLoadData();
     }
   }, [isDemo, orderId]);
 
