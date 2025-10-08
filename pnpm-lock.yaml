@@ -234,6 +234,9 @@ importers:
       '@types/express-serve-static-core':
         specifier: ^5.0.7
         version: 5.0.7
+      '@types/google.maps':
+        specifier: ^3.58.1
+        version: 3.58.1
       '@types/luxon':
         specifier: ^3.7.1
         version: 3.7.1
@@ -1573,6 +1576,9 @@ packages:
 
   '@types/formidable@3.4.5':
     resolution: {integrity: sha512-s7YPsNVfnsng5L8sKnG/Gbb2tiwwJTY1conOkJzTMRvJAlLFW1nEua+ADsJQu8N1c0oTHx9+d5nqg10WuT9gHQ==}
+
+  '@types/google.maps@3.58.1':
+    resolution: {integrity: sha512-X9QTSvGJ0nCfMzYOnaVs/k6/4L+7F5uCS+4iUmkLEls6J9S/Phv+m/i3mDeyc49ZBgwab3EFO1HEoBY7k98EGQ==}
 
   '@types/http-errors@2.0.5':
     resolution: {integrity: sha512-r8Tayk8HJnX0FztbZN7oVqGccWgw98T/0neJphO91KkmOzug1KkofZURD4UaD5uH8AqcFLfdPErnBod0u71/qg==}
@@ -5156,6 +5162,8 @@ snapshots:
   '@types/formidable@3.4.5':
     dependencies:
       '@types/node': 20.19.11
+
+  '@types/google.maps@3.58.1': {}
 
   '@types/http-errors@2.0.5': {}
 
