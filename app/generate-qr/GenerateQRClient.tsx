@@ -293,7 +293,7 @@ export default function GenerateQRClient({ venueId, venueName, activeTablesCount
               .venue-name { 
                 font-size: 32px; 
                 font-weight: bold; 
-                color: #ffffff;
+                color: #000000;
                 margin-bottom: 15px;
                 text-transform: uppercase;
                 letter-spacing: 1px;
@@ -302,7 +302,7 @@ export default function GenerateQRClient({ venueId, venueName, activeTablesCount
               .table-number { 
                 font-size: 28px; 
                 font-weight: bold; 
-                color: #ffffff;
+                color: #000000;
                 margin-bottom: 20px;
                 background: #f0f0f0;
                 padding: 10px 20px;
@@ -327,14 +327,14 @@ export default function GenerateQRClient({ venueId, venueName, activeTablesCount
               
               .scan-text { 
                 font-size: 24px; 
-                color: #ffffff;
+                color: #000000;
                 margin-bottom: 15px;
                 font-weight: 500;
               }
               
               .venue-info { 
                 font-size: 20px; 
-                color: #ffffff;
+                color: #000000;
                 font-weight: 600;
                 margin-bottom: 20px;
               }
@@ -369,7 +369,7 @@ export default function GenerateQRClient({ venueId, venueName, activeTablesCount
               .footer { 
                 margin-top: 30px; 
                 text-align: center; 
-                color: #ffffff; 
+                color: #000000; 
                 font-size: 14px;
                 border-top: 1px solid #eee;
                 padding-top: 20px;
@@ -498,13 +498,13 @@ export default function GenerateQRClient({ venueId, venueName, activeTablesCount
               .venue-name { 
                 font-size: 24px; 
                 font-weight: bold; 
-                color: #ffffff;
+                color: #000000;
                 margin-bottom: 5px;
               }
               
               .venue-subtitle { 
                 font-size: 14px; 
-                color: #ffffff;
+                color: #000000;
                 margin-bottom: 10px;
               }
               
@@ -526,7 +526,7 @@ export default function GenerateQRClient({ venueId, venueName, activeTablesCount
               
               .page-footer {
                 text-align: center; 
-                color: #ffffff; 
+                color: #000000; 
                 font-size: 10px;
                 border-top: 1px solid #eee;
                 padding: 10px;
@@ -564,7 +564,7 @@ export default function GenerateQRClient({ venueId, venueName, activeTablesCount
               .table-number { 
                 font-size: 18px; 
                 font-weight: bold; 
-                color: #ffffff;
+                color: #000000;
                 margin-bottom: 10px;
                 background: #f0f0f0;
                 padding: 5px 10px;
@@ -589,14 +589,14 @@ export default function GenerateQRClient({ venueId, venueName, activeTablesCount
               
               .scan-text { 
                 font-size: 14px; 
-                color: #ffffff;
+                color: #000000;
                 margin-bottom: 5px;
                 font-weight: 500;
               }
               
               .venue-info { 
                 font-size: 12px; 
-                color: #ffffff;
+                color: #000000;
                 font-weight: 500;
               }
               
@@ -841,8 +841,8 @@ export default function GenerateQRClient({ venueId, venueName, activeTablesCount
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 sm:gap-8">
         <Card>
           <CardHeader>
-            <CardTitle>QR Code Settings</CardTitle>
-            <CardDescription>
+            <CardTitle className="text-black">QR Code Settings</CardTitle>
+            <CardDescription className="text-black">
               Configure your QR code generation
             </CardDescription>
           </CardHeader>
@@ -901,7 +901,7 @@ export default function GenerateQRClient({ venueId, venueName, activeTablesCount
                       const cleanName = qrType === 'table' ? cleanTableName(itemNumber) : cleanCounterName(itemNumber);
                       const label = qrType === 'table' ? 'Table' : 'Counter';
                       return (
-                        <Badge key={index} variant="outline" className="text-xs">
+                        <Badge key={index} variant="outline" className="text-xs text-black">
                           {label} {cleanName}
                         </Badge>
                       );
@@ -933,7 +933,7 @@ export default function GenerateQRClient({ venueId, venueName, activeTablesCount
             <div>
               <Label className="text-black font-semibold">Venue</Label>
               <div className="mt-1 p-3 bg-muted rounded-md">
-                <p className="font-medium">{venueName || "My Venue"}</p>
+                <p className="font-medium text-black">{venueName || "My Venue"}</p>
                 <p className="text-sm text-black">Venue ID: {venueId}</p>
               </div>
             </div>
@@ -981,8 +981,8 @@ export default function GenerateQRClient({ venueId, venueName, activeTablesCount
 
         <Card>
           <CardHeader>
-            <CardTitle>QR Code Preview</CardTitle>
-            <CardDescription>
+            <CardTitle className="text-black">QR Code Preview</CardTitle>
+            <CardDescription className="text-black">
               Preview and download your QR codes
             </CardDescription>
           </CardHeader>
@@ -1021,7 +1021,7 @@ export default function GenerateQRClient({ venueId, venueName, activeTablesCount
                         onClick={() => qrType === 'table' ? removeTable(itemNumber) : removeCounter(itemNumber)}
                         variant="ghost"
                         size="icon"
-                        className="absolute top-1 right-1 h-5 w-5 p-0 text-foreground hover:text-destructive opacity-0 group-hover:opacity-100 focus:opacity-100 transition-opacity"
+                        className="absolute top-1 right-1 h-5 w-5 p-0 text-black hover:text-destructive opacity-0 group-hover:opacity-100 focus:opacity-100 transition-opacity"
                         aria-label="Remove QR"
                       >
                         <X className="h-3 w-3" />
@@ -1034,7 +1034,7 @@ export default function GenerateQRClient({ venueId, venueName, activeTablesCount
                         />
                       </div>
                       <div className="mt-2">
-                        <Badge variant="secondary">{label} {cleanName}</Badge>
+                        <Badge variant="secondary" className="text-black">{label} {cleanName}</Badge>
                       </div>
                       <div className="mt-2 text-xs text-black break-all">
                         <code className="text-xs text-black">{itemOrderUrl}</code>
@@ -1070,8 +1070,8 @@ export default function GenerateQRClient({ venueId, venueName, activeTablesCount
 
       <Card>
         <CardHeader>
-          <CardTitle>How to Use QR Codes</CardTitle>
-          <CardDescription>
+          <CardTitle className="text-black">How to Use QR Codes</CardTitle>
+          <CardDescription className="text-black">
             Follow these steps to set up QR code ordering
           </CardDescription>
         </CardHeader>
