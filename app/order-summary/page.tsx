@@ -456,14 +456,18 @@ export default function OrderSummaryPage() {
     if (!orderData) return;
     const param = orderData.orderType === 'counter' ? 'counter' : 'table';
     const value = orderData.orderLocation || orderData.tableNumber;
-    router.push(`/order?venue=${orderData.venueId}&${param}=${value}`);
+    // Preserve demo flag when going back to order page
+    const demoParam = orderData.isDemo || orderData.venueId === 'demo-cafe' ? '&demo=1' : '';
+    router.push(`/order?venue=${orderData.venueId}&${param}=${value}${demoParam}`);
   };
 
   const handleBackToOrder = () => {
     if (!orderData) return;
     const param = orderData.orderType === 'counter' ? 'counter' : 'table';
     const value = orderData.orderLocation || orderData.tableNumber;
-    router.push(`/order?venue=${orderData.venueId}&${param}=${value}`);
+    // Preserve demo flag when going back to order page
+    const demoParam = orderData.isDemo || orderData.venueId === 'demo-cafe' ? '&demo=1' : '';
+    router.push(`/order?venue=${orderData.venueId}&${param}=${value}${demoParam}`);
   };
 
   if (loading) {

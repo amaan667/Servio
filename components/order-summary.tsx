@@ -502,7 +502,12 @@ export default function OrderSummary({ orderId, sessionId, orderData, isDemo = f
         {/* Action Buttons */}
         <div className="flex gap-4">
           <Button 
-            onClick={() => window.location.href = '/order'}
+            onClick={() => {
+              // Preserve demo flag when going back to order page
+              const isDemo = order?.venue_id === 'demo-cafe' || isDemo;
+              const url = isDemo ? '/order?venue=demo-cafe&table=1&demo=1' : '/order';
+              window.location.href = url;
+            }}
             variant="outline"
             className="flex-1"
           >
