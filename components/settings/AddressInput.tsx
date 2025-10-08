@@ -88,6 +88,44 @@ export function AddressInput({ value, onChange, onCoordinatesChange }: AddressIn
     }
   }, [autocompleteEnabled]);
 
+  // Reinitialize autocomplete when input ref changes (e.g., after clearing)
+  useEffect(() => {
+    if (autocompleteEnabled && hasGoogleMaps && inputRef.current && !autocompleteRef.current) {
+      console.log('AddressInput: Reinitializing autocomplete after field change...');
+      try {
+        const autocomplete = new google.maps.places.Autocomplete(inputRef.current, {
+          types: ['address'],
+          fields: ['formatted_address', 'geometry', 'name', 'address_components'],
+        });
+
+        autocomplete.addListener('place_changed', () => {
+          const place = autocomplete.getPlace();
+          
+          if (place.formatted_address && place.place_id) {
+            console.log('AddressInput: Place selected from autocomplete:', place.formatted_address);
+            
+            onChange(place.formatted_address, {
+              lat: place.geometry?.location?.lat() || 0,
+              lng: place.geometry?.location?.lng() || 0,
+            });
+
+            if (place.geometry?.location && onCoordinatesChange) {
+              const lat = place.geometry.location.lat();
+              const lng = place.geometry.location.lng();
+              onCoordinatesChange(lat, lng);
+              updateMapPreview(lat, lng);
+            }
+          }
+        });
+
+        autocompleteRef.current = autocomplete;
+        console.log('AddressInput: Autocomplete reinitialized successfully');
+      } catch (error) {
+        console.error('AddressInput: Error reinitializing autocomplete:', error);
+      }
+    }
+  }, [autocompleteEnabled, hasGoogleMaps, value, onChange, onCoordinatesChange]);
+
   // Update map preview when address changes
   const updateMapPreview = async (lat: number, lng: number) => {
     if (lat && lng) {
@@ -162,6 +200,10 @@ export function AddressInput({ value, onChange, onCoordinatesChange }: AddressIn
                 onClick={() => {
                   onChange('');
                   setMapUrl(null);
+                  // Reset autocomplete to allow fresh suggestions
+                  if (autocompleteRef.current) {
+                    autocompleteRef.current = null;
+                  }
                 }}
                 className="h-7 px-2 text-xs"
                 title="Clear address"
