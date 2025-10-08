@@ -67,15 +67,26 @@ STRIPE_WEBHOOK_SECRET=whsec_your_webhook_secret
 4. Copy the Secret key (starts with `sk_test_`)
 5. For webhooks, go to Developers → Webhooks and create an endpoint
 
-### Additional Google Services (Future Enhancement)
+### Google Maps & Places (Settings Page Enhancement)
 
 ```bash
-# Google Maps API (for location services)
-GOOGLE_MAPS_API_KEY=your_google_maps_api_key
-
-# Google Places API (for venue discovery)
-GOOGLE_PLACES_API_KEY=your_google_places_api_key
+# Google Maps JavaScript API with Places Library
+# Used for address autocomplete in venue settings
+NEXT_PUBLIC_GOOGLE_MAPS_API_KEY=your_google_maps_api_key
 ```
+
+**How to set up Google Maps API:**
+1. Go to [Google Cloud Console](https://console.cloud.google.com/)
+2. Create a new project or select an existing one
+3. Enable "Maps JavaScript API" and "Places API"
+4. Create credentials (API key)
+5. Restrict the API key to your domain for security
+6. Add key domains under "Application restrictions"
+
+**Note:** The address input will work without this API key by falling back to:
+- Manual address entry
+- OpenStreetMap for geocoding (free, no key required)
+- Map preview using OpenStreetMap embed
 
 ## Railway Deployment Configuration
 
@@ -129,6 +140,9 @@ OPENAI_API_KEY=sk-your-openai-api-key
 STRIPE_SECRET_KEY=sk_test_your_stripe_secret_key
 NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY=pk_test_your_stripe_publishable_key
 STRIPE_WEBHOOK_SECRET=whsec_your_webhook_secret
+
+# Google Maps (Optional - for enhanced address input)
+NEXT_PUBLIC_GOOGLE_MAPS_API_KEY=your_google_maps_api_key
 ```
 
 ### Local Development Notes

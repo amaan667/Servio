@@ -65,7 +65,7 @@ export default async function VenueSettings({ params }: { params: Promise<{ venu
     // Verify user owns this venue and get full venue data
     const { data: venue, error: venueError } = await supabase
       .from('venues')
-      .select('venue_id, name, email, phone, address')
+      .select('venue_id, name, email, phone, address, timezone, venue_type, service_type, operating_hours, latitude, longitude')
       .eq('venue_id', venueId)
       .eq('owner_id', user.id)
       .maybeSingle();
@@ -82,7 +82,7 @@ export default async function VenueSettings({ params }: { params: Promise<{ venu
     // Get all user's venues for the client component
     const { data: venues } = await supabase
       .from('venues')
-      .select('venue_id, name, email, phone, address')
+      .select('venue_id, name, email, phone, address, timezone, venue_type, service_type, operating_hours, latitude, longitude')
       .eq('owner_id', user.id);
 
     return (

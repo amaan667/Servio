@@ -1,0 +1,79 @@
+/**
+ * Google Maps API Loader
+ * Loads Google Maps JavaScript API with Places library
+ */
+
+let isLoading = false;
+let isLoaded = false;
+
+export function loadGoogleMapsAPI(): Promise<void> {
+  return new Promise((resolve, reject) => {
+    // Check if already loaded
+    if (isLoaded || (window as any).google?.maps?.places) {
+      isLoaded = true;
+      resolve();
+      return;
+    }
+
+    // Check if already loading
+    if (isLoading) {
+      // Wait for the existing load to complete
+      const checkInterval = setInterval(() => {
+        if (isLoaded || (window as any).google?.maps?.places) {
+          isLoaded = true;
+          clearInterval(checkInterval);
+          resolve();
+        }
+      }, 100);
+      
+      setTimeout(() => {
+        clearInterval(checkInterval);
+        reject(new Error('Google Maps API loading timeout'));
+      }, 10000);
+      return;
+    }
+
+    // Get API key from environment
+    const apiKey = process.env.NEXT_PUBLIC_GOOGLE_MAPS_API_KEY;
+    
+    if (!apiKey) {
+      console.warn('Google Maps API key not found. Address autocomplete will not be available.');
+      reject(new Error('Google Maps API key not configured'));
+      return;
+    }
+
+    isLoading = true;
+
+    // Create script element
+    const script = document.createElement('script');
+    script.src = `https://maps.googleapis.com/maps/api/js?key=${apiKey}&libraries=places&callback=initGoogleMaps`;
+    script.async = true;
+    script.defer = true;
+
+    // Define global callback
+    (window as any).initGoogleMaps = () => {
+      isLoaded = true;
+      isLoading = false;
+      resolve();
+    };
+
+    script.onerror = () => {
+      isLoading = false;
+      reject(new Error('Failed to load Google Maps API'));
+    };
+
+    document.head.appendChild(script);
+  });
+}
+
+/**
+ * Hook to load Google Maps on component mount
+ */
+export function useGoogleMaps() {
+  if (typeof window === 'undefined') return;
+  
+  loadGoogleMapsAPI().catch(error => {
+    console.warn('Google Maps failed to load:', error.message);
+  });
+}
+
