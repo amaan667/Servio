@@ -162,7 +162,7 @@ export default function DemoPage() {
             <div>
               <h1 className="text-2xl font-bold text-gray-900 flex items-center gap-0">
                 Try
-                <span className="text-purple-600 ml-0.5">Servio</span>
+                <span className="text-purple-600 ml-2">Servio</span>
               </h1>
               <p className="text-sm text-gray-600">Experience both perspectives</p>
             </div>
