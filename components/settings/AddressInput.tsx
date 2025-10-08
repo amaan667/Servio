@@ -22,20 +22,24 @@ export function AddressInput({ value, onChange, onCoordinatesChange }: AddressIn
   const [mapUrl, setMapUrl] = useState<string | null>(null);
   const [isLoadingMap, setIsLoadingMap] = useState(false);
   const [hasGoogleMaps, setHasGoogleMaps] = useState(false);
+  const [googleMapsError, setGoogleMapsError] = useState<string | null>(null);
   const inputRef = useRef<HTMLInputElement>(null);
   const autocompleteRef = useRef<google.maps.places.Autocomplete | null>(null);
 
   // Load Google Maps API
   useEffect(() => {
     console.log('AddressInput: Loading Google Maps API...');
+    setGoogleMapsError(null);
     loadGoogleMapsAPI()
       .then(() => {
         console.log('AddressInput: Google Maps API loaded successfully');
         setHasGoogleMaps(true);
+        setGoogleMapsError(null);
       })
       .catch((error) => {
         console.warn('AddressInput: Google Maps not available:', error.message);
         setHasGoogleMaps(false);
+        setGoogleMapsError(error.message);
       });
   }, []);
 
@@ -76,6 +80,7 @@ export function AddressInput({ value, onChange, onCoordinatesChange }: AddressIn
     } catch (error) {
       console.error('AddressInput: Error initializing Google Places:', error);
       setHasGoogleMaps(false);
+      setGoogleMapsError('Failed to initialize Google Places');
     }
   }, [hasGoogleMaps, onChange, onCoordinatesChange]);
 
@@ -113,6 +118,7 @@ export function AddressInput({ value, onChange, onCoordinatesChange }: AddressIn
         console.log('AddressInput: Autocomplete reinitialized successfully');
       } catch (error) {
         console.error('AddressInput: Error reinitializing autocomplete:', error);
+        setGoogleMapsError('Failed to reinitialize autocomplete');
       }
     }
   }, [hasGoogleMaps, value, onChange, onCoordinatesChange]);
@@ -161,18 +167,17 @@ export function AddressInput({ value, onChange, onCoordinatesChange }: AddressIn
     }
   };
 
-  // Debounce manual geocoding
+  // Debounce manual geocoding - always run as fallback
   useEffect(() => {
-    if (hasGoogleMaps) return; // Skip if Google Places is handling it
-    
     const timer = setTimeout(() => {
-      if (value) {
+      if (value && value.length > 5) {
+        // Always try manual geocoding as fallback, even if Google Maps is available
         handleManualGeocode(value);
       }
     }, 1500);
 
     return () => clearTimeout(timer);
-  }, [value, hasGoogleMaps]);
+  }, [value]);
 
   return (
     <div className="space-y-3">
@@ -210,11 +215,22 @@ export function AddressInput({ value, onChange, onCoordinatesChange }: AddressIn
           onChange={(e) => {
             // Always allow manual typing, even with autocomplete enabled
             onChange(e.target.value);
+            // Clear any Google Maps errors when user types
+            if (googleMapsError) {
+              setGoogleMapsError(null);
+            }
           }}
           placeholder="Start typing to search for addresses..."
           className="rounded-lg border-gray-200"
           autoComplete="off" // Prevent browser autocomplete interference
         />
+        
+        {/* Error message display */}
+        {googleMapsError && (
+          <p className="text-xs text-red-600 mt-1">
+            ⚠️ {googleMapsError} - You can still type addresses manually
+          </p>
+        )}
       </div>
 
       {/* Map Preview */}
@@ -242,7 +258,7 @@ export function AddressInput({ value, onChange, onCoordinatesChange }: AddressIn
 
       {!hasGoogleMaps && (
         <p className="text-xs text-amber-600 bg-amber-50 p-2 rounded-lg">
-          💡 Tip: Add Google Maps API key to enable address autocomplete and more accurate location detection.
+          💡 Tip: {googleMapsError ? 'Google Maps is not available - ' : 'Add Google Maps API key to enable '}address autocomplete and more accurate location detection. You can still type addresses manually.
         </p>
       )}
     </div>
