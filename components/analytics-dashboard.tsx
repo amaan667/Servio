@@ -461,22 +461,24 @@ export function AnalyticsDashboard({ venueId }: AnalyticsDashboardProps) {
             <CardDescription>Orders and revenue by hour</CardDescription>
           </CardHeader>
           <CardContent>
-            <ChartContainer config={{
-              orders: { color: "#3b82f6" },
-              revenue: { color: "#10b981" }
-            }}>
-              <ResponsiveContainer width="100%" height={300}>
-                <BarChart data={hourlyData}>
-                  <CartesianGrid strokeDasharray="3 3" />
-                  <XAxis dataKey="name" />
-                  <YAxis yAxisId="left" />
-                  <YAxis yAxisId="right" orientation="right" />
-                  <Tooltip />
-                  <Bar yAxisId="left" dataKey="orders" fill="#3b82f6" name="Orders" />
-                  <Bar yAxisId="right" dataKey="revenue" fill="#10b981" name="Revenue" />
-                </BarChart>
-              </ResponsiveContainer>
-            </ChartContainer>
+            <div className="h-[350px] md:h-[300px] mb-2 md:mb-4">
+              <ChartContainer config={{
+                orders: { color: "#3b82f6" },
+                revenue: { color: "#10b981" }
+              }}>
+                <ResponsiveContainer width="100%" height="100%" maxHeight={330}>
+                  <BarChart data={hourlyData} margin={{ left: 20, right: 30, top: 20, bottom: 20 }}>
+                    <CartesianGrid strokeDasharray="3 3" />
+                    <XAxis dataKey="name" />
+                    <YAxis yAxisId="left" />
+                    <YAxis yAxisId="right" orientation="right" />
+                    <Tooltip />
+                    <Bar yAxisId="left" dataKey="orders" fill="#3b82f6" name="Orders" />
+                    <Bar yAxisId="right" dataKey="revenue" fill="#10b981" name="Revenue" />
+                  </BarChart>
+                </ResponsiveContainer>
+              </ChartContainer>
+            </div>
           </CardContent>
         </Card>
 
@@ -487,21 +489,23 @@ export function AnalyticsDashboard({ venueId }: AnalyticsDashboardProps) {
             <CardDescription>Quantity and revenue</CardDescription>
           </CardHeader>
           <CardContent>
-            <ChartContainer config={{
-              qty: { color: "#8b5cf6" },
-              rev: { color: "#10b981" }
-            }}>
-              <ResponsiveContainer width="100%" height={400}>
-                <BarChart data={topItems} layout="horizontal">
-                  <CartesianGrid strokeDasharray="3 3" />
-                  <XAxis type="number" />
-                  <YAxis dataKey="name" type="category" width={100} />
-                  <Tooltip />
-                  <Bar dataKey="value" fill="#8b5cf6" name="Qty" />
-                  <Bar dataKey="revenue" fill="#10b981" name="Revenue (£)" />
-                </BarChart>
-              </ResponsiveContainer>
-            </ChartContainer>
+            <div className="h-[400px] md:h-[350px] mb-2 md:mb-4">
+              <ChartContainer config={{
+                qty: { color: "#8b5cf6" },
+                rev: { color: "#10b981" }
+              }}>
+                <ResponsiveContainer width="100%" height="100%" maxHeight={380}>
+                  <BarChart data={topItems} layout="horizontal" margin={{ left: 100, right: 30, top: 20, bottom: 20 }}>
+                    <CartesianGrid strokeDasharray="3 3" />
+                    <XAxis type="number" />
+                    <YAxis dataKey="name" type="category" width={90} />
+                    <Tooltip />
+                    <Bar dataKey="value" fill="#8b5cf6" name="Qty" />
+                    <Bar dataKey="revenue" fill="#10b981" name="Revenue (£)" />
+                  </BarChart>
+                </ResponsiveContainer>
+              </ChartContainer>
+            </div>
           </CardContent>
         </Card>
 
@@ -513,19 +517,21 @@ export function AnalyticsDashboard({ venueId }: AnalyticsDashboardProps) {
               <CardDescription>Daily revenue over the last 7 days</CardDescription>
             </CardHeader>
             <CardContent>
-              <ChartContainer config={{
-                revenue: { color: "#10b981" }
-              }}>
-                <ResponsiveContainer width="100%" height={300}>
-                  <LineChart data={revenueTrend}>
-                    <CartesianGrid strokeDasharray="3 3" />
-                    <XAxis dataKey="name" />
-                    <YAxis />
-                    <Tooltip />
-                    <Line type="monotone" dataKey="value" stroke="#10b981" strokeWidth={2} />
-                  </LineChart>
-                </ResponsiveContainer>
-              </ChartContainer>
+              <div className="h-[350px] md:h-[300px] mb-2 md:mb-4">
+                <ChartContainer config={{
+                  revenue: { color: "#10b981" }
+                }}>
+                  <ResponsiveContainer width="100%" height="100%" maxHeight={330}>
+                    <LineChart data={revenueTrend} margin={{ left: 20, right: 30, top: 20, bottom: 20 }}>
+                      <CartesianGrid strokeDasharray="3 3" />
+                      <XAxis dataKey="name" />
+                      <YAxis />
+                      <Tooltip />
+                      <Line type="monotone" dataKey="value" stroke="#10b981" strokeWidth={2} />
+                    </LineChart>
+                  </ResponsiveContainer>
+                </ChartContainer>
+              </div>
             </CardContent>
           </Card>
         )}
@@ -537,29 +543,31 @@ export function AnalyticsDashboard({ venueId }: AnalyticsDashboardProps) {
             <CardDescription>Most frequent customers</CardDescription>
           </CardHeader>
           <CardContent>
-            <ChartContainer config={{
-              customers: { color: "#f59e0b" }
-            }}>
-              <ResponsiveContainer width="100%" height={300}>
-                <PieChart>
-                  <Pie
-                    data={customerFrequency}
-                    cx="50%"
-                    cy="50%"
-                    labelLine={false}
-                    label={({ name, percent }) => `${name} (${(percent * 100).toFixed(0)}%)`}
-                    outerRadius={80}
-                    fill="#8884d8"
-                    dataKey="value"
-                  >
-                    {customerFrequency.map((entry, index) => (
-                      <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
-                    ))}
-                  </Pie>
-                  <Tooltip />
-                </PieChart>
-              </ResponsiveContainer>
-            </ChartContainer>
+            <div className="h-[350px] md:h-[300px] mb-2 md:mb-4">
+              <ChartContainer config={{
+                customers: { color: "#f59e0b" }
+              }}>
+                <ResponsiveContainer width="100%" height="100%" maxHeight={330}>
+                  <PieChart margin={{ left: 20, right: 20, top: 20, bottom: 20 }}>
+                    <Pie
+                      data={customerFrequency}
+                      cx="50%"
+                      cy="50%"
+                      labelLine={false}
+                      label={({ name, percent }) => `${name} (${(percent * 100).toFixed(0)}%)`}
+                      outerRadius={90}
+                      fill="#8884d8"
+                      dataKey="value"
+                    >
+                      {customerFrequency.map((entry, index) => (
+                        <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
+                      ))}
+                    </Pie>
+                    <Tooltip />
+                  </PieChart>
+                </ResponsiveContainer>
+              </ChartContainer>
+            </div>
           </CardContent>
         </Card>
 
@@ -570,19 +578,21 @@ export function AnalyticsDashboard({ venueId }: AnalyticsDashboardProps) {
             <CardDescription>Which day performs best</CardDescription>
           </CardHeader>
           <CardContent>
-            <ChartContainer config={{ orders: { color: '#6366f1' }, revenue: { color: '#10b981' } }}>
-              <ResponsiveContainer width="100%" height={300}>
-                <BarChart data={dayOfWeekData}>
-                  <CartesianGrid strokeDasharray="3 3" />
-                  <XAxis dataKey="name" />
-                  <YAxis yAxisId="left" />
-                  <YAxis yAxisId="right" orientation="right" />
-                  <Tooltip />
-                  <Bar yAxisId="left" dataKey="orders" fill="#6366f1" name="Orders" />
-                  <Bar yAxisId="right" dataKey="revenue" fill="#10b981" name="Revenue" />
-                </BarChart>
-              </ResponsiveContainer>
-            </ChartContainer>
+            <div className="h-[350px] md:h-[300px] mb-2 md:mb-4">
+              <ChartContainer config={{ orders: { color: '#6366f1' }, revenue: { color: '#10b981' } }}>
+                <ResponsiveContainer width="100%" height="100%" maxHeight={330}>
+                  <BarChart data={dayOfWeekData} margin={{ left: 20, right: 30, top: 20, bottom: 20 }}>
+                    <CartesianGrid strokeDasharray="3 3" />
+                    <XAxis dataKey="name" />
+                    <YAxis yAxisId="left" />
+                    <YAxis yAxisId="right" orientation="right" />
+                    <Tooltip />
+                    <Bar yAxisId="left" dataKey="orders" fill="#6366f1" name="Orders" />
+                    <Bar yAxisId="right" dataKey="revenue" fill="#10b981" name="Revenue" />
+                  </BarChart>
+                </ResponsiveContainer>
+              </ChartContainer>
+            </div>
           </CardContent>
         </Card>
 
@@ -593,18 +603,20 @@ export function AnalyticsDashboard({ venueId }: AnalyticsDashboardProps) {
             <CardDescription>Drinks vs Mains vs Desserts</CardDescription>
           </CardHeader>
           <CardContent>
-            <ChartContainer config={{ qty: { color: '#8b5cf6' }, revenue: { color: '#10b981' } }}>
-              <ResponsiveContainer width="100%" height={300}>
-                <BarChart data={categoryPerformance} layout="horizontal">
-                  <CartesianGrid strokeDasharray="3 3" />
-                  <XAxis type="number" />
-                  <YAxis dataKey="name" type="category" width={100} />
-                  <Tooltip />
-                  <Bar dataKey="value" fill="#8b5cf6" name="Qty" />
-                  <Bar dataKey="revenue" fill="#10b981" name="Revenue (£)" />
-                </BarChart>
-              </ResponsiveContainer>
-            </ChartContainer>
+            <div className="h-[350px] md:h-[300px] mb-2 md:mb-4">
+              <ChartContainer config={{ qty: { color: '#8b5cf6' }, revenue: { color: '#10b981' } }}>
+                <ResponsiveContainer width="100%" height="100%" maxHeight={330}>
+                  <BarChart data={categoryPerformance} layout="horizontal" margin={{ left: 100, right: 30, top: 20, bottom: 20 }}>
+                    <CartesianGrid strokeDasharray="3 3" />
+                    <XAxis type="number" />
+                    <YAxis dataKey="name" type="category" width={90} />
+                    <Tooltip />
+                    <Bar dataKey="value" fill="#8b5cf6" name="Qty" />
+                    <Bar dataKey="revenue" fill="#10b981" name="Revenue (£)" />
+                  </BarChart>
+                </ResponsiveContainer>
+              </ChartContainer>
+            </div>
           </CardContent>
         </Card>
       </div>
