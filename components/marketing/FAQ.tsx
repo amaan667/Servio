@@ -4,6 +4,7 @@ import { useState } from "react";
 import { ChevronDown, Mail, ArrowRight } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import Link from "next/link";
+import { motion, useReducedMotion } from "framer-motion";
 
 /**
  * FAQ Item Type
@@ -79,6 +80,7 @@ interface FAQProps {
  */
 export function FAQ({ className = "", onToggle, onCTAClick }: FAQProps) {
   const [openItems, setOpenItems] = useState<Set<string>>(new Set());
+  const reduce = useReducedMotion();
 
   const toggleItem = (id: string) => {
     setOpenItems((prev) => {
@@ -115,7 +117,11 @@ export function FAQ({ className = "", onToggle, onCTAClick }: FAQProps) {
   };
 
   return (
-    <section
+    <motion.section
+      initial={{ opacity: 0, y: reduce ? 0 : 18 }}
+      whileInView={{ opacity: 1, y: 0 }}
+      transition={{ duration: reduce ? 0 : 0.45, ease: "easeOut" }}
+      viewport={{ once: true, amount: 0.25 }}
       aria-labelledby="faq-heading"
       className={`w-full max-w-3xl mx-auto px-4 pt-16 pb-8 ${className}`}
     >
@@ -224,7 +230,7 @@ export function FAQ({ className = "", onToggle, onCTAClick }: FAQProps) {
           </Button>
         </div>
       </div>
-    </section>
+    </motion.section>
   );
 }
 
