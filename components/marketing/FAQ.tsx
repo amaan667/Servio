@@ -176,7 +176,7 @@ export function FAQ({ className = "", onToggle, onCTAClick }: FAQProps) {
                       : "200ms",
                 }}
               >
-                <div className="px-5 pb-4 text-gray-700 leading-relaxed">
+                <div className="px-5 pt-3 pb-4 text-gray-700 leading-relaxed">
                   {/* Support bold markdown with simple string replacement */}
                   {item.answer.split("**").map((part, index) => {
                     // Odd indices are bolded
