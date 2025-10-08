@@ -198,7 +198,7 @@ export function FAQ({ className = "", onToggle, onCTAClick }: FAQProps) {
 
       {/* CTA Footer */}
       <div className="mt-12 pt-8 border-t border-gray-200 text-center">
-        <p className="text-white font-medium mb-4">Still have questions?</p>
+        <p className="text-gray-700 font-medium mb-4">Still have questions?</p>
         <div className="flex flex-col sm:flex-row items-center justify-center gap-3">
           <Button
             variant="outline"
@@ -214,7 +214,7 @@ export function FAQ({ className = "", onToggle, onCTAClick }: FAQProps) {
           <Button
             variant="servio"
             asChild
-            className="bg-purple-600 hover:bg-purple-700"
+            className="bg-purple-600 hover:bg-purple-700 text-white"
             onClick={() => handleCTAClick("trial")}
           >
             <Link href="/sign-up">
