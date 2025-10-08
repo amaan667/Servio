@@ -23,6 +23,7 @@ export function AddressInput({ value, onChange, onCoordinatesChange }: AddressIn
   const [isLoadingMap, setIsLoadingMap] = useState(false);
   const [hasGoogleMaps, setHasGoogleMaps] = useState(false);
   const [googleMapsError, setGoogleMapsError] = useState<string | null>(null);
+  const [autocompleteEnabled, setAutocompleteEnabled] = useState(true);
   const inputRef = useRef<HTMLInputElement>(null);
   const autocompleteRef = useRef<google.maps.places.Autocomplete | null>(null);
 
@@ -43,9 +44,9 @@ export function AddressInput({ value, onChange, onCoordinatesChange }: AddressIn
       });
   }, []);
 
-  // Initialize Google Places Autocomplete - only if Google Maps is working
+  // Initialize Google Places Autocomplete - only if Google Maps is working and autocomplete is enabled
   useEffect(() => {
-    if (!hasGoogleMaps || !inputRef.current || autocompleteRef.current) return;
+    if (!hasGoogleMaps || !inputRef.current || autocompleteRef.current || !autocompleteEnabled) return;
 
     console.log('AddressInput: Initializing Google Places Autocomplete...');
     try {
@@ -60,6 +61,8 @@ export function AddressInput({ value, onChange, onCoordinatesChange }: AddressIn
       const autocomplete = new google.maps.places.Autocomplete(inputRef.current, {
         types: ['address'],
         fields: ['formatted_address', 'geometry', 'name', 'address_components'],
+        // Make autocomplete less aggressive
+        componentRestrictions: { country: [] }, // Allow all countries
       });
 
       autocomplete.addListener('place_changed', () => {
@@ -99,11 +102,11 @@ export function AddressInput({ value, onChange, onCoordinatesChange }: AddressIn
       setHasGoogleMaps(false);
       setGoogleMapsError('Failed to initialize Google Places');
     }
-  }, [hasGoogleMaps, onChange, onCoordinatesChange]);
+  }, [hasGoogleMaps, autocompleteEnabled, onChange, onCoordinatesChange]);
 
   // Reinitialize autocomplete when input ref changes (e.g., after clearing)
   useEffect(() => {
-    if (hasGoogleMaps && inputRef.current && !autocompleteRef.current) {
+    if (hasGoogleMaps && inputRef.current && !autocompleteRef.current && autocompleteEnabled) {
       console.log('AddressInput: Reinitializing autocomplete after field change...');
       try {
         // Check if Google Maps is actually available before reinitializing
@@ -117,6 +120,8 @@ export function AddressInput({ value, onChange, onCoordinatesChange }: AddressIn
         const autocomplete = new google.maps.places.Autocomplete(inputRef.current, {
           types: ['address'],
           fields: ['formatted_address', 'geometry', 'name', 'address_components'],
+          // Make autocomplete less aggressive
+          componentRestrictions: { country: [] }, // Allow all countries
         });
 
         autocomplete.addListener('place_changed', () => {
@@ -155,7 +160,7 @@ export function AddressInput({ value, onChange, onCoordinatesChange }: AddressIn
         setGoogleMapsError('Failed to reinitialize autocomplete');
       }
     }
-  }, [hasGoogleMaps, value, onChange, onCoordinatesChange]);
+  }, [hasGoogleMaps, autocompleteEnabled, value, onChange, onCoordinatesChange]);
 
   // Update map preview when address changes
   const updateMapPreview = async (lat: number, lng: number) => {
@@ -229,25 +234,45 @@ export function AddressInput({ value, onChange, onCoordinatesChange }: AddressIn
             <MapPin className="h-4 w-4" />
             Venue Address
           </Label>
-          {value && (
-            <Button
-              type="button"
-              variant="outline"
-              size="sm"
-              onClick={() => {
-                onChange('');
-                setMapUrl(null);
-                // Reset autocomplete to allow fresh suggestions
-                if (autocompleteRef.current) {
-                  autocompleteRef.current = null;
-                }
-              }}
-              className="h-7 px-2 text-xs"
-              title="Clear address"
-            >
-              <X className="h-3 w-3" />
-            </Button>
-          )}
+          <div className="flex gap-1">
+            {value && (
+              <Button
+                type="button"
+                variant="outline"
+                size="sm"
+                onClick={() => {
+                  onChange('');
+                  setMapUrl(null);
+                  // Reset autocomplete to allow fresh suggestions
+                  if (autocompleteRef.current) {
+                    autocompleteRef.current = null;
+                  }
+                }}
+                className="h-7 px-2 text-xs"
+                title="Clear address"
+              >
+                <X className="h-3 w-3" />
+              </Button>
+            )}
+            {hasGoogleMaps && (
+              <Button
+                type="button"
+                variant="outline"
+                size="sm"
+                onClick={() => {
+                  setAutocompleteEnabled(!autocompleteEnabled);
+                  // Clear autocomplete if disabling
+                  if (autocompleteRef.current && !autocompleteEnabled) {
+                    autocompleteRef.current = null;
+                  }
+                }}
+                className={`h-7 px-2 text-xs ${autocompleteEnabled ? 'bg-purple-100' : 'bg-gray-100'}`}
+                title={autocompleteEnabled ? 'Disable autocomplete' : 'Enable autocomplete'}
+              >
+                {autocompleteEnabled ? 'Auto' : 'Manual'}
+              </Button>
+            )}
+          </div>
         </div>
         
         <Input
