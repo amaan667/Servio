@@ -3,7 +3,8 @@
 import { useState, useEffect, useRef } from "react";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { MapPin, Loader2 } from "lucide-react";
+import { Button } from "@/components/ui/button";
+import { MapPin, Loader2, Search, Edit3 } from "lucide-react";
 import { Card } from "@/components/ui/card";
 import { loadGoogleMapsAPI } from "@/lib/google-maps";
 
@@ -21,6 +22,7 @@ export function AddressInput({ value, onChange, onCoordinatesChange }: AddressIn
   const [mapUrl, setMapUrl] = useState<string | null>(null);
   const [isLoadingMap, setIsLoadingMap] = useState(false);
   const [hasGoogleMaps, setHasGoogleMaps] = useState(false);
+  const [autocompleteEnabled, setAutocompleteEnabled] = useState(false);
   const inputRef = useRef<HTMLInputElement>(null);
   const autocompleteRef = useRef<google.maps.places.Autocomplete | null>(null);
 
@@ -40,7 +42,7 @@ export function AddressInput({ value, onChange, onCoordinatesChange }: AddressIn
 
   // Initialize Google Places Autocomplete
   useEffect(() => {
-    if (!hasGoogleMaps || !inputRef.current || autocompleteRef.current) return;
+    if (!hasGoogleMaps || !inputRef.current || autocompleteRef.current || !autocompleteEnabled) return;
 
     console.log('AddressInput: Initializing Google Places Autocomplete...');
     try {
@@ -52,7 +54,7 @@ export function AddressInput({ value, onChange, onCoordinatesChange }: AddressIn
       autocomplete.addListener('place_changed', () => {
         const place = autocomplete.getPlace();
         
-        if (place.formatted_address) {
+        if (place.formatted_address && place.place_id) {
           onChange(place.formatted_address, {
             lat: place.geometry?.location?.lat() || 0,
             lng: place.geometry?.location?.lng() || 0,
@@ -73,7 +75,15 @@ export function AddressInput({ value, onChange, onCoordinatesChange }: AddressIn
       console.error('AddressInput: Error initializing Google Places:', error);
       setHasGoogleMaps(false);
     }
-  }, [hasGoogleMaps, onChange, onCoordinatesChange]);
+  }, [hasGoogleMaps, autocompleteEnabled, onChange, onCoordinatesChange]);
+
+  // Clean up autocomplete when disabled
+  useEffect(() => {
+    if (!autocompleteEnabled && autocompleteRef.current) {
+      // Clear the autocomplete
+      autocompleteRef.current = null;
+    }
+  }, [autocompleteEnabled]);
 
   // Update map preview when address changes
   const updateMapPreview = async (lat: number, lng: number) => {
@@ -135,29 +145,56 @@ export function AddressInput({ value, onChange, onCoordinatesChange }: AddressIn
   return (
     <div className="space-y-3">
       <div>
-        <Label htmlFor="venueAddress" className="flex items-center gap-2">
-          <MapPin className="h-4 w-4" />
-          Venue Address
+        <div className="flex items-center justify-between mb-1">
+          <Label htmlFor="venueAddress" className="flex items-center gap-2">
+            <MapPin className="h-4 w-4" />
+            Venue Address
+          </Label>
           {hasGoogleMaps && (
-            <span className="text-xs text-green-600 font-normal">(with autocomplete)</span>
+            <Button
+              type="button"
+              variant="outline"
+              size="sm"
+              onClick={() => setAutocompleteEnabled(!autocompleteEnabled)}
+              className="h-7 px-2 text-xs"
+            >
+              {autocompleteEnabled ? (
+                <>
+                  <Edit3 className="h-3 w-3 mr-1" />
+                  Manual
+                </>
+              ) : (
+                <>
+                  <Search className="h-3 w-3 mr-1" />
+                  Autocomplete
+                </>
+              )}
+            </Button>
           )}
-        </Label>
+        </div>
+        
         <Input
           ref={inputRef}
           id="venueAddress"
           value={value}
           onChange={(e) => onChange(e.target.value)}
-          placeholder={hasGoogleMaps ? "Start typing to search..." : "Enter full venue address"}
-          className="rounded-lg border-gray-200 mt-1"
+          placeholder={
+            autocompleteEnabled 
+              ? "Start typing to search for addresses..." 
+              : "Enter full venue address manually"
+          }
+          className="rounded-lg border-gray-200"
         />
+        
         <p className="text-xs text-muted-foreground mt-1">
-          {hasGoogleMaps 
-            ? "Start typing and select from suggestions for accurate location"
-            : "Enter full address including city and postcode"}
+          {autocompleteEnabled 
+            ? "💡 Autocomplete enabled - type to see address suggestions"
+            : "✏️ Manual mode - type your address directly"}
         </p>
+        
         {/* Debug info - remove in production */}
         <p className="text-xs text-gray-500 mt-1">
-          Debug: Google Maps {hasGoogleMaps ? '✅ Loaded' : '❌ Not loaded'} | API Key: {process.env.NEXT_PUBLIC_GOOGLE_MAPS_API_KEY ? '✅ Set' : '❌ Missing'}
+          Debug: Google Maps {hasGoogleMaps ? '✅ Loaded' : '❌ Not loaded'} | API Key: {process.env.NEXT_PUBLIC_GOOGLE_MAPS_API_KEY ? '✅ Set' : '❌ Missing'} | Autocomplete: {autocompleteEnabled ? '✅ On' : '❌ Off'}
         </p>
       </div>
 
