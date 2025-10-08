@@ -6,6 +6,7 @@ import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/com
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { Textarea } from "@/components/ui/textarea";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger, DialogDescription } from "@/components/ui/dialog";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
@@ -415,7 +416,7 @@ export default function VenueSettingsClient({ user, venue, venues }: VenueSettin
                     disabled
                     className="bg-gray-50 border-gray-200 rounded-lg mt-1"
                   />
-                  <p className="text-sm text-muted-foreground mt-1">Email address cannot be changed</p>
+                  <p className="text-sm text-muted-foreground mt-1">Email address cannot be changed - it's associated with your Gmail account</p>
                 </div>
                 
                 <div>
@@ -443,7 +444,7 @@ export default function VenueSettingsClient({ user, venue, venues }: VenueSettin
                 <CardDescription>Manage your account security</CardDescription>
               </CardHeader>
               <CardContent className="pt-6">
-                <Accordion type="single" collapsible className="w-full">
+                <Accordion type="single" collapsible className="w-full space-y-3">
                   <AccordionItem value="password">
                     <AccordionTrigger className="hover:no-underline">
                       <div className="flex items-center gap-2">
@@ -532,7 +533,7 @@ export default function VenueSettingsClient({ user, venue, venues }: VenueSettin
                     </AccordionContent>
                   </AccordionItem>
 
-                  <AccordionItem value="2fa">
+                  <AccordionItem value="2fa" className="mt-4">
                     <AccordionTrigger className="hover:no-underline">
                       <div className="flex items-center gap-2">
                         <Shield className="h-4 w-4" />
@@ -674,14 +675,21 @@ export default function VenueSettingsClient({ user, venue, venues }: VenueSettin
                   />
                 </div>
                 
-                <AddressInput
-                  value={venueAddress}
-                  onChange={(address) => setVenueAddress(address)}
-                  onCoordinatesChange={(lat, lng) => {
-                    setLatitude(lat);
-                    setLongitude(lng);
-                  }}
-                />
+                <div>
+                  <Label htmlFor="venueAddress" className="flex items-center gap-2">
+                    <MapPin className="h-4 w-4" />
+                    Venue Address
+                  </Label>
+                  <Textarea
+                    id="venueAddress"
+                    value={venueAddress}
+                    onChange={(e) => setVenueAddress(e.target.value)}
+                    placeholder="Enter venue address"
+                    rows={3}
+                    className="rounded-lg border-gray-200 mt-1"
+                  />
+                  <p className="text-xs text-muted-foreground mt-1">Full address including city and postcode</p>
+                </div>
 
                 {/* Operating Hours - Expandable */}
                 <Accordion type="single" collapsible className="border rounded-lg">
