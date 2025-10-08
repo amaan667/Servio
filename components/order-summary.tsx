@@ -128,9 +128,11 @@ export default function OrderSummary({ orderId, sessionId, orderData, isDemo = f
       console.log('[ORDER SUMMARY COMPONENT DEBUG] ===== DEMO ORDER - NO ORDER DATA PROVIDED =====');
       console.log('[ORDER SUMMARY COMPONENT DEBUG] Demo order detected, skipping database fetch');
       console.log('[ORDER SUMMARY COMPONENT DEBUG] orderId:', orderId);
-      setError('Demo order data not found in session storage');
-      setLoading(false);
-      return;
+      console.log('[ORDER SUMMARY COMPONENT DEBUG] Waiting for parent to provide data via URL params or localStorage');
+      // Keep loading while parent component reconstructs data from URL params
+      // The parent (payment success page) will pass orderData via props once ready
+      // When orderData arrives, the useEffect will re-run and line 112-123 will handle it
+      return; // Exit early, keep loading state
     }
 
     if (!orderId && !sessionId) {
