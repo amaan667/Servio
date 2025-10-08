@@ -54,8 +54,20 @@ export default function PaymentPage() {
   const [error, setError] = useState<string | null>(null);
   const [paymentAction, setPaymentAction] = useState<PaymentAction | null>(null);
   const [isDemo, setIsDemo] = useState(false);
+  
+  // Check for demo mode from URL parameter as well
+  const isDemoFromUrl = searchParams?.get('demo') === '1';
 
   useEffect(() => {
+    // HARDCODED DEMO MODE CHECK - If demo mode detected, immediately redirect to success
+    if (isDemoFromUrl) {
+      console.log('[PAYMENT DEBUG] HARDCODED DEMO MODE - redirecting immediately');
+      const demoOrderId = `demo-${Date.now()}`;
+      const successUrl = `/payment/success?orderId=${demoOrderId}&demo=1&paymentMethod=demo`;
+      router.push(successUrl);
+      return;
+    }
+    
     // Get checkout data from localStorage
     const storedData = localStorage.getItem("servio-checkout-data");
     
@@ -68,6 +80,15 @@ export default function PaymentPage() {
         setCheckoutData(data);
         setIsDemo(data.isDemo || false); // Set demo flag from checkout data
         console.log('[PAYMENT DEBUG] Demo flag set to:', data.isDemo || false);
+        
+        // HARDCODED DEMO MODE CHECK - If demo mode in checkout data, immediately redirect
+        if (data.isDemo) {
+          console.log('[PAYMENT DEBUG] HARDCODED DEMO MODE from checkout data - redirecting immediately');
+          const demoOrderId = `demo-${Date.now()}`;
+          const successUrl = `/payment/success?orderId=${demoOrderId}&demo=1&paymentMethod=demo`;
+          router.push(successUrl);
+          return;
+        }
       } catch (error) {
         console.error('[PAYMENT DEBUG] Error parsing checkout data:', error);
         router.push("/order");
@@ -76,7 +97,7 @@ export default function PaymentPage() {
       // Redirect back if no checkout data
       router.push("/order");
     }
-  }, [router]);
+  }, [router, isDemoFromUrl]);
 
   const handlePayment = async (action: PaymentAction) => {
     console.log('[PAYMENT DEBUG] handlePayment called with action:', action);
@@ -92,10 +113,15 @@ export default function PaymentPage() {
 
     try {
       // Debug logging for demo mode
-      console.log('[PAYMENT DEBUG] Demo mode check:', { isDemo, checkoutDataIsDemo: checkoutData.isDemo });
+      console.log('[PAYMENT DEBUG] Demo mode check:', { 
+        isDemo, 
+        checkoutDataIsDemo: checkoutData.isDemo, 
+        isDemoFromUrl,
+        finalDemoCheck: isDemo || checkoutData.isDemo || isDemoFromUrl
+      });
       
       // In demo mode, skip all payment processing and go straight to success
-      if (isDemo || checkoutData.isDemo) {
+      if (isDemo || checkoutData.isDemo || isDemoFromUrl) {
         console.log('[PAYMENT DEBUG] Demo mode - skipping payment processing');
         const demoOrderId = `demo-${Date.now()}`;
         
