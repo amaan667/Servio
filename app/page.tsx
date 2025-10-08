@@ -16,9 +16,9 @@ import {
   Star,
   CheckCircle,
   ArrowRight,
-  ChevronDown,
 } from "lucide-react";
 import { useAuth } from "@/app/auth/AuthProvider";
+import { FAQ, faqSchema } from "@/components/marketing/FAQ";
 
 function PricingQuickCompare({
   isSignedIn,
@@ -78,79 +78,23 @@ function PricingQuickCompare({
   );
 }
 
-function FAQSection() {
-  const [openItems, setOpenItems] = useState<Set<number>>(new Set());
-
-  const toggleItem = (index: number) => {
-    setOpenItems(prev => {
-      const newSet = new Set(prev);
-      if (newSet.has(index)) {
-        newSet.delete(index);
-      } else {
-        newSet.add(index);
-      }
-      return newSet;
-    });
-  };
-
-  const faqs = [
-    {
-      question: "Do I need new hardware to use Servio?",
-      answer: "No! Servio works entirely on your customers' smartphones. You don't need to buy tablets, POS terminals, or special equipment. Just print out the QR codes we generate for each table, and you're ready to go. Your staff can manage orders from any device with a web browser."
-    },
-    {
-      question: "Can I try Servio for free?",
-      answer: "Yes! We offer a 14-day free trial with full access to all features—no credit card required. You can set up your menu, generate QR codes, and test the complete ordering system. After the trial, choose the plan that fits your business needs, or cancel anytime with no penalties."
-    },
-    {
-      question: "How do customers place orders?",
-      answer: "It's simple: customers scan the QR code on their table using their phone's camera. This opens your digital menu in their browser (no app download needed). They browse items, customize orders, add to cart, and pay directly through their phone. You receive the order instantly in your dashboard, and customers get real-time updates on their order status."
-    },
-    {
-      question: "Is Servio available outside the UK?",
-      answer: "Currently, Servio is optimized for businesses in the UK with GBP pricing and Stripe payment integration for UK merchants. However, we're actively working on expanding to other regions. If you're interested in using Servio outside the UK, please contact our sales team, and we'll notify you as soon as we launch in your area."
-    }
-  ];
-
-  return (
-    <div className="w-full max-w-5xl mx-auto px-6 pt-12">
-      <h2 className="text-3xl font-bold text-center mb-8">Frequently Asked Questions</h2>
-      <div className="space-y-4">
-        {faqs.map((faq, index) => (
-          <div
-            key={index}
-            className="border border-gray-200 rounded-lg bg-gray-50 hover:bg-gray-100 transition-colors"
-          >
-            <button
-              onClick={() => toggleItem(index)}
-              className="w-full p-4 text-left flex justify-between items-center gap-4"
-            >
-              <span className="font-bold text-gray-900">{faq.question}</span>
-              <ChevronDown
-                className={`h-5 w-5 text-gray-600 flex-shrink-0 transition-transform duration-200 ${
-                  openItems.has(index) ? 'rotate-180' : ''
-                }`}
-              />
-            </button>
-            <div
-              className={`overflow-hidden transition-all duration-200 ease-in-out ${
-                openItems.has(index) ? 'max-h-96 opacity-100' : 'max-h-0 opacity-0'
-              }`}
-            >
-              <div className="px-4 pb-4 pt-2 text-gray-700 leading-relaxed">
-                {faq.answer}
-              </div>
-            </div>
-          </div>
-        ))}
-      </div>
-    </div>
-  );
-}
 
 export default function HomePage() {
   const router = useRouter();
   const { user, loading: authLoading } = useAuth();
+
+  // Analytics handler for FAQ interactions (optional)
+  const handleFAQToggle = (question: string, isOpen: boolean) => {
+    // Fire analytics event if you have analytics configured
+    // Example: analytics.track('faq_toggle', { question, state: isOpen ? 'open' : 'closed' });
+    console.log('FAQ toggled:', question, isOpen ? 'opened' : 'closed');
+  };
+
+  const handleFAQCTAClick = (type: "contact" | "trial") => {
+    // Fire analytics event if you have analytics configured
+    // Example: analytics.track('faq_cta_click', { type });
+    console.log('FAQ CTA clicked:', type);
+  };
 
   const handleGetStarted = () => {
     if (user) {
@@ -229,6 +173,12 @@ export default function HomePage() {
 
   return (
     <div className="min-h-screen bg-white">
+      {/* JSON-LD Schema for FAQ SEO */}
+      <script
+        type="application/ld+json"
+        dangerouslySetInnerHTML={{ __html: JSON.stringify(faqSchema) }}
+      />
+
       {/* Hero Section */}
       <section className="relative bg-gradient-to-br from-[#7c3aed] via-[#7a3bec] to-[#6d28d9] text-white overflow-hidden">
         {/* Add animated background effects */}
@@ -534,7 +484,7 @@ export default function HomePage() {
         <PricingQuickCompare isSignedIn={!!user} onPrimaryClick={handlePricingPrimary} />
         
         {/* FAQ Section */}
-        <FAQSection />
+        <FAQ onToggle={handleFAQToggle} onCTAClick={handleFAQCTAClick} />
       </section>
 
       {/* Pricing Section */}
