@@ -10,8 +10,11 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { supabase } from "@/lib/supabase/client";
-import { ArrowLeft, BarChart, TrendingUp, Clock, ShoppingBag, DollarSign, Calendar, CalendarIcon, Target, Award, TrendingDown } from "lucide-react";
+import { ArrowLeft, BarChart, TrendingUp, Clock, ShoppingBag, DollarSign, Calendar, CalendarIcon, Target, Award, TrendingDown, Download } from "lucide-react";
 import MobileNav from '@/components/MobileNav';
+import { toCSV, formatDateForCSV, formatCurrencyForCSV } from '@/lib/csv';
+import { useCsvDownload, generateTimestampedFilename } from '@/hooks/useCsvDownload';
+import { useToast } from '@/hooks/use-toast';
 
 interface AnalyticsData {
   totalOrders: number;
@@ -50,8 +53,11 @@ export default function AnalyticsClient({ venueId, venueName }: { venueId: strin
     peakDay: { date: '', revenue: 0 },
     lowestDay: { date: '', revenue: 0 }
   });
+  const [filteredOrders, setFilteredOrders] = useState<any[]>([]);
   const [error, setError] = useState<string | null>(null);
   const router = useRouter();
+  const { toast } = useToast();
+  const { downloadCSV, isDownloading } = useCsvDownload();
 
   const getDateRange = (period: TimePeriod) => {
     const endDate = new Date();
@@ -303,6 +309,9 @@ export default function AnalyticsClient({ venueId, venueName }: { venueId: strin
         lowestDay
       });
 
+      // Store filtered orders for CSV export
+      setFilteredOrders(validOrders);
+
     } catch (err: any) {
       console.error('🔍 [ANALYTICS] Error fetching analytics:', err);
       setError(err.message);
@@ -314,6 +323,83 @@ export default function AnalyticsClient({ venueId, venueName }: { venueId: strin
   useEffect(() => {
     fetchAnalyticsData();
   }, [fetchAnalyticsData]);
+
+  const handleExportCSV = useCallback(() => {
+    if (filteredOrders.length === 0) {
+      toast({
+        title: "No Data to Export",
+        description: "No data to export for the selected date range.",
+        variant: "default"
+      });
+      return;
+    }
+
+    try {
+      // Flatten orders into individual item rows for CSV
+      const csvRows: any[] = [];
+      
+      filteredOrders.forEach((order: any) => {
+        if (order.items && Array.isArray(order.items)) {
+          order.items.forEach((item: any) => {
+            csvRows.push({
+              date: formatDateForCSV(order.created_at),
+              table: order.table_number || 'N/A',
+              item: item.item_name || item.name || 'Unknown Item',
+              quantity: item.quantity || 0,
+              price: formatCurrencyForCSV(item.price || 0),
+              total: formatCurrencyForCSV((item.quantity || 0) * (item.price || 0)),
+              paymentMethod: order.payment_method || 'Unknown'
+            });
+          });
+        } else {
+          // Order with no items (shouldn't happen but handle gracefully)
+          csvRows.push({
+            date: formatDateForCSV(order.created_at),
+            table: order.table_number || 'N/A',
+            item: 'Order Total',
+            quantity: 1,
+            price: formatCurrencyForCSV(order.total_amount || 0),
+            total: formatCurrencyForCSV(order.total_amount || 0),
+            paymentMethod: order.payment_method || 'Unknown'
+          });
+        }
+      });
+
+      // Define CSV columns
+      const columns = [
+        { key: 'date' as const, header: 'Date' },
+        { key: 'table' as const, header: 'Table' },
+        { key: 'item' as const, header: 'Item' },
+        { key: 'quantity' as const, header: 'Quantity' },
+        { key: 'price' as const, header: 'Price' },
+        { key: 'total' as const, header: 'Total' },
+        { key: 'paymentMethod' as const, header: 'Payment Method' }
+      ];
+
+      // Generate CSV
+      const csv = toCSV(csvRows, columns);
+
+      // Generate filename
+      const filename = generateTimestampedFilename('servio-analytics');
+
+      // Download CSV
+      downloadCSV({ filename, csv });
+
+      toast({
+        title: "CSV Downloaded",
+        description: `Analytics data exported successfully (${csvRows.length} rows).`,
+        variant: "default"
+      });
+
+    } catch (error) {
+      console.error('Error exporting CSV:', error);
+      toast({
+        title: "Export Failed",
+        description: "Failed to export analytics data. Please try again.",
+        variant: "destructive"
+      });
+    }
+  }, [filteredOrders, downloadCSV, toast]);
 
   const getTimePeriodLabel = (period: TimePeriod) => {
     switch (period) {
@@ -504,9 +590,20 @@ export default function AnalyticsClient({ venueId, venueName }: { venueId: strin
             </Popover>
           </div>
         </div>
-        <div className="flex items-center space-x-2">
-          <span className="text-sm text-gray-900">Last updated:</span>
-          <span className="text-sm font-medium text-gray-900">{new Date().toLocaleTimeString()}</span>
+        <div className="flex items-center space-x-4">
+          <Button
+            onClick={handleExportCSV}
+            disabled={filteredOrders.length === 0 || isDownloading}
+            className="inline-flex items-center gap-2 rounded-lg bg-purple-600 px-3 py-2 text-white text-sm hover:bg-purple-700 disabled:opacity-50"
+            title="Exports the rows you're viewing"
+          >
+            <Download className="h-4 w-4" />
+            {isDownloading ? 'Generating...' : 'Download CSV'}
+          </Button>
+          <div className="flex items-center space-x-2">
+            <span className="text-sm text-gray-900">Last updated:</span>
+            <span className="text-sm font-medium text-gray-900">{new Date().toLocaleTimeString()}</span>
+          </div>
         </div>
       </div>
 
