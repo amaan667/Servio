@@ -4,7 +4,7 @@ import { useState, useEffect, useRef } from "react";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Button } from "@/components/ui/button";
-import { MapPin, Loader2, Search, Edit3 } from "lucide-react";
+import { MapPin, Loader2, Search, Edit3, X } from "lucide-react";
 import { Card } from "@/components/ui/card";
 import { loadGoogleMapsAPI } from "@/lib/google-maps";
 
@@ -54,7 +54,10 @@ export function AddressInput({ value, onChange, onCoordinatesChange }: AddressIn
       autocomplete.addListener('place_changed', () => {
         const place = autocomplete.getPlace();
         
+        // Only update if user actually selected a place (not just typing)
         if (place.formatted_address && place.place_id) {
+          console.log('AddressInput: Place selected from autocomplete:', place.formatted_address);
+          
           onChange(place.formatted_address, {
             lat: place.geometry?.location?.lat() || 0,
             lng: place.geometry?.location?.lng() || 0,
@@ -150,40 +153,61 @@ export function AddressInput({ value, onChange, onCoordinatesChange }: AddressIn
             <MapPin className="h-4 w-4" />
             Venue Address
           </Label>
-          {hasGoogleMaps && (
-            <Button
-              type="button"
-              variant="outline"
-              size="sm"
-              onClick={() => setAutocompleteEnabled(!autocompleteEnabled)}
-              className="h-7 px-2 text-xs"
-            >
-              {autocompleteEnabled ? (
-                <>
-                  <Edit3 className="h-3 w-3 mr-1" />
-                  Manual
-                </>
-              ) : (
-                <>
-                  <Search className="h-3 w-3 mr-1" />
-                  Autocomplete
-                </>
-              )}
-            </Button>
-          )}
+          <div className="flex gap-2">
+            {value && (
+              <Button
+                type="button"
+                variant="outline"
+                size="sm"
+                onClick={() => {
+                  onChange('');
+                  setMapUrl(null);
+                }}
+                className="h-7 px-2 text-xs"
+                title="Clear address"
+              >
+                <X className="h-3 w-3" />
+              </Button>
+            )}
+            {hasGoogleMaps && (
+              <Button
+                type="button"
+                variant="outline"
+                size="sm"
+                onClick={() => setAutocompleteEnabled(!autocompleteEnabled)}
+                className="h-7 px-2 text-xs"
+              >
+                {autocompleteEnabled ? (
+                  <>
+                    <Edit3 className="h-3 w-3 mr-1" />
+                    Manual
+                  </>
+                ) : (
+                  <>
+                    <Search className="h-3 w-3 mr-1" />
+                    Autocomplete
+                  </>
+                )}
+              </Button>
+            )}
+          </div>
         </div>
         
         <Input
           ref={inputRef}
           id="venueAddress"
           value={value}
-          onChange={(e) => onChange(e.target.value)}
+          onChange={(e) => {
+            // Always allow manual typing, even with autocomplete enabled
+            onChange(e.target.value);
+          }}
           placeholder={
             autocompleteEnabled 
               ? "Start typing to search for addresses..." 
               : "Enter full venue address manually"
           }
           className="rounded-lg border-gray-200"
+          autoComplete="off" // Prevent browser autocomplete interference
         />
         
         <p className="text-xs text-muted-foreground mt-1">
