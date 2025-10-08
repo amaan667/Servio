@@ -116,23 +116,23 @@ export default function OrderSummaryPage() {
       console.log('[ORDER SUMMARY DEBUG] demoOrderData object:', demoOrderData);
       console.log('[ORDER SUMMARY DEBUG] demoOrderData JSON string:', JSON.stringify(demoOrderData));
       
-      // Check sessionStorage before setting
-      console.log('[ORDER SUMMARY DEBUG] sessionStorage before setItem:', sessionStorage.getItem('demo-order-data'));
+      // Check localStorage before setting
+      console.log('[ORDER SUMMARY DEBUG] localStorage before setItem:', localStorage.getItem('demo-order-data'));
       
       // Store demo order data for the success page
       try {
-        console.log('[ORDER SUMMARY DEBUG] ===== STORING TO SESSIONSTORAGE =====');
-        sessionStorage.setItem('demo-order-data', JSON.stringify(demoOrderData));
-        console.log('[ORDER SUMMARY DEBUG] sessionStorage.setItem completed successfully');
+        console.log('[ORDER SUMMARY DEBUG] ===== STORING TO LOCALSTORAGE =====');
+        localStorage.setItem('demo-order-data', JSON.stringify(demoOrderData));
+        console.log('[ORDER SUMMARY DEBUG] localStorage.setItem completed successfully');
         
         // Verify storage immediately
-        const stored = sessionStorage.getItem('demo-order-data');
+        const stored = localStorage.getItem('demo-order-data');
         console.log('[ORDER SUMMARY DEBUG] ===== VERIFICATION =====');
         console.log('[ORDER SUMMARY DEBUG] Stored data:', stored);
         console.log('[ORDER SUMMARY DEBUG] Stored data parsed:', JSON.parse(stored || '{}'));
         
-        // Check all sessionStorage keys
-        console.log('[ORDER SUMMARY DEBUG] All sessionStorage keys:', Object.keys(sessionStorage));
+        // Check all localStorage keys
+        console.log('[ORDER SUMMARY DEBUG] All localStorage keys:', Object.keys(localStorage));
         
         // Small delay to ensure storage is complete
         console.log('[ORDER SUMMARY DEBUG] ===== PREPARING REDIRECT =====');
@@ -141,7 +141,7 @@ export default function OrderSummaryPage() {
         
         setTimeout(() => {
           console.log('[ORDER SUMMARY DEBUG] ===== EXECUTING REDIRECT =====');
-          console.log('[ORDER SUMMARY DEBUG] Final sessionStorage check before redirect:', sessionStorage.getItem('demo-order-data'));
+          console.log('[ORDER SUMMARY DEBUG] Final localStorage check before redirect:', localStorage.getItem('demo-order-data'));
           window.location.href = redirectUrl;
         }, 100);
       } catch (error) {
@@ -262,10 +262,10 @@ export default function OrderSummaryPage() {
       // Store demo order data for the success page
       console.log('[ORDER SUMMARY DEBUG] Storing demo order data (pay later):', demoOrderData);
       try {
-        sessionStorage.setItem('demo-order-data', JSON.stringify(demoOrderData));
+        localStorage.setItem('demo-order-data', JSON.stringify(demoOrderData));
         
         // Verify storage
-        const stored = sessionStorage.getItem('demo-order-data');
+        const stored = localStorage.getItem('demo-order-data');
         console.log('[ORDER SUMMARY DEBUG] Verified storage (pay later):', stored);
         
         // Small delay to ensure storage is complete
