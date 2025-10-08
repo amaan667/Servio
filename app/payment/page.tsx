@@ -85,6 +85,18 @@ export default function PaymentPage() {
     setPaymentAction(action);
 
     try {
+      // In demo mode, skip all payment processing and go straight to success
+      if (isDemo) {
+        console.log('[PAYMENT DEBUG] Demo mode - skipping payment processing');
+        const demoOrderId = `demo-${Date.now()}`;
+        
+        // Redirect to payment success page immediately
+        const successUrl = `/payment/success?orderId=${demoOrderId}&demo=1&paymentMethod=${action}`;
+        router.push(successUrl);
+        localStorage.removeItem("servio-checkout-data");
+        return;
+      }
+
       // Handle different payment types
       if (action === 'stripe') {
         
@@ -135,50 +147,42 @@ export default function PaymentPage() {
       }
 
       // For non-Stripe payments (Pay Later, Pay at Till), create the order immediately with UNPAID status
-      // Skip order creation for demo mode
-      let orderData = { order: { id: `demo-${Date.now()}` } };
-      
-      if (!isDemo) {
-        const orderPayload = {
-          venue_id: checkoutData.venueId,
-          table_number: checkoutData.tableNumber,
-          customer_name: checkoutData.customerName || 'Customer',
-          customer_phone: checkoutData.customerPhone || '+1234567890',
-          items: checkoutData.cart.map(item => ({
-            menu_item_id: item.id,
-            quantity: item.quantity,
-            price: item.price,
-            item_name: item.name,
-            specialInstructions: item.specialInstructions || null
-          })),
-          total_amount: Math.round(checkoutData.total * 100), // Convert to pence
-          order_status: 'PLACED',
-          payment_status: action === 'till' ? 'TILL' : action === 'later' ? 'PAY_LATER' : 'UNPAID',
-          payment_method: action === 'demo' ? 'demo' : action === 'till' ? 'till' : 'later',
-          source: checkoutData.orderType === 'counter' ? 'counter' : 'qr', // Set source based on order type
-          notes: `${action} payment order`
-        };
+      const orderPayload = {
+        venue_id: checkoutData.venueId,
+        table_number: checkoutData.tableNumber,
+        customer_name: checkoutData.customerName || 'Customer',
+        customer_phone: checkoutData.customerPhone || '+1234567890',
+        items: checkoutData.cart.map(item => ({
+          menu_item_id: item.id,
+          quantity: item.quantity,
+          price: item.price,
+          item_name: item.name,
+          specialInstructions: item.specialInstructions || null
+        })),
+        total_amount: Math.round(checkoutData.total * 100), // Convert to pence
+        order_status: 'PLACED',
+        payment_status: action === 'till' ? 'TILL' : action === 'later' ? 'PAY_LATER' : 'UNPAID',
+        payment_method: action === 'demo' ? 'demo' : action === 'till' ? 'till' : 'later',
+        source: checkoutData.orderType === 'counter' ? 'counter' : 'qr', // Set source based on order type
+        notes: `${action} payment order`
+      };
 
+      const orderResponse = await fetch('/api/orders', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(orderPayload),
+      });
 
-        const orderResponse = await fetch('/api/orders', {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-          },
-          body: JSON.stringify(orderPayload),
-        });
-
-        if (!orderResponse.ok) {
-          const errorText = await orderResponse.text();
-          console.error('[PAYMENT DEBUG] Order creation failed with status:', orderResponse.status);
-          console.error('[PAYMENT DEBUG] Error response:', errorText);
-          throw new Error(`Failed to create order: ${orderResponse.status} - ${errorText}`);
-        }
-
-        orderData = await orderResponse.json();
-      } else {
-        console.log('[PAYMENT DEBUG] Demo mode - skipping real order creation');
+      if (!orderResponse.ok) {
+        const errorText = await orderResponse.text();
+        console.error('[PAYMENT DEBUG] Order creation failed with status:', orderResponse.status);
+        console.error('[PAYMENT DEBUG] Error response:', errorText);
+        throw new Error(`Failed to create order: ${orderResponse.status} - ${errorText}`);
       }
+
+      const orderData = await orderResponse.json();
       
       // Additional debugging for the order object
       if (orderData.order) {
@@ -209,24 +213,14 @@ export default function PaymentPage() {
         }
       }
 
-
-      // Handle demo payment - skip real order creation and payment processing
-      if (action === 'demo') {
-        console.log('[PAYMENT DEBUG] Demo payment - skipping real order creation and payment processing');
-        // For demo mode, we don't need to create real orders or process payments
-        // Just simulate the success flow
-      }
+      // Redirect to success page for non-Stripe payments (Stripe redirects to checkout)
+      setOrderNumber(orderData.order.id || "ORD-001");
       
-      // Only redirect to success page for non-Stripe payments (Stripe redirects to checkout)
-      if (action !== 'stripe' as PaymentAction) {
-        setOrderNumber(orderData.order.id || "ORD-001");
-        
-        // Redirect to payment success page with order ID and additional data
-        const successUrl = `/payment/success?orderId=${orderData.order.id}&demo=${isDemo ? '1' : '0'}&paymentMethod=${action}`;
-        router.push(successUrl);
-        
-        localStorage.removeItem("servio-checkout-data");
-      }
+      // Redirect to payment success page with order ID and additional data
+      const successUrl = `/payment/success?orderId=${orderData.order.id}&demo=0&paymentMethod=${action}`;
+      router.push(successUrl);
+      
+      localStorage.removeItem("servio-checkout-data");
 
     } catch (error) {
       console.error('[PAYMENT DEBUG] Payment error:', error);
