@@ -223,6 +223,17 @@ export default function HomePage() {
                     Sign In
                   </Button>
                 )}
+                {!authLoading && user && (
+                  <Button
+                    size="lg"
+                    onClick={handleGetStarted}
+                    variant="servio"
+                    className="text-lg px-8 py-4"
+                  >
+                    Go to Dashboard
+                    <ArrowRight className="ml-2 h-5 w-5" />
+                  </Button>
+                )}
                 <Button
                   size="lg"
                   onClick={handleDemo}
