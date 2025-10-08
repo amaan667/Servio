@@ -43,12 +43,20 @@ export function AddressInput({ value, onChange, onCoordinatesChange }: AddressIn
       });
   }, []);
 
-  // Initialize Google Places Autocomplete
+  // Initialize Google Places Autocomplete - only if Google Maps is working
   useEffect(() => {
     if (!hasGoogleMaps || !inputRef.current || autocompleteRef.current) return;
 
     console.log('AddressInput: Initializing Google Places Autocomplete...');
     try {
+      // Check if Google Maps is actually available before initializing
+      if (typeof window.google === 'undefined' || !window.google.maps || !window.google.maps.places) {
+        console.warn('AddressInput: Google Maps not fully loaded, skipping autocomplete');
+        setHasGoogleMaps(false);
+        setGoogleMapsError('Google Maps API not properly loaded');
+        return;
+      }
+
       const autocomplete = new google.maps.places.Autocomplete(inputRef.current, {
         types: ['address'],
         fields: ['formatted_address', 'geometry', 'name', 'address_components'],
@@ -98,6 +106,14 @@ export function AddressInput({ value, onChange, onCoordinatesChange }: AddressIn
     if (hasGoogleMaps && inputRef.current && !autocompleteRef.current) {
       console.log('AddressInput: Reinitializing autocomplete after field change...');
       try {
+        // Check if Google Maps is actually available before reinitializing
+        if (typeof window.google === 'undefined' || !window.google.maps || !window.google.maps.places) {
+          console.warn('AddressInput: Google Maps not fully loaded, skipping reinitialization');
+          setHasGoogleMaps(false);
+          setGoogleMapsError('Google Maps API not properly loaded');
+          return;
+        }
+
         const autocomplete = new google.maps.places.Autocomplete(inputRef.current, {
           types: ['address'],
           fields: ['formatted_address', 'geometry', 'name', 'address_components'],
@@ -185,6 +201,14 @@ export function AddressInput({ value, onChange, onCoordinatesChange }: AddressIn
     }
   };
 
+  // Ensure input is always editable
+  useEffect(() => {
+    if (inputRef.current) {
+      inputRef.current.disabled = false;
+      inputRef.current.readOnly = false;
+    }
+  }, [hasGoogleMaps, googleMapsError]);
+
   // Debounce manual geocoding - always run as fallback
   useEffect(() => {
     const timer = setTimeout(() => {
@@ -242,10 +266,15 @@ export function AddressInput({ value, onChange, onCoordinatesChange }: AddressIn
             // Additional autocomplete prevention on focus
             e.target.setAttribute('autocomplete', 'new-password');
           }}
+          onKeyDown={(e) => {
+            // Ensure input is never blocked - allow all key presses
+            e.stopPropagation();
+          }}
           placeholder="Start typing to search for addresses..."
           className="rounded-lg border-gray-200"
           autoComplete="new-password" // Stronger autocomplete prevention
           type="text"
+          disabled={false} // Explicitly ensure input is never disabled
         />
         
         {/* Error message display */}
