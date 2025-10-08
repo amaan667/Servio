@@ -192,14 +192,14 @@ export default function GlobalBottomNav({ venueId, counts = {} }: GlobalBottomNa
       <div className={`fixed bottom-0 left-0 right-0 z-50 bg-white border-t border-gray-200 shadow-lg transition-transform duration-300 mobile-nav ${
         isVisible ? 'translate-y-0' : 'translate-y-full'
       }`} style={{ paddingBottom: 'env(safe-area-inset-bottom)' }}>
-        <div className="grid grid-cols-4 h-28 gap-2 px-2 pb-3 pt-3">
+        <div className="grid grid-cols-4 h-28 gap-2 px-2 pb-3 pt-3 items-stretch">
           {navItems.map((item) => (
             <button
               key={item.id}
               onClick={() => handleNavigation(item.href)}
-              className={`flex flex-col items-center justify-start p-2 relative transition-all duration-200 rounded-xl bg-white border-2 border-servio-purple shadow-lg hover:shadow-xl active:scale-95`}
+              className={`flex flex-col items-center justify-center p-2 relative transition-all duration-200 rounded-xl bg-white border-2 border-servio-purple shadow-lg hover:shadow-xl active:scale-95`}
             >
-              <div className="relative mb-1 flex flex-col items-center">
+              <div className="relative mb-1 flex flex-col items-center justify-center">
                 <item.icon className={`h-6 w-6 transition-colors text-servio-purple`} />
                 {item.badge && item.badge > 0 && (
                   <Badge
@@ -213,7 +213,8 @@ export default function GlobalBottomNav({ venueId, counts = {} }: GlobalBottomNa
               </div>
               <span
                 className={`text-servio-purple font-bold text-center px-1 transition-colors
-                  leading-tight text-xs sm:text-sm max-w-full inline-block mx-auto`}
+                  leading-tight text-xs sm:text-sm w-full flex items-center justify-center
+                  whitespace-nowrap overflow-hidden`}
               >
                 {item.id === 'live-orders' ? `Live (${liveOrdersCount})` : item.label}
               </span>
