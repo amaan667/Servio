@@ -197,7 +197,7 @@ export default function GlobalBottomNav({ venueId, counts = {} }: GlobalBottomNa
             <button
               key={item.id}
               onClick={() => handleNavigation(item.href)}
-              className={`flex flex-col items-center justify-center p-2 relative transition-all duration-200 rounded-xl bg-white border-2 border-servio-purple shadow-lg hover:shadow-xl active:scale-95`}
+              className={`flex flex-col items-center justify-center p-2 relative transition-all duration-200 rounded-xl bg-white border-2 border-servio-purple shadow-lg hover:shadow-xl active:scale-95 h-full`}
             >
               <div className="relative mb-1 flex flex-col items-center justify-center">
                 <item.icon className={`h-6 w-6 transition-colors text-servio-purple`} />
