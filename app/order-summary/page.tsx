@@ -71,17 +71,27 @@ export default function OrderSummaryPage() {
   }, [router]);
 
   const handlePayNow = async () => {
-    if (!orderData) return;
+    console.log('[ORDER SUMMARY DEBUG] ===== handlePayNow STARTED =====');
+    console.log('[ORDER SUMMARY DEBUG] orderData:', orderData);
+    
+    if (!orderData) {
+      console.error('[ORDER SUMMARY DEBUG] No orderData found!');
+      return;
+    }
     
     // Check if this is a demo order - never redirect to Stripe for demos
     const isDemo = orderData.isDemo || orderData.venueId === 'demo-cafe';
     
     console.log('[ORDER SUMMARY DEBUG] handlePayNow - isDemo:', isDemo);
+    console.log('[ORDER SUMMARY DEBUG] orderData.isDemo:', orderData.isDemo);
+    console.log('[ORDER SUMMARY DEBUG] orderData.venueId:', orderData.venueId);
     
     if (isDemo) {
-      console.log('[ORDER SUMMARY DEBUG] Demo order detected - redirecting to payment success');
+      console.log('[ORDER SUMMARY DEBUG] ===== DEMO ORDER DETECTED =====');
       // For demo orders, create demo order data and redirect to payment success page
       const demoOrderId = `demo-${Date.now()}`;
+      console.log('[ORDER SUMMARY DEBUG] Generated demoOrderId:', demoOrderId);
+      
       const demoOrderData = {
         id: demoOrderId,
         venue_id: orderData.venueId,
@@ -102,21 +112,42 @@ export default function OrderSummaryPage() {
         created_at: new Date().toISOString(),
       };
 
+      console.log('[ORDER SUMMARY DEBUG] ===== CREATED DEMO ORDER DATA =====');
+      console.log('[ORDER SUMMARY DEBUG] demoOrderData object:', demoOrderData);
+      console.log('[ORDER SUMMARY DEBUG] demoOrderData JSON string:', JSON.stringify(demoOrderData));
+      
+      // Check sessionStorage before setting
+      console.log('[ORDER SUMMARY DEBUG] sessionStorage before setItem:', sessionStorage.getItem('demo-order-data'));
+      
       // Store demo order data for the success page
-      console.log('[ORDER SUMMARY DEBUG] Storing demo order data:', demoOrderData);
       try {
+        console.log('[ORDER SUMMARY DEBUG] ===== STORING TO SESSIONSTORAGE =====');
         sessionStorage.setItem('demo-order-data', JSON.stringify(demoOrderData));
+        console.log('[ORDER SUMMARY DEBUG] sessionStorage.setItem completed successfully');
         
-        // Verify storage
+        // Verify storage immediately
         const stored = sessionStorage.getItem('demo-order-data');
-        console.log('[ORDER SUMMARY DEBUG] Verified storage:', stored);
+        console.log('[ORDER SUMMARY DEBUG] ===== VERIFICATION =====');
+        console.log('[ORDER SUMMARY DEBUG] Stored data:', stored);
+        console.log('[ORDER SUMMARY DEBUG] Stored data parsed:', JSON.parse(stored || '{}'));
+        
+        // Check all sessionStorage keys
+        console.log('[ORDER SUMMARY DEBUG] All sessionStorage keys:', Object.keys(sessionStorage));
         
         // Small delay to ensure storage is complete
+        console.log('[ORDER SUMMARY DEBUG] ===== PREPARING REDIRECT =====');
+        const redirectUrl = `/payment/success?orderId=${demoOrderId}&demo=1&paymentMethod=demo`;
+        console.log('[ORDER SUMMARY DEBUG] Redirect URL:', redirectUrl);
+        
         setTimeout(() => {
-          window.location.href = `/payment/success?orderId=${demoOrderId}&demo=1&paymentMethod=demo`;
+          console.log('[ORDER SUMMARY DEBUG] ===== EXECUTING REDIRECT =====');
+          console.log('[ORDER SUMMARY DEBUG] Final sessionStorage check before redirect:', sessionStorage.getItem('demo-order-data'));
+          window.location.href = redirectUrl;
         }, 100);
       } catch (error) {
+        console.error('[ORDER SUMMARY DEBUG] ===== STORAGE ERROR =====');
         console.error('[ORDER SUMMARY DEBUG] Error storing demo order data:', error);
+        console.error('[ORDER SUMMARY DEBUG] Error stack:', error.stack);
         // Fallback: redirect anyway and let the success page handle the error
         window.location.href = `/payment/success?orderId=${demoOrderId}&demo=1&paymentMethod=demo`;
       }

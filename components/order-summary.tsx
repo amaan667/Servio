@@ -103,7 +103,21 @@ export default function OrderSummary({ orderId, sessionId, orderData, isDemo = f
 
   // Fetch order data
   useEffect(() => {
+    console.log('[ORDER SUMMARY COMPONENT DEBUG] ===== useEffect STARTED =====');
+    console.log('[ORDER SUMMARY COMPONENT DEBUG] orderData:', orderData);
+    console.log('[ORDER SUMMARY COMPONENT DEBUG] orderId:', orderId);
+    console.log('[ORDER SUMMARY COMPONENT DEBUG] sessionId:', sessionId);
+    console.log('[ORDER SUMMARY COMPONENT DEBUG] isDemo:', isDemo);
+    
     if (orderData) {
+      console.log('[ORDER SUMMARY COMPONENT DEBUG] ===== USING PROVIDED ORDER DATA =====');
+      console.log('[ORDER SUMMARY COMPONENT DEBUG] orderData details:', {
+        id: orderData.id,
+        venue_id: orderData.venue_id,
+        customer_name: orderData.customer_name,
+        total_amount: orderData.total_amount,
+        items_count: orderData.items?.length || 0
+      });
       setOrder(orderData);
       setLoading(false);
       return;
@@ -111,7 +125,9 @@ export default function OrderSummary({ orderId, sessionId, orderData, isDemo = f
 
     // For demo orders, don't try to fetch from database
     if (isDemo && orderId && orderId.startsWith('demo-')) {
-      console.log('[ORDER SUMMARY] Demo order detected, skipping database fetch');
+      console.log('[ORDER SUMMARY COMPONENT DEBUG] ===== DEMO ORDER - NO ORDER DATA PROVIDED =====');
+      console.log('[ORDER SUMMARY COMPONENT DEBUG] Demo order detected, skipping database fetch');
+      console.log('[ORDER SUMMARY COMPONENT DEBUG] orderId:', orderId);
       setError('Demo order data not found in session storage');
       setLoading(false);
       return;

@@ -15,38 +15,75 @@ export default function PaymentSuccessPage() {
 
   // Load demo order data from sessionStorage
   useEffect(() => {
+    console.log('[PAYMENT SUCCESS DEBUG] ===== useEffect STARTED =====');
+    console.log('[PAYMENT SUCCESS DEBUG] isDemo:', isDemo);
+    console.log('[PAYMENT SUCCESS DEBUG] orderId:', orderId);
+    console.log('[PAYMENT SUCCESS DEBUG] Current URL:', window.location.href);
+    console.log('[PAYMENT SUCCESS DEBUG] Search params:', Object.fromEntries(new URLSearchParams(window.location.search)));
+    
     if (isDemo && orderId) {
-      console.log('[PAYMENT SUCCESS] Loading demo order data for orderId:', orderId);
-      console.log('[PAYMENT SUCCESS] isDemo:', isDemo);
+      console.log('[PAYMENT SUCCESS DEBUG] ===== DEMO ORDER LOADING STARTED =====');
+      
+      // Check all sessionStorage immediately
+      console.log('[PAYMENT SUCCESS DEBUG] All sessionStorage keys on page load:', Object.keys(sessionStorage));
+      console.log('[PAYMENT SUCCESS DEBUG] All sessionStorage items:');
+      for (let i = 0; i < sessionStorage.length; i++) {
+        const key = sessionStorage.key(i);
+        const value = sessionStorage.getItem(key || '');
+        console.log(`[PAYMENT SUCCESS DEBUG] ${key}:`, value);
+      }
       
       // Try multiple times to get the data (in case of timing issues)
       let attempts = 0;
-      const maxAttempts = 5;
+      const maxAttempts = 10; // Increased attempts
       
       const tryLoadData = () => {
+        console.log(`[PAYMENT SUCCESS DEBUG] ===== ATTEMPT ${attempts + 1} =====`);
         const storedData = sessionStorage.getItem("demo-order-data");
-        console.log('[PAYMENT SUCCESS] Attempt', attempts + 1, '- Found data:', !!storedData);
+        console.log('[PAYMENT SUCCESS DEBUG] Raw stored data:', storedData);
+        console.log('[PAYMENT SUCCESS DEBUG] Data exists:', !!storedData);
+        console.log('[PAYMENT SUCCESS DEBUG] Data length:', storedData?.length || 0);
         
         if (storedData) {
           try {
+            console.log('[PAYMENT SUCCESS DEBUG] ===== PARSING DATA =====');
             const data = JSON.parse(storedData);
-            console.log('[PAYMENT SUCCESS] Parsed demo order:', data);
+            console.log('[PAYMENT SUCCESS DEBUG] Parsed demo order:', data);
+            console.log('[PAYMENT SUCCESS DEBUG] Order ID from data:', data.id);
+            console.log('[PAYMENT SUCCESS DEBUG] Expected order ID:', orderId);
+            
             setDemoOrderData(data);
+            console.log('[PAYMENT SUCCESS DEBUG] ===== DATA SET SUCCESSFULLY =====');
+            
             // Clean up after loading
             sessionStorage.removeItem("demo-order-data");
+            console.log('[PAYMENT SUCCESS DEBUG] Cleaned up sessionStorage');
           } catch (error) {
-            console.error('[PAYMENT SUCCESS] Error parsing demo order data:', error);
+            console.error('[PAYMENT SUCCESS DEBUG] ===== PARSING ERROR =====');
+            console.error('[PAYMENT SUCCESS DEBUG] Error parsing demo order data:', error);
+            console.error('[PAYMENT SUCCESS DEBUG] Raw data that failed to parse:', storedData);
           }
         } else if (attempts < maxAttempts) {
           // Try again after a short delay
           attempts++;
+          console.log(`[PAYMENT SUCCESS DEBUG] No data found, retrying in 200ms (attempt ${attempts}/${maxAttempts})`);
           setTimeout(tryLoadData, 200);
         } else {
-          console.error('[PAYMENT SUCCESS] No demo order data found in sessionStorage after', maxAttempts, 'attempts');
+          console.error('[PAYMENT SUCCESS DEBUG] ===== FINAL ERROR =====');
+          console.error('[PAYMENT SUCCESS DEBUG] No demo order data found in sessionStorage after', maxAttempts, 'attempts');
+          console.error('[PAYMENT SUCCESS DEBUG] Final sessionStorage state:');
+          console.error('[PAYMENT SUCCESS DEBUG] Keys:', Object.keys(sessionStorage));
+          for (let i = 0; i < sessionStorage.length; i++) {
+            const key = sessionStorage.key(i);
+            const value = sessionStorage.getItem(key || '');
+            console.error(`[PAYMENT SUCCESS DEBUG] ${key}:`, value);
+          }
         }
       };
       
       tryLoadData();
+    } else {
+      console.log('[PAYMENT SUCCESS DEBUG] Not a demo order or no orderId provided');
     }
   }, [isDemo, orderId]);
 
