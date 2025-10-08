@@ -614,8 +614,10 @@ export default function CustomerOrderPage() {
             .filter((item) => item.specialInstructions)
             .map((item) => `${item.name}: ${item.specialInstructions}`)
             .join("; "),
+          isDemo: true, // Add demo flag
         };
 
+        console.log('[ORDER PAGE] Demo order data prepared:', orderData);
         
         // Store order data in localStorage for order summary page
         localStorage.setItem('servio-pending-order', JSON.stringify(orderData));

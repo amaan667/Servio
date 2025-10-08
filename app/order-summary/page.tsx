@@ -36,6 +36,7 @@ interface PendingOrderData {
   customerName: string;
   customerPhone: string;
   orderId?: string;
+  isDemo?: boolean; // Add demo flag
 }
 
 export default function OrderSummaryPage() {
@@ -44,20 +45,26 @@ export default function OrderSummaryPage() {
   const [orderData, setOrderData] = useState<PendingOrderData | null>(null);
   const [loading, setLoading] = useState(true);
   const [isCreatingOrder, setIsCreatingOrder] = useState(false);
+  const [orderPlaced, setOrderPlaced] = useState(false);
 
   useEffect(() => {
     // Get order data from localStorage
     const storedData = localStorage.getItem('servio-pending-order');
     
+    console.log('[ORDER SUMMARY DEBUG] Loading order data:', storedData);
+    
     if (storedData) {
       try {
         const data = JSON.parse(storedData);
+        console.log('[ORDER SUMMARY DEBUG] Parsed data:', data);
+        console.log('[ORDER SUMMARY DEBUG] Is demo?', data.isDemo, data.venueId === 'demo-cafe');
         setOrderData(data);
       } catch (error) {
         console.error('Error parsing stored order data:', error);
         router.push('/order');
       }
     } else {
+      console.log('[ORDER SUMMARY DEBUG] No stored data, redirecting to order page');
       router.push('/order');
     }
     setLoading(false);
@@ -65,6 +72,22 @@ export default function OrderSummaryPage() {
 
   const handlePayNow = async () => {
     if (!orderData) return;
+    
+    // Check if this is a demo order - never redirect to Stripe for demos
+    const isDemo = orderData.isDemo || orderData.venueId === 'demo-cafe';
+    
+    console.log('[ORDER SUMMARY DEBUG] handlePayNow - isDemo:', isDemo);
+    
+    if (isDemo) {
+      console.log('[ORDER SUMMARY DEBUG] Demo order detected - showing success without Stripe');
+      // For demo orders, just mark as placed and show success
+      setOrderPlaced(true);
+      setOrderData({
+        ...orderData,
+        orderId: `DEMO-${Date.now()}`
+      });
+      return;
+    }
     
     setLoading(true);
     try {
@@ -142,6 +165,24 @@ export default function OrderSummaryPage() {
   const handlePayLater = async () => {
     if (!orderData) return;
 
+    // Check if this is a demo order
+    const isDemo = orderData.isDemo || orderData.venueId === 'demo-cafe';
+    
+    console.log('[ORDER SUMMARY DEBUG] handlePayLater - isDemo:', isDemo);
+    
+    if (isDemo) {
+      console.log('[ORDER SUMMARY DEBUG] Demo order detected - showing success without API call');
+      // For demo orders, just mark as placed and show success
+      const updatedOrderData = {
+        ...orderData,
+        orderId: `DEMO-${Date.now()}`
+      };
+      setOrderData(updatedOrderData);
+      setOrderPlaced(true);
+      localStorage.setItem('servio-pending-order', JSON.stringify(updatedOrderData));
+      return;
+    }
+
     try {
       setIsCreatingOrder(true);
       
@@ -185,6 +226,7 @@ export default function OrderSummaryPage() {
       };
       
       setOrderData(updatedOrderData);
+      setOrderPlaced(true);
       localStorage.setItem('servio-pending-order', JSON.stringify(updatedOrderData));
       
       // Clear checkout data since we're not going to checkout
@@ -236,8 +278,23 @@ export default function OrderSummaryPage() {
     );
   }
 
+  // Check if this is a demo order
+  const isDemo = orderData?.isDemo || orderData?.venueId === 'demo-cafe';
+
   return (
     <div className="min-h-screen bg-gray-50">
+      {/* Demo Mode Banner */}
+      {isDemo && (
+        <div className="bg-gradient-to-r from-purple-600 to-purple-800 text-white py-3 px-4 shadow-md">
+          <div className="max-w-4xl mx-auto flex items-center justify-center">
+            <div className="flex items-center space-x-3">
+              <div className="h-2 w-2 bg-green-400 rounded-full animate-pulse"></div>
+              <span className="text-sm font-medium">💡 Demo Mode — This is a simulated order experience</span>
+            </div>
+          </div>
+        </div>
+      )}
+
       {/* Header */}
       <div className="bg-white shadow-sm border-b">
         <div className="max-w-4xl mx-auto px-4 py-4">
@@ -267,11 +324,21 @@ export default function OrderSummaryPage() {
       <div className="max-w-4xl mx-auto px-4 py-8">
         {/* Order Summary Header */}
         <div className="text-center mb-8">
-          <div className="w-16 h-16 bg-blue-100 rounded-full flex items-center justify-center mx-auto mb-4">
-            <Receipt className="w-8 h-8 text-blue-600" />
+          <div className={`w-16 h-16 ${orderPlaced && isDemo ? 'bg-green-100' : 'bg-blue-100'} rounded-full flex items-center justify-center mx-auto mb-4`}>
+            {orderPlaced && isDemo ? (
+              <CheckCircle className="w-8 h-8 text-green-600" />
+            ) : (
+              <Receipt className="w-8 h-8 text-blue-600" />
+            )}
           </div>
-          <h1 className="text-2xl font-bold text-gray-900 mb-2">Order Summary</h1>
-          <p className="text-gray-900">Review your order and choose how to pay</p>
+          <h1 className="text-2xl font-bold text-gray-900 mb-2">
+            {orderPlaced && isDemo ? 'Order Placed Successfully!' : 'Order Summary'}
+          </h1>
+          <p className="text-gray-900">
+            {orderPlaced && isDemo 
+              ? 'Your demo order has been placed. In a real scenario, this would go to the kitchen.' 
+              : 'Review your order and choose how to pay'}
+          </p>
         </div>
 
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
@@ -353,17 +420,55 @@ export default function OrderSummaryPage() {
             <Card>
               <CardHeader>
                 <CardTitle className="flex items-center">
-                  <CreditCard className="w-5 h-5 mr-2" />
-                  Payment Options
+                  {isDemo && orderPlaced ? (
+                    <>
+                      <CheckCircle className="w-5 h-5 mr-2 text-green-600" />
+                      Demo Order Complete
+                    </>
+                  ) : (
+                    <>
+                      <CreditCard className="w-5 h-5 mr-2" />
+                      Payment Options
+                    </>
+                  )}
                 </CardTitle>
               </CardHeader>
               <CardContent className="space-y-4">
-                {!orderData.orderId ? (
+                {isDemo && orderPlaced ? (
+                  <div className="p-4 border-2 border-green-200 rounded-lg bg-green-50">
+                    <div className="flex items-center mb-2">
+                      <CheckCircle className="w-5 h-5 text-green-600 mr-2" />
+                      <h3 className="font-semibold text-green-900">Demo Order Placed!</h3>
+                    </div>
+                    <p className="text-sm text-green-700 mb-4">
+                      This is a simulated order. In a real scenario, your order would be sent to the kitchen and you could track its status.
+                    </p>
+                    <div className="space-y-2">
+                      <Button 
+                        onClick={handleBackToOrder}
+                        className="w-full bg-purple-600 hover:bg-purple-700"
+                      >
+                        <ShoppingCart className="w-4 h-4 mr-2" />
+                        Continue Exploring Menu
+                      </Button>
+                      <Button 
+                        onClick={() => router.push('/dashboard')}
+                        variant="outline"
+                        className="w-full"
+                      >
+                        <ArrowLeft className="w-4 h-4 mr-2" />
+                        Back to Dashboard
+                      </Button>
+                    </div>
+                  </div>
+                ) : !orderData.orderId ? (
                   <>
                     <div className="p-4 border-2 border-blue-200 rounded-lg bg-blue-50">
-                      <h3 className="font-semibold text-blue-900 mb-2">Pay Now</h3>
+                      <h3 className="font-semibold text-blue-900 mb-2">{isDemo ? 'Simulate Payment' : 'Pay Now'}</h3>
                       <p className="text-sm text-blue-700 mb-4">
-                        Complete your payment immediately using our secure payment system.
+                        {isDemo 
+                          ? 'Experience the payment flow in demo mode (no actual payment required).' 
+                          : 'Complete your payment immediately using our secure payment system.'}
                       </p>
                       <Button 
                         onClick={handlePayNow}
@@ -378,16 +483,18 @@ export default function OrderSummaryPage() {
                         ) : (
                           <>
                             <CreditCard className="w-4 h-4 mr-2" />
-                            Pay £{orderData.total.toFixed(2)} Now
+                            {isDemo ? 'Simulate Payment' : `Pay £${orderData.total.toFixed(2)} Now`}
                           </>
                         )}
                       </Button>
                     </div>
 
                     <div className="p-4 border-2 border-green-200 rounded-lg bg-green-50">
-                      <h3 className="font-semibold text-green-900 mb-2">Pay Later</h3>
+                      <h3 className="font-semibold text-green-900 mb-2">{isDemo ? 'Simulate Pay Later' : 'Pay Later'}</h3>
                       <p className="text-sm text-green-700 mb-4">
-                        Place your order now and pay when you're ready. You can add more items to your table.
+                        {isDemo 
+                          ? 'See how deferred payment works in a real restaurant scenario.' 
+                          : 'Place your order now and pay when you\'re ready. You can add more items to your table.'}
                       </p>
                       <Button 
                         onClick={handlePayLater}
@@ -403,7 +510,7 @@ export default function OrderSummaryPage() {
                         ) : (
                           <>
                             <Clock className="w-4 h-4 mr-2" />
-                            Pay Later
+                            {isDemo ? 'Simulate Pay Later' : 'Pay Later'}
                           </>
                         )}
                       </Button>
