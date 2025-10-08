@@ -127,9 +127,12 @@ export default function AnalyticsClient({ venueId, venueName }: { venueId: strin
         console.error('🔍 [ANALYTICS] Menu items error:', menuError);
       }
 
-      // Process orders data
+      // Process orders data - exclude demo orders and cancelled orders
       const validOrders = (orders || []).filter((order: any) => 
-        order.order_status !== 'CANCELLED' && order.total_amount > 0
+        order.order_status !== 'CANCELLED' && 
+        order.total_amount > 0 &&
+        order.venue_id !== 'demo-cafe' &&
+        order.payment_method !== 'demo'
       );
 
       const totalOrders = validOrders.length;
