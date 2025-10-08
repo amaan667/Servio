@@ -675,21 +675,14 @@ export default function VenueSettingsClient({ user, venue, venues }: VenueSettin
                   />
                 </div>
                 
-                <div>
-                  <Label htmlFor="venueAddress" className="flex items-center gap-2">
-                    <MapPin className="h-4 w-4" />
-                    Venue Address
-                  </Label>
-                  <Textarea
-                    id="venueAddress"
-                    value={venueAddress}
-                    onChange={(e) => setVenueAddress(e.target.value)}
-                    placeholder="Enter venue address"
-                    rows={3}
-                    className="rounded-lg border-gray-200 mt-1"
-                  />
-                  <p className="text-xs text-muted-foreground mt-1">Full address including city and postcode</p>
-                </div>
+                <AddressInput
+                  value={venueAddress}
+                  onChange={(address) => setVenueAddress(address)}
+                  onCoordinatesChange={(lat, lng) => {
+                    setLatitude(lat);
+                    setLongitude(lng);
+                  }}
+                />
 
                 {/* Operating Hours - Expandable */}
                 <Accordion type="single" collapsible className="border rounded-lg">

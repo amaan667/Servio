@@ -188,9 +188,10 @@ export default function ClientNavBar() {
                         Dashboard
                       </Link>
                       <Link
-                        href="/dashboard"
-                        className="text-gray-900 hover:text-gray-900 px-3 py-2 rounded-md text-sm font-medium transition-colors"
+                        href={venueId ? `/dashboard/${venueId}/settings` : "/dashboard"}
+                        className="text-gray-900 hover:text-gray-900 px-3 py-2 rounded-md text-sm font-medium transition-colors flex items-center"
                       >
+                        <Settings className="mr-2 h-4 w-4" />
                         Settings
                       </Link>
                     </>

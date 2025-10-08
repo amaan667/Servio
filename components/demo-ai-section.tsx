@@ -10,7 +10,7 @@ import {
 } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
-import { Sparkles, Send, CheckCircle, AlertCircle } from 'lucide-react';
+import { Sparkles, Send, CheckCircle, AlertCircle, X } from 'lucide-react';
 
 const examplePrompts = [
   "Rename all Coffee items to include '12oz'",
@@ -102,10 +102,14 @@ export default function DemoAISection() {
   const [customPrompt, setCustomPrompt] = useState('');
   const [response, setResponse] = useState<any>(null);
   const [isProcessing, setIsProcessing] = useState(false);
+  const [showConfirmation, setShowConfirmation] = useState(false);
+  const [confirmedChanges, setConfirmedChanges] = useState<any>(null);
 
   const handleRunPreview = (prompt: string) => {
     setIsProcessing(true);
     setResponse(null);
+    setShowConfirmation(false);
+    setConfirmedChanges(null);
     
     // Simulate processing delay
     setTimeout(() => {
@@ -116,6 +120,18 @@ export default function DemoAISection() {
       setResponse(result);
       setIsProcessing(false);
     }, 1500);
+  };
+
+  const handleConfirmChanges = () => {
+    setConfirmedChanges(response);
+    setShowConfirmation(true);
+    setResponse(null); // Hide the preview
+  };
+
+  const handleCancelChanges = () => {
+    setResponse(null);
+    setShowConfirmation(false);
+    setConfirmedChanges(null);
   };
 
   return (
@@ -283,6 +299,25 @@ export default function DemoAISection() {
                       ) : null}
                     </div>
                   ))}
+                </div>
+                
+                {/* Confirmation Buttons */}
+                <div className="bg-gray-50 px-4 py-3 border-t border-gray-200 flex gap-3">
+                  <Button
+                    onClick={handleConfirmChanges}
+                    className="bg-green-600 hover:bg-green-700 text-white"
+                  >
+                    <CheckCircle className="w-4 h-4 mr-2" />
+                    Confirm Changes
+                  </Button>
+                  <Button
+                    onClick={handleCancelChanges}
+                    variant="outline"
+                    className="border-gray-300 text-gray-700 hover:bg-gray-100"
+                  >
+                    <X className="w-4 h-4 mr-2" />
+                    Cancel
+                  </Button>
                 </div>
               </div>
             )}

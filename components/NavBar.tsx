@@ -28,7 +28,7 @@ export default async function NavBar({ showActions = true, venueId }: { showActi
         <Link href="/dashboard" className="text-foreground/80 hover:text-foreground">Dashboard</Link>
         {showActions && (
           <>
-            <Link href={'/dashboard'}>
+            <Link href={resolvedVenueId ? `/dashboard/${resolvedVenueId}/settings` : '/dashboard'}>
               <Button variant="ghost" size="sm" className="flex items-center">
                 <Settings className="h-5 w-5 mr-2" />
                 Settings
