@@ -37,6 +37,7 @@ interface CheckoutData {
   customerName?: string;
   customerPhone?: string;
   orderType?: string; // Add orderType for source determination
+  isDemo?: boolean; // Add isDemo flag for demo mode detection
 }
 
 type PaymentAction = 'demo' | 'stripe' | 'till' | 'later';
