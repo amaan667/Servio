@@ -147,7 +147,7 @@ export default function OrderSummaryPage() {
       } catch (error) {
         console.error('[ORDER SUMMARY DEBUG] ===== STORAGE ERROR =====');
         console.error('[ORDER SUMMARY DEBUG] Error storing demo order data:', error);
-        console.error('[ORDER SUMMARY DEBUG] Error stack:', error.stack);
+        console.error('[ORDER SUMMARY DEBUG] Error stack:', error instanceof Error ? error.stack : 'No stack trace available');
         // Fallback: redirect anyway and let the success page handle the error
         window.location.href = `/payment/success?orderId=${demoOrderId}&demo=1&paymentMethod=demo`;
       }
