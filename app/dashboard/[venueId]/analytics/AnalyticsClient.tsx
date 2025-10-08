@@ -101,6 +101,8 @@ export default function AnalyticsClient({ venueId, venueName }: { venueId: strin
           total_amount,
           created_at,
           order_status,
+          table_number,
+          payment_method,
           items
         `)
         .eq('venue_id', venueId)
@@ -348,7 +350,10 @@ export default function AnalyticsClient({ venueId, venueName }: { venueId: strin
               quantity: item.quantity || 0,
               price: formatCurrencyForCSV(item.price || 0),
               total: formatCurrencyForCSV((item.quantity || 0) * (item.price || 0)),
-              paymentMethod: order.payment_method || 'Unknown'
+              paymentMethod: order.payment_method === 'stripe' ? 'Card' : 
+                           order.payment_method === 'till' ? 'Cash' : 
+                           order.payment_method === 'demo' ? 'Demo' : 
+                           'Unknown'
             });
           });
         } else {
@@ -360,7 +365,10 @@ export default function AnalyticsClient({ venueId, venueName }: { venueId: strin
             quantity: 1,
             price: formatCurrencyForCSV(order.total_amount || 0),
             total: formatCurrencyForCSV(order.total_amount || 0),
-            paymentMethod: order.payment_method || 'Unknown'
+            paymentMethod: order.payment_method === 'stripe' ? 'Card' : 
+                         order.payment_method === 'till' ? 'Cash' : 
+                         order.payment_method === 'demo' ? 'Demo' : 
+                         'Unknown'
           });
         }
       });
