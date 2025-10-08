@@ -59,14 +59,10 @@ export default function PaymentPage() {
   const isDemoFromUrl = searchParams?.get('demo') === '1';
 
   useEffect(() => {
-    // HARDCODED DEMO MODE CHECK - If demo mode detected, immediately redirect to success
-    if (isDemoFromUrl) {
-      console.log('[PAYMENT DEBUG] HARDCODED DEMO MODE - redirecting immediately');
-      const demoOrderId = `demo-${Date.now()}`;
-      const successUrl = `/payment/success?orderId=${demoOrderId}&demo=1&paymentMethod=demo`;
-      router.push(successUrl);
-      return;
-    }
+    // Debug current URL and search params
+    console.log('[PAYMENT DEBUG] Current URL:', window.location.href);
+    console.log('[PAYMENT DEBUG] Search params:', Object.fromEntries(searchParams?.entries() || []));
+    console.log('[PAYMENT DEBUG] isDemoFromUrl:', isDemoFromUrl);
     
     // Get checkout data from localStorage
     const storedData = localStorage.getItem("servio-checkout-data");
@@ -81,13 +77,9 @@ export default function PaymentPage() {
         setIsDemo(data.isDemo || false); // Set demo flag from checkout data
         console.log('[PAYMENT DEBUG] Demo flag set to:', data.isDemo || false);
         
-        // HARDCODED DEMO MODE CHECK - If demo mode in checkout data, immediately redirect
-        if (data.isDemo) {
-          console.log('[PAYMENT DEBUG] HARDCODED DEMO MODE from checkout data - redirecting immediately');
-          const demoOrderId = `demo-${Date.now()}`;
-          const successUrl = `/payment/success?orderId=${demoOrderId}&demo=1&paymentMethod=demo`;
-          router.push(successUrl);
-          return;
+        // If demo mode is detected, show immediate redirect message
+        if (data.isDemo || isDemoFromUrl) {
+          console.log('[PAYMENT DEBUG] DEMO MODE DETECTED - should redirect immediately');
         }
       } catch (error) {
         console.error('[PAYMENT DEBUG] Error parsing checkout data:', error);
@@ -122,7 +114,7 @@ export default function PaymentPage() {
       
       // In demo mode, skip all payment processing and go straight to success
       if (isDemo || checkoutData.isDemo || isDemoFromUrl) {
-        console.log('[PAYMENT DEBUG] Demo mode - skipping payment processing');
+        console.log('[PAYMENT DEBUG] Demo mode detected - skipping payment processing');
         const demoOrderId = `demo-${Date.now()}`;
         
         // Redirect to payment success page immediately
