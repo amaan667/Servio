@@ -489,16 +489,22 @@ export function AnalyticsDashboard({ venueId }: AnalyticsDashboardProps) {
             <CardDescription>Quantity and revenue</CardDescription>
           </CardHeader>
           <CardContent>
-            <div className="h-[400px] md:h-[350px] mb-2 md:mb-4">
+            <div className="h-[450px] md:h-[400px] mb-2 md:mb-4">
               <ChartContainer config={{
                 qty: { color: "#8b5cf6" },
                 rev: { color: "#10b981" }
               }}>
-                <ResponsiveContainer width="100%" height="100%" maxHeight={380}>
-                  <BarChart data={topItems} layout="horizontal" margin={{ left: 100, right: 30, top: 20, bottom: 20 }}>
+                <ResponsiveContainer width="100%" height="100%" maxHeight={430}>
+                  <BarChart data={topItems} layout="horizontal" margin={{ left: 140, right: 40, top: 20, bottom: 20 }}>
                     <CartesianGrid strokeDasharray="3 3" />
                     <XAxis type="number" />
-                    <YAxis dataKey="name" type="category" width={90} />
+                    <YAxis 
+                      dataKey="name" 
+                      type="category" 
+                      width={130}
+                      tick={{ fontSize: 12 }}
+                      tickLine={{ stroke: '#666', strokeWidth: 1 }}
+                    />
                     <Tooltip />
                     <Bar dataKey="value" fill="#8b5cf6" name="Qty" />
                     <Bar dataKey="revenue" fill="#10b981" name="Revenue (£)" />
@@ -603,13 +609,19 @@ export function AnalyticsDashboard({ venueId }: AnalyticsDashboardProps) {
             <CardDescription>Drinks vs Mains vs Desserts</CardDescription>
           </CardHeader>
           <CardContent>
-            <div className="h-[350px] md:h-[300px] mb-2 md:mb-4">
+            <div className="h-[400px] md:h-[350px] mb-2 md:mb-4">
               <ChartContainer config={{ qty: { color: '#8b5cf6' }, revenue: { color: '#10b981' } }}>
-                <ResponsiveContainer width="100%" height="100%" maxHeight={330}>
-                  <BarChart data={categoryPerformance} layout="horizontal" margin={{ left: 100, right: 30, top: 20, bottom: 20 }}>
+                <ResponsiveContainer width="100%" height="100%" maxHeight={380}>
+                  <BarChart data={categoryPerformance} layout="horizontal" margin={{ left: 120, right: 40, top: 20, bottom: 20 }}>
                     <CartesianGrid strokeDasharray="3 3" />
                     <XAxis type="number" />
-                    <YAxis dataKey="name" type="category" width={90} />
+                    <YAxis 
+                      dataKey="name" 
+                      type="category" 
+                      width={110}
+                      tick={{ fontSize: 12 }}
+                      tickLine={{ stroke: '#666', strokeWidth: 1 }}
+                    />
                     <Tooltip />
                     <Bar dataKey="value" fill="#8b5cf6" name="Qty" />
                     <Bar dataKey="revenue" fill="#10b981" name="Revenue (£)" />
