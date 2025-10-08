@@ -79,7 +79,19 @@ function PricingQuickCompare({
 }
 
 function FAQSection() {
-  const [openIndex, setOpenIndex] = useState<number | null>(null);
+  const [openItems, setOpenItems] = useState<Set<number>>(new Set());
+
+  const toggleItem = (index: number) => {
+    setOpenItems(prev => {
+      const newSet = new Set(prev);
+      if (newSet.has(index)) {
+        newSet.delete(index);
+      } else {
+        newSet.add(index);
+      }
+      return newSet;
+    });
+  };
 
   const faqs = [
     {
@@ -110,22 +122,22 @@ function FAQSection() {
             className="border border-gray-200 rounded-lg bg-gray-50 hover:bg-gray-100 transition-colors"
           >
             <button
-              onClick={() => setOpenIndex(openIndex === index ? null : index)}
+              onClick={() => toggleItem(index)}
               className="w-full p-4 text-left flex justify-between items-center gap-4"
             >
               <span className="font-bold text-gray-900">{faq.question}</span>
               <ChevronDown
                 className={`h-5 w-5 text-gray-600 flex-shrink-0 transition-transform duration-200 ${
-                  openIndex === index ? 'rotate-180' : ''
+                  openItems.has(index) ? 'rotate-180' : ''
                 }`}
               />
             </button>
             <div
               className={`overflow-hidden transition-all duration-200 ease-in-out ${
-                openIndex === index ? 'max-h-96 opacity-100' : 'max-h-0 opacity-0'
+                openItems.has(index) ? 'max-h-96 opacity-100' : 'max-h-0 opacity-0'
               }`}
             >
-              <div className="px-4 pb-4 text-gray-700 leading-relaxed">
+              <div className="px-4 pb-4 pt-2 text-gray-700 leading-relaxed">
                 {faq.answer}
               </div>
             </div>
