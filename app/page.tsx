@@ -30,9 +30,9 @@ function PricingQuickCompare({
   return (
     <div className="w-full flex flex-col items-center gap-8 py-10">
       <h2 className="text-3xl font-bold mb-4">Choose the plan that works best for your business</h2>
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-6 w-full max-w-5xl">
+      <div className="grid grid-cols-1 md:grid-cols-3 gap-6 w-full max-w-5xl mx-auto" style={{ minHeight: '500px' }}>
         {/* Basic */}
-        <Card className="flex flex-col items-center p-6 gap-4">
+        <Card className="flex flex-col items-center p-6 gap-4 h-full">
           <div className="text-2xl font-semibold">Basic</div>
           <div className="text-3xl font-bold mb-1">£99<span className="text-lg font-normal">/month</span></div>
           <ul className="mb-4 space-y-1 text-left">
@@ -45,7 +45,7 @@ function PricingQuickCompare({
           </Button>
         </Card>
         {/* Standard */}
-        <Card className="flex flex-col items-center p-6 gap-4 border-2 border-purple-500 shadow-lg scale-105">
+        <Card className="flex flex-col items-center p-6 gap-4 border-2 border-purple-500 shadow-lg h-full">
           <div className="text-2xl font-semibold">Standard</div>
           <div className="w-full flex justify-center">
             <span className="bg-purple-500 text-white text-xs px-3 py-1 rounded-full mb-2">Most Popular</span>
@@ -62,7 +62,7 @@ function PricingQuickCompare({
           </Button>
         </Card>
         {/* Premium */}
-        <Card className="flex flex-col items-center p-6 gap-4">
+        <Card className="flex flex-col items-center p-6 gap-4 h-full">
           <div className="text-2xl font-semibold">Premium</div>
           <div className="text-3xl font-bold mb-1">£449+<span className="text-lg font-normal">/month</span></div>
           <ul className="mb-4 space-y-1 text-left">
@@ -71,7 +71,9 @@ function PricingQuickCompare({
             <li>✔ Priority support</li>
             <li>✔ Custom onboarding & integrations</li>
           </ul>
-          <Button variant="servio" className="w-full">Contact Sales</Button>
+          <Button variant="servio" className="w-full" onClick={onPrimaryClick}>
+            {isSignedIn ? 'Contact Sales' : 'Start Free Trial'}
+          </Button>
         </Card>
       </div>
     </div>
