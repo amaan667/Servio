@@ -287,18 +287,6 @@ export default function DemoAISection() {
               </div>
             )}
 
-            {/* Action Buttons (Demo Only) */}
-            {response.success && (
-              <div className="mt-6 flex gap-3">
-                <Button className="bg-purple-600 hover:bg-purple-700" disabled>
-                  <CheckCircle className="w-4 h-4 mr-2" />
-                  Apply Changes (Demo Only)
-                </Button>
-                <Button variant="outline" onClick={() => setResponse(null)}>
-                  Cancel
-                </Button>
-              </div>
-            )}
           </div>
         )}
 
