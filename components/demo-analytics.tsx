@@ -301,7 +301,7 @@ export default function DemoAnalytics() {
           <CardDescription>Performance by item</CardDescription>
         </CardHeader>
         <CardContent>
-          <div className="h-[120px] md:h-[80px] mb-2 md:mb-4">
+          <div className="h-[200px] md:h-[180px] mb-2 md:mb-4">
             {chartsLoaded && ChartContainer && ResponsiveContainer ? (
               <ChartContainer config={{
                 qty: { color: '#8b5cf6' },
