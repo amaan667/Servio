@@ -85,8 +85,11 @@ export default function PaymentPage() {
     setPaymentAction(action);
 
     try {
+      // Debug logging for demo mode
+      console.log('[PAYMENT DEBUG] Demo mode check:', { isDemo, checkoutDataIsDemo: checkoutData.isDemo });
+      
       // In demo mode, skip all payment processing and go straight to success
-      if (isDemo) {
+      if (isDemo || checkoutData.isDemo) {
         console.log('[PAYMENT DEBUG] Demo mode - skipping payment processing');
         const demoOrderId = `demo-${Date.now()}`;
         
