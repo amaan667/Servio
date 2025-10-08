@@ -122,34 +122,60 @@ export default function OrderSummaryPage() {
       // Store demo order data for the success page
       try {
         console.log('[ORDER SUMMARY DEBUG] ===== STORING TO LOCALSTORAGE =====');
-        localStorage.setItem('demo-order-data', JSON.stringify(demoOrderData));
-        console.log('[ORDER SUMMARY DEBUG] localStorage.setItem completed successfully');
         
-        // Verify storage immediately
-        const stored = localStorage.getItem('demo-order-data');
-        console.log('[ORDER SUMMARY DEBUG] ===== VERIFICATION =====');
-        console.log('[ORDER SUMMARY DEBUG] Stored data:', stored);
-        console.log('[ORDER SUMMARY DEBUG] Stored data parsed:', JSON.parse(stored || '{}'));
+        // Try localStorage first
+        try {
+          localStorage.setItem('demo-order-data', JSON.stringify(demoOrderData));
+          console.log('[ORDER SUMMARY DEBUG] localStorage.setItem completed successfully');
+          
+          // Verify storage immediately
+          const stored = localStorage.getItem('demo-order-data');
+          console.log('[ORDER SUMMARY DEBUG] ===== VERIFICATION =====');
+          console.log('[ORDER SUMMARY DEBUG] Stored data:', stored);
+          
+          if (!stored) {
+            throw new Error('localStorage write verification failed');
+          }
+        } catch (storageError) {
+          console.warn('[ORDER SUMMARY DEBUG] localStorage not available or failed:', storageError);
+          // If localStorage fails, we'll use URL parameters as fallback below
+        }
         
-        // Check all localStorage keys
-        console.log('[ORDER SUMMARY DEBUG] All localStorage keys:', Object.keys(localStorage));
+        // Build redirect URL with data as backup in URL parameters
+        const params = new URLSearchParams({
+          orderId: demoOrderId,
+          demo: '1',
+          paymentMethod: 'demo',
+          // Encode essential data in URL as fallback
+          customerName: demoOrderData.customer_name || '',
+          total: demoOrderData.total_amount?.toString() || '0',
+          venueName: demoOrderData.venue_name || 'Servio Café'
+        });
         
-        // Small delay to ensure storage is complete
+        const redirectUrl = `/payment/success?${params.toString()}`;
         console.log('[ORDER SUMMARY DEBUG] ===== PREPARING REDIRECT =====');
-        const redirectUrl = `/payment/success?orderId=${demoOrderId}&demo=1&paymentMethod=demo`;
         console.log('[ORDER SUMMARY DEBUG] Redirect URL:', redirectUrl);
         
+        // Use a small delay to ensure any async storage operations complete
         setTimeout(() => {
           console.log('[ORDER SUMMARY DEBUG] ===== EXECUTING REDIRECT =====');
-          console.log('[ORDER SUMMARY DEBUG] Final localStorage check before redirect:', localStorage.getItem('demo-order-data'));
+          const finalCheck = localStorage.getItem('demo-order-data');
+          console.log('[ORDER SUMMARY DEBUG] Final localStorage check:', finalCheck ? 'Data present' : 'Data missing - will use URL params');
           window.location.href = redirectUrl;
-        }, 100);
+        }, 150);
       } catch (error) {
         console.error('[ORDER SUMMARY DEBUG] ===== STORAGE ERROR =====');
         console.error('[ORDER SUMMARY DEBUG] Error storing demo order data:', error);
         console.error('[ORDER SUMMARY DEBUG] Error stack:', error instanceof Error ? error.stack : 'No stack trace available');
-        // Fallback: redirect anyway and let the success page handle the error
-        window.location.href = `/payment/success?orderId=${demoOrderId}&demo=1&paymentMethod=demo`;
+        // Fallback: redirect with minimal data in URL
+        const fallbackParams = new URLSearchParams({
+          orderId: demoOrderId,
+          demo: '1',
+          paymentMethod: 'demo',
+          customerName: orderData.customerName || 'Demo Customer',
+          total: orderData.total?.toString() || '0'
+        });
+        window.location.href = `/payment/success?${fallbackParams.toString()}`;
       }
       return;
     }
@@ -262,20 +288,43 @@ export default function OrderSummaryPage() {
       // Store demo order data for the success page
       console.log('[ORDER SUMMARY DEBUG] Storing demo order data (pay later):', demoOrderData);
       try {
-        localStorage.setItem('demo-order-data', JSON.stringify(demoOrderData));
+        // Try localStorage first
+        try {
+          localStorage.setItem('demo-order-data', JSON.stringify(demoOrderData));
+          const stored = localStorage.getItem('demo-order-data');
+          console.log('[ORDER SUMMARY DEBUG] Verified storage (pay later):', stored ? 'Success' : 'Failed');
+          
+          if (!stored) {
+            throw new Error('localStorage write verification failed');
+          }
+        } catch (storageError) {
+          console.warn('[ORDER SUMMARY DEBUG] localStorage not available (pay later):', storageError);
+        }
         
-        // Verify storage
-        const stored = localStorage.getItem('demo-order-data');
-        console.log('[ORDER SUMMARY DEBUG] Verified storage (pay later):', stored);
+        // Build URL with fallback parameters
+        const params = new URLSearchParams({
+          orderId: demoOrderId,
+          demo: '1',
+          paymentMethod: 'later',
+          customerName: demoOrderData.customer_name || '',
+          total: demoOrderData.total_amount?.toString() || '0',
+          venueName: demoOrderData.venue_name || 'Servio Café'
+        });
         
-        // Small delay to ensure storage is complete
         setTimeout(() => {
-          window.location.href = `/payment/success?orderId=${demoOrderId}&demo=1&paymentMethod=later`;
-        }, 100);
+          window.location.href = `/payment/success?${params.toString()}`;
+        }, 150);
       } catch (error) {
         console.error('[ORDER SUMMARY DEBUG] Error storing demo order data (pay later):', error);
-        // Fallback: redirect anyway and let the success page handle the error
-        window.location.href = `/payment/success?orderId=${demoOrderId}&demo=1&paymentMethod=later`;
+        // Fallback: redirect with minimal data in URL
+        const fallbackParams = new URLSearchParams({
+          orderId: demoOrderId,
+          demo: '1',
+          paymentMethod: 'later',
+          customerName: orderData.customerName || 'Demo Customer',
+          total: orderData.total?.toString() || '0'
+        });
+        window.location.href = `/payment/success?${fallbackParams.toString()}`;
       }
       return;
     }

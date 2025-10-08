@@ -12,6 +12,11 @@ export default function PaymentSuccessPage() {
   const paymentMethod = searchParams?.get('paymentMethod') || 'demo';
   const [verifiedOrderId, setVerifiedOrderId] = useState<string | undefined>(orderId || undefined);
   const [demoOrderData, setDemoOrderData] = useState<any>(null);
+  
+  // URL parameter fallbacks
+  const customerNameParam = searchParams?.get('customerName');
+  const totalParam = searchParams?.get('total');
+  const venueNameParam = searchParams?.get('venueName');
 
   // Load demo order data from localStorage
   useEffect(() => {
@@ -64,16 +69,34 @@ export default function PaymentSuccessPage() {
         console.error('[PAYMENT SUCCESS DEBUG] No demo order data found in localStorage');
         console.error('[PAYMENT SUCCESS DEBUG] localStorage state:');
         console.error('[PAYMENT SUCCESS DEBUG] Keys:', Object.keys(localStorage));
-        for (let i = 0; i < localStorage.length; i++) {
-          const key = localStorage.key(i);
-          const value = localStorage.getItem(key || '');
-          console.error(`[PAYMENT SUCCESS DEBUG] ${key}:`, value?.substring(0, 100) + '...');
+        
+        // Try to reconstruct from URL parameters as fallback
+        if (customerNameParam || totalParam) {
+          console.log('[PAYMENT SUCCESS DEBUG] ===== USING URL PARAMETER FALLBACK =====');
+          const reconstructedData = {
+            id: orderId || `demo-${Date.now()}`,
+            venue_id: 'demo-cafe',
+            venue_name: venueNameParam || 'Servio Café',
+            table_number: 1,
+            order_status: 'PLACED',
+            payment_status: 'PAID',
+            payment_method: paymentMethod || 'demo',
+            customer_name: customerNameParam || 'Demo Customer',
+            customer_phone: '',
+            total_amount: parseFloat(totalParam || '0'),
+            items: [],
+            created_at: new Date().toISOString(),
+          };
+          console.log('[PAYMENT SUCCESS DEBUG] Reconstructed order from URL params:', reconstructedData);
+          setDemoOrderData(reconstructedData);
+        } else {
+          console.error('[PAYMENT SUCCESS DEBUG] No fallback data available in URL parameters');
         }
       }
     } else {
       console.log('[PAYMENT SUCCESS DEBUG] Not a demo order or no orderId provided');
     }
-  }, [isDemo, orderId]);
+  }, [isDemo, orderId, customerNameParam, totalParam, venueNameParam, paymentMethod]);
 
   // If we have a sessionId but no orderId, fetch the order from the verify endpoint
   useEffect(() => {
