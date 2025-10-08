@@ -301,17 +301,17 @@ export default function DemoAnalytics() {
           <CardDescription>Performance by item</CardDescription>
         </CardHeader>
         <CardContent>
-          <div className="h-[67px] md:h-[60px] mb-2 md:mb-4">
+          <div className="h-[300px] md:h-[250px] mb-2 md:mb-4">
             {chartsLoaded && ChartContainer && ResponsiveContainer ? (
               <ChartContainer config={{
                 qty: { color: '#8b5cf6' },
                 revenue: { color: '#10b981' }
               }}>
-                <ResponsiveContainer width="100%" height="100%">
-                  <BarChart data={topItems} layout="vertical" margin={{ left: 5, right: 5, top: 5, bottom: 5 }}>
+                <ResponsiveContainer width="100%" height="100%" maxHeight={280}>
+                  <BarChart data={topItems} layout="vertical" margin={{ left: 80, right: 20, top: 20, bottom: 20 }}>
                     <CartesianGrid strokeDasharray="3 3" />
                     <XAxis type="number" />
-                    <YAxis dataKey="name" type="category" width={85} />
+                    <YAxis dataKey="name" type="category" width={75} />
                     <Tooltip />
                     <Bar dataKey="quantity" fill="#8b5cf6" name="Quantity" />
                     <Bar dataKey="revenue" fill="#10b981" name="Revenue (£)" />
