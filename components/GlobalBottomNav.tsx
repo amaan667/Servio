@@ -2,7 +2,6 @@
 
 import React, { useState, useEffect, useCallback, useRef } from 'react';
 import { useRouter, usePathname } from 'next/navigation';
-import { Badge } from '@/components/ui/badge';
 import {
   Home,
   Clock,
@@ -27,7 +26,6 @@ interface NavItem {
   label: string;
   href: string;
   icon: React.ComponentType<{ className?: string }>;
-  badge?: number;
   isActive?: boolean;
 }
 
@@ -159,7 +157,6 @@ export default function GlobalBottomNav({ venueId, counts = {} }: GlobalBottomNa
       label: 'Live Orders',
       href: currentVenueId ? `/dashboard/${currentVenueId}/live-orders` : '/dashboard',
       icon: Clock,
-      badge: liveOrdersCount,
       isActive: pathname === `/dashboard/${currentVenueId}/live-orders`
     },
     {
@@ -201,15 +198,6 @@ export default function GlobalBottomNav({ venueId, counts = {} }: GlobalBottomNa
             >
               <div className="relative mb-1 flex flex-col items-center justify-center">
                 <item.icon className={`h-6 w-6 transition-colors text-servio-purple`} />
-                {item.badge && item.badge > 0 && (
-                  <Badge
-                    variant="destructive"
-                    className="absolute -top-2 -right-2 h-5 w-5 p-0 text-xs flex items-center justify-center bg-red-500 border-2 border-white"
-                    style={{ color: 'white', fontSize: '10px', fontWeight: 'bold' }}
-                  >
-                    {item.badge > 99 ? '99+' : item.badge}
-                  </Badge>
-                )}
               </div>
               <span
                 className={`text-servio-purple font-bold text-center px-1 transition-colors
