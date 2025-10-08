@@ -192,7 +192,7 @@ export default function CustomerOrderPage() {
   const [venueName, setVenueName] = useState<string>('Our Venue');
   const [showGroupSizeModal, setShowGroupSizeModal] = useState(false);
   const [showGroupSizePopup, setShowGroupSizePopup] = useState(false);
-  const [groupSize, setGroupSize] = useState<number>(1);
+  const [groupSize, setGroupSize] = useState<number | null>(null); // Start with nothing selected
   const [showCustomGroupSize, setShowCustomGroupSize] = useState(false);
   const [customGroupSize, setCustomGroupSize] = useState<string>('');
   const [groupSessionId, setGroupSessionId] = useState<string | null>(null);
@@ -588,52 +588,42 @@ export default function CustomerOrderPage() {
         // Determine payment mode based on source
         const paymentMode = isCounterOrder ? 'pay_at_till' : 'online';
 
-      // For demo orders, redirect to checkout with demo mode
+      // For demo orders, redirect to the same order summary as real customers
       if (isDemo || isDemoFallback || venueSlug === 'demo-cafe') {
         
-        // For demo orders, use the same flow as real orders but with demo mode
+        // Create demo order in the format expected by OrderSummary component
+        const demoOrderId = `demo-${Date.now()}`;
         const orderData = {
-          venueId: 'demo-cafe',
-          venueName: 'Servio Café',
-          tableNumber: parseInt(orderLocation) || 1, // Use orderLocation for consistency
-          counterNumber: counterNumber,
-          orderType: orderType,
-          orderLocation: orderLocation,
-          customerName: customerInfo.name.trim(),
-          customerPhone: customerInfo.phone.trim(),
-          cart: cart.map((item) => ({
-            id: item.id && item.id.startsWith('demo-') ? null : item.id,
-            name: item.name,
+          id: demoOrderId,
+          venue_id: 'demo-cafe',
+          venue_name: 'Servio Café',
+          table_number: parseInt(orderLocation) || 1,
+          order_status: 'PLACED',
+          payment_status: 'PAID',
+          payment_method: 'demo',
+          customer_name: customerInfo.name.trim(),
+          customer_phone: customerInfo.phone.trim(),
+          total_amount: getTotalPrice(),
+          items: cart.map((item) => ({
+            item_name: item.name,
             price: item.price,
             quantity: item.quantity,
-            specialInstructions: item.specialInstructions || null,
-            image: (item as any).image || null,
+            special_instructions: item.specialInstructions || null,
           })),
-          total: getTotalPrice(),
-          notes: cart
-            .filter((item) => item.specialInstructions)
-            .map((item) => `${item.name}: ${item.specialInstructions}`)
-            .join("; "),
-          isDemo: true, // Add demo flag
+          created_at: new Date().toISOString(),
         };
 
-        console.log('[ORDER PAGE] Demo order data prepared:', orderData);
+        console.log('[ORDER PAGE] Demo order created:', orderData);
         
-        // Store order data in localStorage for order summary page
-        localStorage.setItem('servio-pending-order', JSON.stringify(orderData));
-        
-        // Verify storage
-        const storedPending = localStorage.getItem('servio-pending-order');
-        
-        // Redirect to order summary page
+        // Store order data for the success page
+        sessionStorage.setItem('demo-order-data', JSON.stringify(orderData));
         
         // Clear loading state before navigation
         setIsSubmitting(false);
         
-        // Use window.location for reliable navigation
+        // Redirect to payment success page with demo mode
         if (typeof window !== 'undefined') {
-          window.location.href = '/order-summary';
-        } else {
+          window.location.href = `/payment/success?orderId=${demoOrderId}&demo=1&paymentMethod=demo`;
         }
         
         return;
@@ -875,7 +865,7 @@ export default function CustomerOrderPage() {
                       </>
                     )}
                   </div>
-                  {!isCounterOrder && groupSessionId && (
+                  {!isCounterOrder && groupSessionId && groupSize && (
                     <button
                       onClick={() => setShowGroupSizePopup(true)}
                       className="px-3 py-1 bg-purple-100 dark:bg-purple-900/30 text-purple-700 dark:text-purple-300 rounded-full text-xs font-medium hover:bg-purple-200 dark:hover:bg-purple-900/50 transition-colors self-start sm:self-auto"
@@ -1476,7 +1466,11 @@ export default function CustomerOrderPage() {
                     }
                   }}
                   className="flex-1 h-10 sm:h-12 bg-purple-600 hover:bg-purple-700 text-white font-medium shadow-sm"
-                  disabled={showCustomGroupSize && (!customGroupSize || parseInt(customGroupSize) < 9 || isNaN(parseInt(customGroupSize)))}
+                  disabled={
+                    showCustomGroupSize 
+                      ? (!customGroupSize || parseInt(customGroupSize) < 9 || isNaN(parseInt(customGroupSize)))
+                      : !groupSize || groupSize <= 0
+                  }
                 >
                   Continue
                 </Button>
@@ -1529,8 +1523,13 @@ export default function CustomerOrderPage() {
                   Cancel
                 </Button>
                 <Button
-                  onClick={() => handleGroupSizeUpdate(groupSize)}
+                  onClick={() => {
+                    if (groupSize !== null && groupSize > 0) {
+                      handleGroupSizeUpdate(groupSize);
+                    }
+                  }}
                   className="flex-1 h-10 sm:h-12 bg-purple-600 hover:bg-purple-700"
+                  disabled={!groupSize || groupSize <= 0}
                 >
                   Update
                 </Button>

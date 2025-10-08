@@ -2,7 +2,6 @@
 
 import { useSearchParams } from "next/navigation";
 import OrderSummary from "@/components/order-summary";
-import DemoOrderSummary from "@/components/demo-order-summary";
 import { useEffect, useState } from "react";
 
 export default function PaymentSuccessPage() {
@@ -12,26 +11,30 @@ export default function PaymentSuccessPage() {
   const isDemo = searchParams?.get('demo') === '1';
   const paymentMethod = searchParams?.get('paymentMethod') || 'demo';
   const [verifiedOrderId, setVerifiedOrderId] = useState<string | undefined>(orderId || undefined);
-  const [checkoutData, setCheckoutData] = useState<any>(null);
+  const [demoOrderData, setDemoOrderData] = useState<any>(null);
 
-  // Load checkout data for demo mode
+  // Load demo order data from sessionStorage
   useEffect(() => {
-    if (isDemo) {
-      const storedData = localStorage.getItem("servio-checkout-data");
+    if (isDemo && orderId) {
+      const storedData = sessionStorage.getItem("demo-order-data");
+      console.log('[PAYMENT SUCCESS] Loading demo order data:', storedData);
       if (storedData) {
         try {
           const data = JSON.parse(storedData);
-          setCheckoutData(data);
+          console.log('[PAYMENT SUCCESS] Parsed demo order:', data);
+          setDemoOrderData(data);
+          // Clean up after loading
+          sessionStorage.removeItem("demo-order-data");
         } catch (error) {
-          console.error('[PAYMENT SUCCESS] Error parsing checkout data:', error);
+          console.error('[PAYMENT SUCCESS] Error parsing demo order data:', error);
         }
       }
     }
-  }, [isDemo]);
+  }, [isDemo, orderId]);
 
   // If we have a sessionId but no orderId, fetch the order from the verify endpoint
   useEffect(() => {
-    if (sessionId && !orderId) {
+    if (sessionId && !orderId && !isDemo) {
       console.log('[PAYMENT SUCCESS] Verifying Stripe session:', sessionId);
       
       fetch(`/api/orders/verify?sessionId=${sessionId}`)
@@ -48,23 +51,14 @@ export default function PaymentSuccessPage() {
           console.error('[PAYMENT SUCCESS] Failed to verify order:', err);
         });
     }
-  }, [sessionId, orderId]);
+  }, [sessionId, orderId, isDemo]);
 
-  // For demo mode, use the demo order summary
-  if (isDemo && checkoutData) {
-    return (
-      <DemoOrderSummary 
-        checkoutData={checkoutData}
-        paymentMethod={paymentMethod}
-      />
-    );
-  }
-
-  // For real orders, use the regular order summary
+  // Use the same OrderSummary component for both demo and real orders
   return (
     <OrderSummary 
       orderId={verifiedOrderId}
       sessionId={sessionId || undefined}
+      orderData={demoOrderData}
       isDemo={isDemo}
     />
   );
