@@ -301,14 +301,14 @@ export default function DemoAnalytics() {
           <CardDescription>Performance by item</CardDescription>
         </CardHeader>
         <CardContent>
-          <div className="h-[180px] mb-4">
+          <div className="h-[160px] md:h-[180px] mb-2 md:mb-6">
             {chartsLoaded && ChartContainer && ResponsiveContainer ? (
               <ChartContainer config={{
                 qty: { color: '#8b5cf6' },
                 revenue: { color: '#10b981' }
               }}>
                 <ResponsiveContainer width="100%" height="100%">
-                  <BarChart data={topItems} layout="vertical" margin={{ left: 5, right: 5, top: 10, bottom: 10 }}>
+                  <BarChart data={topItems} layout="vertical" margin={{ left: 5, right: 5, top: 5, bottom: 5 }}>
                     <CartesianGrid strokeDasharray="3 3" />
                     <XAxis type="number" />
                     <YAxis dataKey="name" type="category" width={85} />
@@ -328,7 +328,7 @@ export default function DemoAnalytics() {
       </Card>
 
       {/* AI Insights */}
-      <Card className="border-2 border-purple-200 mt-8">
+      <Card className="border-2 border-purple-200 mt-4 md:mt-8">
         <CardHeader>
           <div className="flex items-center justify-between">
             <div>

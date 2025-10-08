@@ -162,11 +162,7 @@ export default function DemoPage() {
             <div>
               <h1 className="text-2xl font-bold text-gray-900 flex items-center gap-0">
                 Try
-                <img 
-                  src="/assets/servio-logo-updated.png"
-                  alt="Servio"
-                  className="h-32 w-auto inline-block align-baseline ml-0.5"
-                />
+                <span className="text-purple-600 ml-0.5">Servio</span>
               </h1>
               <p className="text-sm text-gray-600">Experience both perspectives</p>
             </div>
