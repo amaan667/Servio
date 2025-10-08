@@ -75,6 +75,15 @@ export function AddressInput({ value, onChange, onCoordinatesChange }: AddressIn
         }
       });
 
+      // Ensure the input remains editable
+      const input = inputRef.current;
+      if (input) {
+        input.addEventListener('keydown', (e) => {
+          // Allow all key presses to ensure input is never blocked
+          e.stopPropagation();
+        });
+      }
+
       autocompleteRef.current = autocomplete;
       console.log('AddressInput: Google Places Autocomplete initialized successfully');
     } catch (error) {
@@ -113,6 +122,15 @@ export function AddressInput({ value, onChange, onCoordinatesChange }: AddressIn
             }
           }
         });
+
+        // Ensure the input remains editable
+        const input = inputRef.current;
+        if (input) {
+          input.addEventListener('keydown', (e) => {
+            // Allow all key presses to ensure input is never blocked
+            e.stopPropagation();
+          });
+        }
 
         autocompleteRef.current = autocomplete;
         console.log('AddressInput: Autocomplete reinitialized successfully');
@@ -220,9 +238,14 @@ export function AddressInput({ value, onChange, onCoordinatesChange }: AddressIn
               setGoogleMapsError(null);
             }
           }}
+          onFocus={(e) => {
+            // Additional autocomplete prevention on focus
+            e.target.setAttribute('autocomplete', 'new-password');
+          }}
           placeholder="Start typing to search for addresses..."
           className="rounded-lg border-gray-200"
-          autoComplete="off" // Prevent browser autocomplete interference
+          autoComplete="new-password" // Stronger autocomplete prevention
+          type="text"
         />
         
         {/* Error message display */}
