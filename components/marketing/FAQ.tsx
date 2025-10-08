@@ -217,9 +217,9 @@ export function FAQ({ className = "", onToggle, onCTAClick }: FAQProps) {
             className="bg-purple-600 hover:bg-purple-700 text-white"
             onClick={() => handleCTAClick("trial")}
           >
-            <Link href="/sign-up">
+            <Link href="/sign-up" className="text-white">
               Start free trial
-              <ArrowRight className="h-4 w-4 ml-2" aria-hidden="true" />
+              <ArrowRight className="h-4 w-4 ml-2 text-white" aria-hidden="true" />
             </Link>
           </Button>
         </div>
