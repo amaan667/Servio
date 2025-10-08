@@ -16,6 +16,7 @@ import {
   Star,
   CheckCircle,
   ArrowRight,
+  ChevronDown,
 } from "lucide-react";
 import { useAuth } from "@/app/auth/AuthProvider";
 
@@ -72,6 +73,64 @@ function PricingQuickCompare({
           </ul>
           <Button variant="servio" className="w-full">Contact Sales</Button>
         </Card>
+      </div>
+    </div>
+  );
+}
+
+function FAQSection() {
+  const [openIndex, setOpenIndex] = useState<number | null>(null);
+
+  const faqs = [
+    {
+      question: "Do I need new hardware to use Servio?",
+      answer: "No! Servio works entirely on your customers' smartphones. You don't need to buy tablets, POS terminals, or special equipment. Just print out the QR codes we generate for each table, and you're ready to go. Your staff can manage orders from any device with a web browser."
+    },
+    {
+      question: "Can I try Servio for free?",
+      answer: "Yes! We offer a 14-day free trial with full access to all features—no credit card required. You can set up your menu, generate QR codes, and test the complete ordering system. After the trial, choose the plan that fits your business needs, or cancel anytime with no penalties."
+    },
+    {
+      question: "How do customers place orders?",
+      answer: "It's simple: customers scan the QR code on their table using their phone's camera. This opens your digital menu in their browser (no app download needed). They browse items, customize orders, add to cart, and pay directly through their phone. You receive the order instantly in your dashboard, and customers get real-time updates on their order status."
+    },
+    {
+      question: "Is Servio available outside the UK?",
+      answer: "Currently, Servio is optimized for businesses in the UK with GBP pricing and Stripe payment integration for UK merchants. However, we're actively working on expanding to other regions. If you're interested in using Servio outside the UK, please contact our sales team, and we'll notify you as soon as we launch in your area."
+    }
+  ];
+
+  return (
+    <div className="w-full max-w-5xl mx-auto px-6 pt-12">
+      <h2 className="text-3xl font-bold text-center mb-8">Frequently Asked Questions</h2>
+      <div className="space-y-4">
+        {faqs.map((faq, index) => (
+          <div
+            key={index}
+            className="border border-gray-200 rounded-lg bg-gray-50 hover:bg-gray-100 transition-colors"
+          >
+            <button
+              onClick={() => setOpenIndex(openIndex === index ? null : index)}
+              className="w-full p-4 text-left flex justify-between items-center gap-4"
+            >
+              <span className="font-bold text-gray-900">{faq.question}</span>
+              <ChevronDown
+                className={`h-5 w-5 text-gray-600 flex-shrink-0 transition-transform duration-200 ${
+                  openIndex === index ? 'rotate-180' : ''
+                }`}
+              />
+            </button>
+            <div
+              className={`overflow-hidden transition-all duration-200 ease-in-out ${
+                openIndex === index ? 'max-h-96 opacity-100' : 'max-h-0 opacity-0'
+              }`}
+            >
+              <div className="px-4 pb-4 text-gray-700 leading-relaxed">
+                {faq.answer}
+              </div>
+            </div>
+          </div>
+        ))}
       </div>
     </div>
   );
@@ -461,6 +520,9 @@ export default function HomePage() {
       {/* PricingQuickCompare Section */}
       <section id="pricing" className="py-24 bg-white">
         <PricingQuickCompare isSignedIn={!!user} onPrimaryClick={handlePricingPrimary} />
+        
+        {/* FAQ Section */}
+        <FAQSection />
       </section>
 
       {/* Pricing Section */}
