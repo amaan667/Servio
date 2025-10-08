@@ -103,7 +103,12 @@ export default function OrderSummaryPage() {
       };
 
       // Store demo order data for the success page
+      console.log('[ORDER SUMMARY DEBUG] Storing demo order data:', demoOrderData);
       sessionStorage.setItem('demo-order-data', JSON.stringify(demoOrderData));
+      
+      // Verify storage
+      const stored = sessionStorage.getItem('demo-order-data');
+      console.log('[ORDER SUMMARY DEBUG] Verified storage:', stored);
       
       // Redirect to payment success page
       window.location.href = `/payment/success?orderId=${demoOrderId}&demo=1&paymentMethod=demo`;
@@ -216,7 +221,12 @@ export default function OrderSummaryPage() {
       };
 
       // Store demo order data for the success page
+      console.log('[ORDER SUMMARY DEBUG] Storing demo order data (pay later):', demoOrderData);
       sessionStorage.setItem('demo-order-data', JSON.stringify(demoOrderData));
+      
+      // Verify storage
+      const stored = sessionStorage.getItem('demo-order-data');
+      console.log('[ORDER SUMMARY DEBUG] Verified storage (pay later):', stored);
       
       // Redirect to payment success page
       window.location.href = `/payment/success?orderId=${demoOrderId}&demo=1&paymentMethod=later`;

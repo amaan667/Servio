@@ -18,6 +18,7 @@ export default function PaymentSuccessPage() {
     if (isDemo && orderId) {
       const storedData = sessionStorage.getItem("demo-order-data");
       console.log('[PAYMENT SUCCESS] Loading demo order data:', storedData);
+      console.log('[PAYMENT SUCCESS] OrderId:', orderId, 'isDemo:', isDemo);
       if (storedData) {
         try {
           const data = JSON.parse(storedData);
@@ -28,6 +29,8 @@ export default function PaymentSuccessPage() {
         } catch (error) {
           console.error('[PAYMENT SUCCESS] Error parsing demo order data:', error);
         }
+      } else {
+        console.error('[PAYMENT SUCCESS] No demo order data found in sessionStorage');
       }
     }
   }, [isDemo, orderId]);

@@ -109,6 +109,14 @@ export default function OrderSummary({ orderId, sessionId, orderData, isDemo = f
       return;
     }
 
+    // For demo orders, don't try to fetch from database
+    if (isDemo && orderId && orderId.startsWith('demo-')) {
+      console.log('[ORDER SUMMARY] Demo order detected, skipping database fetch');
+      setError('Demo order data not found in session storage');
+      setLoading(false);
+      return;
+    }
+
     if (!orderId && !sessionId) {
       setError('No order information provided');
       setLoading(false);
@@ -147,7 +155,7 @@ export default function OrderSummary({ orderId, sessionId, orderData, isDemo = f
     };
 
     fetchOrder();
-  }, [orderId, sessionId, orderData]);
+  }, [orderId, sessionId, orderData, isDemo]);
 
   // Set up real-time subscription for order updates
   useEffect(() => {

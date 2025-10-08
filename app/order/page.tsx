@@ -216,7 +216,8 @@ export default function CustomerOrderPage() {
           const data = await response.json();
           if (data.groupSessionId) {
             setGroupSessionId(data.groupSessionId);
-            setGroupSize(data.totalGroupSize || 1);
+            // Don't set group size from previous session - always start fresh
+            setGroupSize(null);
             // Still show modal to allow updating group size
             setShowGroupSizeModal(true);
           } else {
@@ -236,6 +237,7 @@ export default function CustomerOrderPage() {
       checkGroupSession();
     } else {
       // For counter orders, still show group size modal
+      setGroupSize(null); // Ensure nothing is selected by default
       setShowGroupSizeModal(true);
     }
 
