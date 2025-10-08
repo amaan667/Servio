@@ -202,16 +202,17 @@ export default function HomePage() {
                 Streamline your business operations with contactless QR code ordering. Customers scan, order, and pay — all from their phones. You focus on great food and service.
               </p>
               <div className="mt-8 flex items-center gap-4 flex-wrap">
-                <Button
-                  size="lg"
-                  onClick={handleGetStarted}
-                  variant="servio"
-                  className="text-lg px-8 py-4"
-                  disabled={authLoading}
-                >
-                  {authLoading ? 'Loading...' : (user ? 'Go to Dashboard' : 'Start Free Trial')}
-                  <ArrowRight className="ml-2 h-5 w-5" />
-                </Button>
+                {!authLoading && !user && (
+                  <Button
+                    size="lg"
+                    onClick={handleGetStarted}
+                    variant="servio"
+                    className="text-lg px-8 py-4"
+                  >
+                    Start Free Trial
+                    <ArrowRight className="ml-2 h-5 w-5" />
+                  </Button>
+                )}
                 {!authLoading && !user && (
                   <Button
                     size="lg"
