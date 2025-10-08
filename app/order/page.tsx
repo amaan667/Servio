@@ -9,7 +9,7 @@ import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Alert, AlertDescription } from "@/components/ui/alert";
-import { Loader2, ShoppingCart, Plus, Minus, X, CreditCard, Table, Receipt } from "lucide-react";
+import { Loader2, ShoppingCart, Plus, Minus, X, CreditCard, Table, Receipt, Check } from "lucide-react";
 import { supabase } from "@/lib/supabase/client";
 import React from "react";
 import { demoMenuItems } from "@/data/demoMenuItems";
@@ -1392,20 +1392,34 @@ export default function CustomerOrderPage() {
                           setShowCustomGroupSize(false);
                           setCustomGroupSize('');
                         }}
-                        className="h-10 sm:h-12 text-sm sm:text-base"
+                        className={`h-10 sm:h-12 text-sm sm:text-base transition-all duration-200 ${
+                          groupSize === size 
+                            ? "bg-servio-purple hover:bg-servio-purple-dark text-white border-servio-purple shadow-lg ring-2 ring-servio-purple ring-opacity-50" 
+                            : "hover:bg-gray-50 border-gray-300"
+                        }`}
                       >
-                        {size} {size === 1 ? "Person" : "People"}
+                        <div className="flex items-center justify-center gap-2">
+                          {groupSize === size && <Check className="h-4 w-4" />}
+                          {size} {size === 1 ? "Person" : "People"}
+                        </div>
                       </Button>
                     ))}
                   </div>
                   
                   <div className="pt-2">
                     <Button
-                      variant="outline"
+                      variant={showCustomGroupSize ? "default" : "outline"}
                       onClick={() => setShowCustomGroupSize(true)}
-                      className="w-full h-10 sm:h-12 text-sm sm:text-base border-dashed"
+                      className={`w-full h-10 sm:h-12 text-sm sm:text-base border-dashed transition-all duration-200 ${
+                        showCustomGroupSize 
+                          ? "bg-servio-purple hover:bg-servio-purple-dark text-white border-servio-purple shadow-lg ring-2 ring-servio-purple ring-opacity-50" 
+                          : "hover:bg-gray-50 border-gray-300"
+                      }`}
                     >
-                      Other (More than 8)
+                      <div className="flex items-center justify-center gap-2">
+                        {showCustomGroupSize && <Check className="h-4 w-4" />}
+                        Other (More than 8)
+                      </div>
                     </Button>
                   </div>
                 </>
