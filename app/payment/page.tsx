@@ -59,11 +59,15 @@ export default function PaymentPage() {
     // Get checkout data from localStorage
     const storedData = localStorage.getItem("servio-checkout-data");
     
+    console.log('[PAYMENT DEBUG] Loading checkout data:', storedData);
+    
     if (storedData) {
       try {
         const data = JSON.parse(storedData);
+        console.log('[PAYMENT DEBUG] Parsed checkout data:', data);
         setCheckoutData(data);
         setIsDemo(data.isDemo || false); // Set demo flag from checkout data
+        console.log('[PAYMENT DEBUG] Demo flag set to:', data.isDemo || false);
       } catch (error) {
         console.error('[PAYMENT DEBUG] Error parsing checkout data:', error);
         router.push("/order");
@@ -75,6 +79,7 @@ export default function PaymentPage() {
   }, [router]);
 
   const handlePayment = async (action: PaymentAction) => {
+    console.log('[PAYMENT DEBUG] handlePayment called with action:', action);
     
     if (!checkoutData) {
       setError('Missing order information. Please try again.');
