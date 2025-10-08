@@ -26,12 +26,14 @@ export function AddressInput({ value, onChange, onCoordinatesChange }: AddressIn
 
   // Load Google Maps API
   useEffect(() => {
+    console.log('AddressInput: Loading Google Maps API...');
     loadGoogleMapsAPI()
       .then(() => {
+        console.log('AddressInput: Google Maps API loaded successfully');
         setHasGoogleMaps(true);
       })
       .catch((error) => {
-        console.warn('Google Maps not available:', error.message);
+        console.warn('AddressInput: Google Maps not available:', error.message);
         setHasGoogleMaps(false);
       });
   }, []);
@@ -40,6 +42,7 @@ export function AddressInput({ value, onChange, onCoordinatesChange }: AddressIn
   useEffect(() => {
     if (!hasGoogleMaps || !inputRef.current || autocompleteRef.current) return;
 
+    console.log('AddressInput: Initializing Google Places Autocomplete...');
     try {
       const autocomplete = new google.maps.places.Autocomplete(inputRef.current, {
         types: ['address'],
@@ -65,8 +68,9 @@ export function AddressInput({ value, onChange, onCoordinatesChange }: AddressIn
       });
 
       autocompleteRef.current = autocomplete;
+      console.log('AddressInput: Google Places Autocomplete initialized successfully');
     } catch (error) {
-      console.error('Error initializing Google Places:', error);
+      console.error('AddressInput: Error initializing Google Places:', error);
       setHasGoogleMaps(false);
     }
   }, [hasGoogleMaps, onChange, onCoordinatesChange]);
@@ -150,6 +154,10 @@ export function AddressInput({ value, onChange, onCoordinatesChange }: AddressIn
           {hasGoogleMaps 
             ? "Start typing and select from suggestions for accurate location"
             : "Enter full address including city and postcode"}
+        </p>
+        {/* Debug info - remove in production */}
+        <p className="text-xs text-gray-500 mt-1">
+          Debug: Google Maps {hasGoogleMaps ? '✅ Loaded' : '❌ Not loaded'} | API Key: {process.env.NEXT_PUBLIC_GOOGLE_MAPS_API_KEY ? '✅ Set' : '❌ Missing'}
         </p>
       </div>
 

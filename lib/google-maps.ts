@@ -33,7 +33,7 @@ export function loadGoogleMapsAPI(): Promise<void> {
       return;
     }
 
-    // Get API key from environment
+    // Get API key from environment (works in Next.js client components)
     const apiKey = process.env.NEXT_PUBLIC_GOOGLE_MAPS_API_KEY;
     
     if (!apiKey) {
@@ -41,6 +41,8 @@ export function loadGoogleMapsAPI(): Promise<void> {
       reject(new Error('Google Maps API key not configured'));
       return;
     }
+
+    console.log('Loading Google Maps API with key:', apiKey.substring(0, 10) + '...');
 
     isLoading = true;
 
