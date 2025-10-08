@@ -79,13 +79,34 @@ export default function OrderSummaryPage() {
     console.log('[ORDER SUMMARY DEBUG] handlePayNow - isDemo:', isDemo);
     
     if (isDemo) {
-      console.log('[ORDER SUMMARY DEBUG] Demo order detected - showing success without Stripe');
-      // For demo orders, just mark as placed and show success
-      setOrderPlaced(true);
-      setOrderData({
-        ...orderData,
-        orderId: `DEMO-${Date.now()}`
-      });
+      console.log('[ORDER SUMMARY DEBUG] Demo order detected - redirecting to payment success');
+      // For demo orders, create demo order data and redirect to payment success page
+      const demoOrderId = `demo-${Date.now()}`;
+      const demoOrderData = {
+        id: demoOrderId,
+        venue_id: orderData.venueId,
+        venue_name: orderData.venueName,
+        table_number: orderData.tableNumber,
+        order_status: 'PLACED',
+        payment_status: 'PAID',
+        payment_method: 'demo',
+        customer_name: orderData.customerName,
+        customer_phone: orderData.customerPhone,
+        total_amount: orderData.total,
+        items: orderData.cart.map((item) => ({
+          item_name: item.name,
+          price: item.price,
+          quantity: item.quantity,
+          special_instructions: item.specialInstructions || null,
+        })),
+        created_at: new Date().toISOString(),
+      };
+
+      // Store demo order data for the success page
+      sessionStorage.setItem('demo-order-data', JSON.stringify(demoOrderData));
+      
+      // Redirect to payment success page
+      window.location.href = `/payment/success?orderId=${demoOrderId}&demo=1&paymentMethod=demo`;
       return;
     }
     
@@ -171,15 +192,34 @@ export default function OrderSummaryPage() {
     console.log('[ORDER SUMMARY DEBUG] handlePayLater - isDemo:', isDemo);
     
     if (isDemo) {
-      console.log('[ORDER SUMMARY DEBUG] Demo order detected - showing success without API call');
-      // For demo orders, just mark as placed and show success
-      const updatedOrderData = {
-        ...orderData,
-        orderId: `DEMO-${Date.now()}`
+      console.log('[ORDER SUMMARY DEBUG] Demo order detected - redirecting to payment success');
+      // For demo orders, create demo order data and redirect to payment success page
+      const demoOrderId = `demo-${Date.now()}`;
+      const demoOrderData = {
+        id: demoOrderId,
+        venue_id: orderData.venueId,
+        venue_name: orderData.venueName,
+        table_number: orderData.tableNumber,
+        order_status: 'PLACED',
+        payment_status: 'PAID',
+        payment_method: 'later',
+        customer_name: orderData.customerName,
+        customer_phone: orderData.customerPhone,
+        total_amount: orderData.total,
+        items: orderData.cart.map((item) => ({
+          item_name: item.name,
+          price: item.price,
+          quantity: item.quantity,
+          special_instructions: item.specialInstructions || null,
+        })),
+        created_at: new Date().toISOString(),
       };
-      setOrderData(updatedOrderData);
-      setOrderPlaced(true);
-      localStorage.setItem('servio-pending-order', JSON.stringify(updatedOrderData));
+
+      // Store demo order data for the success page
+      sessionStorage.setItem('demo-order-data', JSON.stringify(demoOrderData));
+      
+      // Redirect to payment success page
+      window.location.href = `/payment/success?orderId=${demoOrderId}&demo=1&paymentMethod=later`;
       return;
     }
 

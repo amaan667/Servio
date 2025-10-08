@@ -588,42 +588,46 @@ export default function CustomerOrderPage() {
         // Determine payment mode based on source
         const paymentMode = isCounterOrder ? 'pay_at_till' : 'online';
 
-      // For demo orders, redirect to the same order summary as real customers
+      // For demo orders, redirect to order summary page (same flow as real orders)
       if (isDemo || isDemoFallback || venueSlug === 'demo-cafe') {
         
-        // Create demo order in the format expected by OrderSummary component
-        const demoOrderId = `demo-${Date.now()}`;
+        // Create demo order data in the same format as real orders
         const orderData = {
-          id: demoOrderId,
-          venue_id: 'demo-cafe',
-          venue_name: 'Servio Café',
-          table_number: parseInt(orderLocation) || 1,
-          order_status: 'PLACED',
-          payment_status: 'PAID',
-          payment_method: 'demo',
-          customer_name: customerInfo.name.trim(),
-          customer_phone: customerInfo.phone.trim(),
-          total_amount: getTotalPrice(),
-          items: cart.map((item) => ({
-            item_name: item.name,
+          venueId: 'demo-cafe',
+          venueName: 'Servio Café',
+          tableNumber: parseInt(orderLocation) || 1,
+          counterNumber: counterNumber,
+          orderType: orderType,
+          orderLocation: orderLocation,
+          customerName: customerInfo.name.trim(),
+          customerPhone: customerInfo.phone.trim(),
+          cart: cart.map((item) => ({
+            id: item.id && item.id.startsWith('demo-') ? null : item.id,
+            name: item.name,
             price: item.price,
             quantity: item.quantity,
-            special_instructions: item.specialInstructions || null,
+            specialInstructions: item.specialInstructions || null,
+            image: (item as any).image || null,
           })),
-          created_at: new Date().toISOString(),
+          total: getTotalPrice(),
+          notes: cart
+            .filter((item) => item.specialInstructions)
+            .map((item) => `${item.name}: ${item.specialInstructions}`)
+            .join("; "),
+          isDemo: true, // Add demo flag
         };
 
-        console.log('[ORDER PAGE] Demo order created:', orderData);
+        console.log('[ORDER PAGE] Demo order data prepared:', orderData);
         
-        // Store order data for the success page
-        sessionStorage.setItem('demo-order-data', JSON.stringify(orderData));
+        // Store order data in localStorage for order summary page
+        localStorage.setItem('servio-pending-order', JSON.stringify(orderData));
         
         // Clear loading state before navigation
         setIsSubmitting(false);
         
-        // Redirect to payment success page with demo mode
+        // Redirect to order summary page (same as real orders)
         if (typeof window !== 'undefined') {
-          window.location.href = `/payment/success?orderId=${demoOrderId}&demo=1&paymentMethod=demo`;
+          window.location.href = '/order-summary';
         }
         
         return;
