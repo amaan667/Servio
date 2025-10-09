@@ -71,7 +71,9 @@ export async function POST(req: Request) {
           throw new Error('Failed to create KDS stations');
         }
         
-        existingStations.push(...stations);
+        if (existingStations) {
+          existingStations.push(...stations);
+        }
       }
 
       // Get the expo station (default for all items)

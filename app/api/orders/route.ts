@@ -86,7 +86,9 @@ async function createKDSTickets(supabase: any, order: any) {
         throw new Error('Failed to create KDS stations');
       }
       
-      existingStations.push(...stations);
+      if (existingStations) {
+        existingStations.push(...stations);
+      }
     }
     
     // Get the expo station (default for all items)
