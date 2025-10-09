@@ -254,8 +254,42 @@ export async function POST(req: Request) {
       source: orderSource, // Use source from client (based on QR code URL: ?table=X -> 'qr', ?counter=X -> 'counter')
     };
 
-    // Final validation before insertion
+    // Check for duplicate orders (idempotency check)
+    // Look for orders with same customer, table, venue, and recent timestamp (within 5 minutes)
+    const fiveMinutesAgo = new Date(Date.now() - 5 * 60 * 1000).toISOString();
+    const { data: existingOrder, error: duplicateCheckError } = await supabase
+      .from('orders')
+      .select('id, created_at, order_status, payment_status')
+      .eq('venue_id', payload.venue_id)
+      .eq('customer_name', payload.customer_name)
+      .eq('customer_phone', payload.customer_phone)
+      .eq('table_number', payload.table_number)
+      .gte('created_at', fiveMinutesAgo)
+      .order('created_at', { ascending: false })
+      .limit(1)
+      .maybeSingle();
 
+    if (duplicateCheckError) {
+      console.warn('[ORDER API] Duplicate check failed:', duplicateCheckError);
+    }
+
+    // If we found a recent duplicate, return it instead of creating a new one
+    if (existingOrder) {
+      console.log('[ORDER API] Found duplicate order, returning existing:', existingOrder.id);
+      return NextResponse.json({ 
+        ok: true, 
+        order: existingOrder,
+        table_auto_created: tableId !== null,
+        table_id: tableId,
+        session_id: (body as any).session_id || null,
+        source: orderSource,
+        display_name: orderSource === 'counter' ? `Counter ${table_number}` : `Table ${table_number}`,
+        duplicate: true
+      });
+    }
+
+    // Final validation before insertion
+    console.log('[ORDER API] Creating new order for:', payload.customer_name, 'at table', payload.table_number);
     
     const { data: inserted, error: insertErr } = await supabase
       .from('orders')

@@ -31,6 +31,10 @@ export async function POST(req: Request) {
   // Get the original order ID from metadata
   const originalOrderId = session.metadata?.orderId;
   
+  console.log('[WEBHOOK] Processing checkout session:', session.id);
+  console.log('[WEBHOOK] Session metadata:', session.metadata);
+  console.log('[WEBHOOK] Original order ID:', originalOrderId);
+  
   if (!originalOrderId) {
     console.error('[WEBHOOK] No orderId in session metadata');
     return NextResponse.json({ ok: false, error: 'No orderId in session metadata' }, { status: 400 });
@@ -39,10 +43,32 @@ export async function POST(req: Request) {
   // Check if we already processed this session
   const { data: existing } = await supabaseAdmin
     .from('orders')
-    .select('id, stripe_session_id')
+    .select('id, stripe_session_id, payment_status')
     .eq('stripe_session_id', session.id)
     .maybeSingle();
-  if (existing) return NextResponse.json({ ok: true, already: true });
+  if (existing) {
+    console.log('[WEBHOOK] Session already processed for order:', existing.id);
+    return NextResponse.json({ ok: true, already: true });
+  }
+
+  // Verify the original order exists
+  const { data: originalOrder, error: fetchError } = await supabaseAdmin
+    .from('orders')
+    .select('id, payment_status, customer_name, table_number')
+    .eq('id', originalOrderId)
+    .single();
+
+  if (fetchError || !originalOrder) {
+    console.error('[WEBHOOK] Original order not found:', originalOrderId, fetchError);
+    return NextResponse.json({ ok: false, error: 'Original order not found' }, { status: 404 });
+  }
+
+  console.log('[WEBHOOK] Found original order:', {
+    id: originalOrder.id,
+    customer: originalOrder.customer_name,
+    table: originalOrder.table_number,
+    current_payment_status: originalOrder.payment_status
+  });
 
   // Update the existing order with payment information
   const { error: updateErr } = await supabaseAdmin
