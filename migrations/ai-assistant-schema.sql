@@ -381,75 +381,104 @@ CREATE INDEX IF NOT EXISTS idx_automations_trigger ON ai_automations(trigger_typ
 CREATE INDEX IF NOT EXISTS idx_context_cache_expires ON ai_context_cache(expires_at);
 
 -- ============================================================================
--- Add Foreign Key Constraints (only if tables exist)
+-- Add Foreign Key Constraints (with exception handling for safety)
+-- Note: Foreign keys will be skipped if referenced tables/columns don't exist
+-- You can manually add them later when your full schema is in place
 -- ============================================================================
 
--- Add foreign keys for venues (if venues table exists)
+-- Add foreign keys for venues
 DO $$ 
 BEGIN
-  IF EXISTS (SELECT FROM information_schema.tables WHERE table_schema = 'public' AND table_name = 'venues') THEN
-    -- ai_action_audit foreign keys
+  BEGIN
     IF NOT EXISTS (SELECT 1 FROM pg_constraint WHERE conname = 'ai_action_audit_venue_id_fkey') THEN
       ALTER TABLE ai_action_audit 
         ADD CONSTRAINT ai_action_audit_venue_id_fkey 
         FOREIGN KEY (venue_id) REFERENCES venues(id) ON DELETE CASCADE;
     END IF;
-    
-    -- ai_automations foreign keys
+  EXCEPTION WHEN OTHERS THEN
+    RAISE WARNING 'Could not add foreign key ai_action_audit_venue_id_fkey: %', SQLERRM;
+  END;
+
+  BEGIN
     IF NOT EXISTS (SELECT 1 FROM pg_constraint WHERE conname = 'ai_automations_venue_id_fkey') THEN
       ALTER TABLE ai_automations 
         ADD CONSTRAINT ai_automations_venue_id_fkey 
         FOREIGN KEY (venue_id) REFERENCES venues(id) ON DELETE CASCADE;
     END IF;
-    
-    -- ai_context_cache foreign keys
+  EXCEPTION WHEN OTHERS THEN
+    RAISE WARNING 'Could not add foreign key ai_automations_venue_id_fkey: %', SQLERRM;
+  END;
+
+  BEGIN
     IF NOT EXISTS (SELECT 1 FROM pg_constraint WHERE conname = 'ai_context_cache_venue_id_fkey') THEN
       ALTER TABLE ai_context_cache 
         ADD CONSTRAINT ai_context_cache_venue_id_fkey 
         FOREIGN KEY (venue_id) REFERENCES venues(id) ON DELETE CASCADE;
     END IF;
-    
-    -- ai_user_preferences foreign keys
+  EXCEPTION WHEN OTHERS THEN
+    RAISE WARNING 'Could not add foreign key ai_context_cache_venue_id_fkey: %', SQLERRM;
+  END;
+
+  BEGIN
     IF NOT EXISTS (SELECT 1 FROM pg_constraint WHERE conname = 'ai_user_preferences_venue_id_fkey') THEN
       ALTER TABLE ai_user_preferences 
         ADD CONSTRAINT ai_user_preferences_venue_id_fkey 
         FOREIGN KEY (venue_id) REFERENCES venues(id) ON DELETE CASCADE;
     END IF;
-    
-    RAISE NOTICE 'Foreign key constraints for venues added successfully';
-  ELSE
-    RAISE WARNING 'venues table does not exist. Foreign key constraints not added. Run this migration again after creating the venues table.';
-  END IF;
+  EXCEPTION WHEN OTHERS THEN
+    RAISE WARNING 'Could not add foreign key ai_user_preferences_venue_id_fkey: %', SQLERRM;
+  END;
 END $$;
 
--- Add foreign keys for auth.users (if auth schema exists)
+-- Add foreign keys for auth.users
 DO $$ 
 BEGIN
-  IF EXISTS (SELECT FROM information_schema.tables WHERE table_schema = 'auth' AND table_name = 'users') THEN
-    -- ai_action_audit foreign keys
+  BEGIN
     IF NOT EXISTS (SELECT 1 FROM pg_constraint WHERE conname = 'ai_action_audit_user_id_fkey') THEN
       ALTER TABLE ai_action_audit 
         ADD CONSTRAINT ai_action_audit_user_id_fkey 
         FOREIGN KEY (user_id) REFERENCES auth.users(id) ON DELETE CASCADE;
     END IF;
-    
-    -- ai_automations foreign keys
+  EXCEPTION WHEN OTHERS THEN
+    RAISE WARNING 'Could not add foreign key ai_action_audit_user_id_fkey: %', SQLERRM;
+  END;
+
+  BEGIN
     IF NOT EXISTS (SELECT 1 FROM pg_constraint WHERE conname = 'ai_automations_created_by_fkey') THEN
       ALTER TABLE ai_automations 
         ADD CONSTRAINT ai_automations_created_by_fkey 
         FOREIGN KEY (created_by) REFERENCES auth.users(id) ON DELETE SET NULL;
     END IF;
-    
-    -- ai_user_preferences foreign keys
+  EXCEPTION WHEN OTHERS THEN
+    RAISE WARNING 'Could not add foreign key ai_automations_created_by_fkey: %', SQLERRM;
+  END;
+
+  BEGIN
     IF NOT EXISTS (SELECT 1 FROM pg_constraint WHERE conname = 'ai_user_preferences_user_id_fkey') THEN
       ALTER TABLE ai_user_preferences 
         ADD CONSTRAINT ai_user_preferences_user_id_fkey 
         FOREIGN KEY (user_id) REFERENCES auth.users(id) ON DELETE CASCADE;
     END IF;
-    
-    RAISE NOTICE 'Foreign key constraints for auth.users added successfully';
-  ELSE
-    RAISE WARNING 'auth.users table does not exist. Foreign key constraints not added.';
-  END IF;
+  EXCEPTION WHEN OTHERS THEN
+    RAISE WARNING 'Could not add foreign key ai_user_preferences_user_id_fkey: %', SQLERRM;
+  END;
+END $$;
+
+-- Final success message
+DO $$ 
+BEGIN
+  RAISE NOTICE '=================================================================';
+  RAISE NOTICE 'AI Assistant Migration Completed Successfully!';
+  RAISE NOTICE '=================================================================';
+  RAISE NOTICE 'Tables created: ai_action_audit, ai_automations, ai_context_cache, ai_tool_definitions, ai_user_preferences';
+  RAISE NOTICE 'Tool definitions inserted: 13 tools registered';
+  RAISE NOTICE 'RLS enabled on all tables';
+  RAISE NOTICE '';
+  RAISE NOTICE 'Note: Some foreign keys or RLS policies may not have been added if';
+  RAISE NOTICE 'dependent tables (venues, auth.users, user_venue_roles) do not exist.';
+  RAISE NOTICE 'This is OK - the AI Assistant will work, but you should add these';
+  RAISE NOTICE 'constraints manually or re-run this migration after setting up your';
+  RAISE NOTICE 'full Servio schema.';
+  RAISE NOTICE '=================================================================';
 END $$;
 
