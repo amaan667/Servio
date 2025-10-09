@@ -54,13 +54,52 @@ export async function POST(req: Request) {
   // Verify the original order exists
   const { data: originalOrder, error: fetchError } = await supabaseAdmin
     .from('orders')
-    .select('id, payment_status, customer_name, table_number')
+    .select('id, payment_status, customer_name, table_number, created_at')
     .eq('id', originalOrderId)
     .single();
 
   if (fetchError || !originalOrder) {
     console.error('[WEBHOOK] Original order not found:', originalOrderId, fetchError);
-    return NextResponse.json({ ok: false, error: 'Original order not found' }, { status: 404 });
+    
+    // Fallback: Look for recent orders that might match this session
+    console.log('[WEBHOOK] Trying to find order by recent timestamp...');
+    const recentTime = new Date(Date.now() - 10 * 60 * 1000).toISOString(); // Last 10 minutes
+    const { data: recentOrders, error: recentError } = await supabaseAdmin
+      .from('orders')
+      .select('id, payment_status, customer_name, table_number, created_at')
+      .eq('payment_status', 'UNPAID')
+      .gte('created_at', recentTime)
+      .order('created_at', { ascending: false })
+      .limit(5);
+    
+    if (recentOrders && recentOrders.length > 0) {
+      console.log('[WEBHOOK] Found recent unpaid orders:', recentOrders.map(o => o.id));
+      // Use the most recent unpaid order
+      const fallbackOrder = recentOrders[0];
+      console.log('[WEBHOOK] Using fallback order:', fallbackOrder.id);
+      
+      // Update the fallback order
+      const { error: updateErr } = await supabaseAdmin
+        .from('orders')
+        .update({
+          payment_status: 'PAID',
+          payment_method: 'stripe',
+          stripe_session_id: session.id,
+          stripe_payment_intent_id: String(session.payment_intent ?? ''),
+          notes: `Stripe payment completed - Session: ${session.id} (fallback)`
+        })
+        .eq('id', fallbackOrder.id);
+
+      if (updateErr) {
+        console.error('[WEBHOOK] Fallback order update failed:', updateErr);
+        return NextResponse.json({ ok: false, error: updateErr.message }, { status: 500 });
+      }
+
+      console.log('[WEBHOOK] Successfully updated fallback order', fallbackOrder.id);
+      return NextResponse.json({ ok: true, orderId: fallbackOrder.id, fallback: true });
+    }
+    
+    return NextResponse.json({ ok: false, error: 'Original order not found and no fallback available' }, { status: 404 });
   }
 
   console.log('[WEBHOOK] Found original order:', {

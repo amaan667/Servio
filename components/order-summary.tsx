@@ -152,7 +152,7 @@ export default function OrderSummary({ orderId, sessionId, orderData, isDemo = f
             const data = await res.json();
             setOrder(data.order);
           } else {
-            throw new Error('Failed to fetch order by session');
+            throw new Error('Failed to fetch order by session ID');
           }
         } else if (orderId) {
           // Fetch order by ID
