@@ -9,11 +9,15 @@ export async function GET(req: Request) {
     const { searchParams } = new URL(req.url);
     const sessionId = searchParams.get('sessionId');
     
+    console.log('[ORDER BY SESSION] Request URL:', req.url);
+    console.log('[ORDER BY SESSION] Session ID from params:', sessionId);
+    
     if (!sessionId) {
       return NextResponse.json({ error: 'Session ID is required' }, { status: 400 });
     }
 
-    // Fetch order by Stripe session ID
+    // First try to fetch order by Stripe session ID
+    console.log('[ORDER BY SESSION] Searching for order with stripe_session_id:', sessionId);
     const { data: order, error: orderError } = await supabaseAdmin
       .from('orders')
       .select(`
@@ -31,7 +35,53 @@ export async function GET(req: Request) {
       .single();
 
     if (orderError) {
-      console.error('[ORDER BY SESSION] Error fetching order:', orderError);
+      console.error('[ORDER BY SESSION] Error fetching order by stripe_session_id:', orderError);
+      
+      // Fallback: Try to find recent orders that might not have stripe_session_id set yet
+      console.log('[ORDER BY SESSION] Trying fallback search for recent orders...');
+      const { data: recentOrders, error: recentError } = await supabaseAdmin
+        .from('orders')
+        .select(`
+          *,
+          order_items (
+            id,
+            menu_item_id,
+            item_name,
+            quantity,
+            price,
+            special_instructions
+          )
+        `)
+        .eq('payment_status', 'PAID')
+        .eq('payment_method', 'stripe')
+        .is('stripe_session_id', null)
+        .order('created_at', { ascending: false })
+        .limit(5);
+
+      if (recentError) {
+        console.error('[ORDER BY SESSION] Fallback search also failed:', recentError);
+        return NextResponse.json({ 
+          error: 'Order not found' 
+        }, { status: 404 });
+      }
+
+      if (recentOrders && recentOrders.length > 0) {
+        console.log('[ORDER BY SESSION] Found recent paid order without session ID:', recentOrders[0].id);
+        const fallbackOrder = recentOrders[0];
+        
+        // Transform the order to include items array
+        const transformedOrder = {
+          ...fallbackOrder,
+          items: fallbackOrder.order_items || []
+        };
+        delete transformedOrder.order_items;
+
+        return NextResponse.json({ 
+          order: transformedOrder,
+          fallback: true
+        });
+      }
+
       return NextResponse.json({ 
         error: 'Order not found' 
       }, { status: 404 });
