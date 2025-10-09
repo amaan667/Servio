@@ -31,12 +31,7 @@ CREATE TABLE IF NOT EXISTS ai_action_audit (
   execution_time_ms INTEGER,
   
   created_at TIMESTAMPTZ DEFAULT NOW(),
-  executed_at TIMESTAMPTZ,
-  
-  -- Indexes
-  INDEX idx_ai_audit_venue (venue_id, created_at DESC),
-  INDEX idx_ai_audit_user (user_id, created_at DESC),
-  INDEX idx_ai_audit_intent (intent, created_at DESC)
+  executed_at TIMESTAMPTZ
 );
 
 -- ============================================================================
@@ -70,11 +65,7 @@ CREATE TABLE IF NOT EXISTS ai_automations (
   -- Metadata
   created_by UUID REFERENCES auth.users(id),
   created_at TIMESTAMPTZ DEFAULT NOW(),
-  updated_at TIMESTAMPTZ DEFAULT NOW(),
-  
-  -- Indexes
-  INDEX idx_automations_venue_enabled (venue_id, enabled),
-  INDEX idx_automations_next_run (venue_id, last_run_at) WHERE enabled = true
+  updated_at TIMESTAMPTZ DEFAULT NOW()
 );
 
 -- ============================================================================
@@ -96,10 +87,7 @@ CREATE TABLE IF NOT EXISTS ai_context_cache (
   created_at TIMESTAMPTZ DEFAULT NOW(),
   
   -- Unique constraint
-  UNIQUE(venue_id, context_type),
-  
-  -- Index for cleanup
-  INDEX idx_context_cache_expires (expires_at)
+  UNIQUE(venue_id, context_type)
 );
 
 -- ============================================================================
@@ -356,7 +344,18 @@ $$ LANGUAGE plpgsql;
 -- Indexes for Performance
 -- ============================================================================
 
+-- AI Action Audit indexes
+CREATE INDEX IF NOT EXISTS idx_ai_audit_venue ON ai_action_audit(venue_id, created_at DESC);
+CREATE INDEX IF NOT EXISTS idx_ai_audit_user ON ai_action_audit(user_id, created_at DESC);
+CREATE INDEX IF NOT EXISTS idx_ai_audit_intent ON ai_action_audit(intent, created_at DESC);
 CREATE INDEX IF NOT EXISTS idx_ai_audit_created_at ON ai_action_audit(created_at DESC);
-CREATE INDEX IF NOT EXISTS idx_ai_audit_executed ON ai_action_audit(executed, created_at DESC);
+CREATE INDEX IF NOT EXISTS idx_ai_audit_executed ON ai_action_audit(executed, created_at DESC) WHERE executed = true;
+
+-- AI Automations indexes
+CREATE INDEX IF NOT EXISTS idx_automations_venue_enabled ON ai_automations(venue_id, enabled);
+CREATE INDEX IF NOT EXISTS idx_automations_next_run ON ai_automations(venue_id, last_run_at) WHERE enabled = true;
 CREATE INDEX IF NOT EXISTS idx_automations_trigger ON ai_automations(trigger_type, enabled);
+
+-- AI Context Cache indexes
+CREATE INDEX IF NOT EXISTS idx_context_cache_expires ON ai_context_cache(expires_at);
 
