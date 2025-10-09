@@ -26,6 +26,7 @@ import {
   FileText,
   ChevronDown,
   ChevronRight,
+  ChefHat,
 } from "lucide-react";
 import { createClient } from "@/lib/supabase/client";
 import { logger } from "@/lib/logger";
@@ -37,6 +38,7 @@ import {
   DialogTitle,
   DialogDescription,
 } from "@/components/ui/dialog";
+import { RecipeDialog } from "@/components/inventory/RecipeDialog";
 
 // Define types locally since they're not exported from supabase
 interface BaseMenuItem {
@@ -95,6 +97,8 @@ export function MenuManagement({ venueId, session, refreshTrigger }: MenuManagem
   const [batchEditValue, setBatchEditValue] = useState<any>(null);
   const [editItemDraft, setEditItemDraft] = useState<Partial<MenuItem> | null>(null);
   const [expandedCategories, setExpandedCategories] = useState<Set<string>>(new Set());
+  const [recipeDialogOpen, setRecipeDialogOpen] = useState(false);
+  const [selectedMenuItem, setSelectedMenuItem] = useState<MenuItem | null>(null);
   const [showCategoriesManagement, setShowCategoriesManagement] = useState(false);
   
   // Debug: Log state changes
@@ -932,6 +936,18 @@ export function MenuManagement({ venueId, session, refreshTrigger }: MenuManagem
                             variant="ghost"
                             size="icon"
                             onClick={() => {
+                              setSelectedMenuItem(item);
+                              setRecipeDialogOpen(true);
+                            }}
+                            className="text-purple-500 hover:text-purple-700 hover:bg-purple-50 opacity-0 group-hover:opacity-100 transition-opacity"
+                            title="Manage Recipe"
+                          >
+                            <ChefHat className="h-4 w-4" />
+                          </Button>
+                          <Button
+                            variant="ghost"
+                            size="icon"
+                            onClick={() => {
                               setEditingItemId(item.id);
                               setEditItemDraft({
                                 name: item.name,
@@ -1119,6 +1135,17 @@ export function MenuManagement({ venueId, session, refreshTrigger }: MenuManagem
             </DialogFooter>
           </DialogContent>
         </Dialog>
+      )}
+      
+      {/* Recipe Dialog */}
+      {selectedMenuItem && (
+        <RecipeDialog
+          open={recipeDialogOpen}
+          onOpenChange={setRecipeDialogOpen}
+          menuItemId={selectedMenuItem.id}
+          menuItemName={selectedMenuItem.name}
+          venueId={venueId}
+        />
       )}
     </div>
   );

@@ -27,6 +27,24 @@ export async function POST(req: Request) {
       return NextResponse.json({ ok: false, error: error.message }, { status: 500 });
     }
 
+    // Deduct inventory stock when order is completed
+    if (status === 'COMPLETED') {
+      const order = data?.[0];
+      if (order) {
+        try {
+          // Call inventory deduction
+          await supabase.rpc('deduct_stock_for_order', {
+            p_order_id: orderId,
+            p_venue_id: order.venue_id,
+          });
+          console.log('[INVENTORY] Stock deducted for order:', orderId);
+        } catch (inventoryError) {
+          console.error('[INVENTORY] Error deducting stock:', inventoryError);
+          // Don't fail the order completion if inventory deduction fails
+        }
+      }
+    }
+
     // Handle table state transitions when order is completed or cancelled
     if (status === 'COMPLETED' || status === 'CANCELLED') {
       const order = data?.[0];

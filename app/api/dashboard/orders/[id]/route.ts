@@ -33,6 +33,20 @@ export async function PATCH(req: Request, context: { params: Promise<{ id: strin
     .maybeSingle();
   if (error) return NextResponse.json({ ok: false, error: error.message }, { status: 400 });
 
+  // Deduct inventory stock when order is completed
+  if (order_status === 'COMPLETED' && data) {
+    try {
+      await supa.rpc('deduct_stock_for_order', {
+        p_order_id: id,
+        p_venue_id: data.venue_id,
+      });
+      console.log('[INVENTORY] Stock deducted for order:', id);
+    } catch (inventoryError) {
+      console.error('[INVENTORY] Error deducting stock:', inventoryError);
+      // Don't fail the order completion if inventory deduction fails
+    }
+  }
+
   // Handle table state transitions when order is completed or cancelled
   if (order_status === 'COMPLETED' || order_status === 'CANCELLED') {
     const order = data;

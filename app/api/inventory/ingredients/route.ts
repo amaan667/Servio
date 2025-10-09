@@ -1,0 +1,126 @@
+import { NextRequest, NextResponse } from 'next/server';
+import { createClient } from '@/lib/supabase/server';
+import type { CreateIngredientRequest } from '@/types/inventory';
+
+// GET /api/inventory/ingredients?venue_id=xxx
+export async function GET(request: NextRequest) {
+  try {
+    const supabase = await createClient();
+    const { searchParams } = new URL(request.url);
+    const venue_id = searchParams.get('venue_id');
+
+    if (!venue_id) {
+      return NextResponse.json(
+        { error: 'venue_id is required' },
+        { status: 400 }
+      );
+    }
+
+    // Fetch ingredients with current stock levels from view
+    const { data, error } = await supabase
+      .from('v_stock_levels')
+      .select('*')
+      .eq('venue_id', venue_id)
+      .order('name', { ascending: true });
+
+    if (error) {
+      console.error('[INVENTORY API] Error fetching ingredients:', error);
+      return NextResponse.json(
+        { error: error.message },
+        { status: 500 }
+      );
+    }
+
+    return NextResponse.json({ data });
+  } catch (error) {
+    console.error('[INVENTORY API] Unexpected error:', error);
+    return NextResponse.json(
+      { error: 'Internal server error' },
+      { status: 500 }
+    );
+  }
+}
+
+// POST /api/inventory/ingredients
+export async function POST(request: NextRequest) {
+  try {
+    const supabase = await createClient();
+    const body: CreateIngredientRequest = await request.json();
+
+    const {
+      venue_id,
+      name,
+      sku,
+      unit,
+      cost_per_unit = 0,
+      par_level = 0,
+      reorder_level = 0,
+      supplier,
+      notes,
+      initial_stock,
+    } = body;
+
+    if (!venue_id || !name || !unit) {
+      return NextResponse.json(
+        { error: 'venue_id, name, and unit are required' },
+        { status: 400 }
+      );
+    }
+
+    // Create ingredient
+    const { data: ingredient, error: ingredientError } = await supabase
+      .from('ingredients')
+      .insert({
+        venue_id,
+        name,
+        sku,
+        unit,
+        cost_per_unit,
+        par_level,
+        reorder_level,
+        supplier,
+        notes,
+      })
+      .select()
+      .single();
+
+    if (ingredientError) {
+      console.error('[INVENTORY API] Error creating ingredient:', ingredientError);
+      return NextResponse.json(
+        { error: ingredientError.message },
+        { status: 500 }
+      );
+    }
+
+    // If initial stock provided, create a receive ledger entry
+    if (initial_stock && initial_stock > 0) {
+      const { data: currentUser } = await supabase.auth.getUser();
+      
+      const { error: ledgerError } = await supabase
+        .from('stock_ledgers')
+        .insert({
+          ingredient_id: ingredient.id,
+          venue_id,
+          delta: initial_stock,
+          reason: 'receive',
+          ref_type: 'manual',
+          note: 'Initial stock',
+          created_by: currentUser?.user?.id,
+        });
+
+      if (ledgerError) {
+        console.error('[INVENTORY API] Error creating initial stock:', ledgerError);
+        // Don't fail the request, ingredient is already created
+      }
+    }
+
+    return NextResponse.json({ data: ingredient }, { status: 201 });
+  } catch (error) {
+    console.error('[INVENTORY API] Unexpected error:', error);
+    return NextResponse.json(
+      { error: 'Internal server error' },
+      { status: 500 }
+    );
+  }
+}
+

@@ -1,0 +1,69 @@
+import { NextRequest, NextResponse } from 'next/server';
+import { createClient } from '@/lib/supabase/server';
+import type { StockAdjustmentRequest } from '@/types/inventory';
+
+// POST /api/inventory/stock/adjust
+export async function POST(request: NextRequest) {
+  try {
+    const supabase = await createClient();
+    const body: StockAdjustmentRequest = await request.json();
+
+    const { ingredient_id, delta, reason, note } = body;
+
+    if (!ingredient_id || delta === undefined || !reason) {
+      return NextResponse.json(
+        { error: 'ingredient_id, delta, and reason are required' },
+        { status: 400 }
+      );
+    }
+
+    // Get ingredient to find venue_id
+    const { data: ingredient, error: ingredientError } = await supabase
+      .from('ingredients')
+      .select('venue_id')
+      .eq('id', ingredient_id)
+      .single();
+
+    if (ingredientError || !ingredient) {
+      return NextResponse.json(
+        { error: 'Ingredient not found' },
+        { status: 404 }
+      );
+    }
+
+    // Get current user
+    const { data: currentUser } = await supabase.auth.getUser();
+
+    // Create ledger entry
+    const { data, error } = await supabase
+      .from('stock_ledgers')
+      .insert({
+        ingredient_id,
+        venue_id: ingredient.venue_id,
+        delta,
+        reason,
+        ref_type: 'manual',
+        note,
+        created_by: currentUser?.user?.id,
+      })
+      .select()
+      .single();
+
+    if (error) {
+      console.error('[INVENTORY API] Error creating stock adjustment:', error);
+      return NextResponse.json(
+        { error: error.message },
+        { status: 500 }
+      );
+    }
+
+    return NextResponse.json({ data }, { status: 201 });
+  } catch (error) {
+    console.error('[INVENTORY API] Unexpected error:', error);
+    return NextResponse.json(
+      { error: 'Internal server error' },
+      { status: 500 }
+    );
+  }
+}
+
