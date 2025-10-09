@@ -1,4 +1,5 @@
 import type { Metadata } from "next";
+// Railway deployment trigger
 import { Inter } from "next/font/google";
 import "./globals.css";
 import { cookies } from 'next/headers';
