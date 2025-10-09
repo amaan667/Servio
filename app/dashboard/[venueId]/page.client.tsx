@@ -5,7 +5,7 @@ import { useRouter } from "next/navigation";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader } from "@/components/ui/card";
 import Link from "next/link";
-import { Clock, Users, TrendingUp, ShoppingBag, BarChart, QrCode, Settings, Plus, Table, Wifi, WifiOff, AlertTriangle } from "lucide-react";
+import { Clock, Users, TrendingUp, ShoppingBag, BarChart, QrCode, Settings, Plus, Table, Wifi, WifiOff, AlertTriangle, ChefHat } from "lucide-react";
 import { createClient } from "@/lib/supabase/client";
 import NavigationBreadcrumb from "@/components/navigation-breadcrumb";
 import { todayWindowForTZ } from "@/lib/time";
@@ -539,6 +539,18 @@ const VenueDashboardClient = React.memo(function VenueDashboardClient({
                 </div>
                 <h3 className="text-base sm:text-lg font-semibold mb-2 text-foreground">Live Orders</h3>
                 <p className="text-gray-700 text-xs sm:text-sm font-medium">Monitor and manage incoming orders in real-time</p>
+              </CardContent>
+            </Card>
+          </Link>
+
+          <Link href={`/dashboard/${venueId}/kds`}>
+            <Card className="hover:shadow-lg transition-shadow cursor-pointer">
+              <CardContent className="p-4 sm:p-6">
+                <div className="w-10 h-10 sm:w-12 sm:h-12 bg-red-100 rounded-lg flex items-center justify-center mb-4">
+                  <ChefHat className="h-5 w-5 sm:h-6 sm:w-6 text-red-600" />
+                </div>
+                <h3 className="text-base sm:text-lg font-semibold mb-2 text-foreground">Kitchen Display</h3>
+                <p className="text-gray-700 text-xs sm:text-sm font-medium">Manage kitchen prep stations and ticket flow</p>
               </CardContent>
             </Card>
           </Link>
