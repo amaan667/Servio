@@ -6,7 +6,7 @@ import Stripe from "stripe";
 import { createAdminClient } from "@/lib/supabase/server";
 
 const stripe = new Stripe(process.env.STRIPE_SECRET_KEY!, {
-  apiVersion: "2024-11-20.acacia",
+  apiVersion: "2025-08-27.basil",
 });
 
 const PRICE_IDS = {
