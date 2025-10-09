@@ -59,11 +59,9 @@ const AIToolCallSchema = z.object({
     "kds.suggest_optimization",
     "navigation.go_to_page",
   ] as const),
-  params: z.object({
-    // Dynamic parameters will be validated against individual tool schemas
-  }).passthrough(),
+  params: z.record(z.string(), z.unknown()).default({}),
   preview: z.boolean(),
-});
+}).strict();
 
 const AIPlanSchema = z.object({
   intent: z.string().describe("High-level description of what the user wants"),
@@ -77,7 +75,7 @@ const AIPlanSchema = z.object({
     .array(z.string())
     .nullable()
     .describe("Any warnings or considerations for the user"),
-});
+}).strict();
 
 // ============================================================================
 // System Prompt Builder
