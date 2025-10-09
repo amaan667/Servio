@@ -1,0 +1,298 @@
+// Servio AI Assistant - LLM Service
+// Handles intent understanding, planning, and structured output generation
+
+import OpenAI from "openai";
+import { zodResponseFormat } from "openai/helpers/zod";
+import { z } from "zod";
+import {
+  AIAssistantContext,
+  AIPlanResponse,
+  ToolName,
+  TOOL_SCHEMAS,
+  MenuSummary,
+  InventorySummary,
+  OrdersSummary,
+  AnalyticsSummary,
+  DEFAULT_GUARDRAILS,
+} from "@/types/ai-assistant";
+
+// Initialize OpenAI client
+const openai = new OpenAI({
+  apiKey: process.env.OPENAI_API_KEY!,
+});
+
+// Model to use (GPT-4o per user preference)
+const MODEL = "gpt-4o-2024-08-06"; // [[memory:5998613]]
+
+// ============================================================================
+// Response Schema for Structured Output
+// ============================================================================
+
+const AIToolCallSchema = z.object({
+  name: z.enum([
+    "menu.update_prices",
+    "menu.toggle_availability",
+    "menu.translate",
+    "inventory.adjust_stock",
+    "inventory.set_par_levels",
+    "inventory.generate_purchase_order",
+    "orders.mark_served",
+    "orders.complete",
+    "analytics.get_insights",
+    "analytics.export",
+    "discounts.create",
+    "kds.get_overdue",
+    "kds.suggest_optimization",
+  ] as const),
+  params: z.record(z.any()),
+  preview: z.boolean().default(true),
+});
+
+const AIPlanSchema = z.object({
+  intent: z.string().describe("High-level description of what the user wants"),
+  tools: z
+    .array(AIToolCallSchema)
+    .describe("Ordered list of tool calls to execute"),
+  reasoning: z
+    .string()
+    .describe("Explanation of why this plan is safe and appropriate"),
+  warnings: z
+    .array(z.string())
+    .optional()
+    .describe("Any warnings or considerations for the user"),
+});
+
+// ============================================================================
+// System Prompt Builder
+// ============================================================================
+
+function buildSystemPrompt(
+  context: AIAssistantContext,
+  dataSummaries: {
+    menu?: MenuSummary;
+    inventory?: InventorySummary;
+    orders?: OrdersSummary;
+    analytics?: AnalyticsSummary;
+  }
+): string {
+  const { userRole, venueTier, features } = context;
+
+  return `You are Servio Assistant, an AI helper for restaurant operations.
+
+CONTEXT:
+- User Role: ${userRole}
+- Venue Tier: ${venueTier}
+- Timezone: ${context.timezone}
+- Features Enabled: ${JSON.stringify(features)}
+
+CURRENT DATA SUMMARIES:
+${dataSummaries.menu ? `\nMENU:\n${JSON.stringify(dataSummaries.menu, null, 2)}` : ""}
+${dataSummaries.inventory ? `\nINVENTORY:\n${JSON.stringify(dataSummaries.inventory, null, 2)}` : ""}
+${dataSummaries.orders ? `\nORDERS:\n${JSON.stringify(dataSummaries.orders, null, 2)}` : ""}
+${dataSummaries.analytics ? `\nANALYTICS:\n${JSON.stringify(dataSummaries.analytics, null, 2)}` : ""}
+
+AVAILABLE TOOLS:
+${Object.entries(TOOL_SCHEMAS)
+  .map(([name, schema]) => `- ${name}: ${schema.description || ""}`)
+  .join("\n")}
+
+GUARDRAILS & SAFETY:
+${Object.entries(DEFAULT_GUARDRAILS)
+  .map(([tool, rules]) => {
+    const constraints = [];
+    if (rules.maxPriceChangePercent)
+      constraints.push(`max price change ±${rules.maxPriceChangePercent}%`);
+    if (rules.maxDiscountPercent)
+      constraints.push(`max discount ${rules.maxDiscountPercent}%`);
+    if (rules.maxBulkOperationSize)
+      constraints.push(`max ${rules.maxBulkOperationSize} items per call`);
+    if (rules.requiresManagerApproval)
+      constraints.push("requires manager approval");
+    return constraints.length > 0 ? `- ${tool}: ${constraints.join(", ")}` : "";
+  })
+  .filter(Boolean)
+  .join("\n")}
+
+ROLE-BASED RESTRICTIONS:
+- ${userRole === "staff" ? "Staff cannot create discounts, export data, or change par levels" : ""}
+- ${userRole === "manager" ? "Manager has full access" : ""}
+- ${userRole === "owner" ? "Owner has full access" : ""}
+
+TIER RESTRICTIONS:
+- ${venueTier === "starter" ? "Starter tier: no inventory or advanced analytics" : ""}
+- ${venueTier === "professional" ? "Professional tier: inventory enabled" : ""}
+- ${venueTier === "premium" ? "Premium tier: all features enabled" : ""}
+
+RULES:
+1. ALWAYS propose preview=true for destructive or bulk actions
+2. NEVER exceed guardrail limits (price changes, discounts)
+3. RESPECT role and tier restrictions
+4. Provide clear reasoning for your plan
+5. Warn about potential impacts (revenue, operations)
+6. If the request is unclear, ask for clarification in the warnings
+7. If the request violates guardrails, explain why in warnings
+8. Use ONLY the tools available; never hallucinate capabilities
+9. When updating prices, preserve significant figures and round appropriately
+10. For inventory, always validate units and quantities
+
+OUTPUT FORMAT:
+Return a structured plan with:
+- intent: what the user wants
+- tools: ordered array of tool calls with exact params
+- reasoning: why this plan is safe and appropriate
+- warnings: any caveats or considerations (optional)`;
+}
+
+// ============================================================================
+// Planning Function
+// ============================================================================
+
+export async function planAssistantAction(
+  userPrompt: string,
+  context: AIAssistantContext,
+  dataSummaries: {
+    menu?: MenuSummary;
+    inventory?: InventorySummary;
+    orders?: OrdersSummary;
+    analytics?: AnalyticsSummary;
+  }
+): Promise<AIPlanResponse> {
+  const systemPrompt = buildSystemPrompt(context, dataSummaries);
+
+  try {
+    const completion = await openai.beta.chat.completions.parse({
+      model: MODEL,
+      messages: [
+        { role: "system", content: systemPrompt },
+        { role: "user", content: userPrompt },
+      ],
+      response_format: zodResponseFormat(AIPlanSchema, "assistant_plan"),
+      temperature: 0.1, // Low temperature for consistent, safe outputs
+    });
+
+    const plan = completion.choices[0].message.parsed;
+
+    if (!plan) {
+      throw new Error("Failed to parse AI response");
+    }
+
+    // Validate each tool call against its schema
+    const validatedTools = plan.tools.map((tool) => {
+      const schema = TOOL_SCHEMAS[tool.name as ToolName];
+      if (!schema) {
+        throw new Error(`Unknown tool: ${tool.name}`);
+      }
+
+      // Validate params against schema
+      const validatedParams = schema.parse(tool.params);
+
+      return {
+        ...tool,
+        params: validatedParams,
+      };
+    });
+
+    return {
+      intent: plan.intent,
+      tools: validatedTools,
+      reasoning: plan.reasoning,
+      warnings: plan.warnings,
+    };
+  } catch (error) {
+    console.error("[AI ASSISTANT] Planning error:", error);
+    throw error;
+  }
+}
+
+// ============================================================================
+// Explain Action Function (for user clarity)
+// ============================================================================
+
+export async function explainAction(
+  toolName: ToolName,
+  params: any,
+  context: AIAssistantContext
+): Promise<string> {
+  const systemPrompt = `You are Servio Assistant. Explain the following action in simple, human terms.
+Be concise (1-2 sentences). Focus on what will change and potential impact.`;
+
+  const userPrompt = `Explain this action:
+Tool: ${toolName}
+Parameters: ${JSON.stringify(params, null, 2)}
+User Role: ${context.userRole}`;
+
+  try {
+    const completion = await openai.chat.completions.create({
+      model: MODEL,
+      messages: [
+        { role: "system", content: systemPrompt },
+        { role: "user", content: userPrompt },
+      ],
+      temperature: 0.3,
+      max_tokens: 150,
+    });
+
+    return completion.choices[0].message.content || "Action explanation unavailable.";
+  } catch (error) {
+    console.error("[AI ASSISTANT] Explanation error:", error);
+    return "Unable to generate explanation.";
+  }
+}
+
+// ============================================================================
+// Suggestion Generator (for contextual prompts)
+// ============================================================================
+
+export async function generateSuggestions(
+  pageContext: "menu" | "inventory" | "kds" | "orders" | "analytics",
+  dataSummary: any
+): Promise<string[]> {
+  const systemPrompt = `Generate 3-4 actionable suggestions for a ${pageContext} dashboard.
+Return ONLY a JSON array of strings. Each suggestion should be a natural language command.
+Focus on common tasks, optimizations, or insights based on the data.`;
+
+  const userPrompt = `Data: ${JSON.stringify(dataSummary, null, 2)}`;
+
+  try {
+    const completion = await openai.chat.completions.create({
+      model: MODEL,
+      messages: [
+        { role: "system", content: systemPrompt },
+        { role: "user", content: userPrompt },
+      ],
+      response_format: { type: "json_object" },
+      temperature: 0.5,
+      max_tokens: 200,
+    });
+
+    const response = JSON.parse(completion.choices[0].message.content || "{}");
+    return response.suggestions || [];
+  } catch (error) {
+    console.error("[AI ASSISTANT] Suggestion generation error:", error);
+    return [];
+  }
+}
+
+// ============================================================================
+// Token Usage Tracking
+// ============================================================================
+
+export function estimateTokens(text: string): number {
+  // Rough estimate: ~4 characters per token
+  return Math.ceil(text.length / 4);
+}
+
+export function calculateCost(
+  inputTokens: number,
+  outputTokens: number
+): number {
+  // GPT-4o pricing (as of 2024)
+  const inputCostPer1k = 0.0025;
+  const outputCostPer1k = 0.01;
+
+  return (
+    (inputTokens / 1000) * inputCostPer1k +
+    (outputTokens / 1000) * outputCostPer1k
+  );
+}
+
