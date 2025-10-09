@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
 import Stripe from "stripe";
+import { supabaseAdmin } from "@/lib/supabaseAdmin";
 
 export const runtime = 'nodejs';
 
@@ -57,8 +58,24 @@ export async function POST(req: Request) {
       cancel_url: `${base}/payment/cancel?orderId=${orderId}&venueId=${venueId || 'default-venue'}&tableNumber=${tableNumber || '1'}`,
     });
 
-    // Note: Order will be created by webhook after successful payment
-    // No need to update order here since we're using temp order ID
+    // CRITICAL FIX: Store the stripe_session_id immediately on the order
+    // This prevents race condition where user reaches success page before webhook fires
+    console.log('[CHECKOUT DEBUG] Updating order with stripe_session_id:', session.id);
+    const { error: updateError } = await supabaseAdmin
+      .from('orders')
+      .update({
+        stripe_session_id: session.id,
+        payment_method: 'stripe',
+        updated_at: new Date().toISOString()
+      })
+      .eq('id', orderId);
+
+    if (updateError) {
+      console.error('[CHECKOUT DEBUG] Failed to update order with session ID:', updateError);
+      // Don't fail the checkout, webhook will handle it as fallback
+    } else {
+      console.log('[CHECKOUT DEBUG] Successfully stored stripe_session_id on order:', orderId);
+    }
 
     return NextResponse.json({ url: session.url, sessionId: session.id }, { status: 200 });
   } catch (e: any) {
