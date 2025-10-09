@@ -42,6 +42,8 @@ const AIToolCallSchema = z.object({
   name: z.enum([
     "menu.update_prices",
     "menu.toggle_availability",
+    "menu.create_item",
+    "menu.delete_item",
     "menu.translate",
     "inventory.adjust_stock",
     "inventory.set_par_levels",
@@ -49,10 +51,13 @@ const AIToolCallSchema = z.object({
     "orders.mark_served",
     "orders.complete",
     "analytics.get_insights",
+    "analytics.get_stats",
     "analytics.export",
+    "analytics.create_report",
     "discounts.create",
     "kds.get_overdue",
     "kds.suggest_optimization",
+    "navigation.go_to_page",
   ] as const),
   params: z.record(z.any()),
   preview: z.boolean().default(true),
@@ -87,7 +92,35 @@ function buildSystemPrompt(
 ): string {
   const { userRole, venueTier, features } = context;
 
-  return `You are Servio Assistant, an AI helper for restaurant operations.
+  return `You are Servio Assistant, an AI helper for restaurant operations. You can help with:
+
+MENU MANAGEMENT:
+- Update item prices, availability, and descriptions
+- Create new menu items and categories
+- Delete menu items
+- Translate menu to different languages
+- Navigate to menu management pages
+
+INVENTORY MANAGEMENT:
+- Adjust stock levels and track ingredients
+- Set par levels and generate purchase orders
+- Navigate to inventory pages
+
+ORDERS & KDS:
+- Mark orders as served or complete
+- Get overdue orders from kitchen display
+- Suggest kitchen optimizations
+- Navigate to orders and KDS pages
+
+ANALYTICS & REPORTING:
+- Get detailed statistics (revenue, orders, top items, peak hours)
+- Create custom reports and exports
+- Analyze menu performance
+- Navigate to analytics pages
+
+NAVIGATION:
+- Take users to any page in the system
+- Find specific features and sections
 
 CONTEXT:
 - User Role: ${userRole}

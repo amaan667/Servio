@@ -197,13 +197,49 @@ export function AssistantCommandPalette({
 
       setSuccess(true);
       
-      // Close after 2 seconds
-      setTimeout(() => {
-        setOpen(false);
-      }, 2000);
+      // Check if any tool was a navigation action
+      const hasNavigation = plan.tools.some(tool => tool.name === "navigation.go_to_page");
+      
+      if (hasNavigation) {
+        // For navigation, close immediately and navigate
+        setTimeout(() => {
+          setOpen(false);
+          
+          // Find the navigation tool and execute it
+          const navTool = plan.tools.find(tool => tool.name === "navigation.go_to_page");
+          if (navTool && navTool.params?.page) {
+            const routeMap: Record<string, string> = {
+              "dashboard": `/dashboard/${venueId}`,
+              "menu": `/dashboard/${venueId}/menu-management`,
+              "inventory": `/dashboard/${venueId}/inventory`,
+              "orders": `/dashboard/${venueId}/orders`,
+              "live-orders": `/dashboard/${venueId}/live-orders`,
+              "kds": `/dashboard/${venueId}/kds`,
+              "kitchen-display": `/dashboard/${venueId}/kds`,
+              "qr-codes": `/dashboard/${venueId}/qr-codes`,
+              "generate-qr": `/generate-qr`,
+              "analytics": `/dashboard/${venueId}/analytics`,
+              "settings": `/dashboard/${venueId}/settings`,
+              "staff": `/dashboard/${venueId}/staff`,
+              "tables": `/dashboard/${venueId}/tables`,
+              "feedback": `/dashboard/${venueId}/feedback`,
+            };
+            
+            const targetRoute = routeMap[navTool.params.page];
+            if (targetRoute) {
+              window.location.href = targetRoute;
+            }
+          }
+        }, 1000);
+      } else {
+        // For non-navigation actions, close after 2 seconds and refresh
+        setTimeout(() => {
+          setOpen(false);
+        }, 2000);
 
-      // Refresh the page to show updates
-      window.location.reload();
+        // Refresh the page to show updates
+        window.location.reload();
+      }
     } catch (err: any) {
       console.error("[AI ASSISTANT] Execution error:", err);
       setError(err.message || "Failed to execute action");

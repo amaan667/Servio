@@ -19,29 +19,43 @@ const CACHE_TTL = 60; // 1 minute
 
 export async function getAssistantContext(
   venueId: string,
-  userId: string
+  userId: string,
+  providedUserRole?: string
 ): Promise<AIAssistantContext> {
   const supabase = await createClient();
 
-  // Get user role
-  const { data: roleData } = await supabase
-    .from("user_venue_roles")
-    .select("role")
-    .eq("venue_id", venueId)
-    .eq("user_id", userId)
-    .single();
+  let userRole = providedUserRole || "staff";
+
+  // Get user role if not provided
+  if (!providedUserRole) {
+    try {
+      const { data: roleData } = await supabase
+        .from("user_venue_roles")
+        .select("role")
+        .eq("venue_id", venueId)
+        .eq("user_id", userId)
+        .single();
+
+      if (roleData) {
+        userRole = roleData.role;
+      }
+    } catch (error) {
+      // Table doesn't exist or other error - use default
+      console.log("[AI ASSISTANT] Could not get user role:", error);
+    }
+  }
 
   // Get venue details
   const { data: venueData } = await supabase
     .from("venues")
     .select("tier, timezone, kds_enabled, inventory_enabled")
-    .eq("id", venueId)
+    .eq("venue_id", venueId)
     .single();
 
   return {
     venueId,
     userId,
-    userRole: roleData?.role || "staff",
+    userRole,
     venueTier: venueData?.tier || "starter",
     timezone: venueData?.timezone || "UTC",
     features: {

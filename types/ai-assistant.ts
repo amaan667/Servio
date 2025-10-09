@@ -23,6 +23,21 @@ export const MenuToggleAvailabilitySchema = z.object({
   reason: z.string().optional(),
 });
 
+export const MenuCreateItemSchema = z.object({
+  name: z.string().min(1),
+  description: z.string().optional(),
+  price: z.number().positive(),
+  categoryId: z.string().uuid(),
+  available: z.boolean().default(true),
+  imageUrl: z.string().url().optional(),
+  allergens: z.array(z.string()).optional(),
+});
+
+export const MenuDeleteItemSchema = z.object({
+  itemId: z.string().uuid(),
+  reason: z.string().optional(),
+});
+
 export const MenuTranslateSchema = z.object({
   targetLanguage: z.enum(["es", "ar", "fr", "de", "it", "pt", "zh", "ja"]),
   includeDescriptions: z.boolean().default(true),
@@ -82,6 +97,29 @@ export const AnalyticsExportSchema = z.object({
   filters: z.record(z.any()).optional(),
 });
 
+export const AnalyticsGetStatsSchema = z.object({
+  metric: z.enum([
+    "revenue", 
+    "orders_count", 
+    "avg_order_value", 
+    "top_items", 
+    "peak_hours",
+    "customer_count",
+    "table_turnover",
+    "menu_performance"
+  ]),
+  timeRange: z.enum(["today", "yesterday", "week", "month", "quarter", "year"]),
+  groupBy: z.enum(["hour", "day", "week", "month", "category", "item"]).optional(),
+});
+
+export const AnalyticsCreateReportSchema = z.object({
+  name: z.string().min(1),
+  metrics: z.array(z.string()),
+  timeRange: z.enum(["today", "week", "month", "quarter", "year"]),
+  format: z.enum(["pdf", "csv", "json"]),
+  schedule: z.enum(["once", "daily", "weekly", "monthly"]).optional(),
+});
+
 // Discount Tools
 export const DiscountsCreateSchema = z.object({
   name: z.string().min(1),
@@ -103,6 +141,27 @@ export const KDSSuggestOptimizationSchema = z.object({
   station: z.string().optional(),
 });
 
+// Navigation Tools
+export const NavigationGoToPageSchema = z.object({
+  page: z.enum([
+    "dashboard",
+    "menu",
+    "inventory", 
+    "orders",
+    "live-orders",
+    "kds",
+    "kitchen-display",
+    "qr-codes",
+    "generate-qr",
+    "analytics",
+    "settings",
+    "staff",
+    "tables",
+    "feedback"
+  ]),
+  venueId: z.string().optional(),
+});
+
 // ============================================================================
 // Tool Registry
 // ============================================================================
@@ -110,6 +169,8 @@ export const KDSSuggestOptimizationSchema = z.object({
 export const TOOL_SCHEMAS = {
   "menu.update_prices": MenuUpdatePricesSchema,
   "menu.toggle_availability": MenuToggleAvailabilitySchema,
+  "menu.create_item": MenuCreateItemSchema,
+  "menu.delete_item": MenuDeleteItemSchema,
   "menu.translate": MenuTranslateSchema,
   "inventory.adjust_stock": InventoryAdjustStockSchema,
   "inventory.set_par_levels": InventorySetParLevelsSchema,
@@ -117,10 +178,13 @@ export const TOOL_SCHEMAS = {
   "orders.mark_served": OrdersMarkServedSchema,
   "orders.complete": OrdersCompleteSchema,
   "analytics.get_insights": AnalyticsGetInsightsSchema,
+  "analytics.get_stats": AnalyticsGetStatsSchema,
   "analytics.export": AnalyticsExportSchema,
+  "analytics.create_report": AnalyticsCreateReportSchema,
   "discounts.create": DiscountsCreateSchema,
   "kds.get_overdue": KDSGetOverdueSchema,
   "kds.suggest_optimization": KDSSuggestOptimizationSchema,
+  "navigation.go_to_page": NavigationGoToPageSchema,
 } as const;
 
 export type ToolName = keyof typeof TOOL_SCHEMAS;
@@ -133,6 +197,8 @@ export type MenuUpdatePricesParams = z.infer<typeof MenuUpdatePricesSchema>;
 export type MenuToggleAvailabilityParams = z.infer<
   typeof MenuToggleAvailabilitySchema
 >;
+export type MenuCreateItemParams = z.infer<typeof MenuCreateItemSchema>;
+export type MenuDeleteItemParams = z.infer<typeof MenuDeleteItemSchema>;
 export type MenuTranslateParams = z.infer<typeof MenuTranslateSchema>;
 export type InventoryAdjustStockParams = z.infer<
   typeof InventoryAdjustStockSchema
@@ -149,11 +215,14 @@ export type AnalyticsGetInsightsParams = z.infer<
   typeof AnalyticsGetInsightsSchema
 >;
 export type AnalyticsExportParams = z.infer<typeof AnalyticsExportSchema>;
+export type AnalyticsGetStatsParams = z.infer<typeof AnalyticsGetStatsSchema>;
+export type AnalyticsCreateReportParams = z.infer<typeof AnalyticsCreateReportSchema>;
 export type DiscountsCreateParams = z.infer<typeof DiscountsCreateSchema>;
 export type KDSGetOverdueParams = z.infer<typeof KDSGetOverdueSchema>;
 export type KDSSuggestOptimizationParams = z.infer<
   typeof KDSSuggestOptimizationSchema
 >;
+export type NavigationGoToPageParams = z.infer<typeof NavigationGoToPageSchema>;
 
 // ============================================================================
 // AI Assistant Request/Response Types

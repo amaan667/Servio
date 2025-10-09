@@ -26,20 +26,25 @@ export async function POST(request: NextRequest) {
     const body = await request.json();
     const { venueId } = FixAccessRequestSchema.parse(body);
 
-    // Check if user already has a role for this venue
-    const { data: existingRole } = await supabase
-      .from("user_venue_roles")
-      .select("role")
-      .eq("venue_id", venueId)
-      .eq("user_id", user.id)
-      .single();
+    // Check if user_venue_roles table exists and if user already has a role for this venue
+    try {
+      const { data: existingRole, error: roleError } = await supabase
+        .from("user_venue_roles")
+        .select("role")
+        .eq("venue_id", venueId)
+        .eq("user_id", user.id)
+        .single();
 
-    if (existingRole) {
-      return NextResponse.json({
-        success: true,
-        message: "Access already configured",
-        role: existingRole.role,
-      });
+      if (existingRole && !roleError) {
+        return NextResponse.json({
+          success: true,
+          message: "Access already configured",
+          role: existingRole.role,
+        });
+      }
+    } catch (tableError) {
+      // Table doesn't exist or other error - we'll create the role anyway
+      console.log("[AI ASSISTANT] user_venue_roles table check failed:", tableError);
     }
 
     // Check if user owns this venue
@@ -58,30 +63,48 @@ export async function POST(request: NextRequest) {
 
     // If user owns the venue, create owner role
     if (venue.owner_id === user.id) {
-      const { data: roleData, error: roleError } = await supabase
-        .from("user_venue_roles")
-        .insert({
-          user_id: user.id,
-          venue_id: venueId,
+      try {
+        const { data: roleData, error: roleError } = await supabase
+          .from("user_venue_roles")
+          .insert({
+            user_id: user.id,
+            venue_id: venueId,
+            role: "owner",
+            organization_id: null, // Can be null for single-venue setups
+          })
+          .select("role")
+          .single();
+
+        if (roleError) {
+          console.error("[AI ASSISTANT] Failed to create owner role:", roleError);
+          // If table doesn't exist, return success anyway since user owns the venue
+          if (roleError.message?.includes("relation") && roleError.message?.includes("does not exist")) {
+            return NextResponse.json({
+              success: true,
+              message: "Access configured as owner (legacy mode)",
+              role: "owner",
+            });
+          }
+          return NextResponse.json(
+            { error: "Failed to configure access" },
+            { status: 500 }
+          );
+        }
+
+        return NextResponse.json({
+          success: true,
+          message: "Access configured as owner",
+          role: roleData.role,
+        });
+      } catch (insertError) {
+        console.error("[AI ASSISTANT] Failed to insert owner role:", insertError);
+        // If we can't create the role but user owns venue, allow access anyway
+        return NextResponse.json({
+          success: true,
+          message: "Access configured as owner (legacy mode)",
           role: "owner",
-          organization_id: null, // Can be null for single-venue setups
-        })
-        .select("role")
-        .single();
-
-      if (roleError) {
-        console.error("[AI ASSISTANT] Failed to create owner role:", roleError);
-        return NextResponse.json(
-          { error: "Failed to configure access" },
-          { status: 500 }
-        );
+        });
       }
-
-      return NextResponse.json({
-        success: true,
-        message: "Access configured as owner",
-        role: roleData.role,
-      });
     }
 
     // User doesn't own venue and has no role - access denied

@@ -9,6 +9,7 @@ import {
   InventoryAdjustStockParams,
   OrdersMarkServedParams,
   OrdersCompleteParams,
+  NavigationGoToPageParams,
   AIPreviewDiff,
   AIExecutionResult,
   AIAssistantError,
@@ -722,6 +723,68 @@ export async function executeKDSSuggestOptimization(
 // Tool Router
 // ============================================================================
 
+// ============================================================================
+// Navigation Tools
+// ============================================================================
+
+export async function executeNavigationGoToPage(
+  params: NavigationGoToPageParams,
+  venueId: string,
+  userId: string,
+  preview: boolean
+): Promise<AIPreviewDiff | AIExecutionResult> {
+  const { page } = params;
+  
+  // Map page names to actual routes
+  const routeMap: Record<string, string> = {
+    "dashboard": `/dashboard/${venueId}`,
+    "menu": `/dashboard/${venueId}/menu-management`,
+    "inventory": `/dashboard/${venueId}/inventory`,
+    "orders": `/dashboard/${venueId}/orders`,
+    "live-orders": `/dashboard/${venueId}/live-orders`,
+    "kds": `/dashboard/${venueId}/kds`,
+    "kitchen-display": `/dashboard/${venueId}/kds`,
+    "qr-codes": `/dashboard/${venueId}/qr-codes`,
+    "generate-qr": `/generate-qr`,
+    "analytics": `/dashboard/${venueId}/analytics`,
+    "settings": `/dashboard/${venueId}/settings`,
+    "staff": `/dashboard/${venueId}/staff`,
+    "tables": `/dashboard/${venueId}/tables`,
+    "feedback": `/dashboard/${venueId}/feedback`,
+  };
+
+  const targetRoute = routeMap[page];
+  
+  if (!targetRoute) {
+    throw new AIAssistantError(`Unknown page: ${page}`, "INVALID_PARAMS");
+  }
+
+  // Preview mode - just show what would happen
+  if (preview) {
+    return {
+      toolName: "navigation.go_to_page",
+      before: [],
+      after: [],
+      impact: {
+        itemsAffected: 1,
+        estimatedRevenue: 0,
+        description: `Will navigate to the ${page} page`,
+      },
+    };
+  }
+
+  // Execute - return navigation instruction
+  return {
+    success: true,
+    message: `Navigating to ${page} page`,
+    data: {
+      action: "navigate",
+      route: targetRoute,
+      page: page,
+    },
+  };
+}
+
 export async function executeTool(
   toolName: ToolName,
   params: any,
@@ -768,6 +831,9 @@ export async function executeTool(
     
     case "kds.suggest_optimization":
       return executeKDSSuggestOptimization(params, venueId, userId, preview);
+    
+    case "navigation.go_to_page":
+      return executeNavigationGoToPage(params, venueId, userId, preview);
     
     default:
       throw new AIAssistantError(
