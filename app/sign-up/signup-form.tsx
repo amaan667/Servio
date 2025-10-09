@@ -7,8 +7,10 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Alert, AlertDescription } from '@/components/ui/alert';
+import { Badge } from '@/components/ui/badge';
 import { supabaseBrowser } from '@/lib/supabase/browser';
 import Link from 'next/link';
+import { Check, Loader2, Mail } from 'lucide-react';
 
 interface SignUpFormProps {
   onGoogleSignIn: () => Promise<void>;
@@ -19,6 +21,8 @@ export default function SignUpForm({ onGoogleSignIn, isSigningUp = false }: Sign
   const router = useRouter();
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [step, setStep] = useState<'tier' | 'form'>('tier');
+  const [selectedTier, setSelectedTier] = useState<string | null>(null);
   const [formData, setFormData] = useState({
     fullName: '',
     email: '',
@@ -65,92 +69,44 @@ export default function SignUpForm({ onGoogleSignIn, isSigningUp = false }: Sign
       setLoading(false);
       return;
     }
+    if (!selectedTier) {
+      setError('Please select a pricing tier.');
+      setLoading(false);
+      return;
+    }
 
     try {
-      const { data, error } = await supabaseBrowser().auth.signUp({
-        email: formData.email,
-        password: formData.password,
-        options: {
-          emailRedirectTo: `${window.location.origin}/dashboard`,
-          data: {
-            full_name: formData.fullName,
-            venue_name: formData.venueName,
-            business_type: formData.businessType,
-          },
-        },
+      // Call the new signup-with-subscription endpoint
+      const response = await fetch('/api/signup/with-subscription', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          email: formData.email,
+          password: formData.password,
+          fullName: formData.fullName,
+          venueName: formData.venueName,
+          venueType: formData.businessType,
+          tier: selectedTier,
+        }),
       });
 
-      if (error) {
-        // Log the actual error message for debugging
-        
-        // Check if the error is due to email already existing
-        const errorMessage = error.message.toLowerCase();
-        if (errorMessage.includes('already registered') || 
-            errorMessage.includes('already exists') || 
-            errorMessage.includes('user already registered') ||
-            errorMessage.includes('email address is already registered') ||
-            errorMessage.includes('email already in use') ||
-            errorMessage.includes('duplicate key value') ||
-            error.code === 'user_already_registered') {
-          setError('You already have an account with this email. Please sign in instead.');
-        } else {
-          setError(error.message);
-        }
+      const data = await response.json();
+
+      if (data.error || !data.success) {
+        setError(data.error || 'Signup failed. Please try again.');
         setLoading(false);
         return;
       }
 
-      if (data.user) {
-        // Log the sign-up result for debugging
-        
-        // Check if this is actually a new user or an existing user
-        // If the user has identities but we're trying to sign up with email, they might already exist
-        if (data.user.identities && data.user.identities.length > 0) {
-          const hasEmailIdentity = data.user.identities.some((identity: any) => identity.provider === 'email');
-          const hasOAuthIdentity = data.user.identities.some((identity: any) => 
-            identity.provider === 'google' || identity.provider === 'oauth'
-          );
-          
-          // If user has OAuth identity but we're trying to add email, they already have an account
-          if (hasOAuthIdentity && !hasEmailIdentity) {
-            setError('You already have an account with Google. Please sign in instead.');
-            setLoading(false);
-            return;
-          }
-        }
-        
-        // Check if user is immediately authenticated (no email confirmation required)
-        const { data: { user: currentUser } } = await supabaseBrowser().auth.getUser();
-        
-        if (currentUser) {
-          // Force session materialization and move to dashboard
-          await supabaseBrowser().auth.getSession();
-          window.location.assign('/dashboard');
-        } else {
-          // User is not authenticated after sign-up attempt
-          // This could mean either:
-          // 1. New account requiring email confirmation
-          // 2. Existing account (Supabase doesn't return error for existing emails)
-          
-          // Check if this is an existing account by attempting to sign in
-          const { data: signInData, error: signInError } = await supabaseBrowser().auth.signInWithPassword({
-            email: formData.email,
-            password: formData.password,
-          });
-          
-          if (signInData.user && !signInError) {
-            // Account already exists - sign them out and show error message
-            await supabaseBrowser().auth.signOut();
-            setError('You already have an account with this email. Please sign in instead.');
-            setLoading(false);
-            return;
-          } else {
-            // This is a new account, email confirmation is required
-            router.push('/sign-in?message=' + encodeURIComponent('Please check your email to confirm your account before signing in.'));
-          }
-        }
+      // Redirect to Stripe checkout
+      if (data.checkoutUrl) {
+        window.location.href = data.checkoutUrl;
+      } else {
+        setError('Failed to create checkout session. Please try again.');
+        setLoading(false);
       }
     } catch (err: any) {
+      console.error('Signup error:', err);
       setError(err.message || 'Sign-up failed. Please try again.');
       setLoading(false);
     }
@@ -170,12 +126,138 @@ export default function SignUpForm({ onGoogleSignIn, isSigningUp = false }: Sign
     }
   };
 
+  // Tier selection data
+  const tiers = [
+    {
+      name: 'Basic',
+      id: 'basic',
+      price: '£99',
+      description: 'Perfect for small cafes',
+      features: ['10 tables', '50 menu items', 'QR ordering', 'Basic analytics'],
+    },
+    {
+      name: 'Standard',
+      id: 'standard',
+      price: '£249',
+      description: 'Most popular for growing businesses',
+      popular: true,
+      features: ['20 tables', '200 menu items', 'KDS', 'Inventory', 'Advanced analytics'],
+    },
+    {
+      name: 'Premium',
+      id: 'premium',
+      price: '£449+',
+      description: 'Unlimited for enterprises',
+      contact: true,
+      features: ['Unlimited tables', 'Unlimited items', 'AI Assistant', 'Multi-venue'],
+    },
+  ];
+
+  // Render tier selection step
+  if (step === 'tier') {
+    return (
+      <div className="min-h-screen bg-gray-50 flex items-center justify-center p-4">
+        <Card className="w-full max-w-5xl">
+          <CardHeader className="text-center">
+            <CardTitle className="text-3xl font-bold">Choose Your Plan</CardTitle>
+            <CardDescription>Start your 14-day free trial • First billing after trial ends</CardDescription>
+          </CardHeader>
+          <CardContent>
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-6">
+              {tiers.map((tier) => (
+                <Card
+                  key={tier.id}
+                  className={`relative cursor-pointer transition-all hover:shadow-lg ${
+                    selectedTier === tier.id ? 'border-2 border-purple-500 shadow-lg' : ''
+                  } ${tier.popular ? 'border-2 border-purple-400' : ''}`}
+                  onClick={() => {
+                    if (tier.contact) {
+                      window.location.href = 'mailto:sales@servio.app?subject=Premium Plan Inquiry';
+                    } else {
+                      setSelectedTier(tier.id);
+                    }
+                  }}
+                >
+                  {tier.popular && (
+                    <Badge className="absolute -top-3 left-1/2 -translate-x-1/2 bg-purple-500">
+                      Most Popular
+                    </Badge>
+                  )}
+                  <CardContent className="p-6 text-center">
+                    <h3 className="text-2xl font-bold mb-2">{tier.name}</h3>
+                    <div className="text-3xl font-bold mb-2">
+                      {tier.price}
+                      <span className="text-sm font-normal text-gray-600">/month</span>
+                    </div>
+                    <p className="text-sm text-gray-600 mb-4">{tier.description}</p>
+                    <ul className="space-y-2 text-left mb-4">
+                      {tier.features.map((feature, idx) => (
+                        <li key={idx} className="flex items-start gap-2 text-sm">
+                          <Check className="h-4 w-4 text-green-500 flex-shrink-0 mt-0.5" />
+                          <span>{feature}</span>
+                        </li>
+                      ))}
+                    </ul>
+                    {tier.contact ? (
+                      <div className="text-sm text-purple-600 font-medium flex items-center justify-center gap-1">
+                        <Mail className="h-4 w-4" />
+                        Contact Sales
+                      </div>
+                    ) : (
+                      <div className="text-xs text-gray-500">
+                        {selectedTier === tier.id && '✓ Selected'}
+                      </div>
+                    )}
+                  </CardContent>
+                </Card>
+              ))}
+            </div>
+
+            {error && (
+              <Alert variant="destructive" className="mb-4">
+                <AlertDescription>{error}</AlertDescription>
+              </Alert>
+            )}
+
+            <div className="flex justify-between items-center">
+              <Link href="/sign-in" className="text-sm text-purple-600 hover:underline">
+                Already have an account?
+              </Link>
+              <Button
+                onClick={() => {
+                  if (!selectedTier) {
+                    setError('Please select a plan to continue');
+                    return;
+                  }
+                  setError(null);
+                  setStep('form');
+                }}
+                disabled={!selectedTier}
+                size="lg"
+                variant="servio"
+              >
+                Continue with {selectedTier ? tiers.find(t => t.id === selectedTier)?.name : 'Selected Plan'}
+              </Button>
+            </div>
+
+            <p className="text-xs text-center text-gray-500 mt-4">
+              ✨ 14-day free trial • No credit card required upfront • Cancel anytime
+            </p>
+          </CardContent>
+        </Card>
+      </div>
+    );
+  }
+
+  // Render account details form
   return (
     <div className="min-h-screen bg-gray-50 flex items-center justify-center p-4">
       <Card className="w-full max-w-md">
         <CardHeader className="text-center">
           <CardTitle className="text-2xl font-bold">Create Account</CardTitle>
-          <CardDescription>Sign up for your Servio account</CardDescription>
+          <CardDescription>
+            Sign up for {tiers.find(t => t.id === selectedTier)?.name} plan • 14-day free trial
+          </CardDescription>
         </CardHeader>
         <CardContent className="space-y-4">
           {error && (
@@ -311,16 +393,34 @@ export default function SignUpForm({ onGoogleSignIn, isSigningUp = false }: Sign
             </div>
 
             <Button type="submit" disabled={loading} className="w-full">
-              {loading ? 'Creating account...' : 'Create Account'}
+              {loading ? (
+                <>
+                  <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                  Creating account...
+                </>
+              ) : (
+                'Complete Signup & Start Trial'
+              )}
             </Button>
           </form>
 
-          <div className="text-center text-sm text-white">
-            Already have an account?{' '}
-            <Link href="/sign-in" className="text-white hover:text-gray-200 font-medium">
-              Sign in here
+          <div className="flex justify-between items-center text-sm">
+            <Button
+              variant="ghost"
+              size="sm"
+              onClick={() => setStep('tier')}
+              disabled={loading}
+            >
+              ← Change Plan
+            </Button>
+            <Link href="/sign-in" className="text-purple-600 hover:underline">
+              Sign in
             </Link>
           </div>
+
+          <p className="text-xs text-center text-gray-500">
+            By signing up, you'll be taken to Stripe to enter payment details. Your card won't be charged for 14 days.
+          </p>
         </CardContent>
       </Card>
     </div>

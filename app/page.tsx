@@ -19,60 +19,108 @@ import {
 } from "lucide-react";
 import { useAuth } from "@/app/auth/AuthProvider";
 import { FAQ, faqSchema } from "@/components/marketing/FAQ";
+import { UpgradeModal } from "@/components/UpgradeModal";
+import { createClient } from "@/lib/supabase/client";
 
 function PricingQuickCompare({
   isSignedIn,
+  currentTier,
   onPrimaryClick,
+  onUpgradeClick,
 }: {
   isSignedIn: boolean;
+  currentTier?: string;
   onPrimaryClick: () => void;
+  onUpgradeClick: () => void;
 }) {
+  const tierInfo = {
+    basic: { name: 'Basic', order: 1 },
+    standard: { name: 'Standard', order: 2 },
+    premium: { name: 'Premium', order: 3 },
+    grandfathered: { name: 'Grandfathered', order: 999 },
+  };
+
+  const getCurrentTierOrder = () => {
+    return currentTier ? tierInfo[currentTier as keyof typeof tierInfo]?.order || 0 : 0;
+  };
+
+  const currentOrder = getCurrentTierOrder();
+
   return (
     <div className="w-full flex flex-col items-center gap-8 py-10">
-      <h2 className="text-3xl font-bold mb-4">Choose the plan that works best for your business</h2>
+      <div className="text-center">
+        <h2 className="text-3xl font-bold mb-4">Choose the plan that works best for your business</h2>
+        {isSignedIn && currentTier && (
+          <Badge className="bg-green-500 text-white text-sm px-4 py-1">
+            Current Plan: {tierInfo[currentTier as keyof typeof tierInfo]?.name || currentTier}
+          </Badge>
+        )}
+      </div>
       <div className="grid grid-cols-1 md:grid-cols-3 gap-6 w-full max-w-5xl mx-auto" style={{ minHeight: '500px' }}>
         {/* Basic */}
-        <Card className="flex flex-col items-center p-6 gap-4 h-full">
+        <Card className={`flex flex-col items-center p-6 gap-4 h-full ${currentTier === 'basic' ? 'border-2 border-green-500' : ''}`}>
           <div className="text-2xl font-semibold">Basic</div>
           <div className="text-3xl font-bold mb-1">£99<span className="text-lg font-normal">/month</span></div>
-          <ul className="mb-4 space-y-1 text-left">
+          <ul className="mb-4 space-y-1 text-left flex-1">
             <li>✔ Up to 10 tables</li>
+            <li>✔ 50 menu items</li>
             <li>✔ QR ordering</li>
+            <li>✔ Basic analytics</li>
             <li>✔ 14-day free trial</li>
           </ul>
-          <Button variant="servio" className="w-full" onClick={onPrimaryClick}>
-            {isSignedIn ? 'Manage Subscription' : 'Start Free Trial'}
+          <Button variant="servio" className="w-full" onClick={() => {
+            if (isSignedIn && currentOrder > 1) return; // Don't allow downgrade
+            if (isSignedIn && currentTier === 'basic') return;
+            if (isSignedIn) onUpgradeClick();
+            else onPrimaryClick();
+          }} disabled={isSignedIn && (currentTier === 'basic' || currentOrder > 1)}>
+            {currentTier === 'basic' ? 'Current Plan' : 
+             isSignedIn && currentOrder > 1 ? 'Contact to Downgrade' :
+             isSignedIn ? 'Switch to Basic' : 'Start Free Trial'}
           </Button>
         </Card>
         {/* Standard */}
-        <Card className="flex flex-col items-center p-6 gap-4 border-2 border-purple-500 shadow-lg h-full">
+        <Card className={`flex flex-col items-center p-6 gap-4 border-2 shadow-lg h-full ${
+          currentTier === 'standard' ? 'border-green-500' : 'border-purple-500'
+        }`}>
           <div className="text-2xl font-semibold">Standard</div>
           <div className="w-full flex justify-center">
             <span className="bg-purple-500 text-white text-xs px-3 py-1 rounded-full mb-2">Most Popular</span>
           </div>
           <div className="text-3xl font-bold mb-1">£249<span className="text-lg font-normal">/month</span></div>
-          <ul className="mb-4 space-y-1 text-left">
+          <ul className="mb-4 space-y-1 text-left flex-1">
             <li>✔ Everything in Basic, plus:</li>
             <li>✔ Up to 20 tables</li>
-            <li>✔ Full analytics dashboard</li>
-            <li>✔ Email support</li>
+            <li>✔ 200 menu items</li>
+            <li>✔ KDS & Inventory</li>
+            <li>✔ Advanced analytics</li>
           </ul>
-          <Button variant="servio" className="w-full" onClick={onPrimaryClick}>
-            {isSignedIn ? 'Upgrade' : 'Start Free Trial'}
+          <Button variant="servio" className="w-full" onClick={() => {
+            if (isSignedIn && currentTier === 'standard') return;
+            if (isSignedIn) onUpgradeClick();
+            else onPrimaryClick();
+          }} disabled={isSignedIn && currentTier === 'standard'}>
+            {currentTier === 'standard' ? 'Current Plan' :
+             isSignedIn && currentOrder < 2 ? 'Upgrade Now' :
+             isSignedIn && currentOrder > 2 ? 'Contact to Downgrade' :
+             isSignedIn ? 'Manage Subscription' : 'Start Free Trial'}
           </Button>
         </Card>
         {/* Premium */}
-        <Card className="flex flex-col items-center p-6 gap-4 h-full">
+        <Card className={`flex flex-col items-center p-6 gap-4 h-full ${currentTier === 'premium' ? 'border-2 border-green-500' : ''}`}>
           <div className="text-2xl font-semibold">Premium</div>
           <div className="text-3xl font-bold mb-1">£449+<span className="text-lg font-normal">/month</span></div>
-          <ul className="mb-4 space-y-1 text-left">
+          <ul className="mb-4 space-y-1 text-left flex-1">
             <li>✔ Everything in Standard, plus:</li>
             <li>✔ Unlimited tables & venues</li>
+            <li>✔ AI Assistant (13 tools)</li>
             <li>✔ Priority support</li>
-            <li>✔ Custom onboarding & integrations</li>
+            <li>✔ Custom integrations</li>
           </ul>
-          <Button variant="servio" className="w-full" onClick={onPrimaryClick}>
-            {isSignedIn ? 'Contact Sales' : 'Start Free Trial'}
+          <Button variant="servio" className="w-full" onClick={() => {
+            window.location.href = 'mailto:sales@servio.app?subject=Premium Plan Inquiry';
+          }}>
+            {currentTier === 'premium' ? 'Current Plan' : 'Contact Sales'}
           </Button>
         </Card>
       </div>
@@ -84,6 +132,46 @@ function PricingQuickCompare({
 export default function HomePage() {
   const router = useRouter();
   const { user, loading: authLoading } = useAuth();
+  const [currentTier, setCurrentTier] = useState<string | undefined>();
+  const [organizationId, setOrganizationId] = useState<string | undefined>();
+  const [showUpgradeModal, setShowUpgradeModal] = useState(false);
+
+  // Fetch user's current tier
+  useEffect(() => {
+    async function fetchUserTier() {
+      if (!user) {
+        setCurrentTier(undefined);
+        setOrganizationId(undefined);
+        return;
+      }
+
+      try {
+        const supabase = createClient();
+        
+        // Get user's organization
+        const { data: userVenueRole } = await supabase
+          .from('user_venue_roles')
+          .select('organization_id, organizations(subscription_tier, is_grandfathered, id)')
+          .eq('user_id', user.id)
+          .single();
+
+        if (userVenueRole && userVenueRole.organizations) {
+          const org: any = userVenueRole.organizations;
+          setOrganizationId(org.id);
+          
+          if (org.is_grandfathered) {
+            setCurrentTier('grandfathered');
+          } else {
+            setCurrentTier(org.subscription_tier || 'basic');
+          }
+        }
+      } catch (error) {
+        console.error('Error fetching user tier:', error);
+      }
+    }
+
+    fetchUserTier();
+  }, [user]);
 
   // Analytics handler for FAQ interactions (optional)
   const handleFAQToggle = (question: string, isOpen: boolean) => {
@@ -103,8 +191,8 @@ export default function HomePage() {
       // User is signed in, redirect to their dashboard
       router.push("/dashboard");
     } else {
-      // User is not signed in, redirect to sign-in
-      router.push("/sign-in");
+      // User is not signed in, redirect to sign-up
+      router.push("/sign-up");
     }
   };
 
@@ -168,12 +256,23 @@ export default function HomePage() {
   };
 
   const handlePricingPrimary = () => {
-    // If signed in, send to dashboard/billing; if not, to sign-in
+    // If signed in, send to dashboard/billing; if not, to sign-up
     if (user) router.push('/dashboard');
-    else router.push('/sign-in');
+    else router.push('/sign-up');
+  };
+
+  const handleUpgradeClick = () => {
+    setShowUpgradeModal(true);
   };
 
   return (
+    <>
+      <UpgradeModal
+        open={showUpgradeModal}
+        onOpenChange={setShowUpgradeModal}
+        currentTier={currentTier}
+        organizationId={organizationId}
+      />
     <div className="min-h-screen bg-white">
       {/* JSON-LD Schema for FAQ SEO */}
       <script
@@ -495,7 +594,12 @@ export default function HomePage() {
 
       {/* PricingQuickCompare Section */}
       <section id="pricing" className="py-24 bg-white">
-        <PricingQuickCompare isSignedIn={!!user} onPrimaryClick={handlePricingPrimary} />
+        <PricingQuickCompare 
+          isSignedIn={!!user} 
+          currentTier={currentTier}
+          onPrimaryClick={handlePricingPrimary}
+          onUpgradeClick={handleUpgradeClick}
+        />
         
         {/* FAQ Section */}
         <FAQ onToggle={handleFAQToggle} onCTAClick={handleFAQCTAClick} />
@@ -688,5 +792,6 @@ export default function HomePage() {
         </div>
       </footer>
     </div>
+    </>
   );
 }
