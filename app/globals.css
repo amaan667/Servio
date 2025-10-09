@@ -633,7 +633,7 @@ p, span, div {
   
   /* Enhanced input text visibility */
   input, textarea, select {
-    color: #1f2937 !important; /* Dark text */
+    color: #000000 !important; /* Black text for maximum visibility */
     font-weight: 500 !important;
   }
   
@@ -736,7 +736,7 @@ p, span, div {
   .form-field {
     background-color: #ffffff !important;
     border: 2px solid #d1d5db !important;
-    color: #1f2937 !important;
+    color: #000000 !important;
   }
   
   .form-field:focus {
@@ -1297,7 +1297,7 @@ p, span, div {
   
   /* Enhanced label visibility */
   label {
-    color: #374151 !important;
+    color: #000000 !important;
     font-weight: 600 !important;
     font-size: 14px !important;
   }

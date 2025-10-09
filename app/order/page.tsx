@@ -674,6 +674,8 @@ export default function CustomerOrderPage() {
 
       // Create the order immediately via API
       
+      console.log('[ORDER SUBMIT] Submitting order data:', orderData);
+      
       const response = await fetch('/api/orders', {
         method: 'POST',
         headers: {
@@ -686,6 +688,8 @@ export default function CustomerOrderPage() {
       if (!response.ok) {
         const errorData = await response.json();
         console.error('[ORDER SUBMIT] API error response:', errorData);
+        console.error('[ORDER SUBMIT] Response status:', response.status);
+        console.error('[ORDER SUBMIT] Response headers:', response.headers);
         throw new Error(errorData.error || `Failed to create order (${response.status})`);
       }
 
