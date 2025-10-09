@@ -1,10 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import Stripe from 'stripe';
 import { ENV } from '@/lib/env';
-
-const stripe = new Stripe(ENV.STRIPE_SECRET_KEY || '', {
-  apiVersion: '2025-08-27.basil',
-});
+import { stripe } from '@/lib/stripe-client';
 
 interface CreateIntentRequest {
   cartId: string;

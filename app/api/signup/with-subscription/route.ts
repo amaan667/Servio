@@ -4,10 +4,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import Stripe from "stripe";
 import { createAdminClient } from "@/lib/supabase/server";
-
-const stripe = new Stripe(process.env.STRIPE_SECRET_KEY!, {
-  apiVersion: "2025-08-27.basil",
-});
+import { stripe } from "@/lib/stripe-client";
 
 const PRICE_IDS = {
   basic: process.env.STRIPE_BASIC_PRICE_ID || "price_basic",

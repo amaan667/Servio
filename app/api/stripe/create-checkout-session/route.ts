@@ -2,10 +2,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import Stripe from "stripe";
 import { createClient } from "@/lib/supabase/server";
-
-const stripe = new Stripe(process.env.STRIPE_SECRET_KEY!, {
-  apiVersion: "2025-08-27.basil",
-});
+import { stripe } from "@/lib/stripe-client";
 
 // Pricing tiers from homepage
 const PRICE_IDS = {

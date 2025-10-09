@@ -1,12 +1,11 @@
 import Stripe from 'stripe';
 import { NextResponse } from 'next/server';
 import { supabaseAdmin } from '@/lib/supabaseAdmin';
+import { stripe } from '@/lib/stripe-client';
 
 export const runtime = 'nodejs';            // ensure Node runtime (not Edge)
 export const dynamic = 'force-dynamic';
 export const revalidate = 0;
-
-const stripe = new Stripe(process.env.STRIPE_SECRET_KEY!, { apiVersion: '2025-08-27.basil' });
 
 export async function POST(req: Request) {
   console.log('[STRIPE WEBHOOK DEBUG] ===== WEBHOOK RECEIVED =====');

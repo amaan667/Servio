@@ -2,15 +2,12 @@
 import { NextRequest, NextResponse } from "next/server";
 import Stripe from "stripe";
 import { createClient } from "@/lib/supabase/server";
+import { stripe } from "@/lib/stripe-client";
 
 // Extend Invoice type to include subscription property
 interface InvoiceWithSubscription extends Stripe.Invoice {
   subscription?: string | Stripe.Subscription | null;
 }
-
-const stripe = new Stripe(process.env.STRIPE_SECRET_KEY!, {
-  apiVersion: "2025-08-27.basil",
-});
 
 const webhookSecret = process.env.STRIPE_WEBHOOK_SECRET!;
 
