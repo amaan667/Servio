@@ -1,5 +1,5 @@
 import type { Metadata } from "next";
-// Railway deployment trigger - test
+// Railway deployment trigger - premium gates removed
 import { Inter } from "next/font/google";
 import "./globals.css";
 import { cookies } from 'next/headers';
