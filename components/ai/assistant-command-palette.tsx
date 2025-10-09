@@ -85,27 +85,80 @@ export function AssistantCommandPalette({
       const data = await response.json();
 
       if (!response.ok) {
-        throw new Error(data.error || "Planning failed");
-      }
+        // If access denied, try to fix it automatically
+        if (response.status === 403 && data.error?.includes("Access denied")) {
+          console.log("[AI ASSISTANT] Access denied, attempting to fix...");
+          
+          const fixResponse = await fetch("/api/ai-assistant/fix-access", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ venueId }),
+          });
 
-      setPlan(data.plan);
+          const fixData = await fixResponse.json();
 
-      // Fetch previews for each tool
-      const previewPromises = data.plan.tools.map((tool: any) =>
-        fetch("/api/ai-assistant/execute", {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({
-            venueId,
-            toolName: tool.name,
-            params: tool.params,
-            preview: true,
-          }),
-        }).then((res) => res.json())
-      );
+          if (fixResponse.ok) {
+            console.log("[AI ASSISTANT] Access fixed, retrying...");
+            // Retry the original request
+            const retryResponse = await fetch("/api/ai-assistant/plan", {
+              method: "POST",
+              headers: { "Content-Type": "application/json" },
+              body: JSON.stringify({
+                prompt: prompt.trim(),
+                venueId,
+                context: { page },
+              }),
+            });
 
-      const previewResults = await Promise.all(previewPromises);
-      setPreviews(previewResults.map((r) => r.preview));
+            const retryData = await retryResponse.json();
+
+            if (!retryResponse.ok) {
+              throw new Error(retryData.error || "Planning failed after fixing access");
+            }
+
+            setPlan(retryData.plan);
+            
+            // Fetch previews for each tool after successful retry
+            const retryPreviewPromises = retryData.plan.tools.map((tool: any) =>
+              fetch("/api/ai-assistant/execute", {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({
+                  venueId,
+                  toolName: tool.name,
+                  params: tool.params,
+                  preview: true,
+                }),
+              }).then((res) => res.json())
+            );
+
+            const retryPreviewResults = await Promise.all(retryPreviewPromises);
+            setPreviews(retryPreviewResults.map((r) => r.preview));
+          } else {
+            throw new Error(fixData.error || "Failed to fix access");
+          }
+        } else {
+          throw new Error(data.error || "Planning failed");
+        }
+      } else {
+        setPlan(data.plan);
+        
+        // Fetch previews for each tool
+        const previewPromises = data.plan.tools.map((tool: any) =>
+          fetch("/api/ai-assistant/execute", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({
+              venueId,
+              toolName: tool.name,
+              params: tool.params,
+              preview: true,
+            }),
+          }).then((res) => res.json())
+        );
+
+        const previewResults = await Promise.all(previewPromises);
+        setPreviews(previewResults.map((r) => r.preview));
     } catch (err: any) {
       console.error("[AI ASSISTANT] Planning error:", err);
       setError(err.message || "Failed to plan action");
