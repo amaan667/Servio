@@ -6,6 +6,7 @@ import { useMemo } from 'react';
 import { Button } from "@/components/ui/button";
 import { Settings } from "lucide-react";
 import Image from "next/image";
+import { VenueSwitcher } from "@/components/venue-switcher";
 
 function extractVenueId(pathname: string | null) {
   if (!pathname) return undefined;
@@ -29,7 +30,7 @@ export default function NavBarClient() {
   return (
     <nav className="flex items-center justify-between h-20 sm:h-24 md:h-28 px-0 bg-white border-b shadow-lg sticky top-0 z-20">
       {/* Logo - Top-left on desktop, centered on mobile */}
-      <div className="flex items-center md:-ml-4 flex justify-center md:justify-start w-full md:w-auto">
+      <div className="flex items-center md:-ml-4 flex justify-center md:justify-start w-full md:w-auto gap-4">
         <Link href={homeHref} className="flex items-center" aria-label="Home">
           <Image
             src="/assets/servio-logo-updated.png"
@@ -40,6 +41,8 @@ export default function NavBarClient() {
             className="h-12 sm:h-14 md:h-16 lg:h-18 xl:h-20 w-auto hover:opacity-80 transition-opacity"
           />
         </Link>
+        {/* Venue Switcher */}
+        <VenueSwitcher currentVenueId={venueId} />
       </div>
 
       {/* Right - Properly spaced from right edge */}

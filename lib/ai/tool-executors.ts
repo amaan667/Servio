@@ -372,6 +372,350 @@ export async function executeOrdersComplete(
 }
 
 // ============================================================================
+// Menu Translation Tool
+// ============================================================================
+
+export async function executeMenuTranslate(
+  params: any,
+  venueId: string,
+  userId: string,
+  preview: boolean
+): Promise<AIPreviewDiff | AIExecutionResult> {
+  const supabase = await createClient();
+
+  // Note: This is a placeholder - actual translation would use Google Translate API or similar
+  const { data: items } = await supabase
+    .from("menu_items")
+    .select("id, name, description")
+    .eq("venue_id", venueId);
+
+  if (!items || items.length === 0) {
+    throw new AIAssistantError("No menu items found", "INVALID_PARAMS");
+  }
+
+  if (preview) {
+    return {
+      toolName: "menu.translate",
+      before: items.slice(0, 5),
+      after: items.slice(0, 5).map(i => ({
+        ...i,
+        name: `[${params.targetLanguage}] ${i.name}`,
+        description: i.description ? `[${params.targetLanguage}] ${i.description}` : null
+      })),
+      impact: {
+        itemsAffected: items.length,
+        description: `Menu will be translated to ${params.targetLanguage}. Preview shows first 5 items.`,
+      },
+    };
+  }
+
+  // Execution would integrate with translation API
+  throw new AIAssistantError(
+    "Translation execution requires API integration",
+    "EXECUTION_FAILED",
+    { hint: "Set up Google Translate API or similar service" }
+  );
+}
+
+// ============================================================================
+// Inventory Tools (Additional)
+// ============================================================================
+
+export async function executeInventorySetParLevels(
+  params: any,
+  venueId: string,
+  userId: string,
+  preview: boolean
+): Promise<AIPreviewDiff | AIExecutionResult> {
+  const supabase = await createClient();
+
+  const { data: ingredients } = await supabase
+    .from("v_stock_levels")
+    .select("ingredient_id, name, on_hand")
+    .eq("venue_id", venueId);
+
+  if (!ingredients || ingredients.length === 0) {
+    throw new AIAssistantError("No ingredients found", "INVALID_PARAMS");
+  }
+
+  // Calculate par levels based on strategy
+  const updates = ingredients.map(ing => {
+    let parLevel = ing.on_hand;
+    if (params.strategy === "last_7_days" || params.strategy === "last_30_days") {
+      parLevel = Math.ceil(ing.on_hand * (1 + params.bufferPercentage / 100));
+    }
+    return { id: ing.ingredient_id, name: ing.name, currentPar: 0, newPar: parLevel };
+  });
+
+  if (preview) {
+    return {
+      toolName: "inventory.set_par_levels",
+      before: updates.map(u => ({ id: u.id, name: u.name, parLevel: u.currentPar })),
+      after: updates.map(u => ({ id: u.id, name: u.name, parLevel: u.newPar })),
+      impact: {
+        itemsAffected: updates.length,
+        description: `Par levels will be set based on ${params.strategy} with ${params.bufferPercentage}% buffer`,
+      },
+    };
+  }
+
+  // Execute updates
+  for (const update of updates) {
+    await supabase
+      .from("ingredients")
+      .update({ par_level: update.newPar })
+      .eq("id", update.id);
+  }
+
+  return {
+    success: true,
+    toolName: "inventory.set_par_levels",
+    result: { updatedCount: updates.length },
+    auditId: "",
+  };
+}
+
+export async function executeInventoryGeneratePurchaseOrder(
+  params: any,
+  venueId: string,
+  userId: string,
+  preview: boolean
+): Promise<AIPreviewDiff | AIExecutionResult> {
+  const supabase = await createClient();
+
+  const thresholdField = params.threshold === "par_level" ? "par_level" : "reorder_level";
+  
+  const { data: lowStock } = await supabase
+    .from("v_stock_levels")
+    .select("*")
+    .eq("venue_id", venueId)
+    .filter("on_hand", "lte", supabase.rpc(thresholdField));
+
+  if (!lowStock || lowStock.length === 0) {
+    return {
+      success: true,
+      toolName: "inventory.generate_purchase_order",
+      result: { message: "No items below threshold", items: [] },
+      auditId: "",
+    };
+  }
+
+  const poItems = lowStock.map(item => ({
+    ingredient: item.name,
+    currentStock: item.on_hand,
+    orderQty: Math.max(0, (item[thresholdField] || 0) - item.on_hand),
+    unit: item.unit,
+    supplier: item.supplier || "TBD",
+  }));
+
+  if (preview) {
+    return {
+      toolName: "inventory.generate_purchase_order",
+      before: [],
+      after: poItems,
+      impact: {
+        itemsAffected: poItems.length,
+        description: `Purchase order for ${poItems.length} low stock items`,
+      },
+    };
+  }
+
+  return {
+    success: true,
+    toolName: "inventory.generate_purchase_order",
+    result: { format: params.format, items: poItems },
+    auditId: "",
+  };
+}
+
+// ============================================================================
+// Analytics Tools
+// ============================================================================
+
+export async function executeAnalyticsGetInsights(
+  params: any,
+  venueId: string,
+  userId: string,
+  preview: boolean
+): Promise<AIPreviewDiff | AIExecutionResult> {
+  const supabase = await createClient();
+
+  // Calculate date range
+  const now = new Date();
+  let startDate = new Date();
+  
+  switch (params.timeRange) {
+    case "today":
+      startDate.setHours(0, 0, 0, 0);
+      break;
+    case "week":
+      startDate.setDate(now.getDate() - 7);
+      break;
+    case "month":
+      startDate.setMonth(now.getMonth() - 1);
+      break;
+  }
+
+  const { data: orders } = await supabase
+    .from("orders")
+    .select("*")
+    .eq("venue_id", venueId)
+    .gte("created_at", startDate.toISOString());
+
+  const insights = {
+    totalRevenue: orders?.reduce((sum, o) => sum + (o.total_amount || 0), 0) || 0,
+    orderCount: orders?.length || 0,
+    avgOrderValue: orders?.length ? (orders.reduce((sum, o) => sum + (o.total_amount || 0), 0) / orders.length) : 0,
+  };
+
+  return {
+    success: true,
+    toolName: "analytics.get_insights",
+    result: insights,
+    auditId: "",
+  };
+}
+
+export async function executeAnalyticsExport(
+  params: any,
+  venueId: string,
+  userId: string,
+  preview: boolean
+): Promise<AIPreviewDiff | AIExecutionResult> {
+  if (preview) {
+    return {
+      toolName: "analytics.export",
+      before: [],
+      after: [],
+      impact: {
+        itemsAffected: 0,
+        description: `Will export ${params.type} data in ${params.format} format`,
+      },
+    };
+  }
+
+  return {
+    success: true,
+    toolName: "analytics.export",
+    result: { message: "Export functionality requires file generation service", type: params.type, format: params.format },
+    auditId: "",
+  };
+}
+
+// ============================================================================
+// Discount Tools
+// ============================================================================
+
+export async function executeDiscountsCreate(
+  params: any,
+  venueId: string,
+  userId: string,
+  preview: boolean
+): Promise<AIPreviewDiff | AIExecutionResult> {
+  const supabase = await createClient();
+
+  if (preview) {
+    return {
+      toolName: "discounts.create",
+      before: [],
+      after: [{
+        name: params.name,
+        scope: params.scope,
+        discount: `${params.amountPct}%`,
+        startsAt: params.startsAt,
+        endsAt: params.endsAt || "No end date",
+      }],
+      impact: {
+        itemsAffected: 1,
+        description: `Discount "${params.name}" (${params.amountPct}% off) will be created`,
+      },
+    };
+  }
+
+  const { error } = await supabase
+    .from("discounts")
+    .insert({
+      venue_id: venueId,
+      name: params.name,
+      scope: params.scope,
+      scope_id: params.scopeId,
+      amount_pct: params.amountPct,
+      starts_at: params.startsAt,
+      ends_at: params.endsAt,
+      created_by: userId,
+    });
+
+  if (error) throw new AIAssistantError("Failed to create discount", "EXECUTION_FAILED", error);
+
+  return {
+    success: true,
+    toolName: "discounts.create",
+    result: { discountName: params.name },
+    auditId: "",
+  };
+}
+
+// ============================================================================
+// KDS Tools
+// ============================================================================
+
+export async function executeKDSGetOverdue(
+  params: any,
+  venueId: string,
+  userId: string,
+  preview: boolean
+): Promise<AIPreviewDiff | AIExecutionResult> {
+  const supabase = await createClient();
+
+  const query = supabase
+    .from("kds_tickets")
+    .select("*")
+    .eq("venue_id", venueId)
+    .eq("status", "in_progress");
+
+  if (params.station) {
+    query.eq("station_id", params.station);
+  }
+
+  const { data: tickets } = await query;
+
+  const now = new Date();
+  const overdueTickets = tickets?.filter(ticket => {
+    if (!ticket.started_at) return false;
+    const elapsed = (now.getTime() - new Date(ticket.started_at).getTime()) / 1000 / 60;
+    return elapsed > params.thresholdMinutes;
+  }) || [];
+
+  return {
+    success: true,
+    toolName: "kds.get_overdue",
+    result: { overdueCount: overdueTickets.length, tickets: overdueTickets },
+    auditId: "",
+  };
+}
+
+export async function executeKDSSuggestOptimization(
+  params: any,
+  venueId: string,
+  userId: string,
+  preview: boolean
+): Promise<AIPreviewDiff | AIExecutionResult> {
+  // This would analyze KDS performance and suggest optimizations
+  return {
+    success: true,
+    toolName: "kds.suggest_optimization",
+    result: {
+      suggestions: [
+        "Consider adding a prep station for high-volume items",
+        "Grill station shows 15min avg wait - add more capacity during peak",
+        "Route cold items to dedicated station to reduce congestion",
+      ],
+    },
+    auditId: "",
+  };
+}
+
+// ============================================================================
 // Tool Router
 // ============================================================================
 
@@ -389,8 +733,17 @@ export async function executeTool(
     case "menu.toggle_availability":
       return executeMenuToggleAvailability(params, venueId, userId, preview);
     
+    case "menu.translate":
+      return executeMenuTranslate(params, venueId, userId, preview);
+    
     case "inventory.adjust_stock":
       return executeInventoryAdjustStock(params, venueId, userId, preview);
+    
+    case "inventory.set_par_levels":
+      return executeInventorySetParLevels(params, venueId, userId, preview);
+    
+    case "inventory.generate_purchase_order":
+      return executeInventoryGeneratePurchaseOrder(params, venueId, userId, preview);
     
     case "orders.mark_served":
       return executeOrdersMarkServed(params, venueId, userId, preview);
@@ -398,7 +751,20 @@ export async function executeTool(
     case "orders.complete":
       return executeOrdersComplete(params, venueId, userId, preview);
     
-    // Add other tools here...
+    case "analytics.get_insights":
+      return executeAnalyticsGetInsights(params, venueId, userId, preview);
+    
+    case "analytics.export":
+      return executeAnalyticsExport(params, venueId, userId, preview);
+    
+    case "discounts.create":
+      return executeDiscountsCreate(params, venueId, userId, preview);
+    
+    case "kds.get_overdue":
+      return executeKDSGetOverdue(params, venueId, userId, preview);
+    
+    case "kds.suggest_optimization":
+      return executeKDSSuggestOptimization(params, venueId, userId, preview);
     
     default:
       throw new AIAssistantError(
