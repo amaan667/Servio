@@ -58,6 +58,7 @@ export default function NavigationBreadcrumb({
       if (pathname.includes("/feedback")) return "Feedback";
       if (pathname.includes("/orders")) return "Orders";
       if (pathname.includes("/kds")) return "Kitchen Display System";
+      if (pathname.includes("/inventory")) return "Inventory";
       return "Dashboard";
     }
     if (pathname.includes("/sign-in")) return "Sign In";
