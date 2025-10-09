@@ -159,6 +159,7 @@ export function AssistantCommandPalette({
 
         const previewResults = await Promise.all(previewPromises);
         setPreviews(previewResults.map((r) => r.preview));
+      }
     } catch (err: any) {
       console.error("[AI ASSISTANT] Planning error:", err);
       setError(err.message || "Failed to plan action");
