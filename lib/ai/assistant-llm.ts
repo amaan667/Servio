@@ -71,7 +71,7 @@ const AIToolCallSchema = z.object({
     z.record(z.string(), z.number()),
     z.record(z.string(), z.boolean()),
   ])),
-  preview: z.boolean().default(true),
+  preview: z.boolean(),
 });
 
 const AIPlanSchema = z.object({
@@ -178,7 +178,7 @@ TIER RESTRICTIONS:
 - ${venueTier === "premium" ? "Premium tier: all features enabled" : ""}
 
 RULES:
-1. ALWAYS propose preview=true for destructive or bulk actions
+1. ALWAYS set preview=true for destructive or bulk actions, preview=false for navigation
 2. NEVER exceed guardrail limits (price changes, discounts)
 3. RESPECT role and tier restrictions
 4. Provide clear reasoning for your plan
