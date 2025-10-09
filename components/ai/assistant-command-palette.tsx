@@ -265,7 +265,7 @@ export function AssistantCommandPalette({
               Servio AI Assistant
             </DialogTitle>
             <DialogDescription>
-              Ask me anything about your restaurant operations
+              Ask me anything about your business operations
             </DialogDescription>
           </DialogHeader>
 

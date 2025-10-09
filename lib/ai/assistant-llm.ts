@@ -59,7 +59,7 @@ const AIToolCallSchema = z.object({
     "kds.suggest_optimization",
     "navigation.go_to_page",
   ] as const),
-  params: z.record(z.string(), z.any()),
+  params: z.record(z.string(), z.union([z.string(), z.number(), z.boolean(), z.array(z.any())])),
   preview: z.boolean().default(true),
 });
 
@@ -92,7 +92,7 @@ function buildSystemPrompt(
 ): string {
   const { userRole, venueTier, features } = context;
 
-  return `You are Servio Assistant, an AI helper for restaurant operations. You can help with:
+  return `You are Servio Assistant, an AI helper for business operations. You can help with:
 
 MENU MANAGEMENT:
 - Update item prices, availability, and descriptions
