@@ -69,7 +69,7 @@ export function useLiveOrders(venueId: string) {
           { count: 'exact' }
         )
         .eq('venue_id', venueId)
-        .in('order_status', LIVE_STATUSES as unknown as string[])
+        .in('order_status', ['READY', 'SERVED', 'COMPLETED'] as unknown as string[])
         .in('payment_status', ['PAID', 'UNPAID']) // Include both paid and unpaid orders
         .gte('created_at', startOfToday) // today only
         .lte('created_at', endOfToday)

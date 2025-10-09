@@ -5,7 +5,7 @@ import { useRouter } from "next/navigation";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader } from "@/components/ui/card";
 import Link from "next/link";
-import { Clock, Users, TrendingUp, ShoppingBag, BarChart, QrCode, Settings, Plus, Table, Wifi, WifiOff, AlertTriangle, ChefHat } from "lucide-react";
+import { Clock, Users, TrendingUp, ShoppingBag, BarChart, QrCode, Settings, Plus, Table, Wifi, WifiOff, AlertTriangle, ChefHat, Package } from "lucide-react";
 import { createClient } from "@/lib/supabase/client";
 import NavigationBreadcrumb from "@/components/navigation-breadcrumb";
 import { todayWindowForTZ } from "@/lib/time";
@@ -634,6 +634,17 @@ const VenueDashboardClient = React.memo(function VenueDashboardClient({
             </Card>
           </Link>
 
+          <Link href={`/dashboard/${venueId}/inventory`}>
+            <Card className="hover:shadow-lg transition-shadow cursor-pointer">
+              <CardContent className="p-4 sm:p-6">
+                <div className="w-10 h-10 sm:w-12 sm:h-12 bg-emerald-100 rounded-lg flex items-center justify-center mb-4">
+                  <Package className="h-5 w-5 sm:h-6 sm:w-6 text-emerald-600" />
+                </div>
+                <h3 className="text-base sm:text-lg font-semibold mb-2 text-foreground">Inventory Management</h3>
+                <p className="text-gray-700 text-xs sm:text-sm font-medium">Track ingredients, stock levels, and costs</p>
+              </CardContent>
+            </Card>
+          </Link>
 
         </div>
 

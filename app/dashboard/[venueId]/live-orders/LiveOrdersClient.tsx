@@ -105,11 +105,12 @@ export default function LiveOrdersClient({ venueId, venueName: venueNameProp }: 
 
   
   // Constants for order statuses
-  const LIVE_STATUSES = ['PLACED', 'ACCEPTED', 'IN_PREP', 'READY', 'OUT_FOR_DELIVERY', 'SERVING'];
+  // FOH (Live Orders) only sees READY/SERVED/COMPLETED - KDS handles PLACED/IN_PREP
+  const LIVE_STATUSES = ['READY', 'SERVED', 'COMPLETED'];
   const TERMINAL_STATUSES = ['COMPLETED', 'CANCELLED', 'REFUNDED', 'EXPIRED'];
-  const LIVE_WINDOW_STATUSES = ['PLACED', 'ACCEPTED', 'IN_PREP', 'READY', 'OUT_FOR_DELIVERY', 'SERVING', 'COMPLETED']; // Include COMPLETED for live window
-  const ACTIVE_TABLE_ORDER_STATUSES = ['PLACED', 'ACCEPTED', 'IN_PREP', 'READY', 'SERVING']; // Only active orders for table management
-  const LIVE_TABLE_ORDER_STATUSES = ['PLACED', 'ACCEPTED', 'IN_PREP', 'READY', 'SERVING', 'COMPLETED']; // Include COMPLETED for live orders display
+  const LIVE_WINDOW_STATUSES = ['READY', 'SERVED', 'COMPLETED']; // FOH only handles service, not prep
+  const ACTIVE_TABLE_ORDER_STATUSES = ['READY', 'SERVED']; // Active orders for table management (not completed)
+  const LIVE_TABLE_ORDER_STATUSES = ['READY', 'SERVED', 'COMPLETED']; // Include COMPLETED for live orders display
   const prepLeadMs = 30 * 60 * 1000; // 30 minutes default
   
   // Define what constitutes a "live" order - recent orders

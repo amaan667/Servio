@@ -67,9 +67,10 @@ const OrdersClient: React.FC<OrdersClientProps> = ({ venueId, initialOrders = []
   const [activeTab, setActiveTab] = useState("live");
   
   // Constants for order statuses
-  const LIVE_STATUSES = ['PLACED', 'ACCEPTED', 'IN_PREP', 'READY', 'OUT_FOR_DELIVERY', 'SERVING'];
+  // FOH (Live Orders) only sees READY/SERVED/COMPLETED - KDS handles PLACED/IN_PREP
+  const LIVE_STATUSES = ['READY', 'SERVED', 'COMPLETED'];
   const TERMINAL_STATUSES = ['COMPLETED', 'CANCELLED', 'REFUNDED', 'EXPIRED'];
-  const LIVE_WINDOW_STATUSES = ['PLACED', 'ACCEPTED', 'IN_PREP', 'READY', 'OUT_FOR_DELIVERY', 'SERVING', 'COMPLETED'];
+  const LIVE_WINDOW_STATUSES = ['READY', 'SERVED', 'COMPLETED'];
   
   // Define what constitutes a "live" order - orders placed within the last 30 minutes
   const LIVE_ORDER_WINDOW_MS = 30 * 60 * 1000; // 30 minutes

@@ -136,18 +136,20 @@ export function OrderCard({
   const handleStatusUpdate = async (newStatus: string) => {
     if (!venueId) return;
     
-    
     try {
       setIsProcessing(true);
-      const response = await fetch('/api/orders/set-status', {
+      
+      // Use specific serve endpoint for SERVED status
+      const endpoint = newStatus === 'SERVED' ? '/api/orders/serve' : '/api/orders/set-status';
+      const body = newStatus === 'SERVED' 
+        ? { orderId: order.id }
+        : { orderId: order.id, status: newStatus };
+
+      const response = await fetch(endpoint, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          orderId: order.id,
-          status: newStatus
-        }),
+        body: JSON.stringify(body),
       });
-
 
       if (!response.ok) {
         const errorText = await response.text();
@@ -217,13 +219,11 @@ export function OrderCard({
       );
     }
 
-    // Show status update actions for all non-completed orders (regardless of payment status)
+    // Show status update actions for FOH (Live Orders) - only READY/SERVED/COMPLETED
     if (!isCompleted) {
       const getNextStatus = () => {
         switch (order.order_status) {
-          case 'placed': return 'IN_PREP';
-          case 'preparing': return 'READY';
-          case 'ready': return 'COMPLETED';
+          case 'ready': return 'SERVED';
           case 'served': return 'COMPLETED';
           default: return 'COMPLETED';
         }
@@ -231,9 +231,7 @@ export function OrderCard({
 
       const getStatusLabel = () => {
         switch (order.order_status) {
-          case 'placed': return 'Start Preparing';
-          case 'preparing': return 'Mark as Ready';
-          case 'ready': return 'Complete Order';
+          case 'ready': return 'Mark Served';
           case 'served': return 'Complete Order';
           default: return 'Complete Order';
         }
@@ -241,8 +239,6 @@ export function OrderCard({
 
       const getStatusIcon = () => {
         switch (order.order_status) {
-          case 'placed': return <Play className="h-4 w-4 mr-1" />;
-          case 'preparing': return <CheckCircle className="h-4 w-4 mr-1" />;
           case 'ready': return <CheckCircle className="h-4 w-4 mr-1" />;
           case 'served': return <CheckCircle className="h-4 w-4 mr-1" />;
           default: return <CheckCircle className="h-4 w-4 mr-1" />;
@@ -250,20 +246,13 @@ export function OrderCard({
       };
 
       const getStatusMessage = () => {
-        if (isPaid) {
-          return "Paid - Ready for next step";
-        } else {
-          // Show payment status based on payment mode
-          switch (order.payment.mode) {
-            case 'online':
-              return "Paid - Ready for next step";
-            case 'pay_later':
-              return "Paying Later - Ready for next step";
-            case 'pay_at_till':
-              return "Paying at Till - Ready for next step";
-            default:
-              return "Order Management - Update Status";
-          }
+        switch (order.order_status) {
+          case 'ready':
+            return "Kitchen Ready - Mark as Served";
+          case 'served':
+            return "Served - Complete Order";
+          default:
+            return "Order Management - Update Status";
         }
       };
 

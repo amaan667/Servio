@@ -101,12 +101,15 @@ CREATE TRIGGER trg_kds_tickets_updated_at
   FOR EACH ROW
   EXECUTE FUNCTION update_kds_updated_at();
 
--- Function to automatically update order status when all tickets are ready
+-- Function to automatically update order status when KDS tickets change
+-- KDS handles: PLACED -> IN_PREP -> READY
+-- FOH handles: READY -> SERVED -> COMPLETED
 CREATE OR REPLACE FUNCTION update_order_status_from_kds()
 RETURNS TRIGGER AS $$
 DECLARE
   pending_count INTEGER;
   all_bumped BOOLEAN;
+  all_ready BOOLEAN;
 BEGIN
   -- Check if all tickets for this order are ready (not new or in_progress)
   SELECT COUNT(*) INTO pending_count
@@ -114,26 +117,33 @@ BEGIN
   WHERE order_id = NEW.order_id
     AND status IN ('new', 'in_progress');
   
-  -- Check if all tickets are bumped (served)
+  -- Check if all tickets are bumped (kitchen finished)
   SELECT NOT EXISTS (
     SELECT 1 FROM kds_tickets
     WHERE order_id = NEW.order_id
       AND status != 'bumped'
   ) INTO all_bumped;
   
+  -- Check if all tickets are ready or bumped (kitchen work done)
+  SELECT NOT EXISTS (
+    SELECT 1 FROM kds_tickets
+    WHERE order_id = NEW.order_id
+      AND status IN ('new', 'in_progress')
+  ) INTO all_ready;
+  
   -- Update order status based on ticket states
   IF all_bumped THEN
-    -- All tickets bumped = order completed
-    UPDATE orders
-    SET order_status = 'COMPLETED'
-    WHERE id = NEW.order_id
-      AND order_status != 'COMPLETED';
-  ELSIF pending_count = 0 THEN
-    -- All tickets ready = order ready for pickup
+    -- All tickets bumped = order ready for FOH service
     UPDATE orders
     SET order_status = 'READY'
     WHERE id = NEW.order_id
-      AND order_status NOT IN ('READY', 'SERVING', 'COMPLETED');
+      AND order_status NOT IN ('READY', 'SERVED', 'COMPLETED');
+  ELSIF all_ready THEN
+    -- All tickets ready (but not bumped) = order ready for expo
+    UPDATE orders
+    SET order_status = 'READY'
+    WHERE id = NEW.order_id
+      AND order_status NOT IN ('READY', 'SERVED', 'COMPLETED');
   ELSIF NEW.status = 'in_progress' AND OLD.status = 'new' THEN
     -- First ticket started = order in prep
     UPDATE orders
