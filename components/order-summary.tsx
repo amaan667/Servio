@@ -103,21 +103,8 @@ export default function OrderSummary({ orderId, sessionId, orderData, isDemo = f
 
   // Fetch order data
   useEffect(() => {
-    console.log('[ORDER SUMMARY COMPONENT DEBUG] ===== useEffect STARTED =====');
-    console.log('[ORDER SUMMARY COMPONENT DEBUG] orderData:', orderData);
-    console.log('[ORDER SUMMARY COMPONENT DEBUG] orderId:', orderId);
-    console.log('[ORDER SUMMARY COMPONENT DEBUG] sessionId:', sessionId);
-    console.log('[ORDER SUMMARY COMPONENT DEBUG] isDemo:', isDemo);
     
     if (orderData) {
-      console.log('[ORDER SUMMARY COMPONENT DEBUG] ===== USING PROVIDED ORDER DATA =====');
-      console.log('[ORDER SUMMARY COMPONENT DEBUG] orderData details:', {
-        id: orderData.id,
-        venue_id: orderData.venue_id,
-        customer_name: orderData.customer_name,
-        total_amount: orderData.total_amount,
-        items_count: orderData.items?.length || 0
-      });
       setOrder(orderData);
       setLoading(false);
       return;
@@ -125,13 +112,8 @@ export default function OrderSummary({ orderId, sessionId, orderData, isDemo = f
 
     // For demo orders, don't try to fetch from database
     if (isDemo && orderId && orderId.startsWith('demo-')) {
-      console.log('[ORDER SUMMARY COMPONENT DEBUG] ===== DEMO ORDER - NO ORDER DATA PROVIDED =====');
-      console.log('[ORDER SUMMARY COMPONENT DEBUG] Demo order detected, skipping database fetch');
-      console.log('[ORDER SUMMARY COMPONENT DEBUG] orderId:', orderId);
-      console.log('[ORDER SUMMARY COMPONENT DEBUG] Waiting for parent to provide data via URL params or localStorage');
       // Keep loading while parent component reconstructs data from URL params
       // The parent (payment success page) will pass orderData via props once ready
-      // When orderData arrives, the useEffect will re-run and line 112-123 will handle it
       return; // Exit early, keep loading state
     }
 
@@ -147,11 +129,9 @@ export default function OrderSummary({ orderId, sessionId, orderData, isDemo = f
         
         if (sessionId) {
           // Fetch order by Stripe session ID
-          console.log('[ORDER SUMMARY COMPONENT DEBUG] Fetching order by session ID:', sessionId);
           const res = await fetch(`/api/orders/by-session/${sessionId}`);
           if (res.ok) {
             const data = await res.json();
-            console.log('[ORDER SUMMARY COMPONENT DEBUG] Session lookup response:', data);
             if (data.ok && data.order) {
               setOrder(data.order);
             } else {
@@ -159,16 +139,13 @@ export default function OrderSummary({ orderId, sessionId, orderData, isDemo = f
             }
           } else {
             const errorData = await res.json();
-            console.error('[ORDER SUMMARY COMPONENT DEBUG] Session lookup failed:', errorData);
             throw new Error(`Failed to fetch order by session ID: ${errorData.error || 'Unknown error'}`);
           }
         } else if (orderId) {
           // Fetch order by ID
-          console.log('[ORDER SUMMARY COMPONENT DEBUG] Fetching order by ID:', orderId);
           const res = await fetch(`/api/orders/${orderId}`);
           if (res.ok) {
             const data = await res.json();
-            console.log('[ORDER SUMMARY COMPONENT DEBUG] Order fetch response:', data);
             if (data.order) {
               setOrder(data.order);
             } else {
@@ -176,7 +153,6 @@ export default function OrderSummary({ orderId, sessionId, orderData, isDemo = f
             }
           } else {
             const errorData = await res.json();
-            console.error('[ORDER SUMMARY COMPONENT DEBUG] Order fetch failed:', errorData);
             throw new Error(`Failed to fetch order: ${errorData.error || 'Unknown error'}`);
           }
         }
