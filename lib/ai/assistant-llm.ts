@@ -59,18 +59,9 @@ const AIToolCallSchema = z.object({
     "kds.suggest_optimization",
     "navigation.go_to_page",
   ] as const),
-  params: z.record(z.string(), z.union([
-    z.string(),
-    z.number(),
-    z.boolean(),
-    z.null(),
-    z.array(z.string()),
-    z.array(z.number()),
-    z.array(z.boolean()),
-    z.record(z.string(), z.string()),
-    z.record(z.string(), z.number()),
-    z.record(z.string(), z.boolean()),
-  ])),
+  params: z.object({
+    // Dynamic parameters will be validated against individual tool schemas
+  }).passthrough(),
   preview: z.boolean(),
 });
 
