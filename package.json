@@ -1,6 +1,6 @@
 {
   "name": "servio-mvp",
-  "version": "0.1.0",
+  "version": "0.1.1",
   "private": true,
   "packageManager": "pnpm@9.15.9",
   "engines": {
@@ -120,4 +120,4 @@
     "typescript-eslint": "^8.38.0"
   }
 }
-// Force deployment - Thu Oct  9 15:54:13 BST 2025
+// Deploy: Inventory Management + KDS System - Thu Oct 9 2025
