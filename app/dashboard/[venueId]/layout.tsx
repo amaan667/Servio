@@ -1,3 +1,5 @@
+import { AssistantCommandPalette } from "@/components/ai/assistant-command-palette";
+
 export default async function VenueDashboardLayout({
   children,
   params,
@@ -9,6 +11,8 @@ export default async function VenueDashboardLayout({
   return (
     <>
       {children}
+      {/* AI Assistant - Global Command Palette (⌘K / Ctrl-K) */}
+      <AssistantCommandPalette venueId={venueId} />
     </>
   );
 }
