@@ -36,6 +36,100 @@ function bad(msg: string, status = 400) {
   return NextResponse.json({ ok: false, error: msg }, { status });
 }
 
+// Function to create KDS tickets for an order
+async function createKDSTickets(supabase: any, order: any) {
+  try {
+    console.log('[KDS TICKETS] Creating KDS tickets for order:', order.id);
+    
+    // First, ensure KDS stations exist for this venue
+    const { data: existingStations } = await supabase
+      .from('kds_stations')
+      .select('id, station_type')
+      .eq('venue_id', order.venue_id)
+      .eq('is_active', true);
+    
+    if (!existingStations || existingStations.length === 0) {
+      console.log('[KDS TICKETS] No stations found, creating default stations for venue:', order.venue_id);
+      
+      // Create default stations
+      const defaultStations = [
+        { name: 'Expo', type: 'expo', order: 0, color: '#3b82f6' },
+        { name: 'Grill', type: 'grill', order: 1, color: '#ef4444' },
+        { name: 'Fryer', type: 'fryer', order: 2, color: '#f59e0b' },
+        { name: 'Barista', type: 'barista', order: 3, color: '#8b5cf6' },
+        { name: 'Cold Prep', type: 'cold', order: 4, color: '#06b6d4' }
+      ];
+      
+      for (const station of defaultStations) {
+        await supabase
+          .from('kds_stations')
+          .upsert({
+            venue_id: order.venue_id,
+            station_name: station.name,
+            station_type: station.type,
+            display_order: station.order,
+            color_code: station.color,
+            is_active: true
+          }, {
+            onConflict: 'venue_id,station_name'
+          });
+      }
+      
+      // Fetch stations again
+      const { data: stations } = await supabase
+        .from('kds_stations')
+        .select('id, station_type')
+        .eq('venue_id', order.venue_id)
+        .eq('is_active', true);
+      
+      if (!stations || stations.length === 0) {
+        throw new Error('Failed to create KDS stations');
+      }
+      
+      existingStations.push(...stations);
+    }
+    
+    // Get the expo station (default for all items)
+    const expoStation = existingStations.find((s: any) => s.station_type === 'expo') || existingStations[0];
+    
+    if (!expoStation) {
+      throw new Error('No KDS station available');
+    }
+    
+    // Create tickets for each order item
+    const items = Array.isArray(order.items) ? order.items : [];
+    
+    for (const item of items) {
+      const ticketData = {
+        venue_id: order.venue_id,
+        order_id: order.id,
+        station_id: expoStation.id,
+        item_name: item.item_name || 'Unknown Item',
+        quantity: parseInt(item.quantity) || 1,
+        special_instructions: item.specialInstructions || null,
+        table_number: order.table_number,
+        table_label: order.table_id || order.table_number?.toString() || 'Unknown',
+        status: 'new'
+      };
+      
+      const { error: ticketError } = await supabase
+        .from('kds_tickets')
+        .insert(ticketData);
+      
+      if (ticketError) {
+        console.error('[KDS TICKETS] Failed to create ticket for item:', item, ticketError);
+        throw ticketError;
+      }
+    }
+    
+    console.log('[KDS TICKETS] Successfully created', items.length, 'KDS tickets for order:', order.id);
+    
+  } catch (error) {
+    console.error('[KDS TICKETS] Error creating KDS tickets:', error);
+    throw error;
+  }
+}
+
 export async function POST(req: Request) {
   try {
     console.log('[ORDER CREATION DEBUG] ===== ORDER CREATION STARTED =====');
@@ -433,6 +527,14 @@ export async function POST(req: Request) {
     
     console.log('[ORDER CREATION DEBUG] ===== RETURNING RESPONSE =====');
     console.log('[ORDER CREATION DEBUG] Response data:', JSON.stringify(response, null, 2));
+    
+    // Create KDS tickets for the order
+    try {
+      await createKDSTickets(supabase, inserted[0]);
+    } catch (kdsError) {
+      console.warn('[ORDER CREATION DEBUG] KDS ticket creation failed (non-critical):', kdsError);
+      // Don't fail the order creation if KDS tickets fail
+    }
     
     // Log that real-time updates should be triggered
     
