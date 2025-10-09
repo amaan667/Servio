@@ -39,6 +39,19 @@ export async function GET(req: Request) {
       
       // Fallback: Try to find recent orders that might not have stripe_session_id set yet
       console.log('[ORDER BY SESSION] Trying fallback search for recent orders...');
+      
+      // First, let's see what orders exist in the last 30 minutes
+      const thirtyMinutesAgo = new Date(Date.now() - 30 * 60 * 1000).toISOString();
+      const { data: allRecentOrders, error: allRecentError } = await supabaseAdmin
+        .from('orders')
+        .select('id, customer_name, table_number, payment_status, payment_method, stripe_session_id, created_at')
+        .gte('created_at', thirtyMinutesAgo)
+        .order('created_at', { ascending: false })
+        .limit(10);
+      
+      console.log('[ORDER BY SESSION] All recent orders:', allRecentOrders);
+      
+      // Now try to find paid orders without session ID
       const { data: recentOrders, error: recentError } = await supabaseAdmin
         .from('orders')
         .select(`
@@ -82,8 +95,52 @@ export async function GET(req: Request) {
         });
       }
 
+      // Last resort: Find ANY recent paid order (regardless of payment method)
+      console.log('[ORDER BY SESSION] Trying last resort: any recent paid order...');
+      const { data: anyPaidOrder, error: anyPaidError } = await supabaseAdmin
+        .from('orders')
+        .select(`
+          *,
+          order_items (
+            id,
+            menu_item_id,
+            item_name,
+            quantity,
+            price,
+            special_instructions
+          )
+        `)
+        .eq('payment_status', 'PAID')
+        .gte('created_at', thirtyMinutesAgo)
+        .order('created_at', { ascending: false })
+        .limit(1);
+
+      if (anyPaidOrder && anyPaidOrder.length > 0) {
+        console.log('[ORDER BY SESSION] Found any recent paid order:', anyPaidOrder[0].id);
+        const lastResortOrder = anyPaidOrder[0];
+        
+        // Transform the order to include items array
+        const transformedOrder = {
+          ...lastResortOrder,
+          items: lastResortOrder.order_items || []
+        };
+        delete transformedOrder.order_items;
+
+        return NextResponse.json({ 
+          order: transformedOrder,
+          fallback: true,
+          lastResort: true
+        });
+      }
+
       return NextResponse.json({ 
-        error: 'Order not found' 
+        error: 'Order not found',
+        debug: {
+          sessionId,
+          allRecentOrders,
+          recentOrders,
+          anyPaidOrder
+        }
       }, { status: 404 });
     }
 
