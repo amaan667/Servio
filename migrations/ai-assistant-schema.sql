@@ -270,44 +270,65 @@ INSERT INTO ai_tool_definitions (tool_name, category, description, params_schema
 ON CONFLICT (tool_name) DO NOTHING;
 
 -- ============================================================================
--- RLS Policies
+-- RLS Policies (will be added conditionally if user_venue_roles exists)
 -- ============================================================================
 
+-- Enable RLS on all tables
 ALTER TABLE ai_action_audit ENABLE ROW LEVEL SECURITY;
 ALTER TABLE ai_automations ENABLE ROW LEVEL SECURITY;
 ALTER TABLE ai_context_cache ENABLE ROW LEVEL SECURITY;
 ALTER TABLE ai_user_preferences ENABLE ROW LEVEL SECURITY;
 
--- Users can only see audit logs for their venue
-CREATE POLICY audit_venue_access ON ai_action_audit
-  FOR ALL USING (
-    venue_id IN (
-      SELECT venue_id FROM user_venue_roles 
-      WHERE user_id = auth.uid()
-    )
-  );
+-- Add RLS policies conditionally
+DO $$ 
+BEGIN
+  IF EXISTS (SELECT FROM information_schema.tables WHERE table_schema = 'public' AND table_name = 'user_venue_roles') THEN
+    
+    -- Users can only see audit logs for their venue
+    IF NOT EXISTS (SELECT 1 FROM pg_policies WHERE tablename = 'ai_action_audit' AND policyname = 'audit_venue_access') THEN
+      EXECUTE 'CREATE POLICY audit_venue_access ON ai_action_audit
+        FOR ALL USING (
+          venue_id IN (
+            SELECT venue_id FROM user_venue_roles 
+            WHERE user_id = auth.uid()
+          )
+        )';
+    END IF;
 
--- Users can manage automations for their venue
-CREATE POLICY automations_venue_access ON ai_automations
-  FOR ALL USING (
-    venue_id IN (
-      SELECT venue_id FROM user_venue_roles 
-      WHERE user_id = auth.uid()
-    )
-  );
+    -- Users can manage automations for their venue
+    IF NOT EXISTS (SELECT 1 FROM pg_policies WHERE tablename = 'ai_automations' AND policyname = 'automations_venue_access') THEN
+      EXECUTE 'CREATE POLICY automations_venue_access ON ai_automations
+        FOR ALL USING (
+          venue_id IN (
+            SELECT venue_id FROM user_venue_roles 
+            WHERE user_id = auth.uid()
+          )
+        )';
+    END IF;
 
--- Context cache is venue-scoped
-CREATE POLICY context_cache_venue_access ON ai_context_cache
-  FOR ALL USING (
-    venue_id IN (
-      SELECT venue_id FROM user_venue_roles 
-      WHERE user_id = auth.uid()
-    )
-  );
+    -- Context cache is venue-scoped
+    IF NOT EXISTS (SELECT 1 FROM pg_policies WHERE tablename = 'ai_context_cache' AND policyname = 'context_cache_venue_access') THEN
+      EXECUTE 'CREATE POLICY context_cache_venue_access ON ai_context_cache
+        FOR ALL USING (
+          venue_id IN (
+            SELECT venue_id FROM user_venue_roles 
+            WHERE user_id = auth.uid()
+          )
+        )';
+    END IF;
 
--- User preferences are user-scoped
-CREATE POLICY user_prefs_access ON ai_user_preferences
-  FOR ALL USING (user_id = auth.uid());
+    -- User preferences are user-scoped
+    IF NOT EXISTS (SELECT 1 FROM pg_policies WHERE tablename = 'ai_user_preferences' AND policyname = 'user_prefs_access') THEN
+      EXECUTE 'CREATE POLICY user_prefs_access ON ai_user_preferences
+        FOR ALL USING (user_id = auth.uid())';
+    END IF;
+    
+    RAISE NOTICE 'RLS policies added successfully';
+  ELSE
+    RAISE WARNING 'user_venue_roles table does not exist. RLS policies not added. Run this migration again after creating the user_venue_roles table.';
+    RAISE WARNING 'IMPORTANT: Without RLS policies, AI assistant tables are not protected. Add policies before using in production.';
+  END IF;
+END $$;
 
 -- ============================================================================
 -- Triggers & Functions
