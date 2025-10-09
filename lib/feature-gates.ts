@@ -50,18 +50,18 @@ export async function checkFeatureAccess(
 
     if (error) {
       console.error('[FEATURE GATE] Error fetching venue:', error);
-      // Default to basic tier if error
+      // Default to premium tier if error (allow all features)
       return {
-        hasAccess: requiredTier === 'basic',
-        tier: 'basic',
+        hasAccess: true,
+        tier: 'premium',
         requiredTier,
-        message: 'Unable to verify subscription',
+        message: undefined,
       };
     }
 
-    // If no subscription_tier column exists, default to allowing all features for now
-    // This maintains backward compatibility
-    const currentTier = (venue?.subscription_tier as SubscriptionTier) || 'premium';
+    // Temporarily allow all features for development
+    // TODO: Re-enable premium gates when payment plans are implemented
+    const currentTier = 'premium';
 
     const tierHierarchy: Record<SubscriptionTier, number> = {
       basic: 1,
@@ -82,10 +82,10 @@ export async function checkFeatureAccess(
   } catch (error) {
     console.error('[FEATURE GATE] Unexpected error:', error);
     return {
-      hasAccess: false,
-      tier: 'basic',
+      hasAccess: true,
+      tier: 'premium',
       requiredTier,
-      message: 'An error occurred while checking feature access',
+      message: undefined,
     };
   }
 }
@@ -134,9 +134,9 @@ export async function clientCheckFeatureAccess(
   } catch (error) {
     console.error('[FEATURE GATE CLIENT] Error:', error);
     return {
-      hasAccess: false,
-      tier: 'basic',
-      message: 'Unable to check feature access',
+      hasAccess: true,
+      tier: 'premium',
+      message: undefined,
     };
   }
 }
