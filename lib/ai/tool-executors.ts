@@ -6,6 +6,8 @@ import {
   ToolName,
   MenuUpdatePricesParams,
   MenuToggleAvailabilityParams,
+  MenuCreateItemParams,
+  MenuDeleteItemParams,
   InventoryAdjustStockParams,
   OrdersMarkServedParams,
   OrdersCompleteParams,
@@ -723,6 +725,117 @@ export async function executeKDSSuggestOptimization(
 // Tool Router
 // ============================================================================
 
+export async function executeMenuCreateItem(
+  params: MenuCreateItemParams,
+  venueId: string,
+  userId: string,
+  preview: boolean
+): Promise<AIPreviewDiff | AIExecutionResult> {
+  const supabase = await createClient();
+
+  // Preview mode
+  if (preview) {
+    return {
+      toolName: "menu.create_item",
+      before: [],
+      after: [{
+        id: "new-item",
+        name: params.name,
+        price: params.price,
+        description: params.description,
+        categoryId: params.categoryId,
+        available: params.available,
+      }],
+      impact: {
+        itemsAffected: 1,
+        estimatedRevenue: 0,
+        description: `Will create a new menu item: ${params.name} for £${params.price.toFixed(2)}`,
+      },
+    };
+  }
+
+  // Execute - create the menu item
+  const { data: newItem, error } = await supabase
+    .from("menu_items")
+    .insert({
+      venue_id: venueId,
+      name: params.name,
+      description: params.description,
+      price: params.price,
+      category_id: params.categoryId,
+      available: params.available,
+      image_url: params.imageUrl,
+      allergens: params.allergens,
+      created_by: userId,
+    })
+    .select("id, name, price")
+    .single();
+
+  if (error) {
+    throw new AIAssistantError("Failed to create menu item", "EXECUTION_FAILED", error);
+  }
+
+  return {
+    success: true,
+    toolName: "menu.create_item",
+    result: newItem,
+    auditId: "", // Will be set by calling function
+  };
+}
+
+export async function executeMenuDeleteItem(
+  params: MenuDeleteItemParams,
+  venueId: string,
+  userId: string,
+  preview: boolean
+): Promise<AIPreviewDiff | AIExecutionResult> {
+  const supabase = await createClient();
+
+  // Get current item details
+  const { data: currentItem } = await supabase
+    .from("menu_items")
+    .select("id, name, price")
+    .eq("id", params.itemId)
+    .eq("venue_id", venueId)
+    .single();
+
+  if (!currentItem) {
+    throw new AIAssistantError("Menu item not found", "INVALID_PARAMS");
+  }
+
+  // Preview mode
+  if (preview) {
+    return {
+      toolName: "menu.delete_item",
+      before: [currentItem],
+      after: [],
+      impact: {
+        itemsAffected: 1,
+        estimatedRevenue: -currentItem.price,
+        description: `Will delete menu item: ${currentItem.name} (${params.reason || "No reason provided"})`,
+      },
+    };
+  }
+
+  // Execute - delete the menu item
+  const { error } = await supabase
+    .from("menu_items")
+    .delete()
+    .eq("id", params.itemId)
+    .eq("venue_id", venueId);
+
+  if (error) {
+    throw new AIAssistantError("Failed to delete menu item", "EXECUTION_FAILED", error);
+  }
+
+  return {
+    success: true,
+    toolName: "menu.delete_item",
+    result: { deletedItem: currentItem, reason: params.reason },
+    auditId: "", // Will be set by calling function
+  };
+}
+
 // ============================================================================
 // Navigation Tools
 // ============================================================================
@@ -776,13 +889,139 @@ export async function executeNavigationGoToPage(
   // Execute - return navigation instruction
   return {
     success: true,
-    message: `Navigating to ${page} page`,
-    data: {
+    toolName: "navigation.go_to_page",
+    result: {
       action: "navigate",
       route: targetRoute,
       page: page,
+      message: `Navigating to ${page} page`,
     },
+    auditId: "", // Will be set by the calling function
   };
+}
+
+export async function executeAnalyticsGetStats(
+  params: any,
+  venueId: string,
+  userId: string,
+  preview: boolean
+): Promise<AIPreviewDiff | AIExecutionResult> {
+  const supabase = await createClient();
+
+  // Preview mode
+  if (preview) {
+    return {
+      toolName: "analytics.get_stats",
+      before: [],
+      after: [],
+      impact: {
+        itemsAffected: 0,
+        estimatedRevenue: 0,
+        description: `Will generate ${params.metric} statistics for ${params.timeRange}`,
+      },
+    };
+  }
+
+  // Execute - get analytics data
+  let stats = {};
+  
+  try {
+    const { data: orders } = await supabase
+      .from("orders")
+      .select("*")
+      .eq("venue_id", venueId)
+      .gte("created_at", getTimeRangeStart(params.timeRange));
+
+    switch (params.metric) {
+      case "revenue":
+        stats = {
+          total: orders?.reduce((sum, order) => sum + (order.total_amount || 0), 0) || 0,
+          count: orders?.length || 0,
+          average: orders?.length ? (orders.reduce((sum, order) => sum + (order.total_amount || 0), 0) / orders.length) : 0,
+        };
+        break;
+      case "orders_count":
+        stats = { count: orders?.length || 0 };
+        break;
+      case "top_items":
+        // This would require joining with order_items table
+        stats = { message: "Top items analysis requires order_items data" };
+        break;
+      default:
+        stats = { message: `Metric ${params.metric} not yet implemented` };
+    }
+  } catch (error) {
+    throw new AIAssistantError("Failed to get analytics data", "EXECUTION_FAILED", error);
+  }
+
+  return {
+    success: true,
+    toolName: "analytics.get_stats",
+    result: stats,
+    auditId: "", // Will be set by calling function
+  };
+}
+
+export async function executeAnalyticsCreateReport(
+  params: any,
+  venueId: string,
+  userId: string,
+  preview: boolean
+): Promise<AIPreviewDiff | AIExecutionResult> {
+  // Preview mode
+  if (preview) {
+    return {
+      toolName: "analytics.create_report",
+      before: [],
+      after: [],
+      impact: {
+        itemsAffected: 0,
+        estimatedRevenue: 0,
+        description: `Will create report "${params.name}" with ${params.metrics.length} metrics in ${params.format} format`,
+      },
+    };
+  }
+
+  // Execute - create report (simplified implementation)
+  const report = {
+    name: params.name,
+    metrics: params.metrics,
+    timeRange: params.timeRange,
+    format: params.format,
+    createdAt: new Date().toISOString(),
+    venueId,
+    createdBy: userId,
+  };
+
+  return {
+    success: true,
+    toolName: "analytics.create_report",
+    result: report,
+    auditId: "", // Will be set by calling function
+  };
+}
+
+// Helper function to get time range start
+function getTimeRangeStart(timeRange: string): string {
+  const now = new Date();
+  switch (timeRange) {
+    case "today":
+      return new Date(now.getFullYear(), now.getMonth(), now.getDate()).toISOString();
+    case "yesterday":
+      const yesterday = new Date(now);
+      yesterday.setDate(yesterday.getDate() - 1);
+      return new Date(yesterday.getFullYear(), yesterday.getMonth(), yesterday.getDate()).toISOString();
+    case "week":
+      return new Date(now.getTime() - 7 * 24 * 60 * 60 * 1000).toISOString();
+    case "month":
+      return new Date(now.getTime() - 30 * 24 * 60 * 60 * 1000).toISOString();
+    case "quarter":
+      return new Date(now.getTime() - 90 * 24 * 60 * 60 * 1000).toISOString();
+    case "year":
+      return new Date(now.getTime() - 365 * 24 * 60 * 60 * 1000).toISOString();
+    default:
+      return new Date(now.getTime() - 7 * 24 * 60 * 60 * 1000).toISOString();
+  }
 }
 
 export async function executeTool(
@@ -798,6 +1037,12 @@ export async function executeTool(
     
     case "menu.toggle_availability":
       return executeMenuToggleAvailability(params, venueId, userId, preview);
+    
+    case "menu.create_item":
+      return executeMenuCreateItem(params, venueId, userId, preview);
+    
+    case "menu.delete_item":
+      return executeMenuDeleteItem(params, venueId, userId, preview);
     
     case "menu.translate":
       return executeMenuTranslate(params, venueId, userId, preview);
@@ -820,8 +1065,14 @@ export async function executeTool(
     case "analytics.get_insights":
       return executeAnalyticsGetInsights(params, venueId, userId, preview);
     
+    case "analytics.get_stats":
+      return executeAnalyticsGetStats(params, venueId, userId, preview);
+    
     case "analytics.export":
       return executeAnalyticsExport(params, venueId, userId, preview);
+    
+    case "analytics.create_report":
+      return executeAnalyticsCreateReport(params, venueId, userId, preview);
     
     case "discounts.create":
       return executeDiscountsCreate(params, venueId, userId, preview);
