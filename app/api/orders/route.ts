@@ -92,6 +92,10 @@ async function createKDSTickets(supabase: any, order: any) {
     }
     
     // Get the expo station (default for all items)
+    if (!existingStations || existingStations.length === 0) {
+      throw new Error('No KDS stations available');
+    }
+    
     const expoStation = existingStations.find((s: any) => s.station_type === 'expo') || existingStations[0];
     
     if (!expoStation) {
