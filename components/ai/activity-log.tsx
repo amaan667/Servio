@@ -7,7 +7,7 @@ import { useEffect, useState } from "react";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { ScrollArea } from "@/components/ui/scroll-area";
-import { Sparkles, Clock, Check, X, Eye } from "lucide-react";
+import { Sparkles, Clock, Check, X, Eye, Keyboard } from "lucide-react";
 import { formatDistanceToNow } from "date-fns";
 import { AIActionAudit } from "@/types/ai-assistant";
 
@@ -95,12 +95,19 @@ export function AIActivityLog({ venueId, limit = 20 }: ActivityLogProps) {
       <CardContent>
         <ScrollArea className="h-[400px] pr-4">
           {activities.length === 0 ? (
-            <div className="text-center py-8 text-muted-foreground">
-              <Sparkles className="h-12 w-12 mx-auto mb-3 opacity-20" />
-              <p className="text-sm">No AI assistant activity yet</p>
-              <p className="text-xs mt-1">
-                Press ⌘K to start using the AI assistant
-              </p>
+            <div className="text-center py-8">
+              <div className="relative inline-block mb-4">
+                <Sparkles className="h-12 w-12 mx-auto text-purple-500 opacity-30" />
+                <Keyboard className="h-6 w-6 absolute -bottom-1 -right-1 text-purple-600" />
+              </div>
+              <p className="text-sm font-medium mb-2">No AI assistant activity yet</p>
+              <div className="flex items-center justify-center gap-2 text-sm text-muted-foreground">
+                <span>Press</span>
+                <kbd className="px-2 py-1 bg-purple-100 dark:bg-purple-900/30 text-purple-700 dark:text-purple-300 rounded font-mono text-xs border border-purple-200 dark:border-purple-800">⌘K</kbd>
+                <span>or click the floating</span>
+                <Sparkles className="h-4 w-4 text-purple-500" />
+                <span>button</span>
+              </div>
             </div>
           ) : (
             <div className="space-y-3">

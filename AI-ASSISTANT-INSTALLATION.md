@@ -76,7 +76,7 @@ export default function DashboardLayout({
 }
 ```
 
-Now users can press `⌘K` (Mac) or `Ctrl-K` (Windows/Linux) anywhere to open the AI assistant!
+Now users can press `⌘K` (Mac) or `Ctrl-K` (Windows/Linux) or click the floating ✨ AI button in the bottom-right corner to open the AI assistant!
 
 ## Step 5: Add Contextual Assistants (Optional)
 
@@ -223,7 +223,7 @@ export default function SettingsPage({
 
 2. **Navigate to any dashboard page**
 
-3. **Press `⌘K` (or `Ctrl-K`)** to open the command palette
+3. **Press `⌘K` (or `Ctrl-K`) or click the floating ✨ AI button** to open the command palette
 
 4. **Try a simple command:**
    ```
@@ -238,7 +238,7 @@ export default function SettingsPage({
 
 - [ ] Database migration completed successfully
 - [ ] `OPENAI_API_KEY` set in `.env`
-- [ ] Command palette opens with `⌘K` / `Ctrl-K`
+- [ ] Command palette opens with `⌘K` / `Ctrl-K` or floating ✨ AI button
 - [ ] AI can generate plans from natural language
 - [ ] Preview diffs show before/after changes
 - [ ] Execution works and updates database
@@ -326,5 +326,5 @@ If you encounter issues:
 
 ---
 
-**You're all set! Press ⌘K and start using the AI assistant.**
+**You're all set! Press ⌘K or click the floating ✨ AI button and start using the AI assistant.**
 

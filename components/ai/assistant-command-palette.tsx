@@ -17,6 +17,7 @@ import { Badge } from "@/components/ui/badge";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Loader2, Sparkles, AlertTriangle, Check, X } from "lucide-react";
 import { AIPlanResponse, AIPreviewDiff } from "@/types/ai-assistant";
+import { AIAssistantFloat } from "./ai-assistant-float";
 
 interface AssistantCommandPaletteProps {
   venueId: string;
@@ -162,17 +163,21 @@ export function AssistantCommandPalette({
   };
 
   return (
-    <Dialog open={open} onOpenChange={setOpen}>
-      <DialogContent className="max-w-3xl max-h-[80vh] flex flex-col">
-        <DialogHeader>
-          <DialogTitle className="flex items-center gap-2">
-            <Sparkles className="h-5 w-5 text-purple-500" />
-            Servio AI Assistant
-          </DialogTitle>
-          <DialogDescription>
-            Ask me anything about your restaurant operations
-          </DialogDescription>
-        </DialogHeader>
+    <>
+      {/* Floating AI Assistant Button */}
+      <AIAssistantFloat onClick={() => setOpen(true)} />
+      
+      <Dialog open={open} onOpenChange={setOpen}>
+        <DialogContent className="max-w-3xl max-h-[80vh] flex flex-col">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2">
+              <Sparkles className="h-5 w-5 text-purple-500" />
+              Servio AI Assistant
+            </DialogTitle>
+            <DialogDescription>
+              Ask me anything about your restaurant operations
+            </DialogDescription>
+          </DialogHeader>
 
         <div className="flex-1 flex flex-col gap-4 overflow-hidden">
           {/* Input */}
@@ -375,6 +380,7 @@ export function AssistantCommandPalette({
         )}
       </DialogContent>
     </Dialog>
+    </>
   );
 }
 

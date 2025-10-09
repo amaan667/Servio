@@ -13,7 +13,7 @@ echo "OPENAI_API_KEY=sk-proj-your-key" >> .env
 npm run dev
 ```
 
-That's it! Press `⌘K` (or `Ctrl-K`) to start using the AI assistant.
+That's it! Press `⌘K` (or `Ctrl-K`) or click the floating ✨ AI button in the bottom-right corner to start using the AI assistant.
 
 ## 💡 What Can It Do?
 
@@ -157,7 +157,7 @@ case "my.tool":
 
 ### Manual Testing
 1. Open dashboard
-2. Press `⌘K`
+2. Press `⌘K` or click the floating ✨ AI button
 3. Type: "Show top 5 selling items"
 4. Review plan and preview
 5. Confirm execution
