@@ -32,8 +32,13 @@ export async function POST(request: NextRequest) {
       );
     }
 
+    // Handle organizations as single object (foreign key relation)
+    const organization = Array.isArray(venue.organizations) 
+      ? venue.organizations[0] 
+      : venue.organizations;
+
     // Grandfathered accounts always allowed
-    if (venue.organizations.is_grandfathered) {
+    if (organization?.is_grandfathered) {
       return NextResponse.json({
         allowed: true,
         tier: "grandfathered",
@@ -90,7 +95,7 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({
       allowed: true,
       limits,
-      tier: venue.organizations.subscription_tier,
+      tier: organization?.subscription_tier,
     });
   } catch (error: any) {
     console.error("[TIER CHECK] Error:", error);

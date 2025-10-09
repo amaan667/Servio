@@ -3,6 +3,11 @@ import { NextRequest, NextResponse } from "next/server";
 import Stripe from "stripe";
 import { createClient } from "@/lib/supabase/server";
 
+// Extend Invoice type to include subscription property
+interface InvoiceWithSubscription extends Stripe.Invoice {
+  subscription?: string | Stripe.Subscription | null;
+}
+
 const stripe = new Stripe(process.env.STRIPE_SECRET_KEY!, {
   apiVersion: "2025-08-27.basil",
 });
@@ -223,10 +228,11 @@ async function handleSubscriptionDeleted(subscription: Stripe.Subscription) {
 async function handlePaymentSucceeded(invoice: Stripe.Invoice) {
   const supabase = await createClient();
 
-  const subscription = (invoice as any).subscription;
-  const subscriptionId = typeof subscription === 'string' 
-    ? subscription 
-    : subscription?.id;
+  // Access subscription - can be string (ID) or expanded Subscription object
+  const invoiceWithSub = invoice as InvoiceWithSubscription;
+  const subscriptionId = typeof invoiceWithSub.subscription === 'string' 
+    ? invoiceWithSub.subscription 
+    : invoiceWithSub.subscription?.id;
 
   if (!subscriptionId) {
     return;
@@ -254,10 +260,11 @@ async function handlePaymentSucceeded(invoice: Stripe.Invoice) {
 async function handlePaymentFailed(invoice: Stripe.Invoice) {
   const supabase = await createClient();
 
-  const subscription = (invoice as any).subscription;
-  const subscriptionId = typeof subscription === 'string' 
-    ? subscription 
-    : subscription?.id;
+  // Access subscription - can be string (ID) or expanded Subscription object
+  const invoiceWithSub = invoice as InvoiceWithSubscription;
+  const subscriptionId = typeof invoiceWithSub.subscription === 'string' 
+    ? invoiceWithSub.subscription 
+    : invoiceWithSub.subscription?.id;
 
   if (!subscriptionId) {
     return;

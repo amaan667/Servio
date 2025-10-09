@@ -275,6 +275,9 @@ export async function executeOrdersMarkServed(
     );
   }
 
+  // Handle tables as single object (foreign key relation)
+  const table = order.tables && (Array.isArray(order.tables) ? order.tables[0] : order.tables);
+
   if (preview) {
     return {
       toolName: "orders.mark_served",
@@ -282,7 +285,7 @@ export async function executeOrdersMarkServed(
       after: { status: "served" },
       impact: {
         itemsAffected: 1,
-        description: `Order will be marked as served${order.tables ? ` for table ${order.tables.table_number}` : ""}`,
+        description: `Order will be marked as served${table ? ` for table ${table.table_number}` : ""}`,
       },
     };
   }

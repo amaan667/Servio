@@ -121,10 +121,10 @@ export function UpgradeModal({
               <Card
                 key={tierKey}
                 className={`relative ${
-                  tier.popular ? "border-2 border-purple-500 shadow-lg" : ""
+                  'popular' in tier && tier.popular ? "border-2 border-purple-500 shadow-lg" : ""
                 }`}
               >
-                {tier.popular && (
+                {'popular' in tier && tier.popular && (
                   <div className="absolute -top-3 left-1/2 -translate-x-1/2">
                     <Badge className="bg-purple-500 hover:bg-purple-600">
                       Most Popular
@@ -151,7 +151,7 @@ export function UpgradeModal({
                         onClick={() => handleUpgrade(tierKey)}
                         disabled={loading !== null}
                         className="w-full mb-4"
-                        variant={tier.popular ? "default" : "outline"}
+                        variant={'popular' in tier && tier.popular ? "default" : "outline"}
                       >
                         {loading === tierKey ? (
                           <>

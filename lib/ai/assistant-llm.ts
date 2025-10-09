@@ -16,10 +16,20 @@ import {
   DEFAULT_GUARDRAILS,
 } from "@/types/ai-assistant";
 
-// Initialize OpenAI client
-const openai = new OpenAI({
-  apiKey: process.env.OPENAI_API_KEY!,
-});
+// Lazy initialize OpenAI client
+let openai: OpenAI | null = null;
+
+function getOpenAI() {
+  if (!openai) {
+    if (!process.env.OPENAI_API_KEY) {
+      throw new Error("OPENAI_API_KEY environment variable is not set");
+    }
+    openai = new OpenAI({
+      apiKey: process.env.OPENAI_API_KEY,
+    });
+  }
+  return openai;
+}
 
 // Model to use (GPT-4o per user preference)
 const MODEL = "gpt-4o-2024-08-06"; // [[memory:5998613]]
@@ -160,7 +170,7 @@ export async function planAssistantAction(
   const systemPrompt = buildSystemPrompt(context, dataSummaries);
 
   try {
-    const completion = await openai.beta.chat.completions.parse({
+    const completion = await getOpenAI().chat.completions.create({
       model: MODEL,
       messages: [
         { role: "system", content: systemPrompt },
@@ -168,16 +178,21 @@ export async function planAssistantAction(
       ],
       response_format: zodResponseFormat(AIPlanSchema, "assistant_plan"),
       temperature: 0.1, // Low temperature for consistent, safe outputs
-    });
+    }) as any;
 
-    const plan = completion.choices[0].message.parsed;
+    // Handle parsed response (either from .parsed or by parsing content)
+    let plan = completion.choices[0].message.parsed;
+    
+    if (!plan && completion.choices[0].message.content) {
+      plan = JSON.parse(completion.choices[0].message.content);
+    }
 
     if (!plan) {
       throw new Error("Failed to parse AI response");
     }
 
     // Validate each tool call against its schema
-    const validatedTools = plan.tools.map((tool) => {
+    const validatedTools = plan.tools.map((tool: any) => {
       const schema = TOOL_SCHEMAS[tool.name as ToolName];
       if (!schema) {
         throw new Error(`Unknown tool: ${tool.name}`);
@@ -222,7 +237,7 @@ Parameters: ${JSON.stringify(params, null, 2)}
 User Role: ${context.userRole}`;
 
   try {
-    const completion = await openai.chat.completions.create({
+    const completion = await getOpenAI().chat.completions.create({
       model: MODEL,
       messages: [
         { role: "system", content: systemPrompt },
@@ -254,7 +269,7 @@ Focus on common tasks, optimizations, or insights based on the data.`;
   const userPrompt = `Data: ${JSON.stringify(dataSummary, null, 2)}`;
 
   try {
-    const completion = await openai.chat.completions.create({
+    const completion = await getOpenAI().chat.completions.create({
       model: MODEL,
       messages: [
         { role: "system", content: systemPrompt },

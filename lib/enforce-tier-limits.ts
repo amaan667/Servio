@@ -28,7 +28,10 @@ export async function enforceResourceLimit(
     .eq("venue_id", venueId)
     .single();
 
-  if (venue?.organizations?.is_grandfathered) {
+  // Handle organizations as single object (foreign key relation)
+  const organization = venue?.organizations && (Array.isArray(venue.organizations) ? venue.organizations[0] : venue.organizations);
+
+  if (organization?.is_grandfathered) {
     return { allowed: true, tier: "grandfathered" };
   }
 
@@ -78,7 +81,10 @@ export async function enforceFeatureAccess(
     .eq("venue_id", venueId)
     .single();
 
-  if (venue?.organizations?.is_grandfathered) {
+  // Handle organizations as single object (foreign key relation)
+  const organization = venue?.organizations && (Array.isArray(venue.organizations) ? venue.organizations[0] : venue.organizations);
+
+  if (organization?.is_grandfathered) {
     return { allowed: true, tier: "grandfathered" };
   }
 
@@ -120,6 +126,9 @@ export async function getVenueOrganization(venueId: string) {
     .eq("venue_id", venueId)
     .single();
 
-  return venue?.organizations || null;
+  // Handle organizations as single object (foreign key relation)
+  const organization = venue?.organizations && (Array.isArray(venue.organizations) ? venue.organizations[0] : venue.organizations);
+
+  return organization || null;
 }
 
