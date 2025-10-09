@@ -1,9 +1,14 @@
 -- Kitchen Display System (KDS) Schema
 -- This schema supports station-based ticket management for kitchen operations
 
+-- Drop existing tables if they exist (in reverse dependency order)
+DROP TABLE IF EXISTS kds_station_categories CASCADE;
+DROP TABLE IF EXISTS kds_tickets CASCADE;
+DROP TABLE IF EXISTS kds_stations CASCADE;
+
 -- KDS Stations Table
 -- Represents different preparation stations (Grill, Fryer, Barista, etc.)
-CREATE TABLE IF NOT EXISTS kds_stations (
+CREATE TABLE kds_stations (
   id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
   venue_id TEXT NOT NULL REFERENCES venues(venue_id) ON DELETE CASCADE,
   station_name TEXT NOT NULL,
@@ -18,7 +23,7 @@ CREATE TABLE IF NOT EXISTS kds_stations (
 
 -- KDS Tickets Table
 -- Individual preparation tickets for each order item at specific stations
-CREATE TABLE IF NOT EXISTS kds_tickets (
+CREATE TABLE kds_tickets (
   id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
   venue_id TEXT NOT NULL REFERENCES venues(venue_id) ON DELETE CASCADE,
   order_id UUID NOT NULL REFERENCES orders(id) ON DELETE CASCADE,
@@ -48,14 +53,14 @@ CREATE TABLE IF NOT EXISTS kds_tickets (
 );
 
 -- Indexes for performance
-CREATE INDEX IF NOT EXISTS idx_kds_tickets_venue ON kds_tickets(venue_id);
-CREATE INDEX IF NOT EXISTS idx_kds_tickets_order ON kds_tickets(order_id);
-CREATE INDEX IF NOT EXISTS idx_kds_tickets_station ON kds_tickets(station_id);
-CREATE INDEX IF NOT EXISTS idx_kds_tickets_status ON kds_tickets(status);
-CREATE INDEX IF NOT EXISTS idx_kds_tickets_created ON kds_tickets(created_at);
+CREATE INDEX idx_kds_tickets_venue ON kds_tickets(venue_id);
+CREATE INDEX idx_kds_tickets_order ON kds_tickets(order_id);
+CREATE INDEX idx_kds_tickets_station ON kds_tickets(station_id);
+CREATE INDEX idx_kds_tickets_status ON kds_tickets(status);
+CREATE INDEX idx_kds_tickets_created ON kds_tickets(created_at);
 
 -- Station category mapping (optional, for auto-routing items to stations)
-CREATE TABLE IF NOT EXISTS kds_station_categories (
+CREATE TABLE kds_station_categories (
   id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
   venue_id TEXT NOT NULL REFERENCES venues(venue_id) ON DELETE CASCADE,
   station_id UUID NOT NULL REFERENCES kds_stations(id) ON DELETE CASCADE,
@@ -65,6 +70,8 @@ CREATE TABLE IF NOT EXISTS kds_station_categories (
 );
 
 -- Function to update updated_at timestamp
+DROP FUNCTION IF EXISTS update_kds_updated_at();
+
 CREATE OR REPLACE FUNCTION update_kds_updated_at()
 RETURNS TRIGGER AS $$
 BEGIN
@@ -73,7 +80,10 @@ BEGIN
 END;
 $$ LANGUAGE plpgsql;
 
--- Triggers for updated_at
+-- Triggers for updated_at (drop first if they exist)
+DROP TRIGGER IF EXISTS trg_kds_stations_updated_at ON kds_stations;
+DROP TRIGGER IF EXISTS trg_kds_tickets_updated_at ON kds_tickets;
+
 CREATE TRIGGER trg_kds_stations_updated_at
   BEFORE UPDATE ON kds_stations
   FOR EACH ROW
@@ -85,6 +95,8 @@ CREATE TRIGGER trg_kds_tickets_updated_at
   EXECUTE FUNCTION update_kds_updated_at();
 
 -- Function to automatically update order status when all tickets are ready
+DROP FUNCTION IF EXISTS update_order_status_from_kds();
+
 CREATE OR REPLACE FUNCTION update_order_status_from_kds()
 RETURNS TRIGGER AS $$
 DECLARE
@@ -129,13 +141,17 @@ BEGIN
 END;
 $$ LANGUAGE plpgsql;
 
--- Trigger to sync order status with KDS tickets
+-- Trigger to sync order status with KDS tickets (drop first if exists)
+DROP TRIGGER IF EXISTS trg_sync_order_status ON kds_tickets;
+
 CREATE TRIGGER trg_sync_order_status
   AFTER UPDATE OF status ON kds_tickets
   FOR EACH ROW
   EXECUTE FUNCTION update_order_status_from_kds();
 
 -- Function to create KDS tickets from order items
+DROP FUNCTION IF EXISTS create_kds_tickets_from_order();
+
 CREATE OR REPLACE FUNCTION create_kds_tickets_from_order()
 RETURNS TRIGGER AS $$
 DECLARE
@@ -235,13 +251,17 @@ BEGIN
 END;
 $$ LANGUAGE plpgsql;
 
--- Trigger to auto-create KDS tickets when orders are placed
+-- Trigger to auto-create KDS tickets when orders are placed (drop first if exists)
+DROP TRIGGER IF EXISTS trg_create_kds_tickets ON orders;
+
 CREATE TRIGGER trg_create_kds_tickets
   AFTER INSERT ON orders
   FOR EACH ROW
   EXECUTE FUNCTION create_kds_tickets_from_order();
 
 -- Default stations setup function (call this after creating a new venue)
+DROP FUNCTION IF EXISTS setup_default_kds_stations(TEXT);
+
 CREATE OR REPLACE FUNCTION setup_default_kds_stations(p_venue_id TEXT)
 RETURNS void AS $$
 BEGIN
@@ -263,6 +283,13 @@ ALTER TABLE kds_tickets ENABLE ROW LEVEL SECURITY;
 ALTER TABLE kds_station_categories ENABLE ROW LEVEL SECURITY;
 
 -- RLS Policies (allow venue owners and service role to access)
+DROP POLICY IF EXISTS "Users can view their venue's KDS stations" ON kds_stations;
+DROP POLICY IF EXISTS "Users can manage their venue's KDS stations" ON kds_stations;
+DROP POLICY IF EXISTS "Users can view their venue's KDS tickets" ON kds_tickets;
+DROP POLICY IF EXISTS "Users can manage their venue's KDS tickets" ON kds_tickets;
+DROP POLICY IF EXISTS "Users can view their venue's station categories" ON kds_station_categories;
+DROP POLICY IF EXISTS "Users can manage their venue's station categories" ON kds_station_categories;
+
 CREATE POLICY "Users can view their venue's KDS stations"
   ON kds_stations FOR SELECT
   USING (venue_id IN (SELECT venue_id FROM venues WHERE owner_id = auth.uid()));
@@ -288,6 +315,10 @@ CREATE POLICY "Users can manage their venue's station categories"
   USING (venue_id IN (SELECT venue_id FROM venues WHERE owner_id = auth.uid()));
 
 -- Service role policies (bypass RLS)
+DROP POLICY IF EXISTS "Service role has full access to KDS stations" ON kds_stations;
+DROP POLICY IF EXISTS "Service role has full access to KDS tickets" ON kds_tickets;
+DROP POLICY IF EXISTS "Service role has full access to station categories" ON kds_station_categories;
+
 CREATE POLICY "Service role has full access to KDS stations"
   ON kds_stations FOR ALL
   TO service_role
