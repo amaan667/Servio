@@ -38,7 +38,11 @@ function bad(msg: string, status = 400) {
 
 export async function POST(req: Request) {
   try {
+    console.log('[ORDER CREATION DEBUG] ===== ORDER CREATION STARTED =====');
+    console.log('[ORDER CREATION DEBUG] Timestamp:', new Date().toISOString());
+    
     const body = (await req.json()) as Partial<OrderPayload>;
+    console.log('[ORDER CREATION DEBUG] Request body:', JSON.stringify(body, null, 2));
 
     
     if (!body.venue_id || typeof body.venue_id !== 'string') {
@@ -289,7 +293,15 @@ export async function POST(req: Request) {
     }
 
     // Final validation before insertion
-    console.log('[ORDER API] Creating new order for:', payload.customer_name, 'at table', payload.table_number);
+    console.log('[ORDER CREATION DEBUG] ===== CREATING NEW ORDER =====');
+    console.log('[ORDER CREATION DEBUG] Customer:', payload.customer_name);
+    console.log('[ORDER CREATION DEBUG] Table:', payload.table_number);
+    console.log('[ORDER CREATION DEBUG] Venue ID:', payload.venue_id);
+    console.log('[ORDER CREATION DEBUG] Payment status:', payload.payment_status);
+    console.log('[ORDER CREATION DEBUG] Payment method:', payload.payment_method);
+    console.log('[ORDER CREATION DEBUG] Source:', payload.source);
+    console.log('[ORDER CREATION DEBUG] Total amount:', payload.total_amount);
+    console.log('[ORDER CREATION DEBUG] Items count:', payload.items?.length || 0);
     
     const { data: inserted, error: insertErr } = await supabase
       .from('orders')
@@ -297,7 +309,13 @@ export async function POST(req: Request) {
       .select('*');
     
 
+    console.log('[ORDER CREATION DEBUG] Insert result:');
+    console.log('[ORDER CREATION DEBUG] - Inserted data:', inserted);
+    console.log('[ORDER CREATION DEBUG] - Insert error:', insertErr);
+
     if (insertErr) {
+      console.error('[ORDER CREATION DEBUG] ===== INSERT FAILED =====');
+      console.error('[ORDER CREATION DEBUG] Error details:', insertErr);
       
       // Try to provide more specific error messages
       let errorMessage = insertErr.message;
@@ -311,6 +329,22 @@ export async function POST(req: Request) {
       
       return bad(`Insert failed: ${errorMessage}`, 400);
     }
+
+    if (!inserted || inserted.length === 0) {
+      console.error('[ORDER CREATION DEBUG] ===== NO DATA INSERTED =====');
+      return bad('Order creation failed - no data returned', 500);
+    }
+
+    console.log('[ORDER CREATION DEBUG] ===== ORDER CREATED SUCCESSFULLY =====');
+    console.log('[ORDER CREATION DEBUG] Order ID:', inserted[0].id);
+    console.log('[ORDER CREATION DEBUG] Created order details:', {
+      id: inserted[0].id,
+      customer_name: inserted[0].customer_name,
+      table_number: inserted[0].table_number,
+      payment_status: inserted[0].payment_status,
+      payment_method: inserted[0].payment_method,
+      venue_id: inserted[0].venue_id
+    });
     
 
     // Note: items are embedded in orders payload in this schema; if you also mirror rows in order_items elsewhere, log success after that insert
@@ -396,6 +430,9 @@ export async function POST(req: Request) {
       source: orderSource, // Include the correctly determined source
       display_name: orderSource === 'counter' ? `Counter ${table_number}` : `Table ${table_number}` // Include display name for UI
     };
+    
+    console.log('[ORDER CREATION DEBUG] ===== RETURNING RESPONSE =====');
+    console.log('[ORDER CREATION DEBUG] Response data:', JSON.stringify(response, null, 2));
     
     // Log that real-time updates should be triggered
     
