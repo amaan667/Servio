@@ -147,12 +147,12 @@ export default function OrderSummary({ orderId, sessionId, orderData, isDemo = f
         
         if (sessionId) {
           // Fetch order by Stripe session ID
-          const res = await fetch(`/api/orders/verify?sessionId=${sessionId}`);
+          const res = await fetch(`/api/orders/by-session?sessionId=${sessionId}`);
           if (res.ok) {
             const data = await res.json();
             setOrder(data.order);
           } else {
-            throw new Error('Failed to verify order');
+            throw new Error('Failed to fetch order by session');
           }
         } else if (orderId) {
           // Fetch order by ID
