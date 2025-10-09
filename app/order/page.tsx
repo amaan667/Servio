@@ -719,8 +719,8 @@ export default function CustomerOrderPage() {
           .filter((item) => item.specialInstructions)
           .map((item) => `${item.name}: ${item.specialInstructions}`)
           .join("; "),
-        orderId: orderResult.data?.id || orderResult.id, // Include the created order ID
-        orderNumber: orderResult.data?.order_number || orderResult.order_number,
+        orderId: orderResult.order?.id, // Include the created order ID
+        orderNumber: orderResult.order?.order_number,
         sessionId: sessionId, // Include session ID for resume functionality
         orderType: orderType, // Include order type for source determination
         isDemo: isDemo, // Include demo flag
@@ -744,8 +744,8 @@ export default function CustomerOrderPage() {
           image: (item as any).image || null,
         })),
         total: getTotalPrice(),
-        orderId: orderResult.data?.id || orderResult.id,
-        orderNumber: orderResult.data?.order_number || orderResult.order_number,
+        orderId: orderResult.order?.id,
+        orderNumber: orderResult.order?.order_number,
         sessionId: sessionId,
         paymentStatus: 'unpaid'
       };
