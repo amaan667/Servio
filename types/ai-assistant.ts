@@ -402,6 +402,12 @@ export const DEFAULT_GUARDRAILS: Record<ToolName, ToolGuardrails> = {
   "menu.toggle_availability": {
     maxBulkOperationSize: 100,
   },
+  "menu.create_item": {
+    maxBulkOperationSize: 10,
+  },
+  "menu.delete_item": {
+    requiresManagerApproval: true,
+  },
   "menu.translate": {},
   "inventory.adjust_stock": {
     maxBulkOperationSize: 50,
@@ -413,7 +419,11 @@ export const DEFAULT_GUARDRAILS: Record<ToolName, ToolGuardrails> = {
   "orders.mark_served": {},
   "orders.complete": {},
   "analytics.get_insights": {},
+  "analytics.get_stats": {},
   "analytics.export": {
+    requiresManagerApproval: true,
+  },
+  "analytics.create_report": {
     requiresManagerApproval: true,
   },
   "discounts.create": {
@@ -421,6 +431,7 @@ export const DEFAULT_GUARDRAILS: Record<ToolName, ToolGuardrails> = {
   },
   "kds.get_overdue": {},
   "kds.suggest_optimization": {},
+  "navigation.go_to_page": {},
 };
 
 // ============================================================================
