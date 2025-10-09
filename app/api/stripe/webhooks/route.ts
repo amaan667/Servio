@@ -223,14 +223,16 @@ async function handleSubscriptionDeleted(subscription: Stripe.Subscription) {
 async function handlePaymentSucceeded(invoice: Stripe.Invoice) {
   const supabase = await createClient();
 
-  const subscription = invoice.subscription as string;
+  const subscriptionId = typeof invoice.subscription === 'string' 
+    ? invoice.subscription 
+    : invoice.subscription?.id;
 
-  if (!subscription) {
+  if (!subscriptionId) {
     return;
   }
 
   // Get subscription details
-  const stripeSubscription = await stripe.subscriptions.retrieve(subscription);
+  const stripeSubscription = await stripe.subscriptions.retrieve(subscriptionId);
   const organizationId = stripeSubscription.metadata?.organization_id;
 
   if (!organizationId) {
@@ -251,14 +253,16 @@ async function handlePaymentSucceeded(invoice: Stripe.Invoice) {
 async function handlePaymentFailed(invoice: Stripe.Invoice) {
   const supabase = await createClient();
 
-  const subscription = invoice.subscription as string;
+  const subscriptionId = typeof invoice.subscription === 'string' 
+    ? invoice.subscription 
+    : invoice.subscription?.id;
 
-  if (!subscription) {
+  if (!subscriptionId) {
     return;
   }
 
   // Get subscription details
-  const stripeSubscription = await stripe.subscriptions.retrieve(subscription);
+  const stripeSubscription = await stripe.subscriptions.retrieve(subscriptionId);
   const organizationId = stripeSubscription.metadata?.organization_id;
 
   if (!organizationId) {
