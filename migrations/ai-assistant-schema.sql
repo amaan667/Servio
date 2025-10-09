@@ -8,8 +8,8 @@
 
 CREATE TABLE IF NOT EXISTS ai_action_audit (
   id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-  venue_id UUID NOT NULL REFERENCES venues(id) ON DELETE CASCADE,
-  user_id UUID NOT NULL REFERENCES auth.users(id) ON DELETE CASCADE,
+  venue_id UUID NOT NULL,
+  user_id UUID NOT NULL,
   
   -- What the user asked
   user_prompt TEXT NOT NULL,
@@ -41,7 +41,7 @@ CREATE TABLE IF NOT EXISTS ai_action_audit (
 
 CREATE TABLE IF NOT EXISTS ai_automations (
   id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-  venue_id UUID NOT NULL REFERENCES venues(id) ON DELETE CASCADE,
+  venue_id UUID NOT NULL,
   
   -- Automation config
   name TEXT NOT NULL,
@@ -63,7 +63,7 @@ CREATE TABLE IF NOT EXISTS ai_automations (
   last_result JSONB,
   
   -- Metadata
-  created_by UUID REFERENCES auth.users(id),
+  created_by UUID,
   created_at TIMESTAMPTZ DEFAULT NOW(),
   updated_at TIMESTAMPTZ DEFAULT NOW()
 );
@@ -75,7 +75,7 @@ CREATE TABLE IF NOT EXISTS ai_automations (
 
 CREATE TABLE IF NOT EXISTS ai_context_cache (
   id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-  venue_id UUID NOT NULL REFERENCES venues(id) ON DELETE CASCADE,
+  venue_id UUID NOT NULL,
   
   -- Cache key & data
   context_type TEXT NOT NULL, -- "menu_summary", "inventory_summary", "orders_summary"
@@ -130,8 +130,8 @@ CREATE TABLE IF NOT EXISTS ai_tool_definitions (
 
 CREATE TABLE IF NOT EXISTS ai_user_preferences (
   id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-  venue_id UUID NOT NULL REFERENCES venues(id) ON DELETE CASCADE,
-  user_id UUID NOT NULL REFERENCES auth.users(id) ON DELETE CASCADE,
+  venue_id UUID NOT NULL,
+  user_id UUID NOT NULL,
   
   -- Preferences
   preferences JSONB NOT NULL DEFAULT '{}', -- e.g., {"price_rounding": "0.95", "auto_approve_under": 10}
@@ -358,4 +358,77 @@ CREATE INDEX IF NOT EXISTS idx_automations_trigger ON ai_automations(trigger_typ
 
 -- AI Context Cache indexes
 CREATE INDEX IF NOT EXISTS idx_context_cache_expires ON ai_context_cache(expires_at);
+
+-- ============================================================================
+-- Add Foreign Key Constraints (only if tables exist)
+-- ============================================================================
+
+-- Add foreign keys for venues (if venues table exists)
+DO $$ 
+BEGIN
+  IF EXISTS (SELECT FROM information_schema.tables WHERE table_schema = 'public' AND table_name = 'venues') THEN
+    -- ai_action_audit foreign keys
+    IF NOT EXISTS (SELECT 1 FROM pg_constraint WHERE conname = 'ai_action_audit_venue_id_fkey') THEN
+      ALTER TABLE ai_action_audit 
+        ADD CONSTRAINT ai_action_audit_venue_id_fkey 
+        FOREIGN KEY (venue_id) REFERENCES venues(id) ON DELETE CASCADE;
+    END IF;
+    
+    -- ai_automations foreign keys
+    IF NOT EXISTS (SELECT 1 FROM pg_constraint WHERE conname = 'ai_automations_venue_id_fkey') THEN
+      ALTER TABLE ai_automations 
+        ADD CONSTRAINT ai_automations_venue_id_fkey 
+        FOREIGN KEY (venue_id) REFERENCES venues(id) ON DELETE CASCADE;
+    END IF;
+    
+    -- ai_context_cache foreign keys
+    IF NOT EXISTS (SELECT 1 FROM pg_constraint WHERE conname = 'ai_context_cache_venue_id_fkey') THEN
+      ALTER TABLE ai_context_cache 
+        ADD CONSTRAINT ai_context_cache_venue_id_fkey 
+        FOREIGN KEY (venue_id) REFERENCES venues(id) ON DELETE CASCADE;
+    END IF;
+    
+    -- ai_user_preferences foreign keys
+    IF NOT EXISTS (SELECT 1 FROM pg_constraint WHERE conname = 'ai_user_preferences_venue_id_fkey') THEN
+      ALTER TABLE ai_user_preferences 
+        ADD CONSTRAINT ai_user_preferences_venue_id_fkey 
+        FOREIGN KEY (venue_id) REFERENCES venues(id) ON DELETE CASCADE;
+    END IF;
+    
+    RAISE NOTICE 'Foreign key constraints for venues added successfully';
+  ELSE
+    RAISE WARNING 'venues table does not exist. Foreign key constraints not added. Run this migration again after creating the venues table.';
+  END IF;
+END $$;
+
+-- Add foreign keys for auth.users (if auth schema exists)
+DO $$ 
+BEGIN
+  IF EXISTS (SELECT FROM information_schema.tables WHERE table_schema = 'auth' AND table_name = 'users') THEN
+    -- ai_action_audit foreign keys
+    IF NOT EXISTS (SELECT 1 FROM pg_constraint WHERE conname = 'ai_action_audit_user_id_fkey') THEN
+      ALTER TABLE ai_action_audit 
+        ADD CONSTRAINT ai_action_audit_user_id_fkey 
+        FOREIGN KEY (user_id) REFERENCES auth.users(id) ON DELETE CASCADE;
+    END IF;
+    
+    -- ai_automations foreign keys
+    IF NOT EXISTS (SELECT 1 FROM pg_constraint WHERE conname = 'ai_automations_created_by_fkey') THEN
+      ALTER TABLE ai_automations 
+        ADD CONSTRAINT ai_automations_created_by_fkey 
+        FOREIGN KEY (created_by) REFERENCES auth.users(id) ON DELETE SET NULL;
+    END IF;
+    
+    -- ai_user_preferences foreign keys
+    IF NOT EXISTS (SELECT 1 FROM pg_constraint WHERE conname = 'ai_user_preferences_user_id_fkey') THEN
+      ALTER TABLE ai_user_preferences 
+        ADD CONSTRAINT ai_user_preferences_user_id_fkey 
+        FOREIGN KEY (user_id) REFERENCES auth.users(id) ON DELETE CASCADE;
+    END IF;
+    
+    RAISE NOTICE 'Foreign key constraints for auth.users added successfully';
+  ELSE
+    RAISE WARNING 'auth.users table does not exist. Foreign key constraints not added.';
+  END IF;
+END $$;
 
