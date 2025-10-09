@@ -73,7 +73,7 @@ const AIPlanSchema = z.object({
     .describe("Explanation of why this plan is safe and appropriate"),
   warnings: z
     .array(z.string())
-    .optional()
+    .nullable()
     .describe("Any warnings or considerations for the user"),
 });
 
@@ -183,7 +183,7 @@ Return a structured plan with:
 - intent: what the user wants
 - tools: ordered array of tool calls with exact params
 - reasoning: why this plan is safe and appropriate
-- warnings: any caveats or considerations (optional)`;
+- warnings: any caveats or considerations (null if none)`;
 }
 
 // ============================================================================

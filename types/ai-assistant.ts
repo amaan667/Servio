@@ -251,7 +251,7 @@ export interface AIPlanResponse {
   intent: string;
   tools: AIToolCall[];
   reasoning: string;
-  warnings?: string[];
+  warnings: string[] | null;
 }
 
 export interface AIPreviewDiff {
