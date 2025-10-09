@@ -279,7 +279,7 @@ ALTER TABLE ai_automations ENABLE ROW LEVEL SECURITY;
 ALTER TABLE ai_context_cache ENABLE ROW LEVEL SECURITY;
 ALTER TABLE ai_user_preferences ENABLE ROW LEVEL SECURITY;
 
--- Add RLS policies conditionally
+-- Add RLS policies conditionallyto them
 DO $$ 
 BEGIN
   IF EXISTS (SELECT FROM information_schema.tables WHERE table_schema = 'public' AND table_name = 'user_venue_roles') THEN
