@@ -4,7 +4,7 @@ import Link from 'next/link';
 import { useParams, usePathname } from 'next/navigation';
 import { useMemo } from 'react';
 import { Button } from "@/components/ui/button";
-import { Settings } from "lucide-react";
+import { Settings, CreditCard } from "lucide-react";
 import Image from "next/image";
 import { VenueSwitcher } from "@/components/venue-switcher";
 
@@ -25,6 +25,7 @@ export default function NavBarClient() {
 
   const homeHref = venueId ? `/dashboard/${venueId}` : '/dashboard';
   const settingsHref = venueId ? `/dashboard/${venueId}/settings` : '/dashboard';
+  const billingHref = venueId ? `/dashboard/${venueId}/billing` : '/dashboard';
 
 
   return (
@@ -48,6 +49,12 @@ export default function NavBarClient() {
       {/* Right - Properly spaced from right edge */}
       <div className="flex items-center space-x-4 pr-4">
         <Link href={homeHref} className="text-gray-900 hover:text-gray-900 font-medium">Home</Link>
+        <Link href={billingHref} className="text-gray-900 hover:text-gray-900">
+          <Button variant="outline" className="flex items-center">
+            <CreditCard className="mr-2 h-4 w-4" />
+            Billing
+          </Button>
+        </Link>
         <Link href={settingsHref} className="text-gray-900 hover:text-gray-900">
           <Button variant="outline" className="flex items-center">
             <Settings className="mr-2 h-4 w-4" />

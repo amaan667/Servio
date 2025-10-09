@@ -1,5 +1,7 @@
 import { NextResponse } from 'next/server';
 import { createAdminClient } from '@/lib/supabase/server';
+import { enforceResourceLimit } from '@/lib/enforce-tier-limits';
+import { createClient } from '@/lib/supabase/server';
 
 export const runtime = 'nodejs';
 
@@ -36,6 +38,21 @@ export async function POST(req: Request) {
     }
 
     if (!items.length) return NextResponse.json({ ok: false, error: 'no items to import' }, { status: 400 });
+
+    // Check tier limits before importing
+    const authSupa = await createClient();
+    const { data: { user } } = await authSupa.auth.getUser();
+    
+    if (user) {
+      const { data: currentItems } = await supa.from('menu_items').select('id', { count: 'exact' }).eq('venue_id', row.venue_id);
+      const currentCount = currentItems?.length || 0;
+      const newTotal = currentCount + items.length;
+      
+      const tierCheck = await enforceResourceLimit(user.id, row.venue_id, "maxMenuItems", newTotal);
+      if (!tierCheck.allowed && tierCheck.response) {
+        return tierCheck.response;
+      }
+    }
 
     // Insert while avoiding duplicates without relying on DB constraint
     const { data: existing } = await supa.from('menu_items').select('name').eq('venue_id', row.venue_id);

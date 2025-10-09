@@ -51,21 +51,54 @@ OPENAI_API_KEY=sk-your-openai-api-key-here
 
 ## Optional Environment Variables
 
-### Payment Processing (Stripe Sandbox)
+### Payment Processing (Stripe) - REQUIRED FOR NEW SIGNUPS
 
 ```bash
-# Stripe Configuration (Sandbox/Test Mode)
+# Stripe Configuration
 STRIPE_SECRET_KEY=sk_test_your_stripe_secret_key
 NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY=pk_test_your_stripe_publishable_key
 STRIPE_WEBHOOK_SECRET=whsec_your_webhook_secret
+
+# Stripe Subscription Price IDs (REQUIRED)
+STRIPE_BASIC_PRICE_ID=price_basic_id_from_stripe
+STRIPE_STANDARD_PRICE_ID=price_standard_id_from_stripe
+STRIPE_PREMIUM_PRICE_ID=price_premium_id_from_stripe
 ```
 
-**How to get these:**
-1. Sign up at https://stripe.com
-2. Navigate to Developers → API Keys
-3. Copy the Publishable key (starts with `pk_test_`)
-4. Copy the Secret key (starts with `sk_test_`)
-5. For webhooks, go to Developers → Webhooks and create an endpoint
+**How to set up Stripe subscriptions:**
+
+1. **Sign up at https://stripe.com**
+
+2. **Create Products** in Stripe Dashboard → Products:
+   - **Basic Plan**: £99/month
+   - **Standard Plan**: £249/month (mark as "Most Popular")
+   - **Premium Plan**: £449/month
+   
+3. **Add Recurring Prices** to each product:
+   - Select "Recurring" billing
+   - Set to "Monthly"
+   - Enter price in GBP (£)
+   - Copy the Price ID (starts with `price_`)
+
+4. **Enable Free Trials**:
+   - In each price, set trial period to **14 days**
+
+5. **Get API Keys**:
+   - Navigate to Developers → API Keys
+   - Copy Publishable key (starts with `pk_test_`)
+   - Copy Secret key (starts with `sk_test_`)
+
+6. **Set Up Webhooks**:
+   - Go to Developers → Webhooks
+   - Add endpoint: `https://your-domain.com/api/stripe/webhooks`
+   - Select these events:
+     - `checkout.session.completed`
+     - `customer.subscription.created`
+     - `customer.subscription.updated`
+     - `customer.subscription.deleted`
+     - `invoice.payment_succeeded`
+     - `invoice.payment_failed`
+   - Copy Webhook Secret (starts with `whsec_`)
 
 ### Google Maps & Places (Settings Page Enhancement)
 
@@ -98,6 +131,7 @@ For Railway deployment, add these environment variables in your Railway project 
 # Database
 NEXT_PUBLIC_SUPABASE_URL=https://your-project.supabase.co
 NEXT_PUBLIC_SUPABASE_ANON_KEY=your_supabase_anon_key
+SUPABASE_SERVICE_ROLE_KEY=your_service_role_key
 
 # Google Cloud
 GOOGLE_CREDENTIALS_B64=base64_encoded_service_account_json
@@ -106,10 +140,16 @@ GCS_BUCKET_NAME=your-gcs-bucket-name
 # OpenAI
 OPENAI_API_KEY=sk-your-openai-api-key
 
-# Stripe (Sandbox)
+# Stripe (REQUIRED for new signups)
 STRIPE_SECRET_KEY=sk_test_your_stripe_secret_key
 NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY=pk_test_your_stripe_publishable_key
 STRIPE_WEBHOOK_SECRET=whsec_your_webhook_secret
+STRIPE_BASIC_PRICE_ID=price_...
+STRIPE_STANDARD_PRICE_ID=price_...
+STRIPE_PREMIUM_PRICE_ID=price_...
+
+# App Configuration
+NEXT_PUBLIC_APP_URL=https://your-domain.com
 ```
 
 ### Railway-Specific Notes

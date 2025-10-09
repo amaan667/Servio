@@ -1,6 +1,7 @@
 import { NextResponse } from 'next/server';
 import { createClient, createAdminClient } from '@/lib/supabase/server';
 import { getAuthenticatedUser } from '@/lib/supabase/server';
+import { enforceResourceLimit } from '@/lib/enforce-tier-limits';
 
 export const runtime = 'nodejs';
 
@@ -222,6 +223,20 @@ export async function POST(req: Request) {
         ok: false, 
         error: `Cannot create table "${label}" - there are active orders for this table. Please complete or cancel the existing orders first.` 
       }, { status: 400 });
+    }
+
+    // Check tier limits before creating table
+    const { data: currentTables } = await adminSupabase
+      .from('tables')
+      .select('id', { count: 'exact' })
+      .eq('venue_id', venue_id)
+      .eq('is_active', true);
+    
+    const currentCount = currentTables?.length || 0;
+    const tierCheck = await enforceResourceLimit(user.id, venue_id, "maxTables", currentCount + 1);
+    
+    if (!tierCheck.allowed && tierCheck.response) {
+      return tierCheck.response;
     }
 
     // Create table using admin client to bypass RLS

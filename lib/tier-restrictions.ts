@@ -19,6 +19,21 @@ export interface TierLimits {
 
 // Tier limits based on homepage pricing
 export const TIER_LIMITS: Record<string, TierLimits> = {
+  grandfathered: {
+    maxTables: -1, // Unlimited - existing accounts
+    maxMenuItems: -1, // Unlimited
+    maxStaff: -1, // Unlimited
+    maxVenues: -1, // Unlimited
+    features: {
+      kds: true,
+      inventory: true,
+      analytics: true,
+      aiAssistant: true,
+      multiVenue: true,
+      customIntegrations: true,
+      prioritySupport: true,
+    },
+  },
   basic: {
     maxTables: 10,
     maxMenuItems: 50,
@@ -72,11 +87,16 @@ export async function getUserTier(userId: string): Promise<string> {
   // Get user's organization and tier
   const { data: org } = await supabase
     .from("organizations")
-    .select("subscription_tier, subscription_status")
+    .select("subscription_tier, subscription_status, is_grandfathered")
     .eq("owner_id", userId)
     .single();
 
-  // If subscription is not active, downgrade to basic
+  // Grandfathered accounts always get full access
+  if (org?.is_grandfathered) {
+    return "grandfathered";
+  }
+
+  // If subscription is not active, downgrade to basic (but require payment for new users)
   if (!org || org.subscription_status !== "active") {
     return "basic";
   }

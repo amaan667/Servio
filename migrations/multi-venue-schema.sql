@@ -10,12 +10,13 @@ CREATE TABLE IF NOT EXISTS organizations (
   name TEXT NOT NULL,
   slug TEXT UNIQUE NOT NULL,
   owner_id UUID NOT NULL REFERENCES auth.users(id) ON DELETE CASCADE,
-  subscription_tier TEXT DEFAULT 'basic' CHECK (subscription_tier IN ('basic', 'standard', 'premium')),
+  subscription_tier TEXT DEFAULT 'basic' CHECK (subscription_tier IN ('basic', 'standard', 'premium', 'grandfathered')),
   subscription_status TEXT DEFAULT 'active' CHECK (subscription_status IN ('active', 'trialing', 'past_due', 'canceled', 'unpaid')),
   stripe_customer_id TEXT UNIQUE,
   stripe_subscription_id TEXT,
   trial_ends_at TIMESTAMPTZ,
   billing_email TEXT,
+  is_grandfathered BOOLEAN DEFAULT false, -- Existing accounts get full access
   created_at TIMESTAMPTZ DEFAULT NOW(),
   updated_at TIMESTAMPTZ DEFAULT NOW()
 );
@@ -73,20 +74,24 @@ CREATE INDEX IF NOT EXISTS idx_subscription_history_org ON subscription_history(
 -- ============================================================================
 
 -- Create default organizations for existing venues
-INSERT INTO organizations (id, name, slug, owner_id, subscription_tier, created_at)
+-- Mark all existing accounts as GRANDFATHERED (full access, no payment required)
+INSERT INTO organizations (id, name, slug, owner_id, subscription_tier, is_grandfathered, subscription_status, created_at)
 SELECT 
   gen_random_uuid() as id,
   COALESCE(v.name || ' Organization', 'My Organization') as name,
   LOWER(REGEXP_REPLACE(COALESCE(v.name, 'my-org'), '[^a-zA-Z0-9]+', '-', 'g')) || '-' || SUBSTRING(v.owner_id::TEXT, 1, 8) as slug,
   v.owner_id,
-  'basic' as subscription_tier,
+  'grandfathered' as subscription_tier,
+  true as is_grandfathered,
+  'active' as subscription_status,
   v.created_at
 FROM venues v
 WHERE v.owner_id IS NOT NULL
   AND NOT EXISTS (
     SELECT 1 FROM organizations o WHERE o.owner_id = v.owner_id
   )
-GROUP BY v.owner_id, v.name, v.created_at;
+GROUP BY v.owner_id, v.name, v.created_at
+ON CONFLICT (slug) DO NOTHING;
 
 -- Link venues to their organizations
 UPDATE venues v
