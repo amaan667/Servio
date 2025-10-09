@@ -66,3 +66,4 @@ const nextConfig = {
 };
 
 export default nextConfig;
+/* Deployment trigger - Thu Oct  9 15:52:04 BST 2025 */
