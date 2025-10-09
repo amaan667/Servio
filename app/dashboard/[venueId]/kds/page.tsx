@@ -2,6 +2,7 @@ import { createServerSupabase } from '@/lib/supabase/server';
 import { redirect } from 'next/navigation';
 import KDSClient from './KDSClient';
 import { hasServerAuthCookie } from '@/lib/server-utils';
+import NavigationBreadcrumb from '@/components/navigation-breadcrumb';
 
 export const dynamic = 'force-dynamic';
 
@@ -41,6 +42,23 @@ export default async function KDSPage({ params }: PageProps) {
     redirect('/dashboard');
   }
 
-  return <KDSClient venueId={venueId} venueName={venue.name} />;
+  return (
+    <div className="min-h-screen bg-background">
+      <div className="max-w-7xl mx-auto px-3 sm:px-4 lg:px-8 py-4 sm:py-6 lg:py-8 pb-24 md:pb-8">
+        <NavigationBreadcrumb venueId={venueId} />
+        
+        <div className="mb-6 sm:mb-8">
+          <h1 className="text-2xl sm:text-3xl font-bold tracking-tight text-foreground">
+            Kitchen Display System
+          </h1>
+          <p className="mt-2 text-muted-foreground">
+            Monitor and manage kitchen orders for {venue.name}
+          </p>
+        </div>
+        
+        <KDSClient venueId={venueId} venueName={venue.name} />
+      </div>
+    </div>
+  );
 }
 

@@ -15,6 +15,8 @@ export async function GET(
       return NextResponse.json({ error: 'Order ID is required' }, { status: 400 });
     }
 
+    console.log('[ORDER FETCH DEBUG] ===== FETCHING ORDER BY ID =====');
+    console.log('[ORDER FETCH DEBUG] Order ID:', orderId);
 
     // Fetch order with items
     const { data: order, error: orderError } = await supabaseAdmin
@@ -33,18 +35,33 @@ export async function GET(
       .eq('id', orderId)
       .single();
 
+    console.log('[ORDER FETCH DEBUG] Query result:');
+    console.log('[ORDER FETCH DEBUG] - Found order:', !!order);
+    console.log('[ORDER FETCH DEBUG] - Error:', orderError);
+    console.log('[ORDER FETCH DEBUG] - Order data keys:', order ? Object.keys(order) : 'N/A');
+
     if (orderError) {
-      console.error('[ORDER FETCH] Error fetching order:', orderError);
+      console.error('[ORDER FETCH DEBUG] ===== ORDER NOT FOUND =====');
+      console.error('[ORDER FETCH DEBUG] Error fetching order:', orderError);
       return NextResponse.json({ 
         error: 'Order not found' 
       }, { status: 404 });
     }
 
     if (!order) {
+      console.error('[ORDER FETCH DEBUG] ===== NO ORDER DATA =====');
       return NextResponse.json({ 
         error: 'Order not found' 
       }, { status: 404 });
     }
+
+    // Log Stripe payment details
+    console.log('[ORDER FETCH DEBUG] ===== ORDER FOUND - STRIPE DETAILS =====');
+    console.log('[ORDER FETCH DEBUG] Payment method:', order.payment_method);
+    console.log('[ORDER FETCH DEBUG] Payment status:', order.payment_status);
+    console.log('[ORDER FETCH DEBUG] Stripe session ID:', order.stripe_session_id);
+    console.log('[ORDER FETCH DEBUG] Stripe payment intent ID:', order.stripe_payment_intent_id);
+    console.log('[ORDER FETCH DEBUG] Order notes:', order.notes);
 
     // Transform the order to include items array
     const transformedOrder = {
@@ -55,6 +72,9 @@ export async function GET(
     // Remove the order_items property since we have items now
     delete transformedOrder.order_items;
 
+    console.log('[ORDER FETCH DEBUG] ===== RETURNING TRANSFORMED ORDER =====');
+    console.log('[ORDER FETCH DEBUG] Transformed order keys:', Object.keys(transformedOrder));
+    console.log('[ORDER FETCH DEBUG] Items count:', transformedOrder.items.length);
 
     return NextResponse.json({ 
       order: transformedOrder 

@@ -66,23 +66,37 @@ export default function OrderTrackingPage() {
     try {
       setLoading(true);
       setError(null);
+      
+      console.log('[ORDER TRACKING DEBUG] ===== FETCHING ORDER =====');
+      console.log('[ORDER TRACKING DEBUG] Order ID:', orderId);
 
-      const { data, error } = await supabase
-        .from('orders')
-        .select('*')
-        .eq('id', orderId)
-        .single();
+      // Use API endpoint to get complete order data including items and Stripe details
+      const response = await fetch(`/api/orders/${orderId}`);
+      const data = await response.json();
+      
+      console.log('[ORDER TRACKING DEBUG] API response:', data);
 
-      if (error) {
-        console.error('Failed to fetch order:', error);
-        setError('Order not found or access denied');
+      if (!response.ok || !data.order) {
+        console.error('[ORDER TRACKING DEBUG] Failed to fetch order:', data);
+        setError(data.error || 'Order not found or access denied');
         return;
       }
 
-      setOrder(data);
+      console.log('[ORDER TRACKING DEBUG] ===== ORDER FOUND =====');
+      console.log('[ORDER TRACKING DEBUG] Order details:', {
+        id: data.order.id,
+        customer_name: data.order.customer_name,
+        payment_status: data.order.payment_status,
+        payment_method: data.order.payment_method,
+        order_status: data.order.order_status,
+        stripe_session_id: data.order.stripe_session_id,
+        items_count: data.order.items?.length || 0
+      });
+
+      setOrder(data.order);
       setLastUpdate(new Date());
     } catch (err) {
-      console.error('Error fetching order:', err);
+      console.error('[ORDER TRACKING DEBUG] Error fetching order:', err);
       setError('Failed to load order details');
     } finally {
       setLoading(false);

@@ -270,34 +270,28 @@ export default function KDSClient({ venueId, venueName }: KDSClientProps) {
 
   return (
     <div className="space-y-6">
-      {/* Header */}
-      <div className="flex items-center justify-between">
-        <div>
-          <h1 className="text-3xl font-bold">Kitchen Display System</h1>
-          <p className="text-gray-500">{venueName || 'Venue'}</p>
-        </div>
-        <div className="flex items-center gap-3">
-          <Button
-            variant="outline"
-            size="sm"
-            onClick={fetchTickets}
-          >
-            <RefreshCw className="h-4 w-4 mr-2" />
-            Refresh
-          </Button>
-          <Button
-            variant={autoRefresh ? "default" : "outline"}
-            size="sm"
-            onClick={() => setAutoRefresh(!autoRefresh)}
-          >
-            <Timer className="h-4 w-4 mr-2" />
-            {autoRefresh ? 'Auto-refresh ON' : 'Auto-refresh OFF'}
-          </Button>
-        </div>
+      {/* Controls */}
+      <div className="flex items-center justify-end gap-3">
+        <Button
+          variant="outline"
+          size="sm"
+          onClick={fetchTickets}
+        >
+          <RefreshCw className="h-4 w-4 mr-2" />
+          Refresh
+        </Button>
+        <Button
+          variant={autoRefresh ? "default" : "outline"}
+          size="sm"
+          onClick={() => setAutoRefresh(!autoRefresh)}
+        >
+          <Timer className="h-4 w-4 mr-2" />
+          {autoRefresh ? 'Auto-refresh ON' : 'Auto-refresh OFF'}
+        </Button>
       </div>
 
       {/* Stats */}
-      <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+      <div className="grid grid-cols-1 md:grid-cols-4 gap-4 px-2">
         <Card>
           <CardHeader className="pb-3">
             <CardTitle className="text-sm font-medium text-gray-500">New Orders</CardTitle>
@@ -333,7 +327,7 @@ export default function KDSClient({ venueId, venueName }: KDSClientProps) {
       </div>
 
       {/* Station Selector */}
-      <div className="flex gap-2 overflow-x-auto pb-2">
+      <div className="flex gap-2 overflow-x-auto pb-2 px-2">
         <Button
           variant={selectedStation === null ? "default" : "outline"}
           onClick={() => setSelectedStation(null)}
@@ -359,7 +353,7 @@ export default function KDSClient({ venueId, venueName }: KDSClientProps) {
       </div>
 
       {/* Tickets Grid - Kanban Style */}
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+      <div className="grid grid-cols-1 md:grid-cols-3 gap-6 px-2">
         {/* New Column */}
         <div className="space-y-3">
           <div className="flex items-center justify-between bg-blue-50 p-3 rounded-lg">

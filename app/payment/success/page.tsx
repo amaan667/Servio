@@ -38,6 +38,28 @@ export default function PaymentSuccessPage() {
     const allParams = Object.fromEntries(new URLSearchParams(window.location.search));
     console.log('[PAYMENT SUCCESS DEBUG] All URL params:', allParams);
     
+    // Handle Stripe payment success with session_id but no orderId
+    if (sessionId && !orderId && !isDemo) {
+      console.log('[PAYMENT SUCCESS DEBUG] ===== STRIPE PAYMENT SUCCESS - LOOKING UP ORDER BY SESSION =====');
+      console.log('[PAYMENT SUCCESS DEBUG] We have session_id but no orderId, need to look up order');
+      
+      // Look up order by stripe_session_id
+      fetch(`/api/orders/by-session/${sessionId}`)
+        .then(response => response.json())
+        .then(data => {
+          console.log('[PAYMENT SUCCESS DEBUG] Order lookup by session result:', data);
+          if (data.ok && data.orderId) {
+            console.log('[PAYMENT SUCCESS DEBUG] Found order ID from session:', data.orderId);
+            setVerifiedOrderId(data.orderId);
+          } else {
+            console.error('[PAYMENT SUCCESS DEBUG] Failed to find order by session:', data);
+          }
+        })
+        .catch(error => {
+          console.error('[PAYMENT SUCCESS DEBUG] Error looking up order by session:', error);
+        });
+    }
+    
     if (isDemo && orderId) {
       console.log('[PAYMENT SUCCESS DEBUG] ===== DEMO ORDER LOADING STARTED =====');
       console.log('[PAYMENT SUCCESS DEBUG] Demo order ID:', orderId);
@@ -157,26 +179,6 @@ export default function PaymentSuccessPage() {
     console.log('[PAYMENT SUCCESS DEBUG] ===== useEffect COMPLETE =====');
   }, [isDemo, orderId, customerNameParam, totalParam, venueNameParam, paymentMethod]);
 
-  // If we have a sessionId but no orderId, fetch the order from the verify endpoint
-  useEffect(() => {
-    if (sessionId && !orderId && !isDemo) {
-      console.log('[PAYMENT SUCCESS] Verifying Stripe session:', sessionId);
-      
-      fetch(`/api/orders/verify?sessionId=${sessionId}`)
-        .then(res => res.json())
-        .then(data => {
-          if (data.order) {
-            console.log('[PAYMENT SUCCESS] Order verified:', data.order.id);
-            setVerifiedOrderId(data.order.id);
-          } else {
-            console.error('[PAYMENT SUCCESS] No order in verify response:', data);
-          }
-        })
-        .catch(err => {
-          console.error('[PAYMENT SUCCESS] Failed to verify order:', err);
-        });
-    }
-  }, [sessionId, orderId, isDemo]);
 
   // Use the same OrderSummary component for both demo and real orders
   return (

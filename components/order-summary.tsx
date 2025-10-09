@@ -147,21 +147,37 @@ export default function OrderSummary({ orderId, sessionId, orderData, isDemo = f
         
         if (sessionId) {
           // Fetch order by Stripe session ID
-          const res = await fetch(`/api/orders/by-session?sessionId=${sessionId}`);
+          console.log('[ORDER SUMMARY COMPONENT DEBUG] Fetching order by session ID:', sessionId);
+          const res = await fetch(`/api/orders/by-session/${sessionId}`);
           if (res.ok) {
             const data = await res.json();
-            setOrder(data.order);
+            console.log('[ORDER SUMMARY COMPONENT DEBUG] Session lookup response:', data);
+            if (data.ok && data.order) {
+              setOrder(data.order);
+            } else {
+              throw new Error('Order not found for this session');
+            }
           } else {
-            throw new Error('Failed to fetch order by session ID');
+            const errorData = await res.json();
+            console.error('[ORDER SUMMARY COMPONENT DEBUG] Session lookup failed:', errorData);
+            throw new Error(`Failed to fetch order by session ID: ${errorData.error || 'Unknown error'}`);
           }
         } else if (orderId) {
           // Fetch order by ID
+          console.log('[ORDER SUMMARY COMPONENT DEBUG] Fetching order by ID:', orderId);
           const res = await fetch(`/api/orders/${orderId}`);
           if (res.ok) {
             const data = await res.json();
-            setOrder(data.order);
+            console.log('[ORDER SUMMARY COMPONENT DEBUG] Order fetch response:', data);
+            if (data.order) {
+              setOrder(data.order);
+            } else {
+              throw new Error('Order data not found in response');
+            }
           } else {
-            throw new Error('Failed to fetch order');
+            const errorData = await res.json();
+            console.error('[ORDER SUMMARY COMPONENT DEBUG] Order fetch failed:', errorData);
+            throw new Error(`Failed to fetch order: ${errorData.error || 'Unknown error'}`);
           }
         }
       } catch (error) {

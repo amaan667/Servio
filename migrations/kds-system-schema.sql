@@ -1,6 +1,18 @@
 -- Kitchen Display System (KDS) Schema
 -- This schema supports station-based ticket management for kitchen operations
 
+-- Drop triggers first (before functions that they depend on)
+DROP TRIGGER IF EXISTS trg_create_kds_tickets ON orders;
+DROP TRIGGER IF EXISTS trg_sync_order_status ON kds_tickets;
+DROP TRIGGER IF EXISTS trg_kds_stations_updated_at ON kds_stations;
+DROP TRIGGER IF EXISTS trg_kds_tickets_updated_at ON kds_tickets;
+
+-- Drop functions (after triggers)
+DROP FUNCTION IF EXISTS create_kds_tickets_from_order() CASCADE;
+DROP FUNCTION IF EXISTS update_order_status_from_kds() CASCADE;
+DROP FUNCTION IF EXISTS update_kds_updated_at() CASCADE;
+DROP FUNCTION IF EXISTS setup_default_kds_stations(TEXT) CASCADE;
+
 -- Drop existing tables if they exist (in reverse dependency order)
 DROP TABLE IF EXISTS kds_station_categories CASCADE;
 DROP TABLE IF EXISTS kds_tickets CASCADE;
@@ -70,8 +82,6 @@ CREATE TABLE kds_station_categories (
 );
 
 -- Function to update updated_at timestamp
-DROP FUNCTION IF EXISTS update_kds_updated_at();
-
 CREATE OR REPLACE FUNCTION update_kds_updated_at()
 RETURNS TRIGGER AS $$
 BEGIN
@@ -80,10 +90,7 @@ BEGIN
 END;
 $$ LANGUAGE plpgsql;
 
--- Triggers for updated_at (drop first if they exist)
-DROP TRIGGER IF EXISTS trg_kds_stations_updated_at ON kds_stations;
-DROP TRIGGER IF EXISTS trg_kds_tickets_updated_at ON kds_tickets;
-
+-- Triggers for updated_at
 CREATE TRIGGER trg_kds_stations_updated_at
   BEFORE UPDATE ON kds_stations
   FOR EACH ROW
@@ -95,8 +102,6 @@ CREATE TRIGGER trg_kds_tickets_updated_at
   EXECUTE FUNCTION update_kds_updated_at();
 
 -- Function to automatically update order status when all tickets are ready
-DROP FUNCTION IF EXISTS update_order_status_from_kds();
-
 CREATE OR REPLACE FUNCTION update_order_status_from_kds()
 RETURNS TRIGGER AS $$
 DECLARE
@@ -141,17 +146,13 @@ BEGIN
 END;
 $$ LANGUAGE plpgsql;
 
--- Trigger to sync order status with KDS tickets (drop first if exists)
-DROP TRIGGER IF EXISTS trg_sync_order_status ON kds_tickets;
-
+-- Trigger to sync order status with KDS tickets
 CREATE TRIGGER trg_sync_order_status
   AFTER UPDATE OF status ON kds_tickets
   FOR EACH ROW
   EXECUTE FUNCTION update_order_status_from_kds();
 
 -- Function to create KDS tickets from order items
-DROP FUNCTION IF EXISTS create_kds_tickets_from_order();
-
 CREATE OR REPLACE FUNCTION create_kds_tickets_from_order()
 RETURNS TRIGGER AS $$
 DECLARE
@@ -251,17 +252,13 @@ BEGIN
 END;
 $$ LANGUAGE plpgsql;
 
--- Trigger to auto-create KDS tickets when orders are placed (drop first if exists)
-DROP TRIGGER IF EXISTS trg_create_kds_tickets ON orders;
-
+-- Trigger to auto-create KDS tickets when orders are placed
 CREATE TRIGGER trg_create_kds_tickets
   AFTER INSERT ON orders
   FOR EACH ROW
   EXECUTE FUNCTION create_kds_tickets_from_order();
 
 -- Default stations setup function (call this after creating a new venue)
-DROP FUNCTION IF EXISTS setup_default_kds_stations(TEXT);
-
 CREATE OR REPLACE FUNCTION setup_default_kds_stations(p_venue_id TEXT)
 RETURNS void AS $$
 BEGIN
