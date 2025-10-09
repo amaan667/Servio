@@ -20,20 +20,11 @@ export async function GET(
     }
 
     // Look up order by stripe_session_id with all fields including Stripe details
+    // Items are stored as JSONB in orders table, not in separate order_items table
     console.log('[ORDER SESSION LOOKUP DEBUG] Querying orders table for stripe_session_id...');
     const { data: order, error: orderError } = await supabaseAdmin
       .from('orders')
-      .select(`
-        *,
-        order_items (
-          id,
-          menu_item_id,
-          item_name,
-          quantity,
-          price,
-          special_instructions
-        )
-      `)
+      .select('*')
       .eq('stripe_session_id', sessionId)
       .single();
 
@@ -69,17 +60,15 @@ export async function GET(
       order_status: order.order_status,
       stripe_session_id: order.stripe_session_id,
       stripe_payment_intent_id: order.stripe_payment_intent_id,
-      items_count: order.order_items?.length || 0
+      items_count: Array.isArray(order.items) ? order.items.length : 0
     });
 
-    // Transform the order to include items array
+    // Items are already in the order object as JSONB
+    // Ensure items array exists (fallback to empty array if null)
     const transformedOrder = {
       ...order,
-      items: order.order_items || []
+      items: order.items || []
     };
-
-    // Remove the order_items property since we have items now
-    delete transformedOrder.order_items;
 
     console.log('[ORDER SESSION LOOKUP DEBUG] ===== RETURNING TRANSFORMED ORDER =====');
     console.log('[ORDER SESSION LOOKUP DEBUG] Transformed order keys:', Object.keys(transformedOrder));

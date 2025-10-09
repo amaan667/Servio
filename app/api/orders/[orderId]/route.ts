@@ -18,20 +18,10 @@ export async function GET(
     console.log('[ORDER FETCH DEBUG] ===== FETCHING ORDER BY ID =====');
     console.log('[ORDER FETCH DEBUG] Order ID:', orderId);
 
-    // Fetch order with items
+    // Fetch order with items (items are stored as JSONB in orders table)
     const { data: order, error: orderError } = await supabaseAdmin
       .from('orders')
-      .select(`
-        *,
-        order_items (
-          id,
-          menu_item_id,
-          item_name,
-          quantity,
-          price,
-          special_instructions
-        )
-      `)
+      .select('*')
       .eq('id', orderId)
       .single();
 
@@ -55,26 +45,24 @@ export async function GET(
       }, { status: 404 });
     }
 
-    // Log Stripe payment details
-    console.log('[ORDER FETCH DEBUG] ===== ORDER FOUND - STRIPE DETAILS =====');
+    // Log payment details
+    console.log('[ORDER FETCH DEBUG] ===== ORDER FOUND - PAYMENT DETAILS =====');
     console.log('[ORDER FETCH DEBUG] Payment method:', order.payment_method);
     console.log('[ORDER FETCH DEBUG] Payment status:', order.payment_status);
     console.log('[ORDER FETCH DEBUG] Stripe session ID:', order.stripe_session_id);
     console.log('[ORDER FETCH DEBUG] Stripe payment intent ID:', order.stripe_payment_intent_id);
     console.log('[ORDER FETCH DEBUG] Order notes:', order.notes);
 
-    // Transform the order to include items array
+    // Items are already in the order object as JSONB
+    // Ensure items array exists (fallback to empty array if null)
     const transformedOrder = {
       ...order,
-      items: order.order_items || []
+      items: order.items || []
     };
-
-    // Remove the order_items property since we have items now
-    delete transformedOrder.order_items;
 
     console.log('[ORDER FETCH DEBUG] ===== RETURNING TRANSFORMED ORDER =====');
     console.log('[ORDER FETCH DEBUG] Transformed order keys:', Object.keys(transformedOrder));
-    console.log('[ORDER FETCH DEBUG] Items count:', transformedOrder.items.length);
+    console.log('[ORDER FETCH DEBUG] Items count:', Array.isArray(transformedOrder.items) ? transformedOrder.items.length : 0);
 
     return NextResponse.json({ 
       order: transformedOrder 
