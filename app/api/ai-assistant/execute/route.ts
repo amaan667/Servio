@@ -14,7 +14,7 @@ import {
 } from "@/types/ai-assistant";
 
 const ExecuteRequestSchema = z.object({
-  venueId: z.string().uuid(),
+  venueId: z.string().min(1), // Accept any non-empty string for venue ID
   toolName: z.string(),
   params: z.record(z.any()),
   preview: z.boolean().default(false),

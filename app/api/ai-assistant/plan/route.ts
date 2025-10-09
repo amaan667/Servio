@@ -12,7 +12,7 @@ import { z } from "zod";
 
 const PlanRequestSchema = z.object({
   prompt: z.string().min(1).max(500),
-  venueId: z.string().uuid(),
+  venueId: z.string().min(1), // Accept any non-empty string for venue ID
   context: z
     .object({
       page: z.enum(["menu", "inventory", "kds", "orders", "analytics", "general"]).optional(),
