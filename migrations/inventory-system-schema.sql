@@ -1,10 +1,17 @@
 -- Inventory Management System Schema
 -- This schema supports ingredient tracking, recipe costing, stock movements, and low-stock alerts
 
--- Drop triggers first (before functions that they depend on)
-DROP TRIGGER IF EXISTS trg_check_stock_after_movement ON stock_ledgers;
-DROP TRIGGER IF EXISTS trg_ingredients_updated_at ON ingredients;
-DROP TRIGGER IF EXISTS trg_stock_ledgers_updated_at ON stock_ledgers;
+-- Drop triggers, functions, views and tables safely
+-- Using DO block to handle cases where tables don't exist yet
+DO $$ 
+BEGIN
+    -- Drop triggers (requires tables to exist, so we handle exceptions)
+    DROP TRIGGER IF EXISTS trg_check_stock_after_movement ON stock_ledgers;
+    DROP TRIGGER IF EXISTS trg_ingredients_updated_at ON ingredients;
+    DROP TRIGGER IF EXISTS trg_stock_ledgers_updated_at ON stock_ledgers;
+EXCEPTION
+    WHEN undefined_table THEN NULL;
+END $$;
 
 -- Drop functions (after triggers)
 DROP FUNCTION IF EXISTS check_low_stock_and_86() CASCADE;
@@ -54,7 +61,7 @@ CREATE TABLE stock_ledgers (
 -- Menu item to ingredient mapping (recipes)
 -- Defines how much of each ingredient is needed per menu item
 CREATE TABLE menu_item_ingredients (
-  menu_item_id TEXT NOT NULL REFERENCES menu_items(id) ON DELETE CASCADE,
+  menu_item_id UUID NOT NULL REFERENCES menu_items(id) ON DELETE CASCADE,
   ingredient_id UUID NOT NULL REFERENCES ingredients(id) ON DELETE CASCADE,
   qty_per_item NUMERIC(12,4) NOT NULL, -- e.g., 150 (g)
   unit TEXT NOT NULL, -- g, ml, pcs, etc
@@ -263,7 +270,7 @@ BEGIN
       SELECT mi.ingredient_id, mi.qty_per_item, mi.unit, i.name AS ingredient_name
       FROM menu_item_ingredients mi
       JOIN ingredients i ON i.id = mi.ingredient_id
-      WHERE mi.menu_item_id = (item->>'menu_item_id')::TEXT
+      WHERE mi.menu_item_id = (item->>'menu_item_id')::UUID
     LOOP
       -- Calculate total quantity to deduct
       DECLARE

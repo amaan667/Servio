@@ -1,0 +1,84 @@
+import { NextRequest, NextResponse } from 'next/server';
+import { createClient } from '@/lib/supabase/server';
+
+// GET /api/inventory/export/movements?venue_id=xxx&from=&to=&reason=
+export async function GET(request: NextRequest) {
+  try {
+    const supabase = await createClient();
+    const { searchParams } = new URL(request.url);
+    const venue_id = searchParams.get('venue_id');
+    const from = searchParams.get('from');
+    const to = searchParams.get('to');
+    const reason = searchParams.get('reason');
+
+    if (!venue_id) {
+      return NextResponse.json(
+        { error: 'venue_id is required' },
+        { status: 400 }
+      );
+    }
+
+    let query = supabase
+      .from('stock_ledgers')
+      .select(`
+        *,
+        ingredient:ingredients(name, unit),
+        user:created_by(email)
+      `)
+      .eq('venue_id', venue_id)
+      .order('created_at', { ascending: false });
+
+    if (reason && reason !== 'all') {
+      query = query.eq('reason', reason);
+    }
+
+    if (from) {
+      query = query.gte('created_at', from);
+    }
+
+    if (to) {
+      query = query.lte('created_at', to);
+    }
+
+    const { data, error } = await query;
+
+    if (error) {
+      console.error('[INVENTORY EXPORT] Error fetching movements:', error);
+      return NextResponse.json(
+        { error: error.message },
+        { status: 500 }
+      );
+    }
+
+    // Generate CSV
+    const headers = ['Date', 'Ingredient', 'Delta', 'Unit', 'Reason', 'Ref Type', 'Note', 'User'];
+    const rows = data?.map((movement: any) => [
+      new Date(movement.created_at).toISOString(),
+      movement.ingredient?.name || 'Unknown',
+      movement.delta,
+      movement.ingredient?.unit || '',
+      movement.reason,
+      movement.ref_type || '',
+      movement.note || '',
+      movement.user?.email || 'System',
+    ]) || [];
+
+    const csv = [headers, ...rows]
+      .map((row) => row.map((cell) => `"${cell}"`).join(','))
+      .join('\n');
+
+    return new NextResponse(csv, {
+      headers: {
+        'Content-Type': 'text/csv',
+        'Content-Disposition': `attachment; filename="movements-${venue_id}-${new Date().toISOString().split('T')[0]}.csv"`,
+      },
+    });
+  } catch (error) {
+    console.error('[INVENTORY EXPORT] Unexpected error:', error);
+    return NextResponse.json(
+      { error: 'Internal server error' },
+      { status: 500 }
+    );
+  }
+}
+

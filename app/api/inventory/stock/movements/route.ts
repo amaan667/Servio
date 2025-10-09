@@ -22,7 +22,8 @@ export async function GET(request: NextRequest) {
       .from('stock_ledgers')
       .select(`
         *,
-        ingredient:ingredients(name, unit)
+        ingredient:ingredients(name, unit),
+        user:created_by(email)
       `)
       .eq('venue_id', venue_id)
       .order('created_at', { ascending: false })

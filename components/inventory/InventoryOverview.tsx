@@ -25,6 +25,7 @@ import { AddIngredientDialog } from './AddIngredientDialog';
 import { StockAdjustmentDialog } from './StockAdjustmentDialog';
 import { StocktakeDialog } from './StocktakeDialog';
 import { ImportCSVDialog } from './ImportCSVDialog';
+import { ReceiveStockDialog } from './ReceiveStockDialog';
 
 interface InventoryOverviewProps {
   venueId: string;
@@ -35,6 +36,7 @@ export function InventoryOverview({ venueId }: InventoryOverviewProps) {
   const [loading, setLoading] = useState(true);
   const [searchQuery, setSearchQuery] = useState('');
   const [showAddDialog, setShowAddDialog] = useState(false);
+  const [showReceiveDialog, setShowReceiveDialog] = useState(false);
   const [showAdjustDialog, setShowAdjustDialog] = useState(false);
   const [showStocktakeDialog, setShowStocktakeDialog] = useState(false);
   const [showImportDialog, setShowImportDialog] = useState(false);
@@ -75,7 +77,12 @@ export function InventoryOverview({ venueId }: InventoryOverviewProps) {
     }
   };
 
-  const handleAdjustStock = (ingredient: StockLevel, reason: 'receive' | 'adjust' | 'waste') => {
+  const handleReceiveStock = (ingredient: StockLevel) => {
+    setSelectedIngredient(ingredient);
+    setShowReceiveDialog(true);
+  };
+
+  const handleAdjustStock = (ingredient: StockLevel, reason: 'adjust' | 'waste') => {
     setSelectedIngredient(ingredient);
     setShowAdjustDialog(true);
   };
@@ -217,7 +224,7 @@ export function InventoryOverview({ venueId }: InventoryOverviewProps) {
                               </Button>
                             </DropdownMenuTrigger>
                             <DropdownMenuContent align="end">
-                              <DropdownMenuItem onClick={() => handleAdjustStock(ingredient, 'receive')}>
+                              <DropdownMenuItem onClick={() => handleReceiveStock(ingredient)}>
                                 Receive (+)
                               </DropdownMenuItem>
                               <DropdownMenuItem onClick={() => handleAdjustStock(ingredient, 'adjust')}>
@@ -254,6 +261,13 @@ export function InventoryOverview({ venueId }: InventoryOverviewProps) {
 
       {selectedIngredient && (
         <>
+          <ReceiveStockDialog
+            open={showReceiveDialog}
+            onOpenChange={setShowReceiveDialog}
+            ingredient={selectedIngredient}
+            onSuccess={fetchIngredients}
+          />
+
           <StockAdjustmentDialog
             open={showAdjustDialog}
             onOpenChange={setShowAdjustDialog}

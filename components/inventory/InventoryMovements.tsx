@@ -19,7 +19,9 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select';
-import { ArrowUp, ArrowDown, ChevronLeft, ChevronRight } from 'lucide-react';
+import { Input } from '@/components/ui/input';
+import { Label } from '@/components/ui/label';
+import { ArrowUp, ArrowDown, ChevronLeft, ChevronRight, Download, Calendar } from 'lucide-react';
 import type { StockLedger } from '@/types/inventory';
 
 interface InventoryMovementsProps {
@@ -31,6 +33,9 @@ interface LedgerWithIngredient extends StockLedger {
     name: string;
     unit: string;
   };
+  user?: {
+    email: string;
+  };
 }
 
 export function InventoryMovements({ venueId }: InventoryMovementsProps) {
@@ -39,6 +44,8 @@ export function InventoryMovements({ venueId }: InventoryMovementsProps) {
   const [reasonFilter, setReasonFilter] = useState<string>('all');
   const [page, setPage] = useState(0);
   const [hasMore, setHasMore] = useState(true);
+  const [dateFrom, setDateFrom] = useState('');
+  const [dateTo, setDateTo] = useState('');
   const limit = 50;
 
   const fetchMovements = async () => {
@@ -52,6 +59,14 @@ export function InventoryMovements({ venueId }: InventoryMovementsProps) {
 
       if (reasonFilter !== 'all') {
         params.append('reason', reasonFilter);
+      }
+
+      if (dateFrom) {
+        params.append('from', new Date(dateFrom).toISOString());
+      }
+
+      if (dateTo) {
+        params.append('to', new Date(dateTo + 'T23:59:59').toISOString());
       }
 
       const response = await fetch(`/api/inventory/stock/movements?${params}`);
@@ -70,7 +85,40 @@ export function InventoryMovements({ venueId }: InventoryMovementsProps) {
 
   useEffect(() => {
     fetchMovements();
-  }, [venueId, reasonFilter, page]);
+  }, [venueId, reasonFilter, page, dateFrom, dateTo]);
+
+  const handleExportCSV = async () => {
+    try {
+      const params = new URLSearchParams({
+        venue_id: venueId,
+      });
+
+      if (reasonFilter !== 'all') {
+        params.append('reason', reasonFilter);
+      }
+
+      if (dateFrom) {
+        params.append('from', new Date(dateFrom).toISOString());
+      }
+
+      if (dateTo) {
+        params.append('to', new Date(dateTo + 'T23:59:59').toISOString());
+      }
+
+      const response = await fetch(`/api/inventory/export/movements?${params}`);
+      const blob = await response.blob();
+      const url = window.URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = `movements-${venueId}-${new Date().toISOString().split('T')[0]}.csv`;
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
+      window.URL.revokeObjectURL(url);
+    } catch (error) {
+      console.error('Error exporting CSV:', error);
+    }
+  };
 
   const getReasonBadge = (reason: string) => {
     switch (reason) {
@@ -105,29 +153,64 @@ export function InventoryMovements({ venueId }: InventoryMovementsProps) {
   return (
     <Card>
       <CardHeader>
-        <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
-          <div>
-            <CardTitle>Stock Movements</CardTitle>
-            <CardDescription>View all inventory transactions</CardDescription>
+        <div className="flex flex-col gap-4">
+          <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+            <div>
+              <CardTitle>Stock Movements</CardTitle>
+              <CardDescription>View all inventory transactions</CardDescription>
+            </div>
+            <Button onClick={handleExportCSV} variant="outline" size="sm">
+              <Download className="h-4 w-4 mr-2" />
+              Export CSV
+            </Button>
           </div>
-          <div className="flex gap-2">
-            <Select value={reasonFilter} onValueChange={(value) => {
-              setReasonFilter(value);
-              setPage(0);
-            }}>
-              <SelectTrigger className="w-[180px]">
-                <SelectValue placeholder="Filter by reason" />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="all">All Reasons</SelectItem>
-                <SelectItem value="sale">Sale</SelectItem>
-                <SelectItem value="receive">Receive</SelectItem>
-                <SelectItem value="adjust">Adjust</SelectItem>
-                <SelectItem value="waste">Waste</SelectItem>
-                <SelectItem value="stocktake">Stocktake</SelectItem>
-                <SelectItem value="return">Return</SelectItem>
-              </SelectContent>
-            </Select>
+          
+          {/* Filters */}
+          <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+            <div className="space-y-2">
+              <Label className="text-sm">Reason</Label>
+              <Select value={reasonFilter} onValueChange={(value) => {
+                setReasonFilter(value);
+                setPage(0);
+              }}>
+                <SelectTrigger>
+                  <SelectValue placeholder="Filter by reason" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="all">All Reasons</SelectItem>
+                  <SelectItem value="sale">Sale</SelectItem>
+                  <SelectItem value="receive">Receive</SelectItem>
+                  <SelectItem value="adjust">Adjust</SelectItem>
+                  <SelectItem value="waste">Waste</SelectItem>
+                  <SelectItem value="stocktake">Stocktake</SelectItem>
+                  <SelectItem value="return">Return</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+            
+            <div className="space-y-2">
+              <Label className="text-sm">From Date</Label>
+              <Input
+                type="date"
+                value={dateFrom}
+                onChange={(e) => {
+                  setDateFrom(e.target.value);
+                  setPage(0);
+                }}
+              />
+            </div>
+            
+            <div className="space-y-2">
+              <Label className="text-sm">To Date</Label>
+              <Input
+                type="date"
+                value={dateTo}
+                onChange={(e) => {
+                  setDateTo(e.target.value);
+                  setPage(0);
+                }}
+              />
+            </div>
           </div>
         </div>
       </CardHeader>
@@ -149,6 +232,7 @@ export function InventoryMovements({ venueId }: InventoryMovementsProps) {
                     <TableHead>Reason</TableHead>
                     <TableHead>Delta</TableHead>
                     <TableHead>Note</TableHead>
+                    <TableHead>User</TableHead>
                   </TableRow>
                 </TableHeader>
                 <TableBody>
@@ -175,6 +259,9 @@ export function InventoryMovements({ venueId }: InventoryMovementsProps) {
                       </TableCell>
                       <TableCell className="text-sm text-muted-foreground max-w-xs truncate">
                         {movement.note || '-'}
+                      </TableCell>
+                      <TableCell className="text-sm text-muted-foreground">
+                        {movement.user?.email ? movement.user.email.split('@')[0] : 'Auto'}
                       </TableCell>
                     </TableRow>
                   ))}

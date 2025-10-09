@@ -11,7 +11,7 @@
  *   - Recipe mappings for 3 menu items (if they exist)
  */
 
-import { createClient } from '@/lib/supabase/server';
+import { createAdminClient } from '@/lib/supabase/server';
 import type { CreateIngredientRequest } from '@/types/inventory';
 
 interface SeedIngredient {
@@ -156,7 +156,7 @@ const SAMPLE_RECIPES: RecipeMapping[] = [
 ];
 
 export async function seedInventoryData(venueId: string) {
-  const supabase = await createClient();
+  const supabase = createAdminClient();
 
   console.log('[INVENTORY SEED] Starting seed for venue:', venueId);
 
