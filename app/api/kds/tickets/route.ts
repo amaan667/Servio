@@ -1,5 +1,86 @@
 import { NextResponse } from 'next/server';
 import { createServerSupabase } from '@/lib/supabase/server';
+import { supabaseAdmin } from '@/lib/supabaseAdmin';
+
+// Function to automatically backfill missing KDS tickets for orders
+async function autoBackfillMissingTickets(venueId: string) {
+  try {
+    console.log('[KDS AUTO-BACKFILL] Checking for orders without KDS tickets...');
+    
+    // Get today's orders that should have KDS tickets but don't
+    const todayStart = new Date();
+    todayStart.setHours(0, 0, 0, 0);
+    
+    const { data: ordersWithoutTickets } = await supabaseAdmin
+      .from('orders')
+      .select('id')
+      .eq('venue_id', venueId)
+      .in('payment_status', ['PAID', 'UNPAID'])
+      .in('order_status', ['PLACED', 'IN_PREP', 'READY'])
+      .gte('created_at', todayStart.toISOString())
+      .not('id', 'in', `(SELECT DISTINCT order_id FROM kds_tickets WHERE venue_id = '${venueId}')`);
+
+    if (!ordersWithoutTickets || ordersWithoutTickets.length === 0) {
+      console.log('[KDS AUTO-BACKFILL] No orders found without KDS tickets');
+      return;
+    }
+
+    console.log(`[KDS AUTO-BACKFILL] Found ${ordersWithoutTickets.length} orders without KDS tickets, creating tickets...`);
+
+    // Get expo station for this venue
+    const { data: expoStation } = await supabaseAdmin
+      .from('kds_stations')
+      .select('id')
+      .eq('venue_id', venueId)
+      .eq('station_type', 'expo')
+      .eq('is_active', true)
+      .limit(1)
+      .single();
+
+    if (!expoStation) {
+      console.log('[KDS AUTO-BACKFILL] No expo station found, skipping backfill');
+      return;
+    }
+
+    // Create tickets for orders without them
+    for (const orderRef of ordersWithoutTickets) {
+      const { data: order } = await supabaseAdmin
+        .from('orders')
+        .select('id, venue_id, table_number, table_id, items')
+        .eq('id', orderRef.id)
+        .single();
+
+      if (!order || !Array.isArray(order.items)) continue;
+
+      // Create tickets for each item
+      for (const item of order.items) {
+        const ticketData = {
+          venue_id: order.venue_id,
+          order_id: order.id,
+          station_id: expoStation.id,
+          item_name: item.item_name || 'Unknown Item',
+          quantity: parseInt(item.quantity) || 1,
+          special_instructions: item.specialInstructions || null,
+          table_number: order.table_number,
+          table_label: order.table_id || order.table_number?.toString() || 'Unknown',
+          status: 'new'
+        };
+
+        await supabaseAdmin
+          .from('kds_tickets')
+          .insert(ticketData);
+      }
+
+      console.log(`[KDS AUTO-BACKFILL] Created tickets for order ${order.id}`);
+    }
+
+    console.log(`[KDS AUTO-BACKFILL] Auto-backfill completed for ${ordersWithoutTickets.length} orders`);
+
+  } catch (error) {
+    console.error('[KDS AUTO-BACKFILL] Error during auto-backfill:', error);
+    throw error;
+  }
+}
 
 // GET - Fetch KDS tickets for a venue or station
 export async function GET(req: Request) {
@@ -71,9 +152,28 @@ export async function GET(req: Request) {
       );
     }
 
+    // Auto-backfill: Check if we have orders without KDS tickets and create them
+    try {
+      await autoBackfillMissingTickets(venueId);
+    } catch (backfillError) {
+      console.warn('[KDS] Auto-backfill failed (non-critical):', backfillError);
+      // Don't fail the request if backfill fails
+    }
+
+    // Fetch tickets again after potential backfill
+    const { data: finalTickets, error: finalError } = await query;
+
+    if (finalError) {
+      console.error('[KDS] Error fetching tickets after backfill:', finalError);
+      return NextResponse.json(
+        { ok: false, error: finalError.message },
+        { status: 500 }
+      );
+    }
+
     return NextResponse.json({
       ok: true,
-      tickets: tickets || []
+      tickets: finalTickets || []
     });
   } catch (error: any) {
     console.error('[KDS] Unexpected error:', error);
