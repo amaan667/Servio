@@ -71,6 +71,30 @@ function PricingQuickCompare({
             Loading tier information...
           </Badge>
         )}
+        
+        {/* Debug button - temporary */}
+        {isSignedIn && (
+          <Button 
+            onClick={async () => {
+              try {
+                const response = await fetch('/api/debug/subscription-status');
+                const data = await response.json();
+                console.log('[DEBUG] Subscription status:', data);
+                if (data.success) {
+                  // Force page refresh to get updated data
+                  window.location.reload();
+                }
+              } catch (error) {
+                console.error('[DEBUG] Error:', error);
+              }
+            }}
+            variant="outline"
+            size="sm"
+            className="ml-2"
+          >
+            Debug Refresh
+          </Button>
+        )}
       </div>
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 w-full max-w-6xl mx-auto px-4" style={{ minHeight: '600px', maxHeight: '600px' }}>
         {/* Basic */}
