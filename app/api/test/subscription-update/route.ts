@@ -62,8 +62,8 @@ export async function POST(request: NextRequest) {
 
       if (!userVenueError && userVenueRoles && userVenueRoles.length > 0) {
         const userVenueRole = userVenueRoles[0];
-        if (userVenueRole && userVenueRole.organizations) {
-          orgId = userVenueRole.organizations.id;
+        if (userVenueRole && userVenueRole.organization_id) {
+          orgId = userVenueRole.organization_id;
           orgFound = true;
         }
       }
