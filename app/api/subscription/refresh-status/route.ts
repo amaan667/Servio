@@ -1,0 +1,151 @@
+// API endpoint to manually refresh subscription status
+import { NextRequest, NextResponse } from "next/server";
+import { createClient } from "@/lib/supabase/server";
+import { stripe } from "@/lib/stripe-client";
+
+export async function POST(request: NextRequest) {
+  try {
+    const supabase = await createClient();
+
+    // Check auth
+    const {
+      data: { user },
+    } = await supabase.auth.getUser();
+
+    if (!user) {
+      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+    }
+
+    const body = await request.json();
+    const { organizationId } = body;
+
+    if (!organizationId) {
+      return NextResponse.json(
+        { error: "Organization ID required" },
+        { status: 400 }
+      );
+    }
+
+    console.log('[SUBSCRIPTION REFRESH] Refreshing subscription status for org:', organizationId);
+
+    // Get organization details
+    const { data: org, error: orgError } = await supabase
+      .from("organizations")
+      .select("*")
+      .eq("id", organizationId)
+      .single();
+
+    if (orgError || !org) {
+      console.error('[SUBSCRIPTION REFRESH] Organization not found:', orgError);
+      return NextResponse.json(
+        { error: "Organization not found" },
+        { status: 404 }
+      );
+    }
+
+    // If no Stripe subscription ID, return current status
+    if (!org.stripe_subscription_id) {
+      return NextResponse.json({
+        success: true,
+        subscription: {
+          tier: org.subscription_tier || 'basic',
+          status: org.subscription_status || 'basic',
+          trial_ends_at: org.trial_ends_at,
+          is_grandfathered: org.is_grandfathered
+        }
+      });
+    }
+
+    // Fetch latest subscription status from Stripe
+    try {
+      const stripeSubscription = await stripe.subscriptions.retrieve(org.stripe_subscription_id);
+      
+      console.log('[SUBSCRIPTION REFRESH] Stripe subscription status:', {
+        id: stripeSubscription.id,
+        status: stripeSubscription.status,
+        current_period_end: stripeSubscription.current_period_end,
+        trial_end: stripeSubscription.trial_end
+      });
+
+      // Calculate trial end date
+      let trialEndsAt = null;
+      if (stripeSubscription.trial_end) {
+        trialEndsAt = new Date(stripeSubscription.trial_end * 1000).toISOString();
+      }
+
+      // Update organization with latest Stripe data
+      const updateData = {
+        subscription_status: stripeSubscription.status,
+        subscription_tier: stripeSubscription.metadata?.tier || org.subscription_tier,
+        trial_ends_at: trialEndsAt,
+        updated_at: new Date().toISOString(),
+      };
+
+      const { error: updateError } = await supabase
+        .from("organizations")
+        .update(updateData)
+        .eq("id", organizationId);
+
+      if (updateError) {
+        console.error('[SUBSCRIPTION REFRESH] Error updating organization:', updateError);
+        return NextResponse.json(
+          { error: "Failed to update subscription status" },
+          { status: 500 }
+        );
+      }
+
+      console.log('[SUBSCRIPTION REFRESH] Successfully updated organization subscription status');
+
+      return NextResponse.json({
+        success: true,
+        subscription: {
+          tier: updateData.subscription_tier,
+          status: updateData.subscription_status,
+          trial_ends_at: updateData.trial_ends_at,
+          is_grandfathered: org.is_grandfathered
+        }
+      });
+
+    } catch (stripeError: any) {
+      console.error('[SUBSCRIPTION REFRESH] Stripe error:', stripeError);
+      
+      // If subscription doesn't exist in Stripe, reset to basic
+      const { error: resetError } = await supabase
+        .from("organizations")
+        .update({
+          subscription_tier: 'basic',
+          subscription_status: 'basic',
+          stripe_subscription_id: null,
+          trial_ends_at: null,
+          updated_at: new Date().toISOString(),
+        })
+        .eq("id", organizationId);
+
+      if (resetError) {
+        console.error('[SUBSCRIPTION REFRESH] Error resetting organization:', resetError);
+        return NextResponse.json(
+          { error: "Failed to reset subscription status" },
+          { status: 500 }
+        );
+      }
+
+      return NextResponse.json({
+        success: true,
+        subscription: {
+          tier: 'basic',
+          status: 'basic',
+          trial_ends_at: null,
+          is_grandfathered: org.is_grandfathered
+        },
+        reset: true
+      });
+    }
+
+  } catch (error: any) {
+    console.error("[SUBSCRIPTION REFRESH] Error:", error);
+    return NextResponse.json(
+      { error: error.message || "Failed to refresh subscription status" },
+      { status: 500 }
+    );
+  }
+}

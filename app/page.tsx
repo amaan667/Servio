@@ -27,11 +27,15 @@ function PricingQuickCompare({
   currentTier,
   onPrimaryClick,
   onUpgradeClick,
+  trialEndsAt,
+  subscriptionStatus,
 }: {
   isSignedIn: boolean;
   currentTier?: string;
   onPrimaryClick: () => void;
   onUpgradeClick: () => void;
+  trialEndsAt?: string;
+  subscriptionStatus?: string;
 }) {
   const tierInfo = {
     basic: { name: 'Basic', order: 1 },
@@ -70,6 +74,21 @@ function PricingQuickCompare({
           <Badge className="bg-yellow-500 text-white text-sm px-4 py-1">
             Loading tier information...
           </Badge>
+        )}
+        
+        {/* Trial Information */}
+        {isSignedIn && currentTier && trialEndsAt && subscriptionStatus === 'trialing' && (
+          <div className="bg-blue-50 border border-blue-200 rounded-lg p-4 mb-6">
+            <div className="flex items-center justify-between">
+              <div>
+                <h3 className="text-lg font-semibold text-blue-900">Free Trial Active</h3>
+                <p className="text-blue-700">
+                  Your {currentTier} plan trial ends on {new Date(trialEndsAt).toLocaleDateString()}
+                </p>
+              </div>
+              <Badge className="bg-blue-500 text-white">Trial Active</Badge>
+            </div>
+          </div>
         )}
       </div>
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 w-full max-w-6xl mx-auto px-4" style={{ minHeight: '600px', maxHeight: '600px' }}>
@@ -151,6 +170,9 @@ export default function HomePage() {
   const [currentTier, setCurrentTier] = useState<string | undefined>();
   const [organizationId, setOrganizationId] = useState<string | undefined>();
   const [showUpgradeModal, setShowUpgradeModal] = useState(false);
+  const [trialEndsAt, setTrialEndsAt] = useState<string | undefined>();
+  const [subscriptionStatus, setSubscriptionStatus] = useState<string | undefined>();
+  const [isRefreshing, setIsRefreshing] = useState(false);
 
   // Fetch user's current tier
   useEffect(() => {
@@ -197,6 +219,8 @@ export default function HomePage() {
                 console.log('[TIER DEBUG] Setting tier to (via user_venue_roles):', tier);
                 setCurrentTier(tier);
               }
+              setTrialEndsAt(org.trial_ends_at);
+              setSubscriptionStatus(org.subscription_status);
               orgFound = true;
             }
           }
@@ -224,6 +248,8 @@ export default function HomePage() {
                 console.log('[TIER DEBUG] Setting tier to (direct):', tier);
                 setCurrentTier(tier);
               }
+              setTrialEndsAt(directOrgs.trial_ends_at);
+              setSubscriptionStatus(directOrgs.subscription_status);
               orgFound = true;
             }
           } catch (error) {
@@ -273,16 +299,48 @@ export default function HomePage() {
     fetchUserTier();
   }, [user]);
 
+  // Refresh subscription status function
+  const refreshSubscriptionStatus = async () => {
+    if (!organizationId) return;
+    
+    setIsRefreshing(true);
+    try {
+      const response = await fetch('/api/subscription/refresh-status', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ organizationId })
+      });
+
+      if (response.ok) {
+        const data = await response.json();
+        if (data.success) {
+          setCurrentTier(data.subscription.tier);
+          setSubscriptionStatus(data.subscription.status);
+          setTrialEndsAt(data.subscription.trial_ends_at);
+          console.log('[TIER REFRESH] Successfully refreshed subscription status');
+        }
+      }
+    } catch (error) {
+      console.error('[TIER REFRESH] Error refreshing subscription:', error);
+    } finally {
+      setIsRefreshing(false);
+    }
+  };
+
   // Refresh tier info when returning from checkout
   useEffect(() => {
     const urlParams = new URLSearchParams(window.location.search);
     if (urlParams.get('upgrade') === 'success') {
       // Refresh tier info after successful upgrade
       setTimeout(() => {
-        window.location.href = window.location.pathname; // Remove query params and refresh
+        refreshSubscriptionStatus();
+        // Remove query params
+        const url = new URL(window.location.href);
+        url.searchParams.delete('upgrade');
+        window.history.replaceState({}, document.title, url.toString());
       }, 2000);
     }
-  }, []);
+  }, [organizationId]);
 
   // Analytics handler for FAQ interactions (optional)
   const handleFAQToggle = (question: string, isOpen: boolean) => {
@@ -710,6 +768,8 @@ export default function HomePage() {
           currentTier={currentTier}
           onPrimaryClick={handlePricingPrimary}
           onUpgradeClick={handleUpgradeClick}
+          trialEndsAt={trialEndsAt}
+          subscriptionStatus={subscriptionStatus}
         />
         
         {/* FAQ Section */}

@@ -155,7 +155,7 @@ export default function CheckoutSuccessPage() {
             </Button>
             <Button 
               variant="outline"
-              onClick={() => router.push("/")}
+              onClick={() => router.push("/?upgrade=success")}
               className="flex-1"
             >
               Back to Home
