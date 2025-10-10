@@ -12,7 +12,14 @@ export async function GET() {
     };
 
     // Try to list existing products and prices
-    let existingPrices = [];
+    let existingPrices: Array<{
+      id: string;
+      nickname: string;
+      unit_amount: number | null;
+      currency: string;
+      recurring: string | undefined;
+    }> = [];
+    
     try {
       const prices = await stripe.prices.list({ limit: 10 });
       existingPrices = prices.data.map(price => ({
