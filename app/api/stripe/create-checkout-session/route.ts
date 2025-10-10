@@ -222,7 +222,7 @@ export async function POST(request: NextRequest) {
     }
 
     // Create checkout session
-    const sessionData = {
+    const sessionData: Stripe.Checkout.SessionCreateParams = {
       customer: customerId,
       mode: "subscription",
       payment_method_types: ["card"],
