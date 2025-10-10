@@ -244,6 +244,21 @@ const VenueDashboardClient = React.memo(function VenueDashboardClient({
     };
   }, [venueId, venue?.venue_id, todayWindow?.startUtcISO, venueTz]); // Use specific properties instead of objects to prevent unnecessary re-runs
 
+  // Auto-refresh when returning from checkout success
+  useEffect(() => {
+    const urlParams = new URLSearchParams(window.location.search);
+    if (urlParams.get('upgrade') === 'success') {
+      console.log('[DASHBOARD] Detected upgrade success, refreshing dashboard data');
+      // Refresh dashboard data after successful upgrade
+      setTimeout(() => {
+        handleRefresh();
+        // Remove query params
+        const url = new URL(window.location.href);
+        url.searchParams.delete('upgrade');
+        window.history.replaceState({}, document.title, url.toString());
+      }, 1000);
+    }
+  }, []);
 
   // Function to refresh counts using the new RPC with retry logic
   const refreshCounts = async () => {
