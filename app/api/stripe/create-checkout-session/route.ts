@@ -39,8 +39,9 @@ const ensureStripeProducts = async () => {
   for (const product of products) {
     try {
       // Check if we already have a price ID for this tier
-      if (PRICE_IDS[product.tier as keyof typeof PRICE_IDS]) {
-        priceIds[product.tier] = PRICE_IDS[product.tier as keyof typeof PRICE_IDS];
+      const existingPriceId = PRICE_IDS[product.tier as keyof typeof PRICE_IDS];
+      if (existingPriceId) {
+        priceIds[product.tier] = existingPriceId;
         continue;
       }
 
