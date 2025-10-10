@@ -160,13 +160,21 @@ async function handleSubscriptionCreated(subscription: Stripe.Subscription) {
 }
 
 async function handleSubscriptionUpdated(subscription: Stripe.Subscription) {
+  console.log("[STRIPE WEBHOOK] handleSubscriptionUpdated called with subscription:", {
+    id: subscription.id,
+    status: subscription.status,
+    metadata: subscription.metadata
+  });
+
   const supabase = await createClient();
 
   const organizationId = subscription.metadata?.organization_id;
   const tier = subscription.metadata?.tier;
 
+  console.log("[STRIPE WEBHOOK] Extracted subscription data:", { organizationId, tier });
+
   if (!organizationId) {
-    console.error("[STRIPE] No organization_id in subscription");
+    console.error("[STRIPE] No organization_id in subscription metadata:", subscription.metadata);
     return;
   }
 
@@ -177,14 +185,25 @@ async function handleSubscriptionUpdated(subscription: Stripe.Subscription) {
     .eq("id", organizationId)
     .single();
 
-  await supabase
+  const updateData = {
+    subscription_tier: tier || org?.subscription_tier || "basic",
+    subscription_status: subscription.status,
+    updated_at: new Date().toISOString(),
+  };
+
+  console.log("[STRIPE WEBHOOK] Updating organization subscription with data:", updateData);
+
+  const { error: updateError } = await supabase
     .from("organizations")
-    .update({
-      subscription_tier: tier || org?.subscription_tier || "basic",
-      subscription_status: subscription.status,
-      updated_at: new Date().toISOString(),
-    })
+    .update(updateData)
     .eq("id", organizationId);
+
+  if (updateError) {
+    console.error("[STRIPE] Error updating organization subscription:", updateError);
+    return;
+  }
+
+  console.log("[STRIPE WEBHOOK] Successfully updated organization subscription:", organizationId);
 
   await supabase.from("subscription_history").insert({
     organization_id: organizationId,

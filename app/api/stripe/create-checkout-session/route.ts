@@ -196,7 +196,8 @@ export async function POST(request: NextRequest) {
       id: org.id,
       owner_id: org.owner_id,
       subscription_tier: org.subscription_tier,
-      is_grandfathered: org.is_grandfathered
+      is_grandfathered: org.is_grandfathered,
+      stripe_customer_id: org.stripe_customer_id
     });
 
     // Create or retrieve Stripe customer
@@ -221,7 +222,7 @@ export async function POST(request: NextRequest) {
     }
 
     // Create checkout session
-    const session = await stripe.checkout.sessions.create({
+    const sessionData = {
       customer: customerId,
       mode: "subscription",
       payment_method_types: ["card"],
@@ -244,6 +245,16 @@ export async function POST(request: NextRequest) {
         },
         trial_period_days: 14, // 14-day free trial
       },
+    };
+
+    console.log('[STRIPE DEBUG] Creating checkout session with data:', sessionData);
+
+    const session = await stripe.checkout.sessions.create(sessionData);
+
+    console.log('[STRIPE DEBUG] Checkout session created:', {
+      id: session.id,
+      url: session.url,
+      customer: session.customer
     });
 
     return NextResponse.json({ sessionId: session.id, url: session.url });
