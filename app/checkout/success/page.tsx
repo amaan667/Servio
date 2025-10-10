@@ -36,13 +36,27 @@ export default function CheckoutSuccessPage() {
       trialEndDate.setDate(trialEndDate.getDate() + 14);
       setTrialEndsAt(trialEndDate.toLocaleDateString());
       
+      // Update organization tier immediately as a backup in case webhook hasn't fired yet
+      if (user) {
+        console.log('[CHECKOUT SUCCESS] Updating organization tier immediately');
+        fetch('/api/test/update-plan', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ tier: tierParam })
+        }).then(res => res.json()).then(data => {
+          console.log('[CHECKOUT SUCCESS] Organization tier update result:', data);
+        }).catch(err => {
+          console.error('[CHECKOUT SUCCESS] Failed to update organization tier:', err);
+        });
+      }
+      
       setLoading(false);
     } else {
       // Redirect if missing required params
       console.log('[CHECKOUT SUCCESS] Missing params, redirecting to dashboard');
       router.push("/dashboard");
     }
-  }, [searchParams, router]);
+  }, [searchParams, router, user]);
 
   const getTierDisplayName = (tier: string) => {
     switch (tier) {

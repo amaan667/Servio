@@ -73,11 +73,13 @@ export async function POST(request: NextRequest) {
 }
 
 async function handleCheckoutCompleted(session: Stripe.Checkout.Session) {
+  console.log("[STRIPE WEBHOOK] ===== CHECKOUT COMPLETED =====");
   console.log("[STRIPE WEBHOOK] handleCheckoutCompleted called with session:", {
     id: session.id,
     customer: session.customer,
     subscription: session.subscription,
-    metadata: session.metadata
+    metadata: session.metadata,
+    mode: session.mode
   });
 
   const supabase = await createClient();
@@ -88,21 +90,32 @@ async function handleCheckoutCompleted(session: Stripe.Checkout.Session) {
   console.log("[STRIPE WEBHOOK] Extracted data:", { organizationId, tier });
 
   if (!organizationId || !tier) {
-    console.error("[STRIPE WEBHOOK] Missing required metadata in checkout session:", session.metadata);
+    console.error("[STRIPE WEBHOOK] ❌ Missing required metadata in checkout session:", session.metadata);
     return;
   }
 
   // Verify the organization exists
   const { data: existingOrg, error: orgCheckError } = await supabase
     .from("organizations")
-    .select("id")
+    .select("id, subscription_tier, subscription_status")
     .eq("id", organizationId)
-    .single();
+    .maybeSingle();
 
-  if (orgCheckError || !existingOrg) {
-    console.error("[STRIPE WEBHOOK] Organization not found:", organizationId, orgCheckError);
+  if (orgCheckError) {
+    console.error("[STRIPE WEBHOOK] ❌ Error checking organization:", orgCheckError);
     return;
   }
+
+  if (!existingOrg) {
+    console.error("[STRIPE WEBHOOK] ❌ Organization not found:", organizationId);
+    return;
+  }
+
+  console.log("[STRIPE WEBHOOK] ✅ Found organization:", {
+    id: existingOrg.id,
+    current_tier: existingOrg.subscription_tier,
+    current_status: existingOrg.subscription_status
+  });
 
   // Update organization with subscription details
   const updateData = {
@@ -114,30 +127,42 @@ async function handleCheckoutCompleted(session: Stripe.Checkout.Session) {
     updated_at: new Date().toISOString(),
   };
 
-  console.log("[STRIPE WEBHOOK] Updating organization with data:", updateData);
+  console.log("[STRIPE WEBHOOK] 📝 Updating organization with data:", updateData);
 
-  const { error: updateError } = await supabase
+  const { error: updateError, data: updatedOrg } = await supabase
     .from("organizations")
     .update(updateData)
-    .eq("id", organizationId);
+    .eq("id", organizationId)
+    .select()
+    .single();
 
   if (updateError) {
-    console.error("[STRIPE WEBHOOK] Error updating organization:", updateError);
+    console.error("[STRIPE WEBHOOK] ❌ Error updating organization:", updateError);
     return;
   }
 
-  console.log("[STRIPE WEBHOOK] Successfully updated organization:", organizationId);
-
-  // Log subscription history
-  await supabase.from("subscription_history").insert({
-    organization_id: organizationId,
-    event_type: "checkout_completed",
-    new_tier: tier,
-    stripe_event_id: session.id,
-    metadata: { session_id: session.id },
+  console.log("[STRIPE WEBHOOK] ✅ Successfully updated organization:", {
+    id: organizationId,
+    new_tier: updatedOrg.subscription_tier,
+    new_status: updatedOrg.subscription_status
   });
 
-  console.log(`[STRIPE WEBHOOK] Checkout completed for org: ${organizationId}`);
+  // Log subscription history
+  try {
+    await supabase.from("subscription_history").insert({
+      organization_id: organizationId,
+      event_type: "checkout_completed",
+      old_tier: existingOrg.subscription_tier,
+      new_tier: tier,
+      stripe_event_id: session.id,
+      metadata: { session_id: session.id },
+    });
+    console.log("[STRIPE WEBHOOK] ✅ Logged subscription history");
+  } catch (historyError) {
+    console.warn("[STRIPE WEBHOOK] ⚠️ Failed to log subscription history (non-critical):", historyError);
+  }
+
+  console.log(`[STRIPE WEBHOOK] ===== CHECKOUT COMPLETED SUCCESSFULLY for org: ${organizationId} =====`);
 }
 
 async function handleSubscriptionCreated(subscription: Stripe.Subscription) {
