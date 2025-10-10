@@ -39,15 +39,33 @@ export default function CheckoutSuccessPage() {
       // Update organization tier immediately as a backup in case webhook hasn't fired yet
       if (user) {
         console.log('[CHECKOUT SUCCESS] Updating organization tier immediately');
-        fetch('/api/test/update-plan', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ tier: tierParam })
-        }).then(res => res.json()).then(data => {
-          console.log('[CHECKOUT SUCCESS] Organization tier update result:', data);
-        }).catch(err => {
-          console.error('[CHECKOUT SUCCESS] Failed to update organization tier:', err);
-        });
+        
+        // Retry logic for organization update
+        const updateOrganization = async (retryCount = 0) => {
+          try {
+            const response = await fetch('/api/test/update-plan', {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify({ tier: tierParam })
+            });
+            
+            const data = await response.json();
+            console.log('[CHECKOUT SUCCESS] Organization tier update result:', data);
+            
+            if (!response.ok && retryCount < 3) {
+              console.log(`[CHECKOUT SUCCESS] Update failed, retrying in ${(retryCount + 1) * 2} seconds...`);
+              setTimeout(() => updateOrganization(retryCount + 1), (retryCount + 1) * 2000);
+            }
+          } catch (err) {
+            console.error('[CHECKOUT SUCCESS] Failed to update organization tier:', err);
+            if (retryCount < 3) {
+              console.log(`[CHECKOUT SUCCESS] Network error, retrying in ${(retryCount + 1) * 2} seconds...`);
+              setTimeout(() => updateOrganization(retryCount + 1), (retryCount + 1) * 2000);
+            }
+          }
+        };
+        
+        updateOrganization();
       }
       
       setLoading(false);
@@ -168,14 +186,24 @@ export default function CheckoutSuccessPage() {
           {/* Action Buttons */}
           <div className="flex gap-4 pt-4">
             <Button 
-              onClick={() => router.push("/dashboard?upgrade=success")}
+              onClick={() => {
+                // Add a small delay to ensure the organization update has time to propagate
+                setTimeout(() => {
+                  router.push("/dashboard?upgrade=success");
+                }, 1000);
+              }}
               className="flex-1 bg-purple-600 hover:bg-purple-700"
             >
               Go to Dashboard
             </Button>
             <Button 
               variant="outline"
-              onClick={() => router.push("/?upgrade=success")}
+              onClick={() => {
+                // Add a small delay to ensure the organization update has time to propagate
+                setTimeout(() => {
+                  router.push("/?upgrade=success");
+                }, 1000);
+              }}
               className="flex-1"
             >
               Back to Home
