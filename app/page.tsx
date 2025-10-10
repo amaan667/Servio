@@ -234,12 +234,45 @@ export default function HomePage() {
     try {
       console.log(`[TIER REFRESH] Attempt ${retryCount + 1}/${maxRetries + 1}`);
       
-      // Always re-fetch from the organization ensure endpoint for accuracy
-      console.log('[TIER REFRESH] Re-fetching tier info from scratch');
-      await fetchUserTier();
+      // Re-fetch organization data directly for accuracy
+      console.log('[TIER REFRESH] Re-fetching tier info from organization endpoint');
+      const ensureOrgResponse = await fetch('/api/organization/ensure', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' }
+      });
+
+      if (!ensureOrgResponse.ok) {
+        console.error('[TIER REFRESH] Failed to fetch organization');
+        if (retryCount < maxRetries) {
+          console.log(`[TIER REFRESH] Retrying in ${(retryCount + 1) * 2} seconds...`);
+          setTimeout(() => {
+            refreshSubscriptionStatus(retryCount + 1);
+          }, (retryCount + 1) * 2000);
+          return false;
+        }
+        setIsRefreshing(false);
+        return false;
+      }
+
+      const { organization } = await ensureOrgResponse.json();
       
-      // If still showing basic tier after refresh, retry
-      if (retryCount < maxRetries && currentTier === 'basic') {
+      // Update local state with fresh organization data
+      setOrganizationId(organization.id);
+      
+      if (organization.is_grandfathered) {
+        setCurrentTier('grandfathered');
+      } else {
+        const tier = organization.subscription_tier || 'basic';
+        console.log('[TIER REFRESH] Updated tier to:', tier);
+        setCurrentTier(tier);
+      }
+      
+      setTrialEndsAt(organization.trial_ends_at);
+      setSubscriptionStatus(organization.subscription_status);
+      
+      // Check if we got a non-basic tier or if we've exhausted retries
+      const fetchedTier = organization.subscription_tier || 'basic';
+      if (retryCount < maxRetries && fetchedTier === 'basic') {
         console.log(`[TIER REFRESH] Still showing basic tier, retrying in ${(retryCount + 1) * 2} seconds...`);
         setTimeout(() => {
           refreshSubscriptionStatus(retryCount + 1);
@@ -247,12 +280,19 @@ export default function HomePage() {
         return false;
       }
       
-      console.log('[TIER REFRESH] Refresh completed');
+      console.log('[TIER REFRESH] Refresh completed with tier:', fetchedTier);
       setIsRefreshing(false);
       return true;
       
     } catch (error) {
       console.error('[TIER REFRESH] Error refreshing subscription:', error);
+      if (retryCount < maxRetries) {
+        console.log(`[TIER REFRESH] Error occurred, retrying in ${(retryCount + 1) * 2} seconds...`);
+        setTimeout(() => {
+          refreshSubscriptionStatus(retryCount + 1);
+        }, (retryCount + 1) * 2000);
+        return false;
+      }
       setIsRefreshing(false);
       return false;
     }
