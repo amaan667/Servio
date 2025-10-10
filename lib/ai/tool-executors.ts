@@ -391,7 +391,6 @@ export async function executeMenuTranslate(
 ): Promise<AIPreviewDiff | AIExecutionResult> {
   const supabase = await createClient();
 
-  // Note: This is a placeholder - actual translation would use Google Translate API or similar
   const { data: items } = await supabase
     .from("menu_items")
     .select("id, name, description")
@@ -401,34 +400,135 @@ export async function executeMenuTranslate(
     throw new AIAssistantError("No menu items found", "INVALID_PARAMS");
   }
 
+  // Language code mapping
+  const languageNames: Record<string, string> = {
+    es: "Spanish",
+    ar: "Arabic",
+    fr: "French",
+    de: "German",
+    it: "Italian",
+    pt: "Portuguese",
+    zh: "Chinese",
+    ja: "Japanese",
+  };
+
+  const targetLangName = languageNames[params.targetLanguage] || params.targetLanguage;
+
   if (preview) {
+    // For preview, just show what will happen
     return {
       toolName: "menu.translate",
-      before: items.slice(0, 5),
+      before: items.slice(0, 5).map(i => ({ 
+        name: i.name, 
+        description: i.description || "" 
+      })),
       after: items.slice(0, 5).map(i => ({
-        ...i,
-        name: `[${params.targetLanguage}] ${i.name}`,
-        description: i.description ? `[${params.targetLanguage}] ${i.description}` : null
+        name: `[${targetLangName}] ${i.name}`,
+        description: i.description ? `[${targetLangName}] ${i.description}` : ""
       })),
       impact: {
         itemsAffected: items.length,
-        description: `Menu will be translated to ${params.targetLanguage}. Preview shows first 5 items.`,
+        description: `Menu will be translated to ${targetLangName}. This will update ${items.length} items${params.includeDescriptions ? " (including descriptions)" : ""}.`,
       },
     };
   }
 
-  // For now, we'll provide a helpful message instead of failing
-  return {
-    success: true,
-    toolName: "menu.translate",
-    result: {
-      message: `Translation preview completed for ${params.targetLanguage}. To enable full translation, please integrate with a translation service like Google Translate API. The preview shows how ${items.length} menu items would be translated.`,
-      itemsPreviewed: items.length,
-      targetLanguage: params.targetLanguage,
-      hint: "Contact support to enable full translation functionality"
-    },
-    auditId: "",
-  };
+  // Execute - Translate using OpenAI
+  try {
+    // Import OpenAI
+    const { getOpenAI } = await import("@/lib/openai");
+    const openai = getOpenAI();
+
+    // Translate in batches to avoid token limits
+    const batchSize = 20;
+    const translatedItems = [];
+    
+    for (let i = 0; i < items.length; i += batchSize) {
+      const batch = items.slice(i, i + batchSize);
+      
+      // Create translation prompt
+      const itemsToTranslate = batch.map(item => ({
+        id: item.id,
+        name: item.name,
+        ...(params.includeDescriptions && item.description ? { description: item.description } : {})
+      }));
+
+      const prompt = `Translate the following menu items to ${targetLangName}. 
+Return ONLY a JSON array with the same structure, keeping the 'id' field unchanged.
+Maintain culinary context and use natural translations that make sense on a menu.
+
+Items to translate:
+${JSON.stringify(itemsToTranslate, null, 2)}`;
+
+      const response = await openai.chat.completions.create({
+        model: "gpt-4o-mini",
+        messages: [
+          {
+            role: "system",
+            content: "You are a professional menu translator. Return ONLY valid JSON arrays."
+          },
+          {
+            role: "user",
+            content: prompt
+          }
+        ],
+        temperature: 0.3,
+        response_format: { type: "json_object" },
+      });
+
+      const content = response.choices[0]?.message?.content;
+      if (content) {
+        const translated = JSON.parse(content);
+        // Handle if response is wrapped in an object
+        const translatedArray = Array.isArray(translated) ? translated : (translated.items || []);
+        translatedItems.push(...translatedArray);
+      }
+    }
+
+    // Update database with translations
+    let updatedCount = 0;
+    for (const translatedItem of translatedItems) {
+      const updateData: any = {
+        name: translatedItem.name,
+        updated_at: new Date().toISOString()
+      };
+      
+      if (params.includeDescriptions && translatedItem.description) {
+        updateData.description = translatedItem.description;
+      }
+
+      const { error } = await supabase
+        .from("menu_items")
+        .update(updateData)
+        .eq("id", translatedItem.id)
+        .eq("venue_id", venueId);
+
+      if (!error) {
+        updatedCount++;
+      } else {
+        console.error(`[AI ASSISTANT] Failed to update item ${translatedItem.id}:`, error);
+      }
+    }
+
+    return {
+      success: true,
+      toolName: "menu.translate",
+      result: {
+        message: `Successfully translated ${updatedCount} menu items to ${targetLangName}`,
+        itemsTranslated: updatedCount,
+        targetLanguage: params.targetLanguage,
+        includeDescriptions: params.includeDescriptions
+      },
+      auditId: "",
+    };
+  } catch (error: any) {
+    console.error("[AI ASSISTANT] Translation error:", error);
+    throw new AIAssistantError(
+      `Translation failed: ${error.message}`,
+      "EXECUTION_FAILED",
+      error
+    );
+  }
 }
 
 // ============================================================================

@@ -4,6 +4,7 @@
 // Global ⌘K / Ctrl-K command palette for AI assistance
 
 import { useState, useEffect, useCallback } from "react";
+import { useRouter } from "next/navigation";
 import {
   Dialog,
   DialogContent,
@@ -15,7 +16,7 @@ import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { ScrollArea } from "@/components/ui/scroll-area";
-import { Loader2, Sparkles, AlertTriangle, Check, X } from "lucide-react";
+import { Loader2, Sparkles, AlertTriangle, Check, X, TrendingUp, DollarSign } from "lucide-react";
 import { AIPlanResponse, AIPreviewDiff } from "@/types/ai-assistant";
 import { AIAssistantFloat } from "./ai-assistant-float";
 
@@ -30,6 +31,7 @@ export function AssistantCommandPalette({
   page = "general",
   suggestions = [],
 }: AssistantCommandPaletteProps) {
+  const router = useRouter();
   const [open, setOpen] = useState(false);
   const [prompt, setPrompt] = useState("");
   const [loading, setLoading] = useState(false);
@@ -38,6 +40,7 @@ export function AssistantCommandPalette({
   const [executing, setExecuting] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [success, setSuccess] = useState(false);
+  const [executionResults, setExecutionResults] = useState<any[]>([]);
 
   // Keyboard shortcut: ⌘K / Ctrl-K
   useEffect(() => {
@@ -60,6 +63,7 @@ export function AssistantCommandPalette({
       setError(null);
       setSuccess(false);
       setPrompt("");
+      setExecutionResults([]);
     }
   }, [open]);
 
@@ -210,73 +214,39 @@ export function AssistantCommandPalette({
           throw new Error(data.error || "Execution failed");
         }
         
-        results.push(data.result);
+        results.push({ tool: tool.name, result: data.result });
       }
 
       setSuccess(true);
+      setExecutionResults(results);
       
       // Check if any tool was analytics
       const hasAnalytics = plan.tools.some(tool => 
         tool.name.startsWith("analytics.")
       );
       
-      // Display analytics results if present
-      if (hasAnalytics && results.length > 0) {
-        const analyticsResult = results.find(r => r && r.message);
-        if (analyticsResult) {
-          alert(analyticsResult.message);
-        }
-        
-        // Close modal after showing results
-        setTimeout(() => {
-          setOpen(false);
-        }, 2000);
-        return;
-      }
-      
       // Check if any tool was a navigation action
       const hasNavigation = plan.tools.some(tool => tool.name === "navigation.go_to_page");
       
       if (hasNavigation) {
-        // For navigation, close immediately and navigate
+        // For navigation, wait 1.5 seconds then navigate using Next.js router
         setTimeout(() => {
           setOpen(false);
           
-          // Find the navigation tool and execute it
-          const navTool = plan.tools.find(tool => tool.name === "navigation.go_to_page");
-          if (navTool && navTool.params?.page) {
-            const routeMap: Record<string, string> = {
-              "dashboard": `/dashboard/${venueId}`,
-              "menu": `/dashboard/${venueId}/menu-management`,
-              "inventory": `/dashboard/${venueId}/inventory`,
-              "orders": `/dashboard/${venueId}/orders`,
-              "live-orders": `/dashboard/${venueId}/live-orders`,
-              "kds": `/dashboard/${venueId}/kds`,
-              "kitchen-display": `/dashboard/${venueId}/kds`,
-              "qr-codes": `/generate-qr`, // Fixed: qr-codes page doesn't exist, use generate-qr
-              "generate-qr": `/generate-qr`,
-              "analytics": `/dashboard/${venueId}/analytics`,
-              "settings": `/dashboard/${venueId}/settings`,
-              "staff": `/dashboard/${venueId}/staff`,
-              "tables": `/dashboard/${venueId}/tables`,
-              "feedback": `/dashboard/${venueId}/feedback`,
-            };
-            
-            const targetRoute = routeMap[navTool.params.page];
-            if (targetRoute) {
-              window.location.href = targetRoute;
-            }
+          // Find the navigation tool result
+          const navResult = results.find(r => r.tool === "navigation.go_to_page");
+          if (navResult?.result?.route) {
+            router.push(navResult.result.route);
           }
-        }, 1000);
-      } else {
-        // For non-navigation actions, close after 2 seconds and refresh
+        }, 1500);
+      } else if (!hasAnalytics) {
+        // For non-analytics actions, close after 3 seconds and refresh
         setTimeout(() => {
           setOpen(false);
-        }, 2000);
-
-        // Refresh the page to show updates
-        window.location.reload();
+          router.refresh(); // Use Next.js router refresh instead of window.location.reload()
+        }, 3000);
       }
+      // For analytics, keep modal open so user can see results
     } catch (err: any) {
       console.error("[AI ASSISTANT] Execution error:", err);
       setError(err.message || "Failed to execute action");
@@ -287,6 +257,31 @@ export function AssistantCommandPalette({
 
   const handleSuggestionClick = (suggestion: string) => {
     setPrompt(suggestion);
+  };
+
+  // Get success message based on tool name
+  const getSuccessMessage = (toolName: string): string => {
+    const messages: Record<string, string> = {
+      "menu.update_prices": "✓ Prices updated successfully!",
+      "menu.toggle_availability": "✓ Menu items visibility changed!",
+      "menu.create_item": "✓ New menu item created!",
+      "menu.delete_item": "✓ Menu item deleted!",
+      "menu.translate": "✓ Menu translated successfully!",
+      "inventory.adjust_stock": "✓ Stock levels adjusted!",
+      "inventory.set_par_levels": "✓ Par levels updated!",
+      "inventory.generate_purchase_order": "✓ Purchase order generated!",
+      "orders.mark_served": "✓ Order marked as served!",
+      "orders.complete": "✓ Order completed!",
+      "analytics.get_insights": "✓ Analytics retrieved!",
+      "analytics.get_stats": "✓ Statistics generated!",
+      "analytics.export": "✓ Data exported!",
+      "analytics.create_report": "✓ Report created!",
+      "discounts.create": "✓ Discount created!",
+      "kds.get_overdue": "✓ Overdue tickets found!",
+      "kds.suggest_optimization": "✓ Optimization suggestions ready!",
+      "navigation.go_to_page": "✓ Navigating...",
+    };
+    return messages[toolName] || "✓ Action completed successfully!";
   };
 
   return (
@@ -364,11 +359,133 @@ export function AssistantCommandPalette({
 
           {/* Success */}
           {success && (
-            <div className="flex items-center gap-2 p-3 bg-green-500/10 border border-green-500/20 rounded-md">
-              <Check className="h-4 w-4 text-green-500" />
-              <p className="text-sm font-medium text-green-500">
-                Action completed successfully!
-              </p>
+            <div className="space-y-3">
+              <div className="flex items-center gap-2 p-3 bg-green-500/10 border border-green-500/20 rounded-md">
+                <Check className="h-4 w-4 text-green-500" />
+                <div className="flex-1">
+                  <p className="text-sm font-medium text-green-500">
+                    {plan?.tools.length === 1 
+                      ? getSuccessMessage(plan.tools[0].name)
+                      : `All ${plan?.tools.length || 0} actions completed successfully!`
+                    }
+                  </p>
+                  <p className="text-xs text-green-600/80 mt-0.5">{plan?.intent}</p>
+                </div>
+              </div>
+              
+              {/* Display execution results */}
+              {executionResults.length > 0 && (
+                <div className="space-y-3">
+                  {executionResults.map((item, idx) => {
+                    const result = item.result;
+                    
+                    // Analytics results display
+                    if (item.tool.startsWith("analytics.")) {
+                      return (
+                        <div key={idx} className="border rounded-lg p-4 space-y-3 bg-blue-50/50 dark:bg-blue-950/20">
+                          <div className="flex items-center gap-2">
+                            <TrendingUp className="h-5 w-5 text-blue-500" />
+                            <h3 className="font-semibold text-blue-700 dark:text-blue-300">
+                              Analytics Results
+                            </h3>
+                          </div>
+                          
+                          {result.message && (
+                            <p className="text-sm text-muted-foreground">{result.message}</p>
+                          )}
+                          
+                          {/* Revenue stats */}
+                          {(result.revenue !== undefined || result.total !== undefined) && (
+                            <div className="grid grid-cols-2 gap-3">
+                              {(result.revenue !== undefined || result.total !== undefined) && (
+                                <div className="bg-white dark:bg-gray-800 p-3 rounded border">
+                                  <div className="flex items-center gap-2 text-green-600 dark:text-green-400 mb-1">
+                                    <DollarSign className="h-4 w-4" />
+                                    <span className="text-xs font-medium">Revenue</span>
+                                  </div>
+                                  <p className="text-xl font-bold">
+                                    £{(result.revenue || result.total || 0).toFixed(2)}
+                                  </p>
+                                </div>
+                              )}
+                              
+                              {result.quantitySold !== undefined && (
+                                <div className="bg-white dark:bg-gray-800 p-3 rounded border">
+                                  <p className="text-xs font-medium text-muted-foreground mb-1">Units Sold</p>
+                                  <p className="text-xl font-bold">{result.quantitySold}</p>
+                                </div>
+                              )}
+                              
+                              {result.orderCount !== undefined && (
+                                <div className="bg-white dark:bg-gray-800 p-3 rounded border">
+                                  <p className="text-xs font-medium text-muted-foreground mb-1">Orders</p>
+                                  <p className="text-xl font-bold">{result.orderCount}</p>
+                                </div>
+                              )}
+                              
+                              {result.averagePerOrder !== undefined && result.averagePerOrder > 0 && (
+                                <div className="bg-white dark:bg-gray-800 p-3 rounded border">
+                                  <p className="text-xs font-medium text-muted-foreground mb-1">Avg Per Order</p>
+                                  <p className="text-xl font-bold">£{result.averagePerOrder.toFixed(2)}</p>
+                                </div>
+                              )}
+                              
+                              {result.count !== undefined && !result.orderCount && (
+                                <div className="bg-white dark:bg-gray-800 p-3 rounded border">
+                                  <p className="text-xs font-medium text-muted-foreground mb-1">Count</p>
+                                  <p className="text-xl font-bold">{result.count}</p>
+                                </div>
+                              )}
+                              
+                              {result.average !== undefined && (
+                                <div className="bg-white dark:bg-gray-800 p-3 rounded border">
+                                  <p className="text-xs font-medium text-muted-foreground mb-1">Average</p>
+                                  <p className="text-xl font-bold">£{result.average.toFixed(2)}</p>
+                                </div>
+                              )}
+                            </div>
+                          )}
+                          
+                          {/* Top items list */}
+                          {result.topItems && result.topItems.length > 0 && (
+                            <div className="bg-white dark:bg-gray-800 p-3 rounded border">
+                              <p className="text-xs font-medium text-muted-foreground mb-2">Top Items</p>
+                              <div className="space-y-1">
+                                {result.topItems.slice(0, 5).map((item: any, i: number) => (
+                                  <div key={i} className="flex justify-between text-sm">
+                                    <span>{item.name}</span>
+                                    <span className="font-semibold">£{item.revenue.toFixed(2)}</span>
+                                  </div>
+                                ))}
+                              </div>
+                            </div>
+                          )}
+                        </div>
+                      );
+                    }
+                    
+                    // Navigation results
+                    if (item.tool === "navigation.go_to_page") {
+                      return (
+                        <div key={idx} className="text-sm text-muted-foreground">
+                          Navigating to {result.page}...
+                        </div>
+                      );
+                    }
+                    
+                    // Other results with messages
+                    if (result.message) {
+                      return (
+                        <div key={idx} className="text-sm text-muted-foreground p-3 bg-gray-50 dark:bg-gray-800 rounded border">
+                          {result.message}
+                        </div>
+                      );
+                    }
+                    
+                    return null;
+                  })}
+                </div>
+              )}
             </div>
           )}
 
