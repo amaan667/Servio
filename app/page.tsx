@@ -27,15 +27,11 @@ function PricingQuickCompare({
   currentTier,
   onPrimaryClick,
   onUpgradeClick,
-  trialEndsAt,
-  subscriptionStatus,
 }: {
   isSignedIn: boolean;
   currentTier?: string;
   onPrimaryClick: () => void;
   onUpgradeClick: () => void;
-  trialEndsAt?: string;
-  subscriptionStatus?: string;
 }) {
   const tierInfo = {
     basic: { name: 'Basic', order: 1 },
@@ -74,21 +70,6 @@ function PricingQuickCompare({
           <Badge className="bg-yellow-500 text-white text-sm px-4 py-1">
             Loading tier information...
           </Badge>
-        )}
-        
-        {/* Trial Information */}
-        {isSignedIn && currentTier && trialEndsAt && subscriptionStatus === 'trialing' && (
-          <div className="bg-blue-50 border border-blue-200 rounded-lg p-4 mb-6">
-            <div className="flex items-center justify-between">
-              <div>
-                <h3 className="text-lg font-semibold text-blue-900">Free Trial Active</h3>
-                <p className="text-blue-700">
-                  Your {currentTier} plan trial ends on {new Date(trialEndsAt).toLocaleDateString()}
-                </p>
-              </div>
-              <Badge className="bg-blue-500 text-white">Trial Active</Badge>
-            </div>
-          </div>
         )}
       </div>
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 w-full max-w-6xl mx-auto px-4" style={{ minHeight: '600px', maxHeight: '600px' }}>
@@ -768,8 +749,6 @@ export default function HomePage() {
           currentTier={currentTier}
           onPrimaryClick={handlePricingPrimary}
           onUpgradeClick={handleUpgradeClick}
-          trialEndsAt={trialEndsAt}
-          subscriptionStatus={subscriptionStatus}
         />
         
         {/* FAQ Section */}
