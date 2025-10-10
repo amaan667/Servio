@@ -85,6 +85,13 @@ export default async function VenueSettings({ params }: { params: Promise<{ venu
       .select('venue_id, name, email, phone, address, timezone, venue_type, service_type, operating_hours, latitude, longitude')
       .eq('owner_id', user.id);
 
+    // Get organization data for billing
+    const { data: organization } = await supabase
+      .from('organizations')
+      .select('id, subscription_tier, is_grandfathered, stripe_customer_id, subscription_status, trial_ends_at')
+      .eq('owner_id', user.id)
+      .maybeSingle();
+
     return (
       <div className="min-h-screen bg-background">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 pb-24 md:pb-8">
@@ -103,6 +110,7 @@ export default async function VenueSettings({ params }: { params: Promise<{ venu
             user={fullUserData || user} 
             venue={venue} 
             venues={venues || []} 
+            organization={organization}
           />
         </div>
       </div>

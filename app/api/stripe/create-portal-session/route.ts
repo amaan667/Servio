@@ -51,9 +51,14 @@ export async function POST(request: NextRequest) {
     }
 
     // Create billing portal session
+    const returnUrl = `${process.env.NEXT_PUBLIC_SITE_URL || 'https://servio-production.up.railway.app'}/dashboard`;
+    
+    console.log('[STRIPE PORTAL] Creating session for customer:', org.stripe_customer_id);
+    console.log('[STRIPE PORTAL] Return URL:', returnUrl);
+    
     const session = await stripe.billingPortal.sessions.create({
       customer: org.stripe_customer_id,
-      return_url: `${process.env.NEXT_PUBLIC_APP_URL}/dashboard/billing`,
+      return_url: returnUrl,
     });
 
     return NextResponse.json({ url: session.url });

@@ -101,66 +101,97 @@ export function UpgradeModal({
 
     setLoading(tierId);
 
-    console.log('[UPGRADE DEBUG] Starting upgrade with:', {
+    console.log('[UPGRADE DEBUG] Starting plan change with:', {
       tierId,
       currentTier,
       organizationId
     });
 
     try {
-      const response = await fetch("/api/stripe/create-checkout-session", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          tier: tierId,
-          organizationId,
-        }),
-      });
+      // For downgrades (to Basic), we need to handle it differently
+      const isDowngrade = (currentTier === "standard" && tierId === "basic") ||
+                         (currentTier === "premium" && tierId !== "premium");
 
-      const data = await response.json();
+      if (isDowngrade) {
+        // For downgrades, we'll use the billing portal to let users manage their subscription
+        // This is safer than trying to handle downgrades directly
+        const response = await fetch("/api/stripe/create-portal-session", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ organizationId }),
+        });
 
-      if (data.error) {
-        alert(data.error);
-        setLoading(null);
-        return;
-      }
+        const data = await response.json();
 
-      // Redirect to Stripe Checkout
-      if (data.url) {
-        window.location.href = data.url;
+        if (data.error) {
+          alert(data.error);
+          setLoading(null);
+          return;
+        }
+
+        if (data.url) {
+          window.location.href = data.url;
+        }
+      } else {
+        // For upgrades, use the normal checkout flow
+        const response = await fetch("/api/stripe/create-checkout-session", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            tier: tierId,
+            organizationId,
+          }),
+        });
+
+        const data = await response.json();
+
+        if (data.error) {
+          alert(data.error);
+          setLoading(null);
+          return;
+        }
+
+        // Redirect to Stripe Checkout
+        if (data.url) {
+          window.location.href = data.url;
+        }
       }
     } catch (error) {
-      console.error("Upgrade error:", error);
-      alert("Failed to start upgrade. Please try again.");
+      console.error("Plan change error:", error);
+      alert("Failed to change plan. Please try again.");
       setLoading(null);
     }
   };
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="max-w-6xl max-h-[95vh] overflow-y-auto p-4 sm:p-6">
+      <DialogContent className="max-w-6xl max-h-[95vh] overflow-y-auto p-3 sm:p-4 md:p-6">
         <DialogHeader className="text-center sm:text-left">
-          <DialogTitle className="text-2xl sm:text-3xl font-bold">
+          <DialogTitle className="text-xl sm:text-2xl md:text-3xl font-bold">
             Choose Your Plan
           </DialogTitle>
-          <DialogDescription className="text-sm sm:text-base">
+          <DialogDescription className="text-xs sm:text-sm md:text-base">
             {currentTier === "basic" || currentTier === "standard"
               ? "Upgrade to unlock more features and grow your business"
               : "Select the plan that works best for your business"}
           </DialogDescription>
         </DialogHeader>
 
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 sm:gap-6 mt-6 max-w-6xl mx-auto px-2 sm:px-4">
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3 sm:gap-4 md:gap-6 mt-4 sm:mt-6 max-w-6xl mx-auto px-1 sm:px-2 md:px-4">
           {tiers.map((tier) => {
             const isCurrent = tier.id === currentTier;
             const isDowngrade =
               (currentTier === "standard" && tier.id === "basic") ||
               (currentTier === "premium" && tier.id !== "premium");
+            
+            const isUpgrade =
+              (currentTier === "basic" && tier.id === "standard") ||
+              (currentTier === "standard" && tier.id === "premium");
 
             return (
               <Card
                 key={tier.id}
-                className={`relative flex flex-col p-4 sm:p-6 h-full min-h-[420px] sm:min-h-[450px] ${
+                className={`relative flex flex-col p-3 sm:p-4 md:p-6 h-full min-h-[380px] sm:min-h-[420px] md:min-h-[450px] ${
                   isCurrent
                     ? "border-2 border-green-500 bg-green-50 shadow-lg"
                     : tier.popular
@@ -178,18 +209,18 @@ export function UpgradeModal({
                   </Badge>
                 )}
 
-                <div className="text-center mb-4 sm:mb-6">
-                  <h3 className="text-xl sm:text-2xl font-bold mb-2">{tier.name}</h3>
-                  <div className="text-3xl sm:text-4xl font-bold mb-2">
+                <div className="text-center mb-3 sm:mb-4 md:mb-6">
+                  <h3 className="text-lg sm:text-xl md:text-2xl font-bold mb-2">{tier.name}</h3>
+                  <div className="text-2xl sm:text-3xl md:text-4xl font-bold mb-2">
                     {tier.price}
-                    <span className="text-base sm:text-lg font-normal text-gray-900">
+                    <span className="text-sm sm:text-base md:text-lg font-normal text-gray-900">
                       {tier.period}
                     </span>
                   </div>
                   <p className="text-xs sm:text-sm text-gray-900">{tier.description}</p>
                 </div>
 
-                <ul className="space-y-2 sm:space-y-3 mb-4 sm:mb-6 flex-1">
+                <ul className="space-y-1 sm:space-y-2 md:space-y-3 mb-3 sm:mb-4 md:mb-6 flex-1">
                   {tier.features.map((feature, idx) => (
                     <li key={idx} className="flex items-start gap-2">
                       <Check className="h-4 w-4 sm:h-5 sm:w-5 text-green-500 flex-shrink-0 mt-0.5" />
@@ -213,7 +244,7 @@ export function UpgradeModal({
                     className="w-full text-sm sm:text-base"
                     onClick={() => handleUpgrade(tier.id)}
                     disabled={
-                      isCurrent || isDowngrade || loading === tier.id || !!loading
+                      isCurrent || loading === tier.id || !!loading
                     }
                   >
                     {loading === tier.id ? (
@@ -229,7 +260,9 @@ export function UpgradeModal({
                     ) : isCurrent ? (
                       "Current Plan"
                     ) : isDowngrade ? (
-                      "Contact Support to Downgrade"
+                      "Switch to Basic"
+                    ) : isUpgrade ? (
+                      "Upgrade Now"
                     ) : (
                       "Select Plan"
                     )}
@@ -246,7 +279,7 @@ export function UpgradeModal({
           })}
         </div>
 
-        <div className="mt-4 sm:mt-6 p-3 sm:p-4 bg-blue-50 rounded-lg border border-blue-200">
+        <div className="mt-3 sm:mt-4 md:mt-6 p-2 sm:p-3 md:p-4 bg-blue-50 rounded-lg border border-blue-200">
           <p className="text-xs sm:text-sm text-blue-900 text-center">
             <strong>✨ Free Trial:</strong> All plans include a 14-day free
             trial. Your card will only be charged after the trial ends. Cancel

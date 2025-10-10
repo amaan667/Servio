@@ -158,7 +158,7 @@ export default function GlobalNav() {
                       Home
                     </Link>
                     <Link
-                      href={primaryVenueId ? `/dashboard/${primaryVenueId}/settings` : '/dashboard'}
+                      href={(venueId || primaryVenueId) ? `/dashboard/${venueId || primaryVenueId}/settings` : '/dashboard'}
                       className="flex items-center px-4 py-3 text-base font-medium text-foreground hover:text-primary hover:bg-accent rounded-md transition-all duration-200"
                     >
                       <Settings className="mr-3 h-5 w-5" />
@@ -176,7 +176,7 @@ export default function GlobalNav() {
                       Dashboard
                     </Link>
                     <Link
-                      href={primaryVenueId ? `/dashboard/${primaryVenueId}/settings` : '/dashboard'}
+                      href={(venueId || primaryVenueId) ? `/dashboard/${venueId || primaryVenueId}/settings` : '/dashboard'}
                       className="flex items-center px-4 py-3 text-base font-medium text-foreground hover:text-primary hover:bg-accent rounded-md transition-all duration-200"
                     >
                       <Settings className="mr-3 h-5 w-5" />
@@ -212,7 +212,7 @@ export default function GlobalNav() {
                       Dashboard
                     </Link>
                     <Link
-                      href={primaryVenueId ? `/dashboard/${primaryVenueId}/settings` : '/dashboard'}
+                      href={(venueId || primaryVenueId) ? `/dashboard/${venueId || primaryVenueId}/settings` : '/dashboard'}
                       className="flex items-center px-4 py-3 text-base font-medium text-foreground hover:text-primary hover:bg-accent rounded-md transition-all duration-200"
                     >
                       <Settings className="mr-3 h-5 w-5" />
@@ -298,7 +298,7 @@ export default function GlobalNav() {
                       <span>Home</span>
                     </Link>
                     <Link
-                      href={primaryVenueId ? `/dashboard/${primaryVenueId}/settings` : '/dashboard'}
+                      href={(venueId || primaryVenueId) ? `/dashboard/${venueId || primaryVenueId}/settings` : '/dashboard'}
                       className="flex items-center px-4 py-3 text-base font-semibold text-gray-900 hover:text-servio-purple hover:bg-servio-purple/5 rounded-xl transition-all duration-200 min-h-[48px]"
                       onClick={() => setMobileMenuOpen(false)}
                     >
@@ -317,7 +317,7 @@ export default function GlobalNav() {
                       <span>Dashboard</span>
                     </Link>
                     <Link
-                      href={primaryVenueId ? `/dashboard/${primaryVenueId}/settings` : '/dashboard'}
+                      href={(venueId || primaryVenueId) ? `/dashboard/${venueId || primaryVenueId}/settings` : '/dashboard'}
                       className="flex items-center px-4 py-3 text-base font-semibold text-gray-900 hover:text-servio-purple hover:bg-servio-purple/5 rounded-xl transition-all duration-200 min-h-[48px]"
                       onClick={() => setMobileMenuOpen(false)}
                     >
@@ -355,7 +355,7 @@ export default function GlobalNav() {
                       <span>Dashboard</span>
                     </Link>
                     <Link
-                      href={primaryVenueId ? `/dashboard/${primaryVenueId}/settings` : '/dashboard'}
+                      href={(venueId || primaryVenueId) ? `/dashboard/${venueId || primaryVenueId}/settings` : '/dashboard'}
                       className="flex items-center px-4 py-3 text-base font-semibold text-gray-900 hover:text-servio-purple hover:bg-servio-purple/5 rounded-xl transition-all duration-200 min-h-[48px]"
                       onClick={() => setMobileMenuOpen(false)}
                     >

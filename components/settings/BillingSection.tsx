@@ -1,0 +1,331 @@
+"use client";
+
+import { useState } from "react";
+import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
+import { Button } from "@/components/ui/button";
+import { Badge } from "@/components/ui/badge";
+import { Alert, AlertDescription } from "@/components/ui/alert";
+import { 
+  CreditCard, 
+  ExternalLink, 
+  Crown,
+  Sparkles,
+  CheckCircle,
+  AlertTriangle,
+  Loader2
+} from "lucide-react";
+import { UpgradeModal } from "@/components/UpgradeModal";
+
+interface BillingSectionProps {
+  user: {
+    id: string;
+    email: string;
+  };
+  organization?: {
+    id: string;
+    subscription_tier?: string;
+    is_grandfathered?: boolean;
+    stripe_customer_id?: string;
+    subscription_status?: string;
+    trial_ends_at?: string;
+  };
+}
+
+export default function BillingSection({ user, organization }: BillingSectionProps) {
+  const [showUpgradeModal, setShowUpgradeModal] = useState(false);
+  const [loadingPortal, setLoadingPortal] = useState(false);
+
+  const tier = organization?.subscription_tier || "basic";
+  const isGrandfathered = organization?.is_grandfathered || false;
+  const hasStripeCustomer = !!organization?.stripe_customer_id;
+
+  const handleManageBilling = async () => {
+    setLoadingPortal(true);
+    try {
+      console.log('[BILLING PORTAL] Creating portal session for org:', organization?.id);
+      
+      const response = await fetch("/api/stripe/create-portal-session", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ organizationId: organization?.id }),
+      });
+
+      const data = await response.json();
+      
+      console.log('[BILLING PORTAL] Response:', data);
+      
+      if (data.error) {
+        console.error("Billing portal error:", data.error);
+        alert(`Failed to open billing portal: ${data.error}`);
+        return;
+      }
+
+      if (data.url) {
+        console.log('[BILLING PORTAL] Redirecting to:', data.url);
+        window.location.href = data.url;
+      } else {
+        console.error('[BILLING PORTAL] No URL in response');
+        alert('Failed to open billing portal - no URL received');
+      }
+    } catch (error) {
+      console.error("Error creating portal session:", error);
+      alert('Failed to open billing portal. Please try again.');
+    } finally {
+      setLoadingPortal(false);
+    }
+  };
+
+  const getTierInfo = () => {
+    if (isGrandfathered) {
+      return {
+        name: "Grandfathered",
+        icon: Crown,
+        color: "text-yellow-600",
+        bgColor: "bg-yellow-50",
+        borderColor: "border-yellow-200",
+        description: "Legacy account with unlimited access"
+      };
+    }
+    
+    switch (tier) {
+      case "standard":
+        return {
+          name: "Standard",
+          icon: Sparkles,
+          color: "text-blue-600",
+          bgColor: "bg-blue-50",
+          borderColor: "border-blue-200",
+          description: "Most popular plan with advanced features"
+        };
+      case "premium":
+        return {
+          name: "Premium",
+          icon: Crown,
+          color: "text-purple-600",
+          bgColor: "bg-purple-50",
+          borderColor: "border-purple-200",
+          description: "Enterprise plan with all features"
+        };
+      default:
+        return {
+          name: "Basic",
+          icon: CreditCard,
+          color: "text-gray-600",
+          bgColor: "bg-gray-50",
+          borderColor: "border-gray-200",
+          description: "Essential features for small businesses"
+        };
+    }
+  };
+
+  const tierInfo = getTierInfo();
+  const TierIcon = tierInfo.icon;
+
+  return (
+    <div className="space-y-6">
+      {/* Current Plan Status */}
+      <Card className={`border-2 ${tierInfo.borderColor} ${tierInfo.bgColor}`}>
+        <CardHeader>
+          <div className="flex items-center justify-between">
+            <div className="flex items-center gap-3">
+              <div className={`p-3 rounded-full ${tierInfo.bgColor}`}>
+                <TierIcon className={`h-6 w-6 ${tierInfo.color}`} />
+              </div>
+              <div>
+                <CardTitle className="text-xl">{tierInfo.name} Plan</CardTitle>
+                <CardDescription>{tierInfo.description}</CardDescription>
+              </div>
+            </div>
+            
+            <div className="flex gap-2">
+              {!isGrandfathered && tier !== "premium" && (
+                <Button 
+                  onClick={() => setShowUpgradeModal(true)}
+                  className="bg-gradient-to-r from-purple-600 to-pink-600 hover:from-purple-700 hover:to-pink-700"
+                >
+                  <Sparkles className="mr-2 h-4 w-4" />
+                  Upgrade Plan
+                </Button>
+              )}
+            </div>
+          </div>
+        </CardHeader>
+
+        {isGrandfathered && (
+          <CardContent>
+            <Alert className="bg-yellow-50 border-yellow-200">
+              <Crown className="h-4 w-4 text-yellow-600" />
+              <AlertDescription className="text-yellow-800">
+                <strong>Thank you for being an early Servio user!</strong> Your account has been grandfathered 
+                with unlimited access to all features at no charge.
+              </AlertDescription>
+            </Alert>
+          </CardContent>
+        )}
+      </Card>
+
+      {/* Billing Management */}
+      {!isGrandfathered && hasStripeCustomer && (
+        <Card>
+          <CardHeader>
+            <CardTitle className="flex items-center gap-2">
+              <CreditCard className="h-5 w-5" />
+              Billing Management
+            </CardTitle>
+            <CardDescription>
+              Manage your subscription, payment methods, and billing history
+            </CardDescription>
+          </CardHeader>
+          <CardContent>
+            <div className="space-y-4">
+              {organization?.subscription_status && (
+                <div className="flex items-center justify-between">
+                  <span className="text-sm font-medium">Subscription Status</span>
+                  <Badge 
+                    variant={organization.subscription_status === "active" ? "default" : "secondary"}
+                    className={organization.subscription_status === "active" ? "bg-green-600" : ""}
+                  >
+                    {organization.subscription_status}
+                  </Badge>
+                </div>
+              )}
+
+              {organization?.trial_ends_at && (
+                <div className="flex items-center justify-between">
+                  <span className="text-sm font-medium">Trial Ends</span>
+                  <span className="text-sm text-gray-600">
+                    {new Date(organization.trial_ends_at).toLocaleDateString()}
+                  </span>
+                </div>
+              )}
+
+              <Button
+                variant="outline"
+                className="w-full"
+                onClick={handleManageBilling}
+                disabled={loadingPortal}
+              >
+                {loadingPortal ? (
+                  <>
+                    <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                    Loading...
+                  </>
+                ) : (
+                  <>
+                    <ExternalLink className="mr-2 h-4 w-4" />
+                    Open Billing Portal
+                  </>
+                )}
+              </Button>
+
+              <p className="text-xs text-gray-600 text-center">
+                Manage your subscription, update payment methods, and view billing history
+              </p>
+            </div>
+          </CardContent>
+        </Card>
+      )}
+
+      {/* No Billing Account */}
+      {!isGrandfathered && !hasStripeCustomer && (
+        <Card>
+          <CardHeader>
+            <CardTitle className="flex items-center gap-2">
+              <AlertTriangle className="h-5 w-5 text-yellow-600" />
+              Billing Account
+            </CardTitle>
+            <CardDescription>
+              Set up billing to manage your subscription
+            </CardDescription>
+          </CardHeader>
+          <CardContent>
+            <Alert className="bg-yellow-50 border-yellow-200">
+              <AlertTriangle className="h-4 w-4 text-yellow-600" />
+              <AlertDescription className="text-yellow-800">
+                No billing account found. Contact support to set up billing management.
+              </AlertDescription>
+            </Alert>
+          </CardContent>
+        </Card>
+      )}
+
+      {/* Feature Access Summary */}
+      <Card>
+        <CardHeader>
+          <CardTitle>Plan Features</CardTitle>
+          <CardDescription>
+            Features available on your {tierInfo.name} plan
+          </CardDescription>
+        </CardHeader>
+        <CardContent>
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+            <FeatureItem
+              name="QR Ordering"
+              enabled={true}
+              tier="all"
+            />
+            <FeatureItem
+              name="Kitchen Display System"
+              enabled={tier === "standard" || tier === "premium" || isGrandfathered}
+              tier="standard"
+            />
+            <FeatureItem
+              name="Inventory Management"
+              enabled={tier === "standard" || tier === "premium" || isGrandfathered}
+              tier="standard"
+            />
+            <FeatureItem
+              name="AI Assistant"
+              enabled={tier === "premium" || isGrandfathered}
+              tier="premium"
+            />
+            <FeatureItem
+              name="Multi-Venue Management"
+              enabled={tier === "premium" || isGrandfathered}
+              tier="premium"
+            />
+            <FeatureItem
+              name="Advanced Analytics"
+              enabled={tier === "standard" || tier === "premium" || isGrandfathered}
+              tier="standard"
+            />
+          </div>
+        </CardContent>
+      </Card>
+
+      {/* Upgrade Modal */}
+      <UpgradeModal
+        open={showUpgradeModal}
+        onOpenChange={setShowUpgradeModal}
+        currentTier={tier}
+        organizationId={organization?.id}
+      />
+    </div>
+  );
+}
+
+function FeatureItem({
+  name,
+  enabled,
+  tier,
+}: {
+  name: string;
+  enabled: boolean;
+  tier: string;
+}) {
+  return (
+    <div className="flex items-center justify-between p-3 bg-gray-50 rounded-lg">
+      <span className="text-sm font-medium">{name}</span>
+      {enabled ? (
+        <Badge variant="default" className="bg-green-600">
+          <CheckCircle className="h-3 w-3 mr-1" />
+          Enabled
+        </Badge>
+      ) : (
+        <Badge variant="outline">
+          {tier === "premium" ? "Premium" : tier === "standard" ? "Standard" : "Basic"}
+        </Badge>
+      )}
+    </div>
+  );
+}

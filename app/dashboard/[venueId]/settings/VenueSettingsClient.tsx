@@ -14,10 +14,11 @@ import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "@/
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import { Switch } from "@/components/ui/switch";
 import { createClient } from "@/lib/supabase/client";
-import { User, Building, Mail, Phone, MapPin, Lock, Trash2, Save, Store, Shield, AlertTriangle, Clock, Globe, Utensils, CheckCircle2 } from "lucide-react";
+import { User, Building, Mail, Phone, MapPin, Lock, Trash2, Save, Store, Shield, AlertTriangle, Clock, Globe, Utensils, CheckCircle2, CreditCard } from "lucide-react";
 import { toast } from "@/hooks/use-toast";
 import MobileNav from '@/components/MobileNav';
 import { AddressInput } from '@/components/settings/AddressInput';
+import BillingSection from '@/components/settings/BillingSection';
 
 interface Venue {
   venue_id: string;
@@ -54,6 +55,14 @@ interface VenueSettingsClientProps {
   user: User;
   venue: Venue;
   venues: Venue[];
+  organization?: {
+    id: string;
+    subscription_tier?: string;
+    is_grandfathered?: boolean;
+    stripe_customer_id?: string;
+    subscription_status?: string;
+    trial_ends_at?: string;
+  };
 }
 
 interface DayHours {
@@ -105,7 +114,7 @@ const SERVICE_TYPES = [
 
 const DAYS_OF_WEEK = ['monday', 'tuesday', 'wednesday', 'thursday', 'friday', 'saturday', 'sunday'];
 
-export default function VenueSettingsClient({ user, venue, venues }: VenueSettingsClientProps) {
+export default function VenueSettingsClient({ user, venue, venues, organization }: VenueSettingsClientProps) {
   const router = useRouter();
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -733,6 +742,20 @@ export default function VenueSettingsClient({ user, venue, venues }: VenueSettin
             </Card>
           </div>
         </div>
+
+        {/* Billing Section - Full Width */}
+        <Card className="shadow-lg rounded-xl border-gray-200">
+          <CardHeader className="bg-gradient-to-r from-blue-50 to-indigo-50 rounded-t-xl">
+            <CardTitle className="flex items-center gap-2 text-gray-900">
+              <CreditCard className="h-5 w-5 text-blue-600" />
+              Billing & Subscription
+            </CardTitle>
+            <CardDescription>Manage your plan and billing information</CardDescription>
+          </CardHeader>
+          <CardContent className="pt-6">
+            <BillingSection user={user} organization={organization} />
+          </CardContent>
+        </Card>
 
         {/* Danger Zone - Full Width */}
         <Card className="shadow-lg rounded-xl border-red-200">

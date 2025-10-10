@@ -74,21 +74,21 @@ function PricingQuickCompare({
   });
 
   return (
-    <div className="w-full flex flex-col items-center gap-8 py-10">
-      <div className="text-center">
-        <h2 className="text-3xl font-bold mb-4">Choose the plan that works best for your business</h2>
+    <div className="w-full flex flex-col items-center gap-6 sm:gap-8 py-6 sm:py-10">
+      <div className="text-center px-4">
+        <h2 className="text-2xl sm:text-3xl font-bold mb-4">Choose the plan that works best for your business</h2>
         {isSignedIn && currentTier && (
           <Badge className="bg-green-500 text-white text-sm px-4 py-1 mb-4">
             Current Plan: {tierInfo[currentTier as keyof typeof tierInfo]?.name || currentTier.toUpperCase()}
           </Badge>
         )}
         {!isSignedIn && (
-          <p className="text-gray-600">All plans include a 14-day free trial</p>
+          <p className="text-gray-600 text-sm sm:text-base">All plans include a 14-day free trial</p>
         )}
       </div>
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 sm:gap-6 w-full max-w-7xl mx-auto px-4 mb-8">
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3 sm:gap-4 md:gap-6 w-full max-w-7xl mx-auto px-3 sm:px-4 mb-6 sm:mb-8">
         {/* Basic */}
-        <Card className={`relative flex flex-col items-center p-4 sm:p-6 gap-4 h-full min-h-[480px] ${
+        <Card className={`relative flex flex-col items-center p-3 sm:p-4 md:p-6 gap-3 sm:gap-4 h-full min-h-[420px] sm:min-h-[480px] ${
           currentTier === 'basic' 
             ? 'border-2 border-green-500 bg-green-50 shadow-lg' 
             : 'border border-gray-200 hover:shadow-md transition-shadow'
@@ -98,9 +98,9 @@ function PricingQuickCompare({
               Current Plan
             </Badge>
           )}
-          <div className="text-xl sm:text-2xl font-semibold">Basic</div>
-          <div className="text-2xl sm:text-3xl font-bold mb-1">£99<span className="text-lg font-normal">/month</span></div>
-          <ul className="mb-4 space-y-2 text-left flex-1 text-sm sm:text-base">
+          <div className="text-lg sm:text-xl md:text-2xl font-semibold">Basic</div>
+          <div className="text-xl sm:text-2xl md:text-3xl font-bold mb-1">£99<span className="text-sm sm:text-base md:text-lg font-normal">/month</span></div>
+          <ul className="mb-3 sm:mb-4 space-y-1 sm:space-y-2 text-left flex-1 text-xs sm:text-sm md:text-base">
             <li className="flex items-start gap-2">
               <span className="text-green-500 mt-1">✔</span>
               <span>Up to 10 tables</span>
@@ -123,19 +123,17 @@ function PricingQuickCompare({
             </li>
           </ul>
           <Button variant="servio" className="w-full mt-auto" onClick={() => {
-            if (isSignedIn && currentOrder > 1) return; // Don't allow downgrade
             if (isSignedIn && currentTier === 'basic') return;
-            if (isSignedIn) onUpgradeClick();
+            if (isSignedIn) onUpgradeClick(); // Show modal for all plan changes
             else onPrimaryClick();
-          }} disabled={isSignedIn && (currentTier === 'basic' || currentOrder > 1)}>
+          }} disabled={isSignedIn && currentTier === 'basic'}>
             {currentTier === 'basic' ? 'Current Plan' : 
-             isSignedIn && currentOrder > 1 ? 'Contact to Downgrade' :
              isSignedIn ? 'Switch to Basic' : 'Start Free Trial'}
           </Button>
         </Card>
         
         {/* Standard */}
-        <Card className={`relative flex flex-col items-center p-4 sm:p-6 gap-4 h-full min-h-[480px] border-2 shadow-lg ${
+        <Card className={`relative flex flex-col items-center p-3 sm:p-4 md:p-6 gap-3 sm:gap-4 h-full min-h-[420px] sm:min-h-[480px] border-2 shadow-lg ${
           currentTier === 'standard' 
             ? 'border-green-500 bg-green-50' 
             : 'border-purple-500'
@@ -149,9 +147,9 @@ function PricingQuickCompare({
               Most Popular
             </Badge>
           )}
-          <div className="text-xl sm:text-2xl font-semibold">Standard</div>
-          <div className="text-2xl sm:text-3xl font-bold mb-1">£249<span className="text-lg font-normal">/month</span></div>
-          <ul className="mb-4 space-y-2 text-left flex-1 text-sm sm:text-base">
+          <div className="text-lg sm:text-xl md:text-2xl font-semibold">Standard</div>
+          <div className="text-xl sm:text-2xl md:text-3xl font-bold mb-1">£249<span className="text-sm sm:text-base md:text-lg font-normal">/month</span></div>
+          <ul className="mb-3 sm:mb-4 space-y-1 sm:space-y-2 text-left flex-1 text-xs sm:text-sm md:text-base">
             <li className="flex items-start gap-2">
               <span className="text-green-500 mt-1">✔</span>
               <span>Everything in Basic, plus:</span>
@@ -179,14 +177,12 @@ function PricingQuickCompare({
             else onPrimaryClick();
           }} disabled={isSignedIn && currentTier === 'standard'}>
             {currentTier === 'standard' ? 'Current Plan' :
-             isSignedIn && currentOrder < 2 ? 'Upgrade Now' :
-             isSignedIn && currentOrder > 2 ? 'Contact to Downgrade' :
-             isSignedIn ? 'Manage Subscription' : 'Start Free Trial'}
+             isSignedIn ? 'Switch to Standard' : 'Start Free Trial'}
           </Button>
         </Card>
         
         {/* Premium */}
-        <Card className={`relative flex flex-col items-center p-4 sm:p-6 gap-4 h-full min-h-[480px] ${
+        <Card className={`relative flex flex-col items-center p-3 sm:p-4 md:p-6 gap-3 sm:gap-4 h-full min-h-[420px] sm:min-h-[480px] ${
           currentTier === 'premium' 
             ? 'border-2 border-green-500 bg-green-50 shadow-lg' 
             : 'border border-gray-200 hover:shadow-md transition-shadow'
@@ -196,9 +192,9 @@ function PricingQuickCompare({
               Current Plan
             </Badge>
           )}
-          <div className="text-xl sm:text-2xl font-semibold">Premium</div>
-          <div className="text-2xl sm:text-3xl font-bold mb-1">£449+<span className="text-lg font-normal">/month</span></div>
-          <ul className="mb-4 space-y-2 text-left flex-1 text-sm sm:text-base">
+          <div className="text-lg sm:text-xl md:text-2xl font-semibold">Premium</div>
+          <div className="text-xl sm:text-2xl md:text-3xl font-bold mb-1">£449+<span className="text-sm sm:text-base md:text-lg font-normal">/month</span></div>
+          <ul className="mb-3 sm:mb-4 space-y-1 sm:space-y-2 text-left flex-1 text-xs sm:text-sm md:text-base">
             <li className="flex items-start gap-2">
               <span className="text-green-500 mt-1">✔</span>
               <span>Everything in Standard, plus:</span>
