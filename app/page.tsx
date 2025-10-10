@@ -86,19 +86,43 @@ function PricingQuickCompare({
           <p className="text-gray-600">All plans include a 14-day free trial</p>
         )}
       </div>
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 w-full max-w-6xl mx-auto px-4 mb-8">
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 sm:gap-6 w-full max-w-7xl mx-auto px-4 mb-8">
         {/* Basic */}
-        <Card className={`flex flex-col items-center p-6 gap-4 ${currentTier === 'basic' ? 'border-2 border-green-500' : 'border border-gray-200'}`}>
-          <div className="text-2xl font-semibold">Basic</div>
-          <div className="text-3xl font-bold mb-1">£99<span className="text-lg font-normal">/month</span></div>
-          <ul className="mb-4 space-y-1 text-left flex-1">
-            <li>✔ Up to 10 tables</li>
-            <li>✔ 50 menu items</li>
-            <li>✔ QR ordering</li>
-            <li>✔ Basic analytics</li>
-            <li>✔ 14-day free trial</li>
+        <Card className={`relative flex flex-col items-center p-4 sm:p-6 gap-4 h-full min-h-[480px] ${
+          currentTier === 'basic' 
+            ? 'border-2 border-green-500 bg-green-50 shadow-lg' 
+            : 'border border-gray-200 hover:shadow-md transition-shadow'
+        }`}>
+          {currentTier === 'basic' && (
+            <Badge className="absolute -top-3 left-1/2 -translate-x-1/2 bg-green-500 text-white">
+              Current Plan
+            </Badge>
+          )}
+          <div className="text-xl sm:text-2xl font-semibold">Basic</div>
+          <div className="text-2xl sm:text-3xl font-bold mb-1">£99<span className="text-lg font-normal">/month</span></div>
+          <ul className="mb-4 space-y-2 text-left flex-1 text-sm sm:text-base">
+            <li className="flex items-start gap-2">
+              <span className="text-green-500 mt-1">✔</span>
+              <span>Up to 10 tables</span>
+            </li>
+            <li className="flex items-start gap-2">
+              <span className="text-green-500 mt-1">✔</span>
+              <span>50 menu items</span>
+            </li>
+            <li className="flex items-start gap-2">
+              <span className="text-green-500 mt-1">✔</span>
+              <span>QR ordering</span>
+            </li>
+            <li className="flex items-start gap-2">
+              <span className="text-green-500 mt-1">✔</span>
+              <span>Basic analytics</span>
+            </li>
+            <li className="flex items-start gap-2">
+              <span className="text-green-500 mt-1">✔</span>
+              <span>14-day free trial</span>
+            </li>
           </ul>
-          <Button variant="servio" className="w-full" onClick={() => {
+          <Button variant="servio" className="w-full mt-auto" onClick={() => {
             if (isSignedIn && currentOrder > 1) return; // Don't allow downgrade
             if (isSignedIn && currentTier === 'basic') return;
             if (isSignedIn) onUpgradeClick();
@@ -109,23 +133,47 @@ function PricingQuickCompare({
              isSignedIn ? 'Switch to Basic' : 'Start Free Trial'}
           </Button>
         </Card>
+        
         {/* Standard */}
-        <Card className={`flex flex-col items-center p-6 gap-4 border-2 shadow-lg ${
-          currentTier === 'standard' ? 'border-green-500' : 'border-purple-500'
+        <Card className={`relative flex flex-col items-center p-4 sm:p-6 gap-4 h-full min-h-[480px] border-2 shadow-lg ${
+          currentTier === 'standard' 
+            ? 'border-green-500 bg-green-50' 
+            : 'border-purple-500'
         }`}>
-          <div className="text-2xl font-semibold">Standard</div>
-          <div className="w-full flex justify-center">
-            <span className="bg-purple-500 text-white text-xs px-3 py-1 rounded-full mb-2">Most Popular</span>
-          </div>
-          <div className="text-3xl font-bold mb-1">£249<span className="text-lg font-normal">/month</span></div>
-          <ul className="mb-4 space-y-1 text-left flex-1">
-            <li>✔ Everything in Basic, plus:</li>
-            <li>✔ Up to 20 tables</li>
-            <li>✔ 200 menu items</li>
-            <li>✔ KDS & Inventory</li>
-            <li>✔ Advanced analytics</li>
+          {currentTier === 'standard' ? (
+            <Badge className="absolute -top-3 left-1/2 -translate-x-1/2 bg-green-500 text-white">
+              Current Plan
+            </Badge>
+          ) : (
+            <Badge className="absolute -top-3 left-1/2 -translate-x-1/2 bg-purple-500 text-white">
+              Most Popular
+            </Badge>
+          )}
+          <div className="text-xl sm:text-2xl font-semibold">Standard</div>
+          <div className="text-2xl sm:text-3xl font-bold mb-1">£249<span className="text-lg font-normal">/month</span></div>
+          <ul className="mb-4 space-y-2 text-left flex-1 text-sm sm:text-base">
+            <li className="flex items-start gap-2">
+              <span className="text-green-500 mt-1">✔</span>
+              <span>Everything in Basic, plus:</span>
+            </li>
+            <li className="flex items-start gap-2">
+              <span className="text-green-500 mt-1">✔</span>
+              <span>Up to 20 tables</span>
+            </li>
+            <li className="flex items-start gap-2">
+              <span className="text-green-500 mt-1">✔</span>
+              <span>200 menu items</span>
+            </li>
+            <li className="flex items-start gap-2">
+              <span className="text-green-500 mt-1">✔</span>
+              <span>KDS & Inventory</span>
+            </li>
+            <li className="flex items-start gap-2">
+              <span className="text-green-500 mt-1">✔</span>
+              <span>Advanced analytics</span>
+            </li>
           </ul>
-          <Button variant="servio" className="w-full" onClick={() => {
+          <Button variant="servio" className="w-full mt-auto" onClick={() => {
             if (isSignedIn && currentTier === 'standard') return;
             if (isSignedIn) onUpgradeClick();
             else onPrimaryClick();
@@ -136,18 +184,43 @@ function PricingQuickCompare({
              isSignedIn ? 'Manage Subscription' : 'Start Free Trial'}
           </Button>
         </Card>
+        
         {/* Premium */}
-        <Card className={`flex flex-col items-center p-6 gap-4 ${currentTier === 'premium' ? 'border-2 border-green-500' : 'border border-gray-200'}`}>
-          <div className="text-2xl font-semibold">Premium</div>
-          <div className="text-3xl font-bold mb-1">£449+<span className="text-lg font-normal">/month</span></div>
-          <ul className="mb-4 space-y-1 text-left flex-1">
-            <li>✔ Everything in Standard, plus:</li>
-            <li>✔ Unlimited tables & venues</li>
-            <li>✔ AI Assistant (13 tools)</li>
-            <li>✔ Priority support</li>
-            <li>✔ Custom integrations</li>
+        <Card className={`relative flex flex-col items-center p-4 sm:p-6 gap-4 h-full min-h-[480px] ${
+          currentTier === 'premium' 
+            ? 'border-2 border-green-500 bg-green-50 shadow-lg' 
+            : 'border border-gray-200 hover:shadow-md transition-shadow'
+        }`}>
+          {currentTier === 'premium' && (
+            <Badge className="absolute -top-3 left-1/2 -translate-x-1/2 bg-green-500 text-white">
+              Current Plan
+            </Badge>
+          )}
+          <div className="text-xl sm:text-2xl font-semibold">Premium</div>
+          <div className="text-2xl sm:text-3xl font-bold mb-1">£449+<span className="text-lg font-normal">/month</span></div>
+          <ul className="mb-4 space-y-2 text-left flex-1 text-sm sm:text-base">
+            <li className="flex items-start gap-2">
+              <span className="text-green-500 mt-1">✔</span>
+              <span>Everything in Standard, plus:</span>
+            </li>
+            <li className="flex items-start gap-2">
+              <span className="text-green-500 mt-1">✔</span>
+              <span>Unlimited tables & venues</span>
+            </li>
+            <li className="flex items-start gap-2">
+              <span className="text-green-500 mt-1">✔</span>
+              <span>AI Assistant (13 tools)</span>
+            </li>
+            <li className="flex items-start gap-2">
+              <span className="text-green-500 mt-1">✔</span>
+              <span>Priority support</span>
+            </li>
+            <li className="flex items-start gap-2">
+              <span className="text-green-500 mt-1">✔</span>
+              <span>Custom integrations</span>
+            </li>
           </ul>
-          <Button variant="servio" className="w-full" onClick={() => {
+          <Button variant="servio" className="w-full mt-auto" onClick={() => {
             window.location.href = 'mailto:sales@servio.app?subject=Premium Plan Inquiry';
           }}>
             {currentTier === 'premium' ? 'Current Plan' : 'Contact Sales'}

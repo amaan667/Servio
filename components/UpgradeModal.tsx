@@ -138,19 +138,19 @@ export function UpgradeModal({
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="max-w-6xl max-h-[90vh] overflow-y-auto">
-        <DialogHeader>
-          <DialogTitle className="text-3xl font-bold">
+      <DialogContent className="max-w-6xl max-h-[95vh] overflow-y-auto p-4 sm:p-6">
+        <DialogHeader className="text-center sm:text-left">
+          <DialogTitle className="text-2xl sm:text-3xl font-bold">
             Choose Your Plan
           </DialogTitle>
-          <DialogDescription>
+          <DialogDescription className="text-sm sm:text-base">
             {currentTier === "basic" || currentTier === "standard"
               ? "Upgrade to unlock more features and grow your business"
               : "Select the plan that works best for your business"}
           </DialogDescription>
         </DialogHeader>
 
-        <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 mt-6 max-w-5xl mx-auto px-4" style={{ minHeight: '500px' }}>
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 sm:gap-6 mt-6 max-w-6xl mx-auto px-2 sm:px-4">
           {tiers.map((tier) => {
             const isCurrent = tier.id === currentTier;
             const isDowngrade =
@@ -160,39 +160,40 @@ export function UpgradeModal({
             return (
               <Card
                 key={tier.id}
-                className={`relative flex flex-col p-6 h-full min-h-[450px] ${
-                  tier.popular
-                    ? "border-2 border-purple-500 shadow-lg scale-105"
-                    : "border border-gray-200"
-                } ${isCurrent ? "bg-gray-50" : ""}`}
+                className={`relative flex flex-col p-4 sm:p-6 h-full min-h-[420px] sm:min-h-[450px] ${
+                  isCurrent
+                    ? "border-2 border-green-500 bg-green-50 shadow-lg"
+                    : tier.popular
+                    ? "border-2 border-purple-500 shadow-lg"
+                    : "border border-gray-200 hover:shadow-md transition-shadow"
+                }`}
               >
-                {tier.popular && (
-                  <Badge className="absolute -top-3 left-1/2 -translate-x-1/2 bg-purple-500">
+                {isCurrent ? (
+                  <Badge className="absolute -top-3 left-1/2 -translate-x-1/2 bg-green-500 text-white text-xs sm:text-sm">
+                    Current Plan
+                  </Badge>
+                ) : tier.popular && (
+                  <Badge className="absolute -top-3 left-1/2 -translate-x-1/2 bg-purple-500 text-white text-xs sm:text-sm">
                     Most Popular
                   </Badge>
                 )}
-                {isCurrent && (
-                  <Badge className="absolute -top-3 left-1/2 -translate-x-1/2 bg-green-500">
-                    Current Plan
-                  </Badge>
-                )}
 
-                <div className="text-center mb-6">
-                  <h3 className="text-2xl font-bold mb-2">{tier.name}</h3>
-                  <div className="text-4xl font-bold mb-2">
+                <div className="text-center mb-4 sm:mb-6">
+                  <h3 className="text-xl sm:text-2xl font-bold mb-2">{tier.name}</h3>
+                  <div className="text-3xl sm:text-4xl font-bold mb-2">
                     {tier.price}
-                    <span className="text-lg font-normal text-gray-900">
+                    <span className="text-base sm:text-lg font-normal text-gray-900">
                       {tier.period}
                     </span>
                   </div>
-                  <p className="text-sm text-gray-900">{tier.description}</p>
+                  <p className="text-xs sm:text-sm text-gray-900">{tier.description}</p>
                 </div>
 
-                <ul className="space-y-3 mb-6 flex-1">
+                <ul className="space-y-2 sm:space-y-3 mb-4 sm:mb-6 flex-1">
                   {tier.features.map((feature, idx) => (
                     <li key={idx} className="flex items-start gap-2">
-                      <Check className="h-5 w-5 text-green-500 flex-shrink-0 mt-0.5" />
-                      <span className="text-sm">{feature}</span>
+                      <Check className="h-4 w-4 sm:h-5 sm:w-5 text-green-500 flex-shrink-0 mt-0.5" />
+                      <span className="text-xs sm:text-sm leading-relaxed">{feature}</span>
                     </li>
                   ))}
                   {tier.notIncluded &&
@@ -201,50 +202,52 @@ export function UpgradeModal({
                         key={`not-${idx}`}
                         className="flex items-start gap-2 text-gray-500"
                       >
-                        <span className="text-sm">✗ {feature}</span>
+                        <span className="text-xs sm:text-sm">✗ {feature}</span>
                       </li>
                     ))}
                 </ul>
 
-                <Button
-                  variant={tier.popular ? "servio" : "outline"}
-                  className="w-full"
-                  onClick={() => handleUpgrade(tier.id)}
-                  disabled={
-                    isCurrent || isDowngrade || loading === tier.id || !!loading
-                  }
-                >
-                  {loading === tier.id ? (
-                    <>
-                      <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                      Processing...
-                    </>
-                  ) : tier.contact ? (
-                    <>
-                      <Mail className="mr-2 h-4 w-4" />
-                      Contact Sales
-                    </>
-                  ) : isCurrent ? (
-                    "Current Plan"
-                  ) : isDowngrade ? (
-                    "Contact Support to Downgrade"
-                  ) : (
-                    "Select Plan"
-                  )}
-                </Button>
+                <div className="mt-auto space-y-2">
+                  <Button
+                    variant={isCurrent ? "outline" : tier.popular ? "servio" : "outline"}
+                    className="w-full text-sm sm:text-base"
+                    onClick={() => handleUpgrade(tier.id)}
+                    disabled={
+                      isCurrent || isDowngrade || loading === tier.id || !!loading
+                    }
+                  >
+                    {loading === tier.id ? (
+                      <>
+                        <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                        Processing...
+                      </>
+                    ) : tier.contact ? (
+                      <>
+                        <Mail className="mr-2 h-4 w-4" />
+                        Contact Sales
+                      </>
+                    ) : isCurrent ? (
+                      "Current Plan"
+                    ) : isDowngrade ? (
+                      "Contact Support to Downgrade"
+                    ) : (
+                      "Select Plan"
+                    )}
+                  </Button>
 
-                {tier.id !== "premium" && !isCurrent && (
-                  <p className="text-xs text-center text-gray-700 mt-3">
-                    14-day free trial • First billing after trial
-                  </p>
-                )}
+                  {tier.id !== "premium" && !isCurrent && (
+                    <p className="text-xs text-center text-gray-700 px-2">
+                      14-day free trial • First billing after trial
+                    </p>
+                  )}
+                </div>
               </Card>
             );
           })}
         </div>
 
-        <div className="mt-6 p-4 bg-blue-50 rounded-lg border border-blue-200">
-          <p className="text-sm text-blue-900">
+        <div className="mt-4 sm:mt-6 p-3 sm:p-4 bg-blue-50 rounded-lg border border-blue-200">
+          <p className="text-xs sm:text-sm text-blue-900 text-center">
             <strong>✨ Free Trial:</strong> All plans include a 14-day free
             trial. Your card will only be charged after the trial ends. Cancel
             anytime during the trial at no cost.
