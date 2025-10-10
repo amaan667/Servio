@@ -40,25 +40,58 @@ export async function POST(request: NextRequest) {
       ExecuteRequestSchema.parse(body);
 
     // Verify user has access to venue
-    const { data: roleData } = await supabase
-      .from("user_venue_roles")
-      .select("role")
-      .eq("venue_id", venueId)
-      .eq("user_id", user.id)
-      .single();
+    let userRole = "owner"; // Default to owner for backward compatibility
+    
+    try {
+      const { data: roleData, error: roleError } = await supabase
+        .from("user_venue_roles")
+        .select("role")
+        .eq("venue_id", venueId)
+        .eq("user_id", user.id)
+        .single();
 
-    if (!roleData) {
-      return NextResponse.json(
-        { error: "Access denied to this venue" },
-        { status: 403 }
-      );
+      if (roleData && !roleError) {
+        userRole = roleData.role;
+      } else {
+        // If no role found, check if user owns the venue
+        const { data: venue } = await supabase
+          .from("venues")
+          .select("owner_id")
+          .eq("venue_id", venueId)
+          .single();
+
+        if (!venue || venue.owner_id !== user.id) {
+          return NextResponse.json(
+            { error: "Access denied to this venue" },
+            { status: 403 }
+          );
+        }
+        // User owns venue, allow access
+      }
+    } catch (tableError) {
+      // Table doesn't exist - check if user owns venue
+      console.log("[AI ASSISTANT] user_venue_roles table check failed, checking venue ownership:", tableError);
+      
+      const { data: venue } = await supabase
+        .from("venues")
+        .select("owner_id")
+        .eq("venue_id", venueId)
+        .single();
+
+      if (!venue || venue.owner_id !== user.id) {
+        return NextResponse.json(
+          { error: "Access denied to this venue" },
+          { status: 403 }
+        );
+      }
+      // User owns venue, allow access
     }
 
     // Check RBAC for tool
     const guardrails = DEFAULT_GUARDRAILS[toolName as ToolName];
-    if (guardrails?.blockedForRoles?.includes(roleData.role)) {
+    if (guardrails?.blockedForRoles?.includes(userRole)) {
       return NextResponse.json(
-        { error: `Role '${roleData.role}' cannot execute '${toolName}'` },
+        { error: `Role '${userRole}' cannot execute '${toolName}'` },
         { status: 403 }
       );
     }
