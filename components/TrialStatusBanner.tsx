@@ -43,12 +43,31 @@ export default function TrialStatusBanner() {
           .single();
 
         if (orgError) {
-          console.log('[TRIAL DEBUG] No organization found');
-          setLoading(false);
-          return;
+          console.log('[TRIAL DEBUG] No organization found, checking venues table for legacy account');
+          
+          // Check if user has venues (legacy account)
+          const { data: venues, error: venueError } = await supabase
+            .from('venues')
+            .select('venue_id, name, owner_id')
+            .eq('owner_id', user.id)
+            .limit(1);
+          
+          if (!venueError && venues && venues.length > 0) {
+            // User has venues but no organization - they're on basic plan
+            console.log('[TRIAL DEBUG] Found legacy account, defaulting to basic plan');
+            processTrialStatus({
+              subscription_status: 'basic',
+              subscription_tier: 'basic',
+              trial_ends_at: null
+            });
+          } else {
+            console.log('[TRIAL DEBUG] No venues found either');
+            setLoading(false);
+            return;
+          }
+        } else {
+          processTrialStatus(org);
         }
-
-        processTrialStatus(org);
       } else if (userVenueRole && userVenueRole.organizations) {
         processTrialStatus(userVenueRole.organizations);
       }

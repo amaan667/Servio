@@ -71,6 +71,34 @@ function PricingQuickCompare({
             Loading tier information...
           </Badge>
         )}
+        
+        {/* Temporary fix button */}
+        {isSignedIn && (
+          <Button 
+            onClick={async () => {
+              try {
+                const response = await fetch('/api/test/subscription-update', {
+                  method: 'POST',
+                  headers: { 'Content-Type': 'application/json' },
+                  body: JSON.stringify({ tier: 'standard', status: 'trialing' })
+                });
+                const data = await response.json();
+                console.log('[FIX] Subscription update result:', data);
+                if (data.success) {
+                  // Refresh the page to show updated status
+                  window.location.reload();
+                }
+              } catch (error) {
+                console.error('[FIX] Error:', error);
+              }
+            }}
+            variant="outline"
+            size="sm"
+            className="ml-2 bg-green-100 text-green-800 hover:bg-green-200"
+          >
+            Fix Subscription
+          </Button>
+        )}
       </div>
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 w-full max-w-6xl mx-auto px-4" style={{ minHeight: '600px', maxHeight: '600px' }}>
         {/* Basic */}
