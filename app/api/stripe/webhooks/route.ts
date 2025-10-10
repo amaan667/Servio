@@ -86,8 +86,9 @@ async function handleCheckoutCompleted(session: Stripe.Checkout.Session) {
 
   const organizationId = session.metadata?.organization_id;
   const tier = session.metadata?.tier;
+  const userId = session.metadata?.user_id;
 
-  console.log("[STRIPE WEBHOOK] Extracted data:", { organizationId, tier });
+  console.log("[STRIPE WEBHOOK] Extracted data:", { organizationId, tier, userId });
 
   if (!organizationId || !tier) {
     console.error("[STRIPE WEBHOOK] ❌ Missing required metadata in checkout session:", session.metadata);
@@ -97,21 +98,72 @@ async function handleCheckoutCompleted(session: Stripe.Checkout.Session) {
   // Verify the organization exists
   const { data: existingOrg, error: orgCheckError } = await supabase
     .from("organizations")
-    .select("id, subscription_tier, subscription_status")
+    .select("id, subscription_tier, subscription_status, owner_id")
     .eq("id", organizationId)
     .maybeSingle();
 
   if (orgCheckError) {
     console.error("[STRIPE WEBHOOK] ❌ Error checking organization:", orgCheckError);
+    // If we have a user_id, try to find org by owner_id as fallback
+    if (userId) {
+      console.log("[STRIPE WEBHOOK] 🔄 Attempting fallback lookup by user_id:", userId);
+      const { data: orgByOwner, error: ownerError } = await supabase
+        .from("organizations")
+        .select("id, subscription_tier, subscription_status, owner_id")
+        .eq("owner_id", userId)
+        .maybeSingle();
+      
+      if (ownerError || !orgByOwner) {
+        console.error("[STRIPE WEBHOOK] ❌ Fallback lookup also failed:", ownerError);
+        return;
+      }
+      
+      console.log("[STRIPE WEBHOOK] ✅ Found organization via fallback:", orgByOwner.id);
+      // Update the organizationId to use the correct one
+      const actualOrgId = orgByOwner.id;
+      await handleCheckoutWithOrg(session, actualOrgId, tier, orgByOwner, supabase);
+      return;
+    }
     return;
   }
 
   if (!existingOrg) {
     console.error("[STRIPE WEBHOOK] ❌ Organization not found:", organizationId);
+    // If we have a user_id, try to find org by owner_id as fallback
+    if (userId) {
+      console.log("[STRIPE WEBHOOK] 🔄 Attempting fallback lookup by user_id:", userId);
+      const { data: orgByOwner, error: ownerError } = await supabase
+        .from("organizations")
+        .select("id, subscription_tier, subscription_status, owner_id")
+        .eq("owner_id", userId)
+        .maybeSingle();
+      
+      if (ownerError || !orgByOwner) {
+        console.error("[STRIPE WEBHOOK] ❌ Fallback lookup also failed:", ownerError);
+        return;
+      }
+      
+      console.log("[STRIPE WEBHOOK] ✅ Found organization via fallback:", orgByOwner.id);
+      // Update the organizationId to use the correct one
+      const actualOrgId = orgByOwner.id;
+      await handleCheckoutWithOrg(session, actualOrgId, tier, orgByOwner, supabase);
+      return;
+    }
     return;
   }
+  
+  await handleCheckoutWithOrg(session, organizationId, tier, existingOrg, supabase);
+}
 
-  console.log("[STRIPE WEBHOOK] ✅ Found organization:", {
+async function handleCheckoutWithOrg(
+  session: Stripe.Checkout.Session,
+  organizationId: string,
+  tier: string,
+  existingOrg: any,
+  supabase: any
+) {
+
+  console.log("[STRIPE WEBHOOK] ✅ Processing update for organization:", {
     id: existingOrg.id,
     current_tier: existingOrg.subscription_tier,
     current_status: existingOrg.subscription_status
@@ -232,8 +284,9 @@ async function handleSubscriptionUpdated(subscription: Stripe.Subscription) {
 
   const organizationId = subscription.metadata?.organization_id;
   const tier = subscription.metadata?.tier;
+  const userId = subscription.metadata?.user_id;
 
-  console.log("[STRIPE WEBHOOK] Extracted subscription data:", { organizationId, tier });
+  console.log("[STRIPE WEBHOOK] Extracted subscription data:", { organizationId, tier, userId });
 
   if (!organizationId) {
     console.error("[STRIPE WEBHOOK] No organization_id in subscription metadata:", subscription.metadata);
@@ -241,15 +294,33 @@ async function handleSubscriptionUpdated(subscription: Stripe.Subscription) {
   }
 
   // Verify the organization exists
-  const { data: org, error: orgCheckError } = await supabase
+  let { data: org, error: orgCheckError } = await supabase
     .from("organizations")
-    .select("id, subscription_tier")
+    .select("id, subscription_tier, owner_id")
     .eq("id", organizationId)
-    .single();
+    .maybeSingle();
 
   if (orgCheckError || !org) {
-    console.error("[STRIPE WEBHOOK] Organization not found:", organizationId, orgCheckError);
-    return;
+    console.error("[STRIPE WEBHOOK] Organization not found by ID:", organizationId, orgCheckError);
+    // Try fallback by user_id
+    if (userId) {
+      console.log("[STRIPE WEBHOOK] 🔄 Attempting fallback lookup by user_id:", userId);
+      const { data: orgByOwner, error: ownerError } = await supabase
+        .from("organizations")
+        .select("id, subscription_tier, owner_id")
+        .eq("owner_id", userId)
+        .maybeSingle();
+      
+      if (ownerError || !orgByOwner) {
+        console.error("[STRIPE WEBHOOK] ❌ Fallback lookup also failed:", ownerError);
+        return;
+      }
+      
+      org = orgByOwner;
+      console.log("[STRIPE WEBHOOK] ✅ Found organization via fallback:", org.id);
+    } else {
+      return;
+    }
   }
 
   const updateData = {

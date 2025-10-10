@@ -2,6 +2,10 @@
 import { NextRequest, NextResponse } from "next/server";
 import { createClient } from "@/lib/supabase/server";
 
+// Disable caching to always get fresh data
+export const dynamic = 'force-dynamic';
+export const revalidate = 0;
+
 export async function POST(request: NextRequest) {
   try {
     const supabase = await createClient();
@@ -23,13 +27,20 @@ export async function POST(request: NextRequest) {
       .eq("owner_id", user.id)
       .maybeSingle();
 
-    // If organization exists, return it
+    // If organization exists, return it with no-cache headers
     if (existingOrg && !orgCheckError) {
-      return NextResponse.json({
+      const response = NextResponse.json({
         success: true,
         organization: existingOrg,
         created: false
       });
+      
+      // Add cache control headers to ensure fresh data
+      response.headers.set('Cache-Control', 'no-store, no-cache, must-revalidate, proxy-revalidate');
+      response.headers.set('Pragma', 'no-cache');
+      response.headers.set('Expires', '0');
+      
+      return response;
     }
 
     // Get user's name for organization name
@@ -91,11 +102,18 @@ export async function POST(request: NextRequest) {
 
     console.log("[ORG ENSURE] Created new organization:", newOrg.id, "for user:", user.id);
 
-    return NextResponse.json({
+    const response = NextResponse.json({
       success: true,
       organization: newOrg,
       created: true
     });
+    
+    // Add cache control headers to ensure fresh data
+    response.headers.set('Cache-Control', 'no-store, no-cache, must-revalidate, proxy-revalidate');
+    response.headers.set('Pragma', 'no-cache');
+    response.headers.set('Expires', '0');
+    
+    return response;
 
   } catch (error: any) {
     console.error("[ORG ENSURE] Unexpected error:", error);
