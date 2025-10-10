@@ -48,6 +48,14 @@ function PricingQuickCompare({
   
   // Debug logging
   console.log('[BUTTON DEBUG] Current tier:', currentTier, 'Order:', currentOrder, 'Is signed in:', isSignedIn);
+  console.log('[BUTTON DEBUG] Basic button text logic:', {
+    currentTierIsBasic: currentTier === 'basic',
+    isSignedInAndOrderGreaterThan1: isSignedIn && currentOrder > 1,
+    isSignedIn: isSignedIn,
+    finalText: currentTier === 'basic' ? 'Current Plan' : 
+               isSignedIn && currentOrder > 1 ? 'Contact to Downgrade' :
+               isSignedIn ? 'Switch to Basic' : 'Start Free Trial'
+  });
 
   return (
     <div className="w-full flex flex-col items-center gap-8 py-10">
@@ -56,6 +64,11 @@ function PricingQuickCompare({
         {isSignedIn && currentTier && (
           <Badge className="bg-green-500 text-white text-sm px-4 py-1">
             Current Plan: {tierInfo[currentTier as keyof typeof tierInfo]?.name || currentTier}
+          </Badge>
+        )}
+        {isSignedIn && !currentTier && (
+          <Badge className="bg-yellow-500 text-white text-sm px-4 py-1">
+            Loading tier information...
           </Badge>
         )}
       </div>
