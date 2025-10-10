@@ -150,7 +150,7 @@ export function UpgradeModal({
           </DialogDescription>
         </DialogHeader>
 
-        <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 mt-6 max-w-5xl mx-auto">
+        <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 mt-6 max-w-5xl mx-auto px-4" style={{ minHeight: '500px' }}>
           {tiers.map((tier) => {
             const isCurrent = tier.id === currentTier;
             const isDowngrade =
@@ -160,10 +160,10 @@ export function UpgradeModal({
             return (
               <Card
                 key={tier.id}
-                className={`relative flex flex-col p-6 ${
+                className={`relative flex flex-col p-6 h-full min-h-[450px] ${
                   tier.popular
                     ? "border-2 border-purple-500 shadow-lg scale-105"
-                    : ""
+                    : "border border-gray-200"
                 } ${isCurrent ? "bg-gray-50" : ""}`}
               >
                 {tier.popular && (
