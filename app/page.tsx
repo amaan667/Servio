@@ -45,6 +45,9 @@ function PricingQuickCompare({
   };
 
   const currentOrder = getCurrentTierOrder();
+  
+  // Debug logging
+  console.log('[BUTTON DEBUG] Current tier:', currentTier, 'Order:', currentOrder, 'Is signed in:', isSignedIn);
 
   return (
     <div className="w-full flex flex-col items-center gap-8 py-10">
@@ -159,11 +162,21 @@ export default function HomePage() {
           const org: any = userVenueRole.organizations;
           setOrganizationId(org.id);
           
+          console.log('[TIER DEBUG] Organization data:', {
+            subscription_tier: org.subscription_tier,
+            is_grandfathered: org.is_grandfathered,
+            org_id: org.id
+          });
+          
           if (org.is_grandfathered) {
             setCurrentTier('grandfathered');
           } else {
-            setCurrentTier(org.subscription_tier || 'basic');
+            const tier = org.subscription_tier || 'basic';
+            console.log('[TIER DEBUG] Setting tier to:', tier);
+            setCurrentTier(tier);
           }
+        } else {
+          console.log('[TIER DEBUG] No organization found for user:', user.id);
         }
       } catch (error) {
         console.error('Error fetching user tier:', error);
