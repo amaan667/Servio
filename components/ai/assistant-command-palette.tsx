@@ -216,7 +216,7 @@ export function AssistantCommandPalette({
               "live-orders": `/dashboard/${venueId}/live-orders`,
               "kds": `/dashboard/${venueId}/kds`,
               "kitchen-display": `/dashboard/${venueId}/kds`,
-              "qr-codes": `/dashboard/${venueId}/qr-codes`,
+              "qr-codes": `/generate-qr`, // Fixed: qr-codes page doesn't exist, use generate-qr
               "generate-qr": `/generate-qr`,
               "analytics": `/dashboard/${venueId}/analytics`,
               "settings": `/dashboard/${venueId}/settings`,

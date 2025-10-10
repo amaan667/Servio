@@ -848,16 +848,16 @@ export async function executeNavigationGoToPage(
 ): Promise<AIPreviewDiff | AIExecutionResult> {
   const { page } = params;
   
-  // Map page names to actual routes
+  // Map page names to actual routes (verified against existing pages)
   const routeMap: Record<string, string> = {
     "dashboard": `/dashboard/${venueId}`,
-    "menu": `/dashboard/${venueId}/menu-management`,
+    "menu": `/dashboard/${venueId}/menu-management`, // menu-management exists
     "inventory": `/dashboard/${venueId}/inventory`,
     "orders": `/dashboard/${venueId}/orders`,
     "live-orders": `/dashboard/${venueId}/live-orders`,
     "kds": `/dashboard/${venueId}/kds`,
-    "kitchen-display": `/dashboard/${venueId}/kds`,
-    "qr-codes": `/dashboard/${venueId}/qr-codes`,
+    "kitchen-display": `/dashboard/${venueId}/kds`, // same as kds
+    "qr-codes": `/generate-qr`, // Fixed: qr-codes page doesn't exist, use generate-qr
     "generate-qr": `/generate-qr`,
     "analytics": `/dashboard/${venueId}/analytics`,
     "settings": `/dashboard/${venueId}/settings`,
