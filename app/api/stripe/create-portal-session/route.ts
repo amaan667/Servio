@@ -56,73 +56,95 @@ export async function POST(request: NextRequest) {
     console.log('[STRIPE PORTAL] Creating session for customer:', org.stripe_customer_id);
     console.log('[STRIPE PORTAL] Return URL:', returnUrl);
     
-    // Try to create portal session with configuration handling
+    // Try to get or create a billing portal configuration
+    let configurationId: string | undefined;
+    
     try {
-      const session = await stripe.billingPortal.sessions.create({
+      // First, try to list existing configurations
+      console.log('[STRIPE PORTAL] Checking for existing configurations...');
+      const configurations = await stripe.billingPortal.configurations.list({ limit: 1 });
+      
+      if (configurations.data.length > 0 && configurations.data[0].active) {
+        configurationId = configurations.data[0].id;
+        console.log('[STRIPE PORTAL] Using existing configuration:', configurationId);
+      } else {
+        // No active configuration found, create a new one
+        console.log('[STRIPE PORTAL] No active configuration found, creating default configuration...');
+        
+        const configuration = await stripe.billingPortal.configurations.create({
+          business_profile: {
+            headline: 'Manage your Servio subscription',
+          },
+          features: {
+            customer_update: {
+              enabled: true,
+              allowed_updates: ['email', 'address'],
+            },
+            invoice_history: {
+              enabled: true,
+            },
+            payment_method_update: {
+              enabled: true,
+            },
+            subscription_cancel: {
+              enabled: true,
+              mode: 'at_period_end',
+            },
+            subscription_update: {
+              enabled: true,
+              default_allowed_updates: ['price', 'quantity', 'promotion_code'],
+              proration_behavior: 'create_prorations',
+            },
+          },
+        });
+
+        configurationId = configuration.id;
+        console.log('[STRIPE PORTAL] Created new configuration:', configurationId);
+      }
+    } catch (configError: any) {
+      console.error('[STRIPE PORTAL] Failed to get/create configuration:', configError);
+      // Continue without configuration - Stripe will use default if available
+      console.log('[STRIPE PORTAL] Continuing without explicit configuration...');
+    }
+
+    // Create billing portal session
+    try {
+      const sessionParams: Stripe.BillingPortal.SessionCreateParams = {
         customer: org.stripe_customer_id,
         return_url: returnUrl,
+      };
+      
+      if (configurationId) {
+        sessionParams.configuration = configurationId;
+      }
+      
+      console.log('[STRIPE PORTAL] Creating session with params:', { 
+        customer: org.stripe_customer_id, 
+        configuration: configurationId || 'default' 
       });
+      
+      const session = await stripe.billingPortal.sessions.create(sessionParams);
 
       return NextResponse.json({ url: session.url });
     } catch (portalError: any) {
-      // If no configuration exists, create a default one and retry
-      if (portalError.message?.includes('No configuration provided') || 
-          portalError.message?.includes('default configuration has not been created')) {
-        console.log('[STRIPE PORTAL] No configuration found, creating default configuration...');
-        
-        try {
-          // Create a default billing portal configuration
-          const configuration = await stripe.billingPortal.configurations.create({
-            business_profile: {
-              headline: 'Manage your Servio subscription',
-            },
-            features: {
-              customer_update: {
-                enabled: true,
-                allowed_updates: ['email', 'address'],
-              },
-              invoice_history: {
-                enabled: true,
-              },
-              payment_method_update: {
-                enabled: true,
-              },
-              subscription_cancel: {
-                enabled: true,
-                mode: 'at_period_end',
-              },
-              subscription_update: {
-                enabled: true,
-                default_allowed_updates: ['price', 'quantity', 'promotion_code'],
-                proration_behavior: 'create_prorations',
-              },
-            },
-          });
-
-          console.log('[STRIPE PORTAL] Created configuration:', configuration.id);
-
-          // Retry creating the portal session with the new configuration
-          const session = await stripe.billingPortal.sessions.create({
-            customer: org.stripe_customer_id,
-            return_url: returnUrl,
-            configuration: configuration.id,
-          });
-
-          return NextResponse.json({ url: session.url });
-        } catch (configError: any) {
-          console.error('[STRIPE PORTAL] Failed to create configuration:', configError);
-          // Fall back to providing helpful error message
-          return NextResponse.json(
-            { 
-              error: 'Billing portal configuration is missing. Please contact support or set up your billing portal at https://dashboard.stripe.com/settings/billing/portal' 
-            },
-            { status: 500 }
-          );
-        }
+      console.error('[STRIPE PORTAL] Failed to create session:', portalError);
+      
+      // Provide more specific error messages
+      if (portalError.code === 'resource_missing') {
+        return NextResponse.json(
+          { 
+            error: 'Customer not found in Stripe. Please contact support to resolve your billing setup.' 
+          },
+          { status: 400 }
+        );
       }
       
-      // Re-throw other errors
-      throw portalError;
+      return NextResponse.json(
+        { 
+          error: portalError.message || 'Failed to create billing portal session. Please try again or contact support.' 
+        },
+        { status: 500 }
+      );
     }
   } catch (error: any) {
     console.error("[STRIPE PORTAL] Error:", error);
