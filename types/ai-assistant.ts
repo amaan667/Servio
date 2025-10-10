@@ -29,7 +29,7 @@ export const MenuCreateItemSchema = z.object({
   price: z.number().positive(),
   categoryId: z.string().uuid(),
   available: z.boolean().default(true),
-  imageUrl: z.string().url().nullable().default(null),
+  imageUrl: z.string().nullable().default(null), // Removed .url() - not supported by OpenAI strict mode
   allergens: z.array(z.string()).default([]),
 }).strict();
 
