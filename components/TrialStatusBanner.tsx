@@ -26,51 +26,26 @@ export default function TrialStatusBanner() {
     }
 
     try {
-      const supabase = createClient();
+      // Use the organization ensure endpoint to get accurate organization data
+      const ensureOrgResponse = await fetch('/api/organization/ensure', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' }
+      });
+
+      if (!ensureOrgResponse.ok) {
+        console.error('[TRIAL DEBUG] Failed to ensure organization');
+        setLoading(false);
+        return;
+      }
+
+      const { organization } = await ensureOrgResponse.json();
       
-      // Get user's organization and trial status
-      const { data: userVenueRole, error: userVenueError } = await supabase
-        .from('user_venue_roles')
-        .select('organization_id, organizations(subscription_status, subscription_tier, trial_ends_at)')
-        .eq('user_id', user.id)
-        .single();
-
-      if (userVenueError) {
-        // Fallback: try direct organization lookup
-        const { data: org, error: orgError } = await supabase
-          .from('organizations')
-          .select('subscription_status, subscription_tier, trial_ends_at')
-          .eq('owner_id', user.id)
-          .single();
-
-        if (orgError) {
-          console.log('[TRIAL DEBUG] No organization found, checking venues table for legacy account');
-          
-          // Check if user has venues (legacy account)
-          const { data: venues, error: venueError } = await supabase
-            .from('venues')
-            .select('venue_id, name, owner_id')
-            .eq('owner_id', user.id)
-            .limit(1);
-          
-          if (!venueError && venues && venues.length > 0) {
-            // User has venues but no organization - they're on basic plan
-            console.log('[TRIAL DEBUG] Found legacy account, defaulting to basic plan');
-            processTrialStatus({
-              subscription_status: 'basic',
-              subscription_tier: 'basic',
-              trial_ends_at: null
-            });
-          } else {
-            console.log('[TRIAL DEBUG] No venues found either');
-            setLoading(false);
-            return;
-          }
-        } else {
-          processTrialStatus(org);
-        }
-      } else if (userVenueRole && userVenueRole.organizations) {
-        processTrialStatus(userVenueRole.organizations);
+      if (organization) {
+        processTrialStatus({
+          subscription_status: organization.subscription_status,
+          subscription_tier: organization.subscription_tier,
+          trial_ends_at: organization.trial_ends_at
+        });
       }
 
     } catch (error) {
@@ -111,14 +86,24 @@ export default function TrialStatusBanner() {
   useEffect(() => {
     const urlParams = new URLSearchParams(window.location.search);
     if (urlParams.get('upgrade') === 'success') {
-      // Refresh trial status after successful upgrade
+      // Refresh trial status after successful upgrade with retry logic
+      const refreshWithRetry = async (attempt = 0) => {
+        console.log(`[TRIAL REFRESH] Attempt ${attempt + 1}`);
+        await fetchTrialStatus();
+        
+        // If still no trial status and we haven't exceeded retries, try again
+        if (attempt < 3 && !trialStatus) {
+          setTimeout(() => refreshWithRetry(attempt + 1), (attempt + 1) * 2000);
+        }
+      };
+      
       setTimeout(() => {
-        fetchTrialStatus();
+        refreshWithRetry();
         // Remove query params
         const url = new URL(window.location.href);
         url.searchParams.delete('upgrade');
         window.history.replaceState({}, document.title, url.toString());
-      }, 2000);
+      }, 1000);
     }
   }, []);
 

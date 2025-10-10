@@ -27,11 +27,15 @@ function PricingQuickCompare({
   currentTier,
   onPrimaryClick,
   onUpgradeClick,
+  subscriptionStatus,
+  trialEndsAt,
 }: {
   isSignedIn: boolean;
   currentTier?: string;
   onPrimaryClick: () => void;
   onUpgradeClick: () => void;
+  subscriptionStatus?: string;
+  trialEndsAt?: string;
 }) {
   const tierInfo = {
     basic: { name: 'Basic', order: 1 },
@@ -45,6 +49,18 @@ function PricingQuickCompare({
   };
 
   const currentOrder = getCurrentTierOrder();
+  
+  const getTrialDaysRemaining = () => {
+    if (!trialEndsAt) return null;
+    const endDate = new Date(trialEndsAt);
+    const now = new Date();
+    const diffTime = endDate.getTime() - now.getTime();
+    const daysRemaining = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
+    return daysRemaining > 0 ? daysRemaining : 0;
+  };
+
+  const trialDays = getTrialDaysRemaining();
+  const isTrialing = subscriptionStatus === 'trialing';
   
   // Debug logging
   console.log('[BUTTON DEBUG] Current tier:', currentTier, 'Order:', currentOrder, 'Is signed in:', isSignedIn);
@@ -62,14 +78,12 @@ function PricingQuickCompare({
       <div className="text-center">
         <h2 className="text-3xl font-bold mb-4">Choose the plan that works best for your business</h2>
         {isSignedIn && currentTier && (
-          <Badge className="bg-green-500 text-white text-sm px-4 py-1">
-            Current Plan: {tierInfo[currentTier as keyof typeof tierInfo]?.name || currentTier}
+          <Badge className="bg-green-500 text-white text-sm px-4 py-1 mb-4">
+            Current Plan: {tierInfo[currentTier as keyof typeof tierInfo]?.name || currentTier.toUpperCase()}
           </Badge>
         )}
-        {isSignedIn && !currentTier && (
-          <Badge className="bg-yellow-500 text-white text-sm px-4 py-1">
-            Loading tier information...
-          </Badge>
+        {!isSignedIn && (
+          <p className="text-gray-600">All plans include a 14-day free trial</p>
         )}
       </div>
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 w-full max-w-6xl mx-auto px-4" style={{ minHeight: '600px', maxHeight: '600px' }}>
@@ -164,116 +178,47 @@ export default function HomePage() {
     }
 
     try {
-      const supabase = createClient();
-      
       console.log('[TIER DEBUG] Fetching tier for user:', user.id);
       
-      // Try multiple approaches to get organization info
-      let orgFound = false;
-      
-      // Approach 1: Try user_venue_roles table (if it exists)
-      try {
-        const { data: userVenueRoles, error: userVenueError } = await supabase
-          .from('user_venue_roles')
-          .select('organization_id, organizations(subscription_tier, subscription_status, is_grandfathered, id, trial_ends_at)')
-          .eq('user_id', user.id);
+      // First, ensure user has a real organization
+      const ensureOrgResponse = await fetch('/api/organization/ensure', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' }
+      });
 
-        console.log('[TIER DEBUG] User venue roles query result:', { userVenueRoles, userVenueError });
-
-        if (!userVenueError && userVenueRoles && userVenueRoles.length > 0) {
-          const userVenueRole = userVenueRoles[0];
-          if (userVenueRole && userVenueRole.organizations) {
-            const org: any = userVenueRole.organizations;
-            setOrganizationId(org.id);
-            
-            console.log('[TIER DEBUG] Organization data (via user_venue_roles):', {
-              subscription_tier: org.subscription_tier,
-              subscription_status: org.subscription_status,
-              is_grandfathered: org.is_grandfathered,
-              org_id: org.id
-            });
-            
-            if (org.is_grandfathered) {
-              setCurrentTier('grandfathered');
-            } else {
-              const tier = org.subscription_tier || 'basic';
-              console.log('[TIER DEBUG] Setting tier to (via user_venue_roles):', tier);
-              setCurrentTier(tier);
-            }
-            setTrialEndsAt(org.trial_ends_at);
-            setSubscriptionStatus(org.subscription_status);
-            orgFound = true;
-          }
-        }
-      } catch (error) {
-        console.log('[TIER DEBUG] user_venue_roles query failed:', error);
-      }
-
-      // Approach 2: Try organizations table directly (if user_venue_roles didn't work)
-      if (!orgFound) {
-        try {
-          const { data: directOrgs, error: directError } = await supabase
-            .from('organizations')
-            .select('id, subscription_tier, subscription_status, is_grandfathered, trial_ends_at')
-            .eq('owner_id', user.id)
-            .single();
-          
-          console.log('[TIER DEBUG] Direct organization query result:', { directOrgs, directError });
-          
-          if (!directError && directOrgs) {
-            setOrganizationId(directOrgs.id);
-            if (directOrgs.is_grandfathered) {
-              setCurrentTier('grandfathered');
-            } else {
-              const tier = directOrgs.subscription_tier || 'basic';
-              console.log('[TIER DEBUG] Setting tier to (direct):', tier);
-              setCurrentTier(tier);
-            }
-            setTrialEndsAt(directOrgs.trial_ends_at);
-            setSubscriptionStatus(directOrgs.subscription_status);
-            orgFound = true;
-          }
-        } catch (error) {
-          console.log('[TIER DEBUG] Direct organizations query failed:', error);
-        }
-      }
-
-      // Approach 3: Try venues table as fallback (for legacy accounts)
-      if (!orgFound) {
-        try {
-          const { data: venues, error: venueError } = await supabase
-            .from('venues')
-            .select('venue_id, name, owner_id')
-            .eq('owner_id', user.id)
-            .limit(1);
-          
-          console.log('[TIER DEBUG] Venues query result:', { venues, venueError });
-          
-          if (!venueError && venues && venues.length > 0) {
-            // Create a mock organization ID for legacy accounts
-            const mockOrgId = `legacy-${user.id}`;
-            setOrganizationId(mockOrgId);
-            console.log('[TIER DEBUG] Using legacy account, defaulting to basic tier');
-            setCurrentTier('basic');
-            orgFound = true;
-          }
-        } catch (error) {
-          console.log('[TIER DEBUG] Venues query failed:', error);
-        }
-      }
-
-      // Final fallback: Default to basic if nothing worked
-      if (!orgFound) {
-        console.log('[TIER DEBUG] No organization found, defaulting to basic tier');
+      if (!ensureOrgResponse.ok) {
+        console.error('[TIER DEBUG] Failed to ensure organization:', await ensureOrgResponse.text());
         setCurrentTier('basic');
-        setOrganizationId(`default-${user.id}`);
+        return;
       }
+
+      const { organization, created } = await ensureOrgResponse.json();
+      
+      console.log('[TIER DEBUG] Organization ensured:', { 
+        id: organization.id, 
+        tier: organization.subscription_tier,
+        status: organization.subscription_status,
+        created 
+      });
+
+      // Set organization data
+      setOrganizationId(organization.id);
+      
+      if (organization.is_grandfathered) {
+        setCurrentTier('grandfathered');
+      } else {
+        const tier = organization.subscription_tier || 'basic';
+        console.log('[TIER DEBUG] Setting tier to:', tier);
+        setCurrentTier(tier);
+      }
+      
+      setTrialEndsAt(organization.trial_ends_at);
+      setSubscriptionStatus(organization.subscription_status);
 
     } catch (error) {
       console.error('[TIER DEBUG] Error in tier detection:', error);
       // Default to basic if everything fails
       setCurrentTier('basic');
-      setOrganizationId(`error-${user.id}`);
     }
   };
 
@@ -281,7 +226,7 @@ export default function HomePage() {
     fetchUserTier();
   }, [user]);
 
-  // Refresh subscription status function with retry logic
+  // Refresh subscription status function with improved logic
   const refreshSubscriptionStatus = async (retryCount = 0) => {
     const maxRetries = 3;
     setIsRefreshing(true);
@@ -289,40 +234,12 @@ export default function HomePage() {
     try {
       console.log(`[TIER REFRESH] Attempt ${retryCount + 1}/${maxRetries + 1}`);
       
-      // If we have organizationId, use the refresh endpoint
-      if (organizationId) {
-        const response = await fetch('/api/subscription/refresh-status', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ organizationId })
-        });
-
-        if (response.ok) {
-          const data = await response.json();
-          if (data.success) {
-            console.log('[TIER REFRESH] API refresh successful:', data.subscription);
-            setCurrentTier(data.subscription.tier);
-            setSubscriptionStatus(data.subscription.status);
-            setTrialEndsAt(data.subscription.trial_ends_at);
-            setIsRefreshing(false);
-            return true;
-          }
-        }
-      }
-      
-      // Fallback: re-fetch tier info from scratch
-      console.log('[TIER REFRESH] Falling back to full tier fetch');
+      // Always re-fetch from the organization ensure endpoint for accuracy
+      console.log('[TIER REFRESH] Re-fetching tier info from scratch');
       await fetchUserTier();
       
-      // Check if we got updated data
-      if (currentTier !== 'basic') {
-        console.log('[TIER REFRESH] Full fetch successful');
-        setIsRefreshing(false);
-        return true;
-      }
-      
-      // If still showing basic and we have retries left, retry after delay
-      if (retryCount < maxRetries) {
+      // If still showing basic tier after refresh, retry
+      if (retryCount < maxRetries && currentTier === 'basic') {
         console.log(`[TIER REFRESH] Still showing basic tier, retrying in ${(retryCount + 1) * 2} seconds...`);
         setTimeout(() => {
           refreshSubscriptionStatus(retryCount + 1);
@@ -330,9 +247,9 @@ export default function HomePage() {
         return false;
       }
       
-      console.log('[TIER REFRESH] Max retries reached, giving up');
+      console.log('[TIER REFRESH] Refresh completed');
       setIsRefreshing(false);
-      return false;
+      return true;
       
     } catch (error) {
       console.error('[TIER REFRESH] Error refreshing subscription:', error);
@@ -786,6 +703,8 @@ export default function HomePage() {
           currentTier={currentTier}
           onPrimaryClick={handlePricingPrimary}
           onUpgradeClick={handleUpgradeClick}
+          subscriptionStatus={subscriptionStatus}
+          trialEndsAt={trialEndsAt}
         />
         
         {/* FAQ Section */}
