@@ -62,33 +62,43 @@ export async function GET(request: NextRequest) {
       }
     }
 
-    // Approach 3: Try venues table as fallback (for legacy accounts)
+    // Approach 3: If no organization exists, create a real one
     if (!orgFound) {
+      console.log('[DEBUG] No organization found, creating real organization for user:', user.id);
       try {
-        const { data: venues, error: venueError } = await supabase
-          .from('venues')
-          .select('venue_id, name, owner_id')
-          .eq('owner_id', user.id)
-          .limit(1);
-        
-        console.log('[DEBUG] Venues query result:', { venues, venueError });
-        
-        if (!venueError && venues && venues.length > 0) {
-          // Create a mock organization object for legacy accounts
-          org = {
-            id: `legacy-${user.id}`,
+        const userName = user.user_metadata?.full_name || user.email?.split('@')[0] || 'User';
+        const { data: newOrg, error: createError } = await supabase
+          .from("organizations")
+          .insert({
+            name: `${userName}'s Organization`,
+            slug: `org-${user.id.slice(0, 8)}-${Date.now()}`,
             owner_id: user.id,
-            subscription_tier: 'basic',
-            subscription_status: 'basic',
+            subscription_tier: "basic",
+            subscription_status: "trialing",
             is_grandfathered: false,
-            stripe_customer_id: null,
-            stripe_subscription_id: null,
-            trial_ends_at: null
-          };
+            trial_ends_at: new Date(Date.now() + 14 * 24 * 60 * 60 * 1000).toISOString(),
+            created_at: new Date().toISOString(),
+            updated_at: new Date().toISOString()
+          })
+          .select("*")
+          .single();
+
+        if (createError) {
+          console.error('[DEBUG] Failed to create organization:', createError);
+        } else {
+          org = newOrg;
           orgFound = true;
+          console.log('[DEBUG] Created new organization:', org.id);
+          
+          // Link any existing venues to this organization
+          await supabase
+            .from("venues")
+            .update({ organization_id: org.id })
+            .eq("owner_id", user.id)
+            .is("organization_id", null);
         }
       } catch (error) {
-        console.log('[DEBUG] Venues query failed:', error);
+        console.log('[DEBUG] Error creating organization:', error);
       }
     }
 

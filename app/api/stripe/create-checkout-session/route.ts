@@ -99,98 +99,99 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    // Get organization with multiple fallback approaches
+    // ALWAYS get or create a real organization - NO MOCK IDs
     let org = null;
     
-    // Handle mock organization IDs (legacy/default accounts)
-    if (organizationId && (organizationId.startsWith('legacy-') || organizationId.startsWith('default-') || organizationId.startsWith('error-'))) {
-      console.log('[STRIPE DEBUG] Using mock organization ID:', organizationId);
-      // Create a mock organization object for legacy accounts
-      org = {
-        id: organizationId,
-        owner_id: user.id,
-        subscription_tier: 'basic',
-        is_grandfathered: false,
-        stripe_customer_id: null
-      };
-    } else {
-      // Try to find real organization
-      if (organizationId) {
-        try {
-          const { data: orgById } = await supabase
-            .from("organizations")
-            .select("*")
-            .eq("id", organizationId)
-            .single();
-          org = orgById;
-        } catch (error) {
-          console.log('[STRIPE DEBUG] Organization by ID failed:', error);
-        }
-      }
+    // First priority: Try to find by owner_id (most reliable)
+    const { data: orgByOwner, error: ownerError } = await supabase
+      .from("organizations")
+      .select("*")
+      .eq("owner_id", user.id)
+      .maybeSingle();
+    
+    if (orgByOwner) {
+      org = orgByOwner;
+      console.log('[STRIPE DEBUG] Found existing organization by owner_id:', org.id);
+    } else if (ownerError) {
+      console.log('[STRIPE DEBUG] Error querying organization by owner_id:', ownerError);
+    }
+    
+    // Second priority: If organizationId provided and valid, verify it matches user
+    if (!org && organizationId) {
+      const { data: orgById, error: idError } = await supabase
+        .from("organizations")
+        .select("*")
+        .eq("id", organizationId)
+        .maybeSingle();
       
-      // If no org found by ID, try to find user's organization by owner_id
-      if (!org) {
-        try {
-          const { data: orgByOwner } = await supabase
-            .from("organizations")
-            .select("*")
-            .eq("owner_id", user.id)
-            .single();
-          org = orgByOwner;
-        } catch (error) {
-          console.log('[STRIPE DEBUG] Organization by owner failed:', error);
-        }
-      }
-      
-      // If still no org, try to find through user_venue_roles
-      if (!org) {
-        try {
-          const { data: userVenueRole } = await supabase
-            .from("user_venue_roles")
-            .select("organization_id, organizations(*)")
-            .eq("user_id", user.id)
-            .single();
-          
-          if (userVenueRole && userVenueRole.organizations) {
-            org = userVenueRole.organizations;
-          }
-        } catch (error) {
-          console.log('[STRIPE DEBUG] User venue role query failed:', error);
-        }
-      }
-
-      // If still no org, try venues table for legacy accounts
-      if (!org) {
-        try {
-          const { data: venues } = await supabase
-            .from("venues")
-            .select("venue_id, name, owner_id")
-            .eq("owner_id", user.id)
-            .limit(1);
-          
-          if (venues && venues.length > 0) {
-            // Create mock organization for legacy account
-            org = {
-              id: `legacy-${user.id}`,
-              owner_id: user.id,
-              subscription_tier: 'basic',
-              is_grandfathered: false,
-              stripe_customer_id: null
-            };
-          }
-        } catch (error) {
-          console.log('[STRIPE DEBUG] Venues query failed:', error);
-        }
+      if (orgById && orgById.owner_id === user.id) {
+        org = orgById;
+        console.log('[STRIPE DEBUG] Found organization by provided ID:', org.id);
+      } else if (orgById) {
+        console.warn('[STRIPE DEBUG] Organization', organizationId, 'exists but belongs to different user');
+      } else if (idError) {
+        console.log('[STRIPE DEBUG] Error querying organization by ID:', idError);
       }
     }
 
+    // If NO organization found, create a real one NOW
     if (!org) {
-      console.error("No organization found for user:", user.id, "organizationId:", organizationId);
+      console.log('[STRIPE DEBUG] No organization found - creating real organization for user:', user.id);
+      const userName = user.user_metadata?.full_name || user.email?.split('@')[0] || 'User';
+      
+      const { data: newOrg, error: createError } = await supabase
+        .from("organizations")
+        .insert({
+          name: `${userName}'s Organization`,
+          slug: `org-${user.id.slice(0, 8)}-${Date.now()}`,
+          owner_id: user.id,
+          subscription_tier: "basic",
+          subscription_status: "trialing",
+          is_grandfathered: false,
+          trial_ends_at: new Date(Date.now() + 14 * 24 * 60 * 60 * 1000).toISOString(),
+          created_at: new Date().toISOString(),
+          updated_at: new Date().toISOString()
+        })
+        .select("*")
+        .single();
+
+      if (createError) {
+        console.error('[STRIPE ERROR] Failed to create organization:', createError);
+        return NextResponse.json(
+          { error: "Failed to create organization. Please try again." },
+          { status: 500 }
+        );
+      }
+      
+      org = newOrg;
+      console.log('[STRIPE DEBUG] ✅ Created new organization:', org.id);
+      
+      // Link any existing venues to this organization
+      const { error: venueUpdateError } = await supabase
+        .from("venues")
+        .update({ organization_id: org.id })
+        .eq("owner_id", user.id)
+        .is("organization_id", null);
+      
+      if (venueUpdateError) {
+        console.warn('[STRIPE DEBUG] Warning: Could not link venues to organization:', venueUpdateError);
+      } else {
+        console.log('[STRIPE DEBUG] Linked user venues to organization:', org.id);
+      }
+    }
+
+    // Validate we have a real organization
+    if (!org || !org.id) {
+      console.error("[STRIPE ERROR] Failed to get or create organization for user:", user.id);
       return NextResponse.json(
-        { error: "Organization not found" },
-        { status: 404 }
+        { error: "Could not create organization. Please contact support." },
+        { status: 500 }
       );
     }
+    
+    // Always use the actual organization ID from database
+    const actualOrgId = org.id;
+    console.log('[STRIPE DEBUG] Using organization ID:', actualOrgId, 'for user:', user.id);
 
     console.log('[STRIPE DEBUG] Using organization:', {
       id: org.id,
@@ -207,7 +208,7 @@ export async function POST(request: NextRequest) {
       const customer = await stripe.customers.create({
         email: user.email,
         metadata: {
-          organization_id: organizationId,
+          organization_id: actualOrgId,
           user_id: user.id,
         },
       });
@@ -218,7 +219,11 @@ export async function POST(request: NextRequest) {
       await supabase
         .from("organizations")
         .update({ stripe_customer_id: customerId })
-        .eq("id", organizationId);
+        .eq("id", actualOrgId);
+      
+      console.log('[STRIPE DEBUG] Created Stripe customer:', customerId, 'for org:', actualOrgId);
+    } else {
+      console.log('[STRIPE DEBUG] Using existing Stripe customer:', customerId);
     }
 
     // Create checkout session
@@ -232,16 +237,18 @@ export async function POST(request: NextRequest) {
           quantity: 1,
         },
       ],
-      success_url: `${process.env.NEXT_PUBLIC_APP_URL}/checkout/success?session_id={CHECKOUT_SESSION_ID}&tier=${tier}`,
-      cancel_url: `${process.env.NEXT_PUBLIC_APP_URL}/dashboard?upgrade=cancelled`,
+      success_url: `${process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:3000'}/?upgrade=success`,
+      cancel_url: `${process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:3000'}/?upgrade=cancelled`,
       metadata: {
-        organization_id: organizationId,
+        organization_id: actualOrgId,
         tier,
+        user_id: user.id,
       },
       subscription_data: {
         metadata: {
-          organization_id: organizationId,
+          organization_id: actualOrgId,
           tier,
+          user_id: user.id,
         },
         trial_period_days: 14, // 14-day free trial
       },
