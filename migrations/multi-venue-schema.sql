@@ -206,6 +206,12 @@ CREATE POLICY "Owners can update organizations" ON organizations
   FOR UPDATE
   USING (owner_id = auth.uid());
 
+-- Organizations: Authenticated users can create organizations for themselves
+DROP POLICY IF EXISTS "Users can create organizations" ON organizations;
+CREATE POLICY "Users can create organizations" ON organizations
+  FOR INSERT
+  WITH CHECK (owner_id = auth.uid());
+
 -- User venue roles: Users can view roles for venues they have access to
 DROP POLICY IF EXISTS "Users can view venue roles" ON user_venue_roles;
 CREATE POLICY "Users can view venue roles" ON user_venue_roles
