@@ -273,6 +273,17 @@ export default function HomePage() {
     fetchUserTier();
   }, [user]);
 
+  // Refresh tier info when returning from checkout
+  useEffect(() => {
+    const urlParams = new URLSearchParams(window.location.search);
+    if (urlParams.get('upgrade') === 'success') {
+      // Refresh tier info after successful upgrade
+      setTimeout(() => {
+        window.location.href = window.location.pathname; // Remove query params and refresh
+      }, 2000);
+    }
+  }, []);
+
   // Analytics handler for FAQ interactions (optional)
   const handleFAQToggle = (question: string, isOpen: boolean) => {
     // Fire analytics event if you have analytics configured

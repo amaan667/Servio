@@ -16,6 +16,7 @@ import { useConnectionMonitor } from '@/lib/connection-monitor';
 import { DashboardSkeleton } from '@/components/dashboard-skeleton';
 import { useRequestCancellation } from '@/lib/request-utils';
 import OnboardingCompletionBanner from '@/components/onboarding-completion-banner';
+import TrialStatusBanner from '@/components/TrialStatusBanner';
 
 interface DashboardCounts {
   live_count: number;
@@ -413,6 +414,9 @@ const VenueDashboardClient = React.memo(function VenueDashboardClient({
         
         {/* Onboarding completion banner */}
         <OnboardingCompletionBanner />
+        
+        {/* Trial status banner */}
+        <TrialStatusBanner />
         
         <div className="mb-6 sm:mb-8">
           <div className="flex items-start justify-between">
