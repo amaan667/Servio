@@ -79,31 +79,78 @@ export default function TrialStatusBanner() {
   };
 
   useEffect(() => {
-    fetchTrialStatus();
+    if (user) {
+      console.log('[TRIAL BANNER] Fetching trial status for user:', user.id);
+      fetchTrialStatus();
+    } else {
+      console.log('[TRIAL BANNER] No user, clearing trial status');
+      setTrialStatus(null);
+      setLoading(false);
+    }
   }, [user]);
 
   // Auto-refresh when returning from checkout success
   useEffect(() => {
     const urlParams = new URLSearchParams(window.location.search);
     if (urlParams.get('upgrade') === 'success') {
+      console.log('[TRIAL BANNER] Detected upgrade success, starting refresh');
+      
       // Refresh trial status after successful upgrade with retry logic
       const refreshWithRetry = async (attempt = 0) => {
-        console.log(`[TRIAL REFRESH] Attempt ${attempt + 1}`);
-        await fetchTrialStatus();
+        console.log(`[TRIAL BANNER REFRESH] Attempt ${attempt + 1}/4`);
         
-        // If still no trial status and we haven't exceeded retries, try again
-        if (attempt < 3 && !trialStatus) {
-          setTimeout(() => refreshWithRetry(attempt + 1), (attempt + 1) * 2000);
+        try {
+          // Directly fetch organization data
+          const ensureOrgResponse = await fetch('/api/organization/ensure', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' }
+          });
+
+          if (!ensureOrgResponse.ok) {
+            console.error('[TRIAL BANNER REFRESH] Failed to fetch organization');
+            if (attempt < 3) {
+              setTimeout(() => refreshWithRetry(attempt + 1), (attempt + 1) * 2000);
+            }
+            return;
+          }
+
+          const { organization } = await ensureOrgResponse.json();
+          console.log('[TRIAL BANNER REFRESH] Fetched organization:', {
+            tier: organization.subscription_tier,
+            status: organization.subscription_status,
+            trial_ends_at: organization.trial_ends_at
+          });
+          
+          // Process and update trial status
+          if (organization) {
+            processTrialStatus({
+              subscription_status: organization.subscription_status,
+              subscription_tier: organization.subscription_tier,
+              trial_ends_at: organization.trial_ends_at
+            });
+            console.log('[TRIAL BANNER REFRESH] Successfully updated trial status');
+          } else if (attempt < 3) {
+            // If no organization data, retry
+            setTimeout(() => refreshWithRetry(attempt + 1), (attempt + 1) * 2000);
+          }
+        } catch (error) {
+          console.error('[TRIAL BANNER REFRESH] Error:', error);
+          if (attempt < 3) {
+            setTimeout(() => refreshWithRetry(attempt + 1), (attempt + 1) * 2000);
+          }
         }
       };
       
+      // Start immediate refresh
+      refreshWithRetry();
+      
+      // Remove query params after a short delay
       setTimeout(() => {
-        refreshWithRetry();
-        // Remove query params
         const url = new URL(window.location.href);
         url.searchParams.delete('upgrade');
         window.history.replaceState({}, document.title, url.toString());
-      }, 1000);
+        console.log('[TRIAL BANNER] Removed upgrade parameter from URL');
+      }, 3000);
     }
   }, []);
 
