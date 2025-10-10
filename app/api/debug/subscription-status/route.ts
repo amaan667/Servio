@@ -132,8 +132,7 @@ export async function GET(request: NextRequest) {
         id: stripeSubscription.id,
         status: stripeSubscription.status,
         metadata: stripeSubscription.metadata,
-        trial_end: stripeSubscription.trial_end,
-        current_period_end: stripeSubscription.current_period_end
+        trial_end: stripeSubscription.trial_end
       } : null,
       debug: {
         userId: user.id,
