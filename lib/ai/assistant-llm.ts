@@ -62,7 +62,7 @@ MENU MANAGEMENT:
 - Update item prices, availability, and descriptions
 - Create new menu items and categories
 - Delete menu items
-- Translate menu to different languages
+- Preview menu translation (full translation requires API setup)
 - Navigate to menu management pages
 
 INVENTORY MANAGEMENT:
