@@ -20,22 +20,22 @@ export const MenuUpdatePricesSchema = z.object({
 export const MenuToggleAvailabilitySchema = z.object({
   itemIds: z.array(z.string().uuid()),
   available: z.boolean(),
-  reason: z.string().optional(),
+  reason: z.string().nullable().default(null),
 }).strict();
 
 export const MenuCreateItemSchema = z.object({
   name: z.string().min(1),
-  description: z.string().optional(),
+  description: z.string().nullable().default(null),
   price: z.number().positive(),
   categoryId: z.string().uuid(),
   available: z.boolean().default(true),
-  imageUrl: z.string().url().optional(),
-  allergens: z.array(z.string()).optional(),
+  imageUrl: z.string().url().nullable().default(null),
+  allergens: z.array(z.string()).default([]),
 }).strict();
 
 export const MenuDeleteItemSchema = z.object({
   itemId: z.string().uuid(),
-  reason: z.string().optional(),
+  reason: z.string().nullable().default(null),
 }).strict();
 
 export const MenuTranslateSchema = z.object({
@@ -49,7 +49,7 @@ export const InventoryAdjustStockSchema = z.object({
     z.object({
       ingredientId: z.string().uuid(),
       delta: z.number(),
-      notes: z.string().optional(),
+      notes: z.string().nullable().default(null),
     }).strict()
   ),
   reason: z.enum(["receive", "adjust", "waste", "count"]),
@@ -75,27 +75,28 @@ export const OrdersMarkServedSchema = z.object({
 
 export const OrdersCompleteSchema = z.object({
   orderId: z.string().uuid(),
-  paymentMethod: z.string().optional(),
+  paymentMethod: z.string().nullable().default(null),
 }).strict();
 
 // Analytics Tools
 export const AnalyticsGetInsightsSchema = z.object({
   metric: z.string(),
   timeRange: z.enum(["today", "week", "month", "quarter", "year", "custom"]),
-  groupBy: z.enum(["day", "week", "month", "category", "item"]).optional(),
+  groupBy: z.enum(["day", "week", "month", "category", "item"]).nullable().default(null),
   customRange: z
     .object({
       start: z.string(),
       end: z.string(),
     })
     .strict()
-    .optional(),
+    .nullable()
+    .default(null),
 }).strict();
 
 export const AnalyticsExportSchema = z.object({
   type: z.enum(["sales", "orders", "inventory", "customers"]),
   format: z.enum(["csv", "json", "pdf"]),
-  filters: z.object({}).strict().optional(), // No more z.record - strict empty object for flexible filters
+  filters: z.object({}).strict().nullable().default(null), // No more z.record - strict empty object for flexible filters
 }).strict();
 
 export const AnalyticsGetStatsSchema = z.object({
@@ -110,7 +111,7 @@ export const AnalyticsGetStatsSchema = z.object({
     "menu_performance"
   ]),
   timeRange: z.enum(["today", "yesterday", "week", "month", "quarter", "year"]),
-  groupBy: z.enum(["hour", "day", "week", "month", "category", "item"]).optional(),
+  groupBy: z.enum(["hour", "day", "week", "month", "category", "item"]).nullable().default(null),
 }).strict();
 
 export const AnalyticsCreateReportSchema = z.object({
@@ -118,28 +119,28 @@ export const AnalyticsCreateReportSchema = z.object({
   metrics: z.array(z.string()),
   timeRange: z.enum(["today", "week", "month", "quarter", "year"]),
   format: z.enum(["pdf", "csv", "json"]),
-  schedule: z.enum(["once", "daily", "weekly", "monthly"]).optional(),
+  schedule: z.enum(["once", "daily", "weekly", "monthly"]).default("once"),
 }).strict();
 
 // Discount Tools
 export const DiscountsCreateSchema = z.object({
   name: z.string().min(1),
   scope: z.enum(["category", "item", "all"]),
-  scopeId: z.string().uuid().optional(), // category or item id
+  scopeId: z.string().uuid().nullable().default(null), // category or item id
   amountPct: z.number().min(0).max(100),
   startsAt: z.string(),
-  endsAt: z.string().optional(),
+  endsAt: z.string().nullable().default(null),
 }).strict();
 
 // KDS Tools
 export const KDSGetOverdueSchema = z.object({
-  station: z.string().optional(),
+  station: z.string().nullable().default(null),
   thresholdMinutes: z.number().positive().default(10),
 }).strict();
 
 export const KDSSuggestOptimizationSchema = z.object({
   timeRange: z.enum(["today", "week", "month"]),
-  station: z.string().optional(),
+  station: z.string().nullable().default(null),
 }).strict();
 
 // Navigation Tools
@@ -160,7 +161,7 @@ export const NavigationGoToPageSchema = z.object({
     "tables",
     "feedback"
   ]),
-  venueId: z.string().optional(),
+  venueId: z.string().nullable().default(null),
 }).strict();
 
 // ============================================================================
