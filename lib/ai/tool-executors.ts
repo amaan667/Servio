@@ -546,6 +546,20 @@ export async function executeAnalyticsGetInsights(
 ): Promise<AIPreviewDiff | AIExecutionResult> {
   const supabase = await createClient();
 
+  // Preview mode
+  if (preview) {
+    const itemContext = params.itemName ? ` for item: ${params.itemName}` : "";
+    return {
+      toolName: "analytics.get_insights",
+      before: [],
+      after: [],
+      impact: {
+        itemsAffected: 0,
+        description: `Will generate insights for ${params.timeRange}${itemContext}`,
+      },
+    };
+  }
+
   // Calculate date range
   const now = new Date();
   let startDate = new Date();
@@ -560,18 +574,75 @@ export async function executeAnalyticsGetInsights(
     case "month":
       startDate.setMonth(now.getMonth() - 1);
       break;
+    case "quarter":
+      startDate.setMonth(now.getMonth() - 3);
+      break;
+    case "year":
+      startDate.setFullYear(now.getFullYear() - 1);
+      break;
+    case "custom":
+      if (params.customRange) {
+        startDate = new Date(params.customRange.start);
+      }
+      break;
   }
 
+  // If filtering by specific item
+  if (params.itemId) {
+    const { data: orderItems } = await supabase
+      .from("order_items")
+      .select(`
+        menu_item_id,
+        quantity,
+        price,
+        orders!inner(
+          id,
+          created_at,
+          venue_id
+        )
+      `)
+      .eq("orders.venue_id", venueId)
+      .eq("menu_item_id", params.itemId)
+      .gte("orders.created_at", startDate.toISOString());
+
+    const totalRevenue = orderItems?.reduce((sum, item) => sum + (item.price * item.quantity), 0) || 0;
+    const totalQuantity = orderItems?.reduce((sum, item) => sum + item.quantity, 0) || 0;
+    const orderCount = new Set(orderItems?.map((item: any) => item.orders.id)).size;
+
+    const insights = {
+      itemName: params.itemName || "Unknown Item",
+      itemId: params.itemId,
+      timeRange: params.timeRange,
+      totalRevenue,
+      quantitySold: totalQuantity,
+      orderCount,
+      averagePerOrder: orderCount > 0 ? totalRevenue / orderCount : 0,
+      message: `${params.itemName || "Item"}: £${totalRevenue.toFixed(2)} revenue, ${totalQuantity} units sold, ${orderCount} orders (${params.timeRange})`,
+    };
+
+    return {
+      success: true,
+      toolName: "analytics.get_insights",
+      result: insights,
+      auditId: "",
+    };
+  }
+
+  // General insights (no specific item)
   const { data: orders } = await supabase
     .from("orders")
     .select("*")
     .eq("venue_id", venueId)
     .gte("created_at", startDate.toISOString());
 
+  const totalRevenue = orders?.reduce((sum, o) => sum + (o.total_amount || 0), 0) || 0;
+
   const insights = {
-    totalRevenue: orders?.reduce((sum, o) => sum + (o.total_amount || 0), 0) || 0,
+    timeRange: params.timeRange,
+    totalRevenue,
     orderCount: orders?.length || 0,
-    avgOrderValue: orders?.length ? (orders.reduce((sum, o) => sum + (o.total_amount || 0), 0) / orders.length) : 0,
+    avgOrderValue: orders?.length ? totalRevenue / orders.length : 0,
+    message: `Total: £${totalRevenue.toFixed(2)} revenue from ${orders?.length || 0} orders (${params.timeRange})`,
   };
 
   return {
@@ -910,6 +981,7 @@ export async function executeAnalyticsGetStats(
 
   // Preview mode
   if (preview) {
+    const itemContext = params.itemName ? ` for item: ${params.itemName}` : "";
     return {
       toolName: "analytics.get_stats",
       before: [],
@@ -917,7 +989,7 @@ export async function executeAnalyticsGetStats(
       impact: {
         itemsAffected: 0,
         estimatedRevenue: 0,
-        description: `Will generate ${params.metric} statistics for ${params.timeRange}`,
+        description: `Will generate ${params.metric} statistics for ${params.timeRange}${itemContext}`,
       },
     };
   }
@@ -926,29 +998,107 @@ export async function executeAnalyticsGetStats(
   let stats = {};
   
   try {
-    const { data: orders } = await supabase
-      .from("orders")
-      .select("*")
-      .eq("venue_id", venueId)
-      .gte("created_at", getTimeRangeStart(params.timeRange));
+    // Build base query for orders
+    const timeStart = getTimeRangeStart(params.timeRange);
+    
+    // If filtering by specific item, get order_items data
+    if (params.itemId) {
+      const { data: orderItems } = await supabase
+        .from("order_items")
+        .select(`
+          menu_item_id,
+          quantity,
+          price,
+          orders!inner(
+            id,
+            created_at,
+            venue_id,
+            total_amount
+          )
+        `)
+        .eq("orders.venue_id", venueId)
+        .eq("menu_item_id", params.itemId)
+        .gte("orders.created_at", timeStart);
 
-    switch (params.metric) {
-      case "revenue":
-        stats = {
-          total: orders?.reduce((sum, order) => sum + (order.total_amount || 0), 0) || 0,
-          count: orders?.length || 0,
-          average: orders?.length ? (orders.reduce((sum, order) => sum + (order.total_amount || 0), 0) / orders.length) : 0,
-        };
-        break;
-      case "orders_count":
-        stats = { count: orders?.length || 0 };
-        break;
-      case "top_items":
-        // This would require joining with order_items table
-        stats = { message: "Top items analysis requires order_items data" };
-        break;
-      default:
-        stats = { message: `Metric ${params.metric} not yet implemented` };
+      const totalRevenue = orderItems?.reduce((sum, item) => sum + (item.price * item.quantity), 0) || 0;
+      const totalQuantity = orderItems?.reduce((sum, item) => sum + item.quantity, 0) || 0;
+      const orderCount = new Set(orderItems?.map((item: any) => item.orders.id)).size;
+
+      stats = {
+        itemName: params.itemName || "Unknown Item",
+        itemId: params.itemId,
+        timeRange: params.timeRange,
+        revenue: totalRevenue,
+        quantitySold: totalQuantity,
+        orderCount: orderCount,
+        averagePerOrder: orderCount > 0 ? totalRevenue / orderCount : 0,
+        message: `${params.itemName || "Item"} generated £${totalRevenue.toFixed(2)} in revenue from ${totalQuantity} units sold across ${orderCount} orders in the ${params.timeRange}.`,
+      };
+    } else {
+      // General analytics (no specific item)
+      const { data: orders } = await supabase
+        .from("orders")
+        .select("*")
+        .eq("venue_id", venueId)
+        .gte("created_at", timeStart);
+
+      switch (params.metric) {
+        case "revenue":
+          const totalRevenue = orders?.reduce((sum, order) => sum + (order.total_amount || 0), 0) || 0;
+          stats = {
+            total: totalRevenue,
+            count: orders?.length || 0,
+            average: orders?.length ? totalRevenue / orders.length : 0,
+            timeRange: params.timeRange,
+            message: `Total revenue for ${params.timeRange}: £${totalRevenue.toFixed(2)} from ${orders?.length || 0} orders.`,
+          };
+          break;
+        case "orders_count":
+          stats = { 
+            count: orders?.length || 0,
+            timeRange: params.timeRange,
+            message: `Total orders for ${params.timeRange}: ${orders?.length || 0}`,
+          };
+          break;
+        case "top_items":
+          const { data: topItems } = await supabase
+            .from("order_items")
+            .select(`
+              menu_item_id,
+              quantity,
+              price,
+              menu_items!inner(name),
+              orders!inner(venue_id, created_at)
+            `)
+            .eq("orders.venue_id", venueId)
+            .gte("orders.created_at", timeStart);
+
+          const itemSales = new Map();
+          topItems?.forEach((item: any) => {
+            const existing = itemSales.get(item.menu_item_id) || { name: item.menu_items.name, quantity: 0, revenue: 0 };
+            itemSales.set(item.menu_item_id, {
+              name: existing.name,
+              quantity: existing.quantity + item.quantity,
+              revenue: existing.revenue + (item.price * item.quantity),
+            });
+          });
+
+          const top10 = Array.from(itemSales.values())
+            .sort((a, b) => b.revenue - a.revenue)
+            .slice(0, 10);
+
+          stats = {
+            topItems: top10,
+            timeRange: params.timeRange,
+            message: `Top ${top10.length} items by revenue for ${params.timeRange}`,
+          };
+          break;
+        default:
+          stats = { 
+            message: `${params.metric} analysis for ${params.timeRange}`,
+            timeRange: params.timeRange,
+          };
+      }
     }
   } catch (error) {
     throw new AIAssistantError("Failed to get analytics data", "EXECUTION_FAILED", error);

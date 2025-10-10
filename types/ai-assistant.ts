@@ -91,6 +91,8 @@ export const AnalyticsGetInsightsSchema = z.object({
     .strict()
     .nullable()
     .default(null),
+  itemId: z.string().uuid().nullable().default(null), // Filter by specific item
+  itemName: z.string().nullable().default(null), // Item name for context in response
 }).strict();
 
 export const AnalyticsExportSchema = z.object({
@@ -112,6 +114,8 @@ export const AnalyticsGetStatsSchema = z.object({
   ]),
   timeRange: z.enum(["today", "yesterday", "week", "month", "quarter", "year"]),
   groupBy: z.enum(["hour", "day", "week", "month", "category", "item"]).nullable().default(null),
+  itemId: z.string().uuid().nullable().default(null), // Filter by specific item
+  itemName: z.string().nullable().default(null), // Item name for context
 }).strict();
 
 export const AnalyticsCreateReportSchema = z.object({
@@ -398,6 +402,13 @@ export interface MenuSummary {
     price: number;
     sales7d: number;
     revenue7d: number;
+  }>;
+  allItems: Array<{
+    id: string;
+    name: string;
+    price: number;
+    categoryId: string;
+    categoryName: string;
   }>;
   avgPrice: number;
   priceRange: { min: number; max: number };

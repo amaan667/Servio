@@ -144,21 +144,35 @@ export function AssistantCommandPalette({
         setPlan(data.plan);
         
         // Fetch previews for each tool
-        const previewPromises = data.plan.tools.map((tool: any) =>
-          fetch("/api/ai-assistant/execute", {
-            method: "POST",
-            headers: { "Content-Type": "application/json" },
-            body: JSON.stringify({
-              venueId,
-              toolName: tool.name,
-              params: tool.params,
-              preview: true,
-            }),
-          }).then((res) => res.json())
-        );
+        const previewPromises = data.plan.tools.map(async (tool: any) => {
+          try {
+            const res = await fetch("/api/ai-assistant/execute", {
+              method: "POST",
+              headers: { "Content-Type": "application/json" },
+              body: JSON.stringify({
+                venueId,
+                toolName: tool.name,
+                params: tool.params,
+                preview: true,
+              }),
+            });
+            
+            const json = await res.json();
+            
+            if (!res.ok) {
+              console.error(`[AI ASSISTANT] Preview failed for ${tool.name}:`, json.error);
+              throw new Error(json.error || "Preview failed");
+            }
+            
+            return json;
+          } catch (error) {
+            console.error(`[AI ASSISTANT] Preview error for ${tool.name}:`, error);
+            throw error;
+          }
+        });
 
         const previewResults = await Promise.all(previewPromises);
-        setPreviews(previewResults.map((r) => r.preview));
+        setPreviews(previewResults.map((r) => r.preview).filter(Boolean));
       }
     } catch (err: any) {
       console.error("[AI ASSISTANT] Planning error:", err);
@@ -175,7 +189,9 @@ export function AssistantCommandPalette({
     setError(null);
 
     try {
-      // Execute each tool in sequence
+      // Execute each tool in sequence and collect results
+      const results: any[] = [];
+      
       for (const tool of plan.tools) {
         const response = await fetch("/api/ai-assistant/execute", {
           method: "POST",
@@ -193,9 +209,30 @@ export function AssistantCommandPalette({
         if (!response.ok) {
           throw new Error(data.error || "Execution failed");
         }
+        
+        results.push(data.result);
       }
 
       setSuccess(true);
+      
+      // Check if any tool was analytics
+      const hasAnalytics = plan.tools.some(tool => 
+        tool.name.startsWith("analytics.")
+      );
+      
+      // Display analytics results if present
+      if (hasAnalytics && results.length > 0) {
+        const analyticsResult = results.find(r => r && r.message);
+        if (analyticsResult) {
+          alert(analyticsResult.message);
+        }
+        
+        // Close modal after showing results
+        setTimeout(() => {
+          setOpen(false);
+        }, 2000);
+        return;
+      }
       
       // Check if any tool was a navigation action
       const hasNavigation = plan.tools.some(tool => tool.name === "navigation.go_to_page");

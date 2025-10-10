@@ -177,10 +177,20 @@ export async function getMenuSummary(
   const minPrice = Math.min(...prices);
   const maxPrice = Math.max(...prices);
 
+  // Create list of all items for AI to reference
+  const allItems = items.map((item: any) => ({
+    id: item.id,
+    name: item.name,
+    price: item.price,
+    categoryId: item.category_id,
+    categoryName: item.categories?.name || "Uncategorized",
+  }));
+
   const summary: MenuSummary = {
     totalItems: items.length,
     categories,
     topSellers,
+    allItems, // Added: full list of all menu items for AI to reference
     avgPrice: Number(avgPrice.toFixed(2)),
     priceRange: { min: minPrice, max: maxPrice },
   };
