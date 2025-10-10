@@ -56,12 +56,33 @@ export async function POST(request: NextRequest) {
     console.log('[STRIPE PORTAL] Creating session for customer:', org.stripe_customer_id);
     console.log('[STRIPE PORTAL] Return URL:', returnUrl);
     
-    const session = await stripe.billingPortal.sessions.create({
-      customer: org.stripe_customer_id,
-      return_url: returnUrl,
-    });
+    try {
+      const session = await stripe.billingPortal.sessions.create({
+        customer: org.stripe_customer_id,
+        return_url: returnUrl,
+      });
 
-    return NextResponse.json({ url: session.url });
+      return NextResponse.json({ url: session.url });
+    } catch (portalError: any) {
+      console.error('[STRIPE PORTAL] Portal creation error:', portalError);
+      
+      // Check if it's the configuration error
+      if (portalError.message?.includes('No configuration provided') || 
+          portalError.message?.includes('default configuration has not been created')) {
+        
+        // For test mode, we can't create a portal without configuration
+        // Return a helpful error message instead of the raw Stripe error
+        return NextResponse.json(
+          { 
+            error: "Billing portal is not configured. Please contact support to manage your subscription, or use the plan switching options above to change your plan immediately." 
+          },
+          { status: 400 }
+        );
+      }
+      
+      // For other errors, re-throw them
+      throw portalError;
+    }
   } catch (error: any) {
     console.error("[STRIPE PORTAL] Error:", error);
     return NextResponse.json(

@@ -59,9 +59,9 @@ const AIToolCallSchema = z.object({
     "kds.suggest_optimization",
     "navigation.go_to_page",
   ] as const),
-  params: z.record(z.string(), z.unknown()).default({}),
+  params: z.object({}).passthrough().default({}),
   preview: z.boolean(),
-}).strict();
+});
 
 const AIPlanSchema = z.object({
   intent: z.string().describe("High-level description of what the user wants"),

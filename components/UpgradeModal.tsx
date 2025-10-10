@@ -113,24 +113,50 @@ export function UpgradeModal({
                          (currentTier === "premium" && tierId !== "premium");
 
       if (isDowngrade) {
-        // For downgrades, we'll use the billing portal to let users manage their subscription
-        // This is safer than trying to handle downgrades directly
-        const response = await fetch("/api/stripe/create-portal-session", {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ organizationId }),
-        });
+        // For downgrades to Basic, handle immediately
+        if (tierId === "basic") {
+          const response = await fetch("/api/stripe/downgrade-plan", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ 
+              organizationId, 
+              newTier: "basic" 
+            }),
+          });
 
-        const data = await response.json();
+          const data = await response.json();
 
-        if (data.error) {
-          alert(data.error);
-          setLoading(null);
-          return;
-        }
+          if (data.error) {
+            alert(data.error);
+            setLoading(null);
+            return;
+          }
 
-        if (data.url) {
-          window.location.href = data.url;
+          if (data.success) {
+            alert("Successfully switched to Basic plan! Your next billing cycle will reflect the new pricing.");
+            onOpenChange(false);
+            // Refresh the page to show updated plan
+            window.location.reload();
+          }
+        } else {
+          // For other downgrades, use the billing portal
+          const response = await fetch("/api/stripe/create-portal-session", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ organizationId }),
+          });
+
+          const data = await response.json();
+
+          if (data.error) {
+            alert(data.error);
+            setLoading(null);
+            return;
+          }
+
+          if (data.url) {
+            window.location.href = data.url;
+          }
         }
       } else {
         // For upgrades, use the normal checkout flow

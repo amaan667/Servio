@@ -75,6 +75,43 @@ export default function BillingSection({ user, organization }: BillingSectionPro
     }
   };
 
+  const handleSwitchToBasic = async () => {
+    setLoadingPortal(true);
+    try {
+      console.log('[SWITCH TO BASIC] Switching organization to basic plan:', organization?.id);
+      
+      const response = await fetch("/api/stripe/downgrade-plan", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ 
+          organizationId: organization?.id, 
+          newTier: "basic" 
+        }),
+      });
+
+      const data = await response.json();
+      
+      console.log('[SWITCH TO BASIC] Response:', data);
+      
+      if (data.error) {
+        console.error("Switch to basic error:", data.error);
+        alert(`Failed to switch to basic plan: ${data.error}`);
+        return;
+      }
+
+      if (data.success) {
+        alert("Successfully switched to Basic plan! Your next billing cycle will reflect the new pricing.");
+        // Refresh the page to show updated plan
+        window.location.reload();
+      }
+    } catch (error) {
+      console.error("Error switching to basic plan:", error);
+      alert('Failed to switch to basic plan. Please try again.');
+    } finally {
+      setLoadingPortal(false);
+    }
+  };
+
   const getTierInfo = () => {
     if (isGrandfathered) {
       return {
@@ -145,6 +182,23 @@ export default function BillingSection({ user, organization }: BillingSectionPro
                 >
                   <Sparkles className="mr-2 h-4 w-4" />
                   Upgrade Plan
+                </Button>
+              )}
+              {!isGrandfathered && tier === "standard" && (
+                <Button 
+                  variant="outline"
+                  onClick={handleSwitchToBasic}
+                  disabled={loadingPortal}
+                  className="text-gray-600 hover:text-gray-800"
+                >
+                  {loadingPortal ? (
+                    <>
+                      <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                      Switching...
+                    </>
+                  ) : (
+                    "Switch to Basic"
+                  )}
                 </Button>
               )}
             </div>

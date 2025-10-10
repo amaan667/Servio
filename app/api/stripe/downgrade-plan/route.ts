@@ -1,0 +1,144 @@
+// Stripe Plan Downgrade - Handle immediate downgrades
+import { NextRequest, NextResponse } from "next/server";
+import Stripe from "stripe";
+import { createClient } from "@/lib/supabase/server";
+import { stripe } from "@/lib/stripe-client";
+
+export async function POST(request: NextRequest) {
+  try {
+    const supabase = await createClient();
+
+    // Check auth
+    const {
+      data: { user },
+    } = await supabase.auth.getUser();
+
+    if (!user) {
+      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+    }
+
+    const body = await request.json();
+    const { organizationId, newTier } = body;
+
+    if (!organizationId || !newTier) {
+      return NextResponse.json(
+        { error: "Organization ID and new tier are required" },
+        { status: 400 }
+      );
+    }
+
+    if (!["basic", "standard", "premium"].includes(newTier)) {
+      return NextResponse.json(
+        { error: "Invalid tier" },
+        { status: 400 }
+      );
+    }
+
+    // Get organization
+    const { data: org } = await supabase
+      .from("organizations")
+      .select("*")
+      .eq("id", organizationId)
+      .eq("owner_id", user.id)
+      .single();
+
+    if (!org) {
+      return NextResponse.json(
+        { error: "Organization not found" },
+        { status: 404 }
+      );
+    }
+
+    // Grandfathered accounts can't be downgraded
+    if (org.is_grandfathered) {
+      return NextResponse.json(
+        { error: "Grandfathered accounts cannot be downgraded" },
+        { status: 400 }
+      );
+    }
+
+    // If already on the requested tier, no action needed
+    if (org.subscription_tier === newTier) {
+      return NextResponse.json({ 
+        success: true, 
+        message: `Already on ${newTier} plan` 
+      });
+    }
+
+    console.log(`[DOWNGRADE] Downgrading organization ${org.id} from ${org.subscription_tier} to ${newTier}`);
+
+    // For downgrades, we'll update the organization immediately
+    // and let Stripe handle the billing changes through their system
+    const { error: updateError } = await supabase
+      .from("organizations")
+      .update({ 
+        subscription_tier: newTier,
+        updated_at: new Date().toISOString()
+      })
+      .eq("id", org.id);
+
+    if (updateError) {
+      console.error("[DOWNGRADE] Database update error:", updateError);
+      return NextResponse.json(
+        { error: "Failed to update subscription tier" },
+        { status: 500 }
+      );
+    }
+
+    // If the organization has an active Stripe subscription, 
+    // we should update it in Stripe as well
+    if (org.stripe_customer_id) {
+      try {
+        // Get the customer's subscriptions
+        const subscriptions = await stripe.subscriptions.list({
+          customer: org.stripe_customer_id,
+          status: 'active',
+          limit: 1
+        });
+
+        if (subscriptions.data.length > 0) {
+          const subscription = subscriptions.data[0];
+          
+          // Get the price ID for the new tier
+          const priceIds = {
+            basic: process.env.STRIPE_BASIC_PRICE_ID,
+            standard: process.env.STRIPE_STANDARD_PRICE_ID,
+            premium: process.env.STRIPE_PREMIUM_PRICE_ID,
+          };
+
+          const newPriceId = priceIds[newTier as keyof typeof priceIds];
+          
+          if (newPriceId) {
+            // Update the subscription to the new price
+            await stripe.subscriptions.update(subscription.id, {
+              items: [{
+                id: subscription.items.data[0].id,
+                price: newPriceId,
+              }],
+              proration_behavior: 'none', // Don't prorate for downgrades
+            });
+
+            console.log(`[DOWNGRADE] Updated Stripe subscription ${subscription.id} to ${newTier}`);
+          }
+        }
+      } catch (stripeError) {
+        console.error("[DOWNGRADE] Stripe update error:", stripeError);
+        // Don't fail the entire operation if Stripe update fails
+        // The database update already succeeded
+      }
+    }
+
+    return NextResponse.json({ 
+      success: true, 
+      message: `Successfully downgraded to ${newTier} plan`,
+      newTier 
+    });
+
+  } catch (error: any) {
+    console.error("[DOWNGRADE] Error:", error);
+    return NextResponse.json(
+      { error: error.message || "Failed to downgrade plan" },
+      { status: 500 }
+    );
+  }
+}
