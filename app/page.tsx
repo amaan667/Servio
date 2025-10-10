@@ -74,7 +74,7 @@ function PricingQuickCompare({
   });
 
   return (
-    <div className="w-full flex flex-col items-center gap-8 py-10" style={{ minHeight: '700px' }}>
+    <div className="w-full flex flex-col items-center gap-8 py-10">
       <div className="text-center">
         <h2 className="text-3xl font-bold mb-4">Choose the plan that works best for your business</h2>
         {isSignedIn && currentTier && (
@@ -86,9 +86,9 @@ function PricingQuickCompare({
           <p className="text-gray-600">All plans include a 14-day free trial</p>
         )}
       </div>
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 w-full max-w-6xl mx-auto px-4" style={{ minHeight: '600px', maxHeight: '600px' }}>
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 w-full max-w-6xl mx-auto px-4 mb-8">
         {/* Basic */}
-        <Card className={`flex flex-col items-center p-6 gap-4 h-full min-h-[500px] ${currentTier === 'basic' ? 'border-2 border-green-500' : 'border border-gray-200'}`}>
+        <Card className={`flex flex-col items-center p-6 gap-4 ${currentTier === 'basic' ? 'border-2 border-green-500' : 'border border-gray-200'}`}>
           <div className="text-2xl font-semibold">Basic</div>
           <div className="text-3xl font-bold mb-1">£99<span className="text-lg font-normal">/month</span></div>
           <ul className="mb-4 space-y-1 text-left flex-1">
@@ -110,7 +110,7 @@ function PricingQuickCompare({
           </Button>
         </Card>
         {/* Standard */}
-        <Card className={`flex flex-col items-center p-6 gap-4 border-2 shadow-lg h-full min-h-[500px] ${
+        <Card className={`flex flex-col items-center p-6 gap-4 border-2 shadow-lg ${
           currentTier === 'standard' ? 'border-green-500' : 'border-purple-500'
         }`}>
           <div className="text-2xl font-semibold">Standard</div>
@@ -137,7 +137,7 @@ function PricingQuickCompare({
           </Button>
         </Card>
         {/* Premium */}
-        <Card className={`flex flex-col items-center p-6 gap-4 h-full min-h-[500px] ${currentTier === 'premium' ? 'border-2 border-green-500' : 'border border-gray-200'}`}>
+        <Card className={`flex flex-col items-center p-6 gap-4 ${currentTier === 'premium' ? 'border-2 border-green-500' : 'border border-gray-200'}`}>
           <div className="text-2xl font-semibold">Premium</div>
           <div className="text-3xl font-bold mb-1">£449+<span className="text-lg font-normal">/month</span></div>
           <ul className="mb-4 space-y-1 text-left flex-1">
@@ -709,7 +709,7 @@ export default function HomePage() {
       </section>
 
       {/* FAQ Section */}
-      <section className="py-16 bg-gray-50">
+      <section className="py-24 bg-gray-50">
         <FAQ onToggle={handleFAQToggle} onCTAClick={handleFAQCTAClick} />
       </section>
 
