@@ -17,6 +17,12 @@ export default function CheckoutSuccessPage() {
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
+    if (!searchParams) {
+      console.log('[CHECKOUT SUCCESS] No search params available, redirecting to dashboard');
+      router.push("/dashboard");
+      return;
+    }
+
     const sessionId = searchParams.get("session_id");
     const tierParam = searchParams.get("tier");
     
