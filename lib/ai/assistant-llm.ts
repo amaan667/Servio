@@ -14,6 +14,7 @@ import {
   OrdersSummary,
   AnalyticsSummary,
   DEFAULT_GUARDRAILS,
+  AssistantPlanSchema,
 } from "@/types/ai-assistant";
 
 // Lazy initialize OpenAI client
@@ -35,47 +36,10 @@ function getOpenAI() {
 const MODEL = "gpt-4o-2024-08-06"; // [[memory:5998613]]
 
 // ============================================================================
-// Response Schema for Structured Output
+// Response Schema - Now using strict discriminated union from types
 // ============================================================================
-
-const AIToolCallSchema = z.object({
-  name: z.enum([
-    "menu.update_prices",
-    "menu.toggle_availability",
-    "menu.create_item",
-    "menu.delete_item",
-    "menu.translate",
-    "inventory.adjust_stock",
-    "inventory.set_par_levels",
-    "inventory.generate_purchase_order",
-    "orders.mark_served",
-    "orders.complete",
-    "analytics.get_insights",
-    "analytics.get_stats",
-    "analytics.export",
-    "analytics.create_report",
-    "discounts.create",
-    "kds.get_overdue",
-    "kds.suggest_optimization",
-    "navigation.go_to_page",
-  ] as const),
-  params: z.object({}).passthrough().default({}),
-  preview: z.boolean(),
-});
-
-const AIPlanSchema = z.object({
-  intent: z.string().describe("High-level description of what the user wants"),
-  tools: z
-    .array(AIToolCallSchema)
-    .describe("Ordered list of tool calls to execute"),
-  reasoning: z
-    .string()
-    .describe("Explanation of why this plan is safe and appropriate"),
-  warnings: z
-    .array(z.string())
-    .nullable()
-    .describe("Any warnings or considerations for the user"),
-}).strict();
+// AssistantPlanSchema is imported from @/types/ai-assistant
+// It uses a strict discriminated union with explicit params for each tool
 
 // ============================================================================
 // System Prompt Builder
@@ -203,51 +167,49 @@ export async function planAssistantAction(
   const systemPrompt = buildSystemPrompt(context, dataSummaries);
 
   try {
+    // Use zodResponseFormat with strict discriminated union schema
     const completion = await getOpenAI().chat.completions.create({
       model: MODEL,
       messages: [
         { role: "system", content: systemPrompt },
         { role: "user", content: userPrompt },
       ],
-      response_format: zodResponseFormat(AIPlanSchema, "assistant_plan"),
+      response_format: zodResponseFormat(AssistantPlanSchema, "assistant_plan"),
       temperature: 0.1, // Low temperature for consistent, safe outputs
-    }) as any;
+    });
 
-    // Handle parsed response (either from .parsed or by parsing content)
-    let plan = completion.choices[0].message.parsed;
+    // Get parsed response - zodResponseFormat automatically parses and validates
+    const plan = completion.choices[0].message.parsed;
     
-    if (!plan && completion.choices[0].message.content) {
-      plan = JSON.parse(completion.choices[0].message.content);
-    }
-
     if (!plan) {
+      // Fallback: try to parse content if parsed is not available
+      const content = completion.choices[0].message.content;
+      if (content) {
+        const parsedContent = JSON.parse(content);
+        const validated = AssistantPlanSchema.parse(parsedContent);
+        return {
+          intent: validated.intent,
+          tools: validated.tools,
+          reasoning: validated.reasoning,
+          warnings: validated.warnings,
+        };
+      }
       throw new Error("Failed to parse AI response");
     }
 
-    // Validate each tool call against its schema
-    const validatedTools = plan.tools.map((tool: any) => {
-      const schema = TOOL_SCHEMAS[tool.name as ToolName];
-      if (!schema) {
-        throw new Error(`Unknown tool: ${tool.name}`);
-      }
-
-      // Validate params against schema
-      const validatedParams = schema.parse(tool.params);
-
-      return {
-        ...tool,
-        params: validatedParams,
-      };
-    });
-
+    // plan is already validated by Zod through zodResponseFormat
+    // The discriminated union ensures each tool has the correct params structure
     return {
       intent: plan.intent,
-      tools: validatedTools,
+      tools: plan.tools,
       reasoning: plan.reasoning,
       warnings: plan.warnings,
     };
   } catch (error) {
     console.error("[AI ASSISTANT] Planning error:", error);
+    if (error instanceof z.ZodError) {
+      console.error("[AI ASSISTANT] Zod validation errors:", JSON.stringify(error.errors, null, 2));
+    }
     throw error;
   }
 }

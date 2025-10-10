@@ -12,16 +12,16 @@ export const MenuUpdatePricesSchema = z.object({
     z.object({
       id: z.string().uuid(),
       newPrice: z.number().positive(),
-    })
+    }).strict()
   ),
   preview: z.boolean().default(true),
-});
+}).strict();
 
 export const MenuToggleAvailabilitySchema = z.object({
   itemIds: z.array(z.string().uuid()),
   available: z.boolean(),
   reason: z.string().optional(),
-});
+}).strict();
 
 export const MenuCreateItemSchema = z.object({
   name: z.string().min(1),
@@ -31,17 +31,17 @@ export const MenuCreateItemSchema = z.object({
   available: z.boolean().default(true),
   imageUrl: z.string().url().optional(),
   allergens: z.array(z.string()).optional(),
-});
+}).strict();
 
 export const MenuDeleteItemSchema = z.object({
   itemId: z.string().uuid(),
   reason: z.string().optional(),
-});
+}).strict();
 
 export const MenuTranslateSchema = z.object({
   targetLanguage: z.enum(["es", "ar", "fr", "de", "it", "pt", "zh", "ja"]),
   includeDescriptions: z.boolean().default(true),
-});
+}).strict();
 
 // Inventory Tools
 export const InventoryAdjustStockSchema = z.object({
@@ -50,33 +50,33 @@ export const InventoryAdjustStockSchema = z.object({
       ingredientId: z.string().uuid(),
       delta: z.number(),
       notes: z.string().optional(),
-    })
+    }).strict()
   ),
   reason: z.enum(["receive", "adjust", "waste", "count"]),
   preview: z.boolean().default(true),
-});
+}).strict();
 
 export const InventorySetParLevelsSchema = z.object({
   strategy: z.enum(["last_30_days", "last_7_days", "manual"]),
   bufferPercentage: z.number().min(0).max(100).default(20),
   preview: z.boolean().default(true),
-});
+}).strict();
 
 export const InventoryGeneratePurchaseOrderSchema = z.object({
   threshold: z.enum(["reorder_level", "par_level"]),
   format: z.enum(["csv", "json", "pdf"]),
-});
+}).strict();
 
 // Order Tools
 export const OrdersMarkServedSchema = z.object({
   orderId: z.string().uuid(),
   notifyFOH: z.boolean().default(true),
-});
+}).strict();
 
 export const OrdersCompleteSchema = z.object({
   orderId: z.string().uuid(),
   paymentMethod: z.string().optional(),
-});
+}).strict();
 
 // Analytics Tools
 export const AnalyticsGetInsightsSchema = z.object({
@@ -88,14 +88,15 @@ export const AnalyticsGetInsightsSchema = z.object({
       start: z.string(),
       end: z.string(),
     })
+    .strict()
     .optional(),
-});
+}).strict();
 
 export const AnalyticsExportSchema = z.object({
   type: z.enum(["sales", "orders", "inventory", "customers"]),
   format: z.enum(["csv", "json", "pdf"]),
-  filters: z.record(z.any()).optional(),
-});
+  filters: z.object({}).strict().optional(), // No more z.record - strict empty object for flexible filters
+}).strict();
 
 export const AnalyticsGetStatsSchema = z.object({
   metric: z.enum([
@@ -110,7 +111,7 @@ export const AnalyticsGetStatsSchema = z.object({
   ]),
   timeRange: z.enum(["today", "yesterday", "week", "month", "quarter", "year"]),
   groupBy: z.enum(["hour", "day", "week", "month", "category", "item"]).optional(),
-});
+}).strict();
 
 export const AnalyticsCreateReportSchema = z.object({
   name: z.string().min(1),
@@ -118,7 +119,7 @@ export const AnalyticsCreateReportSchema = z.object({
   timeRange: z.enum(["today", "week", "month", "quarter", "year"]),
   format: z.enum(["pdf", "csv", "json"]),
   schedule: z.enum(["once", "daily", "weekly", "monthly"]).optional(),
-});
+}).strict();
 
 // Discount Tools
 export const DiscountsCreateSchema = z.object({
@@ -128,18 +129,18 @@ export const DiscountsCreateSchema = z.object({
   amountPct: z.number().min(0).max(100),
   startsAt: z.string(),
   endsAt: z.string().optional(),
-});
+}).strict();
 
 // KDS Tools
 export const KDSGetOverdueSchema = z.object({
   station: z.string().optional(),
   thresholdMinutes: z.number().positive().default(10),
-});
+}).strict();
 
 export const KDSSuggestOptimizationSchema = z.object({
   timeRange: z.enum(["today", "week", "month"]),
   station: z.string().optional(),
-});
+}).strict();
 
 // Navigation Tools
 export const NavigationGoToPageSchema = z.object({
@@ -160,7 +161,7 @@ export const NavigationGoToPageSchema = z.object({
     "feedback"
   ]),
   venueId: z.string().optional(),
-});
+}).strict();
 
 // ============================================================================
 // Tool Registry
@@ -188,6 +189,111 @@ export const TOOL_SCHEMAS = {
 } as const;
 
 export type ToolName = keyof typeof TOOL_SCHEMAS;
+
+// ============================================================================
+// Discriminated Union for Tool Calls (Strict Schema for OpenAI)
+// ============================================================================
+
+export const ToolCallSchema = z.discriminatedUnion("name", [
+  z.object({
+    name: z.literal("menu.update_prices"),
+    params: MenuUpdatePricesSchema,
+    preview: z.boolean(),
+  }).strict(),
+  z.object({
+    name: z.literal("menu.toggle_availability"),
+    params: MenuToggleAvailabilitySchema,
+    preview: z.boolean(),
+  }).strict(),
+  z.object({
+    name: z.literal("menu.create_item"),
+    params: MenuCreateItemSchema,
+    preview: z.boolean(),
+  }).strict(),
+  z.object({
+    name: z.literal("menu.delete_item"),
+    params: MenuDeleteItemSchema,
+    preview: z.boolean(),
+  }).strict(),
+  z.object({
+    name: z.literal("menu.translate"),
+    params: MenuTranslateSchema,
+    preview: z.boolean(),
+  }).strict(),
+  z.object({
+    name: z.literal("inventory.adjust_stock"),
+    params: InventoryAdjustStockSchema,
+    preview: z.boolean(),
+  }).strict(),
+  z.object({
+    name: z.literal("inventory.set_par_levels"),
+    params: InventorySetParLevelsSchema,
+    preview: z.boolean(),
+  }).strict(),
+  z.object({
+    name: z.literal("inventory.generate_purchase_order"),
+    params: InventoryGeneratePurchaseOrderSchema,
+    preview: z.boolean(),
+  }).strict(),
+  z.object({
+    name: z.literal("orders.mark_served"),
+    params: OrdersMarkServedSchema,
+    preview: z.boolean(),
+  }).strict(),
+  z.object({
+    name: z.literal("orders.complete"),
+    params: OrdersCompleteSchema,
+    preview: z.boolean(),
+  }).strict(),
+  z.object({
+    name: z.literal("analytics.get_insights"),
+    params: AnalyticsGetInsightsSchema,
+    preview: z.boolean(),
+  }).strict(),
+  z.object({
+    name: z.literal("analytics.get_stats"),
+    params: AnalyticsGetStatsSchema,
+    preview: z.boolean(),
+  }).strict(),
+  z.object({
+    name: z.literal("analytics.export"),
+    params: AnalyticsExportSchema,
+    preview: z.boolean(),
+  }).strict(),
+  z.object({
+    name: z.literal("analytics.create_report"),
+    params: AnalyticsCreateReportSchema,
+    preview: z.boolean(),
+  }).strict(),
+  z.object({
+    name: z.literal("discounts.create"),
+    params: DiscountsCreateSchema,
+    preview: z.boolean(),
+  }).strict(),
+  z.object({
+    name: z.literal("kds.get_overdue"),
+    params: KDSGetOverdueSchema,
+    preview: z.boolean(),
+  }).strict(),
+  z.object({
+    name: z.literal("kds.suggest_optimization"),
+    params: KDSSuggestOptimizationSchema,
+    preview: z.boolean(),
+  }).strict(),
+  z.object({
+    name: z.literal("navigation.go_to_page"),
+    params: NavigationGoToPageSchema,
+    preview: z.boolean(),
+  }).strict(),
+]);
+
+// Main Assistant Plan Schema
+export const AssistantPlanSchema = z.object({
+  intent: z.string().describe("High-level description of what the user wants"),
+  tools: z.array(ToolCallSchema).describe("Ordered list of tool calls to execute"),
+  reasoning: z.string().describe("Explanation of why this plan is safe and appropriate"),
+  warnings: z.array(z.string()).nullable().describe("Any warnings or considerations for the user"),
+}).strict();
 
 // ============================================================================
 // TypeScript Types
