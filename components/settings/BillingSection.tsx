@@ -100,7 +100,7 @@ export default function BillingSection({ user, organization }: BillingSectionPro
       }
 
       if (data.success) {
-        alert("Successfully switched to Basic plan! Your next billing cycle will reflect the new pricing.");
+        alert("Successfully switched to Basic plan! The change has been applied immediately and will be reflected in your billing portal.");
         // Refresh the page to show updated plan
         window.location.reload();
       }

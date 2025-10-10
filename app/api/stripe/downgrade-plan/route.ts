@@ -109,16 +109,22 @@ export async function POST(request: NextRequest) {
           const newPriceId = priceIds[newTier as keyof typeof priceIds];
           
           if (newPriceId) {
-            // Update the subscription to the new price
+            // Update the subscription to the new price immediately
+            // Use 'always_invoice' to immediately apply the change
             await stripe.subscriptions.update(subscription.id, {
               items: [{
                 id: subscription.items.data[0].id,
                 price: newPriceId,
               }],
-              proration_behavior: 'none', // Don't prorate for downgrades
+              proration_behavior: 'always_invoice', // Invoice immediately for the change
+              metadata: {
+                organization_id: org.id,
+                tier: newTier,
+                changed_at: new Date().toISOString(),
+              },
             });
 
-            console.log(`[DOWNGRADE] Updated Stripe subscription ${subscription.id} to ${newTier}`);
+            console.log(`[DOWNGRADE] Updated Stripe subscription ${subscription.id} to ${newTier} with immediate billing`);
           }
         }
       } catch (stripeError) {
