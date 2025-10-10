@@ -88,19 +88,21 @@ export async function executeMenuUpdatePrices(
     };
   }
 
-  // Execute
-  const updates = params.items.map((item) => ({
-    id: item.id,
-    price: item.newPrice,
-    updated_at: new Date().toISOString(),
-  }));
+  // Execute - update prices for each item
+  for (const item of params.items) {
+    const { error } = await supabase
+      .from("menu_items")
+      .update({ 
+        price: item.newPrice,
+        updated_at: new Date().toISOString()
+      })
+      .eq("id", item.id)
+      .eq("venue_id", venueId); // Extra safety check
 
-  const { error } = await supabase
-    .from("menu_items")
-    .upsert(updates);
-
-  if (error) {
-    throw new AIAssistantError("Failed to update prices", "EXECUTION_FAILED", error);
+    if (error) {
+      console.error(`[AI ASSISTANT] Failed to update price for item ${item.id}:`, error);
+      throw new AIAssistantError("Failed to update prices", "EXECUTION_FAILED", error);
+    }
   }
 
   return {
