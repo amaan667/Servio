@@ -30,7 +30,7 @@ export async function POST(request: NextRequest) {
       webhookSecret
     );
 
-    console.log("[STRIPE WEBHOOK] Event:", event.type);
+    console.log("[STRIPE WEBHOOK] Event:", event.type, "ID:", event.id);
 
     // Handle the event
     switch (event.type) {
@@ -73,32 +73,47 @@ export async function POST(request: NextRequest) {
 }
 
 async function handleCheckoutCompleted(session: Stripe.Checkout.Session) {
+  console.log("[STRIPE WEBHOOK] handleCheckoutCompleted called with session:", {
+    id: session.id,
+    customer: session.customer,
+    subscription: session.subscription,
+    metadata: session.metadata
+  });
+
   const supabase = await createClient();
 
   const organizationId = session.metadata?.organization_id;
   const tier = session.metadata?.tier;
 
+  console.log("[STRIPE WEBHOOK] Extracted data:", { organizationId, tier });
+
   if (!organizationId) {
-    console.error("[STRIPE] No organization_id in checkout session");
+    console.error("[STRIPE] No organization_id in checkout session metadata:", session.metadata);
     return;
   }
 
   // Update organization with subscription details
+  const updateData = {
+    stripe_subscription_id: session.subscription as string,
+    subscription_tier: tier || "basic",
+    subscription_status: "trialing",
+    trial_ends_at: new Date(Date.now() + 14 * 24 * 60 * 60 * 1000).toISOString(),
+    updated_at: new Date().toISOString(),
+  };
+
+  console.log("[STRIPE WEBHOOK] Updating organization with data:", updateData);
+
   const { error } = await supabase
     .from("organizations")
-    .update({
-      stripe_subscription_id: session.subscription as string,
-      subscription_tier: tier || "basic",
-      subscription_status: "trialing",
-      trial_ends_at: new Date(Date.now() + 14 * 24 * 60 * 60 * 1000).toISOString(),
-      updated_at: new Date().toISOString(),
-    })
+    .update(updateData)
     .eq("id", organizationId);
 
   if (error) {
     console.error("[STRIPE] Error updating organization:", error);
     return;
   }
+
+  console.log("[STRIPE WEBHOOK] Successfully updated organization:", organizationId);
 
   // Log subscription history
   await supabase.from("subscription_history").insert({

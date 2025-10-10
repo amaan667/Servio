@@ -18,14 +18,12 @@ export default function CheckoutSuccessPage() {
 
   useEffect(() => {
     const sessionId = searchParams.get("session_id");
-    const upgrade = searchParams.get("upgrade");
+    const tierParam = searchParams.get("tier");
     
-    if (upgrade === "success" && sessionId) {
-      // Extract tier from URL or get from session
-      const tierParam = searchParams.get("tier");
-      if (tierParam) {
-        setTier(tierParam);
-      }
+    console.log('[CHECKOUT SUCCESS] Page loaded with params:', { sessionId, tierParam });
+    
+    if (sessionId && tierParam) {
+      setTier(tierParam);
       
       // Calculate trial end date (14 days from now)
       const trialEndDate = new Date();
@@ -34,7 +32,8 @@ export default function CheckoutSuccessPage() {
       
       setLoading(false);
     } else {
-      // Redirect if not a success
+      // Redirect if missing required params
+      console.log('[CHECKOUT SUCCESS] Missing params, redirecting to dashboard');
       router.push("/dashboard");
     }
   }, [searchParams, router]);
