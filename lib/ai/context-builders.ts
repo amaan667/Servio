@@ -94,6 +94,7 @@ export async function getMenuSummary(
       totalItems: 0,
       categories: [],
       topSellers: [],
+      allItems: [], // Added: required by MenuSummary interface
       avgPrice: 0,
       priceRange: { min: 0, max: 0 },
     };
