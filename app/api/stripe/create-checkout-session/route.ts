@@ -34,38 +34,88 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    // Get organization - first try with organizationId if provided
+    // Get organization with multiple fallback approaches
     let org = null;
     
-    if (organizationId) {
-      const { data: orgById } = await supabase
-        .from("organizations")
-        .select("*")
-        .eq("id", organizationId)
-        .single();
-      org = orgById;
-    }
-    
-    // If no org found by ID, try to find user's organization by owner_id
-    if (!org) {
-      const { data: orgByOwner } = await supabase
-        .from("organizations")
-        .select("*")
-        .eq("owner_id", user.id)
-        .single();
-      org = orgByOwner;
-    }
-    
-    // If still no org, try to find through user_venue_roles
-    if (!org) {
-      const { data: userVenueRole } = await supabase
-        .from("user_venue_roles")
-        .select("organization_id, organizations(*)")
-        .eq("user_id", user.id)
-        .single();
+    // Handle mock organization IDs (legacy/default accounts)
+    if (organizationId && (organizationId.startsWith('legacy-') || organizationId.startsWith('default-') || organizationId.startsWith('error-'))) {
+      console.log('[STRIPE DEBUG] Using mock organization ID:', organizationId);
+      // Create a mock organization object for legacy accounts
+      org = {
+        id: organizationId,
+        owner_id: user.id,
+        subscription_tier: 'basic',
+        is_grandfathered: false,
+        stripe_customer_id: null
+      };
+    } else {
+      // Try to find real organization
+      if (organizationId) {
+        try {
+          const { data: orgById } = await supabase
+            .from("organizations")
+            .select("*")
+            .eq("id", organizationId)
+            .single();
+          org = orgById;
+        } catch (error) {
+          console.log('[STRIPE DEBUG] Organization by ID failed:', error);
+        }
+      }
       
-      if (userVenueRole && userVenueRole.organizations) {
-        org = userVenueRole.organizations;
+      // If no org found by ID, try to find user's organization by owner_id
+      if (!org) {
+        try {
+          const { data: orgByOwner } = await supabase
+            .from("organizations")
+            .select("*")
+            .eq("owner_id", user.id)
+            .single();
+          org = orgByOwner;
+        } catch (error) {
+          console.log('[STRIPE DEBUG] Organization by owner failed:', error);
+        }
+      }
+      
+      // If still no org, try to find through user_venue_roles
+      if (!org) {
+        try {
+          const { data: userVenueRole } = await supabase
+            .from("user_venue_roles")
+            .select("organization_id, organizations(*)")
+            .eq("user_id", user.id)
+            .single();
+          
+          if (userVenueRole && userVenueRole.organizations) {
+            org = userVenueRole.organizations;
+          }
+        } catch (error) {
+          console.log('[STRIPE DEBUG] User venue role query failed:', error);
+        }
+      }
+
+      // If still no org, try venues table for legacy accounts
+      if (!org) {
+        try {
+          const { data: venues } = await supabase
+            .from("venues")
+            .select("venue_id, name, owner_id")
+            .eq("owner_id", user.id)
+            .limit(1);
+          
+          if (venues && venues.length > 0) {
+            // Create mock organization for legacy account
+            org = {
+              id: `legacy-${user.id}`,
+              owner_id: user.id,
+              subscription_tier: 'basic',
+              is_grandfathered: false,
+              stripe_customer_id: null
+            };
+          }
+        } catch (error) {
+          console.log('[STRIPE DEBUG] Venues query failed:', error);
+        }
       }
     }
 
@@ -76,6 +126,13 @@ export async function POST(request: NextRequest) {
         { status: 404 }
       );
     }
+
+    console.log('[STRIPE DEBUG] Using organization:', {
+      id: org.id,
+      owner_id: org.owner_id,
+      subscription_tier: org.subscription_tier,
+      is_grandfathered: org.is_grandfathered
+    });
 
     // Create or retrieve Stripe customer
     let customerId = org.stripe_customer_id;
