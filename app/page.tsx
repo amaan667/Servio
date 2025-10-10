@@ -281,10 +281,14 @@ export default function HomePage() {
     fetchUserTier();
   }, [user]);
 
-  // Refresh subscription status function
-  const refreshSubscriptionStatus = async () => {
+  // Refresh subscription status function with retry logic
+  const refreshSubscriptionStatus = async (retryCount = 0) => {
+    const maxRetries = 3;
     setIsRefreshing(true);
+    
     try {
+      console.log(`[TIER REFRESH] Attempt ${retryCount + 1}/${maxRetries + 1}`);
+      
       // If we have organizationId, use the refresh endpoint
       if (organizationId) {
         const response = await fetch('/api/subscription/refresh-status', {
@@ -296,12 +300,12 @@ export default function HomePage() {
         if (response.ok) {
           const data = await response.json();
           if (data.success) {
+            console.log('[TIER REFRESH] API refresh successful:', data.subscription);
             setCurrentTier(data.subscription.tier);
             setSubscriptionStatus(data.subscription.status);
             setTrialEndsAt(data.subscription.trial_ends_at);
-            console.log('[TIER REFRESH] Successfully refreshed subscription status');
             setIsRefreshing(false);
-            return;
+            return true;
           }
         }
       }
@@ -309,12 +313,31 @@ export default function HomePage() {
       // Fallback: re-fetch tier info from scratch
       console.log('[TIER REFRESH] Falling back to full tier fetch');
       await fetchUserTier();
+      
+      // Check if we got updated data
+      if (currentTier !== 'basic') {
+        console.log('[TIER REFRESH] Full fetch successful');
+        setIsRefreshing(false);
+        return true;
+      }
+      
+      // If still showing basic and we have retries left, retry after delay
+      if (retryCount < maxRetries) {
+        console.log(`[TIER REFRESH] Still showing basic tier, retrying in ${(retryCount + 1) * 2} seconds...`);
+        setTimeout(() => {
+          refreshSubscriptionStatus(retryCount + 1);
+        }, (retryCount + 1) * 2000);
+        return false;
+      }
+      
+      console.log('[TIER REFRESH] Max retries reached, giving up');
+      setIsRefreshing(false);
+      return false;
+      
     } catch (error) {
       console.error('[TIER REFRESH] Error refreshing subscription:', error);
-      // Fallback: re-fetch tier info from scratch
-      await fetchUserTier();
-    } finally {
       setIsRefreshing(false);
+      return false;
     }
   };
 
@@ -322,27 +345,18 @@ export default function HomePage() {
   useEffect(() => {
     const urlParams = new URLSearchParams(window.location.search);
     if (urlParams.get('upgrade') === 'success') {
-      console.log('[UPGRADE SUCCESS] Detected upgrade success, refreshing subscription status');
-      // Refresh tier info after successful upgrade
+      console.log('[UPGRADE SUCCESS] Detected upgrade success, starting immediate refresh');
+      
+      // Start immediate refresh with retry logic
+      refreshSubscriptionStatus();
+      
+      // Remove query params after a short delay
       setTimeout(() => {
-        refreshSubscriptionStatus();
-        // Remove query params
         const url = new URL(window.location.href);
         url.searchParams.delete('upgrade');
         window.history.replaceState({}, document.title, url.toString());
-      }, 1000); // Reduced timeout for faster refresh
-    }
-  }, []);
-
-  // Also refresh on initial load if upgrade parameter is present
-  useEffect(() => {
-    const urlParams = new URLSearchParams(window.location.search);
-    if (urlParams.get('upgrade') === 'success') {
-      console.log('[UPGRADE SUCCESS] Page load with upgrade success, refreshing immediately');
-      // Refresh subscription status on page load - don't wait for organizationId
-      setTimeout(() => {
-        refreshSubscriptionStatus();
-      }, 500);
+        console.log('[UPGRADE SUCCESS] Removed upgrade parameter from URL');
+      }, 3000);
     }
   }, []);
 

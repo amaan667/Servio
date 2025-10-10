@@ -87,44 +87,77 @@ async function handleCheckoutCompleted(session: Stripe.Checkout.Session) {
 
   console.log("[STRIPE WEBHOOK] Extracted data:", { organizationId, tier });
 
-  if (!organizationId) {
-    console.error("[STRIPE] No organization_id in checkout session metadata:", session.metadata);
+  if (!organizationId || !tier) {
+    console.error("[STRIPE] Missing required metadata in checkout session:", session.metadata);
     return;
   }
 
-  // Update organization with subscription details
-  const updateData = {
-    stripe_subscription_id: session.subscription as string,
-    subscription_tier: tier || "basic",
-    subscription_status: "trialing",
-    trial_ends_at: new Date(Date.now() + 14 * 24 * 60 * 60 * 1000).toISOString(),
-    updated_at: new Date().toISOString(),
-  };
+  // Handle mock organization IDs by creating real organizations
+  let realOrganizationId = organizationId;
+  
+  if (organizationId.startsWith('legacy-') || organizationId.startsWith('default-') || organizationId.startsWith('error-')) {
+    console.log("[STRIPE WEBHOOK] Creating real organization for mock ID:", organizationId);
+    
+    // Get user ID from the mock organization ID
+    const userId = organizationId.replace(/^(legacy-|default-|error-)/, '');
+    
+    // Create a real organization
+    const { data: newOrg, error: createError } = await supabase
+      .from("organizations")
+      .insert({
+        owner_id: userId,
+        subscription_tier: tier,
+        subscription_status: "trialing",
+        stripe_subscription_id: session.subscription as string,
+        trial_ends_at: new Date(Date.now() + 14 * 24 * 60 * 60 * 1000).toISOString(),
+        created_at: new Date().toISOString(),
+        updated_at: new Date().toISOString()
+      })
+      .select()
+      .single();
 
-  console.log("[STRIPE WEBHOOK] Updating organization with data:", updateData);
+    if (createError) {
+      console.error("[STRIPE WEBHOOK] Error creating organization:", createError);
+      return;
+    }
 
-  const { error } = await supabase
-    .from("organizations")
-    .update(updateData)
-    .eq("id", organizationId);
+    realOrganizationId = newOrg.id;
+    console.log("[STRIPE WEBHOOK] Created new organization:", realOrganizationId);
+  } else {
+    // Update existing organization with subscription details
+    const updateData = {
+      stripe_subscription_id: session.subscription as string,
+      subscription_tier: tier,
+      subscription_status: "trialing",
+      trial_ends_at: new Date(Date.now() + 14 * 24 * 60 * 60 * 1000).toISOString(),
+      updated_at: new Date().toISOString(),
+    };
 
-  if (error) {
-    console.error("[STRIPE] Error updating organization:", error);
-    return;
+    console.log("[STRIPE WEBHOOK] Updating organization with data:", updateData);
+
+    const { error } = await supabase
+      .from("organizations")
+      .update(updateData)
+      .eq("id", organizationId);
+
+    if (error) {
+      console.error("[STRIPE] Error updating organization:", error);
+      return;
+    }
+
+    console.log("[STRIPE WEBHOOK] Successfully updated organization:", organizationId);
   }
-
-  console.log("[STRIPE WEBHOOK] Successfully updated organization:", organizationId);
 
   // Log subscription history
   await supabase.from("subscription_history").insert({
-    organization_id: organizationId,
+    organization_id: realOrganizationId,
     event_type: "checkout_completed",
     new_tier: tier,
     stripe_event_id: session.id,
     metadata: { session_id: session.id },
   });
 
-  console.log(`[STRIPE] Checkout completed for org: ${organizationId}`);
+  console.log(`[STRIPE] Checkout completed for org: ${realOrganizationId}`);
 }
 
 async function handleSubscriptionCreated(subscription: Stripe.Subscription) {
@@ -133,9 +166,38 @@ async function handleSubscriptionCreated(subscription: Stripe.Subscription) {
   const organizationId = subscription.metadata?.organization_id;
   const tier = subscription.metadata?.tier;
 
+  console.log("[STRIPE WEBHOOK] handleSubscriptionCreated called with:", {
+    subscriptionId: subscription.id,
+    organizationId,
+    tier,
+    status: subscription.status
+  });
+
   if (!organizationId) {
-    console.error("[STRIPE] No organization_id in subscription");
+    console.error("[STRIPE] No organization_id in subscription metadata:", subscription.metadata);
     return;
+  }
+
+  // Handle mock organization IDs - they should already have been converted to real IDs by checkout completed
+  let realOrganizationId = organizationId;
+  
+  if (organizationId.startsWith('legacy-') || organizationId.startsWith('default-') || organizationId.startsWith('error-')) {
+    console.log("[STRIPE WEBHOOK] Subscription created with mock organization ID, finding real organization");
+    
+    // Try to find the real organization by stripe_subscription_id
+    const { data: existingOrg } = await supabase
+      .from("organizations")
+      .select("id")
+      .eq("stripe_subscription_id", subscription.id)
+      .single();
+    
+    if (existingOrg) {
+      realOrganizationId = existingOrg.id;
+      console.log("[STRIPE WEBHOOK] Found real organization:", realOrganizationId);
+    } else {
+      console.error("[STRIPE WEBHOOK] Could not find real organization for subscription:", subscription.id);
+      return;
+    }
   }
 
   await supabase
@@ -146,17 +208,17 @@ async function handleSubscriptionCreated(subscription: Stripe.Subscription) {
       subscription_status: subscription.status,
       updated_at: new Date().toISOString(),
     })
-    .eq("id", organizationId);
+    .eq("id", realOrganizationId);
 
   await supabase.from("subscription_history").insert({
-    organization_id: organizationId,
+    organization_id: realOrganizationId,
     event_type: "subscription_created",
     new_tier: tier,
     stripe_event_id: subscription.id,
     metadata: { subscription_id: subscription.id },
   });
 
-  console.log(`[STRIPE] Subscription created for org: ${organizationId}`);
+  console.log(`[STRIPE] Subscription created for org: ${realOrganizationId}`);
 }
 
 async function handleSubscriptionUpdated(subscription: Stripe.Subscription) {
@@ -178,11 +240,33 @@ async function handleSubscriptionUpdated(subscription: Stripe.Subscription) {
     return;
   }
 
+  // Handle mock organization IDs
+  let realOrganizationId = organizationId;
+  
+  if (organizationId.startsWith('legacy-') || organizationId.startsWith('default-') || organizationId.startsWith('error-')) {
+    console.log("[STRIPE WEBHOOK] Subscription updated with mock organization ID, finding real organization");
+    
+    // Try to find the real organization by stripe_subscription_id
+    const { data: existingOrg } = await supabase
+      .from("organizations")
+      .select("id")
+      .eq("stripe_subscription_id", subscription.id)
+      .single();
+    
+    if (existingOrg) {
+      realOrganizationId = existingOrg.id;
+      console.log("[STRIPE WEBHOOK] Found real organization:", realOrganizationId);
+    } else {
+      console.error("[STRIPE WEBHOOK] Could not find real organization for subscription:", subscription.id);
+      return;
+    }
+  }
+
   // Get current tier to log change
   const { data: org } = await supabase
     .from("organizations")
     .select("subscription_tier")
-    .eq("id", organizationId)
+    .eq("id", realOrganizationId)
     .single();
 
   const updateData = {
@@ -196,17 +280,17 @@ async function handleSubscriptionUpdated(subscription: Stripe.Subscription) {
   const { error: updateError } = await supabase
     .from("organizations")
     .update(updateData)
-    .eq("id", organizationId);
+    .eq("id", realOrganizationId);
 
   if (updateError) {
     console.error("[STRIPE] Error updating organization subscription:", updateError);
     return;
   }
 
-  console.log("[STRIPE WEBHOOK] Successfully updated organization subscription:", organizationId);
+  console.log("[STRIPE WEBHOOK] Successfully updated organization subscription:", realOrganizationId);
 
   await supabase.from("subscription_history").insert({
-    organization_id: organizationId,
+    organization_id: realOrganizationId,
     event_type: "subscription_updated",
     old_tier: org?.subscription_tier,
     new_tier: tier,
@@ -214,7 +298,7 @@ async function handleSubscriptionUpdated(subscription: Stripe.Subscription) {
     metadata: { subscription_id: subscription.id, status: subscription.status },
   });
 
-  console.log(`[STRIPE] Subscription updated for org: ${organizationId}`);
+  console.log(`[STRIPE] Subscription updated for org: ${realOrganizationId}`);
 }
 
 async function handleSubscriptionDeleted(subscription: Stripe.Subscription) {
