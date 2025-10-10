@@ -178,33 +178,37 @@ export async function planAssistantAction(
       temperature: 0.1, // Low temperature for consistent, safe outputs
     });
 
-    // Get parsed response - zodResponseFormat automatically parses and validates
-    const plan = completion.choices[0].message.parsed;
+    // Get the message from completion
+    const message = completion.choices[0].message;
     
-    if (!plan) {
-      // Fallback: try to parse content if parsed is not available
-      const content = completion.choices[0].message.content;
-      if (content) {
-        const parsedContent = JSON.parse(content);
-        const validated = AssistantPlanSchema.parse(parsedContent);
-        return {
-          intent: validated.intent,
-          tools: validated.tools,
-          reasoning: validated.reasoning,
-          warnings: validated.warnings,
-        };
-      }
-      throw new Error("Failed to parse AI response");
+    // Try to get parsed response (available when using zodResponseFormat)
+    // Type assertion needed as TypeScript doesn't know about the parsed property
+    const parsed = (message as any).parsed;
+    
+    if (parsed) {
+      // Response was successfully parsed and validated by zodResponseFormat
+      return {
+        intent: parsed.intent,
+        tools: parsed.tools,
+        reasoning: parsed.reasoning,
+        warnings: parsed.warnings,
+      };
     }
-
-    // plan is already validated by Zod through zodResponseFormat
-    // The discriminated union ensures each tool has the correct params structure
-    return {
-      intent: plan.intent,
-      tools: plan.tools,
-      reasoning: plan.reasoning,
-      warnings: plan.warnings,
-    };
+    
+    // Fallback: manually parse and validate content
+    const content = message.content;
+    if (content) {
+      const parsedContent = JSON.parse(content);
+      const validated = AssistantPlanSchema.parse(parsedContent);
+      return {
+        intent: validated.intent,
+        tools: validated.tools,
+        reasoning: validated.reasoning,
+        warnings: validated.warnings,
+      };
+    }
+    
+    throw new Error("Failed to parse AI response: no parsed or content available");
   } catch (error) {
     console.error("[AI ASSISTANT] Planning error:", error);
     if (error instanceof z.ZodError) {
