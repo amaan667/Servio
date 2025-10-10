@@ -6,13 +6,77 @@ import { stripe } from "@/lib/stripe-client";
 
 // Pricing tiers from homepage
 const PRICE_IDS = {
-  basic: process.env.STRIPE_BASIC_PRICE_ID || "price_basic",
-  standard: process.env.STRIPE_STANDARD_PRICE_ID || "price_standard",
-  premium: process.env.STRIPE_PREMIUM_PRICE_ID || "price_premium",
+  basic: process.env.STRIPE_BASIC_PRICE_ID,
+  standard: process.env.STRIPE_STANDARD_PRICE_ID,
+  premium: process.env.STRIPE_PREMIUM_PRICE_ID,
+};
+
+// Create Stripe products and prices if they don't exist
+const ensureStripeProducts = async () => {
+  const products = [
+    {
+      tier: 'basic',
+      name: 'Basic Plan',
+      description: 'Perfect for small cafes and restaurants',
+      amount: 9900, // £99.00 in pence
+    },
+    {
+      tier: 'standard', 
+      name: 'Standard Plan',
+      description: 'Most popular for growing businesses',
+      amount: 24900, // £249.00 in pence
+    },
+    {
+      tier: 'premium',
+      name: 'Premium Plan', 
+      description: 'Unlimited power for enterprises',
+      amount: 44900, // £449.00 in pence
+    }
+  ];
+
+  const priceIds: Record<string, string> = {};
+
+  for (const product of products) {
+    try {
+      // Check if we already have a price ID for this tier
+      if (PRICE_IDS[product.tier as keyof typeof PRICE_IDS]) {
+        priceIds[product.tier] = PRICE_IDS[product.tier as keyof typeof PRICE_IDS];
+        continue;
+      }
+
+      // Create product first
+      const stripeProduct = await stripe.products.create({
+        name: product.name,
+        description: product.description,
+        metadata: { tier: product.tier }
+      });
+
+      // Create price for the product
+      const price = await stripe.prices.create({
+        unit_amount: product.amount,
+        currency: 'gbp',
+        recurring: { interval: 'month' },
+        product: stripeProduct.id,
+        nickname: `${product.name} - £${product.amount / 100}/month`
+      });
+
+      priceIds[product.tier] = price.id;
+      console.log(`[STRIPE SETUP] Created ${product.tier} price: ${price.id}`);
+
+    } catch (error) {
+      console.error(`[STRIPE ERROR] Failed to create ${product.tier} product/price:`, error);
+      throw error;
+    }
+  }
+
+  return priceIds;
 };
 
 export async function POST(request: NextRequest) {
   try {
+    // Ensure Stripe products and prices exist
+    const priceIds = await ensureStripeProducts();
+
     const supabase = await createClient();
 
     // Check auth
@@ -162,7 +226,7 @@ export async function POST(request: NextRequest) {
       payment_method_types: ["card"],
       line_items: [
         {
-          price: PRICE_IDS[tier as keyof typeof PRICE_IDS],
+          price: priceIds[tier],
           quantity: 1,
         },
       ],
