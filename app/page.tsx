@@ -164,35 +164,74 @@ export default function HomePage() {
       try {
         const supabase = createClient();
         
-        // Get user's organization
-        const { data: userVenueRole } = await supabase
+        console.log('[TIER DEBUG] Fetching tier for user:', user.id);
+        
+        // Get user's organization with a more robust query
+        const { data: userVenueRoles, error: userVenueError } = await supabase
           .from('user_venue_roles')
           .select('organization_id, organizations(subscription_tier, is_grandfathered, id)')
-          .eq('user_id', user.id)
-          .single();
+          .eq('user_id', user.id);
 
-        if (userVenueRole && userVenueRole.organizations) {
-          const org: any = userVenueRole.organizations;
-          setOrganizationId(org.id);
+        console.log('[TIER DEBUG] User venue roles query result:', { userVenueRoles, userVenueError });
+
+        if (userVenueError) {
+          console.error('[TIER DEBUG] Error fetching user venue roles:', userVenueError);
+          // Fallback: try to get organization directly if user_venue_roles fails
+          const { data: directOrgs, error: directError } = await supabase
+            .from('organizations')
+            .select('id, subscription_tier, is_grandfathered')
+            .eq('owner_id', user.id)
+            .single();
           
-          console.log('[TIER DEBUG] Organization data:', {
-            subscription_tier: org.subscription_tier,
-            is_grandfathered: org.is_grandfathered,
-            org_id: org.id
-          });
+          console.log('[TIER DEBUG] Direct organization query result:', { directOrgs, directError });
           
-          if (org.is_grandfathered) {
-            setCurrentTier('grandfathered');
+          if (directOrgs) {
+            setOrganizationId(directOrgs.id);
+            if (directOrgs.is_grandfathered) {
+              setCurrentTier('grandfathered');
+            } else {
+              const tier = directOrgs.subscription_tier || 'basic';
+              console.log('[TIER DEBUG] Setting tier to (direct):', tier);
+              setCurrentTier(tier);
+            }
           } else {
-            const tier = org.subscription_tier || 'basic';
-            console.log('[TIER DEBUG] Setting tier to:', tier);
-            setCurrentTier(tier);
+            console.log('[TIER DEBUG] No organization found, defaulting to basic');
+            setCurrentTier('basic');
+          }
+          return;
+        }
+
+        if (userVenueRoles && userVenueRoles.length > 0) {
+          const userVenueRole = userVenueRoles[0]; // Take the first one
+          if (userVenueRole && userVenueRole.organizations) {
+            const org: any = userVenueRole.organizations;
+            setOrganizationId(org.id);
+            
+            console.log('[TIER DEBUG] Organization data:', {
+              subscription_tier: org.subscription_tier,
+              is_grandfathered: org.is_grandfathered,
+              org_id: org.id
+            });
+            
+            if (org.is_grandfathered) {
+              setCurrentTier('grandfathered');
+            } else {
+              const tier = org.subscription_tier || 'basic';
+              console.log('[TIER DEBUG] Setting tier to:', tier);
+              setCurrentTier(tier);
+            }
+          } else {
+            console.log('[TIER DEBUG] No organization data in user venue role');
+            setCurrentTier('basic');
           }
         } else {
-          console.log('[TIER DEBUG] No organization found for user:', user.id);
+          console.log('[TIER DEBUG] No user venue roles found for user:', user.id);
+          setCurrentTier('basic');
         }
       } catch (error) {
         console.error('Error fetching user tier:', error);
+        // Default to basic if everything fails
+        setCurrentTier('basic');
       }
     }
 
