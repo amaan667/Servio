@@ -144,7 +144,7 @@ export function UpgradeModal({
           </DialogDescription>
         </DialogHeader>
 
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mt-6">
+        <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 mt-6 max-w-5xl mx-auto">
           {tiers.map((tier) => {
             const isCurrent = tier.id === currentTier;
             const isDowngrade =

@@ -15,7 +15,7 @@ const PRICE_IDS = {
 export async function POST(request: NextRequest) {
   try {
     const body = await request.json();
-    const { email, password, fullName, venueName, venueType, tier } = body;
+    const { email, password, fullName, venueName, venueType, serviceType = 'table_service', tier } = body;
 
     // Validate required fields
     if (!email || !password || !fullName || !venueName || !tier) {
@@ -96,6 +96,7 @@ export async function POST(request: NextRequest) {
         venue_id: venueId,
         name: venueName,
         business_type: venueType,
+        service_type: serviceType,
         owner_id: userId,
         organization_id: org.id,
       })

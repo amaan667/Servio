@@ -162,9 +162,9 @@ export default function SignInForm({ onGoogleSignIn, isLoading = false, error: p
 
       <div className="mt-4 sm:mt-6 text-center">
         <p className="text-sm text-gray-700">
-          Don't have an account?{' '}
+          New to Servio?{' '}
           <Link href="/sign-up" className="text-servio-purple hover:opacity-80 font-medium">
-            Sign up
+            Start Free Trial
           </Link>
         </p>
       </div>

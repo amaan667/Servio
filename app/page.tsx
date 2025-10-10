@@ -56,7 +56,7 @@ function PricingQuickCompare({
           </Badge>
         )}
       </div>
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-6 w-full max-w-5xl mx-auto" style={{ minHeight: '500px' }}>
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 w-full max-w-6xl mx-auto" style={{ minHeight: '500px' }}>
         {/* Basic */}
         <Card className={`flex flex-col items-center p-6 gap-4 h-full ${currentTier === 'basic' ? 'border-2 border-green-500' : ''}`}>
           <div className="text-2xl font-semibold">Basic</div>

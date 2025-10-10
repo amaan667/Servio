@@ -29,6 +29,7 @@ export default function SignUpForm({ onGoogleSignIn, isSigningUp = false }: Sign
     password: '',
     venueName: '',
     businessType: 'Restaurant',
+    serviceType: 'table_service', // 'table_service' or 'counter_pickup'
   });
 
   const handleEmailSignUp = async (e: React.FormEvent) => {
@@ -86,6 +87,7 @@ export default function SignUpForm({ onGoogleSignIn, isSigningUp = false }: Sign
           fullName: formData.fullName,
           venueName: formData.venueName,
           venueType: formData.businessType,
+          serviceType: formData.serviceType,
           tier: selectedTier,
         }),
       });
@@ -156,14 +158,14 @@ export default function SignUpForm({ onGoogleSignIn, isSigningUp = false }: Sign
   // Render tier selection step
   if (step === 'tier') {
     return (
-      <div className="min-h-screen bg-gray-50 flex items-center justify-center p-4">
-        <Card className="w-full max-w-5xl">
-          <CardHeader className="text-center">
-            <CardTitle className="text-3xl font-bold">Choose Your Plan</CardTitle>
-            <CardDescription>Start your 14-day free trial • First billing after trial ends</CardDescription>
-          </CardHeader>
-          <CardContent>
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-6">
+    <div className="min-h-screen bg-gray-50 flex items-center justify-center p-4">
+      <Card className="w-full max-w-6xl">
+        <CardHeader className="text-center">
+          <CardTitle className="text-3xl font-bold">Choose Your Plan</CardTitle>
+          <CardDescription>Start your 14-day free trial • First billing after trial ends</CardDescription>
+        </CardHeader>
+        <CardContent>
+          <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 mb-6 max-w-5xl mx-auto">
               {tiers.map((tier) => (
                 <Card
                   key={tier.id}
@@ -389,6 +391,21 @@ export default function SignUpForm({ onGoogleSignIn, isSigningUp = false }: Sign
                 <option value="Catering">Catering</option>
                 <option value="Food Court">Food Court</option>
                 <option value="Other">Other</option>
+              </select>
+            </div>
+
+            <div className="space-y-2">
+              <Label htmlFor="serviceType">Service Type</Label>
+              <select
+                id="serviceType"
+                value={formData.serviceType}
+                onChange={(e) => setFormData({ ...formData, serviceType: e.target.value })}
+                disabled={loading}
+                className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-transparent"
+                required
+              >
+                <option value="table_service">Table Service (QR codes on tables)</option>
+                <option value="counter_pickup">Pickup/Counter Service (QR codes for orders)</option>
               </select>
             </div>
 
