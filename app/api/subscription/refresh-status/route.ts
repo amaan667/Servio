@@ -62,9 +62,7 @@ export async function POST(request: NextRequest) {
       
       console.log('[SUBSCRIPTION REFRESH] Stripe subscription status:', {
         id: stripeSubscription.id,
-        status: stripeSubscription.status,
-        current_period_end: stripeSubscription.current_period_end,
-        trial_end: stripeSubscription.trial_end
+        status: stripeSubscription.status
       });
 
       // Calculate trial end date
