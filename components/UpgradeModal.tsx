@@ -101,6 +101,12 @@ export function UpgradeModal({
 
     setLoading(tierId);
 
+    console.log('[UPGRADE DEBUG] Starting upgrade with:', {
+      tierId,
+      currentTier,
+      organizationId
+    });
+
     try {
       const response = await fetch("/api/stripe/create-checkout-session", {
         method: "POST",

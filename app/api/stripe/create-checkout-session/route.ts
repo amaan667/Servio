@@ -34,15 +34,43 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    // Get organization
-    const { data: org } = await supabase
-      .from("organizations")
-      .select("*")
-      .eq("id", organizationId)
-      .eq("owner_id", user.id)
-      .single();
+    // Get organization - first try with organizationId if provided
+    let org = null;
+    
+    if (organizationId) {
+      const { data: orgById } = await supabase
+        .from("organizations")
+        .select("*")
+        .eq("id", organizationId)
+        .single();
+      org = orgById;
+    }
+    
+    // If no org found by ID, try to find user's organization by owner_id
+    if (!org) {
+      const { data: orgByOwner } = await supabase
+        .from("organizations")
+        .select("*")
+        .eq("owner_id", user.id)
+        .single();
+      org = orgByOwner;
+    }
+    
+    // If still no org, try to find through user_venue_roles
+    if (!org) {
+      const { data: userVenueRole } = await supabase
+        .from("user_venue_roles")
+        .select("organization_id, organizations(*)")
+        .eq("user_id", user.id)
+        .single();
+      
+      if (userVenueRole && userVenueRole.organizations) {
+        org = userVenueRole.organizations;
+      }
+    }
 
     if (!org) {
+      console.error("No organization found for user:", user.id, "organizationId:", organizationId);
       return NextResponse.json(
         { error: "Organization not found" },
         { status: 404 }
