@@ -71,30 +71,6 @@ function PricingQuickCompare({
             Loading tier information...
           </Badge>
         )}
-        
-        {/* Debug button - temporary */}
-        {isSignedIn && (
-          <Button 
-            onClick={async () => {
-              try {
-                const response = await fetch('/api/debug/subscription-status');
-                const data = await response.json();
-                console.log('[DEBUG] Subscription status:', data);
-                if (data.success) {
-                  // Force page refresh to get updated data
-                  window.location.reload();
-                }
-              } catch (error) {
-                console.error('[DEBUG] Error:', error);
-              }
-            }}
-            variant="outline"
-            size="sm"
-            className="ml-2"
-          >
-            Debug Refresh
-          </Button>
-        )}
       </div>
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 w-full max-w-6xl mx-auto px-4" style={{ minHeight: '600px', maxHeight: '600px' }}>
         {/* Basic */}
@@ -344,6 +320,15 @@ export default function HomePage() {
         url.searchParams.delete('upgrade');
         window.history.replaceState({}, document.title, url.toString());
       }, 2000);
+    }
+  }, [organizationId]);
+
+  // Also refresh on initial load if upgrade parameter is present
+  useEffect(() => {
+    const urlParams = new URLSearchParams(window.location.search);
+    if (urlParams.get('upgrade') === 'success' && organizationId) {
+      // Refresh subscription status on page load
+      refreshSubscriptionStatus();
     }
   }, [organizationId]);
 

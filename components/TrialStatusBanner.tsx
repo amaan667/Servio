@@ -18,72 +18,87 @@ export default function TrialStatusBanner() {
   const [trialStatus, setTrialStatus] = useState<TrialStatus | null>(null);
   const [loading, setLoading] = useState(true);
 
-  useEffect(() => {
-    async function fetchTrialStatus() {
-      if (!user) {
-        setLoading(false);
-        return;
-      }
+  const fetchTrialStatus = async () => {
+    if (!user) {
+      setLoading(false);
+      return;
+    }
 
-      try {
-        const supabase = createClient();
-        
-        // Get user's organization and trial status
-        const { data: userVenueRole, error: userVenueError } = await supabase
-          .from('user_venue_roles')
-          .select('organization_id, organizations(subscription_status, subscription_tier, trial_ends_at)')
-          .eq('user_id', user.id)
+    try {
+      const supabase = createClient();
+      
+      // Get user's organization and trial status
+      const { data: userVenueRole, error: userVenueError } = await supabase
+        .from('user_venue_roles')
+        .select('organization_id, organizations(subscription_status, subscription_tier, trial_ends_at)')
+        .eq('user_id', user.id)
+        .single();
+
+      if (userVenueError) {
+        // Fallback: try direct organization lookup
+        const { data: org, error: orgError } = await supabase
+          .from('organizations')
+          .select('subscription_status, subscription_tier, trial_ends_at')
+          .eq('owner_id', user.id)
           .single();
 
-        if (userVenueError) {
-          // Fallback: try direct organization lookup
-          const { data: org, error: orgError } = await supabase
-            .from('organizations')
-            .select('subscription_status, subscription_tier, trial_ends_at')
-            .eq('owner_id', user.id)
-            .single();
-
-          if (orgError) {
-            console.log('[TRIAL DEBUG] No organization found');
-            setLoading(false);
-            return;
-          }
-
-          processTrialStatus(org);
-        } else if (userVenueRole && userVenueRole.organizations) {
-          processTrialStatus(userVenueRole.organizations);
+        if (orgError) {
+          console.log('[TRIAL DEBUG] No organization found');
+          setLoading(false);
+          return;
         }
 
-      } catch (error) {
-        console.error('[TRIAL DEBUG] Error fetching trial status:', error);
-      } finally {
-        setLoading(false);
-      }
-    }
-
-    function processTrialStatus(org: any) {
-      const isTrialing = org.subscription_status === 'trialing';
-      const tier = org.subscription_tier || 'basic';
-      const trialEndsAt = org.trial_ends_at;
-      
-      let daysRemaining = null;
-      if (isTrialing && trialEndsAt) {
-        const endDate = new Date(trialEndsAt);
-        const now = new Date();
-        const diffTime = endDate.getTime() - now.getTime();
-        daysRemaining = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
+        processTrialStatus(org);
+      } else if (userVenueRole && userVenueRole.organizations) {
+        processTrialStatus(userVenueRole.organizations);
       }
 
-      setTrialStatus({
-        isTrialing,
-        tier,
-        trialEndsAt,
-        daysRemaining
-      });
+    } catch (error) {
+      console.error('[TRIAL DEBUG] Error fetching trial status:', error);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const processTrialStatus = (org: any) => {
+    const isTrialing = org.subscription_status === 'trialing';
+    const tier = org.subscription_tier || 'basic';
+    const trialEndsAt = org.trial_ends_at;
+    
+    let daysRemaining = null;
+    if (isTrialing && trialEndsAt) {
+      const endDate = new Date(trialEndsAt);
+      const now = new Date();
+      const diffTime = endDate.getTime() - now.getTime();
+      daysRemaining = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
     }
 
+    setTrialStatus({
+      isTrialing,
+      tier,
+      trialEndsAt,
+      daysRemaining
+    });
+  };
+
+  useEffect(() => {
     fetchTrialStatus();
   }, [user]);
+
+  // Auto-refresh when returning from checkout success
+  useEffect(() => {
+    const urlParams = new URLSearchParams(window.location.search);
+    if (urlParams.get('upgrade') === 'success') {
+      // Refresh trial status after successful upgrade
+      setTimeout(() => {
+        fetchTrialStatus();
+        // Remove query params
+        const url = new URL(window.location.href);
+        url.searchParams.delete('upgrade');
+        window.history.replaceState({}, document.title, url.toString());
+      }, 2000);
+    }
+  }, []);
 
   if (loading || !trialStatus || !trialStatus.isTrialing) {
     return null;

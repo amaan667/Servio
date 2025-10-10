@@ -148,7 +148,7 @@ export default function CheckoutSuccessPage() {
           {/* Action Buttons */}
           <div className="flex gap-4 pt-4">
             <Button 
-              onClick={() => router.push("/dashboard")}
+              onClick={() => router.push("/dashboard?upgrade=success")}
               className="flex-1 bg-purple-600 hover:bg-purple-700"
             >
               Go to Dashboard
