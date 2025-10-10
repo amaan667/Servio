@@ -80,7 +80,7 @@ function PricingQuickCompare({
                 const response = await fetch('/api/test/subscription-update', {
                   method: 'POST',
                   headers: { 'Content-Type': 'application/json' },
-                  body: JSON.stringify({ tier: 'standard', status: 'trialing' })
+                  body: JSON.stringify({ status: 'trialing' })
                 });
                 const data = await response.json();
                 console.log('[FIX] Subscription update result:', data);

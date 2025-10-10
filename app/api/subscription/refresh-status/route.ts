@@ -62,7 +62,8 @@ export async function POST(request: NextRequest) {
       
       console.log('[SUBSCRIPTION REFRESH] Stripe subscription status:', {
         id: stripeSubscription.id,
-        status: stripeSubscription.status
+        status: stripeSubscription.status,
+        metadata: stripeSubscription.metadata
       });
 
       // Calculate trial end date
@@ -71,10 +72,23 @@ export async function POST(request: NextRequest) {
         trialEndsAt = new Date(stripeSubscription.trial_end * 1000).toISOString();
       }
 
+      // Get tier from Stripe metadata or fallback to existing
+      const stripeTier = stripeSubscription.metadata?.tier;
+      const currentTier = org.subscription_tier;
+      
+      // Use Stripe tier if available, otherwise keep current tier
+      const finalTier = stripeTier || currentTier || 'basic';
+      
+      console.log('[SUBSCRIPTION REFRESH] Tier detection:', {
+        stripeTier,
+        currentTier,
+        finalTier
+      });
+
       // Update organization with latest Stripe data
       const updateData = {
         subscription_status: stripeSubscription.status,
-        subscription_tier: stripeSubscription.metadata?.tier || org.subscription_tier,
+        subscription_tier: finalTier,
         trial_ends_at: trialEndsAt,
         updated_at: new Date().toISOString(),
       };

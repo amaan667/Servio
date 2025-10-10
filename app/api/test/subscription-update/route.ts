@@ -16,9 +16,38 @@ export async function POST(request: NextRequest) {
     }
 
     const body = await request.json();
-    const { tier = 'standard', status = 'trialing' } = body;
+    const { tier, status = 'trialing' } = body;
 
     console.log('[TEST] Manually updating subscription status for user:', user.id);
+
+    // If no tier provided, try to detect from Stripe
+    let detectedTier = tier;
+    if (!detectedTier) {
+      // Try to find existing organization first to get Stripe subscription ID
+      let existingOrg = null;
+      
+      // Check for existing organization
+      const { data: existingOrgs, error: existingError } = await supabase
+        .from('organizations')
+        .select('stripe_subscription_id')
+        .eq('owner_id', user.id)
+        .single();
+      
+      if (!existingError && existingOrgs?.stripe_subscription_id) {
+        try {
+          // Fetch subscription from Stripe to get the actual tier
+          const stripe = require('@/lib/stripe-client').stripe;
+          const stripeSubscription = await stripe.subscriptions.retrieve(existingOrgs.stripe_subscription_id);
+          detectedTier = stripeSubscription.metadata?.tier || 'basic';
+          console.log('[TEST] Detected tier from Stripe:', detectedTier);
+        } catch (stripeError) {
+          console.error('[TEST] Error fetching from Stripe:', stripeError);
+          detectedTier = 'basic'; // Default fallback
+        }
+      } else {
+        detectedTier = 'basic'; // Default fallback
+      }
+    }
 
     // Try to find organization
     let orgId = null;
@@ -67,7 +96,7 @@ export async function POST(request: NextRequest) {
           .from('organizations')
           .insert({
             owner_id: user.id,
-            subscription_tier: tier,
+            subscription_tier: detectedTier,
             subscription_status: status,
             trial_ends_at: new Date(Date.now() + 14 * 24 * 60 * 60 * 1000).toISOString(),
             created_at: new Date().toISOString(),
@@ -98,7 +127,7 @@ export async function POST(request: NextRequest) {
 
     // Update organization with subscription details
     const updateData = {
-      subscription_tier: tier,
+      subscription_tier: detectedTier,
       subscription_status: status,
       trial_ends_at: new Date(Date.now() + 14 * 24 * 60 * 60 * 1000).toISOString(),
       updated_at: new Date().toISOString(),
