@@ -181,11 +181,11 @@ export function UpgradeModal({
                   <h3 className="text-2xl font-bold mb-2">{tier.name}</h3>
                   <div className="text-4xl font-bold mb-2">
                     {tier.price}
-                    <span className="text-lg font-normal text-gray-600">
+                    <span className="text-lg font-normal text-gray-900">
                       {tier.period}
                     </span>
                   </div>
-                  <p className="text-sm text-gray-600">{tier.description}</p>
+                  <p className="text-sm text-gray-900">{tier.description}</p>
                 </div>
 
                 <ul className="space-y-3 mb-6 flex-1">
@@ -199,7 +199,7 @@ export function UpgradeModal({
                     tier.notIncluded.map((feature, idx) => (
                       <li
                         key={`not-${idx}`}
-                        className="flex items-start gap-2 text-gray-400"
+                        className="flex items-start gap-2 text-gray-500"
                       >
                         <span className="text-sm">✗ {feature}</span>
                       </li>
@@ -234,7 +234,7 @@ export function UpgradeModal({
                 </Button>
 
                 {tier.id !== "premium" && !isCurrent && (
-                  <p className="text-xs text-center text-gray-500 mt-3">
+                  <p className="text-xs text-center text-gray-700 mt-3">
                     14-day free trial • First billing after trial
                   </p>
                 )}

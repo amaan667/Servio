@@ -182,7 +182,7 @@ export function FAQ({ className = "", onToggle, onCTAClick }: FAQProps) {
                       : "200ms",
                 }}
               >
-                <div className="px-5 pt-3 pb-4 text-gray-700 leading-relaxed">
+                <div className="px-5 pt-3 pb-4 text-gray-900 leading-relaxed">
                   {/* Support bold markdown with simple string replacement */}
                   {item.answer.split("**").map((part, index) => {
                     // Odd indices are bolded
@@ -204,7 +204,7 @@ export function FAQ({ className = "", onToggle, onCTAClick }: FAQProps) {
 
       {/* CTA Footer */}
       <div className="mt-12 pt-8 border-t border-gray-200 text-center">
-        <p className="text-gray-700 font-medium mb-6">Still have questions?</p>
+        <p className="text-gray-900 font-semibold mb-6">Still have questions?</p>
         <Button
           variant="outline"
           asChild

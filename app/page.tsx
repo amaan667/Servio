@@ -706,8 +706,10 @@ export default function HomePage() {
           subscriptionStatus={subscriptionStatus}
           trialEndsAt={trialEndsAt}
         />
-        
-        {/* FAQ Section */}
+      </section>
+
+      {/* FAQ Section */}
+      <section className="py-16 bg-gray-50">
         <FAQ onToggle={handleFAQToggle} onCTAClick={handleFAQCTAClick} />
       </section>
 
