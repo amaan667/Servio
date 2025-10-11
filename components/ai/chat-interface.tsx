@@ -121,11 +121,9 @@ export function ChatInterface({ venueId, isOpen, onClose, initialPrompt }: ChatI
         console.log("[AI CHAT] Number of conversations:", data.conversations?.length || 0);
         setConversations(data.conversations || []);
         
-        // If there's a current conversation, load its messages
-        if (currentConversation) {
-          loadMessages(currentConversation.id);
-        } else if (data.conversations && data.conversations.length > 0) {
-          // Auto-select the most recent conversation
+        // Only auto-select if no conversation is currently selected
+        if (!currentConversation && data.conversations && data.conversations.length > 0) {
+          // Auto-select the most recent conversation only on first load
           const latest = data.conversations[0];
           console.log("[AI CHAT] Auto-selecting latest conversation:", latest.id);
           setCurrentConversation(latest);
@@ -156,16 +154,40 @@ export function ChatInterface({ venueId, isOpen, onClose, initialPrompt }: ChatI
   const loadMessages = async (conversationId: string) => {
     try {
       console.log("[AI CHAT] Loading messages for conversation:", conversationId);
+      setLoading(true); // Show loading state while fetching messages
+      
       const response = await fetch(`/api/ai-assistant/conversations/${conversationId}/messages`);
       if (response.ok) {
         const data = await response.json();
         console.log("[AI CHAT] Loaded messages:", data.messages);
-        setMessages(data.messages || []);
+        
+        // Transform messages to match the expected format
+        const transformedMessages = (data.messages || []).map((msg: any) => ({
+          id: msg.id,
+          role: msg.role,
+          content: msg.content,
+          createdAt: msg.created_at,
+          toolName: msg.tool_name,
+          toolParams: msg.tool_params,
+          executionResult: msg.execution_result,
+          auditId: msg.audit_id,
+          canUndo: msg.can_undo || false,
+          undoData: msg.undo_data,
+        }));
+        
+        setMessages(transformedMessages);
       } else {
-        console.error("[AI CHAT] Failed to load messages:", response.status);
+        const errorData = await response.text();
+        console.error("[AI CHAT] Failed to load messages:", response.status, errorData);
+        setError("Failed to load conversation messages");
+        setMessages([]);
       }
     } catch (error) {
       console.error("[AI CHAT] Failed to load messages:", error);
+      setError("Failed to load conversation messages");
+      setMessages([]);
+    } finally {
+      setLoading(false);
     }
   };
 
@@ -592,6 +614,7 @@ export function ChatInterface({ venueId, isOpen, onClose, initialPrompt }: ChatI
   };
 
   const selectConversation = (conversation: ChatConversation) => {
+    console.log("[AI CHAT] Selecting conversation:", conversation.id, conversation.title);
     setCurrentConversation(conversation);
     // Don't clear messages immediately - let loadMessages handle it
     setPlan(null);
@@ -734,8 +757,17 @@ export function ChatInterface({ venueId, isOpen, onClose, initialPrompt }: ChatI
                     <div className="bg-background border rounded-lg p-3 flex items-center gap-2">
                       <Loader2 className="h-4 w-4 animate-spin" />
                       <span className="text-sm text-muted-foreground">
-                        Planning your request...
+                        {messages.length === 0 ? "Loading conversation..." : "Planning your request..."}
                       </span>
+                    </div>
+                  </div>
+                )}
+                
+                {!loading && messages.length === 0 && currentConversation && (
+                  <div className="flex justify-center items-center h-32">
+                    <div className="text-center text-muted-foreground">
+                      <MessageSquare className="h-8 w-8 mx-auto mb-2 opacity-50" />
+                      <p className="text-sm">No messages in this conversation yet</p>
                     </div>
                   </div>
                 )}
