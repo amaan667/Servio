@@ -503,7 +503,7 @@ $$;
 GRANT EXECUTE ON FUNCTION check_user_role(TEXT, UUID) TO authenticated;
 
 -- Step 11: Helper function for setting session variables (for audit reasons)
-CREATE OR REPLACE FUNCTION set_config(setting_name TEXT, new_value TEXT, is_local BOOLEAN)
+CREATE OR REPLACE FUNCTION set_session_config(setting_name TEXT, new_value TEXT, is_local BOOLEAN)
 RETURNS TEXT
 LANGUAGE plpgsql
 SECURITY DEFINER
@@ -514,7 +514,7 @@ BEGIN
 END;
 $$;
 
-GRANT EXECUTE ON FUNCTION set_config(TEXT, TEXT, BOOLEAN) TO authenticated;
+GRANT EXECUTE ON FUNCTION set_session_config(TEXT, TEXT, BOOLEAN) TO authenticated;
 
 -- Step 12: Comments for documentation
 COMMENT ON TABLE user_venue_roles IS 'Stores team member roles for each venue';
@@ -522,5 +522,5 @@ COMMENT ON TABLE role_changes IS 'Audit log for role changes';
 COMMENT ON FUNCTION prevent_last_owner() IS 'Prevents removing or demoting the last owner of a venue';
 COMMENT ON FUNCTION log_role_change() IS 'Logs all role changes to the audit table';
 COMMENT ON FUNCTION check_user_role(TEXT, UUID) IS 'Helper function to check a user''s role for a venue';
-COMMENT ON FUNCTION set_config(TEXT, TEXT, BOOLEAN) IS 'Helper to set session configuration variables for audit logging';
+COMMENT ON FUNCTION set_session_config(TEXT, TEXT, BOOLEAN) IS 'Helper to set session configuration variables for audit logging';
 

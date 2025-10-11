@@ -95,7 +95,7 @@ export async function setAuditReason(
 ): Promise<void> {
   try {
     // This sets a session variable that will be picked up by the trigger
-    await supabase.rpc('set_config', {
+    await supabase.rpc('set_session_config', {
       setting_name: 'app.role_reason',
       new_value: reason || '',
       is_local: true
