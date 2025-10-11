@@ -194,6 +194,75 @@ async function undoMenuTranslation(venueId: string, undoData: any, supabase: any
       es: "Spanish",
     };
 
+    // Comprehensive bidirectional category mappings
+    const categoryMappings = {
+      en: {
+        "STARTERS": "ENTRADAS",
+        "APPETIZERS": "APERITIVOS", 
+        "MAIN COURSES": "PLATOS PRINCIPALES",
+        "ENTREES": "PLATOS PRINCIPALES",
+        "DESSERTS": "POSTRES",
+        "SALADS": "ENSALADAS",
+        "KIDS": "NIÑOS",
+        "CHILDREN": "NIÑOS",
+        "DRINKS": "BEBIDAS",
+        "BEVERAGES": "BEBIDAS",
+        "COFFEE": "CAFÉ",
+        "TEA": "TÉ",
+        "SPECIALS": "ESPECIALES",
+        "WRAPS": "WRAPS",
+        "SANDWICHES": "SÁNDWICHES",
+        "MILKSHAKES": "MALTEADAS",
+        "SHAKES": "BATIDOS",
+        "SMOOTHIES": "BATIDOS",
+        "BRUNCH": "BRUNCH",
+        "BREAKFAST": "DESAYUNO",
+        "LUNCH": "ALMUERZO",
+        "DINNER": "CENA",
+        "SOUP": "SOPA",
+        "SOUPS": "SOPAS",
+        "PASTA": "PASTA",
+        "PIZZA": "PIZZA",
+        "SEAFOOD": "MARISCOS",
+        "CHICKEN": "POLLO",
+        "BEEF": "CARNE DE RES",
+        "PORK": "CERDO",
+        "VEGETARIAN": "VEGETARIANO",
+        "VEGAN": "VEGANO",
+        "GLUTEN FREE": "SIN GLUTEN"
+      },
+      es: {
+        "ENTRADAS": "STARTERS",
+        "APERITIVOS": "APPETIZERS",
+        "PLATOS PRINCIPALES": "MAIN COURSES",
+        "POSTRES": "DESSERTS",
+        "ENSALADAS": "SALADS",
+        "NIÑOS": "KIDS",
+        "BEBIDAS": "DRINKS",
+        "CAFÉ": "COFFEE",
+        "CAFE": "COFFEE",
+        "TÉ": "TEA",
+        "TE": "TEA",
+        "ESPECIALES": "SPECIALS",
+        "SÁNDWICHES": "SANDWICHES",
+        "SANDWICHES": "SANDWICHES",
+        "MALTEADAS": "MILKSHAKES",
+        "BATIDOS": "SHAKES",
+        "DESAYUNO": "BREAKFAST",
+        "ALMUERZO": "LUNCH",
+        "CENA": "DINNER",
+        "SOPA": "SOUP",
+        "SOPAS": "SOUPS",
+        "MARISCOS": "SEAFOOD",
+        "POLLO": "CHICKEN",
+        "CARNE DE RES": "BEEF",
+        "CERDO": "PORK",
+        "VEGETARIANO": "VEGETARIAN",
+        "VEGANO": "VEGAN",
+        "SIN GLUTEN": "GLUTEN FREE"
+      }
+    };
+
     const targetLangName = languageNames[reverseLanguage] || reverseLanguage;
 
     // Translate items back
@@ -209,16 +278,24 @@ async function undoMenuTranslation(venueId: string, undoData: any, supabase: any
         category: item.category,
       }));
 
+      // Generate comprehensive category mapping instructions for undo
+      const sourceLanguage = targetLanguage === 'en' ? 'es' : 'en';
+      const categoryMappingList = Object.entries(categoryMappings[sourceLanguage] || {})
+        .map(([from, to]) => `   - "${from}" → "${to}"`)
+        .join('\n');
+
       const prompt = `Translate ALL menu items back to ${targetLangName}. 
 Return a JSON object with an "items" array containing the translated items.
-Keep the 'id' field unchanged.
+Keep the 'id' field unchanged. Maintain culinary context and use natural translations.
 
 CRITICAL REQUIREMENTS:
 1. You MUST return EXACTLY ${batch.length} items (same count as input)
 2. You MUST translate EVERY SINGLE item name and category name back to ${targetLangName}
 3. Each item must have the same 'id' field as the input
 4. Do NOT skip any items - translate ALL of them
-5. For categories: "STARTERS" → "ENTRADAS", "MAIN COURSES" → "PLATOS PRINCIPALES", "DESSERTS" → "POSTRES", "SALADS" → "ENSALADAS", "KIDS" → "NIÑOS", "CAFÉ" → "COFFEE", "BEBIDAS" → "DRINKS", "TÉ" → "TEA", etc.
+5. For category translation, use these mappings:
+${categoryMappingList}
+6. If a category is not in the mapping list, translate it naturally to ${targetLangName}
 
 Items to translate back (translate ALL of these):
 ${JSON.stringify(itemsToTranslate, null, 2)}
@@ -248,12 +325,26 @@ IMPORTANT: Every item in the input must appear in your output with a translated 
         const translated = JSON.parse(content);
         const translatedArray = translated.items || [];
         
-        // Validate that we got the expected number of items
-        if (translatedArray.length !== batch.length) {
+        // Validate that we got the expected number of items and all have required fields
+        if (translatedArray.length === batch.length) {
+          // Additional validation: check that all items have required fields
+          const validItems = translatedArray.filter((item: any) => 
+            item && item.id && item.name && item.category
+          );
+          
+          if (validItems.length === batch.length) {
+            console.log(`[AI UNDO] Batch translation successful: ${translatedArray.length} items`);
+            translatedItems.push(...translatedArray);
+          } else {
+            console.warn(`[AI UNDO] Batch has ${validItems.length} valid items, expected ${batch.length}`);
+            // Still add the valid items to avoid losing translations
+            translatedItems.push(...validItems);
+          }
+        } else {
           console.warn(`[AI UNDO] Batch translation returned ${translatedArray.length} items, expected ${batch.length}`);
+          // Still add what we got to avoid losing translations
+          translatedItems.push(...translatedArray);
         }
-        
-        translatedItems.push(...translatedArray);
       } else {
         console.error("[AI UNDO] No content in translation response");
       }

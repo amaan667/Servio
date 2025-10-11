@@ -416,6 +416,75 @@ export async function executeMenuTranslate(
     ja: "Japanese",
   };
 
+  // Comprehensive bidirectional category mappings
+  const categoryMappings = {
+    en: {
+      "STARTERS": "ENTRADAS",
+      "APPETIZERS": "APERITIVOS", 
+      "MAIN COURSES": "PLATOS PRINCIPALES",
+      "ENTREES": "PLATOS PRINCIPALES",
+      "DESSERTS": "POSTRES",
+      "SALADS": "ENSALADAS",
+      "KIDS": "NIÑOS",
+      "CHILDREN": "NIÑOS",
+      "DRINKS": "BEBIDAS",
+      "BEVERAGES": "BEBIDAS",
+      "COFFEE": "CAFÉ",
+      "TEA": "TÉ",
+      "SPECIALS": "ESPECIALES",
+      "WRAPS": "WRAPS",
+      "SANDWICHES": "SÁNDWICHES",
+      "MILKSHAKES": "MALTEADAS",
+      "SHAKES": "BATIDOS",
+      "SMOOTHIES": "BATIDOS",
+      "BRUNCH": "BRUNCH",
+      "BREAKFAST": "DESAYUNO",
+      "LUNCH": "ALMUERZO",
+      "DINNER": "CENA",
+      "SOUP": "SOPA",
+      "SOUPS": "SOPAS",
+      "PASTA": "PASTA",
+      "PIZZA": "PIZZA",
+      "SEAFOOD": "MARISCOS",
+      "CHICKEN": "POLLO",
+      "BEEF": "CARNE DE RES",
+      "PORK": "CERDO",
+      "VEGETARIAN": "VEGETARIANO",
+      "VEGAN": "VEGANO",
+      "GLUTEN FREE": "SIN GLUTEN"
+    },
+    es: {
+      "ENTRADAS": "STARTERS",
+      "APERITIVOS": "APPETIZERS",
+      "PLATOS PRINCIPALES": "MAIN COURSES",
+      "POSTRES": "DESSERTS",
+      "ENSALADAS": "SALADS",
+      "NIÑOS": "KIDS",
+      "BEBIDAS": "DRINKS",
+      "CAFÉ": "COFFEE",
+      "CAFE": "COFFEE",
+      "TÉ": "TEA",
+      "TE": "TEA",
+      "ESPECIALES": "SPECIALS",
+      "SÁNDWICHES": "SANDWICHES",
+      "SANDWICHES": "SANDWICHES",
+      "MALTEADAS": "MILKSHAKES",
+      "BATIDOS": "SHAKES",
+      "DESAYUNO": "BREAKFAST",
+      "ALMUERZO": "LUNCH",
+      "CENA": "DINNER",
+      "SOPA": "SOUP",
+      "SOPAS": "SOUPS",
+      "MARISCOS": "SEAFOOD",
+      "POLLO": "CHICKEN",
+      "CARNE DE RES": "BEEF",
+      "CERDO": "PORK",
+      "VEGETARIANO": "VEGETARIAN",
+      "VEGANO": "VEGAN",
+      "SIN GLUTEN": "GLUTEN FREE"
+    }
+  };
+
   const targetLangName = languageNames[params.targetLanguage] || params.targetLanguage;
 
   // Get unique categories for translation
@@ -439,6 +508,12 @@ export async function executeMenuTranslate(
         ...(params.includeDescriptions && item.description ? { description: item.description } : {})
       }));
 
+      // Generate comprehensive category mapping instructions for preview
+      const sourceLanguage = params.targetLanguage === 'es' ? 'en' : 'es';
+      const categoryMappingList = Object.entries(categoryMappings[sourceLanguage] || {})
+        .map(([from, to]) => `   - "${from}" → "${to}"`)
+        .join('\n');
+
       const prompt = `Translate the following menu items to ${targetLangName}. 
 Return a JSON object with an "items" array containing the translated items.
 Keep the 'id' field unchanged. Maintain culinary context and use natural translations.
@@ -447,12 +522,17 @@ CRITICAL REQUIREMENTS:
 1. You MUST return EXACTLY the same number of items as provided
 2. You MUST translate BOTH the item names AND the category names
 3. Each item must have the same 'id' field as the input
-4. For categories: "ENTRADAS" → "STARTERS", "PLATOS PRINCIPALES" → "MAIN COURSES", "POSTRES" → "DESSERTS", "ENSALADAS" → "SALADS", "NIÑOS" → "KIDS", etc.
+4. For category translation, use these mappings:
+${categoryMappingList}
+5. If a category is not in the mapping list, translate it naturally to ${targetLangName}
+6. Do NOT skip any items - translate ALL of them
 
 Items to translate:
 ${JSON.stringify(itemsToTranslate, null, 2)}
 
-Return format: {"items": [{"id": "...", "name": "translated name", "category": "translated category", "description": "translated description"}]}`;
+Return format: {"items": [{"id": "...", "name": "translated name", "category": "translated category", "description": "translated description"}]}
+
+IMPORTANT: Every item in the input must appear in your output with a translated name and category.`;
 
       const response = await openai.chat.completions.create({
         model: "gpt-4o-2024-08-06", // Use GPT-4o for translation (complex task requiring accuracy)
@@ -549,6 +629,12 @@ Return format: {"items": [{"id": "...", "name": "translated name", "category": "
         ...(params.includeDescriptions && item.description ? { description: item.description } : {})
       }));
 
+      // Generate comprehensive category mapping instructions
+      const sourceLanguage = params.targetLanguage === 'es' ? 'en' : 'es';
+      const categoryMappingList = Object.entries(categoryMappings[sourceLanguage] || {})
+        .map(([from, to]) => `   - "${from}" → "${to}"`)
+        .join('\n');
+
       const prompt = `Translate the following menu items to ${targetLangName}. 
 Return a JSON object with an "items" array containing the translated items.
 Keep the 'id' field unchanged. Maintain culinary context and use natural translations.
@@ -557,21 +643,17 @@ CRITICAL REQUIREMENTS:
 1. You MUST return EXACTLY ${batch.length} items (same count as input)
 2. You MUST translate BOTH the item names AND the category names
 3. Each item must have the same 'id' field as the input
-4. For Spanish to English category translation:
-   - "ENTRADAS" → "STARTERS"
-   - "PLATOS PRINCIPALES" → "MAIN COURSES" 
-   - "POSTRES" → "DESSERTS"
-   - "ENSALADAS" → "SALADS"
-   - "NIÑOS" → "KIDS"
-   - "APERITIVOS" → "APPETIZERS"
-   - "BRUNCH" → "BRUNCH" (keep if already English)
-   - "STARTERS" → "STARTERS" (keep if already English)
-   - "MAIN COURSES" → "MAIN COURSES" (keep if already English)
+4. For category translation, use these mappings:
+${categoryMappingList}
+5. If a category is not in the mapping list, translate it naturally to ${targetLangName}
+6. Do NOT skip any items - translate ALL of them
 
 Items to translate:
 ${JSON.stringify(itemsToTranslate, null, 2)}
 
-Return format: {"items": [{"id": "...", "name": "translated name", "category": "translated category", "description": "translated description"}]}`;
+Return format: {"items": [{"id": "...", "name": "translated name", "category": "translated category", "description": "translated description"}]}
+
+IMPORTANT: Every item in the input must appear in your output with a translated name and category.`;
 
       let retryCount = 0;
       const maxRetries = 3;
@@ -601,11 +683,24 @@ Return format: {"items": [{"id": "...", "name": "translated name", "category": "
             const translated = JSON.parse(content);
             const translatedArray = translated.items || [];
             
-            // Validate that we got the expected number of items
+            // Validate that we got the expected number of items and all have required fields
             if (translatedArray.length === batch.length) {
-              console.log(`[AI ASSISTANT] Batch ${Math.floor(i/batchSize) + 1} translation successful: ${translatedArray.length} items`);
-              translatedItems.push(...translatedArray);
-              batchTranslated = true;
+              // Additional validation: check that all items have required fields
+              const validItems = translatedArray.filter((item: any) => 
+                item && item.id && item.name && item.category
+              );
+              
+              if (validItems.length === batch.length) {
+                console.log(`[AI ASSISTANT] Batch ${Math.floor(i/batchSize) + 1} translation successful: ${translatedArray.length} items`);
+                translatedItems.push(...translatedArray);
+                batchTranslated = true;
+              } else {
+                console.error(`[AI ASSISTANT] Batch ${Math.floor(i/batchSize) + 1} has ${validItems.length} valid items, expected ${batch.length}`);
+                retryCount++;
+                if (retryCount < maxRetries) {
+                  console.log(`[AI ASSISTANT] Retrying batch ${Math.floor(i/batchSize) + 1} (attempt ${retryCount + 1})`);
+                }
+              }
             } else {
               console.error(`[AI ASSISTANT] Batch ${Math.floor(i/batchSize) + 1} returned ${translatedArray.length} items, expected ${batch.length}`);
               retryCount++;
