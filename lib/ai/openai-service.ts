@@ -215,14 +215,14 @@ export async function handleUserMessage({
 
           // Add tool result to messages for final response
           toolMessages.push({
-            role: "tool" as const,
+            role: "tool",
             content: JSON.stringify(toolResult),
             tool_call_id: callId
-          });
+          } as any);
 
-        } catch (error) {
+        } catch (error: any) {
           console.error(`[AI] Tool execution error for ${name}:`, error);
-          toolResult = { error: `Tool execution failed: ${error.message}` };
+          toolResult = { error: `Tool execution failed: ${error?.message || 'Unknown error'}` };
           
           await supabase.from("ai_messages").insert({
             conversation_id: conversationId,
@@ -233,6 +233,13 @@ export async function handleUserMessage({
             call_id: callId,
             tool_name: name,
           });
+
+          // Add error result to messages
+          toolMessages.push({
+            role: "tool",
+            content: JSON.stringify(toolResult),
+            tool_call_id: callId
+          } as any);
         }
       }
 
