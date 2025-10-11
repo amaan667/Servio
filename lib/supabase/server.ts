@@ -137,10 +137,10 @@ export async function refreshSession() {
 
 // Alias for backward compatibility with existing API routes
 // Can now accept options to create admin client
-export function createClient(options?: { serviceRole?: boolean }) {
+export async function createClient(options?: { serviceRole?: boolean }) {
   if (options?.serviceRole) {
     return createAdminClient();
   }
-  return createServerSupabase();
+  return await createServerSupabase();
 }
 

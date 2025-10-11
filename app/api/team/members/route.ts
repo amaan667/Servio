@@ -47,7 +47,7 @@ export async function GET(request: Request) {
     }
 
     // For each member, fetch their profile data from auth.users
-    const adminSupabase = createClient({ serviceRole: true });
+    const adminSupabase = await createClient({ serviceRole: true });
     const membersWithProfiles = await Promise.all(
       (members || []).map(async (member) => {
         const { data: userData } = await adminSupabase.auth.admin.getUserById(member.user_id);

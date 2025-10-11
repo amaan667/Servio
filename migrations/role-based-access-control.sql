@@ -9,7 +9,7 @@ EXCEPTION WHEN duplicate_object THEN NULL; END $$;
 -- Step 2: Create user_venue_roles table (if not exists)
 CREATE TABLE IF NOT EXISTS user_venue_roles (
   id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-  venue_id UUID NOT NULL REFERENCES venues(id) ON DELETE CASCADE,
+  venue_id TEXT NOT NULL, -- references venues.venue_id (slug)
   user_id UUID NOT NULL, -- auth.users.id
   role user_role NOT NULL DEFAULT 'staff',
   created_at TIMESTAMPTZ DEFAULT NOW(),
@@ -24,7 +24,7 @@ CREATE INDEX IF NOT EXISTS idx_user_venue_roles_lookup ON user_venue_roles(venue
 -- Step 3: Create audit log table
 CREATE TABLE IF NOT EXISTS role_changes (
   id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-  venue_id UUID NOT NULL,
+  venue_id TEXT NOT NULL, -- references venues.venue_id (slug)
   changed_by UUID NOT NULL,
   target_user UUID NOT NULL,
   old_role user_role,
@@ -440,7 +440,7 @@ CREATE POLICY venues_read ON venues FOR SELECT
 USING (
   EXISTS (
     SELECT 1 FROM user_venue_roles me
-    WHERE me.venue_id = venues.id
+    WHERE me.venue_id = venues.venue_id
       AND me.user_id = auth.uid()
   )
 );
@@ -454,7 +454,7 @@ CREATE POLICY venues_update ON venues FOR UPDATE
 USING (
   EXISTS (
     SELECT 1 FROM user_venue_roles me
-    WHERE me.venue_id = venues.id
+    WHERE me.venue_id = venues.venue_id
       AND me.user_id = auth.uid()
       AND me.role IN ('owner', 'manager')
   )
@@ -465,14 +465,14 @@ CREATE POLICY venues_delete ON venues FOR DELETE
 USING (
   EXISTS (
     SELECT 1 FROM user_venue_roles me
-    WHERE me.venue_id = venues.id
+    WHERE me.venue_id = venues.venue_id
       AND me.user_id = auth.uid()
       AND me.role = 'owner'
   )
 );
 
 -- Step 10: Create helper function for checking permissions
-CREATE OR REPLACE FUNCTION check_user_role(p_venue_id UUID, p_user_id UUID)
+CREATE OR REPLACE FUNCTION check_user_role(p_venue_id TEXT, p_user_id UUID)
 RETURNS user_role
 LANGUAGE plpgsql
 SECURITY DEFINER
@@ -490,7 +490,7 @@ END;
 $$;
 
 -- Grant execute permission
-GRANT EXECUTE ON FUNCTION check_user_role(UUID, UUID) TO authenticated;
+GRANT EXECUTE ON FUNCTION check_user_role(TEXT, UUID) TO authenticated;
 
 -- Step 11: Helper function for setting session variables (for audit reasons)
 CREATE OR REPLACE FUNCTION set_config(setting_name TEXT, new_value TEXT, is_local BOOLEAN)
@@ -511,6 +511,6 @@ COMMENT ON TABLE user_venue_roles IS 'Stores team member roles for each venue';
 COMMENT ON TABLE role_changes IS 'Audit log for role changes';
 COMMENT ON FUNCTION prevent_last_owner() IS 'Prevents removing or demoting the last owner of a venue';
 COMMENT ON FUNCTION log_role_change() IS 'Logs all role changes to the audit table';
-COMMENT ON FUNCTION check_user_role(UUID, UUID) IS 'Helper function to check a user''s role for a venue';
+COMMENT ON FUNCTION check_user_role(TEXT, UUID) IS 'Helper function to check a user''s role for a venue';
 COMMENT ON FUNCTION set_config(TEXT, TEXT, BOOLEAN) IS 'Helper to set session configuration variables for audit logging';
 

@@ -38,7 +38,7 @@ export async function GET(request: Request) {
     }
 
     // Enrich with user details
-    const adminSupabase = createClient({ serviceRole: true });
+    const adminSupabase = await createClient({ serviceRole: true });
     const enrichedChanges = await Promise.all(
       (changes || []).map(async (change) => {
         const [changedByData, targetUserData] = await Promise.all([

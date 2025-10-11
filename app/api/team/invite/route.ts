@@ -38,7 +38,7 @@ export async function POST(request: Request) {
     }
 
     // Create admin client for invitation
-    const adminSupabase = createClient({
+    const adminSupabase = await createClient({
       serviceRole: true
     });
 
