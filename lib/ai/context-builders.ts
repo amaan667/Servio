@@ -85,7 +85,7 @@ export async function getMenuSummary(
   // Get total items and categories
   const { data: items } = await supabase
     .from("menu_items")
-    .select("id, name, price, category_id, categories(id, name)")
+    .select("id, name, price, category")
     .eq("venue_id", venueId)
     .eq("available", true);
 
@@ -151,15 +151,14 @@ export async function getMenuSummary(
     .slice(0, 10);
 
   // Calculate category counts
-  const categoryMap = new Map<string, { id: string; name: string; count: number }>();
+  const categoryMap = new Map<string, { name: string; count: number }>();
   items.forEach((item: any) => {
-    if (item.categories) {
-      const existing = categoryMap.get(item.category_id) || {
-        id: item.category_id,
-        name: item.categories.name,
+    if (item.category) {
+      const existing = categoryMap.get(item.category) || {
+        name: item.category,
         count: 0,
       };
-      categoryMap.set(item.category_id, {
+      categoryMap.set(item.category, {
         ...existing,
         count: existing.count + 1,
       });
@@ -167,7 +166,7 @@ export async function getMenuSummary(
   });
 
   const categories = Array.from(categoryMap.values()).map((cat) => ({
-    id: cat.id,
+    id: cat.name, // Use category name as ID since there's no separate categories table
     name: cat.name,
     itemCount: cat.count,
   }));
@@ -183,8 +182,8 @@ export async function getMenuSummary(
     id: item.id,
     name: item.name,
     price: item.price,
-    categoryId: item.category_id,
-    categoryName: item.categories?.name || "Uncategorized",
+    categoryId: item.category, // Use category name as ID since there's no separate categories table
+    categoryName: item.category || "Uncategorized",
   }));
 
   const summary: MenuSummary = {
@@ -423,7 +422,7 @@ export async function getAnalyticsSummary(
 
   const { data: todayOrders } = await supabase
     .from("orders")
-    .select("id, total_amount, order_items(quantity, price, menu_items(name, category_id, categories(name)))")
+    .select("id, total_amount, order_items(quantity, price, menu_items(name, category))")
     .eq("venue_id", venueId)
     .gte("created_at", todayStart.toISOString())
     .in("status", ["completed", "preparing", "ready"]);
@@ -438,7 +437,7 @@ export async function getAnalyticsSummary(
 
   const { data: recentItems } = await supabase
     .from("order_items")
-    .select("menu_item_id, quantity, menu_items(name, category_id, categories(name))")
+    .select("menu_item_id, quantity, menu_items(name, category)")
     .eq("orders.venue_id", venueId)
     .gte("orders.created_at", sevenDaysAgo.toISOString());
 
@@ -458,7 +457,7 @@ export async function getAnalyticsSummary(
   // Count by category
   const categoryPerformance: Record<string, number> = {};
   recentItems?.forEach((item: any) => {
-    const categoryName = item.menu_items?.categories?.name || "Uncategorized";
+    const categoryName = item.menu_items?.category || "Uncategorized";
     categoryPerformance[categoryName] = (categoryPerformance[categoryName] || 0) + item.quantity;
   });
 

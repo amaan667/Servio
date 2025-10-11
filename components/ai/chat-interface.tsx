@@ -245,10 +245,49 @@ export function ChatInterface({ venueId, isOpen, onClose, initialPrompt }: ChatI
   };
 
   const generateConversationTitle = (message: string) => {
-    // Extract meaningful words from the message
-    const words = message.trim().split(/\s+/).slice(0, 4);
-    const title = words.join(' ').substring(0, 50);
-    return title || "New Chat";
+    // Generate a smarter title from the user's message
+    const trimmedMessage = message.trim();
+    
+    // Handle specific question patterns
+    if (trimmedMessage.toLowerCase().includes('how many categories')) {
+      return "Menu Categories Count";
+    }
+    if (trimmedMessage.toLowerCase().includes('categories')) {
+      return "Menu Categories Query";
+    }
+    if (trimmedMessage.toLowerCase().includes('menu')) {
+      return "Menu Management";
+    }
+    if (trimmedMessage.toLowerCase().includes('order')) {
+      return "Order Management";
+    }
+    if (trimmedMessage.toLowerCase().includes('inventory')) {
+      return "Inventory Management";
+    }
+    if (trimmedMessage.toLowerCase().includes('analytics') || trimmedMessage.toLowerCase().includes('stats')) {
+      return "Analytics & Reports";
+    }
+    
+    // For general messages, create a more meaningful title
+    // Remove common words and extract key concepts
+    const commonWords = ['the', 'a', 'an', 'and', 'or', 'but', 'in', 'on', 'at', 'to', 'for', 'of', 'with', 'by', 'how', 'what', 'when', 'where', 'why', 'can', 'could', 'should', 'would', 'is', 'are', 'was', 'were', 'be', 'been', 'have', 'has', 'had', 'do', 'does', 'did', 'will', 'shall'];
+    const words = trimmedMessage.toLowerCase().split(/\s+/).filter(word => 
+      word.length > 2 && !commonWords.includes(word)
+    );
+    
+    // Take first 3-4 meaningful words and capitalize them
+    const meaningfulWords = words.slice(0, 4);
+    if (meaningfulWords.length > 0) {
+      const title = meaningfulWords.map(word => 
+        word.charAt(0).toUpperCase() + word.slice(1)
+      ).join(' ');
+      return title.length > 40 ? title.substring(0, 37) + '...' : title;
+    }
+    
+    // Fallback: use first few words with proper capitalization
+    const wordsFallback = trimmedMessage.split(/\s+/).slice(0, 3);
+    const title = wordsFallback.join(' ');
+    return title.length > 40 ? title.substring(0, 37) + '...' : title || "New Chat";
   };
 
   const createConversationFromMessage = async (userMessage: string) => {

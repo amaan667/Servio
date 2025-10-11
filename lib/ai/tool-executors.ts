@@ -496,8 +496,10 @@ export async function executeMenuTranslate(
       "DRINKS": "BEBIDAS",
       "BEVERAGES": "BEBIDAS",
       "COFFEE": "CAFÉ",
+      "SPECIAL COFFEE": "CAFÉ ESPECIAL",
       "TEA": "TÉ",
       "SPECIALS": "ESPECIALES",
+      "SPECIAL": "ESPECIAL",
       "WRAPS": "WRAPS",
       "SANDWICHES": "SÁNDWICHES",
       "MILKSHAKES": "MALTEADAS",
@@ -527,16 +529,27 @@ export async function executeMenuTranslate(
       "POSTRES": "DESSERTS",
       "ENSALADAS": "SALADS",
       "NIÑOS": "KIDS",
+      "NINOS": "KIDS",
       "BEBIDAS": "DRINKS",
       "CAFÉ": "COFFEE",
       "CAFE": "COFFEE",
+      "CAFÉ ESPECIAL": "SPECIAL COFFEE",
+      "CAFE ESPECIAL": "SPECIAL COFFEE",
+      "CAFÉ ESPECIALES": "SPECIAL COFFEE",
+      "CAFE ESPECIALES": "SPECIAL COFFEE",
       "TÉ": "TEA",
       "TE": "TEA",
       "ESPECIALES": "SPECIALS",
+      "ESPECIAL": "SPECIAL",
       "SÁNDWICHES": "SANDWICHES",
       "SANDWICHES": "SANDWICHES",
+      "WRAPS & SANDWICHES": "WRAPS & SANDWICHES",
       "MALTEADAS": "MILKSHAKES",
       "BATIDOS": "SHAKES",
+      "SHAKES": "SHAKES",
+      "ICED COFFEE": "ICED COFFEE",
+      "CAFÉ HELADO": "ICED COFFEE",
+      "CAFE HELADO": "ICED COFFEE",
       "DESAYUNO": "BREAKFAST",
       "ALMUERZO": "LUNCH",
       "CENA": "DINNER",
@@ -589,7 +602,7 @@ export async function executeMenuTranslate(
     // Comprehensive language indicators
     const spanishIndicators = [
       // Categories
-      'CAFÉ', 'CAFE', 'BEBIDAS', 'TÉ', 'TE', 'ESPECIALES', 'NIÑOS', 'NINOS', 
+      'CAFÉ', 'CAFE', 'CAFÉ ESPECIAL', 'CAFE ESPECIAL', 'BEBIDAS', 'TÉ', 'TE', 'ESPECIALES', 'ESPECIAL', 'NIÑOS', 'NINOS', 
       'ENSALADAS', 'POSTRES', 'ENTRADAS', 'PLATOS PRINCIPALES', 'APERITIVOS',
       'MALTEADAS', 'BATIDOS', 'SÁNDWICHES', 'SANDWICHES', 'DESAYUNO', 'ALMUERZO', 
       'CENA', 'SOPA', 'SOPAS', 'MARISCOS', 'POLLO', 'CARNE DE RES', 'CARNE', 
@@ -686,13 +699,15 @@ TARGET LANGUAGE: ${targetLangName}
 
 CRITICAL REQUIREMENTS (FAILURE TO FOLLOW WILL RESULT IN ERROR):
 1. Return EXACTLY ${sampleItems.length} items (same count as input)
-2. MUST translate BOTH item names AND category names
+2. MUST translate BOTH item names AND category names - NO EXCEPTIONS
 3. Keep the 'id' field UNCHANGED for each item
-4. Use these EXACT category mappings:
+4. Use these EXACT category mappings (case-sensitive):
 ${categoryMappingList}
 5. If a category is not in the mapping, translate it naturally while maintaining context
 6. Do NOT skip, combine, or omit ANY items
 7. Maintain culinary terminology and context appropriately
+8. IMPORTANT: "CAFÉ ESPECIAL" must be translated to "SPECIAL COFFEE" (English) or kept as "CAFÉ ESPECIAL" (Spanish)
+9. All categories MUST be translated - never leave them in the original language
 
 INPUT ITEMS (${sampleItems.length} total):
 ${JSON.stringify(itemsToTranslate, null, 2)}
@@ -817,13 +832,15 @@ TARGET LANGUAGE: ${targetLangName}
 
 CRITICAL REQUIREMENTS (FAILURE TO FOLLOW WILL RESULT IN ERROR):
 1. Return EXACTLY ${batch.length} items (same count as input)
-2. MUST translate BOTH item names AND category names
+2. MUST translate BOTH item names AND category names - NO EXCEPTIONS
 3. Keep the 'id' field UNCHANGED for each item
-4. Use these EXACT category mappings:
+4. Use these EXACT category mappings (case-sensitive):
 ${categoryMappingList}
 5. If a category is not in the mapping, translate it naturally while maintaining context
 6. Do NOT skip, combine, or omit ANY items
 7. Maintain culinary terminology and context appropriately
+8. IMPORTANT: "CAFÉ ESPECIAL" must be translated to "SPECIAL COFFEE" (English) or kept as "CAFÉ ESPECIAL" (Spanish)
+9. All categories MUST be translated - never leave them in the original language
 
 INPUT ITEMS (${batch.length} total):
 ${JSON.stringify(itemsToTranslate, null, 2)}
