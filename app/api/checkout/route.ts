@@ -16,6 +16,7 @@ export async function POST(req: Request) {
       tableNumber,
       customerName,
       customerPhone,
+      customerEmail,
       source
     } = await req.json();
     
@@ -26,7 +27,8 @@ export async function POST(req: Request) {
     const base = process.env.NEXT_PUBLIC_APP_URL; // MUST match the domain customers use
     if (!base) throw new Error("NEXT_PUBLIC_APP_URL not set");
 
-    const session = await stripe.checkout.sessions.create({
+    // Build session parameters
+    const sessionParams: Stripe.Checkout.SessionCreateParams = {
       mode: "payment",
       line_items: [
         {
@@ -55,7 +57,14 @@ export async function POST(req: Request) {
       },
       success_url: `${base}/payment/success?session_id={CHECKOUT_SESSION_ID}&orderId=${orderId}`,
       cancel_url: `${base}/payment/cancel?orderId=${orderId}&venueId=${venueId || 'default-venue'}&tableNumber=${tableNumber || '1'}`,
-    });
+    };
+
+    // Add customer email if provided - Stripe will automatically send digital receipts
+    if (customerEmail && customerEmail.trim() !== '') {
+      sessionParams.customer_email = customerEmail.trim();
+    }
+
+    const session = await stripe.checkout.sessions.create(sessionParams);
 
     // CRITICAL FIX: Store the stripe_session_id immediately on the order
     // This prevents race condition where user reaches success page before webhook fires

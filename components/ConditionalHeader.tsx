@@ -12,12 +12,11 @@ export default function ConditionalHeader() {
   
   // Don't show header on customer-facing pages
   const isCustomerOrderPage = pathname?.startsWith('/order');
-  const isCheckoutPage = pathname?.startsWith('/checkout');
   const isPaymentPage = pathname?.startsWith('/payment');
   const isOrderSummaryPage = pathname?.startsWith('/order-summary');
   const isOrderTrackingPage = pathname?.startsWith('/order-tracking');
   
-  if (isCustomerOrderPage || isCheckoutPage || isPaymentPage || isOrderSummaryPage || isOrderTrackingPage) {
+  if (isCustomerOrderPage || isPaymentPage || isOrderSummaryPage || isOrderTrackingPage) {
     return null;
   }
   

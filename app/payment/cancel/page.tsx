@@ -1,13 +1,16 @@
 "use client";
-import { useSearchParams } from "next/navigation";
+import { useSearchParams, useRouter } from "next/navigation";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { XCircle } from "lucide-react";
 import Image from "next/image";
 
-export default function CancelPage() {
+export default function PaymentCancelPage() {
   const searchParams = useSearchParams();
+  const router = useRouter();
   const orderId = searchParams?.get("orderId") as string | undefined;
+  const venueId = searchParams?.get("venueId") as string | undefined;
+  const tableNumber = searchParams?.get("tableNumber") as string | undefined;
 
   return (
     <div className="min-h-screen bg-gray-50">
@@ -43,13 +46,19 @@ export default function CancelPage() {
             </p>
             <div className="pt-4 space-y-2">
               <Button 
-                onClick={() => window.location.href = '/'}
+                onClick={() => {
+                  if (venueId && tableNumber) {
+                    router.push(`/order?venue=${venueId}&table=${tableNumber}`);
+                  } else {
+                    router.push('/');
+                  }
+                }}
                 className="w-full bg-blue-600 hover:bg-blue-700"
               >
                 Start New Order
               </Button>
               <Button 
-                onClick={() => window.history.back()}
+                onClick={() => router.back()}
                 variant="outline"
                 className="w-full"
               >
@@ -62,3 +71,4 @@ export default function CancelPage() {
     </div>
   );
 }
+

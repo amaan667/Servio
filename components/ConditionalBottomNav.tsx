@@ -16,7 +16,6 @@ export default function ConditionalBottomNav() {
 
   // Don't show bottom nav on customer-facing pages, auth pages, or home page
   const isCustomerOrderPage = pathname?.startsWith('/order');
-  const isCheckoutPage = pathname?.startsWith('/checkout');
   const isPaymentPage = pathname?.startsWith('/payment');
   const isOrderSummaryPage = pathname?.startsWith('/order-summary');
   const isOrderTrackingPage = pathname?.startsWith('/order-tracking');
@@ -24,7 +23,7 @@ export default function ConditionalBottomNav() {
   const isAuthPage = pathname?.startsWith('/sign-in') || pathname?.startsWith('/sign-up') || pathname?.startsWith('/auth');
   const isCompleteProfilePage = pathname?.startsWith('/complete-profile');
   
-  const shouldHide = isCustomerOrderPage || isCheckoutPage || isPaymentPage || isOrderSummaryPage || isOrderTrackingPage || isHomePage || isAuthPage || isCompleteProfilePage;
+  const shouldHide = isCustomerOrderPage || isPaymentPage || isOrderSummaryPage || isOrderTrackingPage || isHomePage || isAuthPage || isCompleteProfilePage;
 
   // Get venue ID from pathname - MUST be called before any returns
   useEffect(() => {

@@ -17,6 +17,7 @@ interface CreateIntentRequest {
   totalAmount: number;
   customerName: string;
   customerPhone: string;
+  receiptEmail?: string; // Optional receipt email
 }
 
 export async function POST(req: NextRequest) {
@@ -31,6 +32,7 @@ export async function POST(req: NextRequest) {
       totalAmount,
       customerName,
       customerPhone,
+      receiptEmail,
     } = body;
 
     // Validate required fields
@@ -66,7 +68,7 @@ export async function POST(req: NextRequest) {
     const itemsSummary = items.map(item => `${item.name} x${item.quantity}`).join(', ');
 
     // Create payment intent with idempotency key
-    const paymentIntent = await stripe.paymentIntents.create({
+    const paymentIntentParams: Stripe.PaymentIntentCreateParams = {
       amount: totalAmount,
       currency: 'gbp',
       automatic_payment_methods: { enabled: true },
@@ -81,9 +83,19 @@ export async function POST(req: NextRequest) {
         total_amount: totalAmount.toString(),
       },
       description: `Order for ${customerName} at table ${tableNumber}`,
-    }, {
-      idempotencyKey: `pi_${cartId}`,
-    });
+    };
+
+    // Add receipt email if provided - Stripe will automatically send digital receipts
+    if (receiptEmail && receiptEmail.trim() !== '') {
+      paymentIntentParams.receipt_email = receiptEmail.trim();
+    }
+
+    const paymentIntent = await stripe.paymentIntents.create(
+      paymentIntentParams,
+      {
+        idempotencyKey: `pi_${cartId}`,
+      }
+    );
 
 
     return NextResponse.json({

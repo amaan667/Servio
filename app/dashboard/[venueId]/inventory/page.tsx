@@ -98,7 +98,7 @@ export default async function InventoryPage({
                 </ul>
               </div>
               <div className="flex gap-2">
-                <Link href="/checkout">
+                <Link href="/?upgrade=true">
                   <Button variant="servio">
                     Upgrade to Premium
                   </Button>

@@ -5,6 +5,8 @@ import { useRouter, useSearchParams } from "next/navigation";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
 import { 
   Check, 
   ArrowLeft, 
@@ -36,6 +38,7 @@ interface CheckoutData {
   orderNumber?: string;
   customerName?: string;
   customerPhone?: string;
+  customerEmail?: string; // Optional receipt email
   orderType?: string; // Add orderType for source determination
   isDemo?: boolean; // Add isDemo flag for demo mode detection
 }
@@ -54,6 +57,7 @@ export default function PaymentPage() {
   const [error, setError] = useState<string | null>(null);
   const [paymentAction, setPaymentAction] = useState<PaymentAction | null>(null);
   const [isDemo, setIsDemo] = useState(false);
+  const [receiptEmail, setReceiptEmail] = useState('');
   
   // Check for demo mode from URL parameter as well
   const isDemoFromUrl = searchParams?.get('demo') === '1';
@@ -75,6 +79,7 @@ export default function PaymentPage() {
         console.log('[PAYMENT DEBUG] Parsed checkout data:', data);
         setCheckoutData(data);
         setIsDemo(data.isDemo || false); // Set demo flag from checkout data
+        setReceiptEmail(data.customerEmail || ''); // Load existing email if available
         console.log('[PAYMENT DEBUG] Demo flag set to:', data.isDemo || false);
         
         // If demo mode is detected, show immediate redirect message
@@ -146,6 +151,7 @@ export default function PaymentPage() {
             tableNumber: checkoutData.tableNumber,
             customerName: checkoutData.customerName || 'Customer',
             customerPhone: checkoutData.customerPhone || '+1234567890',
+            customerEmail: receiptEmail || undefined, // Optional receipt email
             items: checkoutData.cart.map(item => ({
               menu_item_id: item.id,
               quantity: item.quantity,
@@ -486,6 +492,24 @@ export default function PaymentPage() {
             <p className="text-red-700 text-sm">{error}</p>
           </div>
         )}
+
+        {/* Email Receipt (Optional) */}
+        <Card>
+          <CardContent className="pt-6">
+            <Label htmlFor="receipt-email">Email Receipt (Optional)</Label>
+            <Input
+              id="receipt-email"
+              type="email"
+              placeholder="your@email.com"
+              value={receiptEmail}
+              onChange={(e) => setReceiptEmail(e.target.value)}
+              className="mt-2"
+            />
+            <p className="text-xs text-gray-500 mt-2">
+              Leave blank to receive Stripe's digital receipt only
+            </p>
+          </CardContent>
+        </Card>
 
         {/* Payment Options */}
         <div className="space-y-3">
