@@ -87,8 +87,11 @@ export async function POST(request: Request) {
       }
     }
 
-    // Remove the member (RLS and triggers will enforce constraints)
-    const { error: deleteError } = await supabase
+    // Use admin client to remove member (bypass RLS)
+    const adminSupabase = await createClient({ serviceRole: true });
+    
+    // Remove the member using service role (bypasses RLS, triggers still enforce constraints)
+    const { error: deleteError } = await adminSupabase
       .from('user_venue_roles')
       .delete()
       .eq('venue_id', venueId)

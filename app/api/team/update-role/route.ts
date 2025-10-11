@@ -61,17 +61,20 @@ export async function POST(request: Request) {
       }
     }
 
+    // Use admin client for user_venue_roles modifications (bypass RLS)
+    const adminSupabase = await createClient({ serviceRole: true });
+
     // Set audit reason if provided (will be picked up by trigger)
     if (reason) {
       try {
-        await setAuditReason(supabase, reason);
+        await setAuditReason(adminSupabase, reason);
       } catch (err) {
         console.warn('[TEAM UPDATE] Could not set audit reason:', err);
       }
     }
 
-    // Update the role (RLS and triggers will enforce constraints)
-    const { error: updateError } = await supabase
+    // Update the role using service role (bypasses RLS)
+    const { error: updateError } = await adminSupabase
       .from('user_venue_roles')
       .update({ role: newRole })
       .eq('venue_id', venueId)

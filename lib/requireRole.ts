@@ -27,10 +27,18 @@ export async function requireRole(
   venueId: string,
   allowedRoles: UserRole[]
 ): Promise<UserRole> {
+  // Get current user
+  const { data: { user } } = await supabase.auth.getUser();
+  if (!user) {
+    throw new ForbiddenError('Not authenticated');
+  }
+
+  // Query for current user's role (RLS only allows seeing own roles)
   const { data, error } = await supabase
     .from('user_venue_roles')
     .select('role')
     .eq('venue_id', venueId)
+    .eq('user_id', user.id)
     .maybeSingle();
 
   if (error) {
@@ -61,10 +69,18 @@ export async function getUserRole(
   supabase: SupabaseClient,
   venueId: string
 ): Promise<UserRole | null> {
+  // Get current user
+  const { data: { user } } = await supabase.auth.getUser();
+  if (!user) {
+    return null;
+  }
+
+  // Query for current user's role (RLS only allows seeing own roles)
   const { data, error } = await supabase
     .from('user_venue_roles')
     .select('role')
     .eq('venue_id', venueId)
+    .eq('user_id', user.id)
     .maybeSingle();
 
   if (error || !data) {
