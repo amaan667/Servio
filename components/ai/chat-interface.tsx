@@ -30,7 +30,8 @@ import {
   Trash2,
   Plus,
   ChevronLeft,
-  ChevronRight
+  ChevronRight,
+  X
 } from "lucide-react";
 import { AIPlanResponse, AIPreviewDiff } from "@/types/ai-assistant";
 
@@ -625,6 +626,42 @@ export function ChatInterface({ venueId, isOpen, onClose, initialPrompt }: ChatI
     loadMessages(conversation.id);
   };
 
+  const deleteConversation = async (conversationId: string, event: React.MouseEvent) => {
+    event.stopPropagation(); // Prevent triggering conversation selection
+    
+    if (!confirm("Are you sure you want to delete this conversation? This action cannot be undone.")) {
+      return;
+    }
+
+    try {
+      console.log("[AI CHAT] Deleting conversation:", conversationId);
+      
+      const response = await fetch(`/api/ai-assistant/conversations/${conversationId}`, {
+        method: "DELETE",
+      });
+
+      if (response.ok) {
+        // Remove from local state
+        setConversations(prev => prev.filter(conv => conv.id !== conversationId));
+        
+        // If this was the current conversation, clear it
+        if (currentConversation?.id === conversationId) {
+          setCurrentConversation(null);
+          setMessages([]);
+        }
+        
+        console.log("[AI CHAT] Conversation deleted successfully");
+      } else {
+        const errorData = await response.text();
+        console.error("[AI CHAT] Failed to delete conversation:", errorData);
+        setError("Failed to delete conversation");
+      }
+    } catch (error) {
+      console.error("[AI CHAT] Error deleting conversation:", error);
+      setError("Failed to delete conversation");
+    }
+  };
+
   const formatMessageContent = (content: string) => {
     // Simple formatting for better readability
     return content.split('\n').map((line, index) => (
@@ -670,7 +707,7 @@ export function ChatInterface({ venueId, isOpen, onClose, initialPrompt }: ChatI
                   conversations.map((conv) => (
                     <Card
                       key={conv.id}
-                      className={`cursor-pointer transition-colors ${
+                      className={`cursor-pointer transition-colors group relative ${
                         currentConversation?.id === conv.id
                           ? "ring-2 ring-primary bg-primary/5"
                           : "hover:bg-accent"
@@ -687,11 +724,14 @@ export function ChatInterface({ venueId, isOpen, onClose, initialPrompt }: ChatI
                               {new Date(conv.updatedAt).toLocaleDateString()}
                             </p>
                           </div>
-                          {conv.isActive && (
-                            <Badge variant="secondary" className="ml-2">
-                              Active
-                            </Badge>
-                          )}
+                          {/* Hover delete button */}
+                          <button
+                            onClick={(e) => deleteConversation(conv.id, e)}
+                            className="opacity-0 group-hover:opacity-100 transition-opacity ml-2 p-1 rounded-full hover:bg-destructive/10 text-muted-foreground hover:text-destructive"
+                            title="Delete conversation"
+                          >
+                            <X className="h-4 w-4" />
+                          </button>
                         </div>
                       </CardContent>
                     </Card>
