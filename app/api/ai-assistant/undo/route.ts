@@ -284,9 +284,9 @@ IMPORTANT: Every item in the input must appear in your output with a translated 
     }
 
     // Check for any items that weren't translated
-    const missingItems = items.filter(item => !translatedIds.has(item.id));
+    const missingItems = items.filter((item: any) => !translatedIds.has(item.id));
     if (missingItems.length > 0) {
-      console.warn(`[AI UNDO] ${missingItems.length} items were not translated:`, missingItems.map(item => item.name));
+      console.warn(`[AI UNDO] ${missingItems.length} items were not translated:`, missingItems.map((item: any) => item.name));
     }
 
     return {
