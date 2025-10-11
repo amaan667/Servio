@@ -42,6 +42,7 @@ ALTER TABLE user_venue_roles ENABLE ROW LEVEL SECURITY;
 ALTER TABLE role_changes ENABLE ROW LEVEL SECURITY;
 
 -- Step 5: RLS Policies for user_venue_roles
+-- IMPORTANT: These policies avoid recursion by using simple checks or service role operations
 
 -- Drop existing policies if any
 DROP POLICY IF EXISTS uvr_read ON user_venue_roles;
@@ -49,57 +50,21 @@ DROP POLICY IF EXISTS uvr_insert ON user_venue_roles;
 DROP POLICY IF EXISTS uvr_update ON user_venue_roles;
 DROP POLICY IF EXISTS uvr_delete ON user_venue_roles;
 
--- Read team: any member of that venue can see all members
+-- Read: Users can see their own roles (prevents infinite recursion)
+-- Team management operations will use service role to bypass RLS
 CREATE POLICY uvr_read ON user_venue_roles FOR SELECT
-USING (
-  EXISTS (
-    SELECT 1 FROM user_venue_roles me
-    WHERE me.venue_id = user_venue_roles.venue_id
-      AND me.user_id = auth.uid()
-  )
-);
+USING (user_id = auth.uid());
 
--- Insert member: owners can add any role; managers can add staff/kitchen only
+-- Insert/Update/Delete: Only allow service role (bypass with service key)
+-- This prevents recursion and forces all admin operations through API
 CREATE POLICY uvr_insert ON user_venue_roles FOR INSERT
-WITH CHECK (
-  EXISTS (
-    SELECT 1 FROM user_venue_roles me
-    WHERE me.venue_id = user_venue_roles.venue_id
-      AND me.user_id = auth.uid()
-      AND (
-        me.role = 'owner'
-        OR (me.role = 'manager' AND user_venue_roles.role IN ('staff', 'kitchen'))
-      )
-  )
-);
+WITH CHECK (false);
 
--- Update role: owners only
 CREATE POLICY uvr_update ON user_venue_roles FOR UPDATE
-USING (
-  EXISTS (
-    SELECT 1 FROM user_venue_roles me
-    WHERE me.venue_id = user_venue_roles.venue_id
-      AND me.user_id = auth.uid()
-      AND me.role = 'owner'
-  )
-);
+USING (false);
 
--- Delete member: owners; managers may remove staff/kitchen
 CREATE POLICY uvr_delete ON user_venue_roles FOR DELETE
-USING (
-  EXISTS (
-    SELECT 1 FROM user_venue_roles me
-    WHERE me.venue_id = user_venue_roles.venue_id
-      AND me.user_id = auth.uid()
-      AND (
-        me.role = 'owner'
-        OR (
-          me.role = 'manager' 
-          AND user_venue_roles.role IN ('staff', 'kitchen')
-        )
-      )
-  )
-);
+USING (false);
 
 -- Step 6: RLS Policies for role_changes (audit log)
 
