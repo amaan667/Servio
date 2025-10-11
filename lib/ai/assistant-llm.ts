@@ -161,12 +161,19 @@ NATURAL LANGUAGE UNDERSTANDING:
 - For navigation:
   * "take me to", "show me", "go to", "open" → use navigation.go_to_page
 - For translation:
+  * ALWAYS check the target language carefully: "english" = "en", "spanish" = "es"
   * "translate to Spanish" → use menu.translate with targetLanguage="es"
   * "translate to English" or "translate back to English" or "translate back into english" → use menu.translate with targetLanguage="en"
+  * "translate the full menu into english" → use menu.translate with targetLanguage="en"
+  * "translate full menu into english" → use menu.translate with targetLanguage="en"
   * "translate to French" → use menu.translate with targetLanguage="fr"
   * "translate menu to [language]" → use menu.translate with appropriate language code
-  * IMPORTANT: When user says "back to English" or "back into English", they want targetLanguage="en", NOT "es"
-  * Example: "translate full menu back into english" → targetLanguage="en" (NOT "es")
+  * IMPORTANT: When user says "into English", "to English", "back to English", or "back into English", they want targetLanguage="en", NOT "es"
+  * CRITICAL: If user mentions "english" in their request, use targetLanguage="en" (English), NOT "es" (Spanish)
+  * Examples: 
+    - "translate the full menu into english" → targetLanguage="en"
+    - "translate full menu back into english" → targetLanguage="en"
+    - "translate to english" → targetLanguage="en"
 - Be intelligent about partial matches and synonyms
 
 OUTPUT FORMAT:
