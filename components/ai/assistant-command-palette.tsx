@@ -193,6 +193,7 @@ export function AssistantCommandPalette({
   const handleExecute = async () => {
     if (!plan) return;
 
+    console.log("[AI ASSISTANT] Starting execution for plan:", plan);
     setExecuting(true);
     setError(null);
 

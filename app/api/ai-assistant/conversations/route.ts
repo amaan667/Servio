@@ -54,8 +54,21 @@ export async function GET(request: NextRequest) {
 
     if (error) {
       console.error("[AI CHAT] Failed to fetch conversations:", error);
+      
+      // Check if it's a table not found error
+      if (error.code === 'PGRST116' || error.message?.includes('relation "ai_chat_conversations" does not exist')) {
+        return NextResponse.json(
+          { 
+            error: "Chat tables not found. Please run the database migration.",
+            migrationNeeded: true,
+            instructions: "Run the SQL from migrations/ai-chat-schema.sql in your database"
+          },
+          { status: 500 }
+        );
+      }
+      
       return NextResponse.json(
-        { error: "Failed to fetch conversations" },
+        { error: "Failed to fetch conversations", details: error.message },
         { status: 500 }
       );
     }
