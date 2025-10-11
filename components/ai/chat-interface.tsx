@@ -172,11 +172,13 @@ export function ChatInterface({ venueId, isOpen, onClose, initialPrompt }: ChatI
     }
   };
 
-  const handleSendMessage = async () => {
-    if (!input.trim() || loading || executing) return;
+  const handleSendMessage = async (messageOverride?: string) => {
+    const userMessage = messageOverride || input.trim();
+    if (!userMessage || loading || executing) return;
 
-    const userMessage = input.trim();
-    setInput("");
+    if (!messageOverride) {
+      setInput("");
+    }
 
     // Create new conversation if none exists
     if (!currentConversation) {
@@ -349,6 +351,7 @@ export function ChatInterface({ venueId, isOpen, onClose, initialPrompt }: ChatI
         setMessages(prev => [...prev, executionMsg]);
 
         // Save execution message to database
+        if (!currentConversation) return;
         await fetch(`/api/ai-assistant/conversations/${currentConversation.id}/messages`, {
           method: "POST",
           headers: { "Content-Type": "application/json" },
@@ -413,6 +416,7 @@ export function ChatInterface({ venueId, isOpen, onClose, initialPrompt }: ChatI
       setMessages(prev => [...prev, undoMsg]);
 
       // Save undo message to database
+      if (!currentConversation) return;
       await fetch(`/api/ai-assistant/conversations/${currentConversation.id}/messages`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
@@ -668,7 +672,7 @@ export function ChatInterface({ venueId, isOpen, onClose, initialPrompt }: ChatI
                   className="flex-1"
                 />
                 <Button
-                  onClick={handleSendMessage}
+                  onClick={() => handleSendMessage()}
                   disabled={loading || executing || !input.trim()}
                 >
                   {loading ? (
