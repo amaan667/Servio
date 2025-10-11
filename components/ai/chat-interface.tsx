@@ -435,7 +435,7 @@ export function ChatInterface({ venueId, isOpen, onClose, initialPrompt }: ChatI
         
         results.push({ tool: tool.name, result: data.result });
 
-        // Handle navigation results
+          // Handle navigation results
         if (tool.name === "navigation.go_to_page" && data.result?.result?.route) {
           console.log("[AI CHAT] Navigating to:", data.result.result.route);
           // Navigate immediately
@@ -472,6 +472,11 @@ export function ChatInterface({ venueId, isOpen, onClose, initialPrompt }: ChatI
               }),
             });
           }
+          
+          // Auto-close chat interface after navigation
+          setTimeout(() => {
+            onClose();
+          }, 1500); // Consistent timing with other executions
           
           continue; // Skip undo handling for navigation
         }
@@ -517,10 +522,11 @@ export function ChatInterface({ venueId, isOpen, onClose, initialPrompt }: ChatI
       setSuccess(true);
       setExecutionResults(results);
 
-      // Refresh the page after successful execution
+      // Auto-close the chat interface after successful execution
       setTimeout(() => {
         router.refresh();
-      }, 2000);
+        onClose(); // Close the chat interface
+      }, 1500); // Reduced time for faster auto-close
 
     } catch (err: any) {
       console.error("[AI CHAT] Execution error:", err);
@@ -587,7 +593,7 @@ export function ChatInterface({ venueId, isOpen, onClose, initialPrompt }: ChatI
 
   const selectConversation = (conversation: ChatConversation) => {
     setCurrentConversation(conversation);
-    setMessages([]);
+    // Don't clear messages immediately - let loadMessages handle it
     setPlan(null);
     setPreviews([]);
     setError(null);
@@ -627,6 +633,7 @@ export function ChatInterface({ venueId, isOpen, onClose, initialPrompt }: ChatI
                 onClick={createNewConversation}
                 className="w-full"
                 variant="outline"
+                disabled={false}
               >
                 <Plus className="h-4 w-4 mr-2" />
                 {(loading || executing) ? "Cancel & New Conversation" : "New Conversation"}
