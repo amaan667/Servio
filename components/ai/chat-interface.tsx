@@ -379,7 +379,34 @@ export function ChatInterface({ venueId, isOpen, onClose, initialPrompt }: ChatI
 
       setPlan(planData.plan);
 
-      // Add assistant planning message
+      // Handle direct answers (no tools needed)
+      if (planData.plan.directAnswer) {
+        // Add assistant direct answer message
+        const assistantMsg: ChatMessage = {
+          id: `assistant-${Date.now()}`,
+          role: "assistant",
+          content: planData.plan.directAnswer,
+          createdAt: new Date().toISOString(),
+          canUndo: false,
+        };
+
+        setMessages(prev => [...prev, assistantMsg]);
+
+        // Save assistant message to database
+        await fetch(`/api/ai-assistant/conversations/${conversation.id}/messages`, {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            role: "assistant",
+            content: assistantMsg.content,
+          }),
+        });
+
+        setLoading(false);
+        return; // No need to fetch previews or show execute button
+      }
+
+      // Add assistant planning message for tool-based responses
       const assistantMsg: ChatMessage = {
         id: `assistant-${Date.now()}`,
         role: "assistant",

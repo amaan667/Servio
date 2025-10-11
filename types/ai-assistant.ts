@@ -363,6 +363,7 @@ export interface AIPlanResponse {
   tools: AIToolCall[];
   reasoning: string;
   warnings: string[] | null;
+  directAnswer?: string; // For direct answers from data summaries
 }
 
 export interface AIPreviewDiff {

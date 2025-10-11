@@ -209,7 +209,13 @@ RULES:
 
 NATURAL LANGUAGE UNDERSTANDING:
 - Be flexible with user queries - understand context and intent
-- For analytics queries (revenue, sales, stats):
+- For simple questions that can be answered directly from data summaries:
+  * "how many categories are there" → provide direct answer from menu.categories count
+  * "how many menu items" → provide direct answer from menu.totalItems count
+  * "what categories do I have" → provide direct answer listing menu.categories
+  * "total revenue today" → provide direct answer from analytics data if available
+  * "how many orders today" → provide direct answer from orders data if available
+- For complex analytics queries (revenue, sales, stats):
   * "what's the revenue for X" → use analytics.get_stats with metric="revenue", itemId from allItems
   * "how much did X sell" → use analytics.get_stats with metric="revenue", itemId from allItems
   * "show me stats for X" → use analytics.get_stats with itemId from allItems
@@ -251,6 +257,53 @@ Return a structured plan with:
 // Planning Function with Smart Model Selection & Fallback
 // ============================================================================
 
+// Check if query can be answered directly from data summaries
+function canAnswerDirectly(
+  userPrompt: string,
+  dataSummaries: {
+    menu?: MenuSummary;
+    inventory?: InventorySummary;
+    orders?: OrdersSummary;
+    analytics?: AnalyticsSummary;
+  }
+): { canAnswer: boolean; answer?: string } {
+  const prompt = userPrompt.toLowerCase().trim();
+  
+  // Category count questions
+  if (prompt.includes('how many categories') || prompt.includes('number of categories')) {
+    if (dataSummaries.menu?.categories) {
+      const count = dataSummaries.menu.categories.length;
+      return { 
+        canAnswer: true, 
+        answer: `You have ${count} menu categories: ${dataSummaries.menu.categories.map(c => c.name).join(', ')}` 
+      };
+    }
+  }
+  
+  // Total menu items count
+  if (prompt.includes('how many menu items') || prompt.includes('total menu items') || prompt.includes('how many items')) {
+    if (dataSummaries.menu?.totalItems !== undefined) {
+      return { 
+        canAnswer: true, 
+        answer: `You have ${dataSummaries.menu.totalItems} menu items total` 
+      };
+    }
+  }
+  
+  // Categories list
+  if (prompt.includes('what categories') || prompt.includes('list categories') || prompt.includes('categories')) {
+    if (dataSummaries.menu?.categories && dataSummaries.menu.categories.length > 0) {
+      const categoriesList = dataSummaries.menu.categories.map(c => `- ${c.name} (${c.itemCount} items)`).join('\n');
+      return { 
+        canAnswer: true, 
+        answer: `Your menu categories:\n${categoriesList}` 
+      };
+    }
+  }
+  
+  return { canAnswer: false };
+}
+
 export async function planAssistantAction(
   userPrompt: string,
   context: AIAssistantContext,
@@ -261,6 +314,18 @@ export async function planAssistantAction(
     analytics?: AnalyticsSummary;
   }
 ): Promise<AIPlanResponse & { modelUsed?: string }> {
+  // Check if we can answer directly from data summaries
+  const directAnswer = canAnswerDirectly(userPrompt, dataSummaries);
+  if (directAnswer.canAnswer) {
+    return {
+      intent: userPrompt,
+      tools: [],
+      reasoning: "This question can be answered directly from the available data summaries.",
+      warnings: null,
+      directAnswer: directAnswer.answer
+    };
+  }
+
   const systemPrompt = buildSystemPrompt(context, dataSummaries);
 
   // Start with model selection based on prompt
