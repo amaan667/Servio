@@ -196,7 +196,7 @@ export function ChatInterface({ venueId, isOpen, onClose, initialPrompt }: ChatI
       }
     } catch (error) {
       console.error("[AI CHAT] Failed to load messages:", error);
-      setError(`Failed to load conversation messages: ${error.message}`);
+      setError(`Failed to load conversation messages: ${error instanceof Error ? error.message : String(error)}`);
       setMessages([]);
     } finally {
       setLoading(false);
