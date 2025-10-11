@@ -1,0 +1,300 @@
+// Production AI Messages API
+// Handles message loading and creation with proper tool calling support
+
+import { NextRequest, NextResponse } from "next/server";
+import { createClient } from "@/lib/supabase/server";
+import { z } from "zod";
+import { handleUserMessage, generateConversationTitle } from "@/lib/ai/openai-service";
+
+const CreateMessageSchema = z.object({
+  venueId: z.string().min(1),
+  conversationId: z.string().uuid().optional(),
+  text: z.string().min(1),
+});
+
+export async function GET(request: NextRequest) {
+  try {
+    const supabase = await createClient();
+    
+    // Check auth
+    const {
+      data: { user },
+    } = await supabase.auth.getUser();
+
+    if (!user) {
+      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+    }
+
+    const { searchParams } = new URL(request.url);
+    const conversationId = searchParams.get("conversationId");
+    const limit = parseInt(searchParams.get("limit") || "200");
+
+    if (!conversationId) {
+      return NextResponse.json({ error: "Missing conversationId" }, { status: 400 });
+    }
+
+    // Verify user has access to this conversation
+    const { data: conversation } = await supabase
+      .from("ai_conversations")
+      .select(`
+        *,
+        venues!inner(owner_id)
+      `)
+      .eq("id", conversationId)
+      .single();
+
+    if (!conversation) {
+      return NextResponse.json(
+        { error: "Conversation not found" },
+        { status: 404 }
+      );
+    }
+
+    if (conversation.venues.owner_id !== user.id) {
+      return NextResponse.json(
+        { error: "Access denied to this conversation" },
+        { status: 403 }
+      );
+    }
+
+    // Get messages for this conversation
+    const { data: messages, error } = await supabase
+      .from("ai_messages")
+      .select("*")
+      .eq("conversation_id", conversationId)
+      .order("created_at", { ascending: true })
+      .limit(limit);
+
+    if (error) {
+      console.error("[AI CHAT] Failed to fetch messages:", error);
+      return NextResponse.json(
+        { error: "Failed to fetch messages" },
+        { status: 500 }
+      );
+    }
+
+    // Transform messages to match frontend expectations
+    const transformedMessages = (messages || []).map(msg => ({
+      id: msg.id,
+      conversationId: msg.conversation_id,
+      venueId: msg.venue_id,
+      authorRole: msg.author_role,
+      text: msg.text,
+      content: msg.content,
+      callId: msg.call_id,
+      toolName: msg.tool_name,
+      createdAt: msg.created_at,
+    }));
+
+    return NextResponse.json({
+      messages: transformedMessages,
+    });
+  } catch (error: any) {
+    console.error("[AI CHAT] Messages error:", error);
+    return NextResponse.json(
+      { error: error.message || "Internal server error" },
+      { status: 500 }
+    );
+  }
+}
+
+export async function POST(request: NextRequest) {
+  try {
+    const supabase = await createClient();
+    
+    // Check auth
+    const {
+      data: { user },
+    } = await supabase.auth.getUser();
+
+    if (!user) {
+      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+    }
+
+    // Parse request body
+    const body = await request.json();
+    const { venueId, conversationId, text } = CreateMessageSchema.parse(body);
+
+    // Verify user has access to venue
+    const { data: venue } = await supabase
+      .from("venues")
+      .select("owner_id")
+      .eq("venue_id", venueId)
+      .single();
+
+    if (!venue || venue.owner_id !== user.id) {
+      return NextResponse.json(
+        { error: "Access denied to this venue" },
+        { status: 403 }
+      );
+    }
+
+    let currentConversationId = conversationId;
+
+    // Create conversation if none exists
+    if (!currentConversationId) {
+      const title = text.substring(0, 60); // Provisional title from first message
+      
+      const { data: newConversation, error: convError } = await supabase
+        .from("ai_conversations")
+        .insert({
+          venue_id: venueId,
+          created_by: user.id,
+          title,
+        })
+        .select("*")
+        .single();
+
+      if (convError) {
+        console.error("[AI CHAT] Failed to create conversation:", convError);
+        return NextResponse.json(
+          { error: "Failed to create conversation" },
+          { status: 500 }
+        );
+      }
+
+      currentConversationId = newConversation.id;
+    } else {
+      // Verify access to existing conversation
+      const { data: existingConversation } = await supabase
+        .from("ai_conversations")
+        .select("*")
+        .eq("id", currentConversationId)
+        .single();
+
+      if (!existingConversation) {
+        return NextResponse.json(
+          { error: "Conversation not found" },
+          { status: 404 }
+        );
+      }
+    }
+
+    // Save user message
+    const { data: userMessage, error: msgError } = await supabase
+      .from("ai_messages")
+      .insert({
+        conversation_id: currentConversationId,
+        venue_id: venueId,
+        author_role: "user",
+        text: text,
+        content: { text },
+      })
+      .select("*")
+      .single();
+
+    if (msgError) {
+      console.error("[AI CHAT] Failed to save user message:", msgError);
+      return NextResponse.json(
+        { error: "Failed to save message" },
+        { status: 500 }
+      );
+    }
+
+    // Call AI service with tool calling
+    try {
+      const aiResult = await handleUserMessage({
+        venueId,
+        conversationId: currentConversationId,
+        userText: text,
+        userId: user.id
+      });
+
+      // Get the latest messages including the AI response
+      const { data: allMessages } = await supabase
+        .from("ai_messages")
+        .select("*")
+        .eq("conversation_id", currentConversationId)
+        .order("created_at", { ascending: true });
+
+      // Generate conversation title if this is the first exchange
+      const messageCount = allMessages?.filter(m => m.author_role === 'user').length || 0;
+      if (messageCount === 1) {
+        const title = await generateConversationTitle(text);
+        await supabase
+          .from("ai_conversations")
+          .update({ title })
+          .eq("id", currentConversationId);
+      }
+
+      // Transform all messages
+      const transformedMessages = (allMessages || []).map(msg => ({
+        id: msg.id,
+        conversationId: msg.conversation_id,
+        venueId: msg.venue_id,
+        authorRole: msg.author_role,
+        text: msg.text,
+        content: msg.content,
+        callId: msg.call_id,
+        toolName: msg.tool_name,
+        createdAt: msg.created_at,
+      }));
+
+      return NextResponse.json({
+        conversationId: currentConversationId,
+        messages: transformedMessages,
+        toolResults: aiResult.toolResults || []
+      });
+
+    } catch (aiError) {
+      console.error("[AI CHAT] AI service error:", aiError);
+      
+      // Save error message
+      const { data: errorMessage } = await supabase
+        .from("ai_messages")
+        .insert({
+          conversation_id: currentConversationId,
+          venue_id: venueId,
+          author_role: "assistant",
+          text: `I encountered an error: ${aiError.message}`,
+          content: { text: `I encountered an error: ${aiError.message}` },
+        })
+        .select("*")
+        .single();
+
+      const transformedUserMessage = {
+        id: userMessage.id,
+        conversationId: userMessage.conversation_id,
+        venueId: userMessage.venue_id,
+        authorRole: userMessage.author_role,
+        text: userMessage.text,
+        content: userMessage.content,
+        callId: userMessage.call_id,
+        toolName: userMessage.tool_name,
+        createdAt: userMessage.created_at,
+      };
+
+      const transformedErrorMessage = {
+        id: errorMessage.id,
+        conversationId: errorMessage.conversation_id,
+        venueId: errorMessage.venue_id,
+        authorRole: errorMessage.author_role,
+        text: errorMessage.text,
+        content: errorMessage.content,
+        callId: errorMessage.call_id,
+        toolName: errorMessage.tool_name,
+        createdAt: errorMessage.created_at,
+      };
+
+      return NextResponse.json({
+        conversationId: currentConversationId,
+        messages: [transformedUserMessage, transformedErrorMessage],
+        error: aiError.message
+      });
+    }
+  } catch (error: any) {
+    console.error("[AI CHAT] Create message error:", error);
+    
+    if (error.name === "ZodError") {
+      return NextResponse.json(
+        { error: "Invalid request data", details: error.errors },
+        { status: 400 }
+      );
+    }
+
+    return NextResponse.json(
+      { error: error.message || "Internal server error" },
+      { status: 500 }
+    );
+  }
+}
