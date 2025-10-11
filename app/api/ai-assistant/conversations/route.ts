@@ -51,16 +51,12 @@ export async function GET(request: NextRequest) {
       );
     }
 
-    // Get conversations for this venue that actually have messages
+    // Get conversations for this venue
     const { data: conversations, error } = await supabase
       .from("ai_chat_conversations")
-      .select(`
-        *,
-        ai_chat_messages(count)
-      `)
+      .select("*")
       .eq("venue_id", venueId)
       .eq("user_id", user.id)
-      .gt("ai_chat_messages.count", 0)
       .order("updated_at", { ascending: false });
 
     if (error) {
@@ -99,8 +95,18 @@ export async function GET(request: NextRequest) {
     });
   } catch (error: any) {
     console.error("[AI CHAT] Conversations error:", error);
+    console.error("[AI CHAT] Error details:", {
+      message: error.message,
+      code: error.code,
+      details: error.details,
+      hint: error.hint
+    });
     return NextResponse.json(
-      { error: error.message || "Internal server error" },
+      { 
+        error: error.message || "Internal server error",
+        details: error.details,
+        code: error.code
+      },
       { status: 500 }
     );
   }
