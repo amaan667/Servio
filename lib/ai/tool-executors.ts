@@ -454,18 +454,20 @@ export async function executeMenuTranslate(
       }));
 
       const prompt = `Translate the following menu items to ${targetLangName}. 
-Return ONLY a JSON array with the same structure, keeping the 'id' field unchanged.
-Maintain culinary context and use natural translations that make sense on a menu.
+Return a JSON object with an "items" array containing the translated items.
+Keep the 'id' field unchanged. Maintain culinary context and use natural translations.
 
 Items to translate:
-${JSON.stringify(itemsToTranslate, null, 2)}`;
+${JSON.stringify(itemsToTranslate, null, 2)}
+
+Return format: {"items": [{"id": "...", "name": "translated name", "description": "translated description"}]}`;
 
       const response = await openai.chat.completions.create({
         model: "gpt-4o-mini",
         messages: [
           {
             role: "system",
-            content: "You are a professional menu translator. Return ONLY valid JSON arrays."
+            content: "You are a professional menu translator. Return valid JSON with an 'items' array."
           },
           {
             role: "user",
@@ -478,16 +480,30 @@ ${JSON.stringify(itemsToTranslate, null, 2)}`;
 
       const content = response.choices[0]?.message?.content;
       if (content) {
+        console.log("[AI ASSISTANT] Translation response:", content.substring(0, 200));
         const translated = JSON.parse(content);
-        // Handle if response is wrapped in an object
-        const translatedArray = Array.isArray(translated) ? translated : (translated.items || []);
+        const translatedArray = translated.items || [];
+        if (translatedArray.length === 0) {
+          console.error("[AI ASSISTANT] No items in translation response:", translated);
+        }
         translatedItems.push(...translatedArray);
+      } else {
+        console.error("[AI ASSISTANT] No content in translation response");
       }
     }
 
     // Update database with translations
+    console.log(`[AI ASSISTANT] Updating ${translatedItems.length} translated items in database`);
     let updatedCount = 0;
+    let failedCount = 0;
+    
     for (const translatedItem of translatedItems) {
+      if (!translatedItem || !translatedItem.id || !translatedItem.name) {
+        console.error(`[AI ASSISTANT] Invalid translated item:`, translatedItem);
+        failedCount++;
+        continue;
+      }
+
       const updateData: any = {
         name: translatedItem.name,
         updated_at: new Date().toISOString()
@@ -496,6 +512,8 @@ ${JSON.stringify(itemsToTranslate, null, 2)}`;
       if (params.includeDescriptions && translatedItem.description) {
         updateData.description = translatedItem.description;
       }
+
+      console.log(`[AI ASSISTANT] Updating item ${translatedItem.id}: ${translatedItem.name}`);
 
       const { error } = await supabase
         .from("menu_items")
@@ -507,15 +525,26 @@ ${JSON.stringify(itemsToTranslate, null, 2)}`;
         updatedCount++;
       } else {
         console.error(`[AI ASSISTANT] Failed to update item ${translatedItem.id}:`, error);
+        failedCount++;
       }
+    }
+
+    console.log(`[AI ASSISTANT] Translation complete: ${updatedCount} updated, ${failedCount} failed`);
+
+    if (updatedCount === 0 && translatedItems.length > 0) {
+      throw new AIAssistantError(
+        `Translation failed: Could not update any items (${failedCount} failed)`,
+        "EXECUTION_FAILED"
+      );
     }
 
     return {
       success: true,
       toolName: "menu.translate",
       result: {
-        message: `Successfully translated ${updatedCount} menu items to ${targetLangName}`,
+        message: `Successfully translated ${updatedCount} menu items to ${targetLangName}${failedCount > 0 ? ` (${failedCount} failed)` : ""}`,
         itemsTranslated: updatedCount,
+        itemsFailed: failedCount,
         targetLanguage: params.targetLanguage,
         includeDescriptions: params.includeDescriptions
       },
