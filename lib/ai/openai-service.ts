@@ -15,85 +15,93 @@ You are Servio's venue assistant. Be concise, reliable, and action-oriented.
 - Keep replies < 200 words unless asked for more.
 `;
 
-const TOOLS = [
+const TOOLS: OpenAI.Chat.Completions.ChatCompletionTool[] = [
   {
-    type: "function" as const,
-    name: "get_todays_revenue",
-    description: "Return today's revenue in the venue's local currency.",
-    parameters: {
-      type: "object",
-      additionalProperties: false,
-      properties: {
-        venue_id: { 
-          type: "string", 
-          description: "Venue UUID" 
-        }
-      },
-      required: ["venue_id"]
+    type: "function",
+    function: {
+      name: "get_todays_revenue",
+      description: "Return today's revenue in the venue's local currency.",
+      parameters: {
+        type: "object",
+        additionalProperties: false,
+        properties: {
+          venue_id: { 
+            type: "string", 
+            description: "Venue UUID" 
+          }
+        },
+        required: ["venue_id"]
+      }
     }
   },
   {
-    type: "function" as const,
-    name: "get_menu_items",
-    description: "Get menu items for the venue.",
-    parameters: {
-      type: "object",
-      additionalProperties: false,
-      properties: {
-        venue_id: { 
-          type: "string", 
-          description: "Venue UUID" 
+    type: "function",
+    function: {
+      name: "get_menu_items",
+      description: "Get menu items for the venue.",
+      parameters: {
+        type: "object",
+        additionalProperties: false,
+        properties: {
+          venue_id: { 
+            type: "string", 
+            description: "Venue UUID" 
+          },
+          category: { 
+            type: "string", 
+            description: "Optional category filter" 
+          }
         },
-        category: { 
-          type: "string", 
-          description: "Optional category filter" 
-        }
-      },
-      required: ["venue_id"]
+        required: ["venue_id"]
+      }
     }
   },
   {
-    type: "function" as const,
-    name: "update_menu_price",
-    description: "Update the price of a menu item.",
-    parameters: {
-      type: "object",
-      additionalProperties: false,
-      properties: {
-        venue_id: { 
-          type: "string", 
-          description: "Venue UUID" 
+    type: "function",
+    function: {
+      name: "update_menu_price",
+      description: "Update the price of a menu item.",
+      parameters: {
+        type: "object",
+        additionalProperties: false,
+        properties: {
+          venue_id: { 
+            type: "string", 
+            description: "Venue UUID" 
+          },
+          item_id: { 
+            type: "string", 
+            description: "Menu item ID" 
+          },
+          new_price: { 
+            type: "number", 
+            description: "New price" 
+          }
         },
-        item_id: { 
-          type: "string", 
-          description: "Menu item ID" 
-        },
-        new_price: { 
-          type: "number", 
-          description: "New price" 
-        }
-      },
-      required: ["venue_id", "item_id", "new_price"]
+        required: ["venue_id", "item_id", "new_price"]
+      }
     }
   },
   {
-    type: "function" as const,
-    name: "open_page",
-    description: "Open a page inside the dashboard.",
-    parameters: {
-      type: "object",
-      additionalProperties: false,
-      properties: {
-        page: {
-          type: "string",
-          enum: ["orders", "menu", "tables", "settings", "analytics", "dashboard"]
+    type: "function",
+    function: {
+      name: "open_page",
+      description: "Open a page inside the dashboard.",
+      parameters: {
+        type: "object",
+        additionalProperties: false,
+        properties: {
+          page: {
+            type: "string",
+            enum: ["orders", "menu", "tables", "settings", "analytics", "dashboard"]
+          },
+          subpage: { 
+            type: "string",
+            description: "Optional subpage" 
+          }
         },
-        subpage: { 
-          type: "string",
-          description: "Optional subpage" 
-        }
-      },
-      required: ["page"]
+        required: ["page"]
+      }
     }
   }
 ];
