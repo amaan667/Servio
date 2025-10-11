@@ -51,12 +51,16 @@ export async function GET(request: NextRequest) {
       );
     }
 
-    // Get conversations for this venue
+    // Get conversations for this venue that actually have messages
     const { data: conversations, error } = await supabase
       .from("ai_chat_conversations")
-      .select("*")
+      .select(`
+        *,
+        ai_chat_messages(count)
+      `)
       .eq("venue_id", venueId)
       .eq("user_id", user.id)
+      .gt("ai_chat_messages.count", 0)
       .order("updated_at", { ascending: false });
 
     if (error) {

@@ -173,57 +173,20 @@ export function ChatInterface({ venueId, isOpen, onClose, initialPrompt }: ChatI
     try {
       console.log("[AI CHAT] Creating new conversation");
       
-      // Check if there's already a recent empty conversation we can reuse
-      const recentEmptyConversation = conversations.find(conv => 
-        conv.title.startsWith("Conversation ") && 
-        conv.messages?.length === 0 &&
-        new Date(conv.createdAt) > new Date(Date.now() - 5 * 60 * 1000) // Within last 5 minutes
-      );
+      // Only create a conversation when user actually starts typing
+      // Don't create empty conversations just for clicking the button
+      setCurrentConversation(null);
+      setMessages([]);
+      setInput("");
+      setPlan(null);
+      setPreviews([]);
+      setError(null);
+      setSuccess(false);
+      setExecutionResults([]);
       
-      if (recentEmptyConversation) {
-        console.log("[AI CHAT] Reusing recent empty conversation:", recentEmptyConversation.id);
-        setCurrentConversation(recentEmptyConversation);
-        setMessages([]);
-        setInput("");
-        setPlan(null);
-        setPreviews([]);
-        setError(null);
-        setSuccess(false);
-        setExecutionResults([]);
-        return;
-      }
-      
-      // Generate a unique title with timestamp
-      const timestamp = new Date().toLocaleString();
-      const title = `Conversation ${timestamp}`;
-      
-      const response = await fetch("/api/ai-assistant/conversations", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          venueId,
-          title,
-        }),
-      });
-
-      if (response.ok) {
-        const data = await response.json();
-        console.log("[AI CHAT] Created conversation:", data.conversation);
-        const newConversation = data.conversation;
-        setConversations(prev => [newConversation, ...prev]);
-        setCurrentConversation(newConversation);
-        setMessages([]);
-        setInput("");
-        setPlan(null);
-        setPreviews([]);
-        setError(null);
-        setSuccess(false);
-        setExecutionResults([]);
-      } else {
-        console.error("[AI CHAT] Failed to create conversation:", response.status);
-      }
+      console.log("[AI CHAT] Ready for new conversation - will create when user sends first message");
     } catch (error) {
-      console.error("[AI CHAT] Failed to create conversation:", error);
+      console.error("[AI CHAT] Failed to prepare new conversation:", error);
     }
   };
 
@@ -261,6 +224,45 @@ export function ChatInterface({ venueId, isOpen, onClose, initialPrompt }: ChatI
     return title || "New Chat";
   };
 
+  const createConversationFromMessage = async (userMessage: string) => {
+    try {
+      console.log("[AI CHAT] Creating conversation from message:", userMessage);
+      
+      // Generate a meaningful title from the user's message
+      const title = generateConversationTitle(userMessage);
+      
+      const response = await fetch("/api/ai-assistant/conversations", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          venueId,
+          title,
+        }),
+      });
+
+      if (response.ok) {
+        const data = await response.json();
+        console.log("[AI CHAT] Created conversation with title:", title);
+        const newConversation = data.conversation;
+        setConversations(prev => [newConversation, ...prev]);
+        setCurrentConversation(newConversation);
+        setMessages([]);
+        setInput("");
+        setPlan(null);
+        setPreviews([]);
+        setError(null);
+        setSuccess(false);
+        setExecutionResults([]);
+      } else {
+        console.error("[AI CHAT] Failed to create conversation:", response.status);
+        setError("Failed to create conversation");
+      }
+    } catch (error) {
+      console.error("[AI CHAT] Failed to create conversation:", error);
+      setError("Failed to create conversation");
+    }
+  };
+
   const handleSendMessage = async (messageOverride?: string) => {
     const userMessage = messageOverride || input.trim();
     if (!userMessage || loading || executing) return;
@@ -271,7 +273,7 @@ export function ChatInterface({ venueId, isOpen, onClose, initialPrompt }: ChatI
 
     // Create new conversation if none exists
     if (!currentConversation) {
-      await createNewConversation();
+      await createConversationFromMessage(userMessage);
       // Wait for conversation to be created, then send message
       setTimeout(() => handleSendMessage(userMessage), 500);
       return;
@@ -287,13 +289,6 @@ export function ChatInterface({ venueId, isOpen, onClose, initialPrompt }: ChatI
     };
 
     setMessages(prev => [...prev, userMsg]);
-    
-    // Update conversation title based on first message if it's still the default
-    if (currentConversation && currentConversation.title.startsWith("Conversation ")) {
-      const newTitle = generateConversationTitle(userMessage);
-      updateConversationTitle(currentConversation.id, newTitle);
-    }
-    
     setLoading(true);
     setError(null);
     setPlan(null);
