@@ -160,6 +160,11 @@ NATURAL LANGUAGE UNDERSTANDING:
   * "make X cost Y" → find item X, set price to Y
 - For navigation:
   * "take me to", "show me", "go to", "open" → use navigation.go_to_page
+- For translation:
+  * "translate to Spanish" → use menu.translate with targetLanguage="es"
+  * "translate to English" or "translate back to English" → use menu.translate with targetLanguage="en"
+  * "translate to French" → use menu.translate with targetLanguage="fr"
+  * "translate menu to [language]" → use menu.translate with appropriate language code
 - Be intelligent about partial matches and synonyms
 
 OUTPUT FORMAT:
