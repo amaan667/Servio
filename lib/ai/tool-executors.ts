@@ -30,18 +30,44 @@ export async function executeMenuUpdatePrices(
 ): Promise<AIPreviewDiff | AIExecutionResult> {
   const supabase = await createClient();
 
-  // Validate guardrails
-  const { data: currentItems } = await supabase
+  console.log(`[AI ASSISTANT] Updating prices for ${params.items.length} items`);
+
+  // Validate that we have items to update
+  if (!params.items || params.items.length === 0) {
+    throw new AIAssistantError("No items specified for price update", "INVALID_PARAMS");
+  }
+
+  // Validate guardrails - fetch current items
+  const { data: currentItems, error: fetchError } = await supabase
     .from("menu_items")
-    .select("id, name, price")
+    .select("id, name, price, category")
     .eq("venue_id", venueId)
     .in(
       "id",
       params.items.map((i) => i.id)
     );
 
+  if (fetchError) {
+    console.error("[AI ASSISTANT] Error fetching menu items:", fetchError);
+    throw new AIAssistantError("Failed to fetch menu items", "EXECUTION_FAILED", fetchError);
+  }
+
   if (!currentItems || currentItems.length === 0) {
-    throw new AIAssistantError("No items found", "INVALID_PARAMS");
+    throw new AIAssistantError("No items found matching the provided IDs", "INVALID_PARAMS");
+  }
+
+  console.log(`[AI ASSISTANT] Found ${currentItems.length} items in database`);
+
+  // Validate all item IDs exist
+  const foundIds = new Set(currentItems.map(i => i.id));
+  const missingIds = params.items.filter(i => !foundIds.has(i.id));
+  if (missingIds.length > 0) {
+    console.error("[AI ASSISTANT] Missing item IDs:", missingIds.map(i => i.id));
+    throw new AIAssistantError(
+      `Some items not found: ${missingIds.length} items do not exist`,
+      "INVALID_PARAMS",
+      { missingIds: missingIds.map(i => i.id) }
+    );
   }
 
   // Check price change guardrail (±20%)
@@ -51,12 +77,23 @@ export async function executeMenuUpdatePrices(
     const current = currentItems.find((i) => i.id === item.id);
     if (!current) continue;
 
+    // Validate new price is positive
+    if (item.newPrice <= 0) {
+      throw new AIAssistantError(
+        `Invalid price for ${current.name}: price must be greater than 0`,
+        "INVALID_PARAMS",
+        { itemId: item.id, itemName: current.name, newPrice: item.newPrice }
+      );
+    }
+
     const changePercent = Math.abs(((item.newPrice - current.price) / current.price) * 100);
+    console.log(`[AI ASSISTANT] ${current.name}: ${current.price} → ${item.newPrice} (${changePercent.toFixed(1)}% change)`);
+    
     if (changePercent > maxChangePercent) {
       throw new AIAssistantError(
-        `Price change of ${changePercent.toFixed(1)}% exceeds limit of ${maxChangePercent}%`,
+        `Price change of ${changePercent.toFixed(1)}% for "${current.name}" exceeds limit of ${maxChangePercent}%`,
         "GUARDRAIL_VIOLATION",
-        { itemId: item.id, itemName: current.name }
+        { itemId: item.id, itemName: current.name, currentPrice: current.price, newPrice: item.newPrice }
       );
     }
   }
@@ -89,26 +126,54 @@ export async function executeMenuUpdatePrices(
   }
 
   // Execute - update prices for each item
+  console.log(`[AI ASSISTANT] Executing price updates for ${params.items.length} items`);
+  let updatedCount = 0;
+  let failedUpdates: any[] = [];
+  
   for (const item of params.items) {
-    const { error } = await supabase
+    const currentItem = currentItems.find(i => i.id === item.id);
+    const itemName = currentItem?.name || item.id;
+    
+    const { data, error } = await supabase
       .from("menu_items")
       .update({ 
         price: item.newPrice,
         updated_at: new Date().toISOString()
       })
       .eq("id", item.id)
-      .eq("venue_id", venueId); // Extra safety check
+      .eq("venue_id", venueId) // Extra safety check
+      .select("id, name, price");
 
     if (error) {
-      console.error(`[AI ASSISTANT] Failed to update price for item ${item.id}:`, error);
-      throw new AIAssistantError("Failed to update prices", "EXECUTION_FAILED", error);
+      console.error(`[AI ASSISTANT] Failed to update price for "${itemName}":`, error);
+      failedUpdates.push({ id: item.id, name: itemName, error: error.message });
+    } else if (!data || data.length === 0) {
+      console.error(`[AI ASSISTANT] No item updated for "${itemName}" - possibly wrong venue_id`);
+      failedUpdates.push({ id: item.id, name: itemName, error: "Item not found or access denied" });
+    } else {
+      console.log(`[AI ASSISTANT] Successfully updated "${itemName}" to £${item.newPrice}`);
+      updatedCount++;
     }
   }
+
+  // If any updates failed, throw error with details
+  if (failedUpdates.length > 0) {
+    throw new AIAssistantError(
+      `Failed to update ${failedUpdates.length} of ${params.items.length} items`,
+      "EXECUTION_FAILED",
+      { failedUpdates }
+    );
+  }
+
+  console.log(`[AI ASSISTANT] Price update complete: ${updatedCount} items updated successfully`);
 
   return {
     success: true,
     toolName: "menu.update_prices",
-    result: { updatedCount: params.items.length },
+    result: { 
+      updatedCount,
+      message: `Successfully updated ${updatedCount} item${updatedCount !== 1 ? 's' : ''}`
+    },
     auditId: "", // Will be set by caller
   };
 }
@@ -416,9 +481,10 @@ export async function executeMenuTranslate(
     ja: "Japanese",
   };
 
-  // Comprehensive bidirectional category mappings
-  const categoryMappings = {
-    en: {
+  // Comprehensive bidirectional category mappings for all supported languages
+  const categoryMappings: Record<string, Record<string, string>> = {
+    // English to Spanish
+    "en-es": {
       "STARTERS": "ENTRADAS",
       "APPETIZERS": "APERITIVOS", 
       "MAIN COURSES": "PLATOS PRINCIPALES",
@@ -453,7 +519,8 @@ export async function executeMenuTranslate(
       "VEGAN": "VEGANO",
       "GLUTEN FREE": "SIN GLUTEN"
     },
-    es: {
+    // Spanish to English
+    "es-en": {
       "ENTRADAS": "STARTERS",
       "APERITIVOS": "APPETIZERS",
       "PLATOS PRINCIPALES": "MAIN COURSES",
@@ -482,26 +549,89 @@ export async function executeMenuTranslate(
       "VEGETARIANO": "VEGETARIAN",
       "VEGANO": "VEGAN",
       "SIN GLUTEN": "GLUTEN FREE"
+    },
+    // English to French
+    "en-fr": {
+      "STARTERS": "ENTRÉES",
+      "APPETIZERS": "APÉRITIFS",
+      "MAIN COURSES": "PLATS PRINCIPAUX",
+      "DESSERTS": "DESSERTS",
+      "SALADS": "SALADES",
+      "KIDS": "ENFANTS",
+      "DRINKS": "BOISSONS",
+      "COFFEE": "CAFÉ",
+      "TEA": "THÉ",
+      "BREAKFAST": "PETIT DÉJEUNER",
+      "LUNCH": "DÉJEUNER",
+      "DINNER": "DÎNER"
+    },
+    // French to English
+    "fr-en": {
+      "ENTRÉES": "STARTERS",
+      "APÉRITIFS": "APPETIZERS",
+      "PLATS PRINCIPAUX": "MAIN COURSES",
+      "DESSERTS": "DESSERTS",
+      "SALADES": "SALADS",
+      "ENFANTS": "KIDS",
+      "BOISSONS": "DRINKS",
+      "CAFÉ": "COFFEE",
+      "THÉ": "TEA",
+      "PETIT DÉJEUNER": "BREAKFAST",
+      "DÉJEUNER": "LUNCH",
+      "DÎNER": "DINNER"
     }
   };
 
   const targetLangName = languageNames[params.targetLanguage] || params.targetLanguage;
 
-  // Detect the source language by analyzing the current categories
-  const detectSourceLanguage = (categories: string[]): string => {
-    const spanishIndicators = ['CAFÉ', 'BEBIDAS', 'TÉ', 'ESPECIALES', 'NIÑOS', 'ENSALADAS', 'POSTRES', 'ENTRADAS', 'PLATOS PRINCIPALES', 'APERITIVOS', 'MALTEADAS', 'BATIDOS', 'SÁNDWICHES', 'DESAYUNO', 'ALMUERZO', 'CENA', 'SOPA', 'SOPAS', 'MARISCOS', 'POLLO', 'CARNE DE RES', 'CERDO', 'VEGETARIANO', 'VEGANO', 'SIN GLUTEN'];
-    const englishIndicators = ['STARTERS', 'APPETIZERS', 'MAIN COURSES', 'ENTREES', 'DESSERTS', 'SALADS', 'KIDS', 'CHILDREN', 'DRINKS', 'BEVERAGES', 'COFFEE', 'TEA', 'SPECIALS', 'WRAPS', 'SANDWICHES', 'MILKSHAKES', 'SHAKES', 'SMOOTHIES', 'BRUNCH', 'BREAKFAST', 'LUNCH', 'DINNER', 'SOUP', 'SOUPS', 'PASTA', 'PIZZA', 'SEAFOOD', 'CHICKEN', 'BEEF', 'PORK', 'VEGETARIAN', 'VEGAN', 'GLUTEN FREE'];
+  // Detect the source language by analyzing the current categories and item names
+  const detectSourceLanguage = (items: Array<{ name: string; category: string }>): string => {
+    // Comprehensive language indicators
+    const spanishIndicators = [
+      // Categories
+      'CAFÉ', 'CAFE', 'BEBIDAS', 'TÉ', 'TE', 'ESPECIALES', 'NIÑOS', 'NINOS', 
+      'ENSALADAS', 'POSTRES', 'ENTRADAS', 'PLATOS PRINCIPALES', 'APERITIVOS',
+      'MALTEADAS', 'BATIDOS', 'SÁNDWICHES', 'SANDWICHES', 'DESAYUNO', 'ALMUERZO', 
+      'CENA', 'SOPA', 'SOPAS', 'MARISCOS', 'POLLO', 'CARNE DE RES', 'CARNE', 
+      'CERDO', 'VEGETARIANO', 'VEGANO', 'SIN GLUTEN',
+      // Common item words
+      'CON', 'DE', 'Y', 'PARA', 'LOS', 'LAS', 'EL', 'LA', 'DEL', 'AL',
+      'HUEVOS', 'QUESO', 'LECHE', 'PAN', 'ARROZ', 'FRIJOLES', 'SALSA',
+      'TORTILLA', 'TACO', 'BURRITO', 'QUESADILLA', 'ENCHILADA'
+    ];
+    
+    const englishIndicators = [
+      // Categories
+      'STARTERS', 'APPETIZERS', 'MAIN COURSES', 'ENTREES', 'DESSERTS', 
+      'SALADS', 'KIDS', 'CHILDREN', 'DRINKS', 'BEVERAGES', 'COFFEE', 
+      'TEA', 'SPECIALS', 'WRAPS', 'SANDWICHES', 'MILKSHAKES', 'SHAKES', 
+      'SMOOTHIES', 'BRUNCH', 'BREAKFAST', 'LUNCH', 'DINNER', 'SOUP', 
+      'SOUPS', 'PASTA', 'PIZZA', 'SEAFOOD', 'CHICKEN', 'BEEF', 'PORK', 
+      'VEGETARIAN', 'VEGAN', 'GLUTEN FREE', 'GLUTEN-FREE',
+      // Common item words
+      'WITH', 'AND', 'OR', 'THE', 'OF', 'FOR', 'IN', 'ON', 'TO',
+      'EGGS', 'CHEESE', 'MILK', 'BREAD', 'RICE', 'BEANS', 'SAUCE',
+      'BURGER', 'SANDWICH', 'STEAK', 'GRILLED', 'FRIED', 'BAKED'
+    ];
     
     let spanishCount = 0;
     let englishCount = 0;
     
-    categories.forEach(category => {
-      if (spanishIndicators.some(indicator => category.toUpperCase().includes(indicator))) {
-        spanishCount++;
-      }
-      if (englishIndicators.some(indicator => category.toUpperCase().includes(indicator))) {
-        englishCount++;
-      }
+    // Check both categories and item names
+    items.forEach(item => {
+      const text = `${item.name} ${item.category}`.toUpperCase();
+      
+      spanishIndicators.forEach(indicator => {
+        if (text.includes(indicator)) {
+          spanishCount++;
+        }
+      });
+      
+      englishIndicators.forEach(indicator => {
+        if (text.includes(indicator)) {
+          englishCount++;
+        }
+      });
     });
     
     console.log(`[AI ASSISTANT] Language detection: ${spanishCount} Spanish indicators, ${englishCount} English indicators`);
@@ -514,16 +644,16 @@ export async function executeMenuTranslate(
       console.log(`[AI ASSISTANT] Detected source language: English`);
       return 'en';
     } else {
-      // If equal or no clear indicators, default based on target language
+      // If equal or no clear indicators, use opposite of target language
       const defaultSource = params.targetLanguage === 'es' ? 'en' : 'es';
-      console.log(`[AI ASSISTANT] Ambiguous language, defaulting to: ${defaultSource}`);
+      console.log(`[AI ASSISTANT] Ambiguous language, defaulting to opposite of target: ${defaultSource}`);
       return defaultSource;
     }
   };
 
   // Get unique categories for translation
   const uniqueCategories = Array.from(new Set(items.map(item => item.category).filter(Boolean)));
-  const detectedSourceLanguage = detectSourceLanguage(uniqueCategories);
+  const detectedSourceLanguage = detectSourceLanguage(items);
   
   if (preview) {
     // For preview, do actual translation of sample items to show real results
@@ -544,30 +674,40 @@ export async function executeMenuTranslate(
       }));
 
       // Generate comprehensive category mapping instructions for preview
-      const categoryMappingList = Object.entries((categoryMappings as any)[detectedSourceLanguage] || {})
+      const mappingKey = `${detectedSourceLanguage}-${params.targetLanguage}`;
+      const categoryMappingList = Object.entries(categoryMappings[mappingKey] || {})
         .map(([from, to]) => `   - "${from}" → "${to}"`)
         .join('\n');
 
-      const prompt = `Translate the following menu items from ${detectedSourceLanguage.toUpperCase()} to ${targetLangName}. 
-Return a JSON object with an "items" array containing the translated items.
-Keep the 'id' field unchanged. Maintain culinary context and use natural translations.
+      const prompt = `You are a professional menu translator. Translate the following menu items from ${detectedSourceLanguage.toUpperCase()} to ${targetLangName}.
 
-CRITICAL REQUIREMENTS:
-1. You MUST return EXACTLY the same number of items as provided
-2. You MUST translate BOTH the item names AND the category names
-3. Each item must have the same 'id' field as the input
-4. For category translation, use these mappings:
+SOURCE LANGUAGE: ${detectedSourceLanguage.toUpperCase()}
+TARGET LANGUAGE: ${targetLangName}
+
+CRITICAL REQUIREMENTS (FAILURE TO FOLLOW WILL RESULT IN ERROR):
+1. Return EXACTLY ${sampleItems.length} items (same count as input)
+2. MUST translate BOTH item names AND category names
+3. Keep the 'id' field UNCHANGED for each item
+4. Use these EXACT category mappings:
 ${categoryMappingList}
-5. If a category is not in the mapping list, translate it naturally to ${targetLangName}
-6. Do NOT skip any items - translate ALL of them
-7. DETECTED SOURCE LANGUAGE: ${detectedSourceLanguage.toUpperCase()}
+5. If a category is not in the mapping, translate it naturally while maintaining context
+6. Do NOT skip, combine, or omit ANY items
+7. Maintain culinary terminology and context appropriately
 
-Items to translate:
+INPUT ITEMS (${sampleItems.length} total):
 ${JSON.stringify(itemsToTranslate, null, 2)}
 
-Return format: {"items": [{"id": "...", "name": "translated name", "category": "translated category", "description": "translated description"}]}
+OUTPUT FORMAT:
+{"items": [{"id": "exact-id-from-input", "name": "translated name", "category": "translated category", "description": "translated description (if provided)"}]}
 
-IMPORTANT: Every item in the input must appear in your output with a translated name and category.`;
+VALIDATION CHECKLIST:
+✓ Output has EXACTLY ${sampleItems.length} items
+✓ Each item has: id, name, category
+✓ All IDs match input IDs exactly
+✓ All names are translated to ${targetLangName}
+✓ All categories are translated to ${targetLangName}
+
+Remember: You MUST return ALL ${sampleItems.length} items with translations. No exceptions.`;
 
       const response = await openai.chat.completions.create({
         model: "gpt-4o-2024-08-06", // Use GPT-4o for translation (complex task requiring accuracy)
@@ -665,30 +805,40 @@ IMPORTANT: Every item in the input must appear in your output with a translated 
       }));
 
       // Generate comprehensive category mapping instructions
-      const categoryMappingList = Object.entries((categoryMappings as any)[detectedSourceLanguage] || {})
+      const mappingKey = `${detectedSourceLanguage}-${params.targetLanguage}`;
+      const categoryMappingList = Object.entries(categoryMappings[mappingKey] || {})
         .map(([from, to]) => `   - "${from}" → "${to}"`)
         .join('\n');
 
-      const prompt = `Translate the following menu items from ${detectedSourceLanguage.toUpperCase()} to ${targetLangName}. 
-Return a JSON object with an "items" array containing the translated items.
-Keep the 'id' field unchanged. Maintain culinary context and use natural translations.
+      const prompt = `You are a professional menu translator. Translate the following menu items from ${detectedSourceLanguage.toUpperCase()} to ${targetLangName}.
 
-CRITICAL REQUIREMENTS:
-1. You MUST return EXACTLY ${batch.length} items (same count as input)
-2. You MUST translate BOTH the item names AND the category names
-3. Each item must have the same 'id' field as the input
-4. For category translation, use these mappings:
+SOURCE LANGUAGE: ${detectedSourceLanguage.toUpperCase()}
+TARGET LANGUAGE: ${targetLangName}
+
+CRITICAL REQUIREMENTS (FAILURE TO FOLLOW WILL RESULT IN ERROR):
+1. Return EXACTLY ${batch.length} items (same count as input)
+2. MUST translate BOTH item names AND category names
+3. Keep the 'id' field UNCHANGED for each item
+4. Use these EXACT category mappings:
 ${categoryMappingList}
-5. If a category is not in the mapping list, translate it naturally to ${targetLangName}
-6. Do NOT skip any items - translate ALL of them
-7. DETECTED SOURCE LANGUAGE: ${detectedSourceLanguage.toUpperCase()}
+5. If a category is not in the mapping, translate it naturally while maintaining context
+6. Do NOT skip, combine, or omit ANY items
+7. Maintain culinary terminology and context appropriately
 
-Items to translate:
+INPUT ITEMS (${batch.length} total):
 ${JSON.stringify(itemsToTranslate, null, 2)}
 
-Return format: {"items": [{"id": "...", "name": "translated name", "category": "translated category", "description": "translated description"}]}
+OUTPUT FORMAT:
+{"items": [{"id": "exact-id-from-input", "name": "translated name", "category": "translated category", "description": "translated description (if provided)"}]}
 
-IMPORTANT: Every item in the input must appear in your output with a translated name and category.`;
+VALIDATION CHECKLIST:
+✓ Output has EXACTLY ${batch.length} items
+✓ Each item has: id, name, category
+✓ All IDs match input IDs exactly
+✓ All names are translated to ${targetLangName}
+✓ All categories are translated to ${targetLangName}
+
+Remember: You MUST return ALL ${batch.length} items with translations. No exceptions.`;
 
       let retryCount = 0;
       const maxRetries = 3;
@@ -1690,4 +1840,5 @@ export async function executeTool(
       );
   }
 }
+
 

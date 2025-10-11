@@ -360,17 +360,58 @@ export function ChatInterface({ venueId, isOpen, onClose, initialPrompt }: ChatI
         
         results.push({ tool: tool.name, result: data.result });
 
-        // Add execution message with undo capability
+        // Handle navigation results
+        if (tool.name === "navigation.go_to_page" && data.result?.result?.route) {
+          console.log("[AI CHAT] Navigating to:", data.result.result.route);
+          // Navigate immediately
+          router.push(data.result.result.route);
+          
+          // Add navigation message (no undo for navigation)
+          const navMsg: ChatMessage = {
+            id: `execution-${Date.now()}-${tool.name}`,
+            role: "assistant",
+            content: `✅ Navigating to ${data.result.result.page} page...`,
+            toolName: tool.name,
+            toolParams: tool.params,
+            executionResult: data.result,
+            auditId: data.result.auditId,
+            createdAt: new Date().toISOString(),
+            canUndo: false,
+          };
+
+          setMessages(prev => [...prev, navMsg]);
+          
+          // Save navigation message to database
+          if (currentConversation) {
+            await fetch(`/api/ai-assistant/conversations/${currentConversation.id}/messages`, {
+              method: "POST",
+              headers: { "Content-Type": "application/json" },
+              body: JSON.stringify({
+                role: "assistant",
+                content: navMsg.content,
+                toolName: navMsg.toolName,
+                toolParams: navMsg.toolParams,
+                executionResult: navMsg.executionResult,
+                auditId: navMsg.auditId,
+                canUndo: false,
+              }),
+            });
+          }
+          
+          continue; // Skip undo handling for navigation
+        }
+
+        // Add execution message with undo capability for non-navigation actions
         const executionMsg: ChatMessage = {
           id: `execution-${Date.now()}-${tool.name}`,
           role: "assistant",
-          content: `✅ Executed: ${tool.name.replace(/\./g, " → ")}. ${data.result.message || "Action completed successfully."}`,
+          content: `✅ Executed: ${tool.name.replace(/\./g, " → ")}. ${data.result.result?.message || "Action completed successfully."}`,
           toolName: tool.name,
           toolParams: tool.params,
           executionResult: data.result,
           auditId: data.result.auditId,
           createdAt: new Date().toISOString(),
-          canUndo: true,
+          canUndo: tool.name !== "analytics.get_stats" && tool.name !== "analytics.get_insights", // Don't allow undo for read-only actions
           undoData: {
             toolName: tool.name,
             params: tool.params,
