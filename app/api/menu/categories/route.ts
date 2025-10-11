@@ -107,9 +107,42 @@ export async function PUT(request: NextRequest) {
       );
     }
 
-    // For now, just return success without persisting to database
-    // The category order will be maintained in the frontend state
-    // TODO: Implement proper database persistence when schema is confirmed
+    // Update or create menu upload record with new category order
+    if (existingUpload) {
+      const { error: updateError } = await supabase
+        .from('menu_uploads')
+        .update({ 
+          category_order: categories,
+          updated_at: new Date().toISOString()
+        })
+        .eq('id', existingUpload.id);
+
+      if (updateError) {
+        console.error('[CATEGORIES API] Error updating category order:', updateError);
+        return NextResponse.json(
+          { error: 'Failed to update category order' },
+          { status: 500 }
+        );
+      }
+    } else {
+      // Create new menu upload record if none exists
+      const { error: insertError } = await supabase
+        .from('menu_uploads')
+        .insert({
+          venue_id: venueId,
+          category_order: categories,
+          created_at: new Date().toISOString(),
+          updated_at: new Date().toISOString()
+        });
+
+      if (insertError) {
+        console.error('[CATEGORIES API] Error creating category order:', insertError);
+        return NextResponse.json(
+          { error: 'Failed to create category order' },
+          { status: 500 }
+        );
+      }
+    }
 
     return NextResponse.json({ 
       success: true, 

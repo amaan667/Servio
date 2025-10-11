@@ -65,6 +65,18 @@ export async function POST(request: NextRequest) {
       )
     );
 
+    // Create a mapping of original categories to current categories
+    // This preserves translations while maintaining original order
+    const categoryMapping: Record<string, string> = {};
+    originalCategories.forEach(origCat => {
+      const matchingCurrentCat = currentCategories.find(currCat => 
+        currCat.toLowerCase() === origCat.toLowerCase()
+      );
+      if (matchingCurrentCat) {
+        categoryMapping[origCat] = matchingCurrentCat;
+      }
+    });
+
 
     // Delete menu items that belong to manually added categories
     if (manuallyAddedCategories.length > 0) {
@@ -84,11 +96,16 @@ export async function POST(request: NextRequest) {
 
     }
 
+    // Create the new category order preserving translations but maintaining original order
+    const resetCategoryOrder = originalCategories.map(origCat => 
+      categoryMapping[origCat] || origCat
+    );
+
     // Update the category_order in the most recent upload to reflect the reset
     const { error: updateError } = await supabase
       .from('menu_uploads')
       .update({ 
-        category_order: originalCategories,
+        category_order: resetCategoryOrder,
         updated_at: new Date().toISOString()
       })
       .eq('venue_id', venueId)
@@ -104,8 +121,8 @@ export async function POST(request: NextRequest) {
 
     return NextResponse.json({ 
       ok: true, 
-      message: 'Categories reset to original PDF order successfully',
-      originalCategories,
+      message: 'Categories reset to original PDF order successfully (translations preserved)',
+      originalCategories: resetCategoryOrder,
       removedCategories: manuallyAddedCategories,
       removedItemsCount: menuItems?.filter(item => 
         manuallyAddedCategories.includes(item.category)
