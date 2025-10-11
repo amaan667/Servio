@@ -12,8 +12,9 @@ import {
 } from "@/components/ui/dialog";
 import { Badge } from "@/components/ui/badge";
 import { Users, Crown, Shield, UserCheck, Settings, BarChart, Package, ChefHat } from "lucide-react";
-import { createClient } from "@/lib/supabase/client";
 import { toast } from "@/hooks/use-toast";
+import { useUserRole } from "@/hooks/use-user-role";
+import { ConfirmSelfDemotionDialog } from "@/components/confirm-self-demotion-dialog";
 
 interface Role {
   id: string;
@@ -83,66 +84,94 @@ const ROLES: Role[] = [
 
 interface RoleManagementPopupProps {
   venueId: string;
-  currentUserRole?: string;
   onRoleChange?: (newRole: string) => void;
 }
 
 export default function RoleManagementPopup({ 
   venueId, 
-  currentUserRole = "owner",
   onRoleChange 
 }: RoleManagementPopupProps) {
   const [open, setOpen] = useState(false);
-  const [selectedRole, setSelectedRole] = useState<string>(currentUserRole);
-  const [loading, setLoading] = useState(false);
+  const [selectedRole, setSelectedRole] = useState<string>("");
+  const [showDemotionWarning, setShowDemotionWarning] = useState(false);
+  const [pendingRole, setPendingRole] = useState<string>("");
+  const { userRole, permissions, updateRole, loading: roleLoading } = useUserRole(venueId);
+
+  useEffect(() => {
+    if (userRole) {
+      setSelectedRole(userRole.role);
+    }
+  }, [userRole]);
 
   const handleRoleChange = async (roleId: string) => {
-    setLoading(true);
-    try {
-      const supabase = createClient();
-      
-      // Update user role in the database
-      const { error } = await supabase
-        .from("user_venue_roles")
-        .update({ role: roleId })
-        .eq("venue_id", venueId);
+    // Check if this is a self-demotion from owner
+    if (userRole?.role === 'owner' && roleId !== 'owner') {
+      setPendingRole(roleId);
+      setShowDemotionWarning(true);
+      return;
+    }
 
-      if (error) {
-        throw error;
-      }
+    // Proceed with role change
+    await performRoleChange(roleId);
+  };
 
+  const performRoleChange = async (roleId: string) => {
+    const success = await updateRole(roleId);
+    
+    if (success) {
       setSelectedRole(roleId);
       onRoleChange?.(roleId);
       
       toast({
         title: "Role updated successfully",
-        description: `Your role has been changed to ${ROLES.find(r => r.id === roleId)?.name}`,
+        description: `Your role has been changed to ${ROLES.find(r => r.id === roleId)?.name}. Page will refresh to apply permissions.`,
       });
 
       setOpen(false);
-    } catch (error: any) {
-      console.error("Error updating role:", error);
+      setShowDemotionWarning(false);
+      
+      // Refresh the page to apply new permissions
+      setTimeout(() => {
+        window.location.reload();
+      }, 1500);
+    } else {
       toast({
         title: "Failed to update role",
-        description: error.message || "Please try again",
+        description: "Please try again",
         variant: "destructive",
       });
-    } finally {
-      setLoading(false);
     }
+  };
+
+  const handleConfirmDemotion = () => {
+    performRoleChange(pendingRole);
   };
 
   const currentRole = ROLES.find(role => role.id === selectedRole);
 
+  // Don't show role management if user can't manage roles
+  if (permissions && !permissions.canManageRoles) {
+    return null;
+  }
+
   return (
-    <Dialog open={open} onOpenChange={setOpen}>
-      <DialogTrigger asChild>
-        <Button variant="outline" className="flex items-center gap-2">
-          <Users className="h-4 w-4" />
-          Manage Roles
-        </Button>
-      </DialogTrigger>
-      <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
+    <>
+      <ConfirmSelfDemotionDialog
+        open={showDemotionWarning}
+        onOpenChange={setShowDemotionWarning}
+        onConfirm={handleConfirmDemotion}
+        currentRole={userRole?.role || 'owner'}
+        newRole={ROLES.find(r => r.id === pendingRole)?.name || pendingRole}
+      />
+      
+      <Dialog open={open} onOpenChange={setOpen}>
+        <DialogTrigger asChild>
+          <Button variant="outline" className="flex items-center gap-2" disabled={roleLoading}>
+            <Users className="h-4 w-4" />
+            {roleLoading ? "Loading..." : "Manage Roles"}
+          </Button>
+        </DialogTrigger>
+        <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
         <DialogHeader>
           <DialogTitle className="flex items-center gap-2">
             <Users className="h-5 w-5" />
@@ -218,15 +247,15 @@ export default function RoleManagementPopup({
             <Button 
               variant="outline" 
               onClick={() => setOpen(false)}
-              disabled={loading}
+              disabled={roleLoading}
             >
               Cancel
             </Button>
             <Button 
               onClick={() => handleRoleChange(selectedRole)}
-              disabled={loading || selectedRole === currentUserRole}
+              disabled={roleLoading || selectedRole === userRole?.role}
             >
-              {loading ? "Updating..." : "Update Role"}
+              {roleLoading ? "Updating..." : "Update Role"}
             </Button>
           </div>
 
@@ -242,5 +271,6 @@ export default function RoleManagementPopup({
         </div>
       </DialogContent>
     </Dialog>
+    </>
   );
 }

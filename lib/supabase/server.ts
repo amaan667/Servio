@@ -136,5 +136,11 @@ export async function refreshSession() {
 }
 
 // Alias for backward compatibility with existing API routes
-export const createClient = createServerSupabase;
+// Can now accept options to create admin client
+export function createClient(options?: { serviceRole?: boolean }) {
+  if (options?.serviceRole) {
+    return createAdminClient();
+  }
+  return createServerSupabase();
+}
 

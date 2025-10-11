@@ -18,6 +18,7 @@ import { useRequestCancellation } from '@/lib/request-utils';
 import OnboardingCompletionBanner from '@/components/onboarding-completion-banner';
 import TrialStatusBanner from '@/components/TrialStatusBanner';
 import RoleManagementPopup from '@/components/role-management-popup';
+import { useUserRole } from '@/hooks/use-user-role';
 
 interface DashboardCounts {
   live_count: number;
@@ -79,6 +80,9 @@ const VenueDashboardClient = React.memo(function VenueDashboardClient({
   
   // Enable intelligent prefetching for dashboard routes
   useDashboardPrefetch(venueId);
+  
+  // Get user role and permissions
+  const { permissions, userRole } = useUserRole(venueId);
 
   useEffect(() => {
     const loadVenueAndStats = async () => {
@@ -447,7 +451,6 @@ const VenueDashboardClient = React.memo(function VenueDashboardClient({
               {/* Role Management Popup */}
               <RoleManagementPopup 
                 venueId={venueId}
-                currentUserRole="owner"
               />
               
               {/* Connection Status Indicator */}
@@ -491,123 +494,147 @@ const VenueDashboardClient = React.memo(function VenueDashboardClient({
 
         {/* Stats Overview */}
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 sm:gap-6 mb-6 sm:mb-8">
-           <Link href={`/dashboard/${venueId}/live-orders?since=today`}>
-            <Card className="cursor-pointer hover:shadow-lg transition-shadow">
-              <CardContent className="p-4 sm:p-6">
-                <div className="flex items-center justify-between">
-                  <div>
-                    <p className="text-xs sm:text-sm font-medium text-gray-700">Today's Orders</p>
-                    <p className="text-xl sm:text-2xl font-bold text-foreground">{counts.today_orders_count}</p>
+          {/* Today's Orders - Only show if can view live orders */}
+          {permissions?.canViewLiveOrders && (
+            <Link href={`/dashboard/${venueId}/live-orders?since=today`}>
+              <Card className="cursor-pointer hover:shadow-lg transition-shadow">
+                <CardContent className="p-4 sm:p-6">
+                  <div className="flex items-center justify-between">
+                    <div>
+                      <p className="text-xs sm:text-sm font-medium text-gray-700">Today's Orders</p>
+                      <p className="text-xl sm:text-2xl font-bold text-foreground">{counts.today_orders_count}</p>
+                    </div>
+                    <div className="w-10 h-10 sm:w-12 sm:h-12 bg-blue-100 rounded-lg flex items-center justify-center">
+                      <Clock className="h-5 w-5 sm:h-6 sm:w-6 text-blue-600" />
+                    </div>
                   </div>
-                  <div className="w-10 h-10 sm:w-12 sm:h-12 bg-blue-100 rounded-lg flex items-center justify-center">
-                    <Clock className="h-5 w-5 sm:h-6 sm:w-6 text-blue-600" />
-                  </div>
-                </div>
-              </CardContent>
-            </Card>
-          </Link>
+                </CardContent>
+              </Card>
+            </Link>
+          )}
 
-          <Link href={`/dashboard/${venueId}/analytics`}>
-            <Card className="cursor-pointer hover:shadow-lg transition-shadow">
-              <CardContent className="p-4 sm:p-6">
-                <div className="flex items-center justify-between">
-                  <div>
-                    <p className="text-xs sm:text-sm font-medium text-gray-700">Revenue</p>
-                    <p className="text-xl sm:text-2xl font-bold text-foreground">£{stats.revenue.toFixed(2)}</p>
+          {/* Revenue - Only show if can view analytics */}
+          {permissions?.canViewAnalytics && (
+            <Link href={`/dashboard/${venueId}/analytics`}>
+              <Card className="cursor-pointer hover:shadow-lg transition-shadow">
+                <CardContent className="p-4 sm:p-6">
+                  <div className="flex items-center justify-between">
+                    <div>
+                      <p className="text-xs sm:text-sm font-medium text-gray-700">Revenue</p>
+                      <p className="text-xl sm:text-2xl font-bold text-foreground">£{stats.revenue.toFixed(2)}</p>
+                    </div>
+                    <div className="w-10 h-10 sm:w-12 sm:h-12 bg-green-100 rounded-lg flex items-center justify-center">
+                      <TrendingUp className="h-5 w-5 sm:h-6 sm:w-6 text-green-600" />
+                    </div>
                   </div>
-                  <div className="w-10 h-10 sm:w-12 sm:h-12 bg-green-100 rounded-lg flex items-center justify-center">
-                    <TrendingUp className="h-5 w-5 sm:h-6 sm:w-6 text-green-600" />
-                  </div>
-                </div>
-                {/* Remove unpaid count since all orders are now paid */}
-              </CardContent>
-            </Card>
-          </Link>
+                </CardContent>
+              </Card>
+            </Link>
+          )}
 
-           <Link href={`/dashboard/${venueId}/tables`}>
-            <Card className="cursor-pointer hover:shadow-lg transition-shadow">
-              <CardContent className="p-4 sm:p-6">
-                <div className="flex items-center justify-between">
-                  <div>
-                    <p className="text-xs sm:text-sm font-medium text-gray-700">Tables Set Up</p>
-                    <p className="text-xl sm:text-2xl font-bold text-foreground">{counts.tables_set_up}</p>
+          {/* Tables - Only show if can manage tables */}
+          {permissions?.canManageTables && (
+            <Link href={`/dashboard/${venueId}/tables`}>
+              <Card className="cursor-pointer hover:shadow-lg transition-shadow">
+                <CardContent className="p-4 sm:p-6">
+                  <div className="flex items-center justify-between">
+                    <div>
+                      <p className="text-xs sm:text-sm font-medium text-gray-700">Tables Set Up</p>
+                      <p className="text-xl sm:text-2xl font-bold text-foreground">{counts.tables_set_up}</p>
+                    </div>
+                    <div className="w-10 h-10 sm:w-12 sm:h-12 bg-purple-100 rounded-lg flex items-center justify-center">
+                      <Table className="h-5 w-5 sm:h-6 sm:w-6 text-purple-600" />
+                    </div>
                   </div>
-                  <div className="w-10 h-10 sm:w-12 sm:h-12 bg-purple-100 rounded-lg flex items-center justify-center">
-                    <Table className="h-5 w-5 sm:h-6 sm:w-6 text-purple-600" />
-                  </div>
-                </div>
-              </CardContent>
-            </Card>
-          </Link>
+                </CardContent>
+              </Card>
+            </Link>
+          )}
 
-          <Link href={`/dashboard/${venueId}/menu`}>
-            <Card className="cursor-pointer hover:shadow-lg transition-shadow">
-              <CardContent className="p-4 sm:p-6">
-                <div className="flex items-center justify-between">
-                  <div>
-                    <p className="text-xs sm:text-sm font-medium text-gray-700">Menu Items</p>
-                    <p className="text-xl sm:text-2xl font-bold text-foreground">{stats.menuItems}</p>
+          {/* Menu Items - Only show if can manage menu */}
+          {permissions?.canManageMenu && (
+            <Link href={`/dashboard/${venueId}/menu`}>
+              <Card className="cursor-pointer hover:shadow-lg transition-shadow">
+                <CardContent className="p-4 sm:p-6">
+                  <div className="flex items-center justify-between">
+                    <div>
+                      <p className="text-xs sm:text-sm font-medium text-gray-700">Menu Items</p>
+                      <p className="text-xl sm:text-2xl font-bold text-foreground">{stats.menuItems}</p>
+                    </div>
+                    <div className="w-10 h-10 sm:w-12 sm:h-12 bg-orange-100 rounded-lg flex items-center justify-center">
+                      <ShoppingBag className="h-5 w-5 sm:h-6 sm:w-6 text-orange-600" />
+                    </div>
                   </div>
-                  <div className="w-10 h-10 sm:w-12 sm:h-12 bg-orange-100 rounded-lg flex items-center justify-center">
-                    <ShoppingBag className="h-5 w-5 sm:h-6 sm:w-6 text-orange-600" />
-                  </div>
-                </div>
-              </CardContent>
-            </Card>
-          </Link>
+                </CardContent>
+              </Card>
+            </Link>
+          )}
         </div>
 
         {/* Feature grid */}
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 sm:gap-6">
-          <Link href={`/dashboard/${venueId}/live-orders`}>
-            <Card className="hover:shadow-lg transition-shadow cursor-pointer">
-              <CardContent className="p-4 sm:p-6">
-                <div className="w-10 h-10 sm:w-12 sm:h-12 bg-blue-100 rounded-lg flex items-center justify-center mb-4">
-                  <Clock className="h-5 w-5 sm:h-6 sm:w-6 text-blue-600" />
-                </div>
-                <h3 className="text-base sm:text-lg font-semibold mb-2 text-foreground">Live Orders</h3>
-                <p className="text-gray-700 text-xs sm:text-sm font-medium">Monitor and manage incoming orders in real-time</p>
-              </CardContent>
-            </Card>
-          </Link>
+          {/* Live Orders - Only show if can view live orders */}
+          {permissions?.canViewLiveOrders && (
+            <Link href={`/dashboard/${venueId}/live-orders`}>
+              <Card className="hover:shadow-lg transition-shadow cursor-pointer">
+                <CardContent className="p-4 sm:p-6">
+                  <div className="w-10 h-10 sm:w-12 sm:h-12 bg-blue-100 rounded-lg flex items-center justify-center mb-4">
+                    <Clock className="h-5 w-5 sm:h-6 sm:w-6 text-blue-600" />
+                  </div>
+                  <h3 className="text-base sm:text-lg font-semibold mb-2 text-foreground">Live Orders</h3>
+                  <p className="text-gray-700 text-xs sm:text-sm font-medium">Monitor and manage incoming orders in real-time</p>
+                </CardContent>
+              </Card>
+            </Link>
+          )}
 
-          <Link href={`/dashboard/${venueId}/kds`}>
-            <Card className="hover:shadow-lg transition-shadow cursor-pointer">
-              <CardContent className="p-4 sm:p-6">
-                <div className="w-10 h-10 sm:w-12 sm:h-12 bg-red-100 rounded-lg flex items-center justify-center mb-4">
-                  <ChefHat className="h-5 w-5 sm:h-6 sm:w-6 text-red-600" />
-                </div>
-                <h3 className="text-base sm:text-lg font-semibold mb-2 text-foreground">Kitchen Display</h3>
-                <p className="text-gray-700 text-xs sm:text-sm font-medium">Manage kitchen prep stations and ticket flow</p>
-              </CardContent>
-            </Card>
-          </Link>
+          {/* Kitchen Display - Only show if can use KDS */}
+          {permissions?.canUseKDS && (
+            <Link href={`/dashboard/${venueId}/kds`}>
+              <Card className="hover:shadow-lg transition-shadow cursor-pointer">
+                <CardContent className="p-4 sm:p-6">
+                  <div className="w-10 h-10 sm:w-12 sm:h-12 bg-red-100 rounded-lg flex items-center justify-center mb-4">
+                    <ChefHat className="h-5 w-5 sm:h-6 sm:w-6 text-red-600" />
+                  </div>
+                  <h3 className="text-base sm:text-lg font-semibold mb-2 text-foreground">Kitchen Display</h3>
+                  <p className="text-gray-700 text-xs sm:text-sm font-medium">Manage kitchen prep stations and ticket flow</p>
+                </CardContent>
+              </Card>
+            </Link>
+          )}
 
-          <Link href={`/dashboard/${venueId}/menu`}>
-            <Card className="hover:shadow-lg transition-shadow cursor-pointer">
-              <CardContent className="p-4 sm:p-6">
-                <div className="w-10 h-10 sm:w-12 sm:h-12 bg-orange-100 rounded-lg flex items-center justify-center mb-4">
-                  <ShoppingBag className="h-5 w-5 sm:h-6 sm:w-6 text-orange-600" />
-                </div>
-                <h3 className="text-base sm:text-lg font-semibold mb-2 text-foreground">Menu Management</h3>
-                <p className="text-gray-700 text-xs sm:text-sm font-medium">Update your menu items and manage categories</p>
-              </CardContent>
-            </Card>
-          </Link>
+          {/* Menu Management - Only show if can manage menu */}
+          {permissions?.canManageMenu && (
+            <Link href={`/dashboard/${venueId}/menu`}>
+              <Card className="hover:shadow-lg transition-shadow cursor-pointer">
+                <CardContent className="p-4 sm:p-6">
+                  <div className="w-10 h-10 sm:w-12 sm:h-12 bg-orange-100 rounded-lg flex items-center justify-center mb-4">
+                    <ShoppingBag className="h-5 w-5 sm:h-6 sm:w-6 text-orange-600" />
+                  </div>
+                  <h3 className="text-base sm:text-lg font-semibold mb-2 text-foreground">Menu Management</h3>
+                  <p className="text-gray-700 text-xs sm:text-sm font-medium">Update your menu items and manage categories</p>
+                </CardContent>
+              </Card>
+            </Link>
+          )}
 
-          <Link href={`/generate-qr?venue=${venueId}`}>
-            <Card className="hover:shadow-lg transition-shadow cursor-pointer">
-              <CardContent className="p-4 sm:p-6">
-                <div className="w-10 h-10 sm:w-12 sm:h-12 bg-purple-100 rounded-lg flex items-center justify-center mb-4">
-                  <QrCode className="h-5 w-5 sm:h-6 sm:w-6 text-purple-600" />
-                </div>
-                <h3 className="text-base sm:text-lg font-semibold mb-2 text-foreground">QR Codes</h3>
-                <p className="text-gray-700 text-xs sm:text-sm font-medium">Generate and manage QR codes for your tables</p>
-              </CardContent>
-            </Card>
-          </Link>
+          {/* QR Codes - Only show if can manage tables */}
+          {permissions?.canManageTables && (
+            <Link href={`/generate-qr?venue=${venueId}`}>
+              <Card className="hover:shadow-lg transition-shadow cursor-pointer">
+                <CardContent className="p-4 sm:p-6">
+                  <div className="w-10 h-10 sm:w-12 sm:h-12 bg-purple-100 rounded-lg flex items-center justify-center mb-4">
+                    <QrCode className="h-5 w-5 sm:h-6 sm:w-6 text-purple-600" />
+                  </div>
+                  <h3 className="text-base sm:text-lg font-semibold mb-2 text-foreground">QR Codes</h3>
+                  <p className="text-gray-700 text-xs sm:text-sm font-medium">Generate and manage QR codes for your tables</p>
+                </CardContent>
+              </Card>
+            </Link>
+          )}
 
-          {venue?.has_tables !== false && (
+          {/* Table Management - Only show if can manage tables */}
+          {venue?.has_tables !== false && permissions?.canManageTables && (
             <Link 
               href={`/dashboard/${venueId}/tables`}
               onClick={() => {
@@ -626,111 +653,131 @@ const VenueDashboardClient = React.memo(function VenueDashboardClient({
             </Link>
           )}
 
-          <Link href={`/dashboard/${venueId}/analytics`}>
-            <Card className="hover:shadow-lg transition-shadow cursor-pointer">
-              <CardContent className="p-4 sm:p-6">
-                <div className="w-10 h-10 sm:w-12 sm:h-12 bg-green-100 rounded-lg flex items-center justify-center mb-4">
-                  <BarChart className="h-5 w-5 sm:h-6 sm:w-6 text-green-600" />
-                </div>
-                <h3 className="text-base sm:text-lg font-semibold mb-2 text-foreground">Analytics</h3>
-                <p className="text-gray-700 text-xs sm:text-sm font-medium">View detailed reports and business insights</p>
-              </CardContent>
-            </Card>
-          </Link>
+          {/* Analytics - Only show if can view analytics */}
+          {permissions?.canViewAnalytics && (
+            <Link href={`/dashboard/${venueId}/analytics`}>
+              <Card className="hover:shadow-lg transition-shadow cursor-pointer">
+                <CardContent className="p-4 sm:p-6">
+                  <div className="w-10 h-10 sm:w-12 sm:h-12 bg-green-100 rounded-lg flex items-center justify-center mb-4">
+                    <BarChart className="h-5 w-5 sm:h-6 sm:w-6 text-green-600" />
+                  </div>
+                  <h3 className="text-base sm:text-lg font-semibold mb-2 text-foreground">Analytics</h3>
+                  <p className="text-gray-700 text-xs sm:text-sm font-medium">View detailed reports and business insights</p>
+                </CardContent>
+              </Card>
+            </Link>
+          )}
 
-          <Link href={`/dashboard/${venueId}/feedback`}>
-            <Card className="hover:shadow-lg transition-shadow cursor-pointer">
-              <CardContent className="p-4 sm:p-6">
-                <div className="w-10 h-10 sm:w-12 sm:h-12 bg-yellow-100 rounded-lg flex items-center justify-center mb-4">
-                  <BarChart className="h-5 w-5 sm:h-6 sm:w-6 text-yellow-600" />
-                </div>
-                <h3 className="text-base sm:text-lg font-semibold mb-2 text-foreground">Feedback</h3>
-                <p className="text-gray-700 text-xs sm:text-sm font-medium">See customer reviews and ratings</p>
-              </CardContent>
-            </Card>
-          </Link>
+          {/* Feedback - Only show if can view analytics */}
+          {permissions?.canViewAnalytics && (
+            <Link href={`/dashboard/${venueId}/feedback`}>
+              <Card className="hover:shadow-lg transition-shadow cursor-pointer">
+                <CardContent className="p-4 sm:p-6">
+                  <div className="w-10 h-10 sm:w-12 sm:h-12 bg-yellow-100 rounded-lg flex items-center justify-center mb-4">
+                    <BarChart className="h-5 w-5 sm:h-6 sm:w-6 text-yellow-600" />
+                  </div>
+                  <h3 className="text-base sm:text-lg font-semibold mb-2 text-foreground">Feedback</h3>
+                  <p className="text-gray-700 text-xs sm:text-sm font-medium">See customer reviews and ratings</p>
+                </CardContent>
+              </Card>
+            </Link>
+          )}
 
-          <Link href={`/dashboard/${venueId}/staff`}>
-            <Card className="hover:shadow-lg transition-shadow cursor-pointer">
-              <CardContent className="p-4 sm:p-6">
-                <div className="w-10 h-10 sm:w-12 sm:h-12 bg-slate-100 rounded-lg flex items-center justify-center mb-4">
-                  <Users className="h-5 w-5 sm:h-6 sm:w-6 text-slate-700" />
-                </div>
-                <h3 className="text-base sm:text-lg font-semibold mb-2 text-foreground">Staff Management</h3>
-                <p className="text-gray-700 text-xs sm:text-sm font-medium">Add staff and manage roles</p>
-              </CardContent>
-            </Card>
-          </Link>
+          {/* Staff Management - Only show if can manage staff */}
+          {permissions?.canManageStaff && (
+            <Link href={`/dashboard/${venueId}/staff`}>
+              <Card className="hover:shadow-lg transition-shadow cursor-pointer">
+                <CardContent className="p-4 sm:p-6">
+                  <div className="w-10 h-10 sm:w-12 sm:h-12 bg-slate-100 rounded-lg flex items-center justify-center mb-4">
+                    <Users className="h-5 w-5 sm:h-6 sm:w-6 text-slate-700" />
+                  </div>
+                  <h3 className="text-base sm:text-lg font-semibold mb-2 text-foreground">Staff Management</h3>
+                  <p className="text-gray-700 text-xs sm:text-sm font-medium">Add staff and manage roles</p>
+                </CardContent>
+              </Card>
+            </Link>
+          )}
 
-          <Link href={`/dashboard/${venueId}/inventory`}>
-            <Card className="hover:shadow-lg transition-shadow cursor-pointer">
-              <CardContent className="p-4 sm:p-6">
-                <div className="w-10 h-10 sm:w-12 sm:h-12 bg-emerald-100 rounded-lg flex items-center justify-center mb-4">
-                  <Package className="h-5 w-5 sm:h-6 sm:w-6 text-emerald-600" />
-                </div>
-                <h3 className="text-base sm:text-lg font-semibold mb-2 text-foreground">Inventory Management</h3>
-                <p className="text-gray-700 text-xs sm:text-sm font-medium">Track ingredients, stock levels, and costs</p>
-              </CardContent>
-            </Card>
-          </Link>
+          {/* Inventory Management - Only show if can manage inventory */}
+          {permissions?.canManageInventory && (
+            <Link href={`/dashboard/${venueId}/inventory`}>
+              <Card className="hover:shadow-lg transition-shadow cursor-pointer">
+                <CardContent className="p-4 sm:p-6">
+                  <div className="w-10 h-10 sm:w-12 sm:h-12 bg-emerald-100 rounded-lg flex items-center justify-center mb-4">
+                    <Package className="h-5 w-5 sm:h-6 sm:w-6 text-emerald-600" />
+                  </div>
+                  <h3 className="text-base sm:text-lg font-semibold mb-2 text-foreground">Inventory Management</h3>
+                  <p className="text-gray-700 text-xs sm:text-sm font-medium">Track ingredients, stock levels, and costs</p>
+                </CardContent>
+              </Card>
+            </Link>
+          )}
 
         </div>
 
-        {/* Getting Started Section */}
-        <div className="mt-12">
-          <Card>
-            <CardHeader>
-              <h3 className="text-lg font-semibold text-foreground">Getting Started</h3>
-              <p className="text-gray-700 font-medium">Complete these steps to set up your venue</p>
-            </CardHeader>
-            <CardContent className="space-y-4">
-              <div className="flex items-center justify-between p-4 bg-muted rounded-lg">
-                <div className="flex items-center space-x-4">
-                  <div className="w-8 h-8 bg-purple-100 rounded-full flex items-center justify-center">
-                    <Plus className="h-4 w-4 text-purple-600" />
+        {/* Getting Started Section - Only show for owners and managers */}
+        {(permissions?.canManageMenu || permissions?.canManageTables || permissions?.canManageSettings) && (
+          <div className="mt-12">
+            <Card>
+              <CardHeader>
+                <h3 className="text-lg font-semibold text-foreground">Getting Started</h3>
+                <p className="text-gray-700 font-medium">Complete these steps to set up your venue</p>
+              </CardHeader>
+              <CardContent className="space-y-4">
+                {permissions?.canManageMenu && (
+                  <div className="flex items-center justify-between p-4 bg-muted rounded-lg">
+                    <div className="flex items-center space-x-4">
+                      <div className="w-8 h-8 bg-purple-100 rounded-full flex items-center justify-center">
+                        <Plus className="h-4 w-4 text-purple-600" />
+                      </div>
+                      <div>
+                        <h4 className="font-medium text-foreground">Add Menu Items</h4>
+                        <p className="text-sm text-gray-700 font-medium">Upload your menu or add items manually</p>
+                      </div>
+                    </div>
+                    <Button variant="outline" asChild>
+                      <Link href={`/dashboard/${venueId}/menu?openAdd=true`}>Get Started</Link>
+                    </Button>
                   </div>
-                  <div>
-                    <h4 className="font-medium text-foreground">Add Menu Items</h4>
-                    <p className="text-sm text-gray-700 font-medium">Upload your menu or add items manually</p>
-                  </div>
-                </div>
-                <Button variant="outline" asChild>
-                  <Link href={`/dashboard/${venueId}/menu?openAdd=true`}>Get Started</Link>
-                </Button>
-              </div>
+                )}
 
-              <div className="flex items-center justify-between p-4 bg-muted rounded-lg">
-                <div className="flex items-center space-x-4">
-                  <div className="w-8 h-8 bg-purple-100 rounded-full flex items-center justify-center">
-                    <QrCode className="h-4 w-4 text-purple-600" />
+                {permissions?.canManageTables && (
+                  <div className="flex items-center justify-between p-4 bg-muted rounded-lg">
+                    <div className="flex items-center space-x-4">
+                      <div className="w-8 h-8 bg-purple-100 rounded-full flex items-center justify-center">
+                        <QrCode className="h-4 w-4 text-purple-600" />
+                      </div>
+                      <div>
+                        <h4 className="font-medium text-foreground">Generate QR Codes</h4>
+                        <p className="text-sm text-gray-700 font-medium">Create QR codes for your tables</p>
+                      </div>
+                    </div>
+                    <Button variant="outline" asChild>
+                      <Link href={`/generate-qr?venue=${venueId}`}>Generate</Link>
+                    </Button>
                   </div>
-                  <div>
-                    <h4 className="font-medium text-foreground">Generate QR Codes</h4>
-                    <p className="text-sm text-gray-700 font-medium">Create QR codes for your tables</p>
-                  </div>
-                </div>
-                <Button variant="outline" asChild>
-                  <Link href={`/generate-qr?venue=${venueId}`}>Generate</Link>
-                </Button>
-              </div>
+                )}
 
-              <div className="flex items-center justify-between p-4 bg-muted rounded-lg">
-                <div className="flex items-center space-x-4">
-                  <div className="w-8 h-8 bg-purple-100 rounded-full flex items-center justify-center">
-                    <Settings className="h-4 w-4 text-purple-600" />
+                {permissions?.canManageSettings && (
+                  <div className="flex items-center justify-between p-4 bg-muted rounded-lg">
+                    <div className="flex items-center space-x-4">
+                      <div className="w-8 h-8 bg-purple-100 rounded-full flex items-center justify-center">
+                        <Settings className="h-4 w-4 text-purple-600" />
+                      </div>
+                      <div>
+                        <h4 className="font-medium text-foreground">Configure Settings</h4>
+                        <p className="text-sm text-gray-900 font-medium">Customize your venue settings</p>
+                      </div>
+                    </div>
+                    <Button variant="outline" asChild>
+                      <Link href={`/dashboard/${venueId}/settings`}>Configure</Link>
+                    </Button>
                   </div>
-                  <div>
-                    <h4 className="font-medium text-foreground">Configure Settings</h4>
-                    <p className="text-sm text-gray-900 font-medium">Customize your venue settings</p>
-                  </div>
-                </div>
-                <Button variant="outline" asChild>
-                  <Link href={`/dashboard/${venueId}/settings`}>Configure</Link>
-                </Button>
-              </div>
-            </CardContent>
-          </Card>
-        </div>
+                )}
+              </CardContent>
+            </Card>
+          </div>
+        )}
       </div>
       
     </div>

@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { createClient } from "@/lib/supabase/server";
+import { requireRole, PERMISSIONS } from "@/lib/requireRole";
 
 export async function POST(req: NextRequest) {
   try {
@@ -7,7 +8,17 @@ export async function POST(req: NextRequest) {
 
     // Save menu items to Supabase using service role key
     if (body.items && Array.isArray(body.items) && body.venue_id) {
-          const supabase = await createClient();
+      const supabase = await createClient();
+      
+      // Require owner or manager role to modify menu
+      try {
+        await requireRole(supabase, body.venue_id, PERMISSIONS.MANAGE_MENU);
+      } catch (error: any) {
+        return NextResponse.json(
+          { error: error.message || 'Access denied' },
+          { status: error.status || 403 }
+        );
+      }
       // Attach venue_id to each item if not present
       const itemsToInsert = body.items.map((item: any) => ({
         ...item,

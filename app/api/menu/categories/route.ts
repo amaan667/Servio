@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { createClient } from '@/lib/supabase/server';
+import { requireRole, PERMISSIONS } from '@/lib/requireRole';
 
 export async function GET(request: NextRequest) {
   try {
@@ -89,6 +90,9 @@ export async function PUT(request: NextRequest) {
     }
 
     const supabase = await createClient();
+    
+    // Require owner or manager role to modify menu categories
+    await requireRole(supabase, venueId, PERMISSIONS.MANAGE_MENU);
 
     // Update or create menu upload record with new category order
     const { data: existingUpload, error: fetchError } = await supabase
@@ -171,6 +175,9 @@ export async function POST(request: NextRequest) {
     }
 
     const supabase = await createClient();
+    
+    // Require owner or manager role to add menu categories
+    await requireRole(supabase, venueId, PERMISSIONS.MANAGE_MENU);
 
     // Get current category order
     const { data: uploadData, error: fetchError } = await supabase

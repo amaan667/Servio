@@ -1,6 +1,7 @@
 import { NextResponse } from 'next/server';
 import { createClient } from '@/lib/supabase/server';
 import { createAdminClient } from '@/lib/supabase/server';
+import { requireRole, PERMISSIONS } from '@/lib/requireRole';
 
 export const runtime = 'nodejs';
 
@@ -41,19 +42,14 @@ export async function POST(req: Request) {
       }, { status: 401 });
     }
 
-    // Check venue ownership
-    const { data: venue } = await supabase
-      .from('venues')
-      .select('venue_id')
-      .eq('venue_id', venueId)
-      .eq('owner_id', user.id)
-      .maybeSingle();
-
-    if (!venue) {
+    // Require owner or manager role to remove tables
+    try {
+      await requireRole(supabase, venueId, PERMISSIONS.MANAGE_TABLES);
+    } catch (error: any) {
       return NextResponse.json({ 
         ok: false, 
-        error: 'Venue not found or access denied' 
-      }, { status: 403 });
+        error: error.message || 'Access denied' 
+      }, { status: error.status || 403 });
     }
 
     // Use admin client for database operations
