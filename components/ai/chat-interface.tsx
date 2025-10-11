@@ -171,7 +171,11 @@ export function ChatInterface({ venueId, isOpen, onClose, initialPrompt }: ChatI
 
   const createNewConversation = async () => {
     try {
-      console.log("[AI CHAT] Creating new conversation");
+      console.log("[AI CHAT] Creating new conversation - cancelling any ongoing requests");
+      
+      // Cancel any ongoing requests by resetting loading states
+      setLoading(false);
+      setExecuting(false);
       
       // Only create a conversation when user actually starts typing
       // Don't create empty conversations just for clicking the button
@@ -625,7 +629,7 @@ export function ChatInterface({ venueId, isOpen, onClose, initialPrompt }: ChatI
                 variant="outline"
               >
                 <Plus className="h-4 w-4 mr-2" />
-                New Conversation
+                {(loading || executing) ? "Cancel & New Conversation" : "New Conversation"}
               </Button>
             </div>
             
