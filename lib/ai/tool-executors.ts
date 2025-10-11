@@ -393,7 +393,7 @@ export async function executeMenuTranslate(
 
   const { data: items } = await supabase
     .from("menu_items")
-    .select("id, name, description")
+    .select("id, name, description, category")
     .eq("venue_id", venueId);
 
   if (!items || items.length === 0) {
@@ -402,6 +402,7 @@ export async function executeMenuTranslate(
 
   // Language code mapping
   const languageNames: Record<string, string> = {
+    en: "English",
     es: "Spanish",
     ar: "Arabic",
     fr: "French",
@@ -414,21 +415,27 @@ export async function executeMenuTranslate(
 
   const targetLangName = languageNames[params.targetLanguage] || params.targetLanguage;
 
+  // Get unique categories for translation
+  const uniqueCategories = Array.from(new Set(items.map(item => item.category).filter(Boolean)));
+  
   if (preview) {
     // For preview, just show what will happen
     return {
       toolName: "menu.translate",
       before: items.slice(0, 5).map(i => ({ 
         name: i.name, 
-        description: i.description || "" 
+        description: i.description || "",
+        category: i.category || ""
       })),
       after: items.slice(0, 5).map(i => ({
         name: `[${targetLangName}] ${i.name}`,
-        description: i.description ? `[${targetLangName}] ${i.description}` : ""
+        description: i.description ? `[${targetLangName}] ${i.description}` : "",
+        category: i.category ? `[${targetLangName}] ${i.category}` : ""
       })),
       impact: {
         itemsAffected: items.length,
-        description: `Menu will be translated to ${targetLangName}. This will update ${items.length} items${params.includeDescriptions ? " (including descriptions)" : ""}.`,
+        categoriesAffected: uniqueCategories.length,
+        description: `Menu will be translated to ${targetLangName}. This will update ${items.length} items and ${uniqueCategories.length} categories${params.includeDescriptions ? " (including descriptions)" : ""}.`,
       },
     };
   }
@@ -450,6 +457,7 @@ export async function executeMenuTranslate(
       const itemsToTranslate = batch.map(item => ({
         id: item.id,
         name: item.name,
+        category: item.category,
         ...(params.includeDescriptions && item.description ? { description: item.description } : {})
       }));
 
@@ -457,10 +465,14 @@ export async function executeMenuTranslate(
 Return a JSON object with an "items" array containing the translated items.
 Keep the 'id' field unchanged. Maintain culinary context and use natural translations.
 
+IMPORTANT: You MUST translate BOTH the item names AND the category names. 
+For example, if the category is "STARTERS", translate it to the equivalent in ${targetLangName} (e.g., "ENTRADAS" in Spanish, "ENTRÉES" in French, etc.).
+If the category is "MAINS", translate it to "PLATOS PRINCIPALES" in Spanish, "PLATS PRINCIPAUX" in French, etc.
+
 Items to translate:
 ${JSON.stringify(itemsToTranslate, null, 2)}
 
-Return format: {"items": [{"id": "...", "name": "translated name", "description": "translated description"}]}`;
+Return format: {"items": [{"id": "...", "name": "translated name", "category": "translated category", "description": "translated description"}]}`;
 
       const response = await openai.chat.completions.create({
         model: "gpt-4o-mini",
@@ -486,6 +498,14 @@ Return format: {"items": [{"id": "...", "name": "translated name", "description"
         if (translatedArray.length === 0) {
           console.error("[AI ASSISTANT] No items in translation response:", translated);
         }
+        // Log the first few translated items to see if categories are being translated
+        if (translatedArray.length > 0) {
+          console.log("[AI ASSISTANT] Sample translated items:", translatedArray.slice(0, 3).map(item => ({
+            id: item.id,
+            name: item.name,
+            category: item.category
+          })));
+        }
         translatedItems.push(...translatedArray);
       } else {
         console.error("[AI ASSISTANT] No content in translation response");
@@ -509,11 +529,16 @@ Return format: {"items": [{"id": "...", "name": "translated name", "description"
         updated_at: new Date().toISOString()
       };
       
+      // Update category if it was translated
+      if (translatedItem.category) {
+        updateData.category = translatedItem.category;
+      }
+      
       if (params.includeDescriptions && translatedItem.description) {
         updateData.description = translatedItem.description;
       }
 
-      console.log(`[AI ASSISTANT] Updating item ${translatedItem.id}: ${translatedItem.name}`);
+      console.log(`[AI ASSISTANT] Updating item ${translatedItem.id}: ${translatedItem.name}, category: ${translatedItem.category}`);
 
       const { error } = await supabase
         .from("menu_items")
@@ -542,9 +567,10 @@ Return format: {"items": [{"id": "...", "name": "translated name", "description"
       success: true,
       toolName: "menu.translate",
       result: {
-        message: `Successfully translated ${updatedCount} menu items to ${targetLangName}${failedCount > 0 ? ` (${failedCount} failed)` : ""}`,
+        message: `Successfully translated ${updatedCount} menu items and categories to ${targetLangName}${failedCount > 0 ? ` (${failedCount} failed)` : ""}`,
         itemsTranslated: updatedCount,
         itemsFailed: failedCount,
+        categoriesTranslated: uniqueCategories.length,
         targetLanguage: params.targetLanguage,
         includeDescriptions: params.includeDescriptions
       },

@@ -269,7 +269,7 @@ Premium: £449+/month
 ## 🚨 Known Limitations
 
 ### AI Tools
-- `menu.translate` - Preview only (needs translation API)
+- `menu.translate` - Full translation to 9 languages (English, Spanish, French, German, Italian, Portuguese, Arabic, Chinese, Japanese)
 - `analytics.export` - Needs file generation service
 
 ### Stripe
