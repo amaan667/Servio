@@ -17,6 +17,7 @@ import { DashboardSkeleton } from '@/components/dashboard-skeleton';
 import { useRequestCancellation } from '@/lib/request-utils';
 import OnboardingCompletionBanner from '@/components/onboarding-completion-banner';
 import TrialStatusBanner from '@/components/TrialStatusBanner';
+import RoleManagementPopup from '@/components/role-management-popup';
 
 interface DashboardCounts {
   live_count: number;
@@ -442,24 +443,32 @@ const VenueDashboardClient = React.memo(function VenueDashboardClient({
               <p className="text-gray-700 text-sm sm:text-base font-medium">Here's what's happening at {venue?.name || "your venue"} today</p>
             </div>
             
-            {/* Connection Status Indicator */}
-            <div className="flex items-center gap-2 text-xs">
-              {!connectionState.isOnline ? (
-                <div className="flex items-center gap-1 text-red-600">
-                  <WifiOff className="h-4 w-4" />
-                  <span>Offline</span>
-                </div>
-              ) : connectionState.isSlowConnection ? (
-                <div className="flex items-center gap-1 text-yellow-600">
-                  <AlertTriangle className="h-4 w-4" />
-                  <span>Slow</span>
-                </div>
-              ) : (
-                <div className="flex items-center gap-1 text-green-600">
-                  <Wifi className="h-4 w-4" />
-                  <span>Online</span>
-                </div>
-              )}
+            <div className="flex items-center gap-3">
+              {/* Role Management Popup */}
+              <RoleManagementPopup 
+                venueId={venueId}
+                currentUserRole="owner"
+              />
+              
+              {/* Connection Status Indicator */}
+              <div className="flex items-center gap-2 text-xs">
+                {!connectionState.isOnline ? (
+                  <div className="flex items-center gap-1 text-red-600">
+                    <WifiOff className="h-4 w-4" />
+                    <span>Offline</span>
+                  </div>
+                ) : connectionState.isSlowConnection ? (
+                  <div className="flex items-center gap-1 text-yellow-600">
+                    <AlertTriangle className="h-4 w-4" />
+                    <span>Slow</span>
+                  </div>
+                ) : (
+                  <div className="flex items-center gap-1 text-green-600">
+                    <Wifi className="h-4 w-4" />
+                    <span>Online</span>
+                  </div>
+                )}
+              </div>
             </div>
           </div>
           
