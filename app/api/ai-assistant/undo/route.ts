@@ -209,20 +209,23 @@ async function undoMenuTranslation(venueId: string, undoData: any, supabase: any
         category: item.category,
       }));
 
-      const prompt = `Translate the following menu items back to ${targetLangName}. 
+      const prompt = `Translate ALL menu items back to ${targetLangName}. 
 Return a JSON object with an "items" array containing the translated items.
 Keep the 'id' field unchanged.
 
 CRITICAL REQUIREMENTS:
 1. You MUST return EXACTLY ${batch.length} items (same count as input)
-2. You MUST translate BOTH the item names AND the category names back to ${targetLangName}
+2. You MUST translate EVERY SINGLE item name and category name back to ${targetLangName}
 3. Each item must have the same 'id' field as the input
-4. For categories: "STARTERS" → "ENTRADAS", "MAIN COURSES" → "PLATOS PRINCIPALES", "DESSERTS" → "POSTRES", "SALADS" → "ENSALADAS", "KIDS" → "NIÑOS", etc.
+4. Do NOT skip any items - translate ALL of them
+5. For categories: "STARTERS" → "ENTRADAS", "MAIN COURSES" → "PLATOS PRINCIPALES", "DESSERTS" → "POSTRES", "SALADS" → "ENSALADAS", "KIDS" → "NIÑOS", "CAFÉ" → "COFFEE", "BEBIDAS" → "DRINKS", "TÉ" → "TEA", etc.
 
-Items to translate back:
+Items to translate back (translate ALL of these):
 ${JSON.stringify(itemsToTranslate, null, 2)}
 
-Return format: {"items": [{"id": "...", "name": "translated name", "category": "translated category"}]}`;
+Return format: {"items": [{"id": "...", "name": "translated name", "category": "translated category"}]}
+
+IMPORTANT: Every item in the input must appear in your output with a translated name and category.`;
 
       const response = await openai.chat.completions.create({
         model: "gpt-4o-2024-08-06",
@@ -244,12 +247,22 @@ Return format: {"items": [{"id": "...", "name": "translated name", "category": "
       if (content) {
         const translated = JSON.parse(content);
         const translatedArray = translated.items || [];
+        
+        // Validate that we got the expected number of items
+        if (translatedArray.length !== batch.length) {
+          console.warn(`[AI UNDO] Batch translation returned ${translatedArray.length} items, expected ${batch.length}`);
+        }
+        
         translatedItems.push(...translatedArray);
+      } else {
+        console.error("[AI UNDO] No content in translation response");
       }
     }
 
     // Update database with reverse translations
     let updatedCount = 0;
+    const translatedIds = new Set(translatedItems.map(item => item.id));
+    
     for (const translatedItem of translatedItems) {
       if (!translatedItem || !translatedItem.id || !translatedItem.name) {
         continue;
@@ -268,6 +281,12 @@ Return format: {"items": [{"id": "...", "name": "translated name", "category": "
       if (!error) {
         updatedCount++;
       }
+    }
+
+    // Check for any items that weren't translated
+    const missingItems = items.filter(item => !translatedIds.has(item.id));
+    if (missingItems.length > 0) {
+      console.warn(`[AI UNDO] ${missingItems.length} items were not translated:`, missingItems.map(item => item.name));
     }
 
     return {
