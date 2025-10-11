@@ -168,8 +168,11 @@ export async function handleUserMessage({
       const toolMessages = [...openaiMessages, message];
 
       for (const toolCall of toolCalls) {
-        const { function: func, id: callId } = toolCall;
-        const { name, arguments: args } = func;
+        // Access the function property and extract details
+        const callId = toolCall.id;
+        const functionCall = (toolCall as any).function;
+        const name = functionCall.name;
+        const args = functionCall.arguments;
         const parsedArgs = JSON.parse(args);
 
         let toolResult: any;
