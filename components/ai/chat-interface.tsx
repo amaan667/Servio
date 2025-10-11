@@ -253,32 +253,21 @@ export function ChatInterface({ venueId, isOpen, onClose, initialPrompt }: ChatI
         setError(null);
         setSuccess(false);
         setExecutionResults([]);
+        
+        return newConversation;
       } else {
         console.error("[AI CHAT] Failed to create conversation:", response.status);
         setError("Failed to create conversation");
+        return null;
       }
     } catch (error) {
       console.error("[AI CHAT] Failed to create conversation:", error);
       setError("Failed to create conversation");
+      return null;
     }
   };
 
-  const handleSendMessage = async (messageOverride?: string) => {
-    const userMessage = messageOverride || input.trim();
-    if (!userMessage || loading || executing) return;
-
-    if (!messageOverride) {
-      setInput("");
-    }
-
-    // Create new conversation if none exists
-    if (!currentConversation) {
-      await createConversationFromMessage(userMessage);
-      // Wait for conversation to be created, then send message
-      setTimeout(() => handleSendMessage(userMessage), 500);
-      return;
-    }
-
+  const sendMessageToConversation = async (userMessage: string, conversation: any) => {
     // Add user message to chat
     const userMsg: ChatMessage = {
       id: `user-${Date.now()}`,
@@ -296,7 +285,7 @@ export function ChatInterface({ venueId, isOpen, onClose, initialPrompt }: ChatI
 
     try {
       // Save user message to database
-      await fetch(`/api/ai-assistant/conversations/${currentConversation.id}/messages`, {
+      await fetch(`/api/ai-assistant/conversations/${conversation.id}/messages`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
@@ -305,7 +294,7 @@ export function ChatInterface({ venueId, isOpen, onClose, initialPrompt }: ChatI
         }),
       });
 
-      // Plan the action
+      // Get AI plan
       const planResponse = await fetch("/api/ai-assistant/plan", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
@@ -338,7 +327,7 @@ export function ChatInterface({ venueId, isOpen, onClose, initialPrompt }: ChatI
       setMessages(prev => [...prev, assistantMsg]);
 
       // Save assistant message to database
-      await fetch(`/api/ai-assistant/conversations/${currentConversation.id}/messages`, {
+      await fetch(`/api/ai-assistant/conversations/${conversation.id}/messages`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
@@ -373,16 +362,15 @@ export function ChatInterface({ venueId, isOpen, onClose, initialPrompt }: ChatI
 
       const previewResults = await Promise.all(previewPromises);
       setPreviews(previewResults.map((r) => r?.preview).filter(Boolean));
-
-    } catch (err: any) {
-      console.error("[AI CHAT] Error:", err);
-      setError(err.message || "Failed to process request");
+    } catch (error: any) {
+      console.error("[AI CHAT] Error sending message:", error);
+      setError(error.message || "Failed to send message");
       
       // Add error message
       const errorMsg: ChatMessage = {
         id: `error-${Date.now()}`,
         role: "assistant",
-        content: `I encountered an error: ${err.message}`,
+        content: `I encountered an error: ${error.message}`,
         createdAt: new Date().toISOString(),
         canUndo: false,
       };
@@ -390,6 +378,28 @@ export function ChatInterface({ venueId, isOpen, onClose, initialPrompt }: ChatI
     } finally {
       setLoading(false);
     }
+  };
+
+  const handleSendMessage = async (messageOverride?: string) => {
+    const userMessage = messageOverride || input.trim();
+    if (!userMessage || loading || executing) return;
+
+    if (!messageOverride) {
+      setInput("");
+    }
+
+    // Create new conversation if none exists
+    if (!currentConversation) {
+      const newConversation = await createConversationFromMessage(userMessage);
+      if (newConversation) {
+        // Now send the message with the new conversation
+        await sendMessageToConversation(userMessage, newConversation);
+      }
+      return;
+    }
+
+    // Use existing conversation
+    await sendMessageToConversation(userMessage, currentConversation);
   };
 
   const handleExecute = async () => {
