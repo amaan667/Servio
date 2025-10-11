@@ -20,7 +20,7 @@ AND id NOT IN (
   FROM ai_chat_conversations 
   WHERE title = 'New Conversation'
   ORDER BY venue_id, user_id, created_at DESC
-);
+); 
 
 -- Delete conversations with generic titles that have no messages
 DELETE FROM ai_chat_conversations 

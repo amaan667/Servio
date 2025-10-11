@@ -97,21 +97,21 @@ BEGIN
         USING (EXISTS (
           SELECT 1 FROM venues v
           WHERE v.venue_id = ai_conversations.venue_id
-            AND v.owner_id::TEXT = auth.uid()
+            AND v.owner_id = auth.uid()::UUID
         ));
 
         CREATE POLICY "own-venue-write"
         ON ai_conversations FOR INSERT WITH CHECK (
           EXISTS (SELECT 1 FROM venues v
                   WHERE v.venue_id = ai_conversations.venue_id
-                    AND v.owner_id::TEXT = auth.uid())
+                    AND v.owner_id = auth.uid()::UUID)
         );
 
         CREATE POLICY "own-venue-update"
         ON ai_conversations FOR UPDATE USING (
           EXISTS (SELECT 1 FROM venues v
                   WHERE v.venue_id = ai_conversations.venue_id
-                    AND v.owner_id::TEXT = auth.uid())
+                    AND v.owner_id = auth.uid()::UUID)
         );
 
         -- Same for messages
@@ -120,14 +120,14 @@ BEGIN
         USING (EXISTS (
           SELECT 1 FROM venues v
           WHERE v.venue_id = ai_messages.venue_id
-            AND v.owner_id::TEXT = auth.uid()
+            AND v.owner_id = auth.uid()::UUID
         ));
 
         CREATE POLICY "msg-write"
         ON ai_messages FOR INSERT WITH CHECK (
           EXISTS (SELECT 1 FROM venues v
                   WHERE v.venue_id = ai_messages.venue_id
-                    AND v.owner_id::TEXT = auth.uid())
+                    AND v.owner_id = auth.uid()::UUID)
         );
     END IF;
 END $$;

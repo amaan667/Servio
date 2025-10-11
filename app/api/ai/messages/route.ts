@@ -195,7 +195,7 @@ export async function POST(request: NextRequest) {
     try {
       const aiResult = await handleUserMessage({
         venueId,
-        conversationId: currentConversationId,
+        conversationId: currentConversationId!,
         userText: text,
         userId: user.id
       });
@@ -204,7 +204,7 @@ export async function POST(request: NextRequest) {
       const { data: allMessages } = await supabase
         .from("ai_messages")
         .select("*")
-        .eq("conversation_id", currentConversationId)
+        .eq("conversation_id", currentConversationId!)
         .order("created_at", { ascending: true });
 
       // Generate conversation title if this is the first exchange
@@ -214,7 +214,7 @@ export async function POST(request: NextRequest) {
         await supabase
           .from("ai_conversations")
           .update({ title })
-          .eq("id", currentConversationId);
+          .eq("id", currentConversationId!);
       }
 
       // Transform all messages
@@ -231,7 +231,7 @@ export async function POST(request: NextRequest) {
       }));
 
       return NextResponse.json({
-        conversationId: currentConversationId,
+        conversationId: currentConversationId!,
         messages: transformedMessages,
         toolResults: aiResult.toolResults || []
       });
@@ -276,11 +276,11 @@ export async function POST(request: NextRequest) {
         createdAt: errorMessage.created_at,
       };
 
-      return NextResponse.json({
-        conversationId: currentConversationId,
-        messages: [transformedUserMessage, transformedErrorMessage],
-        error: aiError.message
-      });
+            return NextResponse.json({
+              conversationId: currentConversationId!,
+              messages: [transformedUserMessage, transformedErrorMessage],
+              error: aiError.message
+            });
     }
   } catch (error: any) {
     console.error("[AI CHAT] Create message error:", error);
