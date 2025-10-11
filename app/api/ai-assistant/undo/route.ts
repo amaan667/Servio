@@ -265,6 +265,42 @@ async function undoMenuTranslation(venueId: string, undoData: any, supabase: any
 
     const targetLangName = languageNames[reverseLanguage] || reverseLanguage;
 
+    // Detect the source language by analyzing the current categories
+    const detectSourceLanguage = (items: any[]): string => {
+      const categories = items.map(item => item.category).filter(Boolean);
+      const spanishIndicators = ['CAFÉ', 'BEBIDAS', 'TÉ', 'ESPECIALES', 'NIÑOS', 'ENSALADAS', 'POSTRES', 'ENTRADAS', 'PLATOS PRINCIPALES', 'APERITIVOS', 'MALTEADAS', 'BATIDOS', 'SÁNDWICHES', 'DESAYUNO', 'ALMUERZO', 'CENA', 'SOPA', 'SOPAS', 'MARISCOS', 'POLLO', 'CARNE DE RES', 'CERDO', 'VEGETARIANO', 'VEGANO', 'SIN GLUTEN'];
+      const englishIndicators = ['STARTERS', 'APPETIZERS', 'MAIN COURSES', 'ENTREES', 'DESSERTS', 'SALADS', 'KIDS', 'CHILDREN', 'DRINKS', 'BEVERAGES', 'COFFEE', 'TEA', 'SPECIALS', 'WRAPS', 'SANDWICHES', 'MILKSHAKES', 'SHAKES', 'SMOOTHIES', 'BRUNCH', 'BREAKFAST', 'LUNCH', 'DINNER', 'SOUP', 'SOUPS', 'PASTA', 'PIZZA', 'SEAFOOD', 'CHICKEN', 'BEEF', 'PORK', 'VEGETARIAN', 'VEGAN', 'GLUTEN FREE'];
+      
+      let spanishCount = 0;
+      let englishCount = 0;
+      
+      categories.forEach(category => {
+        if (spanishIndicators.some(indicator => category.toUpperCase().includes(indicator))) {
+          spanishCount++;
+        }
+        if (englishIndicators.some(indicator => category.toUpperCase().includes(indicator))) {
+          englishCount++;
+        }
+      });
+      
+      console.log(`[AI UNDO] Language detection: ${spanishCount} Spanish indicators, ${englishCount} English indicators`);
+      
+      // If we have more Spanish indicators, assume source is Spanish
+      if (spanishCount > englishCount) {
+        console.log(`[AI UNDO] Detected source language: Spanish`);
+        return 'es';
+      } else if (englishCount > spanishCount) {
+        console.log(`[AI UNDO] Detected source language: English`);
+        return 'en';
+      } else {
+        // If equal or no clear indicators, use the reverse language
+        console.log(`[AI UNDO] Ambiguous language, using reverse: ${reverseLanguage}`);
+        return reverseLanguage;
+      }
+    };
+
+    const detectedSourceLanguage = detectSourceLanguage(items);
+
     // Translate items back
     const batchSize = 15;
     const translatedItems: any[] = [];
@@ -279,12 +315,11 @@ async function undoMenuTranslation(venueId: string, undoData: any, supabase: any
       }));
 
       // Generate comprehensive category mapping instructions for undo
-      const sourceLanguage = targetLanguage === 'en' ? 'es' : 'en';
-      const categoryMappingList = Object.entries(categoryMappings[sourceLanguage] || {})
+      const categoryMappingList = Object.entries((categoryMappings as any)[detectedSourceLanguage] || {})
         .map(([from, to]) => `   - "${from}" → "${to}"`)
         .join('\n');
 
-      const prompt = `Translate ALL menu items back to ${targetLangName}. 
+      const prompt = `Translate ALL menu items from ${detectedSourceLanguage.toUpperCase()} back to ${targetLangName}. 
 Return a JSON object with an "items" array containing the translated items.
 Keep the 'id' field unchanged. Maintain culinary context and use natural translations.
 
@@ -296,6 +331,7 @@ CRITICAL REQUIREMENTS:
 5. For category translation, use these mappings:
 ${categoryMappingList}
 6. If a category is not in the mapping list, translate it naturally to ${targetLangName}
+7. DETECTED SOURCE LANGUAGE: ${detectedSourceLanguage.toUpperCase()}
 
 Items to translate back (translate ALL of these):
 ${JSON.stringify(itemsToTranslate, null, 2)}

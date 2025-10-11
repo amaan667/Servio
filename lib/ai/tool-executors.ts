@@ -487,8 +487,43 @@ export async function executeMenuTranslate(
 
   const targetLangName = languageNames[params.targetLanguage] || params.targetLanguage;
 
+  // Detect the source language by analyzing the current categories
+  const detectSourceLanguage = (categories: string[]): string => {
+    const spanishIndicators = ['CAFÉ', 'BEBIDAS', 'TÉ', 'ESPECIALES', 'NIÑOS', 'ENSALADAS', 'POSTRES', 'ENTRADAS', 'PLATOS PRINCIPALES', 'APERITIVOS', 'MALTEADAS', 'BATIDOS', 'SÁNDWICHES', 'DESAYUNO', 'ALMUERZO', 'CENA', 'SOPA', 'SOPAS', 'MARISCOS', 'POLLO', 'CARNE DE RES', 'CERDO', 'VEGETARIANO', 'VEGANO', 'SIN GLUTEN'];
+    const englishIndicators = ['STARTERS', 'APPETIZERS', 'MAIN COURSES', 'ENTREES', 'DESSERTS', 'SALADS', 'KIDS', 'CHILDREN', 'DRINKS', 'BEVERAGES', 'COFFEE', 'TEA', 'SPECIALS', 'WRAPS', 'SANDWICHES', 'MILKSHAKES', 'SHAKES', 'SMOOTHIES', 'BRUNCH', 'BREAKFAST', 'LUNCH', 'DINNER', 'SOUP', 'SOUPS', 'PASTA', 'PIZZA', 'SEAFOOD', 'CHICKEN', 'BEEF', 'PORK', 'VEGETARIAN', 'VEGAN', 'GLUTEN FREE'];
+    
+    let spanishCount = 0;
+    let englishCount = 0;
+    
+    categories.forEach(category => {
+      if (spanishIndicators.some(indicator => category.toUpperCase().includes(indicator))) {
+        spanishCount++;
+      }
+      if (englishIndicators.some(indicator => category.toUpperCase().includes(indicator))) {
+        englishCount++;
+      }
+    });
+    
+    console.log(`[AI ASSISTANT] Language detection: ${spanishCount} Spanish indicators, ${englishCount} English indicators`);
+    
+    // If we have more Spanish indicators, assume source is Spanish
+    if (spanishCount > englishCount) {
+      console.log(`[AI ASSISTANT] Detected source language: Spanish`);
+      return 'es';
+    } else if (englishCount > spanishCount) {
+      console.log(`[AI ASSISTANT] Detected source language: English`);
+      return 'en';
+    } else {
+      // If equal or no clear indicators, default based on target language
+      const defaultSource = params.targetLanguage === 'es' ? 'en' : 'es';
+      console.log(`[AI ASSISTANT] Ambiguous language, defaulting to: ${defaultSource}`);
+      return defaultSource;
+    }
+  };
+
   // Get unique categories for translation
   const uniqueCategories = Array.from(new Set(items.map(item => item.category).filter(Boolean)));
+  const detectedSourceLanguage = detectSourceLanguage(uniqueCategories);
   
   if (preview) {
     // For preview, do actual translation of sample items to show real results
@@ -509,12 +544,11 @@ export async function executeMenuTranslate(
       }));
 
       // Generate comprehensive category mapping instructions for preview
-      const sourceLanguage = params.targetLanguage === 'es' ? 'en' : 'es';
-      const categoryMappingList = Object.entries(categoryMappings[sourceLanguage] || {})
+      const categoryMappingList = Object.entries((categoryMappings as any)[detectedSourceLanguage] || {})
         .map(([from, to]) => `   - "${from}" → "${to}"`)
         .join('\n');
 
-      const prompt = `Translate the following menu items to ${targetLangName}. 
+      const prompt = `Translate the following menu items from ${detectedSourceLanguage.toUpperCase()} to ${targetLangName}. 
 Return a JSON object with an "items" array containing the translated items.
 Keep the 'id' field unchanged. Maintain culinary context and use natural translations.
 
@@ -526,6 +560,7 @@ CRITICAL REQUIREMENTS:
 ${categoryMappingList}
 5. If a category is not in the mapping list, translate it naturally to ${targetLangName}
 6. Do NOT skip any items - translate ALL of them
+7. DETECTED SOURCE LANGUAGE: ${detectedSourceLanguage.toUpperCase()}
 
 Items to translate:
 ${JSON.stringify(itemsToTranslate, null, 2)}
@@ -630,12 +665,11 @@ IMPORTANT: Every item in the input must appear in your output with a translated 
       }));
 
       // Generate comprehensive category mapping instructions
-      const sourceLanguage = params.targetLanguage === 'es' ? 'en' : 'es';
-      const categoryMappingList = Object.entries(categoryMappings[sourceLanguage] || {})
+      const categoryMappingList = Object.entries((categoryMappings as any)[detectedSourceLanguage] || {})
         .map(([from, to]) => `   - "${from}" → "${to}"`)
         .join('\n');
 
-      const prompt = `Translate the following menu items to ${targetLangName}. 
+      const prompt = `Translate the following menu items from ${detectedSourceLanguage.toUpperCase()} to ${targetLangName}. 
 Return a JSON object with an "items" array containing the translated items.
 Keep the 'id' field unchanged. Maintain culinary context and use natural translations.
 
@@ -647,6 +681,7 @@ CRITICAL REQUIREMENTS:
 ${categoryMappingList}
 5. If a category is not in the mapping list, translate it naturally to ${targetLangName}
 6. Do NOT skip any items - translate ALL of them
+7. DETECTED SOURCE LANGUAGE: ${detectedSourceLanguage.toUpperCase()}
 
 Items to translate:
 ${JSON.stringify(itemsToTranslate, null, 2)}
