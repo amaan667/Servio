@@ -373,56 +373,66 @@ USING (
 );
 
 -- ========================================
--- VENUE_BRANDING TABLE
+-- VENUE_BRANDING TABLE (if exists)
 -- ========================================
-ALTER TABLE venue_branding ENABLE ROW LEVEL SECURITY;
+DO $$ 
+BEGIN
+  -- Only apply RLS if table exists
+  IF EXISTS (SELECT FROM pg_tables WHERE schemaname = 'public' AND tablename = 'venue_branding') THEN
+    ALTER TABLE venue_branding ENABLE ROW LEVEL SECURITY;
 
--- Drop existing policies if any
-DROP POLICY IF EXISTS venue_branding_read ON venue_branding;
-DROP POLICY IF EXISTS venue_branding_insert ON venue_branding;
-DROP POLICY IF EXISTS venue_branding_update ON venue_branding;
-DROP POLICY IF EXISTS venue_branding_delete ON venue_branding;
+    -- Drop existing policies if any
+    DROP POLICY IF EXISTS venue_branding_read ON venue_branding;
+    DROP POLICY IF EXISTS venue_branding_insert ON venue_branding;
+    DROP POLICY IF EXISTS venue_branding_update ON venue_branding;
+    DROP POLICY IF EXISTS venue_branding_delete ON venue_branding;
 
--- Read: any member can see branding
-CREATE POLICY venue_branding_read ON venue_branding FOR SELECT
-USING (
-  EXISTS (
-    SELECT 1 FROM user_venue_roles me
-    WHERE me.venue_id = venue_branding.venue_id
-      AND me.user_id = auth.uid()
-  )
-);
+    -- Read: any member can see branding
+    CREATE POLICY venue_branding_read ON venue_branding FOR SELECT
+    USING (
+      EXISTS (
+        SELECT 1 FROM user_venue_roles me
+        WHERE me.venue_id = venue_branding.venue_id
+          AND me.user_id = auth.uid()
+      )
+    );
 
--- Insert/Update/Delete: owners only
-CREATE POLICY venue_branding_insert ON venue_branding FOR INSERT
-WITH CHECK (
-  EXISTS (
-    SELECT 1 FROM user_venue_roles me
-    WHERE me.venue_id = venue_branding.venue_id
-      AND me.user_id = auth.uid()
-      AND me.role = 'owner'
-  )
-);
+    -- Insert/Update/Delete: owners only
+    CREATE POLICY venue_branding_insert ON venue_branding FOR INSERT
+    WITH CHECK (
+      EXISTS (
+        SELECT 1 FROM user_venue_roles me
+        WHERE me.venue_id = venue_branding.venue_id
+          AND me.user_id = auth.uid()
+          AND me.role = 'owner'
+      )
+    );
 
-CREATE POLICY venue_branding_update ON venue_branding FOR UPDATE
-USING (
-  EXISTS (
-    SELECT 1 FROM user_venue_roles me
-    WHERE me.venue_id = venue_branding.venue_id
-      AND me.user_id = auth.uid()
-      AND me.role = 'owner'
-  )
-);
+    CREATE POLICY venue_branding_update ON venue_branding FOR UPDATE
+    USING (
+      EXISTS (
+        SELECT 1 FROM user_venue_roles me
+        WHERE me.venue_id = venue_branding.venue_id
+          AND me.user_id = auth.uid()
+          AND me.role = 'owner'
+      )
+    );
 
-CREATE POLICY venue_branding_delete ON venue_branding FOR DELETE
-USING (
-  EXISTS (
-    SELECT 1 FROM user_venue_roles me
-    WHERE me.venue_id = venue_branding.venue_id
-      AND me.user_id = auth.uid()
-      AND me.role = 'owner'
-  )
-);
+    CREATE POLICY venue_branding_delete ON venue_branding FOR DELETE
+    USING (
+      EXISTS (
+        SELECT 1 FROM user_venue_roles me
+        WHERE me.venue_id = venue_branding.venue_id
+          AND me.user_id = auth.uid()
+          AND me.role = 'owner'
+      )
+    );
+    
+    RAISE NOTICE 'RLS policies applied to venue_branding table';
+  ELSE
+    RAISE NOTICE 'Skipping venue_branding - table does not exist';
+  END IF;
+END $$;
 
 -- ========================================
 -- VENUES TABLE
