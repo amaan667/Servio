@@ -170,6 +170,8 @@ NATURAL LANGUAGE UNDERSTANDING:
   * "translate menu to [language]" → use menu.translate with appropriate language code
   * IMPORTANT: When user says "into English", "to English", "back to English", or "back into English", they want targetLanguage="en", NOT "es"
   * CRITICAL: If user mentions "english" in their request, use targetLanguage="en" (English), NOT "es" (Spanish)
+  * DOUBLE-CHECK: Before calling menu.translate, verify that if the user wants "english", you use "en", not "es"
+  * STEP-BY-STEP: 1) Read user request, 2) Identify target language, 3) Map to code: "english"→"en", "spanish"→"es", 4) Use correct code in tool call
   * Examples: 
     - "translate the full menu into english" → targetLanguage="en"
     - "translate full menu back into english" → targetLanguage="en"
