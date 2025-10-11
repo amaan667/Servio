@@ -500,7 +500,7 @@ Return format: {"items": [{"id": "...", "name": "translated name", "category": "
         }
         // Log the first few translated items to see if categories are being translated
         if (translatedArray.length > 0) {
-          console.log("[AI ASSISTANT] Sample translated items:", translatedArray.slice(0, 3).map(item => ({
+          console.log("[AI ASSISTANT] Sample translated items:", translatedArray.slice(0, 3).map((item: any) => ({
             id: item.id,
             name: item.name,
             category: item.category

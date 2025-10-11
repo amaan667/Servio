@@ -371,6 +371,7 @@ export interface AIPreviewDiff {
   after: any;
   impact: {
     itemsAffected: number;
+    categoriesAffected?: number;
     estimatedRevenue?: number;
     estimatedCost?: number;
     description: string;
