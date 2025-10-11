@@ -23,6 +23,7 @@ export default function CompleteProfileForm({ user }: CompleteProfileFormProps) 
   const [formData, setFormData] = useState({
     venueName: user?.user_metadata?.venue_name || user?.user_metadata?.full_name || user?.user_metadata?.name || "",
     businessType: user?.user_metadata?.business_type || "Restaurant",
+    serviceType: user?.user_metadata?.service_type || "table_service", // 'table_service' or 'counter_pickup'
     address: user?.user_metadata?.address || "",
     phone: user?.user_metadata?.phone || "",
     password: "",
@@ -129,6 +130,7 @@ export default function CompleteProfileForm({ user }: CompleteProfileFormProps) 
           venueId: venueId,
           name: venueName,
           business_type: formData.businessType,
+          service_type: formData.serviceType,
           address: formData.address || null,
           phone: formData.phone || null,
         })
@@ -149,6 +151,7 @@ export default function CompleteProfileForm({ user }: CompleteProfileFormProps) 
           profileComplete: true,
           venue_name: venueName,
           business_type: formData.businessType,
+          service_type: formData.serviceType,
           address: formData.address || null,
           phone: formData.phone || null
         }
@@ -239,6 +242,23 @@ export default function CompleteProfileForm({ user }: CompleteProfileFormProps) 
                   <option value="Catering">Catering</option>
                   <option value="Food Court">Food Court</option>
                   <option value="Other">Other</option>
+                </select>
+              </div>
+
+              <div className="space-y-2">
+                <Label htmlFor="serviceType">Service Type</Label>
+                <select
+                  id="serviceType"
+                  value={formData.serviceType}
+                  onChange={(e) =>
+                    setFormData({ ...formData, serviceType: e.target.value })
+                  }
+                  disabled={loading}
+                  className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-purple-500"
+                  required
+                >
+                  <option value="table_service">Table Service (QR codes on tables)</option>
+                  <option value="counter_pickup">Pickup/Counter Service (QR codes for orders)</option>
                 </select>
               </div>
 
