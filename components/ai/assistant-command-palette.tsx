@@ -306,24 +306,9 @@ export function AssistantCommandPalette({
       <Dialog open={open} onOpenChange={setOpen}>
         <DialogContent className="max-w-3xl max-h-[80vh] flex flex-col">
           <DialogHeader>
-            <DialogTitle className="flex items-center justify-between">
-              <div className="flex items-center gap-2">
-                <Sparkles className="h-5 w-5 text-purple-500" />
-                Servio AI Assistant
-              </div>
-              {showChatHistory && (
-                <Button
-                  variant="outline"
-                  size="sm"
-                  onClick={() => {
-                    setOpen(false);
-                    setShowChatInterface(true);
-                  }}
-                >
-                  <MessageSquare className="h-4 w-4 mr-2" />
-                  Chat History
-                </Button>
-              )}
+            <DialogTitle className="flex items-center gap-2">
+              <Sparkles className="h-5 w-5 text-purple-500" />
+              Servio AI Assistant
             </DialogTitle>
             <DialogDescription>
               Ask me anything about your business operations
@@ -644,13 +629,28 @@ export function AssistantCommandPalette({
           )}
         </div>
 
-        {/* Footer Hint */}
-        {!plan && (
-          <div className="text-xs text-muted-foreground text-center">
-            Press <kbd className="px-1 py-0.5 bg-muted rounded">⌘</kbd> +{" "}
-            <kbd className="px-1 py-0.5 bg-muted rounded">K</kbd> to toggle
-          </div>
-        )}
+        {/* Footer with Chat History button and hint */}
+        <div className="flex items-center justify-between pt-4 border-t">
+          {showChatHistory && (
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={() => {
+                setOpen(false);
+                setShowChatInterface(true);
+              }}
+            >
+              <MessageSquare className="h-4 w-4 mr-2" />
+              Chat History
+            </Button>
+          )}
+          {!plan && (
+            <div className={`text-xs text-muted-foreground ${showChatHistory ? '' : 'text-center w-full'}`}>
+              Press <kbd className="px-1 py-0.5 bg-muted rounded">⌘</kbd> +{" "}
+              <kbd className="px-1 py-0.5 bg-muted rounded">K</kbd> to toggle
+            </div>
+          )}
+        </div>
       </DialogContent>
     </Dialog>
     </>

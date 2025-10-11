@@ -113,9 +113,12 @@ export function ChatInterface({ venueId, isOpen, onClose, initialPrompt }: ChatI
     try {
       console.log("[AI CHAT] Loading conversations for venue:", venueId);
       const response = await fetch(`/api/ai-assistant/conversations?venueId=${venueId}`);
+      console.log("[AI CHAT] Response status:", response.status);
+      
       if (response.ok) {
         const data = await response.json();
         console.log("[AI CHAT] Loaded conversations:", data.conversations);
+        console.log("[AI CHAT] Number of conversations:", data.conversations?.length || 0);
         setConversations(data.conversations || []);
         
         // If there's a current conversation, load its messages
@@ -129,7 +132,8 @@ export function ChatInterface({ venueId, isOpen, onClose, initialPrompt }: ChatI
           loadMessages(latest.id);
         }
       } else {
-        console.error("[AI CHAT] Failed to load conversations:", response.status);
+        const errorData = await response.text();
+        console.error("[AI CHAT] Failed to load conversations:", response.status, errorData);
       }
     } catch (error) {
       console.error("[AI CHAT] Failed to load conversations:", error);
@@ -502,35 +506,43 @@ export function ChatInterface({ venueId, isOpen, onClose, initialPrompt }: ChatI
             
             <ScrollArea className="flex-1">
               <div className="p-4 space-y-2">
-                {conversations.map((conv) => (
-                  <Card
-                    key={conv.id}
-                    className={`cursor-pointer transition-colors ${
-                      currentConversation?.id === conv.id
-                        ? "ring-2 ring-primary bg-primary/5"
-                        : "hover:bg-accent"
-                    }`}
-                    onClick={() => selectConversation(conv)}
-                  >
-                    <CardContent className="p-3">
-                      <div className="flex items-start justify-between">
-                        <div className="flex-1 min-w-0">
-                          <p className="text-sm font-medium truncate">
-                            {conv.title}
-                          </p>
-                          <p className="text-xs text-muted-foreground">
-                            {new Date(conv.updatedAt).toLocaleDateString()}
-                          </p>
+                {conversations.length > 0 ? (
+                  conversations.map((conv) => (
+                    <Card
+                      key={conv.id}
+                      className={`cursor-pointer transition-colors ${
+                        currentConversation?.id === conv.id
+                          ? "ring-2 ring-primary bg-primary/5"
+                          : "hover:bg-accent"
+                      }`}
+                      onClick={() => selectConversation(conv)}
+                    >
+                      <CardContent className="p-3">
+                        <div className="flex items-start justify-between">
+                          <div className="flex-1 min-w-0">
+                            <p className="text-sm font-medium truncate">
+                              {conv.title}
+                            </p>
+                            <p className="text-xs text-muted-foreground">
+                              {new Date(conv.updatedAt).toLocaleDateString()}
+                            </p>
+                          </div>
+                          {conv.isActive && (
+                            <Badge variant="secondary" className="ml-2">
+                              Active
+                            </Badge>
+                          )}
                         </div>
-                        {conv.isActive && (
-                          <Badge variant="secondary" className="ml-2">
-                            Active
-                          </Badge>
-                        )}
-                      </div>
-                    </CardContent>
-                  </Card>
-                ))}
+                      </CardContent>
+                    </Card>
+                  ))
+                ) : (
+                  <div className="text-center py-8 text-muted-foreground">
+                    <MessageSquare className="h-8 w-8 mx-auto mb-2 opacity-50" />
+                    <p className="text-sm">No conversations yet</p>
+                    <p className="text-xs mt-1">Start a new conversation to see it here</p>
+                  </div>
+                )}
               </div>
             </ScrollArea>
           </div>
