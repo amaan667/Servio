@@ -80,8 +80,18 @@ export async function GET(request: NextRequest) {
       );
     }
 
+    // Transform the data to match frontend expectations
+    const transformedConversations = (conversations || []).map(conv => ({
+      ...conv,
+      updatedAt: conv.updated_at,
+      createdAt: conv.created_at,
+      venueId: conv.venue_id,
+      userId: conv.user_id,
+      isActive: conv.is_active,
+    }));
+
     return NextResponse.json({
-      conversations: conversations || [],
+      conversations: transformedConversations,
     });
   } catch (error: any) {
     console.error("[AI CHAT] Conversations error:", error);
@@ -142,8 +152,18 @@ export async function POST(request: NextRequest) {
       );
     }
 
+    // Transform the created conversation to match frontend expectations
+    const transformedConversation = {
+      ...conversation,
+      updatedAt: conversation.updated_at,
+      createdAt: conversation.created_at,
+      venueId: conversation.venue_id,
+      userId: conversation.user_id,
+      isActive: conversation.is_active,
+    };
+
     return NextResponse.json({
-      conversation,
+      conversation: transformedConversation,
     });
   } catch (error: any) {
     console.error("[AI CHAT] Create conversation error:", error);

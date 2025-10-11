@@ -73,8 +73,14 @@ export async function GET(
       );
     }
 
+    // Transform messages to match frontend expectations
+    const transformedMessages = (messages || []).map(msg => ({
+      ...msg,
+      createdAt: msg.created_at,
+    }));
+
     return NextResponse.json({
-      messages: messages || [],
+      messages: transformedMessages,
     });
   } catch (error: any) {
     console.error("[AI CHAT] Messages error:", error);
@@ -155,8 +161,14 @@ export async function POST(
       .update({ updated_at: new Date().toISOString() })
       .eq("id", conversationId);
 
+    // Transform the created message to match frontend expectations
+    const transformedMessage = {
+      ...message,
+      createdAt: message.created_at,
+    };
+
     return NextResponse.json({
-      message,
+      message: transformedMessage,
     });
   } catch (error: any) {
     console.error("[AI CHAT] Create message error:", error);
