@@ -19,12 +19,16 @@ export async function GET(request: NextRequest) {
       data: { user },
     } = await supabase.auth.getUser();
 
+    console.log("[AI CHAT] Auth check - user:", user ? "authenticated" : "not authenticated");
+
     if (!user) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
 
     const { searchParams } = new URL(request.url);
     const venueId = searchParams.get("venueId");
+
+    console.log("[AI CHAT] Request venueId:", venueId);
 
     if (!venueId) {
       return NextResponse.json({ error: "Missing venueId" }, { status: 400 });
@@ -37,7 +41,10 @@ export async function GET(request: NextRequest) {
       .eq("venue_id", venueId)
       .single();
 
+    console.log("[AI CHAT] Venue check - found:", !!venue, "owner_id:", venue?.owner_id, "user_id:", user.id);
+
     if (!venue || venue.owner_id !== user.id) {
+      console.log("[AI CHAT] Access denied - venue not found or user not owner");
       return NextResponse.json(
         { error: "Access denied to this venue" },
         { status: 403 }
