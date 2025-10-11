@@ -19,17 +19,20 @@ import { ScrollArea } from "@/components/ui/scroll-area";
 import { Loader2, Sparkles, AlertTriangle, Check, X, TrendingUp, DollarSign } from "lucide-react";
 import { AIPlanResponse, AIPreviewDiff } from "@/types/ai-assistant";
 import { AIAssistantFloat } from "./ai-assistant-float";
+import { ChatInterface } from "./chat-interface";
 
 interface AssistantCommandPaletteProps {
   venueId: string;
   page?: "menu" | "inventory" | "kds" | "orders" | "analytics" | "general";
   suggestions?: string[];
+  showChatHistory?: boolean;
 }
 
 export function AssistantCommandPalette({
   venueId,
   page = "general",
   suggestions = [],
+  showChatHistory = false,
 }: AssistantCommandPaletteProps) {
   const router = useRouter();
   const [open, setOpen] = useState(false);
@@ -41,6 +44,7 @@ export function AssistantCommandPalette({
   const [error, setError] = useState<string | null>(null);
   const [success, setSuccess] = useState(false);
   const [executionResults, setExecutionResults] = useState<any[]>([]);
+  const [showChatInterface, setShowChatInterface] = useState(false);
 
   // Keyboard shortcut: ⌘K / Ctrl-K
   useEffect(() => {
@@ -289,12 +293,37 @@ export function AssistantCommandPalette({
       {/* Floating AI Assistant Button */}
       <AIAssistantFloat onClick={() => setOpen(true)} />
       
+      {/* Chat Interface */}
+      {showChatHistory && (
+        <ChatInterface
+          venueId={venueId}
+          isOpen={showChatInterface}
+          onClose={() => setShowChatInterface(false)}
+          initialPrompt={prompt}
+        />
+      )}
+      
       <Dialog open={open} onOpenChange={setOpen}>
         <DialogContent className="max-w-3xl max-h-[80vh] flex flex-col">
           <DialogHeader>
-            <DialogTitle className="flex items-center gap-2">
-              <Sparkles className="h-5 w-5 text-purple-500" />
-              Servio AI Assistant
+            <DialogTitle className="flex items-center justify-between">
+              <div className="flex items-center gap-2">
+                <Sparkles className="h-5 w-5 text-purple-500" />
+                Servio AI Assistant
+              </div>
+              {showChatHistory && (
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={() => {
+                    setOpen(false);
+                    setShowChatInterface(true);
+                  }}
+                >
+                  <MessageSquare className="h-4 w-4 mr-2" />
+                  Chat History
+                </Button>
+              )}
             </DialogTitle>
             <DialogDescription>
               Ask me anything about your business operations

@@ -12,7 +12,7 @@ export default async function VenueDashboardLayout({
     <>
       {children}
       {/* AI Assistant - Global Command Palette (⌘K / Ctrl-K) */}
-      <AssistantCommandPalette venueId={venueId} />
+      <AssistantCommandPalette venueId={venueId} showChatHistory={true} />
     </>
   );
 }

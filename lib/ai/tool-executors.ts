@@ -394,11 +394,14 @@ export async function executeMenuTranslate(
   const { data: items } = await supabase
     .from("menu_items")
     .select("id, name, description, category")
-    .eq("venue_id", venueId);
+    .eq("venue_id", venueId)
+    .order("created_at", { ascending: true }); // Ensure consistent ordering
 
   if (!items || items.length === 0) {
     throw new AIAssistantError("No menu items found", "INVALID_PARAMS");
   }
+
+  console.log(`[AI ASSISTANT] Starting translation of ${items.length} items to ${params.targetLanguage}`);
 
   // Language code mapping
   const languageNames: Record<string, string> = {
@@ -440,9 +443,11 @@ export async function executeMenuTranslate(
 Return a JSON object with an "items" array containing the translated items.
 Keep the 'id' field unchanged. Maintain culinary context and use natural translations.
 
-IMPORTANT: You MUST translate BOTH the item names AND the category names. 
-For example, if the category is "STARTERS", translate it to the equivalent in ${targetLangName}.
-If the category is "MAINS", translate it to the appropriate term in ${targetLangName}.
+CRITICAL REQUIREMENTS:
+1. You MUST return EXACTLY the same number of items as provided
+2. You MUST translate BOTH the item names AND the category names
+3. Each item must have the same 'id' field as the input
+4. For categories: "ENTRADAS" → "STARTERS", "PLATOS PRINCIPALES" → "MAIN COURSES", "POSTRES" → "DESSERTS", "ENSALADAS" → "SALADS", "NIÑOS" → "KIDS", etc.
 
 Items to translate:
 ${JSON.stringify(itemsToTranslate, null, 2)}
@@ -454,14 +459,14 @@ Return format: {"items": [{"id": "...", "name": "translated name", "category": "
         messages: [
           {
             role: "system",
-            content: "You are a professional menu translator. Return valid JSON with an 'items' array."
+            content: "You are a professional menu translator. Return valid JSON with an 'items' array containing the EXACT same number of items as provided."
           },
           {
             role: "user",
             content: prompt
           }
         ],
-        temperature: 0.3,
+        temperature: 0.1, // Lower temperature for more consistent results
         response_format: { type: "json_object" },
       });
 
@@ -519,20 +524,24 @@ Return format: {"items": [{"id": "...", "name": "translated name", "category": "
     };
   }
 
-  // Execute - Translate using OpenAI
+  // Execute - Translate using OpenAI with improved error handling
   try {
     // Import OpenAI
     const { getOpenAI } = await import("@/lib/openai");
     const openai = getOpenAI();
 
-    // Translate in batches to avoid token limits
-    const batchSize = 20;
-    const translatedItems = [];
+    // Store original item count for validation
+    const originalItemCount = items.length;
+    const translatedItems: any[] = [];
+    
+    // Process items in smaller batches to ensure reliability
+    const batchSize = 15; // Reduced batch size for better reliability
     
     for (let i = 0; i < items.length; i += batchSize) {
       const batch = items.slice(i, i + batchSize);
+      console.log(`[AI ASSISTANT] Processing batch ${Math.floor(i/batchSize) + 1}/${Math.ceil(items.length/batchSize)} (${batch.length} items)`);
       
-      // Create translation prompt
+      // Create translation prompt with explicit requirements
       const itemsToTranslate = batch.map(item => ({
         id: item.id,
         name: item.name,
@@ -544,51 +553,99 @@ Return format: {"items": [{"id": "...", "name": "translated name", "category": "
 Return a JSON object with an "items" array containing the translated items.
 Keep the 'id' field unchanged. Maintain culinary context and use natural translations.
 
-IMPORTANT: You MUST translate BOTH the item names AND the category names. 
-For example, if the category is "STARTERS", translate it to the equivalent in ${targetLangName} (e.g., "ENTRADAS" in Spanish, "ENTRÉES" in French, etc.).
-If the category is "MAINS", translate it to "PLATOS PRINCIPALES" in Spanish, "PLATS PRINCIPAUX" in French, etc.
+CRITICAL REQUIREMENTS:
+1. You MUST return EXACTLY ${batch.length} items (same count as input)
+2. You MUST translate BOTH the item names AND the category names
+3. Each item must have the same 'id' field as the input
+4. For Spanish to English category translation:
+   - "ENTRADAS" → "STARTERS"
+   - "PLATOS PRINCIPALES" → "MAIN COURSES" 
+   - "POSTRES" → "DESSERTS"
+   - "ENSALADAS" → "SALADS"
+   - "NIÑOS" → "KIDS"
+   - "APERITIVOS" → "APPETIZERS"
+   - "BRUNCH" → "BRUNCH" (keep if already English)
+   - "STARTERS" → "STARTERS" (keep if already English)
+   - "MAIN COURSES" → "MAIN COURSES" (keep if already English)
 
 Items to translate:
 ${JSON.stringify(itemsToTranslate, null, 2)}
 
 Return format: {"items": [{"id": "...", "name": "translated name", "category": "translated category", "description": "translated description"}]}`;
 
-      const response = await openai.chat.completions.create({
-        model: "gpt-4o-2024-08-06", // Use GPT-4o for translation (complex task requiring accuracy)
-        messages: [
-          {
-            role: "system",
-            content: "You are a professional menu translator. Return valid JSON with an 'items' array."
-          },
-          {
-            role: "user",
-            content: prompt
-          }
-        ],
-        temperature: 0.3,
-        response_format: { type: "json_object" },
-      });
+      let retryCount = 0;
+      const maxRetries = 3;
+      let batchTranslated = false;
 
-      const content = response.choices[0]?.message?.content;
-      if (content) {
-        console.log("[AI ASSISTANT] Translation response:", content.substring(0, 200));
-        const translated = JSON.parse(content);
-        const translatedArray = translated.items || [];
-        if (translatedArray.length === 0) {
-          console.error("[AI ASSISTANT] No items in translation response:", translated);
+      while (!batchTranslated && retryCount < maxRetries) {
+        try {
+          const response = await openai.chat.completions.create({
+            model: "gpt-4o-2024-08-06", // Use GPT-4o for translation (complex task requiring accuracy)
+            messages: [
+              {
+                role: "system",
+                content: `You are a professional menu translator. Return valid JSON with an 'items' array containing EXACTLY ${batch.length} items. Never omit items.`
+              },
+              {
+                role: "user",
+                content: prompt
+              }
+            ],
+            temperature: 0.1, // Lower temperature for more consistent results
+            response_format: { type: "json_object" },
+          });
+
+          const content = response.choices[0]?.message?.content;
+          if (content) {
+            console.log(`[AI ASSISTANT] Translation response for batch ${Math.floor(i/batchSize) + 1}:`, content.substring(0, 200));
+            const translated = JSON.parse(content);
+            const translatedArray = translated.items || [];
+            
+            // Validate that we got the expected number of items
+            if (translatedArray.length === batch.length) {
+              console.log(`[AI ASSISTANT] Batch ${Math.floor(i/batchSize) + 1} translation successful: ${translatedArray.length} items`);
+              translatedItems.push(...translatedArray);
+              batchTranslated = true;
+            } else {
+              console.error(`[AI ASSISTANT] Batch ${Math.floor(i/batchSize) + 1} returned ${translatedArray.length} items, expected ${batch.length}`);
+              retryCount++;
+              if (retryCount < maxRetries) {
+                console.log(`[AI ASSISTANT] Retrying batch ${Math.floor(i/batchSize) + 1} (attempt ${retryCount + 1})`);
+              }
+            }
+          } else {
+            console.error(`[AI ASSISTANT] No content in translation response for batch ${Math.floor(i/batchSize) + 1}`);
+            retryCount++;
+          }
+        } catch (batchError) {
+          console.error(`[AI ASSISTANT] Batch ${Math.floor(i/batchSize) + 1} translation error:`, batchError);
+          retryCount++;
+          if (retryCount < maxRetries) {
+            console.log(`[AI ASSISTANT] Retrying batch ${Math.floor(i/batchSize) + 1} (attempt ${retryCount + 1})`);
+          }
         }
-        // Log the first few translated items to see if categories are being translated
-        if (translatedArray.length > 0) {
-          console.log("[AI ASSISTANT] Sample translated items:", translatedArray.slice(0, 3).map((item: any) => ({
-            id: item.id,
-            name: item.name,
-            category: item.category
-          })));
-        }
-        translatedItems.push(...translatedArray);
-      } else {
-        console.error("[AI ASSISTANT] No content in translation response");
       }
+
+      // If batch failed after retries, add original items to maintain count
+      if (!batchTranslated) {
+        console.error(`[AI ASSISTANT] Batch ${Math.floor(i/batchSize) + 1} failed after ${maxRetries} retries, using original items`);
+        const fallbackItems = batch.map(item => ({
+          id: item.id,
+          name: item.name,
+          category: item.category,
+          description: item.description || ""
+        }));
+        translatedItems.push(...fallbackItems);
+      }
+    }
+
+    // Validate that we have the same number of items
+    if (translatedItems.length !== originalItemCount) {
+      console.error(`[AI ASSISTANT] Item count mismatch: expected ${originalItemCount}, got ${translatedItems.length}`);
+      throw new AIAssistantError(
+        `Translation failed: Item count mismatch. Expected ${originalItemCount} items, got ${translatedItems.length}`,
+        "EXECUTION_FAILED"
+      );
     }
 
     // Update database with translations
@@ -608,7 +665,7 @@ Return format: {"items": [{"id": "...", "name": "translated name", "category": "
         updated_at: new Date().toISOString()
       };
       
-      // Update category if it was translated
+      // Always update category if it was translated
       if (translatedItem.category) {
         updateData.category = translatedItem.category;
       }
@@ -651,7 +708,9 @@ Return format: {"items": [{"id": "...", "name": "translated name", "category": "
         itemsFailed: failedCount,
         categoriesTranslated: uniqueCategories.length,
         targetLanguage: params.targetLanguage,
-        includeDescriptions: params.includeDescriptions
+        includeDescriptions: params.includeDescriptions,
+        originalItemCount,
+        finalItemCount: translatedItems.length
       },
       auditId: "",
     };

@@ -1,0 +1,143 @@
+// AI Assistant Conversations API
+// Handles creating and listing chat conversations
+
+import { NextRequest, NextResponse } from "next/server";
+import { createClient } from "@/lib/supabase/server";
+import { z } from "zod";
+
+const CreateConversationSchema = z.object({
+  venueId: z.string().min(1),
+  title: z.string().min(1).max(255),
+});
+
+export async function GET(request: NextRequest) {
+  try {
+    const supabase = await createClient();
+    
+    // Check auth
+    const {
+      data: { user },
+    } = await supabase.auth.getUser();
+
+    if (!user) {
+      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+    }
+
+    const { searchParams } = new URL(request.url);
+    const venueId = searchParams.get("venueId");
+
+    if (!venueId) {
+      return NextResponse.json({ error: "Missing venueId" }, { status: 400 });
+    }
+
+    // Verify user has access to venue
+    const { data: venue } = await supabase
+      .from("venues")
+      .select("owner_id")
+      .eq("venue_id", venueId)
+      .single();
+
+    if (!venue || venue.owner_id !== user.id) {
+      return NextResponse.json(
+        { error: "Access denied to this venue" },
+        { status: 403 }
+      );
+    }
+
+    // Get conversations for this venue
+    const { data: conversations, error } = await supabase
+      .from("ai_chat_conversations")
+      .select("*")
+      .eq("venue_id", venueId)
+      .eq("user_id", user.id)
+      .order("updated_at", { ascending: false });
+
+    if (error) {
+      console.error("[AI CHAT] Failed to fetch conversations:", error);
+      return NextResponse.json(
+        { error: "Failed to fetch conversations" },
+        { status: 500 }
+      );
+    }
+
+    return NextResponse.json({
+      conversations: conversations || [],
+    });
+  } catch (error: any) {
+    console.error("[AI CHAT] Conversations error:", error);
+    return NextResponse.json(
+      { error: error.message || "Internal server error" },
+      { status: 500 }
+    );
+  }
+}
+
+export async function POST(request: NextRequest) {
+  try {
+    const supabase = await createClient();
+    
+    // Check auth
+    const {
+      data: { user },
+    } = await supabase.auth.getUser();
+
+    if (!user) {
+      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+    }
+
+    // Parse request body
+    const body = await request.json();
+    const { venueId, title } = CreateConversationSchema.parse(body);
+
+    // Verify user has access to venue
+    const { data: venue } = await supabase
+      .from("venues")
+      .select("owner_id")
+      .eq("venue_id", venueId)
+      .single();
+
+    if (!venue || venue.owner_id !== user.id) {
+      return NextResponse.json(
+        { error: "Access denied to this venue" },
+        { status: 403 }
+      );
+    }
+
+    // Create new conversation
+    const { data: conversation, error } = await supabase
+      .from("ai_chat_conversations")
+      .insert({
+        venue_id: venueId,
+        user_id: user.id,
+        title,
+      })
+      .select("*")
+      .single();
+
+    if (error) {
+      console.error("[AI CHAT] Failed to create conversation:", error);
+      return NextResponse.json(
+        { error: "Failed to create conversation" },
+        { status: 500 }
+      );
+    }
+
+    return NextResponse.json({
+      conversation,
+    });
+  } catch (error: any) {
+    console.error("[AI CHAT] Create conversation error:", error);
+    
+    if (error.name === "ZodError") {
+      return NextResponse.json(
+        { error: "Invalid request data", details: error.errors },
+        { status: 400 }
+      );
+    }
+
+    return NextResponse.json(
+      { error: error.message || "Internal server error" },
+      { status: 500 }
+    );
+  }
+}
