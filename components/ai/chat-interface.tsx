@@ -158,9 +158,12 @@ export function ChatInterface({ venueId, isOpen, onClose, initialPrompt }: ChatI
       setLoading(true); // Show loading state while fetching messages
       
       const response = await fetch(`/api/ai-assistant/conversations/${conversationId}/messages`);
+      console.log("[AI CHAT] Response status:", response.status);
+      
       if (response.ok) {
         const data = await response.json();
         console.log("[AI CHAT] Loaded messages:", data.messages);
+        console.log("[AI CHAT] Number of messages:", data.messages?.length || 0);
         
         // Transform messages to match the expected format
         const transformedMessages = (data.messages || []).map((msg: any) => ({
@@ -176,16 +179,24 @@ export function ChatInterface({ venueId, isOpen, onClose, initialPrompt }: ChatI
           undoData: msg.undo_data,
         }));
         
+        console.log("[AI CHAT] Transformed messages:", transformedMessages);
         setMessages(transformedMessages);
+        
+        if (transformedMessages.length === 0) {
+          console.log("[AI CHAT] No messages found for conversation:", conversationId);
+          setError("No messages found in this conversation");
+        } else {
+          setError(null); // Clear any previous errors
+        }
       } else {
         const errorData = await response.text();
         console.error("[AI CHAT] Failed to load messages:", response.status, errorData);
-        setError("Failed to load conversation messages");
+        setError(`Failed to load conversation messages: ${response.status}`);
         setMessages([]);
       }
     } catch (error) {
       console.error("[AI CHAT] Failed to load messages:", error);
-      setError("Failed to load conversation messages");
+      setError(`Failed to load conversation messages: ${error.message}`);
       setMessages([]);
     } finally {
       setLoading(false);

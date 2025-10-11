@@ -56,6 +56,12 @@ export default function TrialStatusBanner() {
   };
 
   const processTrialStatus = (org: any) => {
+    console.log('[TRIAL DEBUG] Processing trial status:', {
+      subscriptionStatus: org.subscription_status,
+      trialEndsAt: org.trial_ends_at,
+      currentDate: new Date().toISOString()
+    });
+    
     const subscriptionStatus = org.subscription_status || 'basic';
     const isTrialing = subscriptionStatus === 'trialing';
     const tier = org.subscription_tier || 'basic';
@@ -76,6 +82,15 @@ export default function TrialStatusBanner() {
       
       // Ensure we don't show negative days
       daysRemaining = Math.max(0, daysRemaining);
+      
+      console.log('[TRIAL DEBUG] Date calculation:', {
+        endDate: endDate.toISOString(),
+        now: now.toISOString(),
+        endDateStart: endDateStart.toISOString(),
+        nowStart: nowStart.toISOString(),
+        diffTime: diffTime,
+        daysRemaining: daysRemaining
+      });
     }
 
     setTrialStatus({
