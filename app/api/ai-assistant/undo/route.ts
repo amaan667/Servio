@@ -203,7 +203,7 @@ async function undoMenuTranslation(venueId: string, undoData: any, supabase: any
     for (let i = 0; i < items.length; i += batchSize) {
       const batch = items.slice(i, i + batchSize);
       
-      const itemsToTranslate = batch.map(item => ({
+      const itemsToTranslate = batch.map((item: any) => ({
         id: item.id,
         name: item.name,
         category: item.category,
