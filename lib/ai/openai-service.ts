@@ -168,7 +168,8 @@ export async function handleUserMessage({
       const toolMessages = [...openaiMessages, message];
 
       for (const toolCall of toolCalls) {
-        const { name, arguments: args, id: callId } = toolCall;
+        const { function: func, id: callId } = toolCall;
+        const { name, arguments: args } = func;
         const parsedArgs = JSON.parse(args);
 
         let toolResult: any;
