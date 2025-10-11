@@ -419,7 +419,86 @@ export async function executeMenuTranslate(
   const uniqueCategories = Array.from(new Set(items.map(item => item.category).filter(Boolean)));
   
   if (preview) {
-    // For preview, just show what will happen
+    // For preview, do actual translation of sample items to show real results
+    try {
+      // Import OpenAI
+      const { getOpenAI } = await import("@/lib/openai");
+      const openai = getOpenAI();
+
+      // Get sample items for preview (first 5)
+      const sampleItems = items.slice(0, 5);
+      
+      // Create translation prompt for preview
+      const itemsToTranslate = sampleItems.map(item => ({
+        id: item.id,
+        name: item.name,
+        category: item.category,
+        ...(params.includeDescriptions && item.description ? { description: item.description } : {})
+      }));
+
+      const prompt = `Translate the following menu items to ${targetLangName}. 
+Return a JSON object with an "items" array containing the translated items.
+Keep the 'id' field unchanged. Maintain culinary context and use natural translations.
+
+IMPORTANT: You MUST translate BOTH the item names AND the category names. 
+For example, if the category is "STARTERS", translate it to the equivalent in ${targetLangName}.
+If the category is "MAINS", translate it to the appropriate term in ${targetLangName}.
+
+Items to translate:
+${JSON.stringify(itemsToTranslate, null, 2)}
+
+Return format: {"items": [{"id": "...", "name": "translated name", "category": "translated category", "description": "translated description"}]}`;
+
+      const response = await openai.chat.completions.create({
+        model: "gpt-4o-2024-08-06", // Use GPT-4o for translation (complex task requiring accuracy)
+        messages: [
+          {
+            role: "system",
+            content: "You are a professional menu translator. Return valid JSON with an 'items' array."
+          },
+          {
+            role: "user",
+            content: prompt
+          }
+        ],
+        temperature: 0.3,
+        response_format: { type: "json_object" },
+      });
+
+      const content = response.choices[0]?.message?.content;
+      if (content) {
+        const translated = JSON.parse(content);
+        const translatedArray = translated.items || [];
+        
+        if (translatedArray.length > 0) {
+          console.log("[AI ASSISTANT] Preview translation successful:", translatedArray.slice(0, 2));
+        }
+
+        return {
+          toolName: "menu.translate",
+          before: sampleItems.map(i => ({ 
+            name: i.name, 
+            description: i.description || "",
+            category: i.category || ""
+          })),
+          after: translatedArray.map((i: any) => ({
+            name: i.name || i.originalName,
+            description: i.description || "",
+            category: i.category || ""
+          })),
+          impact: {
+            itemsAffected: items.length,
+            categoriesAffected: uniqueCategories.length,
+            description: `Menu will be translated to ${targetLangName}. This will update ${items.length} items and ${uniqueCategories.length} categories${params.includeDescriptions ? " (including descriptions)" : ""}.`,
+          },
+        };
+      }
+    } catch (error) {
+      console.error("[AI ASSISTANT] Preview translation failed:", error);
+      // Fallback to simple preview if translation fails
+    }
+
+    // Fallback: Simple preview if actual translation fails
     return {
       toolName: "menu.translate",
       before: items.slice(0, 5).map(i => ({ 
@@ -428,9 +507,9 @@ export async function executeMenuTranslate(
         category: i.category || ""
       })),
       after: items.slice(0, 5).map(i => ({
-        name: `[${targetLangName}] ${i.name}`,
-        description: i.description ? `[${targetLangName}] ${i.description}` : "",
-        category: i.category ? `[${targetLangName}] ${i.category}` : ""
+        name: `[Will translate to ${targetLangName}] ${i.name}`,
+        description: i.description ? `[Will translate to ${targetLangName}] ${i.description}` : "",
+        category: i.category ? `[Will translate to ${targetLangName}] ${i.category}` : ""
       })),
       impact: {
         itemsAffected: items.length,
@@ -475,7 +554,7 @@ ${JSON.stringify(itemsToTranslate, null, 2)}
 Return format: {"items": [{"id": "...", "name": "translated name", "category": "translated category", "description": "translated description"}]}`;
 
       const response = await openai.chat.completions.create({
-        model: "gpt-4o-mini",
+        model: "gpt-4o-2024-08-06", // Use GPT-4o for translation (complex task requiring accuracy)
         messages: [
           {
             role: "system",

@@ -91,12 +91,12 @@ export async function POST(request: NextRequest) {
     // Get data summaries
     const summaries = await getAllSummaries(venueId, assistantContext.features);
 
-    // Plan the action
+    // Plan the action (now returns model used)
     const startTime = Date.now();
     const plan = await planAssistantAction(prompt, assistantContext, summaries);
     const executionTime = Date.now() - startTime;
 
-    // Log the planning request (not executed yet)
+    // Log the planning request (not executed yet) with actual model used
     const { data: auditData } = await supabase
       .from("ai_action_audit")
       .insert({
@@ -108,7 +108,7 @@ export async function POST(request: NextRequest) {
         params: plan.tools[0]?.params || {},
         preview: true,
         executed: false,
-        model_version: "gpt-4o-2024-08-06",
+        model_version: plan.modelUsed || "gpt-4o-mini", // Track which model was actually used
         execution_time_ms: executionTime,
       })
       .select("id")
@@ -119,6 +119,7 @@ export async function POST(request: NextRequest) {
       plan,
       auditId: auditData?.id,
       executionTimeMs: executionTime,
+      modelUsed: plan.modelUsed, // Return model info to client
     });
   } catch (error: any) {
     console.error("[AI ASSISTANT] Planning error:", error);

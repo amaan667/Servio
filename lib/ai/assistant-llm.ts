@@ -32,8 +32,69 @@ function getOpenAI() {
   return openai;
 }
 
-// Model to use (GPT-4o per user preference)
-const MODEL = "gpt-4o-2024-08-06"; // [[memory:5998613]]
+// ============================================================================
+// Model Selection - Smart routing between GPT-4o-mini (cheap) and GPT-4o (accurate)
+// ============================================================================
+
+const MODEL_MINI = "gpt-4o-mini"; // Cost: ~$0.0003/request (90% cheaper)
+const MODEL_FULL = "gpt-4o-2024-08-06"; // Cost: ~$0.003/request (most accurate)
+
+// Define which tools require the full GPT-4o model for accuracy
+const COMPLEX_TOOLS = new Set<ToolName>([
+  "menu.update_prices", // Requires accurate math and multi-item logic
+  "menu.translate", // Needs high-quality translations
+  "discounts.create", // Financial impact, needs precision
+  "inventory.set_par_levels", // Complex calculations
+  "analytics.create_report", // Complex aggregations
+]);
+
+// Define which tools are simple and work perfectly with mini
+const SIMPLE_TOOLS = new Set<ToolName>([
+  "navigation.go_to_page", // Simple routing
+  "analytics.get_stats", // Direct queries
+  "analytics.get_insights", // Direct queries
+  "menu.toggle_availability", // Simple boolean toggle
+  "orders.mark_served", // Simple status update
+  "orders.complete", // Simple status update
+  "kds.get_overdue", // Simple query
+]);
+
+/**
+ * Select the appropriate model based on task complexity
+ * Returns mini for simple tasks, full for complex ones
+ */
+function selectModel(userPrompt: string, firstToolName?: ToolName): string {
+  // If we know the tool name, use it for decision
+  if (firstToolName) {
+    if (COMPLEX_TOOLS.has(firstToolName)) {
+      console.log(`[AI ASSISTANT] Using GPT-4o (full) for complex tool: ${firstToolName}`);
+      return MODEL_FULL;
+    }
+    if (SIMPLE_TOOLS.has(firstToolName)) {
+      console.log(`[AI ASSISTANT] Using GPT-4o-mini for simple tool: ${firstToolName}`);
+      return MODEL_MINI;
+    }
+  }
+
+  // Heuristic: Check prompt for complexity indicators
+  const promptLower = userPrompt.toLowerCase();
+  
+  // Complex: Multi-step, conditional, comparative operations
+  const complexIndicators = [
+    "if", "but", "except", "compare", "analyze", 
+    "calculate", "optimize", "suggest", "recommend",
+    "except for", "as long as", "unless"
+  ];
+  
+  if (complexIndicators.some(indicator => promptLower.includes(indicator))) {
+    console.log(`[AI ASSISTANT] Using GPT-4o (full) - detected complex prompt`);
+    return MODEL_FULL;
+  }
+
+  // Default to mini for cost savings
+  console.log(`[AI ASSISTANT] Using GPT-4o-mini (default)`);
+  return MODEL_MINI;
+}
 
 // ============================================================================
 // Response Schema - Now using strict discriminated union from types
@@ -187,7 +248,7 @@ Return a structured plan with:
 }
 
 // ============================================================================
-// Planning Function
+// Planning Function with Smart Model Selection & Fallback
 // ============================================================================
 
 export async function planAssistantAction(
@@ -199,13 +260,17 @@ export async function planAssistantAction(
     orders?: OrdersSummary;
     analytics?: AnalyticsSummary;
   }
-): Promise<AIPlanResponse> {
+): Promise<AIPlanResponse & { modelUsed?: string }> {
   const systemPrompt = buildSystemPrompt(context, dataSummaries);
 
+  // Start with model selection based on prompt
+  let selectedModel = selectModel(userPrompt);
+  let usedFallback = false;
+
   try {
-    // Use zodResponseFormat with strict discriminated union schema
+    // Attempt with selected model
     const completion = await getOpenAI().chat.completions.create({
-      model: MODEL,
+      model: selectedModel,
       messages: [
         { role: "system", content: systemPrompt },
         { role: "user", content: userPrompt },
@@ -218,7 +283,6 @@ export async function planAssistantAction(
     const message = completion.choices[0].message;
     
     // Try to get parsed response (available when using zodResponseFormat)
-    // Type assertion needed as TypeScript doesn't know about the parsed property
     const parsed = (message as any).parsed;
     
     if (parsed) {
@@ -228,6 +292,7 @@ export async function planAssistantAction(
         tools: parsed.tools,
         reasoning: parsed.reasoning,
         warnings: parsed.warnings,
+        modelUsed: selectedModel,
       };
     }
     
@@ -241,12 +306,67 @@ export async function planAssistantAction(
         tools: validated.tools,
         reasoning: validated.reasoning,
         warnings: validated.warnings,
+        modelUsed: selectedModel,
       };
     }
     
     throw new Error("Failed to parse AI response: no parsed or content available");
   } catch (error) {
-    console.error("[AI ASSISTANT] Planning error:", error);
+    console.error(`[AI ASSISTANT] Planning error with ${selectedModel}:`, error);
+    
+    // If we used mini and got an error, try falling back to full model
+    if (selectedModel === MODEL_MINI && !usedFallback) {
+      console.log("[AI ASSISTANT] Falling back to GPT-4o (full) after mini failure");
+      usedFallback = true;
+      selectedModel = MODEL_FULL;
+      
+      try {
+        const completion = await getOpenAI().chat.completions.create({
+          model: selectedModel,
+          messages: [
+            { role: "system", content: systemPrompt },
+            { role: "user", content: userPrompt },
+          ],
+          response_format: zodResponseFormat(AssistantPlanSchema, "assistant_plan"),
+          temperature: 0.1,
+        });
+
+        const message = completion.choices[0].message;
+        const parsed = (message as any).parsed;
+        
+        if (parsed) {
+          return {
+            intent: parsed.intent,
+            tools: parsed.tools,
+            reasoning: parsed.reasoning,
+            warnings: parsed.warnings,
+            modelUsed: `${selectedModel} (fallback)`,
+          };
+        }
+        
+        const content = message.content;
+        if (content) {
+          const parsedContent = JSON.parse(content);
+          const validated = AssistantPlanSchema.parse(parsedContent);
+          return {
+            intent: validated.intent,
+            tools: validated.tools,
+            reasoning: validated.reasoning,
+            warnings: validated.warnings,
+            modelUsed: `${selectedModel} (fallback)`,
+          };
+        }
+      } catch (fallbackError) {
+        console.error("[AI ASSISTANT] Fallback to GPT-4o also failed:", fallbackError);
+        // Re-throw the fallback error
+        if (fallbackError instanceof z.ZodError) {
+          console.error("[AI ASSISTANT] Zod validation errors:", JSON.stringify(fallbackError.errors, null, 2));
+        }
+        throw fallbackError;
+      }
+    }
+    
+    // If original error wasn't from mini, or fallback also failed
     if (error instanceof z.ZodError) {
       console.error("[AI ASSISTANT] Zod validation errors:", JSON.stringify(error.errors, null, 2));
     }
@@ -272,8 +392,9 @@ Parameters: ${JSON.stringify(params, null, 2)}
 User Role: ${context.userRole}`;
 
   try {
+    // Use mini for simple explanations (cost savings)
     const completion = await getOpenAI().chat.completions.create({
-      model: MODEL,
+      model: MODEL_MINI,
       messages: [
         { role: "system", content: systemPrompt },
         { role: "user", content: userPrompt },
@@ -304,8 +425,9 @@ Focus on common tasks, optimizations, or insights based on the data.`;
   const userPrompt = `Data: ${JSON.stringify(dataSummary, null, 2)}`;
 
   try {
+    // Use mini for suggestions (cost savings, still good quality)
     const completion = await getOpenAI().chat.completions.create({
-      model: MODEL,
+      model: MODEL_MINI,
       messages: [
         { role: "system", content: systemPrompt },
         { role: "user", content: userPrompt },
@@ -324,7 +446,7 @@ Focus on common tasks, optimizations, or insights based on the data.`;
 }
 
 // ============================================================================
-// Token Usage Tracking
+// Token Usage Tracking & Cost Calculation
 // ============================================================================
 
 export function estimateTokens(text: string): number {
@@ -334,15 +456,29 @@ export function estimateTokens(text: string): number {
 
 export function calculateCost(
   inputTokens: number,
-  outputTokens: number
+  outputTokens: number,
+  model: string = MODEL_MINI
 ): number {
-  // GPT-4o pricing (as of 2024)
-  const inputCostPer1k = 0.0025;
-  const outputCostPer1k = 0.01;
+  // Pricing as of 2024
+  let inputCostPer1k: number;
+  let outputCostPer1k: number;
+
+  if (model.includes("gpt-4o-mini")) {
+    // GPT-4o-mini pricing (90% cheaper!)
+    inputCostPer1k = 0.00015;
+    outputCostPer1k = 0.0006;
+  } else {
+    // GPT-4o pricing
+    inputCostPer1k = 0.0025;
+    outputCostPer1k = 0.01;
+  }
 
   return (
     (inputTokens / 1000) * inputCostPer1k +
     (outputTokens / 1000) * outputCostPer1k
   );
 }
+
+// Export model constants for use in other modules
+export { MODEL_MINI, MODEL_FULL };
 
