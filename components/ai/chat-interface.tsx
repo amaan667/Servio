@@ -637,20 +637,21 @@ export function ChatInterface({ venueId, isOpen, onClose, initialPrompt }: ChatI
 
   return (
     <Dialog open={isOpen} onOpenChange={onClose}>
-      <DialogContent className="max-w-6xl max-h-[90vh] flex flex-col p-0 z-50">
-        <DialogHeader className="p-6 pb-4 relative">
-          <DialogTitle className="flex items-center gap-2">
+      <DialogContent className="max-w-6xl w-[95vw] h-[95vh] max-h-[95vh] flex flex-col p-0 z-50">
+        <DialogHeader className="p-4 sm:p-6 pb-2 sm:pb-4 relative">
+          <DialogTitle className="flex items-center gap-2 text-lg sm:text-xl">
             <Sparkles className="h-5 w-5 text-purple-500" />
-            Servio AI Assistant - Chat History
+            <span className="hidden sm:inline">Servio AI Assistant - Chat History</span>
+            <span className="sm:hidden">AI Assistant</span>
           </DialogTitle>
-          <DialogDescription>
+          <DialogDescription className="hidden sm:block">
             Chat with your AI assistant and manage conversation history
           </DialogDescription>
         </DialogHeader>
 
-        <div className="flex-1 flex overflow-hidden">
+        <div className="flex-1 flex flex-col sm:flex-row overflow-hidden">
           {/* Sidebar - Conversations */}
-          <div className="w-80 border-r bg-muted/20 flex flex-col">
+          <div className="w-full sm:w-80 border-r bg-muted/20 flex flex-col h-48 sm:h-auto">
             <div className="p-4 border-b">
               <Button
                 onClick={createNewConversation}
@@ -707,10 +708,10 @@ export function ChatInterface({ venueId, isOpen, onClose, initialPrompt }: ChatI
           </div>
 
           {/* Main Chat Area */}
-          <div className="flex-1 flex flex-col">
+          <div className="flex-1 flex flex-col min-h-0">
             {/* Messages */}
-            <ScrollArea className="flex-1 p-4">
-              <div className="space-y-4">
+            <ScrollArea className="flex-1 p-3 sm:p-4">
+              <div className="space-y-3 sm:space-y-4">
                 {messages.map((message) => (
                   <div
                     key={message.id}
@@ -719,7 +720,7 @@ export function ChatInterface({ venueId, isOpen, onClose, initialPrompt }: ChatI
                     }`}
                   >
                     <div
-                      className={`max-w-[80%] rounded-lg p-3 ${
+                      className={`max-w-[90%] sm:max-w-[80%] rounded-lg p-3 text-sm sm:text-base ${
                         message.role === "user"
                           ? "bg-primary text-primary-foreground"
                           : message.role === "system"
@@ -848,7 +849,7 @@ export function ChatInterface({ venueId, isOpen, onClose, initialPrompt }: ChatI
             )}
 
             {/* Input */}
-            <div className="p-4 border-t">
+            <div className="p-3 sm:p-4 border-t bg-background sticky bottom-0">
               <div className="flex gap-2">
                 <Input
                   ref={inputRef}
@@ -862,11 +863,13 @@ export function ChatInterface({ venueId, isOpen, onClose, initialPrompt }: ChatI
                     }
                   }}
                   disabled={loading || executing}
-                  className="flex-1"
+                  className="flex-1 min-h-[44px] text-base"
                 />
                 <Button
                   onClick={() => handleSendMessage()}
                   disabled={loading || executing || !input.trim()}
+                  size="sm"
+                  className="min-h-[44px] px-3"
                 >
                   {loading ? (
                     <Loader2 className="h-4 w-4 animate-spin" />
