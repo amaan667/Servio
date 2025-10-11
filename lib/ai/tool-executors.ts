@@ -1116,6 +1116,8 @@ export async function executeAnalyticsGetStats(
 ): Promise<AIPreviewDiff | AIExecutionResult> {
   const supabase = await createClient();
 
+  console.log("[AI ASSISTANT] Analytics params:", JSON.stringify(params, null, 2));
+
   // Preview mode
   if (preview) {
     const itemContext = params.itemName ? ` for item: ${params.itemName}` : "";
@@ -1137,10 +1139,13 @@ export async function executeAnalyticsGetStats(
   try {
     // Build base query for orders
     const timeStart = getTimeRangeStart(params.timeRange);
+    console.log("[AI ASSISTANT] Time range start:", timeStart, "for range:", params.timeRange);
     
     // If filtering by specific item, get order_items data
     if (params.itemId) {
-      const { data: orderItems } = await supabase
+      console.log("[AI ASSISTANT] Searching for item:", params.itemName, "with ID:", params.itemId);
+      
+      const { data: orderItems, error: orderItemsError } = await supabase
         .from("order_items")
         .select(`
           menu_item_id,
@@ -1157,9 +1162,17 @@ export async function executeAnalyticsGetStats(
         .eq("menu_item_id", params.itemId)
         .gte("orders.created_at", timeStart);
 
+      if (orderItemsError) {
+        console.error("[AI ASSISTANT] Error fetching order items:", orderItemsError);
+      }
+      
+      console.log("[AI ASSISTANT] Found", orderItems?.length || 0, "order items for this item");
+
       const totalRevenue = orderItems?.reduce((sum, item) => sum + (item.price * item.quantity), 0) || 0;
       const totalQuantity = orderItems?.reduce((sum, item) => sum + item.quantity, 0) || 0;
       const orderCount = new Set(orderItems?.map((item: any) => item.orders.id)).size;
+
+      console.log("[AI ASSISTANT] Item stats:", { totalRevenue, totalQuantity, orderCount });
 
       stats = {
         itemName: params.itemName || "Unknown Item",
@@ -1238,8 +1251,11 @@ export async function executeAnalyticsGetStats(
       }
     }
   } catch (error) {
+    console.error("[AI ASSISTANT] Analytics error:", error);
     throw new AIAssistantError("Failed to get analytics data", "EXECUTION_FAILED", error);
   }
+
+  console.log("[AI ASSISTANT] Final analytics result:", JSON.stringify(stats, null, 2));
 
   return {
     success: true,
