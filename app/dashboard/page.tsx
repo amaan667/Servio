@@ -35,6 +35,7 @@ export default async function DashboardPage() {
   }
 
   if (!userVenues || userVenues.length === 0) {
+    console.log('No venues found for user:', user.id);
     // Check if user is a Google OAuth user
     const isOAuthUser = user.identities?.some((identity: any) => 
       identity.provider === 'google' || identity.provider === 'oauth'
@@ -76,6 +77,7 @@ export default async function DashboardPage() {
   }
 
   const venueId = userVenues[0].venue_id;
+  console.log('Redirecting to venue:', venueId);
   
   // Redirect to the primary venue's dashboard
   redirect(`/dashboard/${venueId}`);
