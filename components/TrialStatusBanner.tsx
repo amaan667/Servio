@@ -65,8 +65,17 @@ export default function TrialStatusBanner() {
     if (isTrialing && trialEndsAt) {
       const endDate = new Date(trialEndsAt);
       const now = new Date();
-      const diffTime = endDate.getTime() - now.getTime();
-      daysRemaining = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
+      
+      // Set both dates to start of day for accurate day counting
+      const endDateStart = new Date(endDate.getFullYear(), endDate.getMonth(), endDate.getDate());
+      const nowStart = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+      
+      const diffTime = endDateStart.getTime() - nowStart.getTime();
+      // Use Math.floor to get exact days remaining (not rounded up)
+      daysRemaining = Math.floor(diffTime / (1000 * 60 * 60 * 24));
+      
+      // Ensure we don't show negative days
+      daysRemaining = Math.max(0, daysRemaining);
     }
 
     setTrialStatus({
@@ -88,6 +97,48 @@ export default function TrialStatusBanner() {
       setLoading(false);
     }
   }, [user]);
+
+  // Daily refresh to update countdown
+  useEffect(() => {
+    if (!user || !trialStatus?.isTrialing) return;
+
+    // Calculate time until next midnight for daily refresh
+    const now = new Date();
+    const tomorrow = new Date(now);
+    tomorrow.setDate(tomorrow.getDate() + 1);
+    tomorrow.setHours(0, 0, 0, 0);
+    
+    const msUntilMidnight = tomorrow.getTime() - now.getTime();
+    
+    // Set timeout to refresh at midnight
+    const timeoutId = setTimeout(() => {
+      console.log('[TRIAL BANNER] Daily refresh - updating trial countdown');
+      fetchTrialStatus();
+      
+      // Set up recurring daily refresh
+      const dailyInterval = setInterval(() => {
+        console.log('[TRIAL BANNER] Daily refresh - updating trial countdown');
+        fetchTrialStatus();
+      }, 24 * 60 * 60 * 1000); // 24 hours
+      
+      // Clean up interval on unmount
+      return () => clearInterval(dailyInterval);
+    }, msUntilMidnight);
+
+    return () => clearTimeout(timeoutId);
+  }, [user, trialStatus?.isTrialing]);
+
+  // Hourly refresh to catch any edge cases
+  useEffect(() => {
+    if (!user || !trialStatus?.isTrialing) return;
+
+    const hourlyInterval = setInterval(() => {
+      console.log('[TRIAL BANNER] Hourly refresh - updating trial countdown');
+      fetchTrialStatus();
+    }, 60 * 60 * 1000); // 1 hour
+
+    return () => clearInterval(hourlyInterval);
+  }, [user, trialStatus?.isTrialing]);
 
   // Auto-refresh when returning from checkout success
   useEffect(() => {
