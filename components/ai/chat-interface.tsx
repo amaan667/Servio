@@ -111,20 +111,25 @@ export function ChatInterface({ venueId, isOpen, onClose, initialPrompt }: ChatI
 
   const loadConversations = async () => {
     try {
+      console.log("[AI CHAT] Loading conversations for venue:", venueId);
       const response = await fetch(`/api/ai-assistant/conversations?venueId=${venueId}`);
       if (response.ok) {
         const data = await response.json();
+        console.log("[AI CHAT] Loaded conversations:", data.conversations);
         setConversations(data.conversations || []);
         
         // If there's a current conversation, load its messages
         if (currentConversation) {
           loadMessages(currentConversation.id);
-        } else if (data.conversations.length > 0) {
+        } else if (data.conversations && data.conversations.length > 0) {
           // Auto-select the most recent conversation
           const latest = data.conversations[0];
+          console.log("[AI CHAT] Auto-selecting latest conversation:", latest.id);
           setCurrentConversation(latest);
           loadMessages(latest.id);
         }
+      } else {
+        console.error("[AI CHAT] Failed to load conversations:", response.status);
       }
     } catch (error) {
       console.error("[AI CHAT] Failed to load conversations:", error);
@@ -133,10 +138,14 @@ export function ChatInterface({ venueId, isOpen, onClose, initialPrompt }: ChatI
 
   const loadMessages = async (conversationId: string) => {
     try {
+      console.log("[AI CHAT] Loading messages for conversation:", conversationId);
       const response = await fetch(`/api/ai-assistant/conversations/${conversationId}/messages`);
       if (response.ok) {
         const data = await response.json();
+        console.log("[AI CHAT] Loaded messages:", data.messages);
         setMessages(data.messages || []);
+      } else {
+        console.error("[AI CHAT] Failed to load messages:", response.status);
       }
     } catch (error) {
       console.error("[AI CHAT] Failed to load messages:", error);
@@ -145,6 +154,7 @@ export function ChatInterface({ venueId, isOpen, onClose, initialPrompt }: ChatI
 
   const createNewConversation = async () => {
     try {
+      console.log("[AI CHAT] Creating new conversation");
       const response = await fetch("/api/ai-assistant/conversations", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
@@ -156,6 +166,7 @@ export function ChatInterface({ venueId, isOpen, onClose, initialPrompt }: ChatI
 
       if (response.ok) {
         const data = await response.json();
+        console.log("[AI CHAT] Created conversation:", data.conversation);
         const newConversation = data.conversation;
         setConversations(prev => [newConversation, ...prev]);
         setCurrentConversation(newConversation);
@@ -166,6 +177,8 @@ export function ChatInterface({ venueId, isOpen, onClose, initialPrompt }: ChatI
         setError(null);
         setSuccess(false);
         setExecutionResults([]);
+      } else {
+        console.error("[AI CHAT] Failed to create conversation:", response.status);
       }
     } catch (error) {
       console.error("[AI CHAT] Failed to create conversation:", error);
@@ -462,7 +475,7 @@ export function ChatInterface({ venueId, isOpen, onClose, initialPrompt }: ChatI
 
   return (
     <Dialog open={isOpen} onOpenChange={onClose}>
-      <DialogContent className="max-w-6xl max-h-[90vh] flex flex-col p-0">
+      <DialogContent className="max-w-6xl max-h-[90vh] flex flex-col p-0 fixed bottom-4 left-4 top-auto">
         <DialogHeader className="p-6 pb-4">
           <DialogTitle className="flex items-center gap-2">
             <Sparkles className="h-5 w-5 text-purple-500" />
