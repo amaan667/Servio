@@ -236,18 +236,20 @@ export async function POST(request: NextRequest) {
         toolResults: aiResult.toolResults || []
       });
 
-    } catch (aiError) {
+    } catch (aiError: any) {
       console.error("[AI CHAT] AI service error:", aiError);
       
+      const errorMessage = aiError?.message || "An unexpected error occurred";
+      
       // Save error message
-      const { data: errorMessage } = await supabase
+      const { data: errorMsg } = await supabase
         .from("ai_messages")
         .insert({
           conversation_id: currentConversationId,
           venue_id: venueId,
           author_role: "assistant",
-          text: `I encountered an error: ${aiError.message}`,
-          content: { text: `I encountered an error: ${aiError.message}` },
+          text: `I encountered an error: ${errorMessage}`,
+          content: { text: `I encountered an error: ${errorMessage}` },
         })
         .select("*")
         .single();
@@ -264,22 +266,30 @@ export async function POST(request: NextRequest) {
         createdAt: userMessage.created_at,
       };
 
-      const transformedErrorMessage = {
-        id: errorMessage.id,
-        conversationId: errorMessage.conversation_id,
-        venueId: errorMessage.venue_id,
-        authorRole: errorMessage.author_role,
-        text: errorMessage.text,
-        content: errorMessage.content,
-        callId: errorMessage.call_id,
-        toolName: errorMessage.tool_name,
-        createdAt: errorMessage.created_at,
+      const transformedErrorMessage = errorMsg ? {
+        id: errorMsg.id,
+        conversationId: errorMsg.conversation_id,
+        venueId: errorMsg.venue_id,
+        authorRole: errorMsg.author_role,
+        text: errorMsg.text,
+        content: errorMsg.content,
+        callId: errorMsg.call_id,
+        toolName: errorMsg.tool_name,
+        createdAt: errorMsg.created_at,
+      } : {
+        id: 'error',
+        conversationId: currentConversationId!,
+        venueId: venueId,
+        authorRole: 'assistant' as const,
+        text: `I encountered an error: ${errorMessage}`,
+        content: { text: `I encountered an error: ${errorMessage}` },
+        createdAt: new Date().toISOString(),
       };
 
             return NextResponse.json({
               conversationId: currentConversationId!,
               messages: [transformedUserMessage, transformedErrorMessage],
-              error: aiError.message
+              error: errorMessage
             });
     }
   } catch (error: any) {
