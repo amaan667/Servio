@@ -280,9 +280,9 @@ export async function handleUserMessage({
         toolResults: []
       };
     }
-  } catch (error) {
+  } catch (error: any) {
     console.error("[AI] OpenAI service error:", error);
-    throw new Error(`AI service error: ${error.message}`);
+    throw new Error(`AI service error: ${error?.message || 'Unknown error'}`);
   }
 }
 
