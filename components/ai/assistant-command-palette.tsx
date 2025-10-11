@@ -46,18 +46,24 @@ export function AssistantCommandPalette({
   const [executionResults, setExecutionResults] = useState<any[]>([]);
   const [showChatInterface, setShowChatInterface] = useState(false);
 
-  // Keyboard shortcut: ⌘K / Ctrl-K
+  // Keyboard shortcut: ⌘K / Ctrl-K - Opens expanded chat interface directly
   useEffect(() => {
     const down = (e: KeyboardEvent) => {
       if (e.key === "k" && (e.metaKey || e.ctrlKey)) {
         e.preventDefault();
-        setOpen((open) => !open);
+        if (showChatHistory) {
+          // Open expanded chat interface directly
+          setShowChatInterface(true);
+        } else {
+          // Fallback to short form if chat history not enabled
+          setOpen((open) => !open);
+        }
       }
     };
 
     document.addEventListener("keydown", down);
     return () => document.removeEventListener("keydown", down);
-  }, []);
+  }, [showChatHistory]);
 
   // Reset state when dialog closes
   useEffect(() => {
@@ -292,7 +298,15 @@ export function AssistantCommandPalette({
   return (
     <>
       {/* Floating AI Assistant Button */}
-      <AIAssistantFloat onClick={() => setOpen(true)} />
+      <AIAssistantFloat onClick={() => {
+        if (showChatHistory) {
+          // Open expanded chat interface directly
+          setShowChatInterface(true);
+        } else {
+          // Fallback to short form if chat history not enabled
+          setOpen(true);
+        }
+      }} />
       
       {/* Chat Interface */}
       {showChatHistory && (

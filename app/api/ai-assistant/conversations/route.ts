@@ -2,7 +2,7 @@
 // Handles creating and listing chat conversations
 
 import { NextRequest, NextResponse } from "next/server";
-import { createClient } from "@/lib/supabase/server";
+import { createClient, createAdminClient } from "@/lib/supabase/server";
 import { z } from "zod";
 
 const CreateConversationSchema = z.object({
@@ -13,6 +13,7 @@ const CreateConversationSchema = z.object({
 export async function GET(request: NextRequest) {
   try {
     const supabase = await createClient();
+    const adminSupabase = createAdminClient();
     
     // Check auth
     const {
@@ -34,8 +35,8 @@ export async function GET(request: NextRequest) {
       return NextResponse.json({ error: "Missing venueId" }, { status: 400 });
     }
 
-    // Verify user has access to venue
-    const { data: venue } = await supabase
+    // Verify user has access to venue using admin client
+    const { data: venue } = await adminSupabase
       .from("venues")
       .select("owner_id")
       .eq("venue_id", venueId)
@@ -51,8 +52,8 @@ export async function GET(request: NextRequest) {
       );
     }
 
-    // Get conversations for this venue
-    const { data: conversations, error } = await supabase
+    // Get conversations for this venue using admin client
+    const { data: conversations, error } = await adminSupabase
       .from("ai_chat_conversations")
       .select("*")
       .eq("venue_id", venueId)
@@ -115,6 +116,7 @@ export async function GET(request: NextRequest) {
 export async function POST(request: NextRequest) {
   try {
     const supabase = await createClient();
+    const adminSupabase = createAdminClient();
     
     // Check auth
     const {
@@ -129,8 +131,8 @@ export async function POST(request: NextRequest) {
     const body = await request.json();
     const { venueId, title } = CreateConversationSchema.parse(body);
 
-    // Verify user has access to venue
-    const { data: venue } = await supabase
+    // Verify user has access to venue using admin client
+    const { data: venue } = await adminSupabase
       .from("venues")
       .select("owner_id")
       .eq("venue_id", venueId)
@@ -143,8 +145,8 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    // Create new conversation
-    const { data: conversation, error } = await supabase
+    // Create new conversation using admin client
+    const { data: conversation, error } = await adminSupabase
       .from("ai_chat_conversations")
       .insert({
         venue_id: venueId,
@@ -195,6 +197,7 @@ export async function POST(request: NextRequest) {
 export async function PATCH(request: NextRequest) {
   try {
     const supabase = await createClient();
+    const adminSupabase = createAdminClient();
     
     // Check auth
     const {
@@ -216,8 +219,8 @@ export async function PATCH(request: NextRequest) {
       );
     }
 
-    // Verify user has access to this conversation
-    const { data: conversation } = await supabase
+    // Verify user has access to this conversation using admin client
+    const { data: conversation } = await adminSupabase
       .from("ai_chat_conversations")
       .select("*")
       .eq("id", conversationId)
@@ -231,8 +234,8 @@ export async function PATCH(request: NextRequest) {
       );
     }
 
-    // Update the conversation title
-    const { data: updatedConversation, error } = await supabase
+    // Update the conversation title using admin client
+    const { data: updatedConversation, error } = await adminSupabase
       .from("ai_chat_conversations")
       .update({ 
         title,

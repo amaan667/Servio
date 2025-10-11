@@ -2,7 +2,7 @@
 // Handles messages within conversations
 
 import { NextRequest, NextResponse } from "next/server";
-import { createClient } from "@/lib/supabase/server";
+import { createClient, createAdminClient } from "@/lib/supabase/server";
 import { z } from "zod";
 
 const CreateMessageSchema = z.object({
@@ -22,6 +22,7 @@ export async function GET(
 ) {
   try {
     const supabase = await createClient();
+    const adminSupabase = createAdminClient();
     
     // Check auth
     const {
@@ -34,8 +35,8 @@ export async function GET(
 
     const { conversationId } = await params;
 
-    // Verify user has access to this conversation
-    const { data: conversation } = await supabase
+    // Verify user has access to this conversation using admin client
+    const { data: conversation } = await adminSupabase
       .from("ai_chat_conversations")
       .select(`
         *,
@@ -58,8 +59,8 @@ export async function GET(
       );
     }
 
-    // Get messages for this conversation
-    const { data: messages, error } = await supabase
+    // Get messages for this conversation using admin client
+    const { data: messages, error } = await adminSupabase
       .from("ai_chat_messages")
       .select("*")
       .eq("conversation_id", conversationId)
@@ -97,6 +98,7 @@ export async function POST(
 ) {
   try {
     const supabase = await createClient();
+    const adminSupabase = createAdminClient();
     
     // Check auth
     const {
@@ -109,8 +111,8 @@ export async function POST(
 
     const { conversationId } = await params;
 
-    // Verify user has access to this conversation
-    const { data: conversation } = await supabase
+    // Verify user has access to this conversation using admin client
+    const { data: conversation } = await adminSupabase
       .from("ai_chat_conversations")
       .select(`
         *,
@@ -137,8 +139,8 @@ export async function POST(
     const body = await request.json();
     const messageData = CreateMessageSchema.parse(body);
 
-    // Create new message
-    const { data: message, error } = await supabase
+    // Create new message using admin client
+    const { data: message, error } = await adminSupabase
       .from("ai_chat_messages")
       .insert({
         conversation_id: conversationId,
@@ -155,8 +157,8 @@ export async function POST(
       );
     }
 
-    // Update conversation's updated_at timestamp
-    await supabase
+    // Update conversation's updated_at timestamp using admin client
+    await adminSupabase
       .from("ai_chat_conversations")
       .update({ updated_at: new Date().toISOString() })
       .eq("id", conversationId);
