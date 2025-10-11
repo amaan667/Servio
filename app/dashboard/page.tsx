@@ -22,19 +22,19 @@ export default async function DashboardPage() {
     redirect('/sign-in');
   }
 
-  // Get the user's primary venue
-  const { data: venues, error: venueError } = await supabase
-    .from('venues')
-    .select('venue_id, name')
-    .eq('owner_id', user.id)
-    .order('created_at', { ascending: true })
+  // Get the user's venues via RBAC
+  const { data: userVenues, error: venueError } = await supabase
+    .from('user_venue_roles')
+    .select('venue_id')
+    .eq('user_id', user.id)
     .limit(1);
 
   if (venueError) {
+    console.error('Error fetching user venues:', venueError);
     redirect('/complete-profile');
   }
 
-  if (!venues || venues.length === 0) {
+  if (!userVenues || userVenues.length === 0) {
     // Check if user is a Google OAuth user
     const isOAuthUser = user.identities?.some((identity: any) => 
       identity.provider === 'google' || identity.provider === 'oauth'
@@ -75,7 +75,7 @@ export default async function DashboardPage() {
     }
   }
 
-  const venueId = venues[0].venue_id;
+  const venueId = userVenues[0].venue_id;
   
   // Redirect to the primary venue's dashboard
   redirect(`/dashboard/${venueId}`);

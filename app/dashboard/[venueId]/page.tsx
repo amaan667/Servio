@@ -32,33 +32,42 @@ export default async function VenuePage({ params }: { params: Promise<{ venueId:
       redirect('/sign-in');
     }
 
+    // Check if user has access to this venue via RBAC
+    const { data: userRole, error: roleError } = await supabase
+      .from('user_venue_roles')
+      .select('role')
+      .eq('venue_id', venueId)
+      .eq('user_id', user.id)
+      .maybeSingle();
+
+    if (!userRole) {
+      // User doesn't have access to this venue
+      // Check if they have access to any other venues
+      const { data: userVenues } = await supabase
+        .from('user_venue_roles')
+        .select('venue_id')
+        .eq('user_id', user.id)
+        .limit(1);
+      
+      if (userVenues && userVenues.length > 0) {
+        // Redirect to their first venue
+        redirect(`/dashboard/${userVenues[0].venue_id}`);
+      } else {
+        // No venue access - redirect to complete profile
+        redirect('/complete-profile');
+      }
+    }
+
+    // Fetch venue details
     const { data: venue, error: venueError } = await supabase
       .from('venues')
       .select('*')
       .eq('venue_id', venueId)
-      .eq('owner_id', user.id)
       .maybeSingle();
 
-    if (venueError) {
+    if (venueError || !venue) {
       console.error('Database error:', venueError);
       redirect('/?auth_error=database_error');
-    }
-    
-    if (!venue) {
-      // Check if user has any venues at all before redirecting to sign-in
-      const { data: userVenues } = await supabase
-        .from('venues')
-        .select('venue_id')
-        .eq('owner_id', user.id)
-        .limit(1);
-      
-      if (userVenues && userVenues.length > 0) {
-        // User has venues but not this specific one - redirect to their first venue
-        redirect(`/dashboard/${userVenues[0].venue_id}`);
-      } else {
-        // User has no venues - redirect to complete profile
-        redirect('/complete-profile');
-      }
     }
 
     // Check if user needs onboarding (new signup with no menu/tables)
