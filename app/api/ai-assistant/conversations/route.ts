@@ -181,3 +181,83 @@ export async function POST(request: NextRequest) {
     );
   }
 }
+
+export async function PATCH(request: NextRequest) {
+  try {
+    const supabase = await createClient();
+    
+    // Check auth
+    const {
+      data: { user },
+    } = await supabase.auth.getUser();
+
+    if (!user) {
+      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+    }
+
+    // Parse request body
+    const body = await request.json();
+    const { conversationId, title } = body;
+
+    if (!conversationId || !title) {
+      return NextResponse.json(
+        { error: "Missing conversationId or title" },
+        { status: 400 }
+      );
+    }
+
+    // Verify user has access to this conversation
+    const { data: conversation } = await supabase
+      .from("ai_chat_conversations")
+      .select("*")
+      .eq("id", conversationId)
+      .eq("user_id", user.id)
+      .single();
+
+    if (!conversation) {
+      return NextResponse.json(
+        { error: "Conversation not found" },
+        { status: 404 }
+      );
+    }
+
+    // Update the conversation title
+    const { data: updatedConversation, error } = await supabase
+      .from("ai_chat_conversations")
+      .update({ 
+        title,
+        updated_at: new Date().toISOString()
+      })
+      .eq("id", conversationId)
+      .select("*")
+      .single();
+
+    if (error) {
+      console.error("[AI CHAT] Failed to update conversation:", error);
+      return NextResponse.json(
+        { error: "Failed to update conversation" },
+        { status: 500 }
+      );
+    }
+
+    // Transform the updated conversation to match frontend expectations
+    const transformedConversation = {
+      ...updatedConversation,
+      updatedAt: updatedConversation.updated_at,
+      createdAt: updatedConversation.created_at,
+      venueId: updatedConversation.venue_id,
+      userId: updatedConversation.user_id,
+      isActive: updatedConversation.is_active,
+    };
+
+    return NextResponse.json({
+      conversation: transformedConversation,
+    });
+  } catch (error: any) {
+    console.error("[AI CHAT] Update conversation error:", error);
+    return NextResponse.json(
+      { error: error.message || "Internal server error" },
+      { status: 500 }
+    );
+  }
+}
