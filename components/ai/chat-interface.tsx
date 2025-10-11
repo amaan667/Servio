@@ -475,8 +475,8 @@ export function ChatInterface({ venueId, isOpen, onClose, initialPrompt }: ChatI
 
   return (
     <Dialog open={isOpen} onOpenChange={onClose}>
-      <DialogContent className="max-w-6xl max-h-[90vh] flex flex-col p-0 fixed bottom-4 left-4 top-auto">
-        <DialogHeader className="p-6 pb-4">
+      <DialogContent className="max-w-6xl max-h-[90vh] flex flex-col p-0 z-50">
+        <DialogHeader className="p-6 pb-4 relative">
           <DialogTitle className="flex items-center gap-2">
             <Sparkles className="h-5 w-5 text-purple-500" />
             Servio AI Assistant - Chat History
