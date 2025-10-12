@@ -39,6 +39,7 @@ export default function CompleteProfilePage() {
           return;
         }
 
+        // Check if user already has a venue (they've completed profile)
         const { data: venue, error: venueErr } = await createClient()
           .from('venues')
           .select('venue_id')
@@ -49,12 +50,26 @@ export default function CompleteProfilePage() {
           // Silent error handling
         }
 
+        // If user already has a venue, redirect to dashboard
         if (venue?.venue_id) {
           router.replace(`/dashboard/${venue.venue_id}`);
           return;
         }
 
-        // Only show form for Google OAuth users without venues
+        // Check RBAC table as well
+        const { data: rbacVenue } = await createClient()
+          .from('user_venue_roles')
+          .select('venue_id')
+          .eq('user_id', user.id)
+          .limit(1)
+          .maybeSingle();
+
+        if (rbacVenue?.venue_id) {
+          router.replace(`/dashboard/${rbacVenue.venue_id}`);
+          return;
+        }
+
+        // Only show form for Google OAuth users without any venues
         setUser(user);
         setShowForm(true);
         setLoading(false);

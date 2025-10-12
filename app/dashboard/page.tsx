@@ -30,19 +30,40 @@ export default async function DashboardPage() {
     .limit(1);
 
   if (venueError) {
-    console.error('Error fetching user venues:', venueError);
-    redirect('/complete-profile');
+    console.error('Error fetching user venues from RBAC:', venueError);
   }
 
+  // If no venues found in RBAC, check venues table directly
   if (!userVenues || userVenues.length === 0) {
-    console.log('No venues found for user:', user.id);
+    console.log('No venues found in RBAC for user:', user.id);
+    
+    // Check venues table directly (user might be owner)
+    const { data: ownedVenues, error: ownedVenueError } = await supabase
+      .from('venues')
+      .select('venue_id')
+      .eq('owner_id', user.id)
+      .limit(1);
+
+    if (ownedVenueError) {
+      console.error('Error fetching owned venues:', ownedVenueError);
+    }
+
+    // If user has a venue in venues table, redirect there
+    if (ownedVenues && ownedVenues.length > 0) {
+      const venueId = ownedVenues[0].venue_id;
+      console.log('Found owned venue, redirecting to:', venueId);
+      redirect(`/dashboard/${venueId}`);
+    }
+
+    // Only redirect to complete-profile if user truly has no venues
+    console.log('No venues found in venues table either');
     // Check if user is a Google OAuth user
     const isOAuthUser = user.identities?.some((identity: any) => 
       identity.provider === 'google' || identity.provider === 'oauth'
     );
 
     if (isOAuthUser) {
-      // Google OAuth users go to complete profile
+      // Only new Google OAuth users without any venues go to complete profile
       redirect('/complete-profile');
     } else {
       // Email sign-up users should have venue data in metadata
