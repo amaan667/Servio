@@ -64,7 +64,7 @@
       "name": "Live Orders",
       "short_name": "Orders",
       "description": "View live orders",
-      "url": "/dashboard",
+      "url": "/",
       "icons": [
         {
           "src": "/images/shortcut-orders.png",

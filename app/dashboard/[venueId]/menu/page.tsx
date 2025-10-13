@@ -43,7 +43,18 @@ export default async function MenuPage({
     .eq('owner_user_id', user.id)
     .maybeSingle();
 
-  if (!venue) redirect('/dashboard');
+  if (!venue) {
+    // User doesn't own this venue, redirect to their primary venue or home
+    const { data: primaryVenue } = await supabase
+      .from('venues')
+      .select('venue_id')
+      .eq('owner_user_id', user.id)
+      .order('created_at', { ascending: true })
+      .limit(1)
+      .maybeSingle();
+    
+    redirect(primaryVenue ? `/dashboard/${primaryVenue.venue_id}` : '/');
+  }
 
   return (
     <div className="min-h-screen bg-background">

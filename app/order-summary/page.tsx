@@ -668,7 +668,13 @@ export default function OrderSummaryPage() {
                         Continue Exploring Menu
                       </Button>
                       <Button 
-                        onClick={() => router.push('/dashboard')}
+                        onClick={() => {
+                          if (orderData?.venueId) {
+                            router.push(`/dashboard/${orderData.venueId}`);
+                          } else {
+                            router.push('/');
+                          }
+                        }}
                         variant="outline"
                         className="w-full"
                       >

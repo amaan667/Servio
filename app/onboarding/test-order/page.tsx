@@ -76,12 +76,20 @@ export default function OnboardingTestOrderPage() {
 
   const handleCompleteLater = () => {
     localStorage.setItem('onboarding_step', '3');
-    router.push('/dashboard');
+    if (venueId) {
+      router.push(`/dashboard/${venueId}`);
+    } else {
+      router.push('/');
+    }
   };
 
   const handleGoToDashboard = () => {
     localStorage.setItem('onboarding_complete', 'true');
-    router.push('/dashboard');
+    if (venueId) {
+      router.push(`/dashboard/${venueId}`);
+    } else {
+      router.push('/');
+    }
   };
 
   if (loading) {

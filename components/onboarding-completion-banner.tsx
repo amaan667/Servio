@@ -60,7 +60,7 @@ export default function OnboardingCompletionBanner() {
         </p>
 
         <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-4">
-          <Link href={venueId ? `/dashboard/${venueId}/analytics` : '/dashboard'}>
+          <Link href={venueId ? `/dashboard/${venueId}/analytics` : '/'}>
             <div className="bg-white/10 hover:bg-white/20 transition-colors rounded-lg p-4 cursor-pointer h-full">
               <TrendingUp className="w-8 h-8 mb-2" />
               <h3 className="font-semibold mb-1">View Analytics</h3>
@@ -76,7 +76,7 @@ export default function OnboardingCompletionBanner() {
             </div>
           </Link>
 
-          <Link href={venueId ? `/dashboard/${venueId}/settings/staff` : '/dashboard'}>
+          <Link href={venueId ? `/dashboard/${venueId}/settings/staff` : '/'}>
             <div className="bg-white/10 hover:bg-white/20 transition-colors rounded-lg p-4 cursor-pointer h-full">
               <Users className="w-8 h-8 mb-2" />
               <h3 className="font-semibold mb-1">Invite Staff</h3>

@@ -824,7 +824,7 @@ export default function CustomerOrderPage() {
           {isDemo && (
             <div className="mb-3 sm:mb-4">
               <NavigationBreadcrumb 
-                customBackPath="/dashboard" 
+                customBackPath={venueSlug ? `/dashboard/${venueSlug}` : '/'} 
                 customBackLabel="Dashboard"
                 showBackButton={true}
                 isDemo={true}
