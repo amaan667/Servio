@@ -38,10 +38,6 @@ export default async function GenerateQRPage() {
     } catch (queryError) {
       console.error('🔍 [QR PAGE] Active tables query failed:', queryError);
     }
-    
-    // Continue even if active tables query failed - we can still show QR codes
-    if (activeTablesError) {
-    }
 
   return (
     <div className="min-h-screen bg-background">
