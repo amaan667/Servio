@@ -11,6 +11,7 @@ import { EnhancedErrorBoundary } from '@/components/enhanced-error-boundary';
 
 export default async function VenuePage({ params }: { params: Promise<{ venueId: string }> }) {
   const { venueId } = await params;
+  
   try {
     const supabase = await createServerSupabase();
 
@@ -64,6 +65,7 @@ export default async function VenuePage({ params }: { params: Promise<{ venueId:
 
     // If no menu items AND no tables, redirect to onboarding
     if ((!onboardingMenuCheck || onboardingMenuCheck.length === 0) && (!onboardingTablesCheck || onboardingTablesCheck.length === 0)) {
+      console.log('[VENUE PAGE] No menu items or tables found, redirecting to onboarding');
       redirect('/onboarding');
     }
 
@@ -151,7 +153,12 @@ export default async function VenuePage({ params }: { params: Promise<{ venueId:
         initialStats={initialStats}
       />
     );
-  } catch (error) {
+  } catch (error: any) {
+    // Check if this is a Next.js redirect (which is expected)
+    if (error?.message === 'NEXT_REDIRECT') {
+      throw error; // Re-throw redirects so they work properly
+    }
+    
     console.error('[VENUE PAGE] Error:', error);
     return (
       <div className="min-h-screen bg-gray-50 p-4">
