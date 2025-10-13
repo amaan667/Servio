@@ -1,52 +1,29 @@
-// AI Chat History Page
-// Dedicated page for managing AI assistant conversations
+import NavigationBreadcrumb from '@/components/navigation-breadcrumb';
 
-import { createClient } from "@/lib/supabase/server";
-import { redirect } from "next/navigation";
-import { ChatInterface } from "@/components/ai/chat-interface";
-
-interface AIChatPageProps {
-  params: Promise<{
-    venueId: string;
-  }>;
-}
-
-export default async function AIChatPage({ params }: AIChatPageProps) {
-  const supabase = await createClient();
-  
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
-
-  if (!user) return null;
-
+export default async function AIChatPage({ params }: { params: Promise<{ venueId: string }> }) {
   const { venueId } = await params;
-
-  const { data: venue } = await supabase
-    .from("venues")
-    .select("venue_id, venue_name, owner_user_id")
-    .eq("venue_id", venueId)
-    .single();
-
-  if (!venue || venue.owner_user_id !== user.id) return null;
-
+  
   return (
-    <div className="container mx-auto p-6">
-      <div className="mb-6">
-        <h1 className="text-3xl font-bold">AI Assistant Chat</h1>
-        <p className="text-muted-foreground">
-          Manage your AI assistant conversations and undo actions
-        </p>
+    <div className="min-h-screen bg-background">
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 pb-24 md:pb-8">
+        <NavigationBreadcrumb venueId={venueId} />
+        
+        <div className="mb-8">
+          <h1 className="text-3xl font-bold tracking-tight text-foreground">
+            AI Assistant
+          </h1>
+          <p className="text-lg text-foreground mt-2">
+            Get help and insights from AI
+          </p>
+        </div>
+        
+        <div className="bg-white rounded-lg shadow p-6">
+          <div className="text-center py-12">
+            <h3 className="text-lg font-semibold text-gray-900 mb-2">AI Chat Coming Soon</h3>
+            <p className="text-gray-600">AI assistant functionality will be available soon.</p>
+          </div>
+        </div>
       </div>
-
-      <ChatInterface
-        venueId={venueId}
-        isOpen={true}
-        onClose={() => {
-          // In a real implementation, this would navigate back
-          window.history.back();
-        }}
-      />
     </div>
   );
 }

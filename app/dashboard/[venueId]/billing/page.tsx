@@ -1,64 +1,25 @@
-import { redirect } from "next/navigation";
-import { createServerSupabase } from "@/lib/supabase-server";
-import BillingClient from "./billing-client";
-import NavigationBreadcrumb from "@/components/navigation-breadcrumb";
+import BillingClient from './billing-client';
+import NavigationBreadcrumb from '@/components/navigation-breadcrumb';
 
-export const dynamic = "force-dynamic";
-
-export default async function BillingPage({
-  params,
-}: {
-  params: Promise<{ venueId: string }>;
-}) {
+export default async function BillingPage({ params }: { params: Promise<{ venueId: string }> }) {
   const { venueId } = await params;
-
-  const supabase = await createServerSupabase();
-
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
-
-  if (!user) return null;
-
-  const { data: venue } = await supabase
-    .from("venues")
-    .select("*, organizations(*)")
-    .eq("venue_id", venueId)
-    .single();
-
-  if (!venue) return null;
-
-  // Get usage stats
-  const [menuItems, tables, staff, venues] = await Promise.all([
-    supabase.from("menu_items").select("id", { count: "exact" }).eq("venue_id", venueId),
-    supabase.from("tables").select("id", { count: "exact" }).eq("venue_id", venueId),
-    supabase.from("staff").select("id", { count: "exact" }).eq("venue_id", venueId),
-    supabase
-      .from("venues")
-      .select("id", { count: "exact" })
-      .eq("organization_id", venue.organization_id),
-  ]);
-
-  const usage = {
-    menuItems: menuItems.count || 0,
-    tables: tables.count || 0,
-    staff: staff.count || 0,
-    venues: venues.count || 0,
-  };
-
+  
   return (
-    <div className="min-h-screen bg-gray-50 dark:bg-gray-950">
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+    <div className="min-h-screen bg-background">
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 pb-24 md:pb-8">
         <NavigationBreadcrumb venueId={venueId} />
         
-        <BillingClient
-          venueId={venueId}
-          venueName={venue.venue_name}
-          organization={venue.organizations}
-          usage={usage}
-        />
+        <div className="mb-8">
+          <h1 className="text-3xl font-bold tracking-tight text-foreground">
+            Billing & Subscription
+          </h1>
+          <p className="text-lg text-foreground mt-2">
+            Manage your subscription and billing
+          </p>
+        </div>
+        
+        <BillingClient venueId={venueId} venueName="Your Venue" />
       </div>
     </div>
   );
 }
-
