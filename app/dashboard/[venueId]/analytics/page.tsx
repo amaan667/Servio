@@ -1,4 +1,4 @@
-import AnalyticsClientSimple from './AnalyticsClient.simple';
+import AnalyticsClient from './AnalyticsClient';
 import NavigationBreadcrumb from '@/components/navigation-breadcrumb';
 import { createClient } from '@/lib/supabase/server';
 import { redirect } from 'next/navigation';
@@ -38,7 +38,7 @@ export default async function AnalyticsPage({ params }: { params: Promise<{ venu
           </p>
         </div>
         
-        <AnalyticsClientSimple venueId={venueId} venueName={venue.venue_name || "Your Venue"} />
+        <AnalyticsClient venueId={venueId} venueName={venue.venue_name || "Your Venue"} />
       </div>
     </div>
   );
