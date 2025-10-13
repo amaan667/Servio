@@ -14,37 +14,19 @@ interface POSPageProps {
 export default async function POSPage({ params }: POSPageProps) {
   const { venueId } = await params;
   
-  // Check authentication
-  const { user, error } = await getAuthenticatedUser();
-  
-  if (error) {
-    console.error('[POS PAGE] Auth error:', error);
-    redirect('/sign-in');
-  }
-  
-  if (!user) {
-    redirect('/sign-in');
-  }
-
+  const { user } = await getAuthenticatedUser();
+  if (!user) return null;
 
   const supabase = await createServerSupabase();
 
-  // Verify user owns this venue
-  const { data: venue, error: venueError } = await supabase
+  const { data: venue } = await supabase
     .from('venues')
     .select('venue_id, venue_name, slug, owner_user_id')
     .or(`venue_id.eq.${venueId},slug.eq.${venueId}`)
     .eq('owner_user_id', user.id)
     .maybeSingle();
 
-  if (venueError) {
-    console.error('[POS PAGE] Venue query error:', venueError);
-    redirect('/dashboard');
-  }
-
-  if (!venue) {
-    redirect('/dashboard');
-  }
+  if (!venue) return null;
 
   return (
     <div className="min-h-screen bg-background">

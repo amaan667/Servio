@@ -410,13 +410,8 @@ export default function HomePage() {
   };
 
   const handleSignIn = () => {
-    if (user) {
-      // User is signed in, redirect to their dashboard
-      router.push("/dashboard");
-    } else {
-      // User is not signed in, redirect to sign-in
-      router.push("/sign-in");
-    }
+    // User will navigate to dashboard regardless of auth status
+    router.push("/dashboard");
   };
 
   const handleDemo = () => {

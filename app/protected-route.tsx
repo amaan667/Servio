@@ -11,13 +11,8 @@ interface ProtectedRouteProps {
 export default function ProtectedRoute({ children }: ProtectedRouteProps) {
   const { session, loading } = useAuth();
 
-  if (loading) {
-    return <div>Loading...</div>;
-  }
-
-  if (!session) {
-    redirect('/sign-in');
-  }
+  if (loading) return <div>Loading...</div>;
+  if (!session) return null;
 
   return <>{children}</>;
 }

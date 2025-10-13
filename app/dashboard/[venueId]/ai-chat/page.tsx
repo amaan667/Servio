@@ -14,27 +14,21 @@ interface AIChatPageProps {
 export default async function AIChatPage({ params }: AIChatPageProps) {
   const supabase = await createClient();
   
-  // Check auth
   const {
     data: { user },
   } = await supabase.auth.getUser();
 
-  if (!user) {
-    redirect("/sign-in");
-  }
+  if (!user) return null;
 
   const { venueId } = await params;
 
-  // Verify user has access to venue
   const { data: venue } = await supabase
     .from("venues")
     .select("venue_id, venue_name, owner_user_id")
     .eq("venue_id", venueId)
     .single();
 
-  if (!venue || venue.owner_user_id !== user.id) {
-    redirect("/dashboard");
-  }
+  if (!venue || venue.owner_user_id !== user.id) return null;
 
   return (
     <div className="container mx-auto p-6">

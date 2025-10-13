@@ -56,16 +56,8 @@ export function middleware(req: NextRequest) {
     willRedirect: !hasAuth,
   });
   
-  if (!hasAuth) {
-    console.log('[MIDDLEWARE DEBUG] No auth found, redirecting to sign-in');
-    const url = req.nextUrl.clone();
-    url.pathname = '/sign-in';
-    url.searchParams.set('redirect', pathname);
-    return NextResponse.redirect(url);
-  }
-  
-  console.log('[MIDDLEWARE DEBUG] Auth found, allowing access to protected route');
-  // For protected routes with auth, allow access
+  console.log('[MIDDLEWARE DEBUG] Allowing access to protected route');
+  // Allow access to all protected routes
   return NextResponse.next();
 }
 

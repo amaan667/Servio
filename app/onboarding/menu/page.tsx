@@ -30,7 +30,7 @@ export default function OnboardingMenuPage() {
       const { data: { user } } = await supabase.auth.getUser();
 
       if (!user) {
-        router.push('/sign-in');
+        setLoading(false);
         return;
       }
 
@@ -42,7 +42,7 @@ export default function OnboardingMenuPage() {
         .limit(1);
 
       if (!venues || venues.length === 0) {
-        router.push('/complete-profile');
+        setLoading(false);
         return;
       }
 
@@ -50,7 +50,7 @@ export default function OnboardingMenuPage() {
       setLoading(false);
     } catch (error) {
       console.error('Auth check error:', error);
-      router.push('/sign-in');
+      setLoading(false);
     }
   };
 

@@ -35,11 +35,11 @@ export default async function InventoryPage({
   
   if (error) {
     console.error('[INVENTORY] Auth error:', error);
-    redirect('/sign-in');
+    return null;
   }
   
   if (!user) {
-    redirect('/sign-in');
+    return null;
   }
 
   const supabase = await createServerSupabase();
@@ -52,7 +52,7 @@ export default async function InventoryPage({
     .eq('owner_user_id', user.id)
     .maybeSingle();
 
-  if (!venue) redirect('/dashboard');
+  if (!venue) return null;
 
   // Check feature access
   const featureAccess = await checkFeatureAccess(venueId, PREMIUM_FEATURES.INVENTORY);

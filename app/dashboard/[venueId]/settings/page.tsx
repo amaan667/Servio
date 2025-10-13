@@ -13,15 +13,9 @@ export default async function VenueSettings({ params }: { params: Promise<{ venu
   const { venueId } = await params;
   
   try {
-    // Check for auth cookies before making auth calls
-    const hasAuthCookie = await hasServerAuthCookie();
-    if (!hasAuthCookie) {
-      redirect('/sign-in');
-    }
-
     const supabase = await createServerSupabase();
 
-    const { data: { user }, error: userError } = await supabase.auth.getUser();
+    const { data: { user } } = await supabase.auth.getUser();
     
     // Get full user data with identities using admin client
     let fullUserData = user;
@@ -45,7 +39,6 @@ export default async function VenueSettings({ params }: { params: Promise<{ venu
     
     log('SETTINGS SSR user', { 
       hasUser: !!user, 
-      error: userError?.message, 
       hasIdentities: !!fullUserData?.identities,
       userMetadata: fullUserData?.user_metadata,
       appMetadata: fullUserData?.app_metadata,
@@ -53,31 +46,16 @@ export default async function VenueSettings({ params }: { params: Promise<{ venu
       emailConfirmedAt: fullUserData?.email_confirmed_at
     });
     
-    if (userError) {
-      console.error('[SETTINGS] Auth error:', userError);
-      redirect('/sign-in');
-    }
-    
-    if (!user) {
-      redirect('/sign-in');
-    }
+    if (!user) return null;
 
-    // Verify user owns this venue and get full venue data
-    const { data: venue, error: venueError } = await supabase
+    const { data: venue } = await supabase
       .from('venues')
       .select('venue_id, venue_name, email, phone, address, timezone, venue_type, service_type, operating_hours, latitude, longitude')
       .eq('venue_id', venueId)
       .eq('owner_user_id', user.id)
       .maybeSingle();
 
-    if (venueError) {
-      console.error('[SETTINGS] Venue query error:', venueError);
-      redirect('/dashboard');
-    }
-
-    if (!venue) {
-      redirect('/dashboard');
-    }
+    if (!venue) return null;
 
     // Get all user's venues for the client component
     const { data: venues } = await supabase
@@ -117,6 +95,6 @@ export default async function VenueSettings({ params }: { params: Promise<{ venu
     );
   } catch (error) {
     console.error('[SETTINGS] Unexpected error:', error);
-    redirect('/sign-in');
+    return null;
   }
 }

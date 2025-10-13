@@ -12,25 +12,12 @@ import { EnhancedErrorBoundary } from '@/components/enhanced-error-boundary';
 export default async function VenuePage({ params }: { params: Promise<{ venueId: string }> }) {
   const { venueId } = await params;
   try {
-    // Check for auth cookies before making auth calls
-    const hasAuthCookie = await hasServerAuthCookie();
-    if (!hasAuthCookie) {
-      redirect('/sign-in');
-    }
-
     const supabase = await createServerSupabase();
 
-    const { data: { user }, error: userError } = await supabase.auth.getUser();
-    log('VENUE PAGE SSR user', { hasUser: !!user, error: userError?.message });
+    const { data: { user } } = await supabase.auth.getUser();
+    log('VENUE PAGE SSR user', { hasUser: !!user });
     
-    if (userError) {
-      console.error('Auth error:', userError);
-      redirect('/sign-in');
-    }
-    
-    if (!user) {
-      redirect('/sign-in');
-    }
+    if (!user) return null;
 
     const { data: venue, error: venueError } = await supabase
       .from('venues')
@@ -45,20 +32,17 @@ export default async function VenuePage({ params }: { params: Promise<{ venueId:
     }
     
     if (!venue) {
-      // Check if user has any venues at all before redirecting to sign-in
       const { data: userVenues } = await supabase
         .from('venues')
-        .select('venue_id')
+        .select('venue_id, created_at')
         .eq('owner_user_id', user.id)
-        .limit(1);
+        .order('created_at', { ascending: true });
       
       if (userVenues && userVenues.length > 0) {
-        // User has venues but not this specific one - redirect to their first venue
+        // Redirect to main venue (first one created)
         redirect(`/dashboard/${userVenues[0].venue_id}`);
-      } else {
-        // User has no venues - redirect to complete profile
-        redirect('/complete-profile');
       }
+      return null;
     }
 
     // Check if user needs onboarding (new signup with no menu/tables)
@@ -166,6 +150,7 @@ export default async function VenuePage({ params }: { params: Promise<{ venueId:
       </EnhancedErrorBoundary>
     );
   } catch (error) {
-    redirect('/sign-in');
+    console.error('[VENUE PAGE] Error:', error);
+    return null;
   }
 }

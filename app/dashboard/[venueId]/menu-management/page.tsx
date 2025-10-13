@@ -15,11 +15,11 @@ export default async function MenuManagementPage({ params }: { params: Promise<{
   
   if (error) {
     console.error('[MENU MANAGEMENT] Auth error:', error);
-    redirect('/sign-in');
+    return null;
   }
   
   if (!user) {
-    redirect('/sign-in');
+    return null;
   }
 
 
@@ -35,11 +35,11 @@ export default async function MenuManagementPage({ params }: { params: Promise<{
 
   if (venueError) {
     console.error('[MENU MANAGEMENT] Failed to load venue:', venueError);
-    redirect('/dashboard');
+    return null;
   }
 
   if (!venue) {
-    redirect('/dashboard');
+    return null;
   }
 
 

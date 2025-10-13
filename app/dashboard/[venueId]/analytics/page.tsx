@@ -32,7 +32,7 @@ export default async function AnalyticsPage({
     // Check for auth cookies before making auth calls
     const hasAuthCookie = await hasServerAuthCookie();
     if (!hasAuthCookie) {
-      redirect('/sign-in');
+      return null;
     }
 
     const supabase = await createServerSupabase();
@@ -42,11 +42,11 @@ export default async function AnalyticsPage({
     
     if (userError) {
       console.error('[ANALYTICS] Auth error:', userError);
-      redirect('/sign-in');
+      return null;
     }
     
     if (!user) {
-      redirect('/sign-in');
+      return null;
     }
 
     // Verify user owns this venue
@@ -59,11 +59,11 @@ export default async function AnalyticsPage({
 
     if (venueError) {
       console.error('[ANALYTICS] Venue query error:', venueError);
-      redirect('/dashboard');
+      return null;
     }
 
     if (!venue) {
-      redirect('/dashboard');
+      return null;
     }
 
     return (
@@ -86,6 +86,6 @@ export default async function AnalyticsPage({
     );
   } catch (error) {
     console.error('[ANALYTICS] Unexpected error:', error);
-    redirect('/sign-in');
+    return null;
   }
 }

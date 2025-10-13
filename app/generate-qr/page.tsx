@@ -9,59 +9,34 @@ import GenerateQRClient from './GenerateQRClient';
 
 export default async function GenerateQRPage() {
   try {
-    
-    // Check for auth cookies before making auth calls
-    const hasAuthCookie = await hasServerAuthCookie();
-    if (!hasAuthCookie) {
-      redirect('/sign-in');
-    }
-
     const supabase = await createServerSupabase();
 
     const { data: { user } } = await supabase.auth.getUser();
-    if (!user) {
-      redirect('/sign-in');
-    }
+    if (!user) return null;
 
-    const { data: venue, error } = await supabase
+    const { data: venue } = await supabase
       .from('venues')
       .select('venue_id, name')
       .eq('owner_id', user.id)
       .limit(1)
       .maybeSingle();
 
-    // Get active tables count using the same logic as dashboard
+    if (!venue) return null;
+
     let activeTablesCount = 0;
-    let activeTablesError = null;
     
     try {
-      
-      // Use the api_table_counters function (same as table management page)
       const { data: countsData, error: countsError } = await supabase
         .rpc('api_table_counters', {
           p_venue_id: venue.venue_id
         });
       
-      if (countsError) {
-        console.error('🔍 [QR PAGE] Dashboard counts error:', countsError);
-        activeTablesError = countsError;
-      } else {
-        // api_table_counters returns a single object, not an array
+      if (!countsError) {
         const result = Array.isArray(countsData) ? countsData[0] : countsData;
         activeTablesCount = result?.total_tables || 0;
       }
     } catch (queryError) {
       console.error('🔍 [QR PAGE] Active tables query failed:', queryError);
-      activeTablesError = queryError;
-    }
-    
-    if (error) {
-      console.error('🔍 [QR PAGE] Database error:', error);
-      redirect('/complete-profile');
-    }
-    
-    if (!venue) {
-      redirect('/complete-profile');
     }
     
     // Continue even if active tables query failed - we can still show QR codes

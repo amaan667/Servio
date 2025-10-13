@@ -111,31 +111,8 @@ function CallbackContent() {
         }
         
         if (existingSession) {
-          addDebugLog('[AUTH CALLBACK] Session already exists, checking for venues');
-          // Check if user has venues and redirect appropriately
-          try {
-            const { data: venues, error: venueError } = await supabaseBrowser()
-              .from('venues')
-              .select('venue_id')
-              .eq('owner_id', existingSession.user.id)
-              .limit(1);
-            
-            if (!venues || venues.length === 0) {
-              addDebugLog('[AUTH CALLBACK] Existing session but no venues, redirecting to complete profile');
-              router.push('/complete-profile');
-            } else {
-              addDebugLog('[AUTH CALLBACK] Existing session with venues, redirecting to dashboard');
-              const venueId = venues[0]?.venue_id;
-              if (venueId) {
-                router.push(`/dashboard/${venueId}`);
-              } else {
-                router.push('/dashboard');
-              }
-            }
-          } catch (checkError) {
-            addDebugLog(`[AUTH CALLBACK] Error checking venues for existing session: ${checkError}`);
-            router.push('/dashboard');
-          }
+          addDebugLog('[AUTH CALLBACK] Session already exists, redirecting to dashboard');
+          router.push('/dashboard');
           return;
         }
 
@@ -172,18 +149,20 @@ function CallbackContent() {
               exchangeError.message?.includes('verifier') || 
               exchangeError.message?.includes('code verifier') ||
               exchangeError.code === 'validation_failed') {
-            addDebugLog('[AUTH CALLBACK] PKCE error detected, clearing auth state and redirecting');
+            addDebugLog('[AUTH CALLBACK] PKCE error detected, clearing auth state');
             await clearAuthState();
-            router.push('/sign-in?error=pkce_error');
+            setError('Authentication failed due to security verification. Please try again.');
+            setLoading(false);
             return;
           }
           
           // Handle refresh token errors
           if (exchangeError.code === 'refresh_token_not_found' || 
               exchangeError.message?.includes('refresh token')) {
-            addDebugLog('[AUTH CALLBACK] Refresh token error detected, redirecting to sign-in');
+            addDebugLog('[AUTH CALLBACK] Refresh token error detected');
             await clearAuthState();
-            router.push('/sign-in?error=refresh_token_error');
+            setError('Your session has expired. Please try again.');
+            setLoading(false);
             return;
           }
           
@@ -191,8 +170,9 @@ function CallbackContent() {
           if (exchangeError.message?.includes('network') || 
               exchangeError.message?.includes('fetch') ||
               exchangeError.message?.includes('timeout')) {
-            addDebugLog('[AUTH CALLBACK] Network error detected, redirecting to sign-in');
-            router.push('/sign-in?error=network_error');
+            addDebugLog('[AUTH CALLBACK] Network error detected');
+            setError('Network error. Please check your connection and try again.');
+            setLoading(false);
             return;
           }
           
@@ -223,31 +203,8 @@ function CallbackContent() {
             }
             
             if (retryData?.session) {
-              addDebugLog('[AUTH CALLBACK] Fallback authentication successful, checking venues');
-              // Check if this is a new user who needs to complete their profile
-              try {
-                const { data: venues, error: venueError } = await supabaseBrowser()
-                  .from('venues')
-                  .select('venue_id')
-                  .eq('owner_id', retryData.session.user.id)
-                  .limit(1);
-                
-            if (!venues || venues.length === 0) {
-              addDebugLog('[AUTH CALLBACK] No venues found, redirecting to complete profile');
-              router.push('/complete-profile');
-            } else {
-              addDebugLog('[AUTH CALLBACK] User has venues, redirecting to dashboard');
-              const venueId = venues[0]?.venue_id;
-              if (venueId) {
-                router.push(`/dashboard/${venueId}`);
-              } else {
-                router.push('/dashboard');
-              }
-            }
-              } catch (checkError) {
-                addDebugLog(`[AUTH CALLBACK] Error checking user venues: ${checkError}`);
-                router.push('/');
-              }
+              addDebugLog('[AUTH CALLBACK] Fallback authentication successful, redirecting to dashboard');
+              router.push('/dashboard');
               return;
             }
           } catch (fallbackErr: any) {
@@ -263,42 +220,14 @@ function CallbackContent() {
         }
 
         if (data?.session) {
-          addDebugLog('[AUTH CALLBACK] Session created successfully, checking if user needs to complete profile');
+          addDebugLog('[AUTH CALLBACK] Session created successfully, redirecting to dashboard');
           addDebugLog(`[AUTH CALLBACK] Session details: ${JSON.stringify({
             userId: data.session.user.id,
             expiresAt: data.session.expires_at,
             accessToken: data.session.access_token ? 'present' : 'missing'
           })}`);
           
-          // Check if this is a new user who needs to complete their profile
-          try {
-            const { data: venues, error: venueError } = await supabaseBrowser()
-              .from('venues')
-              .select('venue_id')
-              .eq('owner_id', data.session.user.id)
-              .limit(1);
-            
-            if (venueError) {
-              addDebugLog(`[AUTH CALLBACK] Error checking venues: ${venueError.message}`);
-            }
-            
-            if (!venues || venues.length === 0) {
-              addDebugLog('[AUTH CALLBACK] No venues found, redirecting to complete profile');
-              router.push('/complete-profile');
-            } else {
-              addDebugLog('[AUTH CALLBACK] User has venues, redirecting to dashboard');
-              const venueId = venues[0]?.venue_id;
-              if (venueId) {
-                router.push(`/dashboard/${venueId}`);
-              } else {
-                router.push('/dashboard');
-              }
-            }
-          } catch (checkError) {
-            addDebugLog(`[AUTH CALLBACK] Error checking user venues: ${checkError}`);
-            // Fallback to home page if venue check fails
-            router.push('/');
-          }
+          router.push('/dashboard');
         } else {
           addDebugLog('[AUTH CALLBACK] No session returned from exchange');
           addDebugLog(`[AUTH CALLBACK] Data received: ${JSON.stringify(data)}`);
@@ -345,14 +274,8 @@ function CallbackContent() {
             </div>
             <div className="space-y-3">
               <button
-                onClick={() => router.push('/sign-in')}
-                className="w-full bg-blue-600 text-white px-4 py-2 rounded-md hover:bg-blue-700 transition-colors"
-              >
-                Try Again
-              </button>
-              <button
                 onClick={() => window.location.reload()}
-                className="w-full bg-gray-600 text-white px-4 py-2 rounded-md hover:bg-gray-700 transition-colors"
+                className="w-full bg-blue-600 text-white px-4 py-2 rounded-md hover:bg-blue-700 transition-colors"
               >
                 Reload Page
               </button>

@@ -18,20 +18,15 @@ export default async function BillingPage({
     data: { user },
   } = await supabase.auth.getUser();
 
-  if (!user) {
-    redirect("/sign-in");
-  }
+  if (!user) return null;
 
-  // Get venue and organization
   const { data: venue } = await supabase
     .from("venues")
     .select("*, organizations(*)")
     .eq("venue_id", venueId)
     .single();
 
-  if (!venue) {
-    redirect("/dashboard");
-  }
+  if (!venue) return null;
 
   // Get usage stats
   const [menuItems, tables, staff, venues] = await Promise.all([

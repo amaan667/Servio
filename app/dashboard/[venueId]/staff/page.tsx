@@ -18,42 +18,21 @@ export default async function StaffPage({
   const { venueId } = await params;
   
   try {
-    // Check for auth cookies before making auth calls
-    const hasAuthCookie = await hasServerAuthCookie();
-    if (!hasAuthCookie) {
-      redirect('/sign-in');
-    }
-
     const supabase = await createServerSupabase();
 
-    const { data: { user }, error: userError } = await supabase.auth.getUser();
-    log('STAFF SSR user', { hasUser: !!user, error: userError?.message });
+    const { data: { user } } = await supabase.auth.getUser();
+    log('STAFF SSR user', { hasUser: !!user });
     
-    if (userError) {
-      console.error('[STAFF] Auth error:', userError);
-      redirect('/sign-in');
-    }
-    
-    if (!user) {
-      redirect('/sign-in');
-    }
+    if (!user) return null;
 
-    // Verify user owns this venue
-    const { data: venue, error: venueError } = await supabase
+    const { data: venue } = await supabase
       .from('venues')
       .select('venue_id, venue_name')
       .eq('venue_id', venueId)
       .eq('owner_user_id', user.id)
       .maybeSingle();
 
-    if (venueError) {
-      console.error('[STAFF] Venue query error:', venueError);
-      redirect('/dashboard');
-    }
-
-    if (!venue) {
-      redirect('/dashboard');
-    }
+    if (!venue) return null;
 
     // Get initial staff data and counts server-side to prevent flickering
     const admin = createAdminClient();
@@ -128,7 +107,7 @@ export default async function StaffPage({
     );
   } catch (error) {
     console.error('[STAFF] Unexpected error:', error);
-    redirect('/sign-in');
+    return null;
   }
 }
 

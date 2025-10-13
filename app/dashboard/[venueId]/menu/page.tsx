@@ -28,18 +28,9 @@ export default async function MenuPage({
 }) {
   const { venueId } = await params;
   
-  // Safe auth check that only calls getUser if auth cookies exist
-  const { data: { user }, error } = await safeGetUser();
+  const { data: { user } } = await safeGetUser();
+  if (!user) return null;
   
-  if (error) {
-    console.error('[MENU] Auth error:', error);
-    redirect('/sign-in');
-  }
-  
-  if (!user) {
-    redirect('/sign-in');
-  }
-
   log('MENU SSR user', { hasUser: !!user });
 
   const supabase = await createServerSupabase();

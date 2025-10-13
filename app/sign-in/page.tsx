@@ -21,12 +21,6 @@ function SignInPageContent() {
   };
 
   useEffect(() => {
-    // Check if user is already authenticated
-    if (!loading && session?.user) {
-      router.replace('/');
-      return;
-    }
-    
     // Check for error and message parameters in URL
     const urlParams = new URLSearchParams(window.location.search);
     const errorParam = urlParams.get('error');
@@ -46,7 +40,7 @@ function SignInPageContent() {
           setError('Authentication failed. Please try again.');
       }
     }
-  }, [session, loading, router]);
+  }, []);
 
   const signInWithGoogle = async () => {
     if (isSigningIn) {
@@ -102,13 +96,6 @@ function SignInPageContent() {
       setIsSigningIn(false);
     }
   };
-
-  // Remove blocking loading state - render content immediately
-  // Auth state will be handled by the auth provider
-
-  if (session?.user) {
-    return null; // Will redirect in useEffect
-  }
 
   return (
     <div className="min-h-screen w-full bg-gradient-to-br from-purple-50 to-indigo-100 flex items-center justify-center p-4 sm:p-6 lg:p-8">

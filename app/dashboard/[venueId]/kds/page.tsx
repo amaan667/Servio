@@ -17,14 +17,14 @@ export default async function KDSPage({ params }: PageProps) {
   const hasAuthCookie = await hasServerAuthCookie();
   
   if (!hasAuthCookie) {
-    redirect('/sign-in');
+    return null;
   }
 
   const supabase = await createServerSupabase();
   const { data: { user }, error: userError } = await supabase.auth.getUser();
   
   if (userError || !user) {
-    redirect('/sign-in');
+    return null;
   }
 
   // Verify user has access to this venue
@@ -35,11 +35,11 @@ export default async function KDSPage({ params }: PageProps) {
     .single();
 
   if (venueError || !venue) {
-    redirect('/dashboard');
+    return null;
   }
 
   if (venue.owner_user_id !== user.id) {
-    redirect('/dashboard');
+    return null;
   }
 
   return (
