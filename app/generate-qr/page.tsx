@@ -25,6 +25,17 @@ export default async function GenerateQRPage() {
     redirect('/complete-profile');
   }
 
+  // Get accurate table counts
+  let activeTablesCount = 0;
+  const { data: tableCounters } = await supabase
+    .rpc('api_table_counters', {
+      p_venue_id: venue.venue_id
+    });
+  
+  if (tableCounters && tableCounters.length > 0) {
+    activeTablesCount = tableCounters[0].total_tables || 0;
+  }
+
   return (
     <div className="min-h-screen bg-background">
       <div className="max-w-7xl mx-auto px-3 sm:px-4 lg:px-8 py-4 sm:py-6 lg:py-8 pb-24 md:pb-8">
@@ -42,7 +53,7 @@ export default async function GenerateQRPage() {
         <GenerateQRClientSimple 
           venueId={venue.venue_id} 
           venueName={venue.name} 
-          activeTablesCount={0}
+          activeTablesCount={activeTablesCount}
         />
       </div>
     </div>
