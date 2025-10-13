@@ -14,24 +14,34 @@ export async function POST(request: NextRequest) {
     const { data: { user }, error: userError } = await supabase.auth.getUser();
     
     if (userError || !user) {
+      console.error("[ORG ENSURE] Auth error:", userError);
       return NextResponse.json(
-        { error: "Unauthorized" },
+        { error: "Unauthorized", details: userError?.message },
         { status: 401 }
       );
     }
 
+    console.log("[ORG ENSURE] User authenticated:", user.id);
+
     // Use admin client to bypass RLS for organization operations
     const adminClient = createAdminClient();
+    console.log("[ORG ENSURE] Admin client created");
 
     // Check if user already has an organization
+    console.log("[ORG ENSURE] Checking for existing organization for user:", user.id);
     const { data: existingOrg, error: orgCheckError } = await adminClient
       .from("organizations")
       .select("id, subscription_tier, subscription_status, is_grandfathered, trial_ends_at")
       .eq("owner_id", user.id)
       .maybeSingle();
 
+    if (orgCheckError) {
+      console.error("[ORG ENSURE] Error checking existing org:", orgCheckError);
+    }
+
     // If organization exists, return it with no-cache headers
     if (existingOrg && !orgCheckError) {
+      console.log("[ORG ENSURE] Found existing organization:", existingOrg.id);
       const response = NextResponse.json({
         success: true,
         organization: existingOrg,
@@ -45,6 +55,8 @@ export async function POST(request: NextRequest) {
       
       return response;
     }
+
+    console.log("[ORG ENSURE] No existing organization, creating new one");
 
     // Get user's name for organization name
     const userName = user.user_metadata?.full_name || user.email?.split('@')[0] || 'User';
