@@ -53,6 +53,7 @@ export async function POST(request: NextRequest) {
         name: `${userName}'s Organization`,
         slug: `org-${user.id.slice(0, 8)}-${Date.now()}`,
         owner_id: user.id,
+        created_by: user.id,
         subscription_tier: "basic",
         subscription_status: "trialing",
         is_grandfathered: false,
