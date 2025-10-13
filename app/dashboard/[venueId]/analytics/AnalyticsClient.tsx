@@ -11,7 +11,7 @@ import { Label } from "@/components/ui/label";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { createClient } from "@/lib/supabase/client";
 import { ArrowLeft, BarChart, TrendingUp, Clock, ShoppingBag, DollarSign, Calendar, CalendarIcon, Target, Award, TrendingDown, Download } from "lucide-react";
-import MobileNav from '@/components/MobileNav';
+// import MobileNav from '@/components/MobileNav'; // Temporarily disabled to prevent loading issues
 import { toCSV, formatDateForCSV, formatCurrencyForCSV } from '@/lib/csv';
 import { useCsvDownload, generateTimestampedFilename } from '@/hooks/useCsvDownload';
 import { useToast } from '@/hooks/use-toast';
@@ -902,8 +902,8 @@ export default function AnalyticsClient({ venueId, venueName }: { venueId: strin
         </Card>
       )}
       
-      {/* Mobile Navigation */}
-      <MobileNav 
+      {/* Mobile Navigation - Temporarily disabled */}
+      {/* <MobileNav 
         venueId={venueId}
         venueName={venueName}
         counts={{
@@ -911,7 +911,7 @@ export default function AnalyticsClient({ venueId, venueName }: { venueId: strin
           total_orders: 0,
           notifications: 0
         }}
-      />
+      /> */}
     </div>
   );
 }
