@@ -15,14 +15,21 @@ export default async function VenuePage({ params }: { params: Promise<{ venueId:
   try {
     const supabase = await createServerSupabase();
 
-    const { data: { user } } = await supabase.auth.getUser();
-    log('VENUE PAGE SSR user', { hasUser: !!user });
+    const { data: { user }, error: userError } = await supabase.auth.getUser();
+    log('VENUE PAGE SSR user', { hasUser: !!user, error: userError?.message });
+    
+    if (userError) {
+      console.error('[VENUE PAGE] Auth error:', userError);
+      redirect('/?auth_error=user_error');
+    }
     
     if (!user) {
       console.log('[VENUE PAGE] No user found, redirecting to home');
       redirect('/');
     }
 
+    console.log('[VENUE PAGE] Looking up venue:', { venueId, userId: user.id });
+    
     const { data: venue, error: venueError } = await supabase
       .from('venues')
       .select('*')
@@ -30,19 +37,34 @@ export default async function VenuePage({ params }: { params: Promise<{ venueId:
       .eq('owner_id', user.id)
       .maybeSingle();
 
+    console.log('[VENUE PAGE] Venue lookup result:', { 
+      found: !!venue, 
+      error: venueError?.message,
+      venueId: venue?.venue_id,
+      venueName: venue?.venue_name 
+    });
+
     if (venueError) {
       console.error('Database error:', venueError);
       redirect('/?auth_error=database_error');
     }
     
     if (!venue) {
-      const { data: userVenues } = await supabase
+      console.log('[VENUE PAGE] Venue not found, checking user venues...');
+      const { data: userVenues, error: userVenuesError } = await supabase
         .from('venues')
         .select('venue_id, created_at')
         .eq('owner_id', user.id)
         .order('created_at', { ascending: true });
       
+      console.log('[VENUE PAGE] User venues:', { 
+        count: userVenues?.length || 0, 
+        error: userVenuesError?.message,
+        venues: userVenues?.map((v: any) => v.venue_id)
+      });
+      
       if (userVenues && userVenues.length > 0) {
+        console.log('[VENUE PAGE] Redirecting to main venue:', userVenues[0].venue_id);
         // Redirect to main venue (first one created)
         redirect(`/dashboard/${userVenues[0].venue_id}`);
       }
