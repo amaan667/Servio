@@ -67,7 +67,7 @@ export default async function VenueSettings({ params }: { params: Promise<{ venu
       .from('venues')
       .select('venue_id, name, email, phone, address, timezone, venue_type, service_type, operating_hours, latitude, longitude')
       .eq('venue_id', venueId)
-      .eq('owner_id', user.id)
+      .eq('owner_user_id', user.id)
       .maybeSingle();
 
     if (venueError) {
@@ -83,13 +83,13 @@ export default async function VenueSettings({ params }: { params: Promise<{ venu
     const { data: venues } = await supabase
       .from('venues')
       .select('venue_id, name, email, phone, address, timezone, venue_type, service_type, operating_hours, latitude, longitude')
-      .eq('owner_id', user.id);
+      .eq('owner_user_id', user.id);
 
     // Get organization data for billing
     const { data: organization } = await supabase
       .from('organizations')
       .select('id, subscription_tier, is_grandfathered, stripe_customer_id, subscription_status, trial_ends_at')
-      .eq('owner_id', user.id)
+      .eq('owner_user_id', user.id)
       .maybeSingle();
 
     return (

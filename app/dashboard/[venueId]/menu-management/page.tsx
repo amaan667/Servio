@@ -30,7 +30,7 @@ export default async function MenuManagementPage({ params }: { params: Promise<{
     .from('venues')
     .select('venue_id, name, slug, owner_id')
     .or(`venue_id.eq.${venueId},slug.eq.${venueId}`)
-    .eq('owner_id', user.id)
+    .eq('owner_user_id', user.id)
     .maybeSingle();
 
   if (venueError) {

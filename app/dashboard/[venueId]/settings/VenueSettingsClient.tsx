@@ -323,7 +323,7 @@ export default function VenueSettingsClient({ user, venue, venues, organization 
       const { error: venueError } = await createClient()
         .from('venues')
         .delete()
-        .eq('owner_id', user.id);
+        .eq('owner_user_id', user.id);
 
       if (venueError) {
         console.error('Error deleting venues:', venueError);

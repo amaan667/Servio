@@ -26,7 +26,7 @@ export default async function DashboardPage() {
   const { data: venues, error: venueError } = await supabase
     .from('venues')
     .select('venue_id, name')
-    .eq('owner_id', user.id)
+    .eq('owner_user_id', user.id)
     .order('created_at', { ascending: true })
     .limit(1);
 
@@ -57,7 +57,7 @@ export default async function DashboardPage() {
             venue_id: venueId,
             name: venueName,
             business_type: businessType,
-            owner_id: user.id,
+            owner_user_id: user.id,
             created_at: new Date().toISOString(),
             updated_at: new Date().toISOString()
           });

@@ -22,7 +22,7 @@ export async function POST(req: Request) {
     const parsed = row.parsed_json as any;
     if (!parsed?.categories) return NextResponse.json({ ok: false, error: 'no parsed categories' }, { status: 400 });
 
-    const items: Array<{ venue_id: string; name: string; description: string | null; price: number; category: string; available: boolean }>= [];
+    const items: Array<{ venue_id: string; name: string; description: string | null; price: number; category: string; is_available: boolean }>= [];
     
     // Extract category order from parsed data
     const categoryOrder = parsed.categories?.map((cat: any) => cat?.name || 'Uncategorized') || [];

@@ -37,7 +37,7 @@ export default async function OrdersPage({
     .from('venues')
     .select('venue_id, name')
     .eq('venue_id', venueId)
-    .eq('owner_id', user.id)
+    .eq('owner_user_id', user.id)
     .maybeSingle();
 
   if (!venue) redirect('/dashboard');
