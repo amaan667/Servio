@@ -75,7 +75,7 @@ export async function POST(request: NextRequest) {
     await supabase
       .from("venues")
       .update({ organization_id: newOrg.id })
-      .eq("owner_id", user.id)
+      .eq("owner_user_id", user.id)
       .is("organization_id", null);
 
     // Create user_venue_roles entries
