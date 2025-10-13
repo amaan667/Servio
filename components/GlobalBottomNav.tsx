@@ -148,21 +148,21 @@ export default function GlobalBottomNav({ venueId, counts = {} }: GlobalBottomNa
     {
       id: 'home',
       label: showDashboardForHome ? 'Dashboard' : 'Home',
-      href: showDashboardForHome ? (currentVenueId ? `/dashboard/${currentVenueId}` : '/dashboard') : '/',
+      href: showDashboardForHome ? (currentVenueId ? `/dashboard/${currentVenueId}` : '/') : '/',
       icon: showDashboardForHome ? LayoutDashboard : Home,
       isActive: isOnHomePage || (isOnDashboard && pathname === `/dashboard/${currentVenueId}`)
     },
     {
       id: 'live-orders',
       label: 'Live Orders',
-      href: currentVenueId ? `/dashboard/${currentVenueId}/live-orders` : '/dashboard',
+      href: currentVenueId ? `/dashboard/${currentVenueId}/live-orders` : '/',
       icon: Clock,
       isActive: pathname === `/dashboard/${currentVenueId}/live-orders`
     },
     {
       id: 'menu',
       label: 'Menu',
-      href: currentVenueId ? `/dashboard/${currentVenueId}/menu` : '/dashboard',
+      href: currentVenueId ? `/dashboard/${currentVenueId}/menu` : '/',
       icon: ShoppingBag,
       isActive: pathname === `/dashboard/${currentVenueId}/menu`
     },

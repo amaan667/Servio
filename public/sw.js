@@ -8,7 +8,6 @@ const DYNAMIC_CACHE = `servio-dynamic-${VERSION}`;
 // Files to cache immediately
 const STATIC_FILES = [
   '/',
-  '/dashboard',
   '/manifest.json',
   '/favicon.ico',
   '/images/icon-192.png',
@@ -202,7 +201,7 @@ self.addEventListener('notificationclick', (event) => {
 
   if (event.action === 'explore') {
     event.waitUntil(
-      clients.openWindow('/dashboard')
+      clients.openWindow('/')
     );
   } else if (event.action === 'close') {
     // Just close the notification

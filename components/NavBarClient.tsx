@@ -23,9 +23,9 @@ export default function NavBarClient() {
     [params?.venueId, pathname]
   );
 
-  const homeHref = venueId ? `/dashboard/${venueId}` : '/dashboard';
-  const settingsHref = venueId ? `/dashboard/${venueId}/settings` : '/dashboard';
-  const billingHref = venueId ? `/dashboard/${venueId}/billing` : '/dashboard';
+  const homeHref = venueId ? `/dashboard/${venueId}` : '/';
+  const settingsHref = venueId ? `/dashboard/${venueId}/settings` : '/';
+  const billingHref = venueId ? `/dashboard/${venueId}/billing` : '/';
 
 
   return (

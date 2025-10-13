@@ -7,6 +7,7 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { CheckCircle, Clock, Calendar } from "lucide-react";
 import { useAuth } from "@/app/auth/AuthProvider";
+import { createClient } from "@/lib/supabase/client";
 
 export default function CheckoutSuccessPage() {
   const searchParams = useSearchParams();
@@ -17,9 +18,30 @@ export default function CheckoutSuccessPage() {
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
+    const redirectToDashboard = async () => {
+      if (!user) {
+        router.push('/');
+        return;
+      }
+      
+      const supabase = createClient();
+      const { data: venues, error } = await supabase
+        .from('venues')
+        .select('venue_id')
+        .eq('owner_user_id', user.id)
+        .order('created_at', { ascending: true })
+        .limit(1);
+      
+      if (!error && venues && venues.length > 0) {
+        router.push(`/dashboard/${venues[0].venue_id}`);
+      } else {
+        router.push('/');
+      }
+    };
+    
     if (!searchParams) {
       console.log('[CHECKOUT SUCCESS] No search params available, redirecting to dashboard');
-      router.push("/dashboard");
+      redirectToDashboard();
       return;
     }
 
@@ -72,7 +94,7 @@ export default function CheckoutSuccessPage() {
     } else {
       // Redirect if missing required params
       console.log('[CHECKOUT SUCCESS] Missing params, redirecting to dashboard');
-      router.push("/dashboard");
+      redirectToDashboard();
     }
   }, [searchParams, router, user]);
 
@@ -186,10 +208,26 @@ export default function CheckoutSuccessPage() {
           {/* Action Buttons */}
           <div className="flex gap-4 pt-4">
             <Button 
-              onClick={() => {
+              onClick={async () => {
                 // Add a small delay to ensure the organization update has time to propagate
-                setTimeout(() => {
-                  router.push("/dashboard?upgrade=success");
+                setTimeout(async () => {
+                  if (user) {
+                    const supabase = createClient();
+                    const { data: venues, error } = await supabase
+                      .from('venues')
+                      .select('venue_id')
+                      .eq('owner_user_id', user.id)
+                      .order('created_at', { ascending: true })
+                      .limit(1);
+                    
+                    if (!error && venues && venues.length > 0) {
+                      router.push(`/dashboard/${venues[0].venue_id}?upgrade=success`);
+                    } else {
+                      router.push('/');
+                    }
+                  } else {
+                    router.push('/');
+                  }
                 }, 1000);
               }}
               className="flex-1 bg-purple-600 hover:bg-purple-700"

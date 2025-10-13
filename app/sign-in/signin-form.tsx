@@ -59,8 +59,23 @@ export default function SignInForm({ onGoogleSignIn, isLoading = false, error: p
       if (data.user) {
         // Ensure session cookie is set and immediately available
         await sb.auth.getSession();
+        
+        // Fetch primary venue to redirect to venue-specific dashboard
+        const { data: venues, error: venueError } = await sb
+          .from('venues')
+          .select('venue_id')
+          .eq('owner_user_id', data.user.id)
+          .order('created_at', { ascending: true })
+          .limit(1);
+        
+        if (venueError || !venues || venues.length === 0) {
+          // No venue found, redirect to home
+          window.location.assign('/');
+          return;
+        }
+        
         // Use full reload to hydrate header with authenticated state
-        window.location.assign('/dashboard');
+        window.location.assign(`/dashboard/${venues[0].venue_id}`);
       }
     } catch (err: any) {
       const msg = err?.message || 'Sign-in failed. Please try again.';

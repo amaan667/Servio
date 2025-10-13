@@ -13,6 +13,7 @@ const HomePage = React.memo(function HomePage() {
   const router = useRouter();
   const [user, setUser] = useState<any>(null);
   const [loading, setLoading] = useState(true);
+  const [primaryVenueId, setPrimaryVenueId] = useState<string | null>(null);
 
   const checkAuth = useCallback(async () => {
     try {
@@ -22,14 +23,28 @@ const HomePage = React.memo(function HomePage() {
       if (error || !user) {
         // If no authenticated user, show public home page
         setUser(null);
+        setPrimaryVenueId(null);
       } else {
         // User is authenticated, show authenticated home page
         setUser(user);
+        
+        // Fetch primary venue
+        const { data: venues } = await supabase
+          .from('venues')
+          .select('venue_id')
+          .eq('owner_user_id', user.id)
+          .order('created_at', { ascending: true })
+          .limit(1);
+        
+        if (venues && venues.length > 0) {
+          setPrimaryVenueId(venues[0].venue_id);
+        }
       }
     } catch (error) {
       // On error, show public home page
       console.error('[HOME PAGE] Auth check error:', error);
       setUser(null);
+      setPrimaryVenueId(null);
     } finally {
       setLoading(false);
     }
@@ -84,7 +99,7 @@ const HomePage = React.memo(function HomePage() {
               {user ? (
                 <>
                   <span className="text-gray-900">Welcome, {user.email}</span>
-                  <Link href="/dashboard">
+                  <Link href={primaryVenueId ? `/dashboard/${primaryVenueId}` : '/'}>
                     <Button>Dashboard</Button>
                   </Link>
                   <Link href="/sign-out">
@@ -132,7 +147,7 @@ const HomePage = React.memo(function HomePage() {
                 </CardDescription>
               </CardHeader>
               <CardContent>
-                <Link href="/dashboard">
+                <Link href={primaryVenueId ? `/dashboard/${primaryVenueId}` : '/'}>
                   <Button className="w-full">Go to Dashboard</Button>
                 </Link>
               </CardContent>
@@ -166,7 +181,7 @@ const HomePage = React.memo(function HomePage() {
                 </CardDescription>
               </CardHeader>
               <CardContent>
-                <Link href="/dashboard">
+                <Link href={primaryVenueId ? `/dashboard/${primaryVenueId}/analytics` : '/'}>
                   <Button className="w-full" variant="outline">View Analytics</Button>
                 </Link>
               </CardContent>

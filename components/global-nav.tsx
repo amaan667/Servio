@@ -130,7 +130,7 @@ export default function GlobalNav() {
         <div className="flex justify-between items-center h-20 sm:h-24 md:h-28">
           {/* Logo - Top-left on desktop, centered on mobile */}
           <div className="flex-shrink-0 md:-ml-2 sm:-ml-1 flex justify-center md:justify-start w-full md:w-auto">
-            <Link href={isAuthenticated ? (venueId ? `/dashboard/${venueId}` : "/dashboard") : "/"} className="flex items-center group">
+            <Link href={isAuthenticated ? (venueId ? `/dashboard/${venueId}` : (primaryVenueId ? `/dashboard/${primaryVenueId}` : "/")) : "/"} className="flex items-center group">
               <Image
                 src="/assets/servio-logo-updated.png"
                 alt="Servio"
@@ -158,7 +158,7 @@ export default function GlobalNav() {
                       Home
                     </Link>
                     <Link
-                      href={(venueId || primaryVenueId) ? `/dashboard/${venueId || primaryVenueId}/settings` : '/dashboard'}
+                      href={(venueId || primaryVenueId) ? `/dashboard/${venueId || primaryVenueId}/settings` : '/'}
                       className="flex items-center px-4 py-3 text-base font-medium text-foreground hover:text-primary hover:bg-accent rounded-md transition-all duration-200"
                     >
                       <Settings className="mr-3 h-5 w-5" />
@@ -169,14 +169,14 @@ export default function GlobalNav() {
                   // On feature pages (Live Orders, Menu, etc.) and QR pages: Dashboard, Settings, Sign Out
                   <>
                     <Link
-                      href="/dashboard"
+                      href={(venueId || primaryVenueId) ? `/dashboard/${venueId || primaryVenueId}` : '/'}
                       className="flex items-center px-4 py-3 text-base font-medium text-foreground hover:text-primary hover:bg-accent rounded-md transition-all duration-200"
                     >
                       <LayoutDashboard className="mr-3 h-5 w-5" />
                       Dashboard
                     </Link>
                     <Link
-                      href={(venueId || primaryVenueId) ? `/dashboard/${venueId || primaryVenueId}/settings` : '/dashboard'}
+                      href={(venueId || primaryVenueId) ? `/dashboard/${venueId || primaryVenueId}/settings` : '/'}
                       className="flex items-center px-4 py-3 text-base font-medium text-foreground hover:text-primary hover:bg-accent rounded-md transition-all duration-200"
                     >
                       <Settings className="mr-3 h-5 w-5" />
@@ -187,7 +187,7 @@ export default function GlobalNav() {
                   // On settings pages: Dashboard, Home, Sign Out
                   <>
                     <Link
-                      href="/dashboard"
+                      href={(venueId || primaryVenueId) ? `/dashboard/${venueId || primaryVenueId}` : '/'}
                       className="flex items-center px-4 py-3 text-base font-medium text-foreground hover:text-primary hover:bg-accent rounded-md transition-all duration-200"
                     >
                       <LayoutDashboard className="mr-3 h-5 w-5" />
@@ -205,14 +205,14 @@ export default function GlobalNav() {
                   // On home page only: Dashboard, Settings, Sign Out
                   <>
                     <Link
-                      href="/dashboard"
+                      href={(venueId || primaryVenueId) ? `/dashboard/${venueId || primaryVenueId}` : '/'}
                       className="flex items-center px-4 py-3 text-base font-medium text-foreground hover:text-primary hover:bg-accent rounded-md transition-all duration-200"
                     >
                       <LayoutDashboard className="mr-3 h-5 w-5" />
                       Dashboard
                     </Link>
                     <Link
-                      href={(venueId || primaryVenueId) ? `/dashboard/${venueId || primaryVenueId}/settings` : '/dashboard'}
+                      href={(venueId || primaryVenueId) ? `/dashboard/${venueId || primaryVenueId}/settings` : '/'}
                       className="flex items-center px-4 py-3 text-base font-medium text-foreground hover:text-primary hover:bg-accent rounded-md transition-all duration-200"
                     >
                       <Settings className="mr-3 h-5 w-5" />
@@ -298,7 +298,7 @@ export default function GlobalNav() {
                       <span>Home</span>
                     </Link>
                     <Link
-                      href={(venueId || primaryVenueId) ? `/dashboard/${venueId || primaryVenueId}/settings` : '/dashboard'}
+                      href={(venueId || primaryVenueId) ? `/dashboard/${venueId || primaryVenueId}/settings` : '/'}
                       className="flex items-center px-4 py-3 text-base font-semibold text-gray-900 hover:text-servio-purple hover:bg-servio-purple/5 rounded-xl transition-all duration-200 min-h-[48px]"
                       onClick={() => setMobileMenuOpen(false)}
                     >
@@ -309,7 +309,7 @@ export default function GlobalNav() {
                 ) : (isOnFeaturePage || isOnQRPage) ? (
                   <>
                     <Link
-                      href="/dashboard"
+                      href={(venueId || primaryVenueId) ? `/dashboard/${venueId || primaryVenueId}` : '/'}
                       className="flex items-center px-4 py-3 text-base font-semibold text-gray-900 hover:text-servio-purple hover:bg-servio-purple/5 rounded-xl transition-all duration-200 min-h-[48px]"
                       onClick={() => setMobileMenuOpen(false)}
                     >
@@ -317,7 +317,7 @@ export default function GlobalNav() {
                       <span>Dashboard</span>
                     </Link>
                     <Link
-                      href={(venueId || primaryVenueId) ? `/dashboard/${venueId || primaryVenueId}/settings` : '/dashboard'}
+                      href={(venueId || primaryVenueId) ? `/dashboard/${venueId || primaryVenueId}/settings` : '/'}
                       className="flex items-center px-4 py-3 text-base font-semibold text-gray-900 hover:text-servio-purple hover:bg-servio-purple/5 rounded-xl transition-all duration-200 min-h-[48px]"
                       onClick={() => setMobileMenuOpen(false)}
                     >
@@ -328,7 +328,7 @@ export default function GlobalNav() {
                 ) : isOnSettings ? (
                   <>
                     <Link
-                      href="/dashboard"
+                      href={(venueId || primaryVenueId) ? `/dashboard/${venueId || primaryVenueId}` : '/'}
                       className="flex items-center px-4 py-3 text-base font-semibold text-gray-900 hover:text-servio-purple hover:bg-servio-purple/5 rounded-xl transition-all duration-200 min-h-[48px]"
                       onClick={() => setMobileMenuOpen(false)}
                     >
@@ -347,7 +347,7 @@ export default function GlobalNav() {
                 ) : (
                   <>
                     <Link
-                      href="/dashboard"
+                      href={(venueId || primaryVenueId) ? `/dashboard/${venueId || primaryVenueId}` : '/'}
                       className="flex items-center px-4 py-3 text-base font-semibold text-gray-900 hover:text-servio-purple hover:bg-servio-purple/5 rounded-xl transition-all duration-200 min-h-[48px]"
                       onClick={() => setMobileMenuOpen(false)}
                     >
@@ -355,7 +355,7 @@ export default function GlobalNav() {
                       <span>Dashboard</span>
                     </Link>
                     <Link
-                      href={(venueId || primaryVenueId) ? `/dashboard/${venueId || primaryVenueId}/settings` : '/dashboard'}
+                      href={(venueId || primaryVenueId) ? `/dashboard/${venueId || primaryVenueId}/settings` : '/'}
                       className="flex items-center px-4 py-3 text-base font-semibold text-gray-900 hover:text-servio-purple hover:bg-servio-purple/5 rounded-xl transition-all duration-200 min-h-[48px]"
                       onClick={() => setMobileMenuOpen(false)}
                     >

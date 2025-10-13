@@ -8,6 +8,7 @@ import { User, Briefcase, ArrowRight, RefreshCw } from 'lucide-react';
 import Link from 'next/link';
 import dynamic from 'next/dynamic';
 import { demoMenuItems } from '@/data/demoMenuItems';
+import { createClient } from '@/lib/supabase/client';
 
 // Dynamically import heavy components to avoid hydration issues
 const DemoAnalytics = dynamic(() => import('@/components/demo-analytics'), {
@@ -54,6 +55,7 @@ export default function DemoPage() {
   const [mounted, setMounted] = useState(false);
   const [isAuthenticated, setIsAuthenticated] = useState(false);
   const [hasError, setHasError] = useState(false);
+  const [primaryVenueId, setPrimaryVenueId] = useState<string | null>(null);
   
 
   // ALL HOOKS MUST BE CALLED BEFORE ANY CONDITIONAL RETURNS
@@ -69,10 +71,30 @@ export default function DemoPage() {
                               document.cookie.includes('supabase');
         console.log('[DEMO DEBUG] Auth cookies present:', hasAuthCookies);
         setIsAuthenticated(hasAuthCookies);
+        
+        // If authenticated, fetch primary venue
+        if (hasAuthCookies) {
+          const supabase = createClient();
+          const { data: { user } } = await supabase.auth.getUser();
+          
+          if (user) {
+            const { data: venues } = await supabase
+              .from('venues')
+              .select('venue_id')
+              .eq('owner_user_id', user.id)
+              .order('created_at', { ascending: true })
+              .limit(1);
+            
+            if (venues && venues.length > 0) {
+              setPrimaryVenueId(venues[0].venue_id);
+            }
+          }
+        }
       } catch (error) {
         console.error('[DEMO DEBUG] Auth check error:', error);
         // If auth check fails, default to unauthenticated
         setIsAuthenticated(false);
+        setPrimaryVenueId(null);
       }
     };
     
@@ -424,7 +446,7 @@ function OwnerDemoView({ isAuthenticated }: { isAuthenticated: boolean }) {
           <div className="flex flex-col sm:flex-row gap-4 justify-center">
             {isAuthenticated ? (
               <>
-                <Link href="/dashboard">
+                <Link href={primaryVenueId ? `/dashboard/${primaryVenueId}` : '/'}>
                   <Button className="bg-white text-purple-600 hover:bg-gray-100">
                     Go to Dashboard
                   </Button>

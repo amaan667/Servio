@@ -34,8 +34,19 @@ export default function CompleteProfilePage() {
 
         // Only show complete profile form for new Google OAuth users
         if (!isOAuthUser) {
-          // For email sign-up users, redirect to dashboard or sign-in
-          router.replace('/dashboard');
+          // For email sign-up users, redirect to their primary venue dashboard
+          const { data: venues } = await createClient()
+            .from('venues')
+            .select('venue_id')
+            .eq('owner_user_id', user.id)
+            .order('created_at', { ascending: true })
+            .limit(1);
+          
+          if (venues && venues.length > 0) {
+            router.replace(`/dashboard/${venues[0].venue_id}`);
+          } else {
+            router.replace('/');
+          }
           return;
         }
 

@@ -1,6 +1,6 @@
 'use client';
 import Link from 'next/link';
-import { useSelectedLayoutSegments } from 'next/navigation';
+import { useSelectedLayoutSegments, usePathname } from 'next/navigation';
 
 function titleFor(seg: string) {
   if (!seg) return '';
@@ -13,12 +13,17 @@ function titleFor(seg: string) {
 
 export default function Breadcrumbs() {
   const segs = useSelectedLayoutSegments();
+  const pathname = usePathname();
   const currentSeg = [...(segs || [])].reverse().find(s => !s.startsWith('[')) || 'dashboard';
   const currentLabel = titleFor(currentSeg);
+  
+  // Extract venueId from pathname
+  const venueId = pathname?.match(/\/dashboard\/([^/]+)/)?.[1];
+  const dashboardHref = venueId ? `/dashboard/${venueId}` : '/';
 
   const crumbs = [
     { label: currentLabel, current: true as const },
-    { label: 'Dashboard', href: '/dashboard' },
+    { label: 'Dashboard', href: dashboardHref },
     { label: 'Home', href: '/' }
   ];
 

@@ -399,19 +399,50 @@ export default function HomePage() {
     console.log('FAQ CTA clicked:', type);
   };
 
-  const handleGetStarted = () => {
+  const handleGetStarted = async () => {
     if (user) {
-      // User is signed in, redirect to their dashboard
-      router.push("/dashboard");
+      // User is signed in, fetch primary venue and redirect to their dashboard
+      const supabase = createClient();
+      const { data: venues, error } = await supabase
+        .from('venues')
+        .select('venue_id')
+        .eq('owner_user_id', user.id)
+        .order('created_at', { ascending: true })
+        .limit(1);
+      
+      if (!error && venues && venues.length > 0) {
+        router.push(`/dashboard/${venues[0].venue_id}`);
+      } else {
+        // No venue found, redirect to home
+        router.push("/");
+      }
     } else {
       // User is not signed in, redirect to sign-up
       router.push("/sign-up");
     }
   };
 
-  const handleSignIn = () => {
-    // User will navigate to dashboard regardless of auth status
-    router.push("/dashboard");
+  const handleSignIn = async () => {
+    // Fetch primary venue and navigate to dashboard
+    if (user) {
+      const supabase = createClient();
+      const { data: venues, error } = await supabase
+        .from('venues')
+        .select('venue_id')
+        .eq('owner_user_id', user.id)
+        .order('created_at', { ascending: true })
+        .limit(1);
+      
+      if (!error && venues && venues.length > 0) {
+        router.push(`/dashboard/${venues[0].venue_id}`);
+      } else {
+        // No venue found, redirect to home
+        router.push("/");
+      }
+    } else {
+      // Not authenticated, redirect to sign-in
+      router.push("/sign-in");
+    }
   };
 
   const handleDemo = () => {
@@ -463,10 +494,26 @@ export default function HomePage() {
     console.log('[DEMO DEBUG] Router.push called');
   };
 
-  const handlePricingPrimary = () => {
+  const handlePricingPrimary = async () => {
     // If signed in, send to dashboard/billing; if not, to sign-up
-    if (user) router.push('/dashboard');
-    else router.push('/sign-up');
+    if (user) {
+      const supabase = createClient();
+      const { data: venues, error } = await supabase
+        .from('venues')
+        .select('venue_id')
+        .eq('owner_user_id', user.id)
+        .order('created_at', { ascending: true })
+        .limit(1);
+      
+      if (!error && venues && venues.length > 0) {
+        router.push(`/dashboard/${venues[0].venue_id}`);
+      } else {
+        // No venue found, redirect to home
+        router.push("/");
+      }
+    } else {
+      router.push('/sign-up');
+    }
   };
 
   const handleUpgradeClick = () => {

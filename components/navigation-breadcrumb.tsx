@@ -41,7 +41,7 @@ export default function NavigationBreadcrumb({
   const homeLink = '/';
   
   // [NAV] Determine dashboard link - route to dashboard if we have a venueId
-  const dashboardLink = venueId ? `/dashboard/${venueId}` : '/dashboard';
+  const dashboardLink = venueId ? `/dashboard/${venueId}` : '/';
 
 
   const getPageTitle = () => {
