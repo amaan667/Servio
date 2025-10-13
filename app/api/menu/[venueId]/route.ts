@@ -23,13 +23,14 @@ export async function GET(
     // First check if venue exists
     const { data: venue, error: venueError } = await supabase
       .from('venues')
-      .select('venue_id, name')
+      .select('venue_id, venue_name')
       .eq('venue_id', venueId)
       .single();
 
     if (venueError || !venue) {
+      console.error('[MENU API] Venue not found:', venueId, venueError);
       return NextResponse.json(
-        { error: 'Venue not found' },
+        { error: 'Venue not found', venueId: venueId },
         { status: 404 }
       );
     }
@@ -55,7 +56,7 @@ export async function GET(
     const response = {
       venue: {
         id: venue.venue_id,
-        name: venue.name
+        name: venue.venue_name
       },
       menuItems: menuItems || [],
       totalItems: menuItems?.length || 0
