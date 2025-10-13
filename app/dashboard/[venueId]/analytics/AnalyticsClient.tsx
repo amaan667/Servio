@@ -9,7 +9,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
-import { supabase } from "@/lib/supabase/client";
+import { createClient } from "@/lib/supabase/client";
 import { ArrowLeft, BarChart, TrendingUp, Clock, ShoppingBag, DollarSign, Calendar, CalendarIcon, Target, Award, TrendingDown, Download } from "lucide-react";
 import MobileNav from '@/components/MobileNav';
 import { toCSV, formatDateForCSV, formatCurrencyForCSV } from '@/lib/csv';
@@ -94,7 +94,8 @@ export default function AnalyticsClient({ venueId, venueName }: { venueId: strin
 
 
       // Fetch orders from selected period
-      const { data: orders, error: ordersError } = await supabase
+      const supabase = createClient();
+    const { data: orders, error: ordersError } = await supabase
         .from('orders')
         .select(`
           id,
