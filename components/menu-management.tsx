@@ -48,7 +48,7 @@ interface BaseMenuItem {
   description?: string | null;
   price: number;
   category: string;
-  available: boolean;
+  is_available: boolean;
   position?: number | null;
   created_at?: string;
   updated_at?: string;
