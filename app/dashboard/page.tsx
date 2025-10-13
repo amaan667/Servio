@@ -7,7 +7,10 @@ export default async function DashboardPage() {
   const supabase = await createServerSupabase();
   const { data: { user } } = await supabase.auth.getUser();
   
-  if (!user) return null;
+  // If no user, redirect to home page
+  if (!user) {
+    redirect('/');
+  }
 
   const { data: venues } = await supabase
     .from('venues')
@@ -15,7 +18,10 @@ export default async function DashboardPage() {
     .eq('owner_user_id', user.id)
     .order('created_at', { ascending: true });
 
-  if (!venues || venues.length === 0) return null;
+  // If no venues, redirect to home page
+  if (!venues || venues.length === 0) {
+    redirect('/');
+  }
 
   // Redirect to main venue (first one created during signup)
   // First venue by created_at is the main venue, others are secondary
