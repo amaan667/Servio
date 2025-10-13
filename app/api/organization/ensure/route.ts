@@ -50,7 +50,7 @@ export async function POST(request: NextRequest) {
     const { data: existingOrg, error: orgCheckError } = await adminClient
       .from("organizations")
       .select("id, subscription_tier, subscription_status, is_grandfathered, trial_ends_at")
-      .eq("owner_id", user.id)
+      .eq("created_by", user.id)
       .maybeSingle();
 
     if (orgCheckError) {
@@ -85,7 +85,7 @@ export async function POST(request: NextRequest) {
       .insert({
         name: `${userName}'s Organization`,
         slug: `org-${user.id.slice(0, 8)}-${Date.now()}`,
-        owner_id: user.id,
+        created_by: user.id,
         subscription_tier: "basic",
         subscription_status: "trialing",
         is_grandfathered: false,
