@@ -5,7 +5,7 @@ import { redirect } from 'next/navigation';
 import { createServerSupabase } from '@/lib/supabase-server';
 import { hasServerAuthCookie } from '@/lib/server-utils';
 import { log } from '@/lib/debug';
-import DashboardClient from './page.client.simple';
+import DashboardClient from './page.client';
 import { todayWindowForTZ } from '@/lib/time';
 import { EnhancedErrorBoundary } from '@/components/enhanced-error-boundary';
 
