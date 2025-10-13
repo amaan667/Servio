@@ -26,14 +26,21 @@ export default function TrialStatusBanner() {
     }
 
     try {
-      // Use the organization ensure endpoint to get accurate organization data
-      const ensureOrgResponse = await fetch('/api/organization/ensure', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' }
-      });
+      // Use the organization ensure endpoint to get accurate organization data (non-blocking)
+      let ensureOrgResponse;
+      try {
+        ensureOrgResponse = await fetch('/api/organization/ensure', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' }
+        });
 
-      if (!ensureOrgResponse.ok) {
-        console.error('[TRIAL DEBUG] Failed to ensure organization');
+        if (!ensureOrgResponse.ok) {
+          console.error('[TRIAL DEBUG] Failed to ensure organization (non-critical)');
+          setLoading(false);
+          return;
+        }
+      } catch (orgError) {
+        console.error('[TRIAL DEBUG] Organization ensure error (non-critical):', orgError);
         setLoading(false);
         return;
       }
