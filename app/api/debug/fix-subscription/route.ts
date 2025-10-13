@@ -29,7 +29,7 @@ export async function POST(request: NextRequest) {
     const { data: org, error: orgError } = await supabase
       .from('organizations')
       .select('*')
-      .eq('owner_id', user.id)
+      .eq('owner_user_id', user.id)
       .maybeSingle();
 
     if (orgError || !org) {

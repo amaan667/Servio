@@ -32,7 +32,7 @@ export default async function POSPage({ params }: POSPageProps) {
   // Verify user owns this venue
   const { data: venue, error: venueError } = await supabase
     .from('venues')
-    .select('venue_id, name, slug, owner_id')
+    .select('venue_id, venue_name, slug, owner_user_id')
     .or(`venue_id.eq.${venueId},slug.eq.${venueId}`)
     .eq('owner_user_id', user.id)
     .maybeSingle();

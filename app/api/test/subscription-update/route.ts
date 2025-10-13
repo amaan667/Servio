@@ -30,7 +30,7 @@ export async function POST(request: NextRequest) {
       const { data: existingOrgs, error: existingError } = await supabase
         .from('organizations')
         .select('stripe_subscription_id')
-        .eq('owner_id', user.id)
+        .eq('owner_user_id', user.id)
         .single();
       
       if (!existingError && existingOrgs?.stripe_subscription_id) {
@@ -77,7 +77,7 @@ export async function POST(request: NextRequest) {
         const { data: directOrgs, error: directError } = await supabase
           .from('organizations')
           .select('*')
-          .eq('owner_id', user.id)
+          .eq('owner_user_id', user.id)
           .single();
         
         if (!directError && directOrgs) {

@@ -37,7 +37,7 @@ export async function POST(request: NextRequest) {
       .from('venues')
       .select('venue_id, owner_id')
       .eq('venue_id', venueId)
-      .eq('owner_id', user.id)
+      .eq('owner_user_id', user.id)
       .single();
 
     if (venueError || !venue) {

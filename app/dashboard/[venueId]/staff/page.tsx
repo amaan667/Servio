@@ -41,7 +41,7 @@ export default async function StaffPage({
     // Verify user owns this venue
     const { data: venue, error: venueError } = await supabase
       .from('venues')
-      .select('venue_id, name')
+      .select('venue_id, venue_name')
       .eq('venue_id', venueId)
       .eq('owner_user_id', user.id)
       .maybeSingle();

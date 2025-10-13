@@ -122,7 +122,7 @@ export default function VenueSettingsClient({ user, venue, venues, organization 
   const [hasUnsavedChanges, setHasUnsavedChanges] = useState(false);
   
   // Venue settings state
-  const [venueName, setVenueName] = useState(venue.name);
+  const [venueName, setVenueName] = useState(venue.venue_name);
   const [venueEmail, setVenueEmail] = useState(venue.email || '');
   const [venuePhone, setVenuePhone] = useState(venue.phone || '');
   const [venueAddress, setVenueAddress] = useState(venue.address || '');
@@ -161,7 +161,7 @@ export default function VenueSettingsClient({ user, venue, venues, organization 
   // Track unsaved changes
   useEffect(() => {
     const changed = 
-      venueName !== venue.name ||
+      venueName !== venue.venue_name ||
       venueEmail !== (venue.email || '') ||
       venuePhone !== (venue.phone || '') ||
       venueAddress !== (venue.address || '') ||
@@ -868,7 +868,7 @@ export default function VenueSettingsClient({ user, venue, venues, organization 
       {/* Mobile Navigation */}
       <MobileNav 
         venueId={venue.venue_id}
-        venueName={venue.name}
+        venueName={venue.venue_name}
         counts={{
           live_orders: 0,
           total_orders: 0,

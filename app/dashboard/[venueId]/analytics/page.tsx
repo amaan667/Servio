@@ -73,14 +73,14 @@ export default async function AnalyticsPage({
           
           <div className="mb-8">
             <h1 className="text-3xl font-bold tracking-tight text-foreground">
-              Analytics for {venue.name}
+              Analytics for {venue.venue_name}
             </h1>
             <p className="text-lg text-foreground mt-2">
               View your business insights and performance metrics
             </p>
           </div>
           
-          <AnalyticsClient venueId={venueId} venueName={venue.name} />
+          <AnalyticsClient venueId={venueId} venueName={venue.venue_name} />
         </div>
       </div>
     );

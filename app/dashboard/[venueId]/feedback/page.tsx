@@ -67,7 +67,7 @@ export default async function FeedbackPage({ params }: { params: Promise<{ venue
           <div className="mb-8">
             <h1 className="text-3xl font-bold text-gray-900">Customer Feedback</h1>
             <p className="mt-2 text-gray-900">
-              Monitor customer satisfaction and respond to feedback for {venue.name}
+              Monitor customer satisfaction and respond to feedback for {venue.venue_name}
             </p>
           </div>
           

@@ -30,7 +30,7 @@ export default async function KDSPage({ params }: PageProps) {
   // Verify user has access to this venue
   const { data: venue, error: venueError } = await supabase
     .from('venues')
-    .select('venue_id, name, owner_id')
+    .select('venue_id, venue_name, owner_user_id')
     .eq('venue_id', venueId)
     .single();
 
@@ -38,7 +38,7 @@ export default async function KDSPage({ params }: PageProps) {
     redirect('/dashboard');
   }
 
-  if (venue.owner_id !== user.id) {
+  if (venue.owner_user_id !== user.id) {
     redirect('/dashboard');
   }
 

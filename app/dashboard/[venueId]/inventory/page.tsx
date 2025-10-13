@@ -64,7 +64,7 @@ export default async function InventoryPage({
         
         <div className="mb-8">
           <h1 className="text-3xl font-bold tracking-tight text-foreground">
-            Inventory for {venue.name}
+            Inventory for {venue.venue_name}
           </h1>
           <p className="text-lg text-foreground mt-2">
             Track ingredients, manage stock levels, and control costs
@@ -112,7 +112,7 @@ export default async function InventoryPage({
             </CardContent>
           </Card>
         ) : (
-          <InventoryClient venueId={venueId} venueName={venue.name} />
+          <InventoryClient venueId={venueId} venueName={venue.venue_name} />
         )}
       </div>
     </div>

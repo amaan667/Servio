@@ -28,11 +28,11 @@ export default async function AIChatPage({ params }: AIChatPageProps) {
   // Verify user has access to venue
   const { data: venue } = await supabase
     .from("venues")
-    .select("venue_id, name, owner_id")
+    .select("venue_id, venue_name, owner_user_id")
     .eq("venue_id", venueId)
     .single();
 
-  if (!venue || venue.owner_id !== user.id) {
+  if (!venue || venue.owner_user_id !== user.id) {
     redirect("/dashboard");
   }
 

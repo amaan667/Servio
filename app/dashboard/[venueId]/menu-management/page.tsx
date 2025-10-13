@@ -28,7 +28,7 @@ export default async function MenuManagementPage({ params }: { params: Promise<{
   // Verify user owns this venue - try both venue_id and slug
   const { data: venue, error: venueError } = await supabase
     .from('venues')
-    .select('venue_id, name, slug, owner_id')
+    .select('venue_id, venue_name, slug, owner_user_id')
     .or(`venue_id.eq.${venueId},slug.eq.${venueId}`)
     .eq('owner_user_id', user.id)
     .maybeSingle();

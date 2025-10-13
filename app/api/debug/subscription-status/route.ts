@@ -48,7 +48,7 @@ export async function GET(request: NextRequest) {
         const { data: directOrgs, error: directError } = await supabase
           .from('organizations')
           .select('*')
-          .eq('owner_id', user.id)
+          .eq('owner_user_id', user.id)
           .single();
         
         console.log('[DEBUG] Direct organization query result:', { directOrgs, directError });
