@@ -12,7 +12,10 @@ export default async function GenerateQRPage() {
     const supabase = await createServerSupabase();
 
     const { data: { user } } = await supabase.auth.getUser();
-    if (!user) return null;
+    if (!user) {
+      console.log('[GENERATE QR] No user found, redirecting to home');
+      redirect('/');
+    }
 
     const { data: venue } = await supabase
       .from('venues')
@@ -21,7 +24,10 @@ export default async function GenerateQRPage() {
       .limit(1)
       .maybeSingle();
 
-    if (!venue) return null;
+    if (!venue) {
+      console.log('[GENERATE QR] No venue found, redirecting to home');
+      redirect('/');
+    }
 
     let activeTablesCount = 0;
     

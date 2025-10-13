@@ -35,11 +35,12 @@ export default async function InventoryPage({
   
   if (error) {
     console.error('[INVENTORY] Auth error:', error);
-    return null;
+    redirect('/');
   }
   
   if (!user) {
-    return null;
+    console.log('[INVENTORY] No user found, redirecting to home');
+    redirect('/');
   }
 
   const supabase = await createServerSupabase();
@@ -52,7 +53,10 @@ export default async function InventoryPage({
     .eq('owner_user_id', user.id)
     .maybeSingle();
 
-  if (!venue) return null;
+  if (!venue) {
+    console.log('[INVENTORY] No venue found, redirecting to home');
+    redirect('/');
+  }
 
   // Check feature access
   const featureAccess = await checkFeatureAccess(venueId, PREMIUM_FEATURES.INVENTORY);
