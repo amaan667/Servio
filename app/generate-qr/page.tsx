@@ -64,12 +64,12 @@ export default async function GenerateQRPage() {
         <div className="text-center">
           <h2 className="text-xl font-semibold text-red-600 mb-2">Error Loading QR Code Page</h2>
           <p className="text-gray-600 mb-4">{String(error)}</p>
-          <button 
-            onClick={() => window.location.reload()}
-            className="px-4 py-2 bg-purple-600 text-white rounded-md hover:bg-purple-700"
+          <a 
+            href="/generate-qr"
+            className="inline-block px-4 py-2 bg-purple-600 text-white rounded-md hover:bg-purple-700"
           >
             Retry
-          </button>
+          </a>
         </div>
       </div>
     );
