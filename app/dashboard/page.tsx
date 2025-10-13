@@ -31,7 +31,8 @@ export default async function DashboardPage() {
     .limit(1);
 
   if (venueError) {
-    redirect('/complete-profile');
+    console.error('[DASHBOARD] Error fetching venues:', venueError);
+    // Don't redirect on error - might be RLS policy issue, try to create venue instead
   }
 
   if (!venues || venues.length === 0) {
