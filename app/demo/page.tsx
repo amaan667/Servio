@@ -447,7 +447,7 @@ function OwnerDemoView({ isAuthenticated }: { isAuthenticated: boolean }) {
           <div className="flex flex-col sm:flex-row gap-4 justify-center">
             {isAuthenticated ? (
               <>
-                <Link href={primaryVenueId ? `/dashboard/${primaryVenueId}` : '/'}>
+                <Link href="/dashboard">
                   <Button className="bg-white text-purple-600 hover:bg-gray-100">
                     Go to Dashboard
                   </Button>
