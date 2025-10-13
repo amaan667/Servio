@@ -65,8 +65,16 @@ export async function POST(request: NextRequest) {
 
     if (createError) {
       console.error("[ORG ENSURE] Error creating organization:", createError);
+      console.error("[ORG ENSURE] Error details:", JSON.stringify(createError, null, 2));
+      console.error("[ORG ENSURE] User ID:", user.id);
+      console.error("[ORG ENSURE] User metadata:", user.user_metadata);
       return NextResponse.json(
-        { error: "Failed to create organization", details: createError.message },
+        { 
+          error: "Failed to create organization", 
+          details: createError.message,
+          code: createError.code,
+          hint: createError.hint
+        },
         { status: 500 }
       );
     }
