@@ -175,9 +175,6 @@ export default function AnalyticsClientSimple({ venueId, venueName }: Props) {
           <CardContent>
             <div className="space-y-4">
               <p className="text-sm text-gray-600">
-                ✅ Analytics dashboard is working! Showing data for {venueName}.
-              </p>
-              <p className="text-sm text-gray-600">
                 Venue ID: {venueId}
               </p>
               <p className="text-sm text-gray-600">

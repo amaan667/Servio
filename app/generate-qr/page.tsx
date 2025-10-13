@@ -21,24 +21,24 @@ export default async function GenerateQRPage() {
     .limit(1)
     .maybeSingle();
 
-  if (venueError) {
-    redirect('/complete-profile');
-  }
-
-  if (!venue) {
+  if (venueError || !venue) {
     redirect('/complete-profile');
   }
 
   let activeTablesCount = 0;
   
-  const { data: countsData } = await supabase
-    .rpc('api_table_counters', {
-      p_venue_id: venue.venue_id
-    });
-  
-  if (countsData) {
-    const result = Array.isArray(countsData) ? countsData[0] : countsData;
-    activeTablesCount = result?.total_tables || 0;
+  try {
+    const { data: countsData, error: countsError } = await supabase
+      .rpc('api_table_counters', {
+        p_venue_id: venue.venue_id
+      });
+    
+    if (!countsError) {
+      const result = Array.isArray(countsData) ? countsData[0] : countsData;
+      activeTablesCount = result?.total_tables || 0;
+    }
+  } catch (queryError) {
+    // Continue with default count
   }
 
   return (
