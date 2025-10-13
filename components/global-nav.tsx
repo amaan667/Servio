@@ -79,7 +79,7 @@ export default function GlobalNav() {
           const { data, error } = await supabase
             .from('venues')
             .select('venue_id')
-            .eq('owner_id', session.user.id)
+            .eq('owner_user_id', session.user.id)
             .order('created_at', { ascending: true })
             .limit(1);
 
