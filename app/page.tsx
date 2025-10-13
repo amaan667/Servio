@@ -250,22 +250,36 @@ export default function HomePage() {
       console.log('[TIER DEBUG] Fetching tier for user:', user.id);
       
       // First, ensure user has a real organization (non-blocking)
+      let organization = null;
+      let created = false;
+      
       try {
         const ensureOrgResponse = await fetch('/api/organization/ensure', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' }
         });
 
-        if (!ensureOrgResponse.ok) {
+        if (ensureOrgResponse.ok) {
+          const result = await ensureOrgResponse.json();
+          organization = result.organization;
+          created = result.created;
+        } else {
           console.error('[TIER DEBUG] Failed to ensure organization (non-critical):', await ensureOrgResponse.text());
-          // Continue anyway - organization might already exist
+          // Continue anyway with default tier
+          setCurrentTier('basic');
+          return;
         }
       } catch (orgError) {
         console.error('[TIER DEBUG] Organization ensure error (non-critical):', orgError);
-        // Continue anyway
+        // Continue anyway with default tier
+        setCurrentTier('basic');
+        return;
       }
-
-      const { organization, created } = await ensureOrgResponse.json();
+      
+      if (!organization) {
+        setCurrentTier('basic');
+        return;
+      }
       
       console.log('[TIER DEBUG] Organization ensured:', { 
         id: organization.id, 
