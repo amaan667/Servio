@@ -88,7 +88,7 @@ export async function POST(req: Request) {
       description: item.description,
       price: item.price,
       category: item.category,
-      available: item.available
+      is_available: item.available
     }));
 
 

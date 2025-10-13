@@ -33,7 +33,7 @@ export async function POST(req: Request) {
         const name = (it?.name || '').trim();
         const price = Number(it?.unit_price ?? it?.price ?? 0);
         if (!name || !(price > 0)) continue;
-        items.push({ venue_id: row.venue_id, name, description: (it?.description ?? null), price, category: catName, available: true });
+        items.push({ venue_id: row.venue_id, name, description: (it?.description ?? null), price, category: catName, is_available: true });
       }
     }
 

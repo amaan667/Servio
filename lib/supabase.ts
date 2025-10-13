@@ -30,7 +30,7 @@ export interface MenuItem {
   description?: string;
   price: number;
   category: string;
-  available: boolean;
+  is_available: boolean;
   created_at: string;
   image?: string; // image URL for menu items
 }

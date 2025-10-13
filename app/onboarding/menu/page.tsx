@@ -125,7 +125,7 @@ export default function OnboardingMenuPage() {
         price: parseFloat(item.price),
         category: item.category,
         description: '',
-        available: true,
+        is_available: true,
         image_url: null,
       }));
 

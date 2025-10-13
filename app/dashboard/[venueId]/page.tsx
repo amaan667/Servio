@@ -144,7 +144,7 @@ export default async function VenuePage({ params }: { params: Promise<{ venueId:
       .from("menu_items")
       .select("id")
       .eq("venue_id", venueId)
-      .eq("available", true);
+      .eq("is_available", true);
 
     const initialStats = {
       revenue: todayRevenue,

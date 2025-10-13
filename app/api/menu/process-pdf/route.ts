@@ -184,7 +184,7 @@ export async function POST(req: Request) {
             description: item.description || null,
             price: typeof item.price === 'number' && !isNaN(item.price) ? item.price : 0,
             category: item.category || 'UNCATEGORIZED',
-            available: Boolean(item.available ?? true)
+            is_available: Boolean(item.available ?? true)
           })),
           categories: normalized.categories || ['UNCATEGORIZED']
         };
@@ -211,7 +211,7 @@ export async function POST(req: Request) {
         description: item.description,
         price: item.price,
         category: item.category,
-        available: item.available,
+        is_available: item.available,
         order_index: item.order_index !== undefined ? item.order_index : index
       }))
       .filter((it) => {

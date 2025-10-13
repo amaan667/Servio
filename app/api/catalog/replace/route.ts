@@ -204,7 +204,7 @@ async function replaceCatalog(supabase: any, venueId: string, fixedPayload: any)
         description: item.description || null,
         price: item.price || 0,
         category: item.category || 'UNCATEGORIZED',
-        available: true
+        is_available: true
       }));
 
       const { data: insertedItems, error: insertError } = await supabase

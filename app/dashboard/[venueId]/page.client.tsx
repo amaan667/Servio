@@ -365,7 +365,7 @@ const VenueDashboardClient = React.memo(function VenueDashboardClient({
           .from("menu_items")
           .select("id")
           .eq("venue_id", vId)
-          .eq("available", true)
+          .eq("is_available", true)
         )
       ]);
 

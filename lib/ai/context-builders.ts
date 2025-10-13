@@ -87,7 +87,7 @@ export async function getMenuSummary(
     .from("menu_items")
     .select("id, name, price, category")
     .eq("venue_id", venueId)
-    .eq("available", true);
+    .eq("is_available", true);
 
   if (!items || items.length === 0) {
     return {

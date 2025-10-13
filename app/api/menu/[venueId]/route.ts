@@ -40,7 +40,7 @@ export async function GET(
       .from('menu_items')
       .select('*')
       .eq('venue_id', venueId)
-      .eq('available', true)
+      .eq('is_available', true)
       .order('created_at', { ascending: true });
 
     if (menuError) {

@@ -12,7 +12,7 @@ export async function POST(req: NextRequest) {
       const itemsToInsert = body.items.map((item: any) => ({
         ...item,
         venue_id: body.venue_id,
-        available: item.available !== false, // default to true
+        is_available: item.available !== false, // default to true
       }));
               const { error } = await supabase.from("menu_items").insert(itemsToInsert);
       if (error) {

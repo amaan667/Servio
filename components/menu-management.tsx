@@ -883,10 +883,10 @@ export function MenuManagement({ venueId, session, refreshTrigger }: MenuManagem
                               />
                               <div className="flex items-center gap-2">
                                 <Switch
-                                  checked={editItemDraft?.available ?? item.available}
-                                  onCheckedChange={(checked) => setEditItemDraft((draft: Partial<MenuItem> | null) => ({ ...draft, available: checked }))}
+                                  checked={editItemDraft?.is_available ?? item.is_available}
+                                  onCheckedChange={(checked) => setEditItemDraft((draft: Partial<MenuItem> | null) => ({ ...draft, is_available: checked }))}
                                 />
-                                <Label className="text-sm">{(editItemDraft?.available ?? item.available) ? "Available" : "Unavailable"}</Label>
+                                <Label className="text-sm">{(editItemDraft?.is_available ?? item.is_available) ? "Available" : "Unavailable"}</Label>
                               </div>
                               <Button
                                 size="sm"
@@ -918,7 +918,7 @@ export function MenuManagement({ venueId, session, refreshTrigger }: MenuManagem
                               <span className="text-lg font-bold text-green-600">£{item.price.toFixed(2)}</span>
                               <span className="text-xs text-gray-900">{item.category}</span>
                               {item.description && <span className="text-xs text-gray-900">{item.description}</span>}
-                              <span className="text-xs text-gray-900">{item.available ? "Available" : "Unavailable"}</span>
+                              <span className="text-xs text-gray-900">{item.is_available ? "Available" : "Unavailable"}</span>
                             </div>
                           )}
                         </div>
@@ -954,7 +954,7 @@ export function MenuManagement({ venueId, session, refreshTrigger }: MenuManagem
                                 price: item.price,
                                 category: item.category,
                                 description: item.description,
-                                available: item.available,
+                                is_available: item.is_available,
                               });
                             }}
                             className="text-blue-500 hover:text-blue-700 hover:bg-blue-50 opacity-0 group-hover:opacity-100 transition-opacity"

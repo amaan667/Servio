@@ -23,7 +23,7 @@ interface MenuItem {
   description: string | null;
   price: number;
   category: string;
-  available: boolean;
+  is_available: boolean;
   created_at: string;
 }
 
@@ -138,7 +138,7 @@ export default function MenuClient({ venueId, venueName }: { venueId: string; ve
       description: formData.description || null,
       price: parseFloat(formData.price),
       category: formData.category,
-      available: formData.available
+      is_available: formData.available
     };
 
     if (editingItem) {
@@ -191,13 +191,13 @@ export default function MenuClient({ venueId, venueName }: { venueId: string; ve
     const supabase = createClient();
     const { error } = await supabase
       .from('menu_items')
-      .update({ available })
+      .update({ is_available: available })
       .eq('id', itemId)
       .eq('venue_id', venueId);
 
     if (!error) {
       setMenuItems(prev => prev.map(item => 
-        item.id === itemId ? { ...item, available } : item
+        item.id === itemId ? { ...item, is_available: available } : item
       ));
     }
   };
@@ -278,7 +278,7 @@ export default function MenuClient({ venueId, venueName }: { venueId: string; ve
       description: item.description || '',
       price: item.price.toString(),
       category: item.category,
-      available: item.available
+      available: item.is_available
     });
     setIsAddModalOpen(true);
   };
@@ -307,7 +307,7 @@ export default function MenuClient({ venueId, venueName }: { venueId: string; ve
             </div>
             <span className="text-sm text-gray-800">•</span>
             <span className="text-sm text-gray-800">
-              {menuItems.filter(item => item.available).length} available
+              {menuItems.filter(item => item.is_available).length} available
             </span>
           </div>
           <div className="flex items-center space-x-2">
@@ -543,11 +543,11 @@ export default function MenuClient({ venueId, venueName }: { venueId: string; ve
                               )}
                               <div className="flex items-center gap-3">
                                 <ToggleSwitch
-                                  checked={item.available}
+                                  checked={item.is_available}
                                   onCheckedChange={(checked) => handleToggleAvailable(item.id, checked)}
                                 />
                                 <span className="text-sm font-medium text-gray-700">
-                                  {item.available ? 'Available' : 'Unavailable'}
+                                  {item.is_available ? 'Available' : 'Unavailable'}
                                 </span>
                               </div>
                             </div>

@@ -121,7 +121,7 @@ export default function AnalyticsClient({ venueId, venueName }: { venueId: strin
         .from('menu_items')
         .select('id')
         .eq('venue_id', venueId)
-        .eq('available', true);
+        .eq('is_available', true);
 
       if (menuError) {
         console.error('🔍 [ANALYTICS] Menu items error:', menuError);
