@@ -19,7 +19,7 @@ export default async function FeedbackPage({ params }: { params: Promise<{ venue
     .from('venues')
     .select('*')
     .eq('venue_id', venueId)
-    .eq('owner_id', user.id)
+    .eq('owner_user_id', user.id)
     .maybeSingle();
 
   if (venueError) {
@@ -32,7 +32,7 @@ export default async function FeedbackPage({ params }: { params: Promise<{ venue
     const { data: userVenues } = await supabase
       .from('venues')
       .select('venue_id')
-      .eq('owner_id', user.id)
+      .eq('owner_user_id', user.id)
       .limit(1);
 
     if (!userVenues || userVenues.length === 0) {

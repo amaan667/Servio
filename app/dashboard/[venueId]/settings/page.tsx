@@ -29,7 +29,7 @@ export default async function VenueSettings({ params }: { params: Promise<{ venu
   const { data: venues } = await supabase
     .from('venues')
     .select('*')
-    .eq('owner_id', user.id)
+    .eq('owner_user_id', user.id)
     .order('created_at', { ascending: false });
 
   // Fetch organization data
