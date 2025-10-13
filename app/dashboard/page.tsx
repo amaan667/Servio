@@ -15,7 +15,7 @@ export default async function DashboardPage() {
   const { data: venues } = await supabase
     .from('venues')
     .select('venue_id, venue_name, created_at')
-    .eq('owner_user_id', user.id)
+    .eq('owner_id', user.id)
     .order('created_at', { ascending: true });
 
   // If no venues, redirect to home page
