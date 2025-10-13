@@ -1,4 +1,4 @@
-import QuestionsClient from './QuestionsClient';
+import SimpleFeedbackClient from './SimpleFeedbackClient';
 import NavigationBreadcrumb from '@/components/navigation-breadcrumb';
 import { createClient } from '@/lib/supabase/server';
 import { redirect } from 'next/navigation';
@@ -57,7 +57,7 @@ export default async function FeedbackPage({ params }: { params: Promise<{ venue
           </p>
         </div>
         
-        <QuestionsClient venueId={venueId} />
+        <SimpleFeedbackClient venueId={venueId} />
       </div>
     </div>
   );
