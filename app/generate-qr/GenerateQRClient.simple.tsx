@@ -31,14 +31,12 @@ export default function GenerateQRClientSimple({ venueId, venueName, activeTable
           .order('table_number');
 
         if (tablesError) {
-          console.error('[GENERATE QR] Error loading tables:', tablesError);
           setError('Failed to load tables');
           return;
         }
 
         setTables(tablesData || []);
       } catch (err) {
-        console.error('[GENERATE QR] Unexpected error:', err);
         setError('An unexpected error occurred');
       } finally {
         setLoading(false);

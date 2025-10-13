@@ -56,18 +56,13 @@ export default function SimpleFeedbackClient({ venueId }: SimpleFeedbackClientPr
 
   const fetchQuestions = async () => {
     try {
-      console.log('[FEEDBACK DEBUG] Fetching questions for venue:', venueId);
-      
       const response = await fetch(`/api/feedback/questions?venueId=${venueId}`);
-      console.log('[FEEDBACK DEBUG] Fetch response status:', response.status);
       
       if (response.ok) {
         const data = await response.json();
-        console.log('[FEEDBACK DEBUG] Fetched questions:', data);
         setQuestions(data.questions || []);
         setTotalCount(data.totalCount || 0);
       } else {
-        console.error('[FEEDBACK DEBUG] Fetch failed:', response.status);
         toast({
           title: "Error",
           description: "Couldn't load questions",
@@ -75,7 +70,6 @@ export default function SimpleFeedbackClient({ venueId }: SimpleFeedbackClientPr
         });
       }
     } catch (error) {
-      console.error('[FEEDBACK DEBUG] Fetch exception:', error);
       toast({
         title: "Error",
         description: "Couldn't load questions",
@@ -139,7 +133,6 @@ export default function SimpleFeedbackClient({ venueId }: SimpleFeedbackClientPr
         });
       }
     } catch (error) {
-      console.error('Error saving question:', error);
       toast({
         title: "Error",
         description: "Failed to save question",
@@ -185,7 +178,6 @@ export default function SimpleFeedbackClient({ venueId }: SimpleFeedbackClientPr
         });
       }
     } catch (error) {
-      console.error('Error deleting question:', error);
       toast({
         title: "Error",
         description: "Failed to delete question",
@@ -222,7 +214,6 @@ export default function SimpleFeedbackClient({ venueId }: SimpleFeedbackClientPr
         });
       }
     } catch (error) {
-      console.error('Error updating question:', error);
       toast({
         title: "Error",
         description: "Failed to update question",

@@ -7,32 +7,29 @@ export default async function VenueSettings({ params }: { params: Promise<{ venu
   const { venueId } = await params;
   const supabase = await createClient();
 
-  // Get authenticated user
   const { data: { user }, error: userError } = await supabase.auth.getUser();
   
-  if (userError || !user || !user.email) {
+  if (userError || !user) {
     redirect('/sign-in');
   }
 
-  // Fetch venue data
   const { data: venue, error: venueError } = await supabase
     .from('venues')
     .select('*')
     .eq('venue_id', venueId)
+    .eq('owner_user_id', user.id)
     .single();
 
   if (venueError || !venue) {
-    redirect('/dashboard');
+    redirect('/complete-profile');
   }
 
-  // Fetch all venues for the user
   const { data: venues } = await supabase
     .from('venues')
     .select('*')
     .eq('owner_user_id', user.id)
     .order('created_at', { ascending: false });
 
-  // Fetch organization data
   const { data: organization } = await supabase
     .from('organizations')
     .select('id, subscription_tier, is_grandfathered, stripe_customer_id, subscription_status, trial_ends_at')
