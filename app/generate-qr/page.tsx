@@ -17,7 +17,7 @@ export default async function GenerateQRPage() {
     const { data: venue } = await supabase
       .from('venues')
       .select('venue_id, name')
-      .eq('owner_id', user.id)
+      .eq('owner_user_id', user.id)
       .limit(1)
       .maybeSingle();
 

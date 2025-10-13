@@ -42,7 +42,7 @@ export default function CompleteProfilePage() {
         const { data: venue, error: venueErr } = await createClient()
           .from('venues')
           .select('venue_id')
-          .eq('owner_id', user.id)
+          .eq('owner_user_id', user.id)
           .maybeSingle();
 
         if (venueErr) {
