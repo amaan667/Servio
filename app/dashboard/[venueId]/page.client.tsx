@@ -114,7 +114,7 @@ const VenueDashboardClient = React.memo(function VenueDashboardClient({
     };
 
     loadVenueAndStats();
-  }, [venueId]);
+  }, [venueId, venue, loading, venueTz]);
 
   // Handle initial venue data from SSR
   useEffect(() => {
