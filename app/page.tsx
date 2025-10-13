@@ -263,14 +263,33 @@ export default function HomePage() {
           const result = await ensureOrgResponse.json();
           organization = result.organization;
           created = result.created;
+          console.log('[TIER DEBUG] ✅ Organization ensured successfully:', {
+            orgId: organization.id,
+            tier: organization.subscription_tier,
+            status: organization.subscription_status,
+            wasCreated: created
+          });
         } else {
-          console.error('[TIER DEBUG] Failed to ensure organization (non-critical):', await ensureOrgResponse.text());
+          const errorText = await ensureOrgResponse.text();
+          let errorDetail;
+          try {
+            errorDetail = JSON.parse(errorText);
+          } catch {
+            errorDetail = errorText;
+          }
+          console.error('[TIER DEBUG] ❌ Organization ensure failed:', {
+            status: ensureOrgResponse.status,
+            statusText: ensureOrgResponse.statusText,
+            error: errorDetail
+          });
+          alert(`Organization creation failed: ${JSON.stringify(errorDetail, null, 2)}\n\nCheck console for details.`);
           // Continue anyway with default tier
           setCurrentTier('basic');
           return;
         }
       } catch (orgError) {
-        console.error('[TIER DEBUG] Organization ensure error (non-critical):', orgError);
+        console.error('[TIER DEBUG] ❌ Organization ensure error:', orgError);
+        alert(`Organization API error: ${orgError}\n\nCheck console for details.`);
         // Continue anyway with default tier
         setCurrentTier('basic');
         return;
