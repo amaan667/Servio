@@ -13,15 +13,21 @@ interface Props {
 }
 
 export default function GenerateQRClientSimple({ venueId, venueName, activeTablesCount }: Props) {
+  console.log('[QR CLIENT] Component props:', { venueId, venueName, activeTablesCount });
+  
   const [loading, setLoading] = useState(true);
   const [tables, setTables] = useState<any[]>([]);
   const [error, setError] = useState<string | null>(null);
   const router = useRouter();
 
   useEffect(() => {
+    console.log('[QR CLIENT] useEffect triggered, loading tables for venueId:', venueId);
+    
     const loadTables = async () => {
       try {
         setLoading(true);
+        console.log('[QR CLIENT] Starting to load tables...');
+        
         const supabase = createClient();
         
         const { data: tablesData, error: tablesError } = await supabase
@@ -30,15 +36,21 @@ export default function GenerateQRClientSimple({ venueId, venueName, activeTable
           .eq('venue_id', venueId)
           .order('table_number');
 
+        console.log('[QR CLIENT] Tables query result:', { data: tablesData, error: tablesError });
+
         if (tablesError) {
+          console.error('[QR CLIENT] Tables query error:', tablesError);
           setError('Failed to load tables');
           return;
         }
 
+        console.log('[QR CLIENT] Setting tables data:', tablesData);
         setTables(tablesData || []);
       } catch (err) {
+        console.error('[QR CLIENT] Unexpected error:', err);
         setError('An unexpected error occurred');
       } finally {
+        console.log('[QR CLIENT] Setting loading to false');
         setLoading(false);
       }
     };

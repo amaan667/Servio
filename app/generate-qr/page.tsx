@@ -6,11 +6,15 @@ import NavigationBreadcrumb from '@/components/navigation-breadcrumb';
 import GenerateQRClientSimple from './GenerateQRClient.simple';
 
 export default async function GenerateQRPage() {
+  console.log('[QR PAGE] Starting GenerateQRPage');
+  
   const supabase = await createClient();
   
   const { data: { user } } = await supabase.auth.getUser();
+  console.log('[QR PAGE] User auth result:', { hasUser: !!user });
   
   if (!user) {
+    console.log('[QR PAGE] No user, redirecting to sign-in');
     redirect('/sign-in');
   }
 
@@ -21,7 +25,10 @@ export default async function GenerateQRPage() {
     .limit(1)
     .single();
 
+  console.log('[QR PAGE] Venue lookup result:', { hasVenue: !!venue, venueId: venue?.venue_id });
+
   if (!venue) {
+    console.log('[QR PAGE] No venue, redirecting to complete-profile');
     redirect('/complete-profile');
   }
 
@@ -35,6 +42,8 @@ export default async function GenerateQRPage() {
   if (tableCounters && tableCounters.length > 0) {
     activeTablesCount = tableCounters[0].total_tables || 0;
   }
+
+  console.log('[QR PAGE] Final data:', { venueId: venue.venue_id, activeTablesCount });
 
   return (
     <div className="min-h-screen bg-background">
