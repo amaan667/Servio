@@ -25,7 +25,7 @@ export default async function DashboardPage() {
   // Get the user's primary venue
   const { data: venues, error: venueError } = await supabase
     .from('venues')
-    .select('venue_id, name')
+    .select('venue_id, venue_name')
     .eq('owner_user_id', user.id)
     .order('created_at', { ascending: true })
     .limit(1);
@@ -55,7 +55,7 @@ export default async function DashboardPage() {
           .from('venues')
           .insert({
             venue_id: venueId,
-            name: venueName,
+            venue_name: venueName,
             business_type: businessType,
             owner_user_id: user.id,
             created_at: new Date().toISOString(),
