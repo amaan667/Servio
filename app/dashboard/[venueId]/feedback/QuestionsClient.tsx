@@ -63,11 +63,14 @@ export default function QuestionsClient({ venueId, venueName, mode = 'full' }: Q
 
   const fetchQuestions = async () => {
     try {
+      console.log('[FEEDBACK DEBUG] Fetching questions for venue:', venueId);
       
       const response = await fetch(`/api/feedback/questions?venueId=${venueId}`);
+      console.log('[FEEDBACK DEBUG] Fetch response status:', response.status);
       
       if (response.ok) {
         const data = await response.json();
+        console.log('[FEEDBACK DEBUG] Fetched questions:', data);
         setQuestions(data.questions || []);
         setTotalCount(data.totalCount || 0);
       } else {

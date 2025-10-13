@@ -1,7 +1,7 @@
-import { redirect } from 'next/navigation';
+import QuestionsClient from './QuestionsClient';
+import NavigationBreadcrumb from '@/components/navigation-breadcrumb';
 import { createClient } from '@/lib/supabase/server';
-import { EnhancedFeedbackSystem } from '@/components/enhanced-feedback-system';
-import NavigationBreadcrumb from "@/components/navigation-breadcrumb";
+import { redirect } from 'next/navigation';
 
 export default async function FeedbackPage({ params }: { params: Promise<{ venueId: string }> }) {
   const { venueId } = await params;
@@ -53,11 +53,11 @@ export default async function FeedbackPage({ params }: { params: Promise<{ venue
             Customer Feedback
           </h1>
           <p className="text-lg text-foreground mt-2">
-            Monitor customer satisfaction and respond to feedback for {venue.venue_name}
+            Manage customer feedback and reviews for {venue.venue_name}
           </p>
         </div>
         
-        <EnhancedFeedbackSystem venueId={venueId} />
+        <QuestionsClient venueId={venueId} />
       </div>
     </div>
   );
