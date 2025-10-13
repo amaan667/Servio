@@ -1,6 +1,6 @@
 // API endpoint to ensure a user has a real organization
 import { NextRequest, NextResponse } from "next/server";
-import { createClient } from "@/lib/supabase/server";
+import { createClient, createAdminClient } from "@/lib/supabase/server";
 
 // Disable caching to always get fresh data
 export const dynamic = 'force-dynamic';
@@ -20,8 +20,11 @@ export async function POST(request: NextRequest) {
       );
     }
 
+    // Use admin client to bypass RLS for organization operations
+    const adminClient = createAdminClient();
+
     // Check if user already has an organization
-    const { data: existingOrg, error: orgCheckError } = await supabase
+    const { data: existingOrg, error: orgCheckError } = await adminClient
       .from("organizations")
       .select("id, subscription_tier, subscription_status, is_grandfathered, trial_ends_at")
       .eq("owner_id", user.id)
@@ -46,8 +49,8 @@ export async function POST(request: NextRequest) {
     // Get user's name for organization name
     const userName = user.user_metadata?.full_name || user.email?.split('@')[0] || 'User';
     
-    // Create organization for the user
-    const { data: newOrg, error: createError } = await supabase
+    // Create organization for the user using admin client to bypass RLS
+    const { data: newOrg, error: createError } = await adminClient
       .from("organizations")
       .insert({
         name: `${userName}'s Organization`,
@@ -79,15 +82,15 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    // Update any venues to link to this organization
-    await supabase
+    // Update any venues to link to this organization (using admin client)
+    await adminClient
       .from("venues")
       .update({ organization_id: newOrg.id })
       .eq("owner_user_id", user.id)
       .is("organization_id", null);
 
-    // Create user_venue_roles entries
-    const { data: userVenues } = await supabase
+    // Create user_venue_roles entries (using admin client)
+    const { data: userVenues } = await adminClient
       .from("venues")
       .select("venue_id")
       .eq("owner_user_id", user.id);
@@ -101,7 +104,7 @@ export async function POST(request: NextRequest) {
         permissions: { all: true }
       }));
 
-      await supabase
+      await adminClient
         .from("user_venue_roles")
         .upsert(venueRoles, {
           onConflict: "user_id,venue_id"
