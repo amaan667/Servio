@@ -17,7 +17,10 @@ export default async function VenuePage({ params }: { params: Promise<{ venueId:
     const { data: { user } } = await supabase.auth.getUser();
     log('VENUE PAGE SSR user', { hasUser: !!user });
     
-    if (!user) return null;
+    if (!user) {
+      console.log('[VENUE PAGE] No user found, redirecting to home');
+      redirect('/');
+    }
 
     const { data: venue, error: venueError } = await supabase
       .from('venues')
@@ -42,7 +45,8 @@ export default async function VenuePage({ params }: { params: Promise<{ venueId:
         // Redirect to main venue (first one created)
         redirect(`/dashboard/${userVenues[0].venue_id}`);
       }
-      return null;
+      console.log('[VENUE PAGE] No venues found for user, redirecting to home');
+      redirect('/');
     }
 
     // Check if user needs onboarding (new signup with no menu/tables)
@@ -137,20 +141,30 @@ export default async function VenuePage({ params }: { params: Promise<{ venueId:
     };
 
     return (
-      <EnhancedErrorBoundary>
-        <SimpleDashboardClient 
-          venueId={venueId} 
-          userId={user.id}
-          venue={venue}
-          userName={user.user_metadata?.full_name || user.email?.split('@')[0] || 'User'}
-          venueTz={venueTz}
-          initialCounts={counts}
-          initialStats={initialStats}
-        />
-      </EnhancedErrorBoundary>
+      <SimpleDashboardClient 
+        venueId={venueId} 
+        userId={user.id}
+        venue={venue}
+        userName={user.user_metadata?.full_name || user.email?.split('@')[0] || 'User'}
+        venueTz={venueTz}
+        initialCounts={counts}
+        initialStats={initialStats}
+      />
     );
   } catch (error) {
     console.error('[VENUE PAGE] Error:', error);
-    return null;
+    return (
+      <div className="min-h-screen bg-gray-50 p-4">
+        <div className="max-w-7xl mx-auto">
+          <h1 className="text-3xl font-bold text-red-600 mb-6">
+            ❌ Dashboard Error
+          </h1>
+          <div className="bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded">
+            <p className="font-semibold">Error loading dashboard:</p>
+            <p>{String(error)}</p>
+          </div>
+        </div>
+      </div>
+    );
   }
 }
