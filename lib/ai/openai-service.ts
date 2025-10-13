@@ -4,9 +4,16 @@
 import OpenAI from "openai";
 import { createClient } from "@/lib/supabase/server";
 
-const client = new OpenAI({ 
-  apiKey: process.env.OPENAI_API_KEY 
-});
+// Lazy load OpenAI client to avoid build-time initialization
+let client: OpenAI | null = null;
+function getOpenAIClient(): OpenAI {
+  if (!client) {
+    client = new OpenAI({ 
+      apiKey: process.env.OPENAI_API_KEY 
+    });
+  }
+  return client;
+}
 
 const SYSTEM_PROMPT = `
 You are Servio's venue assistant. Be concise, reliable, and action-oriented.
@@ -151,7 +158,7 @@ export async function handleUserMessage({
     ];
 
     // 3) First model call
-    const response = await client.chat.completions.create({
+    const response = await getOpenAIClient().chat.completions.create({
       model: "gpt-4o",
       messages: openaiMessages,
       tools: TOOLS,
@@ -244,7 +251,7 @@ export async function handleUserMessage({
       }
 
       // 5) Get final assistant response
-      const finalResponse = await client.chat.completions.create({
+      const finalResponse = await getOpenAIClient().chat.completions.create({
         model: "gpt-4o",
         messages: toolMessages,
         temperature: 0.7,
@@ -368,7 +375,7 @@ async function executeOpenPage(page: string, subpage?: string) {
 
 export async function generateConversationTitle(firstUserMessage: string): Promise<string> {
   try {
-    const response = await client.chat.completions.create({
+    const response = await getOpenAIClient().chat.completions.create({
       model: "gpt-4o",
       messages: [
         {
