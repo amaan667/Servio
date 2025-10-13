@@ -18,7 +18,22 @@ export default async function BillingPage({ params }: { params: Promise<{ venueI
           </p>
         </div>
         
-        <BillingClient venueId={venueId} venueName="Your Venue" />
+        <BillingClient 
+          venueId={venueId} 
+          venueName="Your Venue"
+          organization={{
+            id: 'temp-org',
+            subscription_tier: 'basic',
+            subscription_status: 'active',
+            trial_ends_at: null
+          }}
+          usage={{
+            menuItems: 0,
+            tables: 0,
+            staff: 0,
+            venues: 1
+          }}
+        />
       </div>
     </div>
   );
