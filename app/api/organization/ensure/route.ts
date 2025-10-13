@@ -82,7 +82,7 @@ export async function POST(request: NextRequest) {
     const { data: userVenues } = await supabase
       .from("venues")
       .select("venue_id")
-      .eq("owner_id", user.id);
+      .eq("owner_user_id", user.id);
 
     if (userVenues && userVenues.length > 0) {
       const venueRoles = userVenues.map(venue => ({
