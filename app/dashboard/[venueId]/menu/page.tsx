@@ -61,14 +61,14 @@ export default async function MenuPage({
         
         <div className="mb-8">
           <h1 className="text-3xl font-bold tracking-tight text-foreground">
-            Menu for {venue.name}
+            Menu for {venue.venue_name}
           </h1>
         <p className="text-lg text-foreground mt-2">
           Manage your menu items and categories
         </p>
         </div>
         
-        <MenuClient venueId={venueId} venueName={venue.name} />
+        <MenuClient venueId={venueId} venueName={venue.venue_name} />
       </div>
     </div>
   );

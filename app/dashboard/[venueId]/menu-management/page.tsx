@@ -50,7 +50,7 @@ export default async function MenuManagementPage({ params }: { params: Promise<{
         
         <div className="mb-8">
           <h1 className="text-3xl font-bold tracking-tight text-foreground">
-            Menu Management for {venue.name}
+            Menu Management for {venue.venue_name}
           </h1>
           <p className="text-lg text-foreground mt-2">
             Manage your menu items and categories

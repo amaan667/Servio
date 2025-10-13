@@ -52,11 +52,11 @@ export default async function KDSPage({ params }: PageProps) {
             Kitchen Display System
           </h1>
           <p className="mt-2 text-muted-foreground">
-            Monitor and manage kitchen orders for {venue.name}
+            Monitor and manage kitchen orders for {venue.venue_name}
           </p>
         </div>
         
-        <KDSClient venueId={venueId} venueName={venue.name} />
+        <KDSClient venueId={venueId} venueName={venue.venue_name} />
       </div>
     </div>
   );

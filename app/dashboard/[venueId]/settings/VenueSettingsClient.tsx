@@ -22,7 +22,7 @@ import BillingSection from '@/components/settings/BillingSection';
 
 interface Venue {
   venue_id: string;
-  name: string;
+  venue_name: string;
   email?: string;
   phone?: string;
   address?: string;

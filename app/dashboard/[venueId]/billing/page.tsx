@@ -58,7 +58,7 @@ export default async function BillingPage({
         
         <BillingClient
           venueId={venueId}
-          venueName={venue.name}
+          venueName={venue.venue_name}
           organization={venue.organizations}
           usage={usage}
         />

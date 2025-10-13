@@ -99,7 +99,7 @@ export default async function VenueSettings({ params }: { params: Promise<{ venu
           
           <div className="mb-8">
             <h1 className="text-3xl font-bold tracking-tight text-foreground">
-              Settings for {venue.name}
+              Settings for {venue.venue_name}
             </h1>
             <p className="text-lg text-foreground mt-2">
               Manage your venue settings and preferences

@@ -78,7 +78,7 @@ export default async function OrdersPage({
         
         <div className="mb-8">
           <h1 className="text-3xl font-bold tracking-tight text-foreground">
-            Orders for {venue.name}
+            Orders for {venue.venue_name}
           </h1>
           <p className="text-lg text-foreground mt-2">
             View and manage all orders
