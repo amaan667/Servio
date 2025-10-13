@@ -23,7 +23,10 @@ export default async function StaffPage({
     const { data: { user } } = await supabase.auth.getUser();
     log('STAFF SSR user', { hasUser: !!user });
     
-    if (!user) return null;
+    if (!user) {
+      console.log('[STAFF] No user found, redirecting to home');
+      redirect('/');
+    }
 
     const { data: venue } = await supabase
       .from('venues')
@@ -32,7 +35,10 @@ export default async function StaffPage({
       .eq('owner_user_id', user.id)
       .maybeSingle();
 
-    if (!venue) return null;
+    if (!venue) {
+    console.log('[STAFF] No venue found, redirecting to home');
+    redirect('/');
+  }
 
     // Get initial staff data and counts server-side to prevent flickering
     const admin = createAdminClient();
@@ -105,9 +111,12 @@ export default async function StaffPage({
         </div>
       </div>
     );
-  } catch (error) {
+  } catch (error: any) {
+    if (error?.message === 'NEXT_REDIRECT') {
+      throw error;
+    }
     console.error('[STAFF] Unexpected error:', error);
-    return null;
+    redirect('/');
   }
 }
 
