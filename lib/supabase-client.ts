@@ -21,12 +21,6 @@ export const supabase = supabaseUrl && supabaseAnonKey
         persistSession: true,
         detectSessionInUrl: true,
         flowType: 'pkce'
-      },
-      // Disable cookie operations on client side to prevent Next.js 15 errors
-      cookies: {
-        get: () => undefined,
-        set: () => {},
-        remove: () => {}
       }
     })
   : {

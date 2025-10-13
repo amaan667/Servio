@@ -58,16 +58,10 @@ export function createClient() {
       { 
         isSingleton: true,
         auth: {
-          autoRefreshToken: false, // Disable auto refresh to prevent auto sign-in
-          persistSession: false, // Disable session persistence to prevent auto sign-in
-          detectSessionInUrl: false, // Disable session detection in URL
+          autoRefreshToken: true, // Enable auto refresh for proper session management
+          persistSession: true, // Enable session persistence for auth state
+          detectSessionInUrl: true, // Enable session detection in URL for OAuth
           flowType: 'pkce'
-        },
-        // Completely disable cookie operations on client side to prevent Next.js 15 errors
-        cookies: {
-          get: () => undefined,
-          set: () => {},
-          remove: () => {}
         }
       }
     );
