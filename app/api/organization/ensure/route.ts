@@ -24,8 +24,26 @@ export async function POST(request: NextRequest) {
     console.log("[ORG ENSURE] User authenticated:", user.id);
 
     // Use admin client to bypass RLS for organization operations
-    const adminClient = createAdminClient();
-    console.log("[ORG ENSURE] Admin client created");
+    let adminClient;
+    try {
+      adminClient = createAdminClient();
+      console.log("[ORG ENSURE] Admin client created successfully");
+    } catch (adminError) {
+      console.error("[ORG ENSURE] Failed to create admin client:", adminError);
+      return NextResponse.json(
+        { error: "Admin client creation failed", details: String(adminError) },
+        { status: 500 }
+      );
+    }
+    
+    // Verify SERVICE_ROLE_KEY is set
+    if (!process.env.SUPABASE_SERVICE_ROLE_KEY) {
+      console.error("[ORG ENSURE] SUPABASE_SERVICE_ROLE_KEY is not set!");
+      return NextResponse.json(
+        { error: "Server configuration error: Missing SERVICE_ROLE_KEY" },
+        { status: 500 }
+      );
+    }
 
     // Check if user already has an organization
     console.log("[ORG ENSURE] Checking for existing organization for user:", user.id);
