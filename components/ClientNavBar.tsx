@@ -143,7 +143,7 @@ export default function ClientNavBar() {
         <div className="flex justify-between items-center h-20 sm:h-24 md:h-28">
           {/* Logo - Top-left on desktop, centered on mobile */}
           <div className="flex-shrink-0 md:-ml-4 flex justify-center md:justify-start w-full md:w-auto">
-            <Link href={isAuthenticated ? (venueId ? `/dashboard/${venueId}` : "/dashboard") : "/"} className="flex items-center group">
+            <Link href={isAuthenticated ? (venueId ? `/dashboard/${venueId}` : (primaryVenueId ? `/dashboard/${primaryVenueId}` : "/")) : "/"} className="flex items-center group">
               <Image
                 src="/assets/servio-logo-updated.png"
                 alt="Servio"
@@ -165,13 +165,13 @@ export default function ClientNavBar() {
                     // On dashboard pages: Home, Settings, Sign Out
                     <>
                       <Link
-                        href="/dashboard"
+                        href={venueId ? `/dashboard/${venueId}` : (primaryVenueId ? `/dashboard/${primaryVenueId}` : "/")}
                         className="text-gray-900 hover:text-gray-900 px-3 py-2 rounded-md text-sm font-medium transition-colors"
                       >
                         Home
                       </Link>
                       <Link
-                        href={venueId ? `/dashboard/${venueId}/settings` : "/dashboard"}
+                        href={venueId ? `/dashboard/${venueId}/settings` : (primaryVenueId ? `/dashboard/${primaryVenueId}/settings` : "/")}
                         className="text-gray-900 hover:text-gray-900 px-3 py-2 rounded-md text-sm font-medium transition-colors flex items-center"
                       >
                         <Settings className="mr-2 h-4 w-4" />
@@ -182,13 +182,13 @@ export default function ClientNavBar() {
                     // On home page: Dashboard, Settings, Sign Out
                     <>
                       <Link
-                        href="/dashboard"
+                        href={venueId ? `/dashboard/${venueId}` : (primaryVenueId ? `/dashboard/${primaryVenueId}` : "/")}
                         className="text-gray-900 hover:text-gray-900 px-3 py-2 rounded-md text-sm font-medium transition-colors"
                       >
                         Dashboard
                       </Link>
                       <Link
-                        href={venueId ? `/dashboard/${venueId}/settings` : "/dashboard"}
+                        href={venueId ? `/dashboard/${venueId}/settings` : (primaryVenueId ? `/dashboard/${primaryVenueId}/settings` : "/")}
                         className="text-gray-900 hover:text-gray-900 px-3 py-2 rounded-md text-sm font-medium transition-colors flex items-center"
                       >
                         <Settings className="mr-2 h-4 w-4" />
@@ -265,14 +265,14 @@ export default function ClientNavBar() {
                   // On dashboard pages: Home, Settings, Sign Out
                   <>
                     <Link
-                      href="/dashboard"
+                      href={venueId ? `/dashboard/${venueId}` : (primaryVenueId ? `/dashboard/${primaryVenueId}` : "/")}
                       className="text-gray-900 hover:text-servio-purple hover:bg-servio-purple/5 block px-4 py-3 rounded-xl text-base font-semibold transition-all duration-200"
                       onClick={() => setMobileMenuOpen(false)}
                     >
                       Home
                     </Link>
                     <Link
-                      href={venueId ? `/dashboard/${venueId}/settings` : "/dashboard"}
+                      href={venueId ? `/dashboard/${venueId}/settings` : (primaryVenueId ? `/dashboard/${primaryVenueId}/settings` : "/")}
                       className="text-gray-900 hover:text-servio-purple hover:bg-servio-purple/5 block px-4 py-3 rounded-xl text-base font-semibold transition-all duration-200 flex items-center"
                       onClick={() => setMobileMenuOpen(false)}
                     >
@@ -284,14 +284,14 @@ export default function ClientNavBar() {
                   // On home page: Dashboard, Settings, Sign Out
                   <>
                     <Link
-                      href="/dashboard"
+                      href={venueId ? `/dashboard/${venueId}` : (primaryVenueId ? `/dashboard/${primaryVenueId}` : "/")}
                       className="text-gray-900 hover:text-servio-purple hover:bg-servio-purple/5 block px-4 py-3 rounded-xl text-base font-semibold transition-all duration-200"
                       onClick={() => setMobileMenuOpen(false)}
                     >
                       Dashboard
                     </Link>
                     <Link
-                      href="/dashboard"
+                      href={venueId ? `/dashboard/${venueId}/settings` : (primaryVenueId ? `/dashboard/${primaryVenueId}/settings` : "/")}
                       className="text-gray-900 hover:text-servio-purple hover:bg-servio-purple/5 block px-4 py-3 rounded-xl text-base font-semibold transition-all duration-200"
                       onClick={() => setMobileMenuOpen(false)}
                     >

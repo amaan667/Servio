@@ -111,8 +111,24 @@ function CallbackContent() {
         }
         
         if (existingSession) {
-          addDebugLog('[AUTH CALLBACK] Session already exists, redirecting to dashboard');
-          router.push('/dashboard');
+          addDebugLog('[AUTH CALLBACK] Session already exists, fetching primary venue...');
+          
+          // Fetch primary venue to redirect to venue-specific dashboard
+          const { data: venues, error: venueError } = await supabaseBrowser()
+            .from('venues')
+            .select('venue_id')
+            .eq('owner_user_id', existingSession.user.id)
+            .order('created_at', { ascending: true })
+            .limit(1);
+          
+          if (venueError || !venues || venues.length === 0) {
+            addDebugLog('[AUTH CALLBACK] No venue found or error, redirecting to home');
+            router.push('/');
+            return;
+          }
+          
+          addDebugLog(`[AUTH CALLBACK] Redirecting to dashboard for venue: ${venues[0].venue_id}`);
+          router.push(`/dashboard/${venues[0].venue_id}`);
           return;
         }
 
@@ -203,8 +219,24 @@ function CallbackContent() {
             }
             
             if (retryData?.session) {
-              addDebugLog('[AUTH CALLBACK] Fallback authentication successful, redirecting to dashboard');
-              router.push('/dashboard');
+              addDebugLog('[AUTH CALLBACK] Fallback authentication successful, fetching primary venue...');
+              
+              // Fetch primary venue to redirect to venue-specific dashboard
+              const { data: venues, error: venueError } = await supabaseBrowser()
+                .from('venues')
+                .select('venue_id')
+                .eq('owner_user_id', retryData.session.user.id)
+                .order('created_at', { ascending: true })
+                .limit(1);
+              
+              if (venueError || !venues || venues.length === 0) {
+                addDebugLog('[AUTH CALLBACK] No venue found or error, redirecting to home');
+                router.push('/');
+                return;
+              }
+              
+              addDebugLog(`[AUTH CALLBACK] Redirecting to dashboard for venue: ${venues[0].venue_id}`);
+              router.push(`/dashboard/${venues[0].venue_id}`);
               return;
             }
           } catch (fallbackErr: any) {
