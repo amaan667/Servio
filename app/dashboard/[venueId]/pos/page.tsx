@@ -1,4 +1,4 @@
-import POSDashboardClient from './pos-dashboard-client';
+import { POSDashboardClient } from './pos-dashboard-client';
 import NavigationBreadcrumb from '@/components/navigation-breadcrumb';
 
 export default async function POSPage({ params }: { params: Promise<{ venueId: string }> }) {

@@ -51,7 +51,7 @@ export default function AnalyticsClientSimple({ venueId, venueName }: Props) {
           console.error('[ANALYTICS] Error loading menu items:', menuError);
         }
 
-        const totalRevenue = orders?.reduce((sum, order) => sum + (Number(order.total_amount) || 0), 0) || 0;
+        const totalRevenue = orders?.reduce((sum: number, order: any) => sum + (Number(order.total_amount) || 0), 0) || 0;
         const totalOrders = orders?.length || 0;
         const averageOrderValue = totalOrders > 0 ? totalRevenue / totalOrders : 0;
 
