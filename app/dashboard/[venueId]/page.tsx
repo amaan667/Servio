@@ -5,7 +5,7 @@ import { redirect } from 'next/navigation';
 import { createServerSupabase } from '@/lib/supabase-server';
 import { hasServerAuthCookie } from '@/lib/server-utils';
 import { log } from '@/lib/debug';
-import DashboardClient from './page.client';
+import SimpleDashboardClient from './page.client.simple';
 import { todayWindowForTZ } from '@/lib/time';
 import { EnhancedErrorBoundary } from '@/components/enhanced-error-boundary';
 
@@ -138,7 +138,7 @@ export default async function VenuePage({ params }: { params: Promise<{ venueId:
 
     return (
       <EnhancedErrorBoundary>
-        <DashboardClient 
+        <SimpleDashboardClient 
           venueId={venueId} 
           userId={user.id}
           venue={venue}
