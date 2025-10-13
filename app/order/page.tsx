@@ -348,7 +348,7 @@ export default function CustomerOrderPage() {
       const mappedItems = demoMenuItems.map((item, idx) => ({
         ...item,
         id: `demo-${idx}`,
-        available: true,
+        is_available: true,
         price: typeof item.price === "number" ? item.price : Number(item.price) || 0,
         // Ensure image property is properly set
         image: item.image || undefined,
