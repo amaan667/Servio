@@ -11,39 +11,18 @@ export default async function GenerateQRPage() {
   try {
     const supabase = await createServerSupabase();
 
-    const { data: { user }, error: userError } = await supabase.auth.getUser();
-    console.log('[GENERATE QR] Auth check:', { hasUser: !!user, error: userError?.message });
-    
-    if (userError) {
-      console.error('[GENERATE QR] Auth error:', userError);
-      redirect('/?auth_error=user_error');
-    }
-    
+    const { data: { user } } = await supabase.auth.getUser();
     if (!user) {
       console.log('[GENERATE QR] No user found, redirecting to home');
       redirect('/');
     }
 
-    console.log('[GENERATE QR] Looking up venue for user:', user.id);
-    
-    const { data: venue, error: venueError } = await supabase
+    const { data: venue } = await supabase
       .from('venues')
       .select('venue_id, name')
       .eq('owner_user_id', user.id)
       .limit(1)
       .maybeSingle();
-
-    console.log('[GENERATE QR] Venue lookup result:', { 
-      found: !!venue, 
-      error: venueError?.message,
-      venueId: venue?.venue_id,
-      venueName: venue?.name 
-    });
-
-    if (venueError) {
-      console.error('[GENERATE QR] Database error:', venueError);
-      redirect('/?auth_error=database_error');
-    }
 
     if (!venue) {
       console.log('[GENERATE QR] No venue found, redirecting to home');
@@ -53,25 +32,14 @@ export default async function GenerateQRPage() {
     let activeTablesCount = 0;
     
     try {
-      console.log('[GENERATE QR] Calling api_table_counters RPC for venue:', venue.venue_id);
-      
       const { data: countsData, error: countsError } = await supabase
         .rpc('api_table_counters', {
           p_venue_id: venue.venue_id
         });
       
-      console.log('[GENERATE QR] RPC result:', { 
-        data: countsData, 
-        error: countsError?.message,
-        hasData: !!countsData
-      });
-      
       if (!countsError) {
         const result = Array.isArray(countsData) ? countsData[0] : countsData;
         activeTablesCount = result?.total_tables || 0;
-        console.log('[GENERATE QR] Active tables count:', activeTablesCount);
-      } else {
-        console.error('[GENERATE QR] RPC error:', countsError);
       }
     } catch (queryError) {
       console.error('🔍 [QR PAGE] Active tables query failed:', queryError);
@@ -91,13 +59,11 @@ export default async function GenerateQRPage() {
           </p>
         </div>
         
-        <div className="error-boundary-wrapper">
-          <GenerateQRClientSimple 
-            venueId={venue.venue_id} 
-            venueName={venue.name} 
-            activeTablesCount={activeTablesCount}
-          />
-        </div>
+        <GenerateQRClientSimple 
+          venueId={venue.venue_id} 
+          venueName={venue.name} 
+          activeTablesCount={activeTablesCount}
+        />
       </div>
     </div>
   );
