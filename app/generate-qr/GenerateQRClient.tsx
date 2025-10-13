@@ -39,7 +39,7 @@ export default function GenerateQRClient({ venueId, venueName, activeTablesCount
       console.log('[GENERATE QR] URL parameters:', {
         tablesParam,
         tableParam,
-        fullUrl: window.location.href
+        fullUrl: typeof window !== 'undefined' ? window.location.href : 'server'
       });
       
       if (tablesParam) {
@@ -71,16 +71,24 @@ export default function GenerateQRClient({ venueId, venueName, activeTablesCount
   // Function to persist selected tables to localStorage
   const persistSelectedTables = (tables: string[]) => {
     if (typeof window !== 'undefined') {
-      const storageKey = `qr-selected-tables-${venueId}`;
-      localStorage.setItem(storageKey, JSON.stringify(tables));
+      try {
+        const storageKey = `qr-selected-tables-${venueId}`;
+        localStorage.setItem(storageKey, JSON.stringify(tables));
+      } catch (error) {
+        console.warn('[GENERATE QR] Failed to persist tables:', error);
+      }
     }
   };
 
   // Function to persist selected counters to localStorage
   const persistSelectedCounters = (counters: string[]) => {
     if (typeof window !== 'undefined') {
-      const storageKey = `qr-selected-counters-${venueId}`;
-      localStorage.setItem(storageKey, JSON.stringify(counters));
+      try {
+        const storageKey = `qr-selected-counters-${venueId}`;
+        localStorage.setItem(storageKey, JSON.stringify(counters));
+      } catch (error) {
+        console.warn('[GENERATE QR] Failed to persist counters:', error);
+      }
     }
   };
 

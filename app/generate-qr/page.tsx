@@ -5,7 +5,7 @@ import { redirect } from 'next/navigation';
 import { createServerSupabase } from '@/lib/supabase-server';
 import { hasServerAuthCookie } from '@/lib/server-utils';
 import NavigationBreadcrumb from '@/components/navigation-breadcrumb';
-import GenerateQRClient from './GenerateQRClient';
+import GenerateQRClientSimple from './GenerateQRClient.simple';
 
 export default async function GenerateQRPage() {
   try {
@@ -59,7 +59,7 @@ export default async function GenerateQRPage() {
           </p>
         </div>
         
-        <GenerateQRClient 
+        <GenerateQRClientSimple 
           venueId={venue.venue_id} 
           venueName={venue.name} 
           activeTablesCount={activeTablesCount}

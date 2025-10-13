@@ -48,7 +48,7 @@ export default async function InventoryPage({
   // Verify user owns this venue
   const { data: venue } = await supabase
     .from('venues')
-    .select('venue_id, name')
+    .select('venue_id, venue_name')
     .eq('venue_id', venueId)
     .eq('owner_user_id', user.id)
     .maybeSingle();
@@ -68,7 +68,7 @@ export default async function InventoryPage({
         
         <div className="mb-8">
           <h1 className="text-3xl font-bold tracking-tight text-foreground">
-            Inventory for {venue.venue_name}
+            Inventory for {venue.venue_name || 'Your Venue'}
           </h1>
           <p className="text-lg text-foreground mt-2">
             Track ingredients, manage stock levels, and control costs
