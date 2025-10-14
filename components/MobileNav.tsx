@@ -96,7 +96,7 @@ export default function MobileNav({ venueId, venueName, counts = {} }: MobileNav
       label: 'Menu Builder',
       href: `/menu-builder?venue=${venueId}`,
       icon: ShoppingBag,
-      description: 'Design and manage menu',
+      description: 'Design, manage, and customize menu',
       isActive: pathname === '/menu-builder'
     },
     {

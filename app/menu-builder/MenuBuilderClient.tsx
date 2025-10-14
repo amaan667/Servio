@@ -42,7 +42,7 @@ export default function MenuBuilderClient({ venueId, venueName }: { venueId: str
     available: true
   });
   const [isClearing, setIsClearing] = useState(false);
-  const [activeTab, setActiveTab] = useState<'design' | 'manage' | 'preview'>('design');
+  const [activeTab, setActiveTab] = useState<'manage' | 'design' | 'preview'>('manage');
   const { toast } = useToast();
   const router = useRouter();
 
@@ -417,15 +417,6 @@ export default function MenuBuilderClient({ venueId, venueName }: { venueId: str
         
         <div className="flex items-center space-x-2">
           <Button
-            variant={activeTab === 'design' ? 'default' : 'outline'}
-            size="sm"
-            onClick={() => setActiveTab('design')}
-            className="flex items-center gap-2"
-          >
-            <Palette className="h-4 w-4" />
-            Design
-          </Button>
-          <Button
             variant={activeTab === 'manage' ? 'default' : 'outline'}
             size="sm"
             onClick={() => setActiveTab('manage')}
@@ -433,6 +424,15 @@ export default function MenuBuilderClient({ venueId, venueName }: { venueId: str
           >
             <Settings className="h-4 w-4" />
             Manage
+          </Button>
+          <Button
+            variant={activeTab === 'design' ? 'default' : 'outline'}
+            size="sm"
+            onClick={() => setActiveTab('design')}
+            className="flex items-center gap-2"
+          >
+            <Palette className="h-4 w-4" />
+            Design
           </Button>
           <Button
             variant={activeTab === 'preview' ? 'default' : 'outline'}
@@ -445,6 +445,157 @@ export default function MenuBuilderClient({ venueId, venueName }: { venueId: str
           </Button>
         </div>
       </div>
+
+      {/* Manage Tab */}
+      {activeTab === 'manage' && (
+        <div className="space-y-6">
+          <div className="flex items-center justify-between">
+            <h2 className="text-xl font-semibold">Menu Management</h2>
+            <div className="flex items-center gap-2">
+              <Button onClick={exportMenu} variant="outline" size="sm">
+                <Download className="h-4 w-4 mr-2" />
+                Export
+              </Button>
+              <Dialog open={isAddModalOpen} onOpenChange={setIsAddModalOpen}>
+                <DialogTrigger asChild>
+                  <Button>
+                    <Plus className="h-4 w-4 mr-2" />
+                    Add Item
+                  </Button>
+                </DialogTrigger>
+                <DialogContent>
+                  <DialogHeader>
+                    <DialogTitle>Add Menu Item</DialogTitle>
+                  </DialogHeader>
+                  <form onSubmit={handleAddItem} className="space-y-4">
+                    <div>
+                      <Label htmlFor="name">Name *</Label>
+                      <Input
+                        id="name"
+                        value={formData.name}
+                        onChange={(e) => setFormData({ ...formData, name: e.target.value })}
+                        placeholder="Enter item name"
+                        required
+                      />
+                    </div>
+                    <div>
+                      <Label htmlFor="description">Description</Label>
+                      <Textarea
+                        id="description"
+                        value={formData.description}
+                        onChange={(e) => setFormData({ ...formData, description: e.target.value })}
+                        placeholder="Enter item description"
+                        rows={3}
+                      />
+                    </div>
+                    <div>
+                      <Label htmlFor="price">Price *</Label>
+                      <Input
+                        id="price"
+                        type="number"
+                        step="0.01"
+                        value={formData.price}
+                        onChange={(e) => setFormData({ ...formData, price: e.target.value })}
+                        placeholder="0.00"
+                        required
+                      />
+                    </div>
+                    <div>
+                      <Label htmlFor="category">Category</Label>
+                      <Input
+                        id="category"
+                        value={formData.category}
+                        onChange={(e) => setFormData({ ...formData, category: e.target.value })}
+                        placeholder="Enter category"
+                      />
+                    </div>
+                    <div className="flex items-center space-x-2">
+                      <ToggleSwitch
+                        checked={formData.available}
+                        onCheckedChange={(checked) => setFormData({ ...formData, available: checked })}
+                      />
+                      <Label>Available</Label>
+                    </div>
+                    <div className="flex justify-end space-x-2">
+                      <Button type="button" variant="outline" onClick={() => setIsAddModalOpen(false)}>
+                        Cancel
+                      </Button>
+                      <Button type="submit">Add Item</Button>
+                    </div>
+                  </form>
+                </DialogContent>
+              </Dialog>
+            </div>
+          </div>
+
+          {/* Categories */}
+          <div className="space-y-4">
+            {getCategories().map((category) => {
+              const items = getItemsByCategory(category);
+              const isExpanded = expandedCategories.has(category);
+              
+              return (
+                <Card key={category}>
+                  <CardHeader 
+                    className="cursor-pointer"
+                    onClick={() => toggleCategory(category)}
+                  >
+                    <div className="flex items-center justify-between">
+                      <CardTitle className="text-lg flex items-center gap-2">
+                        {isExpanded ? <ChevronDown className="h-4 w-4" /> : <ChevronRight className="h-4 w-4" />}
+                        {category}
+                        <span className="text-sm font-normal text-muted-foreground">
+                          ({items.length} items)
+                        </span>
+                      </CardTitle>
+                    </div>
+                  </CardHeader>
+                  {isExpanded && (
+                    <CardContent>
+                      <div className="space-y-3">
+                        {items.map((item) => (
+                          <div key={item.id} className="flex items-center justify-between p-3 border rounded-lg">
+                            <div className="flex-1">
+                              <div className="flex items-center gap-2">
+                                <h4 className="font-medium">{item.name}</h4>
+                                {!item.is_available && (
+                                  <span className="text-xs bg-red-100 text-red-800 px-2 py-1 rounded">
+                                    Unavailable
+                                  </span>
+                                )}
+                              </div>
+                              {item.description && (
+                                <p className="text-sm text-muted-foreground mt-1">{item.description}</p>
+                              )}
+                              <p className="text-sm font-medium text-green-600 mt-1">${item.price.toFixed(2)}</p>
+                            </div>
+                            <div className="flex items-center gap-2">
+                              <Button
+                                variant="outline"
+                                size="sm"
+                                onClick={() => startEdit(item)}
+                              >
+                                <Edit className="h-4 w-4" />
+                              </Button>
+                              <Button
+                                variant="outline"
+                                size="sm"
+                                onClick={() => handleDeleteItem(item.id)}
+                              >
+                                <Trash2 className="h-4 w-4" />
+                              </Button>
+                            </div>
+                          </div>
+                        ))}
+                      </div>
+                    </CardContent>
+                  )}
+                </Card>
+              );
+            })}
+          </div>
+        </div>
+      )}
 
       {/* Design Tab */}
       {activeTab === 'design' && (
@@ -661,42 +812,6 @@ export default function MenuBuilderClient({ venueId, venueName }: { venueId: str
         </div>
       )}
 
-      {/* Manage Tab */}
-      {activeTab === 'manage' && (
-        <div className="space-y-6">
-          <Card>
-            <CardHeader>
-              <CardTitle>Bulk Management</CardTitle>
-            </CardHeader>
-            <CardContent>
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                <div className="space-y-2">
-                  <h4 className="font-medium">Categories</h4>
-                  <Button 
-                    variant="outline" 
-                    className="w-full justify-start"
-                    onClick={() => setShowCategories(true)}
-                  >
-                    <Layout className="h-4 w-4 mr-2" />
-                    Manage Categories
-                  </Button>
-                </div>
-                <div className="space-y-2">
-                  <h4 className="font-medium">Data</h4>
-                  <Button 
-                    variant="outline" 
-                    className="w-full justify-start"
-                    onClick={exportMenu}
-                  >
-                    <Download className="h-4 w-4 mr-2" />
-                    Export Menu
-                  </Button>
-                </div>
-              </div>
-            </CardContent>
-          </Card>
-        </div>
-      )}
 
       {/* Preview Tab */}
       {activeTab === 'preview' && (

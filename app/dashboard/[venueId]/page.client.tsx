@@ -675,7 +675,7 @@ const VenueDashboardClient = React.memo(function VenueDashboardClient({
                   <ShoppingBag className="h-5 w-5 sm:h-6 sm:w-6 text-orange-600" />
                 </div>
                 <h3 className="text-base sm:text-lg font-semibold mb-2 text-foreground">Menu Builder</h3>
-                <p className="text-gray-700 text-xs sm:text-sm font-medium">Design and manage your menu with our intuitive builder</p>
+                <p className="text-gray-700 text-xs sm:text-sm font-medium">Design, manage, and customize your menu</p>
               </CardContent>
             </Card>
           </Link>
