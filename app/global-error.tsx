@@ -1,6 +1,11 @@
 "use client";
 
 export default function GlobalError({ error }: { error: Error & { digest?: string } }) {
+  // Don't render error UI for NEXT_REDIRECT errors
+  if (error.message === 'NEXT_REDIRECT' || error.name === 'NEXT_REDIRECT') {
+    return null;
+  }
+
   return (
     <html>
       <body style={{padding:24,fontFamily:"system-ui",margin:0,display:"flex",alignItems:"center",justifyContent:"center",minHeight:"100vh",backgroundColor:"#f9fafb"}}>
