@@ -364,7 +364,10 @@ export function TableCardNew({ table, venueId, onActionComplete, availableTables
     }
   };
 
-  const qrHref = `/dashboard/${venueId}/qr-codes`;
+  const handleQRCodeClick = () => {
+    // Navigate to QR generation page with this table pre-selected
+    router.push(`/generate-qr?table=${encodeURIComponent(table.id)}`);
+  };
 
   return (
     <Card 
@@ -411,15 +414,13 @@ export function TableCardNew({ table, venueId, onActionComplete, availableTables
                     variant="ghost"
                     size="sm"
                     className="h-8 w-8 p-0"
-                    asChild
+                    onClick={handleQRCodeClick}
                   >
-                    <a href={qrHref} target="_blank" rel="noopener noreferrer">
-                      <QrCode className="h-4 w-4" />
-                    </a>
+                    <QrCode className="h-4 w-4" />
                   </Button>
                 </TooltipTrigger>
                 <TooltipContent>
-                  <p>Assign QR Code</p>
+                  <p>Generate QR Code</p>
                 </TooltipContent>
               </Tooltip>
             </TooltipProvider>
