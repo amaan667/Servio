@@ -243,8 +243,13 @@ export default function QRCodeClient({ venueId, venueName }: { venueId: string; 
 
   const getQRUrl = (tableId: string, isCounter: boolean = false, counterName?: string) => {
     const baseUrl = window.location.origin;
-    const tableParam = isCounter ? `counter=${counterName || 'counter'}` : `table=${tableId}`;
-    return `${baseUrl}/order?venue=${venueId}&${tableParam}`;
+    if (isCounter) {
+      return `${baseUrl}/order?venue=${venueId}&counter=${encodeURIComponent(counterName || 'counter')}`;
+    } else {
+      // For tables, we need to find the table number from the tableId
+      const table = tables.find(t => t.id === tableId);
+      return `${baseUrl}/order?venue=${venueId}&table=${table?.table_number || tableId}`;
+    }
   };
 
   const copyToClipboard = (text: string) => {
@@ -252,6 +257,201 @@ export default function QRCodeClient({ venueId, venueName }: { venueId: string; 
     toast({
       title: "Copied",
       description: "QR code URL copied to clipboard",
+    });
+  };
+
+  const downloadQRCode = (qrUrl: string, name: string, type: 'table' | 'counter') => {
+    // Create a canvas to generate the QR code as an image
+    const canvas = document.createElement('canvas');
+    const ctx = canvas.getContext('2d');
+    if (!ctx) return;
+
+    // Set canvas size based on selected size
+    const baseSize = 300;
+    const size = qrCodeSize === 'small' ? 200 : qrCodeSize === 'large' ? 400 : baseSize;
+    canvas.width = size;
+    canvas.height = size;
+
+    // Create a temporary QR code element to get the image
+    const tempDiv = document.createElement('div');
+    tempDiv.style.position = 'absolute';
+    tempDiv.style.left = '-9999px';
+    tempDiv.style.width = `${size}px`;
+    tempDiv.style.height = `${size}px`;
+    document.body.appendChild(tempDiv);
+
+    // Generate QR code using the existing component logic
+    import('qrcode').then((QRCode) => {
+      QRCode.toCanvas(canvas, qrUrl, {
+        width: size,
+        margin: 2,
+        color: {
+          dark: '#000000',
+          light: '#FFFFFF'
+        }
+      }).then(() => {
+        // Add venue info if enabled
+        if (includeVenueInfo) {
+          const textCanvas = document.createElement('canvas');
+          const textCtx = textCanvas.getContext('2d');
+          if (textCtx) {
+            textCanvas.width = size;
+            textCanvas.height = size + 60; // Extra space for text
+            
+            // Fill background
+            textCtx.fillStyle = '#FFFFFF';
+            textCtx.fillRect(0, 0, textCanvas.width, textCanvas.height);
+            
+            // Draw QR code
+            textCtx.drawImage(canvas, 0, 0);
+            
+            // Add text
+            textCtx.fillStyle = '#000000';
+            textCtx.font = 'bold 16px Arial';
+            textCtx.textAlign = 'center';
+            textCtx.fillText(`${type === 'table' ? 'Table' : 'Counter'}: ${name}`, size/2, size + 25);
+            
+            if (venueName) {
+              textCtx.font = '14px Arial';
+              textCtx.fillText(venueName, size/2, size + 45);
+            }
+            
+            // Download the image
+            const link = document.createElement('a');
+            link.download = `qr-${type}-${name}-${venueName || 'venue'}.png`;
+            link.href = textCanvas.toDataURL();
+            link.click();
+          }
+        } else {
+          // Download just the QR code
+          const link = document.createElement('a');
+          link.download = `qr-${type}-${name}.png`;
+          link.href = canvas.toDataURL();
+          link.click();
+        }
+        
+        document.body.removeChild(tempDiv);
+        toast({
+          title: "Downloaded",
+          description: `QR code for ${type} ${name} downloaded successfully`,
+        });
+      }).catch((error: any) => {
+        console.error('Error generating QR code:', error);
+        document.body.removeChild(tempDiv);
+        toast({
+          title: "Error",
+          description: "Failed to generate QR code for download",
+          variant: "destructive",
+        });
+      });
+    });
+  };
+
+  const printQRCode = (qrUrl: string, name: string, type: 'table' | 'counter') => {
+    // Create a new window for printing
+    const printWindow = window.open('', '_blank');
+    if (!printWindow) return;
+
+    const printContent = `
+      <!DOCTYPE html>
+      <html>
+        <head>
+          <title>QR Code - ${type === 'table' ? 'Table' : 'Counter'} ${name}</title>
+          <style>
+            body {
+              margin: 0;
+              padding: 20px;
+              font-family: Arial, sans-serif;
+              display: flex;
+              flex-direction: column;
+              align-items: center;
+              justify-content: center;
+              min-height: 100vh;
+            }
+            .qr-container {
+              text-align: center;
+              page-break-inside: avoid;
+            }
+            .qr-code {
+              margin: 20px 0;
+            }
+            .qr-title {
+              font-size: 24px;
+              font-weight: bold;
+              margin-bottom: 10px;
+            }
+            .qr-subtitle {
+              font-size: 18px;
+              margin-bottom: 5px;
+            }
+            .venue-name {
+              font-size: 16px;
+              color: #666;
+              margin-top: 10px;
+            }
+            .instructions {
+              margin-top: 30px;
+              font-size: 14px;
+              color: #666;
+              max-width: 300px;
+              text-align: center;
+            }
+            @media print {
+              body { margin: 0; padding: 10px; }
+              .qr-container { margin: 0; }
+            }
+          </style>
+        </head>
+        <body>
+          <div class="qr-container">
+            <div class="qr-title">${type === 'table' ? 'Table' : 'Counter'}: ${name}</div>
+            ${venueName ? `<div class="venue-name">${venueName}</div>` : ''}
+            <div class="qr-code">
+              <canvas id="qrcode"></canvas>
+            </div>
+            ${includeInstructions ? `
+              <div class="instructions">
+                <strong>How to use:</strong><br>
+                1. Scan this QR code with your phone<br>
+                2. View the menu and place your order<br>
+                3. Your order will be prepared fresh!
+              </div>
+            ` : ''}
+          </div>
+          
+          <script src="https://cdn.jsdelivr.net/npm/qrcode@1.5.3/build/qrcode.min.js"></script>
+          <script>
+            const canvas = document.getElementById('qrcode');
+            const size = ${qrCodeSize === 'small' ? 200 : qrCodeSize === 'large' ? 400 : 300};
+            QRCode.toCanvas(canvas, '${qrUrl}', {
+              width: size,
+              margin: 2,
+              color: {
+                dark: '#000000',
+                light: '#FFFFFF'
+              }
+            }, function (error) {
+              if (error) console.error(error);
+            });
+          </script>
+        </body>
+      </html>
+    `;
+
+    printWindow.document.write(printContent);
+    printWindow.document.close();
+    
+    // Wait for QR code to load, then print
+    printWindow.onload = () => {
+      setTimeout(() => {
+        printWindow.print();
+        printWindow.close();
+      }, 1000);
+    };
+
+    toast({
+      title: "Print Preview",
+      description: `Print preview opened for ${type} ${name}`,
     });
   };
 
@@ -491,9 +691,174 @@ export default function QRCodeClient({ venueId, venueName }: { venueId: string; 
         {/* Right Panel - QR Code Preview */}
         <Card>
           <CardHeader>
-            <CardTitle className="flex items-center space-x-2">
-              <Printer className="h-5 w-5" />
-              <span>Preview and download your QR codes</span>
+            <CardTitle className="flex items-center justify-between">
+              <div className="flex items-center space-x-2">
+                <Printer className="h-5 w-5" />
+                <span>Preview and download your QR codes</span>
+              </div>
+              {(selectedTables.length > 0 || selectedCounters.length > 0) && (
+                <div className="flex space-x-2">
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={() => {
+                      // Download all selected QR codes
+                      const allSelected = [
+                        ...selectedTables.map(num => ({ type: 'table' as const, name: num.toString(), number: num })),
+                        ...selectedCounters.map(name => ({ type: 'counter' as const, name, number: name }))
+                      ];
+                      
+                      allSelected.forEach((item, index) => {
+                        const qrUrl = item.type === 'table' 
+                          ? getQRUrl(tables.find(t => t.table_number === parseInt(item.name))?.id || '', false)
+                          : getQRUrl(counters.find(c => c.name === item.name)?.id || '', true, item.name);
+                        
+                        setTimeout(() => {
+                          downloadQRCode(qrUrl, item.name, item.type);
+                        }, index * 500); // Stagger downloads
+                      });
+                    }}
+                  >
+                    <Download className="h-4 w-4 mr-2" />
+                    Download All
+                  </Button>
+                  <Button
+                    variant="default"
+                    size="sm"
+                    onClick={() => {
+                      // Print all selected QR codes
+                      const allSelected = [
+                        ...selectedTables.map(num => ({ type: 'table' as const, name: num.toString(), number: num })),
+                        ...selectedCounters.map(name => ({ type: 'counter' as const, name, number: name }))
+                      ];
+                      
+                      // Create a print window with all QR codes
+                      const printWindow = window.open('', '_blank');
+                      if (!printWindow) return;
+
+                      const qrCodesHtml = allSelected.map(item => {
+                        const qrUrl = item.type === 'table' 
+                          ? getQRUrl(tables.find(t => t.table_number === parseInt(item.name))?.id || '', false)
+                          : getQRUrl(counters.find(c => c.name === item.name)?.id || '', true, item.name);
+                        
+                        return `
+                          <div class="qr-item" style="margin-bottom: 30px; page-break-inside: avoid;">
+                            <div class="qr-title">${item.type === 'table' ? 'Table' : 'Counter'}: ${item.name}</div>
+                            ${venueName ? `<div class="venue-name">${venueName}</div>` : ''}
+                            <div class="qr-code">
+                              <canvas id="qrcode-${item.type}-${item.name.replace(/\s+/g, '-')}"></canvas>
+                            </div>
+                            ${includeInstructions ? `
+                              <div class="instructions">
+                                <strong>How to use:</strong><br>
+                                1. Scan this QR code with your phone<br>
+                                2. View the menu and place your order<br>
+                                3. Your order will be prepared fresh!
+                              </div>
+                            ` : ''}
+                          </div>
+                        `;
+                      }).join('');
+
+                      const printContent = `
+                        <!DOCTYPE html>
+                        <html>
+                          <head>
+                            <title>QR Codes - ${venueName}</title>
+                            <style>
+                              body {
+                                margin: 0;
+                                padding: 20px;
+                                font-family: Arial, sans-serif;
+                              }
+                              .qr-container {
+                                display: grid;
+                                grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+                                gap: 20px;
+                              }
+                              .qr-item {
+                                text-align: center;
+                                border: 1px solid #ddd;
+                                padding: 20px;
+                                border-radius: 8px;
+                              }
+                              .qr-title {
+                                font-size: 20px;
+                                font-weight: bold;
+                                margin-bottom: 10px;
+                              }
+                              .venue-name {
+                                font-size: 14px;
+                                color: #666;
+                                margin-bottom: 15px;
+                              }
+                              .qr-code {
+                                margin: 15px 0;
+                              }
+                              .instructions {
+                                margin-top: 15px;
+                                font-size: 12px;
+                                color: #666;
+                                max-width: 250px;
+                                margin-left: auto;
+                                margin-right: auto;
+                              }
+                              @media print {
+                                body { margin: 0; padding: 10px; }
+                                .qr-container { gap: 10px; }
+                                .qr-item { page-break-inside: avoid; }
+                              }
+                            </style>
+                          </head>
+                          <body>
+                            <h1 style="text-align: center; margin-bottom: 30px;">QR Codes - ${venueName}</h1>
+                            <div class="qr-container">
+                              ${qrCodesHtml}
+                            </div>
+                            
+                            <script src="https://cdn.jsdelivr.net/npm/qrcode@1.5.3/build/qrcode.min.js"></script>
+                            <script>
+                              ${allSelected.map(item => {
+                                const qrUrl = item.type === 'table' 
+                                  ? getQRUrl(tables.find(t => t.table_number === parseInt(item.name))?.id || '', false)
+                                  : getQRUrl(counters.find(c => c.name === item.name)?.id || '', true, item.name);
+                                
+                                return `
+                                  const canvas${item.type}${item.name.replace(/\s+/g, '')} = document.getElementById('qrcode-${item.type}-${item.name.replace(/\s+/g, '-')}');
+                                  const size = ${qrCodeSize === 'small' ? 150 : qrCodeSize === 'large' ? 250 : 200};
+                                  QRCode.toCanvas(canvas${item.type}${item.name.replace(/\s+/g, '')}, '${qrUrl}', {
+                                    width: size,
+                                    margin: 2,
+                                    color: { dark: '#000000', light: '#FFFFFF' }
+                                  });
+                                `;
+                              }).join('')}
+                            </script>
+                          </body>
+                        </html>
+                      `;
+
+                      printWindow.document.write(printContent);
+                      printWindow.document.close();
+                      
+                      printWindow.onload = () => {
+                        setTimeout(() => {
+                          printWindow.print();
+                          printWindow.close();
+                        }, 2000);
+                      };
+
+                      toast({
+                        title: "Print Preview",
+                        description: `Print preview opened for ${allSelected.length} QR codes`,
+                      });
+                    }}
+                  >
+                    <Printer className="h-4 w-4 mr-2" />
+                    Print All
+                  </Button>
+                </div>
+              )}
             </CardTitle>
           </CardHeader>
           <CardContent>
@@ -513,8 +878,7 @@ export default function QRCodeClient({ venueId, venueName }: { venueId: string; 
                       <Button onClick={() => {
                         const tableNumber = prompt('Enter table number:');
                         if (tableNumber && !isNaN(parseInt(tableNumber))) {
-                          setNewTableNumber(tableNumber);
-                          addTable();
+                          addTable(tableNumber);
                         }
                       }}>
                         <Plus className="h-4 w-4 mr-2" />
@@ -528,8 +892,7 @@ export default function QRCodeClient({ venueId, venueName }: { venueId: string; 
                           const end = parseInt(endNum);
                           if (start <= end) {
                             for (let i = start; i <= end; i++) {
-                              setNewTableNumber(i.toString());
-                              setTimeout(() => addTable(), i * 100); // Stagger the requests
+                              setTimeout(() => addTable(i.toString()), (i - start) * 500); // Stagger the requests
                             }
                           }
                         }
@@ -543,8 +906,7 @@ export default function QRCodeClient({ venueId, venueName }: { venueId: string; 
                       <Button onClick={() => {
                         const counterName = prompt('Enter counter name:');
                         if (counterName && counterName.trim()) {
-                          setNewCounterName(counterName.trim());
-                          addCounter();
+                          addCounter(counterName.trim());
                         }
                       }}>
                         <Plus className="h-4 w-4 mr-2" />
@@ -555,8 +917,7 @@ export default function QRCodeClient({ venueId, venueName }: { venueId: string; 
                         if (counterNames && counterNames.trim()) {
                           const names = counterNames.split(',').map(name => name.trim()).filter(name => name);
                           names.forEach((name, index) => {
-                            setNewCounterName(name);
-                            setTimeout(() => addCounter(), index * 100); // Stagger the requests
+                            setTimeout(() => addCounter(name), index * 500); // Stagger the requests
                           });
                         }
                       }}>
@@ -593,24 +954,38 @@ export default function QRCodeClient({ venueId, venueName }: { venueId: string; 
                       }}>
                         <QRCodeDisplay currentUrl={qrUrl} venueName={venueName} />
                       </div>
-                      <div className="mt-3 flex items-center space-x-2">
+                      <div className="mt-3 grid grid-cols-2 gap-2">
                         <Button
                           variant="outline"
                           size="sm"
                           onClick={() => copyToClipboard(qrUrl)}
-                          className="flex-1"
                         >
                           <Copy className="h-3 w-3 mr-2" />
-                          Copy Link
+                          Copy
                         </Button>
                         <Button
                           variant="outline"
                           size="sm"
                           onClick={() => window.open(qrUrl, '_blank')}
-                          className="flex-1"
+                        >
+                          <Table className="h-3 w-3 mr-2" />
+                          Test
+                        </Button>
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          onClick={() => downloadQRCode(qrUrl, tableNumber.toString(), 'table')}
                         >
                           <Download className="h-3 w-3 mr-2" />
-                          Test
+                          Download
+                        </Button>
+                        <Button
+                          variant="default"
+                          size="sm"
+                          onClick={() => printQRCode(qrUrl, tableNumber.toString(), 'table')}
+                        >
+                          <Printer className="h-3 w-3 mr-2" />
+                          Print
                         </Button>
                       </div>
                     </div>
@@ -641,24 +1016,38 @@ export default function QRCodeClient({ venueId, venueName }: { venueId: string; 
                       }}>
                         <QRCodeDisplay currentUrl={qrUrl} venueName={venueName} />
                       </div>
-                      <div className="mt-3 flex items-center space-x-2">
+                      <div className="mt-3 grid grid-cols-2 gap-2">
                         <Button
                           variant="outline"
                           size="sm"
                           onClick={() => copyToClipboard(qrUrl)}
-                          className="flex-1"
                         >
                           <Copy className="h-3 w-3 mr-2" />
-                          Copy Link
+                          Copy
                         </Button>
                         <Button
                           variant="outline"
                           size="sm"
                           onClick={() => window.open(qrUrl, '_blank')}
-                          className="flex-1"
+                        >
+                          <Table className="h-3 w-3 mr-2" />
+                          Test
+                        </Button>
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          onClick={() => downloadQRCode(qrUrl, counterName, 'counter')}
                         >
                           <Download className="h-3 w-3 mr-2" />
-                          Test
+                          Download
+                        </Button>
+                        <Button
+                          variant="default"
+                          size="sm"
+                          onClick={() => printQRCode(qrUrl, counterName, 'counter')}
+                        >
+                          <Printer className="h-3 w-3 mr-2" />
+                          Print
                         </Button>
                       </div>
                     </div>
