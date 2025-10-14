@@ -158,7 +158,6 @@ export const NavigationGoToPageSchema = z.object({
     "kds",
     "kitchen-display",
     "qr-codes",
-    "generate-qr",
     "analytics",
     "settings",
     "staff",

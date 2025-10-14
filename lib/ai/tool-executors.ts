@@ -1527,7 +1527,6 @@ export async function executeNavigationGoToPage(
     "kds": `/dashboard/${venueId}/kds`,
     "kitchen-display": `/dashboard/${venueId}/kds`, // same as kds
     "qr-codes": `/dashboard/${venueId}/qr-codes`,
-    "generate-qr": `/dashboard/${venueId}/qr-codes`,
     "analytics": `/dashboard/${venueId}/analytics`,
     "settings": `/dashboard/${venueId}/settings`,
     "staff": `/dashboard/${venueId}/staff`,

@@ -10,7 +10,49 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { createClient } from "@/lib/supabase/client";
 import { QrCode, Plus, Trash2, Copy, Download, Settings, Table, Printer } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
-import QRCodeDisplay from "@/components/qr-code-display";
+
+// Simple QR Code Canvas Component
+function QRCodeCanvas({ url, size }: { url: string; size: number }) {
+  const [qrDataUrl, setQrDataUrl] = useState<string>("");
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    const generateQR = async () => {
+      try {
+        const QRCode = await import('qrcode');
+        const dataUrl = await QRCode.toDataURL(url, {
+          width: size,
+          margin: 2,
+          color: { dark: '#000000', light: '#ffffff' }
+        });
+        setQrDataUrl(dataUrl);
+      } catch (error) {
+        console.error('Error generating QR code:', error);
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    generateQR();
+  }, [url, size]);
+
+  if (loading) {
+    return (
+      <div className="flex items-center justify-center" style={{ width: size, height: size }}>
+        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-purple-600"></div>
+      </div>
+    );
+  }
+
+  return (
+    <img 
+      src={qrDataUrl} 
+      alt="QR Code" 
+      className="border rounded-lg"
+      style={{ width: size, height: size }}
+    />
+  );
+}
 
 export default function QRCodeClient({ venueId, venueName }: { venueId: string; venueName: string }) {
   const [tables, setTables] = useState<any[]>([]);
@@ -976,7 +1018,9 @@ export default function QRCodeClient({ venueId, venueName }: { venueId: string; 
                         transform: qrCodeSize === 'small' ? 'scale(0.67)' : qrCodeSize === 'large' ? 'scale(1.33)' : 'scale(1)',
                         transformOrigin: 'center'
                       }}>
-                        <QRCodeDisplay currentUrl={qrUrl} venueName={venueName} />
+                        <div className="flex justify-center">
+                          <QRCodeCanvas url={qrUrl} size={qrCodeSize === 'small' ? 150 : qrCodeSize === 'large' ? 250 : 200} />
+                        </div>
                       </div>
                       <div className="mt-3 grid grid-cols-2 gap-2">
                         <Button
@@ -1030,7 +1074,9 @@ export default function QRCodeClient({ venueId, venueName }: { venueId: string; 
                         transform: qrCodeSize === 'small' ? 'scale(0.67)' : qrCodeSize === 'large' ? 'scale(1.33)' : 'scale(1)',
                         transformOrigin: 'center'
                       }}>
-                        <QRCodeDisplay currentUrl={qrUrl} venueName={venueName} />
+                        <div className="flex justify-center">
+                          <QRCodeCanvas url={qrUrl} size={qrCodeSize === 'small' ? 150 : qrCodeSize === 'large' ? 250 : 200} />
+                        </div>
                       </div>
                       <div className="mt-3 grid grid-cols-2 gap-2">
                         <Button
