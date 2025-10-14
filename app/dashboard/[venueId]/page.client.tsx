@@ -178,15 +178,19 @@ const VenueDashboardClient = React.memo(function VenueDashboardClient({
     }
   }, [todayWindow, venue, venueTz]);
 
-  // Set up real-time subscription for orders to update counts and revenue instantly
+  // Set up real-time subscriptions for orders, tables, and menu items to update counts instantly
   useEffect(() => {
     if (!venue || !todayWindow) {
       return;
     }
 
+    console.log('[DASHBOARD] Setting up real-time subscriptions for venue:', venueId);
+    const supabase = createClient();
     
-    const channel = createClient()
-      .channel('dashboard-orders')
+    // Create a unified channel for all dashboard updates
+    const channel = supabase
+      .channel('dashboard-realtime')
+      // Subscribe to order changes
       .on('postgres_changes', 
         { 
           event: '*', 
@@ -195,6 +199,7 @@ const VenueDashboardClient = React.memo(function VenueDashboardClient({
           filter: `venue_id=eq.${venueId}`
         }, 
         async (payload: any) => {
+          console.log('[DASHBOARD] Order update received:', payload.eventType, payload.new?.id);
           
           // Get the order date from the payload with proper type checking
           const orderCreatedAt = (payload.new as any)?.created_at || (payload.old as any)?.created_at;
@@ -206,29 +211,91 @@ const VenueDashboardClient = React.memo(function VenueDashboardClient({
           const isInTodayWindow = orderCreatedAt >= todayWindow.startUtcISO && orderCreatedAt < todayWindow.endUtcISO;
           
           if (isInTodayWindow) {
-            
+            console.log('[DASHBOARD] Refreshing counts due to order change');
             // Always refresh counts for any order change
             await refreshCounts();
             
             // Update revenue incrementally for new orders to prevent flickering
-            if (payload.event === 'INSERT' && payload.new) {
+            if (payload.eventType === 'INSERT' && payload.new) {
               updateRevenueIncrementally(payload.new);
-            } else if (payload.event === 'UPDATE' && payload.new) {
+            } else if (payload.eventType === 'UPDATE' && payload.new) {
               // For order updates, we might need to recalculate revenue if order status changed
               // If order was cancelled or refunded, we should recalculate total revenue
               if (payload.new.order_status === 'CANCELLED' || payload.new.order_status === 'REFUNDED') {
                 await loadStats(venue.venue_id, todayWindow);
               }
             }
-          } else {
           }
         }
       )
-      .subscribe();
+      // Subscribe to table changes
+      .on('postgres_changes',
+        {
+          event: '*',
+          schema: 'public',
+          table: 'tables',
+          filter: `venue_id=eq.${venueId}`
+        },
+        async (payload: any) => {
+          console.log('[DASHBOARD] Table update received:', payload.eventType);
+          await refreshCounts();
+        }
+      )
+      // Subscribe to table session changes
+      .on('postgres_changes',
+        {
+          event: '*',
+          schema: 'public',
+          table: 'table_sessions',
+          filter: `venue_id=eq.${venueId}`
+        },
+        async (payload: any) => {
+          console.log('[DASHBOARD] Table session update received:', payload.eventType);
+          await refreshCounts();
+        }
+      )
+      // Subscribe to menu item changes
+      .on('postgres_changes',
+        {
+          event: '*',
+          schema: 'public',
+          table: 'menu_items',
+          filter: `venue_id=eq.${venueId}`
+        },
+        async (payload: any) => {
+          console.log('[DASHBOARD] Menu item update received:', payload.eventType);
+          // Refresh menu items count
+          try {
+            const { data: menuItems } = await supabase
+              .from("menu_items")
+              .select("id")
+              .eq("venue_id", venueId)
+              .eq("is_available", true);
+            
+            setStats(prev => ({
+              ...prev,
+              menuItems: menuItems?.length || 0
+            }));
+          } catch (error) {
+            console.error('[DASHBOARD] Error updating menu items count:', error);
+          }
+        }
+      )
+      .subscribe((status) => {
+        console.log('[DASHBOARD] Realtime subscription status:', status);
+        if (status === 'SUBSCRIBED') {
+          console.log('[DASHBOARD] ✓ Successfully subscribed to realtime updates');
+        } else if (status === 'CHANNEL_ERROR') {
+          console.error('[DASHBOARD] ✗ Realtime subscription error - falling back to polling');
+        } else if (status === 'TIMED_OUT') {
+          console.error('[DASHBOARD] ✗ Realtime subscription timed out');
+        }
+      });
 
     // Also listen for custom order events from other components
     const handleOrderCreated = (event: CustomEvent) => {
       if (event.detail.venueId === venueId) {
+        console.log('[DASHBOARD] Custom order created event received');
         // Trigger immediate refresh of counts and revenue
         refreshCounts();
         if (event.detail.order) {
@@ -240,10 +307,28 @@ const VenueDashboardClient = React.memo(function VenueDashboardClient({
     window.addEventListener('orderCreated', handleOrderCreated as EventListener);
 
     return () => {
-      createClient().removeChannel(channel);
+      console.log('[DASHBOARD] Cleaning up realtime subscriptions');
+      supabase.removeChannel(channel);
       window.removeEventListener('orderCreated', handleOrderCreated as EventListener);
     };
   }, [venueId, venue?.venue_id, todayWindow?.startUtcISO, venueTz]); // Use specific properties instead of objects to prevent unnecessary re-runs
+
+  // Fallback polling mechanism (every 30 seconds) if realtime is not working
+  useEffect(() => {
+    if (!venue || !todayWindow) {
+      return;
+    }
+
+    console.log('[DASHBOARD] Setting up fallback polling mechanism');
+    const pollInterval = setInterval(async () => {
+      console.log('[DASHBOARD] Polling for updates (fallback)');
+      await refreshCounts();
+    }, 30000); // Poll every 30 seconds
+
+    return () => {
+      clearInterval(pollInterval);
+    };
+  }, [venue, todayWindow]);
 
   // Auto-refresh when returning from checkout success
   useEffect(() => {

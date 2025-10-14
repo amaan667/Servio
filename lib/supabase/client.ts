@@ -43,6 +43,16 @@ function getOrCreateClient() {
         detectSessionInUrl: true,
         flowType: 'pkce',
       },
+      realtime: {
+        params: {
+          eventsPerSecond: 10,
+        },
+      },
+      global: {
+        headers: {
+          'x-client-info': 'servio-dashboard',
+        },
+      },
     });
   } catch (error) {
     // Fallback to mock if the browser client throws during initialization

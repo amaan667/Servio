@@ -1,4 +1,5 @@
-import { useQuery } from '@tanstack/react-query';
+import { useQuery, useQueryClient } from '@tanstack/react-query';
+import { useEffect } from 'react';
 import { createClient } from '@/lib/supabase/client';
 import { todayWindowForTZ } from '@/lib/time';
 
@@ -137,4 +138,42 @@ export function useTableOrderCounts(venueId: string) {
 		retry: 3,
 		retryDelay: 1000
 	});
+}
+
+// Real-time subscription hook for table orders
+export function useTableOrdersRealtime(venueId: string) {
+	const queryClient = useQueryClient();
+
+	useEffect(() => {
+		if (!venueId) return;
+
+		console.log('[TABLE ORDERS] Setting up real-time subscription for venue:', venueId);
+		const supabase = createClient();
+
+		const channel = supabase
+			.channel(`table-orders-${venueId}`)
+			.on('postgres_changes', {
+				event: '*',
+				schema: 'public',
+				table: 'orders',
+				filter: `venue_id=eq.${venueId}`
+			}, (payload: any) => {
+				// Check if this is a table order (QR order)
+				const order = payload.new || payload.old;
+				if (order?.source === 'qr') {
+					console.log('[TABLE ORDERS] Table order update received:', payload.eventType);
+					// Invalidate both queries to trigger refetch
+					queryClient.invalidateQueries({ queryKey: ['table-orders', venueId] });
+					queryClient.invalidateQueries({ queryKey: ['table-order-counts', venueId] });
+				}
+			})
+			.subscribe((status) => {
+				console.log('[TABLE ORDERS] Realtime subscription status:', status);
+			});
+
+		return () => {
+			console.log('[TABLE ORDERS] Cleaning up real-time subscription');
+			supabase.removeChannel(channel);
+		};
+	}, [venueId, queryClient]);
 }

@@ -25,7 +25,7 @@ export default function ConditionalBottomNav() {
   
   const shouldHide = isCustomerOrderPage || isPaymentPage || isOrderSummaryPage || isOrderTrackingPage || isHomePage || isAuthPage || isCompleteProfilePage;
 
-  // Get venue ID from pathname - MUST be called before any returns
+  // Get venue ID from pathname and set up real-time updates - MUST be called before any returns
   useEffect(() => {
     const venueIdFromPath = pathname?.match(/\/dashboard\/([^/]+)/)?.[1];
     if (venueIdFromPath) {
@@ -56,6 +56,25 @@ export default function ConditionalBottomNav() {
       };
 
       loadCounts();
+
+      // Set up real-time subscription for order updates
+      const supabase = createClient();
+      const channel = supabase
+        .channel(`bottom-nav-${venueIdFromPath}`)
+        .on('postgres_changes', {
+          event: '*',
+          schema: 'public',
+          table: 'orders',
+          filter: `venue_id=eq.${venueIdFromPath}`
+        }, () => {
+          console.log('[BOTTOM NAV] Order update received, refreshing counts');
+          loadCounts();
+        })
+        .subscribe();
+
+      return () => {
+        supabase.removeChannel(channel);
+      };
     }
   }, [pathname]);
 

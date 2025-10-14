@@ -1,4 +1,5 @@
-import { useQuery } from '@tanstack/react-query';
+import { useQuery, useQueryClient } from '@tanstack/react-query';
+import { useEffect } from 'react';
 import { createClient } from '@/lib/supabase/client';
 import { todayWindowForTZ } from '@/lib/time';
 
@@ -105,4 +106,42 @@ export function useCounterOrderCounts(venueId: string) {
 		retry: 3,
 		retryDelay: 1000
 	});
+}
+
+// Real-time subscription hook for counter orders
+export function useCounterOrdersRealtime(venueId: string) {
+	const queryClient = useQueryClient();
+
+	useEffect(() => {
+		if (!venueId) return;
+
+		console.log('[COUNTER ORDERS] Setting up real-time subscription for venue:', venueId);
+		const supabase = createClient();
+
+		const channel = supabase
+			.channel(`counter-orders-${venueId}`)
+			.on('postgres_changes', {
+				event: '*',
+				schema: 'public',
+				table: 'orders',
+				filter: `venue_id=eq.${venueId}`
+			}, (payload: any) => {
+				// Check if this is a counter order
+				const order = payload.new || payload.old;
+				if (order?.source === 'counter') {
+					console.log('[COUNTER ORDERS] Counter order update received:', payload.eventType);
+					// Invalidate both queries to trigger refetch
+					queryClient.invalidateQueries({ queryKey: ['counter-orders', venueId] });
+					queryClient.invalidateQueries({ queryKey: ['counter-order-counts', venueId] });
+				}
+			})
+			.subscribe((status) => {
+				console.log('[COUNTER ORDERS] Realtime subscription status:', status);
+			});
+
+		return () => {
+			console.log('[COUNTER ORDERS] Cleaning up real-time subscription');
+			supabase.removeChannel(channel);
+		};
+	}, [venueId, queryClient]);
 }

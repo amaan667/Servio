@@ -16,8 +16,8 @@ import {
   CheckCircle2
 } from 'lucide-react';
 import { useTableGrid, useTableCounters, useReservations } from '@/hooks/useTableReservations';
-import { useCounterOrders, useCounterOrderCounts } from '@/hooks/useCounterOrders';
-import { useTableOrders, useTableOrderCounts } from '@/hooks/useTableOrders';
+import { useCounterOrders, useCounterOrderCounts, useCounterOrdersRealtime } from '@/hooks/useCounterOrders';
+import { useTableOrders, useTableOrderCounts, useTableOrdersRealtime } from '@/hooks/useTableOrders';
 import { useDailyReset } from '@/hooks/useDailyReset';
 import { useGroupSessions } from '@/hooks/useGroupSessions';
 import type { GroupSession } from '@/hooks/useGroupSessions';
@@ -169,6 +169,10 @@ export function TableManagementClientNew({ venueId }: TableManagementClientNewPr
     data: tableOrderCounts = { total: 0, placed: 0, in_prep: 0, ready: 0, serving: 0 }, 
     isLoading: tableOrderCountsLoading 
   } = useTableOrderCounts(venueId);
+
+  // Enable real-time updates for counter and table orders
+  useCounterOrdersRealtime(venueId);
+  useTableOrdersRealtime(venueId);
 
   const filteredTables = useMemo(() => {
     let filtered = tables;
