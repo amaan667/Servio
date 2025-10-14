@@ -198,7 +198,7 @@ export default function VenueSettingsClient({ user, venue, venues, organization 
           venue_name: venueName,
           email: venueEmail || null,
           phone: venuePhone || null,
-          venue_address: venueAddress || null,
+          address: venueAddress || null,
           timezone: timezone,
           venue_type: venueType,
           service_type: serviceType,
