@@ -66,7 +66,7 @@ export default function MenuBuilderClient({ venueId, venueName }: { venueId: str
         .from('menu_items')
         .select('*')
         .eq('venue_id', transformedVenueId)
-        .order('created_at', { ascending: false });
+        .order('created_at', { ascending: true });
 
       if (error) {
         console.error('Error loading menu items:', error);
@@ -93,20 +93,12 @@ export default function MenuBuilderClient({ venueId, venueName }: { venueId: str
 
   const loadCategoryOrder = async () => {
     try {
-      const supabase = createClient();
-      const { data, error } = await supabase
-        .from('venue_settings')
-        .select('category_order')
-        .eq('venue_id', transformedVenueId)
-        .single();
-
-      if (error && error.code !== 'PGRST116') {
-        console.error('Error loading category order:', error);
-        return;
-      }
-
-      if (data?.category_order) {
-        setCategoryOrder(data.category_order);
+      // Use the same API endpoint that customer ordering UI uses
+      const response = await fetch(`/api/menu/categories?venueId=${transformedVenueId}`);
+      const data = await response.json();
+      
+      if (data.categories && Array.isArray(data.categories)) {
+        setCategoryOrder(data.categories);
       }
     } catch (error) {
       console.error('Error loading category order:', error);
