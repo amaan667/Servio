@@ -879,6 +879,13 @@ export default function QRCodeClient({ venueId, venueName }: { venueId: string; 
                         const tableNumber = prompt('Enter table number:');
                         if (tableNumber && !isNaN(parseInt(tableNumber))) {
                           addTable(tableNumber);
+                          // Auto-select the table after adding it
+                          setTimeout(() => {
+                            setSelectedTables(prev => {
+                              const newTables = [...prev, parseInt(tableNumber)];
+                              return newTables;
+                            });
+                          }, 500);
                         }
                       }}>
                         <Plus className="h-4 w-4 mr-2" />

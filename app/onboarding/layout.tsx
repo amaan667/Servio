@@ -13,13 +13,6 @@ export default function OnboardingLayout({
       {/* Header */}
       <div className="bg-white border-b shadow-sm">
         <div className="max-w-4xl mx-auto px-4 py-4">
-          <div className="flex items-center justify-center">
-            <img 
-              src="/assets/servio-logo-updated.png"
-              alt="Servio"
-              className="h-8 w-auto"
-            />
-          </div>
         </div>
       </div>
 

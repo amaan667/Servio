@@ -21,7 +21,7 @@ export default async function GenerateQRPage() {
     .order('created_at', { ascending: false });
 
   if (venuesError || !venues || venues.length === 0) {
-    redirect('/onboarding');
+    redirect('/dashboard');
   }
 
   // For now, use the first venue (in the future, this could be venue selection)
