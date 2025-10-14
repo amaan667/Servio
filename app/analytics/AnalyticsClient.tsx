@@ -390,8 +390,8 @@ export default function AnalyticsClient({ venueId, venueName }: AnalyticsClientP
                   type="date"
                   value={customDateRange?.start || ''}
                   onChange={(e) => setCustomDateRange(prev => ({ 
-                    ...prev, 
-                    start: e.target.value 
+                    start: e.target.value,
+                    end: prev?.end || e.target.value
                   }))}
                 />
               </div>
@@ -402,7 +402,7 @@ export default function AnalyticsClient({ venueId, venueName }: AnalyticsClientP
                   type="date"
                   value={customDateRange?.end || ''}
                   onChange={(e) => setCustomDateRange(prev => ({ 
-                    ...prev, 
+                    start: prev?.start || e.target.value,
                     end: e.target.value 
                   }))}
                 />
