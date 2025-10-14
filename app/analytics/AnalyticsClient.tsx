@@ -140,7 +140,7 @@ export default function AnalyticsClient({ venueId, venueName }: AnalyticsClientP
 
       // Group by date
       const revenueByDate: { [key: string]: { revenue: number; orders: number } } = {};
-      orders?.forEach(order => {
+      orders?.forEach((order: Order) => {
         const date = order.created_at.split('T')[0];
         if (!revenueByDate[date]) {
           revenueByDate[date] = { revenue: 0, orders: 0 };
@@ -174,8 +174,8 @@ export default function AnalyticsClient({ venueId, venueName }: AnalyticsClientP
 
       // Calculate top selling items
       const itemSales: { [key: string]: { quantity: number; revenue: number } } = {};
-      orders?.forEach(order => {
-        order.order_items?.forEach(item => {
+      orders?.forEach((order: Order) => {
+        order.order_items?.forEach((item: any) => {
           const itemName = item.menu_items?.name || 'Unknown Item';
           if (!itemSales[itemName]) {
             itemSales[itemName] = { quantity: 0, revenue: 0 };
