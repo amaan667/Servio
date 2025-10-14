@@ -243,7 +243,7 @@ export default function AnalyticsClient({ venueId, venueName }: AnalyticsClientP
     ];
 
     const csv = toCSV(csvData, columns);
-    const filename = generateTimestampedFilename(`${venueName}_revenue_analytics`, 'csv');
+    const filename = generateTimestampedFilename(`${venueName}_revenue_analytics`);
     
     const blob = new Blob([csv], { type: 'text/csv' });
     const url = URL.createObjectURL(blob);
