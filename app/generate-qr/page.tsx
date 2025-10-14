@@ -1,6 +1,7 @@
 export const dynamic = 'force-dynamic';
 
 import GenerateQRClient from './GenerateQRClient';
+import NavigationBreadcrumb from '@/components/navigation-breadcrumb';
 
 export default function GenerateQRPage() {
   console.log('[QR PAGE] Starting GenerateQRPage - No Auth Required');
@@ -13,6 +14,7 @@ export default function GenerateQRPage() {
   return (
     <div className="min-h-screen bg-background">
       <div className="max-w-7xl mx-auto px-4 py-8">
+        <NavigationBreadcrumb venueId={defaultVenueId} />
         <div className="mb-8">
           <h1 className="text-3xl font-bold">
             QR Code Generator
