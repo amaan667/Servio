@@ -35,6 +35,30 @@ export default function QRCodeClient({ venueId, venueName }: { venueId: string; 
     }
   }, [venueId]);
 
+  // Auto-select and generate QR code if table parameter is present
+  useEffect(() => {
+    if (tables.length > 0) {
+      const urlParams = new URLSearchParams(window.location.search);
+      const tableName = urlParams.get('table');
+      
+      if (tableName && selectedTables.length === 0) {
+        console.log('[OLD QR] Auto-selecting table from URL:', tableName);
+        
+        // Find table by label or table_number
+        const table = tables.find(t => t.label === tableName || t.table_number.toString() === tableName);
+        if (table) {
+          setSelectedTables([table.table_number]);
+          console.log('[OLD QR] Table found and selected:', table);
+        } else {
+          // If table doesn't exist, add it first
+          console.log('[OLD QR] Table not found, adding it:', tableName);
+          addTable(tableName);
+          // The addTable function will auto-select the table
+        }
+      }
+    }
+  }, [tables]);
+
   const loadTablesAndCounters = async () => {
     try {
       setLoading(true);
@@ -116,7 +140,13 @@ export default function QRCodeClient({ venueId, venueName }: { venueId: string; 
       await loadTablesAndCounters();
       
       // Auto-select the newly added table
-      setSelectedTables(prev => [...prev, parseInt(numToAdd) || 1]);
+      const tableNumber = parseInt(numToAdd) || 1;
+      setSelectedTables(prev => {
+        if (!prev.includes(tableNumber)) {
+          return [...prev, tableNumber];
+        }
+        return prev;
+      });
     } catch (error: any) {
       console.error('Error adding table:', error);
       toast({

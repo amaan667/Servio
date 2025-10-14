@@ -365,8 +365,8 @@ export function TableCardNew({ table, venueId, onActionComplete, availableTables
   };
 
   const handleQRCodeClick = () => {
-    // Navigate to QR generation page with this table pre-selected
-    router.push(`/generate-qr?table=${encodeURIComponent(table.id)}`);
+    // Navigate to the old QR codes page with this table pre-selected
+    router.push(`/dashboard/${venueId}/qr-codes?table=${encodeURIComponent(table.label)}`);
   };
 
   return (
