@@ -625,7 +625,7 @@ const VenueDashboardClient = React.memo(function VenueDashboardClient({
             </Card>
           </Link>
 
-          <Link href={`/dashboard/${venueId}/menu`}>
+          <Link href={`/dashboard/${venueId}/menu-management`}>
             <Card className="cursor-pointer hover:shadow-lg transition-shadow">
               <CardContent className="p-4 sm:p-6">
                 <div className="flex items-center justify-between">
@@ -668,7 +668,7 @@ const VenueDashboardClient = React.memo(function VenueDashboardClient({
             </Card>
           </Link>
 
-          <Link href={`/menu-builder?venue=${venueId}`}>
+          <Link href={`/dashboard/${venueId}/menu-management`}>
             <Card className="hover:shadow-lg transition-shadow cursor-pointer">
               <CardContent className="p-4 sm:p-6">
                 <div className="w-10 h-10 sm:w-12 sm:h-12 bg-orange-100 rounded-lg flex items-center justify-center mb-4">
@@ -780,7 +780,7 @@ const VenueDashboardClient = React.memo(function VenueDashboardClient({
                   </div>
                 </div>
                 <Button variant="outline" asChild>
-                  <Link href={`/dashboard/${venueId}/menu?openAdd=true`}>Get Started</Link>
+                  <Link href={`/dashboard/${venueId}/menu-management?openAdd=true`}>Get Started</Link>
                 </Button>
               </div>
 

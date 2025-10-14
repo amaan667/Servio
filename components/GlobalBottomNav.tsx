@@ -162,9 +162,9 @@ export default function GlobalBottomNav({ venueId, counts = {} }: GlobalBottomNa
     {
       id: 'menu',
       label: 'Menu',
-      href: currentVenueId ? `/dashboard/${currentVenueId}/menu` : '/',
+      href: currentVenueId ? `/dashboard/${currentVenueId}/menu-management` : '/',
       icon: ShoppingBag,
-      isActive: pathname === `/dashboard/${currentVenueId}/menu`
+      isActive: pathname === `/dashboard/${currentVenueId}/menu-management`
     },
     {
       id: 'qr-codes',

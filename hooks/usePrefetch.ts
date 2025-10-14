@@ -40,7 +40,7 @@ export function useDashboardPrefetch(venueId: string) {
     // Prefetch common dashboard routes
     const routesToPrefetch = [
       `/dashboard/${venueId}/tables`,
-      `/dashboard/${venueId}/menu`,
+      `/dashboard/${venueId}/menu-management`,
       `/dashboard/${venueId}/live-orders`,
       `/dashboard/${venueId}/analytics`,
       `/dashboard/${venueId}/staff`

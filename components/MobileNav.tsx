@@ -94,10 +94,10 @@ export default function MobileNav({ venueId, venueName, counts = {} }: MobileNav
     {
       id: 'menu',
       label: 'Menu Builder',
-      href: `/menu-builder?venue=${venueId}`,
+      href: `/dashboard/${venueId}/menu-management`,
       icon: ShoppingBag,
       description: 'Design, manage, and customize menu',
-      isActive: pathname === '/menu-builder'
+      isActive: pathname === `/dashboard/${venueId}/menu-management`
     },
     {
       id: 'qr',
