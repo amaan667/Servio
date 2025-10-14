@@ -16,7 +16,7 @@ export default function QRCodeClient({ venueId, venueName }: { venueId: string; 
   const [tables, setTables] = useState<any[]>([]);
   const [counters, setCounters] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
-  const [selectedTables, setSelectedTables] = useState<number[]>([]);
+  const [selectedTables, setSelectedTables] = useState<string[]>([]);
   const [selectedCounters, setSelectedCounters] = useState<string[]>([]);
   const [qrCodeType, setQrCodeType] = useState<'tables' | 'counters'>('tables');
   const [newTableNumber, setNewTableNumber] = useState('');
@@ -44,10 +44,10 @@ export default function QRCodeClient({ venueId, venueName }: { venueId: string; 
       if (tableName && selectedTables.length === 0) {
         console.log('[OLD QR] Auto-selecting table from URL:', tableName);
         
-        // Find table by label or table_number
-        const table = tables.find(t => t.label === tableName || t.table_number.toString() === tableName);
+        // Find table by label
+        const table = tables.find(t => t.label === tableName);
         if (table) {
-          setSelectedTables([table.table_number]);
+          setSelectedTables([table.id]);
           console.log('[OLD QR] Table found and selected:', table);
         } else {
           // If table doesn't exist, add it first
@@ -69,8 +69,8 @@ export default function QRCodeClient({ venueId, venueName }: { venueId: string; 
         .from('tables')
         .select('*')
         .eq('venue_id', venueId)
-        .eq('is_counter', false)
-        .order('table_number', { ascending: true });
+        .eq('is_active', true)
+        .order('label', { ascending: true });
 
       if (tablesError) {
         console.error('Error loading tables:', tablesError);
@@ -121,9 +121,9 @@ export default function QRCodeClient({ venueId, venueName }: { venueId: string; 
         .from('tables')
         .insert({
           venue_id: venueId,
-          table_number: parseInt(numToAdd) || 1,
           label: numToAdd,
-          is_counter: false,
+          seat_count: 4,
+          area: null,
           is_active: true
         });
 
@@ -139,14 +139,7 @@ export default function QRCodeClient({ venueId, venueName }: { venueId: string; 
       setNewTableNumber('');
       await loadTablesAndCounters();
       
-      // Auto-select the newly added table
-      const tableNumber = parseInt(numToAdd) || 1;
-      setSelectedTables(prev => {
-        if (!prev.includes(tableNumber)) {
-          return [...prev, tableNumber];
-        }
-        return prev;
-      });
+      // Auto-select the newly added table (will be selected after reload)
     } catch (error: any) {
       console.error('Error adding table:', error);
       toast({
@@ -496,11 +489,11 @@ export default function QRCodeClient({ venueId, venueName }: { venueId: string; 
     );
   }
 
-  const toggleTableSelection = (tableNumber: number) => {
+  const toggleTableSelection = (tableId: string) => {
     setSelectedTables(prev => 
-      prev.includes(tableNumber) 
-        ? prev.filter(t => t !== tableNumber)
-        : [...prev, tableNumber]
+      prev.includes(tableId) 
+        ? prev.filter(t => t !== tableId)
+        : [...prev, tableId]
     );
   };
 
@@ -601,12 +594,12 @@ export default function QRCodeClient({ venueId, venueName }: { venueId: string; 
                       {tables.map(table => (
                         <Button
                           key={table.id}
-                          variant={selectedTables.includes(table.table_number) ? 'default' : 'outline'}
+                          variant={selectedTables.includes(table.id) ? 'default' : 'outline'}
                           size="sm"
-                          onClick={() => toggleTableSelection(table.table_number)}
+                          onClick={() => toggleTableSelection(table.id)}
                           className="aspect-square"
                         >
-                          {table.table_number}
+                          {table.label}
                         </Button>
                       ))}
                     </div>
@@ -733,13 +726,13 @@ export default function QRCodeClient({ venueId, venueName }: { venueId: string; 
                     onClick={() => {
                       // Download all selected QR codes
                       const allSelected = [
-                        ...selectedTables.map(num => ({ type: 'table' as const, name: num.toString(), number: num })),
-                        ...selectedCounters.map(name => ({ type: 'counter' as const, name, number: name }))
+                        ...selectedTables.map(id => ({ type: 'table' as const, id, name: tables.find(t => t.id === id)?.label || id })),
+                        ...selectedCounters.map(name => ({ type: 'counter' as const, id: name, name }))
                       ];
                       
                       allSelected.forEach((item, index) => {
                         const qrUrl = item.type === 'table' 
-                          ? getQRUrl(tables.find(t => t.table_number === parseInt(item.name))?.id || '', false)
+                          ? getQRUrl(item.id, false)
                           : getQRUrl(counters.find(c => c.name === item.name)?.id || '', true, item.name);
                         
                         setTimeout(() => {
@@ -757,8 +750,8 @@ export default function QRCodeClient({ venueId, venueName }: { venueId: string; 
                     onClick={() => {
                       // Print all selected QR codes
                       const allSelected = [
-                        ...selectedTables.map(num => ({ type: 'table' as const, name: num.toString(), number: num })),
-                        ...selectedCounters.map(name => ({ type: 'counter' as const, name, number: name }))
+                        ...selectedTables.map(id => ({ type: 'table' as const, id, name: tables.find(t => t.id === id)?.label || id })),
+                        ...selectedCounters.map(name => ({ type: 'counter' as const, id: name, name }))
                       ];
                       
                       // Create a print window with all QR codes
@@ -767,7 +760,7 @@ export default function QRCodeClient({ venueId, venueName }: { venueId: string; 
 
                       const qrCodesHtml = allSelected.map(item => {
                         const qrUrl = item.type === 'table' 
-                          ? getQRUrl(tables.find(t => t.table_number === parseInt(item.name))?.id || '', false)
+                          ? getQRUrl(item.id, false)
                           : getQRUrl(counters.find(c => c.name === item.name)?.id || '', true, item.name);
                         
                         return `
@@ -849,7 +842,7 @@ export default function QRCodeClient({ venueId, venueName }: { venueId: string; 
                             <script>
                               ${allSelected.map(item => {
                                 const qrUrl = item.type === 'table' 
-                                  ? getQRUrl(tables.find(t => t.table_number === parseInt(item.name))?.id || '', false)
+                                  ? getQRUrl(item.id, false)
                                   : getQRUrl(counters.find(c => c.name === item.name)?.id || '', true, item.name);
                                 
                                 return `
@@ -960,19 +953,19 @@ export default function QRCodeClient({ venueId, venueName }: { venueId: string; 
             ) : (
               <div className="space-y-4">
                 {/* Show selected tables */}
-                {selectedTables.map(tableNumber => {
-                  const table = tables.find(t => t.table_number === tableNumber);
+                {selectedTables.map(tableId => {
+                  const table = tables.find(t => t.id === tableId);
                   if (!table) return null;
                   
                   const qrUrl = getQRUrl(table.id);
                   return (
                     <div key={table.id} className="border rounded-lg p-4">
                       <div className="flex items-center justify-between mb-3">
-                        <h3 className="font-medium">Table {tableNumber}</h3>
+                        <h3 className="font-medium">{table.label}</h3>
                         <Button
                           variant="ghost"
                           size="sm"
-                          onClick={() => deleteTable(table.id, tableNumber)}
+                          onClick={() => deleteTable(table.id, table.label)}
                         >
                           <Trash2 className="h-4 w-4" />
                         </Button>
@@ -1003,7 +996,7 @@ export default function QRCodeClient({ venueId, venueName }: { venueId: string; 
                         <Button
                           variant="outline"
                           size="sm"
-                          onClick={() => downloadQRCode(qrUrl, tableNumber.toString(), 'table')}
+                          onClick={() => downloadQRCode(qrUrl, table.label, 'table')}
                         >
                           <Download className="h-3 w-3 mr-2" />
                           Download
@@ -1011,7 +1004,7 @@ export default function QRCodeClient({ venueId, venueName }: { venueId: string; 
                         <Button
                           variant="default"
                           size="sm"
-                          onClick={() => printQRCode(qrUrl, tableNumber.toString(), 'table')}
+                          onClick={() => printQRCode(qrUrl, table.label, 'table')}
                         >
                           <Printer className="h-3 w-3 mr-2" />
                           Print
