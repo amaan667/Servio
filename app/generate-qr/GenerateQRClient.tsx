@@ -10,6 +10,9 @@ import { Printer, Copy, Check, Download, Settings, X, Plus, QrCode } from "lucid
 import { createClient } from "@/lib/supabase/client";
 import { siteOrigin } from "@/lib/site";
 import { toast } from "@/hooks/use-toast";
+import { buildOrderUrl, getTablesFromUrl } from "@/lib/qr-urls";
+import { generateQRCodeUrl, getQRCodeSize } from "@/lib/qr-service";
+import { handleQRError, logQRAction } from "@/lib/qr-errors";
 
 interface Props {
   venueId: string;
@@ -31,25 +34,13 @@ export default function GenerateQRClient({ venueId, venueName, activeTablesCount
 
   // Parse URL parameters to get selected tables (only from URL, not localStorage)
   const getInitialTables = () => {
-    if (typeof window !== 'undefined') {
-      // Only check URL parameters - don't fall back to localStorage
-      const tablesParam = searchParams?.get('tables');
-      const tableParam = searchParams?.get('table');
-      
-      console.log('[GENERATE QR] URL parameters:', {
-        tablesParam,
-        tableParam,
-        fullUrl: typeof window !== 'undefined' ? window.location.href : 'server'
+    if (typeof window !== 'undefined' && searchParams) {
+      logQRAction('parse_url_params', {
+        fullUrl: window.location.href,
+        venueId
       });
       
-      if (tablesParam) {
-        // Multiple tables selected
-        const tables = tablesParam.split(',').filter(Boolean);
-        return tables;
-      } else if (tableParam) {
-        // Single table selected
-        return [decodeURIComponent(tableParam)];
-      }
+      return getTablesFromUrl(searchParams);
     }
     return null; // Return null to indicate no specific tables were requested
   };
@@ -123,15 +114,15 @@ export default function GenerateQRClient({ venueId, venueName, activeTablesCount
   
   // Ensure we always have a valid order URL with proper source parameter
   const orderUrl = currentSelection.length > 0 
-    ? `${siteOrigin()}/order?venue=${venueId}&${qrType}=${currentSelection[0]}&source=${qrType}`
-    : `${siteOrigin()}/order?venue=${venueId}&table=1&source=table`;
+    ? buildOrderUrl(venueId, currentSelection[0], qrType)
+    : buildOrderUrl(venueId, '1', 'table');
 
 
   const handleCopy = async () => {
     try {
       if (currentSelection.length === 1) {
         // Copy the single item's URL
-        const itemOrderUrl = `${siteOrigin()}/order?venue=${venueId}&${qrType}=${currentSelection[0]}`;
+        const itemOrderUrl = buildOrderUrl(venueId, currentSelection[0], qrType);
         await navigator.clipboard.writeText(itemOrderUrl);
         toast({
           title: "QR Code URL Copied!",
@@ -142,7 +133,8 @@ export default function GenerateQRClient({ venueId, venueName, activeTablesCount
         const allUrls = currentSelection.map(itemNumber => {
           const cleanName = qrType === 'table' ? cleanTableName(itemNumber) : cleanCounterName(itemNumber);
           const label = qrType === 'table' ? 'Table' : 'Counter';
-          return `${label} ${cleanName}: ${siteOrigin()}/order?venue=${venueId}&${qrType}=${itemNumber}`;
+          const itemOrderUrl = buildOrderUrl(venueId, itemNumber, qrType);
+          return `${label} ${cleanName}: ${itemOrderUrl}`;
         }).join('\n');
         await navigator.clipboard.writeText(allUrls);
         toast({
@@ -153,12 +145,7 @@ export default function GenerateQRClient({ venueId, venueName, activeTablesCount
       setCopied(true);
       setTimeout(() => setCopied(false), 2000);
     } catch (err) {
-      console.error("Failed to copy:", err);
-      toast({
-        title: "Copy Failed",
-        description: "Failed to copy QR code URL. Please try again.",
-        variant: "destructive",
-      });
+      handleQRError(err, 'copy_urls');
     }
   };
 
@@ -248,7 +235,7 @@ export default function GenerateQRClient({ venueId, venueName, activeTablesCount
     const printWindow = window.open('', '_blank', 'width=800,height=600');
     
     if (printWindow) {
-      const qrCodeUrl = `https://api.qrserver.com/v1/create-qr-code/?size=${printSettings.qrSize}x${printSettings.qrSize}&data=${encodeURIComponent(orderUrl)}&format=png&margin=2`;
+      const qrCodeUrl = generateQRCodeUrl(orderUrl, printSettings.qrSize);
       
       printWindow.document.write(`
         <!DOCTYPE html>
@@ -613,10 +600,10 @@ export default function GenerateQRClient({ venueId, venueName, activeTablesCount
           </head>
           <body>
             ${currentSelection.reduce((html, itemNum, index) => {
-              const itemOrderUrl = `${siteOrigin()}/order?venue=${venueId}&${qrType}=${itemNum}`;
+              const itemOrderUrl = buildOrderUrl(venueId, itemNum, qrType);
               const cleanName = qrType === 'table' ? cleanTableName(itemNum) : cleanCounterName(itemNum);
               const label = qrType === 'table' ? 'Table' : 'Counter';
-              const qrCodeUrl = `https://api.qrserver.com/v1/create-qr-code/?size=200x200&data=${encodeURIComponent(itemOrderUrl)}&format=png&margin=2&bgcolor=ffffff&color=000000`;
+              const qrCodeUrl = generateQRCodeUrl(itemOrderUrl, 200);
               
               // Start a new page every 4 QR codes
               if (index % 4 === 0) {
@@ -729,7 +716,7 @@ export default function GenerateQRClient({ venueId, venueName, activeTablesCount
           currentSelectedTables
         });
       } catch (error: any) {
-        console.error('🔍 [QR CLIENT] Error in loadStats:', error);
+        handleQRError(error, 'load_stats');
         setError(`Failed to load stats: ${error.message}`);
         // Set default values on error
         setStats({ activeTablesNow: 0 });
@@ -1020,9 +1007,10 @@ export default function GenerateQRClient({ venueId, venueName, activeTablesCount
             ) : (
               <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3 sm:gap-4 mb-4">
                 {currentSelection.map((itemNumber, index) => {
-                  const itemOrderUrl = `${siteOrigin()}/order?venue=${venueId}&${qrType}=${encodeURIComponent(itemNumber)}`;
+                  const itemOrderUrl = buildOrderUrl(venueId, itemNumber, qrType);
                   const cleanName = qrType === 'table' ? cleanTableName(itemNumber) : cleanCounterName(itemNumber);
                   const label = qrType === 'table' ? 'Table' : 'Counter';
+                  const qrCodeUrl = generateQRCodeUrl(itemOrderUrl, getQRCodeSize('preview'));
                   return (
                     <div key={index} className="group text-center p-2 sm:p-3 border rounded-lg bg-card relative">
                       <Button
@@ -1036,7 +1024,7 @@ export default function GenerateQRClient({ venueId, venueName, activeTablesCount
                       </Button>
                       <div className="bg-card p-2 rounded-lg shadow-sm inline-block">
                         <img
-                          src={`https://api.qrserver.com/v1/create-qr-code/?size=${Math.min(printSettings.qrSize, 120)}x${Math.min(printSettings.qrSize, 120)}&data=${encodeURIComponent(itemOrderUrl)}&format=png&margin=2`}
+                          src={qrCodeUrl}
                           alt={`QR Code for ${label} ${itemNumber}`}
                           className="w-20 h-20 sm:w-24 sm:h-24"
                         />

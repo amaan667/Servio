@@ -371,11 +371,15 @@ export default function CustomerOrderPage() {
       // Fetch menu items using the API endpoint (bypasses RLS)
       const apiUrl = `${window.location.origin}/api/menu/${venueSlug}`;
       
+      console.log('[ORDER PAGE] Fetching menu from API:', { venueSlug, apiUrl });
+      
       const response = await fetch(apiUrl);
       
+      console.log('[ORDER PAGE] API response status:', response.status);
       
       if (!response.ok) {
         const errorData = await response.json();
+        console.error('[ORDER PAGE] Menu fetch error:', errorData);
         setMenuError(`Error loading menu: ${errorData.error || 'Failed to load menu'}`);
         setLoadingMenu(false);
         return;

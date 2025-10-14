@@ -4,6 +4,8 @@ import { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { QrCode, Smartphone, Download } from "lucide-react";
+import { generateQRCodeUrl } from "@/lib/qr-service";
+import { handleQRError } from "@/lib/qr-errors";
 
 interface QRCodeDisplayProps {
   currentUrl: string;
@@ -22,11 +24,11 @@ export default function QRCodeDisplay({ currentUrl, venueName = "Servio Café" }
 
   const generateQRCode = async () => {
     try {
-      // Use a simple QR code service for demo purposes
-      const qrUrl = `https://api.qrserver.com/v1/create-qr-code/?size=200x200&data=${encodeURIComponent(currentUrl)}`;
+      // Use centralized QR code service
+      const qrUrl = generateQRCodeUrl(currentUrl, 200);
       setQrCodeDataUrl(qrUrl);
     } catch (error) {
-      console.error('[QR CODE] Error generating QR code:', error);
+      handleQRError(error, 'generate_qr_display');
     }
   };
 

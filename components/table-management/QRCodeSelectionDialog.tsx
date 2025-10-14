@@ -21,6 +21,8 @@ import {
   Printer
 } from 'lucide-react';
 import { TableWithSession } from '@/hooks/useTablesData';
+import { buildQRGenerationUrl } from '@/lib/qr-urls';
+import { handleQRError } from '@/lib/qr-errors';
 
 interface QRCodeSelectionDialogProps {
   isOpen: boolean;
@@ -75,9 +77,8 @@ export function QRCodeSelectionDialog({
       );
       const tableLabels = selectedTableObjects.map(table => table.label);
       
-      // Create a URL with selected table labels
-      const tableLabelsParam = tableLabels.join(',');
-      const qrUrl = `/generate-qr?venue=${venueId}&tables=${tableLabelsParam}`;
+      // Create a URL with selected table labels using centralized service
+      const qrUrl = buildQRGenerationUrl(venueId, tableLabels);
       
       console.log('[QR CODE] Generating QR for selected tables:', {
         selectedTableIds: selectedTables,
@@ -89,7 +90,7 @@ export function QRCodeSelectionDialog({
       window.open(qrUrl, '_blank');
       onClose();
     } catch (error) {
-      console.error('Error generating QR codes:', error);
+      handleQRError(error, 'generate_qr_selection');
     } finally {
       setIsGenerating(false);
     }
