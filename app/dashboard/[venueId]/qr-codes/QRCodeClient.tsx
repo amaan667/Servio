@@ -83,7 +83,7 @@ export default function QRCodeClient({ venueId, venueName }: { venueId: string; 
         .from('counters')
         .select('*')
         .eq('venue_id', venueId)
-        .order('name', { ascending: true });
+        .order('label', { ascending: true });
 
       if (countersError) {
         console.error('Error loading counters:', countersError);
@@ -629,12 +629,12 @@ export default function QRCodeClient({ venueId, venueName }: { venueId: string; 
                       {counters.map(counter => (
                         <Button
                           key={counter.id}
-                          variant={selectedCounters.includes(counter.name) ? 'default' : 'outline'}
+                          variant={selectedCounters.includes(counter.label) ? 'default' : 'outline'}
                           size="sm"
-                          onClick={() => toggleCounterSelection(counter.name)}
+                          onClick={() => toggleCounterSelection(counter.label)}
                           className="w-full justify-start"
                         >
-                          {counter.name}
+                          {counter.label}
                         </Button>
                       ))}
                     </div>
@@ -727,13 +727,13 @@ export default function QRCodeClient({ venueId, venueName }: { venueId: string; 
                       // Download all selected QR codes
                       const allSelected = [
                         ...selectedTables.map(id => ({ type: 'table' as const, id, name: tables.find(t => t.id === id)?.label || id })),
-                        ...selectedCounters.map(name => ({ type: 'counter' as const, id: name, name }))
+                        ...selectedCounters.map(label => ({ type: 'counter' as const, id: counters.find(c => c.label === label)?.id || label, name: label }))
                       ];
                       
                       allSelected.forEach((item, index) => {
                         const qrUrl = item.type === 'table' 
                           ? getQRUrl(item.id, false)
-                          : getQRUrl(counters.find(c => c.name === item.name)?.id || '', true, item.name);
+                          : getQRUrl(counters.find(c => c.label === item.name)?.id || '', true, item.name);
                         
                         setTimeout(() => {
                           downloadQRCode(qrUrl, item.name, item.type);
@@ -751,7 +751,7 @@ export default function QRCodeClient({ venueId, venueName }: { venueId: string; 
                       // Print all selected QR codes
                       const allSelected = [
                         ...selectedTables.map(id => ({ type: 'table' as const, id, name: tables.find(t => t.id === id)?.label || id })),
-                        ...selectedCounters.map(name => ({ type: 'counter' as const, id: name, name }))
+                        ...selectedCounters.map(label => ({ type: 'counter' as const, id: counters.find(c => c.label === label)?.id || label, name: label }))
                       ];
                       
                       // Create a print window with all QR codes
@@ -761,7 +761,7 @@ export default function QRCodeClient({ venueId, venueName }: { venueId: string; 
                       const qrCodesHtml = allSelected.map(item => {
                         const qrUrl = item.type === 'table' 
                           ? getQRUrl(item.id, false)
-                          : getQRUrl(counters.find(c => c.name === item.name)?.id || '', true, item.name);
+                          : getQRUrl(counters.find(c => c.label === item.name)?.id || '', true, item.name);
                         
                         return `
                           <div class="qr-item" style="margin-bottom: 30px; page-break-inside: avoid;">
@@ -843,7 +843,7 @@ export default function QRCodeClient({ venueId, venueName }: { venueId: string; 
                               ${allSelected.map(item => {
                                 const qrUrl = item.type === 'table' 
                                   ? getQRUrl(item.id, false)
-                                  : getQRUrl(counters.find(c => c.name === item.name)?.id || '', true, item.name);
+                                  : getQRUrl(counters.find(c => c.label === item.name)?.id || '', true, item.name);
                                 
                                 return `
                                   const canvas${item.type}${item.name.replace(/\s+/g, '')} = document.getElementById('qrcode-${item.type}-${item.name.replace(/\s+/g, '-')}');
@@ -988,14 +988,6 @@ export default function QRCodeClient({ venueId, venueName }: { venueId: string; 
                         <Button
                           variant="outline"
                           size="sm"
-                          onClick={() => window.open(qrUrl, '_blank')}
-                        >
-                          <Table className="h-3 w-3 mr-2" />
-                          Test
-                        </Button>
-                        <Button
-                          variant="outline"
-                          size="sm"
                           onClick={() => downloadQRCode(qrUrl, table.label, 'table')}
                         >
                           <Download className="h-3 w-3 mr-2" />
@@ -1016,7 +1008,7 @@ export default function QRCodeClient({ venueId, venueName }: { venueId: string; 
 
                 {/* Show selected counters */}
                 {selectedCounters.map(counterName => {
-                  const counter = counters.find(c => c.name === counterName);
+                  const counter = counters.find(c => c.label === counterName);
                   if (!counter) return null;
                   
                   const qrUrl = getQRUrl(counter.id, true, counterName);
@@ -1046,14 +1038,6 @@ export default function QRCodeClient({ venueId, venueName }: { venueId: string; 
                         >
                           <Copy className="h-3 w-3 mr-2" />
                           Copy
-                        </Button>
-                        <Button
-                          variant="outline"
-                          size="sm"
-                          onClick={() => window.open(qrUrl, '_blank')}
-                        >
-                          <Table className="h-3 w-3 mr-2" />
-                          Test
                         </Button>
                         <Button
                           variant="outline"
