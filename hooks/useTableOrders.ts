@@ -53,7 +53,7 @@ export function useTableOrders(venueId: string) {
 				.eq('venue_id', venueId)
 				.eq('source', 'qr')
 				// Only show today's active orders (respects daily reset)
-				.in('order_status', ['PLACED', 'IN_PREP', 'READY', 'SERVING', 'SERVED'])
+				.in('order_status', ['PLACED', 'IN_PREP', 'READY', 'SERVING', 'COMPLETED'])
 				.gte('created_at', todayStart.toISOString())
 				.lte('created_at', todayEnd.toISOString())
 				.order('created_at', { ascending: false });
@@ -113,7 +113,7 @@ export function useTableOrderCounts(venueId: string) {
 				.eq('venue_id', venueId)
 				.eq('source', 'qr')
 				// Count all active orders regardless of date
-				.in('order_status', ['PLACED', 'IN_PREP', 'READY', 'SERVING', 'SERVED']);
+				.in('order_status', ['PLACED', 'IN_PREP', 'READY', 'SERVING', 'COMPLETED']);
 
 			if (error) throw error;
 			
@@ -128,7 +128,7 @@ export function useTableOrderCounts(venueId: string) {
 				placed: byStatus.PLACED || 0,
 				in_prep: byStatus.IN_PREP || 0,
 				ready: byStatus.READY || 0,
-				serving: (byStatus.SERVING || 0) + (byStatus.SERVED || 0),
+				serving: byStatus.SERVING || 0,
 			};
 		},
 		refetchInterval: 15000,

@@ -143,7 +143,7 @@ export function OrderCard({
     try {
       setIsProcessing(true);
       
-      if (nextStatus === 'SERVED') {
+      if (nextStatus === 'SERVED' || nextStatus === 'SERVING') {
         // Use server endpoint for serving to ensure related side-effects
         console.log('[OrderCard] Clicking Mark Served', { orderId: order.id, venueId });
         const response = await fetch('/api/orders/serve', {
@@ -242,8 +242,8 @@ export function OrderCard({
     if (!isCompleted) {
       const getNextStatus = () => {
         switch ((order.order_status || '').toUpperCase()) {
-          case 'READY': return 'SERVED';
-          case 'SERVED': return 'COMPLETED';
+          case 'READY': return 'SERVING';
+          case 'SERVING': return 'COMPLETED';
           default: return 'COMPLETED';
         }
       };
@@ -251,7 +251,7 @@ export function OrderCard({
       const getStatusLabel = () => {
         switch ((order.order_status || '').toUpperCase()) {
           case 'READY': return 'Mark Served';
-          case 'SERVED': return 'Complete Order';
+          case 'SERVING': return 'Complete Order';
           default: return 'Complete Order';
         }
       };
@@ -259,7 +259,7 @@ export function OrderCard({
       const getStatusIcon = () => {
         switch ((order.order_status || '').toUpperCase()) {
           case 'READY': return <CheckCircle className="h-4 w-4 mr-1" />;
-          case 'SERVED': return <CheckCircle className="h-4 w-4 mr-1" />;
+          case 'SERVING': return <CheckCircle className="h-4 w-4 mr-1" />;
           default: return <CheckCircle className="h-4 w-4 mr-1" />;
         }
       };
@@ -268,7 +268,7 @@ export function OrderCard({
         switch ((order.order_status || '').toUpperCase()) {
           case 'READY':
             return "Kitchen Ready - Mark as Served";
-          case 'SERVED':
+          case 'SERVING':
             return "Served - Complete Order";
           default:
             return "Order Management - Update Status";

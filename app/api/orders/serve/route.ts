@@ -88,13 +88,13 @@ export async function POST(req: Request) {
     }
     console.log('[ORDERS SERVE] Access granted via', { owner: Boolean(venue), role: role?.role || null });
 
-    // Update the order status to SERVED (guard by venue_id for RLS)
+    // Update the order status to SERVING (guard by venue_id for RLS)
     // Use admin client to bypass RLS for the atomic order update; we already authorized above
     const admin = getSupabaseAdmin();
     const { error } = await admin
       .from('orders')
       .update({ 
-        order_status: 'SERVED',
+        order_status: 'SERVING',
         served_at: new Date().toISOString(),
         updated_at: new Date().toISOString()
       })
@@ -105,7 +105,7 @@ export async function POST(req: Request) {
       console.error('[ORDERS SERVE] Failed to update order status', { orderId, venueId, error });
       return NextResponse.json({ error: error.message }, { status: 500 });
     }
-    console.log('[ORDERS SERVE] Order updated to SERVED', { orderId, venueId });
+    console.log('[ORDERS SERVE] Order updated to SERVING', { orderId, venueId });
 
     // Also update table_sessions if present (best-effort)
     try {
