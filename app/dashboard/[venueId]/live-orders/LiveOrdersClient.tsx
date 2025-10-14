@@ -609,7 +609,17 @@ export default function LiveOrdersClient({ venueId, venueName: venueNameProp }: 
   }, [todayWindow, LIVE_ORDER_WINDOW_MS]);
 
   const updateOrderStatus = async (orderId: string, orderStatus: 'PLACED' | 'ACCEPTED' | 'IN_PREP' | 'READY' | 'OUT_FOR_DELIVERY' | 'SERVING' | 'COMPLETED' | 'CANCELLED' | 'REFUNDED' | 'EXPIRED') => {
-    const { error } = await createClient()
+    const supabase = createClient();
+    
+    // Get order details before updating
+    const { data: orderData } = await supabase
+      .from('orders')
+      .select('id, table_id, table_number, source')
+      .eq('id', orderId)
+      .eq('venue_id', venueId)
+      .single();
+
+    const { error } = await supabase
       .from('orders')
       .update({ 
         order_status: orderStatus,
@@ -626,6 +636,62 @@ export default function LiveOrdersClient({ venueId, venueName: venueNameProp }: 
         order.id === orderId ? { ...order, order_status: orderStatus } : order
       ));
       
+      // Handle table cleanup when order is completed or cancelled
+      if ((orderStatus === 'COMPLETED' || orderStatus === 'CANCELLED') && orderData && (orderData.table_id || orderData.table_number) && orderData.source === 'qr') {
+        try {
+          // Check if there are any other active orders for this table
+          const { data: activeOrders, error: activeOrdersError } = await supabase
+            .from('orders')
+            .select('id, order_status, table_id, table_number')
+            .eq('venue_id', venueId)
+            .in('order_status', ['PLACED', 'ACCEPTED', 'IN_PREP', 'READY', 'SERVING'])
+            .neq('id', orderId);
+
+          // Filter by table_id or table_number
+          let filteredActiveOrders = activeOrders || [];
+          if (orderData.table_id) {
+            filteredActiveOrders = (activeOrders || []).filter((o: any) => o.table_id === orderData.table_id);
+          } else if (orderData.table_number) {
+            filteredActiveOrders = (activeOrders || []).filter((o: any) => o.table_number === orderData.table_number);
+          }
+
+          if (activeOrdersError) {
+            console.error('[TABLE CLEAR] Error checking active orders:', activeOrdersError);
+          } else if (!filteredActiveOrders || filteredActiveOrders.length === 0) {
+            
+            // Clear table sessions (active sessions)
+            const sessionUpdateData = {
+              status: 'FREE',
+              order_id: null,
+              closed_at: new Date().toISOString(),
+              updated_at: new Date().toISOString()
+            };
+
+            let sessionQuery = supabase
+              .from('table_sessions')
+              .update(sessionUpdateData)
+              .eq('venue_id', venueId)
+              .is('closed_at', null);
+
+            if (orderData.table_id) {
+              sessionQuery = sessionQuery.eq('table_id', orderData.table_id);
+            } else if (orderData.table_number) {
+              sessionQuery = sessionQuery.eq('table_number', orderData.table_number);
+            }
+
+            const { error: sessionClearError } = await sessionQuery;
+
+            if (sessionClearError) {
+              console.error('[TABLE CLEAR] Error clearing table sessions:', sessionClearError);
+            } else {
+              console.log('[TABLE CLEAR] Successfully cleared table session for completed order');
+            }
+          }
+        } catch (tableCleanupError) {
+          console.error('[TABLE CLEAR] Exception during table cleanup:', tableCleanupError);
+        }
+      }
+      
       // Refresh the authoritative counts after status update
       refetchCounts();
     }
@@ -634,7 +700,17 @@ export default function LiveOrdersClient({ venueId, venueName: venueNameProp }: 
   // Helper function to update orders to COMPLETED and PAID when they're not in live orders
   const updateOrderToCompletedAndPaid = async (orderId: string) => {
     try {
-      const { error } = await createClient()
+      const supabase = createClient();
+      
+      // Get order details before updating
+      const { data: orderData } = await supabase
+        .from('orders')
+        .select('id, table_id, table_number, source')
+        .eq('id', orderId)
+        .eq('venue_id', venueId)
+        .single();
+
+      const { error } = await supabase
         .from('orders')
         .update({ 
           order_status: 'COMPLETED',
@@ -647,6 +723,61 @@ export default function LiveOrdersClient({ venueId, venueName: venueNameProp }: 
       if (error) {
         console.error('[LIVE ORDERS DEBUG] Failed to update order to COMPLETED and PAID:', error);
       } else {
+        // Handle table cleanup for completed order
+        if (orderData && (orderData.table_id || orderData.table_number) && orderData.source === 'qr') {
+          try {
+            // Check if there are any other active orders for this table
+            const { data: activeOrders, error: activeOrdersError } = await supabase
+              .from('orders')
+              .select('id, order_status, table_id, table_number')
+              .eq('venue_id', venueId)
+              .in('order_status', ['PLACED', 'ACCEPTED', 'IN_PREP', 'READY', 'SERVING'])
+              .neq('id', orderId);
+
+            // Filter by table_id or table_number
+            let filteredActiveOrders = activeOrders || [];
+            if (orderData.table_id) {
+              filteredActiveOrders = (activeOrders || []).filter((o: any) => o.table_id === orderData.table_id);
+            } else if (orderData.table_number) {
+              filteredActiveOrders = (activeOrders || []).filter((o: any) => o.table_number === orderData.table_number);
+            }
+
+            if (activeOrdersError) {
+              console.error('[TABLE CLEAR] Error checking active orders:', activeOrdersError);
+            } else if (!filteredActiveOrders || filteredActiveOrders.length === 0) {
+              
+              // Clear table sessions (active sessions)
+              const sessionUpdateData = {
+                status: 'FREE',
+                order_id: null,
+                closed_at: new Date().toISOString(),
+                updated_at: new Date().toISOString()
+              };
+
+              let sessionQuery = supabase
+                .from('table_sessions')
+                .update(sessionUpdateData)
+                .eq('venue_id', venueId)
+                .is('closed_at', null);
+
+              if (orderData.table_id) {
+                sessionQuery = sessionQuery.eq('table_id', orderData.table_id);
+              } else if (orderData.table_number) {
+                sessionQuery = sessionQuery.eq('table_number', orderData.table_number);
+              }
+
+              const { error: sessionClearError } = await sessionQuery;
+
+              if (sessionClearError) {
+                console.error('[TABLE CLEAR] Error clearing table sessions:', sessionClearError);
+              } else {
+                console.log('[TABLE CLEAR] Successfully cleared table session for completed order');
+              }
+            }
+          } catch (tableCleanupError) {
+            console.error('[TABLE CLEAR] Exception during table cleanup:', tableCleanupError);
+          }
+        }
       }
     } catch (error) {
       console.error('[LIVE ORDERS DEBUG] Exception updating order to COMPLETED and PAID:', error);
