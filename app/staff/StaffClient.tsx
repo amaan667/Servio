@@ -367,7 +367,11 @@ export default function StaffClient({ venueId, venueName }: StaffClientProps) {
                     <div className="text-right">
                       <p className="font-medium">{shift.start_time} - {shift.end_time}</p>
                       <p className="text-sm text-muted-foreground">
-                        {isOvernight(shift.start_time, shift.end_time) ? 'Overnight' : 'Same Day'}
+                        {(() => {
+                          const [startHour, startMinute] = shift.start_time.split(':').map(Number);
+                          const [endHour, endMinute] = shift.end_time.split(':').map(Number);
+                          return isOvernight(startHour, startMinute, endHour, endMinute) ? 'Overnight' : 'Same Day';
+                        })()}
                       </p>
                     </div>
                   </div>
@@ -444,15 +448,15 @@ export default function StaffClient({ venueId, venueName }: StaffClientProps) {
               <CardContent className="space-y-4">
                 <div className="flex items-center justify-between">
                   <span>Require Staff Login</span>
-                  <ToggleSwitch defaultChecked />
+                  <ToggleSwitch checked={true} onCheckedChange={() => {}} />
                 </div>
                 <div className="flex items-center justify-between">
                   <span>Auto-logout After Inactivity</span>
-                  <ToggleSwitch defaultChecked />
+                  <ToggleSwitch checked={true} onCheckedChange={() => {}} />
                 </div>
                 <div className="flex items-center justify-between">
                   <span>Email Notifications</span>
-                  <ToggleSwitch defaultChecked />
+                  <ToggleSwitch checked={true} onCheckedChange={() => {}} />
                 </div>
               </CardContent>
             </Card>
@@ -472,7 +476,7 @@ export default function StaffClient({ venueId, venueName }: StaffClientProps) {
                 </div>
                 <div className="flex items-center justify-between">
                   <span>Allow Overnight Shifts</span>
-                  <ToggleSwitch />
+                  <ToggleSwitch checked={false} onCheckedChange={() => {}} />
                 </div>
               </CardContent>
             </Card>
