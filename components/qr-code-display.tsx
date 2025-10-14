@@ -12,7 +12,7 @@ interface QRCodeDisplayProps {
   venueName?: string;
 }
 
-export default function QRCodeDisplay({ currentUrl, venueName = "Servio Café" }: QRCodeDisplayProps) {
+export default function QRCodeDisplay({ currentUrl, venueName = "Demo Café" }: QRCodeDisplayProps) {
   const [showQR, setShowQR] = useState(false);
   const [qrCodeDataUrl, setQrCodeDataUrl] = useState<string>("");
 

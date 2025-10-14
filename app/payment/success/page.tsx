@@ -54,7 +54,7 @@ export default function PaymentSuccessPage() {
           const reconstructedData = {
             id: orderId || `demo-${Date.now()}`,
             venue_id: 'demo-cafe',
-            venue_name: venueNameParam || 'Servio Café',
+            venue_name: venueNameParam || 'Demo Café',
             table_number: 1,
             order_status: 'PLACED',
             payment_status: 'PAID',

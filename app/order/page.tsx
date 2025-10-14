@@ -33,7 +33,7 @@ interface CartItem extends MenuItem {
 
 export default function CustomerOrderPage() {
   const searchParams = useSearchParams();
-  const venueSlug = searchParams?.get("venue") || "venue-1e02af4d"; // Default to known venue
+  const venueSlug = searchParams?.get("venue") || "demo-cafe"; // Default to demo venue
   const tableNumber = searchParams?.get("table") || "1";
   const counterNumber = searchParams?.get("counter") || "";
   const isDemo = searchParams?.get("demo") === "1";
@@ -354,7 +354,7 @@ export default function CustomerOrderPage() {
         image: item.image || undefined,
       }));
       setMenuItems(mappedItems);
-      setVenueName('Servio Café');
+      setVenueName('Demo Café');
       setLoadingMenu(false);
       return;
     }
@@ -607,7 +607,7 @@ export default function CustomerOrderPage() {
         // Create demo order data in the same format as real orders
         const orderData = {
           venueId: 'demo-cafe',
-          venueName: 'Servio Café',
+          venueName: 'Demo Café',
           tableNumber: parseInt(orderLocation) || 1,
           counterNumber: counterNumber,
           orderType: orderType,
@@ -860,7 +860,7 @@ export default function CustomerOrderPage() {
               {/* Business Name and Location */}
               <div className="min-w-0 flex-1">
                 <h1 className="text-lg sm:text-xl md:text-2xl font-bold text-gray-900 dark:text-white truncate">
-                  {isDemo ? "Servio Café" : venueName}
+                  {isDemo ? "Demo Café" : venueName}
                 </h1>
                 <div className="flex flex-col sm:flex-row sm:items-center gap-2 mt-1">
                   <div className="flex items-center gap-2">

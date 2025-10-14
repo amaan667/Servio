@@ -196,7 +196,7 @@ export default function OrderSummaryPage() {
           // Encode essential data in URL as fallback
           customerName: demoOrderData.customer_name || '',
           total: demoOrderData.total_amount?.toString() || '0',
-          venueName: demoOrderData.venue_name || 'Servio Café'
+          venueName: demoOrderData.venue_name || 'Demo Café'
         });
         
         const redirectUrl = `/payment/success?${params.toString()}`;
@@ -374,7 +374,7 @@ export default function OrderSummaryPage() {
           paymentMethod: 'later',
           customerName: demoOrderData.customer_name || '',
           total: demoOrderData.total_amount?.toString() || '0',
-          venueName: demoOrderData.venue_name || 'Servio Café'
+          venueName: demoOrderData.venue_name || 'Demo Café'
         });
         
         setTimeout(() => {

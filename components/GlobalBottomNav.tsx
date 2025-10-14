@@ -169,7 +169,7 @@ export default function GlobalBottomNav({ venueId, counts = {} }: GlobalBottomNa
     {
       id: 'qr-codes',
       label: 'QR Codes',
-      href: currentVenueId ? `/generate-qr?venue=${currentVenueId}` : '/generate-qr',
+      href: '/generate-qr',
       icon: QrCode,
       isActive: pathname === '/generate-qr'
     }

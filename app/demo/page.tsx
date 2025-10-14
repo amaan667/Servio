@@ -244,7 +244,7 @@ function CustomerDemoView() {
       {/* Hero Section */}
       <Card className="border-2 border-purple-200 bg-gradient-to-br from-white to-purple-50">
         <CardHeader>
-          <CardTitle className="text-3xl">Welcome to Servio Café</CardTitle>
+          <CardTitle className="text-3xl">Welcome to Demo Café</CardTitle>
           <CardDescription className="text-lg">
             Experience seamless mobile ordering with QR code scanning
           </CardDescription>

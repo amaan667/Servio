@@ -12,6 +12,7 @@ import TimeField24, { TimeValue24 } from '@/components/inputs/TimeField24';
 import { buildIsoFromLocal, isOvernight, addDaysISO } from '@/lib/time';
 import { Users, Clock, Calendar, ChevronLeft, ChevronRight, Plus } from 'lucide-react';
 import SimpleStaffGrid from '@/components/staff/SimpleStaffGrid';
+import EnhancedShiftSchedule from '@/components/staff/EnhancedShiftSchedule';
 
 
 type StaffRow = {
@@ -734,7 +735,23 @@ export default function StaffClient({
               </div>
             </div>
             
-            <SimpleStaffGrid shifts={allShifts} venueId={venueId} />
+            <EnhancedShiftSchedule
+              staff={staff}
+              shifts={allShifts}
+              venueId={venueId}
+              onShiftAdded={() => {
+                // Reload shifts after adding a new one
+                const loadShifts = async () => {
+                  const res = await fetch(`/api/staff/shifts/list?venue_id=${encodeURIComponent(venueId)}`);
+                  const j = await res.json().catch(() => ({}));
+                  if (res.ok && !j?.error) {
+                    const shifts = j.shifts || [];
+                    setAllShifts(shifts);
+                  }
+                };
+                loadShifts();
+              }}
+            />
           </div>
         )}
       </div>

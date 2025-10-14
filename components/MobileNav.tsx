@@ -102,7 +102,7 @@ export default function MobileNav({ venueId, venueName, counts = {} }: MobileNav
     {
       id: 'qr',
       label: 'QR Codes',
-      href: `/generate-qr?venue=${venueId}`,
+      href: '/generate-qr',
       icon: QrCode,
       description: 'Generate table QR codes',
       isActive: pathname === '/generate-qr'

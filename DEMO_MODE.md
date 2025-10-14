@@ -55,7 +55,7 @@ Two methods for resetting demo data:
 ## Demo Venue Details
 
 - **Venue ID**: `demo-cafe`
-- **Venue Name**: Servio Café
+- **Venue Name**: Demo Café
 - **Menu Items**: 25 pre-configured items across 5 categories
   - Coffee (5 items)
   - Cold Drinks (5 items)
