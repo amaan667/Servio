@@ -10,7 +10,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { ToggleSwitch } from "@/components/ui/toggle-switch";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { createClient } from "@/lib/supabase/client";
-import { ArrowLeft, Plus, Edit, Trash2, ShoppingBag, Trash, ChevronDown, ChevronRight, Save, Eye, Download, Palette, Layout, Settings } from "lucide-react";
+import { ArrowLeft, Plus, Edit, Trash2, ShoppingBag, Trash, ChevronDown, ChevronRight, Save, Eye, Download, Palette, Layout, Settings, Upload, Image, Palette as PaletteIcon, Type, Grid, List } from "lucide-react";
 import { MenuUploadCard } from "@/components/MenuUploadCard";
 import { CategoriesManagement } from "@/components/CategoriesManagement";
 import { useToast } from "@/hooks/use-toast";
@@ -43,6 +43,14 @@ export default function MenuBuilderClient({ venueId, venueName }: { venueId: str
   });
   const [isClearing, setIsClearing] = useState(false);
   const [activeTab, setActiveTab] = useState<'manage' | 'design' | 'preview'>('manage');
+  const [venueSettings, setVenueSettings] = useState({
+    logo: '',
+    theme: 'modern',
+    primaryColor: '#3B82F6',
+    secondaryColor: '#F3F4F6',
+    fontFamily: 'Inter',
+    menuLayout: 'grid'
+  });
   const { toast } = useToast();
   const router = useRouter();
 
@@ -105,9 +113,97 @@ export default function MenuBuilderClient({ venueId, venueName }: { venueId: str
     }
   };
 
+  const loadVenueSettings = async () => {
+    try {
+      const supabase = createClient();
+      const { data, error } = await supabase
+        .from('venue_settings')
+        .select('menu_theme, menu_logo, menu_colors, menu_font, menu_layout')
+        .eq('venue_id', transformedVenueId)
+        .single();
+
+      if (error && error.code !== 'PGRST116') {
+        console.error('Error loading venue settings:', error);
+        return;
+      }
+
+      if (data) {
+        setVenueSettings(prev => ({
+          ...prev,
+          theme: data.menu_theme || 'modern',
+          logo: data.menu_logo || '',
+          primaryColor: data.menu_colors?.primary || '#3B82F6',
+          secondaryColor: data.menu_colors?.secondary || '#F3F4F6',
+          fontFamily: data.menu_font || 'Inter',
+          menuLayout: data.menu_layout || 'grid'
+        }));
+      }
+    } catch (error) {
+      console.error('Error loading venue settings:', error);
+    }
+  };
+
+  const saveVenueSettings = async (newSettings: typeof venueSettings) => {
+    try {
+      const supabase = createClient();
+      const { error } = await supabase
+        .from('venue_settings')
+        .upsert({
+          venue_id: transformedVenueId,
+          menu_theme: newSettings.theme,
+          menu_logo: newSettings.logo,
+          menu_colors: {
+            primary: newSettings.primaryColor,
+            secondary: newSettings.secondaryColor
+          },
+          menu_font: newSettings.fontFamily,
+          menu_layout: newSettings.menuLayout
+        });
+
+      if (error) {
+        console.error('Error saving venue settings:', error);
+        toast({
+          title: "Error",
+          description: "Failed to save settings",
+          variant: "destructive",
+        });
+        return;
+      }
+
+      setVenueSettings(newSettings);
+      toast({
+        title: "Success",
+        description: "Settings saved successfully",
+      });
+    } catch (error) {
+      console.error('Error saving venue settings:', error);
+      toast({
+        title: "Error",
+        description: "Failed to save settings",
+        variant: "destructive",
+      });
+    }
+  };
+
+  const handleLogoUpload = async (event: React.ChangeEvent<HTMLInputElement>) => {
+    const file = event.target.files?.[0];
+    if (!file) return;
+
+    // In a real implementation, you'd upload to a storage service
+    // For now, we'll create a data URL
+    const reader = new FileReader();
+    reader.onload = (e) => {
+      const logoUrl = e.target?.result as string;
+      const newSettings = { ...venueSettings, logo: logoUrl };
+      saveVenueSettings(newSettings);
+    };
+    reader.readAsDataURL(file);
+  };
+
   useEffect(() => {
     loadMenuItems();
     loadCategoryOrder();
+    loadVenueSettings();
   }, [transformedVenueId]);
 
   const handleAddItem = async (e: React.FormEvent) => {
@@ -600,153 +696,251 @@ export default function MenuBuilderClient({ venueId, venueName }: { venueId: str
       {/* Design Tab */}
       {activeTab === 'design' && (
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-          {/* Menu Items */}
+          {/* Design Settings */}
+          <div className="space-y-6">
+            <Card>
+              <CardHeader>
+                <CardTitle className="flex items-center gap-2">
+                  <Image className="h-5 w-5" />
+                  Logo & Branding
+                </CardTitle>
+              </CardHeader>
+              <CardContent className="space-y-4">
+                <div className="space-y-2">
+                  <Label>Restaurant Logo</Label>
+                  <div className="flex items-center gap-4">
+                    {venueSettings.logo ? (
+                      <div className="w-16 h-16 border rounded-lg overflow-hidden">
+                        <img src={venueSettings.logo} alt="Logo" className="w-full h-full object-contain" />
+                      </div>
+                    ) : (
+                      <div className="w-16 h-16 border-2 border-dashed border-gray-300 rounded-lg flex items-center justify-center">
+                        <Image className="h-6 w-6 text-gray-400" />
+                      </div>
+                    )}
+                    <div>
+                      <input
+                        type="file"
+                        accept="image/*"
+                        onChange={handleLogoUpload}
+                        className="hidden"
+                        id="logo-upload"
+                      />
+                      <Button asChild variant="outline" size="sm">
+                        <label htmlFor="logo-upload" className="cursor-pointer">
+                          <Upload className="h-4 w-4 mr-2" />
+                          Upload Logo
+                        </label>
+                      </Button>
+                    </div>
+                  </div>
+                </div>
+              </CardContent>
+            </Card>
+
+            <Card>
+              <CardHeader>
+                <CardTitle className="flex items-center gap-2">
+                  <PaletteIcon className="h-5 w-5" />
+                  Theme & Colors
+                </CardTitle>
+              </CardHeader>
+              <CardContent className="space-y-4">
+                <div className="space-y-2">
+                  <Label>Theme Style</Label>
+                  <select 
+                    value={venueSettings.theme} 
+                    onChange={(e) => saveVenueSettings({ ...venueSettings, theme: e.target.value })}
+                    className="w-full p-2 border rounded-md"
+                  >
+                    <option value="modern">Modern</option>
+                    <option value="classic">Classic</option>
+                    <option value="minimal">Minimal</option>
+                    <option value="elegant">Elegant</option>
+                    <option value="rustic">Rustic</option>
+                  </select>
+                </div>
+                
+                <div className="space-y-2">
+                  <Label>Primary Color</Label>
+                  <div className="flex items-center gap-2">
+                    <input
+                      type="color"
+                      value={venueSettings.primaryColor}
+                      onChange={(e) => saveVenueSettings({ ...venueSettings, primaryColor: e.target.value })}
+                      className="w-10 h-10 border rounded cursor-pointer"
+                    />
+                    <Input
+                      value={venueSettings.primaryColor}
+                      onChange={(e) => saveVenueSettings({ ...venueSettings, primaryColor: e.target.value })}
+                      className="flex-1"
+                    />
+                  </div>
+                </div>
+
+                <div className="space-y-2">
+                  <Label>Secondary Color</Label>
+                  <div className="flex items-center gap-2">
+                    <input
+                      type="color"
+                      value={venueSettings.secondaryColor}
+                      onChange={(e) => saveVenueSettings({ ...venueSettings, secondaryColor: e.target.value })}
+                      className="w-10 h-10 border rounded cursor-pointer"
+                    />
+                    <Input
+                      value={venueSettings.secondaryColor}
+                      onChange={(e) => saveVenueSettings({ ...venueSettings, secondaryColor: e.target.value })}
+                      className="flex-1"
+                    />
+                  </div>
+                </div>
+              </CardContent>
+            </Card>
+
+            <Card>
+              <CardHeader>
+                <CardTitle className="flex items-center gap-2">
+                  <Type className="h-5 w-5" />
+                  Typography & Layout
+                </CardTitle>
+              </CardHeader>
+              <CardContent className="space-y-4">
+                <div className="space-y-2">
+                  <Label>Font Family</Label>
+                  <select 
+                    value={venueSettings.fontFamily} 
+                    onChange={(e) => saveVenueSettings({ ...venueSettings, fontFamily: e.target.value })}
+                    className="w-full p-2 border rounded-md"
+                  >
+                    <option value="Inter">Inter</option>
+                    <option value="Roboto">Roboto</option>
+                    <option value="Open Sans">Open Sans</option>
+                    <option value="Lato">Lato</option>
+                    <option value="Montserrat">Montserrat</option>
+                    <option value="Playfair Display">Playfair Display</option>
+                  </select>
+                </div>
+
+                <div className="space-y-2">
+                  <Label>Menu Layout</Label>
+                  <div className="flex gap-2">
+                    <Button
+                      variant={venueSettings.menuLayout === 'grid' ? 'default' : 'outline'}
+                      size="sm"
+                      onClick={() => saveVenueSettings({ ...venueSettings, menuLayout: 'grid' })}
+                      className="flex items-center gap-2"
+                    >
+                      <Grid className="h-4 w-4" />
+                      Grid
+                    </Button>
+                    <Button
+                      variant={venueSettings.menuLayout === 'list' ? 'default' : 'outline'}
+                      size="sm"
+                      onClick={() => saveVenueSettings({ ...venueSettings, menuLayout: 'list' })}
+                      className="flex items-center gap-2"
+                    >
+                      <List className="h-4 w-4" />
+                      List
+                    </Button>
+                  </div>
+                </div>
+              </CardContent>
+            </Card>
+          </div>
+
+          {/* Menu Preview */}
           <div className="lg:col-span-2 space-y-4">
             <div className="flex items-center justify-between">
-              <h2 className="text-xl font-semibold">Menu Items</h2>
-              <div className="flex items-center gap-2">
-                <Button onClick={exportMenu} variant="outline" size="sm">
-                  <Download className="h-4 w-4 mr-2" />
-                  Export
-                </Button>
-                <Dialog open={isAddModalOpen} onOpenChange={setIsAddModalOpen}>
-                  <DialogTrigger asChild>
-                    <Button>
-                      <Plus className="h-4 w-4 mr-2" />
-                      Add Item
-                    </Button>
-                  </DialogTrigger>
-                  <DialogContent>
-                    <DialogHeader>
-                      <DialogTitle>Add Menu Item</DialogTitle>
-                    </DialogHeader>
-                    <form onSubmit={handleAddItem} className="space-y-4">
-                      <div>
-                        <Label htmlFor="name">Name *</Label>
-                        <Input
-                          id="name"
-                          value={formData.name}
-                          onChange={(e) => setFormData({ ...formData, name: e.target.value })}
-                          placeholder="Enter item name"
-                          required
-                        />
-                      </div>
-                      <div>
-                        <Label htmlFor="description">Description</Label>
-                        <Textarea
-                          id="description"
-                          value={formData.description}
-                          onChange={(e) => setFormData({ ...formData, description: e.target.value })}
-                          placeholder="Enter item description"
-                          rows={3}
-                        />
-                      </div>
-                      <div>
-                        <Label htmlFor="price">Price *</Label>
-                        <Input
-                          id="price"
-                          type="number"
-                          step="0.01"
-                          value={formData.price}
-                          onChange={(e) => setFormData({ ...formData, price: e.target.value })}
-                          placeholder="0.00"
-                          required
-                        />
-                      </div>
-                      <div>
-                        <Label htmlFor="category">Category</Label>
-                        <Input
-                          id="category"
-                          value={formData.category}
-                          onChange={(e) => setFormData({ ...formData, category: e.target.value })}
-                          placeholder="Enter category"
-                        />
-                      </div>
-                      <div className="flex items-center space-x-2">
-                        <ToggleSwitch
-                          checked={formData.available}
-                          onCheckedChange={(checked) => setFormData({ ...formData, available: checked })}
-                        />
-                        <Label>Available</Label>
-                      </div>
-                      <div className="flex justify-end space-x-2">
-                        <Button type="button" variant="outline" onClick={() => setIsAddModalOpen(false)}>
-                          Cancel
-                        </Button>
-                        <Button type="submit">Add Item</Button>
-                      </div>
-                    </form>
-                  </DialogContent>
-                </Dialog>
-              </div>
+              <h2 className="text-xl font-semibold">Live Preview</h2>
+              <Button onClick={() => setActiveTab('preview')} variant="outline" size="sm">
+                <Eye className="h-4 w-4 mr-2" />
+                Full Preview
+              </Button>
             </div>
 
-            {/* Categories */}
-            <div className="space-y-4">
-              {getCategories().map((category) => {
-                const items = getItemsByCategory(category);
-                const isExpanded = expandedCategories.has(category);
-                
-                return (
-                  <Card key={category}>
-                    <CardHeader 
-                      className="cursor-pointer"
-                      onClick={() => toggleCategory(category)}
-                    >
-                      <div className="flex items-center justify-between">
-                        <CardTitle className="text-lg flex items-center gap-2">
-                          {isExpanded ? <ChevronDown className="h-4 w-4" /> : <ChevronRight className="h-4 w-4" />}
+            {/* Live Menu Preview */}
+            <Card 
+              className="border-2"
+              style={{
+                fontFamily: venueSettings.fontFamily,
+                backgroundColor: venueSettings.secondaryColor,
+                borderColor: venueSettings.primaryColor
+              }}
+            >
+              <CardContent className="p-6">
+                {/* Header with Logo */}
+                <div className="text-center mb-6">
+                  {venueSettings.logo && (
+                    <div className="mb-4">
+                      <img 
+                        src={venueSettings.logo} 
+                        alt="Restaurant Logo" 
+                        className="h-16 mx-auto object-contain"
+                      />
+                    </div>
+                  )}
+                  <h1 
+                    className="text-2xl font-bold mb-2"
+                    style={{ color: venueSettings.primaryColor }}
+                  >
+                    {venueName}
+                  </h1>
+                  <p className="text-sm opacity-75">Menu</p>
+                </div>
+
+                {/* Menu Items Preview */}
+                <div className="space-y-6">
+                  {getCategories().slice(0, 2).map((category) => {
+                    const items = getItemsByCategory(category).slice(0, 3);
+                    return (
+                      <div key={category}>
+                        <h2 
+                          className="text-lg font-semibold mb-3 border-b pb-2"
+                          style={{ 
+                            color: venueSettings.primaryColor,
+                            borderColor: venueSettings.primaryColor 
+                          }}
+                        >
                           {category}
-                          <span className="text-sm font-normal text-muted-foreground">
-                            ({items.length} items)
-                          </span>
-                        </CardTitle>
-                      </div>
-                    </CardHeader>
-                    {isExpanded && (
-                      <CardContent>
-                        <div className="space-y-3">
+                        </h2>
+                        <div className={venueSettings.menuLayout === 'grid' ? 'grid grid-cols-1 md:grid-cols-2 gap-4' : 'space-y-3'}>
                           {items.map((item) => (
-                            <div key={item.id} className="flex items-center justify-between p-3 border rounded-lg">
-                              <div className="flex-1">
-                                <div className="flex items-center gap-2">
-                                  <h4 className="font-medium">{item.name}</h4>
-                                  {!item.is_available && (
-                                    <span className="text-xs bg-red-100 text-red-800 px-2 py-1 rounded">
-                                      Unavailable
-                                    </span>
-                                  )}
-                                </div>
-                                {item.description && (
-                                  <p className="text-sm text-muted-foreground mt-1">{item.description}</p>
-                                )}
-                                <p className="text-sm font-medium text-green-600 mt-1">${item.price.toFixed(2)}</p>
-                              </div>
-                              <div className="flex items-center gap-2">
-                                <Button
-                                  variant="outline"
-                                  size="sm"
-                                  onClick={() => startEdit(item)}
+                            <div 
+                              key={item.id} 
+                              className={`p-3 rounded-lg ${
+                                venueSettings.theme === 'minimal' ? 'border' : 'shadow-sm'
+                              }`}
+                              style={{
+                                backgroundColor: venueSettings.theme === 'minimal' ? 'transparent' : 'white',
+                                borderColor: venueSettings.primaryColor
+                              }}
+                            >
+                              <div className="flex justify-between items-start mb-2">
+                                <h3 className="font-medium">{item.name}</h3>
+                                <span 
+                                  className="font-semibold"
+                                  style={{ color: venueSettings.primaryColor }}
                                 >
-                                  <Edit className="h-4 w-4" />
-                                </Button>
-                                <Button
-                                  variant="outline"
-                                  size="sm"
-                                  onClick={() => handleDeleteItem(item.id)}
-                                >
-                                  <Trash2 className="h-4 w-4" />
-                                </Button>
+                                  ${item.price.toFixed(2)}
+                                </span>
                               </div>
+                              {item.description && (
+                                <p className="text-sm opacity-75">{item.description}</p>
+                              )}
+                              {!item.is_available && (
+                                <span className="inline-block mt-2 text-xs bg-red-100 text-red-800 px-2 py-1 rounded">
+                                  Currently Unavailable
+                                </span>
+                              )}
                             </div>
                           ))}
                         </div>
-                      </CardContent>
-                    )}
-                  </Card>
-                );
-              })}
-            </div>
+                      </div>
+                    );
+                  })}
+                </div>
+              </CardContent>
+            </Card>
           </div>
 
           {/* Sidebar */}
