@@ -1,5 +1,6 @@
 import { NextResponse } from 'next/server';
 import { createClient } from '@/lib/supabase/server';
+import { getSupabaseAdmin } from '@/lib/supabaseAdmin';
 
 export async function POST(req: Request) {
   try {
@@ -87,7 +88,9 @@ export async function POST(req: Request) {
     console.log('[ORDERS SERVE] Access granted via', { owner: Boolean(venue), role: role?.role || null });
 
     // Update the order status to SERVED (guard by venue_id for RLS)
-    const { error } = await supabase
+    // Use admin client to bypass RLS for the atomic order update; we already authorized above
+    const admin = getSupabaseAdmin();
+    const { error } = await admin
       .from('orders')
       .update({ 
         order_status: 'SERVED',
@@ -105,7 +108,7 @@ export async function POST(req: Request) {
 
     // Also update table_sessions if present (best-effort)
     try {
-      await supabase
+      await admin
         .from('table_sessions')
         .update({ 
           status: 'SERVED',
