@@ -80,10 +80,10 @@ export default function QRCodeClient({ venueId, venueName }: { venueId: string; 
 
   const addTable = async (tableNumber?: string) => {
     const numToAdd = tableNumber || newTableNumber;
-    if (!numToAdd.trim() || isNaN(parseInt(numToAdd))) {
+    if (!numToAdd.trim()) {
       toast({
         title: "Error",
-        description: "Please enter a valid table number",
+        description: "Please enter a table name or number",
         variant: "destructive",
       });
       return;
@@ -97,7 +97,7 @@ export default function QRCodeClient({ venueId, venueName }: { venueId: string; 
         .from('tables')
         .insert({
           venue_id: venueId,
-          table_number: parseInt(numToAdd),
+          table_number: parseInt(numToAdd) || 1,
           label: numToAdd,
           is_counter: false,
           is_active: true
@@ -116,7 +116,7 @@ export default function QRCodeClient({ venueId, venueName }: { venueId: string; 
       await loadTablesAndCounters();
       
       // Auto-select the newly added table
-      setSelectedTables(prev => [...prev, parseInt(numToAdd)]);
+      setSelectedTables(prev => [...prev, parseInt(numToAdd) || 1]);
     } catch (error: any) {
       console.error('Error adding table:', error);
       toast({
@@ -584,8 +584,7 @@ export default function QRCodeClient({ venueId, venueName }: { venueId: string; 
                   
                   <div className="flex space-x-2">
                     <Input
-                      type="number"
-                      placeholder="Table number"
+                      placeholder="Table name or number"
                       value={newTableNumber}
                       onChange={(e) => setNewTableNumber(e.target.value)}
                       className="flex-1"
@@ -876,16 +875,9 @@ export default function QRCodeClient({ venueId, venueName }: { venueId: string; 
                   {qrCodeType === 'tables' ? (
                     <>
                       <Button onClick={() => {
-                        const tableNumber = prompt('Enter table number:');
-                        if (tableNumber && !isNaN(parseInt(tableNumber))) {
-                          addTable(tableNumber);
-                          // Auto-select the table after adding it
-                          setTimeout(() => {
-                            setSelectedTables(prev => {
-                              const newTables = [...prev, parseInt(tableNumber)];
-                              return newTables;
-                            });
-                          }, 500);
+                        const tableName = prompt('Enter table name or number:');
+                        if (tableName && tableName.trim()) {
+                          addTable(tableName);
                         }
                       }}>
                         <Plus className="h-4 w-4 mr-2" />
