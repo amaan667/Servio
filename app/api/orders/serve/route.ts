@@ -56,22 +56,35 @@ export async function POST(req: Request) {
       return NextResponse.json({ error: 'Order missing venue_id' }, { status: 400 });
     }
 
-    const { data: venue, error: venueError } = await supabase
-      .from('venues')
-      .select('venue_id')
-      .eq('venue_id', venueId)
-      .eq('owner_user_id', user.id)
-      .maybeSingle();
+    // Check access via ownership OR user_venue_roles membership
+    const [{ data: venue, error: venueError }, { data: role, error: roleError }] = await Promise.all([
+      supabase
+        .from('venues')
+        .select('venue_id')
+        .eq('venue_id', venueId)
+        .eq('owner_user_id', user.id)
+        .maybeSingle(),
+      supabase
+        .from('user_venue_roles')
+        .select('role')
+        .eq('venue_id', venueId)
+        .eq('user_id', user.id)
+        .maybeSingle()
+    ]);
 
     if (venueError) {
       console.error('[ORDERS SERVE] Venue check error', { venueId, userId: user.id, venueError });
-      return NextResponse.json({ error: 'Failed to verify venue ownership' }, { status: 500 });
     }
-    if (!venue) {
-      console.warn('[ORDERS SERVE] Forbidden: user does not own venue', { venueId, userId: user.id });
+    if (roleError) {
+      console.error('[ORDERS SERVE] Role check error', { venueId, userId: user.id, roleError });
+    }
+
+    const hasAccess = Boolean(venue) || Boolean(role);
+    if (!hasAccess) {
+      console.warn('[ORDERS SERVE] Forbidden: user lacks venue access (not owner or staff)', { venueId, userId: user.id });
       return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
     }
-    console.log('[ORDERS SERVE] Venue ownership verified', { venueId, userId: user.id });
+    console.log('[ORDERS SERVE] Access granted via', { owner: Boolean(venue), role: role?.role || null });
 
     // Update the order status to SERVED (guard by venue_id for RLS)
     const { error } = await supabase
