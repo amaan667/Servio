@@ -260,7 +260,7 @@ export default function StaffClient({ venueId, venueName }: StaffClientProps) {
       </div>
 
       {/* Main Content */}
-      <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-6">
+      <Tabs value={activeTab} onValueChange={(value) => setActiveTab(value as 'staff' | 'shifts' | 'reports' | 'settings')} className="space-y-6">
         <TabsList className="grid w-full grid-cols-4">
           <TabsTrigger value="staff" className="flex items-center gap-2">
             <Users className="h-4 w-4" />
