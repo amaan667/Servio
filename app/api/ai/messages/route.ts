@@ -115,19 +115,35 @@ export async function POST(request: NextRequest) {
     const body = await request.json();
     const { venueId, conversationId, text } = CreateMessageSchema.parse(body);
 
-    // Verify user has access to venue
-    const { data: venue } = await supabase
-      .from("venues")
-      .select("owner_id")
-      .eq("venue_id", venueId)
-      .single();
-
-    if (!venue || venue.owner_id !== user.id) {
-      return NextResponse.json(
-        { error: "Access denied to this venue" },
-        { status: 403 }
-      );
+    // Verify user has access to venue (role-based first, then owner fallback)
+    let roleName: string | null = null;
+    try {
+      const { data: roleRow, error: roleErr } = await supabase
+        .from('user_venue_roles')
+        .select('role')
+        .eq('venue_id', venueId)
+        .eq('user_id', user.id)
+        .maybeSingle();
+      if (!roleErr && roleRow?.role) roleName = roleRow.role;
+    } catch (e) {
+      // ignore, fallback to owner
     }
+
+    if (!roleName) {
+      const { data: venue } = await supabase
+        .from("venues")
+        .select("owner_id")
+        .eq("venue_id", venueId)
+        .single();
+      if (!venue || venue.owner_id !== user.id) {
+        return NextResponse.json(
+          { error: "Access denied to this venue" },
+          { status: 403 }
+        );
+      }
+      roleName = 'owner';
+    }
+    console.log('[AI MESSAGES] Access granted with role:', { userId: user.id, venueId, role: roleName });
 
     let currentConversationId = conversationId;
 

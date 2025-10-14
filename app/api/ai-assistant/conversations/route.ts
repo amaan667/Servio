@@ -35,21 +35,43 @@ export async function GET(request: NextRequest) {
 
     // If user is authenticated, verify venue access
     if (user) {
-      const { data: venue } = await adminSupabase
-        .from("venues")
-        .select("owner_id")
-        .eq("venue_id", venueId)
-        .single();
-
-      console.log("[AI CHAT] Venue check - found:", !!venue, "owner_id:", venue?.owner_id, "user_id:", user.id);
-
-      if (!venue || venue.owner_id !== user.id) {
-        console.log("[AI CHAT] Access denied - venue not found or user not owner");
-        return NextResponse.json(
-          { error: "Access denied to this venue" },
-          { status: 403 }
-        );
+      // Try role-based access first
+      let roleName: string | null = null;
+      try {
+        const { data: roleRow, error: roleErr } = await adminSupabase
+          .from('user_venue_roles')
+          .select('role')
+          .eq('venue_id', venueId)
+          .eq('user_id', user.id)
+          .maybeSingle();
+        if (!roleErr && roleRow?.role) {
+          roleName = roleRow.role;
+        }
+      } catch (e) {
+        console.log('[AI CHAT] user_venue_roles lookup failed, will fallback to ownership check', e);
       }
+
+      if (!roleName) {
+        // Fallback to owner check
+        const { data: venue } = await adminSupabase
+          .from("venues")
+          .select("owner_id")
+          .eq("venue_id", venueId)
+          .single();
+
+        console.log("[AI CHAT] Venue check - found:", !!venue, "owner_id:", venue?.owner_id, "user_id:", user.id);
+
+        if (!venue || venue.owner_id !== user.id) {
+          console.log("[AI CHAT] Access denied - no role and user not owner");
+          return NextResponse.json(
+            { error: "Access denied to this venue" },
+            { status: 403 }
+          );
+        }
+        roleName = 'owner';
+      }
+
+      console.log('[AI CHAT] Access granted with role:', { userId: user.id, venueId, role: roleName });
 
       // Get conversations for this venue using admin client
       const result = await adminSupabase
