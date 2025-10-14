@@ -64,9 +64,7 @@ export function createClient() {
           flowType: 'pkce',
           // Mobile-optimized settings
           debug: false,
-          storage: typeof window !== 'undefined' ? window.localStorage : undefined,
-          // Mobile-specific settings
-          redirectTo: typeof window !== 'undefined' ? `${window.location.origin}/auth/callback` : undefined
+          storage: typeof window !== 'undefined' ? window.localStorage : undefined
         }
       }
     );
