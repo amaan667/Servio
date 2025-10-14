@@ -427,16 +427,35 @@ export default function MenuBuilderClient({ venueId, venueName }: { venueId: str
 
   const getCategories = () => {
     const categories = [...new Set(menuItems.map(item => item.category))];
-    return categoryOrder ? 
-      categories.sort((a, b) => {
+    
+    // If we have stored category order from PDF upload, use it
+    if (categoryOrder && Array.isArray(categoryOrder)) {
+      return categories.sort((a, b) => {
         const aIndex = categoryOrder.indexOf(a);
         const bIndex = categoryOrder.indexOf(b);
         if (aIndex === -1 && bIndex === -1) return a.localeCompare(b);
         if (aIndex === -1) return 1;
         if (bIndex === -1) return -1;
         return aIndex - bIndex;
-      }) : 
-      categories.sort();
+      });
+    }
+    
+    // Otherwise, derive order from the order items appear in the database (which reflects PDF order)
+    const categoryFirstAppearance: { [key: string]: number } = {};
+    
+    menuItems.forEach((item, index) => {
+      const category = item.category || 'Uncategorized';
+      if (!(category in categoryFirstAppearance)) {
+        categoryFirstAppearance[category] = index;
+      }
+    });
+    
+    // Sort categories by their first appearance in the menu items (PDF order)
+    return categories.sort((a, b) => {
+      const aIndex = categoryFirstAppearance[a] || 999;
+      const bIndex = categoryFirstAppearance[b] || 999;
+      return aIndex - bIndex;
+    });
   };
 
   const toggleCategory = (category: string) => {
