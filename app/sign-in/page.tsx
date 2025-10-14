@@ -72,7 +72,9 @@ function SignInPageContent() {
         const msg = error?.message || 'Sign in failed.';
         // If rate limited, display a friendlier message
         if (/rate limit/i.test(msg)) {
-          alert('Too many attempts. Please wait ~30 seconds and try again.');
+          alert('Too many sign-in attempts. Please wait 30 seconds and try again.');
+        } else if (/network|connection|timeout/i.test(msg)) {
+          alert('Connection issue. Please check your internet and try again.');
         } else {
           alert(`Sign in failed: ${msg}`);
         }

@@ -399,14 +399,21 @@ export default function CustomerOrderPage() {
       // Fetch category order from the categories API
       try {
         const categoryOrderResponse = await fetch(`${window.location.origin}/api/menu/categories?venueId=${venueSlug}`);
+        console.log('[ORDER PAGE] Category order response status:', categoryOrderResponse.status);
         if (categoryOrderResponse.ok) {
           const categoryOrderData = await categoryOrderResponse.json();
+          console.log('[ORDER PAGE] Category order data:', categoryOrderData.categories);
           if (categoryOrderData.categories && Array.isArray(categoryOrderData.categories)) {
             setCategoryOrder(categoryOrderData.categories);
+            console.log('[ORDER PAGE] Set category order:', categoryOrderData.categories);
           } else {
+            console.log('[ORDER PAGE] No valid category order data');
           }
+        } else {
+          console.log('[ORDER PAGE] Category order API failed:', categoryOrderResponse.status);
         }
       } catch (error) {
+        console.error('[ORDER PAGE] Category order fetch error:', error);
         setCategoryOrder(null);
       }
       
@@ -927,6 +934,8 @@ export default function CustomerOrderPage() {
                   
                   // Sort categories based on stored order from PDF upload
                   const sortedCats = categories.sort((a,b)=>{
+                    console.log('[ORDER PAGE] Sorting categories:', { a, b, categoryOrder });
+                    
                     // Check if we have stored category order from PDF upload
                     if (categoryOrder && Array.isArray(categoryOrder)) {
                       const orderA = categoryOrder.findIndex(storedCat => 
@@ -936,8 +945,11 @@ export default function CustomerOrderPage() {
                         storedCat.toLowerCase() === (b||'').toLowerCase()
                       );
                       
+                      console.log('[ORDER PAGE] Category order indices:', { orderA, orderB });
+                      
                       // If both categories are in stored order, sort by that order
                       if (orderA >= 0 && orderB >= 0) {
+                        console.log('[ORDER PAGE] Both in stored order, using stored order');
                         return orderA - orderB;
                       }
                       
@@ -953,12 +965,15 @@ export default function CustomerOrderPage() {
                     if (itemA && itemB) {
                       const indexA = menuItems.indexOf(itemA);
                       const indexB = menuItems.indexOf(itemB);
+                      console.log('[ORDER PAGE] Using database order indices:', { indexA, indexB });
                       return indexA - indexB;
                     }
                     
                     // NO ALPHABETICAL FALLBACK - maintain database order
                     return 0;
                   });
+                  
+                  console.log('[ORDER PAGE] Final sorted categories:', sortedCats);
                   return sortedCats.map((category) => (
                     <div key={category} className="bg-white dark:bg-gray-800 rounded-lg shadow-sm border border-gray-100 dark:border-gray-700 overflow-hidden">
                       <div className="bg-gradient-to-r from-purple-50 to-blue-50 dark:from-purple-900/20 dark:to-blue-900/20 px-4 py-3 border-b border-gray-100 dark:border-gray-700">

@@ -61,7 +61,10 @@ export function createClient() {
           autoRefreshToken: true, // Enable auto refresh for proper session management
           persistSession: true, // Enable session persistence for auth state
           detectSessionInUrl: true, // Enable session detection in URL for OAuth
-          flowType: 'pkce'
+          flowType: 'pkce',
+          // Mobile-optimized settings
+          debug: false,
+          storage: typeof window !== 'undefined' ? window.localStorage : undefined
         }
       }
     );

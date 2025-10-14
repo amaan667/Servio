@@ -50,8 +50,12 @@ export default function SignInForm({ onGoogleSignIn, isLoading = false, error: p
           const waitMs = 30_000; // 30s cooldown
           setCooldownUntil(Date.now() + waitMs);
           setTimeout(() => setCooldownUntil(null), waitMs);
+          setError('Too many sign-in attempts. Please wait 30 seconds and try again.');
+        } else if (/network|connection|timeout/i.test(msg)) {
+          setError('Connection issue. Please check your internet and try again.');
+        } else {
+          setError(msg);
         }
-        setError(msg);
         setLoading(false);
         return;
       }
