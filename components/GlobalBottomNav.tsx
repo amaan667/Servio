@@ -40,7 +40,7 @@ export default function GlobalBottomNav({ venueId, counts = {} }: GlobalBottomNa
   // Determine if we're on dashboard pages
   const isOnDashboard = pathname?.startsWith('/dashboard');
   const isOnHomePage = pathname === '/';
-  const isOnQRPage = pathname?.includes('/generate-qr');
+  const isOnQRPage = pathname?.includes('/qr-codes');
   const shouldShowNav = isOnDashboard || isOnQRPage;
 
   // Check if we're on the dashboard root page (not a feature page)

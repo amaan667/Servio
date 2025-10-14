@@ -656,7 +656,7 @@ const VenueDashboardClient = React.memo(function VenueDashboardClient({
             </Card>
           </Link>
 
-          <Link href={`/kitchen?venue=${venueId}`}>
+          <Link href={`/dashboard/${venueId}/kds`}>
             <Card className="hover:shadow-lg transition-shadow cursor-pointer">
               <CardContent className="p-4 sm:p-6">
                 <div className="w-10 h-10 sm:w-12 sm:h-12 bg-red-100 rounded-lg flex items-center justify-center mb-4">
@@ -680,7 +680,7 @@ const VenueDashboardClient = React.memo(function VenueDashboardClient({
             </Card>
           </Link>
 
-          <Link href={`/generate-qr?venue=${venueId}`}>
+          <Link href={`/dashboard/${venueId}/qr-codes`}>
             <Card className="hover:shadow-lg transition-shadow cursor-pointer">
               <CardContent className="p-4 sm:p-6">
                 <div className="w-10 h-10 sm:w-12 sm:h-12 bg-purple-100 rounded-lg flex items-center justify-center mb-4">
@@ -711,7 +711,7 @@ const VenueDashboardClient = React.memo(function VenueDashboardClient({
             </Link>
           )}
 
-          <Link href={`/analytics?venue=${venueId}`}>
+          <Link href={`/dashboard/${venueId}/analytics`}>
             <Card className="hover:shadow-lg transition-shadow cursor-pointer">
               <CardContent className="p-4 sm:p-6">
                 <div className="w-10 h-10 sm:w-12 sm:h-12 bg-green-100 rounded-lg flex items-center justify-center mb-4">
@@ -735,7 +735,7 @@ const VenueDashboardClient = React.memo(function VenueDashboardClient({
             </Card>
           </Link>
 
-          <Link href={`/staff?venue=${venueId}`}>
+          <Link href={`/dashboard/${venueId}/staff`}>
             <Card className="hover:shadow-lg transition-shadow cursor-pointer">
               <CardContent className="p-4 sm:p-6">
                 <div className="w-10 h-10 sm:w-12 sm:h-12 bg-slate-100 rounded-lg flex items-center justify-center mb-4">
@@ -795,7 +795,7 @@ const VenueDashboardClient = React.memo(function VenueDashboardClient({
                   </div>
                 </div>
                 <Button variant="outline" asChild>
-                  <Link href={`/generate-qr?venue=${venueId}`}>Generate</Link>
+                  <Link href={`/dashboard/${venueId}/qr-codes`}>Generate</Link>
                 </Button>
               </div>
 

@@ -118,18 +118,18 @@ export default function MobileNav({ venueId, venueName, counts = {} }: MobileNav
     {
       id: 'analytics',
       label: 'Analytics',
-      href: `/analytics?venue=${venueId}`,
+      href: `/dashboard/${venueId}/analytics`,
       icon: BarChart,
       description: 'Business insights',
-      isActive: pathname === '/analytics'
+      isActive: pathname === `/dashboard/${venueId}/analytics`
     },
     {
       id: 'staff',
       label: 'Staff',
-      href: `/staff?venue=${venueId}`,
+      href: `/dashboard/${venueId}/staff`,
       icon: Users,
       description: 'Staff management',
-      isActive: pathname === '/staff'
+      isActive: pathname === `/dashboard/${venueId}/staff`
     },
     {
       id: 'feedback',

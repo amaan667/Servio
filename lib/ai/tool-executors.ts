@@ -1526,8 +1526,8 @@ export async function executeNavigationGoToPage(
     "live-orders": `/dashboard/${venueId}/live-orders`,
     "kds": `/dashboard/${venueId}/kds`,
     "kitchen-display": `/dashboard/${venueId}/kds`, // same as kds
-    "qr-codes": `/generate-qr`, // Fixed: qr-codes page doesn't exist, use generate-qr
-    "generate-qr": `/generate-qr`,
+    "qr-codes": `/dashboard/${venueId}/qr-codes`,
+    "generate-qr": `/dashboard/${venueId}/qr-codes`,
     "analytics": `/dashboard/${venueId}/analytics`,
     "settings": `/dashboard/${venueId}/settings`,
     "staff": `/dashboard/${venueId}/staff`,

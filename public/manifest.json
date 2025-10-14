@@ -77,7 +77,7 @@
       "name": "Generate QR",
       "short_name": "QR Codes",
       "description": "Generate QR codes",
-      "url": "/generate-qr",
+      "url": "/dashboard",
       "icons": [
         {
           "src": "/images/shortcut-qr.png",

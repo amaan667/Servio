@@ -892,7 +892,7 @@ export default function AnalyticsClient({ venueId, venueName }: { venueId: strin
             </p>
             <div className="flex justify-center space-x-4">
               <Button asChild>
-                <Link href={`/generate-qr?venue=${venueId}`}>Generate QR Codes</Link>
+                <Link href={`/dashboard/${venueId}/qr-codes`}>Generate QR Codes</Link>
               </Button>
               <Button asChild variant="outline">
                 <Link href={`/dashboard/${venueId}/live-orders`}>View Live Orders</Link>

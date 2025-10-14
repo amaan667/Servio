@@ -164,8 +164,8 @@ const HomePage = React.memo(function HomePage() {
                 </CardDescription>
               </CardHeader>
               <CardContent>
-                <Link href="/generate-qr">
-                  <Button className="w-full" variant="outline">Generate QR</Button>
+                <Link href="/dashboard">
+                  <Button className="w-full" variant="outline">Go to Dashboard</Button>
                 </Link>
               </CardContent>
             </Card>

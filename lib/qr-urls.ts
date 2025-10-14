@@ -34,8 +34,7 @@ export function buildOrderUrl(
  * Build QR generation page URL with selected tables
  */
 export function buildQRGenerationUrl(venueId: string, tables: string[]): string {
-  const tablesParam = tables.join(',');
-  return `/generate-qr?venue=${venueId}&tables=${tablesParam}`;
+  return `/dashboard/${venueId}/qr-codes`;
 }
 
 /**
