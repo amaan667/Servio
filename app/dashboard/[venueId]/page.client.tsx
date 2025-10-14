@@ -656,26 +656,26 @@ const VenueDashboardClient = React.memo(function VenueDashboardClient({
             </Card>
           </Link>
 
-          <Link href={`/dashboard/${venueId}/kds`}>
+          <Link href={`/kitchen?venue=${venueId}`}>
             <Card className="hover:shadow-lg transition-shadow cursor-pointer">
               <CardContent className="p-4 sm:p-6">
                 <div className="w-10 h-10 sm:w-12 sm:h-12 bg-red-100 rounded-lg flex items-center justify-center mb-4">
                   <ChefHat className="h-5 w-5 sm:h-6 sm:w-6 text-red-600" />
                 </div>
                 <h3 className="text-base sm:text-lg font-semibold mb-2 text-foreground">Kitchen Display</h3>
-                <p className="text-gray-700 text-xs sm:text-sm font-medium">Manage kitchen prep stations and ticket flow</p>
+                <p className="text-gray-700 text-xs sm:text-sm font-medium">Real-time kitchen order management and display</p>
               </CardContent>
             </Card>
           </Link>
 
-          <Link href={`/dashboard/${venueId}/menu`}>
+          <Link href={`/menu-builder?venue=${venueId}`}>
             <Card className="hover:shadow-lg transition-shadow cursor-pointer">
               <CardContent className="p-4 sm:p-6">
                 <div className="w-10 h-10 sm:w-12 sm:h-12 bg-orange-100 rounded-lg flex items-center justify-center mb-4">
                   <ShoppingBag className="h-5 w-5 sm:h-6 sm:w-6 text-orange-600" />
                 </div>
-                <h3 className="text-base sm:text-lg font-semibold mb-2 text-foreground">Menu Management</h3>
-                <p className="text-gray-700 text-xs sm:text-sm font-medium">Update your menu items and manage categories</p>
+                <h3 className="text-base sm:text-lg font-semibold mb-2 text-foreground">Menu Builder</h3>
+                <p className="text-gray-700 text-xs sm:text-sm font-medium">Design and manage your menu with our intuitive builder</p>
               </CardContent>
             </Card>
           </Link>
@@ -711,14 +711,14 @@ const VenueDashboardClient = React.memo(function VenueDashboardClient({
             </Link>
           )}
 
-          <Link href={`/dashboard/${venueId}/analytics`}>
+          <Link href={`/analytics?venue=${venueId}`}>
             <Card className="hover:shadow-lg transition-shadow cursor-pointer">
               <CardContent className="p-4 sm:p-6">
                 <div className="w-10 h-10 sm:w-12 sm:h-12 bg-green-100 rounded-lg flex items-center justify-center mb-4">
                   <BarChart className="h-5 w-5 sm:h-6 sm:w-6 text-green-600" />
                 </div>
                 <h3 className="text-base sm:text-lg font-semibold mb-2 text-foreground">Analytics</h3>
-                <p className="text-gray-700 text-xs sm:text-sm font-medium">View detailed reports and business insights</p>
+                <p className="text-gray-700 text-xs sm:text-sm font-medium">Deep insights into your restaurant performance</p>
               </CardContent>
             </Card>
           </Link>
@@ -735,14 +735,14 @@ const VenueDashboardClient = React.memo(function VenueDashboardClient({
             </Card>
           </Link>
 
-          <Link href={`/dashboard/${venueId}/staff`}>
+          <Link href={`/staff?venue=${venueId}`}>
             <Card className="hover:shadow-lg transition-shadow cursor-pointer">
               <CardContent className="p-4 sm:p-6">
                 <div className="w-10 h-10 sm:w-12 sm:h-12 bg-slate-100 rounded-lg flex items-center justify-center mb-4">
                   <Users className="h-5 w-5 sm:h-6 sm:w-6 text-slate-700" />
                 </div>
                 <h3 className="text-base sm:text-lg font-semibold mb-2 text-foreground">Staff Management</h3>
-                <p className="text-gray-700 text-xs sm:text-sm font-medium">Add staff and manage roles</p>
+                <p className="text-gray-700 text-xs sm:text-sm font-medium">Manage your team, roles, and permissions</p>
               </CardContent>
             </Card>
           </Link>

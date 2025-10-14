@@ -93,11 +93,11 @@ export default function MobileNav({ venueId, venueName, counts = {} }: MobileNav
     },
     {
       id: 'menu',
-      label: 'Menu',
-      href: `/dashboard/${venueId}/menu`,
+      label: 'Menu Builder',
+      href: `/menu-builder?venue=${venueId}`,
       icon: ShoppingBag,
-      description: 'Manage menu items',
-      isActive: pathname === `/dashboard/${venueId}/menu`
+      description: 'Design and manage menu',
+      isActive: pathname === '/menu-builder'
     },
     {
       id: 'qr',
@@ -118,18 +118,18 @@ export default function MobileNav({ venueId, venueName, counts = {} }: MobileNav
     {
       id: 'analytics',
       label: 'Analytics',
-      href: `/dashboard/${venueId}/analytics`,
+      href: `/analytics?venue=${venueId}`,
       icon: BarChart,
       description: 'Business insights',
-      isActive: pathname === `/dashboard/${venueId}/analytics`
+      isActive: pathname === '/analytics'
     },
     {
       id: 'staff',
       label: 'Staff',
-      href: `/dashboard/${venueId}/staff`,
+      href: `/staff?venue=${venueId}`,
       icon: Users,
       description: 'Staff management',
-      isActive: pathname === `/dashboard/${venueId}/staff`
+      isActive: pathname === '/staff'
     },
     {
       id: 'feedback',
