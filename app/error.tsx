@@ -13,6 +13,12 @@ export default function Error({
   const router = useRouter();
 
   useEffect(() => {
+    // Don't handle NEXT_REDIRECT errors - these are internal Next.js redirect mechanisms
+    if (error.message === 'NEXT_REDIRECT' || error.name === 'NEXT_REDIRECT') {
+      console.log('[ERROR BOUNDARY] Ignoring NEXT_REDIRECT error - this is expected behavior');
+      return;
+    }
+    
     // Log the error to help with debugging
     console.error('[ERROR BOUNDARY] Application error caught:', {
       message: error.message,
@@ -31,6 +37,11 @@ export default function Error({
     }
     // For other errors, don't redirect - let the component handle it
   }, [error, router]);
+
+  // Don't render error UI for NEXT_REDIRECT errors
+  if (error.message === 'NEXT_REDIRECT' || error.name === 'NEXT_REDIRECT') {
+    return null;
+  }
 
   // Return a simple error state with reset option
   return (
