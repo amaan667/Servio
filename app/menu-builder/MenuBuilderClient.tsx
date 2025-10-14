@@ -32,7 +32,6 @@ export default function MenuBuilderClient({ venueId, venueName }: { venueId: str
   const [isAddModalOpen, setIsAddModalOpen] = useState(false);
   const [categoryOrder, setCategoryOrder] = useState<string[] | null>(null);
   const [editingItem, setEditingItem] = useState<MenuItem | null>(null);
-  const [showCategories, setShowCategories] = useState(false);
   const [expandedCategories, setExpandedCategories] = useState<Set<string>>(new Set());
   const [formData, setFormData] = useState({
     name: '',
@@ -43,6 +42,7 @@ export default function MenuBuilderClient({ venueId, venueName }: { venueId: str
   });
   const [isClearing, setIsClearing] = useState(false);
   const [activeTab, setActiveTab] = useState<'manage' | 'design' | 'preview'>('manage');
+  const [showCategories, setShowCategories] = useState(false);
   const [venueSettings, setVenueSettings] = useState({
     logo: '',
     theme: 'modern',
@@ -978,10 +978,10 @@ export default function MenuBuilderClient({ venueId, venueName }: { venueId: str
                 <Button 
                   variant="outline" 
                   className="w-full justify-start"
-                  onClick={() => setShowCategories(true)}
+                  onClick={() => setShowCategories(!showCategories)}
                 >
                   <Layout className="h-4 w-4 mr-2" />
-                  Manage Categories
+                  {showCategories ? 'Hide Categories' : 'Manage Categories'}
                 </Button>
                 <Button 
                   variant="outline" 
@@ -1113,13 +1113,13 @@ export default function MenuBuilderClient({ venueId, venueName }: { venueId: str
         </DialogContent>
       </Dialog>
 
-      {/* Categories Management Modal */}
-      <CategoriesManagement
-        venueId={transformedVenueId}
-        isOpen={showCategories}
-        onClose={() => setShowCategories(false)}
-        onUpdate={loadCategoryOrder}
-      />
+      {/* Categories Management */}
+      {showCategories && (
+        <CategoriesManagement
+          venueId={transformedVenueId}
+          onCategoriesUpdate={loadCategoryOrder}
+        />
+      )}
     </div>
   );
 }
