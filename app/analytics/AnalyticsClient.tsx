@@ -15,6 +15,13 @@ import { toCSV, formatDateForCSV, formatCurrencyForCSV } from '@/lib/csv';
 import { useCsvDownload, generateTimestampedFilename } from '@/hooks/useCsvDownload';
 import { useToast } from '@/hooks/use-toast';
 
+interface Order {
+  id: string;
+  total_amount: number;
+  created_at: string;
+  order_items?: any[];
+}
+
 interface AnalyticsData {
   totalOrders: number;
   totalRevenue: number;
@@ -128,7 +135,7 @@ export default function AnalyticsClient({ venueId, venueName }: AnalyticsClientP
 
       // Process data
       const totalOrders = orders?.length || 0;
-      const totalRevenue = orders?.reduce((sum: number, order) => sum + (order.total_amount || 0), 0) || 0;
+      const totalRevenue = orders?.reduce((sum: number, order: Order) => sum + (order.total_amount || 0), 0) || 0;
       const averageOrderValue = totalOrders > 0 ? totalRevenue / totalOrders : 0;
 
       // Group by date
