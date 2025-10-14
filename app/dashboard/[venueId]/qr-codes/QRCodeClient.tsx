@@ -78,8 +78,9 @@ export default function QRCodeClient({ venueId, venueName }: { venueId: string; 
     }
   };
 
-  const addTable = async () => {
-    if (!newTableNumber.trim() || isNaN(parseInt(newTableNumber))) {
+  const addTable = async (tableNumber?: string) => {
+    const numToAdd = tableNumber || newTableNumber;
+    if (!numToAdd.trim() || isNaN(parseInt(numToAdd))) {
       toast({
         title: "Error",
         description: "Please enter a valid table number",
@@ -96,8 +97,8 @@ export default function QRCodeClient({ venueId, venueName }: { venueId: string; 
         .from('tables')
         .insert({
           venue_id: venueId,
-          table_number: parseInt(newTableNumber),
-          label: newTableNumber,
+          table_number: parseInt(numToAdd),
+          label: numToAdd,
           is_counter: false,
           is_active: true
         });
@@ -108,11 +109,14 @@ export default function QRCodeClient({ venueId, venueName }: { venueId: string; 
 
       toast({
         title: "Table added",
-        description: `Table ${newTableNumber} has been added successfully.`,
+        description: `Table ${numToAdd} has been added successfully.`,
       });
 
       setNewTableNumber('');
       await loadTablesAndCounters();
+      
+      // Auto-select the newly added table
+      setSelectedTables(prev => [...prev, parseInt(numToAdd)]);
     } catch (error: any) {
       console.error('Error adding table:', error);
       toast({
@@ -125,8 +129,9 @@ export default function QRCodeClient({ venueId, venueName }: { venueId: string; 
     }
   };
 
-  const addCounter = async () => {
-    if (!newCounterName.trim()) {
+  const addCounter = async (counterName?: string) => {
+    const nameToAdd = counterName || newCounterName;
+    if (!nameToAdd.trim()) {
       toast({
         title: "Error",
         description: "Please enter a counter name",
@@ -143,7 +148,7 @@ export default function QRCodeClient({ venueId, venueName }: { venueId: string; 
         .from('counters')
         .insert({
           venue_id: venueId,
-          name: newCounterName.trim()
+          name: nameToAdd.trim()
         });
 
       if (error) {
@@ -152,11 +157,14 @@ export default function QRCodeClient({ venueId, venueName }: { venueId: string; 
 
       toast({
         title: "Counter added",
-        description: `${newCounterName} counter has been added successfully.`,
+        description: `${nameToAdd} counter has been added successfully.`,
       });
 
       setNewCounterName('');
       await loadTablesAndCounters();
+      
+      // Auto-select the newly added counter
+      setSelectedCounters(prev => [...prev, nameToAdd.trim()]);
     } catch (error: any) {
       console.error('Error adding counter:', error);
       toast({
@@ -382,7 +390,7 @@ export default function QRCodeClient({ venueId, venueName }: { venueId: string; 
                       onChange={(e) => setNewTableNumber(e.target.value)}
                       className="flex-1"
                     />
-                    <Button onClick={addTable} disabled={isAddingTable}>
+                    <Button onClick={() => addTable()} disabled={isAddingTable}>
                       <Plus className="h-4 w-4 mr-2" />
                       {isAddingTable ? 'Adding...' : 'Add Table'}
                     </Button>
@@ -417,7 +425,7 @@ export default function QRCodeClient({ venueId, venueName }: { venueId: string; 
                       onChange={(e) => setNewCounterName(e.target.value)}
                       className="flex-1"
                     />
-                    <Button onClick={addCounter} disabled={isAddingCounter}>
+                    <Button onClick={() => addCounter()} disabled={isAddingCounter}>
                       <Plus className="h-4 w-4 mr-2" />
                       {isAddingCounter ? 'Adding...' : 'Add Counter'}
                     </Button>
@@ -503,15 +511,29 @@ export default function QRCodeClient({ venueId, venueName }: { venueId: string; 
                   {qrCodeType === 'tables' ? (
                     <>
                       <Button onClick={() => {
-                        const input = document.createElement('input');
-                        input.type = 'number';
-                        input.placeholder = 'Table number';
-                        // Add table logic here
+                        const tableNumber = prompt('Enter table number:');
+                        if (tableNumber && !isNaN(parseInt(tableNumber))) {
+                          setNewTableNumber(tableNumber);
+                          addTable();
+                        }
                       }}>
                         <Plus className="h-4 w-4 mr-2" />
                         Add a Table
                       </Button>
-                      <Button variant="outline">
+                      <Button variant="outline" onClick={() => {
+                        const startNum = prompt('Enter starting table number:');
+                        const endNum = prompt('Enter ending table number:');
+                        if (startNum && endNum && !isNaN(parseInt(startNum)) && !isNaN(parseInt(endNum))) {
+                          const start = parseInt(startNum);
+                          const end = parseInt(endNum);
+                          if (start <= end) {
+                            for (let i = start; i <= end; i++) {
+                              setNewTableNumber(i.toString());
+                              setTimeout(() => addTable(), i * 100); // Stagger the requests
+                            }
+                          }
+                        }
+                      }}>
                         <Plus className="h-4 w-4 mr-2" />
                         Add Multiple Tables
                       </Button>
@@ -519,15 +541,25 @@ export default function QRCodeClient({ venueId, venueName }: { venueId: string; 
                   ) : (
                     <>
                       <Button onClick={() => {
-                        const input = document.createElement('input');
-                        input.type = 'text';
-                        input.placeholder = 'Counter name';
-                        // Add counter logic here
+                        const counterName = prompt('Enter counter name:');
+                        if (counterName && counterName.trim()) {
+                          setNewCounterName(counterName.trim());
+                          addCounter();
+                        }
                       }}>
                         <Plus className="h-4 w-4 mr-2" />
                         Add a Counter
                       </Button>
-                      <Button variant="outline">
+                      <Button variant="outline" onClick={() => {
+                        const counterNames = prompt('Enter counter names separated by commas:');
+                        if (counterNames && counterNames.trim()) {
+                          const names = counterNames.split(',').map(name => name.trim()).filter(name => name);
+                          names.forEach((name, index) => {
+                            setNewCounterName(name);
+                            setTimeout(() => addCounter(), index * 100); // Stagger the requests
+                          });
+                        }
+                      }}>
                         <Plus className="h-4 w-4 mr-2" />
                         Add Multiple Counters
                       </Button>
@@ -555,7 +587,12 @@ export default function QRCodeClient({ venueId, venueName }: { venueId: string; 
                           <Trash2 className="h-4 w-4" />
                         </Button>
                       </div>
-                      <QRCodeDisplay currentUrl={qrUrl} venueName={venueName} />
+                      <div style={{ 
+                        transform: qrCodeSize === 'small' ? 'scale(0.67)' : qrCodeSize === 'large' ? 'scale(1.33)' : 'scale(1)',
+                        transformOrigin: 'center'
+                      }}>
+                        <QRCodeDisplay currentUrl={qrUrl} venueName={venueName} />
+                      </div>
                       <div className="mt-3 flex items-center space-x-2">
                         <Button
                           variant="outline"
@@ -598,7 +635,12 @@ export default function QRCodeClient({ venueId, venueName }: { venueId: string; 
                           <Trash2 className="h-4 w-4" />
                         </Button>
                       </div>
-                      <QRCodeDisplay currentUrl={qrUrl} venueName={venueName} />
+                      <div style={{ 
+                        transform: qrCodeSize === 'small' ? 'scale(0.67)' : qrCodeSize === 'large' ? 'scale(1.33)' : 'scale(1)',
+                        transformOrigin: 'center'
+                      }}>
+                        <QRCodeDisplay currentUrl={qrUrl} venueName={venueName} />
+                      </div>
                       <div className="mt-3 flex items-center space-x-2">
                         <Button
                           variant="outline"
