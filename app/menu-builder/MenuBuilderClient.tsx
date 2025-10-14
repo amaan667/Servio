@@ -624,6 +624,31 @@ export default function MenuBuilderClient({ venueId, venueName }: { venueId: str
             </div>
           </div>
 
+          {/* Menu Upload Section */}
+          <Card>
+            <CardHeader>
+              <CardTitle className="flex items-center gap-2">
+                <Upload className="h-5 w-5" />
+                Upload Menu
+              </CardTitle>
+              <p className="text-sm text-muted-foreground">
+                Upload a PDF or image of your menu to automatically extract items and prices
+              </p>
+            </CardHeader>
+            <CardContent>
+              <MenuUploadCard 
+                venueId={transformedVenueId} 
+                onSuccess={() => {
+                  loadMenuItems();
+                  toast({
+                    title: "Menu uploaded successfully",
+                    description: "Your menu items have been extracted and added to the menu builder."
+                  });
+                }}
+              />
+            </CardContent>
+          </Card>
+
           {/* Categories */}
           <div className="space-y-4">
             {getCategories().map((category) => {
@@ -663,7 +688,7 @@ export default function MenuBuilderClient({ venueId, venueName }: { venueId: str
                               {item.description && (
                                 <p className="text-sm text-muted-foreground mt-1">{item.description}</p>
                               )}
-                              <p className="text-sm font-medium text-green-600 mt-1">${item.price.toFixed(2)}</p>
+                              <p className="text-sm font-medium text-green-600 mt-1">£{item.price.toFixed(2)}</p>
                             </div>
                             <div className="flex items-center gap-2">
                               <Button
@@ -921,7 +946,7 @@ export default function MenuBuilderClient({ venueId, venueName }: { venueId: str
                                   className="font-semibold"
                                   style={{ color: venueSettings.primaryColor }}
                                 >
-                                  ${item.price.toFixed(2)}
+                                  £{item.price.toFixed(2)}
                                 </span>
                               </div>
                               {item.description && (
@@ -1026,7 +1051,7 @@ export default function MenuBuilderClient({ venueId, venueName }: { venueId: str
                           <div key={item.id} className="p-4 border rounded-lg">
                             <div className="flex justify-between items-start mb-2">
                               <h4 className="font-medium">{item.name}</h4>
-                              <span className="font-semibold text-green-600">${item.price.toFixed(2)}</span>
+                              <span className="font-semibold text-green-600">£{item.price.toFixed(2)}</span>
                             </div>
                             {item.description && (
                               <p className="text-sm text-muted-foreground">{item.description}</p>

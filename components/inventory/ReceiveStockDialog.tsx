@@ -152,7 +152,7 @@ export function ReceiveStockDialog({ open, onOpenChange, ingredient, onSuccess }
               <div className="flex justify-between text-sm">
                 <span>Total Purchase Cost:</span>
                 <span className="font-bold text-green-600">
-                  ${totalCost.toFixed(2)}
+                  £{totalCost.toFixed(2)}
                 </span>
               </div>
             </div>

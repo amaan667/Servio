@@ -152,7 +152,7 @@ export function RecipeDialog({ open, onOpenChange, menuItemId, menuItemName, ven
           <div className="bg-muted p-4 rounded-md">
             <div className="flex justify-between items-center">
               <span className="font-medium">Estimated Cost per Item:</span>
-              <span className="text-2xl font-bold text-green-600">${totalCost.toFixed(2)}</span>
+              <span className="text-2xl font-bold text-green-600">£{totalCost.toFixed(2)}</span>
             </div>
           </div>
 
@@ -176,9 +176,9 @@ export function RecipeDialog({ open, onOpenChange, menuItemId, menuItemName, ven
                       <TableCell className="font-medium">{item.ingredient_name}</TableCell>
                       <TableCell>{item.qty_per_item}</TableCell>
                       <TableCell>{item.unit}</TableCell>
-                      <TableCell>${item.cost_per_unit?.toFixed(2) || '0.00'}</TableCell>
+                      <TableCell>£{item.cost_per_unit?.toFixed(2) || '0.00'}</TableCell>
                       <TableCell className="font-medium">
-                        ${((item.cost_per_unit || 0) * item.qty_per_item).toFixed(2)}
+                        £{((item.cost_per_unit || 0) * item.qty_per_item).toFixed(2)}
                       </TableCell>
                       <TableCell>
                         <Button
