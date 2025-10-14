@@ -1,6 +1,7 @@
 export const dynamic = 'force-dynamic';
 
 import GenerateQRClient from './GenerateQRClient';
+import { AssistantCommandPalette } from "@/components/ai/assistant-command-palette";
 
 export default function GenerateQRPage() {
   console.log('[QR PAGE] Starting GenerateQRPage - No Auth Required');
@@ -11,23 +12,28 @@ export default function GenerateQRPage() {
   const defaultTablesCount = 0; // Start with 0, user can add tables
 
   return (
-    <div className="min-h-screen bg-background">
-      <div className="max-w-7xl mx-auto px-4 py-8">
-        <div className="mb-8">
-          <h1 className="text-3xl font-bold">
-            QR Code Generator
-          </h1>
-          <p className="text-lg mt-2">
-            Generate and manage QR codes for your tables and counters
-          </p>
+    <>
+      <div className="min-h-screen bg-background">
+        <div className="max-w-7xl mx-auto px-4 py-8">
+          <div className="mb-8">
+            <h1 className="text-3xl font-bold">
+              QR Code Generator
+            </h1>
+            <p className="text-lg mt-2">
+              Generate and manage QR codes for your tables and counters
+            </p>
+          </div>
+          
+          <GenerateQRClient 
+            venueId={defaultVenueId}
+            venueName={defaultVenueName}
+            activeTablesCount={defaultTablesCount}
+          />
         </div>
-        
-        <GenerateQRClient 
-          venueId={defaultVenueId}
-          venueName={defaultVenueName}
-          activeTablesCount={defaultTablesCount}
-        />
       </div>
-    </div>
+      
+      {/* AI Assistant - Global Command Palette (⌘K / Ctrl-K) */}
+      <AssistantCommandPalette venueId={defaultVenueId} showChatHistory={true} />
+    </>
   );
 }

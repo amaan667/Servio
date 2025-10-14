@@ -157,11 +157,14 @@ export function ChatInterface({ venueId, isOpen, onClose, initialPrompt }: ChatI
       console.log("[AI CHAT] Loading messages for conversation:", conversationId);
       setLoading(true); // Show loading state while fetching messages
       
-      const response = await fetch(`/api/ai-assistant/conversations/${conversationId}/messages`);
+      const url = `/api/ai-assistant/conversations/${conversationId}/messages`;
+      console.log("[AI CHAT] Fetching from URL:", url);
+      const response = await fetch(url);
       console.log("[AI CHAT] Response status:", response.status);
       
       if (response.ok) {
         const data = await response.json();
+        console.log("[AI CHAT] Raw response data:", data);
         console.log("[AI CHAT] Loaded messages:", data.messages);
         console.log("[AI CHAT] Number of messages:", data.messages?.length || 0);
         
@@ -728,6 +731,7 @@ export function ChatInterface({ venueId, isOpen, onClose, initialPrompt }: ChatI
     setError(null);
     setSuccess(false);
     setExecutionResults([]);
+    console.log("[AI CHAT] About to load messages for conversation:", conversation.id);
     loadMessages(conversation.id);
   };
 
