@@ -10,6 +10,7 @@ import { createClient } from "@/lib/supabase/client";
 import { QrCode, Plus, Trash2, Copy, Download, Settings } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import QRCodeDisplay from "@/components/qr-code-display";
+import NavigationBreadcrumb from '@/components/navigation-breadcrumb';
 
 export default function GenerateQRPage() {
   const [venueId, setVenueId] = useState<string>('');
@@ -314,12 +315,14 @@ export default function GenerateQRPage() {
 
   return (
     <div className="min-h-screen bg-background">
-      <div className="max-w-7xl mx-auto px-4 py-8">
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 pb-24 md:pb-8">
+        <NavigationBreadcrumb venueId={venueId} />
+        
         <div className="mb-8">
-          <h1 className="text-3xl font-bold">
+          <h1 className="text-3xl font-bold tracking-tight text-foreground">
             QR Code Generator
           </h1>
-          <p className="text-lg mt-2">
+          <p className="text-lg text-foreground mt-2">
             Generate and manage QR codes for your tables and counters
           </p>
         </div>
