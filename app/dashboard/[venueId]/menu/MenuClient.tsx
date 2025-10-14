@@ -104,28 +104,42 @@ export default function MenuClient({ venueId, venueName }: { venueId: string; ve
 
   const loadCategoryOrder = async () => {
     try {
-      // First try to load from localStorage
-      const storedOrder = localStorage.getItem(`category-order-${transformedVenueId}`);
-      if (storedOrder) {
-        const parsedOrder = JSON.parse(storedOrder);
-        setCategoryOrder(parsedOrder);
-        return;
-      }
-
-      // Fallback to API
+      console.log('[MENU CLIENT] Loading category order for venue:', transformedVenueId);
+      
+      // Always fetch fresh from API to ensure consistency across devices
       const response = await fetch(`/api/menu/categories?venueId=${transformedVenueId}`);
+      console.log('[MENU CLIENT] Category order response status:', response.status);
       const data = await response.json();
+      console.log('[MENU CLIENT] Category order data from API:', data.categories);
       
       if (response.ok && data.categories && Array.isArray(data.categories)) {
         setCategoryOrder(data.categories);
-        // Store in localStorage for persistence
+        // Store in localStorage for future use (but always fetch fresh first)
         localStorage.setItem(`category-order-${transformedVenueId}`, JSON.stringify(data.categories));
+        console.log('[MENU CLIENT] Set category order from API:', data.categories);
       } else {
-        setCategoryOrder(null);
+        console.log('[MENU CLIENT] Category order API failed:', response.status);
+        // Fallback to localStorage if API fails
+        const storedOrder = localStorage.getItem(`category-order-${transformedVenueId}`);
+        if (storedOrder) {
+          const parsedOrder = JSON.parse(storedOrder);
+          console.log('[MENU CLIENT] Using localStorage fallback:', parsedOrder);
+          setCategoryOrder(parsedOrder);
+        } else {
+          setCategoryOrder(null);
+        }
       }
     } catch (error) {
       console.error('[MENU CLIENT] Error loading category order:', error);
-      setCategoryOrder(null);
+      // Fallback to localStorage on error
+      const storedOrder = localStorage.getItem(`category-order-${transformedVenueId}`);
+      if (storedOrder) {
+        const parsedOrder = JSON.parse(storedOrder);
+        console.log('[MENU CLIENT] Using localStorage fallback on error:', parsedOrder);
+        setCategoryOrder(parsedOrder);
+      } else {
+        setCategoryOrder(null);
+      }
     }
   };
 
