@@ -10,7 +10,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { ToggleSwitch } from "@/components/ui/toggle-switch";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { createClient } from "@/lib/supabase/client";
-import { ArrowLeft, Plus, Edit, Trash2, ShoppingBag, Trash, ChevronDown, ChevronRight, Save, Eye, Download, Palette, Layout, Settings, Upload, Image, Palette as PaletteIcon, Type, Grid, List } from "lucide-react";
+import { Plus, Edit, Trash2, ShoppingBag, Trash, ChevronDown, ChevronRight, Save, Eye, Download, Palette, Layout, Settings, Upload, Image, Palette as PaletteIcon, Type, Grid, List } from "lucide-react";
 import { MenuUploadCard } from "@/components/MenuUploadCard";
 import { CategoriesManagement } from "@/components/CategoriesManagement";
 import { useToast } from "@/hooks/use-toast";
@@ -498,19 +498,7 @@ export default function MenuBuilderClient({ venueId, venueName }: { venueId: str
   return (
     <div className="space-y-6">
       {/* Header with Tabs */}
-      <div className="flex items-center justify-between">
-        <div className="flex items-center space-x-4">
-          <Button
-            variant="outline"
-            size="sm"
-            onClick={() => router.push(`/dashboard/${venueId}`)}
-            className="flex items-center gap-2"
-          >
-            <ArrowLeft className="h-4 w-4" />
-            Back to Dashboard
-          </Button>
-        </div>
-        
+      <div className="flex items-center justify-end">
         <div className="flex items-center space-x-2">
           <Button
             variant={activeTab === 'manage' ? 'default' : 'outline'}

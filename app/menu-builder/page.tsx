@@ -2,6 +2,7 @@ export const dynamic = 'force-dynamic';
 
 import MenuBuilderClient from './MenuBuilderClient';
 import { AssistantCommandPalette } from "@/components/ai/assistant-command-palette";
+import NavigationBreadcrumb from '@/components/navigation-breadcrumb';
 
 export default function MenuBuilderPage() {
   console.log('[MENU BUILDER] Starting MenuBuilderPage');
@@ -13,25 +14,16 @@ export default function MenuBuilderPage() {
   return (
     <>
       <div className="min-h-screen bg-background">
-        <div className="max-w-7xl mx-auto px-4 py-8">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 pb-24 md:pb-8">
+          <NavigationBreadcrumb venueId={defaultVenueId} />
+          
           <div className="mb-8">
-            <div className="flex items-center justify-between">
-              <div>
-                <h1 className="text-3xl font-bold">
-                  Menu Builder
-                </h1>
-                <p className="text-lg mt-2">
-                  Design and manage your restaurant menu with our intuitive builder
-                </p>
-              </div>
-              <div className="flex items-center gap-4">
-                <div className="text-sm text-muted-foreground">
-                  <span className="font-medium">{defaultVenueName}</span>
-                  <span className="mx-2">•</span>
-                  <span>Venue ID: {defaultVenueId}</span>
-                </div>
-              </div>
-            </div>
+            <h1 className="text-3xl font-bold tracking-tight text-foreground">
+              Menu Builder
+            </h1>
+            <p className="text-lg text-foreground mt-2">
+              Design and manage your restaurant menu with our intuitive builder
+            </p>
           </div>
           
           <MenuBuilderClient 
