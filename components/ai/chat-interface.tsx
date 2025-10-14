@@ -182,12 +182,11 @@ export function ChatInterface({ venueId, isOpen, onClose, initialPrompt }: ChatI
         console.log("[AI CHAT] Transformed messages:", transformedMessages);
         setMessages(transformedMessages);
         
+        // Neutral empty state (no error banner)
         if (transformedMessages.length === 0) {
           console.log("[AI CHAT] No messages found for conversation:", conversationId);
-          setError("No messages found in this conversation");
-        } else {
-          setError(null); // Clear any previous errors
         }
+        setError(null); // Always clear errors after a successful fetch
       } else {
         const errorData = await response.text();
         console.error("[AI CHAT] Failed to load messages:", response.status, errorData);
@@ -205,15 +204,31 @@ export function ChatInterface({ venueId, isOpen, onClose, initialPrompt }: ChatI
 
   const createNewConversation = async () => {
     try {
-      console.log("[AI CHAT] Creating new conversation - cancelling any ongoing requests");
-      
-      // Cancel any ongoing requests by resetting loading states
-      setLoading(false);
-      setExecuting(false);
-      
-      // Only create a conversation when user actually starts typing
-      // Don't create empty conversations just for clicking the button
-      setCurrentConversation(null);
+      console.log("[AI CHAT] Creating new conversation now (Option A)");
+      setLoading(true);
+
+      // Generate a lightweight default title
+      const defaultTitle = "New Conversation";
+
+      const response = await fetch("/api/ai-assistant/conversations", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ venueId, title: defaultTitle }),
+      });
+
+      if (!response.ok) {
+        const text = await response.text();
+        console.error("[AI CHAT] Failed to create conversation:", response.status, text);
+        setError("Failed to create conversation");
+        return;
+      }
+
+      const data = await response.json();
+      const newConversation = data.conversation;
+
+      // Insert at top and select
+      setConversations(prev => [newConversation, ...prev]);
+      setCurrentConversation(newConversation);
       setMessages([]);
       setInput("");
       setPlan(null);
@@ -221,10 +236,14 @@ export function ChatInterface({ venueId, isOpen, onClose, initialPrompt }: ChatI
       setError(null);
       setSuccess(false);
       setExecutionResults([]);
-      
-      console.log("[AI CHAT] Ready for new conversation - will create when user sends first message");
+
+      // Focus input for immediate typing
+      setTimeout(() => inputRef.current?.focus(), 50);
     } catch (error) {
-      console.error("[AI CHAT] Failed to prepare new conversation:", error);
+      console.error("[AI CHAT] Failed to create new conversation:", error);
+      setError("Failed to create conversation");
+    } finally {
+      setLoading(false);
     }
   };
 
@@ -371,6 +390,9 @@ export function ChatInterface({ venueId, isOpen, onClose, initialPrompt }: ChatI
         }),
       });
 
+      // Refresh conversations ordering (latest first)
+      loadConversations();
+
       // Get AI plan
       const planResponse = await fetch("/api/ai-assistant/plan", {
         method: "POST",
@@ -412,6 +434,9 @@ export function ChatInterface({ venueId, isOpen, onClose, initialPrompt }: ChatI
             content: assistantMsg.content,
           }),
         });
+
+        // Refresh conversations ordering
+        loadConversations();
 
         setLoading(false);
         return; // No need to fetch previews or show execute button
@@ -617,6 +642,9 @@ export function ChatInterface({ venueId, isOpen, onClose, initialPrompt }: ChatI
             undoData: executionMsg.undoData,
           }),
         });
+
+        // Refresh conversations ordering
+        loadConversations();
       }
 
       setSuccess(true);
