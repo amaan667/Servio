@@ -82,7 +82,7 @@ export async function POST(req: Request) {
         if (order.table_id || order.table_number) {
           tableCleanupTasks.push(
             cleanupTableOnOrderCompletion({
-              venueId: order.venue_id,
+              venueId: venueId, // Use the venueId from the request parameter
               tableId: order.table_id,
               tableNumber: order.table_number
             })
