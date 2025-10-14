@@ -195,10 +195,10 @@ export default function VenueSettingsClient({ user, venue, venues, organization 
       const { error } = await createClient()
         .from('venues')
         .update({
-          name: venueName,
+          venue_name: venueName,
           email: venueEmail || null,
           phone: venuePhone || null,
-          address: venueAddress || null,
+          venue_address: venueAddress || null,
           timezone: timezone,
           venue_type: venueType,
           service_type: serviceType,
