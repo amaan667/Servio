@@ -281,7 +281,7 @@ const VenueDashboardClient = React.memo(function VenueDashboardClient({
           }
         }
       )
-      .subscribe((status) => {
+      .subscribe((status: string) => {
         console.log('[DASHBOARD] Realtime subscription status:', status);
         if (status === 'SUBSCRIBED') {
           console.log('[DASHBOARD] ✓ Successfully subscribed to realtime updates');
