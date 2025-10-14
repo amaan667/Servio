@@ -1,5 +1,6 @@
 import { NextResponse } from 'next/server';
 import { createClient, getAuthenticatedUser } from '@/lib/supabase/server';
+import { cleanupTableOnOrderCompletion } from '@/lib/table-cleanup';
 
 export const runtime = 'nodejs';
 
@@ -72,14 +73,45 @@ export async function POST(req: Request) {
     }
 
 
-    // Handle table cleanup - completely remove ALL tables that were associated with completed orders
+    // Handle table cleanup for completed orders
     if (updatedOrders && updatedOrders.length > 0) {
-      // Get all unique table IDs from completed orders (regardless of source)
+      // Get all unique table identifiers from completed orders
+      const tableCleanupTasks = [];
+      
+      for (const order of updatedOrders) {
+        if (order.table_id || order.table_number) {
+          tableCleanupTasks.push(
+            cleanupTableOnOrderCompletion({
+              venueId: order.venue_id,
+              tableId: order.table_id,
+              tableNumber: order.table_number
+            })
+          );
+        }
+      }
+      
+      // Execute all cleanup tasks in parallel
+      const cleanupResults = await Promise.allSettled(tableCleanupTasks);
+      
+      // Log results
+      cleanupResults.forEach((result, index) => {
+        if (result.status === 'fulfilled') {
+          if (result.value.success) {
+            console.log(`[BULK COMPLETE] Table cleanup ${index + 1} successful:`, result.value.details);
+          } else {
+            console.error(`[BULK COMPLETE] Table cleanup ${index + 1} failed:`, result.value.error);
+          }
+        } else {
+          console.error(`[BULK COMPLETE] Table cleanup ${index + 1} rejected:`, result.reason);
+        }
+      });
+      
+      // Legacy table deletion logic (commented out - use cleanup instead)
+      /*
       const tableIds = [...new Set(updatedOrders
         .filter(order => order.table_id)
         .map(order => order.table_id)
       )];
-      
       
       for (const tableId of tableIds) {
         try {
@@ -171,6 +203,7 @@ export async function POST(req: Request) {
           console.error('[BULK COMPLETE] Error handling table cleanup for table:', tableId, tableError);
         }
       }
+      */
     }
 
     return NextResponse.json({ 

@@ -1,5 +1,6 @@
 import { NextResponse } from 'next/server';
 import { createClient } from '@/lib/supabase/server';
+import { cleanupTableOnOrderCompletion } from '@/lib/table-cleanup';
 
 export async function POST(req: Request) {
   try {
@@ -43,74 +44,20 @@ export async function POST(req: Request) {
     // Handle table clearing when order is completed or cancelled
     if (status === 'COMPLETED' || status === 'CANCELLED') {
       const order = orderData;
-      if (order && (order.table_id || order.table_number) && order.source === 'qr') {
+      if (order && (order.table_id || order.table_number)) {
         
-        // Check if there are any other active orders for this table
-        const { data: activeOrders, error: activeOrdersError } = await supabase
-          .from('orders')
-          .select('id, order_status, table_id, table_number')
-          .eq('venue_id', order.venue_id)
-          .in('order_status', ['PLACED', 'ACCEPTED', 'IN_PREP', 'READY', 'SERVING'])
-          .neq('id', orderId);
+        // Use centralized table cleanup function
+        const cleanupResult = await cleanupTableOnOrderCompletion({
+          venueId: order.venue_id,
+          tableId: order.table_id,
+          tableNumber: order.table_number,
+          orderId: orderId
+        });
 
-        // Filter by table_id or table_number
-        let filteredActiveOrders = activeOrders || [];
-        if (order.table_id) {
-          filteredActiveOrders = (activeOrders || []).filter(o => o.table_id === order.table_id);
-        } else if (order.table_number) {
-          filteredActiveOrders = (activeOrders || []).filter(o => o.table_number === order.table_number);
-        }
-
-        if (activeOrdersError) {
-          console.error('[TABLE CLEAR] Error checking active orders:', activeOrdersError);
-        } else if (!filteredActiveOrders || filteredActiveOrders.length === 0) {
-          
-          // Clear table sessions (active sessions)
-          const sessionUpdateData = {
-            status: 'FREE',
-            order_id: null,
-            closed_at: new Date().toISOString(),
-            updated_at: new Date().toISOString()
-          };
-
-          let sessionQuery = supabase
-            .from('table_sessions')
-            .update(sessionUpdateData)
-            .eq('venue_id', order.venue_id)
-            .is('closed_at', null);
-
-          if (order.table_id) {
-            sessionQuery = sessionQuery.eq('table_id', order.table_id);
-          } else if (order.table_number) {
-            sessionQuery = sessionQuery.eq('table_number', order.table_number);
-          }
-
-          const { error: sessionClearError } = await sessionQuery;
-
-          if (sessionClearError) {
-            console.error('[TABLE CLEAR] Error clearing table sessions:', sessionClearError);
-          } else {
-          }
-
-          // Also clear table runtime state if it exists
-          if (order.table_number) {
-            const { error: runtimeClearError } = await supabase
-              .from('table_runtime_state')
-              .update({ 
-                primary_status: 'FREE',
-                order_id: null,
-                updated_at: new Date().toISOString()
-              })
-              .eq('venue_id', order.venue_id)
-              .eq('label', `Table ${order.table_number}`);
-
-            if (runtimeClearError) {
-              console.error('[TABLE CLEAR] Error clearing table runtime state:', runtimeClearError);
-            } else {
-            }
-          }
-
+        if (!cleanupResult.success) {
+          console.error('[SET STATUS] Table cleanup failed:', cleanupResult.error);
         } else {
+          console.log('[SET STATUS] Table cleanup successful:', cleanupResult.details);
         }
       }
     }

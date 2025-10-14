@@ -1,0 +1,220 @@
+/**
+ * Centralized table cleanup utilities
+ * Ensures consistent table state management when orders are completed
+ */
+
+import { createClient } from '@/lib/supabase/server';
+
+export interface TableCleanupParams {
+  venueId: string;
+  tableId?: string;
+  tableNumber?: string;
+  orderId?: string;
+}
+
+/**
+ * Clean up table state when orders are completed
+ * This function handles:
+ * - Closing table sessions
+ * - Clearing table runtime state
+ * - Marking tables as FREE
+ */
+export async function cleanupTableOnOrderCompletion(params: TableCleanupParams): Promise<{
+  success: boolean;
+  error?: string;
+  details?: {
+    sessionsCleared: number;
+    runtimeStateCleared: boolean;
+  };
+}> {
+  const { venueId, tableId, tableNumber, orderId } = params;
+  
+  if (!tableId && !tableNumber) {
+    return { success: false, error: 'Either tableId or tableNumber must be provided' };
+  }
+
+  try {
+    const supabase = await createClient();
+    
+    // First, check if there are any other active orders for this table
+    let activeOrdersQuery = supabase
+      .from('orders')
+      .select('id, order_status, table_id, table_number')
+      .eq('venue_id', venueId)
+      .in('order_status', ['PLACED', 'ACCEPTED', 'IN_PREP', 'READY', 'SERVING']);
+
+    // Exclude the current order if provided
+    if (orderId) {
+      activeOrdersQuery = activeOrdersQuery.neq('id', orderId);
+    }
+
+    // Filter by table identifier
+    if (tableId) {
+      activeOrdersQuery = activeOrdersQuery.eq('table_id', tableId);
+    } else if (tableNumber) {
+      activeOrdersQuery = activeOrdersQuery.eq('table_number', tableNumber);
+    }
+
+    const { data: activeOrders, error: activeOrdersError } = await activeOrdersQuery;
+
+    if (activeOrdersError) {
+      console.error('[TABLE CLEANUP] Error checking active orders:', activeOrdersError);
+      return { success: false, error: 'Failed to check active orders' };
+    }
+
+    // If there are still active orders, don't clean up the table
+    if (activeOrders && activeOrders.length > 0) {
+      console.log(`[TABLE CLEANUP] Table has ${activeOrders.length} active orders, skipping cleanup`);
+      return { 
+        success: true, 
+        details: { sessionsCleared: 0, runtimeStateCleared: false }
+      };
+    }
+
+    console.log('[TABLE CLEANUP] No active orders found, proceeding with table cleanup');
+
+    let sessionsCleared = 0;
+    let runtimeStateCleared = false;
+
+    // 1. Clear table sessions (close active sessions)
+    const sessionUpdateData = {
+      status: 'FREE',
+      order_id: null,
+      closed_at: new Date().toISOString(),
+      updated_at: new Date().toISOString()
+    };
+
+    let sessionQuery = supabase
+      .from('table_sessions')
+      .update(sessionUpdateData)
+      .eq('venue_id', venueId)
+      .is('closed_at', null);
+
+    if (tableId) {
+      sessionQuery = sessionQuery.eq('table_id', tableId);
+    } else if (tableNumber) {
+      sessionQuery = sessionQuery.eq('table_number', tableNumber);
+    }
+
+    const { data: sessionData, error: sessionClearError } = await sessionQuery.select();
+
+    if (sessionClearError) {
+      console.error('[TABLE CLEANUP] Error clearing table sessions:', sessionClearError);
+    } else {
+      sessionsCleared = sessionData?.length || 0;
+      console.log(`[TABLE CLEANUP] Cleared ${sessionsCleared} table sessions`);
+    }
+
+    // 2. Clear table runtime state
+    if (tableNumber) {
+      const { error: runtimeClearError } = await supabase
+        .from('table_runtime_state')
+        .update({ 
+          primary_status: 'FREE',
+          order_id: null,
+          updated_at: new Date().toISOString()
+        })
+        .eq('venue_id', venueId)
+        .eq('label', `Table ${tableNumber}`);
+
+      if (runtimeClearError) {
+        console.error('[TABLE CLEANUP] Error clearing table runtime state:', runtimeClearError);
+      } else {
+        runtimeStateCleared = true;
+        console.log('[TABLE CLEANUP] Cleared table runtime state');
+      }
+    }
+
+    // 3. If we have a table_id, also try to clear by table_id in runtime state
+    if (tableId) {
+      const { error: runtimeClearErrorById } = await supabase
+        .from('table_runtime_state')
+        .update({ 
+          primary_status: 'FREE',
+          order_id: null,
+          updated_at: new Date().toISOString()
+        })
+        .eq('venue_id', venueId)
+        .eq('table_id', tableId);
+
+      if (runtimeClearErrorById) {
+        console.error('[TABLE CLEANUP] Error clearing table runtime state by ID:', runtimeClearErrorById);
+      } else {
+        runtimeStateCleared = true;
+        console.log('[TABLE CLEANUP] Cleared table runtime state by ID');
+      }
+    }
+
+    console.log('[TABLE CLEANUP] Table cleanup completed successfully');
+
+    return {
+      success: true,
+      details: {
+        sessionsCleared,
+        runtimeStateCleared
+      }
+    };
+
+  } catch (error) {
+    console.error('[TABLE CLEANUP] Unexpected error during table cleanup:', error);
+    return { 
+      success: false, 
+      error: error instanceof Error ? error.message : 'Unknown error during table cleanup'
+    };
+  }
+}
+
+/**
+ * Check if a table has any active orders
+ */
+export async function hasActiveOrders(params: TableCleanupParams): Promise<{
+  hasActive: boolean;
+  count: number;
+  error?: string;
+}> {
+  const { venueId, tableId, tableNumber, orderId } = params;
+  
+  if (!tableId && !tableNumber) {
+    return { hasActive: false, count: 0, error: 'Either tableId or tableNumber must be provided' };
+  }
+
+  try {
+    const supabase = await createClient();
+    
+    let query = supabase
+      .from('orders')
+      .select('id', { count: 'exact' })
+      .eq('venue_id', venueId)
+      .in('order_status', ['PLACED', 'ACCEPTED', 'IN_PREP', 'READY', 'SERVING']);
+
+    if (orderId) {
+      query = query.neq('id', orderId);
+    }
+
+    if (tableId) {
+      query = query.eq('table_id', tableId);
+    } else if (tableNumber) {
+      query = query.eq('table_number', tableNumber);
+    }
+
+    const { count, error } = await query;
+
+    if (error) {
+      console.error('[TABLE CLEANUP] Error checking active orders:', error);
+      return { hasActive: false, count: 0, error: error.message };
+    }
+
+    return {
+      hasActive: (count || 0) > 0,
+      count: count || 0
+    };
+
+  } catch (error) {
+    console.error('[TABLE CLEANUP] Unexpected error checking active orders:', error);
+    return { 
+      hasActive: false, 
+      count: 0, 
+      error: error instanceof Error ? error.message : 'Unknown error'
+    };
+  }
+}

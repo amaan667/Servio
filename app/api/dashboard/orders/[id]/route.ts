@@ -1,5 +1,6 @@
 import { NextResponse } from 'next/server';
 import { createClient } from '@/lib/supabase/server';
+import { cleanupTableOnOrderCompletion } from '@/lib/table-cleanup';
 
 export const runtime = 'nodejs';
 
@@ -50,58 +51,19 @@ export async function PATCH(req: Request, context: { params: Promise<{ id: strin
   // Handle table state transitions when order is completed or cancelled
   if (order_status === 'COMPLETED' || order_status === 'CANCELLED') {
     const order = data;
-    if (order && order.table_number && order.source === 'qr') {
+    if (order && order.table_number) {
       
-      // Check if there are any other active orders for this table
-      const { data: activeOrders, error: activeOrdersError } = await supa
-        .from('orders')
-        .select('id, order_status')
-        .eq('venue_id', order.venue_id)
-        .eq('table_number', order.table_number)
-        .eq('source', 'qr')
-        .in('order_status', ['PLACED', 'ACCEPTED', 'IN_PREP', 'READY', 'SERVING'])
-        .neq('id', id);
+      // Use centralized table cleanup function
+      const cleanupResult = await cleanupTableOnOrderCompletion({
+        venueId: order.venue_id,
+        tableNumber: order.table_number,
+        orderId: id
+      });
 
-      if (activeOrdersError) {
-        console.error('[TABLE CLEAR] Error checking active orders:', activeOrdersError);
-      } else if (!activeOrders || activeOrders.length === 0) {
-        // No other active orders for this table, clear the table setup
-        
-        // Clear table sessions (active sessions)
-        const { error: sessionClearError } = await supa
-          .from('table_sessions')
-          .update({ 
-            status: 'FREE',
-            order_id: null,
-            closed_at: new Date().toISOString(),
-            updated_at: new Date().toISOString()
-          })
-          .eq('venue_id', order.venue_id)
-          .eq('table_number', order.table_number)
-          .is('closed_at', null);
-
-        if (sessionClearError) {
-          console.error('[TABLE CLEAR] Error clearing table sessions:', sessionClearError);
-        } else {
-        }
-
-        // Also clear table runtime state if it exists
-        const { error: runtimeClearError } = await supa
-          .from('table_runtime_state')
-          .update({ 
-            primary_status: 'FREE',
-            order_id: null,
-            updated_at: new Date().toISOString()
-          })
-          .eq('venue_id', order.venue_id)
-          .eq('label', `Table ${order.table_number}`);
-
-        if (runtimeClearError) {
-          console.error('[TABLE CLEAR] Error clearing table runtime state:', runtimeClearError);
-        } else {
-        }
-
+      if (!cleanupResult.success) {
+        console.error('[DASHBOARD ORDER] Table cleanup failed:', cleanupResult.error);
       } else {
+        console.log('[DASHBOARD ORDER] Table cleanup successful:', cleanupResult.details);
       }
     }
   }
