@@ -49,11 +49,13 @@ export default function QRCodeClient({ venueId, venueName }: { venueId: string; 
         if (table) {
           setSelectedTables([table.id]);
           console.log('[OLD QR] Table found and selected:', table);
+          // Auto-generate QR code immediately when table is found from URL
+          // The QR code will be displayed automatically in the preview section
         } else {
-          // If table doesn't exist, add it first
-          console.log('[OLD QR] Table not found, adding it:', tableName);
-          addTable(tableName);
-          // The addTable function will auto-select the table
+          // IMPORTANT: Do NOT call addTable here. If the table doesn't exist,
+          // we should not create it automatically.
+          console.log('[OLD QR] Table not found for auto-selection:', tableName);
+          // Optionally, you could show a toast here indicating the table wasn't found.
         }
       }
     }
