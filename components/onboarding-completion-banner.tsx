@@ -68,7 +68,7 @@ export default function OnboardingCompletionBanner() {
             </div>
           </Link>
 
-          <Link href="/generate-qr">
+          <Link href={`/dashboard/${venueId}/qr-codes`}>
             <div className="bg-white/10 hover:bg-white/20 transition-colors rounded-lg p-4 cursor-pointer h-full">
               <QrCode className="w-8 h-8 mb-2" />
               <h3 className="font-semibold mb-1">Print QR Codes</h3>

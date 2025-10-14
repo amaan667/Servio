@@ -30,7 +30,6 @@ export default function GlobalNav() {
 
   // Determine if we're on an authenticated route that supports dark mode
   const isAuthenticatedRoute = pathname?.startsWith('/dashboard') || 
-                               pathname?.startsWith('/generate-qr') || 
                                pathname?.startsWith('/settings') ||
                                pathname?.startsWith('/complete-profile') ||
                                pathname?.startsWith('/sign-in') ||
@@ -62,7 +61,7 @@ export default function GlobalNav() {
   const isOnDashboard = pathname?.startsWith('/dashboard');
   const isOnHomePage = pathname === '/';
   const isOnSettings = pathname?.includes('/settings');
-  const isOnQRPage = pathname?.includes('/generate-qr');
+  const isOnQRPage = pathname?.includes('/qr-codes');
   
   // Check if we're on the dashboard root page (not a feature page)
   const isDashboardRoot = pathname?.match(/^\/dashboard\/(?:[^/]+)\/?$/);

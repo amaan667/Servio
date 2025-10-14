@@ -364,7 +364,7 @@ export function TableCardNew({ table, venueId, onActionComplete, availableTables
     }
   };
 
-  const qrHref = `/generate-qr`;
+  const qrHref = `/dashboard/${venueId}/qr-codes`;
 
   return (
     <Card 

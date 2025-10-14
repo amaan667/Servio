@@ -1,9 +1,9 @@
-import StaffClient from './staff-client';
+import QRCodeClient from './QRCodeClient';
 import NavigationBreadcrumb from '@/components/navigation-breadcrumb';
 import { createClient } from '@/lib/supabase/server';
 import { redirect } from 'next/navigation';
 
-export default async function StaffPage({ params }: { params: Promise<{ venueId: string }> }) {
+export default async function QRCodePage({ params }: { params: Promise<{ venueId: string }> }) {
   const { venueId } = await params;
   const supabase = await createClient();
 
@@ -31,19 +31,14 @@ export default async function StaffPage({ params }: { params: Promise<{ venueId:
         
         <div className="mb-8">
           <h1 className="text-3xl font-bold tracking-tight text-foreground">
-            Staff Management
+            QR Code Generator
           </h1>
           <p className="text-lg text-foreground mt-2">
-            Invite and manage your staff members
+            Generate and manage QR codes for your tables and counters
           </p>
         </div>
         
-        <StaffClient 
-          venueId={venueId} 
-          venueName={venue.venue_name || "Your Venue"} 
-          initialStaff={undefined}
-          initialCounts={undefined}
-        />
+        <QRCodeClient venueId={venueId} venueName={venue.venue_name || "Your Venue"} />
       </div>
     </div>
   );

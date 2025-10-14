@@ -51,7 +51,6 @@ export default function NavigationBreadcrumb({
       if (pathname.includes("/menu-management")) return "Menu Management";
       if (pathname.includes("/tables")) return "Table Management";
       if (pathname.includes("/qr-codes")) return "QR Codes";
-      if (pathname.includes("/generate-qr")) return "QR Codes";
       if (pathname.includes("/analytics")) return "Analytics";
       if (pathname.includes("/staff")) return "Staff Management";
       if (pathname.includes("/settings")) return "Settings";
@@ -64,7 +63,7 @@ export default function NavigationBreadcrumb({
     if (pathname.includes("/sign-in")) return "Sign In";
     if (pathname.includes("/sign-up")) return "Sign Up";
     if (pathname.includes("/complete-profile")) return "Complete Profile";
-    if (pathname.includes("/generate-qr")) return "QR Codes";
+    if (pathname.includes("/qr-codes")) return "QR Codes";
     if (pathname.includes("/order")) return "Order";
     return "Home";
   };
@@ -73,7 +72,7 @@ export default function NavigationBreadcrumb({
   const isDashboardRoot = /^\/dashboard\/(?:[^/]+)\/?$/.test(pathname);
   const isSignInPage = pathname.includes("/sign-in");
   const isSignUpPage = pathname.includes("/sign-up");
-  const isGenerateQRPage = pathname.includes("/generate-qr");
+  const isGenerateQRPage = pathname.includes("/qr-codes");
 
   // Demo mode: Home ← Demo (current)
   if (isDemo) {
