@@ -70,11 +70,13 @@ function SignInPageContent() {
       if (error) {
         console.error('OAuth sign in error:', error);
         const msg = error?.message || 'Sign in failed.';
-        // If rate limited, display a friendlier message
+        // If rate limited, display a friendlier message with longer wait time
         if (/rate limit/i.test(msg)) {
-          alert('Too many sign-in attempts. Please wait 30 seconds and try again.');
+          alert('Too many sign-in attempts. Please wait 1 minute and try again.');
         } else if (/network|connection|timeout/i.test(msg)) {
           alert('Connection issue. Please check your internet and try again.');
+        } else if (/invalid.*credentials/i.test(msg)) {
+          alert('Invalid email or password. Please check and try again.');
         } else {
           alert(`Sign in failed: ${msg}`);
         }
@@ -84,13 +86,9 @@ function SignInPageContent() {
       
       // The redirect should happen automatically, but if it doesn't, we'll handle it
       if (data.url) {
-        // On desktop, use window.location.href for full page redirect
-        if (!isMobile()) {
-          window.location.href = data.url;
-        } else {
-          // On mobile, try to use the OAuth URL directly
-          window.location.href = data.url;
-        }
+        // For both mobile and desktop, use window.location.href for full page redirect
+        // This ensures proper OAuth flow on all devices
+        window.location.href = data.url;
       }
     } catch (error) {
       console.error('Sign in error:', error);

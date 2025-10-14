@@ -45,14 +45,16 @@ export default function SignInForm({ onGoogleSignIn, isLoading = false, error: p
 
       if (error) {
         const msg = error.message || 'Sign-in failed. Please try again.';
-        // If we hit rate limits, place a brief cooldown to avoid repeated 429s
+        // If we hit rate limits, place a longer cooldown for mobile
         if (/rate limit/i.test(msg)) {
-          const waitMs = 30_000; // 30s cooldown
+          const waitMs = 60_000; // 60s cooldown for mobile
           setCooldownUntil(Date.now() + waitMs);
           setTimeout(() => setCooldownUntil(null), waitMs);
-          setError('Too many sign-in attempts. Please wait 30 seconds and try again.');
+          setError('Too many sign-in attempts. Please wait 1 minute and try again.');
         } else if (/network|connection|timeout/i.test(msg)) {
           setError('Connection issue. Please check your internet and try again.');
+        } else if (/invalid.*credentials/i.test(msg)) {
+          setError('Invalid email or password. Please check and try again.');
         } else {
           setError(msg);
         }

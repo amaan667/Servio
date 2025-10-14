@@ -341,7 +341,29 @@ function CallbackContent() {
     );
   }
 
-  return null;
+  return (
+    <div className="min-h-screen bg-gray-50 flex items-center justify-center p-4">
+      <div className="max-w-md w-full bg-white rounded-lg shadow-md p-6">
+        <div className="text-center">
+          <h1 className="text-xl font-semibold text-gray-900 mb-4">
+            Signing you in...
+          </h1>
+          <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600 mx-auto mb-4"></div>
+          <p className="text-sm text-gray-600">
+            Please wait while we complete your sign-in.
+          </p>
+          {debugLogs.length > 0 && (
+            <div className="mt-4 text-xs text-gray-900 text-left max-h-32 overflow-y-auto">
+              <p className="font-medium mb-1">Debug Logs:</p>
+              {debugLogs.slice(-5).map((log, index) => (
+                <div key={index} className="mb-1">{log}</div>
+              ))}
+            </div>
+          )}
+        </div>
+      </div>
+    </div>
+  );
 }
 
 export default function CallbackPage() {
