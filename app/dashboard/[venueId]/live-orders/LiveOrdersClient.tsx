@@ -105,12 +105,12 @@ export default function LiveOrdersClient({ venueId, venueName: venueNameProp }: 
 
   
   // Constants for order statuses
-  // FOH (Live Orders) only sees READY/SERVED/COMPLETED - KDS handles PLACED/IN_PREP
-  const LIVE_STATUSES = ['READY', 'SERVED', 'COMPLETED'];
+  // FOH (Live Orders) only sees READY/SERVED - COMPLETED orders should be removed from live view
+  const LIVE_STATUSES = ['READY', 'SERVED'];
   const TERMINAL_STATUSES = ['COMPLETED', 'CANCELLED', 'REFUNDED', 'EXPIRED'];
-  const LIVE_WINDOW_STATUSES = ['READY', 'SERVED', 'COMPLETED']; // FOH only handles service, not prep
+  const LIVE_WINDOW_STATUSES = ['READY', 'SERVED']; // Only active orders should show in live orders
   const ACTIVE_TABLE_ORDER_STATUSES = ['READY', 'SERVED']; // Active orders for table management (not completed)
-  const LIVE_TABLE_ORDER_STATUSES = ['READY', 'SERVED', 'COMPLETED']; // Include COMPLETED for live orders display
+  const LIVE_TABLE_ORDER_STATUSES = ['READY', 'SERVED']; // Completed orders should be removed from live display
   const prepLeadMs = 30 * 60 * 1000; // 30 minutes default
   
   // Define what constitutes a "live" order - recent orders
@@ -497,7 +497,7 @@ export default function LiveOrdersClient({ venueId, venueName: venueNameProp }: 
             const orderCreatedAt = new Date(newOrder.created_at);
             const isRecentOrder = orderCreatedAt > new Date(Date.now() - LIVE_ORDER_WINDOW_MS);
             
-            // Include completed orders in live orders if within live window
+            // Only show active orders (READY, SERVED) in live orders - remove completed orders immediately
             if (isLiveOrder && isRecentOrder) {
               // Add to live orders if not already there
               setOrders(prev => {
@@ -511,18 +511,11 @@ export default function LiveOrdersClient({ venueId, venueName: venueNameProp }: 
               // Remove from all today orders if it was there
               setAllTodayOrders(prev => prev.filter(order => order.id !== newOrder.id));
             } else {
-              // Only remove from live orders if it's not recent (older than live window)
-              // Keep COMPLETED orders in live orders if they're within live window
-              if (!isRecentOrder) {
-                setOrders(prev => prev.filter(order => order.id !== newOrder.id));
-              } else {
-                // Order is recent, keep it in live orders even if status changed
-                setOrders(prev => prev.map(order => order.id === newOrder.id ? newOrder : order));
-              }
+              // Remove from live orders if status changed to completed/cancelled or if not recent
+              setOrders(prev => prev.filter(order => order.id !== newOrder.id));
               
-              // Add to all today orders if it's from today and not recent
+              // Add to all today orders if it's from today
               if (todayWindow && orderCreatedAt >= new Date(todayWindow.startUtcISO) && orderCreatedAt < new Date(todayWindow.endUtcISO)) {
-                // Keep original status when moving to "Earlier Today"
                 setAllTodayOrders(prev => {
                   const exists = prev.find(order => order.id === newOrder.id);
                   if (!exists) {
@@ -614,7 +607,7 @@ export default function LiveOrdersClient({ venueId, venueName: venueNameProp }: 
     // Get order details before updating
     const { data: orderData } = await supabase
       .from('orders')
-      .select('id, table_id, table_number, source')
+      .select('id, table_id, table_number, source, created_at')
       .eq('id', orderId)
       .eq('venue_id', venueId)
       .single();
@@ -629,14 +622,35 @@ export default function LiveOrdersClient({ venueId, venueName: venueNameProp }: 
       .eq('venue_id', venueId);
 
     if (!error) {
-      setOrders(prev => prev.map(order => 
-        order.id === orderId ? { ...order, order_status: orderStatus } : order
-      ));
-      setAllTodayOrders(prev => prev.map(order => 
-        order.id === orderId ? { ...order, order_status: orderStatus } : order
-      ));
+      // If order is completed or cancelled, remove from live orders immediately
+      if (orderStatus === 'COMPLETED' || orderStatus === 'CANCELLED') {
+        setOrders(prev => prev.filter(order => order.id !== orderId));
+        
+        // Move to all today orders if it's from today
+        if (orderData && orderData.created_at) {
+          const orderCreatedAt = new Date(orderData.created_at);
+          if (todayWindow && orderCreatedAt >= new Date(todayWindow.startUtcISO) && orderCreatedAt < new Date(todayWindow.endUtcISO)) {
+            setAllTodayOrders(prev => {
+              const updatedOrder = { ...orderData, order_status: orderStatus };
+              const exists = prev.find(order => order.id === orderId);
+              if (!exists) {
+                return [updatedOrder, ...prev];
+              }
+              return prev.map(order => order.id === orderId ? updatedOrder : order);
+            });
+          }
+        }
+      } else {
+        // Update existing order in live orders for active statuses
+        setOrders(prev => prev.map(order => 
+          order.id === orderId ? { ...order, order_status: orderStatus } : order
+        ));
+        setAllTodayOrders(prev => prev.map(order => 
+          order.id === orderId ? { ...order, order_status: orderStatus } : order
+        ));
+      }
       
-      // Handle table cleanup when order is completed or cancelled
+      // Handle table cleanup when order is completed or cancelled (only for QR orders)
       if ((orderStatus === 'COMPLETED' || orderStatus === 'CANCELLED') && orderData && (orderData.table_id || orderData.table_number) && orderData.source === 'qr') {
         try {
           // Check if there are any other active orders for this table
@@ -705,7 +719,7 @@ export default function LiveOrdersClient({ venueId, venueName: venueNameProp }: 
       // Get order details before updating
       const { data: orderData } = await supabase
         .from('orders')
-        .select('id, table_id, table_number, source')
+        .select('id, table_id, table_number, source, created_at')
         .eq('id', orderId)
         .eq('venue_id', venueId)
         .single();
@@ -723,6 +737,23 @@ export default function LiveOrdersClient({ venueId, venueName: venueNameProp }: 
       if (error) {
         console.error('[LIVE ORDERS DEBUG] Failed to update order to COMPLETED and PAID:', error);
       } else {
+        // Remove from live orders immediately when completed
+        setOrders(prev => prev.filter(order => order.id !== orderId));
+        
+        // Move to all today orders if it's from today
+        if (orderData && orderData.created_at) {
+          const orderCreatedAt = new Date(orderData.created_at);
+          if (todayWindow && orderCreatedAt >= new Date(todayWindow.startUtcISO) && orderCreatedAt < new Date(todayWindow.endUtcISO)) {
+            setAllTodayOrders(prev => {
+              const updatedOrder = { ...orderData, order_status: 'COMPLETED', payment_status: 'PAID' };
+              const exists = prev.find(order => order.id === orderId);
+              if (!exists) {
+                return [updatedOrder, ...prev];
+              }
+              return prev.map(order => order.id === orderId ? updatedOrder : order);
+            });
+          }
+        }
         // Handle table cleanup for completed order
         if (orderData && (orderData.table_id || orderData.table_number) && orderData.source === 'qr') {
           try {
