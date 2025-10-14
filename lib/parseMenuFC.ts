@@ -198,6 +198,7 @@ async function parseMenuInChunksFallback(ocrText: string): Promise<MenuPayloadT>
     "- The 'categories' array must list categories in the same order they appear in the PDF.",
     "- MANDATORY: Read the PDF from TOP TO BOTTOM and list categories in that exact sequence.",
     "- DO NOT alphabetize or reorder categories - maintain PDF layout order.",
+    "- UNIVERSAL: This works for any menu structure - preserve whatever order the PDF shows.",
     "- CRITICAL: Only include items with clear prices. If no price is visible, DO NOT include the item.",
     "- Look for price patterns like £X.XX, €X.XX, $X.XX, or just numbers.",
     "- Extract EVERY single menu item with a price - do not miss any.",
