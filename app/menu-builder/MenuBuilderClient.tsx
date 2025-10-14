@@ -551,6 +551,14 @@ export default function MenuBuilderClient({ venueId, venueName }: { venueId: str
                 <Download className="h-4 w-4 mr-2" />
                 Export
               </Button>
+              <Button 
+                variant="outline" 
+                size="sm"
+                onClick={() => setShowCategories(!showCategories)}
+              >
+                <Layout className="h-4 w-4 mr-2" />
+                {showCategories ? 'Hide Categories' : 'Manage Categories'}
+              </Button>
               <Dialog open={isAddModalOpen} onOpenChange={setIsAddModalOpen}>
                 <DialogTrigger asChild>
                   <Button>
@@ -647,6 +655,31 @@ export default function MenuBuilderClient({ venueId, venueName }: { venueId: str
               />
             </CardContent>
           </Card>
+
+          {/* Categories Management */}
+          {showCategories && (
+            <Card>
+              <CardHeader>
+                <CardTitle>Manage Categories</CardTitle>
+                <p className="text-sm text-muted-foreground">
+                  Reorder categories to match your PDF menu or add new categories
+                </p>
+              </CardHeader>
+              <CardContent>
+                <CategoriesManagement 
+                  venueId={transformedVenueId}
+                  onCategoriesUpdate={(newCategories) => {
+                    setCategoryOrder(newCategories);
+                    loadMenuItems(); // Refresh to apply new order
+                    toast({
+                      title: "Categories updated",
+                      description: "Category order has been updated successfully."
+                    });
+                  }}
+                />
+              </CardContent>
+            </Card>
+          )}
 
           {/* Categories */}
           <div className="space-y-4">
@@ -999,14 +1032,6 @@ export default function MenuBuilderClient({ venueId, venueName }: { venueId: str
                 <CardTitle>Quick Actions</CardTitle>
               </CardHeader>
               <CardContent className="space-y-2">
-                <Button 
-                  variant="outline" 
-                  className="w-full justify-start"
-                  onClick={() => setShowCategories(!showCategories)}
-                >
-                  <Layout className="h-4 w-4 mr-2" />
-                  {showCategories ? 'Hide Categories' : 'Manage Categories'}
-                </Button>
                 <Button 
                   variant="outline" 
                   className="w-full justify-start"
