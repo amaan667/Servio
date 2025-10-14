@@ -468,6 +468,8 @@ export default function MenuClient({ venueId, venueName }: { venueId: string; ve
 
               // Sort categories based ONLY on PDF order - no alphabetical fallback
               const sortedCategories = Object.entries(groupedItems).sort(([catA], [catB]) => {
+                console.log('[MENU CLIENT] Sorting categories:', { catA, catB, categoryOrder });
+                
                 // Use stored category order from PDF upload if available
                 if (categoryOrder && Array.isArray(categoryOrder)) {
                   const orderA = categoryOrder.findIndex(storedCat => 
@@ -477,8 +479,11 @@ export default function MenuClient({ venueId, venueName }: { venueId: string; ve
                     storedCat.toLowerCase() === catB.toLowerCase()
                   );
                   
+                  console.log('[MENU CLIENT] Category order indices:', { orderA, orderB });
+                  
                   // If both categories are in stored order, sort by that order
                   if (orderA >= 0 && orderB >= 0) {
+                    console.log('[MENU CLIENT] Both in stored order, using stored order');
                     return orderA - orderB;
                   }
                   
@@ -495,7 +500,10 @@ export default function MenuClient({ venueId, venueName }: { venueId: string; ve
                   dynamicCat.toLowerCase() === catB.toLowerCase()
                 );
                 
+                console.log('[MENU CLIENT] Dynamic order indices:', { dynamicOrderA, dynamicOrderB });
+                
                 if (dynamicOrderA >= 0 && dynamicOrderB >= 0) {
+                  console.log('[MENU CLIENT] Both in dynamic order, using dynamic order');
                   return dynamicOrderA - dynamicOrderB;
                 }
                 if (dynamicOrderA >= 0) return -1;
@@ -504,6 +512,8 @@ export default function MenuClient({ venueId, venueName }: { venueId: string; ve
                 // NO ALPHABETICAL FALLBACK - maintain database order
                 return 0;
               });
+              
+              console.log('[MENU CLIENT] Final sorted categories:', sortedCategories.map(([cat]) => cat));
 
               return sortedCategories.map(([category, items]) => {
                 const isExpanded = expandedCategories.has(category);
