@@ -251,8 +251,8 @@ export function OrderCard({
       const getStatusLabel = () => {
         switch ((order.order_status || '').toUpperCase()) {
           case 'READY': return 'Mark Served';
-          case 'SERVING': return 'Complete Order';
-          default: return 'Complete Order';
+          case 'SERVING': return 'Complete';
+          default: return 'Complete';
         }
       };
 
