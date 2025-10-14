@@ -230,7 +230,7 @@ export default function DemoPage() {
         {viewMode === 'customer' ? (
           <CustomerDemoView />
         ) : (
-          <OwnerDemoView isAuthenticated={isAuthenticated} />
+          <OwnerDemoView isAuthenticated={isAuthenticated} primaryVenueId={primaryVenueId} />
         )}
       </div>
     </div>
@@ -316,7 +316,7 @@ function CustomerDemoView() {
   );
 }
 
-function OwnerDemoView({ isAuthenticated }: { isAuthenticated: boolean }) {
+function OwnerDemoView({ isAuthenticated, primaryVenueId }: { isAuthenticated: boolean; primaryVenueId: string | null }) {
   console.log('[DEMO DEBUG] Rendering OwnerDemoView, isAuthenticated:', isAuthenticated);
   return (
     <div className="space-y-8">
