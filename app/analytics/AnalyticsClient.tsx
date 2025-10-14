@@ -236,7 +236,13 @@ export default function AnalyticsClient({ venueId, venueName }: AnalyticsClientP
       Orders: day.orders
     }));
 
-    const csv = toCSV(csvData);
+    const columns = [
+      { key: 'Date' as const, header: 'Date' },
+      { key: 'Revenue' as const, header: 'Revenue ($)' },
+      { key: 'Orders' as const, header: 'Orders' }
+    ];
+
+    const csv = toCSV(csvData, columns);
     const filename = generateTimestampedFilename(`${venueName}_revenue_analytics`, 'csv');
     
     const blob = new Blob([csv], { type: 'text/csv' });
