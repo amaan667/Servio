@@ -135,7 +135,7 @@ export function useCounterOrdersRealtime(venueId: string) {
 					queryClient.invalidateQueries({ queryKey: ['counter-order-counts', venueId] });
 				}
 			})
-			.subscribe((status) => {
+			.subscribe((status: string) => {
 				console.log('[COUNTER ORDERS] Realtime subscription status:', status);
 			});
 

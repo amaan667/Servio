@@ -167,7 +167,7 @@ export function useTableOrdersRealtime(venueId: string) {
 					queryClient.invalidateQueries({ queryKey: ['table-order-counts', venueId] });
 				}
 			})
-			.subscribe((status) => {
+			.subscribe((status: string) => {
 				console.log('[TABLE ORDERS] Realtime subscription status:', status);
 			});
 
