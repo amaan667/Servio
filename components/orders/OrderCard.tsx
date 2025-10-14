@@ -133,28 +133,42 @@ export function OrderCard({
     }
   };
 
-  const handleStatusUpdate = async (newStatus: string) => {
+  const handleStatusUpdate = async (nextStatusRaw: string) => {
     if (!venueId) return;
+
+    const nextStatus = (nextStatusRaw || '').toUpperCase();
+    const currentStatus = (order.order_status || '').toUpperCase();
     
     try {
       setIsProcessing(true);
       
-      // Use specific serve endpoint for SERVED status
-      const endpoint = newStatus === 'SERVED' ? '/api/orders/serve' : '/api/orders/set-status';
-      const body = newStatus === 'SERVED' 
-        ? { orderId: order.id }
-        : { orderId: order.id, status: newStatus };
-
-      const response = await fetch(endpoint, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(body),
-      });
-
-      if (!response.ok) {
-        const errorText = await response.text();
-        console.error('[OrderCard DEBUG] API error response:', errorText);
-        throw new Error('Failed to update order status');
+      if (nextStatus === 'SERVED') {
+        // Use server endpoint for serving to ensure related side-effects
+        const response = await fetch('/api/orders/serve', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ orderId: order.id }),
+        });
+        if (!response.ok) {
+          const errorText = await response.text();
+          console.error('[OrderCard DEBUG] Serve API error:', errorText);
+          throw new Error('Failed to mark order as served');
+        }
+      } else {
+        // Directly update status via Supabase for other transitions
+        const supabase = createClient();
+        const { error } = await supabase
+          .from('orders')
+          .update({ 
+            order_status: nextStatus,
+            updated_at: new Date().toISOString(),
+          })
+          .eq('id', order.id)
+          .eq('venue_id', venueId);
+        if (error) {
+          console.error('[OrderCard DEBUG] Supabase status update error:', error);
+          throw new Error('Failed to update order status');
+        }
       }
       
       await onActionComplete?.();
@@ -170,7 +184,7 @@ export function OrderCard({
     if (!showActions || !venueId) return null;
 
     const isPaid = order.payment.status === 'paid';
-    const isCompleted = order.order_status === 'completed';
+    const isCompleted = (order.order_status || '').toUpperCase() === 'COMPLETED';
     const showUnpaid = shouldShowUnpaidChip(order);
 
     if (showUnpaid && !isPaid) {
@@ -222,34 +236,34 @@ export function OrderCard({
     // Show status update actions for FOH (Live Orders) - only READY/SERVED/COMPLETED
     if (!isCompleted) {
       const getNextStatus = () => {
-        switch (order.order_status) {
-          case 'ready': return 'SERVED';
-          case 'served': return 'COMPLETED';
+        switch ((order.order_status || '').toUpperCase()) {
+          case 'READY': return 'SERVED';
+          case 'SERVED': return 'COMPLETED';
           default: return 'COMPLETED';
         }
       };
 
       const getStatusLabel = () => {
-        switch (order.order_status) {
-          case 'ready': return 'Mark Served';
-          case 'served': return 'Complete Order';
+        switch ((order.order_status || '').toUpperCase()) {
+          case 'READY': return 'Mark Served';
+          case 'SERVED': return 'Complete Order';
           default: return 'Complete Order';
         }
       };
 
       const getStatusIcon = () => {
-        switch (order.order_status) {
-          case 'ready': return <CheckCircle className="h-4 w-4 mr-1" />;
-          case 'served': return <CheckCircle className="h-4 w-4 mr-1" />;
+        switch ((order.order_status || '').toUpperCase()) {
+          case 'READY': return <CheckCircle className="h-4 w-4 mr-1" />;
+          case 'SERVED': return <CheckCircle className="h-4 w-4 mr-1" />;
           default: return <CheckCircle className="h-4 w-4 mr-1" />;
         }
       };
 
       const getStatusMessage = () => {
-        switch (order.order_status) {
-          case 'ready':
+        switch ((order.order_status || '').toUpperCase()) {
+          case 'READY':
             return "Kitchen Ready - Mark as Served";
-          case 'served':
+          case 'SERVED':
             return "Served - Complete Order";
           default:
             return "Order Management - Update Status";
