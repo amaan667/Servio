@@ -156,7 +156,7 @@ export default function QRCodeClient({ venueId, venueName }: { venueId: string; 
     setGeneratedQRs(prev => [...prev, {
       name,
       url: qrUrl,
-      type: qrCodeType
+      type: qrCodeType === 'tables' ? 'table' : 'counter'
     }]);
   };
 
