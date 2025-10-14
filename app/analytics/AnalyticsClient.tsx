@@ -128,7 +128,7 @@ export default function AnalyticsClient({ venueId, venueName }: AnalyticsClientP
 
       // Process data
       const totalOrders = orders?.length || 0;
-      const totalRevenue = orders?.reduce((sum, order) => sum + (order.total_amount || 0), 0) || 0;
+      const totalRevenue = orders?.reduce((sum: number, order) => sum + (order.total_amount || 0), 0) || 0;
       const averageOrderValue = totalOrders > 0 ? totalRevenue / totalOrders : 0;
 
       // Group by date
