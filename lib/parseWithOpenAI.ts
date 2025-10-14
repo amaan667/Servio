@@ -17,6 +17,8 @@ export async function parseMenuStrict(extractedText: string): Promise<MenuPayloa
     "Rules:",
     "- CRITICAL: Preserve the EXACT order of categories as they appear in the menu from top to bottom.",
     "- The 'categories' array must list categories in the same order they appear in the PDF.",
+    "- MANDATORY: Read the PDF from top to bottom and list categories in that exact sequence.",
+    "- DO NOT alphabetize or reorder categories - maintain PDF layout order.",
     "- Include only items with prices; convert £/€ to numbers (no symbols).",
     "- No trailing commas; no extra fields; no prose.",
     "- Extract EVERY single menu item with a price - do not miss any.",

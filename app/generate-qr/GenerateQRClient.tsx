@@ -13,6 +13,7 @@ import { toast } from "@/hooks/use-toast";
 import { buildOrderUrl, getTablesFromUrl } from "@/lib/qr-urls";
 import { generateQRCodeUrl, getQRCodeSize } from "@/lib/qr-service";
 import { handleQRError, logQRAction } from "@/lib/qr-errors";
+import NavigationBreadcrumb from "@/components/navigation-breadcrumb";
 
 interface Props {
   venueId: string;
@@ -818,7 +819,9 @@ export default function GenerateQRClient({ venueId, venueName, activeTablesCount
     });
 
   return (
-    <div className="space-y-4 sm:space-y-6">
+    <>
+      <NavigationBreadcrumb venueId={venueId} />
+      <div className="space-y-4 sm:space-y-6">
       <div className="grid grid-cols-1 gap-4 sm:gap-6">
         <Card>
           <CardContent className="p-4 sm:p-6">
@@ -1110,5 +1113,6 @@ export default function GenerateQRClient({ venueId, venueName, activeTablesCount
         </CardContent>
       </Card>
     </div>
+    </>
   );
 }
