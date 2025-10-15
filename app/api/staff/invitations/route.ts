@@ -279,6 +279,15 @@ export async function POST(request: NextRequest) {
       
       const invitationLink = generateInvitationLink(invitation.token);
       
+      console.log('[INVITATION API] Sending email to:', invitation.email);
+      console.log('[INVITATION API] Invitation details:', {
+        email: invitation.email,
+        venueName: venue.venue_name,
+        role: invitation.role,
+        invitedBy: user.user_metadata?.full_name || user.email,
+        invitationLink
+      });
+      
       emailSent = await sendInvitationEmail({
         email: invitation.email,
         venueName: venue.venue_name || 'Your Venue',
