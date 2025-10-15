@@ -1412,25 +1412,7 @@ export default function LiveOrdersClient({ venueId, venueName: venueNameProp }: 
                   {/* Action buttons for individual orders */}
                   {showActions && !['COMPLETED', 'CANCELLED', 'REFUNDED', 'EXPIRED'].includes(order.order_status) && (
                     <div className="flex items-center gap-3 mt-6 pt-4 border-t border-gray-200">
-                      {order.order_status === 'PLACED' && (
-                        <Button 
-                          size="sm"
-                          onClick={() => updateOrderStatus(order.id, 'IN_PREP')}
-                          className="bg-blue-600 hover:bg-blue-700 text-white font-semibold px-4 py-2 rounded-lg text-sm"
-                        >
-                          Start Prep
-                        </Button>
-                      )}
-                      {order.order_status === 'IN_PREP' && (
-                        <Button 
-                          size="sm"
-                          onClick={() => updateOrderStatus(order.id, 'READY')}
-                          className="bg-green-600 hover:bg-green-700 text-white font-semibold px-4 py-2 rounded-lg text-sm"
-                        >
-                          Mark Ready
-                        </Button>
-                      )}
-                      {order.order_status === 'READY' && (
+                      {['PLACED', 'IN_PREP', 'READY'].includes(order.order_status) && (
                         <Button 
                           size="sm"
                           onClick={() => updateOrderStatus(order.id, 'SERVED')}
@@ -1445,7 +1427,7 @@ export default function LiveOrdersClient({ venueId, venueName: venueNameProp }: 
                           onClick={() => updateOrderStatus(order.id, 'COMPLETED')}
                           className="bg-gray-600 hover:bg-gray-700 text-white font-semibold px-4 py-2 rounded-lg text-sm"
                         >
-                          Complete
+                          Mark Completed
                         </Button>
                       )}
                     </div>
