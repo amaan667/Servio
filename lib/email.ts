@@ -135,15 +135,15 @@ If you didn't expect this invitation, you can safely ignore this email.
 // Send email using multiple fallback methods
 export async function sendEmail(template: EmailTemplate): Promise<boolean> {
   try {
-    // Method 1: Try Resend (if API key is available and not in dev mode)
+    // Method 1: Try Resend (if API key is available)
     console.log('🔍 Checking RESEND_API_KEY:', process.env.RESEND_API_KEY ? 'Present' : 'Missing');
-    if (process.env.RESEND_API_KEY && process.env.NODE_ENV === 'production') {
+    if (process.env.RESEND_API_KEY) {
       try {
         const { Resend } = await import('resend');
         const resend = new Resend(process.env.RESEND_API_KEY);
         
         const result = await resend.emails.send({
-          from: 'Servio <onboarding@resend.dev>',
+          from: 'Servio <invite@servio.uk>',
           to: template.to,
           subject: template.subject,
           html: template.html,
@@ -160,8 +160,6 @@ export async function sendEmail(template: EmailTemplate): Promise<boolean> {
         console.error('❌ Resend failed with error:', resendError);
         console.warn('⚠️ Resend failed, trying fallback:', resendError);
       }
-    } else if (process.env.RESEND_API_KEY && process.env.NODE_ENV !== 'production') {
-      console.log('⚠️ Resend skipped in development mode - use production or configure domain');
     }
 
     // Method 2: Try SendGrid (if API key is available)
