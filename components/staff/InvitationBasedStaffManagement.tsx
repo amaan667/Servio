@@ -250,18 +250,17 @@ export default function InvitationBasedStaffManagement({
         });
       }
 
-      // Update the invitations list locally instead of reloading everything
+      // Update the invitations list locally by marking as cancelled
       setInvitations(prevInvitations => 
-        prevInvitations.filter(invitation => invitation.id !== invitationId)
+        prevInvitations.map(invitation => 
+          invitation.id === invitationId 
+            ? { ...invitation, status: 'cancelled' as const }
+            : invitation
+        )
       );
 
-      // Reload only the invitations data to ensure consistency
-      const invitationsResponse = await fetch(`/api/staff/invitations?venue_id=${encodeURIComponent(venueId)}`);
-      const invitationsData = await invitationsResponse.json();
-      
-      if (invitationsResponse.ok) {
-        setInvitations(invitationsData.invitations || []);
-      }
+      // Don't reload data immediately to avoid flickering
+      // The local update should be sufficient
     } catch (err: any) {
       toast({
         title: 'Error',
@@ -575,7 +574,7 @@ export default function InvitationBasedStaffManagement({
               <div>
                 <p className="text-sm font-medium text-gray-600">Pending Invitations</p>
                 <p className="text-2xl font-bold text-gray-900">
-                  {invitations.filter(inv => inv.status === 'pending' && !inv.token?.startsWith('CANCELLED_')).length}
+                  {invitations.filter(inv => inv.status === 'pending').length}
                 </p>
               </div>
               <Clock className="h-8 w-8 text-yellow-600" />
@@ -691,7 +690,7 @@ export default function InvitationBasedStaffManagement({
             </Card>
           ) : (
             <div className="grid gap-4">
-              {invitations.filter(invitation => invitation.status === 'pending' && !invitation.token?.startsWith('CANCELLED_')).map((invitation) => {
+              {invitations.filter(invitation => invitation.status === 'pending').map((invitation) => {
                 const roleInfo = getRoleInfo(invitation.role);
                 const IconComponent = roleInfo.icon;
                 

@@ -86,52 +86,25 @@ export async function POST(request: NextRequest) {
       }, { status: 400 });
     }
 
-    // Get invitation details first
-    const { data: invitationData, error: fetchError } = await supabase
+    // Simple approach: just mark as cancelled and let the UI filter it out
+    // This avoids all constraint issues
+    const { error: updateError } = await supabase
       .from('staff_invitations')
-      .select('email, venue_id, token')
-      .eq('id', id)
-      .single();
-
-    if (fetchError) {
-      console.error('[INVITATION API] Error fetching invitation:', fetchError);
-      return NextResponse.json({ error: 'Invitation not found' }, { status: 404 });
-    }
-
-    // Try to delete the invitation completely
-    const { error: deleteError } = await supabase
-      .from('staff_invitations')
-      .delete()
+      .update({ 
+        status: 'cancelled',
+        updated_at: new Date().toISOString()
+      })
       .eq('id', id);
 
-    if (deleteError) {
-      console.error('[INVITATION API] Error deleting invitation:', deleteError);
-      
-      // If deletion fails, try a different approach: update the token to make it invalid
-      // This effectively "cancels" the invitation without constraint conflicts
-      const newToken = 'CANCELLED_' + Date.now() + '_' + Math.random().toString(36).substr(2, 9);
-      
-      const { error: updateError } = await supabase
-        .from('staff_invitations')
-        .update({ 
-          token: newToken,
-          status: 'expired', // Mark as expired so it won't be usable
-          updated_at: new Date().toISOString()
-        })
-        .eq('id', id);
-
-      if (updateError) {
-        console.error('[INVITATION API] Error updating invitation:', updateError);
-        return NextResponse.json({ 
-          error: 'Failed to cancel invitation',
-          details: updateError.message
-        }, { status: 500 });
-      }
-
-      console.log('[INVITATION API] Invitation cancelled by invalidating token');
-    } else {
-      console.log('[INVITATION API] Invitation deleted successfully');
+    if (updateError) {
+      console.error('[INVITATION API] Error updating invitation:', updateError);
+      return NextResponse.json({ 
+        error: 'Failed to cancel invitation',
+        details: updateError.message
+      }, { status: 500 });
     }
+
+    console.log('[INVITATION API] Invitation marked as cancelled');
 
     console.log('[INVITATION API] Invitation cancelled and removed successfully:', id);
 
