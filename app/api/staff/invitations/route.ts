@@ -71,6 +71,26 @@ export async function POST(request: NextRequest) {
       }, { status: 400 });
     }
 
+    const supabase = await createClient();
+
+    // Check if staff_invitations table exists
+    try {
+      await supabase.from('staff_invitations').select('id').limit(1);
+    } catch (tableError: any) {
+      if (tableError.code === 'PGRST116' || tableError.message?.includes('relation "staff_invitations" does not exist')) {
+        // Table doesn't exist
+        console.log('[INVITATION API] staff_invitations table does not exist');
+        return NextResponse.json({ 
+          error: 'Staff invitation system not set up. Please run the database migration first.' 
+        }, { status: 503 });
+      } else {
+        console.error('[INVITATION API] Unexpected table error:', tableError);
+        return NextResponse.json({ 
+          error: 'Database error. Please try again.' 
+        }, { status: 500 });
+      }
+    }
+
     // Validate role
     const validRoles = ['owner', 'manager', 'staff', 'kitchen', 'server', 'cashier'];
     if (!validRoles.includes(role)) {
@@ -84,8 +104,6 @@ export async function POST(request: NextRequest) {
     if (!emailRegex.test(email)) {
       return NextResponse.json({ error: 'Invalid email format' }, { status: 400 });
     }
-
-    const supabase = await createClient();
 
     // Check if user has permission to create invitations for this venue
     const { data: userRole, error: roleError } = await supabase
