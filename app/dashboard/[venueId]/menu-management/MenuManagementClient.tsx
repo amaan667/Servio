@@ -216,6 +216,21 @@ export default function MenuManagementClient({ venueId }: { venueId: string }) {
       setIsUploadingLogo(true);
       const supabase = createClient();
 
+      // First, try to create the bucket if it doesn't exist
+      try {
+        await supabase.storage.createBucket('venue-assets', {
+          public: true,
+          allowedMimeTypes: ['image/png', 'image/jpeg', 'image/jpg', 'image/gif', 'image/webp'],
+          fileSizeLimit: 2097152 // 2MB
+        });
+        console.log('[LOGO UPLOAD] Created venue-assets bucket');
+      } catch (bucketError: any) {
+        // Bucket might already exist, which is fine
+        if (!bucketError.message?.includes('already exists')) {
+          console.log('[LOGO UPLOAD] Bucket creation info:', bucketError.message);
+        }
+      }
+
       // Upload to Supabase Storage
       const fileExt = file.name.split('.').pop();
       const fileName = `${venueId}/logo-${Date.now()}.${fileExt}`;
@@ -242,13 +257,24 @@ export default function MenuManagementClient({ venueId }: { venueId: string }) {
       setDesignSettings(updatedSettings);
 
       // Also save to database immediately
-      await supabase
-        .from('menu_design_settings')
-        .upsert({
-          venue_id: venueId,
-          ...updatedSettings,
-          updated_at: new Date().toISOString()
-        });
+      try {
+        const { error: saveError } = await supabase
+          .from('menu_design_settings')
+          .upsert({
+            venue_id: venueId,
+            ...updatedSettings,
+            updated_at: new Date().toISOString()
+          });
+
+        if (saveError) {
+          console.error('[LOGO UPLOAD] Error saving to database:', saveError);
+          // Don't fail the upload if database save fails
+        } else {
+          console.log('[LOGO UPLOAD] Successfully saved to database');
+        }
+      } catch (dbError) {
+        console.error('[LOGO UPLOAD] Database save exception:', dbError);
+      }
 
       toast({
         title: "Logo uploaded successfully",
@@ -272,6 +298,8 @@ export default function MenuManagementClient({ venueId }: { venueId: string }) {
       setIsSavingDesign(true);
       const supabase = createClient();
 
+      console.log('[SAVE DESIGN] Saving design settings:', designSettings);
+
       const { error } = await supabase
         .from('menu_design_settings')
         .upsert({
@@ -281,19 +309,21 @@ export default function MenuManagementClient({ venueId }: { venueId: string }) {
         });
 
       if (error) {
+        console.error('[SAVE DESIGN] Database error:', error);
         throw error;
       }
 
+      console.log('[SAVE DESIGN] Successfully saved design settings');
       toast({
         title: "Design saved successfully",
         description: "Your design settings have been saved and will appear in the preview.",
       });
 
     } catch (error: any) {
-      console.error('Error saving design settings:', error);
+      console.error('[SAVE DESIGN] Error saving design settings:', error);
       toast({
         title: "Save failed",
-        description: error.message || "Failed to save design settings",
+        description: error.message || "Failed to save design settings. Please check if the database table exists.",
         variant: "destructive",
       });
     } finally {
