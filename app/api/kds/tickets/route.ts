@@ -260,6 +260,24 @@ export async function PATCH(req: Request) {
       );
     }
 
+    // If bumping a ticket, also update the main order status to SERVED
+    if (status === 'bumped' && ticket?.order_id) {
+      const { error: orderUpdateError } = await supabase
+        .from('orders')
+        .update({ 
+          order_status: 'SERVED',
+          updated_at: now
+        })
+        .eq('id', ticket.order_id);
+
+      if (orderUpdateError) {
+        console.error('[KDS] Error updating order status after bump:', orderUpdateError);
+        // Don't fail the request, just log the error
+      } else {
+        console.log(`[KDS] Updated order ${ticket.order_id} status to SERVED after bump`);
+      }
+    }
+
     return NextResponse.json({
       ok: true,
       ticket
