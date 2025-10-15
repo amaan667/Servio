@@ -283,6 +283,7 @@ export default function InvitationBasedStaffManagement({
       case 'expired':
         return <XCircle className="h-4 w-4 text-red-600" />;
       case 'cancelled':
+      case 'deleted':
         return <XCircle className="h-4 w-4 text-gray-600" />;
       default:
         return <AlertCircle className="h-4 w-4 text-gray-600" />;
@@ -298,6 +299,7 @@ export default function InvitationBasedStaffManagement({
       case 'expired':
         return 'bg-red-100 text-red-800 border-red-200';
       case 'cancelled':
+      case 'deleted':
         return 'bg-gray-100 text-gray-800 border-gray-200';
       default:
         return 'bg-gray-100 text-gray-800 border-gray-200';
