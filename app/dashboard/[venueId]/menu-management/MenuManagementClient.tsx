@@ -14,6 +14,7 @@ import { Plus, Edit, Trash2, ShoppingBag, Trash, ChevronDown, ChevronRight, Save
 import { MenuUploadCard } from "@/components/MenuUploadCard";
 import { CategoriesManagement } from "@/components/CategoriesManagement";
 import { useToast } from "@/hooks/use-toast";
+import { formatPriceWithCurrency } from "@/lib/pricing-utils";
 
 interface MenuItem {
   id: string;
@@ -281,11 +282,11 @@ export default function MenuManagementClient({ venueId }: { venueId: string }) {
   return (
     <div className="space-y-6">
       {/* Tab Navigation */}
-      <div className="flex space-x-1 mb-6 bg-muted p-1 rounded-lg w-fit">
+      <div className="flex flex-col sm:flex-row space-y-2 sm:space-y-0 sm:space-x-1 mb-6 bg-muted p-1 rounded-lg w-full sm:w-fit">
         <Button
           variant={activeTab === 'manage' ? 'default' : 'ghost'}
           onClick={() => setActiveTab('manage')}
-          className="flex items-center space-x-2"
+          className="flex items-center justify-center space-x-2 w-full sm:w-auto"
         >
           <Settings className="h-4 w-4" />
           <span>Manage</span>
@@ -293,7 +294,7 @@ export default function MenuManagementClient({ venueId }: { venueId: string }) {
         <Button
           variant={activeTab === 'design' ? 'default' : 'ghost'}
           onClick={() => setActiveTab('design')}
-          className="flex items-center space-x-2"
+          className="flex items-center justify-center space-x-2 w-full sm:w-auto"
         >
           <Palette className="h-4 w-4" />
           <span>Design</span>
@@ -301,7 +302,7 @@ export default function MenuManagementClient({ venueId }: { venueId: string }) {
         <Button
           variant={activeTab === 'preview' ? 'default' : 'ghost'}
           onClick={() => setActiveTab('preview')}
-          className="flex items-center space-x-2"
+          className="flex items-center justify-center space-x-2 w-full sm:w-auto"
         >
           <Eye className="h-4 w-4" />
           <span>Preview</span>
@@ -391,16 +392,20 @@ export default function MenuManagementClient({ venueId }: { venueId: string }) {
                           />
                         </div>
                         <div>
-                          <Label htmlFor="price">Price</Label>
-                          <Input
-                            id="price"
-                            type="number"
-                            step="0.01"
-                            value={formData.price}
-                            onChange={(e) => setFormData({...formData, price: e.target.value})}
-                            placeholder="0.00"
-                            required
-                          />
+                          <Label htmlFor="price">Price (£)</Label>
+                          <div className="relative">
+                            <span className="absolute left-3 top-1/2 transform -translate-y-1/2 text-muted-foreground">£</span>
+                            <Input
+                              id="price"
+                              type="number"
+                              step="0.01"
+                              value={formData.price}
+                              onChange={(e) => setFormData({...formData, price: e.target.value})}
+                              placeholder="0.00"
+                              className="pl-8"
+                              required
+                            />
+                          </div>
                         </div>
                         <div>
                           <Label htmlFor="category">Category</Label>
@@ -490,7 +495,7 @@ export default function MenuManagementClient({ venueId }: { venueId: string }) {
                                 {item.description && (
                                   <p className="text-sm text-muted-foreground mt-1">{item.description}</p>
                                 )}
-                                <p className="text-sm font-medium text-foreground mt-1">${item.price.toFixed(2)}</p>
+                                <p className="text-sm font-medium text-foreground mt-1">{formatPriceWithCurrency(item.price, '£')}</p>
                               </div>
                               <div className="flex items-center space-x-2">
                                 <Button
@@ -522,31 +527,206 @@ export default function MenuManagementClient({ venueId }: { venueId: string }) {
       )}
 
       {activeTab === 'design' && (
-        <Card>
-          <CardHeader>
-            <CardTitle className="flex items-center space-x-2">
-              <PaletteIcon className="h-5 w-5" />
-              <span>Menu Design</span>
-            </CardTitle>
-          </CardHeader>
-          <CardContent>
-            <p className="text-muted-foreground">Design customization options will be available here.</p>
-          </CardContent>
-        </Card>
+        <div className="space-y-6">
+          {/* Theme Settings */}
+          <Card>
+            <CardHeader>
+              <CardTitle className="flex items-center space-x-2">
+                <PaletteIcon className="h-5 w-5" />
+                <span>Theme & Colors</span>
+              </CardTitle>
+            </CardHeader>
+            <CardContent className="space-y-4">
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div>
+                  <Label htmlFor="primary-color">Primary Color</Label>
+                  <div className="flex items-center space-x-2 mt-2">
+                    <input
+                      type="color"
+                      id="primary-color"
+                      defaultValue="#8b5cf6"
+                      className="w-12 h-10 rounded border border-gray-300"
+                    />
+                    <Input placeholder="#8b5cf6" className="flex-1" />
+                  </div>
+                </div>
+                <div>
+                  <Label htmlFor="secondary-color">Secondary Color</Label>
+                  <div className="flex items-center space-x-2 mt-2">
+                    <input
+                      type="color"
+                      id="secondary-color"
+                      defaultValue="#f3f4f6"
+                      className="w-12 h-10 rounded border border-gray-300"
+                    />
+                    <Input placeholder="#f3f4f6" className="flex-1" />
+                  </div>
+                </div>
+              </div>
+            </CardContent>
+          </Card>
+
+          {/* Layout Settings */}
+          <Card>
+            <CardHeader>
+              <CardTitle className="flex items-center space-x-2">
+                <Layout className="h-5 w-5" />
+                <span>Layout & Display</span>
+              </CardTitle>
+            </CardHeader>
+            <CardContent className="space-y-4">
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div>
+                  <Label htmlFor="font-family">Font Family</Label>
+                  <select id="font-family" className="w-full mt-2 p-2 border border-gray-300 rounded-md">
+                    <option value="inter">Inter (Default)</option>
+                    <option value="roboto">Roboto</option>
+                    <option value="opensans">Open Sans</option>
+                    <option value="poppins">Poppins</option>
+                  </select>
+                </div>
+                <div>
+                  <Label htmlFor="font-size">Font Size</Label>
+                  <select id="font-size" className="w-full mt-2 p-2 border border-gray-300 rounded-md">
+                    <option value="small">Small</option>
+                    <option value="medium" selected>Medium</option>
+                    <option value="large">Large</option>
+                  </select>
+                </div>
+              </div>
+              <div className="flex items-center space-x-2">
+                <input type="checkbox" id="show-descriptions" defaultChecked className="rounded" />
+                <Label htmlFor="show-descriptions">Show item descriptions</Label>
+              </div>
+              <div className="flex items-center space-x-2">
+                <input type="checkbox" id="show-prices" defaultChecked className="rounded" />
+                <Label htmlFor="show-prices">Show prices</Label>
+              </div>
+            </CardContent>
+          </Card>
+
+          {/* Branding */}
+          <Card>
+            <CardHeader>
+              <CardTitle className="flex items-center space-x-2">
+                <Image className="h-5 w-5" />
+                <span>Branding</span>
+              </CardTitle>
+            </CardHeader>
+            <CardContent className="space-y-4">
+              <div>
+                <Label htmlFor="venue-name">Venue Name</Label>
+                <Input id="venue-name" placeholder="Your Restaurant Name" className="mt-2" />
+              </div>
+              <div>
+                <Label htmlFor="logo-upload">Logo Upload</Label>
+                <div className="mt-2 border-2 border-dashed border-gray-300 rounded-lg p-6 text-center">
+                  <Upload className="h-8 w-8 text-gray-400 mx-auto mb-2" />
+                  <p className="text-sm text-gray-600">Click to upload or drag and drop</p>
+                  <p className="text-xs text-gray-500">PNG, JPG up to 2MB</p>
+                </div>
+              </div>
+            </CardContent>
+          </Card>
+
+          <div className="flex justify-end">
+            <Button className="flex items-center space-x-2 w-full sm:w-auto">
+              <Save className="h-4 w-4" />
+              <span>Save Design</span>
+            </Button>
+          </div>
+        </div>
       )}
 
       {activeTab === 'preview' && (
-        <Card>
-          <CardHeader>
-            <CardTitle className="flex items-center space-x-2">
-              <Eye className="h-5 w-5" />
-              <span>Menu Preview</span>
-            </CardTitle>
-          </CardHeader>
-          <CardContent>
-            <p className="text-muted-foreground">Menu preview will be available here.</p>
-          </CardContent>
-        </Card>
+        <div className="space-y-6">
+          {/* Preview Controls */}
+          <Card>
+            <CardHeader>
+              <CardTitle className="flex items-center justify-between">
+                <div className="flex items-center space-x-2">
+                  <Eye className="h-5 w-5" />
+                  <span>Menu Preview</span>
+                </div>
+                <div className="flex flex-col sm:flex-row items-stretch sm:items-center space-y-2 sm:space-y-0 sm:space-x-2">
+                  <Button variant="outline" size="sm" className="w-full sm:w-auto">
+                    <Download className="h-4 w-4 mr-2" />
+                    Export PDF
+                  </Button>
+                  <Button variant="outline" size="sm" className="w-full sm:w-auto">
+                    <Link className="h-4 w-4 mr-2" />
+                    Share Link
+                  </Button>
+                </div>
+              </CardTitle>
+            </CardHeader>
+          </Card>
+
+          {/* Menu Preview */}
+          <Card>
+            <CardContent className="p-0">
+              <div className="bg-white min-h-[600px] p-8">
+                {/* Menu Header */}
+                <div className="text-center mb-8 pb-6 border-b border-gray-200">
+                  <h1 className="text-3xl font-bold text-gray-900 mb-2">Your Restaurant</h1>
+                  <p className="text-gray-600">Delicious food, great service</p>
+                </div>
+
+                {/* Menu Categories */}
+                {menuItems.length === 0 ? (
+                  <div className="text-center py-12">
+                    <ShoppingBag className="h-16 w-16 text-gray-300 mx-auto mb-4" />
+                    <h3 className="text-lg font-medium text-gray-900 mb-2">No menu items to preview</h3>
+                    <p className="text-gray-500 mb-4">Add some menu items in the Manage tab to see your menu preview.</p>
+                    <Button onClick={() => setActiveTab('manage')} className="flex items-center space-x-2">
+                      <Plus className="h-4 w-4" />
+                      <span>Add Menu Items</span>
+                    </Button>
+                  </div>
+                ) : (
+                  <div className="space-y-8">
+                    {getCategories().map(category => (
+                      <div key={category} className="space-y-4">
+                        <h2 className="text-2xl font-bold text-gray-900 border-b-2 border-purple-600 pb-2">
+                          {category}
+                        </h2>
+                        <div className="grid gap-4">
+                          {getItemsByCategory(category).map(item => (
+                            <div key={item.id} className="flex justify-between items-start py-2">
+                              <div className="flex-1">
+                                <div className="flex items-center space-x-2">
+                                  <h3 className="font-semibold text-gray-900">{item.name}</h3>
+                                  {!item.is_available && (
+                                    <span className="text-xs bg-red-100 text-red-800 px-2 py-1 rounded">Unavailable</span>
+                                  )}
+                                </div>
+                                {item.description && (
+                                  <p className="text-sm text-gray-600 mt-1">{item.description}</p>
+                                )}
+                              </div>
+                              <div className="text-right">
+                                <span className="font-bold text-gray-900 text-lg">
+                                  {formatPriceWithCurrency(item.price, '£')}
+                                </span>
+                              </div>
+                            </div>
+                          ))}
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                )}
+
+                {/* Menu Footer */}
+                {menuItems.length > 0 && (
+                  <div className="text-center mt-12 pt-6 border-t border-gray-200">
+                    <p className="text-sm text-gray-500">Thank you for choosing us!</p>
+                  </div>
+                )}
+              </div>
+            </CardContent>
+          </Card>
+        </div>
       )}
     </div>
   );
