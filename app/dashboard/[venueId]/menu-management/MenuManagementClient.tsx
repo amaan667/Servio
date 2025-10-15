@@ -86,23 +86,23 @@ export default function MenuManagementClient({ venueId }: { venueId: string }) {
   const detectColorsFromImage = (imageUrl: string): Promise<{primary: string, secondary: string}> => {
     return new Promise((resolve) => {
       // Check if we're in a browser environment
-      if (typeof window === 'undefined' || typeof Image === 'undefined') {
+      if (typeof window === 'undefined' || typeof window.Image === 'undefined') {
         resolve({ primary: '#8b5cf6', secondary: '#f3f4f6' });
         return;
       }
       
-      const img = new Image();
+      const img = new window.Image();
       img.crossOrigin = 'anonymous';
       
       img.onload = () => {
         try {
           // Check if canvas is available
-          if (typeof document === 'undefined') {
+          if (typeof window === 'undefined' || typeof window.document === 'undefined') {
             resolve({ primary: '#8b5cf6', secondary: '#f3f4f6' });
             return;
           }
           
-          const canvas = document.createElement('canvas');
+          const canvas = window.document.createElement('canvas');
           const ctx = canvas.getContext('2d');
           if (!ctx) {
             resolve({ primary: '#8b5cf6', secondary: '#f3f4f6' });
