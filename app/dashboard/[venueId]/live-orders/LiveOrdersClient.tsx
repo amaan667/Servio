@@ -50,7 +50,7 @@ interface Order {
   total_amount: number;
   created_at: string;
   updated_at?: string;
-  order_status: 'PLACED' | 'ACCEPTED' | 'IN_PREP' | 'READY' | 'OUT_FOR_DELIVERY' | 'SERVING' | 'COMPLETED' | 'CANCELLED' | 'REFUNDED' | 'EXPIRED';
+  order_status: 'PLACED' | 'ACCEPTED' | 'IN_PREP' | 'READY' | 'OUT_FOR_DELIVERY' | 'SERVING' | 'SERVED' | 'COMPLETED' | 'CANCELLED' | 'REFUNDED' | 'EXPIRED';
   payment_status?: string;
   payment_method?: string;
   notes?: string;
@@ -104,14 +104,14 @@ export default function LiveOrdersClient({ venueId, venueName: venueNameProp }: 
   }, [tabParam]);
 
   
-  // Constants for order statuses (FOH must see orders from placement until served)
-  // Show orders throughout the whole lifecycle in Live Orders (until completed/cancelled)
-  const LIVE_STATUSES = ['PLACED', 'IN_PREP', 'READY', 'SERVING', 'SERVED'];
-  const TERMINAL_STATUSES = ['COMPLETED', 'CANCELLED', 'REFUNDED', 'EXPIRED'];
-  // Treat these as "in live window" so they render on the Live tab immediately
-  const LIVE_WINDOW_STATUSES = ['PLACED', 'IN_PREP', 'READY', 'SERVING', 'SERVED'];
-  const ACTIVE_TABLE_ORDER_STATUSES = ['PLACED', 'IN_PREP', 'READY', 'SERVING'];
-  const LIVE_TABLE_ORDER_STATUSES = ['PLACED', 'IN_PREP', 'READY', 'SERVING', 'SERVED'];
+  // Constants for order statuses (FOH must see orders from placement until manually deleted)
+  // Show orders throughout the whole lifecycle in Live Orders (including COMPLETED - never auto-hide)
+  const LIVE_STATUSES = ['PLACED', 'IN_PREP', 'READY', 'SERVING', 'SERVED', 'COMPLETED'];
+  const TERMINAL_STATUSES = ['CANCELLED', 'REFUNDED', 'EXPIRED']; // Only these are truly terminal
+  // Treat these as "in live window" so they render on the Live tab immediately and stay visible
+  const LIVE_WINDOW_STATUSES = ['PLACED', 'IN_PREP', 'READY', 'SERVING', 'SERVED', 'COMPLETED'];
+  const ACTIVE_TABLE_ORDER_STATUSES = ['PLACED', 'IN_PREP', 'READY', 'SERVING', 'SERVED'];
+  const LIVE_TABLE_ORDER_STATUSES = ['PLACED', 'IN_PREP', 'READY', 'SERVING', 'SERVED', 'COMPLETED'];
   const prepLeadMs = 30 * 60 * 1000; // 30 minutes default
   
   // Define what constitutes a "live" order - recent orders
@@ -189,7 +189,7 @@ export default function LiveOrdersClient({ venueId, venueName: venueNameProp }: 
         .from('orders')
         .select('id', { count: 'exact', head: true })
         .eq('venue_id', venueId)
-        .in('order_status', ['PLACED','ACCEPTED','IN_PREP','READY','OUT_FOR_DELIVERY','SERVING','COMPLETED'])
+        .in('order_status', ['PLACED','ACCEPTED','IN_PREP','READY','OUT_FOR_DELIVERY','SERVING','SERVED','COMPLETED'])
         .gte('created_at', startUtc)
         .lt('created_at', endUtc)
         .gte('created_at', liveCutoff);
@@ -602,7 +602,7 @@ export default function LiveOrdersClient({ venueId, venueName: venueNameProp }: 
     return () => clearInterval(interval);
   }, [todayWindow, LIVE_ORDER_WINDOW_MS]);
 
-  const updateOrderStatus = async (orderId: string, orderStatus: 'PLACED' | 'ACCEPTED' | 'IN_PREP' | 'READY' | 'OUT_FOR_DELIVERY' | 'SERVING' | 'COMPLETED' | 'CANCELLED' | 'REFUNDED' | 'EXPIRED') => {
+  const updateOrderStatus = async (orderId: string, orderStatus: 'PLACED' | 'ACCEPTED' | 'IN_PREP' | 'READY' | 'OUT_FOR_DELIVERY' | 'SERVING' | 'SERVED' | 'COMPLETED' | 'CANCELLED' | 'REFUNDED' | 'EXPIRED') => {
     const supabase = createClient();
     
     // Get order details before updating
@@ -623,8 +623,8 @@ export default function LiveOrdersClient({ venueId, venueName: venueNameProp }: 
       .eq('venue_id', venueId);
 
     if (!error) {
-      // If order is completed or cancelled, remove from live orders immediately
-      if (orderStatus === 'COMPLETED' || orderStatus === 'CANCELLED') {
+      // Only remove from live orders if truly terminal (CANCELLED, REFUNDED, EXPIRED)
+      if (orderStatus === 'CANCELLED' || orderStatus === 'REFUNDED' || orderStatus === 'EXPIRED') {
         setOrders(prev => prev.filter(order => order.id !== orderId));
         
         // Move to all today orders if it's from today
@@ -642,7 +642,7 @@ export default function LiveOrdersClient({ venueId, venueName: venueNameProp }: 
           }
         }
       } else {
-        // Update existing order in live orders for active statuses
+        // Update existing order in live orders for all other statuses (including COMPLETED)
         setOrders(prev => prev.map(order => 
           order.id === orderId ? { ...order, order_status: orderStatus } : order
         ));
@@ -826,7 +826,7 @@ export default function LiveOrdersClient({ venueId, venueName: venueNameProp }: 
       // Get all active orders (not completed) from the current tab
       const currentOrders = activeTab === 'live' ? orders : allTodayOrders;
       const activeOrders = currentOrders.filter(order => 
-        ['PLACED', 'IN_PREP', 'READY', 'SERVING', 'SERVED'].includes(order.order_status)
+        ['PLACED', 'IN_PREP', 'READY', 'SERVING', 'SERVED', 'COMPLETED'].includes(order.order_status)
       );
       
       if (activeOrders.length === 0) {
@@ -1410,7 +1410,7 @@ export default function LiveOrdersClient({ venueId, venueName: venueNameProp }: 
                   </div>
 
                   {/* Action buttons for individual orders */}
-                  {showActions && order.order_status !== 'COMPLETED' && (
+                  {showActions && !['COMPLETED', 'CANCELLED', 'REFUNDED', 'EXPIRED'].includes(order.order_status) && (
                     <div className="flex items-center gap-3 mt-6 pt-4 border-t border-gray-200">
                       {order.order_status === 'PLACED' && (
                         <Button 
@@ -1433,10 +1433,19 @@ export default function LiveOrdersClient({ venueId, venueName: venueNameProp }: 
                       {order.order_status === 'READY' && (
                         <Button 
                           size="sm"
-                          onClick={() => updateOrderStatus(order.id, 'COMPLETED')}
+                          onClick={() => updateOrderStatus(order.id, 'SERVED')}
                           className="bg-purple-600 hover:bg-purple-700 text-white font-semibold px-6 py-2 rounded-lg text-sm"
                         >
                           Mark Served
+                        </Button>
+                      )}
+                      {order.order_status === 'SERVED' && (
+                        <Button 
+                          size="sm"
+                          onClick={() => updateOrderStatus(order.id, 'COMPLETED')}
+                          className="bg-gray-600 hover:bg-gray-700 text-white font-semibold px-6 py-2 rounded-lg text-sm"
+                        >
+                          Complete Order
                         </Button>
                       )}
                     </div>
@@ -1598,7 +1607,7 @@ export default function LiveOrdersClient({ venueId, venueName: venueNameProp }: 
               ) : (
                 <>
                   {/* Bulk Complete All Button */}
-                  {orders.filter(order => ['PLACED', 'IN_PREP', 'READY', 'SERVING'].includes(order.order_status)).length > 0 && (
+                  {orders.filter(order => ['PLACED', 'IN_PREP', 'READY', 'SERVING', 'SERVED'].includes(order.order_status)).length > 0 && (
                     <div className="flex justify-center mb-8">
                       <Button
                         onClick={bulkCompleteAllOrders}
@@ -1612,7 +1621,7 @@ export default function LiveOrdersClient({ venueId, venueName: venueNameProp }: 
                           </>
                         ) : (
                           <>
-                            Complete All Orders ({orders.filter(order => ['PLACED', 'IN_PREP', 'READY', 'SERVING'].includes(order.order_status)).length})
+                            Complete All Orders ({orders.filter(order => ['PLACED', 'IN_PREP', 'READY', 'SERVING', 'SERVED'].includes(order.order_status)).length})
                           </>
                         )}
                       </Button>
@@ -1678,7 +1687,7 @@ export default function LiveOrdersClient({ venueId, venueName: venueNameProp }: 
               ) : (
                 <>
                   {/* Bulk Complete All Button for Earlier Today */}
-                  {allTodayOrders.filter(order => ['PLACED', 'IN_PREP', 'READY', 'SERVING'].includes(order.order_status)).length > 0 && (
+                  {allTodayOrders.filter(order => ['PLACED', 'IN_PREP', 'READY', 'SERVING', 'SERVED'].includes(order.order_status)).length > 0 && (
                     <div className="flex justify-center mb-8">
                       <Button
                         onClick={bulkCompleteAllOrders}
@@ -1692,7 +1701,7 @@ export default function LiveOrdersClient({ venueId, venueName: venueNameProp }: 
                           </>
                         ) : (
                           <>
-                            Complete All Orders ({allTodayOrders.filter(order => ['PLACED', 'IN_PREP', 'READY', 'SERVING'].includes(order.order_status)).length})
+                            Complete All Orders ({allTodayOrders.filter(order => ['PLACED', 'IN_PREP', 'READY', 'SERVING', 'SERVED'].includes(order.order_status)).length})
                           </>
                         )}
                       </Button>
