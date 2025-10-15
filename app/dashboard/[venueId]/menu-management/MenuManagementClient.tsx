@@ -34,6 +34,7 @@ interface DesignSettings {
   secondary_color: string;
   font_family: string;
   font_size: string;
+  font_size_numeric?: number;
   show_descriptions: boolean;
   show_prices: boolean;
 }
@@ -62,6 +63,7 @@ export default function MenuManagementClient({ venueId }: { venueId: string }) {
     secondary_color: '#f3f4f6',
     font_family: 'inter',
     font_size: 'medium',
+    font_size_numeric: 16,
     show_descriptions: true,
     show_prices: true
   });
@@ -80,19 +82,53 @@ export default function MenuManagementClient({ venueId }: { venueId: string }) {
   // Load Google Fonts dynamically
   useEffect(() => {
     const loadFont = (fontFamily: string) => {
+      // Check if font is already loaded
+      const existingLink = document.querySelector(`link[href*="${fontFamily.replace(' ', '+')}"]`);
+      if (existingLink) return;
+
       const link = document.createElement('link');
-      link.href = `https://fonts.googleapis.com/css2?family=${fontFamily.replace(' ', '+')}:wght@400;500;600;700&display=swap`;
+      link.href = `https://fonts.googleapis.com/css2?family=${fontFamily.replace(' ', '+')}:wght@300;400;500;600;700&display=swap`;
       link.rel = 'stylesheet';
       document.head.appendChild(link);
     };
 
     // Load fonts based on current design settings
-    if (designSettings.font_family === 'roboto') {
-      loadFont('Roboto');
-    } else if (designSettings.font_family === 'opensans') {
-      loadFont('Open Sans');
-    } else if (designSettings.font_family === 'poppins') {
-      loadFont('Poppins');
+    const fontMap: { [key: string]: string } = {
+      'inter': 'Inter',
+      'roboto': 'Roboto',
+      'opensans': 'Open Sans',
+      'poppins': 'Poppins',
+      'lato': 'Lato',
+      'montserrat': 'Montserrat',
+      'nunito': 'Nunito',
+      'source-sans': 'Source Sans Pro',
+      'playfair': 'Playfair Display',
+      'merriweather': 'Merriweather',
+      'crimson': 'Crimson Text',
+      'libre-baskerville': 'Libre Baskerville',
+      'dancing-script': 'Dancing Script',
+      'pacifico': 'Pacifico',
+      'lobster': 'Lobster',
+      'bebas-neue': 'Bebas Neue',
+      'oswald': 'Oswald',
+      'raleway': 'Raleway',
+      'ubuntu': 'Ubuntu',
+      'fira-sans': 'Fira Sans',
+      'work-sans': 'Work Sans',
+      'quicksand': 'Quicksand',
+      'rubik': 'Rubik',
+      'comfortaa': 'Comfortaa',
+      'cabin': 'Cabin',
+      'dosis': 'Dosis',
+      'exo': 'Exo',
+      'fjalla': 'Fjalla One',
+      'anton': 'Anton',
+      'barlow': 'Barlow'
+    };
+
+    const fontName = fontMap[designSettings.font_family];
+    if (fontName) {
+      loadFont(fontName);
     }
   }, [designSettings.font_family]);
 
@@ -180,6 +216,7 @@ export default function MenuManagementClient({ venueId }: { venueId: string }) {
           secondary_color: data.secondary_color || '#f3f4f6',
           font_family: data.font_family || 'inter',
           font_size: data.font_size || 'medium',
+          font_size_numeric: data.font_size_numeric || 16,
           show_descriptions: data.show_descriptions ?? true,
           show_prices: data.show_prices ?? true
         });
@@ -277,8 +314,9 @@ export default function MenuManagementClient({ venueId }: { venueId: string }) {
       }
 
       toast({
-        title: "Logo uploaded successfully",
-        description: "Your logo has been uploaded and will appear in the preview.",
+        title: "🎉 Logo uploaded successfully!",
+        description: "Your logo has been uploaded and is now visible in the menu preview. It will appear on all customer-facing menus.",
+        duration: 5000,
       });
 
     } catch (error: any) {
@@ -828,24 +866,69 @@ export default function MenuManagementClient({ venueId }: { venueId: string }) {
                     onChange={(e) => setDesignSettings(prev => ({ ...prev, font_family: e.target.value }))}
                     className="w-full mt-2 p-2 border border-gray-300 rounded-md"
                   >
-                    <option value="inter">Inter (Default)</option>
-                    <option value="roboto">Roboto</option>
-                    <option value="opensans">Open Sans</option>
-                    <option value="poppins">Poppins</option>
+                    <optgroup label="Sans-Serif Fonts">
+                      <option value="inter">Inter (Default)</option>
+                      <option value="roboto">Roboto</option>
+                      <option value="opensans">Open Sans</option>
+                      <option value="poppins">Poppins</option>
+                      <option value="lato">Lato</option>
+                      <option value="montserrat">Montserrat</option>
+                      <option value="nunito">Nunito</option>
+                      <option value="source-sans">Source Sans Pro</option>
+                      <option value="raleway">Raleway</option>
+                      <option value="ubuntu">Ubuntu</option>
+                      <option value="fira-sans">Fira Sans</option>
+                      <option value="work-sans">Work Sans</option>
+                      <option value="quicksand">Quicksand</option>
+                      <option value="rubik">Rubik</option>
+                      <option value="comfortaa">Comfortaa</option>
+                      <option value="cabin">Cabin</option>
+                      <option value="dosis">Dosis</option>
+                      <option value="exo">Exo</option>
+                      <option value="barlow">Barlow</option>
+                    </optgroup>
+                    <optgroup label="Serif Fonts">
+                      <option value="playfair">Playfair Display</option>
+                      <option value="merriweather">Merriweather</option>
+                      <option value="crimson">Crimson Text</option>
+                      <option value="libre-baskerville">Libre Baskerville</option>
+                    </optgroup>
+                    <optgroup label="Display & Script Fonts">
+                      <option value="dancing-script">Dancing Script</option>
+                      <option value="pacifico">Pacifico</option>
+                      <option value="lobster">Lobster</option>
+                      <option value="bebas-neue">Bebas Neue</option>
+                      <option value="oswald">Oswald</option>
+                      <option value="fjalla">Fjalla One</option>
+                      <option value="anton">Anton</option>
+                    </optgroup>
                   </select>
                 </div>
                 <div>
-                  <Label htmlFor="font-size">Font Size</Label>
-                  <select 
-                    id="font-size" 
-                    value={designSettings.font_size}
-                    onChange={(e) => setDesignSettings(prev => ({ ...prev, font_size: e.target.value }))}
-                    className="w-full mt-2 p-2 border border-gray-300 rounded-md"
-                  >
-                    <option value="small">Small</option>
-                    <option value="medium">Medium</option>
-                    <option value="large">Large</option>
-                  </select>
+                  <Label htmlFor="font-size-numeric">Font Size (px)</Label>
+                  <div className="flex items-center space-x-2 mt-2">
+                    <input
+                      type="range"
+                      id="font-size-numeric"
+                      min="8"
+                      max="24"
+                      value={designSettings.font_size_numeric || 16}
+                      onChange={(e) => setDesignSettings(prev => ({ 
+                        ...prev, 
+                        font_size_numeric: parseInt(e.target.value),
+                        font_size: parseInt(e.target.value) <= 12 ? 'small' : 
+                                  parseInt(e.target.value) <= 18 ? 'medium' : 'large'
+                      }))}
+                      className="flex-1"
+                    />
+                    <span className="text-sm font-medium w-12 text-center">
+                      {designSettings.font_size_numeric || 16}px
+                    </span>
+                  </div>
+                  <div className="flex justify-between text-xs text-gray-500 mt-1">
+                    <span>8px</span>
+                    <span>24px</span>
+                  </div>
                 </div>
               </div>
               <div className="flex items-center space-x-2">
@@ -971,9 +1054,34 @@ export default function MenuManagementClient({ venueId }: { venueId: string }) {
                   fontFamily: designSettings.font_family === 'inter' ? 'Inter, sans-serif' :
                              designSettings.font_family === 'roboto' ? 'Roboto, sans-serif' :
                              designSettings.font_family === 'opensans' ? 'Open Sans, sans-serif' :
-                             designSettings.font_family === 'poppins' ? 'Poppins, sans-serif' : 'Inter, sans-serif',
-                  fontSize: designSettings.font_size === 'small' ? '14px' :
-                           designSettings.font_size === 'large' ? '18px' : '16px'
+                             designSettings.font_family === 'poppins' ? 'Poppins, sans-serif' :
+                             designSettings.font_family === 'lato' ? 'Lato, sans-serif' :
+                             designSettings.font_family === 'montserrat' ? 'Montserrat, sans-serif' :
+                             designSettings.font_family === 'nunito' ? 'Nunito, sans-serif' :
+                             designSettings.font_family === 'source-sans' ? 'Source Sans Pro, sans-serif' :
+                             designSettings.font_family === 'playfair' ? 'Playfair Display, serif' :
+                             designSettings.font_family === 'merriweather' ? 'Merriweather, serif' :
+                             designSettings.font_family === 'crimson' ? 'Crimson Text, serif' :
+                             designSettings.font_family === 'libre-baskerville' ? 'Libre Baskerville, serif' :
+                             designSettings.font_family === 'dancing-script' ? 'Dancing Script, cursive' :
+                             designSettings.font_family === 'pacifico' ? 'Pacifico, cursive' :
+                             designSettings.font_family === 'lobster' ? 'Lobster, cursive' :
+                             designSettings.font_family === 'bebas-neue' ? 'Bebas Neue, cursive' :
+                             designSettings.font_family === 'oswald' ? 'Oswald, sans-serif' :
+                             designSettings.font_family === 'raleway' ? 'Raleway, sans-serif' :
+                             designSettings.font_family === 'ubuntu' ? 'Ubuntu, sans-serif' :
+                             designSettings.font_family === 'fira-sans' ? 'Fira Sans, sans-serif' :
+                             designSettings.font_family === 'work-sans' ? 'Work Sans, sans-serif' :
+                             designSettings.font_family === 'quicksand' ? 'Quicksand, sans-serif' :
+                             designSettings.font_family === 'rubik' ? 'Rubik, sans-serif' :
+                             designSettings.font_family === 'comfortaa' ? 'Comfortaa, cursive' :
+                             designSettings.font_family === 'cabin' ? 'Cabin, sans-serif' :
+                             designSettings.font_family === 'dosis' ? 'Dosis, sans-serif' :
+                             designSettings.font_family === 'exo' ? 'Exo, sans-serif' :
+                             designSettings.font_family === 'fjalla' ? 'Fjalla One, sans-serif' :
+                             designSettings.font_family === 'anton' ? 'Anton, sans-serif' :
+                             designSettings.font_family === 'barlow' ? 'Barlow, sans-serif' : 'Inter, sans-serif',
+                  fontSize: `${designSettings.font_size_numeric || 16}px`
                 }}
               >
                 {/* Debug info - remove this later */}
@@ -989,23 +1097,27 @@ export default function MenuManagementClient({ venueId }: { venueId: string }) {
                 {/* Menu Header */}
                 <div className="text-center mb-8 pb-6 border-b border-gray-200">
                   {designSettings.logo_url && (
-                    <div className="mb-4">
+                    <div className="mb-6">
                       <img 
                         src={designSettings.logo_url} 
                         alt="Restaurant logo" 
-                        className="h-20 w-auto object-contain mx-auto"
+                        className="h-40 w-auto object-contain mx-auto max-w-xs"
                         onLoad={() => console.log('[PREVIEW] Logo loaded successfully:', designSettings.logo_url)}
                         onError={(e) => console.error('[PREVIEW] Logo failed to load:', designSettings.logo_url, e)}
                       />
                     </div>
                   )}
-                  <h1 
-                    className="text-3xl font-bold mb-2"
-                    style={{ color: designSettings.primary_color }}
-                  >
-                    {designSettings.venue_name || 'Your Restaurant'}
-                  </h1>
-                  <p className="text-gray-600">Delicious food, great service</p>
+                  {designSettings.venue_name && (
+                    <>
+                      <h1 
+                        className="text-3xl font-bold mb-2"
+                        style={{ color: designSettings.primary_color }}
+                      >
+                        {designSettings.venue_name}
+                      </h1>
+                      <p className="text-gray-600">Delicious food, great service</p>
+                    </>
+                  )}
                 </div>
 
                 {/* Menu Categories */}
