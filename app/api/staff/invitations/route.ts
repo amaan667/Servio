@@ -27,7 +27,24 @@ export async function GET(request: NextRequest) {
       .eq('venue_id', venueId)
       .single();
 
-    if (roleError || !userRole || !['owner', 'manager'].includes(userRole.role)) {
+    // If no role found, check if user is the venue owner
+    let hasPermission = false;
+    if (userRole && ['owner', 'manager'].includes(userRole.role)) {
+      hasPermission = true;
+    } else {
+      // Check if user is the venue owner
+      const { data: venue, error: venueError } = await supabase
+        .from('venues')
+        .select('owner_user_id')
+        .eq('venue_id', venueId)
+        .single();
+      
+      if (venue && venue.owner_user_id === user.id) {
+        hasPermission = true;
+      }
+    }
+
+    if (!hasPermission) {
       return NextResponse.json({ error: 'Insufficient permissions' }, { status: 403 });
     }
 
@@ -113,7 +130,24 @@ export async function POST(request: NextRequest) {
       .eq('venue_id', venue_id)
       .single();
 
-    if (roleError || !userRole || !['owner', 'manager'].includes(userRole.role)) {
+    // If no role found, check if user is the venue owner
+    let hasPermission = false;
+    if (userRole && ['owner', 'manager'].includes(userRole.role)) {
+      hasPermission = true;
+    } else {
+      // Check if user is the venue owner
+      const { data: venue, error: venueError } = await supabase
+        .from('venues')
+        .select('owner_user_id')
+        .eq('venue_id', venue_id)
+        .single();
+      
+      if (venue && venue.owner_user_id === user.id) {
+        hasPermission = true;
+      }
+    }
+
+    if (!hasPermission) {
       return NextResponse.json({ error: 'Insufficient permissions' }, { status: 403 });
     }
 
@@ -150,7 +184,7 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: 'Failed to check existing users' }, { status: 500 });
     }
 
-    // Get organization_id and venue name for the venue
+    // Get organization_id and venue name for the venue (we already have venue data from permission check)
     const { data: venue, error: venueError } = await supabase
       .from('venues')
       .select('organization_id, venue_name')
