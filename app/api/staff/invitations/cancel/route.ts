@@ -13,11 +13,30 @@ export async function POST(request: NextRequest) {
     const body = await request.json();
     const { id } = body;
 
+    console.log('[INVITATION API] Cancel request received:', { id, user: user.id });
+
     if (!id) {
       return NextResponse.json({ error: 'Invitation ID is required' }, { status: 400 });
     }
 
     const supabase = await createClient();
+
+    // Check if staff_invitations table exists
+    try {
+      await supabase.from('staff_invitations').select('id').limit(1);
+    } catch (tableError: any) {
+      if (tableError.code === 'PGRST116' || tableError.message?.includes('relation "staff_invitations" does not exist')) {
+        console.log('[INVITATION API] staff_invitations table does not exist');
+        return NextResponse.json({ 
+          error: 'Staff invitation system not set up. Please run the database migration first.' 
+        }, { status: 503 });
+      } else {
+        console.error('[INVITATION API] Unexpected table error:', tableError);
+        return NextResponse.json({ 
+          error: 'Database error. Please try again.' 
+        }, { status: 500 });
+      }
+    }
 
     // Get invitation details to check permissions
     const { data: invitation, error: fetchError } = await supabase
@@ -78,7 +97,16 @@ export async function POST(request: NextRequest) {
 
     if (cancelError) {
       console.error('[INVITATION API] Error cancelling invitation:', cancelError);
-      return NextResponse.json({ error: 'Failed to cancel invitation' }, { status: 500 });
+      console.error('[INVITATION API] Cancel error details:', {
+        code: cancelError.code,
+        message: cancelError.message,
+        details: cancelError.details,
+        hint: cancelError.hint
+      });
+      return NextResponse.json({ 
+        error: 'Failed to cancel invitation',
+        details: cancelError.message 
+      }, { status: 500 });
     }
 
     console.log('[INVITATION API] Invitation cancelled successfully:', id);
