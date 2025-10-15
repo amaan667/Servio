@@ -136,13 +136,14 @@ If you didn't expect this invitation, you can safely ignore this email.
 export async function sendEmail(template: EmailTemplate): Promise<boolean> {
   try {
     // Method 1: Try Resend (if API key is available)
+    console.log('🔍 Checking RESEND_API_KEY:', process.env.RESEND_API_KEY ? 'Present' : 'Missing');
     if (process.env.RESEND_API_KEY) {
       try {
         const { Resend } = await import('resend');
         const resend = new Resend(process.env.RESEND_API_KEY);
         
         const result = await resend.emails.send({
-          from: 'Servio <noreply@servio.app>',
+          from: 'Servio <onboarding@resend.dev>',
           to: template.to,
           subject: template.subject,
           html: template.html,
@@ -152,8 +153,11 @@ export async function sendEmail(template: EmailTemplate): Promise<boolean> {
         if (result.data) {
           console.log('✅ Email sent successfully via Resend:', result.data.id);
           return true;
+        } else {
+          console.error('❌ Resend returned no data:', result);
         }
       } catch (resendError) {
+        console.error('❌ Resend failed with error:', resendError);
         console.warn('⚠️ Resend failed, trying fallback:', resendError);
       }
     }
