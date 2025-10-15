@@ -53,7 +53,7 @@ export async function POST(request: NextRequest) {
       console.error('[DEBUG EMAIL] Email error:', emailError);
       return NextResponse.json({ 
         error: 'Email sending failed',
-        details: emailError.message,
+        details: emailError instanceof Error ? emailError.message : String(emailError),
         testEmail,
         resendApiKeyPresent: !!process.env.RESEND_API_KEY
       }, { status: 500 });
