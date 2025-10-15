@@ -86,8 +86,7 @@ export async function POST(request: NextRequest) {
       }, { status: 400 });
     }
 
-    // Delete the invitation completely (instead of just marking as cancelled)
-    // This allows the same email to be invited again
+    // Try to delete the invitation completely first
     const { error: deleteError } = await supabase
       .from('staff_invitations')
       .delete()
@@ -101,9 +100,40 @@ export async function POST(request: NextRequest) {
         details: deleteError.details,
         hint: deleteError.hint
       });
+
+      // If deletion fails due to constraint, try updating status to cancelled as fallback
+      if (deleteError.code === '23505' || deleteError.message?.includes('unique constraint')) {
+        console.log('[INVITATION API] Constraint error detected, falling back to status update');
+        
+        const { error: updateError } = await supabase
+          .from('staff_invitations')
+          .update({ 
+            status: 'cancelled',
+            updated_at: new Date().toISOString()
+          })
+          .eq('id', id);
+
+        if (updateError) {
+          console.error('[INVITATION API] Error updating invitation status:', updateError);
+          return NextResponse.json({ 
+            error: 'Failed to cancel invitation. Please run the database migration to fix this issue.',
+            details: updateError.message,
+            migrationRequired: true
+          }, { status: 500 });
+        }
+
+        console.log('[INVITATION API] Invitation marked as cancelled (fallback)');
+        return NextResponse.json({ 
+          success: true,
+          message: 'Invitation cancelled successfully (marked as cancelled due to database constraint)',
+          fallback: true
+        });
+      }
+
       return NextResponse.json({ 
         error: 'Failed to cancel invitation',
-        details: deleteError.message 
+        details: deleteError.message,
+        migrationRequired: deleteError.code === '23505'
       }, { status: 500 });
     }
 

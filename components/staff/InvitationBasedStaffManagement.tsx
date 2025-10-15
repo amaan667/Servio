@@ -225,13 +225,29 @@ export default function InvitationBasedStaffManagement({
       const data = await response.json();
 
       if (!response.ok) {
+        if (data.migrationRequired) {
+          toast({
+            title: 'Database Migration Required',
+            description: 'Please run the database migration to fix invitation cancellation. Contact your administrator.',
+            variant: 'destructive',
+          });
+        }
         throw new Error(data.error || 'Failed to cancel invitation');
       }
 
-      toast({
-        title: 'Invitation cancelled',
-        description: 'The invitation has been cancelled successfully',
-      });
+      // Show appropriate message based on response
+      if (data.fallback) {
+        toast({
+          title: 'Invitation cancelled',
+          description: 'The invitation has been cancelled (marked as cancelled due to database constraint)',
+          variant: 'destructive',
+        });
+      } else {
+        toast({
+          title: 'Invitation cancelled',
+          description: 'The invitation has been cancelled successfully',
+        });
+      }
 
       // Update the invitations list locally instead of reloading everything
       setInvitations(prevInvitations => 
@@ -672,7 +688,7 @@ export default function InvitationBasedStaffManagement({
             </Card>
           ) : (
             <div className="grid gap-4">
-              {invitations.map((invitation) => {
+              {invitations.filter(invitation => invitation.status === 'pending').map((invitation) => {
                 const roleInfo = getRoleInfo(invitation.role);
                 const IconComponent = roleInfo.icon;
                 
