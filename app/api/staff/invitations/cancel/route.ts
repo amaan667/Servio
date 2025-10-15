@@ -39,7 +39,24 @@ export async function POST(request: NextRequest) {
       .eq('venue_id', invitation.venue_id)
       .single();
 
-    if (roleError || !userRole || !['owner', 'manager'].includes(userRole.role)) {
+    // If no role found, check if user is the venue owner
+    let hasPermission = false;
+    if (userRole && ['owner', 'manager'].includes(userRole.role)) {
+      hasPermission = true;
+    } else {
+      // Check if user is the venue owner
+      const { data: venue, error: venueError } = await supabase
+        .from('venues')
+        .select('owner_user_id')
+        .eq('venue_id', invitation.venue_id)
+        .single();
+      
+      if (venue && venue.owner_user_id === user.id) {
+        hasPermission = true;
+      }
+    }
+
+    if (!hasPermission) {
       return NextResponse.json({ error: 'Insufficient permissions' }, { status: 403 });
     }
 
@@ -63,6 +80,8 @@ export async function POST(request: NextRequest) {
       console.error('[INVITATION API] Error cancelling invitation:', cancelError);
       return NextResponse.json({ error: 'Failed to cancel invitation' }, { status: 500 });
     }
+
+    console.log('[INVITATION API] Invitation cancelled successfully:', id);
 
     return NextResponse.json({ 
       success: true,
