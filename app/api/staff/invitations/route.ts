@@ -171,23 +171,67 @@ export async function POST(request: NextRequest) {
       }, { status: 409 });
     }
 
-    // Check if user already has access to this venue
-    const { data: existingUser, error: userCheckError } = await supabase
-      .from('user_venue_roles')
-      .select('user_id')
-      .eq('venue_id', venue_id)
-      .eq('user_id', user.id)
+    // Check if the email being invited already has access to this venue
+    // First, check if there's a user with this email
+    const { data: existingUserByEmail, error: emailCheckError } = await supabase
+      .from('auth.users')
+      .select('id')
+      .eq('email', email.toLowerCase())
       .single();
 
-    if (userCheckError && userCheckError.code !== 'PGRST116') {
-      console.error('[INVITATION API] Error checking existing user:', userCheckError);
-      return NextResponse.json({ error: 'Failed to check existing users' }, { status: 500 });
+    if (emailCheckError && emailCheckError.code !== 'PGRST116') {
+      console.error('[INVITATION API] Error checking user by email:', emailCheckError);
+      // Continue anyway, user might not exist yet
     }
 
-    if (existingUser) {
-      return NextResponse.json({ 
-        error: 'This user already has access to this venue' 
-      }, { status: 409 });
+    // If user exists, check if they already have access to this venue
+    if (existingUserByEmail) {
+      const { data: existingUserRole, error: roleCheckError } = await supabase
+        .from('user_venue_roles')
+        .select('user_id, role')
+        .eq('venue_id', venue_id)
+        .eq('user_id', existingUserByEmail.id)
+        .single();
+
+      if (roleCheckError && roleCheckError.code !== 'PGRST116') {
+        console.error('[INVITATION API] Error checking existing user role:', roleCheckError);
+        return NextResponse.json({ error: 'Failed to check existing users' }, { status: 500 });
+      }
+
+      if (existingUserRole) {
+        return NextResponse.json({ 
+          error: 'This email address already has access to this venue' 
+        }, { status: 409 });
+      }
+    }
+
+    // Check if this is the owner's email address
+    const { data: venueOwner, error: venueOwnerError } = await supabase
+      .from('venues')
+      .select('owner_user_id')
+      .eq('venue_id', venue_id)
+      .single();
+
+    if (venueOwnerError) {
+      console.error('[INVITATION API] Error fetching venue owner:', venueOwnerError);
+      return NextResponse.json({ error: 'Failed to check venue ownership' }, { status: 500 });
+    }
+
+    // Get the owner's email to compare
+    if (venueOwner?.owner_user_id) {
+      const { data: ownerUser, error: ownerUserError } = await supabase
+        .from('auth.users')
+        .select('email')
+        .eq('id', venueOwner.owner_user_id)
+        .single();
+
+      if (ownerUserError) {
+        console.error('[INVITATION API] Error fetching owner email:', ownerUserError);
+      } else if (ownerUser?.email?.toLowerCase() === email.toLowerCase()) {
+        return NextResponse.json({ 
+          error: 'This is the owner\'s email address. The owner already has full access to this venue.' 
+        }, { status: 409 });
+      }
     }
 
     // Get organization_id and venue name for the venue (we already have venue data from permission check)
