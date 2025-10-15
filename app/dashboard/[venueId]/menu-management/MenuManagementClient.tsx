@@ -145,18 +145,34 @@ export default function MenuManagementClient({ venueId }: { venueId: string }) {
   const loadDesignSettings = async () => {
     try {
       const supabase = createClient();
+      console.log('[DESIGN SETTINGS] Loading design settings for venue:', venueId);
+      
       const { data, error } = await supabase
         .from('menu_design_settings')
         .select('*')
         .eq('venue_id', venueId)
         .single();
 
-      if (error && error.code !== 'PGRST116') { // PGRST116 = no rows returned
-        console.error('Error loading design settings:', error);
+      if (error) {
+        if (error.code === 'PGRST116') {
+          // No rows returned - this is normal for new venues
+          console.log('[DESIGN SETTINGS] No design settings found, using defaults');
+        } else if (error.code === '42P01') {
+          // Table doesn't exist - need to create it
+          console.error('[DESIGN SETTINGS] Table menu_design_settings does not exist. Please run the migration script.');
+          toast({
+            title: "Database Setup Required",
+            description: "Please run the menu design settings migration script in your database.",
+            variant: "destructive",
+          });
+        } else {
+          console.error('[DESIGN SETTINGS] Error loading design settings:', error);
+        }
         return;
       }
 
       if (data) {
+        console.log('[DESIGN SETTINGS] Loaded design settings:', data);
         setDesignSettings({
           venue_name: data.venue_name || '',
           logo_url: data.logo_url,
@@ -169,7 +185,7 @@ export default function MenuManagementClient({ venueId }: { venueId: string }) {
         });
       }
     } catch (error) {
-      console.error('Error in loadDesignSettings:', error);
+      console.error('[DESIGN SETTINGS] Error in loadDesignSettings:', error);
     }
   };
 
@@ -930,6 +946,16 @@ export default function MenuManagementClient({ venueId }: { venueId: string }) {
                            designSettings.font_size === 'large' ? '18px' : '16px'
                 }}
               >
+                {/* Debug info - remove this later */}
+                {process.env.NODE_ENV === 'development' && (
+                  <div className="mb-4 p-2 bg-gray-100 text-xs">
+                    <strong>Debug Info:</strong><br/>
+                    Logo URL: {designSettings.logo_url || 'None'}<br/>
+                    Venue Name: {designSettings.venue_name || 'None'}<br/>
+                    Primary Color: {designSettings.primary_color}<br/>
+                    Font Family: {designSettings.font_family}
+                  </div>
+                )}
                 {/* Menu Header */}
                 <div className="text-center mb-8 pb-6 border-b border-gray-200">
                   {designSettings.logo_url && (
