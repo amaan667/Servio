@@ -196,6 +196,9 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: 'Venue not found' }, { status: 404 });
     }
 
+    // Generate a secure token for the invitation
+    const token = crypto.randomUUID().replace(/-/g, '') + crypto.randomUUID().replace(/-/g, '');
+
     // Create the invitation
     const { data: invitation, error: createError } = await supabase
       .from('staff_invitations')
@@ -206,6 +209,7 @@ export async function POST(request: NextRequest) {
         email: email.toLowerCase(),
         role,
         permissions,
+        token,
         expires_at: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000).toISOString() // 7 days
       })
       .select()
