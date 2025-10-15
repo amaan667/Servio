@@ -110,16 +110,6 @@ export class AuthErrorBoundary extends React.Component<AuthErrorBoundaryProps, A
                 </ul>
               </div>
 
-              {process.env.NODE_ENV === 'development' && this.state.errorInfo && (
-                <details className="mt-4 text-xs text-left">
-                  <summary className="cursor-pointer text-gray-900 hover:text-gray-800">
-                    Debug Information (Development Only)
-                  </summary>
-                  <pre className="mt-2 p-2 bg-gray-100 rounded text-xs overflow-auto max-h-32">
-                    {this.state.errorInfo.componentStack}
-                  </pre>
-                </details>
-              )}
             </div>
           </div>
         </div>

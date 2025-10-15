@@ -254,7 +254,7 @@ export async function POST(request: NextRequest) {
       invitation,
       message: emailMessage,
       emailSent,
-      invitationLink: emailSent ? undefined : generateInvitationLink(invitation.token)
+      invitationLink: emailSent ? undefined : (await import('@/lib/email')).generateInvitationLink(invitation.token)
     });
   } catch (error) {
     console.error('[INVITATION API] Unexpected error:', error);

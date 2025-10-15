@@ -25,21 +25,6 @@ export default function ClientNavBar() {
   // Also add additional checks to ensure session is valid
   const isAuthenticated = !loading && !!session?.user && !!session?.access_token;
 
-  // Debug logging for authentication state (reduced)
-  useEffect(() => {
-    if (process.env.NODE_ENV === 'development') {
-      console.log('[AUTH DEBUG] ClientNavBar auth state:', {
-        loading,
-        hasSession: !!session,
-        hasUser: !!session?.user,
-        hasAccessToken: !!session?.access_token,
-        userId: session?.user?.id,
-        isAuthenticated,
-        pathname,
-        timestamp: new Date().toISOString()
-      });
-    }
-  }, [loading, session, isAuthenticated, pathname]);
 
   // Determine if we're on dashboard pages
   const isOnDashboard = pathname?.startsWith('/dashboard');
@@ -101,7 +86,7 @@ export default function ClientNavBar() {
       router.replace('/');
       
     } catch (error) {
-      console.error('[AUTH DEBUG] Sign out error:', error);
+      console.error('Sign out error:', error);
       // Force redirect even if there's an error
       router.replace('/');
     }

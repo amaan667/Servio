@@ -101,12 +101,6 @@ export function UpgradeModal({
 
     setLoading(tierId);
 
-    console.log('[UPGRADE DEBUG] Starting plan change with:', {
-      tierId,
-      currentTier,
-      organizationId
-    });
-
     try {
       // For downgrades (to Basic), we need to handle it differently
       const isDowngrade = (currentTier === "standard" && tierId === "basic") ||

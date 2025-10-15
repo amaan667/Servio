@@ -94,9 +94,6 @@ const demoResponses: { [key: string]: any } = {
 };
 
 export default function DemoAISection() {
-  console.log('[DEMO DEBUG] DemoAISection component rendering', {
-    timestamp: new Date().toISOString(),
-  });
 
   const [selectedPrompt, setSelectedPrompt] = useState('');
   const [customPrompt, setCustomPrompt] = useState('');

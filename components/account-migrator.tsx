@@ -441,41 +441,6 @@ export function AccountMigrator() {
         </Card>
       )}
 
-      {/* Debug Information */}
-      <Card>
-        <CardHeader>
-          <CardTitle>Debug Information</CardTitle>
-          <CardDescription>
-            System status and configuration details
-          </CardDescription>
-        </CardHeader>
-        <CardContent className="space-y-2 text-sm">
-          <div className="grid grid-cols-2 gap-4">
-            <div>
-              <span className="font-medium">Supabase URL:</span>{" "}
-              {process.env.NEXT_PUBLIC_SUPABASE_URL
-                ? "✅ Configured"
-                : "❌ Missing"}
-            </div>
-            <div>
-              <span className="font-medium">Supabase Key:</span>{" "}
-              {process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY
-                ? "✅ Configured"
-                : "❌ Missing"}
-            </div>
-            <div>
-              <span className="font-medium">Local Storage:</span>{" "}
-              {typeof localStorage !== "undefined"
-                ? "✅ Available"
-                : "❌ Unavailable"}
-            </div>
-            <div>
-              <span className="font-medium">Environment:</span>{" "}
-              {process.env.NODE_ENV || "development"}
-            </div>
-          </div>
-        </CardContent>
-      </Card>
     </div>
   );
 }

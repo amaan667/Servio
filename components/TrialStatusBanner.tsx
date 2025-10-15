@@ -35,12 +35,12 @@ export default function TrialStatusBanner() {
         });
 
         if (!ensureOrgResponse.ok) {
-          console.error('[TRIAL DEBUG] Failed to ensure organization (non-critical)');
+          console.error('Failed to ensure organization (non-critical)');
           setLoading(false);
           return;
         }
       } catch (orgError) {
-        console.error('[TRIAL DEBUG] Organization ensure error (non-critical):', orgError);
+        console.error('Organization ensure error (non-critical):', orgError);
         setLoading(false);
         return;
       }
@@ -56,19 +56,13 @@ export default function TrialStatusBanner() {
       }
 
     } catch (error) {
-      console.error('[TRIAL DEBUG] Error fetching trial status:', error);
+      console.error('Error fetching trial status:', error);
     } finally {
       setLoading(false);
     }
   };
 
   const processTrialStatus = (org: any) => {
-    console.log('[TRIAL DEBUG] Processing trial status:', {
-      subscriptionStatus: org.subscription_status,
-      trialEndsAt: org.trial_ends_at,
-      currentDate: new Date().toISOString()
-    });
-    
     const subscriptionStatus = org.subscription_status || 'basic';
     const isTrialing = subscriptionStatus === 'trialing';
     const tier = org.subscription_tier || 'basic';
@@ -89,15 +83,6 @@ export default function TrialStatusBanner() {
       
       // Ensure we don't show negative days
       daysRemaining = Math.max(0, daysRemaining);
-      
-      console.log('[TRIAL DEBUG] Date calculation:', {
-        endDate: endDate.toISOString(),
-        now: now.toISOString(),
-        endDateStart: endDateStart.toISOString(),
-        nowStart: nowStart.toISOString(),
-        diffTime: diffTime,
-        daysRemaining: daysRemaining
-      });
     }
 
     setTrialStatus({

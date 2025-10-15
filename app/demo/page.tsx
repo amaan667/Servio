@@ -50,7 +50,6 @@ class DemoErrorBoundary extends React.Component<
 }
 
 export default function DemoPage() {
-  console.log('[DEMO DEBUG] Demo page component initialized');
   
   const [viewMode, setViewMode] = useState<'customer' | 'owner'>('customer');
   const [mounted, setMounted] = useState(false);
@@ -172,9 +171,6 @@ export default function DemoPage() {
     );
   }
 
-  console.log('[DEMO DEBUG] Rendering demo page successfully');
-  console.log('[DEMO DEBUG] View mode:', viewMode);
-  console.log('[DEMO DEBUG] Is authenticated:', isAuthenticated);
   
   return (
     <div className="min-h-screen bg-gradient-to-br from-purple-50 via-white to-purple-50">
@@ -191,10 +187,7 @@ export default function DemoPage() {
             </div>
             <div className="flex items-center space-x-2 bg-gray-100 rounded-lg p-1">
               <Button
-                onClick={() => {
-                  console.log('[DEMO DEBUG] Switching to customer view');
-                  setViewMode('customer');
-                }}
+                onClick={() => setViewMode('customer')}
                 variant={viewMode === 'customer' ? 'default' : 'ghost'}
                 className={`${
                   viewMode === 'customer'
@@ -206,10 +199,7 @@ export default function DemoPage() {
                 Customer 👤
               </Button>
               <Button
-                onClick={() => {
-                  console.log('[DEMO DEBUG] Switching to owner view');
-                  setViewMode('owner');
-                }}
+                onClick={() => setViewMode('owner')}
                 variant={viewMode === 'owner' ? 'default' : 'ghost'}
                 className={`${
                   viewMode === 'owner'
