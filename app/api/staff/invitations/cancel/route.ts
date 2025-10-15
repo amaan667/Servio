@@ -86,30 +86,28 @@ export async function POST(request: NextRequest) {
       }, { status: 400 });
     }
 
-    // Cancel the invitation
-    const { error: cancelError } = await supabase
+    // Delete the invitation completely (instead of just marking as cancelled)
+    // This allows the same email to be invited again
+    const { error: deleteError } = await supabase
       .from('staff_invitations')
-      .update({ 
-        status: 'cancelled',
-        updated_at: new Date().toISOString()
-      })
+      .delete()
       .eq('id', id);
 
-    if (cancelError) {
-      console.error('[INVITATION API] Error cancelling invitation:', cancelError);
-      console.error('[INVITATION API] Cancel error details:', {
-        code: cancelError.code,
-        message: cancelError.message,
-        details: cancelError.details,
-        hint: cancelError.hint
+    if (deleteError) {
+      console.error('[INVITATION API] Error deleting invitation:', deleteError);
+      console.error('[INVITATION API] Delete error details:', {
+        code: deleteError.code,
+        message: deleteError.message,
+        details: deleteError.details,
+        hint: deleteError.hint
       });
       return NextResponse.json({ 
         error: 'Failed to cancel invitation',
-        details: cancelError.message 
+        details: deleteError.message 
       }, { status: 500 });
     }
 
-    console.log('[INVITATION API] Invitation cancelled successfully:', id);
+    console.log('[INVITATION API] Invitation cancelled and removed successfully:', id);
 
     return NextResponse.json({ 
       success: true,

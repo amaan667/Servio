@@ -184,6 +184,12 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: 'Failed to check existing users' }, { status: 500 });
     }
 
+    if (existingUser) {
+      return NextResponse.json({ 
+        error: 'This user already has access to this venue' 
+      }, { status: 409 });
+    }
+
     // Get organization_id and venue name for the venue (we already have venue data from permission check)
     const { data: venue, error: venueError } = await supabase
       .from('venues')
