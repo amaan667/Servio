@@ -105,6 +105,38 @@ export async function POST(request: NextRequest) {
       if (deleteError.code === '23505' || deleteError.message?.includes('unique constraint')) {
         console.log('[INVITATION API] Constraint error detected, falling back to status update');
         
+        // First, try to delete any existing cancelled invitations for this email/venue to make room
+        const { data: invitationData } = await supabase
+          .from('staff_invitations')
+          .select('email, venue_id')
+          .eq('id', id)
+          .single();
+
+        if (invitationData) {
+          // Delete any existing cancelled invitations for this email/venue
+          await supabase
+            .from('staff_invitations')
+            .delete()
+            .eq('venue_id', invitationData.venue_id)
+            .eq('email', invitationData.email)
+            .eq('status', 'cancelled');
+        }
+        
+        // Now try to delete the current invitation again
+        const { error: retryDeleteError } = await supabase
+          .from('staff_invitations')
+          .delete()
+          .eq('id', id);
+
+        if (!retryDeleteError) {
+          console.log('[INVITATION API] Invitation deleted successfully after cleanup');
+          return NextResponse.json({ 
+            success: true,
+            message: 'Invitation cancelled successfully'
+          });
+        }
+        
+        // If still failing, mark as cancelled
         const { error: updateError } = await supabase
           .from('staff_invitations')
           .update({ 

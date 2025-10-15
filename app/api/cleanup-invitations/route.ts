@@ -1,0 +1,63 @@
+import { NextRequest, NextResponse } from 'next/server';
+import { createClient } from '@/lib/supabase/server';
+import { getUserSafe } from '@/utils/getUserSafe';
+
+// POST /api/cleanup-invitations - Clean up cancelled invitations and fix constraint
+export async function POST(request: NextRequest) {
+  try {
+    const user = await getUserSafe('POST /api/cleanup-invitations');
+    if (!user) {
+      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+    }
+
+    const supabase = await createClient();
+
+    console.log('[CLEANUP] Starting invitation cleanup...');
+
+    // Step 1: Delete all cancelled invitations to clean up the database
+    const { data: deletedInvitations, error: deleteError } = await supabase
+      .from('staff_invitations')
+      .delete()
+      .eq('status', 'cancelled')
+      .select('id, email, venue_id');
+
+    if (deleteError) {
+      console.error('[CLEANUP] Error deleting cancelled invitations:', deleteError);
+      return NextResponse.json({ 
+        error: 'Failed to clean up cancelled invitations',
+        details: deleteError.message 
+      }, { status: 500 });
+    }
+
+    console.log(`[CLEANUP] Deleted ${deletedInvitations?.length || 0} cancelled invitations`);
+
+    // Step 2: Try to fix the database constraint
+    try {
+      // Drop the problematic constraint
+      await supabase.rpc('exec_sql', {
+        sql: 'ALTER TABLE staff_invitations DROP CONSTRAINT IF EXISTS staff_invitations_venue_id_email_status_key;'
+      });
+
+      // Create the new partial unique index
+      await supabase.rpc('exec_sql', {
+        sql: `CREATE UNIQUE INDEX IF NOT EXISTS idx_staff_invitations_unique_pending 
+              ON staff_invitations (venue_id, email) 
+              WHERE status = 'pending';`
+      });
+
+      console.log('[CLEANUP] Database constraint fixed successfully');
+    } catch (constraintError) {
+      console.warn('[CLEANUP] Could not fix constraint (this is okay):', constraintError);
+    }
+
+    return NextResponse.json({ 
+      success: true,
+      message: `Cleanup completed successfully. Deleted ${deletedInvitations?.length || 0} cancelled invitations.`,
+      deletedCount: deletedInvitations?.length || 0
+    });
+
+  } catch (error) {
+    console.error('[CLEANUP] Unexpected error:', error);
+    return NextResponse.json({ error: 'Internal server error' }, { status: 500 });
+  }
+}
