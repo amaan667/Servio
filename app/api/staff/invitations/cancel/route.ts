@@ -39,14 +39,14 @@ export async function POST(request: NextRequest) {
     }
 
     // Get invitation details to check permissions
-    const { data: invitation, error: fetchError } = await supabase
+    const { data: invitation, error: fetchInvitationError } = await supabase
       .from('staff_invitations')
       .select('venue_id, status')
       .eq('id', id)
       .single();
 
-    if (fetchError) {
-      console.error('[INVITATION API] Error fetching invitation:', fetchError);
+    if (fetchInvitationError) {
+      console.error('[INVITATION API] Error fetching invitation:', fetchInvitationError);
       return NextResponse.json({ error: 'Invitation not found' }, { status: 404 });
     }
 
