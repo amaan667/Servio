@@ -35,6 +35,11 @@ interface DesignSettings {
   font_family: string;
   font_size: string;
   font_size_numeric?: number;
+  logo_size?: string;
+  custom_heading?: string;
+  auto_theme_enabled?: boolean;
+  detected_primary_color?: string;
+  detected_secondary_color?: string;
   show_descriptions: boolean;
   show_prices: boolean;
 }
@@ -64,6 +69,11 @@ export default function MenuManagementClient({ venueId }: { venueId: string }) {
     font_family: 'inter',
     font_size: 'medium',
     font_size_numeric: 16,
+    logo_size: 'large',
+    custom_heading: '',
+    auto_theme_enabled: false,
+    detected_primary_color: '',
+    detected_secondary_color: '',
     show_descriptions: true,
     show_prices: true
   });
@@ -71,6 +81,73 @@ export default function MenuManagementClient({ venueId }: { venueId: string }) {
   const [isSavingDesign, setIsSavingDesign] = useState(false);
   const router = useRouter();
   const { toast } = useToast();
+
+  // Function to detect colors from logo image
+  const detectColorsFromImage = (imageUrl: string): Promise<{primary: string, secondary: string}> => {
+    return new Promise((resolve) => {
+      const img = new Image();
+      img.crossOrigin = 'anonymous';
+      
+      img.onload = () => {
+        try {
+          const canvas = document.createElement('canvas');
+          const ctx = canvas.getContext('2d');
+          if (!ctx) {
+            resolve({ primary: '#8b5cf6', secondary: '#f3f4f6' });
+            return;
+          }
+
+          canvas.width = img.width;
+          canvas.height = img.height;
+          ctx.drawImage(img, 0, 0);
+
+          const imageData = ctx.getImageData(0, 0, canvas.width, canvas.height);
+          const pixels = imageData.data;
+          
+          // Sample colors from the image
+          const colors: { [key: string]: number } = {};
+          const sampleSize = Math.min(1000, pixels.length / 4);
+          
+          for (let i = 0; i < sampleSize; i++) {
+            const pixelIndex = Math.floor(Math.random() * (pixels.length / 4)) * 4;
+            const r = pixels[pixelIndex];
+            const g = pixels[pixelIndex + 1];
+            const b = pixels[pixelIndex + 2];
+            const a = pixels[pixelIndex + 3];
+            
+            // Skip transparent pixels
+            if (a < 128) continue;
+            
+            // Skip very light colors (likely background)
+            if (r > 240 && g > 240 && b > 240) continue;
+            
+            const color = `#${r.toString(16).padStart(2, '0')}${g.toString(16).padStart(2, '0')}${b.toString(16).padStart(2, '0')}`;
+            colors[color] = (colors[color] || 0) + 1;
+          }
+
+          // Find the most common colors
+          const sortedColors = Object.entries(colors)
+            .sort(([,a], [,b]) => b - a)
+            .map(([color]) => color);
+
+          const primary = sortedColors[0] || '#8b5cf6';
+          const secondary = sortedColors[1] || '#f3f4f6';
+
+          resolve({ primary, secondary });
+        } catch (error) {
+          console.error('[COLOR DETECTION] Error detecting colors:', error);
+          resolve({ primary: '#8b5cf6', secondary: '#f3f4f6' });
+        }
+      };
+
+      img.onerror = () => {
+        console.error('[COLOR DETECTION] Failed to load image for color detection');
+        resolve({ primary: '#8b5cf6', secondary: '#f3f4f6' });
+      };
+
+      img.src = imageUrl;
+    });
+  };
 
   useEffect(() => {
     if (venueId) {
@@ -217,6 +294,11 @@ export default function MenuManagementClient({ venueId }: { venueId: string }) {
           font_family: data.font_family || 'inter',
           font_size: data.font_size || 'medium',
           font_size_numeric: data.font_size_numeric || 16,
+          logo_size: data.logo_size || 'large',
+          custom_heading: data.custom_heading || '',
+          auto_theme_enabled: data.auto_theme_enabled ?? false,
+          detected_primary_color: data.detected_primary_color || '',
+          detected_secondary_color: data.detected_secondary_color || '',
           show_descriptions: data.show_descriptions ?? true,
           show_prices: data.show_prices ?? true
         });
@@ -285,12 +367,22 @@ export default function MenuManagementClient({ venueId }: { venueId: string }) {
         .from('venue-assets')
         .getPublicUrl(fileName);
 
-      // Update design settings with new logo URL
+      // Detect colors from the uploaded logo
+      console.log('[LOGO UPLOAD] Detecting colors from logo...');
+      const detectedColors = await detectColorsFromImage(urlData.publicUrl);
+      console.log('[LOGO UPLOAD] Detected colors:', detectedColors);
+
+      // Update design settings with new logo URL and detected colors
       const updatedSettings = {
         ...designSettings,
-        logo_url: urlData.publicUrl
+        logo_url: urlData.publicUrl,
+        auto_theme_enabled: true,
+        detected_primary_color: detectedColors.primary,
+        detected_secondary_color: detectedColors.secondary,
+        primary_color: detectedColors.primary,
+        secondary_color: detectedColors.secondary
       };
-      console.log('[LOGO UPLOAD] Updating design settings with logo URL:', urlData.publicUrl);
+      console.log('[LOGO UPLOAD] Updating design settings with logo URL and auto-detected theme:', urlData.publicUrl);
       setDesignSettings(updatedSettings);
 
       // Also save to database immediately
@@ -315,7 +407,7 @@ export default function MenuManagementClient({ venueId }: { venueId: string }) {
 
       toast({
         title: "🎉 Logo uploaded successfully!",
-        description: "Your logo has been uploaded and is now visible in the menu preview. It will appear on all customer-facing menus.",
+        description: `Your logo has been uploaded and a theme has been automatically detected from its colors. The theme is now applied to your menu design.`,
         duration: 5000,
       });
 
@@ -807,6 +899,31 @@ export default function MenuManagementClient({ venueId }: { venueId: string }) {
               </CardTitle>
             </CardHeader>
             <CardContent className="space-y-4">
+              {/* Auto Theme Toggle */}
+              {designSettings.detected_primary_color && designSettings.detected_secondary_color && (
+                <div className="flex items-center justify-between p-3 bg-gray-50 rounded-lg">
+                  <div>
+                    <Label htmlFor="auto-theme" className="text-sm font-medium">Use Auto-Detected Theme</Label>
+                    <p className="text-xs text-gray-500">Automatically apply colors detected from your logo</p>
+                  </div>
+                  <input
+                    type="checkbox"
+                    id="auto-theme"
+                    checked={designSettings.auto_theme_enabled || false}
+                    onChange={(e) => {
+                      const autoTheme = e.target.checked;
+                      setDesignSettings(prev => ({
+                        ...prev,
+                        auto_theme_enabled: autoTheme,
+                        primary_color: autoTheme ? (prev.detected_primary_color || prev.primary_color) : prev.primary_color,
+                        secondary_color: autoTheme ? (prev.detected_secondary_color || prev.secondary_color) : prev.secondary_color
+                      }));
+                    }}
+                    className="h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300 rounded"
+                  />
+                </div>
+              )}
+
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <div>
                   <Label htmlFor="primary-color">Primary Color</Label>
@@ -815,16 +932,21 @@ export default function MenuManagementClient({ venueId }: { venueId: string }) {
                       type="color"
                       id="primary-color"
                       value={designSettings.primary_color}
-                      onChange={(e) => setDesignSettings(prev => ({ ...prev, primary_color: e.target.value }))}
+                      onChange={(e) => setDesignSettings(prev => ({ ...prev, primary_color: e.target.value, auto_theme_enabled: false }))}
                       className="w-12 h-10 rounded border border-gray-300"
+                      disabled={designSettings.auto_theme_enabled}
                     />
                     <Input 
                       value={designSettings.primary_color}
-                      onChange={(e) => setDesignSettings(prev => ({ ...prev, primary_color: e.target.value }))}
+                      onChange={(e) => setDesignSettings(prev => ({ ...prev, primary_color: e.target.value, auto_theme_enabled: false }))}
                       placeholder="#8b5cf6" 
                       className="flex-1" 
+                      disabled={designSettings.auto_theme_enabled}
                     />
                   </div>
+                  {designSettings.auto_theme_enabled && designSettings.detected_primary_color && (
+                    <p className="text-xs text-gray-500 mt-1">Auto-detected: {designSettings.detected_primary_color}</p>
+                  )}
                 </div>
                 <div>
                   <Label htmlFor="secondary-color">Secondary Color</Label>
@@ -833,16 +955,21 @@ export default function MenuManagementClient({ venueId }: { venueId: string }) {
                       type="color"
                       id="secondary-color"
                       value={designSettings.secondary_color}
-                      onChange={(e) => setDesignSettings(prev => ({ ...prev, secondary_color: e.target.value }))}
+                      onChange={(e) => setDesignSettings(prev => ({ ...prev, secondary_color: e.target.value, auto_theme_enabled: false }))}
                       className="w-12 h-10 rounded border border-gray-300"
+                      disabled={designSettings.auto_theme_enabled}
                     />
                     <Input 
                       value={designSettings.secondary_color}
-                      onChange={(e) => setDesignSettings(prev => ({ ...prev, secondary_color: e.target.value }))}
+                      onChange={(e) => setDesignSettings(prev => ({ ...prev, secondary_color: e.target.value, auto_theme_enabled: false }))}
                       placeholder="#f3f4f6" 
                       className="flex-1" 
+                      disabled={designSettings.auto_theme_enabled}
                     />
                   </div>
+                  {designSettings.auto_theme_enabled && designSettings.detected_secondary_color && (
+                    <p className="text-xs text-gray-500 mt-1">Auto-detected: {designSettings.detected_secondary_color}</p>
+                  )}
                 </div>
               </div>
             </CardContent>
@@ -974,6 +1101,17 @@ export default function MenuManagementClient({ venueId }: { venueId: string }) {
                 />
               </div>
               <div>
+                <Label htmlFor="custom-heading">Custom Heading/Text</Label>
+                <Input 
+                  id="custom-heading" 
+                  value={designSettings.custom_heading || ''}
+                  onChange={(e) => setDesignSettings(prev => ({ ...prev, custom_heading: e.target.value }))}
+                  placeholder="Enter custom heading or text to display" 
+                  className="mt-2" 
+                />
+                <p className="text-xs text-gray-500 mt-1">This text will appear below the logo in your menu preview</p>
+              </div>
+              <div>
                 <Label htmlFor="logo-upload">Logo Upload</Label>
                 <div className="mt-2">
                   {designSettings.logo_url && (
@@ -1004,6 +1142,24 @@ export default function MenuManagementClient({ venueId }: { venueId: string }) {
                   </div>
                 </div>
               </div>
+              
+              {/* Logo Size Control */}
+              {designSettings.logo_url && (
+                <div>
+                  <Label htmlFor="logo-size">Logo Size</Label>
+                  <select 
+                    id="logo-size" 
+                    value={designSettings.logo_size || 'large'}
+                    onChange={(e) => setDesignSettings(prev => ({ ...prev, logo_size: e.target.value }))}
+                    className="w-full mt-2 p-2 border border-gray-300 rounded-md"
+                  >
+                    <option value="small">Small</option>
+                    <option value="medium">Medium</option>
+                    <option value="large">Large</option>
+                    <option value="extra-large">Extra Large</option>
+                  </select>
+                </div>
+              )}
           </CardContent>
         </Card>
 
@@ -1101,12 +1257,30 @@ export default function MenuManagementClient({ venueId }: { venueId: string }) {
                       <img 
                         src={designSettings.logo_url} 
                         alt="Restaurant logo" 
-                        className="h-40 w-auto object-contain mx-auto max-w-xs"
+                        className={`w-auto object-contain mx-auto max-w-xs ${
+                          designSettings.logo_size === 'small' ? 'h-20' :
+                          designSettings.logo_size === 'medium' ? 'h-32' :
+                          designSettings.logo_size === 'large' ? 'h-40' :
+                          designSettings.logo_size === 'extra-large' ? 'h-48' : 'h-40'
+                        }`}
                         onLoad={() => console.log('[PREVIEW] Logo loaded successfully:', designSettings.logo_url)}
                         onError={(e) => console.error('[PREVIEW] Logo failed to load:', designSettings.logo_url, e)}
                       />
                     </div>
                   )}
+                  
+                  {/* Custom Heading */}
+                  {designSettings.custom_heading && (
+                    <div className="mb-4">
+                      <p 
+                        className="text-lg font-medium"
+                        style={{ color: designSettings.primary_color }}
+                      >
+                        {designSettings.custom_heading}
+                      </p>
+                    </div>
+                  )}
+                  
                   {designSettings.venue_name && (
                     <>
                       <h1 
@@ -1183,8 +1357,9 @@ export default function MenuManagementClient({ venueId }: { venueId: string }) {
                   </div>
                 )}
               </div>
-          </CardContent>
-        </Card>
+              
+            </CardContent>
+          </Card>
         </div>
       )}
     </div>
