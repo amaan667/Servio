@@ -96,6 +96,7 @@ export default function InvitationBasedStaffManagement({
   const [inviteLoading, setInviteLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [editingShiftFor, setEditingShiftFor] = useState<string | null>(null);
+  const [activeTab, setActiveTab] = useState('team');
 
   // Load staff and invitations
   useEffect(() => {
@@ -195,6 +196,9 @@ export default function InvitationBasedStaffManagement({
       setInviteDialogOpen(false);
       setInviteEmail('');
       setInviteRole('staff');
+      
+      // Switch to invitations tab and reload data
+      setActiveTab('invitations');
       loadData(); // Reload to show new invitation
     } catch (err: any) {
       setError(err.message || 'Failed to send invitation');
@@ -229,7 +233,18 @@ export default function InvitationBasedStaffManagement({
         description: 'The invitation has been cancelled successfully',
       });
 
-      loadData(); // Reload to update invitations
+      // Update the invitations list locally instead of reloading everything
+      setInvitations(prevInvitations => 
+        prevInvitations.filter(invitation => invitation.id !== invitationId)
+      );
+
+      // Reload only the invitations data to ensure consistency
+      const invitationsResponse = await fetch(`/api/staff/invitations?venue_id=${encodeURIComponent(venueId)}`);
+      const invitationsData = await invitationsResponse.json();
+      
+      if (invitationsResponse.ok) {
+        setInvitations(invitationsData.invitations || []);
+      }
     } catch (err: any) {
       toast({
         title: 'Error',
@@ -562,7 +577,7 @@ export default function InvitationBasedStaffManagement({
       </div>
 
       {/* Tabs */}
-      <Tabs defaultValue="team" className="space-y-4">
+      <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-4">
         <TabsList>
           <TabsTrigger value="team">Team Members</TabsTrigger>
           <TabsTrigger value="invitations">Invitations</TabsTrigger>
