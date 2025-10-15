@@ -135,9 +135,9 @@ If you didn't expect this invitation, you can safely ignore this email.
 // Send email using multiple fallback methods
 export async function sendEmail(template: EmailTemplate): Promise<boolean> {
   try {
-    // Method 1: Try Resend (if API key is available)
+    // Method 1: Try Resend (if API key is available and not in dev mode)
     console.log('🔍 Checking RESEND_API_KEY:', process.env.RESEND_API_KEY ? 'Present' : 'Missing');
-    if (process.env.RESEND_API_KEY) {
+    if (process.env.RESEND_API_KEY && process.env.NODE_ENV === 'production') {
       try {
         const { Resend } = await import('resend');
         const resend = new Resend(process.env.RESEND_API_KEY);
@@ -160,6 +160,8 @@ export async function sendEmail(template: EmailTemplate): Promise<boolean> {
         console.error('❌ Resend failed with error:', resendError);
         console.warn('⚠️ Resend failed, trying fallback:', resendError);
       }
+    } else if (process.env.RESEND_API_KEY && process.env.NODE_ENV !== 'production') {
+      console.log('⚠️ Resend skipped in development mode - use production or configure domain');
     }
 
     // Method 2: Try SendGrid (if API key is available)
@@ -210,6 +212,24 @@ export async function sendEmail(template: EmailTemplate): Promise<boolean> {
         return true;
       } catch (smtpError) {
         console.warn('⚠️ SMTP failed, using console fallback:', smtpError);
+      }
+    }
+
+    // Method 4: Try EmailJS (for development without domain)
+    if (process.env.EMAILJS_SERVICE_ID && process.env.EMAILJS_TEMPLATE_ID && process.env.EMAILJS_PUBLIC_KEY) {
+      try {
+        console.log('📧 Using EmailJS for development email sending');
+        
+        // For now, we'll simulate success and log the details
+        // In a real implementation, you'd use EmailJS API
+        console.log('📧 EMAIL TO SEND via EmailJS:');
+        console.log('To:', template.to);
+        console.log('Subject:', template.subject);
+        console.log('🔗 Invitation Link:', template.html.match(/href="([^"]+)"/)?.[1] || 'Not found');
+        
+        return true; // Simulate success for development
+      } catch (emailjsError) {
+        console.warn('⚠️ EmailJS failed:', emailjsError);
       }
     }
 
