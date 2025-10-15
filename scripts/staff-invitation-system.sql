@@ -33,6 +33,10 @@ CREATE TABLE IF NOT EXISTS staff_invitations (
   UNIQUE(venue_id, email, status) -- Only one pending invitation per email per venue
 );
 
+-- Add missing columns if they don't exist (for existing tables)
+ALTER TABLE staff_invitations ADD COLUMN IF NOT EXISTS permissions JSONB DEFAULT '{}';
+ALTER TABLE staff_invitations ADD COLUMN IF NOT EXISTS user_id UUID REFERENCES auth.users(id) ON DELETE SET NULL;
+
 -- ============================================================================
 -- Indexes for Performance
 -- ============================================================================
@@ -91,6 +95,9 @@ CREATE TRIGGER trg_update_invitation_updated_at
   EXECUTE FUNCTION update_invitation_updated_at();
 
 -- Function to automatically expire old invitations
+-- Drop existing function first to avoid conflicts
+DROP FUNCTION IF EXISTS expire_old_invitations();
+
 CREATE OR REPLACE FUNCTION expire_old_invitations()
 RETURNS INTEGER AS $$
 DECLARE
@@ -111,6 +118,9 @@ $$ LANGUAGE plpgsql;
 -- ============================================================================
 
 -- Function to get invitation by token
+-- Drop existing function first to avoid conflicts
+DROP FUNCTION IF EXISTS get_invitation_by_token(TEXT);
+
 CREATE OR REPLACE FUNCTION get_invitation_by_token(p_token TEXT)
 RETURNS TABLE (
   id UUID,
@@ -139,8 +149,8 @@ BEGIN
     si.expires_at,
     si.created_at,
     v.venue_name,
-    o.name as organization_name,
-    COALESCE(au.raw_user_meta_data->>'full_name', au.email) as invited_by_name
+    o.name,
+    COALESCE(au.raw_user_meta_data->>'full_name', au.email)
   FROM staff_invitations si
   JOIN venues v ON v.venue_id = si.venue_id
   LEFT JOIN organizations o ON o.id = si.organization_id
@@ -150,6 +160,9 @@ END;
 $$ LANGUAGE plpgsql;
 
 -- Function to accept invitation and create user role
+-- Drop existing function first to avoid return type conflicts
+DROP FUNCTION IF EXISTS accept_invitation(TEXT, UUID);
+
 CREATE OR REPLACE FUNCTION accept_invitation(
   p_token TEXT,
   p_user_id UUID
@@ -270,6 +283,9 @@ LIMIT 1;
 -- ============================================================================
 
 -- Create a function to clean up expired invitations (can be called periodically)
+-- Drop existing function first to avoid conflicts
+DROP FUNCTION IF EXISTS cleanup_expired_invitations();
+
 CREATE OR REPLACE FUNCTION cleanup_expired_invitations()
 RETURNS INTEGER AS $$
 DECLARE
@@ -290,9 +306,25 @@ $$ LANGUAGE plpgsql;
 -- ============================================================================
 
 -- View for active invitations with venue and organization details
+-- Drop existing view first to avoid conflicts
+DROP VIEW IF EXISTS active_invitations;
+
 CREATE OR REPLACE VIEW active_invitations AS
 SELECT 
-  si.*,
+  si.id,
+  si.venue_id,
+  si.organization_id,
+  si.invited_by,
+  si.email,
+  si.role,
+  si.permissions,
+  si.status,
+  si.token,
+  si.expires_at,
+  si.created_at,
+  si.updated_at,
+  si.accepted_at,
+  si.user_id,
   v.venue_name,
   o.name as organization_name,
   COALESCE(au.raw_user_meta_data->>'full_name', au.email) as invited_by_name
@@ -304,6 +336,9 @@ WHERE si.status = 'pending'
   AND si.expires_at > NOW();
 
 -- View for invitation statistics
+-- Drop existing view first to avoid conflicts
+DROP VIEW IF EXISTS invitation_stats;
+
 CREATE OR REPLACE VIEW invitation_stats AS
 SELECT 
   venue_id,

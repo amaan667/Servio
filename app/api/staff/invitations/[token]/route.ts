@@ -94,40 +94,37 @@ export async function POST(
       return NextResponse.json({ error: 'Invitation is no longer valid' }, { status: 410 });
     }
 
-    // Check if user already exists with this email
-    const { data: existingUser, error: userCheckError } = await supabase.auth.admin.getUserByEmail(invitation.email);
-
-    if (userCheckError && userCheckError.message !== 'User not found') {
-      console.error('[INVITATION API] Error checking existing user:', userCheckError);
-      return NextResponse.json({ error: 'Failed to check existing user' }, { status: 500 });
-    }
-
+    // Try to create new user account
+    // If user already exists, we'll get an error and handle it
     let userId: string;
+    
+    const { data: newUser, error: signUpError } = await supabase.auth.admin.createUser({
+      email: invitation.email,
+      password,
+      user_metadata: {
+        full_name,
+        invited_by: invitation.invited_by_name
+      },
+      email_confirm: true // Auto-confirm since they're invited
+    });
 
-    if (existingUser?.user) {
-      // User exists, just accept the invitation
-      userId = existingUser.user.id;
-    } else {
-      // Create new user account
-      const { data: newUser, error: signUpError } = await supabase.auth.admin.createUser({
-        email: invitation.email,
-        password,
-        user_metadata: {
-          full_name,
-          invited_by: invitation.invited_by_name
-        },
-        email_confirm: true // Auto-confirm since they're invited
-      });
-
-      if (signUpError) {
+    if (signUpError) {
+      // Check if the error is because user already exists
+      if (signUpError.message?.includes('already registered') || signUpError.message?.includes('already exists')) {
+        // User already exists, we need to find their ID
+        // For now, we'll return an error asking them to sign in first
+        return NextResponse.json({ 
+          error: 'An account with this email already exists. Please sign in to your existing account and contact the person who invited you to resend the invitation.' 
+        }, { status: 409 });
+      } else {
         console.error('[INVITATION API] Error creating user:', signUpError);
         return NextResponse.json({ 
           error: 'Failed to create account: ' + signUpError.message 
         }, { status: 500 });
       }
-
-      userId = newUser.user.id;
     }
+
+    userId = newUser.user.id;
 
     // Accept the invitation using the database function
     const { data: acceptResult, error: acceptError } = await supabase
