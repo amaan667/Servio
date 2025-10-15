@@ -574,7 +574,7 @@ export default function InvitationBasedStaffManagement({
               <div>
                 <p className="text-sm font-medium text-gray-600">Pending Invitations</p>
                 <p className="text-2xl font-bold text-gray-900">
-                  {invitations.filter(inv => inv.status === 'pending').length}
+                  {invitations.filter(inv => inv.status === 'pending' && !inv.token?.startsWith('CANCELLED_')).length}
                 </p>
               </div>
               <Clock className="h-8 w-8 text-yellow-600" />
@@ -690,7 +690,7 @@ export default function InvitationBasedStaffManagement({
             </Card>
           ) : (
             <div className="grid gap-4">
-              {invitations.filter(invitation => invitation.status === 'pending').map((invitation) => {
+              {invitations.filter(invitation => invitation.status === 'pending' && !invitation.token?.startsWith('CANCELLED_')).map((invitation) => {
                 const roleInfo = getRoleInfo(invitation.role);
                 const IconComponent = roleInfo.icon;
                 
