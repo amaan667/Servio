@@ -221,12 +221,15 @@ export async function POST(request: NextRequest) {
     }
 
     // Send email invitation
+    let emailSent = false;
+    let emailMessage = 'Invitation created successfully.';
+    
     try {
       const { sendInvitationEmail, generateInvitationLink } = await import('@/lib/email');
       
       const invitationLink = generateInvitationLink(invitation.token);
       
-      const emailSent = await sendInvitationEmail({
+      emailSent = await sendInvitationEmail({
         email: invitation.email,
         venueName: venue.venue_name || 'Your Venue',
         role: invitation.role,
@@ -235,17 +238,23 @@ export async function POST(request: NextRequest) {
         expiresAt: invitation.expires_at
       });
 
-      if (!emailSent) {
+      if (emailSent) {
+        emailMessage = 'Invitation created successfully. Email has been sent.';
+      } else {
+        emailMessage = 'Invitation created successfully. Email service not configured - check server logs for invitation link.';
         console.warn('[INVITATION API] Email sending failed, but invitation was created');
+        console.log('[INVITATION API] Invitation link:', invitationLink);
       }
     } catch (emailError) {
       console.error('[INVITATION API] Email sending error:', emailError);
-      // Don't fail the request if email fails - invitation is still created
+      emailMessage = 'Invitation created successfully. Email service error - check server logs for invitation link.';
     }
 
     return NextResponse.json({ 
       invitation,
-      message: 'Invitation created successfully. Email has been sent.'
+      message: emailMessage,
+      emailSent,
+      invitationLink: emailSent ? undefined : generateInvitationLink(invitation.token)
     });
   } catch (error) {
     console.error('[INVITATION API] Unexpected error:', error);

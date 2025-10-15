@@ -132,34 +132,96 @@ If you didn't expect this invitation, you can safely ignore this email.
   };
 }
 
-// Send email (placeholder implementation)
-// In production, integrate with services like:
-// - SendGrid
-// - AWS SES
-// - Resend
-// - Supabase Edge Functions with email service
+// Send email using multiple fallback methods
 export async function sendEmail(template: EmailTemplate): Promise<boolean> {
   try {
-    // For now, just log the email (in production, replace with actual email service)
-    console.log('📧 EMAIL TO SEND:');
+    // Method 1: Try Resend (if API key is available)
+    if (process.env.RESEND_API_KEY) {
+      try {
+        const { Resend } = await import('resend');
+        const resend = new Resend(process.env.RESEND_API_KEY);
+        
+        const result = await resend.emails.send({
+          from: 'Servio <noreply@servio.app>',
+          to: template.to,
+          subject: template.subject,
+          html: template.html,
+          text: template.text,
+        });
+        
+        if (result.data) {
+          console.log('✅ Email sent successfully via Resend:', result.data.id);
+          return true;
+        }
+      } catch (resendError) {
+        console.warn('⚠️ Resend failed, trying fallback:', resendError);
+      }
+    }
+
+    // Method 2: Try SendGrid (if API key is available)
+    if (process.env.SENDGRID_API_KEY) {
+      try {
+        const sgMail = await import('@sendgrid/mail');
+        sgMail.default.setApiKey(process.env.SENDGRID_API_KEY);
+        
+        await sgMail.default.send({
+          to: template.to,
+          from: 'noreply@servio.app',
+          subject: template.subject,
+          html: template.html,
+          text: template.text,
+        });
+        
+        console.log('✅ Email sent successfully via SendGrid');
+        return true;
+      } catch (sendgridError) {
+        console.warn('⚠️ SendGrid failed, trying fallback:', sendgridError);
+      }
+    }
+
+    // Method 3: Try SMTP (if credentials are available)
+    if (process.env.SMTP_HOST && process.env.SMTP_USER && process.env.SMTP_PASS) {
+      try {
+        const nodemailer = await import('nodemailer');
+        
+        const transporter = nodemailer.default.createTransporter({
+          host: process.env.SMTP_HOST,
+          port: parseInt(process.env.SMTP_PORT || '587'),
+          secure: process.env.SMTP_PORT === '465',
+          auth: {
+            user: process.env.SMTP_USER,
+            pass: process.env.SMTP_PASS,
+          },
+        });
+        
+        await transporter.sendMail({
+          from: process.env.SMTP_USER,
+          to: template.to,
+          subject: template.subject,
+          html: template.html,
+          text: template.text,
+        });
+        
+        console.log('✅ Email sent successfully via SMTP');
+        return true;
+      } catch (smtpError) {
+        console.warn('⚠️ SMTP failed, using console fallback:', smtpError);
+      }
+    }
+
+    // Fallback: Log to console (for development/testing)
+    console.log('📧 EMAIL TO SEND (No email service configured):');
     console.log('To:', template.to);
     console.log('Subject:', template.subject);
     console.log('HTML Preview:', template.html.substring(0, 200) + '...');
+    console.log('🔗 Invitation Link:', template.html.match(/href="([^"]+)"/)?.[1] || 'Not found');
     
-    // TODO: Replace with actual email service integration
-    // Example with SendGrid:
-    // const sgMail = require('@sendgrid/mail');
-    // sgMail.setApiKey(process.env.SENDGRID_API_KEY);
-    // await sgMail.send(template);
+    // In development, we'll return true so the invitation flow continues
+    // In production, you should configure an email service
+    return process.env.NODE_ENV === 'development';
     
-    // Example with Resend:
-    // const { Resend } = require('resend');
-    // const resend = new Resend(process.env.RESEND_API_KEY);
-    // await resend.emails.send(template);
-    
-    return true;
   } catch (error) {
-    console.error('Failed to send email:', error);
+    console.error('❌ Failed to send email:', error);
     return false;
   }
 }
