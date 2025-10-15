@@ -77,6 +77,25 @@ export default function MenuManagementClient({ venueId }: { venueId: string }) {
     }
   }, [venueId]);
 
+  // Load Google Fonts dynamically
+  useEffect(() => {
+    const loadFont = (fontFamily: string) => {
+      const link = document.createElement('link');
+      link.href = `https://fonts.googleapis.com/css2?family=${fontFamily.replace(' ', '+')}:wght@400;500;600;700&display=swap`;
+      link.rel = 'stylesheet';
+      document.head.appendChild(link);
+    };
+
+    // Load fonts based on current design settings
+    if (designSettings.font_family === 'roboto') {
+      loadFont('Roboto');
+    } else if (designSettings.font_family === 'opensans') {
+      loadFont('Open Sans');
+    } else if (designSettings.font_family === 'poppins') {
+      loadFont('Poppins');
+    }
+  }, [designSettings.font_family]);
+
   const loadMenuItems = async () => {
     try {
       setLoading(true);
@@ -199,10 +218,21 @@ export default function MenuManagementClient({ venueId }: { venueId: string }) {
         .getPublicUrl(fileName);
 
       // Update design settings with new logo URL
-      setDesignSettings(prev => ({
-        ...prev,
+      const updatedSettings = {
+        ...designSettings,
         logo_url: urlData.publicUrl
-      }));
+      };
+      console.log('[LOGO UPLOAD] Updating design settings with logo URL:', urlData.publicUrl);
+      setDesignSettings(updatedSettings);
+
+      // Also save to database immediately
+      await supabase
+        .from('menu_design_settings')
+        .upsert({
+          venue_id: venueId,
+          ...updatedSettings,
+          updated_at: new Date().toISOString()
+        });
 
       toast({
         title: "Logo uploaded successfully",
@@ -889,6 +919,7 @@ export default function MenuManagementClient({ venueId }: { venueId: string }) {
           <Card>
             <CardContent className="p-0">
               <div 
+                key={`preview-${designSettings.logo_url}-${designSettings.primary_color}-${designSettings.font_family}-${designSettings.font_size}`}
                 className="bg-white min-h-[600px] p-8"
                 style={{
                   fontFamily: designSettings.font_family === 'inter' ? 'Inter, sans-serif' :
@@ -907,6 +938,8 @@ export default function MenuManagementClient({ venueId }: { venueId: string }) {
                         src={designSettings.logo_url} 
                         alt="Restaurant logo" 
                         className="h-20 w-auto object-contain mx-auto"
+                        onLoad={() => console.log('[PREVIEW] Logo loaded successfully:', designSettings.logo_url)}
+                        onError={(e) => console.error('[PREVIEW] Logo failed to load:', designSettings.logo_url, e)}
                       />
                     </div>
                   )}
