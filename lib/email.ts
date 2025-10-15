@@ -46,14 +46,14 @@ export function generateInvitationEmail(data: InvitationEmailData): EmailTemplat
     <body>
       <div class="container">
         <div class="header">
-          <h1 style="margin: 0; font-size: 24px;">You're Invited to Join Servio!</h1>
-          <p style="margin: 10px 0 0 0; opacity: 0.9;">Join the team at ${venueName}</p>
+          <h1 style="margin: 0; font-size: 24px;">You're Invited to Join ${venueName}!</h1>
+          <p style="margin: 10px 0 0 0; opacity: 0.9;">Join our team and help us deliver great service</p>
         </div>
         
         <div class="content">
           <p>Hi there!</p>
           
-          <p><strong>${invitedBy}</strong> has invited you to join the team at <strong>${venueName}</strong> as a <span class="role-badge">${role}</span>.</p>
+          <p>We're excited to invite you to join our team at <strong>${venueName}</strong>! <strong>${invitedBy}</strong> has recommended you for the <span class="role-badge">${role}</span> position.</p>
           
           <div class="details">
             <div class="detail-row">
@@ -74,10 +74,10 @@ export function generateInvitationEmail(data: InvitationEmailData): EmailTemplat
             </div>
           </div>
           
-          <p>Click the button below to accept your invitation and create your account:</p>
+          <p>We'd love to have you on our team! Click the button below to accept your invitation and get started:</p>
           
           <div style="text-align: center;">
-            <a href="${invitationLink}" class="button">Accept Invitation & Join Team</a>
+            <a href="${invitationLink}" class="button">Accept Invitation & Join ${venueName}</a>
           </div>
           
           <p style="font-size: 14px; color: #6b7280; margin-top: 30px;">
@@ -86,13 +86,13 @@ export function generateInvitationEmail(data: InvitationEmailData): EmailTemplat
           </p>
           
           <p style="font-size: 14px; color: #6b7280;">
-            This invitation will expire on ${new Date(expiresAt).toLocaleDateString()}. If you have any questions, please contact ${invitedBy}.
+            This invitation will expire on ${new Date(expiresAt).toLocaleDateString()}. If you have any questions, please contact ${invitedBy} at ${venueName}.
           </p>
         </div>
         
         <div class="footer">
           <p style="margin: 0; font-size: 14px; color: #6b7280;">
-            This invitation was sent by Servio - Restaurant Management Platform<br>
+            This invitation was sent by ${venueName}<br>
             If you didn't expect this invitation, you can safely ignore this email.
           </p>
         </div>
@@ -106,7 +106,7 @@ You're Invited to Join ${venueName}!
 
 Hi there!
 
-${invitedBy} has invited you to join the team at ${venueName} as a ${role}.
+We're excited to invite you to join our team at ${venueName}! ${invitedBy} has recommended you for the ${role} position.
 
 Details:
 - Venue: ${venueName}
@@ -114,19 +114,19 @@ Details:
 - Invited by: ${invitedBy}
 - Expires: ${new Date(expiresAt).toLocaleDateString()}
 
-To accept your invitation and create your account, visit:
+We'd love to have you on our team! To accept your invitation and get started, visit:
 ${invitationLink}
 
-This invitation will expire on ${new Date(expiresAt).toLocaleDateString()}. If you have any questions, please contact ${invitedBy}.
+This invitation will expire on ${new Date(expiresAt).toLocaleDateString()}. If you have any questions, please contact ${invitedBy} at ${venueName}.
 
 ---
-This invitation was sent by Servio - Restaurant Management Platform
+This invitation was sent by ${venueName}
 If you didn't expect this invitation, you can safely ignore this email.
   `;
 
   return {
     to: email,
-    subject: `You're invited to join ${venueName} on Servio`,
+    subject: `You're invited to join the team at ${venueName}`,
     html,
     text
   };
@@ -143,7 +143,7 @@ export async function sendEmail(template: EmailTemplate): Promise<boolean> {
         const resend = new Resend(process.env.RESEND_API_KEY);
         
         const result = await resend.emails.send({
-          from: 'Servio <invite@servio.uk>',
+          from: 'Team Invitations <invite@servio.uk>',
           to: template.to,
           subject: template.subject,
           html: template.html,
