@@ -104,13 +104,14 @@ export default function LiveOrdersClient({ venueId, venueName: venueNameProp }: 
   }, [tabParam]);
 
   
-  // Constants for order statuses
-  // FOH (Live Orders) only sees READY/SERVED - COMPLETED orders should be removed from live view
-  const LIVE_STATUSES = ['READY', 'SERVED'];
+  // Constants for order statuses (FOH must see orders from placement until served)
+  // Show orders throughout the whole lifecycle in Live Orders (until completed/cancelled)
+  const LIVE_STATUSES = ['PLACED', 'IN_PREP', 'READY', 'SERVING', 'SERVED'];
   const TERMINAL_STATUSES = ['COMPLETED', 'CANCELLED', 'REFUNDED', 'EXPIRED'];
-  const LIVE_WINDOW_STATUSES = ['READY', 'SERVED']; // Only active orders should show in live orders
-  const ACTIVE_TABLE_ORDER_STATUSES = ['READY', 'SERVED']; // Active orders for table management (not completed)
-  const LIVE_TABLE_ORDER_STATUSES = ['READY', 'SERVED']; // Completed orders should be removed from live display
+  // Treat these as "in live window" so they render on the Live tab immediately
+  const LIVE_WINDOW_STATUSES = ['PLACED', 'IN_PREP', 'READY', 'SERVING', 'SERVED'];
+  const ACTIVE_TABLE_ORDER_STATUSES = ['PLACED', 'IN_PREP', 'READY', 'SERVING'];
+  const LIVE_TABLE_ORDER_STATUSES = ['PLACED', 'IN_PREP', 'READY', 'SERVING', 'SERVED'];
   const prepLeadMs = 30 * 60 * 1000; // 30 minutes default
   
   // Define what constitutes a "live" order - recent orders
@@ -825,7 +826,7 @@ export default function LiveOrdersClient({ venueId, venueName: venueNameProp }: 
       // Get all active orders (not completed) from the current tab
       const currentOrders = activeTab === 'live' ? orders : allTodayOrders;
       const activeOrders = currentOrders.filter(order => 
-        ['PLACED', 'IN_PREP', 'READY', 'SERVING'].includes(order.order_status)
+        ['PLACED', 'IN_PREP', 'READY', 'SERVING', 'SERVED'].includes(order.order_status)
       );
       
       if (activeOrders.length === 0) {
@@ -1378,7 +1379,7 @@ export default function LiveOrdersClient({ venueId, venueName: venueNameProp }: 
                   {/* Status Badges */}
                   <div className="flex items-center gap-3 mb-6">
                     <Badge className={`${getStatusColor(order.order_status)} text-sm font-semibold px-4 py-2 rounded-full`}>
-                      {order.order_status.replace('_', ' ').toLowerCase()}
+                      {order.order_status === 'PLACED' ? 'preparing' : order.order_status.replace('_', ' ').toLowerCase()}
                     </Badge>
                     {order.payment_status && (
                       <Badge className={`${getPaymentStatusColor(order.payment_status)} text-sm font-semibold px-4 py-2 rounded-full`}>
@@ -1426,7 +1427,7 @@ export default function LiveOrdersClient({ venueId, venueName: venueNameProp }: 
                           onClick={() => updateOrderStatus(order.id, 'READY')}
                           className="bg-green-600 hover:bg-green-700 text-white font-semibold px-6 py-2 rounded-lg text-sm"
                         >
-                          {order.source === 'counter' ? 'Mark as Ready for Pickup' : 'Mark as Served'}
+                          Mark Ready
                         </Button>
                       )}
                       {order.order_status === 'READY' && (
@@ -1435,7 +1436,7 @@ export default function LiveOrdersClient({ venueId, venueName: venueNameProp }: 
                           onClick={() => updateOrderStatus(order.id, 'COMPLETED')}
                           className="bg-purple-600 hover:bg-purple-700 text-white font-semibold px-6 py-2 rounded-lg text-sm"
                         >
-                          Complete Order
+                          Mark Served
                         </Button>
                       )}
                     </div>
