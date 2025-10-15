@@ -160,8 +160,12 @@ export default function InvitationBasedStaffManagement({
     }
 
     try {
-      const response = await fetch(`/api/staff/invitations/${invitationId}/cancel`, {
+      const response = await fetch('/api/staff/invitations/cancel', {
         method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ id: invitationId }),
       });
 
       const data = await response.json();
