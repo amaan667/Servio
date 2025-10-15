@@ -1416,16 +1416,16 @@ export default function LiveOrdersClient({ venueId, venueName: venueNameProp }: 
                         <Button 
                           size="sm"
                           onClick={() => updateOrderStatus(order.id, 'IN_PREP')}
-                          className="bg-blue-600 hover:bg-blue-700 text-white font-semibold px-6 py-2 rounded-lg text-sm"
+                          className="bg-blue-600 hover:bg-blue-700 text-white font-semibold px-4 py-2 rounded-lg text-sm"
                         >
-                          Start Preparing
+                          Start Prep
                         </Button>
                       )}
                       {order.order_status === 'IN_PREP' && (
                         <Button 
                           size="sm"
                           onClick={() => updateOrderStatus(order.id, 'READY')}
-                          className="bg-green-600 hover:bg-green-700 text-white font-semibold px-6 py-2 rounded-lg text-sm"
+                          className="bg-green-600 hover:bg-green-700 text-white font-semibold px-4 py-2 rounded-lg text-sm"
                         >
                           Mark Ready
                         </Button>
@@ -1434,18 +1434,18 @@ export default function LiveOrdersClient({ venueId, venueName: venueNameProp }: 
                         <Button 
                           size="sm"
                           onClick={() => updateOrderStatus(order.id, 'SERVED')}
-                          className="bg-purple-600 hover:bg-purple-700 text-white font-semibold px-6 py-2 rounded-lg text-sm"
+                          className="bg-purple-600 hover:bg-purple-700 text-white font-semibold px-4 py-2 rounded-lg text-sm"
                         >
-                          Mark Served
+                          {order.source === 'counter' ? 'Ready' : 'Mark Served'}
                         </Button>
                       )}
                       {order.order_status === 'SERVED' && (
                         <Button 
                           size="sm"
                           onClick={() => updateOrderStatus(order.id, 'COMPLETED')}
-                          className="bg-gray-600 hover:bg-gray-700 text-white font-semibold px-6 py-2 rounded-lg text-sm"
+                          className="bg-gray-600 hover:bg-gray-700 text-white font-semibold px-4 py-2 rounded-lg text-sm"
                         >
-                          Complete Order
+                          Complete
                         </Button>
                       )}
                     </div>
