@@ -56,6 +56,7 @@ interface Invitation {
   created_at: string;
   expires_at: string;
   invited_by_name: string;
+  token?: string;
 }
 
 interface LegacyShift {
