@@ -177,10 +177,20 @@ export default function InvitationBasedStaffManagement({
         throw new Error(data.error || 'Failed to send invitation');
       }
 
-      toast({
-        title: 'Invitation sent!',
-        description: `An invitation has been sent to ${inviteEmail}`,
-      });
+      // Show different messages based on email status
+      if (data.emailSent) {
+        toast({
+          title: 'Invitation sent!',
+          description: `An invitation has been sent to ${inviteEmail}`,
+        });
+      } else {
+        toast({
+          title: 'Invitation created!',
+          description: `Invitation created but email failed to send. Check server logs for invitation link.`,
+          variant: 'destructive',
+        });
+        console.log('📧 Invitation link:', data.invitationLink);
+      }
 
       setInviteDialogOpen(false);
       setInviteEmail('');
