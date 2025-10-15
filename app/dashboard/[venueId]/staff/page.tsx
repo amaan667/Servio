@@ -1,4 +1,4 @@
-import StaffClient from './staff-client';
+import InvitationBasedStaffManagement from '@/components/staff/InvitationBasedStaffManagement';
 import NavigationBreadcrumb from '@/components/navigation-breadcrumb';
 import { createClient } from '@/lib/supabase/server';
 import { redirect } from 'next/navigation';
@@ -13,14 +13,25 @@ export default async function StaffPage({ params }: { params: Promise<{ venueId:
     redirect('/sign-in');
   }
 
-  const { data: venue, error: venueError } = await supabase
-    .from('venues')
-    .select('venue_id, venue_name')
+  // Check if user has access to this venue (owner or has role)
+  const { data: userRole, error: roleError } = await supabase
+    .from('user_venue_roles')
+    .select('role')
+    .eq('user_id', user.id)
     .eq('venue_id', venueId)
-    .eq('owner_user_id', user.id)
     .single();
 
-  if (venueError || !venue) {
+  // Also check if user is the venue owner (for backward compatibility)
+  const { data: venue, error: venueError } = await supabase
+    .from('venues')
+    .select('venue_id, venue_name, owner_user_id')
+    .eq('venue_id', venueId)
+    .single();
+
+  const isOwner = venue?.owner_user_id === user.id;
+  const hasRole = userRole && ['owner', 'manager'].includes(userRole.role);
+
+  if (venueError || !venue || (!isOwner && !hasRole)) {
     redirect('/complete-profile');
   }
   
@@ -29,20 +40,9 @@ export default async function StaffPage({ params }: { params: Promise<{ venueId:
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 pb-24 md:pb-8">
         <NavigationBreadcrumb venueId={venueId} />
         
-        <div className="mb-8">
-          <h1 className="text-3xl font-bold tracking-tight text-foreground">
-            Staff Management
-          </h1>
-          <p className="text-lg text-foreground mt-2">
-            Invite and manage your staff members
-          </p>
-        </div>
-        
-        <StaffClient 
+        <InvitationBasedStaffManagement 
           venueId={venueId} 
           venueName={venue.venue_name || "Your Venue"} 
-          initialStaff={undefined}
-          initialCounts={undefined}
         />
       </div>
     </div>
