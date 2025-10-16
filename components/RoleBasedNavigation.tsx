@@ -1,7 +1,5 @@
 'use client';
 
-import { useRouter } from 'next/navigation';
-import { Button } from '@/components/ui/button';
 import { 
   LayoutDashboard, 
   Settings, 
@@ -27,8 +25,6 @@ export default function RoleBasedNavigation({
   userRole, 
   userName 
 }: RoleBasedNavigationProps) {
-  const router = useRouter();
-
   const navigationItems = [
     {
       label: 'Dashboard',
@@ -105,14 +101,6 @@ export default function RoleBasedNavigation({
         </Badge>
         <span className="text-sm text-gray-600">{userName}</span>
       </div>
-      
-      <Button
-        variant="outline"
-        size="sm"
-        onClick={() => router.push('/sign-out')}
-      >
-        Sign Out
-      </Button>
     </div>
   );
 }
