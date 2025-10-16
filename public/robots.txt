@@ -1,17 +1,39 @@
-# Allow all search engines to crawl the site
+# Servio - QR Code Ordering Platform
+# https://servio.app
+
 User-agent: *
 Allow: /
 
-# Disallow private pages
-Disallow: /dashboard/
+# Crawl important pages
+Allow: /privacy
+Allow: /terms
+Allow: /cookies
+Allow: /refund-policy
+
+# Block admin and internal pages
 Disallow: /api/
-Disallow: /complete-profile/
+Disallow: /dashboard/
+Disallow: /settings/
 Disallow: /onboarding/
+Disallow: /kitchen/
+Disallow: /pos/
+Disallow: /staff/
+Disallow: /menu-builder/
+Disallow: /complete-profile/
 Disallow: /invitation/
 
-# Crawl delay (optional)
-Crawl-delay: 1
+# Block authentication pages
+Disallow: /sign-in
+Disallow: /sign-up
+Disallow: /sign-out
+Disallow: /auth/
+
+# Block order and payment pages
+Disallow: /order/
+Disallow: /order-summary/
+Disallow: /order-tracking/
+Disallow: /payment/
+Disallow: /checkout/
 
 # Sitemap location
 Sitemap: https://servio.app/sitemap.xml
-

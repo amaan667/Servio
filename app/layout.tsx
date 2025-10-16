@@ -11,13 +11,22 @@ import ThemeToggleFloat from "@/components/ThemeToggleFloat";
 import ConditionalHeader from "@/components/ConditionalHeader";
 import ConditionalBottomNav from "@/components/ConditionalBottomNav";
 import { ErrorBoundary } from "@/components/error-boundary";
+import { Analytics } from "@/components/Analytics";
 
 const inter = Inter({ subsets: ["latin"] });
 
 export const metadata: Metadata = {
-  title: "Servio - QR Code Ordering Made Simple",
+  metadataBase: new URL('https://servio.app'),
+  title: {
+    default: "Servio - QR Code Ordering Made Simple",
+    template: "%s | Servio"
+  },
   description:
-    "Streamline your business operations with contactless QR code ordering. Customers scan, order, and pay - all from their phones.",
+    "Streamline your business operations with contactless QR code ordering. Customers scan, order, and pay - all from their phones. 14-day free trial. No setup fees.",
+  keywords: ["QR code ordering", "restaurant ordering system", "contactless ordering", "digital menu", "QR menu", "restaurant technology", "cafe ordering system", "mobile ordering", "table ordering", "hospitality technology"],
+  authors: [{ name: "Servio" }],
+  creator: "Servio",
+  publisher: "Servio",
   manifest: "/manifest.json",
   themeColor: "#7c3aed",
   viewport: {
@@ -36,14 +45,37 @@ export const metadata: Metadata = {
   },
   openGraph: {
     type: 'website',
+    locale: 'en_GB',
+    url: 'https://servio.app',
     siteName: 'Servio',
     title: 'Servio - QR Code Ordering Made Simple',
-    description: 'Streamline your business operations with contactless QR code ordering',
+    description: 'Streamline your business operations with contactless QR code ordering. 14-day free trial.',
+    images: [
+      {
+        url: '/images/og-image.png',
+        width: 1200,
+        height: 630,
+        alt: 'Servio - QR Code Ordering Platform',
+      },
+    ],
   },
   twitter: {
-    card: 'summary',
+    card: 'summary_large_image',
     title: 'Servio - QR Code Ordering Made Simple',
     description: 'Streamline your business operations with contactless QR code ordering',
+    images: ['/images/og-image.png'],
+    creator: '@servio_app',
+  },
+  robots: {
+    index: true,
+    follow: true,
+    googleBot: {
+      index: true,
+      follow: true,
+      'max-video-preview': -1,
+      'max-image-preview': 'large',
+      'max-snippet': -1,
+    },
   },
   icons: {
     icon: '/favicon.ico',
@@ -82,6 +114,7 @@ export default async function RootLayout({
               {children}
               <ThemeToggleFloat />
               <ConditionalBottomNav />
+              <Analytics />
             </Providers>
           </AuthProvider>
         </ErrorBoundary>

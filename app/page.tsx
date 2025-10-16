@@ -1007,10 +1007,10 @@ export default function HomePage() {
                 </li>
                 <li>
                   <Link
-                    href="#"
+                    href="/refund-policy"
                     className="text-gray-300 hover:text-white transition-colors"
                   >
-                    API
+                    Refund Policy
                   </Link>
                 </li>
               </ul>
@@ -1020,15 +1020,7 @@ export default function HomePage() {
               <ul className="space-y-2">
                 <li>
                   <Link
-                    href="#"
-                    className="text-gray-300 hover:text-white transition-colors"
-                  >
-                    Help Center
-                  </Link>
-                </li>
-                <li>
-                  <Link
-                    href="#"
+                    href="mailto:support@servio.app"
                     className="text-gray-300 hover:text-white transition-colors"
                   >
                     Contact Us
@@ -1036,18 +1028,26 @@ export default function HomePage() {
                 </li>
                 <li>
                   <Link
-                    href="#"
+                    href="/privacy"
                     className="text-gray-300 hover:text-white transition-colors"
                   >
-                    Status
+                    Privacy Policy
                   </Link>
                 </li>
                 <li>
                   <Link
-                    href="#"
+                    href="/terms"
                     className="text-gray-300 hover:text-white transition-colors"
                   >
-                    Privacy Policy
+                    Terms of Service
+                  </Link>
+                </li>
+                <li>
+                  <Link
+                    href="/cookies"
+                    className="text-gray-300 hover:text-white transition-colors"
+                  >
+                    Cookie Policy
                   </Link>
                 </li>
               </ul>
