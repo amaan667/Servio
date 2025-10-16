@@ -558,7 +558,7 @@ const VenueDashboardClient = React.memo(function VenueDashboardClient({
               
               {/* Role Management Popup */}
               <RoleManagementPopup 
-                currentUserRole="owner"
+                currentUserRole={userRole || 'owner'}
               />
               
               {/* Connection Status Indicator */}
