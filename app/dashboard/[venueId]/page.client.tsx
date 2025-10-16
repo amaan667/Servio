@@ -8,6 +8,7 @@ import Link from "next/link";
 import { Clock, Users, TrendingUp, ShoppingBag, BarChart, QrCode, Settings, Plus, Table, Wifi, WifiOff, AlertTriangle, ChefHat, Package } from "lucide-react";
 import { createClient } from "@/lib/supabase/client";
 import NavigationBreadcrumb from "@/components/navigation-breadcrumb";
+import RoleBasedNavigation from "@/components/RoleBasedNavigation";
 import { todayWindowForTZ } from "@/lib/time";
 import { useDashboardPrefetch } from '@/hooks/usePrefetch';
 import PullToRefresh from '@/components/PullToRefresh';
@@ -527,7 +528,11 @@ const VenueDashboardClient = React.memo(function VenueDashboardClient({
       <div className="min-h-screen bg-background">
         <div className="max-w-7xl mx-auto px-3 sm:px-4 lg:px-8 py-4 sm:py-6 lg:py-8 pb-24 md:pb-8">
         {/* Simple breadcrumb for main dashboard */}
-        <NavigationBreadcrumb venueId={venueId} />
+        <RoleBasedNavigation 
+          venueId={venueId} 
+          userRole={userRole as any}
+          userName={userName}
+        />
         
         {/* Onboarding completion banner */}
         <OnboardingCompletionBanner />
