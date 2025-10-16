@@ -17,24 +17,29 @@ export function createLazyComponent<P extends object>(
           </div>
         ),
     ssr: false,
-  });
+  }) as ComponentType<P>;
 }
 
 // Pre-configured lazy components for common patterns
-export const LazyAnalyticsDashboard = createLazyComponent(
-  () => import('@/components/analytics-dashboard').then(mod => ({ default: mod.AnalyticsDashboard }))
+// Using dynamic import directly to avoid type issues
+export const LazyAnalyticsDashboard = dynamic(
+  () => import('@/components/analytics-dashboard').then(mod => ({ default: mod.AnalyticsDashboard })),
+  { ssr: false }
 );
 
-export const LazyDemoAISection = createLazyComponent(
-  () => import('@/components/demo-ai-section')
+export const LazyDemoAISection = dynamic(
+  () => import('@/components/demo-ai-section'),
+  { ssr: false }
 );
 
-export const LazyDemoAnalytics = createLazyComponent(
-  () => import('@/components/demo-analytics')
+export const LazyDemoAnalytics = dynamic(
+  () => import('@/components/demo-analytics'),
+  { ssr: false }
 );
 
-export const LazyEnhancedFeedbackSystem = createLazyComponent(
-  () => import('@/components/enhanced-feedback-system').then(mod => ({ default: mod.EnhancedFeedbackSystem }))
+export const LazyEnhancedFeedbackSystem = dynamic(
+  () => import('@/components/enhanced-feedback-system').then(mod => ({ default: mod.EnhancedFeedbackSystem })),
+  { ssr: false }
 );
 
 // Loading skeleton for dashboard
