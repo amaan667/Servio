@@ -74,9 +74,19 @@ export default function VenueSwitcherPopup({
   const loadVenues = async () => {
     try {
       const supabase = createClient();
+      
+      // Get current user first
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) {
+        console.error('No authenticated user found');
+        return;
+      }
+
+      // Only load venues owned by the current user
       const { data, error } = await supabase
         .from('venues')
         .select('*')
+        .eq('owner_user_id', user.id)
         .order('is_primary', { ascending: false })
         .order('created_at', { ascending: true });
 
@@ -318,9 +328,14 @@ export default function VenueSwitcherPopup({
                     : "border-border hover:border-primary/50 cursor-pointer hover:bg-gray-50"
                 }`}
                 onClick={() => {
+                  console.log('[VENUE SWITCHER] Clicked venue:', venue.venue_name, 'ID:', venue.venue_id);
+                  console.log('[VENUE SWITCHER] Current venue ID:', currentVenueId);
                   if (venue.venue_id !== currentVenueId) {
+                    console.log('[VENUE SWITCHER] Calling onVenueChange with:', venue.venue_id);
                     onVenueChange(venue.venue_id);
                     setOpen(false);
+                  } else {
+                    console.log('[VENUE SWITCHER] Same venue, not switching');
                   }
                 }}
               >

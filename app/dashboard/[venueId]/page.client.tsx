@@ -77,6 +77,7 @@ const VenueDashboardClient = React.memo(function VenueDashboardClient({
   
   // Handle venue change
   const handleVenueChange = (newVenueId: string) => {
+    console.log('[VENUE SWITCH] Switching from', venueId, 'to', newVenueId);
     router.push(`/dashboard/${newVenueId}`);
   };
   
