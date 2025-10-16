@@ -5,12 +5,11 @@ import Link from "next/link";
 import Image from "next/image";
 import { Button } from "@/components/ui/button";
 import { createClient } from "@/lib/supabase/client";
-import { Menu, X, Settings, Home, LogOut, LayoutDashboard } from "lucide-react";
+import { Menu, X, Settings, Home, LayoutDashboard } from "lucide-react";
 import { useAuth } from "@/app/auth/AuthProvider";
 import { useRouter, usePathname } from "next/navigation";
 import SignInButton from "@/app/components/SignInButton";
 
-import { signOutUser } from "@/lib/supabase";
 
 export default function GlobalNav() {
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
@@ -112,30 +111,6 @@ export default function GlobalNav() {
     fetchUserData();
   }, [isAuthenticated, session?.user?.id]);
 
-  const handleSignOut = async () => {
-    try {
-      // Call unified API signout to clear cookies server-side
-      const response = await fetch('/api/auth/signout', { 
-        method: 'POST', 
-        headers: { 'Content-Type': 'application/json' } 
-      });
-      
-      if (!response.ok) {
-        console.error('Server-side sign out failed');
-      }
-      
-      // Use the auth provider's signOut method
-      await signOut();
-      
-      // Force redirect to home page
-      router.replace('/');
-    } catch (error) {
-      console.error('Sign out error:', error);
-      // Force redirect even if there's an error
-      router.replace('/');
-    }
-  };
-
   // Always render navigation immediately - don't wait for auth loading
   // The navigation will show appropriate content based on auth state
 
@@ -172,7 +147,7 @@ export default function GlobalNav() {
                       <Home className="mr-3 h-5 w-5" />
                       Home
                     </Link>
-                    {userRole === 'owner' && (
+                    {(userRole === 'owner' || userRole === 'manager') && (
                       <Link
                         href={(venueId || primaryVenueId) ? `/dashboard/${venueId || primaryVenueId}/settings` : '/'}
                         className="flex items-center px-4 py-3 text-base font-medium text-foreground hover:text-primary hover:bg-accent rounded-md transition-all duration-200"
@@ -192,7 +167,7 @@ export default function GlobalNav() {
                       <LayoutDashboard className="mr-3 h-5 w-5" />
                       Dashboard
                     </Link>
-                    {userRole === 'owner' && (
+                    {(userRole === 'owner' || userRole === 'manager') && (
                       <Link
                         href={(venueId || primaryVenueId) ? `/dashboard/${venueId || primaryVenueId}/settings` : '/'}
                         className="flex items-center px-4 py-3 text-base font-medium text-foreground hover:text-primary hover:bg-accent rounded-md transition-all duration-200"
@@ -230,7 +205,7 @@ export default function GlobalNav() {
                       <LayoutDashboard className="mr-3 h-5 w-5" />
                       Dashboard
                     </Link>
-                    {userRole === 'owner' && (
+                    {(userRole === 'owner' || userRole === 'manager') && (
                       <Link
                         href={(venueId || primaryVenueId) ? `/dashboard/${venueId || primaryVenueId}/settings` : '/'}
                         className="flex items-center px-4 py-3 text-base font-medium text-foreground hover:text-primary hover:bg-accent rounded-md transition-all duration-200"
@@ -241,15 +216,6 @@ export default function GlobalNav() {
                     )}
                   </>
                 )}
-                <div className="w-px h-8 bg-border mx-2"></div>
-                <Button
-                  variant="destructive"
-                  onClick={handleSignOut}
-                  className="flex items-center px-4 py-3 text-base font-medium bg-red-600 text-white hover:bg-red-700 rounded-md transition-all duration-200"
-                >
-                  <LogOut className="mr-3 h-5 w-5" />
-                  Sign Out
-                </Button>
               </div>
             ) : shouldHidePublicActions ? null : (
               // Not signed in navigation - modern SaaS style
@@ -318,7 +284,7 @@ export default function GlobalNav() {
                       <Home className="mr-3 h-5 w-5 flex-shrink-0 text-gray-900" />
                       <span>Home</span>
                     </Link>
-                    {userRole === 'owner' && (
+                    {(userRole === 'owner' || userRole === 'manager') && (
                       <Link
                         href={(venueId || primaryVenueId) ? `/dashboard/${venueId || primaryVenueId}/settings` : '/'}
                         className="flex items-center px-4 py-3 text-base font-semibold text-gray-900 hover:text-servio-purple hover:bg-servio-purple/5 rounded-xl transition-all duration-200 min-h-[48px]"
@@ -339,7 +305,7 @@ export default function GlobalNav() {
                       <LayoutDashboard className="mr-3 h-5 w-5 flex-shrink-0 text-gray-900" />
                       <span>Dashboard</span>
                     </Link>
-                    {userRole === 'owner' && (
+                    {(userRole === 'owner' || userRole === 'manager') && (
                       <Link
                         href={(venueId || primaryVenueId) ? `/dashboard/${venueId || primaryVenueId}/settings` : '/'}
                         className="flex items-center px-4 py-3 text-base font-semibold text-gray-900 hover:text-servio-purple hover:bg-servio-purple/5 rounded-xl transition-all duration-200 min-h-[48px]"
@@ -379,7 +345,7 @@ export default function GlobalNav() {
                       <LayoutDashboard className="mr-3 h-5 w-5 flex-shrink-0 text-gray-900" />
                       <span>Dashboard</span>
                     </Link>
-                    {userRole === 'owner' && (
+                    {(userRole === 'owner' || userRole === 'manager') && (
                       <Link
                         href={(venueId || primaryVenueId) ? `/dashboard/${venueId || primaryVenueId}/settings` : '/'}
                         className="flex items-center px-4 py-3 text-base font-semibold text-gray-900 hover:text-servio-purple hover:bg-servio-purple/5 rounded-xl transition-all duration-200 min-h-[48px]"
@@ -391,14 +357,6 @@ export default function GlobalNav() {
                     )}
                   </>
                 )}
-                <div className="w-full h-px bg-gray-100 my-4"></div>
-                <button
-                  onClick={handleSignOut}
-                  className="flex items-center w-full px-4 py-3 text-base font-semibold bg-red-600 hover:bg-red-700 text-white rounded-xl transition-all duration-200 min-h-[48px] justify-start"
-                >
-                  <LogOut className="mr-3 h-5 w-5 flex-shrink-0 text-white" />
-                  <span>Sign Out</span>
-                </button>
               </>
             ) : (
               // Not signed in mobile navigation

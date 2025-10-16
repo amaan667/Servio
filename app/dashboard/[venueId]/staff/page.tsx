@@ -29,13 +29,14 @@ export default async function StaffPage({ params }: { params: Promise<{ venueId:
     .single();
 
   const isOwner = venue?.owner_user_id === user.id;
-  const hasRole = userRole && ['owner', 'manager'].includes(userRole.role);
+  const isStaff = !!userRole;
 
-  if (venueError || !venue || (!isOwner && !hasRole)) {
+  if (venueError || !venue || (!isOwner && !isStaff)) {
     redirect('/complete-profile');
   }
   
   const finalUserRole = userRole?.role || (isOwner ? 'owner' : 'staff');
+  const canManageStaff = finalUserRole === 'owner' || finalUserRole === 'manager';
 
   return (
     <div className="min-h-screen bg-background">
@@ -46,10 +47,17 @@ export default async function StaffPage({ params }: { params: Promise<{ venueId:
           userName={user.user_metadata?.full_name || user.email?.split('@')[0] || 'User'}
         />
         
-        <InvitationBasedStaffManagement 
-          venueId={venueId} 
-          venueName={venue.venue_name || "Your Venue"} 
-        />
+        {canManageStaff ? (
+          <InvitationBasedStaffManagement 
+            venueId={venueId} 
+            venueName={venue.venue_name || "Your Venue"} 
+          />
+        ) : (
+          <div className="bg-yellow-50 border border-yellow-200 rounded-lg p-6">
+            <h3 className="text-lg font-semibold text-yellow-800 mb-2">Access Restricted</h3>
+            <p className="text-yellow-700">You don't have permission to manage staff. This feature is available for Owner and Manager roles only.</p>
+          </div>
+        )}
       </div>
     </div>
   );

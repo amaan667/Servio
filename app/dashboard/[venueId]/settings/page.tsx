@@ -30,26 +30,26 @@ export default async function VenueSettings({ params }: { params: Promise<{ venu
     .maybeSingle();
 
   const isOwner = !!venue;
-  const isStaff = !!userRole;
+  const isManager = userRole?.role === 'manager';
 
-  // If user is not owner or staff, redirect
-  if (!isOwner && !isStaff) {
+  // Only owners and managers can access settings
+  if (!isOwner && !isManager) {
     redirect('/complete-profile');
   }
 
-  // Get venue details for staff
+  // Get venue details for manager
   let finalVenue = venue;
-  if (!venue && isStaff) {
-    const { data: staffVenue } = await supabase
+  if (!venue && isManager) {
+    const { data: managerVenue } = await supabase
       .from('venues')
       .select('*')
       .eq('venue_id', venueId)
       .single();
     
-    if (!staffVenue) {
+    if (!managerVenue) {
       redirect('/complete-profile');
     }
-    finalVenue = staffVenue;
+    finalVenue = managerVenue;
   }
 
   // Only owners can see all venues
@@ -66,6 +66,7 @@ export default async function VenueSettings({ params }: { params: Promise<{ venu
     .single();
 
   const finalUserRole = userRole?.role || (isOwner ? 'owner' : 'staff');
+  const canAccessSettings = finalUserRole === 'owner' || finalUserRole === 'manager';
 
   return (
     <div className="min-h-screen bg-background">
@@ -85,13 +86,20 @@ export default async function VenueSettings({ params }: { params: Promise<{ venu
           </p>
         </div>
         
-        <VenueSettingsClient 
-          user={user as any} 
-          venue={finalVenue} 
-          venues={venues || []} 
-          organization={organization || undefined}
-          isOwner={isOwner}
-        />
+        {canAccessSettings ? (
+          <VenueSettingsClient 
+            user={user as any} 
+            venue={finalVenue} 
+            venues={venues || []} 
+            organization={organization || undefined}
+            isOwner={isOwner}
+          />
+        ) : (
+          <div className="bg-yellow-50 border border-yellow-200 rounded-lg p-6">
+            <h3 className="text-lg font-semibold text-yellow-800 mb-2">Access Restricted</h3>
+            <p className="text-yellow-700">You don't have permission to access settings. This feature is available for Owner and Manager roles only.</p>
+          </div>
+        )}
       </div>
     </div>
   );

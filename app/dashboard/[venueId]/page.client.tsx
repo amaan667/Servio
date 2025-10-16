@@ -618,22 +618,23 @@ const VenueDashboardClient = React.memo(function VenueDashboardClient({
             </Card>
           </Link>
 
-          <Link href={`/dashboard/${venueId}/analytics`}>
-            <Card className="cursor-pointer hover:shadow-lg transition-shadow">
-              <CardContent className="p-4 sm:p-6">
-                <div className="flex items-center justify-between">
-                  <div>
-                    <p className="text-xs sm:text-sm font-medium text-gray-700">Revenue</p>
-                    <p className="text-xl sm:text-2xl font-bold text-foreground">£{stats.revenue.toFixed(2)}</p>
+          {(userRole === 'owner' || userRole === 'manager') && (
+            <Link href={`/dashboard/${venueId}/analytics`}>
+              <Card className="cursor-pointer hover:shadow-lg transition-shadow">
+                <CardContent className="p-4 sm:p-6">
+                  <div className="flex items-center justify-between">
+                    <div>
+                      <p className="text-xs sm:text-sm font-medium text-gray-700">Revenue</p>
+                      <p className="text-xl sm:text-2xl font-bold text-foreground">£{stats.revenue.toFixed(2)}</p>
+                    </div>
+                    <div className="w-10 h-10 sm:w-12 sm:h-12 bg-green-100 rounded-lg flex items-center justify-center">
+                      <TrendingUp className="h-5 w-5 sm:h-6 sm:w-6 text-green-600" />
+                    </div>
                   </div>
-                  <div className="w-10 h-10 sm:w-12 sm:h-12 bg-green-100 rounded-lg flex items-center justify-center">
-                    <TrendingUp className="h-5 w-5 sm:h-6 sm:w-6 text-green-600" />
-                  </div>
-                </div>
-                {/* Remove unpaid count since all orders are now paid */}
-              </CardContent>
-            </Card>
-          </Link>
+                </CardContent>
+              </Card>
+            </Link>
+          )}
 
            <Link href={`/dashboard/${venueId}/tables`}>
             <Card className="cursor-pointer hover:shadow-lg transition-shadow">
@@ -682,17 +683,19 @@ const VenueDashboardClient = React.memo(function VenueDashboardClient({
             </Card>
           </Link>
 
-          <Link href={`/dashboard/${venueId}/kds`}>
-            <Card className="hover:shadow-lg transition-shadow cursor-pointer">
-              <CardContent className="p-4 sm:p-6">
-                <div className="w-10 h-10 sm:w-12 sm:h-12 bg-red-100 rounded-lg flex items-center justify-center mb-4">
-                  <ChefHat className="h-5 w-5 sm:h-6 sm:w-6 text-red-600" />
-                </div>
-                <h3 className="text-base sm:text-lg font-semibold mb-2 text-foreground">Kitchen Display</h3>
-                <p className="text-gray-700 text-xs sm:text-sm font-medium">Real-time kitchen order management and display</p>
-              </CardContent>
-            </Card>
-          </Link>
+          {(userRole === 'owner' || userRole === 'manager' || userRole === 'kitchen') && (
+            <Link href={`/dashboard/${venueId}/kds`}>
+              <Card className="hover:shadow-lg transition-shadow cursor-pointer">
+                <CardContent className="p-4 sm:p-6">
+                  <div className="w-10 h-10 sm:w-12 sm:h-12 bg-red-100 rounded-lg flex items-center justify-center mb-4">
+                    <ChefHat className="h-5 w-5 sm:h-6 sm:w-6 text-red-600" />
+                  </div>
+                  <h3 className="text-base sm:text-lg font-semibold mb-2 text-foreground">Kitchen Display</h3>
+                  <p className="text-gray-700 text-xs sm:text-sm font-medium">Real-time kitchen order management and display</p>
+                </CardContent>
+              </Card>
+            </Link>
+          )}
 
           <Link href={`/dashboard/${venueId}/menu-management`}>
             <Card className="hover:shadow-lg transition-shadow cursor-pointer">
@@ -737,17 +740,19 @@ const VenueDashboardClient = React.memo(function VenueDashboardClient({
             </Link>
           )}
 
-          <Link href={`/dashboard/${venueId}/analytics`}>
-            <Card className="hover:shadow-lg transition-shadow cursor-pointer">
-              <CardContent className="p-4 sm:p-6">
-                <div className="w-10 h-10 sm:w-12 sm:h-12 bg-green-100 rounded-lg flex items-center justify-center mb-4">
-                  <BarChart className="h-5 w-5 sm:h-6 sm:w-6 text-green-600" />
-                </div>
-                <h3 className="text-base sm:text-lg font-semibold mb-2 text-foreground">Analytics</h3>
-                <p className="text-gray-700 text-xs sm:text-sm font-medium">Deep insights into your restaurant performance</p>
-              </CardContent>
-            </Card>
-          </Link>
+          {(userRole === 'owner' || userRole === 'manager') && (
+            <Link href={`/dashboard/${venueId}/analytics`}>
+              <Card className="hover:shadow-lg transition-shadow cursor-pointer">
+                <CardContent className="p-4 sm:p-6">
+                  <div className="w-10 h-10 sm:w-12 sm:h-12 bg-green-100 rounded-lg flex items-center justify-center mb-4">
+                    <BarChart className="h-5 w-5 sm:h-6 sm:w-6 text-green-600" />
+                  </div>
+                  <h3 className="text-base sm:text-lg font-semibold mb-2 text-foreground">Analytics</h3>
+                  <p className="text-gray-700 text-xs sm:text-sm font-medium">Deep insights into your restaurant performance</p>
+                </CardContent>
+              </Card>
+            </Link>
+          )}
 
           <Link href={`/dashboard/${venueId}/feedback`}>
             <Card className="hover:shadow-lg transition-shadow cursor-pointer">
@@ -761,17 +766,19 @@ const VenueDashboardClient = React.memo(function VenueDashboardClient({
             </Card>
           </Link>
 
-          <Link href={`/dashboard/${venueId}/staff`}>
-            <Card className="hover:shadow-lg transition-shadow cursor-pointer">
-              <CardContent className="p-4 sm:p-6">
-                <div className="w-10 h-10 sm:w-12 sm:h-12 bg-slate-100 rounded-lg flex items-center justify-center mb-4">
-                  <Users className="h-5 w-5 sm:h-6 sm:w-6 text-slate-700" />
-                </div>
-                <h3 className="text-base sm:text-lg font-semibold mb-2 text-foreground">Staff Management</h3>
-                <p className="text-gray-700 text-xs sm:text-sm font-medium">Manage your team, roles, and permissions</p>
-              </CardContent>
-            </Card>
-          </Link>
+          {(userRole === 'owner' || userRole === 'manager') && (
+            <Link href={`/dashboard/${venueId}/staff`}>
+              <Card className="hover:shadow-lg transition-shadow cursor-pointer">
+                <CardContent className="p-4 sm:p-6">
+                  <div className="w-10 h-10 sm:w-12 sm:h-12 bg-slate-100 rounded-lg flex items-center justify-center mb-4">
+                    <Users className="h-5 w-5 sm:h-6 sm:w-6 text-slate-700" />
+                  </div>
+                  <h3 className="text-base sm:text-lg font-semibold mb-2 text-foreground">Staff Management</h3>
+                  <p className="text-gray-700 text-xs sm:text-sm font-medium">Manage your team, roles, and permissions</p>
+                </CardContent>
+              </Card>
+            </Link>
+          )}
 
           <Link href={`/dashboard/${venueId}/inventory`}>
             <Card className="hover:shadow-lg transition-shadow cursor-pointer">
