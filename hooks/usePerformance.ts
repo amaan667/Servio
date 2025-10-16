@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useCallback } from 'react';
+import React, { useEffect, useCallback } from 'react';
 
 interface PerformanceMetrics {
   name: string;
@@ -138,7 +138,7 @@ export function withPerformanceTracking<P extends object>(
       }
     }, [measureComponentRender, componentName]);
 
-    return <WrappedComponent {...props} />;
+    return React.createElement(WrappedComponent, props);
   };
 
   PerformanceTrackedComponent.displayName = `withPerformanceTracking(${componentName})`;
