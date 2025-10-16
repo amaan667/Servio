@@ -65,7 +65,10 @@ export async function GET(request: NextRequest) {
 
     return NextResponse.json({ invitations });
   } catch (error) {
-    return NextResponse.json({ error: 'Internal server error' }, { status: 500 });
+    const errorMessage = error instanceof Error ? error.message : 'Internal server error';
+    return NextResponse.json({ 
+      error: errorMessage 
+    }, { status: 500 });
   }
 }
 
@@ -77,12 +80,32 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
 
-    const body = await request.json();
+    let body;
+    try {
+      body = await request.json();
+    } catch (parseError) {
+      return NextResponse.json({ 
+        error: 'Invalid request body' 
+      }, { status: 400 });
+    }
+
     const { venue_id, email, role, permissions = {} } = body;
 
-    if (!venue_id || !email || !role) {
+    if (!venue_id) {
       return NextResponse.json({ 
-        error: 'venue_id, email, and role are required' 
+        error: 'venue_id is required' 
+      }, { status: 400 });
+    }
+
+    if (!email) {
+      return NextResponse.json({ 
+        error: 'email is required' 
+      }, { status: 400 });
+    }
+
+    if (!role) {
+      return NextResponse.json({ 
+        error: 'role is required' 
       }, { status: 400 });
     }
 
@@ -274,6 +297,9 @@ export async function POST(request: NextRequest) {
       invitationLink: emailSent ? undefined : (await import('@/lib/email')).generateInvitationLink(invitation.token)
     });
   } catch (error) {
-    return NextResponse.json({ error: 'Internal server error' }, { status: 500 });
+    const errorMessage = error instanceof Error ? error.message : 'Internal server error';
+    return NextResponse.json({ 
+      error: errorMessage 
+    }, { status: 500 });
   }
 }
