@@ -42,7 +42,7 @@ export default async function KDSPage({ params }: { params: Promise<{ venueId: s
   if (!venue && isStaff) {
     const { data: staffVenue } = await supabase
       .from('venues')
-      .select('venue_id, venue_name')
+      .select('*')
       .eq('venue_id', venueId)
       .single();
     
