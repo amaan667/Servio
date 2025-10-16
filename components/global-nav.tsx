@@ -21,6 +21,11 @@ export default function GlobalNav() {
   const pathname = usePathname();
   const supabase = createClient();
 
+  // Hide GlobalNav on dashboard pages (we use RoleBasedNavigation instead)
+  const isOnDashboard = pathname?.startsWith('/dashboard');
+  if (isOnDashboard) {
+    return null;
+  }
 
   // Prefer NOT flashing the unauthenticated header. Treat the user as
   // potentially authenticated while loading and only show public actions
