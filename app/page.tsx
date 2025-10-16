@@ -560,10 +560,10 @@ export default function HomePage() {
                 Transform Your Business
               </Badge>
               <h1 className="!text-white text-[clamp(2rem,6vw,4.5rem)] leading-[1.05] tracking-tight font-extrabold" style={{textShadow: '0 0 40px rgba(255,255,255,0.5), 0 0 80px rgba(255,255,255,0.3), 0 8px 32px rgba(0,0,0,0.8), 0 16px 64px rgba(0,0,0,0.6), 0 4px 16px rgba(0,0,0,0.9), 0 2px 4px rgba(0,0,0,1)', filter: 'drop-shadow(0 0 20px rgba(255,255,255,0.4))'}}>
-                Complete POS & QR Ordering for Food Businesses
+                The All-in-One POS & QR Ordering System — No Hardware Required
               </h1>
               <p className="mt-5 !text-white text-[clamp(1rem,2.2vw,1.25rem)] leading-relaxed max-w-[45ch]" style={{textShadow: '0 2px 20px rgba(0,0,0,0.8), 0 4px 40px rgba(0,0,0,0.5), 0 0 30px rgba(255,255,255,0.2)'}}>
-                All-in-one platform for restaurants, cafes, food trucks, and market stalls. QR ordering, payments, kitchen display, and inventory — everything you need in one system.
+                Run your venue from any device. QR ordering, payments, kitchen display, and inventory — all connected in one easy-to-use system.
               </p>
               <div className="mt-8 flex items-center gap-4 flex-wrap">
                 {!authLoading && !user && (
