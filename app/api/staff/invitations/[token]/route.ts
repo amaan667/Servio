@@ -20,7 +20,6 @@ export async function GET(
       .rpc('get_invitation_by_token', { p_token: token });
 
     if (error) {
-      console.error('[INVITATION API] Error fetching invitation:', error);
       return NextResponse.json({ error: 'Failed to fetch invitation' }, { status: 500 });
     }
 
@@ -42,7 +41,6 @@ export async function GET(
 
     return NextResponse.json({ invitation });
   } catch (error) {
-    console.error('[INVITATION API] Unexpected error:', error);
     return NextResponse.json({ error: 'Internal server error' }, { status: 500 });
   }
 }
@@ -74,7 +72,6 @@ export async function POST(
       .rpc('get_invitation_by_token', { p_token: token });
 
     if (fetchError) {
-      console.error('[INVITATION API] Error fetching invitation:', fetchError);
       return NextResponse.json({ error: 'Failed to fetch invitation' }, { status: 500 });
     }
 
@@ -117,7 +114,6 @@ export async function POST(
           error: 'An account with this email already exists. Please sign in to your existing account and contact the person who invited you to resend the invitation.' 
         }, { status: 409 });
       } else {
-        console.error('[INVITATION API] Error creating user:', signUpError);
         return NextResponse.json({ 
           error: 'Failed to create account: ' + signUpError.message 
         }, { status: 500 });
@@ -134,7 +130,6 @@ export async function POST(
       });
 
     if (acceptError) {
-      console.error('[INVITATION API] Error accepting invitation:', acceptError);
       return NextResponse.json({ error: 'Failed to accept invitation' }, { status: 500 });
     }
 
@@ -154,7 +149,6 @@ export async function POST(
       .single();
 
     if (updateError) {
-      console.error('[INVITATION API] Error fetching updated invitation:', updateError);
     }
 
     return NextResponse.json({ 
@@ -163,7 +157,6 @@ export async function POST(
       invitation: updatedInvitation
     });
   } catch (error) {
-    console.error('[INVITATION API] Unexpected error:', error);
     return NextResponse.json({ error: 'Internal server error' }, { status: 500 });
   }
 }

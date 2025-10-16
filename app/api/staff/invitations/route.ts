@@ -60,13 +60,11 @@ export async function GET(request: NextRequest) {
       .order('created_at', { ascending: false });
 
     if (error) {
-      console.error('[INVITATION API] Error fetching invitations:', error);
       return NextResponse.json({ error: 'Failed to fetch invitations' }, { status: 500 });
     }
 
     return NextResponse.json({ invitations });
   } catch (error) {
-    console.error('[INVITATION API] Unexpected error:', error);
     return NextResponse.json({ error: 'Internal server error' }, { status: 500 });
   }
 }
@@ -96,12 +94,10 @@ export async function POST(request: NextRequest) {
     } catch (tableError: any) {
       if (tableError.code === 'PGRST116' || tableError.message?.includes('relation "staff_invitations" does not exist')) {
         // Table doesn't exist
-        console.log('[INVITATION API] staff_invitations table does not exist');
         return NextResponse.json({ 
           error: 'Staff invitation system not set up. Please run the database migration first.' 
         }, { status: 503 });
       } else {
-        console.error('[INVITATION API] Unexpected table error:', tableError);
         return NextResponse.json({ 
           error: 'Database error. Please try again.' 
         }, { status: 500 });
@@ -151,38 +147,6 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: 'Insufficient permissions' }, { status: 403 });
     }
 
-    // Check if there's already a pending invitation for this email/venue
-    const { data: existingInvitation, error: checkError } = await supabase
-      .from('staff_invitations')
-      .select('id, status')
-      .eq('venue_id', venue_id)
-      .eq('email', email.toLowerCase())
-      .eq('status', 'pending')
-      .single();
-
-    if (checkError && checkError.code !== 'PGRST116') { // PGRST116 = no rows returned
-      console.error('[INVITATION API] Error checking existing invitation:', checkError);
-      return NextResponse.json({ error: 'Failed to check existing invitations' }, { status: 500 });
-    }
-
-    // If there's an existing pending invitation, cancel it so we can create a new one
-    if (existingInvitation) {
-      const { error: cancelError } = await supabase
-        .from('staff_invitations')
-        .update({ 
-          status: 'cancelled',
-          updated_at: new Date().toISOString()
-        })
-        .eq('id', existingInvitation.id);
-
-      if (cancelError) {
-        console.error('[INVITATION API] Error cancelling existing invitation:', cancelError);
-        return NextResponse.json({ 
-          error: 'Failed to cancel existing invitation' 
-        }, { status: 500 });
-      }
-    }
-
     // Check if the email being invited already has access to this venue
     // First, check if there's a user with this email
     const { data: existingUserByEmail, error: emailCheckError } = await supabase
@@ -192,7 +156,6 @@ export async function POST(request: NextRequest) {
       .single();
 
     if (emailCheckError && emailCheckError.code !== 'PGRST116') {
-      console.error('[INVITATION API] Error checking user by email:', emailCheckError);
       // Continue anyway, user might not exist yet
     }
 
@@ -206,7 +169,6 @@ export async function POST(request: NextRequest) {
         .single();
 
       if (roleCheckError && roleCheckError.code !== 'PGRST116') {
-        console.error('[INVITATION API] Error checking existing user role:', roleCheckError);
         return NextResponse.json({ error: 'Failed to check existing users' }, { status: 500 });
       }
 
@@ -225,7 +187,6 @@ export async function POST(request: NextRequest) {
       .single();
 
     if (venueOwnerError) {
-      console.error('[INVITATION API] Error fetching venue owner:', venueOwnerError);
       return NextResponse.json({ error: 'Failed to check venue ownership' }, { status: 500 });
     }
 
@@ -238,7 +199,6 @@ export async function POST(request: NextRequest) {
         .single();
 
       if (ownerUserError) {
-        console.error('[INVITATION API] Error fetching owner email:', ownerUserError);
       } else if (ownerUser?.email?.toLowerCase() === email.toLowerCase()) {
         return NextResponse.json({ 
           error: 'This is the owner\'s email address. The owner already has full access to this venue.' 
@@ -254,7 +214,6 @@ export async function POST(request: NextRequest) {
       .single();
 
     if (venueError) {
-      console.error('[INVITATION API] Error fetching venue:', venueError);
       return NextResponse.json({ error: 'Venue not found' }, { status: 404 });
     }
 
@@ -278,7 +237,6 @@ export async function POST(request: NextRequest) {
       .single();
 
     if (createError) {
-      console.error('[INVITATION API] Error creating invitation:', createError);
       return NextResponse.json({ error: 'Failed to create invitation' }, { status: 500 });
     }
 
@@ -290,15 +248,6 @@ export async function POST(request: NextRequest) {
       const { sendInvitationEmail, generateInvitationLink } = await import('@/lib/email');
       
       const invitationLink = generateInvitationLink(invitation.token);
-      
-      console.log('[INVITATION API] Sending email to:', invitation.email);
-      console.log('[INVITATION API] Invitation details:', {
-        email: invitation.email,
-        venueName: venue.venue_name,
-        role: invitation.role,
-        invitedBy: user.user_metadata?.full_name || user.email,
-        invitationLink
-      });
       
       emailSent = await sendInvitationEmail({
         email: invitation.email,
@@ -312,13 +261,10 @@ export async function POST(request: NextRequest) {
       if (emailSent) {
         emailMessage = 'Invitation created successfully. Email has been sent.';
       } else {
-        emailMessage = 'Invitation created successfully. Email service not configured - check server logs for invitation link.';
-        console.warn('[INVITATION API] Email sending failed, but invitation was created');
-        console.log('[INVITATION API] Invitation link:', invitationLink);
+        emailMessage = 'Invitation created successfully. Email service not configured.';
       }
     } catch (emailError) {
-      console.error('[INVITATION API] Email sending error:', emailError);
-      emailMessage = 'Invitation created successfully. Email service error - check server logs for invitation link.';
+      emailMessage = 'Invitation created successfully. Email service error.';
     }
 
     return NextResponse.json({ 
@@ -328,7 +274,6 @@ export async function POST(request: NextRequest) {
       invitationLink: emailSent ? undefined : (await import('@/lib/email')).generateInvitationLink(invitation.token)
     });
   } catch (error) {
-    console.error('[INVITATION API] Unexpected error:', error);
     return NextResponse.json({ error: 'Internal server error' }, { status: 500 });
   }
 }
