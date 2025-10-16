@@ -29,9 +29,10 @@ import { ReceiveStockDialog } from './ReceiveStockDialog';
 
 interface InventoryOverviewProps {
   venueId: string;
+  canEdit?: boolean;
 }
 
-export function InventoryOverview({ venueId }: InventoryOverviewProps) {
+export function InventoryOverview({ venueId, canEdit = true }: InventoryOverviewProps) {
   const [ingredients, setIngredients] = useState<StockLevel[]>([]);
   const [loading, setLoading] = useState(true);
   const [searchQuery, setSearchQuery] = useState('');

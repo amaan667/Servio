@@ -26,6 +26,7 @@ import type { StockLedger } from '@/types/inventory';
 
 interface InventoryMovementsProps {
   venueId: string;
+  canEdit?: boolean;
 }
 
 interface LedgerWithIngredient extends StockLedger {
@@ -38,7 +39,7 @@ interface LedgerWithIngredient extends StockLedger {
   };
 }
 
-export function InventoryMovements({ venueId }: InventoryMovementsProps) {
+export function InventoryMovements({ venueId, canEdit = true }: InventoryMovementsProps) {
   const [movements, setMovements] = useState<LedgerWithIngredient[]>([]);
   const [loading, setLoading] = useState(true);
   const [reasonFilter, setReasonFilter] = useState<string>('all');
