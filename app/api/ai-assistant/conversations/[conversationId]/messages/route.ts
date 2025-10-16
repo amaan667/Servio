@@ -3,6 +3,7 @@
 
 import { NextRequest, NextResponse } from "next/server";
 import { createClient, createAdminClient } from "@/lib/supabase/server";
+import { generateConversationTitle } from "@/lib/ai/openai-service";
 import { z } from "zod";
 
 const CreateMessageSchema = z.object({
@@ -109,6 +110,34 @@ export async function POST(
     }
 
     console.log("[AI CHAT MESSAGES POST] Message created successfully:", message);
+
+    // Generate AI-powered conversation title if this is the first user message
+    if (messageData.role === "user") {
+      // Check if this is the first user message in the conversation
+      const { data: userMessages } = await adminSupabase
+        .from("ai_chat_messages")
+        .select("id")
+        .eq("conversation_id", conversationId)
+        .eq("role", "user");
+
+      // If this is the first user message, generate a proper title
+      if (userMessages && userMessages.length === 1) {
+        try {
+          const aiTitle = await generateConversationTitle(messageData.content);
+          await adminSupabase
+            .from("ai_chat_conversations")
+            .update({ 
+              title: aiTitle,
+              updated_at: new Date().toISOString() 
+            })
+            .eq("id", conversationId);
+          console.log("[AI CHAT] Updated conversation title to:", aiTitle);
+        } catch (error) {
+          console.error("[AI CHAT] Failed to generate title:", error);
+          // Continue without failing the message creation
+        }
+      }
+    }
 
     // Update conversation's updated_at timestamp using admin client
     await adminSupabase
