@@ -1,23 +1,23 @@
 -- Restore Cafe Nur venue that was accidentally deleted
 -- Run this directly in your Supabase SQL Editor
 
--- Step 1: Check if you have any venues left
+-- Step 1: Add is_primary column if it doesn't exist
+ALTER TABLE venues ADD COLUMN IF NOT EXISTS is_primary BOOLEAN DEFAULT false;
+
+-- Step 2: Check current state
 SELECT 'Current venues:' as info;
 SELECT venue_id, venue_name, created_at FROM venues ORDER BY created_at;
 
--- Step 2: Get your user ID (replace with your actual user ID)
--- You can find this in your Supabase auth.users table
-SELECT 'Your user ID:' as info;
-SELECT id, email FROM auth.users WHERE email = 'amaantanveer667@gmail.com';
+-- Step 3: Get your user and organization info
+SELECT 'Your user info:' as info;
+SELECT id as user_id, email FROM auth.users WHERE email = 'amaantanveer667@gmail.com';
 
--- Step 3: Get your organization ID
-SELECT 'Your organization:' as info;
-SELECT id, name, owner_id FROM organizations WHERE owner_id = (
+SELECT 'Your organization info:' as info;
+SELECT id as org_id, name, owner_id FROM organizations WHERE owner_id = (
   SELECT id FROM auth.users WHERE email = 'amaantanveer667@gmail.com'
 );
 
--- Step 4: Restore Cafe Nur venue
--- Replace 'YOUR_USER_ID' and 'YOUR_ORG_ID' with the actual IDs from steps 2 and 3
+-- Step 4: Restore Cafe Nur venue with all the correct IDs
 INSERT INTO venues (
   venue_id,
   venue_name,
@@ -32,8 +32,8 @@ INSERT INTO venues (
 ) VALUES (
   'venue-1e02af4d',  -- Your original venue ID
   'Cafe Nur',
-  'Your original address',  -- Update with actual address
-  'Your phone number',      -- Update with actual phone
+  '523 Kings Road, Stretford, Manchester',  -- Your address
+  '07527443911',  -- Your phone number
   'Your main cafe location',
   (SELECT id FROM auth.users WHERE email = 'amaantanveer667@gmail.com'),
   (SELECT id FROM organizations WHERE owner_id = (SELECT id FROM auth.users WHERE email = 'amaantanveer667@gmail.com')),
@@ -42,6 +42,13 @@ INSERT INTO venues (
   NOW()
 );
 
--- Step 5: Verify the venue was restored
+-- Step 5: Create index for better performance
+CREATE INDEX IF NOT EXISTS idx_venues_is_primary ON venues(is_primary);
+
+-- Step 6: Verify the venue was restored
 SELECT 'Restored venue:' as info;
 SELECT venue_id, venue_name, is_primary, created_at FROM venues WHERE venue_name = 'Cafe Nur';
+
+-- Step 7: Show all venues to confirm
+SELECT 'All venues after restoration:' as info;
+SELECT venue_id, venue_name, is_primary, created_at FROM venues ORDER BY is_primary DESC, created_at ASC;
