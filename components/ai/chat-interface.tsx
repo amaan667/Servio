@@ -139,7 +139,7 @@ export function ChatInterface({ venueId, isOpen, onClose, initialPrompt }: ChatI
           const errorJson = JSON.parse(errorData);
           if (errorJson.migrationNeeded) {
             console.error("[AI CHAT] Migration needed:", errorJson.instructions);
-            setError(`Database migration required: ${errorJson.instructions}`);
+            setError(`Database migration required. Please run the migration script or contact support.`);
           } else {
             setError(errorJson.error || "Failed to load conversations");
           }
@@ -149,6 +149,7 @@ export function ChatInterface({ venueId, isOpen, onClose, initialPrompt }: ChatI
       }
     } catch (error) {
       console.error("[AI CHAT] Failed to load conversations:", error);
+      setError("Failed to load conversations");
     }
   };
 
