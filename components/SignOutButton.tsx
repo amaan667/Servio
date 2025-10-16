@@ -29,7 +29,7 @@ export function SignOutButton() {
         
         // Clear client-side storage and redirect
         try {
-          const { clearAuthStorage } = await import('@/lib/sb-client');
+          const { clearAuthStorage } = await import('@/lib/supabase/client');
           clearAuthStorage();
         } catch (error) {
         }

@@ -74,7 +74,7 @@ export default function ClientNavBar() {
       
       // Clear client storage to avoid auto sign-in or stale sessions
       try {
-        const { clearAuthStorage } = await import('@/lib/sb-client');
+        const { clearAuthStorage } = await import('@/lib/supabase/client');
         clearAuthStorage();
       } catch (error) {
       }

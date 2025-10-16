@@ -347,7 +347,7 @@ export default function VenueSettingsClient({ user, venue, venues, organization 
       }
       
       try {
-        const { clearAuthStorage } = await import('@/lib/sb-client');
+        const { clearAuthStorage } = await import('@/lib/supabase/client');
         clearAuthStorage();
       } catch (error) {
         console.error('Clear storage error:', error);
