@@ -260,7 +260,16 @@ export async function POST(request: NextRequest) {
       .single();
 
     if (createError) {
-      return NextResponse.json({ error: 'Failed to create invitation' }, { status: 500 });
+      // Check if it's a unique constraint violation
+      if (createError.code === '23505' || createError.message?.includes('duplicate key')) {
+        return NextResponse.json({ 
+          error: 'A pending invitation already exists for this email address' 
+        }, { status: 409 });
+      }
+      return NextResponse.json({ 
+        error: 'Failed to create invitation',
+        details: createError.message 
+      }, { status: 500 });
     }
 
     // Send email invitation
