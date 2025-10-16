@@ -1,6 +1,7 @@
 'use client';
 
 import { useState, useEffect, memo, useCallback } from 'react';
+import { createClient } from '@/lib/supabase/client';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
@@ -87,6 +88,7 @@ export default function InvitationBasedStaffManagement({
   venueId, 
   venueName 
 }: InvitationBasedStaffManagementProps) {
+  const supabase = createClient();
   const [staff, setStaff] = useState<StaffMember[]>([]);
   const [invitations, setInvitations] = useState<Invitation[]>([]);
   const [allShifts, setAllShifts] = useState<LegacyShift[]>([]);
@@ -154,6 +156,15 @@ export default function InvitationBasedStaffManagement({
   const handleSendInvitation = async () => {
     if (!inviteEmail.trim()) {
       setError('Email is required');
+      return;
+    }
+
+    // Get current user's email
+    const { data: { user } } = await supabase.auth.getUser();
+    
+    // Prevent inviting yourself
+    if (user?.email?.toLowerCase() === inviteEmail.trim().toLowerCase()) {
+      setError('You cannot invite yourself. You already have access to this venue.');
       return;
     }
 

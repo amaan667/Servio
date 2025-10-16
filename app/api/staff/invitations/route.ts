@@ -109,6 +109,13 @@ export async function POST(request: NextRequest) {
       }, { status: 400 });
     }
 
+    // Prevent inviting yourself
+    if (user.email?.toLowerCase() === email.toLowerCase()) {
+      return NextResponse.json({ 
+        error: 'You cannot invite yourself. You already have access to this venue.' 
+      }, { status: 400 });
+    }
+
     const supabase = await createClient();
 
     // Check if staff_invitations table exists
