@@ -36,6 +36,7 @@ interface Venue {
   address?: string;
   phone?: string;
   description?: string;
+  is_primary?: boolean;
   created_at: string;
 }
 
@@ -123,7 +124,8 @@ export default function VenueSwitcherPopup({
           phone: formData.phone.trim() || null,
           description: formData.description.trim() || null,
           organization_id: currentVenue?.organization_id,
-          owner_user_id: user.id
+          owner_user_id: user.id,
+          is_primary: false
         })
         .select()
         .single();
@@ -287,6 +289,9 @@ export default function VenueSwitcherPopup({
                 <div className="flex-1">
                   <div className="flex items-center gap-2">
                     <h3 className="font-semibold text-blue-900">{currentVenue.name}</h3>
+                    {currentVenue.is_primary && (
+                      <Badge variant="default" className="text-xs">Primary</Badge>
+                    )}
                     <Badge variant="secondary" className="text-xs">Current</Badge>
                   </div>
                   {currentVenue.address && (
@@ -325,6 +330,9 @@ export default function VenueSwitcherPopup({
                   <div className="flex-1">
                     <div className="flex items-center gap-2 mb-1">
                       <h4 className="font-semibold">{venue.name}</h4>
+                      {venue.is_primary && (
+                        <Badge variant="default" className="text-xs">Primary</Badge>
+                      )}
                       {venue.venue_id === currentVenueId && (
                         <Badge variant="secondary" className="text-xs">Current</Badge>
                       )}
@@ -356,16 +364,18 @@ export default function VenueSwitcherPopup({
                     >
                       <Edit className="h-3 w-3" />
                     </Button>
-                    <Button
-                      variant="ghost"
-                      size="sm"
-                      onClick={(e) => {
-                        e.stopPropagation();
-                        handleDeleteVenue(venue.venue_id, venue.name);
-                      }}
-                    >
-                      <Trash2 className="h-3 w-3" />
-                    </Button>
+                    {!venue.is_primary && (
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          handleDeleteVenue(venue.venue_id, venue.name);
+                        }}
+                      >
+                        <Trash2 className="h-3 w-3" />
+                      </Button>
+                    )}
                   </div>
                 </div>
               </div>
