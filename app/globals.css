@@ -550,103 +550,74 @@ p, span, div {
 
 /* Mobile-specific improvements */
 @media (max-width: 768px) {
-  /* Enhanced text visibility on mobile - ensure proper contrast */
+  /* Enhanced text visibility on mobile - only target specific elements */
   .text-muted-foreground {
-    color: #1f2937 !important; /* Very dark gray for maximum visibility */
+    color: rgb(55, 65, 81) !important; /* gray-700 for visibility */
   }
   
-  .text-white {
-    color: #374151 !important; /* Darker gray for better visibility */
+  /* DO NOT override .text-white - let it stay white! */
+  
+  /* Enhanced card text visibility - specific selectors */
+  .card .text-muted {
+    color: rgb(75, 85, 99) !important; /* gray-600 */
   }
   
-  .text-white {
-    color: #4b5563 !important; /* Darker gray for better visibility */
+  /* Target only elements without explicit color classes */
+  .card p:not([class*="text-white"]):not([class*="text-"]),
+  .card span:not([class*="text-white"]):not([class*="text-"]) {
+    color: rgb(31, 41, 55) !important; /* gray-800 */
   }
   
-  .text-white {
-    color: #6b7280 !important; /* Darker gray for better visibility */
-  }
-  
-  /* Enhanced mobile text contrast for card descriptions */
-  .text-white {
-    color: #1f2937 !important; /* Very dark for maximum mobile visibility */
-  }
-  
-  .text-white {
-    color: #374151 !important; /* Darker for better mobile visibility */
-  }
-  
-  /* Dark mode text fixes for better readability */
+  /* Dark mode fixes */
   .dark .text-muted-foreground {
-    color: #d1d5db !important; /* Light gray for dark mode */
+    color: rgb(209, 213, 219) !important; /* gray-300 */
   }
   
-  .dark .text-white {
-    color: #d1d5db !important; /* Light gray for dark mode */
+  .dark .card .text-muted {
+    color: rgb(156, 163, 175) !important; /* gray-400 */
   }
   
-  .dark .text-white {
-    color: #9ca3af !important; /* Medium gray for dark mode */
-  }
-  
-  .dark .text-white {
-    color: #d1d5db !important; /* Light gray for dark mode */
-  }
-  
-  .dark .text-white {
-    color: #f3f4f6 !important; /* Very light gray for dark mode */
-  }
-  
-  .dark .text-white {
-    color: #f9fafb !important; /* Almost white for dark mode */
-  }
-  
-  /* Enhanced card text visibility */
-  .card .text-muted-foreground {
-    color: #374151 !important;
-  }
-  
-  /* Dashboard card text visibility fixes */
-  .card p, .card span, .card div {
-    color: #374151 !important;
-  }
-  
-  .dark .card p, .dark .card span, .dark .card div {
-    color: #d1d5db !important;
-  }
-  
-  /* Dashboard card labels and descriptions */
-  .card .text-white {
-    color: #374151 !important;
-  }
-  
-  .dark .card .text-white {
-    color: #d1d5db !important;
+  .dark .card p:not([class*="text-white"]):not([class*="text-"]),
+  .dark .card span:not([class*="text-white"]):not([class*="text-"]) {
+    color: rgb(229, 231, 235) !important; /* gray-200 */
   }
   
   /* Enhanced label visibility */
   label {
-    color: #1f2937 !important; /* Very dark for maximum visibility */
-    font-weight: 600 !important;
-    font-size: 14px !important;
+    color: rgb(31, 41, 55) !important; /* gray-800 */
+    font-weight: 500;
+  }
+  
+  .dark label {
+    color: rgb(249, 250, 251) !important; /* gray-50 */
   }
   
   /* Enhanced input text visibility */
   input, textarea, select {
-    color: #000000 !important; /* Black text for maximum visibility */
-    font-weight: 500 !important;
+    color: rgb(17, 24, 39) !important; /* gray-900 for maximum visibility */
+    font-weight: 400;
+  }
+  
+  .dark input, .dark textarea, .dark select {
+    color: rgb(243, 244, 246) !important; /* gray-100 */
   }
   
   /* Enhanced input placeholder visibility */
   input::placeholder, textarea::placeholder {
-    color: #6b7280 !important; /* Darker placeholder text */
-    font-weight: 400 !important;
+    color: rgb(107, 114, 128) !important; /* gray-500 */
+    font-weight: 400;
   }
   
-  /* Enhanced button text visibility */
+  .dark input::placeholder, .dark textarea::placeholder {
+    color: rgb(156, 163, 175) !important; /* gray-400 */
+  }
+  
+  /* Enhanced button visibility - improved touch targets */
   button {
-    color: #1f2937 !important;
-    font-weight: 600 !important;
+    min-height: 44px; /* Apple's recommended minimum touch target */
+    min-width: 44px;
+    padding: 10px 16px;
+    font-size: 14px;
   }
   
   /* Enhanced navigation text visibility */

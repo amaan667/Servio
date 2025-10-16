@@ -21,8 +21,13 @@ const nextConfig = {
     },
   },
   compiler: {
-    removeConsole: process.env.NODE_ENV === 'production',
+    // Remove console.logs in production but keep errors and warnings
+    removeConsole: process.env.NODE_ENV === 'production' ? {
+      exclude: ['error', 'warn'],
+    } : false,
   },
+  // Production optimizations
+  poweredByHeader: false,
   images: {
     unoptimized: true,
     formats: ['image/webp', 'image/avif'],

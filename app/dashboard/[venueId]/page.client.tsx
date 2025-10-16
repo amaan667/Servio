@@ -55,7 +55,7 @@ const VenueDashboardClient = React.memo(function VenueDashboardClient({
   initialStats?: DashboardStats;
 }) {
   const [venue, setVenue] = useState<any>(initialVenue);
-  const [loading, setLoading] = useState(false); // Always start with loading false for instant loading
+  const [loading, setLoading] = useState(!initialVenue); // Only show loading if no initial data
   const [counts, setCounts] = useState<DashboardCounts>(initialCounts || {
     live_count: 0,
     earlier_today_count: 0,
@@ -314,28 +314,33 @@ const VenueDashboardClient = React.memo(function VenueDashboardClient({
     window.addEventListener('orderCreated', handleOrderCreated as EventListener);
 
     return () => {
-      console.log('[DASHBOARD] Cleaning up realtime subscriptions');
       supabase.removeChannel(channel);
       window.removeEventListener('orderCreated', handleOrderCreated as EventListener);
     };
-  }, [venueId, venue?.venue_id, todayWindow?.startUtcISO, venueTz]); // Use specific properties instead of objects to prevent unnecessary re-runs
+  }, [venueId, venueTz]); // Simplified dependencies - only what's truly needed
 
-  // Fallback polling mechanism (every 30 seconds) if realtime is not working
+  // Fallback polling - only if realtime subscription fails
   useEffect(() => {
-    if (!venue || !todayWindow) {
+    if (!venue?.venue_id || !todayWindow?.startUtcISO) {
       return;
     }
 
-    console.log('[DASHBOARD] Setting up fallback polling mechanism');
-    const pollInterval = setInterval(async () => {
-      console.log('[DASHBOARD] Polling for updates (fallback)');
-      await refreshCounts();
-    }, 30000); // Poll every 30 seconds
+    // Check realtime status after 5 seconds, only enable polling if it fails
+    const realtimeCheck = setTimeout(() => {
+      // If we haven't received any realtime updates, enable polling
+      const pollInterval = setInterval(async () => {
+        await refreshCounts();
+      }, 60000); // Poll every 60 seconds (reduced from 30)
+
+      return () => {
+        clearInterval(pollInterval);
+      };
+    }, 5000);
 
     return () => {
-      clearInterval(pollInterval);
+      clearTimeout(realtimeCheck);
     };
-  }, [venue, todayWindow]);
+  }, [venue?.venue_id, todayWindow?.startUtcISO]); // Use specific properties only
 
   // Auto-refresh when returning from checkout success
   useEffect(() => {
@@ -502,8 +507,8 @@ const VenueDashboardClient = React.memo(function VenueDashboardClient({
   }, [initialStats, statsLoaded]);
 
 
-  // Show skeleton while loading or if no venue data
-  if (loading || !venue) {
+  // Show skeleton only while loading AND no initial data
+  if (loading && !venue && !initialVenue) {
     return <DashboardSkeleton />;
   }
 

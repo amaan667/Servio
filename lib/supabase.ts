@@ -94,7 +94,7 @@ export async function signUpUser(
   venueType: string,
 ) {
   try {
-    logger.log("Attempting sign up", { email, fullName });
+    logger.info("Attempting sign up", { email, fullName });
 
     // Use normalized site origin
     const emailRedirectTo = `${(process.env.NEXT_PUBLIC_SITE_URL || 'https://servio-production.up.railway.app').replace(/[;\s]+$/g, '').replace(/\/+$/g, '')}/dashboard`;
@@ -160,7 +160,7 @@ export async function signUpUser(
       venueData = newVenue;
     }
 
-    logger.log("User signed up successfully", { userId, venueId });
+    logger.info("User signed up successfully", { userId, venueId });
     return {
       success: true,
       message: "Account created successfully! Welcome to Servio.",
@@ -177,7 +177,7 @@ export async function signUpUser(
 
 export async function signInUser(email: string, password: string) {
   try {
-    logger.log("Attempting sign in", { email });
+    logger.info("Attempting sign in", { email });
     const { data, error } = await supabase.auth.signInWithPassword({
       email,
       password,
@@ -190,7 +190,7 @@ export async function signInUser(email: string, password: string) {
       };
     }
     
-    logger.log("Sign in successful", { userId: data.user.id });
+    logger.info("Sign in successful", { userId: data.user.id });
     
     // Ensure user is properly authenticated
     const { data: userData } = await supabase.auth.getUser();
@@ -269,7 +269,7 @@ export async function signOutUser() {
     });
     
     if (response.ok) {
-      logger.log("User signed out");
+      logger.info("User signed out");
     } else {
       logger.error("Server signout failed", { status: response.status });
     }
@@ -298,7 +298,7 @@ export async function createMenuItem(
       return { success: false, message: "Failed to create menu item" };
     }
 
-    logger.log("Menu item created", { itemId: data.id, venueId });
+    logger.info("Menu item created", { itemId: data.id, venueId });
     return { success: true, data };
   } catch (error) {
     logger.error("Create menu item error", { error });
@@ -323,7 +323,7 @@ export async function updateMenuItem(
       return { success: false, message: "Failed to update menu item" };
     }
 
-    logger.log("Menu item updated", { itemId });
+    logger.info("Menu item updated", { itemId });
     return { success: true, data };
   } catch (error) {
     logger.error("Update menu item error", { error });
@@ -343,7 +343,7 @@ export async function deleteMenuItem(itemId: string) {
       return { success: false, message: "Failed to delete menu item" };
     }
 
-    logger.log("Menu item deleted", { itemId });
+    logger.info("Menu item deleted", { itemId });
     return { success: true };
   } catch (error) {
     logger.error("Delete menu item error", { error });

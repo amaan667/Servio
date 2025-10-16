@@ -242,7 +242,7 @@ export function TableManagementClientNew({ venueId }: TableManagementClientNewPr
     
     // Subscribe to reservation changes for instant updates
     const reservationSubscription = supabase
-      .channel('reservations-realtime')
+      .channel(`reservations-${venueId}`)
       .on(
         'postgres_changes',
         {
@@ -251,7 +251,7 @@ export function TableManagementClientNew({ venueId }: TableManagementClientNewPr
           table: 'reservations',
           filter: `venue_id=eq.${venueId}`,
         },
-        (payload: any) => {
+        () => {
           // Invalidate and refetch reservations data
           refetchTables();
         }
@@ -259,9 +259,9 @@ export function TableManagementClientNew({ venueId }: TableManagementClientNewPr
       .subscribe();
 
     return () => {
-      reservationSubscription.unsubscribe();
+      supabase.removeChannel(reservationSubscription);
     };
-  }, [venueId, refetchTables]);
+  }, [venueId]); // Removed refetchTables from dependencies to prevent recreation
 
   // Auto-complete expired reservations every 5 minutes
   // TEMPORARILY DISABLED due to resource exhaustion issues

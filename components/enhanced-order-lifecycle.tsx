@@ -193,7 +193,7 @@ export function EnhancedOrderLifecycle({ venueId, order, onUpdate }: OrderLifecy
       // Auto-advance to next logical status
       const nextStatus = getNextLogicalStatus(order.order_status);
       if (nextStatus) {
-        logger.log('Auto-transitioning order status', { 
+        logger.info('Auto-transitioning order status', { 
           orderId: order.id, 
           from: order.order_status, 
           to: nextStatus 
@@ -205,7 +205,7 @@ export function EnhancedOrderLifecycle({ venueId, order, onUpdate }: OrderLifecy
       const timer = setTimeout(() => {
         const nextStatus = getNextLogicalStatus(order.order_status);
         if (nextStatus) {
-          logger.log('Auto-transitioning order status', { 
+          logger.info('Auto-transitioning order status', { 
             orderId: order.id, 
             from: order.order_status, 
             to: nextStatus 
@@ -239,7 +239,7 @@ export function EnhancedOrderLifecycle({ venueId, order, onUpdate }: OrderLifecy
     if (updating) return;
 
     setUpdating(true);
-    logger.log('Updating order status', { 
+    logger.info('Updating order status', { 
       orderId: order.id, 
       from: order.order_status, 
       to: newStatus 
@@ -261,7 +261,7 @@ export function EnhancedOrderLifecycle({ venueId, order, onUpdate }: OrderLifecy
         throw new Error(error.message);
       }
 
-      logger.log('Order status updated successfully', { 
+      logger.info('Order status updated successfully', { 
         orderId: order.id, 
         newStatus 
       });
@@ -471,7 +471,7 @@ export function EnhancedOrderLifecycle({ venueId, order, onUpdate }: OrderLifecy
                     const newTime = new Date();
                     newTime.setMinutes(newTime.getMinutes() - 5);
                     // This would need a custom API endpoint to update the updated_at timestamp
-                    logger.log('Requesting time adjustment', { orderId: order.id, adjustment: '-5 minutes' });
+                    logger.info('Requesting time adjustment', { orderId: order.id, adjustment: '-5 minutes' });
                   }}
                   disabled={updating}
                 >
@@ -487,7 +487,7 @@ export function EnhancedOrderLifecycle({ venueId, order, onUpdate }: OrderLifecy
                     const newTime = new Date();
                     newTime.setMinutes(newTime.getMinutes() + 5);
                     // This would need a custom API endpoint to update the updated_at timestamp
-                    logger.log('Requesting time adjustment', { orderId: order.id, adjustment: '+5 minutes' });
+                    logger.info('Requesting time adjustment', { orderId: order.id, adjustment: '+5 minutes' });
                   }}
                   disabled={updating}
                 >

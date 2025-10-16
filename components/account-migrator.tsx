@@ -53,7 +53,7 @@ export function AccountMigrator() {
 
   useEffect(() => {
     loadLocalAccounts();
-    logger.log("ACCOUNT_MIGRATOR: Component initialized", {
+    logger.debug("ACCOUNT_MIGRATOR: Component initialized", {
       hasSupabase: hasSupabaseConfig,
       timestamp: new Date().toISOString(),
     });
@@ -64,7 +64,7 @@ export function AccountMigrator() {
       const stored = localStorage.getItem("servio-accounts");
       const accounts = stored ? JSON.parse(stored) : [];
       setLocalAccounts(accounts);
-      logger.log("ACCOUNT_MIGRATOR: Local accounts loaded", {
+      logger.debug("ACCOUNT_MIGRATOR: Local accounts loaded", {
         count: accounts.length,
       });
     } catch (error) {
@@ -80,7 +80,7 @@ export function AccountMigrator() {
     const timestamp = new Date().toLocaleTimeString();
     const logEntry = `[${timestamp}] ${message}`;
     setLogs((prev: string[]) => [...prev, logEntry]);
-    logger.log("MIGRATION_LOG: " + message);
+    logger.info("MIGRATION_LOG: " + message);
   };
 
   const migrateAccount = async (account: LocalAccount): Promise<boolean> => {
@@ -174,7 +174,7 @@ export function AccountMigrator() {
       setLocalAccounts([]);
       setMigrationStatus({});
       addLog("🗑️ Local accounts cleared");
-      logger.log("ACCOUNT_MIGRATOR: Local accounts cleared");
+      logger.info("ACCOUNT_MIGRATOR: Local accounts cleared");
     }
   };
 
