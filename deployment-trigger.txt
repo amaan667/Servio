@@ -1,2 +1,2 @@
 RAILWAY_DEPLOYMENT_TRIGGER=Sat Oct 11 18:45:00 BST 2025 - AI Assistant Schema Fix
-Deployment trigger - Mon Oct 13 18:01:18 BST 2025
+Deployment trigger - Thu Oct 16 18:30:00 BST 2025 - Fixed TypeScript errors and invitation flow
