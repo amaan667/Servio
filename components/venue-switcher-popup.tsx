@@ -32,7 +32,7 @@ import { useRouter } from "next/navigation";
 
 interface Venue {
   venue_id: string;
-  name: string;
+  venue_name: string;
   address?: string;
   phone?: string;
   description?: string;
@@ -119,7 +119,7 @@ export default function VenueSwitcherPopup({
       const { data, error } = await supabase
         .from('venues')
         .insert({
-          name: formData.name.trim(),
+          venue_name: formData.name.trim(),
           address: formData.address.trim() || null,
           phone: formData.phone.trim() || null,
           description: formData.description.trim() || null,
@@ -176,7 +176,7 @@ export default function VenueSwitcherPopup({
       const { error } = await supabase
         .from('venues')
         .update({
-          name: formData.name.trim(),
+          venue_name: formData.name.trim(),
           address: formData.address.trim() || null,
           phone: formData.phone.trim() || null,
           description: formData.description.trim() || null,
@@ -243,7 +243,7 @@ export default function VenueSwitcherPopup({
   const startEdit = (venue: Venue) => {
     setEditingVenue(venue);
     setFormData({
-      name: venue.name,
+      name: venue.venue_name,
       address: venue.address || "",
       phone: venue.phone || "",
       description: venue.description || ""
@@ -264,7 +264,7 @@ export default function VenueSwitcherPopup({
       <DialogTrigger asChild>
         <Button variant="outline" className="flex items-center gap-2">
           <Building2 className="h-4 w-4" />
-          {currentVenue?.name || "Select Venue"}
+          {currentVenue?.venue_name || "Select Venue"}
         </Button>
       </DialogTrigger>
       <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
@@ -288,7 +288,7 @@ export default function VenueSwitcherPopup({
                 </div>
                 <div className="flex-1">
                   <div className="flex items-center gap-2">
-                    <h3 className="font-semibold text-blue-900">{currentVenue.name}</h3>
+                    <h3 className="font-semibold text-blue-900">{currentVenue.venue_name}</h3>
                     {currentVenue.is_primary && (
                       <Badge variant="default" className="text-xs">Primary</Badge>
                     )}
@@ -329,7 +329,7 @@ export default function VenueSwitcherPopup({
                   </div>
                   <div className="flex-1">
                     <div className="flex items-center gap-2 mb-1">
-                      <h4 className="font-semibold">{venue.name}</h4>
+                      <h4 className="font-semibold">{venue.venue_name}</h4>
                       {venue.is_primary && (
                         <Badge variant="default" className="text-xs">Primary</Badge>
                       )}

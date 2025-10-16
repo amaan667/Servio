@@ -18,6 +18,6 @@ WHERE venue_id = (
 CREATE INDEX IF NOT EXISTS idx_venues_is_primary ON venues(is_primary);
 
 -- Step 4: Verify the changes
-SELECT venue_id, name, is_primary, created_at 
+SELECT venue_id, venue_name, is_primary, created_at 
 FROM venues 
 ORDER BY is_primary DESC, created_at ASC;
