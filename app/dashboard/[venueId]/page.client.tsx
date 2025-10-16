@@ -531,7 +531,7 @@ const VenueDashboardClient = React.memo(function VenueDashboardClient({
               <h2 className="text-xl sm:text-2xl font-bold text-foreground mb-2">
                 Welcome back, {userName}!
               </h2>
-              <p className="text-gray-700 text-sm sm:text-base font-medium">Here's what's happening at {venue?.name || "your venue"} today</p>
+              <p className="text-gray-700 text-sm sm:text-base font-medium">Here's what's happening at {venue?.venue_name || "your venue"} today</p>
             </div>
             
             <div className="flex items-center gap-3">
