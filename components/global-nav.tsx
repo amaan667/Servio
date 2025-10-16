@@ -15,17 +15,12 @@ import { signOutUser } from "@/lib/supabase";
 export default function GlobalNav() {
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [primaryVenueId, setPrimaryVenueId] = useState<string | null>(null);
+  const [userRole, setUserRole] = useState<string>('owner');
   // Use our central auth context instead of local state
   const { session, loading, signOut } = useAuth();
   const router = useRouter();
   const pathname = usePathname();
   const supabase = createClient();
-
-  // Hide GlobalNav on dashboard pages (we use RoleBasedNavigation instead)
-  const isOnDashboard = pathname?.startsWith('/dashboard');
-  if (isOnDashboard) {
-    return null;
-  }
 
   // Prefer NOT flashing the unauthenticated header. Treat the user as
   // potentially authenticated while loading and only show public actions
@@ -75,30 +70,46 @@ export default function GlobalNav() {
   // Extract venueId from pathname for venue-specific navigation
   const venueId = pathname?.match(/\/dashboard\/([^/]+)/)?.[1];
 
-  // Fetch primary venue when user is signed in
+  // Fetch primary venue and user role when user is signed in
   useEffect(() => {
-    const fetchPrimaryVenue = async () => {
+    const fetchUserData = async () => {
       if (isAuthenticated && session?.user?.id) {
         try {
-          const { data, error } = await supabase
+          // Fetch primary venue
+          const { data: venueData, error: venueError } = await supabase
             .from('venues')
             .select('venue_id')
             .eq('owner_user_id', session.user.id)
             .order('created_at', { ascending: true })
             .limit(1);
 
-          if (!error && data?.length) {
-            setPrimaryVenueId(data[0].venue_id);
+          if (!venueError && venueData?.length) {
+            setPrimaryVenueId(venueData[0].venue_id);
+            setUserRole('owner');
+          } else {
+            // Check if user is staff
+            const { data: staffData } = await supabase
+              .from('user_venue_roles')
+              .select('role, venue_id')
+              .eq('user_id', session.user.id)
+              .limit(1)
+              .single();
+            
+            if (staffData) {
+              setPrimaryVenueId(staffData.venue_id);
+              setUserRole(staffData.role);
+            }
           }
         } catch (err) {
-          console.error('Error fetching primary venue:', err);
+          console.error('Error fetching user data:', err);
         }
       } else {
         setPrimaryVenueId(null);
+        setUserRole('owner');
       }
     };
 
-    fetchPrimaryVenue();
+    fetchUserData();
   }, [isAuthenticated, session?.user?.id]);
 
   const handleSignOut = async () => {
@@ -152,7 +163,7 @@ export default function GlobalNav() {
               // Signed in navigation - modern SaaS style
               <div className="flex items-center space-x-2">
                 {isDashboardRoot ? (
-                  // On dashboard root page: Home, Settings, Sign Out
+                  // On dashboard root page: Home, Settings (owners only), Sign Out
                   <>
                     <Link
                       href="/"
@@ -161,16 +172,18 @@ export default function GlobalNav() {
                       <Home className="mr-3 h-5 w-5" />
                       Home
                     </Link>
-                    <Link
-                      href={(venueId || primaryVenueId) ? `/dashboard/${venueId || primaryVenueId}/settings` : '/'}
-                      className="flex items-center px-4 py-3 text-base font-medium text-foreground hover:text-primary hover:bg-accent rounded-md transition-all duration-200"
-                    >
-                      <Settings className="mr-3 h-5 w-5" />
-                      Settings
-                    </Link>
+                    {userRole === 'owner' && (
+                      <Link
+                        href={(venueId || primaryVenueId) ? `/dashboard/${venueId || primaryVenueId}/settings` : '/'}
+                        className="flex items-center px-4 py-3 text-base font-medium text-foreground hover:text-primary hover:bg-accent rounded-md transition-all duration-200"
+                      >
+                        <Settings className="mr-3 h-5 w-5" />
+                        Settings
+                      </Link>
+                    )}
                   </>
                 ) : (isOnFeaturePage || isOnQRPage) ? (
-                  // On feature pages (Live Orders, Menu, etc.) and QR pages: Dashboard, Settings, Sign Out
+                  // On feature pages (Live Orders, Menu, etc.) and QR pages: Dashboard, Settings (owners only), Sign Out
                   <>
                     <Link
                       href={(venueId || primaryVenueId) ? `/dashboard/${venueId || primaryVenueId}` : '/'}
@@ -179,13 +192,15 @@ export default function GlobalNav() {
                       <LayoutDashboard className="mr-3 h-5 w-5" />
                       Dashboard
                     </Link>
-                    <Link
-                      href={(venueId || primaryVenueId) ? `/dashboard/${venueId || primaryVenueId}/settings` : '/'}
-                      className="flex items-center px-4 py-3 text-base font-medium text-foreground hover:text-primary hover:bg-accent rounded-md transition-all duration-200"
-                    >
-                      <Settings className="mr-3 h-5 w-5" />
-                      Settings
-                    </Link>
+                    {userRole === 'owner' && (
+                      <Link
+                        href={(venueId || primaryVenueId) ? `/dashboard/${venueId || primaryVenueId}/settings` : '/'}
+                        className="flex items-center px-4 py-3 text-base font-medium text-foreground hover:text-primary hover:bg-accent rounded-md transition-all duration-200"
+                      >
+                        <Settings className="mr-3 h-5 w-5" />
+                        Settings
+                      </Link>
+                    )}
                   </>
                 ) : isOnSettings ? (
                   // On settings pages: Dashboard, Home, Sign Out
@@ -206,7 +221,7 @@ export default function GlobalNav() {
                     </Link>
                   </>
                 ) : (
-                  // On home page only: Dashboard, Settings, Sign Out
+                  // On home page only: Dashboard, Settings (owners only), Sign Out
                   <>
                     <Link
                       href={(venueId || primaryVenueId) ? `/dashboard/${venueId || primaryVenueId}` : '/'}
@@ -215,13 +230,15 @@ export default function GlobalNav() {
                       <LayoutDashboard className="mr-3 h-5 w-5" />
                       Dashboard
                     </Link>
-                    <Link
-                      href={(venueId || primaryVenueId) ? `/dashboard/${venueId || primaryVenueId}/settings` : '/'}
-                      className="flex items-center px-4 py-3 text-base font-medium text-foreground hover:text-primary hover:bg-accent rounded-md transition-all duration-200"
-                    >
-                      <Settings className="mr-3 h-5 w-5" />
-                      Settings
-                    </Link>
+                    {userRole === 'owner' && (
+                      <Link
+                        href={(venueId || primaryVenueId) ? `/dashboard/${venueId || primaryVenueId}/settings` : '/'}
+                        className="flex items-center px-4 py-3 text-base font-medium text-foreground hover:text-primary hover:bg-accent rounded-md transition-all duration-200"
+                      >
+                        <Settings className="mr-3 h-5 w-5" />
+                        Settings
+                      </Link>
+                    )}
                   </>
                 )}
                 <div className="w-px h-8 bg-border mx-2"></div>
@@ -301,14 +318,16 @@ export default function GlobalNav() {
                       <Home className="mr-3 h-5 w-5 flex-shrink-0 text-gray-900" />
                       <span>Home</span>
                     </Link>
-                    <Link
-                      href={(venueId || primaryVenueId) ? `/dashboard/${venueId || primaryVenueId}/settings` : '/'}
-                      className="flex items-center px-4 py-3 text-base font-semibold text-gray-900 hover:text-servio-purple hover:bg-servio-purple/5 rounded-xl transition-all duration-200 min-h-[48px]"
-                      onClick={() => setMobileMenuOpen(false)}
-                    >
-                      <Settings className="mr-3 h-5 w-5 flex-shrink-0 text-gray-900" />
-                      <span>Settings</span>
-                    </Link>
+                    {userRole === 'owner' && (
+                      <Link
+                        href={(venueId || primaryVenueId) ? `/dashboard/${venueId || primaryVenueId}/settings` : '/'}
+                        className="flex items-center px-4 py-3 text-base font-semibold text-gray-900 hover:text-servio-purple hover:bg-servio-purple/5 rounded-xl transition-all duration-200 min-h-[48px]"
+                        onClick={() => setMobileMenuOpen(false)}
+                      >
+                        <Settings className="mr-3 h-5 w-5 flex-shrink-0 text-gray-900" />
+                        <span>Settings</span>
+                      </Link>
+                    )}
                   </>
                 ) : (isOnFeaturePage || isOnQRPage) ? (
                   <>
@@ -320,14 +339,16 @@ export default function GlobalNav() {
                       <LayoutDashboard className="mr-3 h-5 w-5 flex-shrink-0 text-gray-900" />
                       <span>Dashboard</span>
                     </Link>
-                    <Link
-                      href={(venueId || primaryVenueId) ? `/dashboard/${venueId || primaryVenueId}/settings` : '/'}
-                      className="flex items-center px-4 py-3 text-base font-semibold text-gray-900 hover:text-servio-purple hover:bg-servio-purple/5 rounded-xl transition-all duration-200 min-h-[48px]"
-                      onClick={() => setMobileMenuOpen(false)}
-                    >
-                      <Settings className="mr-3 h-5 w-5 flex-shrink-0 text-gray-900" />
-                      <span>Settings</span>
-                    </Link>
+                    {userRole === 'owner' && (
+                      <Link
+                        href={(venueId || primaryVenueId) ? `/dashboard/${venueId || primaryVenueId}/settings` : '/'}
+                        className="flex items-center px-4 py-3 text-base font-semibold text-gray-900 hover:text-servio-purple hover:bg-servio-purple/5 rounded-xl transition-all duration-200 min-h-[48px]"
+                        onClick={() => setMobileMenuOpen(false)}
+                      >
+                        <Settings className="mr-3 h-5 w-5 flex-shrink-0 text-gray-900" />
+                        <span>Settings</span>
+                      </Link>
+                    )}
                   </>
                 ) : isOnSettings ? (
                   <>
@@ -358,14 +379,16 @@ export default function GlobalNav() {
                       <LayoutDashboard className="mr-3 h-5 w-5 flex-shrink-0 text-gray-900" />
                       <span>Dashboard</span>
                     </Link>
-                    <Link
-                      href={(venueId || primaryVenueId) ? `/dashboard/${venueId || primaryVenueId}/settings` : '/'}
-                      className="flex items-center px-4 py-3 text-base font-semibold text-gray-900 hover:text-servio-purple hover:bg-servio-purple/5 rounded-xl transition-all duration-200 min-h-[48px]"
-                      onClick={() => setMobileMenuOpen(false)}
-                    >
-                      <Settings className="mr-3 h-5 w-5 flex-shrink-0 text-gray-900" />
-                      <span>Settings</span>
-                    </Link>
+                    {userRole === 'owner' && (
+                      <Link
+                        href={(venueId || primaryVenueId) ? `/dashboard/${venueId || primaryVenueId}/settings` : '/'}
+                        className="flex items-center px-4 py-3 text-base font-semibold text-gray-900 hover:text-servio-purple hover:bg-servio-purple/5 rounded-xl transition-all duration-200 min-h-[48px]"
+                        onClick={() => setMobileMenuOpen(false)}
+                      >
+                        <Settings className="mr-3 h-5 w-5 flex-shrink-0 text-gray-900" />
+                        <span>Settings</span>
+                      </Link>
+                    )}
                   </>
                 )}
                 <div className="w-full h-px bg-gray-100 my-4"></div>
