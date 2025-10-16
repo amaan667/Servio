@@ -1,6 +1,5 @@
--- Migration Script: Move AI Conversations from Old to New System
--- This script migrates conversations from ai_conversations to ai_chat_conversations
--- and generates AI-powered titles for existing conversations
+-- Fixed Migration Script: Move AI Conversations from Old to New System
+-- This script fixes the UUID casting issues
 
 -- Step 1: Create the new tables if they don't exist
 CREATE TABLE IF NOT EXISTS ai_chat_conversations (
@@ -38,7 +37,7 @@ CREATE INDEX IF NOT EXISTS idx_ai_chat_messages_created_at ON ai_chat_messages(c
 ALTER TABLE ai_chat_conversations ENABLE ROW LEVEL SECURITY;
 ALTER TABLE ai_chat_messages ENABLE ROW LEVEL SECURITY;
 
--- Step 4: Create RLS policies for new tables
+-- Step 4: Create RLS policies for new tables (with proper UUID casting)
 -- Drop existing policies if they exist
 DROP POLICY IF EXISTS "Users can view their own conversations" ON ai_chat_conversations;
 DROP POLICY IF EXISTS "Users can create conversations for their venues" ON ai_chat_conversations;
@@ -47,7 +46,7 @@ DROP POLICY IF EXISTS "Users can delete their own conversations" ON ai_chat_conv
 DROP POLICY IF EXISTS "Users can view messages from their conversations" ON ai_chat_messages;
 DROP POLICY IF EXISTS "Users can create messages in their conversations" ON ai_chat_messages;
 
--- Create policies for ai_chat_conversations
+-- Create policies for ai_chat_conversations with proper UUID casting
 CREATE POLICY "Users can view their own conversations" ON ai_chat_conversations
   FOR SELECT USING (auth.uid()::uuid = user_id);
 
@@ -60,7 +59,7 @@ CREATE POLICY "Users can update their own conversations" ON ai_chat_conversation
 CREATE POLICY "Users can delete their own conversations" ON ai_chat_conversations
   FOR DELETE USING (auth.uid()::uuid = user_id);
 
--- Create policies for ai_chat_messages
+-- Create policies for ai_chat_messages with proper UUID casting
 CREATE POLICY "Users can view messages from their conversations" ON ai_chat_messages
   FOR SELECT USING (
     EXISTS (
@@ -94,58 +93,72 @@ CREATE TRIGGER trigger_update_ai_chat_conversations_updated_at
   FOR EACH ROW
   EXECUTE FUNCTION update_ai_chat_conversations_updated_at();
 
--- Step 6: Migrate existing conversations
--- First, insert conversations with improved titles
-INSERT INTO ai_chat_conversations (id, venue_id, user_id, title, created_at, updated_at)
-SELECT 
-  id, -- Keep the same ID to maintain references
-  venue_id,
-  created_by as user_id,
-  CASE 
-    -- Generate better titles based on content
-    WHEN LENGTH(title) > 50 THEN LEFT(title, 47) || '...'
-    WHEN title = 'New Conversation' THEN 'Chat Conversation'
-    ELSE title
-  END as title,
-  created_at,
-  updated_at
-FROM ai_conversations
-WHERE NOT EXISTS (
-  SELECT 1 FROM ai_chat_conversations acc 
-  WHERE acc.id = ai_conversations.id
-);
+-- Step 6: Migrate existing conversations (only if old table exists)
+DO $$
+BEGIN
+  -- Check if ai_conversations table exists
+  IF EXISTS (SELECT 1 FROM information_schema.tables WHERE table_name = 'ai_conversations') THEN
+    
+    -- Insert conversations with improved titles
+    INSERT INTO ai_chat_conversations (id, venue_id, user_id, title, created_at, updated_at)
+    SELECT 
+      id, -- Keep the same ID to maintain references
+      venue_id,
+      created_by::uuid as user_id, -- Ensure proper UUID casting
+      CASE 
+        -- Generate better titles based on content
+        WHEN LENGTH(title) > 50 THEN LEFT(title, 47) || '...'
+        WHEN title = 'New Conversation' THEN 'Chat Conversation'
+        ELSE title
+      END as title,
+      created_at,
+      updated_at
+    FROM ai_conversations
+    WHERE NOT EXISTS (
+      SELECT 1 FROM ai_chat_conversations acc 
+      WHERE acc.id = ai_conversations.id
+    );
 
--- Step 7: Migrate existing messages
-INSERT INTO ai_chat_messages (
-  id,
-  conversation_id, 
-  role, 
-  content, 
-  tool_name, 
-  created_at
-)
-SELECT 
-  am.id, -- Keep the same ID
-  am.conversation_id,
-  CASE 
-    WHEN am.author_role = 'tool' THEN 'assistant'
-    ELSE am.author_role
-  END as role,
-  COALESCE(am.text, (am.content->>'text')::text, '') as content,
-  am.tool_name,
-  am.created_at
-FROM ai_messages am
-WHERE EXISTS (
-  SELECT 1 FROM ai_chat_conversations acc 
-  WHERE acc.id = am.conversation_id
-)
-AND NOT EXISTS (
-  SELECT 1 FROM ai_chat_messages acm 
-  WHERE acm.id = am.id
-);
+    -- Migrate existing messages (only if old messages table exists)
+    IF EXISTS (SELECT 1 FROM information_schema.tables WHERE table_name = 'ai_messages') THEN
+      INSERT INTO ai_chat_messages (
+        id,
+        conversation_id, 
+        role, 
+        content, 
+        tool_name, 
+        created_at
+      )
+      SELECT 
+        am.id, -- Keep the same ID
+        am.conversation_id,
+        CASE 
+          WHEN am.author_role = 'tool' THEN 'assistant'
+          ELSE am.author_role
+        END as role,
+        COALESCE(am.text, (am.content->>'text')::text, '') as content,
+        am.tool_name,
+        am.created_at
+      FROM ai_messages am
+      WHERE EXISTS (
+        SELECT 1 FROM ai_chat_conversations acc 
+        WHERE acc.id = am.conversation_id
+      )
+      AND NOT EXISTS (
+        SELECT 1 FROM ai_chat_messages acm 
+        WHERE acm.id = am.id
+      );
+    END IF;
+    
+    RAISE NOTICE 'Migration completed: % conversations and % messages migrated', 
+      (SELECT COUNT(*) FROM ai_chat_conversations), 
+      (SELECT COUNT(*) FROM ai_chat_messages);
+  ELSE
+    RAISE NOTICE 'No existing ai_conversations table found, skipping migration';
+  END IF;
+END $$;
 
--- Step 8: Create a function to generate AI titles for existing conversations
--- This will be called by the API to update titles with AI generation
+-- Step 7: Create functions for AI title generation
 CREATE OR REPLACE FUNCTION get_conversations_needing_ai_titles()
 RETURNS TABLE (
   conversation_id UUID,
@@ -174,7 +187,6 @@ BEGIN
 END;
 $$ LANGUAGE plpgsql;
 
--- Step 9: Create a function to update conversation titles
 CREATE OR REPLACE FUNCTION update_conversation_ai_title(
   conv_id UUID,
   new_title TEXT
@@ -188,7 +200,7 @@ BEGIN
 END;
 $$ LANGUAGE plpgsql;
 
--- Step 10: Add a column to track migration status (optional)
+-- Step 8: Add migration status tracking
 ALTER TABLE ai_chat_conversations 
 ADD COLUMN IF NOT EXISTS migration_status VARCHAR(20) DEFAULT 'migrated';
 
@@ -197,7 +209,7 @@ UPDATE ai_chat_conversations
 SET migration_status = 'migrated'
 WHERE migration_status IS NULL;
 
--- Step 11: Create a view for easy monitoring
+-- Step 9: Create monitoring view
 CREATE OR REPLACE VIEW migration_status AS
 SELECT 
   'ai_conversations' as table_name,
@@ -206,6 +218,7 @@ SELECT
   MIN(created_at) as oldest_conversation,
   MAX(created_at) as newest_conversation
 FROM ai_conversations
+WHERE EXISTS (SELECT 1 FROM information_schema.tables WHERE table_name = 'ai_conversations')
 UNION ALL
 SELECT 
   'ai_chat_conversations' as table_name,
@@ -215,11 +228,9 @@ SELECT
   MAX(created_at) as newest_conversation
 FROM ai_chat_conversations;
 
--- Display migration summary
+-- Display completion message
 SELECT 'Migration completed successfully!' as status;
 SELECT * FROM migration_status;
-
--- Show conversations that need AI title generation
 SELECT 
   'Conversations needing AI titles:' as info,
   COUNT(*) as count
