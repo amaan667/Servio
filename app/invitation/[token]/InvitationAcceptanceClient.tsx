@@ -93,6 +93,14 @@ export default function InvitationAcceptanceClient({
       const data = await response.json();
 
       if (!response.ok) {
+        // If the error is that user already exists, redirect to sign in
+        if (response.status === 409) {
+          setError('An account with this email already exists. Please sign in to accept the invitation.');
+          setTimeout(() => {
+            router.push(`/sign-in?email=${encodeURIComponent(invitation.email)}&redirect=/invitation/${token}`);
+          }, 3000);
+          return;
+        }
         throw new Error(data.error || 'Failed to accept invitation');
       }
 
