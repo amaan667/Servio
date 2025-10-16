@@ -5,10 +5,10 @@ import type { Metadata } from "next";
 
 export const metadata: Metadata = {
   title: "Refund Policy",
-  description: "Servio's refund policy including 14-day money-back guarantee, service failure refunds, and cancellation terms. Fair and transparent refund process.",
+  description: "Servio's refund policy for food business POS subscriptions including 14-day money-back guarantee, service failure refunds, and fair cancellation terms.",
   openGraph: {
     title: "Refund Policy | Servio",
-    description: "14-day money-back guarantee and fair refund terms for Servio subscriptions.",
+    description: "14-day money-back guarantee and fair refund terms for Servio POS subscriptions.",
   },
 };
 

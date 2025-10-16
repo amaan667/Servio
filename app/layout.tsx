@@ -22,8 +22,8 @@ export const metadata: Metadata = {
     template: "%s | Servio"
   },
   description:
-    "Streamline your business operations with contactless QR code ordering. Customers scan, order, and pay - all from their phones. 14-day free trial. No setup fees.",
-  keywords: ["QR code ordering", "restaurant ordering system", "contactless ordering", "digital menu", "QR menu", "restaurant technology", "cafe ordering system", "mobile ordering", "table ordering", "hospitality technology"],
+    "Complete POS and QR ordering platform for restaurants, cafes, food trucks, and market stalls. Manage orders, payments, inventory, and kitchen operations in one system. 14-day free trial.",
+  keywords: ["QR code ordering", "food business POS", "cafe POS system", "food truck ordering", "contactless ordering", "digital menu", "QR menu", "hospitality technology", "mobile ordering", "kitchen display system", "inventory management"],
   authors: [{ name: "Servio" }],
   creator: "Servio",
   publisher: "Servio",
@@ -48,8 +48,8 @@ export const metadata: Metadata = {
     locale: 'en_GB',
     url: 'https://servio.app',
     siteName: 'Servio',
-    title: 'Servio - QR Code Ordering Made Simple',
-    description: 'Streamline your business operations with contactless QR code ordering. 14-day free trial.',
+    title: 'Servio - Complete POS & QR Ordering for Food Businesses',
+    description: 'All-in-one platform for restaurants, cafes, food trucks, and stalls. QR ordering, POS, payments, and kitchen management.',
     images: [
       {
         url: '/images/og-image.png',
@@ -61,8 +61,8 @@ export const metadata: Metadata = {
   },
   twitter: {
     card: 'summary_large_image',
-    title: 'Servio - QR Code Ordering Made Simple',
-    description: 'Streamline your business operations with contactless QR code ordering',
+    title: 'Servio - Complete POS & QR Ordering for Food Businesses',
+    description: 'All-in-one platform for restaurants, cafes, food trucks, and stalls',
     images: ['/images/og-image.png'],
     creator: '@servio_app',
   },

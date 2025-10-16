@@ -5,10 +5,10 @@ import type { Metadata } from "next";
 
 export const metadata: Metadata = {
   title: "Terms of Service",
-  description: "Read Servio's terms of service, including subscription plans, refund policy, and acceptable use policy for our QR code ordering platform.",
+  description: "Read Servio's terms of service, including subscription plans, refund policy, and acceptable use policy for our POS and ordering platform.",
   openGraph: {
     title: "Terms of Service | Servio",
-    description: "Terms and conditions for using Servio's QR code ordering platform.",
+    description: "Terms and conditions for using Servio's POS and ordering platform.",
   },
 };
 
@@ -30,7 +30,7 @@ export default function TermsOfServicePage() {
           <section className="mb-8">
             <h2 className="text-2xl font-semibold mb-4">1. Agreement to Terms</h2>
             <p className="text-gray-700 mb-4">
-              By accessing or using Servio's QR code ordering platform ("Service"), you agree to be bound by these Terms of Service ("Terms"). 
+              By accessing or using Servio's point-of-sale and ordering platform ("Service"), you agree to be bound by these Terms of Service ("Terms"). 
               If you do not agree to these Terms, please do not use our Service.
             </p>
             <p className="text-gray-700 mb-4">
@@ -41,14 +41,16 @@ export default function TermsOfServicePage() {
           <section className="mb-8">
             <h2 className="text-2xl font-semibold mb-4">2. Description of Service</h2>
             <p className="text-gray-700 mb-4">
-              Servio provides a cloud-based QR code ordering platform that enables businesses to:
+              Servio provides a cloud-based point-of-sale (POS) and ordering platform for food and beverage businesses including restaurants, cafes, food trucks, and market stalls. The Service enables you to:
             </p>
             <ul className="list-disc pl-6 mb-4 text-gray-700">
-              <li>Generate QR codes for tables and counters</li>
+              <li>Generate QR codes for tables, counters, trucks, and stalls</li>
               <li>Manage digital menus with AI-powered tools</li>
               <li>Receive and process customer orders in real-time</li>
-              <li>Accept payments through Stripe integration</li>
-              <li>Manage inventory, staff, and business operations</li>
+              <li>Process payments through integrated payment systems</li>
+              <li>Manage kitchen operations with Kitchen Display System (KDS)</li>
+              <li>Track inventory and stock levels</li>
+              <li>Manage staff with role-based permissions</li>
               <li>Access analytics and reporting tools</li>
             </ul>
           </section>
@@ -59,7 +61,7 @@ export default function TermsOfServicePage() {
             <h3 className="text-xl font-semibold mb-3 mt-6">3.1 Eligibility</h3>
             <p className="text-gray-700 mb-4">
               You must be at least 18 years old and authorized to enter into contracts to use Servio. 
-              By registering, you represent that you have the legal authority to bind your business.
+              By registering, you represent that you have the legal authority to bind your business (restaurant, cafe, food truck, market stall, or other food service operation).
             </p>
 
             <h3 className="text-xl font-semibold mb-3 mt-6">3.2 Account Security</h3>

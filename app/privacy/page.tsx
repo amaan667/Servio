@@ -5,7 +5,7 @@ import type { Metadata } from "next";
 
 export const metadata: Metadata = {
   title: "Privacy Policy",
-  description: "Learn how Servio collects, uses, and protects your personal information. UK GDPR compliant privacy policy for our QR code ordering platform.",
+  description: "Learn how Servio collects, uses, and protects your personal information. UK GDPR compliant privacy policy for our POS and ordering platform.",
   openGraph: {
     title: "Privacy Policy | Servio",
     description: "Learn how Servio protects your data and complies with UK GDPR regulations.",
@@ -31,7 +31,7 @@ export default function PrivacyPolicyPage() {
             <h2 className="text-2xl font-semibold mb-4">1. Introduction</h2>
             <p className="text-gray-700 mb-4">
               Welcome to Servio ("we," "our," or "us"). We are committed to protecting your personal information and your right to privacy. 
-              This Privacy Policy explains how we collect, use, disclose, and safeguard your information when you use our QR code ordering platform and services.
+              This Privacy Policy explains how we collect, use, disclose, and safeguard your information when you use our point-of-sale and ordering platform and services.
             </p>
             <p className="text-gray-700 mb-4">
               Servio is operated from the United Kingdom and complies with the UK General Data Protection Regulation (UK GDPR) and the Data Protection Act 2018.
@@ -42,20 +42,20 @@ export default function PrivacyPolicyPage() {
             <h2 className="text-2xl font-semibold mb-4">2. Information We Collect</h2>
             
             <h3 className="text-xl font-semibold mb-3 mt-6">2.1 Business Account Information</h3>
-            <p className="text-gray-700 mb-4">When you create a Servio business account, we collect:</p>
+            <p className="text-gray-700 mb-4">When you create a Servio business account for your restaurant, cafe, food truck, market stall, or other food service business, we collect:</p>
             <ul className="list-disc pl-6 mb-4 text-gray-700">
               <li>Name and email address</li>
-              <li>Business name and address</li>
+              <li>Business name and address (or operating location)</li>
               <li>Phone number</li>
               <li>Payment information (processed securely by Stripe)</li>
               <li>VAT number (if applicable)</li>
             </ul>
 
             <h3 className="text-xl font-semibold mb-3 mt-6">2.2 Customer Order Information</h3>
-            <p className="text-gray-700 mb-4">When customers place orders through your venue's QR codes, we collect:</p>
+            <p className="text-gray-700 mb-4">When customers place orders through your QR codes (at tables, counters, trucks, or stalls), we collect:</p>
             <ul className="list-disc pl-6 mb-4 text-gray-700">
               <li>Customer name (optional)</li>
-              <li>Table number or counter location</li>
+              <li>Table number, counter location, truck window, or stall identifier</li>
               <li>Order details (items, quantities, special instructions)</li>
               <li>Payment information (processed by Stripe, we do not store card details)</li>
               <li>Order timestamps and status</li>
@@ -75,7 +75,7 @@ export default function PrivacyPolicyPage() {
             <h2 className="text-2xl font-semibold mb-4">3. How We Use Your Information</h2>
             <p className="text-gray-700 mb-4">We use the information we collect to:</p>
             <ul className="list-disc pl-6 mb-4 text-gray-700">
-              <li><strong>Provide Services:</strong> Process orders, manage your venue, and deliver our platform features</li>
+              <li><strong>Provide Services:</strong> Process orders, manage your business operations, and deliver our platform features</li>
               <li><strong>Process Payments:</strong> Handle billing and subscriptions through Stripe</li>
               <li><strong>Customer Support:</strong> Respond to your inquiries and provide technical assistance</li>
               <li><strong>Improve Our Platform:</strong> Analyze usage patterns to enhance features and performance</li>

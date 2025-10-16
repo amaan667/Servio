@@ -560,10 +560,10 @@ export default function HomePage() {
                 Transform Your Business
               </Badge>
               <h1 className="!text-white text-[clamp(2rem,6vw,4.5rem)] leading-[1.05] tracking-tight font-extrabold" style={{textShadow: '0 0 40px rgba(255,255,255,0.5), 0 0 80px rgba(255,255,255,0.3), 0 8px 32px rgba(0,0,0,0.8), 0 16px 64px rgba(0,0,0,0.6), 0 4px 16px rgba(0,0,0,0.9), 0 2px 4px rgba(0,0,0,1)', filter: 'drop-shadow(0 0 20px rgba(255,255,255,0.4))'}}>
-                QR Code Ordering Made Simple
+                Complete POS & QR Ordering for Food Businesses
               </h1>
               <p className="mt-5 !text-white text-[clamp(1rem,2.2vw,1.25rem)] leading-relaxed max-w-[45ch]" style={{textShadow: '0 2px 20px rgba(0,0,0,0.8), 0 4px 40px rgba(0,0,0,0.5), 0 0 30px rgba(255,255,255,0.2)'}}>
-                Streamline your business operations with contactless QR code ordering. Customers scan, order, and pay — all from their phones. You focus on great food and service.
+                All-in-one platform for restaurants, cafes, food trucks, and market stalls. QR ordering, payments, kitchen display, and inventory — everything you need in one system.
               </p>
               <div className="mt-8 flex items-center gap-4 flex-wrap">
                 {!authLoading && !user && (
@@ -651,12 +651,12 @@ export default function HomePage() {
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="text-center mb-16">
             <h2 className="text-4xl font-bold text-gray-900 mb-4">
-              Everything You Need to Modernize Your Business
+              Everything You Need to Run Your Food Business
             </h2>
             <p className="text-xl text-gray-800 max-w-3xl mx-auto">
-              From QR code generation to real-time order management, Servio
-              provides all the tools you need to create a seamless dining
-              experience.
+              From QR code ordering to kitchen management and inventory, Servio
+              provides all the tools you need to streamline operations and serve
+              customers efficiently.
             </p>
           </div>
 
@@ -746,7 +746,7 @@ export default function HomePage() {
                 </h3>
                 <p className="text-gray-800">
                   Manage your team with role-based access. Kitchen staff,
-                  servers, and managers each get the tools they need.
+                  front-of-house, and managers each get the tools they need.
                 </p>
               </CardContent>
             </Card>
@@ -876,10 +876,10 @@ export default function HomePage() {
       <section className="py-24 bg-gradient-to-r from-purple-600 to-purple-700 text-white">
         <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 text-center">
           <h2 className="text-4xl font-bold mb-6 !text-white">
-            Ready to Transform Your Business?
+            Ready to Transform Your Food Business?
           </h2>
           <p className="text-xl !text-white mb-8">
-            Join businesses across the UK who use Servio to simplify ordering and improve customer experience.
+            Join restaurants, cafes, food trucks, and stalls across the UK using Servio to streamline operations and delight customers.
           </p>
           <div className="flex flex-col sm:flex-row gap-4 justify-center">
             <Button
@@ -921,8 +921,8 @@ export default function HomePage() {
           <div className="grid grid-cols-1 md:grid-cols-4 gap-8">
             <div className="col-span-1 md:col-span-2">
               <p className="text-gray-300 mb-6 max-w-md">
-                Servio makes QR code ordering simple and effective for
-                businesses of all sizes. Transform your customer experience
+                Servio provides complete POS and ordering solutions for
+                food businesses of all sizes. Transform your operations
                 today.
               </p>
               <div className="flex space-x-4">
