@@ -226,6 +226,42 @@ export default function InvitationBasedStaffManagement({
   };
 
 
+  const handleRemoveInvitation = async (invitationId: string) => {
+    if (!confirm('Are you sure you want to remove this invitation? This action cannot be undone.')) {
+      return;
+    }
+
+    try {
+      const response = await fetch('/api/staff/invitations', {
+        method: 'DELETE',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ id: invitationId }),
+      });
+
+      const data = await response.json();
+
+      if (!response.ok) {
+        throw new Error(data.error || 'Failed to remove invitation');
+      }
+
+      toast({
+        title: 'Invitation removed',
+        description: 'The invitation has been removed successfully',
+      });
+
+      // Reload data to reflect changes
+      loadData();
+    } catch (err: any) {
+      toast({
+        title: 'Error',
+        description: err.message || 'Failed to remove invitation',
+        variant: 'destructive',
+      });
+    }
+  };
+
   const getRoleInfo = (roleId: string) => {
     return ROLES.find(role => role.id === roleId) || ROLES[2]; // Default to staff
   };
@@ -673,6 +709,16 @@ export default function InvitationBasedStaffManagement({
                             {getStatusIcon(invitation.status)}
                             <span className="ml-1 capitalize">{invitation.status}</span>
                           </Badge>
+                          {invitation.status === 'pending' && (
+                            <Button
+                              variant="outline"
+                              size="sm"
+                              onClick={() => handleRemoveInvitation(invitation.id)}
+                              className="text-red-600 hover:text-red-700 hover:bg-red-50"
+                            >
+                              Remove
+                            </Button>
+                          )}
                         </div>
                       </div>
                     </CardContent>

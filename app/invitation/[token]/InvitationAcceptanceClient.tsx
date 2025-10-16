@@ -233,6 +233,20 @@ export default function InvitationAcceptanceClient({
         {/* Account Creation Form */}
         <form onSubmit={handleSubmit} className="space-y-4">
           <div>
+            <label htmlFor="email" className="block text-sm font-medium text-gray-700 mb-2">
+              Email Address
+            </label>
+            <Input
+              id="email"
+              type="email"
+              value={invitation.email}
+              disabled
+              className="h-11 bg-gray-50 cursor-not-allowed"
+            />
+            <p className="text-xs text-gray-500 mt-1">This is the email address the invitation was sent to</p>
+          </div>
+
+          <div>
             <label htmlFor="fullName" className="block text-sm font-medium text-gray-700 mb-2">
               Full Name
             </label>

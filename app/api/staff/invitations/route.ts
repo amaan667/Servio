@@ -362,3 +362,94 @@ export async function POST(request: NextRequest) {
     }, { status: 500 });
   }
 }
+
+// DELETE /api/staff/invitations - Delete an invitation
+export async function DELETE(request: NextRequest) {
+  try {
+    const user = await getUserSafe('DELETE /api/staff/invitations');
+    if (!user) {
+      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+    }
+
+    let body;
+    try {
+      body = await request.json();
+    } catch (parseError) {
+      return NextResponse.json({ 
+        error: 'Invalid request body' 
+      }, { status: 400 });
+    }
+
+    const { id } = body;
+
+    if (!id) {
+      return NextResponse.json({ 
+        error: 'Invitation ID is required' 
+      }, { status: 400 });
+    }
+
+    const supabase = await createClient();
+
+    // Get invitation details to check permissions
+    const { data: invitation, error: fetchError } = await supabase
+      .from('staff_invitations')
+      .select('venue_id, status')
+      .eq('id', id)
+      .single();
+
+    if (fetchError) {
+      return NextResponse.json({ error: 'Invitation not found' }, { status: 404 });
+    }
+
+    // Check if user has permission to delete invitations for this venue
+    const { data: userRole, error: roleError } = await supabase
+      .from('user_venue_roles')
+      .select('role')
+      .eq('user_id', user.id)
+      .eq('venue_id', invitation.venue_id)
+      .single();
+
+    let hasPermission = false;
+    if (userRole && ['owner', 'manager'].includes(userRole.role)) {
+      hasPermission = true;
+    } else {
+      // Check if user is the venue owner
+      const { data: venue, error: venueError } = await supabase
+        .from('venues')
+        .select('owner_user_id')
+        .eq('venue_id', invitation.venue_id)
+        .single();
+      
+      if (venue && venue.owner_user_id === user.id) {
+        hasPermission = true;
+      }
+    }
+
+    if (!hasPermission) {
+      return NextResponse.json({ error: 'Insufficient permissions' }, { status: 403 });
+    }
+
+    // Delete the invitation
+    const { error: deleteError } = await supabase
+      .from('staff_invitations')
+      .delete()
+      .eq('id', id);
+
+    if (deleteError) {
+      return NextResponse.json({ 
+        error: 'Failed to remove invitation',
+        details: deleteError.message 
+      }, { status: 500 });
+    }
+
+    return NextResponse.json({ 
+      success: true,
+      message: 'Invitation removed successfully'
+    });
+  } catch (error) {
+    const errorMessage = error instanceof Error ? error.message : 'Internal server error';
+    return NextResponse.json({ 
+      error: errorMessage 
+    }, { status: 500 });
+  }
+}

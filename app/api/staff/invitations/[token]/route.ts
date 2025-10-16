@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { createClient } from '@/lib/supabase/server';
+import { createClient, createAdminClient } from '@/lib/supabase/server';
 
 // GET /api/staff/invitations/[token] - Get invitation details by token
 export async function GET(
@@ -95,7 +95,9 @@ export async function POST(
     // If user already exists, we'll get an error and handle it
     let userId: string;
     
-    const { data: newUser, error: signUpError } = await supabase.auth.admin.createUser({
+    // Use admin client to create user
+    const adminClient = createAdminClient();
+    const { data: newUser, error: signUpError } = await adminClient.auth.admin.createUser({
       email: invitation.email,
       password,
       user_metadata: {
@@ -108,16 +110,23 @@ export async function POST(
     if (signUpError) {
       // Check if the error is because user already exists
       if (signUpError.message?.includes('already registered') || signUpError.message?.includes('already exists')) {
-        // User already exists, we need to find their ID
-        // For now, we'll return an error asking them to sign in first
         return NextResponse.json({ 
           error: 'An account with this email already exists. Please sign in to your existing account and contact the person who invited you to resend the invitation.' 
         }, { status: 409 });
-      } else {
-        return NextResponse.json({ 
-          error: 'Failed to create account: ' + signUpError.message 
-        }, { status: 500 });
       }
+      
+      // Check for specific Supabase errors
+      if (signUpError.message?.includes('User not allowed')) {
+        return NextResponse.json({ 
+          error: 'Account creation is not allowed. Please contact the venue owner for assistance.' 
+        }, { status: 403 });
+      }
+      
+      // Return the actual error message
+      return NextResponse.json({ 
+        error: 'Failed to create account: ' + (signUpError.message || 'Unknown error'),
+        details: signUpError
+      }, { status: 500 });
     }
 
     userId = newUser.user.id;
