@@ -14,7 +14,7 @@ import SignInButton from "@/app/components/SignInButton";
 export default function GlobalNav() {
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [primaryVenueId, setPrimaryVenueId] = useState<string | null>(null);
-  const [userRole, setUserRole] = useState<string>('owner');
+  const [userRole, setUserRole] = useState<string | null>(null);
   // Use our central auth context instead of local state
   const { session, loading, signOut } = useAuth();
   const router = useRouter();
@@ -147,7 +147,7 @@ export default function GlobalNav() {
                       <Home className="mr-3 h-5 w-5" />
                       Home
                     </Link>
-                    {(userRole === 'owner' || userRole === 'manager') && (
+                    {userRole && (userRole === 'owner' || userRole === 'manager') && (
                       <Link
                         href={(venueId || primaryVenueId) ? `/dashboard/${venueId || primaryVenueId}/settings` : '/'}
                         className="flex items-center px-4 py-3 text-base font-medium text-foreground hover:text-primary hover:bg-accent rounded-md transition-all duration-200"
@@ -179,7 +179,7 @@ export default function GlobalNav() {
                       <LayoutDashboard className="mr-3 h-5 w-5" />
                       Dashboard
                     </Link>
-                    {(userRole === 'owner' || userRole === 'manager') && (
+                    {userRole && (userRole === 'owner' || userRole === 'manager') && (
                       <Link
                         href={(venueId || primaryVenueId) ? `/dashboard/${venueId || primaryVenueId}/settings` : '/'}
                         className="flex items-center px-4 py-3 text-base font-medium text-foreground hover:text-primary hover:bg-accent rounded-md transition-all duration-200"
@@ -241,7 +241,7 @@ export default function GlobalNav() {
                       <LayoutDashboard className="mr-3 h-5 w-5" />
                       Dashboard
                     </Link>
-                    {(userRole === 'owner' || userRole === 'manager') && (
+                    {userRole && (userRole === 'owner' || userRole === 'manager') && (
                       <Link
                         href={(venueId || primaryVenueId) ? `/dashboard/${venueId || primaryVenueId}/settings` : '/'}
                         className="flex items-center px-4 py-3 text-base font-medium text-foreground hover:text-primary hover:bg-accent rounded-md transition-all duration-200"
@@ -332,7 +332,7 @@ export default function GlobalNav() {
                       <Home className="mr-3 h-5 w-5 flex-shrink-0 text-gray-900" />
                       <span>Home</span>
                     </Link>
-                    {(userRole === 'owner' || userRole === 'manager') && (
+                    {userRole && (userRole === 'owner' || userRole === 'manager') && (
                       <Link
                         href={(venueId || primaryVenueId) ? `/dashboard/${venueId || primaryVenueId}/settings` : '/'}
                         className="flex items-center px-4 py-3 text-base font-semibold text-gray-900 hover:text-servio-purple hover:bg-servio-purple/5 rounded-xl transition-all duration-200 min-h-[48px]"
@@ -353,7 +353,7 @@ export default function GlobalNav() {
                       <LayoutDashboard className="mr-3 h-5 w-5 flex-shrink-0 text-gray-900" />
                       <span>Dashboard</span>
                     </Link>
-                    {(userRole === 'owner' || userRole === 'manager') && (
+                    {userRole && (userRole === 'owner' || userRole === 'manager') && (
                       <Link
                         href={(venueId || primaryVenueId) ? `/dashboard/${venueId || primaryVenueId}/settings` : '/'}
                         className="flex items-center px-4 py-3 text-base font-semibold text-gray-900 hover:text-servio-purple hover:bg-servio-purple/5 rounded-xl transition-all duration-200 min-h-[48px]"
@@ -393,7 +393,7 @@ export default function GlobalNav() {
                       <LayoutDashboard className="mr-3 h-5 w-5 flex-shrink-0 text-gray-900" />
                       <span>Dashboard</span>
                     </Link>
-                    {(userRole === 'owner' || userRole === 'manager') && (
+                    {userRole && (userRole === 'owner' || userRole === 'manager') && (
                       <Link
                         href={(venueId || primaryVenueId) ? `/dashboard/${venueId || primaryVenueId}/settings` : '/'}
                         className="flex items-center px-4 py-3 text-base font-semibold text-gray-900 hover:text-servio-purple hover:bg-servio-purple/5 rounded-xl transition-all duration-200 min-h-[48px]"
