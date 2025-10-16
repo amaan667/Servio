@@ -127,9 +127,13 @@ export default function VenueSwitcherPopup({
         .eq('venue_id', currentVenueId)
         .single();
 
+      // Generate a unique venue_id
+      const venueId = `venue-${crypto.randomUUID().replace(/-/g, '')}`;
+
       const { data, error } = await supabase
         .from('venues')
         .insert({
+          venue_id: venueId,
           venue_name: formData.name.trim(),
           address: formData.address.trim() || null,
           phone: formData.phone.trim() || null,
