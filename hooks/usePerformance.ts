@@ -120,7 +120,7 @@ export function withPerformanceTracking<P extends object>(
   Component: React.ComponentType<P>,
   componentName: string
 ) {
-  return function PerformanceTrackedComponent(props: P) {
+  const PerformanceTrackedComponent = (props: P) => {
     const { measureComponentRender } = usePerformance();
 
     useEffect(() => {
@@ -140,5 +140,9 @@ export function withPerformanceTracking<P extends object>(
 
     return <Component {...props} />;
   };
+
+  PerformanceTrackedComponent.displayName = `withPerformanceTracking(${componentName})`;
+  
+  return PerformanceTrackedComponent;
 }
 
