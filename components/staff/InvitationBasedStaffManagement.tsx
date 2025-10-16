@@ -470,86 +470,6 @@ export default function InvitationBasedStaffManagement({
           <h2 className="text-2xl font-bold text-gray-900">Staff Management</h2>
           <p className="text-gray-600">Invite and manage your team members and their shifts</p>
         </div>
-        <Dialog open={inviteDialogOpen} onOpenChange={setInviteDialogOpen}>
-          <DialogTrigger asChild>
-            <Button className="bg-purple-600 hover:bg-purple-700 text-white">
-              <Plus className="h-4 w-4 mr-2" />
-              Invite Team Member
-            </Button>
-          </DialogTrigger>
-          <DialogContent className="max-w-md">
-            <DialogHeader>
-              <DialogTitle>Invite Team Member</DialogTitle>
-              <DialogDescription>
-                Send an invitation to join your team at {venueName}
-              </DialogDescription>
-            </DialogHeader>
-            <div className="space-y-4">
-              <div>
-                <label htmlFor="email" className="block text-sm font-medium text-gray-700 mb-2">
-                  Email Address
-                </label>
-                <Input
-                  id="email"
-                  type="email"
-                  value={inviteEmail}
-                  onChange={(e) => setInviteEmail(e.target.value)}
-                  placeholder="team@example.com"
-                  className="h-11"
-                />
-              </div>
-              <div>
-                <label htmlFor="role" className="block text-sm font-medium text-gray-700 mb-2">
-                  Role
-                </label>
-                <select
-                  id="role"
-                  value={inviteRole}
-                  onChange={(e) => setInviteRole(e.target.value)}
-                  className="w-full h-11 px-3 py-2 border border-input bg-background rounded-md text-sm focus:outline-none focus:ring-2 focus:ring-ring focus:border-transparent"
-                >
-                  {ROLES.map((role) => (
-                    <option key={role.id} value={role.id}>
-                      {role.name} - {role.description}
-                    </option>
-                  ))}
-                </select>
-              </div>
-              {error && (
-                <Alert variant="destructive">
-                  <AlertCircle className="h-4 w-4" />
-                  <AlertDescription>{error}</AlertDescription>
-                </Alert>
-              )}
-              <div className="flex gap-3">
-                <Button
-                  onClick={handleSendInvitation}
-                  disabled={inviteLoading || !inviteEmail.trim()}
-                  className="flex-1 bg-purple-600 hover:bg-purple-700 text-white"
-                >
-                  {inviteLoading ? (
-                    <>
-                      <Loader2 className="h-4 w-4 mr-2 animate-spin" />
-                      Sending...
-                    </>
-                  ) : (
-                    <>
-                      <Mail className="h-4 w-4 mr-2" />
-                      Send Invitation
-                    </>
-                  )}
-                </Button>
-                <Button
-                  variant="outline"
-                  onClick={() => setInviteDialogOpen(false)}
-                  disabled={inviteLoading}
-                >
-                  Cancel
-                </Button>
-              </div>
-            </div>
-          </DialogContent>
-        </Dialog>
       </div>
 
       {/* Stats Cards */}
@@ -676,13 +596,9 @@ export default function InvitationBasedStaffManagement({
               <CardContent className="p-8 text-center">
                 <Mail className="h-12 w-12 text-gray-400 mx-auto mb-4" />
                 <h3 className="text-lg font-semibold text-gray-900 mb-2">No invitations sent</h3>
-                <p className="text-gray-600 mb-4">
+                <p className="text-gray-600">
                   Send invitations to add new team members.
                 </p>
-                <Button onClick={() => setInviteDialogOpen(true)}>
-                  <Plus className="h-4 w-4 mr-2" />
-                  Send First Invitation
-                </Button>
               </CardContent>
             </Card>
           ) : (

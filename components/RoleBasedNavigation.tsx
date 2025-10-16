@@ -103,34 +103,16 @@ export default function RoleBasedNavigation({
         <Badge className={getRoleColor(userRole)}>
           {getRoleDisplayName(userRole)}
         </Badge>
-        <span className="text-sm text-gray-600">Welcome, {userName}</span>
+        <span className="text-sm text-gray-600">{userName}</span>
       </div>
       
-      <div className="flex items-center gap-2">
-        {visibleItems.map((item) => {
-          const Icon = item.icon;
-          return (
-            <Button
-              key={item.href}
-              variant="ghost"
-              size="sm"
-              onClick={() => router.push(item.href)}
-              className="flex items-center gap-2"
-            >
-              <Icon className="h-4 w-4" />
-              {item.label}
-            </Button>
-          );
-        })}
-        
-        <Button
-          variant="outline"
-          size="sm"
-          onClick={() => router.push('/sign-out')}
-        >
-          Sign Out
-        </Button>
-      </div>
+      <Button
+        variant="outline"
+        size="sm"
+        onClick={() => router.push('/sign-out')}
+      >
+        Sign Out
+      </Button>
     </div>
   );
 }
