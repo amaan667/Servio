@@ -44,7 +44,7 @@ interface DesignSettings {
   show_prices: boolean;
 }
 
-export default function MenuManagementClient({ venueId }: { venueId: string }) {
+export default function MenuManagementClient({ venueId, canEdit = true }: { venueId: string; canEdit?: boolean }) {
   const [menuItems, setMenuItems] = useState<MenuItem[]>([]);
   const [loading, setLoading] = useState(true);
   const [isAddModalOpen, setIsAddModalOpen] = useState(false);

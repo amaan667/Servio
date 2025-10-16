@@ -9,9 +9,10 @@ import { Package, History } from 'lucide-react';
 interface InventoryClientProps {
   venueId: string;
   venueName: string;
+  canEdit?: boolean;
 }
 
-export default function InventoryClient({ venueId, venueName }: InventoryClientProps) {
+export default function InventoryClient({ venueId, venueName, canEdit = true }: InventoryClientProps) {
   const [activeTab, setActiveTab] = useState('overview');
 
   return (
@@ -29,11 +30,11 @@ export default function InventoryClient({ venueId, venueName }: InventoryClientP
         </TabsList>
 
         <TabsContent value="overview" className="mt-6">
-          <InventoryOverview venueId={venueId} />
+          <InventoryOverview venueId={venueId} canEdit={canEdit} />
         </TabsContent>
 
         <TabsContent value="movements" className="mt-6">
-          <InventoryMovements venueId={venueId} />
+          <InventoryMovements venueId={venueId} canEdit={canEdit} />
         </TabsContent>
       </Tabs>
     </div>
