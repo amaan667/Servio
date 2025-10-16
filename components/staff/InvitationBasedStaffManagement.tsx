@@ -251,7 +251,12 @@ export default function InvitationBasedStaffManagement({
         description: 'The invitation has been removed successfully',
       });
 
-      // Reload data to reflect changes
+      // Update the UI immediately by filtering out the removed invitation
+      setInvitations(prevInvitations => 
+        prevInvitations.filter(inv => inv.id !== invitationId)
+      );
+
+      // Also reload data to ensure consistency
       loadData();
     } catch (err: any) {
       toast({

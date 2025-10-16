@@ -117,9 +117,9 @@ export default function InvitationAcceptanceClient({
 
       setSuccess(true);
       
-      // Redirect to dashboard after a short delay
+      // Redirect to the venue dashboard after a short delay
       setTimeout(() => {
-        router.push('/dashboard');
+        router.push(`/dashboard/${invitation.venue_id}`);
       }, 2000);
 
     } catch (err: any) {
