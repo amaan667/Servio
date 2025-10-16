@@ -138,9 +138,16 @@ export default function VenueSwitcherPopup({
         description: `Venue "${formData.name}" has been added`,
       });
 
+      // Reset form and close modals
       setFormData({ name: "", address: "", phone: "", description: "" });
       setShowAddForm(false);
-      loadVenues();
+      
+      // Reload venues to show the new one
+      await loadVenues();
+      
+      // Close the main modal
+      setOpen(false);
+      
     } catch (error: any) {
       console.error('Error adding venue:', error);
       toast({
@@ -186,7 +193,8 @@ export default function VenueSwitcherPopup({
 
       setFormData({ name: "", address: "", phone: "", description: "" });
       setEditingVenue(null);
-      loadVenues();
+      await loadVenues();
+      setOpen(false);
     } catch (error: any) {
       console.error('Error updating venue:', error);
       toast({
