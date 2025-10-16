@@ -32,9 +32,9 @@ INSERT INTO venues (
 ) VALUES (
   'venue-1e02af4d',  -- Your original venue ID
   'Cafe Nur',
-  '523 Kings Road, Stretford, Manchester',  -- Your address
-  '07527443911',  -- Your phone number
-  'Your main cafe location',
+  '523 Kings Road, Stretford, Manchester',  -- Your actual address
+  '07527443911',  -- Your actual phone number
+  'Your main cafe location in Stretford, Manchester',
   (SELECT id FROM auth.users WHERE email = 'amaantanveer667@gmail.com'),
   (SELECT id FROM organizations WHERE owner_id = (SELECT id FROM auth.users WHERE email = 'amaantanveer667@gmail.com')),
   true,  -- Set as primary venue
