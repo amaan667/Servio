@@ -155,6 +155,10 @@ export default function VenueSwitcherPopup({
       // Reload venues to show the new one
       await loadVenues();
       
+      // Automatically switch to the newly added venue
+      console.log('[VENUE SWITCHER] Auto-switching to new venue:', data.venue_id);
+      onVenueChange(data.venue_id);
+      
       // Close the main modal
       setOpen(false);
       
