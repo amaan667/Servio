@@ -125,17 +125,17 @@ export function withPerformanceTracking<P extends object>(
 
     useEffect(() => {
       const measure = measureComponentRender(componentName);
-      if (!measure) return;
-      
-      measure.start();
-      return () => {
-        const duration = measure.end();
-        if (duration && duration > 100) {
-          console.warn(
-            `[Performance] ${componentName} took ${duration.toFixed(2)}ms to render (>100ms threshold)`
-          );
-        }
-      };
+      if (measure) {
+        measure.start();
+        return () => {
+          const duration = measure.end();
+          if (duration && duration > 100) {
+            console.warn(
+              `[Performance] ${componentName} took ${duration.toFixed(2)}ms to render (>100ms threshold)`
+            );
+          }
+        };
+      }
     }, [measureComponentRender, componentName]);
 
     return <Component {...props} />;
