@@ -165,10 +165,22 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: 'Failed to check existing invitations' }, { status: 500 });
     }
 
+    // If there's an existing pending invitation, cancel it so we can create a new one
     if (existingInvitation) {
-      return NextResponse.json({ 
-        error: 'A pending invitation already exists for this email address' 
-      }, { status: 409 });
+      const { error: cancelError } = await supabase
+        .from('staff_invitations')
+        .update({ 
+          status: 'cancelled',
+          updated_at: new Date().toISOString()
+        })
+        .eq('id', existingInvitation.id);
+
+      if (cancelError) {
+        console.error('[INVITATION API] Error cancelling existing invitation:', cancelError);
+        return NextResponse.json({ 
+          error: 'Failed to cancel existing invitation' 
+        }, { status: 500 });
+      }
     }
 
     // Check if the email being invited already has access to this venue

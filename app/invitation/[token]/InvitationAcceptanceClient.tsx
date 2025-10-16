@@ -112,7 +112,6 @@ export default function InvitationAcceptanceClient({
       });
 
       if (signInError) {
-        console.error('[AUTH DEBUG] Error signing in after invitation acceptance:', signInError);
         throw new Error('Account created but failed to sign in. Please try signing in manually.');
       }
 

@@ -21,34 +21,19 @@ export default async function InvitationPage({ params }: InvitationPageProps) {
     const { data: invitationData, error } = await supabase
       .rpc('get_invitation_by_token', { p_token: token });
 
-    if (error) {
-      console.error('[INVITATION PAGE] Error fetching invitation:', error);
-      redirect('/invitation/invalid');
-    }
-
-    if (!invitationData || invitationData.length === 0) {
-      console.error('[INVITATION PAGE] No invitation found for token:', token);
+    if (error || !invitationData || invitationData.length === 0) {
       redirect('/invitation/invalid');
     }
 
     const invitation = invitationData[0];
-    console.log('[INVITATION PAGE] Invitation details:', {
-      id: invitation.id,
-      email: invitation.email,
-      status: invitation.status,
-      expires_at: invitation.expires_at,
-      venue_name: invitation.venue_name
-    });
 
     // Check if invitation is expired
     if (new Date(invitation.expires_at) < new Date()) {
-      console.log('[INVITATION PAGE] Invitation expired');
       redirect('/invitation/expired');
     }
 
     // Check if invitation is already accepted
     if (invitation.status !== 'pending') {
-      console.log('[INVITATION PAGE] Invitation status is not pending:', invitation.status);
       redirect('/invitation/invalid');
     }
 
@@ -67,7 +52,6 @@ export default async function InvitationPage({ params }: InvitationPageProps) {
       </div>
     );
   } catch (error) {
-    console.error('Error fetching invitation:', error);
     redirect('/invitation/invalid');
   }
 }
