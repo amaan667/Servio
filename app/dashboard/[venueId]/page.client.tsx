@@ -44,7 +44,9 @@ const VenueDashboardClient = React.memo(function VenueDashboardClient({
   userName,
   venueTz,
   initialCounts,
-  initialStats
+  initialStats,
+  userRole,
+  isOwner
 }: { 
   venueId: string; 
   userId: string; 
@@ -53,6 +55,8 @@ const VenueDashboardClient = React.memo(function VenueDashboardClient({
   venueTz: string;
   initialCounts?: DashboardCounts;
   initialStats?: DashboardStats;
+  userRole?: string;
+  isOwner?: boolean;
 }) {
   const [venue, setVenue] = useState<any>(initialVenue);
   const [loading, setLoading] = useState(!initialVenue); // Only show loading if no initial data

@@ -15,6 +15,7 @@ export default async function VenuePage({ params }: { params: Promise<{ venueId:
     redirect('/sign-in');
   }
   
+  // Check if user is the venue owner
   const { data: venue, error: venueError } = await supabase
     .from('venues')
     .select('*')
@@ -22,20 +23,38 @@ export default async function VenuePage({ params }: { params: Promise<{ venueId:
     .eq('owner_user_id', user.id)
     .maybeSingle();
 
-  if (venueError) {
+  // Check if user has a staff role for this venue
+  const { data: userRole, error: roleError } = await supabase
+    .from('user_venue_roles')
+    .select('role')
+    .eq('user_id', user.id)
+    .eq('venue_id', venueId)
+    .single();
+
+  const isOwner = !!venue;
+  const isStaff = !!userRole;
+
+  // If user is not owner or staff, redirect
+  if (!isOwner && !isStaff) {
     redirect('/complete-profile');
   }
   
-  if (!venue) {
-    const { data: userVenues } = await supabase
+  // If user is staff but not owner, get venue details
+  let finalVenue = venue;
+  if (!venue && isStaff) {
+    const { data: staffVenue } = await supabase
       .from('venues')
-      .select('venue_id, created_at')
-      .eq('owner_user_id', user.id)
-      .order('created_at', { ascending: true });
+      .select('*')
+      .eq('venue_id', venueId)
+      .single();
     
-    if (userVenues && userVenues.length > 0) {
-      redirect(`/dashboard/${userVenues[0].venue_id}`);
+    if (!staffVenue) {
+      redirect('/complete-profile');
     }
+    finalVenue = staffVenue;
+  }
+  
+  if (!finalVenue) {
     redirect('/complete-profile');
   }
 
@@ -103,11 +122,13 @@ export default async function VenuePage({ params }: { params: Promise<{ venueId:
     <DashboardClient 
       venueId={venueId} 
       userId={user.id}
-      venue={venue}
+      venue={finalVenue}
       userName={user.user_metadata?.full_name || user.email?.split('@')[0] || 'User'}
       venueTz={venueTz}
       initialCounts={counts as any}
       initialStats={initialStats}
+      userRole={userRole?.role || (isOwner ? 'owner' : 'staff')}
+      isOwner={isOwner}
     />
   );
 }
