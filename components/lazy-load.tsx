@@ -22,7 +22,7 @@ export function createLazyComponent<P extends object>(
 
 // Pre-configured lazy components for common patterns
 export const LazyAnalyticsDashboard = createLazyComponent(
-  () => import('@/components/analytics-dashboard')
+  () => import('@/components/analytics-dashboard').then(mod => ({ default: mod.AnalyticsDashboard }))
 );
 
 export const LazyDemoAISection = createLazyComponent(
@@ -34,7 +34,7 @@ export const LazyDemoAnalytics = createLazyComponent(
 );
 
 export const LazyEnhancedFeedbackSystem = createLazyComponent(
-  () => import('@/components/enhanced-feedback-system')
+  () => import('@/components/enhanced-feedback-system').then(mod => ({ default: mod.EnhancedFeedbackSystem }))
 );
 
 // Loading skeleton for dashboard
