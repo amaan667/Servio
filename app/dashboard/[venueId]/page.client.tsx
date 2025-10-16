@@ -531,7 +531,6 @@ const VenueDashboardClient = React.memo(function VenueDashboardClient({
             <div className="flex items-center gap-3">
               {/* Role Management Popup */}
               <RoleManagementPopup 
-                venueId={venueId}
                 currentUserRole="owner"
               />
               
