@@ -1,3 +1,7 @@
+-- Drop existing functions if they exist
+DROP FUNCTION IF EXISTS get_invitation_by_token(TEXT);
+DROP FUNCTION IF EXISTS accept_invitation(TEXT, UUID);
+
 -- Create function to get invitation by token
 CREATE OR REPLACE FUNCTION get_invitation_by_token(p_token TEXT)
 RETURNS TABLE (
