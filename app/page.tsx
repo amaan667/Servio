@@ -555,15 +555,15 @@ export default function HomePage() {
         <div className="relative max-w-screen-xl mx-auto px-6 py-24 lg:py-32">
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-12 items-center">
             <div className="max-w-3xl sm:max-w-xl md:max-w-2xl">
-              <Badge className="bg-white/50 text-white border-white/70 mb-6 shadow-2xl backdrop-blur-sm" style={{boxShadow: '0 0 30px rgba(255,255,255,0.3), 0 10px 25px rgba(0,0,0,0.3)'}}>
+              <Badge className="bg-white text-purple-700 border-2 border-white mb-6 shadow-2xl font-semibold" style={{boxShadow: '0 4px 20px rgba(255,255,255,0.4), 0 0 40px rgba(255,255,255,0.3)'}}>
                 <QrCode className="w-4 h-4 mr-2" />
                 Transform Your Business
               </Badge>
               <h1 className="!text-white text-[clamp(2rem,6vw,4.5rem)] leading-[1.05] tracking-tight font-extrabold" style={{textShadow: '0 0 40px rgba(255,255,255,0.5), 0 0 80px rgba(255,255,255,0.3), 0 8px 32px rgba(0,0,0,0.8), 0 16px 64px rgba(0,0,0,0.6), 0 4px 16px rgba(0,0,0,0.9), 0 2px 4px rgba(0,0,0,1)', filter: 'drop-shadow(0 0 20px rgba(255,255,255,0.4))'}}>
-                The All-in-One POS & QR Ordering System — No Hardware Required
+                The All-in-One POS & QR Ordering System for Modern Venues
               </h1>
-              <p className="mt-5 !text-white text-[clamp(1rem,2.2vw,1.25rem)] leading-relaxed max-w-[45ch]" style={{textShadow: '0 2px 20px rgba(0,0,0,0.8), 0 4px 40px rgba(0,0,0,0.5), 0 0 30px rgba(255,255,255,0.2)'}}>
-                Run your venue from any device. QR ordering, payments, kitchen display, and inventory — all connected in one easy-to-use system.
+              <p className="mt-5 !text-white text-[clamp(1rem,2.2vw,1.25rem)] leading-relaxed max-w-[50ch]" style={{textShadow: '0 2px 20px rgba(0,0,0,0.8), 0 4px 40px rgba(0,0,0,0.5), 0 0 30px rgba(255,255,255,0.2)'}}>
+                Run your entire venue from any device — no hardware required. Accept orders, manage payments, display tickets in the kitchen, and track inventory — all in one simple platform.
               </p>
               <div className="mt-8 flex items-center gap-4 flex-wrap">
                 {!authLoading && !user && (
