@@ -7,6 +7,7 @@ import { Input } from '@/components/ui/input';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Alert, AlertDescription } from '@/components/ui/alert';
+import { createClient } from '@/lib/supabase/client';
 import { 
   Users, 
   Mail, 
@@ -93,6 +94,18 @@ export default function InvitationAcceptanceClient({
 
       if (!response.ok) {
         throw new Error(data.error || 'Failed to accept invitation');
+      }
+
+      // Sign the user in after account creation
+      const supabase = createClient();
+      const { error: signInError } = await supabase.auth.signInWithPassword({
+        email: invitation.email,
+        password,
+      });
+
+      if (signInError) {
+        console.error('[AUTH DEBUG] Error signing in after invitation acceptance:', signInError);
+        throw new Error('Account created but failed to sign in. Please try signing in manually.');
       }
 
       setSuccess(true);
