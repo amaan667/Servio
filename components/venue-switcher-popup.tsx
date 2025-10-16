@@ -77,6 +77,7 @@ export default function VenueSwitcherPopup({
       const { data, error } = await supabase
         .from('venues')
         .select('*')
+        .order('is_primary', { ascending: false })
         .order('created_at', { ascending: true });
 
       if (error) throw error;
@@ -314,7 +315,7 @@ export default function VenueSwitcherPopup({
                 className={`p-4 border rounded-lg transition-all hover:shadow-md ${
                   venue.venue_id === currentVenueId 
                     ? "border-blue-500 bg-blue-50" 
-                    : "border-border hover:border-primary/50 cursor-pointer"
+                    : "border-border hover:border-primary/50 cursor-pointer hover:bg-gray-50"
                 }`}
                 onClick={() => {
                   if (venue.venue_id !== currentVenueId) {
@@ -333,8 +334,10 @@ export default function VenueSwitcherPopup({
                       {venue.is_primary && (
                         <Badge variant="default" className="text-xs">Primary</Badge>
                       )}
-                      {venue.venue_id === currentVenueId && (
+                      {venue.venue_id === currentVenueId ? (
                         <Badge variant="secondary" className="text-xs">Current</Badge>
+                      ) : (
+                        <span className="text-xs text-gray-500 italic">Click to switch</span>
                       )}
                     </div>
                     {venue.address && (
@@ -370,7 +373,7 @@ export default function VenueSwitcherPopup({
                         size="sm"
                         onClick={(e) => {
                           e.stopPropagation();
-                          handleDeleteVenue(venue.venue_id, venue.name);
+                          handleDeleteVenue(venue.venue_id, venue.venue_name);
                         }}
                       >
                         <Trash2 className="h-3 w-3" />
