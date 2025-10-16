@@ -27,7 +27,7 @@ export async function POST(request: NextRequest) {
     // Check if venue exists
     const { data: venue, error: venueError } = await supabase
       .from('venues')
-      .select('venue_id, name')
+      .select('venue_id, venue_name')
       .eq('venue_id', venueId)
       .single();
 
