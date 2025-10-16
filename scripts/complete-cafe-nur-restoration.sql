@@ -6,9 +6,10 @@
 -- PART 1: Fix the trigger that's causing errors
 -- ============================================
 
--- Drop the old trigger and function
+-- Drop the old trigger and function (CASCADE to handle dependencies)
 DROP TRIGGER IF EXISTS auto_assign_venue_owner_trigger ON venues;
-DROP FUNCTION IF EXISTS auto_assign_venue_owner();
+DROP TRIGGER IF EXISTS trg_auto_assign_venue_owner ON venues;
+DROP FUNCTION IF EXISTS auto_assign_venue_owner() CASCADE;
 
 -- Create the corrected function (using owner_user_id instead of owner_id)
 CREATE OR REPLACE FUNCTION auto_assign_venue_owner()
