@@ -18,6 +18,7 @@ import { useRequestCancellation } from '@/lib/request-utils';
 import OnboardingCompletionBanner from '@/components/onboarding-completion-banner';
 import TrialStatusBanner from '@/components/TrialStatusBanner';
 import RoleManagementPopup from '@/components/role-management-popup';
+import VenueSwitcherPopup from '@/components/venue-switcher-popup';
 
 interface DashboardCounts {
   live_count: number;
@@ -73,6 +74,11 @@ const VenueDashboardClient = React.memo(function VenueDashboardClient({
   
   // Monitor connection status
   const connectionState = useConnectionMonitor();
+  
+  // Handle venue change
+  const handleVenueChange = (newVenueId: string) => {
+    router.push(`/dashboard/${newVenueId}`);
+  };
   
   // Request cancellation
   const { createRequest, cancelRequest } = useRequestCancellation();
@@ -529,6 +535,12 @@ const VenueDashboardClient = React.memo(function VenueDashboardClient({
             </div>
             
             <div className="flex items-center gap-3">
+              {/* Venue Switcher */}
+              <VenueSwitcherPopup 
+                currentVenueId={venueId}
+                onVenueChange={handleVenueChange}
+              />
+              
               {/* Role Management Popup */}
               <RoleManagementPopup 
                 currentUserRole="owner"
