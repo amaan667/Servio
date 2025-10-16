@@ -12,8 +12,17 @@ import ConditionalHeader from "@/components/ConditionalHeader";
 import ConditionalBottomNav from "@/components/ConditionalBottomNav";
 import { ErrorBoundary } from "@/components/error-boundary";
 import { Analytics } from "@/components/Analytics";
+import { WebVitals } from "./web-vitals";
 
-const inter = Inter({ subsets: ["latin"] });
+// Optimized font loading with display swap and preload
+const inter = Inter({ 
+  subsets: ["latin"],
+  display: 'swap',
+  preload: true,
+  fallback: ['system-ui', 'arial'],
+  adjustFontFallback: true,
+  variable: '--font-inter',
+});
 
 export const metadata: Metadata = {
   metadataBase: new URL('https://servio.app'),
@@ -106,6 +115,17 @@ export default async function RootLayout({
 
   return (
     <html lang="en" suppressHydrationWarning>
+      <head>
+        {/* DNS Prefetch & Preconnect for faster third-party connections */}
+        <link rel="dns-prefetch" href="https://fonts.googleapis.com" />
+        <link rel="preconnect" href="https://fonts.googleapis.com" crossOrigin="anonymous" />
+        <link rel="preconnect" href="https://fonts.gstatic.com" crossOrigin="anonymous" />
+        <link rel="dns-prefetch" href="https://www.googletagmanager.com" />
+        <link rel="preconnect" href="https://www.googletagmanager.com" crossOrigin="anonymous" />
+        {/* Supabase preconnect */}
+        <link rel="dns-prefetch" href={process.env.NEXT_PUBLIC_SUPABASE_URL} />
+        <link rel="preconnect" href={process.env.NEXT_PUBLIC_SUPABASE_URL} crossOrigin="anonymous" />
+      </head>
       <body className={inter.className}>
         <ErrorBoundary>
           <AuthProvider initialSession={session}>
@@ -115,6 +135,7 @@ export default async function RootLayout({
               <ThemeToggleFloat />
               <ConditionalBottomNav />
               <Analytics />
+              <WebVitals />
             </Providers>
           </AuthProvider>
         </ErrorBoundary>

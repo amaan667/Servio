@@ -1,0 +1,142 @@
+'use client';
+
+import { useEffect, useCallback } from 'react';
+
+interface PerformanceMetrics {
+  name: string;
+  value: number;
+  rating: 'good' | 'needs-improvement' | 'poor';
+}
+
+export function usePerformance() {
+  const measureComponentRender = useCallback((componentName: string) => {
+    if (typeof window === 'undefined' || !window.performance) return;
+
+    const startMark = `${componentName}-start`;
+    const endMark = `${componentName}-end`;
+    const measureName = `${componentName}-render`;
+
+    return {
+      start: () => performance.mark(startMark),
+      end: () => {
+        performance.mark(endMark);
+        try {
+          performance.measure(measureName, startMark, endMark);
+          const measure = performance.getEntriesByName(measureName)[0];
+          
+          if (process.env.NODE_ENV === 'development') {
+            console.log(`[Performance] ${componentName} rendered in ${measure.duration.toFixed(2)}ms`);
+          }
+
+          // Clean up marks
+          performance.clearMarks(startMark);
+          performance.clearMarks(endMark);
+          performance.clearMeasures(measureName);
+
+          return measure.duration;
+        } catch (error) {
+          // Silent error handling
+          return 0;
+        }
+      },
+    };
+  }, []);
+
+  const measureAction = useCallback(async <T,>(
+    actionName: string,
+    action: () => Promise<T> | T
+  ): Promise<T> => {
+    const start = performance.now();
+    const result = await action();
+    const duration = performance.now() - start;
+
+    if (process.env.NODE_ENV === 'development') {
+      console.log(`[Performance] ${actionName} completed in ${duration.toFixed(2)}ms`);
+    }
+
+    return result;
+  }, []);
+
+  const getNetworkInfo = useCallback(() => {
+    if (typeof navigator === 'undefined' || !('connection' in navigator)) {
+      return null;
+    }
+
+    const connection = (navigator as any).connection;
+    return {
+      effectiveType: connection?.effectiveType,
+      downlink: connection?.downlink,
+      rtt: connection?.rtt,
+      saveData: connection?.saveData,
+    };
+  }, []);
+
+  const getMemoryInfo = useCallback(() => {
+    if (typeof performance === 'undefined' || !('memory' in performance)) {
+      return null;
+    }
+
+    const memory = (performance as any).memory;
+    return {
+      usedJSHeapSize: memory?.usedJSHeapSize,
+      totalJSHeapSize: memory?.totalJSHeapSize,
+      jsHeapSizeLimit: memory?.jsHeapSizeLimit,
+      usagePercentage: memory
+        ? ((memory.usedJSHeapSize / memory.jsHeapSizeLimit) * 100).toFixed(2)
+        : 0,
+    };
+  }, []);
+
+  const reportLongTask = useCallback((taskName: string, duration: number) => {
+    if (duration > 50) {
+      // Long task threshold is 50ms
+      console.warn(
+        `[Performance Warning] Long task detected: ${taskName} took ${duration.toFixed(2)}ms`
+      );
+
+      // Send to analytics if in production
+      if (process.env.NODE_ENV === 'production') {
+        fetch('/api/analytics/long-task', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ taskName, duration }),
+          keepalive: true,
+        }).catch(() => {});
+      }
+    }
+  }, []);
+
+  return {
+    measureComponentRender,
+    measureAction,
+    getNetworkInfo,
+    getMemoryInfo,
+    reportLongTask,
+  };
+}
+
+// HOC for measuring component render performance
+export function withPerformanceTracking<P extends object>(
+  Component: React.ComponentType<P>,
+  componentName: string
+) {
+  return function PerformanceTrackedComponent(props: P) {
+    const { measureComponentRender } = usePerformance();
+
+    useEffect(() => {
+      const measure = measureComponentRender(componentName);
+      measure.start();
+      return () => {
+        const duration = measure.end();
+        if (duration > 100) {
+          console.warn(
+            `[Performance] ${componentName} took ${duration.toFixed(2)}ms to render (>100ms threshold)`
+          );
+        }
+      };
+    }, [measureComponentRender]);
+
+    return <Component {...props} />;
+  };
+}
+
