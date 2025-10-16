@@ -23,10 +23,12 @@ import {
   Trash2, 
   Check,
   X,
-  Store
+  Store,
+  Settings
 } from "lucide-react";
 import { createClient } from "@/lib/supabase/client";
 import { toast } from "@/hooks/use-toast";
+import { useRouter } from "next/navigation";
 
 interface Venue {
   venue_id: string;
@@ -52,6 +54,7 @@ export default function VenueSwitcherPopup({
   const [loading, setLoading] = useState(false);
   const [showAddForm, setShowAddForm] = useState(false);
   const [editingVenue, setEditingVenue] = useState<Venue | null>(null);
+  const router = useRouter();
   
   // Form state
   const [formData, setFormData] = useState({
@@ -447,6 +450,21 @@ export default function VenueSwitcherPopup({
               Add New Venue
             </Button>
           )}
+
+          {/* Settings Link */}
+          <div className="pt-4 border-t">
+            <Button
+              variant="ghost"
+              onClick={() => {
+                setOpen(false);
+                router.push(`/dashboard/${currentVenueId}/settings`);
+              }}
+              className="w-full justify-start text-sm text-gray-600 hover:text-gray-900"
+            >
+              <Settings className="h-4 w-4 mr-2" />
+              ⚙️ Manage venue in Settings
+            </Button>
+          </div>
         </div>
       </DialogContent>
     </Dialog>
