@@ -117,7 +117,7 @@ export function usePerformance() {
 
 // HOC for measuring component render performance
 export function withPerformanceTracking<P extends object>(
-  Component: React.ComponentType<P>,
+  WrappedComponent: React.ComponentType<P>,
   componentName: string
 ) {
   const PerformanceTrackedComponent = (props: P) => {
@@ -138,7 +138,7 @@ export function withPerformanceTracking<P extends object>(
       }
     }, [measureComponentRender, componentName]);
 
-    return <Component {...props} />;
+    return <WrappedComponent {...props} />;
   };
 
   PerformanceTrackedComponent.displayName = `withPerformanceTracking(${componentName})`;
