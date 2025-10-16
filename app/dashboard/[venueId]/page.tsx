@@ -29,7 +29,7 @@ export default async function VenuePage({ params }: { params: Promise<{ venueId:
     .select('role')
     .eq('user_id', user.id)
     .eq('venue_id', venueId)
-    .single();
+    .maybeSingle();
 
   const isOwner = !!venue;
   const isStaff = !!userRole;
