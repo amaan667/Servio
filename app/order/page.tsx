@@ -390,7 +390,7 @@ export default function CustomerOrderPage() {
       // Attach venue_name for display
       const normalized = (data.menuItems || []).map((mi: any) => ({ 
         ...mi, 
-        venue_name: data.venue?.name || 'Our Venue'
+        venue_name: data.venue?.venue_name || 'Our Venue'
       }));
       
       

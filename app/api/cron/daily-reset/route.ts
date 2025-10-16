@@ -29,7 +29,7 @@ export async function POST(request: NextRequest) {
     // Get all venues that need daily reset at the current time (within 5 minutes)
     const { data: venues, error: venuesError } = await supabase
       .from('venues')
-      .select('venue_id, name, daily_reset_time')
+      .select('venue_id, venue_name, daily_reset_time')
       .not('daily_reset_time', 'is', null);
 
     if (venuesError) {
@@ -101,7 +101,7 @@ export async function POST(request: NextRequest) {
         if (!needsReset) {
           resetResults.push({
             venueId: venue.venue_id,
-            venueName: venue.name,
+            venueName: venue.venue_name,
             reset: false,
             reason: 'No active orders, reservations, or occupied tables'
           });
@@ -162,7 +162,7 @@ export async function POST(request: NextRequest) {
 
         resetResults.push({
           venueId: venue.venue_id,
-          venueName: venue.name,
+          venueName: venue.venue_name,
           reset: true,
           completedOrders: activeOrders?.length || 0,
           canceledReservations: activeReservations?.length || 0,
@@ -171,10 +171,10 @@ export async function POST(request: NextRequest) {
 
 
       } catch (error) {
-        console.error(`🕛 [CRON DAILY RESET] Error resetting venue ${venue.name}:`, error);
+        console.error(`🕛 [CRON DAILY RESET] Error resetting venue ${venue.venue_name}:`, error);
         resetResults.push({
           venueId: venue.venue_id,
-          venueName: venue.name,
+          venueName: venue.venue_name,
           reset: false,
           error: error instanceof Error ? error.message : 'Unknown error'
         });

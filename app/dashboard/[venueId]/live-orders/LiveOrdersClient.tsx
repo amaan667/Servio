@@ -300,10 +300,10 @@ export default function LiveOrdersClient({ venueId, venueName: venueNameProp }: 
       if (!venueNameProp) {
         const { data: venueData } = await createClient()
           .from('venues')
-          .select('name')
+          .select('venue_name')
           .eq('venue_id', venueId)
           .single();
-        setVenueName(venueData?.name || '');
+        setVenueName(venueData?.venue_name || '');
         // keep default timezone for now; replace with venue setting when available
       }
       const window = todayWindowForTZ(venueTimezone);

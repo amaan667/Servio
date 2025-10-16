@@ -117,7 +117,7 @@ export default function VenueDashboardPage({ params }: { params: { venueId: stri
             Welcome back, {session?.user?.user_metadata?.full_name || "Manager"}!
           </h2>
           <p className="text-gray-600">
-            Here's what's happening at {venue?.name || "your venue"} today
+            Here's what's happening at {venue?.venue_name || "your venue"} today
           </p>
         </div>
 

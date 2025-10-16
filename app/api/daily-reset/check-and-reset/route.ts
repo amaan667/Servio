@@ -295,7 +295,7 @@ export async function POST(request: NextRequest) {
       resetDate: todayString,
       summary: {
         venueId,
-        venueName: venue.name,
+        venueName: venue.venue_name,
         completedOrders: resetSummary.completedOrders,
         canceledReservations: resetSummary.canceledReservations,
         deletedTables: resetSummary.resetTables,

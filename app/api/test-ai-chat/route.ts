@@ -81,7 +81,7 @@ export async function GET(request: NextRequest) {
     return NextResponse.json({
       success: true,
       user: { id: user.id, email: user.email },
-      venue: { id: venue.venue_id, name: venue.name, owner_id: venue.owner_id },
+      venue: { id: venue.venue_id, name: venue.venue_name, owner_id: venue.owner_user_id },
       conversations: {
         count: conversations?.length || 0,
         data: conversations || [],

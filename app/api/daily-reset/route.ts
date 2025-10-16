@@ -182,7 +182,7 @@ export async function POST(request: NextRequest) {
       message: 'Daily reset completed successfully',
       summary: {
         venueId,
-        venueName: venue.name,
+        venueName: venue.venue_name,
         completedOrders: activeOrders?.length || 0,
         canceledReservations: activeReservations?.length || 0,
         deletedTables: tables?.length || 0,
