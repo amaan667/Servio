@@ -181,14 +181,20 @@ export default function InvitationBasedStaffManagement({
 
       // Show different messages based on email status
       if (data.emailSent) {
+        const isRefresh = data.message?.includes('refreshed');
         toast({
-          title: 'Invitation sent!',
-          description: `An invitation has been sent to ${inviteEmail}`,
+          title: isRefresh ? 'Invitation refreshed!' : 'Invitation sent!',
+          description: isRefresh 
+            ? `A new invitation link has been sent to ${inviteEmail}`
+            : `An invitation has been sent to ${inviteEmail}`,
         });
       } else {
+        const isRefresh = data.message?.includes('refreshed');
         toast({
-          title: 'Invitation created!',
-          description: `Invitation created but email failed to send. Check server logs for invitation link.`,
+          title: isRefresh ? 'Invitation refreshed!' : 'Invitation created!',
+          description: isRefresh
+            ? `Invitation refreshed but email failed to send. Check server logs for invitation link.`
+            : `Invitation created but email failed to send. Check server logs for invitation link.`,
           variant: 'destructive',
         });
         console.log('📧 Invitation link:', data.invitationLink);

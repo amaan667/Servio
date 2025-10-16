@@ -242,39 +242,76 @@ export async function POST(request: NextRequest) {
 
     // Generate a secure token for the invitation
     const token = crypto.randomUUID().replace(/-/g, '') + crypto.randomUUID().replace(/-/g, '');
+    const expiresAt = new Date(Date.now() + 7 * 24 * 60 * 60 * 1000).toISOString(); // 7 days
 
-    // Create the invitation
-    const { data: invitation, error: createError } = await supabase
+    // Check if there's an existing pending invitation for this email/venue
+    const { data: existingInvitation, error: checkError } = await supabase
       .from('staff_invitations')
-      .insert({
-        venue_id,
-        organization_id: venue.organization_id,
-        invited_by: user.id,
-        email: email.toLowerCase(),
-        role,
-        permissions,
-        token,
-        expires_at: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000).toISOString() // 7 days
-      })
-      .select()
+      .select('id')
+      .eq('venue_id', venue_id)
+      .eq('email', email.toLowerCase())
+      .eq('status', 'pending')
       .single();
 
-    if (createError) {
-      // Check if it's a unique constraint violation
-      if (createError.code === '23505' || createError.message?.includes('duplicate key')) {
+    let invitation;
+
+    if (existingInvitation && !checkError) {
+      // Update existing invitation with new token and expiry
+      const { data: updatedInvitation, error: updateError } = await supabase
+        .from('staff_invitations')
+        .update({
+          token,
+          expires_at: expiresAt,
+          role,
+          permissions,
+          invited_by: user.id,
+          updated_at: new Date().toISOString()
+        })
+        .eq('id', existingInvitation.id)
+        .select()
+        .single();
+
+      if (updateError) {
         return NextResponse.json({ 
-          error: 'A pending invitation already exists for this email address' 
-        }, { status: 409 });
+          error: 'Failed to update invitation',
+          details: updateError.message 
+        }, { status: 500 });
       }
-      return NextResponse.json({ 
-        error: 'Failed to create invitation',
-        details: createError.message 
-      }, { status: 500 });
+
+      invitation = updatedInvitation;
+    } else {
+      // Create new invitation
+      const { data: newInvitation, error: createError } = await supabase
+        .from('staff_invitations')
+        .insert({
+          venue_id,
+          organization_id: venue.organization_id,
+          invited_by: user.id,
+          email: email.toLowerCase(),
+          role,
+          permissions,
+          token,
+          expires_at: expiresAt
+        })
+        .select()
+        .single();
+
+      if (createError) {
+        return NextResponse.json({ 
+          error: 'Failed to create invitation',
+          details: createError.message 
+        }, { status: 500 });
+      }
+
+      invitation = newInvitation;
     }
 
     // Send email invitation
     let emailSent = false;
-    let emailMessage = 'Invitation created successfully.';
+    const isUpdate = existingInvitation && !checkError;
+    let emailMessage = isUpdate 
+      ? 'Invitation refreshed successfully.' 
+      : 'Invitation created successfully.';
     
     try {
       const { sendInvitationEmail, generateInvitationLink } = await import('@/lib/email');
@@ -291,12 +328,18 @@ export async function POST(request: NextRequest) {
       });
 
       if (emailSent) {
-        emailMessage = 'Invitation created successfully. Email has been sent.';
+        emailMessage = isUpdate 
+          ? 'Invitation refreshed and email sent successfully.' 
+          : 'Invitation created and email sent successfully.';
       } else {
-        emailMessage = 'Invitation created successfully. Email service not configured.';
+        emailMessage = isUpdate 
+          ? 'Invitation refreshed successfully. Email service not configured.' 
+          : 'Invitation created successfully. Email service not configured.';
       }
     } catch (emailError) {
-      emailMessage = 'Invitation created successfully. Email service error.';
+      emailMessage = isUpdate 
+        ? 'Invitation refreshed successfully. Email service error.' 
+        : 'Invitation created successfully. Email service error.';
     }
 
     return NextResponse.json({ 
