@@ -55,6 +55,7 @@ interface VenueSettingsClientProps {
   user: User;
   venue: Venue;
   venues: Venue[];
+  isOwner?: boolean;
   organization?: {
     id: string;
     subscription_tier?: string;
@@ -114,7 +115,7 @@ const SERVICE_TYPES = [
 
 const DAYS_OF_WEEK = ['monday', 'tuesday', 'wednesday', 'thursday', 'friday', 'saturday', 'sunday'];
 
-export default function VenueSettingsClient({ user, venue, venues, organization }: VenueSettingsClientProps) {
+export default function VenueSettingsClient({ user, venue, venues, organization, isOwner = true }: VenueSettingsClientProps) {
   const router = useRouter();
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);

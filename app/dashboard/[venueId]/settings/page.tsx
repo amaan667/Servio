@@ -13,27 +13,56 @@ export default async function VenueSettings({ params }: { params: Promise<{ venu
     redirect('/sign-in');
   }
 
+  // Check if user is the venue owner
   const { data: venue, error: venueError } = await supabase
     .from('venues')
     .select('*')
     .eq('venue_id', venueId)
     .eq('owner_user_id', user.id)
-    .single();
+    .maybeSingle();
 
-  if (venueError || !venue) {
+  // Check if user has a staff role for this venue
+  const { data: userRole, error: roleError } = await supabase
+    .from('user_venue_roles')
+    .select('role')
+    .eq('user_id', user.id)
+    .eq('venue_id', venueId)
+    .maybeSingle();
+
+  const isOwner = !!venue;
+  const isStaff = !!userRole;
+
+  // If user is not owner or staff, redirect
+  if (!isOwner && !isStaff) {
     redirect('/complete-profile');
   }
 
-  const { data: venues } = await supabase
+  // Get venue details for staff
+  let finalVenue = venue;
+  if (!venue && isStaff) {
+    const { data: staffVenue } = await supabase
+      .from('venues')
+      .select('*')
+      .eq('venue_id', venueId)
+      .single();
+    
+    if (!staffVenue) {
+      redirect('/complete-profile');
+    }
+    finalVenue = staffVenue;
+  }
+
+  // Only owners can see all venues
+  const { data: venues } = isOwner ? await supabase
     .from('venues')
     .select('*')
     .eq('owner_user_id', user.id)
-    .order('created_at', { ascending: false });
+    .order('created_at', { ascending: false }) : { data: [] };
 
   const { data: organization } = await supabase
     .from('organizations')
     .select('id, subscription_tier, is_grandfathered, stripe_customer_id, subscription_status, trial_ends_at')
-    .eq('id', venue.organization_id)
+    .eq('id', finalVenue.organization_id)
     .single();
 
   return (
@@ -52,9 +81,10 @@ export default async function VenueSettings({ params }: { params: Promise<{ venu
         
         <VenueSettingsClient 
           user={user as any} 
-          venue={venue} 
+          venue={finalVenue} 
           venues={venues || []} 
           organization={organization || undefined}
+          isOwner={isOwner}
         />
       </div>
     </div>
