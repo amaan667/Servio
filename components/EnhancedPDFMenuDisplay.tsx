@@ -73,9 +73,10 @@ export function EnhancedPDFMenuDisplay({
         const supabase = createClient();
         
         // Fetch the most recent PDF upload for this venue
+        // Note: pdf_images column may not exist in all deployments
         const { data: uploadData, error } = await supabase
           .from('menu_uploads')
-          .select('pdf_images')
+          .select('*')
           .eq('venue_id', venueId)
           .order('created_at', { ascending: false })
           .limit(1)
@@ -83,9 +84,14 @@ export function EnhancedPDFMenuDisplay({
 
         if (uploadData && uploadData.pdf_images) {
           setPdfImages(uploadData.pdf_images);
+        } else {
+          // If no PDF images, default to list view
+          setViewMode('list');
         }
       } catch (error) {
         console.error('Error fetching PDF images:', error);
+        // If no PDF images, default to list view
+        setViewMode('list');
       } finally {
         setLoading(false);
       }
@@ -225,11 +231,12 @@ export function EnhancedPDFMenuDisplay({
     );
   }
 
-  if (pdfImages.length === 0) {
+  // If no PDF images and no menu items, show empty state
+  if (pdfImages.length === 0 && menuItems.length === 0) {
     return (
       <div className="text-center py-12">
-        <p className="text-gray-600 mb-4">No PDF menu images available</p>
-        <p className="text-sm text-gray-500">Upload a PDF menu to see the visual menu</p>
+        <p className="text-gray-600 mb-4">No menu items available</p>
+        <p className="text-sm text-gray-500">Add menu items in the Manage tab to see them here</p>
       </div>
     );
   }
