@@ -1,5 +1,10 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { createAdminClient } from '@/lib/supabase/server';
+import * as pdfjsLib from 'pdfjs-dist';
+import { createCanvas } from 'canvas';
+
+// Configure pdfjs-dist to work in Node.js
+pdfjsLib.GlobalWorkerOptions.workerSrc = `//cdnjs.cloudflare.com/ajax/libs/pdf.js/${pdfjsLib.version}/pdf.worker.min.mjs`;
 
 /**
  * Convert PDF pages to images
@@ -18,34 +23,70 @@ export async function POST(req: NextRequest) {
       }, { status: 400 });
     }
     
-    // For now, return a placeholder response
-    // In production, you would:
-    // 1. Use a PDF-to-image library (pdf-lib, pdf2pic, sharp, etc.)
-    // 2. Convert each PDF page to an image
-    // 3. Upload images to Supabase Storage
-    // 4. Return the image URLs
+    console.log('[PDF CONVERT] Starting conversion:', pdfFile.name, 'Size:', pdfFile.size);
     
-    console.log('[PDF CONVERT] PDF conversion not yet fully implemented');
-    console.log('[PDF CONVERT] File:', pdfFile.name, 'Size:', pdfFile.size);
-    console.log('[PDF CONVERT] Venue ID:', venueId);
+    // Load the PDF
+    const pdfBytes = await pdfFile.arrayBuffer();
+    const loadingTask = pdfjsLib.getDocument({ data: pdfBytes });
+    const pdf = await loadingTask.promise;
     
-    // TODO: Implement actual PDF to image conversion
-    // Example using pdf-lib:
-    // const pdfBytes = await pdfFile.arrayBuffer();
-    // const pdfDoc = await PDFDocument.load(pdfBytes);
-    // const pages = pdfDoc.getPages();
-    // 
-    // const imageUrls = [];
-    // for (let i = 0; i < pages.length; i++) {
-    //   // Convert page to image
-    //   // Upload to Supabase Storage
-    //   // Get URL and add to imageUrls array
-    // }
+    console.log('[PDF CONVERT] PDF loaded, pages:', pdf.numPages);
+    
+    const supabase = await createAdminClient();
+    const imageUrls: string[] = [];
+    
+    // Convert each page to an image
+    for (let pageNum = 1; pageNum <= pdf.numPages; pageNum++) {
+      const page = await pdf.getPage(pageNum);
+      
+      // Set scale for high quality (2x for retina displays)
+      const scale = 2.0;
+      const viewport = page.getViewport({ scale });
+      
+      // Create canvas
+      const canvas = createCanvas(viewport.width, viewport.height);
+      const context = canvas.getContext('2d');
+      
+      // Render PDF page to canvas
+      await page.render({
+        canvasContext: context as any,
+        viewport: viewport
+      }).promise;
+      
+      // Convert canvas to buffer
+      const imageBuffer = canvas.toBuffer('image/png');
+      
+      // Upload to Supabase Storage
+      const fileName = `${venueId}/menu-page-${pageNum}-${Date.now()}.png`;
+      const { data: uploadData, error: uploadError } = await supabase.storage
+        .from('menus')
+        .upload(fileName, imageBuffer, {
+          contentType: 'image/png',
+          upsert: false
+        });
+      
+      if (uploadError) {
+        console.error('[PDF CONVERT] Error uploading page', pageNum, ':', uploadError);
+        continue;
+      }
+      
+      // Get public URL
+      const { data: urlData } = supabase.storage
+        .from('menus')
+        .getPublicUrl(fileName);
+      
+      if (urlData?.publicUrl) {
+        imageUrls.push(urlData.publicUrl);
+        console.log('[PDF CONVERT] Page', pageNum, 'converted and uploaded');
+      }
+    }
+    
+    console.log('[PDF CONVERT] Conversion complete. Total images:', imageUrls.length);
     
     return NextResponse.json({
       ok: true,
-      message: 'PDF conversion endpoint ready (implementation pending)',
-      imageUrls: []
+      message: `Successfully converted ${imageUrls.length} pages`,
+      imageUrls: imageUrls
     });
     
   } catch (error: any) {
