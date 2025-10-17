@@ -1,5 +1,6 @@
 import { NextResponse } from 'next/server';
 import { createClient, getAuthenticatedUser } from '@/lib/supabase/server';
+import { cache } from '@/lib/cache';
 
 export const runtime = 'nodejs';
 
@@ -15,6 +16,17 @@ export async function GET(req: Request) {
   if (!user) {
     return NextResponse.json({ ok: false, error: 'Not authenticated' }, { status: 401 });
   }
+  
+  // Try to get from cache first (30 second TTL for live orders)
+  const cacheKey = `live_orders:${venueId}`;
+  const cachedOrders = await cache.get(cacheKey);
+  
+  if (cachedOrders) {
+    console.log('[LIVE ORDERS] Cache hit for:', venueId);
+    return NextResponse.json(cachedOrders);
+  }
+  
+  console.log('[LIVE ORDERS] Cache miss for:', venueId);
   
   const supabase = await createClient();
 
@@ -58,8 +70,13 @@ export async function GET(req: Request) {
     table_label: (order.tables as any)?.label || (order.source === 'counter' ? `Counter ${order.table_number}` : `Table ${order.table_number}`)
   })) || [];
 
-  return NextResponse.json({
+  const response = {
     ok: true,
     orders: transformedOrders
-  });
+  };
+
+  // Cache the response for 30 seconds (live orders change frequently)
+  await cache.set(cacheKey, response, 30);
+
+  return NextResponse.json(response);
 }

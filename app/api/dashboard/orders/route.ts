@@ -1,6 +1,7 @@
 import { NextResponse } from 'next/server';
 import { createClient, getAuthenticatedUser } from '@/lib/supabase/server';
 import { liveOrdersWindow, earlierTodayWindow, historyWindow } from '@/lib/dates';
+import { cache } from '@/lib/cache';
 
 export const runtime = 'nodejs';
 
@@ -19,6 +20,17 @@ export async function GET(req: Request) {
   if (!user) {
     return NextResponse.json({ ok: false, error: 'Not authenticated' }, { status: 401 });
   }
+  
+  // Try to get from cache first (1 minute TTL for dashboard orders)
+  const cacheKey = `dashboard_orders:${venueId}:${status}:${scope}:${limit}`;
+  const cachedOrders = await cache.get(cacheKey);
+  
+  if (cachedOrders) {
+    console.log('[DASHBOARD ORDERS] Cache hit for:', venueId);
+    return NextResponse.json(cachedOrders);
+  }
+  
+  console.log('[DASHBOARD ORDERS] Cache miss for:', venueId);
   
   const supabase = await createClient();
 
@@ -134,12 +146,17 @@ export async function GET(req: Request) {
 
   const activeTablesToday = new Set(activeTables?.map((o: any) => o.table_number) || []).size;
 
-  return NextResponse.json({
+  const response = {
     ok: true,
     orders: transformedOrders,
     meta: {
       activeTablesToday,
       total: transformedOrders?.length || 0
     }
-  });
+  };
+
+  // Cache the response for 1 minute (dashboard orders change frequently)
+  await cache.set(cacheKey, response, 60);
+
+  return NextResponse.json(response);
 }

@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { createClient } from '@/lib/supabase/server';
+import { cache, cacheKeys, cacheTTL } from '@/lib/cache';
 
 export async function GET(request: NextRequest) {
   try {
@@ -12,6 +13,17 @@ export async function GET(request: NextRequest) {
         { status: 400 }
       );
     }
+
+    // Try to get from cache first
+    const cacheKey = cacheKeys.categories(venueId);
+    const cachedCategories = await cache.get(cacheKey);
+    
+    if (cachedCategories) {
+      console.log('[CATEGORIES API] Cache hit for:', venueId);
+      return NextResponse.json(cachedCategories);
+    }
+    
+    console.log('[CATEGORIES API] Cache miss for:', venueId);
 
     const supabase = await createClient();
 
@@ -61,12 +73,16 @@ export async function GET(request: NextRequest) {
       orderedCategories = [...storedOrder, ...newCategories];
     }
 
-
-    return NextResponse.json({
+    const response = {
       categories: orderedCategories,
       originalCategories: uploadData?.category_order || [],
       hasStoredOrder: !!uploadData?.category_order
-    });
+    };
+
+    // Cache the response for 10 minutes
+    await cache.set(cacheKey, response, cacheTTL.categories);
+    
+    return NextResponse.json(response);
 
   } catch (error) {
     console.error('[CATEGORIES API] Unexpected error:', error);

@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { createClient } from '@/lib/supabase/server';
 import { getAuthenticatedUser } from '@/lib/supabase/server';
+import { cache } from '@/lib/cache';
 
 export async function GET(req: NextRequest) {
   try {
@@ -18,6 +19,17 @@ export async function GET(req: NextRequest) {
     if (!user) {
       return NextResponse.json({ error: 'Not authenticated' }, { status: 401 });
     }
+
+    // Try to get from cache first (1 minute TTL for POS orders)
+    const cacheKey = `pos_orders:${venueId}:${isActive}:${status}:${station}`;
+    const cachedOrders = await cache.get(cacheKey);
+    
+    if (cachedOrders) {
+      console.log('[POS ORDERS] Cache hit for:', venueId);
+      return NextResponse.json(cachedOrders);
+    }
+    
+    console.log('[POS ORDERS] Cache miss for:', venueId);
 
     const supabase = await createClient();
 
@@ -73,7 +85,12 @@ export async function GET(req: NextRequest) {
       table_label: order.tables?.label || `Table ${order.table_number}`
     })) || [];
 
-    return NextResponse.json({ orders: transformedOrders });
+    const response = { orders: transformedOrders };
+
+    // Cache the response for 1 minute (POS orders change frequently)
+    await cache.set(cacheKey, response, 60);
+
+    return NextResponse.json(response);
   } catch (error) {
     console.error('[POS ORDERS] Unexpected error:', error);
     return NextResponse.json({ error: 'Internal server error' }, { status: 500 });

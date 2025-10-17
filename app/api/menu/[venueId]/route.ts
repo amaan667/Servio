@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { createAdminClient } from '@/lib/supabase/server';
+import { cache, cacheKeys, cacheTTL } from '@/lib/cache';
 
 export async function GET(
   request: NextRequest,
@@ -21,6 +22,17 @@ export async function GET(
     const venueId = rawVenueId.startsWith('venue-') ? rawVenueId : `venue-${rawVenueId}`;
     
     console.log('[MENU API] Looking up venue:', { rawVenueId, transformedVenueId: venueId });
+
+    // Try to get from cache first
+    const cacheKey = cacheKeys.menuItems(venueId);
+    const cachedMenu = await cache.get(cacheKey);
+    
+    if (cachedMenu) {
+      console.log('[MENU API] Cache hit for:', venueId);
+      return NextResponse.json(cachedMenu);
+    }
+    
+    console.log('[MENU API] Cache miss for:', venueId);
 
     // Use admin client to bypass RLS for public menu access
     const supabase = createAdminClient();
@@ -82,6 +94,8 @@ export async function GET(
       totalItems: menuItems?.length || 0
     };
 
+    // Cache the response for 5 minutes
+    await cache.set(cacheKey, response, cacheTTL.menuItems);
     
     return NextResponse.json(response);
 
