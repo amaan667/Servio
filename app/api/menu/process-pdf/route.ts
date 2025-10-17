@@ -129,15 +129,21 @@ export async function POST(req: Request) {
       const pdfjsLib = await import('pdfjs-dist');
       const { createCanvas } = await import('canvas');
       
+      console.log('[PDF_PROCESS] PDF.js and Canvas libraries loaded');
+      
       // Configure pdfjs-dist
       pdfjsLib.GlobalWorkerOptions.workerSrc = `//cdnjs.cloudflare.com/ajax/libs/pdf.js/${pdfjsLib.version}/pdf.worker.min.mjs`;
       
       // Load PDF
+      console.log('[PDF_PROCESS] Loading PDF document...');
       const loadingTask = pdfjsLib.getDocument({ data: buffer });
       const pdf = await loadingTask.promise;
       
+      console.log('[PDF_PROCESS] PDF loaded successfully. Total pages:', pdf.numPages);
+      
       // Convert each page to image (max 10 pages)
       for (let pageNum = 1; pageNum <= Math.min(pdf.numPages, 10); pageNum++) {
+        console.log('[PDF_PROCESS] Converting page', pageNum, 'to image...');
         const page = await pdf.getPage(pageNum);
         const scale = 2.0;
         const viewport = page.getViewport({ scale });
@@ -155,6 +161,7 @@ export async function POST(req: Request) {
         
         // Convert canvas to buffer
         const imageBuffer = canvas.toBuffer('image/png');
+        console.log('[PDF_PROCESS] Page', pageNum, 'rendered. Buffer size:', imageBuffer.length);
         
         // Upload to Supabase Storage
         const fileName = `${venueId}/menu-page-${pageNum}-${Date.now()}.png`;
@@ -170,6 +177,8 @@ export async function POST(req: Request) {
           continue;
         }
         
+        console.log('[PDF_PROCESS] Page', pageNum, 'uploaded to storage:', uploadData);
+        
         // Get public URL
         const { data: urlData } = supa.storage
           .from('menus')
@@ -177,13 +186,16 @@ export async function POST(req: Request) {
         
         if (urlData?.publicUrl) {
           pdfImages.push(urlData.publicUrl);
-          console.log('[PDF CONVERT] Page', pageNum, 'converted and uploaded');
+          console.log('[PDF CONVERT] Page', pageNum, 'converted and uploaded. URL:', urlData.publicUrl);
+        } else {
+          console.error('[PDF_PROCESS] Failed to get public URL for page', pageNum);
         }
       }
       
-      console.log('[PDF_PROCESS] Converted', pdfImages.length, 'pages to images');
+      console.log('[PDF_PROCESS] Converted', pdfImages.length, 'pages to images:', pdfImages);
     } catch (imageError: any) {
       console.error('[PDF_PROCESS] Image conversion failed:', imageError);
+      console.error('[PDF_PROCESS] Error stack:', imageError.stack);
       // Don't fail the whole request if image conversion fails
     }
 
@@ -331,8 +343,11 @@ export async function POST(req: Request) {
     const duplicatesSkipped = itemsToUpsert.length - toInsert.length;
 
     // Store audit trail with category order and PDF images
+    console.log('[PDF_PROCESS] Saving to menu_uploads table...');
+    console.log('[PDF_PROCESS] pdf_images to save:', pdfImages);
+    console.log('[PDF_PROCESS] pdf_images length:', pdfImages.length);
     try {
-      await supa.from('menu_uploads').insert({
+      const { data: insertData, error: insertError } = await supa.from('menu_uploads').insert({
         venue_id: venueId,
         filename: file.name,
         storage_path: storagePath,
@@ -341,9 +356,15 @@ export async function POST(req: Request) {
         category_order: validated.categories, // Store category order in the new column
         pdf_images: pdfImages, // Store PDF images for preview
         created_at: new Date().toISOString()
-      });
+      }).select();
+      
+      if (insertError) {
+        console.error('[PDF_PROCESS] Audit trail insertion failed:', insertError);
+      } else {
+        console.log('[PDF_PROCESS] Audit trail saved successfully:', insertData);
+      }
     } catch (auditError) {
-      console.warn('[PDF_PROCESS] Audit trail insertion failed:', auditError);
+      console.error('[PDF_PROCESS] Audit trail insertion exception:', auditError);
       // Don't fail the whole request for audit trail issues
     }
     
