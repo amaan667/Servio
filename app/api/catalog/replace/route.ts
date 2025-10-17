@@ -151,7 +151,29 @@ export async function POST(req: NextRequest) {
         items: applyKnownFixes(parsedPayload.items)
       };
 
-      return await replaceCatalog(supabase, venueId, fixedPayload, extractedText);
+      // Convert PDF to images and store them
+      let pdfImages: string[] = [];
+      try {
+        const formData = new FormData();
+        formData.append('pdf', file);
+        formData.append('venueId', venueId);
+        
+        const convertResponse = await fetch(`${process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:3000'}/api/pdf/convert-to-images`, {
+          method: 'POST',
+          body: formData
+        });
+        
+        if (convertResponse.ok) {
+          const convertResult = await convertResponse.json();
+          pdfImages = convertResult.imageUrls || [];
+          console.log('[CATALOG REPLACE] Converted PDF to', pdfImages.length, 'images');
+        }
+      } catch (error) {
+        console.error('[CATALOG REPLACE] Error converting PDF to images:', error);
+        // Continue without images - text extraction still works
+      }
+
+      return await replaceCatalog(supabase, venueId, fixedPayload, extractedText, pdfImages);
     } else {
       // Direct payload provided
       const { payload } = requestBody;
@@ -180,7 +202,7 @@ export async function POST(req: NextRequest) {
 }
 
 // Helper function to replace catalog
-async function replaceCatalog(supabase: any, venueId: string, fixedPayload: any, extractedText?: string) {
+async function replaceCatalog(supabase: any, venueId: string, fixedPayload: any, extractedText?: string, pdfImages?: string[]) {
 
   // Skip validation for now to focus on maximum extraction
   // Just try to insert items directly
@@ -221,6 +243,21 @@ async function replaceCatalog(supabase: any, venueId: string, fixedPayload: any,
         }, { status: 500 });
       }
 
+      // Store PDF images in menu_uploads table
+      if (pdfImages && pdfImages.length > 0) {
+        const { error: updateError } = await supabase
+          .from('menu_uploads')
+          .update({ pdf_images: pdfImages })
+          .eq('venue_id', venueId)
+          .order('created_at', { ascending: false })
+          .limit(1);
+        
+        if (updateError) {
+          console.warn('[CATALOG REPLACE] Warning: Could not store PDF images:', updateError.message);
+        } else {
+          console.log('[CATALOG REPLACE] Stored', pdfImages.length, 'PDF images');
+        }
+      }
 
       return NextResponse.json({
         ok: true,
