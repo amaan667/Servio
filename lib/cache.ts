@@ -7,11 +7,31 @@ import Redis from 'ioredis';
 import { logger } from './logger';
 
 // Initialize Redis client (server-only)
-const redis = typeof window === 'undefined' ? new Redis(process.env.REDIS_URL || 'redis://localhost:6379', {
-  maxRetriesPerRequest: 3,
-  enableReadyCheck: true,
-  lazyConnect: true,
-}) : null;
+// Support both traditional Redis (REDIS_URL) and Upstash (UPSTASH_REDIS_REST_URL + UPSTASH_REDIS_REST_TOKEN)
+const getRedisConfig = () => {
+  // If UPSTASH_REDIS_REST_URL is set, construct Upstash connection
+  if (process.env.UPSTASH_REDIS_REST_URL && process.env.UPSTASH_REDIS_REST_TOKEN) {
+    const url = process.env.UPSTASH_REDIS_REST_URL.replace('https://', 'redis://');
+    const token = process.env.UPSTASH_REDIS_REST_TOKEN;
+    return new Redis(`${url}`, {
+      password: token,
+      maxRetriesPerRequest: 3,
+      enableReadyCheck: true,
+      lazyConnect: true,
+      tls: {
+        rejectUnauthorized: false
+      }
+    });
+  }
+  // Fallback to REDIS_URL or localhost
+  return new Redis(process.env.REDIS_URL || 'redis://localhost:6379', {
+    maxRetriesPerRequest: 3,
+    enableReadyCheck: true,
+    lazyConnect: true,
+  });
+};
+
+const redis = typeof window === 'undefined' ? getRedisConfig() : null;
 
 if (redis) {
   redis.on('error', (err) => {
