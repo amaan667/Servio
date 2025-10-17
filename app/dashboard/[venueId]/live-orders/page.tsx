@@ -42,7 +42,7 @@ export default async function LiveOrdersPage({ params }: { params: Promise<{ ven
   if (!venue && isStaff) {
     const { data: staffVenue } = await supabase
       .from('venues')
-      .select('venue_id, venue_name')
+      .select('*')
       .eq('venue_id', venueId)
       .single();
     

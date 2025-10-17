@@ -42,7 +42,7 @@ export default async function QRCodePage({ params }: { params: Promise<{ venueId
   if (!venue && isStaff) {
     const { data: staffVenue } = await supabase
       .from('venues')
-      .select('venue_id, venue_name')
+      .select('*')
       .eq('venue_id', venueId)
       .single();
     
