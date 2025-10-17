@@ -80,6 +80,7 @@ export default function MenuManagementClient({ venueId, canEdit = true }: { venu
   });
   const [isUploadingLogo, setIsUploadingLogo] = useState(false);
   const [isSavingDesign, setIsSavingDesign] = useState(false);
+  const [previewMode, setPreviewMode] = useState<'styled' | 'simple'>('styled');
   const router = useRouter();
   const { toast } = useToast();
 
@@ -1176,6 +1177,30 @@ export default function MenuManagementClient({ venueId, canEdit = true }: { venu
           </CardContent>
         </Card>
 
+          {/* Live Preview Section */}
+          {menuItems.length > 0 && (
+            <Card>
+              <CardHeader>
+                <CardTitle className="flex items-center space-x-2">
+                  <Eye className="h-5 w-5" />
+                  <span>Live Preview</span>
+                </CardTitle>
+                <CardDescription>
+                  See your changes in real-time as you edit the design
+                </CardDescription>
+              </CardHeader>
+              <CardContent>
+                <div className="border border-gray-200 rounded-lg p-4 bg-white">
+                  <MenuPreview
+                    venueId={venueId}
+                    menuItems={menuItems}
+                    categoryOrder={categoryOrder}
+                  />
+                </div>
+              </CardContent>
+            </Card>
+          )}
+
           <div className="flex justify-end">
             <Button 
               onClick={saveDesignSettings}
@@ -1200,6 +1225,31 @@ export default function MenuManagementClient({ venueId, canEdit = true }: { venu
                   <span>Menu Preview</span>
                 </div>
                 <div className="flex flex-col sm:flex-row items-stretch sm:items-center space-y-2 sm:space-y-0 sm:space-x-2">
+                  {/* Preview Mode Toggle */}
+                  <div className="flex items-center space-x-2 bg-gray-100 rounded-lg p-1">
+                    <button
+                      onClick={() => setPreviewMode('styled')}
+                      className={`px-3 py-1.5 text-sm font-medium rounded-md transition-colors ${
+                        previewMode === 'styled'
+                          ? 'bg-white text-gray-900 shadow-sm'
+                          : 'text-gray-600 hover:text-gray-900'
+                      }`}
+                    >
+                      <Layout className="h-4 w-4 inline mr-1" />
+                      Styled
+                    </button>
+                    <button
+                      onClick={() => setPreviewMode('simple')}
+                      className={`px-3 py-1.5 text-sm font-medium rounded-md transition-colors ${
+                        previewMode === 'simple'
+                          ? 'bg-white text-gray-900 shadow-sm'
+                          : 'text-gray-600 hover:text-gray-900'
+                      }`}
+                    >
+                      <List className="h-4 w-4 inline mr-1" />
+                      Simple
+                    </button>
+                  </div>
                   <Button variant="outline" size="sm" className="w-full sm:w-auto">
                     <Download className="h-4 w-4 mr-2" />
                     Export PDF
@@ -1213,7 +1263,7 @@ export default function MenuManagementClient({ venueId, canEdit = true }: { venu
             </CardHeader>
           </Card>
 
-          {/* Styled Menu Preview - Read-only display of PDF menu */}
+          {/* Menu Preview - Styled or Simple View */}
           {menuItems.length === 0 ? (
             <Card>
               <CardContent className="p-12">
@@ -1228,12 +1278,57 @@ export default function MenuManagementClient({ venueId, canEdit = true }: { venu
                 </div>
               </CardContent>
             </Card>
-          ) : (
+          ) : previewMode === 'styled' ? (
             <MenuPreview
               venueId={venueId}
               menuItems={menuItems}
               categoryOrder={categoryOrder}
             />
+          ) : (
+            <Card>
+              <CardContent className="p-6">
+                <div className="space-y-8">
+                  {(() => {
+                    const categories = Array.from(new Set(menuItems.map((i) => i.category)));
+                    const sortedCats = categoryOrder 
+                      ? categories.sort((a,b) => {
+                          const orderA = categoryOrder.findIndex(c => c.toLowerCase() === a.toLowerCase());
+                          const orderB = categoryOrder.findIndex(c => c.toLowerCase() === b.toLowerCase());
+                          if (orderA >= 0 && orderB >= 0) return orderA - orderB;
+                          if (orderA >= 0) return -1;
+                          if (orderB >= 0) return 1;
+                          return 0;
+                        })
+                      : categories.sort();
+                    
+                    return sortedCats.map(category => (
+                      <div key={category} className="space-y-4">
+                        <h2 className="text-2xl font-bold text-gray-900 border-b-2 border-gray-200 pb-2">
+                          {category}
+                        </h2>
+                        <div className="space-y-3">
+                          {menuItems
+                            .filter(item => item.category === category && item.is_available)
+                            .map(item => (
+                              <div key={item.id} className="flex justify-between items-start py-2 border-b border-gray-100 last:border-b-0">
+                                <div className="flex-1">
+                                  <h3 className="font-semibold text-gray-900">{item.name}</h3>
+                                  {item.description && (
+                                    <p className="text-sm text-gray-600 mt-1">{item.description}</p>
+                                  )}
+                                </div>
+                                <span className="text-lg font-semibold text-purple-600 ml-4">
+                                  £{item.price.toFixed(2)}
+                                </span>
+                              </div>
+                            ))}
+                        </div>
+                      </div>
+                    ));
+                  })()}
+                </div>
+              </CardContent>
+            </Card>
           )}
         </div>
       )}
