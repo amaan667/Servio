@@ -72,8 +72,9 @@ export function EnhancedPDFMenuDisplay({
       try {
         const supabase = createClient();
         
+        console.log('[PDF IMAGES] Fetching PDF images for venue:', venueId);
+        
         // Fetch the most recent PDF upload for this venue
-        // Note: pdf_images column may not exist in all deployments
         const { data: uploadData, error } = await supabase
           .from('menu_uploads')
           .select('*')
@@ -82,15 +83,24 @@ export function EnhancedPDFMenuDisplay({
           .limit(1)
           .single();
 
-        if (uploadData && uploadData.pdf_images) {
+        console.log('[PDF IMAGES] Upload data:', uploadData);
+        console.log('[PDF IMAGES] Error:', error);
+
+        if (uploadData) {
+          console.log('[PDF IMAGES] pdf_images column:', uploadData.pdf_images);
+          console.log('[PDF IMAGES] pdf_images type:', typeof uploadData.pdf_images);
+          console.log('[PDF IMAGES] pdf_images length:', uploadData.pdf_images?.length);
+        }
+
+        if (uploadData && uploadData.pdf_images && uploadData.pdf_images.length > 0) {
+          console.log('[PDF IMAGES] Setting PDF images:', uploadData.pdf_images);
           setPdfImages(uploadData.pdf_images);
         } else {
-          // If no PDF images, default to list view
+          console.log('[PDF IMAGES] No PDF images found, defaulting to list view');
           setViewMode('list');
         }
       } catch (error) {
-        console.error('Error fetching PDF images:', error);
-        // If no PDF images, default to list view
+        console.error('[PDF IMAGES] Error fetching PDF images:', error);
         setViewMode('list');
       } finally {
         setLoading(false);
