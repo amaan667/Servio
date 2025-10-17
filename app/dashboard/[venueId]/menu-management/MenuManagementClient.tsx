@@ -85,8 +85,6 @@ export default function MenuManagementClient({ venueId, canEdit = true }: { venu
   const [previewMode, setPreviewMode] = useState<'pdf' | 'styled' | 'simple'>('pdf');
   const [draggedItem, setDraggedItem] = useState<MenuItem | null>(null);
   const [draggedOverItem, setDraggedOverItem] = useState<MenuItem | null>(null);
-  const [isDetectingHotspots, setIsDetectingHotspots] = useState(false);
-  const [hotspotsEnabled, setHotspotsEnabled] = useState(false);
   const router = useRouter();
   const { toast } = useToast();
 
@@ -246,64 +244,8 @@ export default function MenuManagementClient({ venueId, canEdit = true }: { venu
     if (venueId) {
       loadMenuItems();
       loadDesignSettings();
-      checkHotspotsStatus();
     }
   }, [venueId]);
-
-  const checkHotspotsStatus = async () => {
-    try {
-      const supabase = createClient();
-      const { data, error } = await supabase
-        .from('menu_hotspots')
-        .select('id')
-        .eq('venue_id', venueId)
-        .eq('is_active', true)
-        .limit(1);
-
-      if (!error && data && data.length > 0) {
-        setHotspotsEnabled(true);
-      }
-    } catch (error) {
-      console.error('Error checking hotspots status:', error);
-    }
-  };
-
-  const handleDetectHotspots = async () => {
-    try {
-      setIsDetectingHotspots(true);
-      
-      const response = await fetch('/api/menu/trigger-hotspot-detection', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({ venueId }),
-      });
-
-      const result = await response.json();
-
-      if (!result.ok) {
-        throw new Error(result.error || 'Failed to detect hotspots');
-      }
-
-      setHotspotsEnabled(true);
-      toast({
-        title: "✅ Hotspots detected successfully!",
-        description: `Found ${result.hotspots} menu item hotspots on your PDF menu. They will now be clickable in the preview.`,
-        duration: 5000,
-      });
-
-    } catch (error: any) {
-      console.error('Error detecting hotspots:', error);
-      toast({
-        title: "Error",
-        description: error.message || "Failed to detect hotspots",
-        variant: "destructive",
-      });
-    } finally {
-      setIsDetectingHotspots(false);
-    }
-  };
 
   // Load Google Fonts dynamically
   useEffect(() => {
@@ -833,74 +775,6 @@ export default function MenuManagementClient({ venueId, canEdit = true }: { venu
             </CardHeader>
             <CardContent>
               <MenuUploadCard venueId={venueId} onSuccess={() => loadMenuItems()} />
-            </CardContent>
-          </Card>
-
-          {/* Hotspot Detection Section */}
-          <Card>
-            <CardHeader>
-              <CardTitle className="flex items-center space-x-2">
-                <Layout className="h-5 w-5" />
-                <span>Interactive Hotspots</span>
-              </CardTitle>
-            </CardHeader>
-            <CardContent className="space-y-4">
-              <p className="text-sm text-muted-foreground">
-                Enable interactive hotspots on your PDF menu. Click on menu items directly in the PDF to view details and add to cart.
-              </p>
-              
-              {hotspotsEnabled ? (
-                <div className="bg-green-50 border border-green-200 rounded-lg p-4">
-                  <div className="flex items-center justify-between">
-                    <div className="flex items-center space-x-2">
-                      <div className="h-2 w-2 bg-green-500 rounded-full"></div>
-                      <span className="text-sm font-medium text-green-800">
-                        Hotspots are active
-                      </span>
-                    </div>
-                    <Button
-                      variant="outline"
-                      size="sm"
-                      onClick={handleDetectHotspots}
-                      disabled={isDetectingHotspots}
-                    >
-                      {isDetectingHotspots ? 'Detecting...' : 'Re-detect Hotspots'}
-                    </Button>
-                  </div>
-                  <p className="text-xs text-green-700 mt-2">
-                    Menu items are now clickable in the PDF preview
-                  </p>
-                </div>
-              ) : (
-                <Button
-                  onClick={handleDetectHotspots}
-                  disabled={isDetectingHotspots}
-                  className="w-full"
-                >
-                  {isDetectingHotspots ? (
-                    <>
-                      <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white mr-2"></div>
-                      Detecting Hotspots...
-                    </>
-                  ) : (
-                    <>
-                      <Layout className="h-4 w-4 mr-2" />
-                      Enable Interactive Hotspots
-                    </>
-                  )}
-                </Button>
-              )}
-
-              <div className="text-xs text-muted-foreground space-y-1">
-                <p>✨ Features:</p>
-                <ul className="list-disc list-inside space-y-1 ml-2">
-                  <li>Click any menu item on the PDF to see details</li>
-                  <li>Add items to cart directly from the PDF</li>
-                  <li>Switch between PDF view and list view</li>
-                  <li>Pinch to zoom on mobile devices</li>
-                  <li>Search and filter menu items</li>
-                </ul>
-              </div>
             </CardContent>
           </Card>
 
@@ -1529,29 +1403,16 @@ export default function MenuManagementClient({ venueId, canEdit = true }: { venu
               </CardContent>
             </Card>
           ) : previewMode === 'pdf' ? (
-            hotspotsEnabled ? (
-              <EnhancedPDFMenuDisplay
-                venueId={venueId}
-                menuItems={menuItems}
-                categoryOrder={categoryOrder}
-                onAddToCart={() => {}}
-                cart={[]}
-                onRemoveFromCart={() => {}}
-                onUpdateQuantity={() => {}}
-                isOrdering={false}
-              />
-            ) : (
-              <PDFMenuDisplay
-                venueId={venueId}
-                menuItems={menuItems}
-                categoryOrder={categoryOrder}
-                onAddToCart={() => {}}
-                cart={[]}
-                onRemoveFromCart={() => {}}
-                onUpdateQuantity={() => {}}
-                isOrdering={false}
-              />
-            )
+            <EnhancedPDFMenuDisplay
+              venueId={venueId}
+              menuItems={menuItems}
+              categoryOrder={categoryOrder}
+              onAddToCart={() => {}}
+              cart={[]}
+              onRemoveFromCart={() => {}}
+              onUpdateQuantity={() => {}}
+              isOrdering={false}
+            />
           ) : previewMode === 'styled' ? (
             <MenuPreview
               venueId={venueId}
