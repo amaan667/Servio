@@ -121,6 +121,71 @@ export async function POST(req: Request) {
       }, { status: 500 });
     }
 
+    // Convert PDF to images for preview
+    console.log('[PDF_PROCESS] Converting PDF to images...');
+    let pdfImages: string[] = [];
+    try {
+      // Dynamic imports to avoid build issues
+      const pdfjsLib = await import('pdfjs-dist');
+      const { createCanvas } = await import('canvas');
+      
+      // Configure pdfjs-dist
+      pdfjsLib.GlobalWorkerOptions.workerSrc = `//cdnjs.cloudflare.com/ajax/libs/pdf.js/${pdfjsLib.version}/pdf.worker.min.mjs`;
+      
+      // Load PDF
+      const loadingTask = pdfjsLib.getDocument({ data: buffer });
+      const pdf = await loadingTask.promise;
+      
+      // Convert each page to image (max 10 pages)
+      for (let pageNum = 1; pageNum <= Math.min(pdf.numPages, 10); pageNum++) {
+        const page = await pdf.getPage(pageNum);
+        const scale = 2.0;
+        const viewport = page.getViewport({ scale });
+        
+        // Create canvas
+        const canvas = createCanvas(viewport.width, viewport.height);
+        const context = canvas.getContext('2d');
+        
+        // Render PDF page to canvas
+        await page.render({
+          canvasContext: context as any,
+          viewport: viewport,
+          canvas: canvas as any
+        }).promise;
+        
+        // Convert canvas to buffer
+        const imageBuffer = canvas.toBuffer('image/png');
+        
+        // Upload to Supabase Storage
+        const fileName = `${venueId}/menu-page-${pageNum}-${Date.now()}.png`;
+        const { data: uploadData, error: uploadError } = await supa.storage
+          .from('menus')
+          .upload(fileName, imageBuffer, {
+            contentType: 'image/png',
+            upsert: false
+          });
+        
+        if (uploadError) {
+          console.error('[PDF CONVERT] Error uploading page', pageNum, ':', uploadError);
+          continue;
+        }
+        
+        // Get public URL
+        const { data: urlData } = supa.storage
+          .from('menus')
+          .getPublicUrl(fileName);
+        
+        if (urlData?.publicUrl) {
+          pdfImages.push(urlData.publicUrl);
+          console.log('[PDF CONVERT] Page', pageNum, 'converted and uploaded');
+        }
+      }
+      
+      console.log('[PDF_PROCESS] Converted', pdfImages.length, 'pages to images');
+    } catch (imageError: any) {
+      console.error('[PDF_PROCESS] Image conversion failed:', imageError);
+      // Don't fail the whole request if image conversion fails
+    }
 
     // Extract text using OCR (currently mock implementation)
     let extractedText: string;
@@ -265,7 +330,7 @@ export async function POST(req: Request) {
 
     const duplicatesSkipped = itemsToUpsert.length - toInsert.length;
 
-    // Store audit trail with category order
+    // Store audit trail with category order and PDF images
     try {
       await supa.from('menu_uploads').insert({
         venue_id: venueId,
@@ -274,11 +339,31 @@ export async function POST(req: Request) {
         file_size: file.size,
         extracted_text_length: extractedText.length,
         category_order: validated.categories, // Store category order in the new column
+        pdf_images: pdfImages, // Store PDF images for preview
         created_at: new Date().toISOString()
       });
     } catch (auditError) {
       console.warn('[PDF_PROCESS] Audit trail insertion failed:', auditError);
       // Don't fail the whole request for audit trail issues
+    }
+    
+    // Auto-enable hotspots after successful upload
+    if (pdfImages.length > 0 && upsertedItems.length > 0) {
+      try {
+        console.log('[PDF_PROCESS] Auto-enabling hotspots...');
+        const baseUrl = process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:3000';
+        await fetch(`${baseUrl}/api/menu/detect-hotspots`, {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({ venueId }),
+        });
+        console.log('[PDF_PROCESS] Hotspots auto-enabled');
+      } catch (hotspotError) {
+        console.warn('[PDF_PROCESS] Failed to auto-enable hotspots:', hotspotError);
+        // Don't fail the whole request if hotspot detection fails
+      }
     }
 
     return NextResponse.json({

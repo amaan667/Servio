@@ -904,30 +904,32 @@ export default function MenuManagementClient({ venueId, canEdit = true }: { venu
             </CardContent>
           </Card>
 
-          {/* Categories Management */}
-          <Card>
-            <CardHeader>
-              <CardTitle className="flex items-center justify-between">
-                <div className="flex items-center space-x-2">
-                  <Grid className="h-5 w-5" />
-                  <span>Categories</span>
-                </div>
-                <Button
-                  variant="outline"
-                  onClick={() => setShowCategories(!showCategories)}
-                  className="flex items-center space-x-2"
-                >
-                  {showCategories ? <ChevronDown className="h-4 w-4" /> : <ChevronRight className="h-4 w-4" />}
-                  <span>{showCategories ? 'Hide' : 'Manage'}</span>
-                </Button>
-              </CardTitle>
-            </CardHeader>
-            {showCategories && (
-              <CardContent>
-                <CategoriesManagement venueId={venueId} onCategoriesUpdate={() => loadMenuItems()} />
-              </CardContent>
-            )}
-          </Card>
+          {/* Categories Management - Only show if menu items exist */}
+          {menuItems.length > 0 && (
+            <Card>
+              <CardHeader>
+                <CardTitle className="flex items-center justify-between">
+                  <div className="flex items-center space-x-2">
+                    <Grid className="h-5 w-5" />
+                    <span>Categories</span>
+                  </div>
+                  <Button
+                    variant="outline"
+                    onClick={() => setShowCategories(!showCategories)}
+                    className="flex items-center space-x-2"
+                  >
+                    {showCategories ? <ChevronDown className="h-4 w-4" /> : <ChevronRight className="h-4 w-4" />}
+                    <span>{showCategories ? 'Hide' : 'Manage'}</span>
+                  </Button>
+                </CardTitle>
+              </CardHeader>
+              {showCategories && (
+                <CardContent>
+                  <CategoriesManagement venueId={venueId} onCategoriesUpdate={() => loadMenuItems()} />
+                </CardContent>
+              )}
+            </Card>
+          )}
 
           {/* Menu Items Management */}
           <Card>
@@ -1460,11 +1462,49 @@ export default function MenuManagementClient({ venueId, canEdit = true }: { venu
                       Simple
                     </button>
                   </div>
-                  <Button variant="outline" size="sm" className="w-full sm:w-auto">
+                  <Button 
+                    variant="outline" 
+                    size="sm" 
+                    className="w-full sm:w-auto"
+                    onClick={() => {
+                      // Export PDF functionality
+                      const link = document.createElement('a');
+                      link.href = `/api/menu/export-pdf?venueId=${venueId}`;
+                      link.download = 'menu.pdf';
+                      link.click();
+                    }}
+                  >
                     <Download className="h-4 w-4 mr-2" />
                     Export PDF
                   </Button>
-                  <Button variant="outline" size="sm" className="w-full sm:w-auto">
+                  <Button 
+                    variant="outline" 
+                    size="sm" 
+                    className="w-full sm:w-auto"
+                    onClick={async () => {
+                      // Share Link functionality
+                      const shareUrl = `${window.location.origin}/order/${venueId}`;
+                      if (navigator.share) {
+                        try {
+                          await navigator.share({
+                            title: 'View Our Menu',
+                            text: 'Check out our menu!',
+                            url: shareUrl,
+                          });
+                        } catch (err) {
+                          // User cancelled or error occurred
+                          console.log('Error sharing:', err);
+                        }
+                      } else {
+                        // Fallback: copy to clipboard
+                        await navigator.clipboard.writeText(shareUrl);
+                        toast({
+                          title: 'Link copied!',
+                          description: 'Menu link has been copied to your clipboard',
+                        });
+                      }
+                    }}
+                  >
                     <Share className="h-4 w-4 mr-2" />
                     Share Link
                   </Button>
