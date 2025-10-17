@@ -18,6 +18,7 @@ import { PDFMenuDisplay } from "@/components/PDFMenuDisplay";
 import { EnhancedPDFMenuDisplay } from "@/components/EnhancedPDFMenuDisplay";
 import { useToast } from "@/hooks/use-toast";
 import { formatPriceWithCurrency } from "@/lib/pricing-utils";
+import { DragDropContext, Droppable, Draggable, DropResult } from "@hello-pangea/dnd";
 
 interface MenuItem {
   id: string;
@@ -89,44 +90,31 @@ export default function MenuManagementClient({ venueId, canEdit = true }: { venu
   const router = useRouter();
   const { toast } = useToast();
 
-  // Drag and drop handlers
-  const handleDragStart = (item: MenuItem) => {
-    setDraggedItem(item);
-  };
+  // Drag and drop handlers - using @hello-pangea/dnd library
 
-  const handleDragOver = (e: React.DragEvent, item: MenuItem) => {
-    e.preventDefault();
-    if (draggedItem && draggedItem.id !== item.id) {
-      setDraggedOverItem(item);
-    }
-  };
-
-  const handleDragEnd = async () => {
-    if (!draggedItem || !draggedOverItem) {
+  const handleDragEnd = async (result: DropResult) => {
+    if (!result.destination) {
       setDraggedItem(null);
       setDraggedOverItem(null);
       return;
     }
+
+    const { source, destination } = result;
+    const category = source.droppableId;
+
+    // Get items in this category
+    const categoryItems = menuItems
+      .filter(item => item.category === category)
+      .sort((a, b) => (a.position || 0) - (b.position || 0));
 
     // Reorder items
-    const categoryItems = menuItems.filter(item => item.category === draggedItem.category);
-    const draggedIndex = categoryItems.findIndex(item => item.id === draggedItem.id);
-    const targetIndex = categoryItems.findIndex(item => item.id === draggedOverItem.id);
+    const newItems = Array.from(categoryItems);
+    const [removed] = newItems.splice(source.index, 1);
+    newItems.splice(destination.index, 0, removed);
 
-    if (draggedIndex === -1 || targetIndex === -1) {
-      setDraggedItem(null);
-      setDraggedOverItem(null);
-      return;
-    }
-
-    // Create new array with reordered items
-    const newItems = [...categoryItems];
-    const [removed] = newItems.splice(draggedIndex, 1);
-    newItems.splice(targetIndex, 0, removed);
-
-    // Update all items in the category with new order (visual only, no database update)
+    // Update positions for all items in the category
     const updatedItems = menuItems.map(item => {
-      if (item.category === draggedItem.category) {
+      if (item.category === category) {
         const newIndex = newItems.findIndex(newItem => newItem.id === item.id);
         return { ...item, position: newIndex };
       }
@@ -135,12 +123,30 @@ export default function MenuManagementClient({ venueId, canEdit = true }: { venu
 
     setMenuItems(updatedItems);
 
-    // Note: Position is not persisted to database as the position column doesn't exist
-    // Items will be ordered by created_at when the page reloads
-    toast({
-      title: "Items reordered",
-      description: "Menu items have been reordered (changes will reset on page reload)",
-    });
+    // Save positions to database
+    try {
+      const supabase = createClient();
+      const updates = newItems.map((item, index) => 
+        supabase
+          .from('menu_items')
+          .update({ position: index })
+          .eq('id', item.id)
+      );
+
+      await Promise.all(updates);
+
+      toast({
+        title: "Items reordered",
+        description: "Menu items have been reordered successfully",
+      });
+    } catch (error) {
+      console.error('Error reordering items:', error);
+      toast({
+        title: "Error",
+        description: "Failed to save item order",
+        variant: "destructive",
+      });
+    }
 
     setDraggedItem(null);
     setDraggedOverItem(null);
@@ -297,12 +303,12 @@ export default function MenuManagementClient({ venueId, canEdit = true }: { venu
         hasKey: !!process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY
       });
       
-      // Query menu items ordered by creation date
+      // Query menu items ordered by position within category
       const { data: items, error } = await supabase
         .from('menu_items')
         .select('*')
         .eq('venue_id', venueId)
-        .order('created_at', { ascending: true });
+        .order('position', { ascending: true, nullsFirst: false });
 
       if (error) {
         console.error('[MENU LOAD] Error loading menu items:', error);
@@ -574,6 +580,14 @@ export default function MenuManagementClient({ venueId, canEdit = true }: { venu
 
     try {
       const supabase = createClient();
+      
+      // Calculate position for new items (add to end of category)
+      let position = 0;
+      if (!editingItem) {
+        const categoryItems = menuItems.filter(item => item.category === formData.category.trim());
+        position = categoryItems.length;
+      }
+      
       const itemData = {
         venue_id: venueId,
         name: formData.name.trim(),
@@ -581,6 +595,7 @@ export default function MenuManagementClient({ venueId, canEdit = true }: { venu
         price: parseFloat(formData.price),
         category: formData.category.trim(),
         is_available: formData.available,
+        position: editingItem ? editingItem.position : position,
         created_at: new Date().toISOString()
       };
 
@@ -691,7 +706,9 @@ export default function MenuManagementClient({ venueId, canEdit = true }: { venu
   };
 
   const getItemsByCategory = (category: string) => {
-    return menuItems.filter(item => item.category === category);
+    return menuItems
+      .filter(item => item.category === category)
+      .sort((a, b) => (a.position || 0) - (b.position || 0));
   };
 
   const clearAllMenu = async () => {
@@ -925,81 +942,96 @@ export default function MenuManagementClient({ venueId, canEdit = true }: { venu
                   </Button>
                 </div>
               ) : (
-                <div className="space-y-4">
-                  {getCategories().map(category => (
-                    <div key={category} className="border rounded-lg">
-                      <div
-                        className="flex items-center justify-between p-4 cursor-pointer hover:bg-muted/50"
-                        onClick={() => toggleCategory(category)}
-                      >
-                        <div className="flex items-center space-x-2">
-                          {expandedCategories.has(category) ? (
-                            <ChevronDown className="h-4 w-4" />
-                          ) : (
-                            <ChevronRight className="h-4 w-4" />
-                          )}
-                          <h3 className="font-medium text-foreground">{category}</h3>
-                          <span className="text-sm text-muted-foreground">
-                            ({getItemsByCategory(category).length} items)
-                          </span>
+                <DragDropContext onDragEnd={handleDragEnd}>
+                  <div className="space-y-4">
+                    {getCategories().map(category => (
+                      <div key={category} className="border rounded-lg">
+                        <div
+                          className="flex items-center justify-between p-4 cursor-pointer hover:bg-muted/50"
+                          onClick={() => toggleCategory(category)}
+                        >
+                          <div className="flex items-center space-x-2">
+                            {expandedCategories.has(category) ? (
+                              <ChevronDown className="h-4 w-4" />
+                            ) : (
+                              <ChevronRight className="h-4 w-4" />
+                            )}
+                            <h3 className="font-medium text-foreground">{category}</h3>
+                            <span className="text-sm text-muted-foreground">
+                              ({getItemsByCategory(category).length} items)
+                            </span>
+                          </div>
                         </div>
+                        {expandedCategories.has(category) && (
+                          <Droppable droppableId={category}>
+                            {(provided, snapshot) => (
+                              <div
+                                ref={provided.innerRef}
+                                {...provided.droppableProps}
+                                className={`border-t ${snapshot.isDraggingOver ? 'bg-blue-50' : ''}`}
+                              >
+                                {getItemsByCategory(category)
+                                  .sort((a, b) => (a.position || 0) - (b.position || 0))
+                                  .map((item, index) => (
+                                    <Draggable key={item.id} draggableId={item.id} index={index}>
+                                      {(provided, snapshot) => (
+                                        <div
+                                          ref={provided.innerRef}
+                                          {...provided.draggableProps}
+                                          className={`flex items-center justify-between p-4 hover:bg-muted/25 transition-colors ${
+                                            snapshot.isDragging ? 'bg-blue-50 border-l-4 border-blue-500 shadow-md' : ''
+                                          }`}
+                                        >
+                                          <div className="flex items-center space-x-2 flex-1">
+                                            {/* Drag Handle */}
+                                            <div
+                                              {...provided.dragHandleProps}
+                                              className="cursor-grab active:cursor-grabbing text-gray-400 hover:text-gray-600"
+                                            >
+                                              <GripVertical className="h-5 w-5" />
+                                            </div>
+                                            <div className="flex-1">
+                                              <div className="flex items-center space-x-2">
+                                                <h4 className="font-medium text-foreground">{item.name}</h4>
+                                                {!item.is_available && (
+                                                  <span className="text-xs bg-red-100 text-red-800 px-2 py-1 rounded">Unavailable</span>
+                                                )}
+                                              </div>
+                                              {item.description && (
+                                                <p className="text-sm text-muted-foreground mt-1">{item.description}</p>
+                                              )}
+                                              <p className="text-sm font-medium text-foreground mt-1">{formatPriceWithCurrency(item.price, '£')}</p>
+                                            </div>
+                                          </div>
+                                          <div className="flex items-center space-x-2">
+                                            <Button
+                                              variant="ghost"
+                                              size="sm"
+                                              onClick={() => handleEdit(item)}
+                                            >
+                                              <Edit className="h-4 w-4" />
+                                            </Button>
+                                            <Button
+                                              variant="ghost"
+                                              size="sm"
+                                              onClick={() => handleDelete(item)}
+                                            >
+                                              <Trash2 className="h-4 w-4" />
+                                            </Button>
+                                          </div>
+                                        </div>
+                                      )}
+                                    </Draggable>
+                                  ))}
+                                {provided.placeholder}
+                              </div>
+                            )}
+                          </Droppable>
+                        )}
                       </div>
-                      {expandedCategories.has(category) && (
-                        <div className="border-t">
-                          {getItemsByCategory(category).map(item => (
-                            <div 
-                              key={item.id} 
-                              className={`flex items-center justify-between p-4 hover:bg-muted/25 transition-colors ${
-                                draggedItem?.id === item.id ? 'opacity-50' : ''
-                              } ${
-                                draggedOverItem?.id === item.id ? 'bg-blue-50 border-l-4 border-blue-500' : ''
-                              }`}
-                              draggable
-                              onDragStart={() => handleDragStart(item)}
-                              onDragOver={(e) => handleDragOver(e, item)}
-                              onDragEnd={handleDragEnd}
-                            >
-                              <div className="flex items-center space-x-2 flex-1">
-                                {/* Drag Handle */}
-                                <div className="cursor-move text-gray-400 hover:text-gray-600">
-                                  <GripVertical className="h-5 w-5" />
-                                </div>
-                                <div className="flex-1">
-                                  <div className="flex items-center space-x-2">
-                                    <h4 className="font-medium text-foreground">{item.name}</h4>
-                                    {!item.is_available && (
-                                      <span className="text-xs bg-red-100 text-red-800 px-2 py-1 rounded">Unavailable</span>
-                                    )}
-                                  </div>
-                                  {item.description && (
-                                    <p className="text-sm text-muted-foreground mt-1">{item.description}</p>
-                                  )}
-                                  <p className="text-sm font-medium text-foreground mt-1">{formatPriceWithCurrency(item.price, '£')}</p>
-                                </div>
-                              </div>
-                              <div className="flex items-center space-x-2">
-                                <Button
-                                  variant="ghost"
-                                  size="sm"
-                                  onClick={() => handleEdit(item)}
-                                >
-                                  <Edit className="h-4 w-4" />
-                                </Button>
-                                <Button
-                                  variant="ghost"
-                                  size="sm"
-                                  onClick={() => handleDelete(item)}
-                                >
-                                  <Trash2 className="h-4 w-4" />
-                                </Button>
-                              </div>
-                            </div>
-                          ))}
-                        </div>
-                      )}
-                    </div>
-                  ))}
-                </div>
+                    ))}
+                  </div>
+                </DragDropContext>
               )}
             </CardContent>
           </Card>
