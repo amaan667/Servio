@@ -1,59 +1,92 @@
+import { createAdminClient } from '@/lib/supabase/server';
+
 /**
- * PDF to Images Converter
- * Converts PDF pages to images and uploads them to Supabase Storage
+ * Convert PDF pages to images and upload to Supabase Storage
+ * This is a reusable function that can be called from any route
+ * 
+ * @param pdfBytes - The PDF file as an ArrayBuffer
+ * @param venueId - The venue ID to associate the images with
+ * @returns Array of public URLs for the converted images
  */
-
-import { createClient } from '@/lib/supabase/server';
-
-export async function convertPDFToImages(
-  pdfFile: File,
-  venueId: string,
-  supabase: any
-): Promise<string[]> {
+export async function convertPDFToImages(pdfBytes: ArrayBuffer, venueId: string): Promise<string[]> {
+  console.log('[PDF_TO_IMAGES] Starting PDF to images conversion for venue:', venueId);
+  
   try {
-    // For now, we'll use a server-side API to convert PDF to images
-    // This requires a backend service or library like pdf-lib, pdf2pic, or similar
+    // Dynamic imports to avoid build issues
+    const pdfjsLib = await import('pdfjs-dist');
+    const { createCanvas } = await import('canvas');
     
-    // Create a FormData object
-    const formData = new FormData();
-    formData.append('pdf', pdfFile);
-    formData.append('venueId', venueId);
+    // Configure pdfjs-dist
+    pdfjsLib.GlobalWorkerOptions.workerSrc = `//cdnjs.cloudflare.com/ajax/libs/pdf.js/${pdfjsLib.version}/pdf.worker.min.mjs`;
     
-    // Call the PDF conversion API
-    const response = await fetch('/api/pdf/convert-to-images', {
-      method: 'POST',
-      body: formData
-    });
+    // Load PDF
+    const loadingTask = pdfjsLib.getDocument({ data: pdfBytes });
+    const pdf = await loadingTask.promise;
     
-    if (!response.ok) {
-      throw new Error('Failed to convert PDF to images');
+    console.log('[PDF_TO_IMAGES] PDF loaded successfully. Total pages:', pdf.numPages);
+    
+    const supabase = await createAdminClient();
+    const imageUrls: string[] = [];
+    
+    // Convert each page to image (max 10 pages)
+    for (let pageNum = 1; pageNum <= Math.min(pdf.numPages, 10); pageNum++) {
+      console.log('[PDF_TO_IMAGES] Converting page', pageNum, 'to image...');
+      
+      const page = await pdf.getPage(pageNum);
+      const scale = 2.0; // High quality for preview
+      const viewport = page.getViewport({ scale });
+      
+      // Create canvas
+      const canvas = createCanvas(viewport.width, viewport.height);
+      const context = canvas.getContext('2d');
+      
+      // Render PDF page to canvas
+      await page.render({
+        canvasContext: context as any,
+        viewport: viewport,
+        canvas: canvas as any
+      }).promise;
+      
+      // Convert canvas to buffer
+      const imageBuffer = canvas.toBuffer('image/png');
+      console.log('[PDF_TO_IMAGES] Page', pageNum, 'rendered. Buffer size:', imageBuffer.length);
+      
+      // Upload to Supabase Storage
+      const fileName = `${venueId}/menu-page-${pageNum}-${Date.now()}.png`;
+      const { data: uploadData, error: uploadError } = await supabase.storage
+        .from('menus')
+        .upload(fileName, imageBuffer, {
+          contentType: 'image/png',
+          upsert: false
+        });
+      
+      if (uploadError) {
+        console.error('[PDF_TO_IMAGES] Error uploading page', pageNum, ':', uploadError);
+        continue;
+      }
+      
+      console.log('[PDF_TO_IMAGES] Page', pageNum, 'uploaded to storage:', uploadData.path);
+      
+      // Get public URL
+      const { data: urlData } = supabase.storage
+        .from('menus')
+        .getPublicUrl(fileName);
+      
+      if (urlData?.publicUrl) {
+        imageUrls.push(urlData.publicUrl);
+        console.log('[PDF_TO_IMAGES] Page', pageNum, 'converted successfully. URL:', urlData.publicUrl);
+      } else {
+        console.error('[PDF_TO_IMAGES] Failed to get public URL for page', pageNum);
+      }
     }
     
-    const result = await response.json();
-    return result.imageUrls || [];
+    console.log('[PDF_TO_IMAGES] Conversion complete. Total images:', imageUrls.length);
+    return imageUrls;
     
-  } catch (error) {
-    console.error('Error converting PDF to images:', error);
-    throw error;
-  }
-}
-
-/**
- * Alternative: Convert PDF to images using pdf-lib (client-side)
- * Note: This requires pdf-lib library to be installed
- */
-export async function convertPDFToImagesClient(
-  pdfFile: File,
-  venueId: string
-): Promise<string[]> {
-  try {
-    // This would use pdf-lib to convert PDF pages to images
-    // For now, return empty array as placeholder
-    console.warn('Client-side PDF conversion not yet implemented');
+  } catch (error: any) {
+    console.error('[PDF_TO_IMAGES] Error converting PDF to images:', error);
+    console.error('[PDF_TO_IMAGES] Error stack:', error.stack);
+    // Return empty array instead of throwing - let the calling code handle it
     return [];
-  } catch (error) {
-    console.error('Error converting PDF to images:', error);
-    throw error;
   }
 }
-

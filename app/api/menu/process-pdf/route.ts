@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
 import { createAdminClient } from '@/lib/supabase/server';
+import { convertPDFToImages } from '@/lib/pdf-to-images';
 
 export const runtime = "nodejs";
 
@@ -123,83 +124,10 @@ export async function POST(req: Request) {
       }, { status: 500 });
     }
 
-    // Convert PDF to images for preview
+    // Convert PDF to images using shared function
     console.log('[PDF_PROCESS] Converting PDF to images...');
-    let pdfImages: string[] = [];
-    try {
-      // Dynamic imports to avoid build issues
-      const pdfjsLib = await import('pdfjs-dist');
-      const { createCanvas } = await import('canvas');
-      
-      console.log('[PDF_PROCESS] PDF.js and Canvas libraries loaded');
-      
-      // Configure pdfjs-dist
-      pdfjsLib.GlobalWorkerOptions.workerSrc = `//cdnjs.cloudflare.com/ajax/libs/pdf.js/${pdfjsLib.version}/pdf.worker.min.mjs`;
-      
-      // Load PDF
-      console.log('[PDF_PROCESS] Loading PDF document...');
-      const loadingTask = pdfjsLib.getDocument({ data: buffer });
-      const pdf = await loadingTask.promise;
-      
-      console.log('[PDF_PROCESS] PDF loaded successfully. Total pages:', pdf.numPages);
-      
-      // Convert each page to image (max 10 pages)
-      for (let pageNum = 1; pageNum <= Math.min(pdf.numPages, 10); pageNum++) {
-        console.log('[PDF_PROCESS] Converting page', pageNum, 'to image...');
-        const page = await pdf.getPage(pageNum);
-        const scale = 2.0;
-        const viewport = page.getViewport({ scale });
-        
-        // Create canvas
-        const canvas = createCanvas(viewport.width, viewport.height);
-        const context = canvas.getContext('2d');
-        
-        // Render PDF page to canvas
-        await page.render({
-          canvasContext: context as any,
-          viewport: viewport,
-          canvas: canvas as any
-        }).promise;
-        
-        // Convert canvas to buffer
-        const imageBuffer = canvas.toBuffer('image/png');
-        console.log('[PDF_PROCESS] Page', pageNum, 'rendered. Buffer size:', imageBuffer.length);
-        
-        // Upload to Supabase Storage
-        const fileName = `${venueId}/menu-page-${pageNum}-${Date.now()}.png`;
-        const { data: uploadData, error: uploadError } = await supa.storage
-          .from('menus')
-          .upload(fileName, imageBuffer, {
-            contentType: 'image/png',
-            upsert: false
-          });
-        
-        if (uploadError) {
-          console.error('[PDF CONVERT] Error uploading page', pageNum, ':', uploadError);
-          continue;
-        }
-        
-        console.log('[PDF_PROCESS] Page', pageNum, 'uploaded to storage:', uploadData);
-        
-        // Get public URL
-        const { data: urlData } = supa.storage
-          .from('menus')
-          .getPublicUrl(fileName);
-        
-        if (urlData?.publicUrl) {
-          pdfImages.push(urlData.publicUrl);
-          console.log('[PDF CONVERT] Page', pageNum, 'converted and uploaded. URL:', urlData.publicUrl);
-        } else {
-          console.error('[PDF_PROCESS] Failed to get public URL for page', pageNum);
-        }
-      }
-      
-      console.log('[PDF_PROCESS] Converted', pdfImages.length, 'pages to images:', pdfImages);
-    } catch (imageError: any) {
-      console.error('[PDF_PROCESS] Image conversion failed:', imageError);
-      console.error('[PDF_PROCESS] Error stack:', imageError.stack);
-      // Don't fail the whole request if image conversion fails
-    }
+    const pdfImages = await convertPDFToImages(buffer, venueId);
+    console.log('[PDF_PROCESS] PDF conversion complete. Images:', pdfImages.length);
 
     // Extract text using OCR (currently mock implementation)
     let extractedText: string;
