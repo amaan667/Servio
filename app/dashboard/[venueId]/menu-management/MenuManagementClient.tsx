@@ -1177,31 +1177,10 @@ export default function MenuManagementClient({ venueId, canEdit = true }: { venu
           </CardContent>
         </Card>
 
-          {/* Live Preview Section */}
-          {menuItems.length > 0 && (
-            <Card>
-              <CardHeader>
-                <CardTitle className="flex items-center space-x-2">
-                  <Eye className="h-5 w-5" />
-                  <span>Live Preview</span>
-                </CardTitle>
-                <CardDescription>
-                  See your changes in real-time as you edit the design
-                </CardDescription>
-              </CardHeader>
-              <CardContent>
-                <div className="border border-gray-200 rounded-lg p-4 bg-white">
-                  <MenuPreview
-                    venueId={venueId}
-                    menuItems={menuItems}
-                    categoryOrder={categoryOrder}
-                  />
-                </div>
-              </CardContent>
-            </Card>
-          )}
-
-          <div className="flex justify-end">
+          <div className="flex justify-between items-center">
+            <div className="text-sm text-gray-600">
+              💡 Changes will be visible in the Preview tab
+            </div>
             <Button 
               onClick={saveDesignSettings}
               disabled={isSavingDesign}
