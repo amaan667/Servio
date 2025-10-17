@@ -8,11 +8,22 @@ import { ItemDetailsModal } from '@/components/ItemDetailsModal';
 import { Input } from '@/components/ui/input';
 import { formatPriceWithCurrency } from '@/lib/pricing-utils';
 
+interface MenuItem {
+  id: string;
+  venue_id: string;
+  name: string;
+  description: string | null;
+  price: number;
+  category: string;
+  is_available: boolean;
+  created_at: string;
+}
+
 interface EnhancedPDFMenuDisplayProps {
   venueId: string;
-  menuItems: any[];
+  menuItems: MenuItem[];
   categoryOrder: string[] | null;
-  onAddToCart: (item: any) => void;
+  onAddToCart: (item: MenuItem) => void;
   cart: Array<{ id: string; quantity: number }>;
   onRemoveFromCart: (itemId: string) => void;
   onUpdateQuantity: (itemId: string, quantity: number) => void;
@@ -42,7 +53,7 @@ export function EnhancedPDFMenuDisplay({
   const [pdfImages, setPdfImages] = useState<string[]>([]);
   const [loading, setLoading] = useState(true);
   const [hotspots, setHotspots] = useState<Hotspot[]>([]);
-  const [selectedItem, setSelectedItem] = useState<any | null>(null);
+  const [selectedItem, setSelectedItem] = useState<MenuItem | null>(null);
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [viewMode, setViewMode] = useState<'pdf' | 'list'>('pdf');
   const [searchQuery, setSearchQuery] = useState('');
@@ -109,14 +120,14 @@ export function EnhancedPDFMenuDisplay({
   }, [cart]);
 
   const handleHotspotClick = (hotspot: Hotspot) => {
-    const item = menuItems.find(i => i.id === hotspot.menu_item_id);
+    const item = menuItems.find((i: MenuItem) => i.id === hotspot.menu_item_id);
     if (item) {
       setSelectedItem(item);
       setIsModalOpen(true);
     }
   };
 
-  const handleAddToCart = (item: any) => {
+  const handleAddToCart = (item: MenuItem) => {
     onAddToCart(item);
     setIsModalOpen(false);
   };
@@ -185,20 +196,20 @@ export function EnhancedPDFMenuDisplay({
   };
 
   // Filter menu items based on search
-  const filteredItems = menuItems.filter(item =>
+  const filteredItems = menuItems.filter((item: MenuItem) =>
     item.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
     item.category.toLowerCase().includes(searchQuery.toLowerCase()) ||
     (item.description && item.description.toLowerCase().includes(searchQuery.toLowerCase()))
   );
 
   // Group items by category
-  const groupedItems = filteredItems.reduce((acc, item) => {
+  const groupedItems = filteredItems.reduce((acc, item: MenuItem) => {
     if (!acc[item.category]) {
       acc[item.category] = [];
     }
     acc[item.category].push(item);
     return acc;
-  }, {} as Record<string, any[]>);
+  }, {} as Record<string, MenuItem[]>);
 
   const categories = categoryOrder
     ? categoryOrder.filter(cat => groupedItems[cat]?.length > 0)
@@ -222,7 +233,7 @@ export function EnhancedPDFMenuDisplay({
   }
 
   const cartTotal = cart.reduce((sum, item) => {
-    const menuItem = menuItems.find(i => i.id === item.id);
+    const menuItem = menuItems.find((i: MenuItem) => i.id === item.id);
     return sum + (menuItem ? menuItem.price * item.quantity : 0);
   }, 0);
 
@@ -409,8 +420,8 @@ export function EnhancedPDFMenuDisplay({
                 </h2>
                 <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
                   {items
-                    .filter(item => item.is_available)
-                    .map((item) => {
+                    .filter((item: MenuItem) => item.is_available)
+                    .map((item: MenuItem) => {
                       const cartItem = cart.find(c => c.id === item.id);
                       const quantity = cartItem?.quantity || 0;
 
