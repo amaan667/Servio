@@ -121,7 +121,7 @@ export function PDFMenuDisplay({
           <div 
             key={index} 
             className="relative group"
-            ref={(el) => (imageRefs.current[index] = el)}
+            ref={(el) => { imageRefs.current[index] = el; }}
           >
             {/* PDF Page Image */}
             <img 
