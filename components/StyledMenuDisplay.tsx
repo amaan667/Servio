@@ -20,7 +20,7 @@ interface StyledMenuDisplayProps {
   venueId: string;
   menuItems: MenuItem[];
   categoryOrder: string[] | null;
-  onAddToCart: (item: MenuItem) => void;
+  onAddToCart: (item: any) => void;
   cart: Array<{ id: string; quantity: number }>;
   onRemoveFromCart: (itemId: string) => void;
   onUpdateQuantity: (itemId: string, quantity: number) => void;
