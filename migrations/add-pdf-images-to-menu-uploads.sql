@@ -1,12 +1,13 @@
--- Add PDF images column to menu_uploads table
--- This stores an array of image URLs for each page of the uploaded PDF
+-- Add pdf_images column to menu_uploads table
+-- This stores the converted PDF page images for interactive preview
 
-ALTER TABLE menu_uploads 
-ADD COLUMN IF NOT EXISTS pdf_images TEXT[];
+-- Add pdf_images column (array of text URLs)
+ALTER TABLE menu_uploads
+ADD COLUMN IF NOT EXISTS pdf_images TEXT[] DEFAULT '{}';
 
--- Add comment
-COMMENT ON COLUMN menu_uploads.pdf_images IS 'Array of image URLs for each page of the uploaded PDF menu';
+-- Add comment to column
+COMMENT ON COLUMN menu_uploads.pdf_images IS 'Array of URLs to converted PDF page images for interactive preview';
 
--- Create index for faster queries
-CREATE INDEX IF NOT EXISTS idx_menu_uploads_pdf_images ON menu_uploads(venue_id, created_at DESC) WHERE pdf_images IS NOT NULL;
-
+-- Create index for better query performance
+CREATE INDEX IF NOT EXISTS idx_menu_uploads_venue_created 
+ON menu_uploads(venue_id, created_at DESC);
