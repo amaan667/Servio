@@ -8,6 +8,8 @@ export const dynamic = 'force-dynamic';
 export const revalidate = 0;
 
 export async function POST(req: Request) {
+  const supabaseAdmin = createAdminClient();
+  
   console.log('[STRIPE WEBHOOK DEBUG] ===== WEBHOOK RECEIVED =====');
   console.log('[STRIPE WEBHOOK DEBUG] Timestamp:', new Date().toISOString());
   console.log('[STRIPE WEBHOOK DEBUG] Request headers:', Object.fromEntries(req.headers.entries()));

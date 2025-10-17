@@ -5,6 +5,7 @@ export const runtime = 'nodejs'; // KDS backfill endpoint
 
 export async function POST(req: Request) {
   try {
+    const supabaseAdmin = createAdminClient();
     console.log('[KDS BACKFILL] Starting KDS backfill for existing orders...');
     
     const { venueId, scope = 'today' } = await req.json();

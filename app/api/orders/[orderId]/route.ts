@@ -9,6 +9,7 @@ export async function GET(
   { params }: { params: Promise<{ orderId: string }> }
 ) {
   try {
+    const supabaseAdmin = createAdminClient();
     const { orderId } = await params;
     
     if (!orderId) {

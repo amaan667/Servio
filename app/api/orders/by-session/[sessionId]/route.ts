@@ -9,6 +9,7 @@ export async function GET(
   { params }: { params: Promise<{ sessionId: string }> }
 ) {
   try {
+    const supabaseAdmin = createAdminClient();
     const { sessionId } = await params;
     
     console.log('[ORDER SESSION LOOKUP DEBUG] ===== LOOKING UP ORDER BY SESSION =====');

@@ -6,6 +6,7 @@ export const dynamic = 'force-dynamic';
 
 export async function GET(req: Request) {
   try {
+    const supabaseAdmin = createAdminClient();
     console.log('[RECENT PAID] Fetching most recent paid order...');
     
     // Get the most recent paid order from the last hour

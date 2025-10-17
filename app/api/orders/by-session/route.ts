@@ -6,6 +6,7 @@ export const dynamic = 'force-dynamic';
 
 export async function GET(req: Request) {
   try {
+    const supabaseAdmin = createAdminClient();
     const { searchParams } = new URL(req.url);
     const sessionId = searchParams.get('sessionId');
     

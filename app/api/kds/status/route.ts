@@ -6,6 +6,7 @@ export const dynamic = 'force-dynamic';
 
 export async function GET(req: Request) {
   try {
+    const supabaseAdmin = createAdminClient();
     console.log('[KDS STATUS] Checking KDS system status...');
     
     // Check if KDS tables exist

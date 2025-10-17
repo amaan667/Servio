@@ -5,6 +5,7 @@ export const runtime = 'nodejs';
 
 export async function POST(req: Request) {
   try {
+    const supabaseAdmin = createAdminClient();
     console.log('[KDS TRIGGER] Creating KDS trigger function...');
     
     // Create the trigger function to automatically create KDS tickets

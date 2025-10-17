@@ -85,6 +85,7 @@ async function autoBackfillMissingTickets(venueId: string) {
 // GET - Fetch KDS tickets for a venue or station
 export async function GET(req: Request) {
   try {
+    const supabaseAdmin = createAdminClient();
     const { searchParams } = new URL(req.url);
     const venueId = searchParams.get('venueId');
     const stationId = searchParams.get('stationId');
@@ -187,6 +188,7 @@ export async function GET(req: Request) {
 // PATCH - Update ticket status
 export async function PATCH(req: Request) {
   try {
+    const supabaseAdmin = createAdminClient();
     const body = await req.json();
     const { ticketId, status } = body;
 

@@ -5,6 +5,7 @@ export const runtime = 'nodejs';
 
 export async function POST(req: Request) {
   try {
+    const supabaseAdmin = createAdminClient();
     console.log('[SETUP KDS] Starting KDS setup...');
     
     // Create KDS Stations table

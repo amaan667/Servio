@@ -5,6 +5,8 @@ export const runtime = 'nodejs';
 
 export async function POST(req: Request) {
   try {
+    const supabaseAdmin = createAdminClient();
+    
     console.log('[KDS BACKFILL ALL] Starting comprehensive KDS backfill...');
     
     const { venueId } = await req.json();
