@@ -53,7 +53,6 @@ export default async function BillingPage({ params }: { params: Promise<{ venueI
   }
 
   const finalUserRole = userRole?.role || (isOwner ? 'owner' : 'staff');
-  const canAccessBilling = finalUserRole === 'owner';
   
   return (
     <div className="min-h-screen bg-background">
@@ -73,29 +72,22 @@ export default async function BillingPage({ params }: { params: Promise<{ venueI
           </p>
         </div>
         
-        {canAccessBilling ? (
-          <BillingClient 
-            venueId={venueId} 
-            venueName={finalVenue?.venue_name || "Your Venue"}
-            organization={{
-              id: 'temp-org',
-              subscription_tier: 'basic',
-              subscription_status: 'active',
-              trial_ends_at: null
-            }}
-            usage={{
-              menuItems: 0,
-              tables: 0,
-              staff: 0,
-              venues: 1
-            }}
-          />
-        ) : (
-          <div className="bg-yellow-50 border border-yellow-200 rounded-lg p-6">
-            <h3 className="text-lg font-semibold text-yellow-800 mb-2">Access Restricted</h3>
-            <p className="text-yellow-700">You don't have permission to access billing. This feature is available for Owner role only.</p>
-          </div>
-        )}
+        <BillingClient 
+          venueId={venueId} 
+          venueName={finalVenue?.venue_name || "Your Venue"}
+          organization={{
+            id: 'temp-org',
+            subscription_tier: 'basic',
+            subscription_status: 'active',
+            trial_ends_at: null
+          }}
+          usage={{
+            menuItems: 0,
+            tables: 0,
+            staff: 0,
+            venues: 1
+          }}
+        />
       </div>
     </div>
   );

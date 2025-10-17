@@ -537,8 +537,8 @@ const VenueDashboardClient = React.memo(function VenueDashboardClient({
         {/* Onboarding completion banner */}
         <OnboardingCompletionBanner />
         
-        {/* Trial status banner */}
-        <TrialStatusBanner />
+        {/* Trial status banner - Only for owners */}
+        <TrialStatusBanner userRole={userRole} />
         
         <div className="mb-6 sm:mb-8">
           <div className="flex items-start justify-between">

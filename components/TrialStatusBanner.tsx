@@ -14,10 +14,19 @@ interface TrialStatus {
   daysRemaining: number | null;
 }
 
-export default function TrialStatusBanner() {
+interface TrialStatusBannerProps {
+  userRole?: string;
+}
+
+export default function TrialStatusBanner({ userRole }: TrialStatusBannerProps) {
   const { user } = useAuth();
   const [trialStatus, setTrialStatus] = useState<TrialStatus | null>(null);
   const [loading, setLoading] = useState(true);
+
+  // Only show trial status banner for owners
+  if (userRole && userRole !== 'owner') {
+    return null;
+  }
 
   const fetchTrialStatus = async () => {
     if (!user) {
