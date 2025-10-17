@@ -13,6 +13,7 @@ import { createClient } from "@/lib/supabase/client";
 import { Plus, Edit, Trash2, ShoppingBag, Trash, ChevronDown, ChevronRight, Save, Eye, Download, Palette, Layout, Settings, Upload, Image, Palette as PaletteIcon, Type, Grid, List, Share } from "lucide-react";
 import { MenuUploadCard } from "@/components/MenuUploadCard";
 import { CategoriesManagement } from "@/components/CategoriesManagement";
+import { StyledMenuDisplay } from "@/components/StyledMenuDisplay";
 import { useToast } from "@/hooks/use-toast";
 import { formatPriceWithCurrency } from "@/lib/pricing-utils";
 
@@ -79,8 +80,32 @@ export default function MenuManagementClient({ venueId, canEdit = true }: { venu
   });
   const [isUploadingLogo, setIsUploadingLogo] = useState(false);
   const [isSavingDesign, setIsSavingDesign] = useState(false);
+  const [previewCart, setPreviewCart] = useState<Array<{ id: string; quantity: number }>>([]);
   const router = useRouter();
   const { toast } = useToast();
+
+  // Preview cart functions
+  const handleAddToPreviewCart = (item: MenuItem) => {
+    setPreviewCart(prev => {
+      const existing = prev.find(c => c.id === item.id);
+      if (existing) {
+        return prev.map(c => c.id === item.id ? { ...c, quantity: c.quantity + 1 } : c);
+      }
+      return [...prev, { id: item.id, quantity: 1 }];
+    });
+  };
+
+  const handleRemoveFromPreviewCart = (itemId: string) => {
+    setPreviewCart(prev => prev.filter(c => c.id !== itemId));
+  };
+
+  const handleUpdatePreviewCartQuantity = (itemId: string, quantity: number) => {
+    if (quantity <= 0) {
+      handleRemoveFromPreviewCart(itemId);
+    } else {
+      setPreviewCart(prev => prev.map(c => c.id === itemId ? { ...c, quantity } : c));
+    }
+  };
 
   // Function to detect colors from logo image
   const detectColorsFromImage = (imageUrl: string): Promise<{primary: string, secondary: string}> => {
@@ -1191,12 +1216,12 @@ export default function MenuManagementClient({ venueId, canEdit = true }: { venu
       {activeTab === 'preview' && (
         <div className="space-y-6">
           {/* Preview Controls */}
-        <Card>
-          <CardHeader>
+          <Card>
+            <CardHeader>
               <CardTitle className="flex items-center justify-between">
                 <div className="flex items-center space-x-2">
-              <Eye className="h-5 w-5" />
-              <span>Menu Preview</span>
+                  <Eye className="h-5 w-5" />
+                  <span>Menu Preview</span>
                 </div>
                 <div className="flex flex-col sm:flex-row items-stretch sm:items-center space-y-2 sm:space-y-0 sm:space-x-2">
                   <Button variant="outline" size="sm" className="w-full sm:w-auto">
@@ -1208,170 +1233,36 @@ export default function MenuManagementClient({ venueId, canEdit = true }: { venu
                     Share Link
                   </Button>
                 </div>
-            </CardTitle>
-          </CardHeader>
+              </CardTitle>
+            </CardHeader>
           </Card>
 
-          {/* Menu Preview */}
-          <Card>
-            <CardContent className="p-0">
-              <div 
-                key={`preview-${designSettings.logo_url}-${designSettings.primary_color}-${designSettings.font_family}-${designSettings.font_size}`}
-                className="bg-white min-h-[600px] p-8"
-                style={{
-                  fontFamily: designSettings.font_family === 'inter' ? 'Inter, sans-serif' :
-                             designSettings.font_family === 'roboto' ? 'Roboto, sans-serif' :
-                             designSettings.font_family === 'opensans' ? 'Open Sans, sans-serif' :
-                             designSettings.font_family === 'poppins' ? 'Poppins, sans-serif' :
-                             designSettings.font_family === 'lato' ? 'Lato, sans-serif' :
-                             designSettings.font_family === 'montserrat' ? 'Montserrat, sans-serif' :
-                             designSettings.font_family === 'nunito' ? 'Nunito, sans-serif' :
-                             designSettings.font_family === 'source-sans' ? 'Source Sans Pro, sans-serif' :
-                             designSettings.font_family === 'playfair' ? 'Playfair Display, serif' :
-                             designSettings.font_family === 'merriweather' ? 'Merriweather, serif' :
-                             designSettings.font_family === 'crimson' ? 'Crimson Text, serif' :
-                             designSettings.font_family === 'libre-baskerville' ? 'Libre Baskerville, serif' :
-                             designSettings.font_family === 'dancing-script' ? 'Dancing Script, cursive' :
-                             designSettings.font_family === 'pacifico' ? 'Pacifico, cursive' :
-                             designSettings.font_family === 'lobster' ? 'Lobster, cursive' :
-                             designSettings.font_family === 'bebas-neue' ? 'Bebas Neue, cursive' :
-                             designSettings.font_family === 'oswald' ? 'Oswald, sans-serif' :
-                             designSettings.font_family === 'raleway' ? 'Raleway, sans-serif' :
-                             designSettings.font_family === 'ubuntu' ? 'Ubuntu, sans-serif' :
-                             designSettings.font_family === 'fira-sans' ? 'Fira Sans, sans-serif' :
-                             designSettings.font_family === 'work-sans' ? 'Work Sans, sans-serif' :
-                             designSettings.font_family === 'quicksand' ? 'Quicksand, sans-serif' :
-                             designSettings.font_family === 'rubik' ? 'Rubik, sans-serif' :
-                             designSettings.font_family === 'comfortaa' ? 'Comfortaa, cursive' :
-                             designSettings.font_family === 'cabin' ? 'Cabin, sans-serif' :
-                             designSettings.font_family === 'dosis' ? 'Dosis, sans-serif' :
-                             designSettings.font_family === 'exo' ? 'Exo, sans-serif' :
-                             designSettings.font_family === 'fjalla' ? 'Fjalla One, sans-serif' :
-                             designSettings.font_family === 'anton' ? 'Anton, sans-serif' :
-                             designSettings.font_family === 'barlow' ? 'Barlow, sans-serif' : 'Inter, sans-serif',
-                  fontSize: `${designSettings.font_size_numeric || 16}px`
-                }}
-              >
-                {/* Debug info - remove this later */}
-                {process.env.NODE_ENV === 'development' && (
-                  <div className="mb-4 p-2 bg-gray-100 text-xs">
-                    <strong>Debug Info:</strong><br/>
-                    Logo URL: {designSettings.logo_url || 'None'}<br/>
-                    Venue Name: {designSettings.venue_name || 'None'}<br/>
-                    Primary Color: {designSettings.primary_color}<br/>
-                    Font Family: {designSettings.font_family}
-                  </div>
-                )}
-                {/* Menu Header */}
-                <div className="text-center mb-8 pb-6 border-b border-gray-200">
-                  {designSettings.logo_url && (
-                    <div className="mb-6">
-                      <img 
-                        src={designSettings.logo_url} 
-                        alt="Restaurant logo" 
-                        className={`w-auto object-contain mx-auto max-w-xs ${
-                          designSettings.logo_size === 'small' ? 'h-20' :
-                          designSettings.logo_size === 'medium' ? 'h-32' :
-                          designSettings.logo_size === 'large' ? 'h-40' :
-                          designSettings.logo_size === 'extra-large' ? 'h-48' : 'h-40'
-                        }`}
-                        onLoad={() => console.log('[PREVIEW] Logo loaded successfully:', designSettings.logo_url)}
-                        onError={(e) => console.error('[PREVIEW] Logo failed to load:', designSettings.logo_url, e)}
-                      />
-                    </div>
-                  )}
-                  
-                  {/* Custom Heading */}
-                  {designSettings.custom_heading && (
-                    <div className="mb-4">
-                      <p 
-                        className="text-lg font-medium"
-                        style={{ color: designSettings.primary_color }}
-                      >
-                        {designSettings.custom_heading}
-                      </p>
-                    </div>
-                  )}
-                  
-                  {designSettings.venue_name && (
-                    <>
-                      <h1 
-                        className="text-3xl font-bold mb-2"
-                        style={{ color: designSettings.primary_color }}
-                      >
-                        {designSettings.venue_name}
-                      </h1>
-                      <p className="text-gray-600">Delicious food, great service</p>
-                    </>
-                  )}
+          {/* Styled Menu Preview - Automatically uses extracted style from PDF */}
+          {menuItems.length === 0 ? (
+            <Card>
+              <CardContent className="p-12">
+                <div className="text-center">
+                  <ShoppingBag className="h-16 w-16 text-gray-300 mx-auto mb-4" />
+                  <h3 className="text-lg font-medium text-gray-900 mb-2">No menu items to preview</h3>
+                  <p className="text-gray-500 mb-4">Upload a PDF menu in the Manage tab to see your styled menu preview.</p>
+                  <Button onClick={() => setActiveTab('manage')} className="flex items-center space-x-2 mx-auto">
+                    <Plus className="h-4 w-4" />
+                    <span>Go to Manage</span>
+                  </Button>
                 </div>
-
-                {/* Menu Categories */}
-                {menuItems.length === 0 ? (
-                  <div className="text-center py-12">
-                    <ShoppingBag className="h-16 w-16 text-gray-300 mx-auto mb-4" />
-                    <h3 className="text-lg font-medium text-gray-900 mb-2">No menu items to preview</h3>
-                    <p className="text-gray-500 mb-4">Add some menu items in the Manage tab to see your menu preview.</p>
-                    <Button onClick={() => setActiveTab('manage')} className="flex items-center space-x-2">
-                      <Plus className="h-4 w-4" />
-                      <span>Add Menu Items</span>
-                    </Button>
-                  </div>
-                ) : (
-                  <div className="space-y-8">
-                    {getCategories().map(category => (
-                      <div key={category} className="space-y-4">
-                        <h2 
-                          className="text-2xl font-bold border-b-2 pb-2"
-                          style={{ 
-                            color: designSettings.primary_color,
-                            borderBottomColor: designSettings.primary_color
-                          }}
-                        >
-                          {category}
-                        </h2>
-                        <div className="grid gap-4">
-                          {getItemsByCategory(category).map(item => (
-                            <div key={item.id} className="flex justify-between items-start py-2">
-                              <div className="flex-1">
-                                <div className="flex items-center space-x-2">
-                                  <h3 className="font-semibold text-gray-900">{item.name}</h3>
-                                  {!item.is_available && (
-                                    <span className="text-xs bg-red-100 text-red-800 px-2 py-1 rounded">Unavailable</span>
-                                  )}
-                                </div>
-                                {item.description && designSettings.show_descriptions && (
-                                  <p className="text-sm text-gray-600 mt-1">{item.description}</p>
-                                )}
-                              </div>
-                              {designSettings.show_prices && (
-                                <div className="text-right">
-                                  <span 
-                                    className="font-bold text-lg"
-                                    style={{ color: designSettings.primary_color }}
-                                  >
-                                    {formatPriceWithCurrency(item.price, '£')}
-                                  </span>
-                                </div>
-                              )}
-                            </div>
-                          ))}
-                        </div>
-                      </div>
-                    ))}
-                  </div>
-                )}
-
-                {/* Menu Footer */}
-                {menuItems.length > 0 && (
-                  <div className="text-center mt-12 pt-6 border-t border-gray-200">
-                    <p className="text-sm text-gray-500">Thank you for choosing us!</p>
-                  </div>
-                )}
-              </div>
-              
-            </CardContent>
-          </Card>
+              </CardContent>
+            </Card>
+          ) : (
+            <StyledMenuDisplay
+              venueId={venueId}
+              menuItems={menuItems}
+              categoryOrder={categoryOrder}
+              onAddToCart={handleAddToPreviewCart}
+              cart={previewCart}
+              onRemoveFromCart={handleRemoveFromPreviewCart}
+              onUpdateQuantity={handleUpdatePreviewCartQuantity}
+            />
+          )}
         </div>
       )}
     </div>
