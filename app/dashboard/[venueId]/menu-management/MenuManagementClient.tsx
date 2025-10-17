@@ -306,6 +306,11 @@ export default function MenuManagementClient({ venueId, canEdit = true }: { venu
       const supabase = createClient();
       
       console.log('[MENU LOAD] Loading menu items for venue:', venueId);
+      console.log('[MENU LOAD] Supabase client:', supabase);
+      console.log('[MENU LOAD] Env vars:', {
+        hasUrl: !!process.env.NEXT_PUBLIC_SUPABASE_URL,
+        hasKey: !!process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY
+      });
       
       // Query menu items with position ordering
       const { data: items, error } = await supabase
@@ -316,28 +321,41 @@ export default function MenuManagementClient({ venueId, canEdit = true }: { venu
 
       if (error) {
         console.error('[MENU LOAD] Error loading menu items:', error);
-        toast({
-          title: "Error",
-          description: `Failed to load menu items: ${error.message}`,
-          variant: "destructive",
-        });
+        console.error('[MENU LOAD] Error details:', JSON.stringify(error, null, 2));
+        
+        // Check if it's an authentication error
+        if (error.message?.includes('API key') || error.message?.includes('apikey')) {
+          toast({
+            title: "Configuration Error",
+            description: "Supabase API key is not configured. Please check your environment variables.",
+            variant: "destructive",
+          });
+        } else {
+          toast({
+            title: "Error",
+            description: `Failed to load menu items: ${error.message}`,
+            variant: "destructive",
+          });
+        }
         return;
       }
 
       console.log('[MENU LOAD] Loaded', items?.length || 0, 'menu items');
       setMenuItems(items || []);
       
-      // Load category order
-      const { data: uploadData, error: uploadError } = await supabase
-        .from('menu_uploads')
-        .select('category_order')
-        .eq('venue_id', venueId)
-        .order('created_at', { ascending: false })
-        .limit(1);
+      // Load category order only if we have menu items
+      if (items && items.length > 0) {
+        const { data: uploadData, error: uploadError } = await supabase
+          .from('menu_uploads')
+          .select('category_order')
+          .eq('venue_id', venueId)
+          .order('created_at', { ascending: false })
+          .limit(1);
 
-      if (!uploadError && uploadData && uploadData.length > 0) {
-        console.log('[MENU LOAD] Loaded category order:', uploadData[0].category_order);
-        setCategoryOrder(uploadData[0].category_order);
+        if (!uploadError && uploadData && uploadData.length > 0) {
+          console.log('[MENU LOAD] Loaded category order:', uploadData[0].category_order);
+          setCategoryOrder(uploadData[0].category_order);
+        }
       }
     } catch (error) {
       console.error('[MENU LOAD] Exception in loadMenuItems:', error);
