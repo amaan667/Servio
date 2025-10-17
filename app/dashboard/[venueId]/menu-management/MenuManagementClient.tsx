@@ -305,22 +305,37 @@ export default function MenuManagementClient({ venueId, canEdit = true }: { venu
       setLoading(true);
       const supabase = createClient();
       
-      const { data: items, error } = await supabase
+      console.log('[MENU LOAD] Loading menu items for venue:', venueId);
+      
+      // Try with position ordering first
+      let { data: items, error } = await supabase
         .from('menu_items')
         .select('*')
         .eq('venue_id', venueId)
         .order('position', { ascending: true, nullsFirst: false });
 
+      // If that fails, try without position ordering
       if (error) {
-        console.error('Error loading menu items:', error);
+        console.warn('[MENU LOAD] Error with position ordering, trying without:', error);
+        const result = await supabase
+          .from('menu_items')
+          .select('*')
+          .eq('venue_id', venueId);
+        items = result.data;
+        error = result.error;
+      }
+
+      if (error) {
+        console.error('[MENU LOAD] Error loading menu items:', error);
         toast({
           title: "Error",
-          description: "Failed to load menu items",
+          description: `Failed to load menu items: ${error.message}`,
           variant: "destructive",
         });
         return;
       }
 
+      console.log('[MENU LOAD] Loaded', items?.length || 0, 'menu items');
       setMenuItems(items || []);
       
       // Load category order
@@ -332,13 +347,14 @@ export default function MenuManagementClient({ venueId, canEdit = true }: { venu
         .limit(1);
 
       if (!uploadError && uploadData && uploadData.length > 0) {
+        console.log('[MENU LOAD] Loaded category order:', uploadData[0].category_order);
         setCategoryOrder(uploadData[0].category_order);
       }
     } catch (error) {
-      console.error('Error in loadMenuItems:', error);
+      console.error('[MENU LOAD] Exception in loadMenuItems:', error);
       toast({
         title: "Error",
-        description: "Failed to load menu items",
+        description: `Failed to load menu items: ${error instanceof Error ? error.message : 'Unknown error'}`,
         variant: "destructive",
       });
     } finally {
