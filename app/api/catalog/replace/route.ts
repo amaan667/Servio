@@ -154,20 +154,67 @@ export async function POST(req: NextRequest) {
       // Convert PDF to images and store them
       let pdfImages: string[] = [];
       try {
-        const formData = new FormData();
-        formData.append('pdf', file);
-        formData.append('venueId', venueId);
+        console.log('[CATALOG REPLACE] Converting PDF to images...');
         
-        const convertResponse = await fetch(`${process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:3000'}/api/pdf/convert-to-images`, {
-          method: 'POST',
-          body: formData
-        });
+        // Dynamic imports to avoid build issues
+        const pdfjsLib = await import('pdfjs-dist');
+        const { createCanvas } = await import('canvas');
         
-        if (convertResponse.ok) {
-          const convertResult = await convertResponse.json();
-          pdfImages = convertResult.imageUrls || [];
-          console.log('[CATALOG REPLACE] Converted PDF to', pdfImages.length, 'images');
+        // Configure pdfjs-dist
+        pdfjsLib.GlobalWorkerOptions.workerSrc = `//cdnjs.cloudflare.com/ajax/libs/pdf.js/${pdfjsLib.version}/pdf.worker.min.mjs`;
+        
+        // Load PDF
+        const loadingTask = pdfjsLib.getDocument({ data: pdfBytes });
+        const pdf = await loadingTask.promise;
+        
+        console.log('[CATALOG REPLACE] PDF loaded. Total pages:', pdf.numPages);
+        
+        // Convert each page to image (max 10 pages)
+        for (let pageNum = 1; pageNum <= Math.min(pdf.numPages, 10); pageNum++) {
+          const page = await pdf.getPage(pageNum);
+          const scale = 2.0;
+          const viewport = page.getViewport({ scale });
+          
+          // Create canvas
+          const canvas = createCanvas(viewport.width, viewport.height);
+          const context = canvas.getContext('2d');
+          
+          // Render PDF page to canvas
+          await page.render({
+            canvasContext: context as any,
+            viewport: viewport,
+            canvas: canvas as any
+          }).promise;
+          
+          // Convert canvas to buffer
+          const imageBuffer = canvas.toBuffer('image/png');
+          
+          // Upload to Supabase Storage
+          const fileName = `${venueId}/menu-page-${pageNum}-${Date.now()}.png`;
+          const { data: uploadData, error: uploadError } = await supabase.storage
+            .from('menus')
+            .upload(fileName, imageBuffer, {
+              contentType: 'image/png',
+              upsert: false
+            });
+          
+          if (uploadError) {
+            console.error('[CATALOG REPLACE] Error uploading page', pageNum, ':', uploadError);
+            continue;
+          }
+          
+          // Get public URL
+          const { data: urlData } = supabase.storage
+            .from('menus')
+            .getPublicUrl(fileName);
+          
+          if (urlData?.publicUrl) {
+            pdfImages.push(urlData.publicUrl);
+            console.log('[CATALOG REPLACE] Page', pageNum, 'converted and uploaded');
+          }
         }
+        
+        console.log('[CATALOG REPLACE] Converted', pdfImages.length, 'pages to images:', pdfImages);
       } catch (error) {
         console.error('[CATALOG REPLACE] Error converting PDF to images:', error);
         // Continue without images - text extraction still works
@@ -245,17 +292,25 @@ async function replaceCatalog(supabase: any, venueId: string, fixedPayload: any,
 
       // Store PDF images in menu_uploads table
       if (pdfImages && pdfImages.length > 0) {
-        const { error: updateError } = await supabase
+        console.log('[CATALOG REPLACE] Saving PDF images to menu_uploads table...');
+        const { data: insertData, error: insertError } = await supabase
           .from('menu_uploads')
-          .update({ pdf_images: pdfImages })
-          .eq('venue_id', venueId)
-          .order('created_at', { ascending: false })
-          .limit(1);
+          .insert({
+            venue_id: venueId,
+            filename: `catalog-replace-${Date.now()}.pdf`,
+            storage_path: `menus/${venueId}/catalog-replace-${Date.now()}.pdf`,
+            file_size: 0,
+            extracted_text_length: extractedText?.length || 0,
+            category_order: [...new Set(fixedPayload.items.map((item: any) => item.category))],
+            pdf_images: pdfImages,
+            created_at: new Date().toISOString()
+          })
+          .select();
         
-        if (updateError) {
-          console.warn('[CATALOG REPLACE] Warning: Could not store PDF images:', updateError.message);
+        if (insertError) {
+          console.error('[CATALOG REPLACE] Error storing PDF images:', insertError);
         } else {
-          console.log('[CATALOG REPLACE] Stored', pdfImages.length, 'PDF images');
+          console.log('[CATALOG REPLACE] Stored', pdfImages.length, 'PDF images:', insertData);
         }
       }
 
