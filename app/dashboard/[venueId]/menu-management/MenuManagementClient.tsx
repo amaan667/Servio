@@ -13,7 +13,7 @@ import { createClient } from "@/lib/supabase/client";
 import { Plus, Edit, Trash2, ShoppingBag, Trash, ChevronDown, ChevronRight, Save, Eye, Download, Palette, Layout, Settings, Upload, Image, Palette as PaletteIcon, Type, Grid, List, Share } from "lucide-react";
 import { MenuUploadCard } from "@/components/MenuUploadCard";
 import { CategoriesManagement } from "@/components/CategoriesManagement";
-import { StyledMenuDisplay } from "@/components/StyledMenuDisplay";
+import { MenuPreview } from "@/components/MenuPreview";
 import { useToast } from "@/hooks/use-toast";
 import { formatPriceWithCurrency } from "@/lib/pricing-utils";
 
@@ -80,32 +80,8 @@ export default function MenuManagementClient({ venueId, canEdit = true }: { venu
   });
   const [isUploadingLogo, setIsUploadingLogo] = useState(false);
   const [isSavingDesign, setIsSavingDesign] = useState(false);
-  const [previewCart, setPreviewCart] = useState<Array<{ id: string; quantity: number }>>([]);
   const router = useRouter();
   const { toast } = useToast();
-
-  // Preview cart functions
-  const handleAddToPreviewCart = (item: MenuItem) => {
-    setPreviewCart(prev => {
-      const existing = prev.find(c => c.id === item.id);
-      if (existing) {
-        return prev.map(c => c.id === item.id ? { ...c, quantity: c.quantity + 1 } : c);
-      }
-      return [...prev, { id: item.id, quantity: 1 }];
-    });
-  };
-
-  const handleRemoveFromPreviewCart = (itemId: string) => {
-    setPreviewCart(prev => prev.filter(c => c.id !== itemId));
-  };
-
-  const handleUpdatePreviewCartQuantity = (itemId: string, quantity: number) => {
-    if (quantity <= 0) {
-      handleRemoveFromPreviewCart(itemId);
-    } else {
-      setPreviewCart(prev => prev.map(c => c.id === itemId ? { ...c, quantity } : c));
-    }
-  };
 
   // Function to detect colors from logo image
   const detectColorsFromImage = (imageUrl: string): Promise<{primary: string, secondary: string}> => {
@@ -1237,7 +1213,7 @@ export default function MenuManagementClient({ venueId, canEdit = true }: { venu
             </CardHeader>
           </Card>
 
-          {/* Styled Menu Preview - Automatically uses extracted style from PDF */}
+          {/* Styled Menu Preview - Read-only display of PDF menu */}
           {menuItems.length === 0 ? (
             <Card>
               <CardContent className="p-12">
@@ -1253,14 +1229,10 @@ export default function MenuManagementClient({ venueId, canEdit = true }: { venu
               </CardContent>
             </Card>
           ) : (
-            <StyledMenuDisplay
+            <MenuPreview
               venueId={venueId}
               menuItems={menuItems}
               categoryOrder={categoryOrder}
-              onAddToCart={handleAddToPreviewCart}
-              cart={previewCart}
-              onRemoveFromCart={handleRemoveFromPreviewCart}
-              onUpdateQuantity={handleUpdatePreviewCartQuantity}
             />
           )}
         </div>

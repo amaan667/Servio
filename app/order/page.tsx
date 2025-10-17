@@ -16,6 +16,7 @@ import { demoMenuItems } from "@/data/demoMenuItems";
 
 import { useRouter } from "next/navigation";
 import NavigationBreadcrumb from "@/components/navigation-breadcrumb";
+import { StyledMenuDisplay } from "@/components/StyledMenuDisplay";
 import { MenuItem as BaseMenuItem } from "@/lib/supabase";
 
 // Local MenuItem interface for order page (extends global but makes some properties optional)
@@ -914,138 +915,36 @@ export default function CustomerOrderPage() {
 
       <div className="max-w-7xl mx-auto px-3 sm:px-4 lg:px-6 py-4 sm:py-6 lg:py-8 bg-gray-50 dark:bg-gray-900 min-h-screen">
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 lg:gap-8">
-          {/* Menu Section */}
-          <div className="lg:col-span-2 space-y-6">
-        {(() => {
-          
-          if (menuError) {
-            return (
+          {/* Menu Section - Styled PDF Menu with Ordering Functionality */}
+          <div className="lg:col-span-2">
+            {menuError ? (
               <Alert variant="destructive">
                 <AlertDescription>{menuError}</AlertDescription>
               </Alert>
-            );
-          }
-          
-          // Always render the menu structure - items will appear as they load
-          return (
-              <div className="space-y-8">
-                {(() => {
-                  const categories = Array.from(new Set(menuItems.map((i) => i.category)));
-                  
-                  // Sort categories based on stored order from PDF upload
-                  const sortedCats = categories.sort((a,b)=>{
-                    console.log('[ORDER PAGE] Sorting categories:', { a, b, categoryOrder });
-                    
-                    // Check if we have stored category order from PDF upload
-                    if (categoryOrder && Array.isArray(categoryOrder)) {
-                      const orderA = categoryOrder.findIndex(storedCat => 
-                        storedCat.toLowerCase() === (a||'').toLowerCase()
-                      );
-                      const orderB = categoryOrder.findIndex(storedCat => 
-                        storedCat.toLowerCase() === (b||'').toLowerCase()
-                      );
-                      
-                      console.log('[ORDER PAGE] Category order indices:', { orderA, orderB });
-                      
-                      // If both categories are in stored order, sort by that order
-                      if (orderA >= 0 && orderB >= 0) {
-                        console.log('[ORDER PAGE] Both in stored order, using stored order');
-                        return orderA - orderB;
-                      }
-                      
-                      // If only one is in stored order, prioritize it
-                      if (orderA >= 0) return -1;
-                      if (orderB >= 0) return 1;
-                    }
-                    
-                    // If no stored order, derive order from the order items appear in the database (PDF order)
-                    const itemA = menuItems.find(item => item.category === a);
-                    const itemB = menuItems.find(item => item.category === b);
-                    
-                    if (itemA && itemB) {
-                      const indexA = menuItems.indexOf(itemA);
-                      const indexB = menuItems.indexOf(itemB);
-                      console.log('[ORDER PAGE] Using database order indices:', { indexA, indexB });
-                      return indexA - indexB;
-                    }
-                    
-                    // NO ALPHABETICAL FALLBACK - maintain database order
-                    return 0;
-                  });
-                  
-                  console.log('[ORDER PAGE] Final sorted categories:', sortedCats);
-                  return sortedCats.map((category) => (
-                    <div key={category} className="bg-white dark:bg-gray-800 rounded-lg shadow-sm border border-gray-100 dark:border-gray-700 overflow-hidden">
-                      <div className="bg-gradient-to-r from-purple-50 to-blue-50 dark:from-purple-900/20 dark:to-blue-900/20 px-4 py-3 border-b border-gray-100 dark:border-gray-700">
-                        <h2 className="text-lg sm:text-xl font-semibold text-gray-900 dark:text-white capitalize">
-                          {category}
-                        </h2>
-                      </div>
-                      <div className="p-4">
-                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                        {menuItems
-                          .filter((item) => item.category === category)
-                          .map((item) => (
-                            <Card key={item.id} className="hover:shadow-lg transition-all duration-200 border border-gray-200 dark:border-gray-600 hover:border-purple-300 dark:hover:border-purple-500 bg-white dark:bg-gray-800">
-                              <CardContent className="p-4">
-                                <div className="flex gap-4">
-                                  {/* Item Image */}
-                                  {item.image && (
-                                    <div className="flex-shrink-0">
-                                      <div className="w-16 h-16 bg-gray-50 dark:bg-gray-700 rounded-lg flex items-center justify-center overflow-hidden border border-gray-200 dark:border-gray-600">
-                                        <Image
-                                          src={item.image}
-                                          alt={item.name}
-                                          width={48}
-                                          height={48}
-                                          className="object-contain"
-                                          onError={(e) => {
-                                            // Hide image if it fails to load
-                                            const target = e.target as HTMLImageElement;
-                                            target.style.display = 'none';
-                                          }}
-                                        />
-                                      </div>
-                                    </div>
-                                  )}
-                                  
-                                  {/* Item Details */}
-                                  <div className="flex-1 min-w-0">
-                                    <h3 className="font-semibold text-gray-900 dark:text-white text-lg mb-2">
-                                      {item.name}
-                                    </h3>
-                                    {item.description && (
-                                      <p className="text-sm text-gray-900 dark:text-gray-600 mb-3 line-clamp-2">
-                                        {item.description}
-                                      </p>
-                                    )}
-                                    <div className="flex items-center justify-between">
-                                      <p className="text-xl font-bold text-purple-600 dark:text-purple-400">
-                                        £{item.price.toFixed(2)}
-                                      </p>
-                                      <Button
-                                        onClick={() => addToCart(item)}
-                                        size="sm"
-                                        className="bg-purple-600 hover:bg-purple-700 dark:bg-purple-600 dark:hover:bg-purple-700 text-white font-medium px-4 py-2 shadow-sm"
-                                      >
-                                        <Plus className="h-4 w-4 mr-2" />
-                                        Add to Cart
-                                      </Button>
-                                    </div>
-                                  </div>
-                                </div>
-                              </CardContent>
-                            </Card>
-                          ))}
-                        </div>
-                      </div>
-                    </div>
-                  ));
-                })()}
+            ) : loadingMenu ? (
+              <div className="flex justify-center items-center h-64">
+                <Loader2 className="h-8 w-8 animate-spin text-purple-600" />
               </div>
-            );
-          })()}
-        </div>
+            ) : menuItems.length === 0 ? (
+              <Card>
+                <CardContent className="p-12 text-center">
+                  <ShoppingCart className="h-16 w-16 text-gray-300 mx-auto mb-4" />
+                  <h3 className="text-lg font-medium text-gray-900 mb-2">No menu items available</h3>
+                  <p className="text-gray-500">Please check back later or contact the venue.</p>
+                </CardContent>
+              </Card>
+            ) : (
+              <StyledMenuDisplay
+                venueId={venueSlug}
+                menuItems={menuItems}
+                categoryOrder={categoryOrder}
+                onAddToCart={(item) => addToCart(item)}
+                cart={cart.map(item => ({ id: item.id, quantity: item.quantity }))}
+                onRemoveFromCart={(itemId) => removeFromCart(itemId)}
+                onUpdateQuantity={(itemId, quantity) => updateQuantity(itemId, quantity)}
+              />
+            )}
+          </div>
 
           {/* Desktop Cart */}
           <div className="hidden lg:block">
