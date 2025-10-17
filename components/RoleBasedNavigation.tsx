@@ -126,14 +126,14 @@ export default function RoleBasedNavigation({
     <div className="bg-white border-b">
       {/* Breadcrumb Navigation */}
       <div className="flex items-center gap-2 px-4 py-2 text-sm text-gray-600">
-        <Link 
-          href="/" 
-          className="hover:text-purple-600 transition-colors flex items-center gap-1"
-        >
-          <Home className="h-4 w-4" />
-          Home
-        </Link>
-        <ChevronRight className="h-4 w-4" />
+        {!isDashboard && (
+          <>
+            <span className="text-gray-900 font-medium bg-purple-50 px-3 py-1 rounded-md border border-purple-200 shadow-sm">
+              {currentPage}
+            </span>
+            <ChevronRight className="h-4 w-4 rotate-180" />
+          </>
+        )}
         <Link 
           href={`/dashboard/${venueId}`} 
           className="hover:text-purple-600 transition-colors flex items-center gap-1"
@@ -141,12 +141,14 @@ export default function RoleBasedNavigation({
           <LayoutDashboard className="h-4 w-4" />
           Dashboard
         </Link>
-        {!isDashboard && (
-          <>
-            <ChevronRight className="h-4 w-4" />
-            <span className="text-gray-900 font-medium">{currentPage}</span>
-          </>
-        )}
+        <ChevronRight className="h-4 w-4 rotate-180" />
+        <Link 
+          href="/" 
+          className="hover:text-purple-600 transition-colors flex items-center gap-1"
+        >
+          <Home className="h-4 w-4" />
+          Home
+        </Link>
       </div>
 
       {/* Role Badge and User Name */}

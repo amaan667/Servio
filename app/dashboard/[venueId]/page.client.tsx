@@ -7,7 +7,6 @@ import { Card, CardContent, CardHeader } from "@/components/ui/card";
 import Link from "next/link";
 import { Clock, Users, TrendingUp, ShoppingBag, BarChart, QrCode, Settings, Plus, Table, Wifi, WifiOff, AlertTriangle, ChefHat, Package } from "lucide-react";
 import { createClient } from "@/lib/supabase/client";
-import NavigationBreadcrumb from "@/components/navigation-breadcrumb";
 import RoleBasedNavigation from "@/components/RoleBasedNavigation";
 import { todayWindowForTZ } from "@/lib/time";
 import { useDashboardPrefetch } from '@/hooks/usePrefetch';
