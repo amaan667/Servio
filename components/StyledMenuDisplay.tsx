@@ -9,7 +9,7 @@ import { Plus, Minus } from 'lucide-react';
 interface MenuItem {
   id: string;
   name: string;
-  description?: string | null;
+  description?: string | null | undefined;
   price: number;
   category: string;
   is_available: boolean;
