@@ -28,6 +28,7 @@ interface MenuItem {
   category: string;
   is_available: boolean;
   created_at: string;
+  position?: number; // Optional, used for visual ordering only
 }
 
 interface DesignSettings {
@@ -123,7 +124,7 @@ export default function MenuManagementClient({ venueId, canEdit = true }: { venu
     const [removed] = newItems.splice(draggedIndex, 1);
     newItems.splice(targetIndex, 0, removed);
 
-    // Update all items with new order
+    // Update all items in the category with new order (visual only, no database update)
     const updatedItems = menuItems.map(item => {
       if (item.category === draggedItem.category) {
         const newIndex = newItems.findIndex(newItem => newItem.id === item.id);
@@ -134,28 +135,12 @@ export default function MenuManagementClient({ venueId, canEdit = true }: { venu
 
     setMenuItems(updatedItems);
 
-    // Save to database
-    try {
-      const supabase = createClient();
-      for (let i = 0; i < newItems.length; i++) {
-        await supabase
-          .from('menu_items')
-          .update({ position: i })
-          .eq('id', newItems[i].id);
-      }
-
-      toast({
-        title: "Items reordered",
-        description: "Menu items have been reordered successfully",
-      });
-    } catch (error) {
-      console.error('Error reordering items:', error);
-      toast({
-        title: "Error",
-        description: "Failed to reorder items",
-        variant: "destructive",
-      });
-    }
+    // Note: Position is not persisted to database as the position column doesn't exist
+    // Items will be ordered by created_at when the page reloads
+    toast({
+      title: "Items reordered",
+      description: "Menu items have been reordered (changes will reset on page reload)",
+    });
 
     setDraggedItem(null);
     setDraggedOverItem(null);
@@ -312,12 +297,12 @@ export default function MenuManagementClient({ venueId, canEdit = true }: { venu
         hasKey: !!process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY
       });
       
-      // Query menu items with position ordering
+      // Query menu items ordered by creation date
       const { data: items, error } = await supabase
         .from('menu_items')
         .select('*')
         .eq('venue_id', venueId)
-        .order('position', { ascending: true, nullsFirst: false });
+        .order('created_at', { ascending: true });
 
       if (error) {
         console.error('[MENU LOAD] Error loading menu items:', error);
