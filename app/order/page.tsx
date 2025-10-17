@@ -16,7 +16,7 @@ import { demoMenuItems } from "@/data/demoMenuItems";
 
 import { useRouter } from "next/navigation";
 import NavigationBreadcrumb from "@/components/navigation-breadcrumb";
-import { StyledMenuDisplay } from "@/components/StyledMenuDisplay";
+import { PDFMenuDisplay } from "@/components/PDFMenuDisplay";
 import { MenuItem as BaseMenuItem } from "@/lib/supabase";
 
 // Local MenuItem interface for order page (extends global but makes some properties optional)
@@ -915,7 +915,7 @@ export default function CustomerOrderPage() {
 
       <div className="max-w-7xl mx-auto px-3 sm:px-4 lg:px-6 py-4 sm:py-6 lg:py-8 bg-gray-50 dark:bg-gray-900 min-h-screen">
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 lg:gap-8">
-          {/* Menu Section - Styled PDF Menu with Ordering Functionality */}
+          {/* Menu Section - PDF Menu Images with Ordering Functionality */}
           <div className="lg:col-span-2">
             {menuError ? (
               <Alert variant="destructive">
@@ -934,7 +934,7 @@ export default function CustomerOrderPage() {
                 </CardContent>
               </Card>
             ) : (
-              <StyledMenuDisplay
+              <PDFMenuDisplay
                 venueId={venueSlug}
                 menuItems={menuItems}
                 categoryOrder={categoryOrder}
@@ -942,6 +942,7 @@ export default function CustomerOrderPage() {
                 cart={cart.map(item => ({ id: item.id, quantity: item.quantity }))}
                 onRemoveFromCart={(itemId) => removeFromCart(itemId)}
                 onUpdateQuantity={(itemId, quantity) => updateQuantity(itemId, quantity)}
+                isOrdering={true}
               />
             )}
           </div>
