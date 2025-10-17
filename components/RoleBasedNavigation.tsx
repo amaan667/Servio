@@ -1,5 +1,6 @@
 'use client';
 
+import Link from 'next/link';
 import { 
   LayoutDashboard, 
   Settings, 
@@ -9,10 +10,13 @@ import {
   ChefHat,
   Table,
   CreditCard,
-  Package
+  Package,
+  Home,
+  ChevronRight
 } from 'lucide-react';
 import { canAccess, getRoleDisplayName, getRoleColor, UserRole } from '@/lib/permissions';
 import { Badge } from '@/components/ui/badge';
+import { usePathname } from 'next/navigation';
 
 interface RoleBasedNavigationProps {
   venueId: string;
@@ -25,6 +29,31 @@ export default function RoleBasedNavigation({
   userRole, 
   userName 
 }: RoleBasedNavigationProps) {
+  const pathname = usePathname();
+  
+  // Get the current page name from the path
+  const getPageName = () => {
+    const path = pathname || '';
+    if (path.includes('/analytics')) return 'Analytics';
+    if (path.includes('/menu-management')) return 'Menu';
+    if (path.includes('/inventory')) return 'Inventory';
+    if (path.includes('/staff')) return 'Staff';
+    if (path.includes('/kds')) return 'KDS';
+    if (path.includes('/tables')) return 'Tables';
+    if (path.includes('/pos')) return 'POS';
+    if (path.includes('/settings')) return 'Settings';
+    if (path.includes('/qr-codes')) return 'QR Codes';
+    if (path.includes('/feedback')) return 'Feedback';
+    if (path.includes('/live-orders')) return 'Live Orders';
+    if (path.includes('/orders')) return 'Orders';
+    if (path.includes('/billing')) return 'Billing';
+    if (path.includes('/ai-chat')) return 'AI Assistant';
+    return 'Dashboard';
+  };
+
+  const currentPage = getPageName();
+  const isDashboard = currentPage === 'Dashboard';
+
   const navigationItems = [
     {
       label: 'Dashboard',
@@ -94,12 +123,40 @@ export default function RoleBasedNavigation({
   const visibleItems = navigationItems.filter(item => item.show);
 
   return (
-    <div className="flex items-center justify-between bg-white border-b px-4 py-3">
-      <div className="flex items-center gap-2">
-        <Badge className={getRoleColor(userRole)}>
-          {getRoleDisplayName(userRole)}
-        </Badge>
-        <span className="text-sm text-gray-600">{userName}</span>
+    <div className="bg-white border-b">
+      {/* Breadcrumb Navigation */}
+      <div className="flex items-center gap-2 px-4 py-2 text-sm text-gray-600">
+        <Link 
+          href="/" 
+          className="hover:text-purple-600 transition-colors flex items-center gap-1"
+        >
+          <Home className="h-4 w-4" />
+          Home
+        </Link>
+        <ChevronRight className="h-4 w-4" />
+        <Link 
+          href={`/dashboard/${venueId}`} 
+          className="hover:text-purple-600 transition-colors flex items-center gap-1"
+        >
+          <LayoutDashboard className="h-4 w-4" />
+          Dashboard
+        </Link>
+        {!isDashboard && (
+          <>
+            <ChevronRight className="h-4 w-4" />
+            <span className="text-gray-900 font-medium">{currentPage}</span>
+          </>
+        )}
+      </div>
+
+      {/* Role Badge and User Name */}
+      <div className="flex items-center justify-between px-4 py-3 border-t border-gray-100">
+        <div className="flex items-center gap-2">
+          <Badge className={getRoleColor(userRole)}>
+            {getRoleDisplayName(userRole)}
+          </Badge>
+          <span className="text-sm text-gray-600">{userName}</span>
+        </div>
       </div>
     </div>
   );
