@@ -28,6 +28,14 @@ function getOrCreateClient() {
   const url = process.env.NEXT_PUBLIC_SUPABASE_URL;
   const anon = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
 
+  console.log('[SUPABASE CLIENT] Creating client:', {
+    hasUrl: !!url,
+    hasKey: !!anon,
+    isBrowser: typeof window !== 'undefined',
+    url: url ? `${url.substring(0, 20)}...` : 'missing',
+    key: anon ? `${anon.substring(0, 10)}...` : 'missing'
+  });
+
   // If env is missing or not in a browser, return a mock to avoid build-time crashes
   if (typeof window === 'undefined' || !url || !anon) {
     console.warn('[SUPABASE CLIENT] Missing environment variables or not in browser:', {
@@ -39,7 +47,7 @@ function getOrCreateClient() {
   }
 
   try {
-    return createBrowserClient(url, anon, {
+    const client = createBrowserClient(url, anon, {
       auth: {
         persistSession: true,
         autoRefreshToken: true,
@@ -57,6 +65,9 @@ function getOrCreateClient() {
         },
       },
     });
+    
+    console.log('[SUPABASE CLIENT] Client created successfully');
+    return client;
   } catch (error) {
     console.error('[SUPABASE CLIENT] Error creating client:', error);
     // Fallback to mock if the browser client throws during initialization
@@ -70,12 +81,7 @@ export function createClient() {
 }
 
 // Export a lazy-initialized instance
-export const supabase = new Proxy({} as any, {
-  get(target, prop) {
-    const client = getOrCreateClient();
-    return client[prop as keyof typeof client];
-  }
-});
+export const supabase = getOrCreateClient();
 
 // Backward compatibility functions for existing code
 export function clearAuthStorage() {
