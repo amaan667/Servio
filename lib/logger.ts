@@ -1,63 +1,88 @@
 /**
- * Production-safe logging utility
- * Replaces console.log statements throughout the app
+ * Production-ready logging utility
+ * Replaces console.log with structured logging
  */
 
-const isDevelopment = process.env.NODE_ENV === 'development';
-const isProduction = process.env.NODE_ENV === 'production';
+type LogLevel = 'debug' | 'info' | 'warn' | 'error';
 
-interface LogData {
+interface LogContext {
   [key: string]: any;
 }
 
-export const logger = {
-  /**
-   * Debug logs - only shown in development
-   */
-  debug: (message: string, data?: LogData) => {
-    if (isDevelopment) {
-      console.log(`[DEBUG] ${message}`, data || '');
+class Logger {
+  private isDevelopment = process.env.NODE_ENV === 'development';
+  private isProduction = process.env.NODE_ENV === 'production';
+
+  private log(level: LogLevel, message: string, context?: LogContext) {
+    const timestamp = new Date().toISOString();
+    const logEntry = {
+      timestamp,
+      level,
+      message,
+      ...context,
+    };
+
+    // In development, use console for readability
+    if (this.isDevelopment) {
+      const emoji = {
+        debug: '🔍',
+        info: 'ℹ️',
+        warn: '⚠️',
+        error: '❌',
+      }[level];
+
+      console.log(`${emoji} [${level.toUpperCase()}] ${message}`, context || '');
     }
-  },
 
-  /**
-   * Info logs - shown in all environments
-   */
-  info: (message: string, data?: LogData) => {
-    console.log(`[INFO] ${message}`, data || '');
-  },
-
-  /**
-   * Warning logs - shown in all environments
-   */
-  warn: (message: string, data?: LogData) => {
-    console.warn(`[WARN] ${message}`, data || '');
-  },
-
-  /**
-   * Error logs - shown in all environments
-   * TODO: Send to error tracking service (Sentry) in production
-   */
-  error: (message: string, error?: Error | any, data?: LogData) => {
-    console.error(`[ERROR] ${message}`, error || '', data || '');
-    
-    // In production, send to error tracking
-    if (isProduction && typeof window !== 'undefined' && (window as any).Sentry) {
-      (window as any).Sentry.captureException(error || new Error(message), {
-        extra: data,
-      });
+    // In production, send to logging service
+    if (this.isProduction) {
+      // TODO: Send to logging service (e.g., LogRocket, Datadog, etc.)
+      // For now, only log errors in production
+      if (level === 'error') {
+        console.error(JSON.stringify(logEntry));
+      }
     }
-  },
+  }
 
-  /**
-   * Performance timing logs
-   */
-  perf: (operation: string, startTime: number) => {
-    const duration = Date.now() - startTime;
-    if (isDevelopment || duration > 1000) { // Log slow operations in production
-      console.log(`[PERF] ${operation}: ${duration}ms`);
-    }
-  },
-};
+  debug(message: string, context?: LogContext) {
+    this.log('debug', message, context);
+  }
 
-export default logger;
+  info(message: string, context?: LogContext) {
+    this.log('info', message, context);
+  }
+
+  warn(message: string, context?: LogContext) {
+    this.log('warn', message, context);
+  }
+
+  error(message: string, error?: Error | any, context?: LogContext) {
+    const errorContext = {
+      ...context,
+      error: error?.message,
+      stack: error?.stack,
+    };
+    this.log('error', message, errorContext);
+  }
+}
+
+export const logger = new Logger();
+
+// Helper for API routes
+export function logApiCall(endpoint: string, method: string, duration: number, status: number) {
+  logger.info('API Call', {
+    endpoint,
+    method,
+    duration: `${duration}ms`,
+    status,
+  });
+}
+
+// Helper for database queries
+export function logDbQuery(query: string, duration: number, rows?: number) {
+  logger.debug('Database Query', {
+    query: query.substring(0, 100),
+    duration: `${duration}ms`,
+    rows,
+  });
+}
