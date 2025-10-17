@@ -37,7 +37,9 @@ export function ItemDetailsModal({
   if (!item) return null;
 
   const handleAddToCart = () => {
-    onAddToCart(item);
+    // Quantity is already tracked via onUpdateQuantity
+    // Just close the modal
+    onClose();
   };
 
   const handleIncrement = () => {
@@ -88,26 +90,18 @@ export function ItemDetailsModal({
             </div>
           )}
 
-          {/* Quantity Controls */}
+          {/* Quantity Controls - Always Visible */}
           <div className="flex items-center justify-between pt-4 border-t">
-            {quantity === 0 ? (
-              <Button
-                onClick={handleAddToCart}
-                disabled={!item.is_available}
-                className="w-full flex items-center justify-center space-x-2"
-                size="lg"
-              >
-                <ShoppingCart className="h-5 w-5" />
-                <span>Add to Cart</span>
-              </Button>
-            ) : (
-              <div className="flex items-center space-x-4 w-full">
+            <div className="flex items-center space-x-4 w-full">
+              <div className="flex flex-col space-y-1">
+                <label className="text-sm font-medium text-muted-foreground">Quantity</label>
                 <div className="flex items-center space-x-2 bg-muted rounded-lg p-2">
                   <Button
                     onClick={handleDecrement}
                     variant="ghost"
                     size="sm"
                     className="h-8 w-8 p-0"
+                    disabled={quantity === 0}
                   >
                     <Minus className="h-4 w-4" />
                   </Button>
@@ -119,19 +113,33 @@ export function ItemDetailsModal({
                     variant="ghost"
                     size="sm"
                     className="h-8 w-8 p-0"
+                    disabled={!item.is_available}
                   >
                     <Plus className="h-4 w-4" />
                   </Button>
                 </div>
-                <div className="flex-1 text-right">
-                  <p className="text-sm text-muted-foreground">Total</p>
-                  <p className="text-lg font-bold text-primary">
-                    {formatPriceWithCurrency(item.price * quantity, '£')}
-                  </p>
-                </div>
               </div>
-            )}
+              <div className="flex-1 text-right">
+                <p className="text-sm text-muted-foreground">Total</p>
+                <p className="text-lg font-bold text-primary">
+                  {formatPriceWithCurrency(item.price * quantity, '£')}
+                </p>
+              </div>
+            </div>
           </div>
+
+          {/* Add to Cart Button - Only show when quantity > 0 */}
+          {quantity > 0 && (
+            <Button
+              onClick={handleAddToCart}
+              disabled={!item.is_available}
+              className="w-full flex items-center justify-center space-x-2"
+              size="lg"
+            >
+              <ShoppingCart className="h-5 w-5" />
+              <span>Add to Cart</span>
+            </Button>
+          )}
         </div>
       </DialogContent>
     </Dialog>
