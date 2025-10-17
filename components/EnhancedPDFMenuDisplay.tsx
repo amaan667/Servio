@@ -19,6 +19,8 @@ interface MenuItem {
   created_at: string;
 }
 
+// Type-safe menu item interface for hotspot system
+
 interface EnhancedPDFMenuDisplayProps {
   venueId: string;
   menuItems: MenuItem[];
