@@ -88,17 +88,77 @@ export default function MenuManagementClient({ venueId, canEdit = true }: { venu
   const router = useRouter();
   const { toast } = useToast();
 
-  // Drag and drop handlers - disabled until position column is added
+  // Drag and drop handlers
   const handleDragStart = (item: MenuItem) => {
-    // Drag and drop disabled - position column doesn't exist
+    setDraggedItem(item);
   };
 
   const handleDragOver = (e: React.DragEvent, item: MenuItem) => {
-    // Drag and drop disabled - position column doesn't exist
+    e.preventDefault();
+    if (draggedItem && draggedItem.id !== item.id) {
+      setDraggedOverItem(item);
+    }
   };
 
   const handleDragEnd = async () => {
-    // Drag and drop disabled - position column doesn't exist
+    if (!draggedItem || !draggedOverItem) {
+      setDraggedItem(null);
+      setDraggedOverItem(null);
+      return;
+    }
+
+    // Reorder items
+    const categoryItems = menuItems.filter(item => item.category === draggedItem.category);
+    const draggedIndex = categoryItems.findIndex(item => item.id === draggedItem.id);
+    const targetIndex = categoryItems.findIndex(item => item.id === draggedOverItem.id);
+
+    if (draggedIndex === -1 || targetIndex === -1) {
+      setDraggedItem(null);
+      setDraggedOverItem(null);
+      return;
+    }
+
+    // Create new array with reordered items
+    const newItems = [...categoryItems];
+    const [removed] = newItems.splice(draggedIndex, 1);
+    newItems.splice(targetIndex, 0, removed);
+
+    // Update all items with new order
+    const updatedItems = menuItems.map(item => {
+      if (item.category === draggedItem.category) {
+        const newIndex = newItems.findIndex(newItem => newItem.id === item.id);
+        return { ...item, position: newIndex };
+      }
+      return item;
+    });
+
+    setMenuItems(updatedItems);
+
+    // Save to database
+    try {
+      const supabase = createClient();
+      for (let i = 0; i < newItems.length; i++) {
+        await supabase
+          .from('menu_items')
+          .update({ position: i })
+          .eq('id', newItems[i].id);
+      }
+
+      toast({
+        title: "Items reordered",
+        description: "Menu items have been reordered successfully",
+      });
+    } catch (error) {
+      console.error('Error reordering items:', error);
+      toast({
+        title: "Error",
+        description: "Failed to reorder items",
+        variant: "destructive",
+      });
+    }
+
+    setDraggedItem(null);
+    setDraggedOverItem(null);
   };
 
   // Function to detect colors from logo image
@@ -247,12 +307,12 @@ export default function MenuManagementClient({ venueId, canEdit = true }: { venu
       
       console.log('[MENU LOAD] Loading menu items for venue:', venueId);
       
-      // Query menu items (position column doesn't exist, so order by created_at)
+      // Query menu items with position ordering
       const { data: items, error } = await supabase
         .from('menu_items')
         .select('*')
         .eq('venue_id', venueId)
-        .order('created_at', { ascending: true });
+        .order('position', { ascending: true, nullsFirst: false });
 
       if (error) {
         console.error('[MENU LOAD] Error loading menu items:', error);
@@ -886,9 +946,21 @@ export default function MenuManagementClient({ venueId, canEdit = true }: { venu
                           {getItemsByCategory(category).map(item => (
                             <div 
                               key={item.id} 
-                              className="flex items-center justify-between p-4 hover:bg-muted/25 transition-colors"
+                              className={`flex items-center justify-between p-4 hover:bg-muted/25 transition-colors ${
+                                draggedItem?.id === item.id ? 'opacity-50' : ''
+                              } ${
+                                draggedOverItem?.id === item.id ? 'bg-blue-50 border-l-4 border-blue-500' : ''
+                              }`}
+                              draggable
+                              onDragStart={() => handleDragStart(item)}
+                              onDragOver={(e) => handleDragOver(e, item)}
+                              onDragEnd={handleDragEnd}
                             >
                               <div className="flex items-center space-x-2 flex-1">
+                                {/* Drag Handle */}
+                                <div className="cursor-move text-gray-400 hover:text-gray-600">
+                                  <GripVertical className="h-5 w-5" />
+                                </div>
                                 <div className="flex-1">
                                   <div className="flex items-center space-x-2">
                                     <h4 className="font-medium text-foreground">{item.name}</h4>
