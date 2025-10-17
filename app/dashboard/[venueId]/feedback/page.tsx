@@ -1,5 +1,5 @@
 import SimpleFeedbackClient from './SimpleFeedbackClient';
-import NavigationBreadcrumb from '@/components/navigation-breadcrumb';
+import RoleBasedNavigation from '@/components/RoleBasedNavigation';
 import { createClient } from '@/lib/supabase/server';
 import { redirect } from 'next/navigation';
 
@@ -14,46 +14,62 @@ export default async function FeedbackPage({ params }: { params: Promise<{ venue
     redirect('/sign-in');
   }
 
-  // Fetch venue data to verify ownership
+  // Check if user is the venue owner
   const { data: venue, error: venueError } = await supabase
     .from('venues')
-    .select('*')
+    .select('venue_id, venue_name, owner_user_id')
     .eq('venue_id', venueId)
     .eq('owner_user_id', user.id)
     .maybeSingle();
 
-  if (venueError) {
-    console.error('Database error:', venueError);
-    redirect('/?auth_error=database_error');
-  }
-  
-  if (!venue) {
-    // Check if user has any venues at all before redirecting
-    const { data: userVenues } = await supabase
-      .from('venues')
-      .select('venue_id')
-      .eq('owner_user_id', user.id)
-      .limit(1);
+  // Check if user has a staff role for this venue
+  const { data: userRole, error: roleError } = await supabase
+    .from('user_venue_roles')
+    .select('role')
+    .eq('user_id', user.id)
+    .eq('venue_id', venueId)
+    .maybeSingle();
 
-    if (!userVenues || userVenues.length === 0) {
+  const isOwner = !!venue;
+  const isStaff = !!userRole;
+
+  // If user is not owner or staff, redirect
+  if (!isOwner && !isStaff) {
+    redirect('/complete-profile');
+  }
+
+  // Get venue details for staff
+  let finalVenue = venue;
+  if (!venue && isStaff) {
+    const { data: staffVenue } = await supabase
+      .from('venues')
+      .select('venue_id, venue_name')
+      .eq('venue_id', venueId)
+      .single();
+    
+    if (!staffVenue) {
       redirect('/complete-profile');
     }
-
-    // User has venues but not this one, redirect to their first venue
-    redirect(`/dashboard/${userVenues[0].venue_id}`);
+    finalVenue = staffVenue;
   }
 
+  const finalUserRole = userRole?.role || (isOwner ? 'owner' : 'staff');
+  
   return (
     <div className="min-h-screen bg-background">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 pb-24 md:pb-8">
-        <NavigationBreadcrumb venueId={venueId} />
+        <RoleBasedNavigation 
+          venueId={venueId} 
+          userRole={finalUserRole as any}
+          userName={user.user_metadata?.full_name || user.email?.split('@')[0] || 'User'}
+        />
         
-        <div className="mb-8">
+        <div className="mb-8 mt-4">
           <h1 className="text-3xl font-bold tracking-tight text-foreground">
             Customer Feedback
           </h1>
           <p className="text-lg text-foreground mt-2">
-            Manage customer feedback and reviews for {venue.venue_name}
+            Manage customer feedback and reviews for {finalVenue?.venue_name || "your venue"}
           </p>
         </div>
         
