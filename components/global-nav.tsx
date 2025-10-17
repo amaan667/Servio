@@ -74,6 +74,16 @@ export default function GlobalNav() {
     const fetchUserData = async () => {
       if (isAuthenticated && session?.user?.id) {
         try {
+          // Check cache first
+          const cachedRole = sessionStorage.getItem(`user_role_${session.user.id}`);
+          const cachedVenueId = sessionStorage.getItem(`venue_id_${session.user.id}`);
+          
+          if (cachedRole && cachedVenueId) {
+            setUserRole(cachedRole);
+            setPrimaryVenueId(cachedVenueId);
+            return; // Use cached data immediately
+          }
+          
           // Fetch primary venue
           const { data: venueData, error: venueError } = await supabase
             .from('venues')
@@ -85,6 +95,9 @@ export default function GlobalNav() {
           if (!venueError && venueData?.length) {
             setPrimaryVenueId(venueData[0].venue_id);
             setUserRole('owner');
+            // Cache the data
+            sessionStorage.setItem(`user_role_${session.user.id}`, 'owner');
+            sessionStorage.setItem(`venue_id_${session.user.id}`, venueData[0].venue_id);
           } else {
             // Check if user is staff
             const { data: staffData } = await supabase
@@ -97,6 +110,9 @@ export default function GlobalNav() {
             if (staffData) {
               setPrimaryVenueId(staffData.venue_id);
               setUserRole(staffData.role);
+              // Cache the data
+              sessionStorage.setItem(`user_role_${session.user.id}`, staffData.role);
+              sessionStorage.setItem(`venue_id_${session.user.id}`, staffData.venue_id);
             }
           }
         } catch (err) {

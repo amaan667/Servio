@@ -14,6 +14,7 @@ import { Plus, Edit, Trash2, ShoppingBag, Trash, ChevronDown, ChevronRight, Save
 import { MenuUploadCard } from "@/components/MenuUploadCard";
 import { CategoriesManagement } from "@/components/CategoriesManagement";
 import { MenuPreview } from "@/components/MenuPreview";
+import { PDFMenuDisplay } from "@/components/PDFMenuDisplay";
 import { useToast } from "@/hooks/use-toast";
 import { formatPriceWithCurrency } from "@/lib/pricing-utils";
 
@@ -80,7 +81,7 @@ export default function MenuManagementClient({ venueId, canEdit = true }: { venu
   });
   const [isUploadingLogo, setIsUploadingLogo] = useState(false);
   const [isSavingDesign, setIsSavingDesign] = useState(false);
-  const [previewMode, setPreviewMode] = useState<'styled' | 'simple'>('styled');
+  const [previewMode, setPreviewMode] = useState<'pdf' | 'styled' | 'simple'>('pdf');
   const router = useRouter();
   const { toast } = useToast();
 
@@ -1207,6 +1208,17 @@ export default function MenuManagementClient({ venueId, canEdit = true }: { venu
                   {/* Preview Mode Toggle */}
                   <div className="flex items-center space-x-2 bg-gray-100 rounded-lg p-1">
                     <button
+                      onClick={() => setPreviewMode('pdf')}
+                      className={`px-3 py-1.5 text-sm font-medium rounded-md transition-colors ${
+                        previewMode === 'pdf'
+                          ? 'bg-white text-gray-900 shadow-sm'
+                          : 'text-gray-600 hover:text-gray-900'
+                      }`}
+                    >
+                      <Image className="h-4 w-4 inline mr-1" />
+                      PDF
+                    </button>
+                    <button
                       onClick={() => setPreviewMode('styled')}
                       className={`px-3 py-1.5 text-sm font-medium rounded-md transition-colors ${
                         previewMode === 'styled'
@@ -1242,7 +1254,7 @@ export default function MenuManagementClient({ venueId, canEdit = true }: { venu
             </CardHeader>
           </Card>
 
-          {/* Menu Preview - Styled or Simple View */}
+          {/* Menu Preview - PDF Images or Styled/Simple View */}
           {menuItems.length === 0 ? (
             <Card>
               <CardContent className="p-12">
@@ -1257,6 +1269,17 @@ export default function MenuManagementClient({ venueId, canEdit = true }: { venu
                 </div>
               </CardContent>
             </Card>
+          ) : previewMode === 'pdf' ? (
+            <PDFMenuDisplay
+              venueId={venueId}
+              menuItems={menuItems}
+              categoryOrder={categoryOrder}
+              onAddToCart={() => {}}
+              cart={[]}
+              onRemoveFromCart={() => {}}
+              onUpdateQuantity={() => {}}
+              isOrdering={false}
+            />
           ) : previewMode === 'styled' ? (
             <MenuPreview
               venueId={venueId}
