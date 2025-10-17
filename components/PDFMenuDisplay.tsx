@@ -48,17 +48,28 @@ export function PDFMenuDisplay({
         // Fetch the most recent PDF upload for this venue
         const { data: uploadData, error } = await supabase
           .from('menu_uploads')
-          .select('pdf_images')
+          .select('pdf_images, filename, created_at')
           .eq('venue_id', venueId)
           .order('created_at', { ascending: false })
           .limit(1)
           .single();
 
-        if (uploadData && uploadData.pdf_images) {
+        console.log('[PDF MENU DISPLAY] Fetch result:', { 
+          hasData: !!uploadData, 
+          hasPdfImages: !!(uploadData?.pdf_images), 
+          pdfImagesLength: uploadData?.pdf_images?.length || 0,
+          filename: uploadData?.filename,
+          error: error?.message 
+        });
+
+        if (uploadData && uploadData.pdf_images && uploadData.pdf_images.length > 0) {
+          console.log('[PDF MENU DISPLAY] Setting PDF images:', uploadData.pdf_images.length);
           setPdfImages(uploadData.pdf_images);
+        } else {
+          console.warn('[PDF MENU DISPLAY] No PDF images found in upload data');
         }
       } catch (error) {
-        console.error('Error fetching PDF images:', error);
+        console.error('[PDF MENU DISPLAY] Error fetching PDF images:', error);
       } finally {
         setLoading(false);
       }
@@ -107,7 +118,30 @@ export function PDFMenuDisplay({
     return (
       <div className="text-center py-12">
         <p className="text-gray-600 mb-4">No PDF menu images available</p>
-        <p className="text-sm text-gray-500">Upload a PDF menu to see the visual menu</p>
+        <p className="text-sm text-gray-500 mb-4">Upload a PDF menu to see the visual menu</p>
+        <button
+          onClick={async () => {
+            try {
+              const response = await fetch('/api/menu/reconvert-pdf', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ venueId })
+              });
+              const result = await response.json();
+              if (result.ok) {
+                alert('PDF images regenerated! Please refresh the page.');
+                window.location.reload();
+              } else {
+                alert('Failed to regenerate PDF images: ' + result.error);
+              }
+            } catch (error) {
+              alert('Error regenerating PDF images');
+            }
+          }}
+          className="px-4 py-2 bg-purple-600 text-white rounded-lg hover:bg-purple-700"
+        >
+          Regenerate PDF Images
+        </button>
       </div>
     );
   }
