@@ -104,7 +104,7 @@ export default function GlobalNav() {
         }
       } else {
         setPrimaryVenueId(null);
-        setUserRole('owner');
+        setUserRole(null);
       }
     };
 
