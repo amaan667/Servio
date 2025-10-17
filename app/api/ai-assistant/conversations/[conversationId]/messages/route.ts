@@ -18,7 +18,7 @@ const CreateMessageSchema = z.object({
 });
 
 export async function GET(
-  request: NextRequest,
+  _request: NextRequest,
   { params }: { params: Promise<{ conversationId: string }> }
 ) {
   try {

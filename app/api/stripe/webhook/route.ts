@@ -1,6 +1,6 @@
 import Stripe from 'stripe';
 import { NextResponse } from 'next/server';
-import { supabaseAdmin } from '@/lib/supabaseAdmin';
+import { createAdminClient } from '@/lib/supabase/server';
 import { stripe } from '@/lib/stripe-client';
 
 export const runtime = 'nodejs';            // ensure Node runtime (not Edge)

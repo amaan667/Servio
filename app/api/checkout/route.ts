@@ -1,12 +1,14 @@
 import { NextResponse } from "next/server";
 import Stripe from "stripe";
-import { supabaseAdmin } from "@/lib/supabaseAdmin";
+import { createAdminClient } from "@/lib/supabase/server";
 import { stripe } from "@/lib/stripe-client";
 
 export const runtime = 'nodejs';
 
 export async function POST(req: Request) {
   try {
+    const supabaseAdmin = createAdminClient();
+    
     const { 
       orderId, 
       total, 

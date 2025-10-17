@@ -3,7 +3,7 @@ import Stripe from 'stripe';
 import { ENV } from '@/lib/env';
 import { v4 as uuidv4 } from 'uuid';
 import { stripe } from '@/lib/stripe-client';
-import { supabaseAdmin as supabase } from '@/lib/supabaseAdmin';
+import { createAdminClient as supabase } from '@/lib/supabase/server';
 
 interface CreateOrderRequest {
   paymentIntentId: string;

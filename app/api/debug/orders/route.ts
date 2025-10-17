@@ -1,11 +1,13 @@
 import { NextResponse } from 'next/server';
-import { supabaseAdmin } from '@/lib/supabaseAdmin';
+import { createAdminClient } from '@/lib/supabase/server';
 
 export const runtime = 'nodejs';
 export const dynamic = 'force-dynamic';
 
 export async function GET(req: Request) {
   try {
+    const supabaseAdmin = createAdminClient();
+    
     const { searchParams } = new URL(req.url);
     const sessionId = searchParams.get('sessionId');
     

@@ -1,5 +1,5 @@
 import { NextResponse } from 'next/server';
-import { createServerSupabase } from '@/lib/supabase-server';
+import { createServerSupabase } from '@/lib/supabase/server';
 import { cookies } from 'next/headers';
 
 export async function GET() {

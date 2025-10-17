@@ -36,7 +36,7 @@ export async function POST(request: NextRequest) {
 
     // Parse request
     const body = await request.json();
-    const { venueId, toolName, params, preview, auditId } =
+    const { venueId, toolName, params, preview } =
       ExecuteRequestSchema.parse(body);
 
     // Verify user has access to venue

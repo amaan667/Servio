@@ -1,7 +1,7 @@
 import { NextResponse } from 'next/server';
 export const runtime = 'nodejs';
 import { createClient } from '@/lib/supabase/server';
-import { getSupabaseAdmin } from '@/lib/supabaseAdmin';
+import { getSupabaseAdmin } from '@/lib/supabase/server';
 
 export async function POST(req: Request) {
   try {
@@ -90,7 +90,7 @@ export async function POST(req: Request) {
 
     // Update the order status to SERVING (guard by venue_id for RLS)
     // Use admin client to bypass RLS for the atomic order update; we already authorized above
-    const admin = getSupabaseAdmin();
+    const admin = createAdminClient();
     const { error } = await admin
       .from('orders')
       .update({ 
