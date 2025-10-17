@@ -151,15 +151,17 @@ export default function RoleBasedNavigation({
         )}
       </div>
 
-      {/* Role Badge and User Name */}
-      <div className="flex items-center justify-between px-4 py-3 border-t border-gray-100">
-        <div className="flex items-center gap-2">
-          <Badge className={getRoleColor(userRole)}>
-            {getRoleDisplayName(userRole)}
-          </Badge>
-          <span className="text-sm text-gray-600">{userName}</span>
+      {/* Role Badge and User Name - Only show on dashboard */}
+      {isDashboard && (
+        <div className="flex items-center justify-between px-4 py-3 border-t border-gray-100">
+          <div className="flex items-center gap-2">
+            <Badge className={getRoleColor(userRole)}>
+              {getRoleDisplayName(userRole)}
+            </Badge>
+            <span className="text-sm text-gray-600">{userName}</span>
+          </div>
         </div>
-      </div>
+      )}
     </div>
   );
 }
