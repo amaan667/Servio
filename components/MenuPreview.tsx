@@ -142,36 +142,36 @@ export function MenuPreview({
                 {category}
               </h2>
 
-              {/* Items Grid */}
-              <div className={styleClasses.container}>
+              {/* Items List - PDF Style */}
+              <div className="space-y-4">
                 {items
                   .filter(item => item.is_available)
                   .map((item) => (
                     <div
                       key={item.id}
-                      className="bg-white rounded-lg p-6 shadow-sm border border-gray-200"
+                      className="border-b border-gray-200 pb-4 last:border-b-0"
                     >
-                      {/* Item Name */}
-                      <div className="flex justify-between items-start mb-2">
+                      {/* Item Name and Price */}
+                      <div className="flex justify-between items-start mb-1">
                         <h3 
-                          className={`${styleClasses.item} font-semibold`}
+                          className={`${styleClasses.item} font-semibold uppercase`}
                           style={{ color: menuStyle.text_color }}
                         >
                           {item.name}
                         </h3>
                         {menuStyle.show_prices && (
                           <span 
-                            className={`${styleClasses.price} ml-4`}
+                            className={`${styleClasses.price} ml-4 whitespace-nowrap`}
                             style={{ color: menuStyle.accent_color }}
                           >
-                            ${item.price.toFixed(2)}
+                            £{item.price.toFixed(2)}
                           </span>
                         )}
                       </div>
 
                       {/* Item Description */}
                       {menuStyle.show_descriptions && item.description && (
-                        <p className={`${styleClasses.description} text-gray-600`}>
+                        <p className={`${styleClasses.description} text-gray-600 italic`}>
                           {item.description}
                         </p>
                       )}

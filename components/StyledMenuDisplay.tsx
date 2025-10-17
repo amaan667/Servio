@@ -161,8 +161,8 @@ export function StyledMenuDisplay({
                 {category}
               </h2>
 
-              {/* Items Grid */}
-              <div className={styleClasses.container}>
+              {/* Items List - PDF Style */}
+              <div className="space-y-4">
                 {items
                   .filter(item => item.is_available)
                   .map((item) => {
@@ -172,59 +172,58 @@ export function StyledMenuDisplay({
                     return (
                       <div
                         key={item.id}
-                        className="bg-white rounded-lg p-6 shadow-sm border border-gray-200 hover:shadow-md transition-shadow"
+                        className="border-b border-gray-200 pb-4 last:border-b-0"
                       >
-                        {/* Item Name */}
-                        <div className="flex justify-between items-start mb-2">
+                        {/* Item Name and Price */}
+                        <div className="flex justify-between items-start mb-1">
                           <h3 
-                            className={`${styleClasses.item} font-semibold`}
+                            className={`${styleClasses.item} font-semibold uppercase`}
                             style={{ color: menuStyle.text_color }}
                           >
                             {item.name}
                           </h3>
                           {menuStyle.show_prices && (
                             <span 
-                              className={`${styleClasses.price} ml-4`}
+                              className={`${styleClasses.price} ml-4 whitespace-nowrap`}
                               style={{ color: menuStyle.accent_color }}
                             >
-                              ${item.price.toFixed(2)}
+                              £{item.price.toFixed(2)}
                             </span>
                           )}
                         </div>
 
                         {/* Item Description */}
                         {menuStyle.show_descriptions && item.description && (
-                          <p className={`${styleClasses.description} text-gray-600 mb-4`}>
+                          <p className={`${styleClasses.description} text-gray-600 italic mb-3`}>
                             {item.description}
                           </p>
                         )}
 
                         {/* Add to Cart Controls */}
-                        <div className="flex items-center justify-between mt-4">
+                        <div className="flex items-center justify-end mt-2">
                           {quantity === 0 ? (
                             <Button
                               onClick={() => onAddToCart(item)}
-                              className="w-full"
+                              size="sm"
                               style={{
                                 backgroundColor: menuStyle.primary_color,
                                 color: '#ffffff'
                               }}
                             >
                               <Plus className="h-4 w-4 mr-2" />
-                              Add to Cart
+                              Add
                             </Button>
                           ) : (
-                            <div className="flex items-center gap-3 w-full">
+                            <div className="flex items-center gap-2">
                               <Button
                                 onClick={() => onUpdateQuantity(item.id, quantity - 1)}
                                 variant="outline"
                                 size="sm"
-                                className="flex-1"
                               >
                                 <Minus className="h-4 w-4" />
                               </Button>
                               <span 
-                                className="text-lg font-semibold min-w-[40px] text-center"
+                                className="text-base font-semibold min-w-[30px] text-center"
                                 style={{ color: menuStyle.primary_color }}
                               >
                                 {quantity}
@@ -232,7 +231,6 @@ export function StyledMenuDisplay({
                               <Button
                                 onClick={() => onUpdateQuantity(item.id, quantity + 1)}
                                 size="sm"
-                                className="flex-1"
                                 style={{
                                   backgroundColor: menuStyle.primary_color,
                                   color: '#ffffff'
