@@ -1,16 +1,20 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { createAdminClient } from '@/lib/supabase/server';
-import * as pdfjsLib from 'pdfjs-dist';
-import { createCanvas } from 'canvas';
 
-// Configure pdfjs-dist to work in Node.js
-pdfjsLib.GlobalWorkerOptions.workerSrc = `//cdnjs.cloudflare.com/ajax/libs/pdf.js/${pdfjsLib.version}/pdf.worker.min.mjs`;
+// Explicitly use Node.js runtime
+export const runtime = 'nodejs';
 
 /**
  * Convert PDF pages to images
  * This endpoint receives a PDF file and converts each page to an image
  */
 export async function POST(req: NextRequest) {
+  // Dynamic imports to avoid browser API issues during build
+  const pdfjsLib = await import('pdfjs-dist');
+  const { createCanvas } = await import('canvas');
+  
+  // Configure pdfjs-dist to work in Node.js
+  pdfjsLib.GlobalWorkerOptions.workerSrc = `//cdnjs.cloudflare.com/ajax/libs/pdf.js/${pdfjsLib.version}/pdf.worker.min.mjs`;
   try {
     const formData = await req.formData();
     const pdfFile = formData.get('pdf') as File;
