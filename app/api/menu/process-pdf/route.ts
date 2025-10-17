@@ -126,7 +126,7 @@ export async function POST(req: Request) {
 
     // Convert PDF to images using shared function
     console.log('[PDF_PROCESS] Converting PDF to images...');
-    const pdfImages = await convertPDFToImages(buffer, venueId);
+    const pdfImages = await convertPDFToImages(buffer.buffer, venueId);
     console.log('[PDF_PROCESS] PDF conversion complete. Images:', pdfImages.length);
 
     // Extract text using OCR (currently mock implementation)
