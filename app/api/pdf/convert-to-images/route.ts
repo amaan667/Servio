@@ -50,7 +50,8 @@ export async function POST(req: NextRequest) {
       // Render PDF page to canvas
       await page.render({
         canvasContext: context as any,
-        viewport: viewport
+        viewport: viewport,
+        canvas: canvas as any
       }).promise;
       
       // Convert canvas to buffer
