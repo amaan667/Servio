@@ -65,12 +65,14 @@ BEVERAGES
 }
 
 export async function POST(req: Request) {
+  console.log('[PDF_PROCESS] ====== PDF PROCESSING STARTED ======');
   const supa = getSupabaseClient();
   
   try {
-    
+    console.log('[PDF_PROCESS] Parsing FormData...');
     // Parse FormData
     const formData = await req.formData();
+    console.log('[PDF_PROCESS] FormData parsed successfully');
     const file = formData.get('file') as File | null;
     const venueId = formData.get('venue_id') as string;
     const loose = formData.get('loose') === '1';
@@ -387,6 +389,7 @@ export async function POST(req: Request) {
       }
     }
 
+    console.log('[PDF_PROCESS] ====== PDF PROCESSING COMPLETED SUCCESSFULLY ======');
     return NextResponse.json({
       ok: true,
       counts: { inserted, skipped, total },
@@ -396,7 +399,10 @@ export async function POST(req: Request) {
     });
 
   } catch (error: any) {
-    console.error('[PDF_PROCESS] Fatal error:', error);
+    console.error('[PDF_PROCESS] ====== FATAL ERROR ======');
+    console.error('[PDF_PROCESS] Error:', error);
+    console.error('[PDF_PROCESS] Error message:', error.message);
+    console.error('[PDF_PROCESS] Error stack:', error.stack);
     return NextResponse.json({ 
       ok: false, 
       error: `PDF processing failed: ${error.message}` 
