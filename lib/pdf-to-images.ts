@@ -77,6 +77,19 @@ export async function convertPDFToImages(pdfBytes: ArrayBuffer, venueId: string)
         console.log('[PDF_TO_IMAGES] Page', pageNum, 'converted successfully. URL:', urlData.publicUrl);
       } else {
         console.error('[PDF_TO_IMAGES] Failed to get public URL for page', pageNum);
+        console.error('[PDF_TO_IMAGES] urlData:', urlData);
+      }
+      
+      // Verify the URL is accessible
+      try {
+        const response = await fetch(urlData.publicUrl, { method: 'HEAD' });
+        if (response.ok) {
+          console.log('[PDF_TO_IMAGES] URL is accessible:', urlData.publicUrl);
+        } else {
+          console.warn('[PDF_TO_IMAGES] URL returned status:', response.status, urlData.publicUrl);
+        }
+      } catch (fetchError) {
+        console.error('[PDF_TO_IMAGES] Failed to verify URL accessibility:', fetchError);
       }
     }
     

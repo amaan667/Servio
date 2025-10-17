@@ -118,30 +118,7 @@ export function PDFMenuDisplay({
     return (
       <div className="text-center py-12">
         <p className="text-gray-600 mb-4">No PDF menu images available</p>
-        <p className="text-sm text-gray-500 mb-4">Upload a PDF menu to see the visual menu</p>
-        <button
-          onClick={async () => {
-            try {
-              const response = await fetch('/api/menu/reconvert-pdf', {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ venueId })
-              });
-              const result = await response.json();
-              if (result.ok) {
-                alert('PDF images regenerated! Please refresh the page.');
-                window.location.reload();
-              } else {
-                alert('Failed to regenerate PDF images: ' + result.error);
-              }
-            } catch (error) {
-              alert('Error regenerating PDF images');
-            }
-          }}
-          className="px-4 py-2 bg-purple-600 text-white rounded-lg hover:bg-purple-700"
-        >
-          Regenerate PDF Images
-        </button>
+        <p className="text-sm text-gray-500">Upload a PDF menu to see the visual menu</p>
       </div>
     );
   }
