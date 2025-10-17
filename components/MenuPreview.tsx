@@ -7,10 +7,11 @@ import { MenuStyle, getMenuStyleClasses } from '@/lib/menu-style-extractor';
 interface MenuItem {
   id: string;
   name: string;
-  description?: string | null | undefined;
+  description?: string | null;
   price: number;
   category: string;
   is_available: boolean;
+  [key: string]: any; // Allow additional properties
 }
 
 interface MenuPreviewProps {
