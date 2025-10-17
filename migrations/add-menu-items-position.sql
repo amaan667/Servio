@@ -14,6 +14,7 @@ DO $$
 DECLARE
     venue_rec RECORD;
     cat_rec RECORD;
+    item_rec RECORD;
     pos INTEGER;
 BEGIN
     -- Loop through each venue
@@ -24,23 +25,9 @@ BEGIN
             FROM menu_items 
             WHERE venue_id = venue_rec.venue_id
         LOOP
-            pos := 0;
-            -- Update items in this category with sequential positions
-            UPDATE menu_items
-            SET position = pos
-            WHERE venue_id = venue_rec.venue_id 
-              AND category = cat_rec.category
-              AND id IN (
-                  SELECT id FROM menu_items
-                  WHERE venue_id = venue_rec.venue_id 
-                    AND category = cat_rec.category
-                  ORDER BY created_at ASC
-                  LIMIT 1000
-              );
-            
             -- Now update with correct sequential positions
             pos := 0;
-            FOR item IN 
+            FOR item_rec IN 
                 SELECT id FROM menu_items
                 WHERE venue_id = venue_rec.venue_id 
                   AND category = cat_rec.category
@@ -48,7 +35,7 @@ BEGIN
             LOOP
                 UPDATE menu_items
                 SET position = pos
-                WHERE id = item.id;
+                WHERE id = item_rec.id;
                 pos := pos + 1;
             END LOOP;
         END LOOP;
