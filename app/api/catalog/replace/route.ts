@@ -151,7 +151,7 @@ export async function POST(req: NextRequest) {
         items: applyKnownFixes(parsedPayload.items)
       };
 
-      return await replaceCatalog(supabase, venueId, fixedPayload);
+      return await replaceCatalog(supabase, venueId, fixedPayload, extractedText);
     } else {
       // Direct payload provided
       const { payload } = requestBody;
@@ -167,7 +167,7 @@ export async function POST(req: NextRequest) {
         items: applyKnownFixes(payload.items)
       };
 
-      return await replaceCatalog(supabase, venueId, fixedPayload);
+      return await replaceCatalog(supabase, venueId, fixedPayload, undefined);
     }
 
   } catch (error: any) {
@@ -180,7 +180,7 @@ export async function POST(req: NextRequest) {
 }
 
 // Helper function to replace catalog
-async function replaceCatalog(supabase: any, venueId: string, fixedPayload: any) {
+async function replaceCatalog(supabase: any, venueId: string, fixedPayload: any, extractedText?: string) {
 
   // Skip validation for now to focus on maximum extraction
   // Just try to insert items directly
@@ -227,7 +227,8 @@ async function replaceCatalog(supabase: any, venueId: string, fixedPayload: any)
         message: 'Catalog replaced successfully',
         result: {
           items_created: insertedItems?.length || 0,
-          categories_created: [...new Set(itemsToInsert.map((item: any) => item.category))].length
+          categories_created: [...new Set(itemsToInsert.map((item: any) => item.category))].length,
+          extracted_text: extractedText // Include extracted text for style extraction
         }
       });
     } else {
@@ -236,7 +237,8 @@ async function replaceCatalog(supabase: any, venueId: string, fixedPayload: any)
         message: 'Catalog cleared (no items found)',
         result: {
           items_created: 0,
-          categories_created: 0
+          categories_created: 0,
+          extracted_text: extractedText
         }
       });
     }

@@ -9,6 +9,7 @@ import { Switch } from '@/components/ui/switch';
 import { Label } from '@/components/ui/label';
 import { FileText, Upload, Info, Trash2, RefreshCw } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
+import { createClient } from '@/lib/supabase/client';
 
 interface MenuUploadCardProps {
   venueId: string;
@@ -22,6 +23,53 @@ export function MenuUploadCard({ venueId, onSuccess }: MenuUploadCardProps) {
   const [isDragOver, setIsDragOver] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const { toast } = useToast();
+  const supabase = createClient();
+
+  // Save extracted style to database
+  const saveExtractedStyle = async (extractedText: string) => {
+    try {
+      // Import the style extractor
+      const { extractStyleFromPDF } = await import('@/lib/menu-style-extractor');
+      
+      // Extract style from text
+      const style = extractStyleFromPDF(extractedText);
+      
+      // Get venue name
+      const { data: venue } = await supabase
+        .from('venues')
+        .select('venue_name')
+        .eq('venue_id', venueId)
+        .single();
+      
+      // Upsert style settings
+      const { error } = await supabase
+        .from('menu_design_settings')
+        .upsert({
+          venue_id: venueId,
+          venue_name: venue?.venue_name || undefined,
+          primary_color: style.detected_primary_color || style.primary_color,
+          secondary_color: style.detected_secondary_color || style.secondary_color,
+          font_family: style.font_family,
+          font_size: style.font_size,
+          show_descriptions: style.show_descriptions,
+          show_prices: style.show_prices,
+          auto_theme_enabled: true
+        }, {
+          onConflict: 'venue_id'
+        });
+      
+      if (error) {
+        console.error('Error saving extracted style:', error);
+      } else {
+        toast({
+          title: 'Menu style extracted',
+          description: 'Your menu design has been automatically configured from the PDF'
+        });
+      }
+    } catch (error) {
+      console.error('Error extracting style:', error);
+    }
+  };
 
   const processFile = async (file: File) => {
     if (!file) {
@@ -83,6 +131,12 @@ export function MenuUploadCard({ venueId, onSuccess }: MenuUploadCardProps) {
               title: 'Catalog replaced successfully',
               description: `${result.result.items_created} items, ${result.result.categories_created} categories created`
             });
+            
+            // Save extracted style to database if available
+            if (result.result.extracted_text) {
+              await saveExtractedStyle(result.result.extracted_text);
+            }
+            
             onSuccess?.();
           } else {
             throw new Error(`Catalog replacement failed: ${result.error}`);
