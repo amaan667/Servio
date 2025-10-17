@@ -1,13 +1,13 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { createClient } from '@/lib/supabase/client';
-import { getServerSession } from 'next-auth';
-import { authOptions } from '@/lib/auth';
+import { createClient, createAdminClient } from '@/lib/supabase/server';
 
 export async function POST(req: NextRequest) {
   try {
-    const session = await getServerSession(authOptions);
+    // Get authenticated user
+    const supabase = await createClient();
+    const { data: { user }, error: userError } = await supabase.auth.getUser();
     
-    if (!session?.user?.id) {
+    if (userError || !user) {
       return NextResponse.json(
         { ok: false, error: 'Unauthorized' },
         { status: 401 }
@@ -24,14 +24,12 @@ export async function POST(req: NextRequest) {
     }
 
     // Verify user has access to the venue
-    const supabase = createClient();
-    
     // Check if user is owner
     const { data: venue } = await supabase
       .from('venues')
       .select('venue_id, owner_user_id')
       .eq('venue_id', venueId)
-      .eq('owner_user_id', session.user.id)
+      .eq('owner_user_id', user.id)
       .maybeSingle();
 
     // Check if user has staff role
@@ -39,7 +37,7 @@ export async function POST(req: NextRequest) {
       .from('user_venue_roles')
       .select('role')
       .eq('venue_id', venueId)
-      .eq('user_id', session.user.id)
+      .eq('user_id', user.id)
       .maybeSingle();
 
     const isOwner = !!venue;
