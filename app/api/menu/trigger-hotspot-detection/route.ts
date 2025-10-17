@@ -23,15 +23,29 @@ export async function POST(req: NextRequest) {
       );
     }
 
-    // Verify user owns the venue
+    // Verify user has access to the venue
     const supabase = createClient();
-    const { data: venue, error: venueError } = await supabase
+    
+    // Check if user is owner
+    const { data: venue } = await supabase
       .from('venues')
-      .select('venue_id, owner_id')
+      .select('venue_id, owner_user_id')
       .eq('venue_id', venueId)
-      .single();
+      .eq('owner_user_id', session.user.id)
+      .maybeSingle();
 
-    if (venueError || !venue || venue.owner_id !== session.user.id) {
+    // Check if user has staff role
+    const { data: userRole } = await supabase
+      .from('user_venue_roles')
+      .select('role')
+      .eq('venue_id', venueId)
+      .eq('user_id', session.user.id)
+      .maybeSingle();
+
+    const isOwner = !!venue;
+    const isManagerOrOwner = isOwner || userRole?.role === 'manager' || userRole?.role === 'owner';
+
+    if (!isOwner && !isManagerOrOwner) {
       return NextResponse.json(
         { ok: false, error: 'Venue not found or access denied' },
         { status: 403 }

@@ -71,7 +71,14 @@ CREATE POLICY "Users can view hotspots for their venues"
     EXISTS (
       SELECT 1 FROM venues
       WHERE venues.venue_id = menu_hotspots.venue_id
-      AND venues.owner_id = auth.uid()
+      AND (
+        venues.owner_user_id = auth.uid()
+        OR EXISTS (
+          SELECT 1 FROM user_venue_roles
+          WHERE user_venue_roles.venue_id = venues.venue_id
+          AND user_venue_roles.user_id = auth.uid()
+        )
+      )
     )
   );
 
@@ -82,7 +89,15 @@ CREATE POLICY "Users can insert hotspots for their venues"
     EXISTS (
       SELECT 1 FROM venues
       WHERE venues.venue_id = menu_hotspots.venue_id
-      AND venues.owner_id = auth.uid()
+      AND (
+        venues.owner_user_id = auth.uid()
+        OR EXISTS (
+          SELECT 1 FROM user_venue_roles
+          WHERE user_venue_roles.venue_id = venues.venue_id
+          AND user_venue_roles.user_id = auth.uid()
+          AND user_venue_roles.role IN ('owner', 'manager')
+        )
+      )
     )
   );
 
@@ -93,7 +108,15 @@ CREATE POLICY "Users can update hotspots for their venues"
     EXISTS (
       SELECT 1 FROM venues
       WHERE venues.venue_id = menu_hotspots.venue_id
-      AND venues.owner_id = auth.uid()
+      AND (
+        venues.owner_user_id = auth.uid()
+        OR EXISTS (
+          SELECT 1 FROM user_venue_roles
+          WHERE user_venue_roles.venue_id = venues.venue_id
+          AND user_venue_roles.user_id = auth.uid()
+          AND user_venue_roles.role IN ('owner', 'manager')
+        )
+      )
     )
   );
 
@@ -104,7 +127,15 @@ CREATE POLICY "Users can delete hotspots for their venues"
     EXISTS (
       SELECT 1 FROM venues
       WHERE venues.venue_id = menu_hotspots.venue_id
-      AND venues.owner_id = auth.uid()
+      AND (
+        venues.owner_user_id = auth.uid()
+        OR EXISTS (
+          SELECT 1 FROM user_venue_roles
+          WHERE user_venue_roles.venue_id = venues.venue_id
+          AND user_venue_roles.user_id = auth.uid()
+          AND user_venue_roles.role IN ('owner', 'manager')
+        )
+      )
     )
   );
 
