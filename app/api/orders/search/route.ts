@@ -1,10 +1,12 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { createAdminClient as supabase } from '@/lib/supabase/server';
+import { createAdminClient } from '@/lib/supabase/server';
 
 export const runtime = 'nodejs';
 
 export async function GET(req: NextRequest) {
   try {
+    const supabase = createAdminClient();
+    
     const { searchParams } = new URL(req.url);
     const venueId = searchParams.get('venue_id');
     const paymentIntent = searchParams.get('payment_intent');

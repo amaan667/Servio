@@ -25,7 +25,6 @@ import {
   Eye,
   EyeOff,
 } from "lucide-react";
-import { signUpUser } from "@/lib/supabase";
 import { logger } from "@/lib/logger";
 
 const hasSupabaseConfig = !!(process.env.NEXT_PUBLIC_SUPABASE_URL && process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY);
@@ -91,23 +90,9 @@ export function AccountMigrator() {
       const password = atob(account.passwordHash);
       addLog(`Decoded password for ${account.contactEmail}`);
 
-      const result = await signUpUser(
-        account.contactEmail,
-        password,
-        account.contactName,
-        account.venueName,
-        account.venueType,
-      );
-
-      if (result.success) {
-        addLog(`✅ Successfully migrated ${account.contactEmail}`);
-        return true;
-      } else {
-        addLog(
-          `❌ Failed to migrate ${account.contactEmail}: ${result.message}`,
-        );
-        return false;
-      }
+      // TODO: Implement signUpUser function
+      addLog(`⚠️ Sign up not implemented yet for ${account.contactEmail}`);
+      return false;
     } catch (error: any) {
       addLog(`❌ Error migrating ${account.contactEmail}: ${error.message}`);
       logger.error("ACCOUNT_MIGRATOR: Migration error", {

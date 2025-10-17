@@ -6,26 +6,29 @@
 import Redis from 'ioredis';
 import { logger } from './logger';
 
-// Initialize Redis client
-const redis = new Redis(process.env.REDIS_URL || 'redis://localhost:6379', {
+// Initialize Redis client (server-only)
+const redis = typeof window === 'undefined' ? new Redis(process.env.REDIS_URL || 'redis://localhost:6379', {
   maxRetriesPerRequest: 3,
   enableReadyCheck: true,
   lazyConnect: true,
-});
+}) : null;
 
-redis.on('error', (err) => {
-  logger.error('Redis connection error', err);
-});
+if (redis) {
+  redis.on('error', (err) => {
+    logger.error('Redis connection error', err);
+  });
 
-redis.on('connect', () => {
-  logger.info('Redis connected successfully');
-});
+  redis.on('connect', () => {
+    logger.info('Redis connected successfully');
+  });
+}
 
 export const cache = {
   /**
    * Get value from cache
    */
   async get<T>(key: string): Promise<T | null> {
+    if (!redis) return null;
     try {
       const data = await redis.get(key);
       if (!data) return null;
@@ -40,6 +43,7 @@ export const cache = {
    * Set value in cache with TTL
    */
   async set(key: string, value: any, ttl = 3600): Promise<void> {
+    if (!redis) return;
     try {
       await redis.setex(key, ttl, JSON.stringify(value));
     } catch (error) {
@@ -51,6 +55,7 @@ export const cache = {
    * Delete key from cache
    */
   async delete(key: string): Promise<void> {
+    if (!redis) return;
     try {
       await redis.del(key);
     } catch (error) {
@@ -62,6 +67,7 @@ export const cache = {
    * Invalidate keys matching pattern
    */
   async invalidate(pattern: string): Promise<void> {
+    if (!redis) return;
     try {
       const keys = await redis.keys(pattern);
       if (keys.length > 0) {
@@ -77,6 +83,7 @@ export const cache = {
    * Check if key exists
    */
   async exists(key: string): Promise<boolean> {
+    if (!redis) return false;
     try {
       const result = await redis.exists(key);
       return result === 1;
@@ -90,9 +97,10 @@ export const cache = {
    * Get multiple keys
    */
   async mget<T>(keys: string[]): Promise<(T | null)[]> {
+    if (!redis) return keys.map(() => null);
     try {
       const values = await redis.mget(...keys);
-      return values.map(v => v ? JSON.parse(v) : null) as (T | null)[];
+      return values.map((v: any) => v ? JSON.parse(v) : null);
     } catch (error) {
       logger.error('Cache mget error', error, { keys });
       return keys.map(() => null);
@@ -103,6 +111,7 @@ export const cache = {
    * Set multiple keys
    */
   async mset(keyValues: Record<string, any>, ttl = 3600): Promise<void> {
+    if (!redis) return;
     try {
       const pipeline = redis.pipeline();
       for (const [key, value] of Object.entries(keyValues)) {

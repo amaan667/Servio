@@ -232,38 +232,37 @@ export default function OrderSummaryPage() {
 
   useEffect(() => {
     // Set up real-time subscription for order updates
-    if (supabase && orderId) {
-      
-      const channel = supabase
-        .channel(`order-summary-${orderId}`)
-        .on(
-          'postgres_changes',
-          {
-            event: '*',
-            schema: 'public',
-            table: 'orders',
-            filter: `id=eq.${orderId}`,
-          },
-          (payload: any) => {
-            if (payload.eventType === 'UPDATE') {
-              
-              setOrder(prevOrder => {
-                if (!prevOrder) return null;
-                return { ...prevOrder, ...payload.new };
-              });
-              
-              setLastUpdate(new Date());
-            } else if (payload.eventType === 'DELETE') {
-              setError('This order has been cancelled or deleted');
-            }
+    if (!supabase || !orderId) return;
+    
+    const channel = supabase
+      .channel(`order-summary-${orderId}`)
+      .on(
+        'postgres_changes',
+        {
+          event: '*',
+          schema: 'public',
+          table: 'orders',
+          filter: `id=eq.${orderId}`,
+        },
+        (payload: any) => {
+          if (payload.eventType === 'UPDATE') {
+            
+            setOrder(prevOrder => {
+              if (!prevOrder) return null;
+              return { ...prevOrder, ...payload.new };
+            });
+            
+            setLastUpdate(new Date());
+          } else if (payload.eventType === 'DELETE') {
+            setError('This order has been cancelled or deleted');
           }
-        )
-        .subscribe();
+        }
+      )
+      .subscribe();
 
-      return () => {
-        supabase.removeChannel(channel);
-      };
-    }
+    return () => {
+      supabase.removeChannel(channel);
+    };
   }, [orderId, supabase]);
 
   const getStatusInfo = (status: string, order: Order) => {

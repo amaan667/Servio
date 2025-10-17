@@ -90,47 +90,46 @@ export default function OrderTrackingPage() {
     fetchOrder();
 
     // Set up real-time subscription for order updates
-    if (supabase && orderId) {
-      
-      const channel = supabase
-        .channel(`order-tracking-${orderId}`)
-        .on(
-          'postgres_changes',
-          {
-            event: '*',
-            schema: 'public',
-            table: 'orders',
-            filter: `id=eq.${orderId}`,
-          },
-          (payload: any) => {
-            if (payload.eventType === 'UPDATE') {
+    if (!supabase || !orderId) return;
+    
+    const channel = supabase
+      .channel(`order-tracking-${orderId}`)
+      .on(
+        'postgres_changes',
+        {
+          event: '*',
+          schema: 'public',
+          table: 'orders',
+          filter: `id=eq.${orderId}`,
+        },
+        (payload: any) => {
+          if (payload.eventType === 'UPDATE') {
+            
+            // Update the order with new data
+            setOrder(prevOrder => {
+              if (!prevOrder) return null;
               
-              // Update the order with new data
-              setOrder(prevOrder => {
-                if (!prevOrder) return null;
-                
-                const updatedOrder = { ...prevOrder, ...payload.new };
-                return updatedOrder;
-              });
-              
-              setLastUpdate(new Date());
-            } else if (payload.eventType === 'DELETE') {
-              setError('This order has been cancelled or deleted');
-            }
+              const updatedOrder = { ...prevOrder, ...payload.new };
+              return updatedOrder;
+            });
+            
+            setLastUpdate(new Date());
+          } else if (payload.eventType === 'DELETE') {
+            setError('This order has been cancelled or deleted');
           }
-        )
-        .subscribe((status: any) => {
-          
-          if (status === 'SUBSCRIBED') {
-          } else if (status === 'CHANNEL_ERROR') {
-            console.error('Real-time subscription error');
-          }
-        });
+        }
+      )
+      .subscribe((status: any) => {
+        
+        if (status === 'SUBSCRIBED') {
+        } else if (status === 'CHANNEL_ERROR') {
+          console.error('Real-time subscription error');
+        }
+      });
 
-      return () => {
-        supabase.removeChannel(channel);
-      };
-    }
+    return () => {
+      supabase.removeChannel(channel);
+    };
   }, [orderId, supabase]);
 
   const getStatusInfo = (status: string) => {

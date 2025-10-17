@@ -37,12 +37,10 @@ export async function GET(
     // This will be handled client-side using localStorage
     const order = null;
 
-    if (!order) {
-      return NextResponse.json({
-        success: true,
-        data: null
-      });
-    }
+    return NextResponse.json({
+      success: true,
+      data: null
+    });
 
   } catch (error) {
     console.error('[ORDERS SESSION] Error:', error);

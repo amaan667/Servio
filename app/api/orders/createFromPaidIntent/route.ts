@@ -3,7 +3,7 @@ import Stripe from 'stripe';
 import { ENV } from '@/lib/env';
 import { v4 as uuidv4 } from 'uuid';
 import { stripe } from '@/lib/stripe-client';
-import { createAdminClient as supabase } from '@/lib/supabase/server';
+import { createAdminClient } from '@/lib/supabase/server';
 
 interface CreateOrderRequest {
   paymentIntentId: string;
@@ -12,6 +12,8 @@ interface CreateOrderRequest {
 
 export async function POST(req: NextRequest) {
   try {
+    const supabase = createAdminClient();
+    
     const body: CreateOrderRequest = await req.json();
     const { paymentIntentId, cartId } = body;
 
@@ -181,6 +183,7 @@ export async function POST(req: NextRequest) {
 
 async function createDemoOrder(cartId: string) {
   try {
+    const supabase = createAdminClient();
 
     // Create a demo order
     const demoOrderData = {

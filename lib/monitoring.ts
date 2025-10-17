@@ -13,11 +13,6 @@ export function initSentry() {
       environment: process.env.NODE_ENV || 'development',
       tracesSampleRate: process.env.NODE_ENV === 'production' ? 0.1 : 1.0,
       debug: process.env.NODE_ENV === 'development',
-      integrations: [
-        new Sentry.BrowserTracing({
-          tracePropagationTargets: ['localhost', /^https:\/\/servio-production\.up\.railway\.app/],
-        }),
-      ],
       beforeSend(event) {
         // Filter out non-critical errors in production
         if (process.env.NODE_ENV === 'production') {
@@ -75,10 +70,11 @@ export const errorTracking = {
   },
 
   /**
-   * Start transaction
+   * Start transaction (deprecated in Sentry v8+)
    */
   startTransaction(name: string, op: string) {
-    return Sentry.startTransaction({ name, op });
+    // Transactions are deprecated, use spans instead
+    return null;
   },
 };
 
@@ -88,21 +84,6 @@ export const performanceMonitoring = {
    * Track API call performance
    */
   trackApiCall(endpoint: string, method: string, duration: number, status: number) {
-    const transaction = Sentry.startTransaction({
-      name: `${method} ${endpoint}`,
-      op: 'http.server',
-    });
-
-    const span = transaction.startChild({
-      op: 'http',
-      description: `${method} ${endpoint}`,
-    });
-
-    span.setData('status', status);
-    span.setData('duration', duration);
-    span.finish();
-    transaction.finish();
-
     // Log slow requests
     if (duration > 1000) {
       errorTracking.captureMessage('Slow API request', 'warning', {
@@ -118,21 +99,6 @@ export const performanceMonitoring = {
    * Track database query performance
    */
   trackDbQuery(query: string, duration: number, rows?: number) {
-    const transaction = Sentry.startTransaction({
-      name: 'Database Query',
-      op: 'db.query',
-    });
-
-    const span = transaction.startChild({
-      op: 'db',
-      description: query.substring(0, 100),
-    });
-
-    span.setData('duration', duration);
-    if (rows !== undefined) span.setData('rows', rows);
-    span.finish();
-    transaction.finish();
-
     // Log slow queries
     if (duration > 500) {
       errorTracking.captureMessage('Slow database query', 'warning', {
@@ -147,14 +113,6 @@ export const performanceMonitoring = {
    * Track page load performance
    */
   trackPageLoad(page: string, duration: number) {
-    const transaction = Sentry.startTransaction({
-      name: `Page Load: ${page}`,
-      op: 'navigation',
-    });
-
-    transaction.setData('duration', duration);
-    transaction.finish();
-
     // Log slow page loads
     if (duration > 2000) {
       errorTracking.captureMessage('Slow page load', 'warning', {

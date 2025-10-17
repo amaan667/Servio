@@ -146,47 +146,47 @@ const VenueDashboardClient = React.memo(function VenueDashboardClient({
 
   // Reset stats and clear tables when day changes to ensure fresh data
   useEffect(() => {
-    if (todayWindow) {
-      const checkDayChange = async () => {
-        const now = new Date();
-        const currentDay = now.toDateString();
-        const lastDay = new Date(todayWindow.startUtcISO).toDateString();
-        
-        if (currentDay !== lastDay) {
-          setStatsLoaded(false);
-          setStats({ revenue: 0, menuItems: 0, unpaid: 0 });
-          
-          // Clear all tables and sessions for new day
-          if (venue) {
-            try {
-              const response = await fetch('/api/tables/clear-all', {
-                method: 'POST',
-                headers: {
-                  'Content-Type': 'application/json',
-                },
-                body: JSON.stringify({ venue_id: venue.venue_id }),
-              });
-
-              if (response.ok) {
-              } else {
-                console.error('[DASHBOARD] Failed to clear all tables and sessions:', response.status);
-              }
-            } catch (error) {
-              console.error('[DASHBOARD] Error clearing all tables and sessions:', error);
-            }
-
-            // Reload stats for new day
-            const newWindow = todayWindowForTZ(venueTz);
-            setTodayWindow(newWindow);
-            loadStats(venue.venue_id, newWindow);
-          }
-        }
-      };
+    if (!todayWindow) return;
+    
+    const checkDayChange = async () => {
+      const now = new Date();
+      const currentDay = now.toDateString();
+      const lastDay = new Date(todayWindow.startUtcISO).toDateString();
       
-      // Check every minute for day change
-      const interval = setInterval(checkDayChange, 120000);
-      return () => clearInterval(interval);
-    }
+      if (currentDay !== lastDay) {
+        setStatsLoaded(false);
+        setStats({ revenue: 0, menuItems: 0, unpaid: 0 });
+        
+        // Clear all tables and sessions for new day
+        if (venue) {
+          try {
+            const response = await fetch('/api/tables/clear-all', {
+              method: 'POST',
+              headers: {
+                'Content-Type': 'application/json',
+              },
+              body: JSON.stringify({ venue_id: venue.venue_id }),
+            });
+
+            if (response.ok) {
+            } else {
+              console.error('[DASHBOARD] Failed to clear all tables and sessions:', response.status);
+            }
+          } catch (error) {
+            console.error('[DASHBOARD] Error clearing all tables and sessions:', error);
+          }
+
+          // Reload stats for new day
+          const newWindow = todayWindowForTZ(venueTz);
+          setTodayWindow(newWindow);
+          loadStats(venue.venue_id, newWindow);
+        }
+      }
+    };
+    
+    // Check every minute for day change
+    const interval = setInterval(checkDayChange, 120000);
+    return () => clearInterval(interval);
   }, [todayWindow, venue, venueTz]);
 
   // Set up real-time subscriptions for orders, tables, and menu items to update counts instantly

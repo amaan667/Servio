@@ -52,8 +52,18 @@ class Logger {
     this.log('info', message, context);
   }
 
-  warn(message: string, context?: LogContext) {
-    this.log('warn', message, context);
+  warn(message: string, errorOrContext?: Error | any | LogContext, context?: LogContext) {
+    // Handle both warn(message, error) and warn(message, context) signatures
+    if (errorOrContext instanceof Error || (errorOrContext && errorOrContext.message)) {
+      const errorContext = {
+        ...context,
+        error: errorOrContext.message,
+        stack: errorOrContext.stack,
+      };
+      this.log('warn', message, errorContext);
+    } else {
+      this.log('warn', message, errorOrContext as LogContext);
+    }
   }
 
   error(message: string, error?: Error | any, context?: LogContext) {

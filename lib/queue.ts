@@ -14,8 +14,8 @@ const connection = {
   password: process.env.REDIS_PASSWORD,
 };
 
-// PDF Processing Queue
-export const pdfQueue = new Queue('pdf-processing', {
+// PDF Processing Queue (server-only)
+export const pdfQueue = typeof window === 'undefined' ? new Queue('pdf-processing', {
   connection,
   defaultJobOptions: {
     attempts: 3,
@@ -30,10 +30,10 @@ export const pdfQueue = new Queue('pdf-processing', {
       age: 86400, // Keep failed jobs for 24 hours
     },
   },
-});
+}) : null;
 
-// PDF Processing Worker
-export const pdfWorker = new Worker(
+// PDF Processing Worker (server-only)
+export const pdfWorker = typeof window === 'undefined' ? new Worker(
   'pdf-processing',
   async (job) => {
     const { pdfBytes, venueId, uploadId } = job.data;
@@ -73,18 +73,20 @@ export const pdfWorker = new Worker(
     connection,
     concurrency: 2, // Process 2 PDFs at a time
   }
-);
+) : null;
 
-// Queue events for monitoring
-export const pdfQueueEvents = new QueueEvents('pdf-processing', { connection });
+// Queue events for monitoring (server-only)
+export const pdfQueueEvents = typeof window === 'undefined' ? new QueueEvents('pdf-processing', { connection }) : null;
 
-pdfQueueEvents.on('completed', ({ jobId, returnvalue }) => {
-  logger.info('PDF job completed', { jobId, returnvalue });
-});
+if (pdfQueueEvents) {
+  pdfQueueEvents.on('completed', ({ jobId, returnvalue }) => {
+    logger.info('PDF job completed', { jobId, returnvalue });
+  });
 
-pdfQueueEvents.on('failed', ({ jobId, failedReason }) => {
-  logger.error('PDF job failed', new Error(failedReason), { jobId });
-});
+  pdfQueueEvents.on('failed', ({ jobId, failedReason }) => {
+    logger.error('PDF job failed', new Error(failedReason), { jobId });
+  });
+}
 
 // Job status helpers
 export const jobHelpers = {
@@ -92,6 +94,11 @@ export const jobHelpers = {
    * Add PDF processing job
    */
   async addPdfJob(pdfBytes: ArrayBuffer, venueId: string, uploadId?: string) {
+    if (!pdfQueue) {
+      logger.warn('PDF queue not available');
+      return null;
+    }
+    
     const job = await pdfQueue.add('convert-pdf', {
       pdfBytes,
       venueId,
@@ -111,6 +118,8 @@ export const jobHelpers = {
    * Get job status
    */
   async getJobStatus(jobId: string) {
+    if (!pdfQueue) return null;
+    
     const job = await pdfQueue.getJob(jobId);
     if (!job) return null;
 
@@ -133,6 +142,8 @@ export const jobHelpers = {
    * Cancel job
    */
   async cancelJob(jobId: string) {
+    if (!pdfQueue) return false;
+    
     const job = await pdfQueue.getJob(jobId);
     if (!job) return false;
 
@@ -145,6 +156,16 @@ export const jobHelpers = {
    * Get queue stats
    */
   async getQueueStats() {
+    if (!pdfQueue) {
+      return {
+        waiting: 0,
+        active: 0,
+        completed: 0,
+        failed: 0,
+        total: 0,
+      };
+    }
+    
     const waiting = await pdfQueue.getWaitingCount();
     const active = await pdfQueue.getActiveCount();
     const completed = await pdfQueue.getCompletedCount();

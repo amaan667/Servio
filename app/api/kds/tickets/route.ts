@@ -5,6 +5,8 @@ import { createAdminClient } from '@/lib/supabase/server';
 // Function to automatically backfill missing KDS tickets for orders
 async function autoBackfillMissingTickets(venueId: string) {
   try {
+    const supabaseAdmin = createAdminClient();
+    
     console.log('[KDS AUTO-BACKFILL] Checking for orders without KDS tickets...');
     
     // Get today's orders that should have KDS tickets but don't

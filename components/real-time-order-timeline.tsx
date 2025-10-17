@@ -112,54 +112,53 @@ export function RealTimeOrderTimeline({ orderId, venueId, className }: RealTimeO
     fetchOrder();
 
     // Set up real-time subscription for order updates
-    if (supabase && orderId) {
-      
-      const channel = supabase
-        .channel(`order-timeline-${orderId}`)
-        .on(
-          'postgres_changes',
-          {
-            event: '*',
-            schema: 'public',
-            table: 'orders',
-            filter: `id=eq.${orderId}`,
-          },
-          (payload: any) => {
-            console.log('[REAL-TIME TIMELINE] Order update received:', {
-              eventType: payload.eventType,
-              oldStatus: payload.old?.order_status,
-              newStatus: payload.new?.order_status,
-              orderId: payload.new?.id
+    if (!supabase || !orderId) return;
+    
+    const channel = supabase
+      .channel(`order-timeline-${orderId}`)
+      .on(
+        'postgres_changes',
+        {
+          event: '*',
+          schema: 'public',
+          table: 'orders',
+          filter: `id=eq.${orderId}`,
+        },
+        (payload: any) => {
+          console.log('[REAL-TIME TIMELINE] Order update received:', {
+            eventType: payload.eventType,
+            oldStatus: payload.old?.order_status,
+            newStatus: payload.new?.order_status,
+            orderId: payload.new?.id
+          });
+          
+          if (payload.eventType === 'UPDATE') {
+            
+            // Update the order with new data
+            setOrder(prevOrder => {
+              if (!prevOrder) return null;
+              
+              const updatedOrder = { ...prevOrder, ...payload.new };
+              return updatedOrder;
             });
             
-            if (payload.eventType === 'UPDATE') {
-              
-              // Update the order with new data
-              setOrder(prevOrder => {
-                if (!prevOrder) return null;
-                
-                const updatedOrder = { ...prevOrder, ...payload.new };
-                return updatedOrder;
-              });
-              
-              setLastUpdate(new Date());
-            } else if (payload.eventType === 'DELETE') {
-              setError('This order has been cancelled or deleted');
-            }
+            setLastUpdate(new Date());
+          } else if (payload.eventType === 'DELETE') {
+            setError('This order has been cancelled or deleted');
           }
-        )
-        .subscribe((status: any) => {
-          
-          if (status === 'SUBSCRIBED') {
-          } else if (status === 'CHANNEL_ERROR') {
-            console.error('[REAL-TIME TIMELINE] Real-time subscription error');
-          }
-        });
+        }
+      )
+      .subscribe((status: any) => {
+        
+        if (status === 'SUBSCRIBED') {
+        } else if (status === 'CHANNEL_ERROR') {
+          console.error('[REAL-TIME TIMELINE] Real-time subscription error');
+        }
+      });
 
-      return () => {
-        supabase.removeChannel(channel);
-      };
-    }
+    return () => {
+      supabase.removeChannel(channel);
+    };
   }, [orderId, supabase]);
 
   const getStatusInfo = (status: string, order: Order) => {

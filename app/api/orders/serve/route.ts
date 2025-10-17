@@ -1,7 +1,7 @@
 import { NextResponse } from 'next/server';
 export const runtime = 'nodejs';
 import { createClient } from '@/lib/supabase/server';
-import { getSupabaseAdmin } from '@/lib/supabase/server';
+import { createAdminClient } from '@/lib/supabase/server';
 
 export async function POST(req: Request) {
   try {
@@ -16,6 +16,7 @@ export async function POST(req: Request) {
     }
 
     const supabase = await createClient();
+    const supabaseAdmin = createAdminClient();
     console.log('[ORDERS SERVE] Supabase client created');
 
     // Require authenticated user
