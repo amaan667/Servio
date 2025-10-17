@@ -550,11 +550,13 @@ const VenueDashboardClient = React.memo(function VenueDashboardClient({
             </div>
             
             <div className="flex items-center gap-3">
-              {/* Venue Switcher */}
-              <VenueSwitcherPopup 
-                currentVenueId={venueId}
-                onVenueChange={handleVenueChange}
-              />
+              {/* Venue Switcher - Only for owners */}
+              {(userRole === 'owner' || isOwner) && (
+                <VenueSwitcherPopup 
+                  currentVenueId={venueId}
+                  onVenueChange={handleVenueChange}
+                />
+              )}
               
               {/* Role Management Popup */}
               <RoleManagementPopup 
