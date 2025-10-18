@@ -165,92 +165,49 @@ export function MenuUploadCard({ venueId, onSuccess }: MenuUploadCardProps) {
           } else {
             throw new Error(`Catalog replacement failed: ${result.error}`);
           }
-        } else {
-          // Use legacy append endpoint
-          const formData = new FormData();
-          formData.append('file', file);
-          formData.append('venue_id', venueId);
-          
-          
-          const response = await fetch('/api/menu/process-pdf', {
-            method: 'POST',
-            body: formData
-          });
-          
-          if (!response.ok) {
-            const errorText = await response.text();
-            throw new Error(`PDF processing failed: ${response.status} - ${errorText}`);
-          }
-
-          const result = await response.json();
-          
-          if (result.ok) {
-            toast({
-              title: 'Menu imported successfully',
-              description: `${result.counts.inserted} items added, ${result.counts.skipped} skipped`
-            });
-            onSuccess?.();
-          } else {
-            throw new Error(`PDF processing failed: ${result.error}`);
-          }
-        }
-        
-      } else if (['.txt', '.md', '.json'].includes(fileExtension)) {
-        // For text files, read and send directly
-        const text = await file.text();
-        
-        const response = await fetch('/api/menu/process-text', {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-          },
-          body: JSON.stringify({
-            venue_id: venueId,
-            filename: file.name,
-            text: text
-          })
-        });
-        
-        if (!response.ok) {
-          const errorText = await response.text();
-          throw new Error(`Text processing failed: ${response.status} - ${errorText}`);
-        }
-
-        const result = await response.json();
-        
-        if (result.ok) {
-          toast({
-            title: 'Menu imported successfully',
-            description: `${result.counts.inserted} items added, ${result.counts.skipped} skipped`
-          });
-          onSuccess?.();
-        } else {
-          throw new Error(`Text processing failed: ${result.error}`);
-        }
-      } else {
-        // Image flow: upload then process (same endpoint as PDF now supports images)
-        const formData = new FormData();
-        formData.append('file', file);
-        formData.append('venue_id', venueId);
-
-        const up = await fetch('/api/menu/upload', { method: 'POST', body: formData });
-        const uj = await up.json();
-        if (!up.ok || !uj?.ok) {
-          throw new Error(uj?.error || 'Upload failed');
-        }
-
-        const pr = await fetch('/api/menu/process', {
-          method: 'POST',
-          headers: { 'content-type': 'application/json' },
-          body: JSON.stringify({ uploadId: uj.upload_id })
-        });
-        const pj = await pr.json();
-        if (!pr.ok || !pj?.ok) {
-          throw new Error(pj?.error || 'Image processing failed');
-        }
-        toast({ title: 'Menu imported successfully', description: `${(pj.items || []).length} items extracted` });
-        onSuccess?.();
       }
+      
+    } else {
+      // Unified processing for all file types (PDFs, images, text)
+      // Step 1: Upload file to storage
+      const formData = new FormData();
+      formData.append('file', file);
+      formData.append('venue_id', venueId);
+
+      const uploadResponse = await fetch('/api/menu/upload', { 
+        method: 'POST', 
+        body: formData 
+      });
+      
+      const uploadResult = await uploadResponse.json();
+      
+      if (!uploadResponse.ok || !uploadResult?.ok) {
+        throw new Error(uploadResult?.error || 'Upload failed');
+      }
+
+      // Step 2: Process with GPT-4o Vision (auto-creates hotspots)
+      const processResponse = await fetch('/api/menu/process', {
+        method: 'POST',
+        headers: { 'content-type': 'application/json' },
+        body: JSON.stringify({ uploadId: uploadResult.upload_id })
+      });
+      
+      const processResult = await processResponse.json();
+      
+      if (!processResponse.ok || !processResult?.ok) {
+        throw new Error(processResult?.error || 'Processing failed');
+      }
+      
+      const itemCount = (processResult.items || []).length;
+      const hotspotCount = processResult.hotspots_created || 0;
+      
+      toast({ 
+        title: 'Menu imported successfully', 
+        description: `${itemCount} items extracted${hotspotCount > 0 ? `, ${hotspotCount} hotspots created` : ''}` 
+      });
+      
+      onSuccess?.();
+    }
       
     } catch (error: any) {
       toast({
