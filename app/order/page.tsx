@@ -16,7 +16,7 @@ import { demoMenuItems } from "@/data/demoMenuItems";
 
 import { useRouter } from "next/navigation";
 import NavigationBreadcrumb from "@/components/navigation-breadcrumb";
-import { InteractivePDFMenu } from "@/components/InteractivePDFMenu";
+import { EnhancedPDFMenuDisplay } from "@/components/EnhancedPDFMenuDisplay";
 
 // MenuItem interface for order page
 interface MenuItem {
@@ -910,11 +910,15 @@ export default function CustomerOrderPage() {
                 <Loader2 className="h-8 w-8 animate-spin text-purple-600" />
               </div>
             ) : (
-              <InteractivePDFMenu
+              <EnhancedPDFMenuDisplay
                 venueId={venueSlug}
+                menuItems={menu}
+                categoryOrder={categoryOrder}
                 onAddToCart={(item) => addToCart(item)}
-                cart={cart.map(item => ({ id: item.id, quantity: item.quantity }))}
+                cart={cart}
+                onRemoveFromCart={(itemId) => removeFromCart(itemId)}
                 onUpdateQuantity={(itemId, quantity) => updateQuantity(itemId, quantity)}
+                isOrdering={true}
               />
             )}
           </div>

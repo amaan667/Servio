@@ -75,7 +75,12 @@ self.addEventListener('fetch', (event) => {
       .then((response) => {
         const responseClone = response.clone();
         caches.open(DYNAMIC_CACHE).then((cache) => {
-          cache.put(request, responseClone);
+          // Only cache if the request URL is cacheable (not chrome-extension, blob, etc.)
+          if (request.url.startsWith('http://') || request.url.startsWith('https://')) {
+            cache.put(request, responseClone).catch((err) => {
+              console.warn('[SW] Failed to cache request:', request.url, err);
+            });
+          }
         });
         return response;
       })
