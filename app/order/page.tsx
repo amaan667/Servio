@@ -912,7 +912,7 @@ export default function CustomerOrderPage() {
             ) : (
               <EnhancedPDFMenuDisplay
                 venueId={venueSlug}
-                menuItems={menu}
+                menuItems={menuItems}
                 categoryOrder={categoryOrder}
                 onAddToCart={(item) => addToCart(item)}
                 cart={cart}
