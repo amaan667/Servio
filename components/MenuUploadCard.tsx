@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useRef } from 'react';
+import { useState, useRef, useEffect } from 'react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Alert, AlertDescription } from '@/components/ui/alert';
@@ -21,9 +21,33 @@ export function MenuUploadCard({ venueId, onSuccess }: MenuUploadCardProps) {
   const [isReplacing, setIsReplacing] = useState(true); // Default to replace mode
   const [isClearing, setIsClearing] = useState(false);
   const [isDragOver, setIsDragOver] = useState(false);
+  const [hasExistingUpload, setHasExistingUpload] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const { toast } = useToast();
   const supabase = createClient();
+  
+  // Check if venue has any existing menu uploads
+  useEffect(() => {
+    const checkExistingUploads = async () => {
+      try {
+        const { data, error } = await supabase
+          .from('menu_uploads')
+          .select('id')
+          .eq('venue_id', venueId)
+          .limit(1)
+          .single();
+        
+        if (data && !error) {
+          setHasExistingUpload(true);
+        }
+      } catch (error) {
+        // No existing uploads
+        setHasExistingUpload(false);
+      }
+    };
+    
+    checkExistingUploads();
+  }, [venueId]);
 
   // Save extracted style to database
   const saveExtractedStyle = async (extractedText: string) => {
@@ -323,18 +347,20 @@ export function MenuUploadCard({ venueId, onSuccess }: MenuUploadCardProps) {
         <CardDescription className="text-gray-900">Upload and parse PDF menus using advanced OCR and AI processing.</CardDescription>
       </CardHeader>
       <CardContent className="space-y-4">
-        {/* Replace vs Append Toggle */}
-        <div className="flex items-center space-x-2">
-          <Switch
-            id="replace-mode"
-            checked={isReplacing}
-            onCheckedChange={setIsReplacing}
-            disabled={isProcessing}
-          />
-          <Label htmlFor="replace-mode" className="text-sm font-medium text-gray-900">
-            {isReplacing ? 'Replace Catalog' : 'Append to Catalog'}
-          </Label>
-        </div>
+        {/* Replace vs Append Toggle - Only show if there's an existing upload */}
+        {hasExistingUpload && (
+          <div className="flex items-center space-x-2">
+            <Switch
+              id="replace-mode"
+              checked={isReplacing}
+              onCheckedChange={setIsReplacing}
+              disabled={isProcessing}
+            />
+            <Label htmlFor="replace-mode" className="text-sm font-medium text-gray-900">
+              {isReplacing ? 'Replace Catalog' : 'Append to Catalog'}
+            </Label>
+          </div>
+        )}
 
 
         <div className="space-y-2">
