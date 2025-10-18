@@ -61,28 +61,12 @@ export function InteractivePDFMenu({
 
       const supabase = createClient();
 
-      // Fetch menu pages and items
-      const { data: pagesData, error: pagesError } = await supabase
-        .from('menu_pages')
-        .select('*')
-        .eq('venue_id', venueId)
-        .order('page_number', { ascending: true });
-
-      if (pagesError) {
-        throw new Error(`Failed to fetch pages: ${pagesError.message}`);
-      }
-
-      if (!pagesData || pagesData.length === 0) {
-        setError('No menu pages found. Please upload and parse a PDF menu first.');
-        setLoading(false);
-        return;
-      }
-
-      // Fetch items for each page
+      // Fetch existing menu items with coordinates
       const { data: itemsData, error: itemsError } = await supabase
-        .from('menu_items_parsed')
+        .from('menu_items')
         .select('*')
         .eq('venue_id', venueId)
+        .not('bbox_x', 'is', null) // Only items with coordinates
         .order('page_number', { ascending: true })
         .order('bbox_y', { ascending: false }); // Top to bottom
 
@@ -90,20 +74,28 @@ export function InteractivePDFMenu({
         throw new Error(`Failed to fetch items: ${itemsError.message}`);
       }
 
-      // Group items by page
-      const pagesMap = new Map<number, PageData>();
-      
-      for (const page of pagesData) {
-        pagesMap.set(page.page_number, {
-          page_number: page.page_number,
-          width: page.width,
-          height: page.height,
-          image_url: page.image_url,
-          items: []
-        });
+      if (!itemsData || itemsData.length === 0) {
+        setError('No menu items with coordinates found. Please update coordinates first.');
+        setLoading(false);
+        return;
       }
 
-      for (const item of itemsData || []) {
+      // Group items by page and get page images
+      const pagesMap = new Map<number, PageData>();
+      
+      for (const item of itemsData) {
+        if (!item.page_number || !item.pdf_image_url) continue;
+        
+        if (!pagesMap.has(item.page_number)) {
+          pagesMap.set(item.page_number, {
+            page_number: item.page_number,
+            width: 800, // Default, will be calculated from image
+            height: 1000, // Default, will be calculated from image
+            image_url: item.pdf_image_url,
+            items: []
+          });
+        }
+        
         const page = pagesMap.get(item.page_number);
         if (page) {
           page.items.push(item);
@@ -111,7 +103,7 @@ export function InteractivePDFMenu({
       }
 
       setPages(Array.from(pagesMap.values()));
-      console.log(`[InteractivePDFMenu] Loaded ${pages.length} pages with ${itemsData?.length || 0} items`);
+      console.log(`[InteractivePDFMenu] Loaded ${pages.length} pages with ${itemsData.length} items`);
 
     } catch (err: any) {
       console.error('[InteractivePDFMenu] Error:', err);

@@ -7,18 +7,17 @@ import { convertPDFToImages } from '@/lib/pdf-to-images';
 export const runtime = 'nodejs';
 export const dynamic = 'force-dynamic';
 
-// Helper function to parse PDF coordinates asynchronously
-async function parsePDFCoordinatesAsync(venueId: string, menuUploadId: string) {
+// Helper function to update menu item coordinates asynchronously
+async function updateItemCoordinatesAsync(venueId: string) {
   try {
-    console.log('[CATALOG_REPLACE] Starting PDF coordinate parsing for venue:', venueId);
+    console.log('[CATALOG_REPLACE] Starting coordinate update for venue:', venueId);
     
-    const response = await fetch(`${process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:3000'}/api/menu/parse-pdf-coordinates`, {
+    const response = await fetch(`${process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:3000'}/api/menu/update-item-coordinates`, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
       },
       body: JSON.stringify({
-        menuUploadId,
         venueId
       })
     });
@@ -26,12 +25,12 @@ async function parsePDFCoordinatesAsync(venueId: string, menuUploadId: string) {
     const result = await response.json();
     
     if (result.ok) {
-      console.log('[CATALOG_REPLACE] PDF coordinate parsing successful:', result.result);
+      console.log('[CATALOG_REPLACE] Coordinate update successful:', result.result);
     } else {
-      console.error('[CATALOG_REPLACE] PDF coordinate parsing failed:', result.error);
+      console.error('[CATALOG_REPLACE] Coordinate update failed:', result.error);
     }
   } catch (error) {
-    console.error('[CATALOG_REPLACE] Error parsing PDF coordinates:', error);
+    console.error('[CATALOG_REPLACE] Error updating coordinates:', error);
   }
 }
 
@@ -194,10 +193,10 @@ export async function POST(req: NextRequest) {
       // Replace catalog
       const result = await replaceCatalog(supabase, venueId, fixedPayload, extractedText, pdfImages);
 
-      // Parse PDF coordinates for interactive menu (async, don't wait)
+      // Update menu item coordinates for interactive menu (async, don't wait)
       if (result.ok) {
-        parsePDFCoordinatesAsync(venueId, uploadRecord.id).catch(err => {
-          console.error('[CATALOG_REPLACE] Failed to parse PDF coordinates:', err);
+        updateItemCoordinatesAsync(venueId).catch(err => {
+          console.error('[CATALOG_REPLACE] Failed to update coordinates:', err);
         });
       }
 
