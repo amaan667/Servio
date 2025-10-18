@@ -14,7 +14,6 @@ import { Plus, Edit, Trash2, ShoppingBag, Trash, ChevronDown, ChevronRight, Save
 import { MenuUploadCard } from "@/components/MenuUploadCard";
 import { CategoriesManagement } from "@/components/CategoriesManagement";
 import { MenuPreview } from "@/components/MenuPreview";
-import { PDFMenuDisplay } from "@/components/PDFMenuDisplay";
 import { EnhancedPDFMenuDisplay } from "@/components/EnhancedPDFMenuDisplay";
 import { useToast } from "@/hooks/use-toast";
 import { formatPriceWithCurrency } from "@/lib/pricing-utils";
