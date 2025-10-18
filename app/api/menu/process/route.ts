@@ -127,12 +127,14 @@ export async function POST(req: NextRequest) {
           messages: [
             {
               role: 'system',
-              content: `You are a menu parsing expert. Extract menu items from this PDF page and return ONLY a valid JSON array. Each item should have: category (string), name (string), price (number), description (string, optional). Ignore headers, footers, "about us", allergy info, or promotional text. Focus only on food/drink items with prices.`
+              content: `You are a menu parsing expert. Extract menu items from this PDF page and return ONLY a valid JSON array. Each item should have: category (string), name (string), price (number), description (string, optional), x_percent (number 0-100), y_percent (number 0-100). 
+
+IMPORTANT: For x_percent and y_percent, provide the approximate center position of the menu item on the page as a percentage (0-100). This is used to place interactive buttons on the menu. Ignore headers, footers, "about us", allergy info, or promotional text. Focus only on food/drink items with prices.`
             },
             {
               role: 'user',
               content: [
-                { type: 'text', text: 'Extract menu items from this page/image. Return valid JSON array only.' },
+                { type: 'text', text: 'Extract menu items from this page/image with their positions. Return valid JSON array only. Include x_percent and y_percent for each item based on where it appears on the page.' },
                 { type: 'image_url', image_url: { url: page } }
               ]
             }
@@ -146,7 +148,12 @@ export async function POST(req: NextRequest) {
           try {
             const items = JSON.parse(content);
             if (Array.isArray(items)) {
-              return { items, tokens: response.usage?.total_tokens || 0, page: i + 1 };
+              // Add page_index to each item for hotspot creation
+              const itemsWithPage = items.map((item: any) => ({
+                ...item,
+                page_index: i
+              }));
+              return { items: itemsWithPage, tokens: response.usage?.total_tokens || 0, page: i + 1 };
             }
           } catch (parseErr) {
             console.error('[AUTH DEBUG] Failed to parse JSON from page', i + 1, ':', parseErr);
@@ -187,11 +194,83 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ ok: false, error: 'Failed to save results' }, { status: 500 });
     }
 
+    // Auto-create hotspots if coordinates are available
+    let hotspotsCreated = 0;
+    if (allMenuItems.length > 0 && allMenuItems[0].x_percent !== undefined) {
+      try {
+        console.log('[AUTH DEBUG] Auto-creating hotspots from extraction...');
+        
+        // Get venue_id from upload record
+        const { data: uploadData } = await supa
+          .from('menu_uploads')
+          .select('venue_id')
+          .eq('id', uploadId)
+          .single();
+        
+        if (uploadData?.venue_id) {
+          // Insert menu items first
+          const itemsToInsert = allMenuItems.map((item: any) => ({
+            venue_id: uploadData.venue_id,
+            name: item.name,
+            description: item.description || null,
+            price: Math.round(item.price * 100), // Convert to cents
+            category: item.category || 'UNCATEGORIZED',
+            is_available: true
+          }));
+          
+          const { data: insertedItems, error: itemsError } = await supa
+            .from('menu_items')
+            .insert(itemsToInsert)
+            .select('id, name');
+          
+          if (!itemsError && insertedItems) {
+            // Create hotspots by matching items
+            const hotspots = allMenuItems
+              .map((item: any, index: number) => {
+                const menuItem = insertedItems.find((mi: any) => mi.name === item.name);
+                if (menuItem && item.x_percent !== undefined && item.y_percent !== undefined) {
+                  return {
+                    venue_id: uploadData.venue_id,
+                    menu_item_id: menuItem.id,
+                    menu_upload_id: uploadId,
+                    page_index: item.page_index || 0,
+                    x_percent: item.x_percent,
+                    y_percent: item.y_percent,
+                    confidence: 0.95, // High confidence from GPT-4o
+                    detection_method: 'auto_extraction',
+                    is_active: true
+                  };
+                }
+                return null;
+              })
+              .filter((h: any) => h !== null);
+            
+            if (hotspots.length > 0) {
+              const { error: hotspotsError } = await supa
+                .from('menu_hotspots')
+                .insert(hotspots);
+              
+              if (!hotspotsError) {
+                hotspotsCreated = hotspots.length;
+                console.log('[AUTH DEBUG] Auto-created', hotspotsCreated, 'hotspots');
+              } else {
+                console.error('[AUTH DEBUG] Failed to create hotspots:', hotspotsError);
+              }
+            }
+          }
+        }
+      } catch (hotspotErr) {
+        console.error('[AUTH DEBUG] Hotspot creation error:', hotspotErr);
+        // Don't fail the whole request if hotspot creation fails
+      }
+    }
+
     return NextResponse.json({
       ok: true,
       items: allMenuItems,
       pages: maxPages,
       tokens: totalTokens,
+      hotspots_created: hotspotsCreated,
       preview: rawText.substring(0, 200) + '...'
     });
 

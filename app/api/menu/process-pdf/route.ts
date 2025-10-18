@@ -299,24 +299,9 @@ export async function POST(req: Request) {
       // Don't fail the whole request for audit trail issues
     }
     
-    // Auto-enable hotspots after successful upload
-    if (pdfImages.length > 0 && upsertedItems.length > 0) {
-      try {
-        console.log('[PDF_PROCESS] Auto-enabling hotspots...');
-        const baseUrl = process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:3000';
-        await fetch(`${baseUrl}/api/menu/detect-hotspots`, {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-          },
-          body: JSON.stringify({ venueId }),
-        });
-        console.log('[PDF_PROCESS] Hotspots auto-enabled');
-      } catch (hotspotError) {
-        console.warn('[PDF_PROCESS] Failed to auto-enable hotspots:', hotspotError);
-        // Don't fail the whole request if hotspot detection fails
-      }
-    }
+    // Note: Hotspots are now automatically created during menu extraction
+    // in the /api/menu/process endpoint using GPT-4o Vision
+    console.log('[PDF_PROCESS] Hotspots will be auto-created during menu extraction');
 
     console.log('[PDF_PROCESS] ====== PDF PROCESSING COMPLETED SUCCESSFULLY ======');
     return NextResponse.json({
