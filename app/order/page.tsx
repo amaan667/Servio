@@ -23,7 +23,7 @@ interface MenuItem {
   id: string;
   venue_id?: string;
   name: string;
-  description?: string;
+  description?: string | null;
   price: number;
   category: string;
   image_url?: string;
