@@ -49,9 +49,11 @@ export function InteractivePDFMenu({
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [hoveredItem, setHoveredItem] = useState<string | null>(null);
+  const [mounted, setMounted] = useState(false);
   const pageRefs = useRef<Map<number, HTMLDivElement>>(new Map());
 
   useEffect(() => {
+    setMounted(true);
     fetchMenuData();
   }, [venueId]);
 
@@ -105,12 +107,17 @@ export function InteractivePDFMenu({
       }
 
       // Download PDF from storage using the correct path
-      const storagePath = uploadData.storage_path || uploadData.filename;
+      let storagePath = uploadData.storage_path || uploadData.filename;
       
       if (!storagePath) {
         setError('PDF file path not found.');
         setLoading(false);
         return;
+      }
+
+      // Remove 'menus/' prefix if it exists (bucket name is already specified in .from())
+      if (storagePath.startsWith('menus/')) {
+        storagePath = storagePath.replace('menus/', '');
       }
 
       const { data: pdfBlob, error: pdfError } = await supabase.storage
@@ -287,7 +294,8 @@ export function InteractivePDFMenu({
     );
   };
 
-  if (loading) {
+  // Prevent hydration errors by only rendering after mount
+  if (!mounted || loading) {
     return (
       <div className="flex flex-col items-center justify-center h-64">
         <Loader2 className="h-8 w-8 animate-spin text-purple-600 mb-4" />

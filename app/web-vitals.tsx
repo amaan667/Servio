@@ -1,43 +1,27 @@
 'use client';
 
-import { useReportWebVitals } from 'next/web-vitals';
+import { useEffect } from 'react';
+import { onCLS, onFID, onFCP, onLCP, onTTFB, Metric } from 'web-vitals';
 
 export function WebVitals() {
-  useReportWebVitals((metric) => {
-    // Log to console in development
-    if (process.env.NODE_ENV === 'development') {
-      console.log('[Web Vitals]', metric);
-    }
-
-    // Send to analytics in production
-    if (process.env.NODE_ENV === 'production') {
-      const body = JSON.stringify({
-        name: metric.name,
-        value: metric.value,
-        rating: metric.rating,
-        id: metric.id,
-        navigationType: metric.navigationType,
+  useEffect(() => {
+    const reportMetric = (metric: Metric) => {
+      // Send to analytics endpoint
+      fetch('/api/analytics/vitals', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(metric),
+      }).catch(() => {
+        // Silently fail if analytics endpoint is down
       });
+    };
 
-      // Send to your analytics endpoint
-      const url = '/api/analytics/vitals';
-
-      // Use `navigator.sendBeacon()` if available, falling back to `fetch()`
-      if (navigator.sendBeacon) {
-        navigator.sendBeacon(url, body);
-      } else {
-        fetch(url, {
-          body,
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-          },
-          keepalive: true,
-        }).catch(console.error);
-      }
-    }
-  });
+    onCLS(reportMetric);
+    onFID(reportMetric);
+    onFCP(reportMetric);
+    onLCP(reportMetric);
+    onTTFB(reportMetric);
+  }, []);
 
   return null;
 }
-
