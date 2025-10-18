@@ -17,8 +17,16 @@ export async function convertPDFToImages(pdfBytes: ArrayBuffer, venueId: string)
     const pdfjsLib = await import('pdfjs-dist/legacy/build/pdf.mjs');
     const { createCanvas } = await import('canvas');
     
-    // Load PDF
-    const loadingTask = pdfjsLib.getDocument({ data: pdfBytes });
+    // Disable worker for Node.js environment
+    pdfjsLib.GlobalWorkerOptions.workerSrc = '';
+    
+    // Load PDF without worker
+    const loadingTask = pdfjsLib.getDocument({ 
+      data: pdfBytes,
+      useWorkerFetch: false,
+      isEvalSupported: false,
+      useSystemFonts: true
+    });
     const pdf = await loadingTask.promise;
     
     console.log('[PDF_TO_IMAGES] PDF loaded successfully. Total pages:', pdf.numPages);
