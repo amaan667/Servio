@@ -16,7 +16,7 @@ import { demoMenuItems } from "@/data/demoMenuItems";
 
 import { useRouter } from "next/navigation";
 import NavigationBreadcrumb from "@/components/navigation-breadcrumb";
-import { PDFMenuDisplay } from "@/components/PDFMenuDisplay";
+import { InteractivePDFMenu } from "@/components/InteractivePDFMenu";
 
 // MenuItem interface for order page
 interface MenuItem {
@@ -921,7 +921,7 @@ export default function CustomerOrderPage() {
 
       <div className="max-w-7xl mx-auto px-3 sm:px-4 lg:px-6 py-4 sm:py-6 lg:py-8 bg-gray-50 dark:bg-gray-900 min-h-screen">
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 lg:gap-8">
-          {/* Menu Section - PDF Menu Images with Ordering Functionality */}
+          {/* Menu Section - Interactive PDF Menu with Pixel-Perfect Hitboxes */}
           <div className="lg:col-span-2">
             {menuError ? (
               <Alert variant="destructive">
@@ -931,24 +931,12 @@ export default function CustomerOrderPage() {
               <div className="flex justify-center items-center h-64">
                 <Loader2 className="h-8 w-8 animate-spin text-purple-600" />
               </div>
-            ) : menuItems.length === 0 ? (
-              <Card>
-                <CardContent className="p-12 text-center">
-                  <ShoppingCart className="h-16 w-16 text-gray-300 mx-auto mb-4" />
-                  <h3 className="text-lg font-medium text-gray-900 mb-2">No menu items available</h3>
-                  <p className="text-gray-500">Please check back later or contact the venue.</p>
-                </CardContent>
-              </Card>
             ) : (
-              <PDFMenuDisplay
+              <InteractivePDFMenu
                 venueId={venueSlug}
-                menuItems={menuItems}
-                categoryOrder={categoryOrder}
                 onAddToCart={(item) => addToCart(item)}
                 cart={cart.map(item => ({ id: item.id, quantity: item.quantity }))}
-                onRemoveFromCart={(itemId) => removeFromCart(itemId)}
                 onUpdateQuantity={(itemId, quantity) => updateQuantity(itemId, quantity)}
-                isOrdering={true}
               />
             )}
           </div>

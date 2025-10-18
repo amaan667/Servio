@@ -86,6 +86,7 @@
     "openai": "^5.10.1",
     "pdf-lib": "^1.17.1",
     "pdf2pic": "^3.2.0",
+    "pdfjs-dist": "^5.4.296",
     "qrcode": "^1.5.4",
     "react": "^18.3.1",
     "react-confetti": "^6.4.0",
