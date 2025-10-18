@@ -1,11 +1,11 @@
 import { createAdminClient } from '@/lib/supabase/server';
-import fs from 'fs';
+import fs from 'fs/promises';
 import path from 'path';
-import { fromBuffer } from 'pdf2pic';
+import { fromPath } from 'pdf2pic';
 
 /**
  * Convert PDF pages to images and upload to Supabase Storage
- * This is a reusable function that can be called from any route
+ * Railway-friendly implementation using Nixpacks with GraphicsMagick/Ghostscript
  * 
  * @param pdfBytes - The PDF file as an ArrayBuffer
  * @param venueId - The venue ID to associate the images with
@@ -14,83 +14,83 @@ import { fromBuffer } from 'pdf2pic';
 export async function convertPDFToImages(pdfBytes: ArrayBuffer, venueId: string): Promise<string[]> {
   console.log('[PDF_TO_IMAGES] Starting PDF to images conversion for venue:', venueId);
   
-  // Create a temporary file for the PDF
-  const tempDir = '/tmp';
-  const tempPdfPath = path.join(tempDir, `menu-${venueId}-${Date.now()}.pdf`);
+  // Create a temporary directory for PDF processing
+  const workDir = '/tmp/pdf2img';
+  const inPath = path.join(workDir, 'input.pdf');
+  const outDir = path.join(workDir, 'out');
   
   try {
+    // Clean up and create directories
+    await fs.rm(workDir, { recursive: true, force: true }).catch(() => {});
+    await fs.mkdir(outDir, { recursive: true });
+    
     // Write PDF to temp file
-    fs.mkdirSync(tempDir, { recursive: true });
-    fs.writeFileSync(tempPdfPath, Buffer.from(pdfBytes));
-    console.log('[PDF_TO_IMAGES] PDF written to temp file:', tempPdfPath);
+    await fs.writeFile(inPath, Buffer.from(pdfBytes));
+    console.log('[PDF_TO_IMAGES] PDF written to temp file:', inPath);
     
-    // Configure pdf2pic
-    const convert = fromBuffer(
-      Buffer.from(pdfBytes),
-      {
-        density: 200,           // High quality
-        saveFilename: 'page',
-        savePath: tempDir,
-        format: 'png',
-        width: 1200,
-        height: 1600
-      }
-    );
+    // Configure pdf2pic (uses GraphicsMagick/Ghostscript from Nixpacks)
+    const converter = fromPath(inPath, {
+      density: 200,           // High quality
+      savePath: outDir,
+      format: 'png',
+      saveFilename: 'page',
+      width: 1200,
+      height: 1600
+    });
     
-    // Convert all pages (max 10 pages)
-    const maxPages = 10;
-    const imageUrls: string[] = [];
+    console.log('[PDF_TO_IMAGES] Converting PDF to images...');
+    
+    // Convert all pages (pdf2pic will create page_1.png, page_2.png, etc.)
+    await converter.bulk(-1, { responseType: 'image' });
+    
+    // Read all generated PNG files
+    const files = await fs.readdir(outDir);
+    const pngFiles = files.filter(f => f.endsWith('.png')).sort();
+    
+    console.log('[PDF_TO_IMAGES] Converted', pngFiles.length, 'pages');
+    
+    // Upload each image to Supabase Storage
     const supabase = await createAdminClient();
+    const imageUrls: string[] = [];
     
-    for (let pageNum = 1; pageNum <= maxPages; pageNum++) {
+    for (let i = 0; i < pngFiles.length; i++) {
+      const fileName = pngFiles[i];
+      const filePath = path.join(outDir, fileName);
+      
       try {
-        console.log('[PDF_TO_IMAGES] Converting page', pageNum, 'to image...');
-        
-        const result = await convert(pageNum, { responseType: 'buffer' });
-        
-        if (!result || !result.buffer) {
-          console.log('[PDF_TO_IMAGES] No more pages. Total pages:', pageNum - 1);
-          break;
-        }
-        
-        console.log('[PDF_TO_IMAGES] Page', pageNum, 'rendered. Buffer size:', result.buffer.length);
+        // Read the image file
+        const imageBuffer = await fs.readFile(filePath);
         
         // Upload to Supabase Storage
-        const fileName = `${venueId}/menu-page-${pageNum}-${Date.now()}.png`;
+        const storageFileName = `${venueId}/menu-page-${i + 1}-${Date.now()}.png`;
         const { data: uploadData, error: uploadError } = await supabase.storage
           .from('menus')
-          .upload(fileName, result.buffer, {
+          .upload(storageFileName, imageBuffer, {
             contentType: 'image/png',
             upsert: false
           });
         
         if (uploadError) {
-          console.error('[PDF_TO_IMAGES] Error uploading page', pageNum, ':', uploadError);
+          console.error('[PDF_TO_IMAGES] Error uploading page', i + 1, ':', uploadError);
           continue;
         }
         
-        console.log('[PDF_TO_IMAGES] Page', pageNum, 'uploaded to storage:', uploadData.path);
+        console.log('[PDF_TO_IMAGES] Page', i + 1, 'uploaded to storage:', uploadData.path);
         
         // Get public URL
         const { data: urlData } = supabase.storage
           .from('menus')
-          .getPublicUrl(fileName);
+          .getPublicUrl(storageFileName);
         
         if (urlData?.publicUrl) {
           imageUrls.push(urlData.publicUrl);
-          console.log('[PDF_TO_IMAGES] Page', pageNum, 'converted successfully. URL:', urlData.publicUrl);
+          console.log('[PDF_TO_IMAGES] Page', i + 1, 'converted successfully. URL:', urlData.publicUrl);
         } else {
-          console.error('[PDF_TO_IMAGES] Failed to get public URL for page', pageNum);
+          console.error('[PDF_TO_IMAGES] Failed to get public URL for page', i + 1);
         }
         
-      } catch (pageError: any) {
-        // If we get an error on the first page, the PDF might be invalid
-        if (pageNum === 1) {
-          throw pageError;
-        }
-        // Otherwise, we've reached the end of the PDF
-        console.log('[PDF_TO_IMAGES] Reached end of PDF at page', pageNum);
-        break;
+      } catch (pageError) {
+        console.error('[PDF_TO_IMAGES] Error processing page', i + 1, ':', pageError);
       }
     }
     
@@ -105,10 +105,8 @@ export async function convertPDFToImages(pdfBytes: ArrayBuffer, venueId: string)
   } finally {
     // Clean up temp files
     try {
-      if (fs.existsSync(tempPdfPath)) {
-        fs.unlinkSync(tempPdfPath);
-        console.log('[PDF_TO_IMAGES] Cleaned up temp PDF file');
-      }
+      await fs.rm(workDir, { recursive: true, force: true });
+      console.log('[PDF_TO_IMAGES] Cleaned up temp directory');
     } catch (cleanupError) {
       console.error('[PDF_TO_IMAGES] Error cleaning up temp files:', cleanupError);
     }

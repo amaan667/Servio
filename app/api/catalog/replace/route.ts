@@ -3,6 +3,10 @@ import { createAdminClient } from '@/lib/supabase/server';
 import { parseMenuBulletproof, applyKnownFixes } from '@/lib/improvedMenuParser';
 import { convertPDFToImages } from '@/lib/pdf-to-images';
 
+// Ensure this runs on Node.js runtime (not Edge)
+export const runtime = 'nodejs';
+export const dynamic = 'force-dynamic';
+
 export async function POST(req: NextRequest) {
   try {
     let venueId, pdfFileId, mode = 'replace';
