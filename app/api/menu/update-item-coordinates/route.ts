@@ -1,11 +1,8 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { createAdminClient } from '@/lib/supabase/server';
-import * as pdfjsLib from 'pdfjs-dist';
 
-// Configure pdf.js worker
-if (typeof window === 'undefined') {
-  pdfjsLib.GlobalWorkerOptions.workerSrc = require.resolve('pdfjs-dist/build/pdf.worker.mjs');
-}
+// Use legacy build for Node.js environment
+const pdfjsLib = require('pdfjs-dist/legacy/build/pdf.js');
 
 interface TextRun {
   str: string;
@@ -77,7 +74,15 @@ export async function POST(req: NextRequest) {
     }
 
     const pdfArrayBuffer = await pdfData.arrayBuffer();
-    const pdf = await pdfjsLib.getDocument({ data: pdfArrayBuffer }).promise;
+    
+    // Use legacy build for server-side
+    const pdf = await pdfjsLib.getDocument({ 
+      data: pdfArrayBuffer,
+      useWorkerFetch: false,
+      isEvalSupported: false,
+      useSystemFonts: true
+    }).promise;
+    
     const numPages = pdf.numPages;
 
     console.log(`[COORD_UPDATE] Extracting coordinates from ${numPages} pages for ${existingItems.length} items`);
