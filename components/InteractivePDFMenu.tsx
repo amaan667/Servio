@@ -4,6 +4,10 @@ import { useState, useEffect, useRef } from 'react';
 import { createClient } from '@/lib/supabase/client';
 import { Button } from '@/components/ui/button';
 import { Plus, Minus, Loader2 } from 'lucide-react';
+import * as pdfjsLib from 'pdfjs-dist';
+
+// Configure pdf.js for client-side
+pdfjsLib.GlobalWorkerOptions.workerSrc = `//cdnjs.cloudflare.com/ajax/libs/pdf.js/${pdfjsLib.version}/pdf.worker.min.js`;
 
 interface InteractivePDFMenuProps {
   venueId: string;
@@ -16,16 +20,13 @@ interface MenuItem {
   id: string;
   name: string;
   description?: string;
-  price_minor: number;
-  currency: string;
-  bbox_x: number;
-  bbox_y: number;
-  bbox_w: number;
-  bbox_h: number;
+  price: number;
+  bbox_x?: number;
+  bbox_y?: number;
+  bbox_w?: number;
+  bbox_h?: number;
   page_number: number;
-  image_url: string;
-  source: string;
-  confidence: number;
+  image_url?: string;
   category?: string;
   is_available: boolean;
 }
@@ -61,10 +62,10 @@ export function InteractivePDFMenu({
 
       const supabase = createClient();
 
-      // Fetch PDF images from menu_uploads
+      // Fetch menu upload with PDF URL
       const { data: uploadData, error: uploadError } = await supabase
         .from('menu_uploads')
-        .select('pdf_images, pdf_images_cc')
+        .select('filename, storage_path, pdf_images, pdf_images_cc')
         .eq('venue_id', venueId)
         .order('created_at', { ascending: false })
         .limit(1)
@@ -77,7 +78,8 @@ export function InteractivePDFMenu({
       }
 
       const pdfImages = uploadData.pdf_images || uploadData.pdf_images_cc || [];
-      
+      const pdfUrl = uploadData.filename || uploadData.storage_path;
+
       if (pdfImages.length === 0) {
         setError('No PDF images found. Please upload a PDF menu.');
         setLoading(false);
@@ -103,27 +105,59 @@ export function InteractivePDFMenu({
         return;
       }
 
-      // Group items by page (distribute evenly across pages)
-      const itemsPerPage = Math.ceil(itemsData.length / pdfImages.length);
-      const pagesMap = new Map<number, PageData>();
+      // Download PDF from storage
+      const { data: pdfBlob, error: pdfError } = await supabase.storage
+        .from('menus')
+        .download(pdfUrl);
 
-      pdfImages.forEach((imageUrl: string, index: number) => {
-        const pageNumber = index + 1;
-        const startIdx = index * itemsPerPage;
-        const endIdx = Math.min(startIdx + itemsPerPage, itemsData.length);
-        const pageItems = itemsData.slice(startIdx, endIdx);
+      if (pdfError || !pdfBlob) {
+        throw new Error('Failed to download PDF');
+      }
 
-        pagesMap.set(pageNumber, {
-          page_number: pageNumber,
-          width: 800,
-          height: 1000,
-          image_url: imageUrl,
+      const pdfArrayBuffer = await pdfBlob.arrayBuffer();
+
+      // Load PDF with pdf.js
+      const pdf = await pdfjsLib.getDocument({ data: pdfArrayBuffer }).promise;
+      const numPages = pdf.numPages;
+
+      console.log(`[InteractivePDFMenu] Processing ${numPages} pages for ${itemsData.length} items`);
+
+      // Extract coordinates from each page
+      const pagesData: PageData[] = [];
+
+      for (let pageNum = 1; pageNum <= numPages; pageNum++) {
+        const page = await pdf.getPage(pageNum);
+        const viewport = page.getViewport({ scale: 1.0 });
+        const textContent = await page.getTextContent();
+
+        // Extract text runs with coordinates
+        const textRuns: any[] = [];
+        for (const item of textContent.items) {
+          if ('str' in item && 'transform' in item) {
+            textRuns.push({
+              str: item.str,
+              x: item.transform[4],
+              y: item.transform[5],
+              width: item.width || 0,
+              height: item.height || 0
+            });
+          }
+        }
+
+        // Match items to text runs
+        const pageItems = matchItemsToTextRuns(itemsData, textRuns, pageNum, viewport);
+        
+        pagesData.push({
+          page_number: pageNum,
+          width: viewport.width,
+          height: viewport.height,
+          image_url: pdfImages[pageNum - 1],
           items: pageItems
         });
-      });
+      }
 
-      setPages(Array.from(pagesMap.values()));
-      console.log(`[InteractivePDFMenu] Loaded ${pages.length} pages with ${itemsData.length} items`);
+      setPages(pagesData);
+      console.log(`[InteractivePDFMenu] Loaded ${pagesData.length} pages with mapped items`);
 
     } catch (err: any) {
       console.error('[InteractivePDFMenu] Error:', err);
@@ -134,89 +168,116 @@ export function InteractivePDFMenu({
   };
 
   const renderPage = (page: PageData, index: number) => {
+    const pageRef = pageRefs.current.get(page.page_number);
+    const renderedWidth = pageRef?.clientWidth || 800;
+    const renderedHeight = (renderedWidth / page.width) * page.height;
+
+    // Calculate scale factors
+    const scaleX = renderedWidth / page.width;
+    const scaleY = renderedHeight / page.height;
+
     return (
-      <div key={page.page_number} className="mb-8">
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-          {/* PDF Page Image */}
-          <div className="lg:sticky lg:top-4 h-fit">
-            <img 
-              src={page.image_url} 
-              alt={`Menu Page ${page.page_number}`}
-              className="w-full h-auto rounded-lg shadow-lg border border-gray-200"
-            />
-          </div>
+      <div 
+        key={page.page_number}
+        ref={(el) => {
+          if (el) {
+            pageRefs.current.set(page.page_number, el);
+          }
+        }}
+        className="relative mb-8"
+      >
+        {/* PDF Page Image */}
+        <img 
+          src={page.image_url} 
+          alt={`Menu Page ${page.page_number}`}
+          className="w-full h-auto rounded-lg shadow-lg border border-gray-200"
+          style={{ maxWidth: '100%' }}
+        />
 
-          {/* Menu Items List */}
-          <div className="space-y-4">
-            {page.items.map((item) => {
-              const cartItem = cart.find(c => c.id === item.id);
-              const quantity = cartItem?.quantity || 0;
-              const isHovered = hoveredItem === item.id;
-              const price = (item.price / 100).toFixed(2);
+        {/* Interactive Buttons Overlay */}
+        {page.items.map((item) => {
+          if (!item.bbox_x || !item.bbox_y) return null;
 
-              return (
-                <div
-                  key={item.id}
-                  className="flex items-center justify-between p-4 bg-white rounded-lg shadow-md hover:shadow-lg transition-shadow border border-gray-200"
-                  onMouseEnter={() => setHoveredItem(item.id)}
-                  onMouseLeave={() => setHoveredItem(null)}
+          const cartItem = cart.find(c => c.id === item.id);
+          const quantity = cartItem?.quantity || 0;
+          const isHovered = hoveredItem === item.id;
+
+          // Calculate scaled coordinates
+          const left = item.bbox_x * scaleX;
+          const top = item.bbox_y * scaleY;
+          const width = item.bbox_w * scaleX;
+          const height = item.bbox_h * scaleY;
+
+          // Position button at the right edge of the item
+          const buttonLeft = left + width - 90;
+          const buttonTop = top + (height / 2) - 18;
+
+          return (
+            <div
+              key={item.id}
+              className="absolute transition-all duration-200"
+              style={{
+                left: `${buttonLeft}px`,
+                top: `${buttonTop}px`,
+                zIndex: isHovered ? 30 : 10
+              }}
+              onMouseEnter={() => setHoveredItem(item.id)}
+              onMouseLeave={() => setHoveredItem(null)}
+            >
+              {quantity === 0 ? (
+                <Button
+                  onClick={() => {
+                    const menuItem = {
+                      id: item.id,
+                      name: item.name,
+                      description: item.description,
+                      price: item.price / 100,
+                      category: item.category || 'UNCATEGORIZED',
+                      is_available: item.is_available
+                    };
+                    onAddToCart(menuItem);
+                  }}
+                  size="sm"
+                  className="bg-purple-600 hover:bg-purple-700 text-white shadow-lg hover:shadow-xl transition-all font-semibold min-w-[90px]"
+                  style={{
+                    opacity: isHovered ? 1 : 0.9,
+                    transform: isHovered ? 'scale(1.05)' : 'scale(1)'
+                  }}
                 >
-                  <div className="flex-1">
-                    <h3 className="font-semibold text-gray-900">{item.name}</h3>
-                    {item.description && (
-                      <p className="text-sm text-gray-600 mt-1">{item.description}</p>
-                    )}
-                    <p className="text-lg font-bold text-purple-600 mt-2">£{price}</p>
-                  </div>
-
-                  <div className="ml-4">
-                    {quantity === 0 ? (
-                      <Button
-                        onClick={() => {
-                          const menuItem = {
-                            id: item.id,
-                            name: item.name,
-                            description: item.description,
-                            price: item.price / 100,
-                            category: item.category || 'UNCATEGORIZED',
-                            is_available: item.is_available
-                          };
-                          onAddToCart(menuItem);
-                        }}
-                        size="sm"
-                        className="bg-purple-600 hover:bg-purple-700 text-white shadow-md hover:shadow-lg transition-all font-semibold"
-                      >
-                        <Plus className="h-4 w-4 mr-1" />
-                        Add
-                      </Button>
-                    ) : (
-                      <div className="flex items-center gap-2 bg-purple-50 rounded-lg p-2 border-2 border-purple-600">
-                        <Button
-                          onClick={() => onUpdateQuantity(item.id, quantity - 1)}
-                          variant="outline"
-                          size="sm"
-                          className="h-8 w-8 p-0 border-purple-300 hover:border-purple-600"
-                        >
-                          <Minus className="h-3 w-3" />
-                        </Button>
-                        <span className="text-sm font-bold text-purple-700 min-w-[24px] text-center">
-                          {quantity}
-                        </span>
-                        <Button
-                          onClick={() => onUpdateQuantity(item.id, quantity + 1)}
-                          size="sm"
-                          className="h-8 w-8 p-0 bg-purple-600 hover:bg-purple-700"
-                        >
-                          <Plus className="h-3 w-3" />
-                        </Button>
-                      </div>
-                    )}
-                  </div>
+                  <Plus className="h-3.5 w-3.5 mr-1" />
+                  Add
+                </Button>
+              ) : (
+                <div 
+                  className="bg-white rounded-md shadow-lg border-2 border-purple-600 p-1.5 flex items-center gap-1.5"
+                  style={{
+                    opacity: isHovered ? 1 : 0.95,
+                    transform: isHovered ? 'scale(1.05)' : 'scale(1)'
+                  }}
+                >
+                  <Button
+                    onClick={() => onUpdateQuantity(item.id, quantity - 1)}
+                    variant="outline"
+                    size="sm"
+                    className="h-7 w-7 p-0 border-purple-300 hover:border-purple-600 hover:bg-purple-50"
+                  >
+                    <Minus className="h-3 w-3" />
+                  </Button>
+                  <span className="text-xs font-bold text-purple-700 min-w-[20px] text-center">
+                    {quantity}
+                  </span>
+                  <Button
+                    onClick={() => onUpdateQuantity(item.id, quantity + 1)}
+                    size="sm"
+                    className="h-7 w-7 p-0 bg-purple-600 hover:bg-purple-700"
+                  >
+                    <Plus className="h-3 w-3" />
+                  </Button>
                 </div>
-              );
-            })}
-          </div>
-        </div>
+              )}
+            </div>
+          );
+        })}
       </div>
     );
   };
@@ -253,5 +314,115 @@ export function InteractivePDFMenu({
       {pages.map((page, index) => renderPage(page, index))}
     </div>
   );
+}
+
+// Helper function to match menu items to text runs in PDF
+function matchItemsToTextRuns(
+  items: any[],
+  textRuns: any[],
+  pageNumber: number,
+  viewport: any
+): MenuItem[] {
+  const matchedItems: MenuItem[] = [];
+  const priceRegex = /£?\s*(\d+(?:\.\d{1,2})?)/;
+
+  // Group text runs into lines
+  const lines: any[][] = [];
+  let currentLine: any[] = [];
+  let currentY = textRuns[0]?.y || 0;
+
+  for (const run of textRuns) {
+    if (Math.abs(run.y - currentY) > 5) {
+      if (currentLine.length > 0) lines.push(currentLine);
+      currentLine = [run];
+      currentY = run.y;
+    } else {
+      currentLine.push(run);
+    }
+  }
+  if (currentLine.length > 0) lines.push(currentLine);
+
+  // Match each item to a line
+  for (const item of items) {
+    let bestMatch: any = null;
+    let bestScore = 0;
+
+    for (const line of lines) {
+      const lineText = line.map(r => r.str).join(' ').trim();
+      const priceMatch = lineText.match(priceRegex);
+      
+      if (!priceMatch) continue;
+
+      const score = similarity(item.name, lineText);
+      if (score > bestScore && score > 0.6) {
+        bestScore = score;
+        bestMatch = line;
+      }
+    }
+
+    if (bestMatch) {
+      const minX = Math.min(...bestMatch.map((r: any) => r.x));
+      const maxX = Math.max(...bestMatch.map((r: any) => r.x + r.width));
+      const minY = Math.min(...bestMatch.map((r: any) => r.y));
+      const maxY = Math.max(...bestMatch.map((r: any) => r.y + r.height));
+
+      matchedItems.push({
+        ...item,
+        bbox_x: minX,
+        bbox_y: viewport.height - maxY,
+        bbox_w: maxX - minX,
+        bbox_h: maxY - minY,
+        page_number: pageNumber
+      });
+    }
+  }
+
+  return matchedItems;
+}
+
+// Calculate string similarity
+function similarity(str1: string, str2: string): number {
+  const s1 = str1.toLowerCase().trim();
+  const s2 = str2.toLowerCase().trim();
+  
+  if (s1 === s2) return 1.0;
+  if (s1.includes(s2) || s2.includes(s1)) return 0.9;
+  
+  // Simple Levenshtein distance
+  const longer = s1.length > s2.length ? s1 : s2;
+  const shorter = s1.length > s2.length ? s2 : s1;
+  
+  if (longer.length === 0) return 1.0;
+  
+  const distance = levenshteinDistance(longer, shorter);
+  return (longer.length - distance) / longer.length;
+}
+
+function levenshteinDistance(str1: string, str2: string): number {
+  const matrix = [];
+
+  for (let i = 0; i <= str2.length; i++) {
+    matrix[i] = [i];
+  }
+
+  for (let j = 0; j <= str1.length; j++) {
+    matrix[0][j] = j;
+  }
+
+  for (let i = 1; i <= str2.length; i++) {
+    for (let j = 1; j <= str1.length; j++) {
+      if (str2.charAt(i - 1) === str1.charAt(j - 1)) {
+        matrix[i][j] = matrix[i - 1][j - 1];
+      } else {
+        matrix[i][j] = Math.min(
+          matrix[i - 1][j - 1] + 1,
+          matrix[i][j - 1] + 1,
+          matrix[i - 1][j] + 1
+        );
+      }
+    }
+  }
+
+  return matrix[str2.length][str1.length];
 }
 
