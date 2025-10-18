@@ -45,33 +45,50 @@ export function PDFMenuDisplay({
       try {
         const supabase = createClient();
         
+        console.log('[PDF MENU DISPLAY] Fetching PDF images for venue:', venueId);
+        
         // Fetch the most recent PDF upload for this venue
         const { data: uploadData, error } = await supabase
           .from('menu_uploads')
-          .select('pdf_images, pdf_images_cc, filename, created_at')
+          .select('pdf_images, pdf_images_cc, filename, created_at, venue_id')
           .eq('venue_id', venueId)
           .order('created_at', { ascending: false })
           .limit(1)
           .single();
 
         console.log('[PDF MENU DISPLAY] Fetch result:', { 
+          venueId,
           hasData: !!uploadData, 
           hasPdfImages: !!(uploadData?.pdf_images), 
           hasPdfImagesCC: !!(uploadData?.pdf_images_cc),
           pdfImagesLength: uploadData?.pdf_images?.length || 0,
           pdfImagesCCLength: uploadData?.pdf_images_cc?.length || 0,
           filename: uploadData?.filename,
-          error: error?.message 
+          error: error?.message,
+          uploadDataVenueId: uploadData?.venue_id
         });
 
         // Try pdf_images first, then fallback to pdf_images_cc
         const images = uploadData?.pdf_images || uploadData?.pdf_images_cc;
         
         if (uploadData && images && images.length > 0) {
-          console.log('[PDF MENU DISPLAY] Setting PDF images:', images.length);
+          console.log('[PDF MENU DISPLAY] Setting PDF images:', images.length, 'for venue:', venueId);
           setPdfImages(images);
         } else {
-          console.warn('[PDF MENU DISPLAY] No PDF images found in upload data');
+          console.warn('[PDF MENU DISPLAY] No PDF images found for venue:', venueId);
+          
+          // Try to find any upload for this venue
+          const { data: allUploads, error: allError } = await supabase
+            .from('menu_uploads')
+            .select('venue_id, filename, pdf_images, pdf_images_cc')
+            .eq('venue_id', venueId);
+          
+          console.log('[PDF MENU DISPLAY] All uploads for venue:', {
+            venueId,
+            count: allUploads?.length || 0,
+            uploads: allUploads,
+            error: allError?.message
+          });
         }
       } catch (error) {
         console.error('[PDF MENU DISPLAY] Error fetching PDF images:', error);
@@ -80,7 +97,12 @@ export function PDFMenuDisplay({
       }
     };
 
-    fetchPDFImages();
+    if (venueId) {
+      fetchPDFImages();
+    } else {
+      console.warn('[PDF MENU DISPLAY] No venue ID provided');
+      setLoading(false);
+    }
   }, [venueId]);
 
   // Generate overlays for menu items
@@ -123,7 +145,9 @@ export function PDFMenuDisplay({
     return (
       <div className="text-center py-12">
         <p className="text-gray-600 mb-4">No PDF menu images available</p>
-        <p className="text-sm text-gray-500">Upload a PDF menu to see the visual menu</p>
+        <p className="text-sm text-gray-500 mb-2">Upload a PDF menu to see the visual menu</p>
+        <p className="text-xs text-gray-400">Venue ID: {venueId}</p>
+        <p className="text-xs text-gray-400 mt-2">Check console for detailed logs</p>
       </div>
     );
   }
