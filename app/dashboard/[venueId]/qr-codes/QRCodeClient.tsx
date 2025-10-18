@@ -296,6 +296,165 @@ export default function QRCodeClient({ venueId, venueName }: { venueId: string; 
     });
   };
 
+  const printAllQRCodes = async () => {
+    if (generatedQRs.length === 0) {
+      toast({
+        title: "No QR Codes",
+        description: "Generate some QR codes first",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    const printWindow = window.open('', '_blank');
+    if (!printWindow) return;
+
+    const qrSize = qrCodeSize === 'small' ? 150 : qrCodeSize === 'large' ? 250 : 200;
+    
+    // Create a grid layout for multiple QR codes
+    const printContent = `
+      <!DOCTYPE html>
+      <html>
+        <head>
+          <title>All QR Codes - ${venueName}</title>
+          <style>
+            body { 
+              font-family: Arial, sans-serif; 
+              margin: 20px; 
+              padding: 20px;
+            }
+            .header {
+              text-align: center;
+              margin-bottom: 30px;
+              border-bottom: 2px solid #333;
+              padding-bottom: 15px;
+            }
+            .header h1 {
+              margin: 0;
+              font-size: 24px;
+              font-weight: bold;
+            }
+            .venue-name {
+              margin-top: 5px;
+              font-size: 16px;
+              color: #666;
+            }
+            .qr-grid {
+              display: grid;
+              grid-template-columns: repeat(2, 1fr);
+              gap: 40px;
+              margin-bottom: 30px;
+            }
+            .qr-item {
+              text-align: center;
+              page-break-inside: avoid;
+              border: 1px solid #ddd;
+              padding: 20px;
+              border-radius: 8px;
+            }
+            .qr-label {
+              font-size: 18px;
+              font-weight: bold;
+              margin-bottom: 15px;
+              color: #333;
+            }
+            .qr-type {
+              font-size: 12px;
+              color: #666;
+              margin-bottom: 10px;
+              text-transform: uppercase;
+              letter-spacing: 1px;
+            }
+            .qr-code {
+              margin: 15px 0;
+              display: flex;
+              justify-content: center;
+            }
+            .instructions {
+              font-size: 11px;
+              margin-top: 15px;
+              padding: 10px;
+              background: #f5f5f5;
+              border-radius: 5px;
+              text-align: left;
+            }
+            @media print {
+              body { margin: 0; padding: 10px; }
+              .qr-grid { gap: 20px; }
+              .qr-item { border: 1px solid #000; }
+            }
+            @page {
+              margin: 1cm;
+            }
+          </style>
+        </head>
+        <body>
+          <div class="header">
+            <h1>QR Codes</h1>
+            ${venueName ? `<div class="venue-name">${venueName}</div>` : ''}
+            <div style="font-size: 12px; color: #999; margin-top: 5px;">
+              Generated: ${new Date().toLocaleDateString()}
+            </div>
+          </div>
+          
+          <div class="qr-grid">
+            ${generatedQRs.map((qr, index) => `
+              <div class="qr-item">
+                <div class="qr-type">${qr.type}</div>
+                <div class="qr-label">${qr.name}</div>
+                <div class="qr-code">
+                  <canvas id="qrcode-${index}"></canvas>
+                </div>
+                ${includeInstructions ? `
+                  <div class="instructions">
+                    <strong>How to use:</strong><br>
+                    1. Scan this QR code with your phone<br>
+                    2. View the menu and place your order<br>
+                    3. Your order will be prepared fresh!
+                  </div>
+                ` : ''}
+              </div>
+            `).join('')}
+          </div>
+          
+          <script src="https://cdn.jsdelivr.net/npm/qrcode@1.5.3/build/qrcode.min.js"></script>
+          <script>
+            const qrData = ${JSON.stringify(generatedQRs)};
+            const size = ${qrSize};
+            
+            qrData.forEach((qr, index) => {
+              const canvas = document.getElementById('qrcode-' + index);
+              QRCode.toCanvas(canvas, qr.url, {
+                width: size,
+                margin: 2,
+                color: {
+                  dark: '#000000',
+                  light: '#FFFFFF'
+                }
+              }, function (error) {
+                if (error) console.error('Error generating QR code:', error);
+              });
+            });
+            
+            // Auto-print after all QR codes are generated
+            setTimeout(() => {
+              window.print();
+              window.close();
+            }, 2000);
+          </script>
+        </body>
+      </html>
+    `;
+
+    printWindow.document.write(printContent);
+    printWindow.document.close();
+
+    toast({
+      title: "Print Preview",
+      description: `Print preview opened for all ${generatedQRs.length} QR codes`,
+    });
+  };
+
   if (loading) {
     return (
       <div className="flex items-center justify-center py-8">
@@ -581,8 +740,7 @@ export default function QRCodeClient({ venueId, venueName }: { venueId: string; 
               <div className="space-y-4">
                 {generatedQRs.map((qr, index) => (
                   <div key={index} className="border rounded-lg p-4">
-                    <div className="flex items-center justify-between mb-3">
-                      <h3 className="font-medium">{qr.name}</h3>
+                    <div className="flex justify-end mb-2">
                       <Button
                         variant="ghost"
                         size="sm"
@@ -590,6 +748,9 @@ export default function QRCodeClient({ venueId, venueName }: { venueId: string; 
                       >
                         <Trash2 className="h-4 w-4" />
                       </Button>
+                    </div>
+                    <div className="text-center mb-3">
+                      <h3 className="font-medium text-lg">{qr.name}</h3>
                     </div>
                     <div style={{ 
                       transform: qrCodeSize === 'small' ? 'scale(0.67)' : qrCodeSize === 'large' ? 'scale(1.33)' : 'scale(1)',
@@ -606,7 +767,7 @@ export default function QRCodeClient({ venueId, venueName }: { venueId: string; 
                         onClick={() => copyToClipboard(qr.url)}
                       >
                         <Copy className="h-3 w-3 mr-2" />
-                        Copy
+                        Copy URL
                       </Button>
                       <Button
                         variant="outline"
@@ -619,10 +780,11 @@ export default function QRCodeClient({ venueId, venueName }: { venueId: string; 
                       <Button
                         variant="default"
                         size="sm"
-                        onClick={() => printQRCode(qr.url, qr.name, qr.type)}
+                        className="col-span-2"
+                        onClick={() => printAllQRCodes()}
                       >
                         <Printer className="h-3 w-3 mr-2" />
-                        Print
+                        Print All QR Codes
                       </Button>
                     </div>
                   </div>
