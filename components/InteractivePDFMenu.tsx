@@ -61,46 +61,66 @@ export function InteractivePDFMenu({
 
       const supabase = createClient();
 
-      // Fetch existing menu items with coordinates
+      // Fetch PDF images from menu_uploads
+      const { data: uploadData, error: uploadError } = await supabase
+        .from('menu_uploads')
+        .select('pdf_images, pdf_images_cc')
+        .eq('venue_id', venueId)
+        .order('created_at', { ascending: false })
+        .limit(1)
+        .single();
+
+      if (uploadError || !uploadData) {
+        setError('No PDF menu found. Please upload a menu first.');
+        setLoading(false);
+        return;
+      }
+
+      const pdfImages = uploadData.pdf_images || uploadData.pdf_images_cc || [];
+      
+      if (pdfImages.length === 0) {
+        setError('No PDF images found. Please upload a PDF menu.');
+        setLoading(false);
+        return;
+      }
+
+      // Fetch existing menu items
       const { data: itemsData, error: itemsError } = await supabase
         .from('menu_items')
         .select('*')
         .eq('venue_id', venueId)
-        .not('bbox_x', 'is', null) // Only items with coordinates
-        .order('page_number', { ascending: true })
-        .order('bbox_y', { ascending: false }); // Top to bottom
+        .eq('is_available', true)
+        .order('category', { ascending: true })
+        .order('name', { ascending: true });
 
       if (itemsError) {
         throw new Error(`Failed to fetch items: ${itemsError.message}`);
       }
 
       if (!itemsData || itemsData.length === 0) {
-        setError('No menu items with coordinates found. Please update coordinates first.');
+        setError('No menu items found.');
         setLoading(false);
         return;
       }
 
-      // Group items by page and get page images
+      // Group items by page (distribute evenly across pages)
+      const itemsPerPage = Math.ceil(itemsData.length / pdfImages.length);
       const pagesMap = new Map<number, PageData>();
-      
-      for (const item of itemsData) {
-        if (!item.page_number || !item.pdf_image_url) continue;
-        
-        if (!pagesMap.has(item.page_number)) {
-          pagesMap.set(item.page_number, {
-            page_number: item.page_number,
-            width: 800, // Default, will be calculated from image
-            height: 1000, // Default, will be calculated from image
-            image_url: item.pdf_image_url,
-            items: []
-          });
-        }
-        
-        const page = pagesMap.get(item.page_number);
-        if (page) {
-          page.items.push(item);
-        }
-      }
+
+      pdfImages.forEach((imageUrl: string, index: number) => {
+        const pageNumber = index + 1;
+        const startIdx = index * itemsPerPage;
+        const endIdx = Math.min(startIdx + itemsPerPage, itemsData.length);
+        const pageItems = itemsData.slice(startIdx, endIdx);
+
+        pagesMap.set(pageNumber, {
+          page_number: pageNumber,
+          width: 800,
+          height: 1000,
+          image_url: imageUrl,
+          items: pageItems
+        });
+      });
 
       setPages(Array.from(pagesMap.values()));
       console.log(`[InteractivePDFMenu] Loaded ${pages.length} pages with ${itemsData.length} items`);
@@ -114,123 +134,89 @@ export function InteractivePDFMenu({
   };
 
   const renderPage = (page: PageData, index: number) => {
-    const pageRef = pageRefs.current.get(page.page_number);
-    const renderedWidth = pageRef?.clientWidth || 800;
-    const renderedHeight = (renderedWidth / page.width) * page.height;
-
-    // Calculate scale factors
-    const scaleX = renderedWidth / page.width;
-    const scaleY = renderedHeight / page.height;
-
     return (
-      <div 
-        key={page.page_number}
-        ref={(el) => {
-          if (el) {
-            pageRefs.current.set(page.page_number, el);
-          }
-        }}
-        className="relative mb-8"
-      >
-        {/* PDF Page Image */}
-        <img 
-          src={page.image_url} 
-          alt={`Menu Page ${page.page_number}`}
-          className="w-full h-auto rounded-lg shadow-lg border border-gray-200"
-          style={{ maxWidth: '100%' }}
-        />
+      <div key={page.page_number} className="mb-8">
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+          {/* PDF Page Image */}
+          <div className="lg:sticky lg:top-4 h-fit">
+            <img 
+              src={page.image_url} 
+              alt={`Menu Page ${page.page_number}`}
+              className="w-full h-auto rounded-lg shadow-lg border border-gray-200"
+            />
+          </div>
 
-        {/* Interactive Hitboxes */}
-        {page.items.map((item) => {
-          // Skip unavailable items
-          if (!item.is_available) {
-            return null;
-          }
+          {/* Menu Items List */}
+          <div className="space-y-4">
+            {page.items.map((item) => {
+              const cartItem = cart.find(c => c.id === item.id);
+              const quantity = cartItem?.quantity || 0;
+              const isHovered = hoveredItem === item.id;
+              const price = (item.price / 100).toFixed(2);
 
-          const cartItem = cart.find(c => c.id === item.id);
-          const quantity = cartItem?.quantity || 0;
-          const isHovered = hoveredItem === item.id;
-
-          // Calculate scaled coordinates
-          const left = item.bbox_x * scaleX;
-          const top = item.bbox_y * scaleY;
-          const width = item.bbox_w * scaleX;
-          const height = item.bbox_h * scaleY;
-
-          // Position button at the right edge of the item's bounding box
-          const buttonLeft = left + width - 80; // 80px for button width
-          const buttonTop = top + (height / 2) - 20; // Center vertically
-
-          const price = (item.price_minor / 100).toFixed(2);
-
-          return (
-            <div
-              key={item.id}
-              className="absolute transition-all duration-200"
-              style={{
-                left: `${buttonLeft}px`,
-                top: `${buttonTop}px`,
-                zIndex: isHovered ? 30 : 10
-              }}
-              onMouseEnter={() => setHoveredItem(item.id)}
-              onMouseLeave={() => setHoveredItem(null)}
-            >
-              {/* Add to Cart Button / Quantity Controls */}
-              {quantity === 0 ? (
-                <Button
-                  onClick={() => {
-                    // Convert to menu item format
-                    const menuItem = {
-                      id: item.id,
-                      name: item.name,
-                      description: item.description,
-                      price: item.price_minor / 100,
-                      category: item.category || 'UNCATEGORIZED',
-                      is_available: item.is_available
-                    };
-                    onAddToCart(menuItem);
-                  }}
-                  size="sm"
-                  className="bg-purple-600 hover:bg-purple-700 text-white shadow-lg hover:shadow-xl transition-all font-semibold min-w-[80px]"
-                  style={{
-                    opacity: isHovered ? 1 : 0.9,
-                    transform: isHovered ? 'scale(1.05)' : 'scale(1)'
-                  }}
+              return (
+                <div
+                  key={item.id}
+                  className="flex items-center justify-between p-4 bg-white rounded-lg shadow-md hover:shadow-lg transition-shadow border border-gray-200"
+                  onMouseEnter={() => setHoveredItem(item.id)}
+                  onMouseLeave={() => setHoveredItem(null)}
                 >
-                  <Plus className="h-3.5 w-3.5 mr-1" />
-                  Add
-                </Button>
-              ) : (
-                <div 
-                  className="bg-white rounded-md shadow-lg border-2 border-purple-600 p-1.5 flex items-center gap-1.5"
-                  style={{
-                    opacity: isHovered ? 1 : 0.95,
-                    transform: isHovered ? 'scale(1.05)' : 'scale(1)'
-                  }}
-                >
-                  <Button
-                    onClick={() => onUpdateQuantity(item.id, quantity - 1)}
-                    variant="outline"
-                    size="sm"
-                    className="h-7 w-7 p-0 border-purple-300 hover:border-purple-600 hover:bg-purple-50"
-                  >
-                    <Minus className="h-3 w-3" />
-                  </Button>
-                  <span className="text-xs font-bold text-purple-700 min-w-[20px] text-center">
-                    {quantity}
-                  </span>
-                  <Button
-                    onClick={() => onUpdateQuantity(item.id, quantity + 1)}
-                    size="sm"
-                    className="h-7 w-7 p-0 bg-purple-600 hover:bg-purple-700"
-                  >
-                    <Plus className="h-3 w-3" />
-                  </Button>
+                  <div className="flex-1">
+                    <h3 className="font-semibold text-gray-900">{item.name}</h3>
+                    {item.description && (
+                      <p className="text-sm text-gray-600 mt-1">{item.description}</p>
+                    )}
+                    <p className="text-lg font-bold text-purple-600 mt-2">£{price}</p>
+                  </div>
+
+                  <div className="ml-4">
+                    {quantity === 0 ? (
+                      <Button
+                        onClick={() => {
+                          const menuItem = {
+                            id: item.id,
+                            name: item.name,
+                            description: item.description,
+                            price: item.price / 100,
+                            category: item.category || 'UNCATEGORIZED',
+                            is_available: item.is_available
+                          };
+                          onAddToCart(menuItem);
+                        }}
+                        size="sm"
+                        className="bg-purple-600 hover:bg-purple-700 text-white shadow-md hover:shadow-lg transition-all font-semibold"
+                      >
+                        <Plus className="h-4 w-4 mr-1" />
+                        Add
+                      </Button>
+                    ) : (
+                      <div className="flex items-center gap-2 bg-purple-50 rounded-lg p-2 border-2 border-purple-600">
+                        <Button
+                          onClick={() => onUpdateQuantity(item.id, quantity - 1)}
+                          variant="outline"
+                          size="sm"
+                          className="h-8 w-8 p-0 border-purple-300 hover:border-purple-600"
+                        >
+                          <Minus className="h-3 w-3" />
+                        </Button>
+                        <span className="text-sm font-bold text-purple-700 min-w-[24px] text-center">
+                          {quantity}
+                        </span>
+                        <Button
+                          onClick={() => onUpdateQuantity(item.id, quantity + 1)}
+                          size="sm"
+                          className="h-8 w-8 p-0 bg-purple-600 hover:bg-purple-700"
+                        >
+                          <Plus className="h-3 w-3" />
+                        </Button>
+                      </div>
+                    )}
+                  </div>
                 </div>
-              )}
-            </div>
-          );
-        })}
+              );
+            })}
+          </div>
+        </div>
       </div>
     );
   };

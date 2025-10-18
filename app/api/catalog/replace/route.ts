@@ -7,32 +7,6 @@ import { convertPDFToImages } from '@/lib/pdf-to-images';
 export const runtime = 'nodejs';
 export const dynamic = 'force-dynamic';
 
-// Helper function to update menu item coordinates asynchronously
-async function updateItemCoordinatesAsync(venueId: string) {
-  try {
-    console.log('[CATALOG_REPLACE] Starting coordinate update for venue:', venueId);
-    
-    const response = await fetch(`${process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:3000'}/api/menu/update-item-coordinates`, {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-      },
-      body: JSON.stringify({
-        venueId
-      })
-    });
-
-    const result = await response.json();
-    
-    if (result.ok) {
-      console.log('[CATALOG_REPLACE] Coordinate update successful:', result.result);
-    } else {
-      console.error('[CATALOG_REPLACE] Coordinate update failed:', result.error);
-    }
-  } catch (error) {
-    console.error('[CATALOG_REPLACE] Error updating coordinates:', error);
-  }
-}
 
 export async function POST(req: NextRequest) {
   try {
@@ -192,13 +166,6 @@ export async function POST(req: NextRequest) {
 
       // Replace catalog
       const result = await replaceCatalog(supabase, venueId, fixedPayload, extractedText, pdfImages);
-
-      // Update menu item coordinates for interactive menu (async, don't wait)
-      if (result.ok) {
-        updateItemCoordinatesAsync(venueId).catch(err => {
-          console.error('[CATALOG_REPLACE] Failed to update coordinates:', err);
-        });
-      }
 
       return result;
     } else {
