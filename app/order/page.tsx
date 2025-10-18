@@ -337,7 +337,7 @@ export default function CustomerOrderPage() {
         };
       }
     } catch (err) {
-      console.log('[AUTH DEBUG] onAuthStateChange setup failed:', err);
+      // Auth state change setup failed
     }
     return () => {};
   }, []);
@@ -378,15 +378,10 @@ export default function CustomerOrderPage() {
       // Fetch menu items using the API endpoint (bypasses RLS)
       const apiUrl = `${window.location.origin}/api/menu/${venueSlug}`;
       
-      console.log('[ORDER PAGE] Fetching menu from API:', { venueSlug, apiUrl });
-      
       const response = await fetch(apiUrl);
-      
-      console.log('[ORDER PAGE] API response status:', response.status);
       
       if (!response.ok) {
         const errorData = await response.json();
-        console.error('[ORDER PAGE] Menu fetch error:', errorData);
         setMenuError(`Error loading menu: ${errorData.error || 'Failed to load menu'}`);
         setLoadingMenu(false);
         return;
@@ -406,21 +401,13 @@ export default function CustomerOrderPage() {
       // Fetch category order from the categories API
       try {
         const categoryOrderResponse = await fetch(`${window.location.origin}/api/menu/categories?venueId=${venueSlug}`);
-        console.log('[ORDER PAGE] Category order response status:', categoryOrderResponse.status);
         if (categoryOrderResponse.ok) {
           const categoryOrderData = await categoryOrderResponse.json();
-          console.log('[ORDER PAGE] Category order data:', categoryOrderData.categories);
           if (categoryOrderData.categories && Array.isArray(categoryOrderData.categories)) {
             setCategoryOrder(categoryOrderData.categories);
-            console.log('[ORDER PAGE] Set category order:', categoryOrderData.categories);
-          } else {
-            console.log('[ORDER PAGE] No valid category order data');
           }
-        } else {
-          console.log('[ORDER PAGE] Category order API failed:', categoryOrderResponse.status);
         }
       } catch (error) {
-        console.error('[ORDER PAGE] Category order fetch error:', error);
         setCategoryOrder(null);
       }
       
@@ -636,8 +623,6 @@ export default function CustomerOrderPage() {
             .join("; "),
           isDemo: true, // Add demo flag
         };
-
-        console.log('[ORDER PAGE] Demo order data prepared:', orderData);
         
         // Store order data in localStorage for order summary page
         localStorage.setItem('servio-pending-order', JSON.stringify(orderData));
@@ -691,9 +676,6 @@ export default function CustomerOrderPage() {
       };
 
       // Create the order immediately via API
-      
-      console.log('[ORDER SUBMIT] Submitting order data:', orderData);
-      
       const response = await fetch('/api/orders', {
         method: 'POST',
         headers: {
@@ -702,12 +684,8 @@ export default function CustomerOrderPage() {
         body: JSON.stringify(orderData),
       });
 
-
       if (!response.ok) {
         const errorData = await response.json();
-        console.error('[ORDER SUBMIT] API error response:', errorData);
-        console.error('[ORDER SUBMIT] Response status:', response.status);
-        console.error('[ORDER SUBMIT] Response headers:', response.headers);
         throw new Error(errorData.error || `Failed to create order (${response.status})`);
       }
 

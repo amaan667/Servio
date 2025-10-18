@@ -78,7 +78,6 @@ export function InteractivePDFMenu({
       }
 
       const pdfImages = uploadData.pdf_images || uploadData.pdf_images_cc || [];
-      const pdfUrl = uploadData.filename || uploadData.storage_path;
 
       if (pdfImages.length === 0) {
         setError('No PDF images found. Please upload a PDF menu.');
@@ -96,7 +95,7 @@ export function InteractivePDFMenu({
         .order('name', { ascending: true });
 
       if (itemsError) {
-        throw new Error(`Failed to fetch items: ${itemsError.message}`);
+        throw new Error('Failed to fetch menu items');
       }
 
       if (!itemsData || itemsData.length === 0) {
@@ -105,13 +104,23 @@ export function InteractivePDFMenu({
         return;
       }
 
-      // Download PDF from storage
+      // Download PDF from storage using the correct path
+      const storagePath = uploadData.storage_path || uploadData.filename;
+      
+      if (!storagePath) {
+        setError('PDF file path not found.');
+        setLoading(false);
+        return;
+      }
+
       const { data: pdfBlob, error: pdfError } = await supabase.storage
         .from('menus')
-        .download(pdfUrl);
+        .download(storagePath);
 
       if (pdfError || !pdfBlob) {
-        throw new Error('Failed to download PDF');
+        setError('Failed to load PDF menu.');
+        setLoading(false);
+        return;
       }
 
       const pdfArrayBuffer = await pdfBlob.arrayBuffer();
@@ -119,8 +128,6 @@ export function InteractivePDFMenu({
       // Load PDF with pdf.js
       const pdf = await pdfjsLib.getDocument({ data: pdfArrayBuffer }).promise;
       const numPages = pdf.numPages;
-
-      console.log(`[InteractivePDFMenu] Processing ${numPages} pages for ${itemsData.length} items`);
 
       // Extract coordinates from each page
       const pagesData: PageData[] = [];
@@ -157,11 +164,9 @@ export function InteractivePDFMenu({
       }
 
       setPages(pagesData);
-      console.log(`[InteractivePDFMenu] Loaded ${pagesData.length} pages with mapped items`);
 
     } catch (err: any) {
-      console.error('[InteractivePDFMenu] Error:', err);
-      setError(err.message || 'Failed to load menu');
+      setError('Failed to load menu');
     } finally {
       setLoading(false);
     }
@@ -295,7 +300,6 @@ export function InteractivePDFMenu({
     return (
       <div className="text-center py-12">
         <p className="text-red-600 mb-4">{error}</p>
-        <p className="text-sm text-gray-500">Venue ID: {venueId}</p>
       </div>
     );
   }
