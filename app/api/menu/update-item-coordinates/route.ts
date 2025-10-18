@@ -4,7 +4,7 @@ import * as pdfjsLib from 'pdfjs-dist';
 
 // Configure pdf.js worker
 if (typeof window === 'undefined') {
-  pdfjsLib.GlobalWorkerOptions.workerSrc = require.resolve('pdfjs-dist/build/pdf.worker.min.js');
+  pdfjsLib.GlobalWorkerOptions.workerSrc = require.resolve('pdfjs-dist/build/pdf.worker.mjs');
 }
 
 interface TextRun {
