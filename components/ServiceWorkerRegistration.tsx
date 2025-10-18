@@ -29,7 +29,6 @@ export default function ServiceWorkerRegistration({ children }: ServiceWorkerReg
     if ('serviceWorker' in navigator) {
       navigator.serviceWorker.register('/sw.js')
         .then((registration) => {
-          console.log('[SW] Service worker registered successfully:', registration);
           setSwRegistration(registration);
 
           // Previously: show update banner when updatefound. Now we silently allow the
@@ -48,15 +47,14 @@ export default function ServiceWorkerRegistration({ children }: ServiceWorkerReg
           // Check for existing updates
           registration.update();
         })
-        .catch((error) => {
-          console.error('[SW] Service worker registration failed:', error);
+        .catch(() => {
+          // Service worker registration failed
         });
     }
 
     // Listen for messages from service worker
     if ('serviceWorker' in navigator) {
       navigator.serviceWorker.addEventListener('message', (event) => {
-        console.log('[SW] Message from service worker:', event.data);
         
         if (event.data && event.data.type === 'SKIP_WAITING') {
           window.location.reload();

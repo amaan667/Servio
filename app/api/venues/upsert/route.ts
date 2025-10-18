@@ -50,6 +50,9 @@ export async function POST(req: Request) {
         .select()
         .single();
 
+      // Invalidate venue cache
+      await cache.invalidate(`venue:${venueId}`);
+
       if (error) throw error;
       return NextResponse.json({ ok: true, venue: data });
     } else {
