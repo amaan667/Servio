@@ -68,9 +68,13 @@ export async function POST(req: NextRequest) {
           items: applyKnownFixes(parsedPayload.items || [])
         };
 
+        // Convert PDF to images for preview
+        console.log('[CATALOG REPLACE] Converting PDF to images...');
+        const pdfImages = await convertPDFToImages(fileBuffer, venueId);
+        console.log('[CATALOG REPLACE] PDF converted to', pdfImages.length, 'images');
 
         // Validate and replace catalog
-        return await replaceCatalog(supabase, venueId, fixedPayload);
+        return await replaceCatalog(supabase, venueId, fixedPayload, extractedText, pdfImages);
         
       } else {
         // For text files
