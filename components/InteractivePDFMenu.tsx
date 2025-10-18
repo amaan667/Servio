@@ -196,7 +196,7 @@ export function InteractivePDFMenu({
 
         {/* Interactive Buttons Overlay */}
         {page.items.map((item) => {
-          if (!item.bbox_x || !item.bbox_y) return null;
+          if (!item.bbox_x || !item.bbox_y || !item.bbox_w || !item.bbox_h) return null;
 
           const cartItem = cart.find(c => c.id === item.id);
           const quantity = cartItem?.quantity || 0;
