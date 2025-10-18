@@ -285,6 +285,7 @@ export async function POST(req: Request) {
         extracted_text_length: extractedText.length,
         category_order: validated.categories, // Store category order in the new column
         pdf_images: pdfImages, // Store PDF images for preview
+        pdf_images_cc: pdfImages, // Also store in pdf_images_cc for compatibility
         created_at: new Date().toISOString()
       }).select();
       

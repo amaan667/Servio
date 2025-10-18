@@ -88,13 +88,18 @@ export function EnhancedPDFMenuDisplay({
 
         if (uploadData) {
           console.log('[PDF IMAGES] pdf_images column:', uploadData.pdf_images);
+          console.log('[PDF IMAGES] pdf_images_cc column:', uploadData.pdf_images_cc);
           console.log('[PDF IMAGES] pdf_images type:', typeof uploadData.pdf_images);
           console.log('[PDF IMAGES] pdf_images length:', uploadData.pdf_images?.length);
+          console.log('[PDF IMAGES] pdf_images_cc length:', uploadData.pdf_images_cc?.length);
         }
 
-        if (uploadData && uploadData.pdf_images && uploadData.pdf_images.length > 0) {
-          console.log('[PDF IMAGES] Setting PDF images:', uploadData.pdf_images);
-          setPdfImages(uploadData.pdf_images);
+        // Try pdf_images first, then fallback to pdf_images_cc
+        const images = uploadData?.pdf_images || uploadData?.pdf_images_cc;
+
+        if (uploadData && images && images.length > 0) {
+          console.log('[PDF IMAGES] Setting PDF images:', images);
+          setPdfImages(images);
         } else {
           console.log('[PDF IMAGES] No PDF images found, defaulting to list view');
           setViewMode('list');

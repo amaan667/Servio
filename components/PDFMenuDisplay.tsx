@@ -48,7 +48,7 @@ export function PDFMenuDisplay({
         // Fetch the most recent PDF upload for this venue
         const { data: uploadData, error } = await supabase
           .from('menu_uploads')
-          .select('pdf_images, filename, created_at')
+          .select('pdf_images, pdf_images_cc, filename, created_at')
           .eq('venue_id', venueId)
           .order('created_at', { ascending: false })
           .limit(1)
@@ -57,14 +57,19 @@ export function PDFMenuDisplay({
         console.log('[PDF MENU DISPLAY] Fetch result:', { 
           hasData: !!uploadData, 
           hasPdfImages: !!(uploadData?.pdf_images), 
+          hasPdfImagesCC: !!(uploadData?.pdf_images_cc),
           pdfImagesLength: uploadData?.pdf_images?.length || 0,
+          pdfImagesCCLength: uploadData?.pdf_images_cc?.length || 0,
           filename: uploadData?.filename,
           error: error?.message 
         });
 
-        if (uploadData && uploadData.pdf_images && uploadData.pdf_images.length > 0) {
-          console.log('[PDF MENU DISPLAY] Setting PDF images:', uploadData.pdf_images.length);
-          setPdfImages(uploadData.pdf_images);
+        // Try pdf_images first, then fallback to pdf_images_cc
+        const images = uploadData?.pdf_images || uploadData?.pdf_images_cc;
+        
+        if (uploadData && images && images.length > 0) {
+          console.log('[PDF MENU DISPLAY] Setting PDF images:', images.length);
+          setPdfImages(images);
         } else {
           console.warn('[PDF MENU DISPLAY] No PDF images found in upload data');
         }

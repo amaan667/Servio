@@ -61,7 +61,10 @@ export async function POST(req: NextRequest) {
     // Update the menu_uploads record with the new images
     const { error: updateError } = await supabase
       .from('menu_uploads')
-      .update({ pdf_images: pdfImages })
+      .update({ 
+        pdf_images: pdfImages,
+        pdf_images_cc: pdfImages  // Also update pdf_images_cc for compatibility
+      })
       .eq('id', uploadData.id);
 
     if (updateError) {
