@@ -1,4 +1,7 @@
 import { createAdminClient } from '@/lib/supabase/server';
+import fs from 'fs';
+import path from 'path';
+import { fromBuffer } from 'pdf2pic';
 
 /**
  * Convert PDF pages to images and upload to Supabase Storage
@@ -11,91 +14,83 @@ import { createAdminClient } from '@/lib/supabase/server';
 export async function convertPDFToImages(pdfBytes: ArrayBuffer, venueId: string): Promise<string[]> {
   console.log('[PDF_TO_IMAGES] Starting PDF to images conversion for venue:', venueId);
   
+  // Create a temporary file for the PDF
+  const tempDir = '/tmp';
+  const tempPdfPath = path.join(tempDir, `menu-${venueId}-${Date.now()}.pdf`);
+  
   try {
-    // Dynamic imports to avoid build issues
-    // Use legacy build for Node.js environment
-    const pdfjsLib = await import('pdfjs-dist/legacy/build/pdf.mjs');
-    const { createCanvas } = await import('canvas');
+    // Write PDF to temp file
+    fs.mkdirSync(tempDir, { recursive: true });
+    fs.writeFileSync(tempPdfPath, Buffer.from(pdfBytes));
+    console.log('[PDF_TO_IMAGES] PDF written to temp file:', tempPdfPath);
     
-    // Disable worker for Node.js environment
-    pdfjsLib.GlobalWorkerOptions.workerSrc = '';
+    // Configure pdf2pic
+    const convert = fromBuffer(
+      Buffer.from(pdfBytes),
+      {
+        density: 200,           // High quality
+        saveFilename: 'page',
+        savePath: tempDir,
+        format: 'png',
+        width: 1200,
+        height: 1600
+      }
+    );
     
-    // Load PDF without worker
-    const loadingTask = pdfjsLib.getDocument({ 
-      data: pdfBytes,
-      useWorkerFetch: false,
-      isEvalSupported: false,
-      useSystemFonts: true
-    });
-    const pdf = await loadingTask.promise;
-    
-    console.log('[PDF_TO_IMAGES] PDF loaded successfully. Total pages:', pdf.numPages);
-    
-    const supabase = await createAdminClient();
+    // Convert all pages (max 10 pages)
+    const maxPages = 10;
     const imageUrls: string[] = [];
+    const supabase = await createAdminClient();
     
-    // Convert each page to image (max 10 pages)
-    for (let pageNum = 1; pageNum <= Math.min(pdf.numPages, 10); pageNum++) {
-      console.log('[PDF_TO_IMAGES] Converting page', pageNum, 'to image...');
-      
-      const page = await pdf.getPage(pageNum);
-      const scale = 2.0; // High quality for preview
-      const viewport = page.getViewport({ scale });
-      
-      // Create canvas
-      const canvas = createCanvas(viewport.width, viewport.height);
-      const context = canvas.getContext('2d');
-      
-      // Render PDF page to canvas
-      await page.render({
-        canvasContext: context as any,
-        viewport: viewport,
-        canvas: canvas as any
-      }).promise;
-      
-      // Convert canvas to buffer
-      const imageBuffer = canvas.toBuffer('image/png');
-      console.log('[PDF_TO_IMAGES] Page', pageNum, 'rendered. Buffer size:', imageBuffer.length);
-      
-      // Upload to Supabase Storage
-      const fileName = `${venueId}/menu-page-${pageNum}-${Date.now()}.png`;
-      const { data: uploadData, error: uploadError } = await supabase.storage
-        .from('menus')
-        .upload(fileName, imageBuffer, {
-          contentType: 'image/png',
-          upsert: false
-        });
-      
-      if (uploadError) {
-        console.error('[PDF_TO_IMAGES] Error uploading page', pageNum, ':', uploadError);
-        continue;
-      }
-      
-      console.log('[PDF_TO_IMAGES] Page', pageNum, 'uploaded to storage:', uploadData.path);
-      
-      // Get public URL
-      const { data: urlData } = supabase.storage
-        .from('menus')
-        .getPublicUrl(fileName);
-      
-      if (urlData?.publicUrl) {
-        imageUrls.push(urlData.publicUrl);
-        console.log('[PDF_TO_IMAGES] Page', pageNum, 'converted successfully. URL:', urlData.publicUrl);
-      } else {
-        console.error('[PDF_TO_IMAGES] Failed to get public URL for page', pageNum);
-        console.error('[PDF_TO_IMAGES] urlData:', urlData);
-      }
-      
-      // Verify the URL is accessible
+    for (let pageNum = 1; pageNum <= maxPages; pageNum++) {
       try {
-        const response = await fetch(urlData.publicUrl, { method: 'HEAD' });
-        if (response.ok) {
-          console.log('[PDF_TO_IMAGES] URL is accessible:', urlData.publicUrl);
-        } else {
-          console.warn('[PDF_TO_IMAGES] URL returned status:', response.status, urlData.publicUrl);
+        console.log('[PDF_TO_IMAGES] Converting page', pageNum, 'to image...');
+        
+        const result = await convert(pageNum, { responseType: 'buffer' });
+        
+        if (!result || !result.buffer) {
+          console.log('[PDF_TO_IMAGES] No more pages. Total pages:', pageNum - 1);
+          break;
         }
-      } catch (fetchError) {
-        console.error('[PDF_TO_IMAGES] Failed to verify URL accessibility:', fetchError);
+        
+        console.log('[PDF_TO_IMAGES] Page', pageNum, 'rendered. Buffer size:', result.buffer.length);
+        
+        // Upload to Supabase Storage
+        const fileName = `${venueId}/menu-page-${pageNum}-${Date.now()}.png`;
+        const { data: uploadData, error: uploadError } = await supabase.storage
+          .from('menus')
+          .upload(fileName, result.buffer, {
+            contentType: 'image/png',
+            upsert: false
+          });
+        
+        if (uploadError) {
+          console.error('[PDF_TO_IMAGES] Error uploading page', pageNum, ':', uploadError);
+          continue;
+        }
+        
+        console.log('[PDF_TO_IMAGES] Page', pageNum, 'uploaded to storage:', uploadData.path);
+        
+        // Get public URL
+        const { data: urlData } = supabase.storage
+          .from('menus')
+          .getPublicUrl(fileName);
+        
+        if (urlData?.publicUrl) {
+          imageUrls.push(urlData.publicUrl);
+          console.log('[PDF_TO_IMAGES] Page', pageNum, 'converted successfully. URL:', urlData.publicUrl);
+        } else {
+          console.error('[PDF_TO_IMAGES] Failed to get public URL for page', pageNum);
+        }
+        
+      } catch (pageError: any) {
+        // If we get an error on the first page, the PDF might be invalid
+        if (pageNum === 1) {
+          throw pageError;
+        }
+        // Otherwise, we've reached the end of the PDF
+        console.log('[PDF_TO_IMAGES] Reached end of PDF at page', pageNum);
+        break;
       }
     }
     
@@ -107,5 +102,15 @@ export async function convertPDFToImages(pdfBytes: ArrayBuffer, venueId: string)
     console.error('[PDF_TO_IMAGES] Error stack:', error.stack);
     // Return empty array instead of throwing - let the calling code handle it
     return [];
+  } finally {
+    // Clean up temp files
+    try {
+      if (fs.existsSync(tempPdfPath)) {
+        fs.unlinkSync(tempPdfPath);
+        console.log('[PDF_TO_IMAGES] Cleaned up temp PDF file');
+      }
+    } catch (cleanupError) {
+      console.error('[PDF_TO_IMAGES] Error cleaning up temp files:', cleanupError);
+    }
   }
 }
