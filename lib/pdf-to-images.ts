@@ -13,11 +13,9 @@ export async function convertPDFToImages(pdfBytes: ArrayBuffer, venueId: string)
   
   try {
     // Dynamic imports to avoid build issues
-    const pdfjsLib = await import('pdfjs-dist');
+    // Use legacy build for Node.js environment
+    const pdfjsLib = await import('pdfjs-dist/legacy/build/pdf');
     const { createCanvas } = await import('canvas');
-    
-    // Configure pdfjs-dist
-    pdfjsLib.GlobalWorkerOptions.workerSrc = `//cdnjs.cloudflare.com/ajax/libs/pdf.js/${pdfjsLib.version}/pdf.worker.min.mjs`;
     
     // Load PDF
     const loadingTask = pdfjsLib.getDocument({ data: pdfBytes });
