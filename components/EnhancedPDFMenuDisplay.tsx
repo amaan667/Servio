@@ -10,13 +10,15 @@ import { formatPriceWithCurrency } from '@/lib/pricing-utils';
 
 interface MenuItem {
   id: string;
-  venue_id: string;
+  venue_id?: string;
   name: string;
-  description: string | null;
+  description?: string | null;
   price: number;
   category: string;
   is_available: boolean;
-  created_at: string;
+  created_at?: string;
+  venue_name?: string;
+  options?: Array<{ label: string; values: string[] }>;
 }
 
 // Type-safe menu item interface for hotspot system
