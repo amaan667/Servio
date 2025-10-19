@@ -1,9 +1,8 @@
-export const runtime = "nodejs";
-export const dynamic = "force-dynamic";
-
-export const dynamic = "force-dynamic";
+export const runtime = 'nodejs';
+export const dynamic = 'force-dynamic';
 export const revalidate = false;
-import { NextRequest, NextResponse } from "next/server";
+
+import { NextRequest, NextResponse } from 'next/server';
 
 export async function GET(req: NextRequest) {
   const cookies = req.cookies.getAll();

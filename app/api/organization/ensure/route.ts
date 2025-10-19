@@ -1,14 +1,11 @@
-export const runtime = "nodejs";
-export const dynamic = "force-dynamic";
-
-// API endpoint to ensure a user has a real organization
-import { NextRequest, NextResponse } from "next/server";
-import { createClient, createAdminClient } from "@/lib/supabase/server";
-import { apiLogger, logger } from '@/lib/logger';
-
-// Disable caching to always get fresh data
+export const runtime = 'nodejs';
 export const dynamic = 'force-dynamic';
 export const revalidate = 0;
+
+// API endpoint to ensure a user has a real organization
+import { NextRequest, NextResponse } from 'next/server';
+import { createClient, createAdminClient } from '@/lib/supabase/server';
+import { apiLogger, logger } from '@/lib/logger';
 
 export async function POST(request: NextRequest) {
   try {
