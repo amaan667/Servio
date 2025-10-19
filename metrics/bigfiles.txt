@@ -1,4 +1,5 @@
-  573549 total
+  641511 total
+   70170 metrics/lint.txt
    14777 package-lock.json
    11207 pnpm-lock.yaml
     5664 coverage/servio-mvp-cleaned/lib/ai/tool-executors.ts.html
@@ -27,4 +28,3 @@
     1995 coverage/servio-mvp-cleaned/components/analytics-dashboard.tsx.html
     1974 coverage/servio-mvp-cleaned/lib/pdfImporter/jsonRepair.ts.html
     1967 app/globals.css
-    1861 lib/ai/tool-executors.ts
