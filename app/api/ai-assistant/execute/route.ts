@@ -1,9 +1,12 @@
+export const runtime = "nodejs";
+export const dynamic = "force-dynamic";
+
 // AI Assistant - Execute Endpoint
 // Executes a planned action after user confirmation
 
 import { NextRequest, NextResponse } from "next/server";
 import { createClient } from "@/lib/supabase/server";
-import { executeTool } from "@/lib/ai/tool-executors";
+import { executeTool } from "@/lib/tools";
 import { z } from "zod";
 import { apiLogger, logger } from '@/lib/logger';
 import {
@@ -177,18 +180,21 @@ export async function POST(request: NextRequest) {
       result: result as AIExecutionResult,
       executionTimeMs: executionTime,
     });
-  } catch (error: any) {
+  } catch (error: unknown) {
     logger.error("[AI ASSISTANT] Execution error:", { error: error instanceof Error ? error.message : 'Unknown error' });
 
-    if (error.name === "ZodError") {
+    // Type guard for ZodError
+    if (error && typeof error === 'object' && 'name' in error && error.name === "ZodError") {
+      const zodError = error as unknown as { errors: unknown };
       return NextResponse.json(
-        { error: "Invalid parameters", details: error.errors },
+        { error: "Invalid parameters", details: zodError.errors },
         { status: 400 }
       );
     }
 
-    if (error.code) {
-      // AIAssistantError
+    // Type guard for AIAssistantError
+    if (error && typeof error === 'object' && 'code' in error) {
+      const aiError = error as { code: string; message?: string; details?: unknown };
       const statusMap: Record<string, number> = {
         UNAUTHORIZED: 403,
         INVALID_PARAMS: 400,
@@ -199,13 +205,15 @@ export async function POST(request: NextRequest) {
       };
 
       return NextResponse.json(
-        { error: error.message, code: error.code, details: error.details },
-        { status: statusMap[error.code] || 500 }
+        { error: aiError.message || "Execution failed", code: aiError.code, details: aiError.details },
+        { status: statusMap[aiError.code] || 500 }
       );
     }
 
+    // Generic error
+    const errorMessage = error instanceof Error ? error.message : "Execution failed";
     return NextResponse.json(
-      { error: error.message || "Execution failed" },
+      { error: errorMessage },
       { status: 500 }
     );
   }
