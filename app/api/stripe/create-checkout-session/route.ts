@@ -79,17 +79,6 @@ export async function POST(request: NextRequest) {
     // Ensure Stripe products and prices exist
     const priceIds = await ensureStripeProducts();
 
-    const supabase = await createClient();
-
-    // Check auth
-    const {
-      data: { user },
-    } = await supabase.auth.getUser();
-
-    if (!user) {
-      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
-    }
-
     const body = await request.json();
     const { tier, organizationId, isSignup, email, fullName, venueName } = body;
 
@@ -100,7 +89,7 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    // If this is a signup flow, handle it differently
+    // If this is a signup flow, handle it differently (no auth required)
     if (isSignup) {
       // Create checkout session for new signup
       const sessionData: Stripe.Checkout.SessionCreateParams = {
@@ -134,6 +123,16 @@ export async function POST(request: NextRequest) {
 
       const session = await stripe.checkout.sessions.create(sessionData);
       return NextResponse.json({ sessionId: session.id, url: session.url });
+    }
+
+    // For existing users, check auth
+    const supabase = await createClient();
+    const {
+      data: { user },
+    } = await supabase.auth.getUser();
+
+    if (!user) {
+      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
 
     // ALWAYS get or create a real organization - NO MOCK IDs

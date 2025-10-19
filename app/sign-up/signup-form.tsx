@@ -166,7 +166,7 @@ export default function SignUpForm({ onGoogleSignIn, isSigningUp = false }: Sign
   if (step === 'tier') {
     return (
     <div className="min-h-screen bg-gray-50 flex items-center justify-center p-4">
-      <Card className="w-full max-w-6xl">
+      <Card className="w-full max-w-6xl animate-in fade-in duration-300">
         <CardHeader className="text-center">
           <CardTitle className="text-3xl font-bold">Choose Your Plan</CardTitle>
           <CardDescription>Start your 14-day free trial • First billing after trial ends</CardDescription>
@@ -233,19 +233,53 @@ export default function SignUpForm({ onGoogleSignIn, isSigningUp = false }: Sign
                 Already have an account?
               </Link>
               <Button
-                onClick={() => {
+                onClick={async () => {
                   if (!selectedTier) {
                     setError('Please select a plan to continue');
                     return;
                   }
                   setError(null);
-                  setStep('form');
+                  setLoading(true);
+                  
+                  try {
+                    // Redirect directly to Stripe checkout
+                    const response = await fetch('/api/stripe/create-checkout-session', {
+                      method: 'POST',
+                      headers: { 'Content-Type': 'application/json' },
+                      body: JSON.stringify({
+                        tier: selectedTier,
+                        isSignup: true,
+                      }),
+                    });
+
+                    const data = await response.json();
+
+                    if (data.error || !data.url) {
+                      setError(data.error || 'Failed to create checkout session. Please try again.');
+                      setLoading(false);
+                      return;
+                    }
+
+                    // Redirect to Stripe checkout
+                    window.location.href = data.url;
+                  } catch (err: any) {
+                    console.error('Checkout error:', err);
+                    setError(err.message || 'Failed to create checkout session. Please try again.');
+                    setLoading(false);
+                  }
                 }}
-                disabled={!selectedTier}
+                disabled={!selectedTier || loading}
                 size="lg"
                 variant="servio"
               >
-                Continue with {selectedTier ? tiers.find(t => t.id === selectedTier)?.name : 'Selected Plan'}
+                {loading ? (
+                  <>
+                    <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                    Redirecting...
+                  </>
+                ) : (
+                  `Continue with ${selectedTier ? tiers.find(t => t.id === selectedTier)?.name : 'Selected Plan'}`
+                )}
               </Button>
             </div>
 
@@ -261,7 +295,7 @@ export default function SignUpForm({ onGoogleSignIn, isSigningUp = false }: Sign
   // Render account details form
   return (
     <div className="min-h-screen bg-gray-50 flex items-center justify-center p-4">
-      <Card className="w-full max-w-md">
+      <Card className="w-full max-w-md animate-in fade-in duration-300">
         <CardHeader className="text-center">
           <CardTitle className="text-2xl font-bold">Create Account</CardTitle>
           <CardDescription>

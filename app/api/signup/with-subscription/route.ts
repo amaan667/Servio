@@ -16,7 +16,7 @@ const PRICE_IDS = {
 export async function POST(request: NextRequest) {
   try {
     const body = await request.json();
-    const { email, password, fullName, venueName, venueType, serviceType = 'table_service', tier } = body;
+    const { email, password, fullName, venueName, venueType, serviceType = 'table_service', tier, stripeSessionId } = body;
 
     // Validate required fields
     if (!email || !password || !fullName || !venueName || !tier) {
@@ -56,15 +56,35 @@ export async function POST(request: NextRequest) {
     const venueId = `venue-${userId.slice(0, 8)}`;
     const orgSlug = `${venueName.toLowerCase().replace(/[^a-z0-9]+/g, "-")}-${userId.slice(0, 8)}`;
 
-    // Create Stripe customer
-    const customer = await stripe.customers.create({
-      email,
-      name: fullName,
-      metadata: {
-        user_id: userId,
-        venue_name: venueName,
-      },
-    });
+    // Create or retrieve Stripe customer
+    let customer;
+    if (stripeSessionId) {
+      // Get customer from existing session
+      const session = await stripe.checkout.sessions.retrieve(stripeSessionId);
+      if (session.customer) {
+        customer = await stripe.customers.retrieve(session.customer as string);
+      } else {
+        // Fallback: create new customer
+        customer = await stripe.customers.create({
+          email,
+          name: fullName,
+          metadata: {
+            user_id: userId,
+            venue_name: venueName,
+          },
+        });
+      }
+    } else {
+      // Create new customer
+      customer = await stripe.customers.create({
+        email,
+        name: fullName,
+        metadata: {
+          user_id: userId,
+          venue_name: venueName,
+        },
+      });
+    }
 
     // Create organization (not grandfathered - regular subscription required)
     const { data: org, error: orgError } = await supabase
@@ -119,41 +139,54 @@ export async function POST(request: NextRequest) {
       role: "owner",
     });
 
-    // Create Stripe checkout session for payment (14-day trial)
-    const session = await stripe.checkout.sessions.create({
-      customer: customer.id,
-      mode: "subscription",
-      payment_method_types: ["card"],
-      line_items: [
-        {
-          price: PRICE_IDS[tier as keyof typeof PRICE_IDS],
-          quantity: 1,
-        },
-      ],
-      success_url: `${process.env.NEXT_PUBLIC_APP_URL}/dashboard/${venueId}?welcome=true`,
-      cancel_url: `${process.env.NEXT_PUBLIC_APP_URL}/sign-up?cancelled=true`,
-      metadata: {
-        organization_id: org.id,
-        venue_id: venueId,
-        tier,
-      },
-      subscription_data: {
+    // If we have a stripeSessionId, the payment is already complete
+    // Otherwise, create a checkout session
+    if (stripeSessionId) {
+      // Payment already completed, just return success
+      return NextResponse.json({
+        success: true,
+        userId,
+        venueId,
+        organizationId: org.id,
+        message: "Account created successfully! Your 14-day free trial is active.",
+      });
+    } else {
+      // Create Stripe checkout session for payment (14-day trial)
+      const session = await stripe.checkout.sessions.create({
+        customer: customer.id,
+        mode: "subscription",
+        payment_method_types: ["card"],
+        line_items: [
+          {
+            price: PRICE_IDS[tier as keyof typeof PRICE_IDS],
+            quantity: 1,
+          },
+        ],
+        success_url: `${process.env.NEXT_PUBLIC_APP_URL}/dashboard/${venueId}?welcome=true`,
+        cancel_url: `${process.env.NEXT_PUBLIC_APP_URL}/sign-up?cancelled=true`,
         metadata: {
           organization_id: org.id,
+          venue_id: venueId,
           tier,
         },
-        trial_period_days: 14, // 14-day free trial
-      },
-    });
+        subscription_data: {
+          metadata: {
+            organization_id: org.id,
+            tier,
+          },
+          trial_period_days: 14, // 14-day free trial
+        },
+      });
 
-    return NextResponse.json({
-      success: true,
-      userId,
-      venueId,
-      organizationId: org.id,
-      checkoutUrl: session.url,
-      message: "Account created! Complete payment setup to activate your 14-day free trial.",
-    });
+      return NextResponse.json({
+        success: true,
+        userId,
+        venueId,
+        organizationId: org.id,
+        checkoutUrl: session.url,
+        message: "Account created! Complete payment setup to activate your 14-day free trial.",
+      });
+    }
   } catch (error: any) {
     logger.error("[SIGNUP WITH SUBSCRIPTION] Error:", { error: error instanceof Error ? error.message : 'Unknown error' });
     return NextResponse.json(
