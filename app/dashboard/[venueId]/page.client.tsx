@@ -1,17 +1,14 @@
 "use client";
 
-import React, { useEffect, useMemo, useState, useCallback } from "react";
+import React, { useEffect, useMemo, useCallback } from "react";
 import { useRouter } from "next/navigation";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader } from "@/components/ui/card";
 import Link from "next/link";
 import { Clock, Users, TrendingUp, ShoppingBag, BarChart, QrCode, Settings, Plus, Table, Wifi, WifiOff, AlertTriangle, ChefHat, Package } from "lucide-react";
-import { createClient } from "@/lib/supabase/client";
 import RoleBasedNavigation from "@/components/RoleBasedNavigation";
-import { todayWindowForTZ } from "@/lib/time";
 import { useDashboardPrefetch } from '@/hooks/usePrefetch';
 import PullToRefresh from '@/components/PullToRefresh';
-import { withSupabaseRetry } from '@/lib/retry';
 import { useConnectionMonitor } from '@/lib/connection-monitor';
 import { DashboardSkeleton } from '@/components/dashboard-skeleton';
 import { useRequestCancellation } from '@/lib/request-utils';
@@ -20,23 +17,21 @@ import TrialStatusBanner from '@/components/TrialStatusBanner';
 import RoleManagementPopup from '@/components/role-management-popup';
 import VenueSwitcherPopup from '@/components/venue-switcher-popup';
 
+// Hooks
+import { useDashboardData } from './hooks/useDashboardData';
+import { useDashboardRealtime } from './hooks/useDashboardRealtime';
 
-interface DashboardCounts {
-  live_count: number;
-  earlier_today_count: number;
-  history_count: number;
-  today_orders_count: number;
-  active_tables_count: number;
-  tables_set_up: number;
-  tables_in_use: number;
-  tables_reserved_now: number;
-}
+// Components
+import { DashboardStatCard } from './components/DashboardStatCard';
+import { QuickActionCard } from './components/QuickActionCard';
 
-interface DashboardStats {
-  revenue: number;
-  menuItems: number;
-  unpaid: number;
-}
+/**
+ * Venue Dashboard Client Component
+ * Main dashboard view showing overview stats and quick actions
+ * 
+ * Refactored: Extracted hooks and components for better organization
+ * Original: 805 lines → Now: ~200 lines
+ */
 
 const VenueDashboardClient = React.memo(function VenueDashboardClient({ 
   venueId, 
@@ -54,37 +49,21 @@ const VenueDashboardClient = React.memo(function VenueDashboardClient({
   venue?: any; 
   userName: string;
   venueTz: string;
-  initialCounts?: DashboardCounts;
-  initialStats?: DashboardStats;
+  initialCounts?: any;
+  initialStats?: any;
   userRole?: string;
   isOwner?: boolean;
 }) {
-  const [venue, setVenue] = useState<any>(initialVenue);
-  const [loading, setLoading] = useState(!initialVenue); // Only show loading if no initial data
-  const [counts, setCounts] = useState<DashboardCounts>(initialCounts || {
-    live_count: 0,
-    earlier_today_count: 0,
-    history_count: 0,
-    today_orders_count: 0,
-    active_tables_count: 0,
-    tables_set_up: 0,
-    tables_in_use: 0,
-    tables_reserved_now: 0
-  });
-  const [stats, setStats] = useState<DashboardStats>(initialStats || { revenue: 0, menuItems: 0, unpaid: 0 });
-  const [statsLoaded, setStatsLoaded] = useState(false);
-  const [todayWindow, setTodayWindow] = useState<any>(null);
-  const [error, setError] = useState<string | null>(null);
   const router = useRouter();
   
   // Monitor connection status
   const connectionState = useConnectionMonitor();
   
   // Handle venue change
-  const handleVenueChange = (newVenueId: string) => {
+  const handleVenueChange = useCallback((newVenueId: string) => {
     console.debug('[VENUE SWITCH] Switching from', venueId, 'to', newVenueId);
     router.push(`/dashboard/${newVenueId}`);
-  };
+  }, [venueId, router]);
   
   // Request cancellation
   const { createRequest, cancelRequest } = useRequestCancellation();
@@ -92,270 +71,25 @@ const VenueDashboardClient = React.memo(function VenueDashboardClient({
   // Enable intelligent prefetching for dashboard routes
   useDashboardPrefetch(venueId);
 
-  useEffect(() => {
-    const loadVenueAndStats = async () => {
-      try {
-        // Check if we already have venue data from SSR
-        if (venue && !loading) {
-          const window = todayWindowForTZ(venueTz);
-          setTodayWindow(window);
-          await loadStats(venue.venue_id, window);
-          return;
-        }
-        
-        // Load venue data and stats (userId already verified by SSR)
-        const { data: venueData, error } = await createClient()
-          .from("venues")
-          .select("*")
-          .eq("venue_id", venueId)
-          .single();
-        
-        if (!error && venueData) {
-          setVenue(venueData);
-          const window = todayWindowForTZ(venueTz);
-          setTodayWindow(window);
-          await loadStats(venueData.venue_id, window);
-        } else {
-          // Set loading to false even on error to prevent infinite loading
-          setLoading(false);
-        }
-      } catch (error) {
-        // Set loading to false even on error to prevent infinite loading
-        setLoading(false);
-      }
-    };
-
-    loadVenueAndStats();
-  }, [venueId, venue, loading, venueTz]);
-
-  // Handle initial venue data from SSR
-  useEffect(() => {
-    if (initialVenue && !venue) {
-      setVenue(initialVenue);
-      setLoading(false);
-    }
-  }, [initialVenue, venue]);
-
-  // Set up time window when venue data is available
-  useEffect(() => {
-    if (venue && !todayWindow) {
-      const window = todayWindowForTZ(venueTz);
-      setTodayWindow(window);
-      loadStats(venue.venue_id, window);
-    }
-  }, [venue, todayWindow, venueTz]);
-
-  // Reset stats and clear tables when day changes to ensure fresh data
-  useEffect(() => {
-    if (!todayWindow) return;
-    
-    const checkDayChange = async () => {
-      const now = new Date();
-      const currentDay = now.toDateString();
-      const lastDay = new Date(todayWindow.startUtcISO).toDateString();
-      
-      if (currentDay !== lastDay) {
-        setStatsLoaded(false);
-        setStats({ revenue: 0, menuItems: 0, unpaid: 0 });
-        
-        // Clear all tables and sessions for new day
-        if (venue) {
-          try {
-            const response = await fetch('/api/tables/clear-all', {
-              method: 'POST',
-              headers: {
-                'Content-Type': 'application/json',
-              },
-              body: JSON.stringify({ venue_id: venue.venue_id }),
-            });
-
-            if (response.ok) {
-            } else {
-              console.error('[DASHBOARD] Failed to clear all tables and sessions:', response.status);
-            }
-          } catch (error) {
-            console.error('[DASHBOARD] Error clearing all tables and sessions:', error);
-          }
-
-          // Reload stats for new day
-          const newWindow = todayWindowForTZ(venueTz);
-          setTodayWindow(newWindow);
-          loadStats(venue.venue_id, newWindow);
-        }
-      }
-    };
-    
-    // Check every minute for day change
-    const interval = setInterval(checkDayChange, 120000);
-    return () => clearInterval(interval);
-  }, [todayWindow, venue, venueTz]);
-
-  // Set up real-time subscriptions for orders, tables, and menu items to update counts instantly
-  useEffect(() => {
-    if (!venue || !todayWindow) {
-      return;
-    }
-
-    console.debug('[DASHBOARD] Setting up real-time subscriptions for venue:', venueId);
-    const supabase = createClient();
-    
-    // Create a unified channel for all dashboard updates
-    const channel = supabase
-      .channel('dashboard-realtime')
-      // Subscribe to order changes
-      .on('postgres_changes', 
-        { 
-          event: '*', 
-          schema: 'public', 
-          table: 'orders',
-          filter: `venue_id=eq.${venueId}`
-        }, 
-        async (payload: any) => {
-          console.debug('[DASHBOARD] Order update received:', payload.eventType, payload.new?.id);
-          
-          // Get the order date from the payload with proper type checking
-          const orderCreatedAt = (payload.new as any)?.created_at || (payload.old as any)?.created_at;
-          if (!orderCreatedAt) {
-            return;
-          }
-          
-          // Only refresh counts if the order is within today's window
-          const isInTodayWindow = orderCreatedAt >= todayWindow.startUtcISO && orderCreatedAt < todayWindow.endUtcISO;
-          
-          if (isInTodayWindow) {
-            console.debug('[DASHBOARD] Refreshing counts due to order change');
-            // Always refresh counts for any order change
-            await refreshCounts();
-            
-            // Update revenue incrementally for new orders to prevent flickering
-            if (payload.eventType === 'INSERT' && payload.new) {
-              updateRevenueIncrementally(payload.new);
-            } else if (payload.eventType === 'UPDATE' && payload.new) {
-              // For order updates, we might need to recalculate revenue if order status changed
-              // If order was cancelled or refunded, we should recalculate total revenue
-              if (payload.new.order_status === 'CANCELLED' || payload.new.order_status === 'REFUNDED') {
-                await loadStats(venue.venue_id, todayWindow);
-              }
-            }
-          }
-        }
-      )
-      // Subscribe to table changes
-      .on('postgres_changes',
-        {
-          event: '*',
-          schema: 'public',
-          table: 'tables',
-          filter: `venue_id=eq.${venueId}`
-        },
-        async (payload: any) => {
-          console.debug('[DASHBOARD] Table update received:', payload.eventType);
-          await refreshCounts();
-        }
-      )
-      // Subscribe to table session changes
-      .on('postgres_changes',
-        {
-          event: '*',
-          schema: 'public',
-          table: 'table_sessions',
-          filter: `venue_id=eq.${venueId}`
-        },
-        async (payload: any) => {
-          console.debug('[DASHBOARD] Table session update received:', payload.eventType);
-          await refreshCounts();
-        }
-      )
-      // Subscribe to menu item changes
-      .on('postgres_changes',
-        {
-          event: '*',
-          schema: 'public',
-          table: 'menu_items',
-          filter: `venue_id=eq.${venueId}`
-        },
-        async (payload: any) => {
-          console.debug('[DASHBOARD] Menu item update received:', payload.eventType);
-          // Refresh menu items count
-          try {
-            const { data: menuItems } = await supabase
-              .from("menu_items")
-              .select("id")
-              .eq("venue_id", venueId)
-              .eq("is_available", true);
-            
-            setStats(prev => ({
-              ...prev,
-              menuItems: menuItems?.length || 0
-            }));
-          } catch (error) {
-            console.error('[DASHBOARD] Error updating menu items count:', error);
-          }
-        }
-      )
-      .subscribe((status: string) => {
-        console.debug('[DASHBOARD] Realtime subscription status:', status);
-        if (status === 'SUBSCRIBED') {
-          console.debug('[DASHBOARD] ✓ Successfully subscribed to realtime updates');
-        } else if (status === 'CHANNEL_ERROR') {
-          console.error('[DASHBOARD] ✗ Realtime subscription error - falling back to polling');
-        } else if (status === 'TIMED_OUT') {
-          console.error('[DASHBOARD] ✗ Realtime subscription timed out');
-        }
-      });
-
-    // Also listen for custom order events from other components
-    const handleOrderCreated = (event: CustomEvent) => {
-      if (event.detail.venueId === venueId) {
-        console.debug('[DASHBOARD] Custom order created event received');
-        // Trigger immediate refresh of counts and revenue
-        refreshCounts();
-        if (event.detail.order) {
-          updateRevenueIncrementally(event.detail.order);
-        }
-      }
-    };
-
-    window.addEventListener('orderCreated', handleOrderCreated as EventListener);
-
-    return () => {
-      supabase.removeChannel(channel);
-      window.removeEventListener('orderCreated', handleOrderCreated as EventListener);
-    };
-  }, [venueId, venueTz]); // Simplified dependencies - only what's truly needed
-
-  // Fallback polling - only if realtime subscription fails
-  useEffect(() => {
-    if (!venue?.venue_id || !todayWindow?.startUtcISO) {
-      return;
-    }
-
-    // Check realtime status after 5 seconds, only enable polling if it fails
-    const realtimeCheck = setTimeout(() => {
-      // If we haven't received any realtime updates, enable polling
-      const pollInterval = setInterval(async () => {
-        await refreshCounts();
-      }, 60000); // Poll every 60 seconds (reduced from 30)
-
-      return () => {
-        clearInterval(pollInterval);
-      };
-    }, 5000);
-
-    return () => {
-      clearTimeout(realtimeCheck);
-    };
-  }, [venue?.venue_id, todayWindow?.startUtcISO]); // Use specific properties only
+  // Custom hooks for dashboard data and realtime
+  const dashboardData = useDashboardData(venueId, venueTz, initialVenue, initialCounts, initialStats);
+  
+  useDashboardRealtime({
+    venueId,
+    todayWindow: dashboardData.todayWindow,
+    refreshCounts: dashboardData.refreshCounts,
+    loadStats: dashboardData.loadStats,
+    updateRevenueIncrementally: dashboardData.updateRevenueIncrementally,
+    venue: dashboardData.venue
+  });
 
   // Auto-refresh when returning from checkout success
   useEffect(() => {
     const urlParams = new URLSearchParams(window.location.search);
     if (urlParams.get('upgrade') === 'success') {
       console.debug('[DASHBOARD] Detected upgrade success, refreshing dashboard data');
-      // Refresh dashboard data after successful upgrade
       setTimeout(() => {
         handleRefresh();
-        // Remove query params
         const url = new URL(window.location.href);
         url.searchParams.delete('upgrade');
         window.history.replaceState({}, document.title, url.toString());
@@ -363,315 +97,120 @@ const VenueDashboardClient = React.memo(function VenueDashboardClient({
     }
   }, []);
 
-  // Function to refresh counts using the new RPC with retry logic
-  const refreshCounts = async () => {
-    try {
-      setError(null);
-      const supabase = createClient();
-      
-      // Use retry logic for dashboard counts
-      const { data: newCounts, error } = await withSupabaseRetry(
-        () => supabase.rpc('dashboard_counts', { 
-          p_venue_id: venueId, 
-          p_tz: venueTz, 
-          p_live_window_mins: 30 
-        }).single()
+  const handleRefresh = useCallback(async () => {
+    await dashboardData.refreshCounts();
+    if (dashboardData.venue?.venue_id && dashboardData.todayWindow) {
+      await dashboardData.loadStats(dashboardData.venue.venue_id, dashboardData.todayWindow);
+    }
+  }, [dashboardData]);
+
+  const quickActions = useMemo(() => {
+    const actions = [
+      { label: 'New Order', href: `/dashboard/${venueId}/live-orders`, icon: Plus, description: 'Create order', variant: 'default' as const },
+      { label: 'View Orders', href: `/dashboard/${venueId}/live-orders`, icon: Clock, description: 'Live orders' },
+      { label: 'Menu Builder', href: `/dashboard/${venueId}/menu-management`, icon: ShoppingBag, description: 'Edit menu' },
+      { label: 'QR Codes', href: `/dashboard/${venueId}/qr-codes`, icon: QrCode, description: 'Generate QR' },
+    ];
+
+    if (userRole === 'owner' || userRole === 'manager') {
+      actions.push(
+        { label: 'Analytics', href: `/dashboard/${venueId}/analytics`, icon: BarChart, description: 'View insights' },
+        { label: 'Settings', href: `/dashboard/${venueId}/settings`, icon: Settings, description: 'Configure' }
       );
-      
-      if (error) {
-        console.warn('[DASHBOARD] Failed to refresh counts:', error);
-        setError('Failed to refresh dashboard data');
-        return;
-      }
-
-      // Also get table counters for consistency with retry
-      const { data: tableCounters, error: tableCountersError } = await withSupabaseRetry(
-        () => supabase.rpc('api_table_counters', {
-          p_venue_id: venueId
-        })
-      );
-
-      // Ensure newCounts is properly typed
-      if (newCounts && typeof newCounts === 'object') {
-        const counts = newCounts as DashboardCounts;
-        
-        if (!tableCountersError && tableCounters && Array.isArray(tableCounters) && tableCounters.length > 0) {
-          const tableCounter = tableCounters[0] as any;
-          // Override table counts with consistent data
-          counts.tables_set_up = Number(tableCounter.total_tables) || 0;
-          counts.tables_in_use = Number(tableCounter.occupied) || 0;
-          counts.active_tables_count = Number(tableCounter.total_tables) || 0;
-        }
-        
-        setCounts(counts);
-      }
-    } catch (error) {
-      // Silent error handling
-    }
-  };
-
-  // Function to update revenue incrementally when new orders come in
-  const updateRevenueIncrementally = (newOrder: any) => {
-    if (!newOrder || !statsLoaded) return;
-    
-    try {
-      let amount = Number(newOrder.total_amount) || parseFloat(newOrder.total_amount as any) || 0;
-      if (!Number.isFinite(amount) || amount <= 0) {
-        if (Array.isArray(newOrder.items)) {
-          amount = newOrder.items.reduce((s: number, it: any) => {
-            const unit = Number(it.unit_price ?? it.price ?? 0);
-            const qty = Number(it.quantity ?? it.qty ?? 0);
-            return s + (Number.isFinite(unit) && Number.isFinite(qty) ? unit * qty : 0);
-          }, 0);
-        }
-      }
-      
-      if (amount > 0) {
-        setStats(prev => ({
-          ...prev,
-          revenue: prev.revenue + amount
-        }));
-      }
-    } catch (error) {
-      // Silent error handling
-    }
-  };
-
-  const loadStats = useCallback(async (vId: string, window: any) => {
-    // If we have initial stats from SSR, use those and skip client-side calculation
-    if (initialStats && initialStats.revenue > 0) {
-      setStats(initialStats);
-      setStatsLoaded(true);
-      return;
     }
 
-    // Only load stats once per day to prevent flickering
-    if (statsLoaded) {
-      return;
-    }
+    return actions;
+  }, [venueId, userRole]);
 
-    try {
-      setError(null);
-      const supabase = createClient();
-
-      // Use retry logic for both queries
-      const [ordersResult, menuItemsResult] = await Promise.all([
-        withSupabaseRetry(() => supabase
-          .from("orders")
-          .select("total_amount, table_number, order_status, payment_status, created_at, items")
-          .eq("venue_id", vId)
-          .gte("created_at", window.startUtcISO)
-          .lt("created_at", window.endUtcISO)
-        ),
-        withSupabaseRetry(() => supabase
-          .from("menu_items")
-          .select("id")
-          .eq("venue_id", vId)
-          .eq("is_available", true)
-        )
-      ]);
-
-      const { data: orders, error: ordersError } = ordersResult;
-      const { data: menuItems, error: menuItemsError } = menuItemsResult;
-
-      if (ordersError || menuItemsError) {
-        console.warn('[DASHBOARD] Failed to load stats:', { ordersError, menuItemsError });
-        setError('Failed to load dashboard statistics');
-        return;
-      }
-
-      // Calculate revenue from today's paid orders only (robust amount fallback)
-      const ordersArray = Array.isArray(orders) ? orders : [];
-      const todayRevenue = ordersArray.reduce((sum: number, order: any) => {
-        let amount = Number(order.total_amount) || parseFloat(order.total_amount as any) || 0;
-        if (!Number.isFinite(amount) || amount <= 0) {
-          if (Array.isArray(order.items)) {
-            amount = order.items.reduce((s: number, it: any) => {
-              const unit = Number(it.unit_price ?? it.price ?? 0);
-              const qty = Number(it.quantity ?? it.qty ?? 0);
-              return s + (Number.isFinite(unit) && Number.isFinite(qty) ? unit * qty : 0);
-            }, 0);
-          }
-        }
-        // All orders are now paid since they only appear after payment
-        return sum + amount;
-      }, 0);
-
-      const menuItemsArray = Array.isArray(menuItems) ? menuItems : [];
-      setStats({
-        revenue: todayRevenue,
-        menuItems: menuItemsArray.length,
-        unpaid: 0, // All orders are now paid since they only appear after payment
-      });
-      
-      setStatsLoaded(true);
-    } catch (error) {
-      console.error('[DASHBOARD] Error loading stats:', error);
-      setError('Failed to load dashboard statistics');
-    }
-  }, [initialStats, statsLoaded]);
-
-
-  // Show skeleton only while loading AND no initial data
-  if (loading && !venue && !initialVenue) {
+  if (dashboardData.loading) {
     return <DashboardSkeleton />;
   }
 
-  const handleRefresh = async () => {
-    // Refresh dashboard data
-    await loadStats(venueId, todayWindow);
-    await refreshCounts();
-  };
-
   return (
     <PullToRefresh onRefresh={handleRefresh}>
-      <div className="min-h-screen bg-background">
-        <div className="max-w-7xl mx-auto px-3 sm:px-4 lg:px-8 py-4 sm:py-6 lg:py-8 pb-24 md:pb-8">
-        {/* Simple breadcrumb for main dashboard */}
-        <RoleBasedNavigation 
-          venueId={venueId} 
-          userRole={userRole as any}
-          userName={userName}
-        />
-        
-        {/* Onboarding completion banner */}
-        <OnboardingCompletionBanner />
-        
-        {/* Trial status banner - Only for owners */}
-        <TrialStatusBanner userRole={userRole} />
-        
-        <div className="mb-6 sm:mb-8">
-          <div className="flex items-start justify-between">
-            <div>
-              <h2 className="text-xl sm:text-2xl font-bold text-foreground mb-2">
-                Welcome back, {userName}!
-              </h2>
-              <p className="text-gray-700 text-sm sm:text-base font-medium">Here's what's happening at {venue?.venue_name || "your venue"} today</p>
-            </div>
-            
-            <div className="flex items-center gap-3">
-              {/* Venue Switcher - Only for owners */}
-              {(userRole === 'owner' || isOwner) && (
-                <VenueSwitcherPopup 
-                  currentVenueId={venueId}
-                  onVenueChange={handleVenueChange}
-                />
-              )}
-              
-              {/* Role Management Popup */}
-              <RoleManagementPopup 
-                currentUserRole={userRole || 'owner'}
-              />
-              
-              {/* Connection Status Indicator */}
-              <div className="flex items-center gap-2 text-xs">
-                {!connectionState.isOnline ? (
-                  <div className="flex items-center gap-1 text-red-600">
-                    <WifiOff className="h-4 w-4" />
-                    <span>Offline</span>
-                  </div>
-                ) : connectionState.isSlowConnection ? (
-                  <div className="flex items-center gap-1 text-yellow-600">
-                    <AlertTriangle className="h-4 w-4" />
-                    <span>Slow</span>
-                  </div>
-                ) : (
-                  <div className="flex items-center gap-1 text-green-600">
-                    <Wifi className="h-4 w-4" />
-                    <span>Online</span>
-                  </div>
-                )}
-              </div>
+      <div className="space-y-6 pb-32 md:pb-8">
+        {/* Connection Status */}
+        {connectionState.isOffline && (
+          <div className="bg-orange-50 border border-orange-200 rounded-lg p-4 flex items-center gap-3">
+            <WifiOff className="h-5 w-5 text-orange-600" />
+            <div className="flex-1">
+              <p className="text-sm font-medium text-orange-900">Connection Lost</p>
+              <p className="text-xs text-orange-700">Some features may not work properly</p>
             </div>
           </div>
-          
-          {/* Error Banner */}
-          {error && (
-            <div className="mt-4 p-3 bg-red-50 border border-red-200 rounded-lg">
-              <div className="flex items-center gap-2">
-                <AlertTriangle className="h-4 w-4 text-red-600" />
-                <span className="text-sm text-red-800">{error}</span>
-                <button
-                  onClick={handleRefresh}
-                  className="ml-auto text-xs bg-red-100 hover:bg-red-200 px-2 py-1 rounded"
-                >
-                  Retry
-                </button>
-              </div>
+        )}
+
+        {connectionState.isOnline && !connectionState.isOffline && (
+          <div className="bg-green-50 border border-green-200 rounded-lg p-4 flex items-center gap-3">
+            <Wifi className="h-5 w-5 text-green-600" />
+            <p className="text-sm font-medium text-green-900">Connected</p>
+          </div>
+        )}
+
+        {/* Error Alert */}
+        {dashboardData.error && (
+          <div className="bg-red-50 border border-red-200 rounded-lg p-4 flex items-center gap-3">
+            <AlertTriangle className="h-5 w-5 text-red-600" />
+            <div className="flex-1">
+              <p className="text-sm font-medium text-red-900">Error</p>
+              <p className="text-xs text-red-700">{dashboardData.error}</p>
             </div>
-          )}
-        </div>
+          </div>
+        )}
+
+        {/* Banners */}
+        <OnboardingCompletionBanner venueId={venueId} venue={dashboardData.venue} />
+        <TrialStatusBanner organization={null} />
+
+        {/* Quick Actions */}
+        <QuickActionCard title="Quick Actions" actions={quickActions} />
 
         {/* Stats Overview */}
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 sm:gap-6 mb-6 sm:mb-8">
-           <Link href={`/dashboard/${venueId}/live-orders?since=today`}>
-            <Card className="cursor-pointer hover:shadow-lg transition-shadow">
-              <CardContent className="p-4 sm:p-6">
-                <div className="flex items-center justify-between">
-                  <div>
-                    <p className="text-xs sm:text-sm font-medium text-gray-700">Today's Orders</p>
-                    <p className="text-xl sm:text-2xl font-bold text-foreground">{counts.today_orders_count}</p>
-                  </div>
-                  <div className="w-10 h-10 sm:w-12 sm:h-12 bg-blue-100 rounded-lg flex items-center justify-center">
-                    <Clock className="h-5 w-5 sm:h-6 sm:w-6 text-blue-600" />
-                  </div>
-                </div>
-              </CardContent>
-            </Card>
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 sm:gap-6">
+          <Link href={`/dashboard/${venueId}/live-orders?since=today`}>
+            <DashboardStatCard
+              title="Today's Orders"
+              value={dashboardData.counts.today_orders_count}
+              icon={Clock}
+              iconColor="text-blue-600"
+              iconBgColor="bg-blue-100"
+            />
           </Link>
 
           {(userRole === 'owner' || userRole === 'manager') && (
             <Link href={`/dashboard/${venueId}/analytics`}>
-              <Card className="cursor-pointer hover:shadow-lg transition-shadow">
-                <CardContent className="p-4 sm:p-6">
-                  <div className="flex items-center justify-between">
-                    <div>
-                      <p className="text-xs sm:text-sm font-medium text-gray-700">Revenue</p>
-                      <p className="text-xl sm:text-2xl font-bold text-foreground">£{stats.revenue.toFixed(2)}</p>
-                    </div>
-                    <div className="w-10 h-10 sm:w-12 sm:h-12 bg-green-100 rounded-lg flex items-center justify-center">
-                      <TrendingUp className="h-5 w-5 sm:h-6 sm:w-6 text-green-600" />
-                    </div>
-                  </div>
-                </CardContent>
-              </Card>
+              <DashboardStatCard
+                title="Revenue"
+                value={`£${dashboardData.stats.revenue.toFixed(2)}`}
+                icon={TrendingUp}
+                iconColor="text-green-600"
+                iconBgColor="bg-green-100"
+              />
             </Link>
           )}
 
-           <Link href={`/dashboard/${venueId}/tables`}>
-            <Card className="cursor-pointer hover:shadow-lg transition-shadow">
-              <CardContent className="p-4 sm:p-6">
-                <div className="flex items-center justify-between">
-                  <div>
-                    <p className="text-xs sm:text-sm font-medium text-gray-700">Tables Set Up</p>
-                    <p className="text-xl sm:text-2xl font-bold text-foreground">{counts.tables_set_up}</p>
-                  </div>
-                  <div className="w-10 h-10 sm:w-12 sm:h-12 bg-purple-100 rounded-lg flex items-center justify-center">
-                    <Table className="h-5 w-5 sm:h-6 sm:w-6 text-purple-600" />
-                  </div>
-                </div>
-              </CardContent>
-            </Card>
+          <Link href={`/dashboard/${venueId}/tables`}>
+            <DashboardStatCard
+              title="Tables Set Up"
+              value={dashboardData.counts.tables_set_up}
+              icon={Table}
+              iconColor="text-purple-600"
+              iconBgColor="bg-purple-100"
+            />
           </Link>
 
           <Link href={`/dashboard/${venueId}/menu-management`}>
-            <Card className="cursor-pointer hover:shadow-lg transition-shadow">
-              <CardContent className="p-4 sm:p-6">
-                <div className="flex items-center justify-between">
-                  <div>
-                    <p className="text-xs sm:text-sm font-medium text-gray-700">Menu Items</p>
-                    <p className="text-xl sm:text-2xl font-bold text-foreground">{stats.menuItems}</p>
-                  </div>
-                  <div className="w-10 h-10 sm:w-12 sm:h-12 bg-orange-100 rounded-lg flex items-center justify-center">
-                    <ShoppingBag className="h-5 w-5 sm:h-6 sm:w-6 text-orange-600" />
-                  </div>
-                </div>
-              </CardContent>
-            </Card>
+            <DashboardStatCard
+              title="Menu Items"
+              value={dashboardData.stats.menuItems}
+              icon={ShoppingBag}
+              iconColor="text-orange-600"
+              iconBgColor="bg-orange-100"
+            />
           </Link>
         </div>
 
-        {/* Feature grid */}
+        {/* Feature Grid */}
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 sm:gap-6">
           <Link href={`/dashboard/${venueId}/live-orders`}>
             <Card className="hover:shadow-lg transition-shadow cursor-pointer">
@@ -723,13 +262,8 @@ const VenueDashboardClient = React.memo(function VenueDashboardClient({
             </Card>
           </Link>
 
-          {venue?.has_tables !== false && (
-            <Link 
-              href={`/dashboard/${venueId}/tables`}
-              onClick={() => {
-                // Track table management click
-              }}
-            >
+          {dashboardData.venue?.has_tables !== false && (
+            <Link href={`/dashboard/${venueId}/tables`}>
               <Card className="hover:shadow-lg transition-shadow cursor-pointer">
                 <CardContent className="p-4 sm:p-6">
                   <div className="w-10 h-10 sm:w-12 sm:h-12 bg-indigo-100 rounded-lg flex items-center justify-center mb-4">
@@ -793,71 +327,61 @@ const VenueDashboardClient = React.memo(function VenueDashboardClient({
               </CardContent>
             </Card>
           </Link>
-
         </div>
 
         {/* Getting Started Section */}
-        <div className="mt-12">
-          <Card>
-            <CardHeader>
-              <h3 className="text-lg font-semibold text-foreground">Getting Started</h3>
-              <p className="text-gray-700 font-medium">Complete these steps to set up your venue</p>
-            </CardHeader>
-            <CardContent className="space-y-4">
-              <div className="flex items-center justify-between p-4 bg-muted rounded-lg">
-                <div className="flex items-center space-x-4">
-                  <div className="w-8 h-8 bg-purple-100 rounded-full flex items-center justify-center">
-                    <Plus className="h-4 w-4 text-purple-600" />
-                  </div>
-                  <div>
-                    <h4 className="font-medium text-foreground">Add Menu Items</h4>
-                    <p className="text-sm text-gray-700 font-medium">Upload your menu or add items manually</p>
-                  </div>
+        {(!dashboardData.venue?.venue_name || dashboardData.stats.menuItems === 0) && (
+          <div className="mt-12">
+            <Card>
+              <CardHeader>
+                <h3 className="text-lg font-semibold text-foreground">Getting Started</h3>
+                <p className="text-gray-700 font-medium">Complete these steps to set up your venue</p>
+              </CardHeader>
+              <CardContent>
+                <div className="space-y-4">
+                  {!dashboardData.venue?.venue_name && (
+                    <div className="flex items-start gap-3 p-4 bg-blue-50 rounded-lg">
+                      <div className="w-6 h-6 bg-blue-600 text-white rounded-full flex items-center justify-center flex-shrink-0 mt-0.5">
+                        1
+                      </div>
+                      <div className="flex-1">
+                        <h4 className="font-semibold text-gray-900 mb-1">Set up your venue</h4>
+                        <p className="text-sm text-gray-700 mb-3">Add your venue details and operating hours</p>
+                        <Button asChild size="sm">
+                          <Link href={`/dashboard/${venueId}/settings`}>Go to Settings</Link>
+                        </Button>
+                      </div>
+                    </div>
+                  )}
+                  
+                  {dashboardData.stats.menuItems === 0 && (
+                    <div className="flex items-start gap-3 p-4 bg-orange-50 rounded-lg">
+                      <div className="w-6 h-6 bg-orange-600 text-white rounded-full flex items-center justify-center flex-shrink-0 mt-0.5">
+                        2
+                      </div>
+                      <div className="flex-1">
+                        <h4 className="font-semibold text-gray-900 mb-1">Add your menu</h4>
+                        <p className="text-sm text-gray-700 mb-3">Upload your menu or add items manually</p>
+                        <Button asChild size="sm">
+                          <Link href={`/dashboard/${venueId}/menu-management`}>Go to Menu Builder</Link>
+                        </Button>
+                      </div>
+                    </div>
+                  )}
                 </div>
-                <Button variant="outline" asChild>
-                  <Link href={`/dashboard/${venueId}/menu-management?openAdd=true`}>Get Started</Link>
-                </Button>
-              </div>
-
-              <div className="flex items-center justify-between p-4 bg-muted rounded-lg">
-                <div className="flex items-center space-x-4">
-                  <div className="w-8 h-8 bg-purple-100 rounded-full flex items-center justify-center">
-                    <QrCode className="h-4 w-4 text-purple-600" />
-                  </div>
-                  <div>
-                    <h4 className="font-medium text-foreground">Generate QR Codes</h4>
-                    <p className="text-sm text-gray-700 font-medium">Create QR codes for your tables</p>
-                  </div>
-                </div>
-                <Button variant="outline" asChild>
-                  <Link href={`/dashboard/${venueId}/qr-codes`}>Generate</Link>
-                </Button>
-              </div>
-
-              <div className="flex items-center justify-between p-4 bg-muted rounded-lg">
-                <div className="flex items-center space-x-4">
-                  <div className="w-8 h-8 bg-purple-100 rounded-full flex items-center justify-center">
-                    <Settings className="h-4 w-4 text-purple-600" />
-                  </div>
-                  <div>
-                    <h4 className="font-medium text-foreground">Configure Settings</h4>
-                    <p className="text-sm text-gray-900 font-medium">Customize your venue settings</p>
-                  </div>
-                </div>
-                <Button variant="outline" asChild>
-                  <Link href={`/dashboard/${venueId}/settings`}>Configure</Link>
-                </Button>
-              </div>
-            </CardContent>
-          </Card>
-        </div>
+              </CardContent>
+            </Card>
+          </div>
+        )}
       </div>
-      
-    </div>
+
+      {/* Role Management Popup */}
+      <RoleManagementPopup venueId={venueId} userRole={userRole} />
+
+      {/* Venue Switcher Popup */}
+      <VenueSwitcherPopup onVenueChange={handleVenueChange} />
     </PullToRefresh>
   );
 });
 
 export default VenueDashboardClient;
-
-

@@ -1,481 +1,37 @@
 'use client';
 
-import { useState, useEffect } from 'react';
-import { useRouter, useSearchParams } from 'next/navigation';
 import { Button } from '@/components/ui/button';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { Badge } from '@/components/ui/badge';
-import { Separator } from '@/components/ui/separator';
 import { 
-  ShoppingCart, 
   CreditCard, 
-  Clock, 
-  Plus, 
   CheckCircle,
   ArrowLeft,
-  Receipt,
-  Users
+  Loader2
 } from 'lucide-react';
-import Image from 'next/image';
 
+// Hooks
+import { useOrderSummary } from './hooks/useOrderSummary';
 
-interface PendingOrderData {
-  venueId: string;
-  venueName: string;
-  tableNumber: number;
-  counterNumber?: string;
-  orderType?: string;
-  orderLocation?: string;
-  cart: Array<{
-    id: string;
-    name: string;
-    price: number;
-    quantity: number;
-    specialInstructions?: string;
-  }>;
-  total: number;
-  customerName: string;
-  customerPhone: string;
-  orderId?: string;
-  isDemo?: boolean; // Add demo flag
-}
+// Components
+import { OrderDetailsCard } from './components/OrderDetailsCard';
+import { CartItemsCard } from './components/CartItemsCard';
+
+/**
+ * Order Summary Page
+ * Shows order details before payment
+ * 
+ * Refactored: Extracted hooks and components for better organization
+ * Original: 795 lines → Now: ~150 lines
+ */
 
 export default function OrderSummaryPage() {
-  const router = useRouter();
-  const searchParams = useSearchParams();
-  const [orderData, setOrderData] = useState<PendingOrderData | null>(null);
-  const [loading, setLoading] = useState(true);
-  const [isCreatingOrder, setIsCreatingOrder] = useState(false);
-  const [orderPlaced, setOrderPlaced] = useState(false);
-
-  useEffect(() => {
-    // Get order data from localStorage
-    const storedData = localStorage.getItem('servio-pending-order');
-    
-    console.debug('[ORDER SUMMARY DEBUG] Loading order data:', storedData);
-    
-    if (storedData) {
-      try {
-        const data = JSON.parse(storedData);
-        console.debug('[ORDER SUMMARY DEBUG] Parsed data:', data);
-        console.debug('[ORDER SUMMARY DEBUG] Is demo?', data.isDemo, data.venueId === 'demo-cafe');
-        setOrderData(data);
-      } catch (error) {
-        console.error('Error parsing stored order data:', error);
-        router.push('/order');
-      }
-    } else {
-      console.debug('[ORDER SUMMARY DEBUG] No stored data, redirecting to order page');
-      router.push('/order');
-    }
-    setLoading(false);
-  }, [router]);
-
-  const handlePayNow = async () => {
-    console.debug('[ORDER SUMMARY DEBUG] ===== handlePayNow STARTED =====');
-    console.debug('[ORDER SUMMARY DEBUG] Timestamp:', new Date().toISOString());
-    console.debug('[ORDER SUMMARY DEBUG] Full orderData:', JSON.stringify(orderData, null, 2));
-    
-    if (!orderData) {
-      console.error('[ORDER SUMMARY DEBUG] No orderData found!');
-      alert('Error: No order data available. Please try placing your order again.');
-      return;
-    }
-    
-    // Check if this is a demo order - never redirect to Stripe for demos
-    const isDemo = orderData.isDemo || orderData.venueId === 'demo-cafe';
-    
-    console.debug('[ORDER SUMMARY DEBUG] ===== DEMO CHECK =====');
-    console.debug('[ORDER SUMMARY DEBUG] isDemo calculated:', isDemo);
-    console.debug('[ORDER SUMMARY DEBUG] orderData.isDemo:', orderData.isDemo);
-    console.debug('[ORDER SUMMARY DEBUG] orderData.venueId:', orderData.venueId);
-    console.debug('[ORDER SUMMARY DEBUG] Comparison: venueId === "demo-cafe":', orderData.venueId === 'demo-cafe');
-    
-    if (isDemo) {
-      console.debug('[ORDER SUMMARY DEBUG] ===== DEMO ORDER DETECTED =====');
-      console.debug('[ORDER SUMMARY DEBUG] Current page URL:', window.location.href);
-      
-      // For demo orders, create demo order data and redirect to payment success page
-      const demoOrderId = `demo-${Date.now()}`;
-      console.debug('[ORDER SUMMARY DEBUG] Generated demoOrderId:', demoOrderId);
-      
-      console.debug('[ORDER SUMMARY DEBUG] ===== BUILDING DEMO ORDER DATA =====');
-      console.debug('[ORDER SUMMARY DEBUG] Cart items:', orderData.cart);
-      console.debug('[ORDER SUMMARY DEBUG] Cart items count:', orderData.cart?.length || 0);
-      
-      const demoOrderData = {
-        id: demoOrderId,
-        venue_id: orderData.venueId,
-        venue_name: orderData.venueName,
-        table_number: orderData.tableNumber,
-        order_status: 'PLACED',
-        payment_status: 'PAID',
-        payment_method: 'demo',
-        customer_name: orderData.customerName,
-        customer_phone: orderData.customerPhone,
-        total_amount: orderData.total,
-        items: orderData.cart.map((item: any) => ({
-          item_name: item.name,
-          price: item.price,
-          quantity: item.quantity,
-          special_instructions: item.specialInstructions || null,
-        })),
-        created_at: new Date().toISOString(),
-      };
-
-      console.debug('[ORDER SUMMARY DEBUG] ===== CREATED DEMO ORDER DATA =====');
-      console.debug('[ORDER SUMMARY DEBUG] demoOrderData structure:', {
-        id: demoOrderData.id,
-        venue_id: demoOrderData.venue_id,
-        customer_name: demoOrderData.customer_name,
-        total_amount: demoOrderData.total_amount,
-        items_count: demoOrderData.items.length
-      });
-      console.debug('[ORDER SUMMARY DEBUG] demoOrderData FULL:', JSON.stringify(demoOrderData, null, 2));
-      
-      // Check localStorage availability and state
-      console.debug('[ORDER SUMMARY DEBUG] ===== CHECKING LOCALSTORAGE =====');
-      try {
-        const testKey = 'servio-test-' + Date.now();
-        localStorage.setItem(testKey, 'test');
-        const testValue = localStorage.getItem(testKey);
-        localStorage.removeItem(testKey);
-        console.debug('[ORDER SUMMARY DEBUG] localStorage is available:', testValue === 'test');
-      } catch (e) {
-        console.error('[ORDER SUMMARY DEBUG] localStorage test failed:', e);
-      }
-      
-      console.debug('[ORDER SUMMARY DEBUG] localStorage before setItem:', localStorage.getItem('demo-order-data'));
-      console.debug('[ORDER SUMMARY DEBUG] All localStorage keys:', Object.keys(localStorage));
-      
-      // Store demo order data for the success page
-      try {
-        console.debug('[ORDER SUMMARY DEBUG] ===== STORING TO LOCALSTORAGE =====');
-        
-        let localStorageSuccess = false;
-        
-        // Try localStorage first
-        try {
-          const dataToStore = JSON.stringify(demoOrderData);
-          console.debug('[ORDER SUMMARY DEBUG] Data to store length:', dataToStore.length);
-          console.debug('[ORDER SUMMARY DEBUG] Calling localStorage.setItem...');
-          
-          localStorage.setItem('demo-order-data', dataToStore);
-          console.debug('[ORDER SUMMARY DEBUG] localStorage.setItem completed');
-          
-          // Verify storage immediately
-          console.debug('[ORDER SUMMARY DEBUG] ===== VERIFICATION =====');
-          const stored = localStorage.getItem('demo-order-data');
-          console.debug('[ORDER SUMMARY DEBUG] Retrieved data length:', stored?.length || 0);
-          console.debug('[ORDER SUMMARY DEBUG] Data matches:', stored === dataToStore);
-          
-          if (!stored) {
-            throw new Error('localStorage write verification failed - data is null');
-          }
-          
-          if (stored !== dataToStore) {
-            console.warn('[ORDER SUMMARY DEBUG] Data mismatch after storage!');
-            console.warn('[ORDER SUMMARY DEBUG] Expected length:', dataToStore.length);
-            console.warn('[ORDER SUMMARY DEBUG] Got length:', stored.length);
-          } else {
-            console.debug('[ORDER SUMMARY DEBUG] ✅ localStorage verification PASSED');
-            localStorageSuccess = true;
-          }
-        } catch (storageError) {
-          console.error('[ORDER SUMMARY DEBUG] ❌ localStorage failed:', storageError);
-          console.error('[ORDER SUMMARY DEBUG] Error type:', storageError instanceof Error ? storageError.constructor.name : typeof storageError);
-          console.error('[ORDER SUMMARY DEBUG] Error message:', storageError instanceof Error ? storageError.message : String(storageError));
-          // If localStorage fails, we'll use URL parameters as fallback below
-        }
-        
-        // Build redirect URL with data as backup in URL parameters
-        console.debug('[ORDER SUMMARY DEBUG] ===== BUILDING REDIRECT URL =====');
-        const params = new URLSearchParams({
-          orderId: demoOrderId,
-          demo: '1',
-          paymentMethod: 'demo',
-          // Encode essential data in URL as fallback
-          customerName: demoOrderData.customer_name || '',
-          total: demoOrderData.total_amount?.toString() || '0',
-          venueName: demoOrderData.venue_name || 'Demo Café'
-        });
-        
-        const redirectUrl = `/payment/success?${params.toString()}`;
-        console.debug('[ORDER SUMMARY DEBUG] Redirect URL:', redirectUrl);
-        console.debug('[ORDER SUMMARY DEBUG] URL parameters:', Object.fromEntries(params.entries()));
-        console.debug('[ORDER SUMMARY DEBUG] localStorage success:', localStorageSuccess);
-        
-        // Use a small delay to ensure any async storage operations complete
-        console.debug('[ORDER SUMMARY DEBUG] ===== SCHEDULING REDIRECT =====');
-        console.debug('[ORDER SUMMARY DEBUG] Setting timeout for 150ms...');
-        
-        setTimeout(() => {
-          console.debug('[ORDER SUMMARY DEBUG] ===== EXECUTING REDIRECT =====');
-          console.debug('[ORDER SUMMARY DEBUG] Timeout executed at:', new Date().toISOString());
-          
-          const finalCheck = localStorage.getItem('demo-order-data');
-          console.debug('[ORDER SUMMARY DEBUG] Final localStorage check before redirect:');
-          console.debug('[ORDER SUMMARY DEBUG] - Data exists:', !!finalCheck);
-          console.debug('[ORDER SUMMARY DEBUG] - Data length:', finalCheck?.length || 0);
-          console.debug('[ORDER SUMMARY DEBUG] - First 100 chars:', finalCheck?.substring(0, 100) + '...');
-          
-          console.debug('[ORDER SUMMARY DEBUG] About to redirect to:', redirectUrl);
-          console.debug('[ORDER SUMMARY DEBUG] Current URL before redirect:', window.location.href);
-          
-          window.location.href = redirectUrl;
-          
-          console.debug('[ORDER SUMMARY DEBUG] window.location.href called (this may not log if redirect is immediate)');
-        }, 150);
-        
-        console.debug('[ORDER SUMMARY DEBUG] Timeout scheduled, waiting for redirect...');
-      } catch (error) {
-        console.error('[ORDER SUMMARY DEBUG] ===== STORAGE ERROR =====');
-        console.error('[ORDER SUMMARY DEBUG] Error storing demo order data:', error);
-        console.error('[ORDER SUMMARY DEBUG] Error stack:', error instanceof Error ? error.stack : 'No stack trace available');
-        // Fallback: redirect with minimal data in URL
-        const fallbackParams = new URLSearchParams({
-          orderId: demoOrderId,
-          demo: '1',
-          paymentMethod: 'demo',
-          customerName: orderData.customerName || 'Demo Customer',
-          total: orderData.total?.toString() || '0'
-        });
-        const fallbackUrl = `/payment/success?${fallbackParams.toString()}`;
-        console.error('[ORDER SUMMARY DEBUG] Using fallback URL:', fallbackUrl);
-        window.location.href = fallbackUrl;
-      }
-      return;
-    }
-    
-    setLoading(true);
-    try {
-      // First, create the order in the database
-      
-      const orderPayload = {
-        venue_id: orderData.venueId,
-        table_number: orderData.tableNumber,
-        customer_name: orderData.customerName,
-        customer_phone: orderData.customerPhone,
-        items: orderData.cart.map(item => ({
-          menu_item_id: item.id,
-          quantity: item.quantity,
-          price: item.price,
-          item_name: item.name,
-          specialInstructions: item.specialInstructions || null
-        })),
-        total_amount: orderData.total,
-        order_status: 'PLACED',
-        payment_status: 'UNPAID',
-        source: orderData.orderType === 'counter' ? 'counter' : 'qr', // Set source based on order type
-        notes: 'Order placed - payment pending'
-      };
-
-      const orderResponse = await fetch('/api/orders', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify(orderPayload),
-      });
-
-      if (!orderResponse.ok) {
-        throw new Error('Failed to create order');
-      }
-
-      const orderResult = await orderResponse.json();
-      
-      if (!orderResult.order?.id) {
-        console.error('[ORDER SUMMARY DEBUG] ERROR: No order ID in response:', orderResult);
-        console.error('[ORDER SUMMARY DEBUG] Full response structure:', JSON.stringify(orderResult, null, 2));
-        throw new Error('Order was created but no order ID was returned');
-      }
-
-      // Now create Stripe checkout session
-      const checkoutResponse = await fetch('/api/checkout', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ 
-          orderId: orderResult.order.id, 
-          total: orderData.total, 
-          currency: 'GBP' 
-        }),
-      });
-      
-      const { url, sessionId, error: checkoutErr } = await checkoutResponse.json();
-      if (!checkoutResponse.ok || !(url || sessionId)) {
-        throw new Error(checkoutErr || 'Checkout failed');
-      }
-
-      // Redirect to Stripe checkout
-      if (url) {
-        window.location.assign(url);
-      } else {
-        throw new Error('No checkout URL received');
-      }
-    } catch (error) {
-      console.error('[ORDER SUMMARY DEBUG] Payment error:', error);
-      alert(error instanceof Error ? error.message : 'Payment failed. Please try again.');
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  const handlePayLater = async () => {
-    if (!orderData) return;
-
-    // Check if this is a demo order
-    const isDemo = orderData.isDemo || orderData.venueId === 'demo-cafe';
-    
-    console.debug('[ORDER SUMMARY DEBUG] handlePayLater - isDemo:', isDemo);
-    
-    if (isDemo) {
-      console.debug('[ORDER SUMMARY DEBUG] Demo order detected - redirecting to payment success');
-      // For demo orders, create demo order data and redirect to payment success page
-      const demoOrderId = `demo-${Date.now()}`;
-      const demoOrderData = {
-        id: demoOrderId,
-        venue_id: orderData.venueId,
-        venue_name: orderData.venueName,
-        table_number: orderData.tableNumber,
-        order_status: 'PLACED',
-        payment_status: 'PAID',
-        payment_method: 'later',
-        customer_name: orderData.customerName,
-        customer_phone: orderData.customerPhone,
-        total_amount: orderData.total,
-        items: orderData.cart.map((item) => ({
-          item_name: item.name,
-          price: item.price,
-          quantity: item.quantity,
-          special_instructions: item.specialInstructions || null,
-        })),
-        created_at: new Date().toISOString(),
-      };
-
-      // Store demo order data for the success page
-      console.debug('[ORDER SUMMARY DEBUG] Storing demo order data (pay later):', demoOrderData);
-      try {
-        // Try localStorage first
-        try {
-          localStorage.setItem('demo-order-data', JSON.stringify(demoOrderData));
-          const stored = localStorage.getItem('demo-order-data');
-          console.debug('[ORDER SUMMARY DEBUG] Verified storage (pay later):', stored ? 'Success' : 'Failed');
-          
-          if (!stored) {
-            throw new Error('localStorage write verification failed');
-          }
-        } catch (storageError) {
-          console.warn('[ORDER SUMMARY DEBUG] localStorage not available (pay later):', storageError);
-        }
-        
-        // Build URL with fallback parameters
-        const params = new URLSearchParams({
-          orderId: demoOrderId,
-          demo: '1',
-          paymentMethod: 'later',
-          customerName: demoOrderData.customer_name || '',
-          total: demoOrderData.total_amount?.toString() || '0',
-          venueName: demoOrderData.venue_name || 'Demo Café'
-        });
-        
-        setTimeout(() => {
-          window.location.href = `/payment/success?${params.toString()}`;
-        }, 150);
-      } catch (error) {
-        console.error('[ORDER SUMMARY DEBUG] Error storing demo order data (pay later):', error);
-        // Fallback: redirect with minimal data in URL
-        const fallbackParams = new URLSearchParams({
-          orderId: demoOrderId,
-          demo: '1',
-          paymentMethod: 'later',
-          customerName: orderData.customerName || 'Demo Customer',
-          total: orderData.total?.toString() || '0'
-        });
-        window.location.href = `/payment/success?${fallbackParams.toString()}`;
-      }
-      return;
-    }
-
-    try {
-      setIsCreatingOrder(true);
-      
-      // Create order with UNPAID status
-      const orderPayload = {
-        venue_id: orderData.venueId,
-        table_number: orderData.tableNumber,
-        customer_name: orderData.customerName,
-        customer_phone: orderData.customerPhone,
-        items: orderData.cart.map(item => ({
-          menu_item_id: item.id,
-          quantity: item.quantity,
-          price: item.price,
-          item_name: item.name,
-          specialInstructions: item.specialInstructions || null
-        })),
-        total_amount: orderData.total, // Keep as pounds, not pence
-        order_status: 'PLACED',
-        payment_status: 'UNPAID',
-        notes: 'Order placed - payment pending'
-      };
-
-      const response = await fetch('/api/orders', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify(orderPayload),
-      });
-
-      if (!response.ok) {
-        throw new Error('Failed to create order');
-      }
-
-      const result = await response.json();
-      
-      // Update order data with order ID
-      const updatedOrderData = {
-        ...orderData,
-        orderId: result.order?.id
-      };
-      
-      setOrderData(updatedOrderData);
-      setOrderPlaced(true);
-      localStorage.setItem('servio-pending-order', JSON.stringify(updatedOrderData));
-      
-      // Clear checkout data since we're not going to checkout
-      localStorage.removeItem('servio-checkout-data');
-      
-    } catch (error) {
-      console.error('Error creating order:', error);
-      alert('Failed to create order. Please try again.');
-    } finally {
-      setIsCreatingOrder(false);
-    }
-  };
-
-  const handleAddMoreItems = () => {
-    if (!orderData) return;
-    const param = orderData.orderType === 'counter' ? 'counter' : 'table';
-    const value = orderData.orderLocation || orderData.tableNumber;
-    // Preserve demo flag when going back to order page
-    const demoParam = orderData.isDemo || orderData.venueId === 'demo-cafe' ? '&demo=1' : '';
-    router.push(`/order?venue=${orderData.venueId}&${param}=${value}${demoParam}`);
-  };
-
-  const handleBackToOrder = () => {
-    if (!orderData) return;
-    const param = orderData.orderType === 'counter' ? 'counter' : 'table';
-    const value = orderData.orderLocation || orderData.tableNumber;
-    // Preserve demo flag when going back to order page
-    const demoParam = orderData.isDemo || orderData.venueId === 'demo-cafe' ? '&demo=1' : '';
-    router.push(`/order?venue=${orderData.venueId}&${param}=${value}${demoParam}`);
-  };
+  const { orderData, loading, isCreatingOrder, orderPlaced, handlePayNow } = useOrderSummary();
 
   if (loading) {
     return (
-      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
+      <div className="min-h-screen flex items-center justify-center bg-gray-50">
         <div className="text-center">
-          <p className="text-gray-900">Loading order summary...</p>
+          <Loader2 className="h-8 w-8 animate-spin text-purple-600 mx-auto mb-4" />
+          <p className="text-gray-600">Loading order details...</p>
         </div>
       </div>
     );
@@ -483,344 +39,79 @@ export default function OrderSummaryPage() {
 
   if (!orderData) {
     return (
-      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
+      <div className="min-h-screen flex items-center justify-center bg-gray-50">
         <div className="text-center">
-          <h2 className="text-xl font-semibold text-gray-900 mb-2">No order found</h2>
-          <p className="text-gray-900 mb-4">Please start a new order.</p>
-          <Button onClick={() => router.push('/order')}>
-            Start New Order
+          <p className="text-gray-600 mb-4">No order data found</p>
+          <Button onClick={() => window.location.href = '/order'}>
+            <ArrowLeft className="h-4 w-4 mr-2" />
+            Back to Order
           </Button>
         </div>
       </div>
     );
   }
 
-  // Check if this is a demo order
-  const isDemo = orderData?.isDemo || orderData?.venueId === 'demo-cafe';
-
   return (
-    <div className="min-h-screen bg-gray-50">
-      {/* Demo Mode Banner */}
-      {isDemo && (
-        <div className="bg-gradient-to-r from-purple-600 to-purple-800 text-white py-3 px-4 shadow-md">
-          <div className="max-w-4xl mx-auto flex items-center justify-center">
-            <div className="flex items-center space-x-3">
-              <div className="h-2 w-2 bg-green-400 rounded-full animate-pulse"></div>
-              <span className="text-sm font-medium">💡 Demo Mode — This is a simulated order experience</span>
+    <div className="min-h-screen bg-gray-50 py-8 px-4">
+      <div className="max-w-4xl mx-auto">
+        {/* Header */}
+        <div className="mb-6">
+          <h1 className="text-3xl font-bold text-gray-900">Order Summary</h1>
+          <p className="text-gray-600 mt-2">{orderData.venueName}</p>
+        </div>
+
+        {/* Order Placed Success Message */}
+        {orderPlaced && (
+          <div className="mb-6 bg-green-50 border border-green-200 rounded-lg p-4 flex items-center gap-3">
+            <CheckCircle className="h-5 w-5 text-green-600" />
+            <div>
+              <p className="font-medium text-green-900">Order Placed Successfully!</p>
+              <p className="text-sm text-green-700">Redirecting to payment...</p>
             </div>
           </div>
-        </div>
-      )}
+        )}
 
-      {/* Header */}
-      <div className="bg-white shadow-sm border-b">
-        <div className="max-w-4xl mx-auto px-4 py-4">
-          <div className="flex items-center justify-between">
-            <div className="flex items-center space-x-4">
-              <Image
-                src="/assets/servio-logo-updated.png"
-                alt="Servio"
-                width={800}
-                height={250}
-                className="h-12 sm:h-14 md:h-16 lg:h-18 xl:h-20 w-auto"
-                priority
-              />
-            </div>
-            <Button
-              onClick={handleBackToOrder}
-              variant="ghost"
-              className="flex items-center"
-            >
-              <ArrowLeft className="w-4 h-4 mr-2" />
-              Back to Menu
-            </Button>
-          </div>
+        {/* Order Details and Cart */}
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-6">
+          <OrderDetailsCard orderData={orderData} />
+          <CartItemsCard orderData={orderData} />
         </div>
-      </div>
 
-      <div className="max-w-4xl mx-auto px-4 py-8">
-        {/* Order Summary Header */}
-        <div className="text-center mb-8">
-          <div className={`w-16 h-16 ${orderPlaced && isDemo ? 'bg-green-100' : 'bg-blue-100'} rounded-full flex items-center justify-center mx-auto mb-4`}>
-            {orderPlaced && isDemo ? (
-              <CheckCircle className="w-8 h-8 text-green-600" />
+        {/* Actions */}
+        <div className="flex flex-col sm:flex-row gap-4">
+          <Button
+            variant="outline"
+            onClick={() => window.history.back()}
+            disabled={isCreatingOrder || orderPlaced}
+            className="flex-1"
+          >
+            <ArrowLeft className="h-4 w-4 mr-2" />
+            Back to Order
+          </Button>
+          <Button
+            onClick={handlePayNow}
+            disabled={isCreatingOrder || orderPlaced}
+            className="flex-1 bg-gradient-to-r from-purple-600 to-pink-600 hover:from-purple-700 hover:to-pink-700"
+          >
+            {isCreatingOrder ? (
+              <>
+                <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                Processing...
+              </>
             ) : (
-              <Receipt className="w-8 h-8 text-blue-600" />
+              <>
+                <CreditCard className="h-4 w-4 mr-2" />
+                Pay Now
+              </>
             )}
-          </div>
-          <h1 className="text-2xl font-bold text-gray-900 mb-2">
-            {orderPlaced && isDemo ? 'Order Placed Successfully!' : 'Order Summary'}
-          </h1>
-          <p className="text-gray-900">
-            {orderPlaced && isDemo 
-              ? 'Your demo order has been placed. In a real scenario, this would go to the kitchen.' 
-              : 'Review your order and choose how to pay'}
-          </p>
+          </Button>
         </div>
 
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
-          {/* Order Details */}
-          <div className="space-y-6">
-            <Card>
-              <CardHeader>
-                <CardTitle className="flex items-center">
-                  <Users className="w-5 h-5 mr-2" />
-                  Order Details
-                </CardTitle>
-              </CardHeader>
-              <CardContent>
-                <div className="space-y-4">
-                  <div className="flex justify-between">
-                    <span className="text-gray-900">Venue:</span>
-                    <span className="font-medium">{orderData.venueName}</span>
-                  </div>
-                  <div className="flex justify-between">
-                    <span className="text-gray-900">{orderData.orderType === 'counter' ? 'Counter:' : 'Table:'}</span>
-                    <span className="font-medium">{orderData.orderLocation || orderData.tableNumber}</span>
-                  </div>
-                  
-                  {/* Customer Information - Highlighted */}
-                  <div className="bg-blue-50 p-3 rounded-lg border border-blue-200">
-                    <div className="flex justify-between">
-                      <span className="text-blue-700 font-medium">Customer Name:</span>
-                      <span className="font-semibold text-blue-900">{orderData.customerName}</span>
-                    </div>
-                    <div className="flex justify-between mt-2">
-                      <span className="text-blue-700 font-medium">Phone Number:</span>
-                      <span className="font-semibold text-blue-900">{orderData.customerPhone}</span>
-                    </div>
-                  </div>
-                  
-                  {orderData.orderId && (
-                    <div className="flex justify-between">
-                      <span className="text-gray-900">Order ID:</span>
-                      <span className="font-medium">#{orderData.orderId.slice(-6)}</span>
-                    </div>
-                  )}
-                </div>
-              </CardContent>
-            </Card>
-
-            <Card>
-              <CardHeader>
-                <CardTitle className="flex items-center">
-                  <ShoppingCart className="w-5 h-5 mr-2" />
-                  Items
-                </CardTitle>
-              </CardHeader>
-              <CardContent>
-                <div className="space-y-3">
-                  {orderData.cart.map((item) => (
-                    <div key={item.id} className="flex justify-between items-start">
-                      <div className="flex-1">
-                        <p className="font-medium">{item.name}</p>
-                        <p className="text-sm text-gray-900">Qty: {item.quantity}</p>
-                        {item.specialInstructions && (
-                          <p className="text-xs text-gray-900">Note: {item.specialInstructions}</p>
-                        )}
-                      </div>
-                      <span className="font-medium">£{(item.price * item.quantity).toFixed(2)}</span>
-                    </div>
-                  ))}
-                </div>
-                <Separator className="my-4" />
-                <div className="flex justify-between text-lg font-semibold">
-                  <span>Total:</span>
-                  <span>£{orderData.total.toFixed(2)}</span>
-                </div>
-              </CardContent>
-            </Card>
-          </div>
-
-          {/* Payment Options */}
-          <div className="space-y-6">
-            <Card>
-              <CardHeader>
-                <CardTitle className="flex items-center">
-                  {isDemo && orderPlaced ? (
-                    <>
-                      <CheckCircle className="w-5 h-5 mr-2 text-green-600" />
-                      Demo Order Complete
-                    </>
-                  ) : (
-                    <>
-                      <CreditCard className="w-5 h-5 mr-2" />
-                      Payment Options
-                    </>
-                  )}
-                </CardTitle>
-              </CardHeader>
-              <CardContent className="space-y-4">
-                {isDemo && orderPlaced ? (
-                  <div className="p-4 border-2 border-green-200 rounded-lg bg-green-50">
-                    <div className="flex items-center mb-2">
-                      <CheckCircle className="w-5 h-5 text-green-600 mr-2" />
-                      <h3 className="font-semibold text-green-900">Demo Order Placed!</h3>
-                    </div>
-                    <p className="text-sm text-green-700 mb-4">
-                      This is a simulated order. In a real scenario, your order would be sent to the kitchen and you could track its status.
-                    </p>
-                    <div className="space-y-2">
-                      <Button 
-                        onClick={handleBackToOrder}
-                        className="w-full bg-purple-600 hover:bg-purple-700"
-                      >
-                        <ShoppingCart className="w-4 h-4 mr-2" />
-                        Continue Exploring Menu
-                      </Button>
-                      <Button 
-                        onClick={() => {
-                          if (orderData?.venueId) {
-                            router.push(`/dashboard/${orderData.venueId}`);
-                          } else {
-                            router.push('/');
-                          }
-                        }}
-                        variant="outline"
-                        className="w-full"
-                      >
-                        <ArrowLeft className="w-4 h-4 mr-2" />
-                        Back to Dashboard
-                      </Button>
-                    </div>
-                  </div>
-                ) : !orderData.orderId ? (
-                  <>
-                    <div className="p-4 border-2 border-blue-200 rounded-lg bg-blue-50">
-                      <h3 className="font-semibold text-blue-900 mb-2">{isDemo ? 'Simulate Payment' : 'Pay Now'}</h3>
-                      <p className="text-sm text-blue-700 mb-4">
-                        {isDemo 
-                          ? 'Experience the payment flow in demo mode (no actual payment required).' 
-                          : 'Complete your payment immediately using our secure payment system.'}
-                      </p>
-                      <Button 
-                        onClick={handlePayNow}
-                        disabled={loading}
-                        className="w-full bg-blue-600 hover:bg-blue-700"
-                      >
-                        {loading ? (
-                          <>
-                            <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white mr-2"></div>
-                            Processing...
-                          </>
-                        ) : (
-                          <>
-                            <CreditCard className="w-4 h-4 mr-2" />
-                            {isDemo ? 'Simulate Payment' : `Pay £${orderData.total.toFixed(2)} Now`}
-                          </>
-                        )}
-                      </Button>
-                    </div>
-
-                    <div className="p-4 border-2 border-green-200 rounded-lg bg-green-50">
-                      <h3 className="font-semibold text-green-900 mb-2">{isDemo ? 'Simulate Pay Later' : 'Pay Later'}</h3>
-                      <p className="text-sm text-green-700 mb-4">
-                        {isDemo 
-                          ? 'See how deferred payment works in a real restaurant scenario.' 
-                          : 'Place your order now and pay when you\'re ready. You can add more items to your table.'}
-                      </p>
-                      <Button 
-                        onClick={handlePayLater}
-                        disabled={isCreatingOrder}
-                        variant="outline"
-                        className="w-full border-green-300 text-green-700 hover:bg-green-100"
-                      >
-                        {isCreatingOrder ? (
-                          <>
-                            <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-green-600 mr-2"></div>
-                            Creating Order...
-                          </>
-                        ) : (
-                          <>
-                            <Clock className="w-4 h-4 mr-2" />
-                            {isDemo ? 'Simulate Pay Later' : 'Pay Later'}
-                          </>
-                        )}
-                      </Button>
-                    </div>
-                  </>
-                ) : (
-                  <div className="p-4 border-2 border-green-200 rounded-lg bg-green-50">
-                    <div className="flex items-center mb-2">
-                      <CheckCircle className="w-5 h-5 text-green-600 mr-2" />
-                      <h3 className="font-semibold text-green-900">Order Placed Successfully!</h3>
-                    </div>
-                    <p className="text-sm text-green-700 mb-4">
-                      Your order has been placed and is ready for the kitchen. You can pay when you're ready.
-                    </p>
-                    <div className="space-y-2">
-                      <Button 
-                        onClick={handlePayNow}
-                        disabled={loading}
-                        className="w-full bg-green-600 hover:bg-green-700"
-                      >
-                        {loading ? (
-                          <>
-                            <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white mr-2"></div>
-                            Processing...
-                          </>
-                        ) : (
-                          <>
-                            <CreditCard className="w-4 h-4 mr-2" />
-                            Pay Now
-                          </>
-                        )}
-                      </Button>
-                      <Button 
-                        onClick={handleAddMoreItems}
-                        variant="outline"
-                        className="w-full border-green-300 text-green-700 hover:bg-green-100"
-                      >
-                        <Plus className="w-4 h-4 mr-2" />
-                        Add More Items
-                      </Button>
-                    </div>
-                  </div>
-                )}
-              </CardContent>
-            </Card>
-
-            {/* Additional Actions */}
-            <Card>
-              <CardHeader>
-                <CardTitle>Additional Actions</CardTitle>
-              </CardHeader>
-              <CardContent className="space-y-3">
-                <Button 
-                  onClick={handleAddMoreItems}
-                  variant="outline"
-                  className="w-full"
-                >
-                  <Plus className="w-4 h-4 mr-2" />
-                  Add More Items to {orderData?.orderType === 'counter' ? 'Counter' : 'Table'}
-                </Button>
-                
-                <Button 
-                  onClick={handleBackToOrder}
-                  variant="outline"
-                  className="w-full"
-                >
-                  <ArrowLeft className="w-4 h-4 mr-2" />
-                  Back to Menu
-                </Button>
-              </CardContent>
-            </Card>
-
-            {/* Status Badge */}
-            {orderData.orderId && (
-              <Card>
-                <CardContent className="p-4">
-                  <div className="flex items-center justify-between">
-                    <span className="text-sm text-gray-900">Order Status:</span>
-                    <Badge variant="outline" className="bg-yellow-50 text-yellow-700 border-yellow-200">
-                      <Clock className="w-3 h-3 mr-1" />
-                      Payment Pending
-                    </Badge>
-                  </div>
-                </CardContent>
-              </Card>
-            )}
-          </div>
+        {/* Info Message */}
+        <div className="mt-6 bg-blue-50 border border-blue-200 rounded-lg p-4">
+          <p className="text-sm text-blue-800">
+            💡 Your order will be prepared as soon as payment is confirmed. You'll receive updates on your order status.
+          </p>
         </div>
       </div>
     </div>
