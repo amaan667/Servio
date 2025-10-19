@@ -85,36 +85,34 @@ export default function GlobalNav() {
             return; // Use cached data immediately
           }
           
-          // Fetch primary venue
-          const { data: venueData, error: venueError } = await supabase
-            .from('venues')
-            .select('venue_id')
-            .eq('owner_user_id', session.user.id)
-            .order('created_at', { ascending: true })
-            .limit(1);
-
-          if (!venueError && venueData?.length) {
-            setPrimaryVenueId(venueData[0].venue_id);
-            setUserRole('owner');
-            // Cache the data
-            sessionStorage.setItem(`user_role_${session.user.id}`, 'owner');
-            sessionStorage.setItem(`venue_id_${session.user.id}`, venueData[0].venue_id);
-          } else {
-            // Check if user is staff
-            const { data: staffData } = await supabase
+          // Fetch both in parallel for faster loading
+          const [venueResult, staffResult] = await Promise.all([
+            supabase
+              .from('venues')
+              .select('venue_id')
+              .eq('owner_user_id', session.user.id)
+              .order('created_at', { ascending: true })
+              .limit(1),
+            supabase
               .from('user_venue_roles')
               .select('role, venue_id')
               .eq('user_id', session.user.id)
               .limit(1)
-              .single();
-            
-            if (staffData) {
-              setPrimaryVenueId(staffData.venue_id);
-              setUserRole(staffData.role);
-              // Cache the data
-              sessionStorage.setItem(`user_role_${session.user.id}`, staffData.role);
-              sessionStorage.setItem(`venue_id_${session.user.id}`, staffData.venue_id);
-            }
+              .single()
+          ]);
+
+          if (!venueResult.error && venueResult.data?.length) {
+            setPrimaryVenueId(venueResult.data[0].venue_id);
+            setUserRole('owner');
+            // Cache the data
+            sessionStorage.setItem(`user_role_${session.user.id}`, 'owner');
+            sessionStorage.setItem(`venue_id_${session.user.id}`, venueResult.data[0].venue_id);
+          } else if (!staffResult.error && staffResult.data) {
+            setPrimaryVenueId(staffResult.data.venue_id);
+            setUserRole(staffResult.data.role);
+            // Cache the data
+            sessionStorage.setItem(`user_role_${session.user.id}`, staffResult.data.role);
+            sessionStorage.setItem(`venue_id_${session.user.id}`, staffResult.data.venue_id);
           }
         } catch (err) {
           console.error('Error fetching user data:', err);

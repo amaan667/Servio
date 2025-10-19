@@ -13,21 +13,30 @@ export default async function VenueSettings({ params }: { params: Promise<{ venu
     redirect('/sign-in');
   }
 
-  // Check if user is the venue owner
-  const { data: venue, error: venueError } = await supabase
-    .from('venues')
-    .select('*')
-    .eq('venue_id', venueId)
-    .eq('owner_user_id', user.id)
-    .maybeSingle();
+  // Run all queries in parallel for faster loading
+  const [venueResult, userRoleResult, allVenuesResult] = await Promise.all([
+    supabase
+      .from('venues')
+      .select('*')
+      .eq('venue_id', venueId)
+      .eq('owner_user_id', user.id)
+      .maybeSingle(),
+    supabase
+      .from('user_venue_roles')
+      .select('role')
+      .eq('user_id', user.id)
+      .eq('venue_id', venueId)
+      .maybeSingle(),
+    supabase
+      .from('venues')
+      .select('*')
+      .eq('owner_user_id', user.id)
+      .order('created_at', { ascending: false })
+  ]);
 
-  // Check if user has a staff role for this venue
-  const { data: userRole, error: roleError } = await supabase
-    .from('user_venue_roles')
-    .select('role')
-    .eq('user_id', user.id)
-    .eq('venue_id', venueId)
-    .maybeSingle();
+  const venue = venueResult.data;
+  const userRole = userRoleResult.data;
+  const allVenues = allVenuesResult.data || [];
 
   const isOwner = !!venue;
   const isManager = userRole?.role === 'manager';
@@ -52,13 +61,7 @@ export default async function VenueSettings({ params }: { params: Promise<{ venu
     finalVenue = managerVenue;
   }
 
-  // Only owners can see all venues
-  const { data: venues } = isOwner ? await supabase
-    .from('venues')
-    .select('*')
-    .eq('owner_user_id', user.id)
-    .order('created_at', { ascending: false }) : { data: [] };
-
+  // Get organization details
   const { data: organization } = await supabase
     .from('organizations')
     .select('id, subscription_tier, is_grandfathered, stripe_customer_id, subscription_status, trial_ends_at')
@@ -90,7 +93,7 @@ export default async function VenueSettings({ params }: { params: Promise<{ venu
           <VenueSettingsClient 
             user={user as any} 
             venue={finalVenue} 
-            venues={venues || []} 
+            venues={allVenues} 
             organization={organization || undefined}
             isOwner={isOwner}
           />
