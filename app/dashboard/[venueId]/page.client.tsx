@@ -33,7 +33,7 @@ import { QuickActionCard } from './components/QuickActionCard';
  * Original: 805 lines → Now: ~200 lines
  */
 
-const VenueDashboardClient = React.memo(function VenueDashboardClient({ 
+const DashboardClient = React.memo(function DashboardClient({ 
   venueId, 
   userId, 
   venue: initialVenue, 
@@ -384,4 +384,4 @@ const VenueDashboardClient = React.memo(function VenueDashboardClient({
   );
 });
 
-export default VenueDashboardClient;
+export default DashboardClient;
