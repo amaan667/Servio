@@ -83,6 +83,13 @@ const DashboardClient = React.memo(function DashboardClient({
     venue: dashboardData.venue
   });
 
+  const handleRefresh = useCallback(async () => {
+    await dashboardData.refreshCounts();
+    if (dashboardData.venue?.venue_id && dashboardData.todayWindow) {
+      await dashboardData.loadStats(dashboardData.venue.venue_id, dashboardData.todayWindow);
+    }
+  }, [dashboardData]);
+
   // Auto-refresh when returning from checkout success
   useEffect(() => {
     const urlParams = new URLSearchParams(window.location.search);
@@ -95,14 +102,7 @@ const DashboardClient = React.memo(function DashboardClient({
         window.history.replaceState({}, document.title, url.toString());
       }, 1000);
     }
-  }, []);
-
-  const handleRefresh = useCallback(async () => {
-    await dashboardData.refreshCounts();
-    if (dashboardData.venue?.venue_id && dashboardData.todayWindow) {
-      await dashboardData.loadStats(dashboardData.venue.venue_id, dashboardData.todayWindow);
-    }
-  }, [dashboardData]);
+  }, [handleRefresh]);
 
   const quickActions = useMemo(() => {
     const actions = [
