@@ -1,14 +1,26 @@
 'use client';
 
 import { useState, useEffect, useRef } from 'react';
-import * as pdfjs from 'pdfjs-dist';
-import 'pdfjs-dist/build/pdf.worker.entry';
 import { usePdfOverlay, PdfOverlayItem } from '@/hooks/usePdfOverlay';
 import { Button } from '@/components/ui/button';
 import { Plus, Minus } from 'lucide-react';
 
-// Configure pdfjs worker
-pdfjs.GlobalWorkerOptions.workerSrc = '/pdf.worker.min.mjs';
+// Lazy-load pdfjs worker for smaller bundle
+let pdfjs: typeof import('pdfjs-dist');
+let workerInitialized = false;
+
+async function initPdfJs() {
+  if (!pdfjs) {
+    pdfjs = await import('pdfjs-dist');
+    await import('pdfjs-dist/build/pdf.worker.entry');
+    
+    if (!workerInitialized) {
+      pdfjs.GlobalWorkerOptions.workerSrc = '/pdf.worker.min.mjs';
+      workerInitialized = true;
+    }
+  }
+  return pdfjs;
+}
 
 export interface PdfMenuProps {
   src: string | ArrayBuffer; // public URL or binary data
@@ -45,6 +57,9 @@ export function PdfMenu({
         setLoading(true);
         setError(null);
 
+        // Lazy-load pdfjs
+        const pdfjsLib = await initPdfJs();
+
         let loadingTask;
 
         // Handle both URL and ArrayBuffer sources
@@ -53,13 +68,13 @@ export function PdfMenu({
           try {
             const response = await fetch(src);
             const arrayBuffer = await response.arrayBuffer();
-            loadingTask = pdfjs.getDocument({ data: arrayBuffer });
+            loadingTask = pdfjsLib.getDocument({ data: arrayBuffer });
           } catch (fetchError) {
             // Fallback to direct URL loading
-            loadingTask = pdfjs.getDocument(src);
+            loadingTask = pdfjsLib.getDocument(src);
           }
         } else {
-          loadingTask = pdfjs.getDocument({ data: src });
+          loadingTask = pdfjsLib.getDocument({ data: src });
         }
 
         const pdf = await loadingTask.promise;
@@ -83,7 +98,7 @@ export function PdfMenu({
   }, [src, scale]);
 
   // Render a single page to canvas
-  const renderPage = async (page: pdfjs.PDFPageProxy, pageIndex: number) => {
+  const renderPage = async (page: any, pageIndex: number) => {
     const canvas = canvasRefs.current[pageIndex];
     if (!canvas) return;
 
@@ -225,18 +240,21 @@ export function PdfMenuWithCart({
         setLoading(true);
         setError(null);
 
+        // Lazy-load pdfjs
+        const pdfjsLib = await initPdfJs();
+
         let loadingTask;
 
         if (typeof src === 'string') {
           try {
             const response = await fetch(src);
             const arrayBuffer = await response.arrayBuffer();
-            loadingTask = pdfjs.getDocument({ data: arrayBuffer });
+            loadingTask = pdfjsLib.getDocument({ data: arrayBuffer });
           } catch (fetchError) {
-            loadingTask = pdfjs.getDocument(src);
+            loadingTask = pdfjsLib.getDocument(src);
           }
         } else {
-          loadingTask = pdfjs.getDocument({ data: src });
+          loadingTask = pdfjsLib.getDocument({ data: src });
         }
 
         const pdf = await loadingTask.promise;
