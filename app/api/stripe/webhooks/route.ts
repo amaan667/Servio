@@ -1,12 +1,12 @@
-export const runtime = "nodejs";
-export const dynamic = "force-dynamic";
+export const runtime = 'nodejs';
+export const dynamic = 'force-dynamic';
 
 // Stripe Webhooks - Handle subscription events
-import { NextRequest, NextResponse } from "next/server";
-import Stripe from "stripe";
-import { createClient } from "@/lib/supabase/server";
-import { stripe } from "@/lib/stripe-client";
-import { apiLogger } from '@/lib/logger';
+import { NextRequest, NextResponse } from 'next/server';
+import Stripe from 'stripe';
+import { createClient } from '@/lib/supabase/server';
+import { stripe } from '@/lib/stripe-client';
+import { apiLogger, logger } from '@/lib/logger';
 
 // Extend Invoice type to include subscription property
 interface InvoiceWithSubscription extends Stripe.Invoice {

@@ -2,7 +2,7 @@ import Stripe from 'stripe';
 import { NextRequest, NextResponse } from 'next/server';
 import { createAdminClient } from '@/lib/supabase/server';
 import { stripe } from '@/lib/stripe-client';
-import { apiLogger } from '@/lib/logger';
+import { apiLogger, logger } from '@/lib/logger';
 
 export const runtime = 'nodejs';            // ensure Node runtime (not Edge)
 export const dynamic = 'force-dynamic';
