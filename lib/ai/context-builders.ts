@@ -42,7 +42,7 @@ export async function getAssistantContext(
       }
     } catch (error) {
       // Table doesn't exist or other error - use default
-      logger.debug("[AI ASSISTANT] Could not get user role:", error);
+      aiLogger.debug("[AI ASSISTANT] Could not get user role:", error);
     }
   }
 

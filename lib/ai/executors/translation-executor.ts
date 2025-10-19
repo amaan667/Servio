@@ -89,7 +89,7 @@ const CATEGORY_MAPPINGS: Record<string, Record<string, string>> = {
   }
 };
 
-function detectSourceLanguage(items: Array<{ name: string; category: string }>): string {
+function detectSourceLanguage(items: Array<{ name: string; category: string }>, targetLanguage: string): string {
   const spanishIndicators = [
     'CAFÉ', 'CAFE', 'BEBIDAS', 'TÉ', 'TE', 'ESPECIALES', 'ESPECIAL', 'NIÑOS', 'NINOS',
     'ENSALADAS', 'POSTRES', 'ENTRADAS', 'PLATOS PRINCIPALES', 'APERITIVOS',
@@ -130,7 +130,7 @@ function detectSourceLanguage(items: Array<{ name: string; category: string }>):
   
   if (spanishCount > englishCount) return 'es';
   if (englishCount > spanishCount) return 'en';
-  return params.targetLanguage === 'es' ? 'en' : 'es';
+  return targetLanguage === 'es' ? 'en' : 'es';
 }
 
 export async function executeMenuTranslate(
@@ -155,7 +155,7 @@ export async function executeMenuTranslate(
 
   const targetLangName = LANGUAGE_NAMES[params.targetLanguage] || params.targetLanguage;
   const uniqueCategories = Array.from(new Set(items.map(item => item.category).filter(Boolean)));
-  const detectedSourceLanguage = detectSourceLanguage(items);
+  const detectedSourceLanguage = detectSourceLanguage(items, params.targetLanguage);
   
   if (preview) {
     try {

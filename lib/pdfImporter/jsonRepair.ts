@@ -526,7 +526,7 @@ function validateAndCleanItems(json: string): string {
     return JSON.stringify(result, null, 2);
     
   } catch (error) {
-    logger.error('[JSON_REPAIR] Failed to validate items:', error);
+    aiLogger.error('[JSON_REPAIR] Failed to validate items:', error);
     return json;
   }
 }
@@ -614,7 +614,7 @@ export function repairAndValidateMenuJSON(brokenJSON: string): {
         items: validation.items
       };
     } else {
-      logger.error('[JSON_REPAIR] Validation failed:', validation.errors);
+      aiLogger.error('[JSON_REPAIR] Validation failed:', validation.errors);
       return {
         success: false,
         errors: validation.errors
@@ -622,7 +622,7 @@ export function repairAndValidateMenuJSON(brokenJSON: string): {
     }
     
   } catch (error) {
-    logger.error('[JSON_REPAIR] Repair pipeline failed:', error);
+    aiLogger.error('[JSON_REPAIR] Repair pipeline failed:', error);
     return {
       success: false,
       errors: [`Repair failed: ${(error as any).message}`]
