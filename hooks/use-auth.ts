@@ -4,6 +4,7 @@ import { useEffect, useState, useCallback } from 'react';
 import { User } from '@supabase/supabase-js';
 import { supabase } from '@/lib/supabase/client';
 import { logger } from '@/lib/logger';
+import { getErrorMessage, getErrorDetails } from '@/lib/utils/errors';
 
 interface AuthState {
   user: User | null;
@@ -32,12 +33,12 @@ export function useAuth() {
       }
       
       setAuthState({ user, loading: false, error: null });
-    } catch (error) {
-      logger.error('[AUTH HOOK] Unexpected error:', error);
+    } catch (error: unknown) {
+      logger.error('[AUTH HOOK] Unexpected error:', getErrorDetails(error));
       setAuthState({ 
         user: null, 
         loading: false, 
-        error: error instanceof Error ? error.message : 'Authentication error' 
+        error: error instanceof Error ? getErrorMessage(error) : 'Authentication error' 
       });
     }
   }, []);
@@ -70,11 +71,11 @@ export function useAuth() {
       // Clear local state
       setAuthState({ user: null, loading: false, error: null });
       
-    } catch (error) {
-      logger.error('[AUTH HOOK] Sign out error:', error);
+    } catch (error: unknown) {
+      logger.error('[AUTH HOOK] Sign out error:', getErrorDetails(error));
       setAuthState(prev => ({ 
         ...prev, 
-        error: error instanceof Error ? error.message : 'Sign out failed' 
+        error: error instanceof Error ? getErrorMessage(error) : 'Sign out failed' 
       }));
     }
   }, []);

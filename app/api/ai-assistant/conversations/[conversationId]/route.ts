@@ -7,6 +7,7 @@ export const dynamic = "force-dynamic";
 import { NextRequest, NextResponse } from "next/server";
 import { createAdminClient } from "@/lib/supabase/server";
 import { apiLogger, logger } from '@/lib/logger';
+import { getErrorMessage, getErrorDetails } from '@/lib/utils/errors';
 
 export async function DELETE(
   _request: NextRequest,
@@ -43,7 +44,7 @@ export async function DELETE(
     logger.debug("[AI CHAT] Conversation deleted successfully");
     return NextResponse.json({ success: true });
   } catch (error: unknown) {
-    const errorMessage = error instanceof Error ? error.message : 'Unknown error';
+    const errorMessage = error instanceof Error ? getErrorMessage(error) : 'Unknown error';
     logger.error("[AI CHAT] Delete conversation error:", { error: errorMessage });
     return NextResponse.json(
       { error: errorMessage || "Internal server error" },

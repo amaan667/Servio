@@ -3,6 +3,7 @@ export const dynamic = "force-dynamic";
 
 import { NextRequest, NextResponse } from 'next/server';
 import { apiLogger, logger } from '@/lib/logger';
+import { getErrorDetails } from '@/lib/utils/errors';
 
 export async function POST(req: NextRequest) {
   try {
@@ -26,8 +27,8 @@ export async function POST(req: NextRequest) {
     logger.debug(log);
 
     return NextResponse.json({ ok: true });
-  } catch (err) {
-    logger.error('[ORDER ACCESS] log failure:', err);
+  } catch (err: unknown) {
+    logger.error('[ORDER ACCESS] log failure:', getErrorDetails(err));
     return NextResponse.json({ ok: false }, { status: 500 });
   }
 }

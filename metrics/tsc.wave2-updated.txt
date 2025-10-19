@@ -1,0 +1,599 @@
+__tests__/api/orders.test.ts(59,62): error TS2554: Expected 1 arguments, but got 2.
+__tests__/api/orders.test.ts(78,62): error TS2554: Expected 1 arguments, but got 2.
+__tests__/api/orders.test.ts(94,19): error TS2540: Cannot assign to 'url' because it is a read-only property.
+__tests__/api/orders.test.ts(96,45): error TS2554: Expected 1 arguments, but got 2.
+__tests__/api/orders.test.ts(132,19): error TS2540: Cannot assign to 'method' because it is a read-only property.
+__tests__/api/orders.test.ts(135,63): error TS2554: Expected 1 arguments, but got 2.
+__tests__/api/orders.test.ts(151,19): error TS2540: Cannot assign to 'method' because it is a read-only property.
+__tests__/api/orders.test.ts(154,63): error TS2554: Expected 1 arguments, but got 2.
+__tests__/api/orders.test.ts(179,19): error TS2540: Cannot assign to 'method' because it is a read-only property.
+__tests__/api/orders.test.ts(182,63): error TS2554: Expected 1 arguments, but got 2.
+__tests__/hooks/useMenuItems.test.ts(115,19): error TS7030: Not all code paths return a value.
+__tests__/logger/production-logger.test.ts(29,3): error TS2304: Cannot find name 'afterEach'.
+__tests__/logger/production-logger.test.ts(35,19): error TS2540: Cannot assign to 'NODE_ENV' because it is a read-only property.
+__tests__/logger/production-logger.test.ts(42,19): error TS2540: Cannot assign to 'NODE_ENV' because it is a read-only property.
+__tests__/logger/production-logger.test.ts(77,19): error TS2540: Cannot assign to 'NODE_ENV' because it is a read-only property.
+__tests__/logger/production-logger.test.ts(86,19): error TS2540: Cannot assign to 'NODE_ENV' because it is a read-only property.
+__tests__/logger/production-logger.test.ts(95,19): error TS2540: Cannot assign to 'NODE_ENV' because it is a read-only property.
+__tests__/middleware/authorization.test.ts(171,27): error TS2345: Argument of type '{ venue: { venue_id: string; }; user: { id: string; }; role: string; venueId: string; }' is not assignable to parameter of type 'AuthorizedContext'.
+  Types of property 'venue' are incompatible.
+    Type '{ venue_id: string; }' is missing the following properties from type 'Venue': owner_id, name, created_at, updated_at
+__tests__/middleware/authorization.test.ts(182,27): error TS2345: Argument of type '{ venue: { venue_id: string; }; user: { id: string; }; role: string; venueId: string; }' is not assignable to parameter of type 'AuthorizedContext'.
+  Types of property 'venue' are incompatible.
+    Type '{ venue_id: string; }' is missing the following properties from type 'Venue': owner_id, name, created_at, updated_at
+__tests__/middleware/authorization.test.ts(195,34): error TS2345: Argument of type '{ venue: { venue_id: string; }; user: { id: string; }; role: string; venueId: string; }' is not assignable to parameter of type 'AuthorizedContext'.
+  Types of property 'venue' are incompatible.
+    Type '{ venue_id: string; }' is missing the following properties from type 'Venue': owner_id, name, created_at, updated_at
+__tests__/middleware/authorization.test.ts(206,34): error TS2345: Argument of type '{ venue: { venue_id: string; }; user: { id: string; }; role: string; venueId: string; }' is not assignable to parameter of type 'AuthorizedContext'.
+  Types of property 'venue' are incompatible.
+    Type '{ venue_id: string; }' is missing the following properties from type 'Venue': owner_id, name, created_at, updated_at
+__tests__/middleware/authorization.test.ts(217,34): error TS2345: Argument of type '{ venue: { venue_id: string; }; user: { id: string; }; role: string; venueId: string; }' is not assignable to parameter of type 'AuthorizedContext'.
+  Types of property 'venue' are incompatible.
+    Type '{ venue_id: string; }' is missing the following properties from type 'Venue': owner_id, name, created_at, updated_at
+__tests__/middleware/authorization.test.ts(228,34): error TS2345: Argument of type '{ venue: { venue_id: string; }; user: { id: string; }; role: string; venueId: string; }' is not assignable to parameter of type 'AuthorizedContext'.
+  Types of property 'venue' are incompatible.
+    Type '{ venue_id: string; }' is missing the following properties from type 'Venue': owner_id, name, created_at, updated_at
+app/api/ai-assistant/undo/route.ts(466,37): error TS18046: 'error' is of type 'unknown'.
+app/api/ai-assistant/undo/route.ts(496,37): error TS18046: 'error' is of type 'unknown'.
+app/api/ai-assistant/undo/route.ts(522,37): error TS18046: 'error' is of type 'unknown'.
+app/api/ai-assistant/undo/route.ts(557,37): error TS18046: 'error' is of type 'unknown'.
+app/api/ai-assistant/undo/route.ts(588,37): error TS18046: 'error' is of type 'unknown'.
+app/api/ai/conversations/route.ts(82,16): error TS18046: 'error' is of type 'unknown'.
+app/api/ai/conversations/route.ts(162,16): error TS18046: 'error' is of type 'unknown'.
+app/api/ai/conversations/route.ts(256,16): error TS18046: 'error' is of type 'unknown'.
+app/api/ai/messages/route.ts(99,16): error TS18046: 'error' is of type 'unknown'.
+app/api/ai/messages/route.ts(318,9): error TS18046: 'error' is of type 'unknown'.
+app/api/ai/messages/route.ts(320,51): error TS18046: 'error' is of type 'unknown'.
+app/api/ai/messages/route.ts(326,16): error TS18046: 'error' is of type 'unknown'.
+app/api/auth/health/route.ts(36,22): error TS18046: 'err' is of type 'unknown'.
+app/api/auth/health/route.ts(65,14): error TS18046: 'error' is of type 'unknown'.
+app/api/auth/refresh/route.ts(39,53): error TS18046: 'error' is of type 'unknown'.
+app/api/auth/refresh/route.ts(42,14): error TS18046: 'error' is of type 'unknown'.
+app/api/auth/signout/route.ts(57,53): error TS18046: 'error' is of type 'unknown'.
+app/api/auth/signout/route.ts(60,14): error TS18046: 'error' is of type 'unknown'.
+app/api/auth/test-oauth/route.ts(58,14): error TS18046: 'error' is of type 'unknown'.
+app/api/catalog/clear/route.ts(82,37): error TS18046: 'error' is of type 'unknown'.
+app/api/catalog/replace/route.ts(194,37): error TS18046: 'error' is of type 'unknown'.
+app/api/catalog/replace/route.ts(290,37): error TS18046: 'error' is of type 'unknown'.
+app/api/catalog/replace/route.ts(338,36): error TS18046: 'error' is of type 'unknown'.
+app/api/checkout/route.ts(94,39): error TS18046: 'e' is of type 'unknown'.
+app/api/checkout/verify/route.ts(88,39): error TS18046: 'e' is of type 'unknown'.
+app/api/dashboard/orders/[id]/route.ts(47,58): error TS2345: Argument of type 'unknown' is not assignable to parameter of type 'LogContext'.
+app/api/dashboard/orders/one/route.ts(122,50): error TS18046: 'e' is of type 'unknown'.
+app/api/delete-account/route.ts(25,34): error TS18046: 'error' is of type 'unknown'.
+app/api/extract-menu/route.ts(33,21): error TS2339: Property 'message' does not exist on type '{}'.
+app/api/feedback-responses/route.ts(114,49): error TS18046: 'q' is of type 'unknown'.
+app/api/feedback-responses/route.ts(115,34): error TS2339: Property 'choices' does not exist on type '{}'.
+app/api/feedback-responses/route.ts(115,55): error TS2339: Property 'choices' does not exist on type '{}'.
+app/api/feedback-responses/route.ts(202,53): error TS18046: 'error' is of type 'unknown'.
+app/api/feedback/list/route.ts(91,43): error TS18046: 'error' is of type 'unknown'.
+app/api/feedback/questions/public/route.ts(41,50): error TS18046: 'error' is of type 'unknown'.
+app/api/feedback/questions/route.ts(66,50): error TS18046: 'error' is of type 'unknown'.
+app/api/feedback/questions/route.ts(163,49): error TS18046: 'error' is of type 'unknown'.
+app/api/feedback/questions/route.ts(250,52): error TS18046: 'error' is of type 'unknown'.
+app/api/feedback/questions/route.ts(299,52): error TS18046: 'error' is of type 'unknown'.
+app/api/feedback/route.ts(48,65): error TS2345: Argument of type 'unknown' is not assignable to parameter of type 'LogContext'.
+app/api/feedback/route.ts(51,14): error TS18046: 'e' is of type 'unknown'.
+app/api/inventory/import/csv/route.ts(147,45): error TS18046: 'err' is of type 'unknown'.
+app/api/kds/backfill-all/route.ts(169,90): error TS2554: Expected 1-2 arguments, but got 3.
+app/api/kds/backfill-all/route.ts(182,67): error TS18046: 'error' is of type 'unknown'.
+app/api/kds/backfill-all/route.ts(217,14): error TS18046: 'error' is of type 'unknown'.
+app/api/kds/backfill/route.ts(164,84): error TS2554: Expected 1-2 arguments, but got 3.
+app/api/kds/backfill/route.ts(177,60): error TS18046: 'error' is of type 'unknown'.
+app/api/kds/backfill/route.ts(199,14): error TS18046: 'error' is of type 'unknown'.
+app/api/kds/stations/route.ts(79,27): error TS18046: 'error' is of type 'unknown'.
+app/api/kds/stations/route.ts(137,27): error TS18046: 'error' is of type 'unknown'.
+app/api/kds/status/route.ts(29,52): error TS2345: Argument of type 'any[]' is not assignable to parameter of type 'LogContext'.
+  Type 'any[]' is not assignable to type 'Record<string, unknown>'.
+    Index signature for type 'string' is missing in type 'any[]'.
+app/api/kds/tickets/bulk-update/route.ts(111,27): error TS18046: 'error' is of type 'unknown'.
+app/api/kds/tickets/route.ts(166,65): error TS2345: Argument of type 'unknown' is not assignable to parameter of type 'LogContext'.
+app/api/kds/tickets/route.ts(188,27): error TS18046: 'error' is of type 'unknown'.
+app/api/kds/tickets/route.ts(296,27): error TS18046: 'error' is of type 'unknown'.
+app/api/log-demo-access/route.ts(25,65): error TS2345: Argument of type 'unknown' is not assignable to parameter of type 'LogContext'.
+app/api/log-order-access/route.ts(26,18): error TS2345: Argument of type '{ tag: string; timestamp: string; ip: string; userAgent: string; url: any; venueSlug: any; tableNumber: any; counterNumber: any; orderType: any; orderLocation: any; isDemo: any; }' is not assignable to parameter of type 'string'.
+app/api/log-order-access/route.ts(30,49): error TS2345: Argument of type 'unknown' is not assignable to parameter of type 'LogContext'.
+app/api/menu/[venueId]/route.ts(67,96): error TS2554: Expected 1-2 arguments, but got 3.
+app/api/menu/check-hotspots/route.ts(100,27): error TS18046: 'error' is of type 'unknown'.
+app/api/menu/check-pdf-images/route.ts(63,14): error TS18046: 'error' is of type 'unknown'.
+app/api/menu/clear/route.ts(65,36): error TS18046: 'error' is of type 'unknown'.
+app/api/menu/delete-category/route.ts(87,73): error TS2345: Argument of type 'unknown' is not assignable to parameter of type 'LogContext'.
+app/api/menu/export-pdf/route.ts(65,27): error TS18046: 'error' is of type 'unknown'.
+app/api/menu/process/route.ts(94,60): error TS2345: Argument of type 'unknown' is not assignable to parameter of type 'LogContext'.
+app/api/menu/process/route.ts(163,80): error TS2554: Expected 1-2 arguments, but got 4.
+app/api/menu/process/route.ts(170,70): error TS2554: Expected 1-2 arguments, but got 4.
+app/api/menu/process/route.ts(203,36): error TS2571: Object is of type 'unknown'.
+app/api/menu/process/route.ts(259,76): error TS2554: Expected 1-2 arguments, but got 3.
+app/api/menu/process/route.ts(267,62): error TS2345: Argument of type 'unknown' is not assignable to parameter of type 'LogContext'.
+app/api/menu/repair-json/route.ts(54,56): error TS2345: Argument of type 'string[] | undefined' is not assignable to parameter of type 'LogContext'.
+  Type 'string[]' is not assignable to type 'LogContext'.
+    Type 'string[]' is not assignable to type 'Record<string, unknown>'.
+      Index signature for type 'string' is missing in type 'string[]'.
+app/api/menu/repair-json/route.ts(69,37): error TS18046: 'error' is of type 'unknown'.
+app/api/menu/upload/route.ts(117,41): error TS2345: Argument of type 'unknown' is not assignable to parameter of type 'LogContext'.
+app/api/menu/upload/route.ts(118,53): error TS2339: Property 'message' does not exist on type '{}'.
+app/api/migrations/kds-trigger/route.ts(150,14): error TS18046: 'error' is of type 'unknown'.
+app/api/migrations/kds/route.ts(128,14): error TS18046: 'error' is of type 'unknown'.
+app/api/orders/[orderId]/route.ts(33,60): error TS2345: Argument of type 'string[] | "N/A"' is not assignable to parameter of type 'LogContext'.
+  Type 'string[]' is not assignable to type 'LogContext'.
+    Type 'string[]' is not assignable to type 'Record<string, unknown>'.
+      Index signature for type 'string' is missing in type 'string[]'.
+app/api/orders/[orderId]/route.ts(66,65): error TS2345: Argument of type 'string[]' is not assignable to parameter of type 'LogContext'.
+  Type 'string[]' is not assignable to type 'Record<string, unknown>'.
+    Index signature for type 'string' is missing in type 'string[]'.
+app/api/orders/by-session/[sessionId]/route.ts(76,74): error TS2345: Argument of type 'string[]' is not assignable to parameter of type 'LogContext'.
+  Type 'string[]' is not assignable to type 'Record<string, unknown>'.
+    Index signature for type 'string' is missing in type 'string[]'.
+app/api/orders/createFromPaidIntent/route.ts(153,74): error TS2345: Argument of type 'unknown' is not assignable to parameter of type 'LogContext'.
+app/api/orders/createFromPaidIntent/route.ts(259,70): error TS2345: Argument of type 'unknown' is not assignable to parameter of type 'LogContext'.
+app/api/orders/mark-paid/route.ts(64,76): error TS2345: Argument of type 'unknown' is not assignable to parameter of type 'LogContext'.
+app/api/orders/mark-paid/route.ts(78,39): error TS18046: 'error' is of type 'unknown'.
+app/api/orders/route.ts(50,42): error TS2345: Argument of type 'unknown' is not assignable to parameter of type 'LogContext'.
+app/api/orders/route.ts(174,79): error TS2554: Expected 1-2 arguments, but got 3.
+app/api/orders/route.ts(179,70): error TS2554: Expected 1-2 arguments, but got 4.
+app/api/orders/route.ts(461,61): error TS2345: Argument of type 'any[] | null' is not assignable to parameter of type 'LogContext'.
+  Type 'any[]' is not assignable to type 'LogContext'.
+    Type 'any[]' is not assignable to type 'Record<string, unknown>'.
+      Index signature for type 'string' is missing in type 'any[]'.
+app/api/orders/route.ts(589,88): error TS2345: Argument of type 'unknown' is not assignable to parameter of type 'LogContext'.
+app/api/orders/route.ts(597,20): error TS2339: Property 'message' does not exist on type '{}'.
+app/api/orders/serve/route.ts(134,62): error TS2339: Property 'message' does not exist on type '{}'.
+app/api/orders/serve/route.ts(134,94): error TS2339: Property 'stack' does not exist on type '{}'.
+app/api/orders/serve/route.ts(137,16): error TS18046: 'error' is of type 'unknown'.
+app/api/orders/set-status/route.ts(72,39): error TS18046: 'error' is of type 'unknown'.
+app/api/orders/update-payment-status/route.ts(51,16): error TS18046: 'error' is of type 'unknown'.
+app/api/orders/update-status/route.ts(44,62): error TS2345: Argument of type 'unknown' is not assignable to parameter of type 'LogContext'.
+app/api/orders/update-status/route.ts(88,84): error TS2345: Argument of type 'unknown' is not assignable to parameter of type 'LogContext'.
+app/api/organization/ensure/route.ts(33,67): error TS2345: Argument of type 'unknown' is not assignable to parameter of type 'LogContext'.
+app/api/organization/ensure/route.ts(145,71): error TS2554: Expected 1-2 arguments, but got 4.
+app/api/organization/ensure/route.ts(163,50): error TS18046: 'error' is of type 'unknown'.
+app/api/reservations/[reservationId]/modify/route.ts(97,14): error TS18046: 'error' is of type 'unknown'.
+app/api/reservations/auto-complete/route.ts(185,14): error TS18046: 'error' is of type 'unknown'.
+app/api/reservations/by-table/[tableId]/route.ts(72,14): error TS18046: 'error' is of type 'unknown'.
+app/api/reservations/check-completion/route.ts(155,14): error TS18046: 'error' is of type 'unknown'.
+app/api/reservations/checkin/route.ts(102,14): error TS18046: 'error' is of type 'unknown'.
+app/api/reservations/create/route.ts(136,14): error TS18046: 'error' is of type 'unknown'.
+app/api/reviews/add/route.ts(30,49): error TS18046: 'e' is of type 'unknown'.
+app/api/setup-kds/route.ts(132,14): error TS18046: 'error' is of type 'unknown'.
+app/api/signup/with-subscription/route.ts(196,16): error TS18046: 'error' is of type 'unknown'.
+app/api/staff/add/route.ts(20,42): error TS2339: Property 'message' does not exist on type '{}'.
+app/api/staff/check/route.ts(36,52): error TS2339: Property 'message' does not exist on type '{}'.
+app/api/staff/debug-invitations/route.ts(48,16): error TS18046: 'error' is of type 'unknown'.
+app/api/staff/debug-invitations/route.ts(69,16): error TS18046: 'error' is of type 'unknown'.
+app/api/staff/debug-invitations/route.ts(90,16): error TS18046: 'error' is of type 'unknown'.
+app/api/staff/debug-invitations/route.ts(111,16): error TS18046: 'error' is of type 'unknown'.
+app/api/staff/debug-invitations/route.ts(131,16): error TS18046: 'error' is of type 'unknown'.
+app/api/staff/init/route.ts(32,52): error TS2339: Property 'message' does not exist on type '{}'.
+app/api/staff/list/route.ts(28,42): error TS2339: Property 'message' does not exist on type '{}'.
+app/api/stripe/checkout-session/route.ts(42,16): error TS18046: 'error' is of type 'unknown'.
+app/api/stripe/create-checkout-session/route.ts(170,68): error TS2554: Expected 1-2 arguments, but got 3.
+app/api/stripe/create-checkout-session/route.ts(233,72): error TS2554: Expected 1-2 arguments, but got 4.
+app/api/stripe/create-checkout-session/route.ts(263,75): error TS2554: Expected 1-2 arguments, but got 4.
+app/api/stripe/create-checkout-session/route.ts(296,73): error TS2345: Argument of type 'SessionCreateParams' is not assignable to parameter of type 'LogContext'.
+  Type 'SessionCreateParams' is not assignable to type 'Record<string, unknown>'.
+    Index signature for type 'string' is missing in type 'SessionCreateParams'.
+app/api/stripe/create-checkout-session/route.ts(310,16): error TS18046: 'error' is of type 'unknown'.
+app/api/stripe/create-portal-session/route.ts(156,16): error TS18046: 'error' is of type 'unknown'.
+app/api/stripe/downgrade-plan/route.ts(135,58): error TS2345: Argument of type 'unknown' is not assignable to parameter of type 'LogContext'.
+app/api/stripe/downgrade-plan/route.ts(150,16): error TS18046: 'error' is of type 'unknown'.
+app/api/stripe/webhook/route.ts(39,72): error TS18046: 'err' is of type 'unknown'.
+app/api/stripe/webhook/route.ts(40,47): error TS18046: 'err' is of type 'unknown'.
+app/api/stripe/webhook/route.ts(58,68): error TS2345: Argument of type 'CustomerDetails | null' is not assignable to parameter of type 'LogContext'.
+  Type 'CustomerDetails' is not assignable to type 'LogContext'.
+    Type 'CustomerDetails' is not assignable to type 'Record<string, unknown>'.
+      Index signature for type 'string' is missing in type 'CustomerDetails'.
+app/api/stripe/webhook/route.ts(110,61): error TS2345: Argument of type 'any[]' is not assignable to parameter of type 'LogContext'.
+  Type 'any[]' is not assignable to type 'Record<string, unknown>'.
+    Index signature for type 'string' is missing in type 'any[]'.
+app/api/stripe/webhook/route.ts(183,86): error TS2554: Expected 1-2 arguments, but got 3.
+app/api/stripe/webhook/route.ts(184,96): error TS2554: Expected 1-2 arguments, but got 3.
+app/api/stripe/webhooks/route.ts(37,57): error TS2554: Expected 1-2 arguments, but got 4.
+app/api/stripe/webhooks/route.ts(73,16): error TS18046: 'error' is of type 'unknown'.
+app/api/stripe/webhooks/route.ts(218,91): error TS2345: Argument of type 'unknown' is not assignable to parameter of type 'LogContext'.
+app/api/stripe/webhooks/route.ts(250,78): error TS2554: Expected 1-2 arguments, but got 3.
+app/api/stripe/webhooks/route.ts(308,84): error TS2554: Expected 1-2 arguments, but got 3.
+app/api/subscription/refresh-status/route.ts(163,16): error TS18046: 'error' is of type 'unknown'.
+app/api/tables/[tableId]/route.ts(105,66): error TS2345: Argument of type 'unknown' is not assignable to parameter of type 'LogContext'.
+app/api/tables/cleanup-duplicates/route.ts(68,20): error TS18046: 'a' is of type 'unknown'.
+app/api/tables/cleanup-duplicates/route.ts(68,55): error TS18046: 'b' is of type 'unknown'.
+app/api/tables/cleanup-duplicates/route.ts(73,35): error TS2571: Object is of type 'unknown'.
+app/api/tables/remove/route.ts(216,14): error TS18046: 'error' is of type 'unknown'.
+app/api/tables/route.ts(122,90): error TS2554: Expected 1-2 arguments, but got 3.
+app/api/test/subscription-update/route.ts(48,62): error TS2345: Argument of type 'unknown' is not assignable to parameter of type 'LogContext'.
+app/api/test/subscription-update/route.ts(166,16): error TS18046: 'error' is of type 'unknown'.
+app/api/test/update-plan/route.ts(32,68): error TS2554: Expected 1-2 arguments, but got 4.
+app/api/test/update-plan/route.ts(103,87): error TS2345: Argument of type 'unknown' is not assignable to parameter of type 'LogContext'.
+app/api/test/update-plan/route.ts(115,50): error TS18046: 'error' is of type 'unknown'.
+app/api/tier-check/route.ts(107,16): error TS18046: 'error' is of type 'unknown'.
+app/api/venues/upsert/route.ts(76,50): error TS18046: 'error' is of type 'unknown'.
+app/auth/callback/page.tsx(285,58): error TS18046: 'err' is of type 'unknown'.
+app/auth/callback/page.tsx(287,20): error TS18046: 'err' is of type 'unknown'.
+app/auth/callback/page.tsx(288,17): error TS18046: 'err' is of type 'unknown'.
+app/auth/callback/page.tsx(289,18): error TS18046: 'err' is of type 'unknown'.
+app/auth/callback/page.tsx(293,13): error TS18046: 'err' is of type 'unknown'.
+app/auth/callback/page.tsx(300,18): error TS18046: 'err' is of type 'unknown'.
+app/auth/create-account/page.tsx(49,18): error TS18046: 'err' is of type 'unknown'.
+app/auth/create-account/page.tsx(67,18): error TS18046: 'sessionData' is of type 'unknown'.
+app/auth/create-account/page.tsx(69,21): error TS18046: 'sessionData' is of type 'unknown'.
+app/auth/create-account/page.tsx(73,17): error TS18046: 'sessionData' is of type 'unknown'.
+app/auth/create-account/page.tsx(74,28): error TS18046: 'sessionData' is of type 'unknown'.
+app/auth/create-account/page.tsx(92,16): error TS18046: 'err' is of type 'unknown'.
+app/auth/create-account/page.tsx(137,38): error TS2339: Property 'customer_email' does not exist on type '{}'.
+app/complete-profile/form.tsx(162,16): error TS18046: 'error' is of type 'unknown'.
+app/dashboard/[venueId]/analytics/AnalyticsClient.tsx(324,16): error TS18046: 'err' is of type 'unknown'.
+app/dashboard/[venueId]/analytics/AnalyticsClient.tsx(393,25): error TS2345: Argument of type 'unknown[]' is not assignable to parameter of type 'Record<string, any>[]'.
+  Type 'unknown' is not assignable to type 'Record<string, any>'.
+app/dashboard/[venueId]/billing/billing-client.tsx(92,26): error TS2304: Cannot find name 'response'.
+app/dashboard/[venueId]/kds/KDSClient.tsx(86,16): error TS18046: 'err' is of type 'unknown'.
+app/dashboard/[venueId]/kds/KDSClient.tsx(105,16): error TS18046: 'err' is of type 'unknown'.
+app/dashboard/[venueId]/kds/KDSClient.tsx(220,13): error TS18046: 'payload' is of type 'unknown'.
+app/dashboard/[venueId]/kds/KDSClient.tsx(222,20): error TS18046: 'payload' is of type 'unknown'.
+app/dashboard/[venueId]/kds/KDSClient.tsx(224,36): error TS18046: 'payload' is of type 'unknown'.
+app/dashboard/[venueId]/kds/KDSClient.tsx(224,64): error TS18046: 'payload' is of type 'unknown'.
+app/dashboard/[venueId]/kds/KDSClient.tsx(226,20): error TS18046: 'payload' is of type 'unknown'.
+app/dashboard/[venueId]/kds/KDSClient.tsx(227,56): error TS18046: 'payload' is of type 'unknown'.
+app/dashboard/[venueId]/live-orders/LiveOrdersClient.tsx(441,28): error TS18046: 'payload' is of type 'unknown'.
+app/dashboard/[venueId]/live-orders/LiveOrdersClient.tsx(442,28): error TS18046: 'payload' is of type 'unknown'.
+app/dashboard/[venueId]/live-orders/LiveOrdersClient.tsx(444,15): error TS18046: 'payload' is of type 'unknown'.
+app/dashboard/[venueId]/live-orders/LiveOrdersClient.tsx(495,22): error TS18046: 'payload' is of type 'unknown'.
+app/dashboard/[venueId]/live-orders/LiveOrdersClient.tsx(539,22): error TS18046: 'payload' is of type 'unknown'.
+app/dashboard/[venueId]/live-orders/LiveOrdersClient.tsx(540,34): error TS18046: 'payload' is of type 'unknown'.
+app/dashboard/[venueId]/menu-management/MenuManagementClient.tsx(516,11): error TS2552: Cannot find name 'error'. Did you mean 'Error'?
+app/dashboard/[venueId]/menu-management/MenuManagementClient.tsx(517,65): error TS2552: Cannot find name 'error'. Did you mean 'Error'?
+app/dashboard/[venueId]/menu-management/MenuManagementClient.tsx(518,15): error TS2552: Cannot find name 'error'. Did you mean 'Error'?
+app/dashboard/[venueId]/page.client.tsx(145,26): error TS2345: Argument of type '{ zone: string; startUtcISO: string | null; endUtcISO: string | null; startLocalISO: string | null; endLocalISO: string | null; }' is not assignable to parameter of type 'SetStateAction<TimeWindow | null>'.
+  Type '{ zone: string; startUtcISO: string | null; endUtcISO: string | null; startLocalISO: string | null; endLocalISO: string | null; }' is not assignable to type 'TimeWindow'.
+    Types of property 'startUtcISO' are incompatible.
+      Type 'string | null' is not assignable to type 'string'.
+        Type 'null' is not assignable to type 'string'.
+app/dashboard/[venueId]/page.client.tsx(146,43): error TS2345: Argument of type '{ zone: string; startUtcISO: string | null; endUtcISO: string | null; startLocalISO: string | null; endLocalISO: string | null; }' is not assignable to parameter of type 'TimeWindow'.
+  Types of property 'startUtcISO' are incompatible.
+    Type 'string | null' is not assignable to type 'string'.
+      Type 'null' is not assignable to type 'string'.
+app/dashboard/[venueId]/page.client.tsx(160,26): error TS2345: Argument of type '{ zone: string; startUtcISO: string | null; endUtcISO: string | null; startLocalISO: string | null; endLocalISO: string | null; }' is not assignable to parameter of type 'SetStateAction<TimeWindow | null>'.
+  Type '{ zone: string; startUtcISO: string | null; endUtcISO: string | null; startLocalISO: string | null; endLocalISO: string | null; }' is not assignable to type 'TimeWindow'.
+    Types of property 'startUtcISO' are incompatible.
+      Type 'string | null' is not assignable to type 'string'.
+        Type 'null' is not assignable to type 'string'.
+app/dashboard/[venueId]/page.client.tsx(161,47): error TS2345: Argument of type '{ zone: string; startUtcISO: string | null; endUtcISO: string | null; startLocalISO: string | null; endLocalISO: string | null; }' is not assignable to parameter of type 'TimeWindow'.
+  Types of property 'startUtcISO' are incompatible.
+    Type 'string | null' is not assignable to type 'string'.
+      Type 'null' is not assignable to type 'string'.
+app/dashboard/[venueId]/page.client.tsx(189,22): error TS2345: Argument of type '{ zone: string; startUtcISO: string | null; endUtcISO: string | null; startLocalISO: string | null; endLocalISO: string | null; }' is not assignable to parameter of type 'SetStateAction<TimeWindow | null>'.
+  Type '{ zone: string; startUtcISO: string | null; endUtcISO: string | null; startLocalISO: string | null; endLocalISO: string | null; }' is not assignable to type 'TimeWindow'.
+    Types of property 'startUtcISO' are incompatible.
+      Type 'string | null' is not assignable to type 'string'.
+        Type 'null' is not assignable to type 'string'.
+app/dashboard/[venueId]/page.client.tsx(190,33): error TS2345: Argument of type '{ zone: string; startUtcISO: string | null; endUtcISO: string | null; startLocalISO: string | null; endLocalISO: string | null; }' is not assignable to parameter of type 'TimeWindow'.
+  Types of property 'startUtcISO' are incompatible.
+    Type 'string | null' is not assignable to type 'string'.
+      Type 'null' is not assignable to type 'string'.
+app/dashboard/[venueId]/page.client.tsx(235,26): error TS2345: Argument of type '{ zone: string; startUtcISO: string | null; endUtcISO: string | null; startLocalISO: string | null; endLocalISO: string | null; }' is not assignable to parameter of type 'SetStateAction<TimeWindow | null>'.
+  Type '{ zone: string; startUtcISO: string | null; endUtcISO: string | null; startLocalISO: string | null; endLocalISO: string | null; }' is not assignable to type 'TimeWindow'.
+    Types of property 'startUtcISO' are incompatible.
+      Type 'string | null' is not assignable to type 'string'.
+        Type 'null' is not assignable to type 'string'.
+app/dashboard/[venueId]/page.client.tsx(236,37): error TS2345: Argument of type '{ zone: string; startUtcISO: string | null; endUtcISO: string | null; startLocalISO: string | null; endLocalISO: string | null; }' is not assignable to parameter of type 'TimeWindow'.
+  Types of property 'startUtcISO' are incompatible.
+    Type 'string | null' is not assignable to type 'string'.
+      Type 'null' is not assignable to type 'string'.
+app/dashboard/[venueId]/page.client.tsx(266,16): error TS7006: Parameter 'payload' implicitly has an 'any' type.
+app/dashboard/[venueId]/page.client.tsx(613,30): error TS2345: Argument of type 'TimeWindow | null' is not assignable to parameter of type 'TimeWindow'.
+  Type 'null' is not assignable to type 'TimeWindow'.
+app/dashboard/[venueId]/page.client.tsx(641,46): error TS2322: Type '{}' is not assignable to type 'ReactNode'.
+app/dashboard/[venueId]/settings/VenueSettingsClient.tsx(232,16): error TS18046: 'err' is of type 'unknown'.
+app/dashboard/[venueId]/settings/VenueSettingsClient.tsx(235,22): error TS18046: 'err' is of type 'unknown'.
+app/dashboard/[venueId]/settings/VenueSettingsClient.tsx(304,16): error TS18046: 'err' is of type 'unknown'.
+app/dashboard/[venueId]/settings/VenueSettingsClient.tsx(307,22): error TS18046: 'err' is of type 'unknown'.
+app/dashboard/[venueId]/settings/VenueSettingsClient.tsx(365,16): error TS18046: 'err' is of type 'unknown'.
+app/dashboard/[venueId]/settings/VenueSettingsClient.tsx(368,22): error TS18046: 'err' is of type 'unknown'.
+app/dashboard/[venueId]/staff/staff-client.tsx(154,19): error TS2339: Property 'message' does not exist on type '{}'.
+app/dashboard/[venueId]/tables/table-management-client-new.tsx(479,66): error TS18046: 'o' is of type 'unknown'.
+app/dashboard/[venueId]/tables/table-management-client-new.tsx(506,31): error TS18046: 'order' is of type 'unknown'.
+app/dashboard/[venueId]/tables/table-management-client-new.tsx(508,59): error TS18046: 'order' is of type 'unknown'.
+app/dashboard/[venueId]/tables/table-management-client-new.tsx(509,57): error TS18046: 'order' is of type 'unknown'.
+app/dashboard/[venueId]/tables/table-management-client-new.tsx(512,35): error TS18046: 'order' is of type 'unknown'.
+app/demo-order-summary/page.tsx(52,7): error TS2322: Type '{ id: string; venue_id: string; table_number: number; customer_name: string; customer_phone: string; customer_email: string; order_status: string; total_amount: number; notes: string; payment_method: string; ... 4 more ...; items: ({ ...; } | { ...; })[]; }' is not assignable to type 'Order'.
+  Types of property 'table_number' are incompatible.
+    Type 'number' is not assignable to type 'string'.
+app/home/page.tsx(102,66): error TS2339: Property 'email' does not exist on type '{}'.
+app/invitation/[token]/InvitationAcceptanceClient.tsx(126,16): error TS18046: 'err' is of type 'unknown'.
+app/onboarding/menu/page.tsx(95,22): error TS18046: 'error' is of type 'unknown'.
+app/onboarding/menu/page.tsx(154,22): error TS18046: 'error' is of type 'unknown'.
+app/onboarding/tables/page.tsx(140,22): error TS18046: 'error' is of type 'unknown'.
+app/onboarding/tables/page.tsx(210,27): error TS18046: 'table' is of type 'unknown'.
+app/onboarding/tables/page.tsx(211,72): error TS18046: 'table' is of type 'unknown'.
+app/onboarding/tables/page.tsx(213,26): error TS18046: 'table' is of type 'unknown'.
+app/onboarding/tables/page.tsx(214,47): error TS18046: 'table' is of type 'unknown'.
+app/onboarding/tables/page.tsx(218,22): error TS18046: 'table' is of type 'unknown'.
+app/order-summary/[orderId]/page.tsx(249,15): error TS18046: 'payload' is of type 'unknown'.
+app/order-summary/[orderId]/page.tsx(253,41): error TS18046: 'payload' is of type 'unknown'.
+app/order-summary/[orderId]/page.tsx(257,22): error TS18046: 'payload' is of type 'unknown'.
+app/order-summary/page.tsx(154,49): error TS2304: Cannot find name 'params'.
+app/order-tracking/[orderId]/page.tsx(107,15): error TS18046: 'payload' is of type 'unknown'.
+app/order-tracking/[orderId]/page.tsx(113,55): error TS18046: 'payload' is of type 'unknown'.
+app/order-tracking/[orderId]/page.tsx(118,22): error TS18046: 'payload' is of type 'unknown'.
+app/order/page.tsx(427,43): error TS18046: 'err' is of type 'unknown'.
+app/page.tsx(319,12): error TS2304: Cannot find name 'ensureOrgResponse'.
+app/page.tsx(331,38): error TS2304: Cannot find name 'ensureOrgResponse'.
+app/payment/success/page.tsx(80,7): error TS2322: Type 'unknown' is not assignable to type 'Order | undefined'.
+app/sign-in/signin-form.tsx(87,24): error TS2339: Property 'message' does not exist on type '{}'.
+app/sign-up/signup-form.tsx(118,16): error TS18046: 'err' is of type 'unknown'.
+app/sign-up/signup-form.tsx(133,16): error TS18046: 'err' is of type 'unknown'.
+app/sign-up/signup-form.tsx(267,30): error TS18046: 'err' is of type 'unknown'.
+components/account-migrator.tsx(89,60): error TS18046: 'error' is of type 'unknown'.
+components/ai/assistant-command-palette.tsx(106,33): error TS2552: Cannot find name 'fixResponse'. Did you mean 'response'?
+components/ai/assistant-command-palette.tsx(108,15): error TS2552: Cannot find name 'fixResponse'. Did you mean 'response'?
+components/ai/assistant-command-palette.tsx(186,16): error TS18046: 'err' is of type 'unknown'.
+components/ai/assistant-command-palette.tsx(240,47): error TS18046: 'r' is of type 'unknown'.
+components/ai/assistant-command-palette.tsx(241,26): error TS2339: Property 'result' does not exist on type '{}'.
+components/ai/assistant-command-palette.tsx(242,35): error TS2339: Property 'result' does not exist on type '{}'.
+components/ai/assistant-command-palette.tsx(255,16): error TS18046: 'err' is of type 'unknown'.
+components/ai/assistant-command-palette.tsx(401,36): error TS18046: 'item' is of type 'unknown'.
+components/ai/assistant-command-palette.tsx(404,25): error TS18046: 'item' is of type 'unknown'.
+components/ai/assistant-command-palette.tsx(489,25): error TS18046: 'item' is of type 'unknown'.
+components/ai/chat-interface.tsx(442,16): error TS18046: 'error' is of type 'unknown'.
+components/ai/chat-interface.tsx(448,45): error TS18046: 'error' is of type 'unknown'.
+components/ai/chat-interface.tsx(606,16): error TS18046: 'err' is of type 'unknown'.
+components/ai/chat-interface.tsx(661,16): error TS18046: 'err' is of type 'unknown'.
+components/ai/chat-interface.tsx(687,11): error TS2552: Cannot find name 'response'. Did you mean 'Response'?
+components/ai/chat-interface.tsx(698,33): error TS2552: Cannot find name 'response'. Did you mean 'Response'?
+components/ai/production-chat-interface.tsx(81,63): error TS2345: Argument of type 'unknown' is not assignable to parameter of type 'LogContext'.
+components/ai/production-chat-interface.tsx(98,58): error TS2345: Argument of type 'unknown' is not assignable to parameter of type 'LogContext'.
+components/ai/production-chat-interface.tsx(165,57): error TS2345: Argument of type 'unknown' is not assignable to parameter of type 'LogContext'.
+components/analytics-dashboard.tsx(312,35): error TS18046: 'payload' is of type 'unknown'.
+components/analytics-dashboard.tsx(312,71): error TS18046: 'payload' is of type 'unknown'.
+components/customer-feedback-form.tsx(138,16): error TS18046: 'err' is of type 'unknown'.
+components/demo-ai-section.tsx(162,9): error TS2322: Type 'unknown' is not assignable to type 'ReactNode'.
+components/demo-ai-section.tsx(186,9): error TS2322: Type 'unknown' is not assignable to type 'ReactNode'.
+components/demo-ai-section.tsx(219,22): error TS2339: Property 'success' does not exist on type '{}'.
+components/demo-ai-section.tsx(224,25): error TS2339: Property 'success' does not exist on type '{}'.
+components/demo-ai-section.tsx(231,28): error TS2339: Property 'success' does not exist on type '{}'.
+components/demo-ai-section.tsx(233,29): error TS2339: Property 'success' does not exist on type '{}'.
+components/demo-ai-section.tsx(236,28): error TS2339: Property 'success' does not exist on type '{}'.
+components/demo-ai-section.tsx(238,29): error TS2339: Property 'message' does not exist on type '{}'.
+components/demo-ai-section.tsx(244,23): error TS2339: Property 'success' does not exist on type '{}'.
+components/demo-ai-section.tsx(244,43): error TS2339: Property 'preview' does not exist on type '{}'.
+components/demo-ai-section.tsx(250,29): error TS2339: Property 'preview' does not exist on type '{}'.
+components/demo-ai-section.tsx(341,31): error TS2339: Property 'preview' does not exist on type '{}'.
+components/demo-ai-section.tsx(347,37): error TS2339: Property 'preview' does not exist on type '{}'.
+components/enhanced-feedback-system.tsx(151,58): error TS18046: 'err' is of type 'unknown'.
+components/enhanced-feedback-system.tsx(152,16): error TS18046: 'err' is of type 'unknown'.
+components/enhanced-feedback-system.tsx(430,35): error TS18046: 'question' is of type 'unknown'.
+components/enhanced-feedback-system.tsx(434,62): error TS18046: 'question' is of type 'unknown'.
+components/enhanced-feedback-system.tsx(435,47): error TS18046: 'question' is of type 'unknown'.
+components/enhanced-feedback-system.tsx(436,34): error TS18046: 'question' is of type 'unknown'.
+components/enhanced-feedback-system.tsx(438,33): error TS18046: 'question' is of type 'unknown'.
+components/enhanced-order-lifecycle.tsx(254,16): error TS18046: 'error' is of type 'unknown'.
+components/inventory/ImportCSVDialog.tsx(86,38): error TS2339: Property 'success' does not exist on type '{}'.
+components/inventory/ImportCSVDialog.tsx(86,56): error TS2339: Property 'error_count' does not exist on type '{}'.
+components/inventory/ImportCSVDialog.tsx(87,25): error TS2339: Property 'success' does not exist on type '{}'.
+components/inventory/ImportCSVDialog.tsx(87,43): error TS2339: Property 'error_count' does not exist on type '{}'.
+components/inventory/ImportCSVDialog.tsx(93,27): error TS2339: Property 'success' does not exist on type '{}'.
+components/inventory/ImportCSVDialog.tsx(95,53): error TS2339: Property 'imported_count' does not exist on type '{}'.
+components/inventory/ImportCSVDialog.tsx(96,31): error TS2339: Property 'error_count' does not exist on type '{}'.
+components/inventory/ImportCSVDialog.tsx(96,61): error TS2339: Property 'error_count' does not exist on type '{}'.
+components/inventory/ImportCSVDialog.tsx(99,28): error TS2339: Property 'error' does not exist on type '{}'.
+components/inventory/ImportCSVDialog.tsx(105,22): error TS2339: Property 'errors' does not exist on type '{}'.
+components/inventory/ImportCSVDialog.tsx(105,39): error TS2339: Property 'errors' does not exist on type '{}'.
+components/inventory/ImportCSVDialog.tsx(108,25): error TS2339: Property 'errors' does not exist on type '{}'.
+components/menu-management.tsx(532,43): error TS18046: 'error' is of type 'unknown'.
+components/menu-management.tsx(563,48): error TS2339: Property 'trim' does not exist on type '{}'.
+components/menu-management.tsx(1225,17): error TS2322: Type '{}' is not assignable to type 'string | number | readonly string[] | undefined'.
+components/menu-management.tsx(1233,17): error TS2322: Type '{}' is not assignable to type 'string | number | readonly string[] | undefined'.
+components/menu/PdfMenu.stories.tsx(1,37): error TS2307: Cannot find module '@storybook/react' or its corresponding type declarations.
+components/menu/PdfMenu.stories.tsx(93,19): error TS7006: Parameter 'id' implicitly has an 'any' type.
+components/menu/PdfMenu.tsx(15,18): error TS2307: Cannot find module 'pdfjs-dist/build/pdf.worker.entry' or its corresponding type declarations.
+components/menu/PdfMenu.tsx(168,17): error TS2322: Type '(el: HTMLCanvasElement | null) => HTMLCanvasElement | null' is not assignable to type 'LegacyRef<HTMLCanvasElement> | undefined'.
+  Type '(el: HTMLCanvasElement | null) => HTMLCanvasElement | null' is not assignable to type '(instance: HTMLCanvasElement | null) => void | (() => VoidOrUndefinedOnly)'.
+    Type 'HTMLCanvasElement | null' is not assignable to type 'void | (() => VoidOrUndefinedOnly)'.
+      Type 'null' is not assignable to type 'void | (() => VoidOrUndefinedOnly)'.
+components/menu/PdfMenu.tsx(279,35): error TS2503: Cannot find namespace 'pdfjs'.
+components/menu/PdfMenu.tsx(352,17): error TS2322: Type '(el: HTMLCanvasElement | null) => HTMLCanvasElement | null' is not assignable to type 'LegacyRef<HTMLCanvasElement> | undefined'.
+  Type '(el: HTMLCanvasElement | null) => HTMLCanvasElement | null' is not assignable to type '(instance: HTMLCanvasElement | null) => void | (() => VoidOrUndefinedOnly)'.
+    Type 'HTMLCanvasElement | null' is not assignable to type 'void | (() => VoidOrUndefinedOnly)'.
+      Type 'null' is not assignable to type 'void | (() => VoidOrUndefinedOnly)'.
+components/MenuUploadCard.tsx(216,22): error TS18046: 'error' is of type 'unknown'.
+components/MenuUploadCard.tsx(290,22): error TS18046: 'error' is of type 'unknown'.
+components/order-summary.tsx(209,10): error TS7006: Parameter 'payload' implicitly has an 'any' type.
+components/orders/OrderCard.tsx(149,14): error TS2552: Cannot find name 'response'. Did you mean 'Response'?
+components/orders/OrderCard.tsx(150,35): error TS2552: Cannot find name 'response'. Did you mean 'Response'?
+components/orders/OrderCard.tsx(154,28): error TS2552: Cannot find name 'response'. Did you mean 'Response'?
+components/real-time-order-timeline.tsx(130,15): error TS18046: 'payload' is of type 'unknown'.
+components/real-time-order-timeline.tsx(136,55): error TS18046: 'payload' is of type 'unknown'.
+components/real-time-order-timeline.tsx(141,22): error TS18046: 'payload' is of type 'unknown'.
+components/settings/BillingSection.tsx(47,26): error TS2304: Cannot find name 'response'.
+components/settings/BillingSection.tsx(74,26): error TS2304: Cannot find name 'response'.
+components/settings/DailyResetSettings.tsx(72,16): error TS18046: 'err' is of type 'unknown'.
+components/staff/InvitationBasedStaffManagement.tsx(222,16): error TS18046: 'err' is of type 'unknown'.
+components/staff/InvitationBasedStaffManagement.tsx(264,22): error TS18046: 'err' is of type 'unknown'.
+components/table-management/AddTableDialog.tsx(65,11): error TS18046: 'error' is of type 'unknown'.
+components/table-management/AddTableDialog.tsx(65,58): error TS18046: 'error' is of type 'unknown'.
+components/table-management/AddTableDialog.tsx(68,18): error TS18046: 'error' is of type 'unknown'.
+components/venue-switcher-popup.tsx(173,22): error TS18046: 'error' is of type 'unknown'.
+components/venue-switcher-popup.tsx(220,22): error TS18046: 'error' is of type 'unknown'.
+components/venue-switcher-popup.tsx(254,22): error TS18046: 'error' is of type 'unknown'.
+e2e/menu-upload.spec.ts(1,30): error TS2307: Cannot find module '@playwright/test' or its corresponding type declarations.
+e2e/menu-upload.spec.ts(4,28): error TS7031: Binding element 'page' implicitly has an 'any' type.
+e2e/menu-upload.spec.ts(9,43): error TS7031: Binding element 'page' implicitly has an 'any' type.
+e2e/menu-upload.spec.ts(29,59): error TS7031: Binding element 'page' implicitly has an 'any' type.
+e2e/menu-upload.spec.ts(40,58): error TS7031: Binding element 'page' implicitly has an 'any' type.
+hooks/use-auth.ts(36,53): error TS2345: Argument of type 'unknown' is not assignable to parameter of type 'LogContext'.
+hooks/use-auth.ts(74,51): error TS2345: Argument of type 'unknown' is not assignable to parameter of type 'LogContext'.
+hooks/use-staff-counts.ts(39,51): error TS2345: Argument of type 'unknown' is not assignable to parameter of type 'LogContext'.
+hooks/use-tab-counts.ts(47,49): error TS2345: Argument of type 'unknown' is not assignable to parameter of type 'LogContext'.
+hooks/useCounterOrders.ts(131,19): error TS18046: 'payload' is of type 'unknown'.
+hooks/useCounterOrders.ts(131,34): error TS18046: 'payload' is of type 'unknown'.
+hooks/useCounterOrders.ts(133,70): error TS18046: 'payload' is of type 'unknown'.
+hooks/useCsvDownload.ts(64,59): error TS2345: Argument of type 'unknown' is not assignable to parameter of type 'LogContext'.
+hooks/useCsvDownload.ts(74,67): error TS2345: Argument of type 'unknown' is not assignable to parameter of type 'LogContext'.
+hooks/useDailyReset.ts(62,73): error TS2345: Argument of type 'unknown' is not assignable to parameter of type 'LogContext'.
+hooks/useEnhancedTableMerge.ts(87,63): error TS2345: Argument of type 'unknown' is not assignable to parameter of type 'LogContext'.
+hooks/useGestures.ts(282,47): error TS2345: Argument of type 'unknown' is not assignable to parameter of type 'LogContext'.
+hooks/useGroupSessions.ts(51,75): error TS2345: Argument of type 'unknown' is not assignable to parameter of type 'LogContext'.
+hooks/useInventoryAlerts.ts(21,58): error TS2345: Argument of type 'unknown' is not assignable to parameter of type 'LogContext'.
+hooks/useLiveOrders.ts(96,16): error TS18046: 'err' is of type 'unknown'.
+hooks/usePerformanceMonitor.ts(49,87): error TS2345: Argument of type 'unknown' is not assignable to parameter of type 'LogContext'.
+hooks/useTableActions.ts(41,68): error TS2345: Argument of type 'unknown' is not assignable to parameter of type 'LogContext'.
+hooks/useTableManagement.ts(53,69): error TS2345: Argument of type 'unknown' is not assignable to parameter of type 'LogContext'.
+hooks/useTableManagement.ts(88,69): error TS2345: Argument of type 'unknown' is not assignable to parameter of type 'LogContext'.
+hooks/useTableManagement.ts(114,69): error TS2345: Argument of type 'unknown' is not assignable to parameter of type 'LogContext'.
+hooks/useTableManagement.ts(140,67): error TS2345: Argument of type 'unknown' is not assignable to parameter of type 'LogContext'.
+hooks/useTableOrders.ts(163,19): error TS18046: 'payload' is of type 'unknown'.
+hooks/useTableOrders.ts(163,34): error TS18046: 'payload' is of type 'unknown'.
+hooks/useTableOrders.ts(165,66): error TS18046: 'payload' is of type 'unknown'.
+lib/ai/assistant-llm.ts(381,74): error TS2345: Argument of type 'unknown' is not assignable to parameter of type 'LogContext'.
+lib/ai/assistant-llm.ts(426,72): error TS2345: Argument of type 'unknown' is not assignable to parameter of type 'LogContext'.
+lib/ai/assistant-llm.ts(474,55): error TS2345: Argument of type 'unknown' is not assignable to parameter of type 'LogContext'.
+lib/ai/assistant-llm.ts(509,65): error TS2345: Argument of type 'unknown' is not assignable to parameter of type 'LogContext'.
+lib/ai/context-builders.ts(45,7): error TS2552: Cannot find name 'logger'. Did you mean 'aiLogger'?
+lib/ai/executors/BaseExecutor.ts(26,14): error TS2315: Type 'AIExecutionResult' is not generic.
+lib/ai/executors/BaseExecutor.ts(36,55): error TS2345: Argument of type 'unknown' is not assignable to parameter of type 'LogContext'.
+lib/ai/executors/BaseExecutor.ts(46,41): error TS2345: Argument of type 'string' is not assignable to parameter of type '"UNAUTHORIZED" | "INVALID_PARAMS" | "GUARDRAIL_VIOLATION" | "EXECUTION_FAILED" | "RATE_LIMITED" | "TIER_RESTRICTED"'.
+lib/ai/executors/BaseExecutor.ts(54,48): error TS2345: Argument of type 'unknown' is not assignable to parameter of type 'LogContext'.
+lib/ai/openai-service.ts(225,66): error TS2345: Argument of type 'unknown' is not assignable to parameter of type 'LogContext'.
+lib/ai/openai-service.ts(226,66): error TS2339: Property 'message' does not exist on type '{}'.
+lib/ai/openai-service.ts(285,48): error TS2345: Argument of type 'unknown' is not assignable to parameter of type 'LogContext'.
+lib/ai/openai-service.ts(286,49): error TS2339: Property 'message' does not exist on type '{}'.
+lib/ai/openai-service.ts(387,50): error TS2345: Argument of type 'unknown' is not assignable to parameter of type 'LogContext'.
+lib/ai/tools/menu-tools.ts(57,56): error TS2345: Argument of type 'string[]' is not assignable to parameter of type 'LogContext'.
+  Type 'string[]' is not assignable to type 'Record<string, unknown>'.
+    Index signature for type 'string' is missing in type 'string[]'.
+lib/api/response-helpers.ts(175,24): error TS2345: Argument of type '"UNAUTHORIZED"' is not assignable to parameter of type 'ErrorCode'.
+lib/auth/client.ts(21,73): error TS2345: Argument of type 'unknown' is not assignable to parameter of type 'LogContext'.
+lib/auth/client.ts(69,58): error TS2345: Argument of type 'unknown' is not assignable to parameter of type 'LogContext'.
+lib/auth/permissions.ts(234,29): error TS2339: Property 'venues' does not exist on type 'never'.
+lib/auth/signin.ts(62,48): error TS2345: Argument of type 'unknown' is not assignable to parameter of type 'LogContext'.
+lib/auth/signin.ts(71,51): error TS2345: Argument of type 'unknown' is not assignable to parameter of type 'LogContext'.
+lib/auth/supabase-callback.ts(47,7): error TS18046: 'payload' is of type 'unknown'.
+lib/auth/supabase-callback.ts(50,72): error TS2345: Argument of type 'unknown' is not assignable to parameter of type 'string'.
+lib/auth/supabase-callback.ts(77,16): error TS18046: 'err' is of type 'unknown'.
+lib/auth/supabase-callback.ts(78,14): error TS18046: 'err' is of type 'unknown'.
+lib/auth/supabase-callback.ts(82,42): error TS18046: 'err' is of type 'unknown'.
+lib/cache.ts(57,46): error TS2554: Expected 1-2 arguments, but got 3.
+lib/cache.ts(70,46): error TS2554: Expected 1-2 arguments, but got 3.
+lib/cache.ts(82,49): error TS2554: Expected 1-2 arguments, but got 3.
+lib/cache.ts(98,53): error TS2554: Expected 1-2 arguments, but got 3.
+lib/cache.ts(111,49): error TS2554: Expected 1-2 arguments, but got 3.
+lib/cache.ts(125,47): error TS2554: Expected 1-2 arguments, but got 3.
+lib/cache.ts(142,47): error TS2554: Expected 1-2 arguments, but got 3.
+lib/cache/index.ts(68,59): error TS2345: Argument of type 'unknown' is not assignable to parameter of type 'LogContext'.
+lib/cache/redis.ts(47,54): error TS2345: Argument of type 'unknown' is not assignable to parameter of type 'LogContext'.
+lib/cache/redis.ts(74,55): error TS2554: Expected 1-2 arguments, but got 3.
+lib/cache/redis.ts(91,55): error TS2554: Expected 1-2 arguments, but got 3.
+lib/cache/redis.ts(108,56): error TS2554: Expected 1-2 arguments, but got 3.
+lib/cache/redis.ts(128,64): error TS2554: Expected 1-2 arguments, but got 3.
+lib/cache/redis.ts(145,62): error TS2554: Expected 1-2 arguments, but got 3.
+lib/cache/redis.ts(161,55): error TS2554: Expected 1-2 arguments, but got 3.
+lib/cache/redis.ts(177,56): error TS2554: Expected 1-2 arguments, but got 3.
+lib/cache/redis.ts(194,60): error TS2345: Argument of type 'unknown' is not assignable to parameter of type 'LogContext'.
+lib/cache/redis.ts(221,60): error TS2345: Argument of type 'unknown' is not assignable to parameter of type 'LogContext'.
+lib/cache/redis.ts(238,53): error TS2345: Argument of type 'unknown' is not assignable to parameter of type 'LogContext'.
+lib/code-splitting.tsx(66,81): error TS2345: Argument of type 'unknown' is not assignable to parameter of type 'LogContext'.
+lib/connection-monitor.ts(66,60): error TS2345: Argument of type 'unknown' is not assignable to parameter of type 'LogContext'.
+lib/debug.ts(7,42): error TS2345: Argument of type 'unknown' is not assignable to parameter of type 'LogContext'.
+lib/debug.ts(10,43): error TS2345: Argument of type 'unknown' is not assignable to parameter of type 'LogContext'.
+lib/email.ts(161,53): error TS2345: Argument of type 'unknown' is not assignable to parameter of type 'LogContext'.
+lib/email.ts(162,59): error TS2345: Argument of type 'unknown' is not assignable to parameter of type 'LogContext'.
+lib/email.ts(183,61): error TS2345: Argument of type 'unknown' is not assignable to parameter of type 'LogContext'.
+lib/email.ts(213,64): error TS2345: Argument of type 'unknown' is not assignable to parameter of type 'LogContext'.
+lib/email.ts(231,43): error TS2345: Argument of type 'unknown' is not assignable to parameter of type 'LogContext'.
+lib/email.ts(247,45): error TS2345: Argument of type 'unknown' is not assignable to parameter of type 'LogContext'.
+lib/feature-gates.ts(84,54): error TS2345: Argument of type 'unknown' is not assignable to parameter of type 'LogContext'.
+lib/feature-gates.ts(136,50): error TS2345: Argument of type 'unknown' is not assignable to parameter of type 'LogContext'.
+lib/inventory-seed.ts(220,94): error TS2345: Argument of type 'unknown' is not assignable to parameter of type 'LogContext'.
+lib/inventory-seed.ts(277,94): error TS2345: Argument of type 'unknown' is not assignable to parameter of type 'LogContext'.
+lib/logger/production-logger.ts(110,49): error TS2698: Spread types may only be created from object types.
+lib/monitoring/performance.ts(86,56): error TS2345: Argument of type 'unknown' is not assignable to parameter of type 'LogContext'.
+lib/parseMenuFC.ts(87,60): error TS2345: Argument of type 'unknown' is not assignable to parameter of type 'LogContext'.
+lib/parseMenuFC.ts(96,64): error TS2345: Argument of type 'unknown' is not assignable to parameter of type 'LogContext'.
+lib/parseMenuFC.ts(155,65): error TS2345: Argument of type 'unknown' is not assignable to parameter of type 'LogContext'.
+lib/parseMenuFC.ts(234,59): error TS2345: Argument of type 'unknown' is not assignable to parameter of type 'LogContext'.
+lib/parseWithOpenAI.ts(55,75): error TS2345: Argument of type 'unknown' is not assignable to parameter of type 'LogContext'.
+lib/parseWithOpenAI.ts(116,64): error TS2345: Argument of type 'unknown' is not assignable to parameter of type 'LogContext'.
+lib/pdf-to-images.ts(51,64): error TS2554: Expected 1-2 arguments, but got 3.
+lib/pdf-to-images.ts(75,71): error TS2554: Expected 1-2 arguments, but got 4.
+lib/pdf-to-images.ts(79,53): error TS2554: Expected 1-2 arguments, but got 4.
+lib/pdf-to-images.ts(88,55): error TS2554: Expected 1-2 arguments, but got 4.
+lib/pdf-to-images.ts(94,70): error TS2554: Expected 1-2 arguments, but got 4.
+lib/pdf-to-images.ts(102,69): error TS2345: Argument of type 'unknown' is not assignable to parameter of type 'LogContext'.
+lib/pdf-to-images.ts(103,50): error TS18046: 'error' is of type 'unknown'.
+lib/pdf-to-images.ts(112,69): error TS2345: Argument of type 'unknown' is not assignable to parameter of type 'LogContext'.
+lib/pdfImporter/googleVisionOCR.ts(53,68): error TS2345: Argument of type 'unknown' is not assignable to parameter of type 'LogContext'.
+lib/pdfImporter/googleVisionOCR.ts(127,53): error TS2345: Argument of type 'unknown' is not assignable to parameter of type 'LogContext'.
+lib/pdfImporter/googleVisionOCR.ts(184,16): error TS18046: 'a' is of type 'unknown'.
+lib/pdfImporter/googleVisionOCR.ts(185,16): error TS18046: 'b' is of type 'unknown'.
+lib/pdfImporter/googleVisionOCR.ts(191,18): error TS2571: Object is of type 'unknown'.
+lib/pdfImporter/googleVisionOCR.ts(195,19): error TS18046: 'word' is of type 'unknown'.
+lib/pdfImporter/googleVisionOCR.ts(227,26): error TS18046: 'word' is of type 'unknown'.
+lib/pdfImporter/googleVisionOCR.ts(250,19): error TS18046: 'word' is of type 'unknown'.
+lib/pdfImporter/googleVisionOCR.ts(253,10): error TS18046: 'totalConfidence' is of type 'unknown'.
+lib/pdfImporter/gptClassifier.ts(86,59): error TS2345: Argument of type 'unknown' is not assignable to parameter of type 'LogContext'.
+lib/pdfImporter/gptClassifier.ts(222,71): error TS2345: Argument of type 'unknown' is not assignable to parameter of type 'LogContext'.
+lib/pdfImporter/jsonRepair.ts(638,56): error TS2345: Argument of type 'string[]' is not assignable to parameter of type 'LogContext'.
+  Type 'string[]' is not assignable to type 'Record<string, unknown>'.
+    Index signature for type 'string' is missing in type 'string[]'.
+lib/pdfImporter/mainImporter.ts(233,49): error TS2345: Argument of type 'unknown' is not assignable to parameter of type 'LogContext'.
+lib/pdfImporter/mainImporter.ts(237,14): error TS18046: 'error' is of type 'unknown'.
+lib/pdfImporter/pdfDetection.ts(40,52): error TS2345: Argument of type 'unknown' is not assignable to parameter of type 'LogContext'.
+lib/pdfImporter/pdfDetection.ts(70,60): error TS2345: Argument of type 'unknown' is not assignable to parameter of type 'LogContext'.
+lib/pdfImporter/pdfDetection.ts(113,59): error TS2345: Argument of type 'unknown' is not assignable to parameter of type 'LogContext'.
+lib/pdfImporter/pdfDetection.ts(114,48): error TS18046: 'error' is of type 'unknown'.
+lib/pdfImporter/processingModes.ts(75,5): error TS2322: Type 'unknown[]' is not assignable to type 'ParsedCategory[]'.
+  Type 'unknown' is not assignable to type 'ParsedCategory'.
+lib/pdfImporter/processingModes.ts(127,5): error TS2322: Type 'unknown[]' is not assignable to type 'ParsedCategory[]'.
+  Type 'unknown' is not assignable to type 'ParsedCategory'.
+lib/pdfImporter/processingModes.ts(421,9): error TS18046: 'item' is of type 'unknown'.
+lib/pdfImporter/processingModes.ts(426,9): error TS18046: 'item' is of type 'unknown'.
+lib/pdfImporter/processingModes.ts(431,10): error TS18046: 'item' is of type 'unknown'.
+lib/pdfImporter/processingModes.ts(431,24): error TS18046: 'item' is of type 'unknown'.
+lib/pdfImporter/processingModes.ts(447,17): error TS18046: 'item' is of type 'unknown'.
+lib/pdfImporter/processingModes.ts(455,17): error TS18046: 'item' is of type 'unknown'.
+lib/pdfImporter/processingModes.ts(472,19): error TS18046: 'item' is of type 'unknown'.
+lib/pdfImporter/processingModes.ts(476,7): error TS18046: 'item' is of type 'unknown'.
+lib/pdfImporter/processingModes.ts(478,7): error TS18046: 'item' is of type 'unknown'.
+lib/pdfImporter/processingModes.ts(480,7): error TS18046: 'item' is of type 'unknown'.
+lib/pdfImporter/processingModes.ts(482,7): error TS18046: 'item' is of type 'unknown'.
+lib/pdfImporter/processingModes.ts(497,26): error TS18046: 'item' is of type 'unknown'.
+lib/pdfImporter/processingModes.ts(519,26): error TS18046: 'item' is of type 'unknown'.
+lib/pdfImporter/processingModes.ts(537,60): error TS18046: 'cat' is of type 'unknown'.
+lib/pdfImporter/processingModes.ts(543,38): error TS18046: 'totalItems' is of type 'unknown'.
+lib/pdfImporter/processingModes.ts(544,14): error TS18046: 'totalItems' is of type 'unknown'.
+lib/pdfImporter/processingModes.ts(544,32): error TS18046: 'totalItems' is of type 'unknown'.
+lib/pdfImporter/robustMenuParser.ts(120,67): error TS2345: Argument of type 'unknown' is not assignable to parameter of type 'LogContext'.
+lib/pdfImporter/robustMenuParser.ts(121,19): error TS18046: 'error' is of type 'unknown'.
+lib/pdfImporter/robustMenuParser.ts(252,38): error TS18046: 'error' is of type 'unknown'.
+lib/pdfImporter/robustMenuParser.ts(341,29): error TS18046: 'item' is of type 'unknown'.
+lib/pdfImporter/robustMenuParser.ts(382,58): error TS18046: 'item' is of type 'unknown'.
+lib/pdfImporter/robustMenuParser.ts(388,64): error TS18046: 'item' is of type 'unknown'.
+lib/pdfImporter/robustMenuParser.ts(388,84): error TS18046: 'item' is of type 'unknown'.
+lib/pdfImporter/schemaValidator.ts(243,66): error TS2345: Argument of type 'unknown' is not assignable to parameter of type 'LogContext'.
+lib/pdfImporter/schemaValidator.ts(246,14): error TS18046: 'error' is of type 'unknown'.
+lib/pdfImporter/schemaValidator.ts(288,59): error TS2345: Argument of type 'unknown' is not assignable to parameter of type 'LogContext'.
+lib/pdfImporter/schemaValidator.ts(291,38): error TS18046: 'error' is of type 'unknown'.
+lib/performance/request-optimizer.ts(21,7): error TS2322: Type 'unknown' is not assignable to type 'T'.
+  'T' could be instantiated with an arbitrary type which could be unrelated to 'unknown'.
+lib/reassign.ts(3,16): error TS18046: 'm' is of type 'unknown'.
+lib/reassign.ts(4,75): error TS2698: Spread types may only be created from object types.
+lib/reassign.ts(5,65): error TS2698: Spread types may only be created from object types.
+lib/retry.ts(58,7): error TS2304: Cannot find name 'logger'.
+lib/sectionPost.ts(7,26): error TS18046: 'it' is of type 'unknown'.
+lib/sectionPost.ts(8,47): error TS18046: 'it' is of type 'unknown'.
+lib/sectionPost.ts(8,60): error TS18046: 'it' is of type 'unknown'.
+lib/sectionPost.ts(9,9): error TS18046: 'it' is of type 'unknown'.
+lib/sectionPost.ts(10,20): error TS2698: Spread types may only be created from object types.
+lib/sectionPost.ts(10,78): error TS18046: 'it' is of type 'unknown'.
+lib/sectionPost.ts(13,17): error TS2698: Spread types may only be created from object types.
+lib/table-states.ts(254,22): error TS18046: 'table' is of type 'unknown'.
+lib/table-states.ts(260,9): error TS2698: Spread types may only be created from object types.
+lib/tools/menu.ts(842,46): error TS2339: Property 'id' does not exist on type '{}'.
+lib/tools/menu.ts(842,68): error TS2339: Property 'name' does not exist on type '{}'.
+lib/tools/menu.ts(849,30): error TS2339: Property 'name' does not exist on type '{}'.
+lib/tools/menu.ts(854,26): error TS2339: Property 'category' does not exist on type '{}'.
+lib/tools/menu.ts(855,46): error TS2339: Property 'category' does not exist on type '{}'.
+lib/tools/menu.ts(858,56): error TS2339: Property 'description' does not exist on type '{}'.
+lib/tools/menu.ts(859,49): error TS2339: Property 'description' does not exist on type '{}'.
+lib/tools/menu.ts(862,67): error TS2339: Property 'id' does not exist on type '{}'.
+lib/tools/menu.ts(862,89): error TS2339: Property 'name' does not exist on type '{}'.
+lib/tools/menu.ts(862,123): error TS2339: Property 'category' does not exist on type '{}'.
+lib/tools/menu.ts(867,34): error TS2339: Property 'id' does not exist on type '{}'.

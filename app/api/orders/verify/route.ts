@@ -3,6 +3,7 @@ import Stripe from 'stripe';
 import { createClient } from '@/lib/supabase/server';
 import { stripe } from '@/lib/stripe-client';
 import { apiLogger, logger } from '@/lib/logger';
+import { getErrorMessage, getErrorDetails } from '@/lib/utils/errors';
 
 export const runtime = 'nodejs';
 export const dynamic = 'force-dynamic';
@@ -92,11 +93,11 @@ export async function GET(req: NextRequest) {
       updated: true 
     });
 
-  } catch (error) {
-    logger.error('[VERIFY] Error:', { error: error instanceof Error ? error.message : 'Unknown error' });
+  } catch (error: unknown) {
+    logger.error('[VERIFY] Error:', { error: error instanceof Error ? getErrorMessage(error) : 'Unknown error' });
     return NextResponse.json({ 
       error: 'Internal server error',
-      details: error instanceof Error ? error.message : 'Unknown error'
+      details: error instanceof Error ? getErrorMessage(error) : 'Unknown error'
     }, { status: 500 });
   }
 }

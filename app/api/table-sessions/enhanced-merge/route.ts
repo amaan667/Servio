@@ -5,6 +5,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { createAdminClient, getAuthenticatedUser } from '@/lib/supabase/server';
 import { getTableState, getMergeScenario } from '@/lib/table-states';
 import { logger } from '@/lib/logger';
+import { getErrorMessage, getErrorDetails } from '@/lib/utils/errors';
 
 export async function POST(req: NextRequest) {
   try {
@@ -132,8 +133,8 @@ export async function POST(req: NextRequest) {
       description: mergeScenario.description
     });
 
-  } catch (error) {
-    logger.error('[ENHANCED MERGE] Unexpected error:', { error: error instanceof Error ? error.message : 'Unknown error' });
+  } catch (error: unknown) {
+    logger.error('[ENHANCED MERGE] Unexpected error:', { error: error instanceof Error ? getErrorMessage(error) : 'Unknown error' });
     return NextResponse.json({ error: 'Internal server error' }, { status: 500 });
   }
 }
@@ -195,8 +196,8 @@ async function mergeFreeTables(supabase: any, sourceTable: any, targetTable: any
         total_seats: sourceTable.seat_count + targetTable.seat_count
       }
     };
-  } catch (error) {
-    logger.error('[ENHANCED MERGE] Error merging free tables:', { error: error instanceof Error ? error.message : 'Unknown error' });
+  } catch (error: unknown) {
+    logger.error('[ENHANCED MERGE] Error merging free tables:', { error: error instanceof Error ? getErrorMessage(error) : 'Unknown error' });
     return { error: 'Failed to merge free tables' };
   }
 }
@@ -259,8 +260,8 @@ async function expandOccupiedTable(supabase: any, sourceTable: any, targetTable:
         session_id: occupiedSession.id
       }
     };
-  } catch (error) {
-    logger.error('[ENHANCED MERGE] Error expanding occupied table:', { error: error instanceof Error ? error.message : 'Unknown error' });
+  } catch (error: unknown) {
+    logger.error('[ENHANCED MERGE] Error expanding occupied table:', { error: error instanceof Error ? getErrorMessage(error) : 'Unknown error' });
     return { error: 'Failed to expand occupied table' };
   }
 }
@@ -310,8 +311,8 @@ async function expandReservedTable(supabase: any, sourceTable: any, targetTable:
         total_seats: reservedTable.seat_count + freeTable.seat_count
       }
     };
-  } catch (error) {
-    logger.error('[ENHANCED MERGE] Error expanding reserved table:', { error: error instanceof Error ? error.message : 'Unknown error' });
+  } catch (error: unknown) {
+    logger.error('[ENHANCED MERGE] Error expanding reserved table:', { error: error instanceof Error ? getErrorMessage(error) : 'Unknown error' });
     return { error: 'Failed to expand reserved table' };
   }
 }
@@ -411,8 +412,8 @@ async function mergeOccupiedTables(supabase: any, sourceTable: any, targetTable:
         total_seats: sourceTable.seat_count + targetTable.seat_count
       }
     };
-  } catch (error) {
-    logger.error('[ENHANCED MERGE] Error merging occupied tables:', { error: error instanceof Error ? error.message : 'Unknown error' });
+  } catch (error: unknown) {
+    logger.error('[ENHANCED MERGE] Error merging occupied tables:', { error: error instanceof Error ? getErrorMessage(error) : 'Unknown error' });
     return { error: 'Failed to merge occupied tables' };
   }
 }
@@ -459,8 +460,8 @@ async function mergeReservedTables(supabase: any, sourceTable: any, targetTable:
         total_seats: sourceTable.seat_count + targetTable.seat_count
       }
     };
-  } catch (error) {
-    logger.error('[ENHANCED MERGE] Error merging reserved tables:', { error: error instanceof Error ? error.message : 'Unknown error' });
+  } catch (error: unknown) {
+    logger.error('[ENHANCED MERGE] Error merging reserved tables:', { error: error instanceof Error ? getErrorMessage(error) : 'Unknown error' });
     return { error: 'Failed to merge reserved tables' };
   }
 }

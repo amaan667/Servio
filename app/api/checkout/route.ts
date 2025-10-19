@@ -3,6 +3,7 @@ import Stripe from "stripe";
 import { createAdminClient } from "@/lib/supabase/server";
 import { stripe } from "@/lib/stripe-client";
 import { apiLogger, logger } from '@/lib/logger';
+import { getErrorMessage, getErrorDetails } from '@/lib/utils/errors';
 
 export const runtime = 'nodejs';
 
@@ -90,7 +91,7 @@ export async function POST(req: NextRequest) {
 
     return NextResponse.json({ url: session.url, sessionId: session.id }, { status: 200 });
   } catch (e: unknown) {
-    logger.error("Stripe session error", { error: e instanceof Error ? e.message : 'Unknown error' });
-    return NextResponse.json({ error: e.message ?? "Stripe error" }, { status: 500 });
+    logger.error("Stripe session error", { error: e instanceof Error ? getErrorMessage(e) : 'Unknown error' });
+    return NextResponse.json({ error: getErrorMessage(e) ?? "Stripe error" }, { status: 500 });
   }
 }

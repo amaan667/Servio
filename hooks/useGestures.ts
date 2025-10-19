@@ -1,5 +1,6 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { logger } from '@/lib/logger';
+import { getErrorDetails } from '@/lib/utils/errors';
 
 interface GestureState {
   isDragging: boolean;
@@ -278,8 +279,8 @@ export function usePullToRefresh(onRefresh: () => Promise<void>) {
     setIsRefreshing(true);
     try {
       await onRefresh();
-    } catch (error) {
-      logger.error('Pull-to-refresh failed:', error);
+    } catch (error: unknown) {
+      logger.error('Pull-to-refresh failed:', getErrorDetails(error));
     } finally {
       setIsRefreshing(false);
     }

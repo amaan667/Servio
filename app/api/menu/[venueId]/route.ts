@@ -5,6 +5,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { createAdminClient } from '@/lib/supabase/server';
 import { cache, cacheKeys, cacheTTL } from '@/lib/cache';
 import { apiLogger, logger } from '@/lib/logger';
+import { getErrorMessage, getErrorDetails } from '@/lib/utils/errors';
 
 export async function GET(
   request: NextRequest,
@@ -103,8 +104,8 @@ export async function GET(
     
     return NextResponse.json(response);
 
-  } catch (error) {
-    logger.error('[MENU API] Unexpected error:', { error: error instanceof Error ? error.message : 'Unknown error' });
+  } catch (error: unknown) {
+    logger.error('[MENU API] Unexpected error:', { error: error instanceof Error ? getErrorMessage(error) : 'Unknown error' });
     return NextResponse.json(
       { error: 'Internal server error' },
       { status: 500 }

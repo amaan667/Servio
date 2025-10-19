@@ -77,7 +77,7 @@ export async function fetchWithTimeout(
       });
 
       return response;
-    } catch (error) {
+    } catch (error: unknown) {
       lastError = error as Error;
       attempt++;
 
@@ -139,7 +139,7 @@ export function createCancellablePromise<T>(
         },
         controller.signal
       );
-    } catch (error) {
+    } catch (error: unknown) {
       cleanup();
       reject(error);
     }
@@ -178,7 +178,7 @@ export function createCancellableDebounce<T extends (...args: unknown[]) => any>
         try {
           const result = await func(...args);
           resolve(result);
-        } catch (error) {
+        } catch (error: unknown) {
           if ((error as Error).name !== 'RequestCancelledError') {
             reject(error);
           }

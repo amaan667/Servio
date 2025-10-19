@@ -6,6 +6,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { createClient } from "@/lib/supabase/server";
 import { checkLimit, checkFeatureAccess, getTierLimits } from "@/lib/tier-restrictions";
 import { logger } from '@/lib/logger';
+import { getErrorMessage, getErrorDetails } from '@/lib/utils/errors';
 
 export async function POST(request: NextRequest) {
   try {
@@ -102,9 +103,9 @@ export async function POST(request: NextRequest) {
       tier: organization?.subscription_tier,
     });
   } catch (error: unknown) {
-    logger.error("[TIER CHECK] Error:", { error: error instanceof Error ? error.message : 'Unknown error' });
+    logger.error("[TIER CHECK] Error:", { error: error instanceof Error ? getErrorMessage(error) : 'Unknown error' });
     return NextResponse.json(
-      { error: error.message || "Tier check failed" },
+      { error: getErrorMessage(error) || "Tier check failed" },
       { status: 500 }
     );
   }

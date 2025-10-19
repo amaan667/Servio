@@ -4,6 +4,7 @@ export const dynamic = "force-dynamic";
 import { NextRequest, NextResponse } from 'next/server';
 import { createAdminClient } from '@/lib/supabase/server';
 import { logger } from '@/lib/logger';
+import { getErrorMessage, getErrorDetails } from '@/lib/utils/errors';
 
 export async function POST(request: NextRequest) {
   try {
@@ -72,7 +73,7 @@ export async function POST(request: NextRequest) {
           );
         `
       });
-    } catch (error) {
+    } catch (error: unknown) {
     }
     
     // Check if there's a reset record for today
@@ -307,8 +308,8 @@ export async function POST(request: NextRequest) {
       }
     });
 
-  } catch (error) {
-    logger.error('🔄 [DAILY RESET CHECK] Error in daily reset check:', { error: error instanceof Error ? error.message : 'Unknown error' });
+  } catch (error: unknown) {
+    logger.error('🔄 [DAILY RESET CHECK] Error in daily reset check:', { error: error instanceof Error ? getErrorMessage(error) : 'Unknown error' });
     return NextResponse.json(
       { error: 'Internal server error' },
       { status: 500 }

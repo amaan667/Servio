@@ -4,6 +4,7 @@ export const dynamic = "force-dynamic";
 import { NextRequest, NextResponse } from 'next/server';
 import { createClient, createAdminClient, getAuthenticatedUser } from '@/lib/supabase/server';
 import { logger } from '@/lib/logger';
+import { getErrorMessage, getErrorDetails } from '@/lib/utils/errors';
 
 export async function POST(req: NextRequest) {
   try {
@@ -87,8 +88,8 @@ export async function POST(req: NextRequest) {
       default:
         return NextResponse.json({ error: 'Invalid action' }, { status: 400 });
     }
-  } catch (error) {
-    logger.error('[TABLE SESSIONS ACTIONS API] Unexpected error:', { error: error instanceof Error ? error.message : 'Unknown error' });
+  } catch (error: unknown) {
+    logger.error('[TABLE SESSIONS ACTIONS API] Unexpected error:', { error: error instanceof Error ? getErrorMessage(error) : 'Unknown error' });
     return NextResponse.json({ error: 'Internal server error' }, { status: 500 });
   }
 }
@@ -268,8 +269,8 @@ async function handleCloseTable(supabase: any, table_id: string) {
         new_session: newSessionData
       }
     });
-  } catch (error) {
-    logger.error('[TABLE ACTIONS] Unexpected error closing table:', { error: error instanceof Error ? error.message : 'Unknown error' });
+  } catch (error: unknown) {
+    logger.error('[TABLE ACTIONS] Unexpected error closing table:', { error: error instanceof Error ? getErrorMessage(error) : 'Unknown error' });
     return NextResponse.json({ error: 'Internal server error' }, { status: 500 });
   }
 }
@@ -471,8 +472,8 @@ async function handleReserveTable(supabase: any, table_id: string, customer_name
   }
 
   return NextResponse.json({ success: true });
-  } catch (error) {
-    logger.error('[TABLE ACTIONS] Unexpected error in handleReserveTable:', { error: error instanceof Error ? error.message : 'Unknown error' });
+  } catch (error: unknown) {
+    logger.error('[TABLE ACTIONS] Unexpected error in handleReserveTable:', { error: error instanceof Error ? getErrorMessage(error) : 'Unknown error' });
     return NextResponse.json({ error: 'Internal server error in reservation' }, { status: 500 });
   }
 }
@@ -648,8 +649,8 @@ async function handleMergeTable(supabase: any, venue_id: string, table_id: strin
       success: true, 
       data: data 
     });
-  } catch (error) {
-    logger.error('[TABLE ACTIONS] Unexpected error merging tables:', { error: error instanceof Error ? error.message : 'Unknown error' });
+  } catch (error: unknown) {
+    logger.error('[TABLE ACTIONS] Unexpected error merging tables:', { error: error instanceof Error ? getErrorMessage(error) : 'Unknown error' });
     return NextResponse.json({ error: 'Internal server error' }, { status: 500 });
   }
 }
@@ -790,8 +791,8 @@ async function handleUnmergeTable(supabase: any, table_id: string) {
     }
 
     return NextResponse.json({ error: 'No merged table found for this table' }, { status: 404 });
-  } catch (error) {
-    logger.error('[TABLE ACTIONS] Unexpected error unmerging table:', { error: error instanceof Error ? error.message : 'Unknown error' });
+  } catch (error: unknown) {
+    logger.error('[TABLE ACTIONS] Unexpected error unmerging table:', { error: error instanceof Error ? getErrorMessage(error) : 'Unknown error' });
     return NextResponse.json({ error: 'Internal server error' }, { status: 500 });
   }
 }
@@ -867,8 +868,8 @@ async function handleCancelReservation(supabase: any, table_id: string, reservat
         new_session: newSessionData
       }
     });
-  } catch (error) {
-    logger.error('[TABLE ACTIONS] Unexpected error cancelling reservation:', { error: error instanceof Error ? error.message : 'Unknown error' });
+  } catch (error: unknown) {
+    logger.error('[TABLE ACTIONS] Unexpected error cancelling reservation:', { error: error instanceof Error ? getErrorMessage(error) : 'Unknown error' });
     return NextResponse.json({ error: 'Internal server error' }, { status: 500 });
   }
 }

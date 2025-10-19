@@ -2,6 +2,7 @@
 import { createClient } from "@/lib/supabase/client";
 import { getAuthRedirectUrl } from "@/lib/auth";
 import { authLogger as logger } from '@/lib/logger';
+import { getErrorDetails } from '@/lib/utils/errors';
 
 export async function signInWithGoogle() {
   
@@ -32,7 +33,7 @@ export async function signInWithGoogle() {
     // Clear OAuth progress flags from previous attempts
     sessionStorage.removeItem("sb_oauth_retry");
     sessionStorage.removeItem("sb_oauth_in_progress");
-  } catch (error) {
+  } catch (error: unknown) {
     // Silent error handling
   }
 
@@ -67,8 +68,8 @@ export async function signInWithGoogle() {
   try {
     sessionStorage.setItem("sb_oauth_in_progress", "true");
     sessionStorage.setItem("sb_oauth_start_time", Date.now().toString());
-  } catch (e) {
-    logger.debug('[AUTH] Session storage error:', e);
+  } catch (e: unknown) {
+    logger.debug('[AUTH] Session storage error:', getErrorDetails(e));
   }
   
   const { data, error } = await sb.auth.signInWithOAuth({

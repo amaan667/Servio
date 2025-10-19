@@ -5,6 +5,7 @@
 
 import { getOpenAI } from '../openai';
 import { logger } from '@/lib/logger';
+import { getErrorDetails } from '@/lib/utils/errors';
 import { 
   TextBlock, 
   GPTClassificationResult, 
@@ -83,7 +84,7 @@ Return ONLY a JSON object with "type" and "confidence" (0-1).`
     };
     
   } catch (error: unknown) {
-    logger.error('[GPT_CLASSIFY] Classification failed:', error);
+    logger.error('[GPT_CLASSIFY] Classification failed:', getErrorDetails(error));
     
     // Fallback to rule-based classification
     return fallbackClassification(block, contextBlocks);
@@ -219,7 +220,7 @@ If this is not an option group, return null.`
     };
     
   } catch (error: unknown) {
-    logger.error('[GPT_OPTIONS] Option group classification failed:', error);
+    logger.error('[GPT_OPTIONS] Option group classification failed:', getErrorDetails(error));
     return null;
   }
 }

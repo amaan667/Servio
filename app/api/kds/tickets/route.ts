@@ -5,6 +5,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { createServerSupabase } from '@/lib/supabase/server';
 import { createAdminClient } from '@/lib/supabase/server';
 import { apiLogger, logger } from '@/lib/logger';
+import { getErrorMessage, getErrorDetails } from '@/lib/utils/errors';
 
 // Function to automatically backfill missing KDS tickets for orders
 async function autoBackfillMissingTickets(venueId: string) {
@@ -82,8 +83,8 @@ async function autoBackfillMissingTickets(venueId: string) {
 
     logger.debug(`[KDS AUTO-BACKFILL] Auto-backfill completed for ${ordersWithoutTickets.length} orders`);
 
-  } catch (error) {
-    logger.error('[KDS AUTO-BACKFILL] Error during auto-backfill:', { error: error instanceof Error ? error.message : 'Unknown error' });
+  } catch (error: unknown) {
+    logger.error('[KDS AUTO-BACKFILL] Error during auto-backfill:', { error: error instanceof Error ? getErrorMessage(error) : 'Unknown error' });
     throw error;
   }
 }
@@ -183,9 +184,9 @@ export async function GET(req: NextRequest) {
       tickets: finalTickets || []
     });
   } catch (error: unknown) {
-    logger.error('[KDS] Unexpected error:', { error: error instanceof Error ? error.message : 'Unknown error' });
+    logger.error('[KDS] Unexpected error:', { error: error instanceof Error ? getErrorMessage(error) : 'Unknown error' });
     return NextResponse.json(
-      { ok: false, error: error.message || 'Internal server error' },
+      { ok: false, error: getErrorMessage(error) || 'Internal server error' },
       { status: 500 }
     );
   }
@@ -291,9 +292,9 @@ export async function PATCH(req: NextRequest) {
       ticket
     });
   } catch (error: unknown) {
-    logger.error('[KDS] Unexpected error:', { error: error instanceof Error ? error.message : 'Unknown error' });
+    logger.error('[KDS] Unexpected error:', { error: error instanceof Error ? getErrorMessage(error) : 'Unknown error' });
     return NextResponse.json(
-      { ok: false, error: error.message || 'Internal server error' },
+      { ok: false, error: getErrorMessage(error) || 'Internal server error' },
       { status: 500 }
     );
   }

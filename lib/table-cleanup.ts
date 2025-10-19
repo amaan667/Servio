@@ -5,6 +5,7 @@
 
 import { createClient } from '@/lib/supabase/server';
 import { logger } from '@/lib/logger';
+import { getErrorMessage, getErrorDetails } from '@/lib/utils/errors';
 
 export interface TableCleanupParams {
   venueId: string;
@@ -156,11 +157,11 @@ export async function cleanupTableOnOrderCompletion(params: TableCleanupParams):
       }
     };
 
-  } catch (error) {
-    logger.error('[TABLE CLEANUP] Unexpected error during table cleanup:', error);
+  } catch (error: unknown) {
+    logger.error('[TABLE CLEANUP] Unexpected error during table cleanup:', getErrorDetails(error));
     return { 
       success: false, 
-      error: error instanceof Error ? error.message : 'Unknown error during table cleanup'
+      error: error instanceof Error ? getErrorMessage(error) : 'Unknown error during table cleanup'
     };
   }
 }
@@ -210,12 +211,12 @@ export async function hasActiveOrders(params: TableCleanupParams): Promise<{
       count: count || 0
     };
 
-  } catch (error) {
-    logger.error('[TABLE CLEANUP] Unexpected error checking active orders:', error);
+  } catch (error: unknown) {
+    logger.error('[TABLE CLEANUP] Unexpected error checking active orders:', getErrorDetails(error));
     return { 
       hasActive: false, 
       count: 0, 
-      error: error instanceof Error ? error.message : 'Unknown error'
+      error: error instanceof Error ? getErrorMessage(error) : 'Unknown error'
     };
   }
 }

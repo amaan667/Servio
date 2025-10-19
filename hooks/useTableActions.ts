@@ -1,5 +1,6 @@
 import { useState } from 'react';
 import { logger } from '@/lib/logger';
+import { getErrorMessage, getErrorDetails } from '@/lib/utils/errors';
 
 export interface TableActionParams {
   action: 'start_preparing' | 'mark_ready' | 'mark_served' | 'mark_awaiting_bill' | 'close_table' | 'reserve_table' | 'occupy_table' | 'move_table' | 'merge_table' | 'unmerge_table' | 'cancel_reservation';
@@ -37,9 +38,9 @@ export function useTableActions() {
       }
 
       return data;
-    } catch (err) {
-      logger.error('[TABLE ACTIONS HOOK] Error executing action:', err);
-      const errorMessage = err instanceof Error ? err.message : 'Failed to execute action';
+    } catch (err: unknown) {
+      logger.error('[TABLE ACTIONS HOOK] Error executing action:', getErrorDetails(err));
+      const errorMessage = err instanceof Error ? getErrorMessage(err) : 'Failed to execute action';
       setError(errorMessage);
       throw err;
     } finally {

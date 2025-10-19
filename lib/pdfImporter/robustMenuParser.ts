@@ -7,6 +7,7 @@ import { getOpenAI } from '../openai';
 import { getPrompt } from './gptPrompts';
 import { repairAndValidateMenuJSON, validateMenuJSON } from './jsonRepair';
 import { logger } from '@/lib/logger';
+import { getErrorMessage, getErrorDetails } from '@/lib/utils/errors';
 
 export interface MenuParsingResult {
   success: boolean;
@@ -32,7 +33,7 @@ const DEFAULT_OPTIONS: MenuParsingOptions = {
   enableRepair: true,
   enableValidation: true,
   temperature: 0,
-  model: 'gpt-4o-mini'
+  model: 'gpt-4o-mini',
 };
 
 /**
@@ -44,17 +45,15 @@ export async function parseMenuWithGPT(
 ): Promise<MenuParsingResult> {
   const startTime = Date.now();
   const finalOptions = { ...DEFAULT_OPTIONS, ...options };
-  
-  
+
   let lastError: string = '';
   let attempts = 0;
-  
+
   for (attempts = 1; attempts <= finalOptions.maxRetries; attempts++) {
     try {
-      
       // Step 1: Extract menu with GPT
       const extractedJSON = await extractMenuWithGPT(menuText, finalOptions);
-      
+
       // Step 2: Validate JSON
       if (finalOptions.enableValidation) {
         const validation = validateMenuJSON(extractedJSON);
@@ -64,7 +63,7 @@ export async function parseMenuWithGPT(
             items: validation.items,
             json: extractedJSON,
             attempts,
-            processingTime: Date.now() - startTime
+            processingTime: Date.now() - startTime,
           };
         } else {
           lastError = validation.errors.join(', ');
@@ -76,14 +75,14 @@ export async function parseMenuWithGPT(
           items: [],
           json: extractedJSON,
           attempts,
-          processingTime: Date.now() - startTime
+          processingTime: Date.now() - startTime,
         };
       }
-      
+
       // Step 3: Try to repair JSON if validation failed
       if (finalOptions.enableRepair && attempts < finalOptions.maxRetries) {
         const repairResult = repairAndValidateMenuJSON(extractedJSON);
-        
+
         if (repairResult.success) {
           return {
             success: true,
@@ -91,17 +90,21 @@ export async function parseMenuWithGPT(
             json: repairResult.json!,
             warnings: ['JSON was repaired during parsing'],
             attempts,
-            processingTime: Date.now() - startTime
+            processingTime: Date.now() - startTime,
           };
         } else {
           lastError = repairResult.errors?.join(', ') || 'Repair failed';
         }
       }
-      
+
       // Step 4: Try GPT repair if automatic repair failed
       if (attempts < finalOptions.maxRetries) {
-        const gptRepairResult = await repairJSONWithGPT(extractedJSON, lastError, finalOptions);
-        
+        const gptRepairResult = await repairJSONWithGPT(
+          extractedJSON,
+          lastError,
+          finalOptions
+        );
+
         if (gptRepairResult.success) {
           return {
             success: true,
@@ -109,33 +112,35 @@ export async function parseMenuWithGPT(
             json: gptRepairResult.json!,
             warnings: ['JSON was repaired by GPT'],
             attempts,
-            processingTime: Date.now() - startTime
+            processingTime: Date.now() - startTime,
           };
         } else {
           lastError = gptRepairResult.errors?.join(', ') || 'GPT repair failed';
         }
       }
-      
     } catch (error: unknown) {
-      logger.error(`[ROBUST_PARSER] Attempt ${attempts} failed:`, error);
-      lastError = error.message;
-      
+      logger.error(
+        `[ROBUST_PARSER] Attempt ${attempts} failed:`,
+        getErrorDetails(error)
+      );
+      lastError = getErrorMessage(error);
+
       if (attempts === finalOptions.maxRetries) {
         break;
       }
-      
+
       // Reduce retry delay for faster processing
-      await new Promise(resolve => setTimeout(resolve, 500 * attempts));
+      await new Promise((resolve) => setTimeout(resolve, 500 * attempts));
     }
   }
-  
+
   logger.error('[ROBUST_PARSER] All attempts failed');
   return {
     success: false,
     items: [],
     errors: [`Failed after ${attempts} attempts: ${lastError}`],
     attempts,
-    processingTime: Date.now() - startTime
+    processingTime: Date.now() - startTime,
   };
 }
 
@@ -147,37 +152,38 @@ async function extractMenuWithGPT(
   options: MenuParsingOptions
 ): Promise<string> {
   const openai = getOpenAI();
-  
+
   const prompt = getPrompt('extract') + '\n\n' + menuText;
-  
+
   const response = await openai.chat.completions.create({
     model: options.model,
     messages: [
       {
         role: 'system',
-        content: 'You are a menu parsing expert. Extract menu items and return ONLY valid JSON.'
+        content:
+          'You are a menu parsing expert. Extract menu items and return ONLY valid JSON.',
       },
       {
         role: 'user',
-        content: prompt
-      }
+        content: prompt,
+      },
     ],
     temperature: options.temperature,
     max_tokens: 4000,
-    response_format: { type: 'json_object' }
+    response_format: { type: 'json_object' },
   });
-  
+
   const content = response.choices[0]?.message?.content;
   if (!content) {
     throw new Error('No response from GPT');
   }
-  
+
   // Clean the response (remove markdown code blocks if present)
   const cleanedContent = content
     .replace(/```json\n?/g, '')
     .replace(/```\n?/g, '')
     .trim();
-  
+
   return cleanedContent;
 }
 
@@ -190,50 +196,51 @@ async function repairJSONWithGPT(
   options: MenuParsingOptions
 ): Promise<MenuParsingResult> {
   const openai = getOpenAI();
-  
+
   const prompt = getPrompt('repair', {
     error: errorMessage,
-    json: brokenJSON
+    json: brokenJSON,
   });
-  
+
   try {
     const response = await openai.chat.completions.create({
       model: options.model,
       messages: [
         {
           role: 'system',
-          content: 'You are a JSON repair expert. Fix the broken JSON and return ONLY the corrected JSON.'
+          content:
+            'You are a JSON repair expert. Fix the broken JSON and return ONLY the corrected JSON.',
         },
         {
           role: 'user',
-          content: prompt
-        }
+          content: prompt,
+        },
       ],
       temperature: 0, // Deterministic for repair
-      max_tokens: 4000
+      max_tokens: 4000,
     });
-    
+
     const content = response.choices[0]?.message?.content;
     if (!content) {
       throw new Error('No response from GPT repair');
     }
-    
+
     // Clean the response
     const cleanedContent = content
       .replace(/```json\n?/g, '')
       .replace(/```\n?/g, '')
       .trim();
-    
+
     // Validate the repaired JSON
     const validation = validateMenuJSON(cleanedContent);
-    
+
     if (validation.valid) {
       return {
         success: true,
         items: validation.items,
         json: cleanedContent,
         attempts: 1,
-        processingTime: 0
+        processingTime: 0,
       };
     } else {
       return {
@@ -241,17 +248,16 @@ async function repairJSONWithGPT(
         items: [],
         errors: validation.errors,
         attempts: 1,
-        processingTime: 0
+        processingTime: 0,
       };
     }
-    
   } catch (error: unknown) {
     return {
       success: false,
       items: [],
-      errors: [`GPT repair failed: ${error.message}`],
+      errors: [`GPT repair failed: ${getErrorMessage(error)}`],
       attempts: 1,
-      processingTime: 0
+      processingTime: 0,
     };
   }
 }
@@ -265,23 +271,22 @@ export async function parseMenuInBatches(
 ): Promise<MenuParsingResult> {
   const finalOptions = { ...DEFAULT_OPTIONS, ...options };
   const batchSize = finalOptions.batchSize || 2000; // characters per batch
-  
-  
+
   // Split menu text into batches
   const batches = splitTextIntoBatches(menuText, batchSize);
-  
+
   const allItems: unknown[] = [];
   const allErrors: string[] = [];
   const allWarnings: string[] = [];
-  
+
   for (let i = 0; i < batches.length; i++) {
     const batch = batches[i];
-    
+
     const batchResult = await parseMenuWithGPT(batch, {
       ...finalOptions,
-      maxRetries: 2 // Fewer retries for batches
+      maxRetries: 2, // Fewer retries for batches
     });
-    
+
     if (batchResult.success) {
       allItems.push(...batchResult.items);
       if (batchResult.warnings) {
@@ -291,17 +296,17 @@ export async function parseMenuInBatches(
       allErrors.push(`Batch ${i + 1}: ${batchResult.errors?.join(', ')}`);
     }
   }
-  
+
   // Deduplicate items across batches
   const uniqueItems = deduplicateItems(allItems);
-  
+
   return {
     success: allErrors.length === 0,
     items: uniqueItems,
     errors: allErrors.length > 0 ? allErrors : undefined,
     warnings: allWarnings.length > 0 ? allWarnings : undefined,
     attempts: batches.length,
-    processingTime: 0
+    processingTime: 0,
   };
 }
 
@@ -311,22 +316,25 @@ export async function parseMenuInBatches(
 function splitTextIntoBatches(text: string, batchSize: number): string[] {
   const batches: string[] = [];
   let currentBatch = '';
-  
+
   const lines = text.split('\n');
-  
+
   for (const line of lines) {
-    if (currentBatch.length + line.length > batchSize && currentBatch.length > 0) {
+    if (
+      currentBatch.length + line.length > batchSize &&
+      currentBatch.length > 0
+    ) {
       batches.push(currentBatch.trim());
       currentBatch = line;
     } else {
       currentBatch += (currentBatch ? '\n' : '') + line;
     }
   }
-  
+
   if (currentBatch.trim()) {
     batches.push(currentBatch.trim());
   }
-  
+
   return batches;
 }
 
@@ -336,7 +344,7 @@ function splitTextIntoBatches(text: string, batchSize: number): string[] {
 function deduplicateItems(items: unknown[]): unknown[] {
   const seen = new Set<string>();
   const unique: unknown[] = [];
-  
+
   for (const item of items) {
     const normalizedTitle = item.title?.toLowerCase().trim();
     if (normalizedTitle && !seen.has(normalizedTitle)) {
@@ -344,7 +352,7 @@ function deduplicateItems(items: unknown[]): unknown[] {
       unique.push(item);
     }
   }
-  
+
   return unique;
 }
 
@@ -358,42 +366,50 @@ export function validateMenuParsingResult(result: MenuParsingResult): {
 } {
   const issues: string[] = [];
   const recommendations: string[] = [];
-  
+
   if (!result.success) {
     issues.push('Menu parsing failed');
     return { isValid: false, issues, recommendations };
   }
-  
+
   if (result.items.length === 0) {
     issues.push('No items extracted');
-    recommendations.push('Check if menu text contains recognizable items with prices');
+    recommendations.push(
+      'Check if menu text contains recognizable items with prices'
+    );
   }
-  
+
   if (result.attempts > 1) {
     issues.push(`Required ${result.attempts} attempts to parse`);
-    recommendations.push('Consider improving menu text quality or adjusting parsing parameters');
+    recommendations.push(
+      'Consider improving menu text quality or adjusting parsing parameters'
+    );
   }
-  
+
   if (result.warnings && result.warnings.length > 0) {
     issues.push(`${result.warnings.length} warnings during parsing`);
   }
-  
+
   // Check for common issues
-  const itemsWithZeroPrice = result.items.filter(item => item.price <= 0);
+  const itemsWithZeroPrice = result.items.filter((item) => item.price <= 0);
   if (itemsWithZeroPrice.length > 0) {
-    issues.push(`${itemsWithZeroPrice.length} items with zero or invalid prices`);
+    issues.push(
+      `${itemsWithZeroPrice.length} items with zero or invalid prices`
+    );
     recommendations.push('Review price extraction logic');
   }
-  
-  const itemsWithoutDescription = result.items.filter(item => !item.description || item.description.trim() === '');
+
+  const itemsWithoutDescription = result.items.filter(
+    (item) => !item.description || item.description.trim() === ''
+  );
   if (itemsWithoutDescription.length > result.items.length * 0.5) {
     issues.push('Many items missing descriptions');
     recommendations.push('Improve description extraction');
   }
-  
+
   return {
     isValid: issues.length === 0,
     issues,
-    recommendations
+    recommendations,
   };
 }

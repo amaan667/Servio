@@ -4,6 +4,7 @@ export const dynamic = "force-dynamic";
 import { NextRequest, NextResponse } from 'next/server';
 import { getAuthUserForAPI } from '@/lib/auth/server';
 import { logger } from '@/lib/logger';
+import { getErrorMessage, getErrorDetails } from '@/lib/utils/errors';
 
 export async function GET() {
   try {
@@ -38,8 +39,8 @@ export async function GET() {
     
     return NextResponse.json({ profile });
     
-  } catch (error) {
-    logger.error('[USER PROFILE API] Error:', { error: error instanceof Error ? error.message : 'Unknown error' });
+  } catch (error: unknown) {
+    logger.error('[USER PROFILE API] Error:', { error: error instanceof Error ? getErrorMessage(error) : 'Unknown error' });
     return NextResponse.json(
       { error: 'Internal server error' },
       { status: 500 }
@@ -72,8 +73,8 @@ export async function PUT(request: Request) {
       }
     });
     
-  } catch (error) {
-    logger.error('[USER PROFILE API] Error:', { error: error instanceof Error ? error.message : 'Unknown error' });
+  } catch (error: unknown) {
+    logger.error('[USER PROFILE API] Error:', { error: error instanceof Error ? getErrorMessage(error) : 'Unknown error' });
     return NextResponse.json(
       { error: 'Internal server error' },
       { status: 500 }

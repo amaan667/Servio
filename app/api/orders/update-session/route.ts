@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { createClient } from '@/lib/supabase/server';
 import { logger } from '@/lib/logger';
+import { getErrorMessage, getErrorDetails } from '@/lib/utils/errors';
 
 export const runtime = 'nodejs';
 
@@ -52,8 +53,8 @@ export async function POST(req: NextRequest) {
 
     return NextResponse.json({ success: true, orderId: order.id });
 
-  } catch (error) {
-    logger.error('[UPDATE SESSION] Unexpected error:', { error: error instanceof Error ? error.message : 'Unknown error' });
+  } catch (error: unknown) {
+    logger.error('[UPDATE SESSION] Unexpected error:', { error: error instanceof Error ? getErrorMessage(error) : 'Unknown error' });
     return NextResponse.json({ 
       error: 'Internal server error' 
     }, { status: 500 });

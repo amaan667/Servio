@@ -4,6 +4,7 @@ export const dynamic = "force-dynamic";
 import { NextRequest, NextResponse } from 'next/server';
 import { createAdminClient } from '@/lib/supabase/server';
 import { logger } from '@/lib/logger';
+import { getErrorMessage, getErrorDetails } from '@/lib/utils/errors';
 
 // This endpoint can be called by a cron job or scheduled task
 // to automatically perform daily reset at midnight
@@ -174,13 +175,13 @@ export async function POST(request: NextRequest) {
         });
 
 
-      } catch (error) {
-        logger.error(`🕛 [CRON DAILY RESET] Error resetting venue ${venue.venue_name}:`, { error: error instanceof Error ? error.message : 'Unknown error' });
+      } catch (error: unknown) {
+        logger.error(`🕛 [CRON DAILY RESET] Error resetting venue ${venue.venue_name}:`, { error: error instanceof Error ? getErrorMessage(error) : 'Unknown error' });
         resetResults.push({
           venueId: venue.venue_id,
           venueName: venue.venue_name,
           reset: false,
-          error: error instanceof Error ? error.message : 'Unknown error'
+          error: error instanceof Error ? getErrorMessage(error) : 'Unknown error'
         });
       }
     }
@@ -196,8 +197,8 @@ export async function POST(request: NextRequest) {
       resetResults
     });
 
-  } catch (error) {
-    logger.error('🕛 [CRON DAILY RESET] Error in automatic daily reset:', { error: error instanceof Error ? error.message : 'Unknown error' });
+  } catch (error: unknown) {
+    logger.error('🕛 [CRON DAILY RESET] Error in automatic daily reset:', { error: error instanceof Error ? getErrorMessage(error) : 'Unknown error' });
     return NextResponse.json(
       { error: 'Internal server error' },
       { status: 500 }

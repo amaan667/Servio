@@ -1,6 +1,7 @@
 import { useState, useEffect, useCallback } from 'react';
 import { createClient } from '@/lib/supabase/client';
 import { logger } from '@/lib/logger';
+import { getErrorMessage, getErrorDetails } from '@/lib/utils/errors';
 
 export interface StaffCounts {
   total_staff: number;
@@ -35,9 +36,9 @@ export function useStaffCounts(venueId: string) {
       }
       
       setData(result);
-    } catch (err) {
-      logger.error('[STAFF_COUNTS] Fetch error:', err);
-      setError(err instanceof Error ? err.message : 'Unknown error');
+    } catch (err: unknown) {
+      logger.error('[STAFF_COUNTS] Fetch error:', getErrorDetails(err));
+      setError(err instanceof Error ? getErrorMessage(err) : 'Unknown error');
     } finally {
       setIsLoading(false);
     }

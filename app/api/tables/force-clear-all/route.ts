@@ -4,6 +4,7 @@ export const dynamic = "force-dynamic";
 import { NextRequest, NextResponse } from 'next/server';
 import { createAdminClient } from '@/lib/supabase/server';
 import { logger } from '@/lib/logger';
+import { getErrorMessage, getErrorDetails } from '@/lib/utils/errors';
 
 export async function POST(request: NextRequest) {
   try {
@@ -88,8 +89,8 @@ export async function POST(request: NextRequest) {
       message: 'All tables and sessions force cleared successfully' 
     });
 
-  } catch (error) {
-    logger.error('[FORCE CLEAR ALL] Error in force clear all tables API:', { error: error instanceof Error ? error.message : 'Unknown error' });
+  } catch (error: unknown) {
+    logger.error('[FORCE CLEAR ALL] Error in force clear all tables API:', { error: error instanceof Error ? getErrorMessage(error) : 'Unknown error' });
     return NextResponse.json({ 
       ok: false, 
       error: 'Internal server error' 

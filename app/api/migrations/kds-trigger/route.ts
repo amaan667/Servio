@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { createAdminClient } from '@/lib/supabase/server';
 import { apiLogger, logger } from '@/lib/logger';
+import { getErrorMessage, getErrorDetails } from '@/lib/utils/errors';
 
 export const runtime = 'nodejs';
 
@@ -144,10 +145,10 @@ export async function POST(req: NextRequest) {
     });
     
   } catch (error: unknown) {
-    logger.error('[KDS TRIGGER] Unexpected error:', { error: error instanceof Error ? error.message : 'Unknown error' });
+    logger.error('[KDS TRIGGER] Unexpected error:', { error: error instanceof Error ? getErrorMessage(error) : 'Unknown error' });
     return NextResponse.json({ 
       ok: false, 
-      error: error.message || 'Trigger creation failed' 
+      error: getErrorMessage(error) || 'Trigger creation failed' 
     }, { status: 500 });
   }
 }

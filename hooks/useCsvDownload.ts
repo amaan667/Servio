@@ -7,6 +7,7 @@
 
 import { useState, useCallback } from 'react';
 import { logger } from '@/lib/logger';
+import { getErrorDetails } from '@/lib/utils/errors';
 
 export interface CsvDownloadOptions {
   filename: string;
@@ -60,8 +61,8 @@ export function downloadCSV({ filename, csv }: CsvDownloadOptions): void {
     URL.revokeObjectURL(url);
 
     logger.debug(`[CSV Download] Successfully downloaded: ${sanitizedFilename}`);
-  } catch (error) {
-    logger.warn('[CSV Download] Failed to download CSV:', error);
+  } catch (error: unknown) {
+    logger.warn('[CSV Download] Failed to download CSV:', getErrorDetails(error));
     
     // Fallback: try to open in new window (may not work in all browsers)
     try {

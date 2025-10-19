@@ -24,7 +24,17 @@
     "test:e2e": "playwright test",
     "test:e2e:ui": "playwright test --ui",
     "test:e2e:debug": "playwright test --debug",
-    "cleanup": "chmod +x scripts/cleanup-all.sh && ./scripts/cleanup-all.sh"
+    "cleanup": "chmod +x scripts/cleanup-all.sh && ./scripts/cleanup-all.sh",
+    "prepare": "husky"
+  },
+  "lint-staged": {
+    "*.{ts,tsx}": [
+      "eslint --fix",
+      "prettier --write"
+    ],
+    "*.{js,jsx,css,md,json}": [
+      "prettier --write"
+    ]
   },
   "dependencies": {
     "@google-cloud/storage": "^7.7.0",
@@ -109,6 +119,8 @@
   },
   "devDependencies": {
     "@eslint/js": "^9.31.0",
+    "@testing-library/jest-dom": "^6.9.1",
+    "@testing-library/react": "^16.3.0",
     "@types/caseless": "^0.12.5",
     "@types/d3-path": "^3.1.1",
     "@types/express": "^5.0.3",
@@ -127,6 +139,8 @@
     "eslint-plugin-react": "^7.37.5",
     "glob": "^11.0.3",
     "globals": "^16.3.0",
+    "husky": "^9.1.7",
+    "lint-staged": "^16.2.4",
     "pg": "^8.11.3",
     "postcss": "^8",
     "prettier": "^3.0.0",
@@ -135,6 +149,7 @@
     "tailwindcss": "^3.4.1",
     "ts-prune": "^0.10.3",
     "typescript": "^5",
-    "typescript-eslint": "^8.38.0"
+    "typescript-eslint": "^8.38.0",
+    "vitest": "^3.2.4"
   }
 }

@@ -5,6 +5,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { createClient } from '@supabase/supabase-js';
 import { ENV } from '@/lib/env';
 import { logger } from '@/lib/logger';
+import { getErrorMessage, getErrorDetails } from '@/lib/utils/errors';
 
 function getSupabaseClient() {
   return createClient(
@@ -75,8 +76,8 @@ export async function POST(req: NextRequest) {
       cartData,
     });
 
-  } catch (error) {
-    logger.error('[CART STORE] Error:', { error: error instanceof Error ? error.message : 'Unknown error' });
+  } catch (error: unknown) {
+    logger.error('[CART STORE] Error:', { error: error instanceof Error ? getErrorMessage(error) : 'Unknown error' });
     return NextResponse.json(
       { error: 'Internal server error' },
       { status: 500 }
@@ -103,8 +104,8 @@ export async function GET(req: NextRequest) {
       cartData: null,
     });
 
-  } catch (error) {
-    logger.error('[CART STORE] Error:', { error: error instanceof Error ? error.message : 'Unknown error' });
+  } catch (error: unknown) {
+    logger.error('[CART STORE] Error:', { error: error instanceof Error ? getErrorMessage(error) : 'Unknown error' });
     return NextResponse.json(
       { error: 'Internal server error' },
       { status: 500 }

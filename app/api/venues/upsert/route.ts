@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { createClient, getAuthenticatedUser } from '@/lib/supabase/server';
 import { cache, cacheKeys, cacheTTL } from '@/lib/cache';
 import { logger } from '@/lib/logger';
+import { getErrorMessage, getErrorDetails } from '@/lib/utils/errors';
 
 export const runtime = 'nodejs';
 
@@ -72,8 +73,8 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ ok: true, venue: data });
     }
   } catch (error: unknown) {
-    logger.error('[VENUES UPSERT] Error:', { error: error instanceof Error ? error.message : 'Unknown error' });
-    return NextResponse.json({ ok: false, error: error.message }, { status: 500 });
+    logger.error('[VENUES UPSERT] Error:', { error: error instanceof Error ? getErrorMessage(error) : 'Unknown error' });
+    return NextResponse.json({ ok: false, error: getErrorMessage(error) }, { status: 500 });
   }
 }
 

@@ -4,6 +4,7 @@ export const dynamic = "force-dynamic";
 import { NextRequest, NextResponse } from 'next/server';
 import { createServerSupabase } from '@/lib/supabase/server';
 import { apiLogger, logger } from '@/lib/logger';
+import { getErrorMessage, getErrorDetails } from '@/lib/utils/errors';
 
 // PATCH - Bulk update multiple tickets (e.g., bump all ready tickets for an order)
 export async function PATCH(req: NextRequest) {
@@ -106,9 +107,9 @@ export async function PATCH(req: NextRequest) {
       tickets
     });
   } catch (error: unknown) {
-    logger.error('[KDS] Unexpected error:', { error: error instanceof Error ? error.message : 'Unknown error' });
+    logger.error('[KDS] Unexpected error:', { error: error instanceof Error ? getErrorMessage(error) : 'Unknown error' });
     return NextResponse.json(
-      { ok: false, error: error.message || 'Internal server error' },
+      { ok: false, error: getErrorMessage(error) || 'Internal server error' },
       { status: 500 }
     );
   }

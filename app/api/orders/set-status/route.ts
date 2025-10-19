@@ -5,6 +5,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { createClient } from '@/lib/supabase/server';
 import { cleanupTableOnOrderCompletion } from '@/lib/table-cleanup';
 import { apiLogger as logger } from '@/lib/logger';
+import { getErrorMessage, getErrorDetails } from '@/lib/utils/errors';
 
 export async function POST(req: NextRequest) {
   try {
@@ -68,7 +69,7 @@ export async function POST(req: NextRequest) {
 
     return NextResponse.json({ success: true });
   } catch (error: unknown) {
-    logger.error('Set status error:', { error: error instanceof Error ? error.message : 'Unknown error' });
-    return NextResponse.json({ error: error.message }, { status: 500 });
+    logger.error('Set status error:', { error: error instanceof Error ? getErrorMessage(error) : 'Unknown error' });
+    return NextResponse.json({ error: getErrorMessage(error) }, { status: 500 });
   }
 }

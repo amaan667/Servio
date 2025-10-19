@@ -3,6 +3,7 @@ export const dynamic = "force-dynamic";
 
 import { NextRequest, NextResponse } from "next/server";
 import { createClient } from "@/lib/supabase/server";
+import { getErrorMessage, getErrorDetails } from '@/lib/utils/errors';
 
 export async function POST(req: NextRequest) {
   const { userId, venueId } = await req.json();
@@ -22,7 +23,7 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ success: true });
   } catch (error: unknown) {
     return NextResponse.json(
-      { success: false, message: error.message || "Failed to delete account" },
+      { success: false, message: getErrorMessage(error) || "Failed to delete account" },
       { status: 500 },
     );
   }

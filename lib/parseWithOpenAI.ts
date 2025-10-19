@@ -51,7 +51,7 @@ export async function parseMenuStrict(extractedText: string): Promise<MenuPayloa
     const parsed = JSON.parse(raw);
     const validated = MenuPayload.parse(parsed);
     return validated;
-  } catch (e) {
+  } catch (e: unknown) {
     logger.error('[MENU PARSE] Initial parse failed, attempting repair:', e);
     // Fallback to repair flow if something still goes wrong
     return await repairMenuJson(raw);
@@ -86,7 +86,7 @@ async function repairMenuJson(modelOutput: string) {
     const parsed = JSON.parse(fixedAttempt);
     const validated = MenuPayload.parse(parsed);
     return validated;
-  } catch (e) {
+  } catch (e: unknown) {
     
     // Ask the model to repair to valid JSON exactly matching schema
     const repair = await openai.chat.completions.create({

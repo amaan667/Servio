@@ -8,6 +8,7 @@ import { isMenuLike } from '@/lib/menuLike';
 import { tryParseMenuWithGPT } from '@/lib/safeParse';
 import { PDFDocument } from 'pdf-lib';
 import { apiLogger, logger } from '@/lib/logger';
+import { getErrorMessage, getErrorDetails } from '@/lib/utils/errors';
 
 export async function POST(req: NextRequest) {
   try {
@@ -278,8 +279,8 @@ IMPORTANT: For x_percent and y_percent, provide the approximate center position 
       preview: rawText.substring(0, 200) + '...'
     });
 
-  } catch (error) {
-    logger.error('[AUTH DEBUG] Process error:', { error: error instanceof Error ? error.message : 'Unknown error' });
+  } catch (error: unknown) {
+    logger.error('[AUTH DEBUG] Process error:', { error: error instanceof Error ? getErrorMessage(error) : 'Unknown error' });
     return NextResponse.json({ ok: false, error: 'Processing failed' }, { status: 500 });
   }
 }

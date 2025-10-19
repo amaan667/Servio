@@ -6,6 +6,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { createClient } from '@/lib/supabase/server';
 import { getUserSafe } from '@/utils/getUserSafe';
 import { logger } from '@/lib/logger';
+import { getErrorMessage, getErrorDetails } from '@/lib/utils/errors';
 
 export async function GET(request: NextRequest) {
   try {
@@ -45,7 +46,7 @@ export async function GET(request: NextRequest) {
     } catch (error: unknown) {
       debugInfo.checks.staff_invitations_table = {
         exists: false,
-        error: error.message
+        error: getErrorMessage(error)
       };
     }
 
@@ -66,7 +67,7 @@ export async function GET(request: NextRequest) {
       debugInfo.checks.user_venue_roles = {
         found: 0,
         roles: [],
-        error: error.message
+        error: getErrorMessage(error)
       };
     }
 
@@ -87,7 +88,7 @@ export async function GET(request: NextRequest) {
       debugInfo.checks.venue = {
         exists: false,
         venue: null,
-        error: error.message
+        error: getErrorMessage(error)
       };
     }
 
@@ -108,7 +109,7 @@ export async function GET(request: NextRequest) {
       debugInfo.checks.is_owner = {
         is_owner: false,
         owner_user_id: null,
-        error: error.message
+        error: getErrorMessage(error)
       };
     }
 
@@ -128,16 +129,16 @@ export async function GET(request: NextRequest) {
       debugInfo.checks.existing_invitations = {
         count: 0,
         invitations: [],
-        error: error.message
+        error: getErrorMessage(error)
       };
     }
 
     return NextResponse.json(debugInfo);
-  } catch (error) {
-    logger.error('[DEBUG API] Unexpected error:', { error: error instanceof Error ? error.message : 'Unknown error' });
+  } catch (error: unknown) {
+    logger.error('[DEBUG API] Unexpected error:', { error: error instanceof Error ? getErrorMessage(error) : 'Unknown error' });
     return NextResponse.json({ 
       error: 'Internal server error',
-      details: error instanceof Error ? error.message : 'Unknown error'
+      details: error instanceof Error ? getErrorMessage(error) : 'Unknown error'
     }, { status: 500 });
   }
 }

@@ -5,6 +5,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { createAdminClient } from '@/lib/supabase/server';
 import type { IngredientUnit } from '@/types/inventory';
 import { logger } from '@/lib/logger';
+import { getErrorMessage, getErrorDetails } from '@/lib/utils/errors';
 
 interface CSVRow {
   name: string;
@@ -144,7 +145,7 @@ export async function POST(request: NextRequest) {
 
         imported.push(ingredient.name);
       } catch (err: unknown) {
-        errors.push({ row: row.name, error: err.message });
+        errors.push({ row: row.name, error: getErrorMessage(err) });
       }
     }
 
@@ -155,8 +156,8 @@ export async function POST(request: NextRequest) {
       imported,
       errors,
     });
-  } catch (error) {
-    logger.error('[INVENTORY API] Unexpected error:', { error: error instanceof Error ? error.message : 'Unknown error' });
+  } catch (error: unknown) {
+    logger.error('[INVENTORY API] Unexpected error:', { error: error instanceof Error ? getErrorMessage(error) : 'Unknown error' });
     return NextResponse.json(
       { error: 'Internal server error' },
       { status: 500 }

@@ -5,6 +5,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { createClient } from '@/lib/supabase/server';
 import { getUserSafe } from '@/utils/getUserSafe';
 import { apiLogger, logger } from '@/lib/logger';
+import { getErrorMessage, getErrorDetails } from '@/lib/utils/errors';
 
 // POST /api/fix-invitation-constraint - Direct fix for invitation constraint
 export async function POST(request: NextRequest) {
@@ -52,8 +53,8 @@ export async function POST(request: NextRequest) {
       deletedCount: cancelledInvitations?.length || 0
     });
 
-  } catch (error) {
-    logger.error('[CONSTRAINT FIX] Unexpected error:', { error: error instanceof Error ? error.message : 'Unknown error' });
+  } catch (error: unknown) {
+    logger.error('[CONSTRAINT FIX] Unexpected error:', { error: error instanceof Error ? getErrorMessage(error) : 'Unknown error' });
     return NextResponse.json({ error: 'Internal server error' }, { status: 500 });
   }
 }

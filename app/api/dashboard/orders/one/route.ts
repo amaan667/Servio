@@ -6,6 +6,7 @@ import { createServerClient } from '@supabase/ssr';
 import { todayWindowForTZ } from '@/lib/time';
 import { liveOrdersWindow, earlierTodayWindow, historyWindow } from '@/lib/dates';
 import { cookieAdapter } from '@/lib/server/supabase';
+import { getErrorMessage, getErrorDetails } from '@/lib/utils/errors';
 
 type OrderRow = {
   id: string;
@@ -119,6 +120,6 @@ export async function GET(req: NextRequest) {
       orders: (transformedOrders || []) as OrderRow[],
     });
   } catch (e: unknown) {
-    return NextResponse.json({ ok: false, error: e.message }, { status: 500 });
+    return NextResponse.json({ ok: false, error: getErrorMessage(e) }, { status: 500 });
   }
 }

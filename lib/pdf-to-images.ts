@@ -3,6 +3,7 @@ import fs from 'fs/promises';
 import path from 'path';
 import { fromPath } from 'pdf2pic';
 import { logger } from '@/lib/logger';
+import { getErrorDetails } from '@/lib/utils/errors';
 
 /**
  * Convert PDF pages to images and upload to Supabase Storage
@@ -99,8 +100,8 @@ export async function convertPDFToImages(pdfBytes: ArrayBuffer, venueId: string)
     return imageUrls;
     
   } catch (error: unknown) {
-    logger.error('[PDF_TO_IMAGES] Error converting PDF to images:', error);
-    logger.error('[PDF_TO_IMAGES] Error stack:', error.stack);
+    logger.error('[PDF_TO_IMAGES] Error converting PDF to images:', getErrorDetails(error));
+    logger.error('[PDF_TO_IMAGES] Error stack:', getErrorDetails(error).stack);
     // Return empty array instead of throwing - let the calling code handle it
     return [];
   } finally {

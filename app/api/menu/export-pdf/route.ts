@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { createAdminClient } from '@/lib/supabase/server';
 import { logger } from '@/lib/logger';
+import { getErrorMessage, getErrorDetails } from '@/lib/utils/errors';
 
 export const runtime = 'nodejs';
 
@@ -60,9 +61,9 @@ export async function GET(req: NextRequest) {
     });
 
   } catch (error: unknown) {
-    logger.error('[EXPORT PDF] Error:', { error: error instanceof Error ? error.message : 'Unknown error' });
+    logger.error('[EXPORT PDF] Error:', { error: error instanceof Error ? getErrorMessage(error) : 'Unknown error' });
     return NextResponse.json(
-      { ok: false, error: error.message || 'Failed to export PDF' },
+      { ok: false, error: getErrorMessage(error) || 'Failed to export PDF' },
       { status: 500 }
     );
   }

@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { createAdminClient } from '@/lib/supabase/server';
 import { apiLogger, logger } from '@/lib/logger';
+import { getErrorMessage, getErrorDetails } from '@/lib/utils/errors';
 
 export const runtime = 'nodejs';
 export const dynamic = 'force-dynamic';
@@ -106,8 +107,8 @@ export async function GET(req: NextRequest) {
       order: transformedOrder 
     });
 
-  } catch (error) {
-    logger.error('[ORDER BY SESSION] Error:', { error: error instanceof Error ? error.message : 'Unknown error' });
+  } catch (error: unknown) {
+    logger.error('[ORDER BY SESSION] Error:', { error: error instanceof Error ? getErrorMessage(error) : 'Unknown error' });
     return NextResponse.json({ 
       error: 'Internal server error' 
     }, { status: 500 });

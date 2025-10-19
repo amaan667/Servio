@@ -7,6 +7,7 @@ export const dynamic = "force-dynamic";
 import { NextRequest, NextResponse } from "next/server";
 import { createClient } from "@/lib/supabase/server";
 import { logger } from '@/lib/logger';
+import { getErrorMessage, getErrorDetails } from '@/lib/utils/errors';
 
 export async function GET(request: NextRequest) {
   try {
@@ -77,9 +78,9 @@ export async function GET(request: NextRequest) {
       nextCursor: conversations?.length === limit ? (parseInt(cursor) + limit).toString() : null,
     });
   } catch (error: unknown) {
-    logger.error("[AI CHAT] Conversations error:", { error: error instanceof Error ? error.message : 'Unknown error' });
+    logger.error("[AI CHAT] Conversations error:", { error: error instanceof Error ? getErrorMessage(error) : 'Unknown error' });
     return NextResponse.json(
-      { error: error.message || "Internal server error" },
+      { error: getErrorMessage(error) || "Internal server error" },
       { status: 500 }
     );
   }
@@ -157,9 +158,9 @@ export async function POST(request: NextRequest) {
       conversation: transformedConversation,
     });
   } catch (error: unknown) {
-    logger.error("[AI CHAT] Create conversation error:", { error: error instanceof Error ? error.message : 'Unknown error' });
+    logger.error("[AI CHAT] Create conversation error:", { error: error instanceof Error ? getErrorMessage(error) : 'Unknown error' });
     return NextResponse.json(
-      { error: error.message || "Internal server error" },
+      { error: getErrorMessage(error) || "Internal server error" },
       { status: 500 }
     );
   }
@@ -251,9 +252,9 @@ export async function PATCH(request: NextRequest) {
       conversation: transformedConversation,
     });
   } catch (error: unknown) {
-    logger.error("[AI CHAT] Update conversation error:", { error: error instanceof Error ? error.message : 'Unknown error' });
+    logger.error("[AI CHAT] Update conversation error:", { error: error instanceof Error ? getErrorMessage(error) : 'Unknown error' });
     return NextResponse.json(
-      { error: error.message || "Internal server error" },
+      { error: getErrorMessage(error) || "Internal server error" },
       { status: 500 }
     );
   }

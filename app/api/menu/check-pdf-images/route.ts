@@ -4,6 +4,7 @@ export const dynamic = "force-dynamic";
 import { NextRequest, NextResponse } from 'next/server';
 import { createAdminClient } from '@/lib/supabase/server';
 import { logger } from '@/lib/logger';
+import { getErrorMessage, getErrorDetails } from '@/lib/utils/errors';
 
 /**
  * Check PDF images status for a venue
@@ -57,10 +58,10 @@ export async function GET(req: NextRequest) {
     });
 
   } catch (error: unknown) {
-    logger.error('[CHECK PDF IMAGES] Error:', { error: error instanceof Error ? error.message : 'Unknown error' });
+    logger.error('[CHECK PDF IMAGES] Error:', { error: error instanceof Error ? getErrorMessage(error) : 'Unknown error' });
     return NextResponse.json({ 
       ok: false, 
-      error: error.message || 'Failed to check PDF images' 
+      error: getErrorMessage(error) || 'Failed to check PDF images' 
     }, { status: 500 });
   }
 }

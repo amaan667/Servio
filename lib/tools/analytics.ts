@@ -4,6 +4,7 @@
 import { createClient } from "@/lib/supabase/server";
 import { aiLogger as logger } from '@/lib/logger';
 import { AIAssistantError, AIPreviewDiff, AIExecutionResult } from "@/types/ai-assistant";
+import { getErrorDetails } from '@/lib/utils/errors';
 
 // ============================================================================
 // Analytics Tools
@@ -292,8 +293,8 @@ export async function executeAnalyticsGetStats(
           };
       }
     }
-  } catch (error) {
-    logger.error("[AI ASSISTANT] Analytics error:", error);
+  } catch (error: unknown) {
+    logger.error("[AI ASSISTANT] Analytics error:", getErrorDetails(error));
     throw new AIAssistantError("Failed to get analytics data", "EXECUTION_FAILED", error);
   }
 

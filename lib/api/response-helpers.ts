@@ -76,7 +76,7 @@ export function asyncHandler<T extends unknown[]>(
   return async (...args: T): Promise<NextResponse> => {
     try {
       return await handler(...args);
-    } catch (error) {
+    } catch (error: unknown) {
       return handleError(error);
     }
   };
@@ -93,7 +93,7 @@ export async function validateBody<T>(
     const body = await request.json();
     const data = schema.parse(body);
     return { success: true, data };
-  } catch (error) {
+  } catch (error: unknown) {
     if (error && typeof error === 'object' && 'issues' in error) {
       // Zod validation error
       return {
@@ -131,7 +131,7 @@ export function validateQuery<T>(
     const params = Object.fromEntries(query.entries());
     const data = schema.parse(params);
     return { success: true, data };
-  } catch (error) {
+  } catch (error: unknown) {
     if (error && typeof error === 'object' && 'issues' in error) {
       return {
         success: false,

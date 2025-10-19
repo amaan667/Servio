@@ -9,6 +9,7 @@ import { createClient } from "@/lib/supabase/server";
 import { z } from "zod";
 import { handleUserMessage, generateConversationTitle } from "@/lib/ai/openai-service";
 import { apiLogger, logger } from '@/lib/logger';
+import { getErrorMessage, getErrorDetails } from '@/lib/utils/errors';
 
 const CreateMessageSchema = z.object({
   venueId: z.string().min(1),
@@ -94,9 +95,9 @@ export async function GET(request: NextRequest) {
       messages: transformedMessages,
     });
   } catch (error: unknown) {
-    logger.error("[AI CHAT] Messages error:", { error: error instanceof Error ? error.message : 'Unknown error' });
+    logger.error("[AI CHAT] Messages error:", { error: error instanceof Error ? getErrorMessage(error) : 'Unknown error' });
     return NextResponse.json(
-      { error: error.message || "Internal server error" },
+      { error: getErrorMessage(error) || "Internal server error" },
       { status: 500 }
     );
   }
@@ -129,7 +130,7 @@ export async function POST(request: NextRequest) {
         .eq('user_id', user.id)
         .maybeSingle();
       if (!roleErr && roleRow?.role) roleName = roleRow.role;
-    } catch (e) {
+    } catch (e: unknown) {
       // ignore, fallback to owner
     }
 
@@ -313,9 +314,9 @@ export async function POST(request: NextRequest) {
             });
     }
   } catch (error: unknown) {
-    logger.error("[AI CHAT] Create message error:", { error: error instanceof Error ? error.message : 'Unknown error' });
+    logger.error("[AI CHAT] Create message error:", { error: error instanceof Error ? getErrorMessage(error) : 'Unknown error' });
     
-    if (error.name === "ZodError") {
+    if (getErrorDetails(error).name === "ZodError") {
       return NextResponse.json(
         { error: "Invalid request data", details: error.errors },
         { status: 400 }

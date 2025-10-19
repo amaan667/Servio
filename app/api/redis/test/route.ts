@@ -3,6 +3,7 @@ export const dynamic = "force-dynamic";
 
 import { NextRequest, NextResponse } from 'next/server';
 import { cache } from '@/lib/cache';
+import { getErrorMessage, getErrorDetails } from '@/lib/utils/errors';
 
 export async function GET() {
   try {
@@ -31,11 +32,11 @@ export async function GET() {
         got: retrieved
       }, { status: 500 });
     }
-  } catch (error) {
+  } catch (error: unknown) {
     return NextResponse.json({
       success: false,
       message: 'Redis connection failed',
-      error: error instanceof Error ? error.message : 'Unknown error'
+      error: error instanceof Error ? getErrorMessage(error) : 'Unknown error'
     }, { status: 500 });
   }
 }

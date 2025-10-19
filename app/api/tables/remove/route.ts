@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { createClient } from '@/lib/supabase/server';
 import { createAdminClient } from '@/lib/supabase/server';
 import { logger } from '@/lib/logger';
+import { getErrorMessage, getErrorDetails } from '@/lib/utils/errors';
 
 export const runtime = 'nodejs';
 
@@ -210,10 +211,10 @@ export async function POST(req: NextRequest) {
     return NextResponse.json(result);
 
   } catch (error: unknown) {
-    logger.error('[TABLE REMOVAL] Unexpected error:', { error: error instanceof Error ? error.message : 'Unknown error' });
+    logger.error('[TABLE REMOVAL] Unexpected error:', { error: error instanceof Error ? getErrorMessage(error) : 'Unknown error' });
     return NextResponse.json({ 
       ok: false, 
-      error: error.message || 'An unexpected error occurred' 
+      error: getErrorMessage(error) || 'An unexpected error occurred' 
     }, { status: 500 });
   }
 }

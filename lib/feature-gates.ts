@@ -11,6 +11,7 @@
 
 import { createClient } from '@/lib/supabase/server';
 import { logger } from '@/lib/logger';
+import { getErrorDetails } from '@/lib/utils/errors';
 
 export type SubscriptionTier = 'basic' | 'standard' | 'premium';
 
@@ -80,8 +81,8 @@ export async function checkFeatureAccess(
         ? undefined
         : `This feature requires ${requiredTier} tier. Your current tier is ${currentTier}.`,
     };
-  } catch (error) {
-    logger.error('[FEATURE GATE] Unexpected error:', error);
+  } catch (error: unknown) {
+    logger.error('[FEATURE GATE] Unexpected error:', getErrorDetails(error));
     return {
       hasAccess: true,
       tier: 'premium',
@@ -132,8 +133,8 @@ export async function clientCheckFeatureAccess(
   try {
     const response = await fetch(`/api/features/check?venue_id=${venueId}&feature=${feature}`);
     return await response.json();
-  } catch (error) {
-    logger.error('[FEATURE GATE CLIENT] Error:', error);
+  } catch (error: unknown) {
+    logger.error('[FEATURE GATE CLIENT] Error:', getErrorDetails(error));
     return {
       hasAccess: true,
       tier: 'premium',

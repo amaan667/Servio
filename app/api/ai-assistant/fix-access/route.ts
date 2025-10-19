@@ -8,6 +8,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { createClient } from "@/lib/supabase/server";
 import { z } from "zod";
 import { apiLogger, logger } from '@/lib/logger';
+import { getErrorMessage, getErrorDetails } from '@/lib/utils/errors';
 
 const FixAccessRequestSchema = z.object({
   venueId: z.string().min(1),
@@ -117,9 +118,9 @@ export async function POST(request: NextRequest) {
       { status: 403 }
     );
   } catch (error: unknown) {
-    logger.error("[AI ASSISTANT] Fix access error:", { error: error instanceof Error ? error.message : 'Unknown error' });
+    logger.error("[AI ASSISTANT] Fix access error:", { error: error instanceof Error ? getErrorMessage(error) : 'Unknown error' });
 
-    if (error instanceof Error && error.name === "ZodError") {
+    if (error instanceof Error && getErrorDetails(error).name === "ZodError") {
       const zodError = error as any;
       return NextResponse.json(
         { error: "Invalid request format", details: zodError.errors },

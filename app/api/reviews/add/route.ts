@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { z } from 'zod';
 import { createClient } from '@/lib/supabase/server';
+import { getErrorMessage, getErrorDetails } from '@/lib/utils/errors';
 
 export const runtime = 'nodejs';
 
@@ -27,7 +28,7 @@ export async function POST(req: NextRequest) {
     if (insErr) return NextResponse.json({ ok:false, error: insErr.message }, { status:500 });
     return NextResponse.json({ ok:true });
   } catch (e: unknown) {
-    return NextResponse.json({ ok:false, error: e.message }, { status:400 });
+    return NextResponse.json({ ok:false, error: getErrorMessage(e) }, { status:400 });
   }
 }
 

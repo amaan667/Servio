@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { createClient } from '@/lib/supabase/server';
 import { logger } from '@/lib/logger';
+import { getErrorMessage, getErrorDetails } from '@/lib/utils/errors';
 
 export const runtime = 'nodejs';
 
@@ -45,10 +46,10 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ ok: true });
     
   } catch (e: unknown) {
-    logger.error('[AUTH DEBUG] Feedback submission exception:', e);
+    logger.error('[AUTH DEBUG] Feedback submission exception:', getErrorDetails(e));
     return NextResponse.json({ 
       ok: false, 
-      error: e.message 
+      error: getErrorMessage(e) 
     }, { status: 500 });
   }
 }

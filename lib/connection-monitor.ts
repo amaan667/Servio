@@ -4,6 +4,7 @@
 
 import React from 'react';
 import { logger } from '@/lib/logger';
+import { getErrorDetails } from '@/lib/utils/errors';
 
 export interface ConnectionState {
   isOnline: boolean;
@@ -62,8 +63,8 @@ class ConnectionMonitor {
         lastChecked: new Date()
       });
 
-    } catch (error) {
-      logger.warn('[CONNECTION] Connection check failed:', error);
+    } catch (error: unknown) {
+      logger.warn('[CONNECTION] Connection check failed:', getErrorDetails(error));
       this.updateState({
         isOnline: false,
         isSlowConnection: false,

@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { logger } from '@/lib/logger';
+import { getErrorMessage, getErrorDetails } from '@/lib/utils/errors';
 
 export const runtime = 'nodejs';
 
@@ -22,8 +23,8 @@ export async function POST() {
     response.cookies.set('supabase-auth-token', '', cookieOptions);
     
     return response;
-  } catch (error) {
-    logger.error('[AUTH] Sign-out error:', { error: error instanceof Error ? error.message : 'Unknown error' });
+  } catch (error: unknown) {
+    logger.error('[AUTH] Sign-out error:', { error: error instanceof Error ? getErrorMessage(error) : 'Unknown error' });
     return NextResponse.json({ ok: true }); // Always return success to avoid client errors
   }
 }

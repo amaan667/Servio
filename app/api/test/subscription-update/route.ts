@@ -5,6 +5,7 @@ export const dynamic = "force-dynamic";
 import { NextRequest, NextResponse } from "next/server";
 import { createClient } from "@/lib/supabase/server";
 import { apiLogger, logger } from '@/lib/logger';
+import { getErrorMessage, getErrorDetails } from '@/lib/utils/errors';
 
 export async function POST(request: NextRequest) {
   try {
@@ -71,8 +72,8 @@ export async function POST(request: NextRequest) {
           orgFound = true;
         }
       }
-    } catch (error) {
-      logger.debug('[TEST] user_venue_roles query failed:', { error: error instanceof Error ? error.message : 'Unknown error' });
+    } catch (error: unknown) {
+      logger.debug('[TEST] user_venue_roles query failed:', { error: error instanceof Error ? getErrorMessage(error) : 'Unknown error' });
     }
 
     // Approach 2: Try organizations table directly
@@ -88,8 +89,8 @@ export async function POST(request: NextRequest) {
           orgId = directOrgs.id;
           orgFound = true;
         }
-      } catch (error) {
-        logger.debug('[TEST] Direct organizations query failed:', { error: error instanceof Error ? error.message : 'Unknown error' });
+      } catch (error: unknown) {
+        logger.debug('[TEST] Direct organizations query failed:', { error: error instanceof Error ? getErrorMessage(error) : 'Unknown error' });
       }
     }
 
@@ -120,8 +121,8 @@ export async function POST(request: NextRequest) {
         orgId = newOrg.id;
         orgFound = true;
         logger.debug('[TEST] Created new organization:', orgId);
-      } catch (error) {
-        logger.error('[TEST] Error creating organization:', { error: error instanceof Error ? error.message : 'Unknown error' });
+      } catch (error: unknown) {
+        logger.error('[TEST] Error creating organization:', { error: error instanceof Error ? getErrorMessage(error) : 'Unknown error' });
         return NextResponse.json(
           { error: "Failed to create organization" },
           { status: 500 }
@@ -161,9 +162,9 @@ export async function POST(request: NextRequest) {
     });
 
   } catch (error: unknown) {
-    logger.error("[TEST] Error:", { error: error instanceof Error ? error.message : 'Unknown error' });
+    logger.error("[TEST] Error:", { error: error instanceof Error ? getErrorMessage(error) : 'Unknown error' });
     return NextResponse.json(
-      { error: error.message || "Failed to update subscription status" },
+      { error: getErrorMessage(error) || "Failed to update subscription status" },
       { status: 500 }
     );
   }

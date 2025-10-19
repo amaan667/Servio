@@ -18,6 +18,7 @@ import {
   TOOL_CAPABILITIES,
 } from "@/types/ai-assistant";
 import { assertVenueCapability, Capability } from "@/lib/auth/permissions";
+import { getErrorMessage, getErrorDetails } from '@/lib/utils/errors';
 
 const ExecuteRequestSchema = z.object({
   venueId: z.string().min(1), // Accept any non-empty string for venue ID
@@ -63,10 +64,10 @@ export async function POST(request: NextRequest) {
       );
       
       logger.debug(`[AI ASSISTANT] User ${user.id} (${role}) executing ${toolName} (requires ${requiredCapability})`);
-    } catch (error: any) {
+    } catch (error: unknown) {
       if (error.statusCode === 403) {
         return NextResponse.json(
-          { error: error.message || "Access denied" },
+          { error: getErrorMessage(error) || "Access denied" },
           { status: 403 }
         );
       }
@@ -154,10 +155,10 @@ export async function POST(request: NextRequest) {
       executionTimeMs: executionTime,
     });
   } catch (error: unknown) {
-    logger.error("[AI ASSISTANT] Execution error:", { error: error instanceof Error ? error.message : 'Unknown error' });
+    logger.error("[AI ASSISTANT] Execution error:", { error: error instanceof Error ? getErrorMessage(error) : 'Unknown error' });
 
     // Type guard for ZodError
-    if (error && typeof error === 'object' && 'name' in error && error.name === "ZodError") {
+    if (error && typeof error === 'object' && 'name' in error && getErrorDetails(error).name === "ZodError") {
       const zodError = error as unknown as { errors: unknown };
       return NextResponse.json(
         { error: "Invalid parameters", details: zodError.errors },

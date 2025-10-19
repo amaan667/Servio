@@ -8,6 +8,7 @@ import { Storage } from '@google-cloud/storage';
 import { v4 as uuidv4 } from 'uuid';
 import { TextBlock, BoundingBox } from './types';
 import { logger } from '@/lib/logger';
+import { getErrorDetails } from '@/lib/utils/errors';
 
 const bucketName = process.env.GCS_BUCKET_NAME;
 
@@ -49,8 +50,8 @@ try {
     });
   }
   
-} catch (error) {
-  logger.error('[OCR] Failed to initialize Google Cloud clients:', error);
+} catch (error: unknown) {
+  logger.error('[OCR] Failed to initialize Google Cloud clients:', getErrorDetails(error));
   throw new Error(`Google Cloud credentials not properly configured: ${(error as any).message}`);
 }
 
@@ -123,8 +124,8 @@ export async function extractTextBlocksFromPdf(pdfBuffer: Buffer, fileName: stri
 
     return allBlocks;
 
-  } catch (error) {
-    logger.error('[OCR] Error during OCR process:', error);
+  } catch (error: unknown) {
+    logger.error('[OCR] Error during OCR process:', getErrorDetails(error));
     throw error;
   }
 }

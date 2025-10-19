@@ -5,6 +5,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { createClient } from '@/lib/supabase/server';
 import type { StocktakeRequest } from '@/types/inventory';
 import { logger } from '@/lib/logger';
+import { getErrorMessage, getErrorDetails } from '@/lib/utils/errors';
 
 // POST /api/inventory/stock/stocktake
 export async function POST(request: NextRequest) {
@@ -85,8 +86,8 @@ export async function POST(request: NextRequest) {
       new_stock: actual_count,
       delta,
     }, { status: 201 });
-  } catch (error) {
-    logger.error('[INVENTORY API] Unexpected error:', { error: error instanceof Error ? error.message : 'Unknown error' });
+  } catch (error: unknown) {
+    logger.error('[INVENTORY API] Unexpected error:', { error: error instanceof Error ? getErrorMessage(error) : 'Unknown error' });
     return NextResponse.json(
       { error: 'Internal server error' },
       { status: 500 }

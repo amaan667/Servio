@@ -5,6 +5,7 @@ export const dynamic = "force-dynamic";
 import { NextRequest, NextResponse } from "next/server";
 import { stripe } from "@/lib/stripe-client";
 import { apiLogger as logger } from '@/lib/logger';
+import { getErrorMessage, getErrorDetails } from '@/lib/utils/errors';
 
 export async function GET(request: NextRequest) {
   try {
@@ -37,9 +38,9 @@ export async function GET(request: NextRequest) {
       payment_status: session.payment_status,
     });
   } catch (error: unknown) {
-    logger.error("[STRIPE SESSION] Error fetching session:", { error: error instanceof Error ? error.message : 'Unknown error' });
+    logger.error("[STRIPE SESSION] Error fetching session:", { error: error instanceof Error ? getErrorMessage(error) : 'Unknown error' });
     return NextResponse.json(
-      { error: error.message || "Failed to fetch session" },
+      { error: getErrorMessage(error) || "Failed to fetch session" },
       { status: 500 }
     );
   }

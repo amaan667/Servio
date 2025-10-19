@@ -34,7 +34,7 @@ export async function convertToWebP(
       try {
         const webpDataUrl = canvas.toDataURL('image/webp', quality / 100);
         resolve(webpDataUrl);
-      } catch (error) {
+      } catch (error: unknown) {
         reject(error);
       }
     };
@@ -112,7 +112,7 @@ export async function compressImage(
       try {
         const compressedDataUrl = canvas.toDataURL('image/jpeg', quality / 100);
         resolve(compressedDataUrl);
-      } catch (error) {
+      } catch (error: unknown) {
         reject(error);
       }
     };

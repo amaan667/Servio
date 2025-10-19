@@ -7,6 +7,7 @@ export const dynamic = "force-dynamic";
 import { NextRequest, NextResponse } from "next/server";
 import { createClient } from "@/lib/supabase/server";
 import { apiLogger, logger } from '@/lib/logger';
+import { getErrorMessage, getErrorDetails } from '@/lib/utils/errors';
 
 export async function POST(request: NextRequest) {
   try {
@@ -269,9 +270,9 @@ CREATE TRIGGER trigger_update_ai_chat_conversations_updated_at
     });
 
   } catch (error: unknown) {
-    logger.error("[AI MIGRATION] Migration failed:", { error: error instanceof Error ? error.message : 'Unknown error' });
+    logger.error("[AI MIGRATION] Migration failed:", { error: error instanceof Error ? getErrorMessage(error) : 'Unknown error' });
     return NextResponse.json(
-      { error: error instanceof Error ? error.message : "Migration failed" },
+      { error: error instanceof Error ? getErrorMessage(error) : "Migration failed" },
       { status: 500 }
     );
   }

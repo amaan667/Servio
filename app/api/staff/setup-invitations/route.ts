@@ -7,6 +7,7 @@ export const dynamic = "force-dynamic";
 import { NextRequest, NextResponse } from "next/server";
 import { createClient } from "@/lib/supabase/server";
 import { apiLogger, logger } from '@/lib/logger';
+import { getErrorMessage, getErrorDetails } from '@/lib/utils/errors';
 
 export async function POST(request: NextRequest) {
   try {
@@ -95,8 +96,8 @@ export async function POST(request: NextRequest) {
           sql: createTableSQL
         });
       }
-    } catch (error) {
-      logger.debug("[STAFF INVITATION SETUP] Error testing table existence:", { error: error instanceof Error ? error.message : 'Unknown error' });
+    } catch (error: unknown) {
+      logger.debug("[STAFF INVITATION SETUP] Error testing table existence:", { error: error instanceof Error ? getErrorMessage(error) : 'Unknown error' });
     }
 
     // If we get here, the table might exist or there was an error
@@ -168,12 +169,12 @@ export async function POST(request: NextRequest) {
       ]
     });
 
-  } catch (error) {
-    logger.error("[STAFF INVITATION SETUP] Error:", { error: error instanceof Error ? error.message : 'Unknown error' });
+  } catch (error: unknown) {
+    logger.error("[STAFF INVITATION SETUP] Error:", { error: error instanceof Error ? getErrorMessage(error) : 'Unknown error' });
     return NextResponse.json({
       success: false,
       error: "Failed to set up staff invitation system",
-      details: error instanceof Error ? error.message : "Unknown error"
+      details: error instanceof Error ? getErrorMessage(error) : "Unknown error"
     }, { status: 500 });
   }
 }

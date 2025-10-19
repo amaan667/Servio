@@ -19,6 +19,7 @@ import { runHighRecallMode, runPrecisionMode, HIGH_RECALL_OPTIONS, PRECISION_OPT
 import { batchClassifyBlocks } from './gptClassifier';
 import { parseMenuWithGPT, parseMenuInBatches, validateMenuParsingResult } from './robustMenuParser';
 import { logger } from '@/lib/logger';
+import { getErrorMessage, getErrorDetails } from '@/lib/utils/errors';
 
 /**
  * Main PDF importer function with comprehensive error handling
@@ -230,11 +231,11 @@ export async function importPDFToMenu(
     
   } catch (error: unknown) {
     const processingTime = Date.now() - startTime;
-    logger.error('[PDF_IMPORT] Import failed:', error);
+    logger.error('[PDF_IMPORT] Import failed:', getErrorDetails(error));
     
     return {
       success: false,
-      error: error.message,
+      error: getErrorMessage(error),
       warnings: warnings.length > 0 ? warnings : undefined,
       metadata: {
         sourceType: { type: 'vision_ocr', hasSelectableText: false, hasTextLayer: false, confidence: 0, extractionMethod: 'vision_ocr' },

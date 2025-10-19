@@ -1,6 +1,7 @@
 import { createClient } from '@/lib/supabase/client'
 import { useState, useEffect, useCallback, useMemo } from 'react'
 import { logger } from '@/lib/logger';
+import { getErrorMessage, getErrorDetails } from '@/lib/utils/errors';
 
 export interface TabCounts {
   live_count: number
@@ -43,9 +44,9 @@ export function useTabCounts(venueId: string, tz: string, liveWindowMins = 30) {
       }
       
       setData(result)
-    } catch (err) {
-      logger.error('[TAB_COUNTS] Fetch error:', err)
-      setError(err instanceof Error ? err.message : 'Unknown error')
+    } catch (err: unknown) {
+      logger.error('[TAB_COUNTS] Fetch error:', getErrorDetails(err))
+      setError(err instanceof Error ? getErrorMessage(err) : 'Unknown error')
     } finally {
       setIsLoading(false)
     }

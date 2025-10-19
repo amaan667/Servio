@@ -14,6 +14,7 @@
 import { createAdminClient } from '@/lib/supabase/server';
 import type { CreateIngredientRequest } from '@/types/inventory';
 import { logger } from '@/lib/logger';
+import { getErrorDetails } from '@/lib/utils/errors';
 
 interface SeedIngredient {
   name: string;
@@ -216,8 +217,8 @@ export async function seedInventoryData(venueId: string) {
       }
 
       logger.debug(`[INVENTORY SEED] Created ingredient: ${ingredient.name} (${data.id})`);
-    } catch (error) {
-      logger.error(`[INVENTORY SEED] Unexpected error for ingredient "${ingredient.name}":`, error);
+    } catch (error: unknown) {
+      logger.error(`[INVENTORY SEED] Unexpected error for ingredient "${ingredient.name}":`, getErrorDetails(error));
     }
   }
 
@@ -273,8 +274,8 @@ export async function seedInventoryData(venueId: string) {
           logger.debug(`[INVENTORY SEED] Created recipe for: ${menuItem.name}`);
         }
       }
-    } catch (error) {
-      logger.error(`[INVENTORY SEED] Unexpected error for recipe "${recipe.menuItemName}":`, error);
+    } catch (error: unknown) {
+      logger.error(`[INVENTORY SEED] Unexpected error for recipe "${recipe.menuItemName}":`, getErrorDetails(error));
     }
   }
 

@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { createClient, getAuthenticatedUser } from '@/lib/supabase/server';
 import { logger } from '@/lib/logger';
+import { getErrorMessage, getErrorDetails } from '@/lib/utils/errors';
 
 export const runtime = 'nodejs';
 
@@ -91,10 +92,10 @@ export async function PUT(req: NextRequest, context: { params: Promise<{ reserva
     });
 
   } catch (error: unknown) {
-    logger.error('[MODIFY RESERVATION] Error:', { error: error instanceof Error ? error.message : 'Unknown error' });
+    logger.error('[MODIFY RESERVATION] Error:', { error: error instanceof Error ? getErrorMessage(error) : 'Unknown error' });
     return NextResponse.json({ 
       ok: false, 
-      error: error.message || 'Internal server error' 
+      error: getErrorMessage(error) || 'Internal server error' 
     }, { status: 500 });
   }
 }

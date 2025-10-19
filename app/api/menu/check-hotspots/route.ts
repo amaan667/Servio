@@ -3,6 +3,7 @@ export const dynamic = "force-dynamic";
 
 import { NextRequest, NextResponse } from 'next/server';
 import { createAdminClient } from '@/lib/supabase/server';
+import { getErrorMessage, getErrorDetails } from '@/lib/utils/errors';
 
 export async function GET(req: NextRequest) {
   try {
@@ -97,7 +98,7 @@ export async function GET(req: NextRequest) {
 
   } catch (error: unknown) {
     return NextResponse.json(
-      { ok: false, error: error.message },
+      { ok: false, error: getErrorMessage(error) },
       { status: 500 }
     );
   }

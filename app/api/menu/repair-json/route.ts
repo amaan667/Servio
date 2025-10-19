@@ -6,6 +6,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { repairAndValidateMenuJSON, validateMenuJSON } from '@/lib/pdfImporter/jsonRepair';
 import { logger } from '@/lib/logger';
+import { getErrorMessage, getErrorDetails } from '@/lib/utils/errors';
 
 export const runtime = "nodejs";
 
@@ -63,10 +64,10 @@ export async function POST(req: NextRequest) {
     }
 
   } catch (error: unknown) {
-    logger.error('[JSON_REPAIR_API] Fatal error:', { error: error instanceof Error ? error.message : 'Unknown error' });
+    logger.error('[JSON_REPAIR_API] Fatal error:', { error: error instanceof Error ? getErrorMessage(error) : 'Unknown error' });
     return NextResponse.json({ 
       success: false, 
-      error: `JSON repair failed: ${error.message}` 
+      error: `JSON repair failed: ${getErrorMessage(error)}` 
     }, { status: 500 });
   }
 }

@@ -4,6 +4,7 @@ export const dynamic = "force-dynamic";
 import { NextRequest, NextResponse } from 'next/server';
 import { createClient } from '@/lib/supabase/server';
 import { getAuthRedirectUrl } from '@/lib/auth';
+import { getErrorMessage, getErrorDetails } from '@/lib/utils/errors';
 
 export async function GET(request: NextRequest) {
   try {
@@ -55,7 +56,7 @@ export async function GET(request: NextRequest) {
     
   } catch (error: unknown) {
     return NextResponse.json({ 
-      error: error.message,
+      error: getErrorMessage(error),
       timestamp: new Date().toISOString()
     }, { status: 500 });
   }

@@ -3,6 +3,7 @@ import { cookies } from 'next/headers';
 import { createServerClient } from '@supabase/ssr';
 import { cookieAdapter } from '@/lib/server/supabase';
 import { logger } from '@/lib/logger';
+import { getErrorMessage, getErrorDetails } from '@/lib/utils/errors';
 
 export const runtime = 'nodejs';
 
@@ -85,10 +86,10 @@ export async function POST(req: NextRequest) {
     });
 
   } catch (error: unknown) {
-    logger.error('[AUTH DEBUG] Error in feedback list:', { error: error instanceof Error ? error.message : 'Unknown error' });
+    logger.error('[AUTH DEBUG] Error in feedback list:', { error: error instanceof Error ? getErrorMessage(error) : 'Unknown error' });
     return NextResponse.json({ 
       ok: false, 
-      error: `Failed to fetch feedback: ${error.message}` 
+      error: `Failed to fetch feedback: ${getErrorMessage(error)}` 
     }, { status: 500 });
   }
 }

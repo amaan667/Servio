@@ -4,6 +4,7 @@ export const dynamic = "force-dynamic";
 import { NextRequest, NextResponse } from 'next/server';
 import { refreshSession } from '@/lib/supabase/server';
 import { logger } from '@/lib/logger';
+import { getErrorMessage, getErrorDetails } from '@/lib/utils/errors';
 
 export async function POST() {
   try {
@@ -36,10 +37,10 @@ export async function POST() {
     });
     
   } catch (error: unknown) {
-    logger.error('[REFRESH API] Unexpected error:', error.message);
+    logger.error('[REFRESH API] Unexpected error:', getErrorMessage(error));
     return NextResponse.json({ 
       ok: false, 
-      error: error.message || 'Internal server error'
+      error: getErrorMessage(error) || 'Internal server error'
     }, { status: 500 });
   }
 }

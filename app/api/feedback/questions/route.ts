@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { createClient, getAuthenticatedUser, createAdminClient } from '@/lib/supabase/server';
 import type { FeedbackQuestion } from '@/types/feedback';
 import { logger } from '@/lib/logger';
+import { getErrorMessage, getErrorDetails } from '@/lib/utils/errors';
 
 export const runtime = 'nodejs';
 
@@ -63,7 +64,7 @@ export async function GET(req: NextRequest) {
     });
 
   } catch (error: unknown) {
-    logger.error('[FEEDBACK:Q] list exception:', error.message);
+    logger.error('[FEEDBACK:Q] list exception:', getErrorMessage(error));
     return NextResponse.json({ error: 'Internal server error' }, { status: 500 });
   }
 }
@@ -160,7 +161,7 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ question });
 
   } catch (error: unknown) {
-    logger.error('[FEEDBACK:Q] add exception:', error.message);
+    logger.error('[FEEDBACK:Q] add exception:', getErrorMessage(error));
     return NextResponse.json({ error: 'Internal server error' }, { status: 500 });
   }
 }
@@ -247,7 +248,7 @@ export async function PATCH(req: NextRequest) {
     return NextResponse.json({ question });
 
   } catch (error: unknown) {
-    logger.error('[FEEDBACK:Q] update exception:', error.message);
+    logger.error('[FEEDBACK:Q] update exception:', getErrorMessage(error));
     return NextResponse.json({ error: 'Internal server error' }, { status: 500 });
   }
 }
@@ -296,7 +297,7 @@ export async function DELETE(req: NextRequest) {
     return NextResponse.json({ success: true });
 
   } catch (error: unknown) {
-    logger.error('[FEEDBACK:Q] delete exception:', error.message);
+    logger.error('[FEEDBACK:Q] delete exception:', getErrorMessage(error));
     return NextResponse.json({ error: 'Internal server error' }, { status: 500 });
   }
 }

@@ -4,6 +4,7 @@ export const dynamic = 'force-dynamic';
 import { NextRequest, NextResponse } from 'next/server';
 import { createClient } from '@/lib/supabase/server';
 import { logger } from '@/lib/logger';
+import { getErrorMessage, getErrorDetails } from '@/lib/utils/errors';
 
 /**
  * Demo Reset API
@@ -44,13 +45,13 @@ export async function POST(request: NextRequest) {
       message: 'Demo data reset successfully',
       timestamp: new Date().toISOString(),
     });
-  } catch (error) {
-    logger.error('[DEMO RESET] Error:', { error: error instanceof Error ? error.message : 'Unknown error' });
+  } catch (error: unknown) {
+    logger.error('[DEMO RESET] Error:', { error: error instanceof Error ? getErrorMessage(error) : 'Unknown error' });
     return NextResponse.json(
       { 
         success: false, 
         error: 'Failed to reset demo data',
-        details: error instanceof Error ? error.message : 'Unknown error'
+        details: error instanceof Error ? getErrorMessage(error) : 'Unknown error'
       },
       { status: 500 }
     );

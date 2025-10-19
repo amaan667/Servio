@@ -1,5 +1,6 @@
 import { useState, useEffect, useCallback } from 'react'
 import { createClient } from '@/lib/supabase/client'
+import { getErrorMessage, getErrorDetails } from '@/lib/utils/errors';
 
 export type Order = {
   id: string
@@ -93,7 +94,7 @@ export function useLiveOrders(venueId: string) {
       
     } catch (err: unknown) {
       setIsError(true)
-      setError(err.message || 'Failed to load orders')
+      setError(getErrorMessage(err) || 'Failed to load orders')
     } finally {
       setIsLoading(false)
     }

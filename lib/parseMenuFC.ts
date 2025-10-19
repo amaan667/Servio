@@ -6,6 +6,7 @@ import { sectionPrompt } from "./prompts";
 import { filterSectionItems } from "./sectionPost";
 import { reassignMoved } from "./reassign";
 import { logger } from '@/lib/logger';
+import { getErrorDetails } from '@/lib/utils/errors';
 
 
 const menuFunction = {
@@ -151,8 +152,8 @@ export async function parseMenuInChunks(ocrText: string): Promise<MenuPayloadT> 
       itemsAll.push(...normalizedKept);
       movedAll.push(...reassigned);
       
-    } catch (e) {
-      logger.warn(`[MENU PARSE] Section "${sec.name}" failed:`, e);
+    } catch (e: unknown) {
+      logger.warn(`[MENU PARSE] Section "${sec.name}" failed:`, getErrorDetails(e));
       // Continue with other sections instead of failing completely
     }
   }
@@ -230,8 +231,8 @@ async function parseMenuInChunksFallback(ocrText: string): Promise<MenuPayloadT>
     const parsed = JSON.parse(raw);
     const validated = MenuPayload.parse(parsed);
     return validated;
-  } catch (e) {
-    logger.error('[MENU PARSE] Fallback parsing failed:', e);
+  } catch (e: unknown) {
+    logger.error('[MENU PARSE] Fallback parsing failed:', getErrorDetails(e));
     throw new Error("Failed to parse menu with fallback method.");
   }
 }

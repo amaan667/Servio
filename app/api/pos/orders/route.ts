@@ -6,6 +6,7 @@ import { createClient } from '@/lib/supabase/server';
 import { getAuthenticatedUser } from '@/lib/supabase/server';
 import { cache } from '@/lib/cache';
 import { apiLogger, logger } from '@/lib/logger';
+import { getErrorMessage, getErrorDetails } from '@/lib/utils/errors';
 
 export async function GET(req: NextRequest) {
   try {
@@ -95,8 +96,8 @@ export async function GET(req: NextRequest) {
     await cache.set(cacheKey, response, 60);
 
     return NextResponse.json(response);
-  } catch (error) {
-    logger.error('[POS ORDERS] Unexpected error:', { error: error instanceof Error ? error.message : 'Unknown error' });
+  } catch (error: unknown) {
+    logger.error('[POS ORDERS] Unexpected error:', { error: error instanceof Error ? getErrorMessage(error) : 'Unknown error' });
     return NextResponse.json({ error: 'Internal server error' }, { status: 500 });
   }
 }

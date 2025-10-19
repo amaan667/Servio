@@ -7,6 +7,7 @@ import Stripe from 'stripe';
 import { createClient } from '@/lib/supabase/server';
 import { stripe } from '@/lib/stripe-client';
 import { apiLogger, logger } from '@/lib/logger';
+import { getErrorMessage, getErrorDetails } from '@/lib/utils/errors';
 
 // Extend Invoice type to include subscription property
 interface InvoiceWithSubscription extends Stripe.Invoice {
@@ -68,9 +69,9 @@ export async function POST(request: NextRequest) {
 
     return NextResponse.json({ received: true });
   } catch (error: unknown) {
-    logger.error("[STRIPE WEBHOOK] Error:", { error: error instanceof Error ? error.message : 'Unknown error' });
+    logger.error("[STRIPE WEBHOOK] Error:", { error: error instanceof Error ? getErrorMessage(error) : 'Unknown error' });
     return NextResponse.json(
-      { error: error.message },
+      { error: getErrorMessage(error) },
       { status: 400 }
     );
   }

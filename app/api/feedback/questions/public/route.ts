@@ -4,6 +4,7 @@ export const dynamic = "force-dynamic";
 import { NextRequest, NextResponse } from 'next/server';
 import { createAdminClient } from '@/lib/supabase/server';
 import { logger } from '@/lib/logger';
+import { getErrorMessage, getErrorDetails } from '@/lib/utils/errors';
 
 // GET - List active questions for venue (public endpoint for customers)
 export async function GET(req: NextRequest) {
@@ -38,7 +39,7 @@ export async function GET(req: NextRequest) {
     });
 
   } catch (error: unknown) {
-    logger.error('[FEEDBACK:PUBLIC] Exception:', error.message);
+    logger.error('[FEEDBACK:PUBLIC] Exception:', getErrorMessage(error));
     return NextResponse.json({ error: 'Internal server error' }, { status: 500 });
   }
 }

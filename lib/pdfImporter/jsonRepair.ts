@@ -5,6 +5,7 @@
 
 /**
 import { logger } from '@/lib/logger';
+import { getErrorDetails } from '@/lib/utils/errors';
  * Repairs malformed JSON from GPT output
  */
 export function repairMenuJSON(brokenJSON: string): string {
@@ -13,7 +14,7 @@ export function repairMenuJSON(brokenJSON: string): string {
     // First, try to parse as-is
     JSON.parse(brokenJSON);
     return brokenJSON;
-  } catch (error) {
+  } catch (error: unknown) {
   }
   
   // Try the new robust reconstruction approach first
@@ -22,7 +23,7 @@ export function repairMenuJSON(brokenJSON: string): string {
     if (reconstructed) {
       return reconstructed;
     }
-  } catch (error) {
+  } catch (error: unknown) {
   }
   
   let repaired = brokenJSON;
@@ -172,7 +173,7 @@ function reconstructJSONFromMalformed(json: string): string | null {
     
     return JSON.stringify(reconstructed, null, 2);
     
-  } catch (error) {
+  } catch (error: unknown) {
     return null;
   }
 }
@@ -525,8 +526,8 @@ function validateAndCleanItems(json: string): string {
     
     return JSON.stringify(result, null, 2);
     
-  } catch (error) {
-    logger.error('[JSON_REPAIR] Failed to validate items:', error);
+  } catch (error: unknown) {
+    logger.error('[JSON_REPAIR] Failed to validate items:', getErrorDetails(error));
     return json;
   }
 }
@@ -584,7 +585,7 @@ export function validateMenuJSON(json: string): {
       items
     };
     
-  } catch (error) {
+  } catch (error: unknown) {
     errors.push(`JSON parse error: ${(error as any).message}`);
     return { valid: false, errors, items };
   }
@@ -621,8 +622,8 @@ export function repairAndValidateMenuJSON(brokenJSON: string): {
       };
     }
     
-  } catch (error) {
-    logger.error('[JSON_REPAIR] Repair pipeline failed:', error);
+  } catch (error: unknown) {
+    logger.error('[JSON_REPAIR] Repair pipeline failed:', getErrorDetails(error));
     return {
       success: false,
       errors: [`Repair failed: ${(error as any).message}`]

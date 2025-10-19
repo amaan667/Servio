@@ -1,5 +1,6 @@
 import { createBrowserClient } from '@supabase/ssr'
 import { dbLogger as logger } from '@/lib/logger';
+import { getErrorMessage, getErrorDetails } from '@/lib/utils/errors';
 
 const supabaseInstance: ReturnType<typeof createBrowserClient> | any | null = null;
 
@@ -69,8 +70,8 @@ function getOrCreateClient() {
     
     logger.debug('[SUPABASE CLIENT] Client created successfully');
     return client;
-  } catch (error) {
-    logger.error('[SUPABASE CLIENT] Error creating client:', error);
+  } catch (error: unknown) {
+    logger.error('[SUPABASE CLIENT] Error creating client:', getErrorDetails(error));
     // Fallback to mock if the browser client throws during initialization
     return createMockClient();
   }
@@ -98,7 +99,7 @@ export function clearAuthStorage() {
       k.includes("auth") && !k.includes("token-code-verifier")
     );
     sessionStorageKeys.forEach(k => sessionStorage.removeItem(k));
-  } catch (error) {
+  } catch (error: unknown) {
     // Silent error handling
   }
 }
@@ -126,8 +127,8 @@ export function checkPKCEState() {
         authKeys: Object.keys(sessionStorage).filter(k => k.includes('auth') || k.includes('sb-')),
       }
     };
-  } catch (error) {
-    return { error: error instanceof Error ? error.message : 'Unknown error' };
+  } catch (error: unknown) {
+    return { error: error instanceof Error ? getErrorMessage(error) : 'Unknown error' };
   }
 }
 
@@ -138,7 +139,7 @@ export async function checkAuthState() {
   try {
     const { data, error } = await supabase.auth.getUser();
     return { data, error };
-  } catch (error) {
+  } catch (error: unknown) {
     return { data: null, error };
   }
 }

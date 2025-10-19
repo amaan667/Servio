@@ -4,6 +4,7 @@ export const dynamic = "force-dynamic";
 import { NextRequest, NextResponse } from 'next/server';
 import { createClient } from '@/lib/supabase/server';
 import { logger } from '@/lib/logger';
+import { getErrorMessage, getErrorDetails } from '@/lib/utils/errors';
 
 export async function POST(req: NextRequest) {
   try {
@@ -74,8 +75,8 @@ export async function POST(req: NextRequest) {
       updated_at: new Date().toISOString()
     });
   } catch (error: unknown) {
-    logger.error('[MARK PAID] Error marking order as paid:', { error: error instanceof Error ? error.message : 'Unknown error' });
-    return NextResponse.json({ error: error.message }, { status: 500 });
+    logger.error('[MARK PAID] Error marking order as paid:', { error: error instanceof Error ? getErrorMessage(error) : 'Unknown error' });
+    return NextResponse.json({ error: getErrorMessage(error) }, { status: 500 });
   }
 }
 

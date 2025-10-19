@@ -7,6 +7,7 @@ import Stripe from "stripe";
 import { createClient } from "@/lib/supabase/server";
 import { stripe } from "@/lib/stripe-client";
 import { apiLogger as logger } from '@/lib/logger';
+import { getErrorMessage, getErrorDetails } from '@/lib/utils/errors';
 
 // Pricing tiers from homepage
 const PRICE_IDS = {
@@ -68,8 +69,8 @@ const ensureStripeProducts = async () => {
       priceIds[product.tier] = price.id;
       logger.debug(`[STRIPE SETUP] Created ${product.tier} price: ${price.id}`);
 
-    } catch (error) {
-      logger.error(`[STRIPE ERROR] Failed to create ${product.tier} product/price:`, { error: error instanceof Error ? error.message : 'Unknown error' });
+    } catch (error: unknown) {
+      logger.error(`[STRIPE ERROR] Failed to create ${product.tier} product/price:`, { error: error instanceof Error ? getErrorMessage(error) : 'Unknown error' });
       throw error;
     }
   }
@@ -305,9 +306,9 @@ export async function POST(request: NextRequest) {
 
     return NextResponse.json({ sessionId: session.id, url: session.url });
   } catch (error: unknown) {
-    logger.error("[STRIPE CHECKOUT] Error:", { error: error instanceof Error ? error.message : 'Unknown error' });
+    logger.error("[STRIPE CHECKOUT] Error:", { error: error instanceof Error ? getErrorMessage(error) : 'Unknown error' });
     return NextResponse.json(
-      { error: error.message || "Failed to create checkout session" },
+      { error: getErrorMessage(error) || "Failed to create checkout session" },
       { status: 500 }
     );
   }

@@ -8,6 +8,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { createSupabaseClient } from "@/lib/supabase/unified-client";
 import { z } from "zod";
 import { apiLogger, logger } from '@/lib/logger';
+import { getErrorMessage, getErrorDetails } from '@/lib/utils/errors';
 
 const CreateConversationSchema = z.object({
   venueId: z.string().min(1),
@@ -51,8 +52,8 @@ export async function GET(request: NextRequest) {
         if (!roleErr && roleRow?.role) {
           roleName = roleRow.role;
         }
-      } catch (e) {
-        logger.debug('[AI CHAT] user_venue_roles lookup failed, will fallback to ownership check', { error: e instanceof Error ? e.message : 'Unknown error' });
+      } catch (e: unknown) {
+        logger.debug('[AI CHAT] user_venue_roles lookup failed, will fallback to ownership check', { error: e instanceof Error ? getErrorMessage(e) : 'Unknown error' });
       }
 
       if (!roleName) {
@@ -130,7 +131,7 @@ export async function GET(request: NextRequest) {
       conversations: transformedConversations,
     });
   } catch (error: unknown) {
-    const errorMessage = error instanceof Error ? error.message : 'Unknown error';
+    const errorMessage = error instanceof Error ? getErrorMessage(error) : 'Unknown error';
     logger.error("[AI CHAT] Conversations error:", { error: errorMessage });
     
     const errorObj = error && typeof error === 'object' ? error as Record<string, unknown> : {};
@@ -203,11 +204,11 @@ export async function POST(request: NextRequest) {
       conversation: transformedConversation,
     });
   } catch (error: unknown) {
-    const errorMessage = error instanceof Error ? error.message : 'Unknown error';
+    const errorMessage = error instanceof Error ? getErrorMessage(error) : 'Unknown error';
     logger.error("[AI CHAT] Create conversation error:", { error: errorMessage });
     
     // Type guard for ZodError
-    if (error && typeof error === 'object' && 'name' in error && error.name === "ZodError") {
+    if (error && typeof error === 'object' && 'name' in error && getErrorDetails(error).name === "ZodError") {
       const zodError = error as unknown as { errors: unknown };
       return NextResponse.json(
         { error: "Invalid request data", details: zodError.errors },
@@ -295,7 +296,7 @@ export async function PATCH(request: NextRequest) {
       conversation: transformedConversation,
     });
   } catch (error: unknown) {
-    const errorMessage = error instanceof Error ? error.message : 'Unknown error';
+    const errorMessage = error instanceof Error ? getErrorMessage(error) : 'Unknown error';
     logger.error("[AI CHAT] Update conversation error:", { error: errorMessage });
     return NextResponse.json(
       { error: errorMessage || "Internal server error" },

@@ -1,6 +1,7 @@
 import { useState, useEffect, useCallback } from 'react';
 import { createClient } from '@/lib/supabase/client';
 import { logger } from '@/lib/logger';
+import { getErrorMessage, getErrorDetails } from '@/lib/utils/errors';
 
 export interface TableWithSession {
   id: string;
@@ -87,10 +88,10 @@ export function useTablesData(venueId: string) {
       }
 
       setTables(data.tables || []);
-    } catch (err) {
+    } catch (err: unknown) {
       logger.error('[TABLES HOOK] Error fetching tables:', {
         error: err,
-        message: err instanceof Error ? err.message : 'Unknown error',
+        message: err instanceof Error ? getErrorMessage(err) : 'Unknown error',
         venueId,
         timestamp: new Date().toISOString()
       });

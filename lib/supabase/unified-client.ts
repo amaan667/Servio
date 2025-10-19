@@ -122,7 +122,7 @@ export async function createSupabaseClient(context: ClientContext = 'server') {
       get(name: string) {
         try {
           return cookieStore.get(name)?.value;
-        } catch (error) {
+        } catch (error: unknown) {
           return undefined;
         }
       },
@@ -135,7 +135,7 @@ export async function createSupabaseClient(context: ClientContext = 'server') {
             httpOnly: false,
             path: '/',
           });
-        } catch (error) {
+        } catch (error: unknown) {
           // Silently fail for cookie context errors
         }
       },
@@ -149,7 +149,7 @@ export async function createSupabaseClient(context: ClientContext = 'server') {
             httpOnly: false,
             path: '/',
           });
-        } catch (error) {
+        } catch (error: unknown) {
           // Silently fail for cookie context errors
         }
       },
@@ -170,7 +170,7 @@ export async function getAuthenticatedUser() {
     }
     
     return { user, error: null };
-  } catch (error) {
+  } catch (error: unknown) {
     return { user: null, error: 'Failed to get authenticated user' };
   }
 }
@@ -188,7 +188,7 @@ export async function getSession() {
     }
     
     return { session, error: null };
-  } catch (error) {
+  } catch (error: unknown) {
     return { session: null, error: 'Failed to get session' };
   }
 }
@@ -209,7 +209,7 @@ export function clearAuthStorage() {
       k => k.includes('auth') && !k.includes('token-code-verifier')
     );
     sessionStorageKeys.forEach(k => sessionStorage.removeItem(k));
-  } catch (error) {
+  } catch (error: unknown) {
     // Silent error handling
   }
 }

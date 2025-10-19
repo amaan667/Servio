@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { createAdminClient } from '@/lib/supabase/server';
 import type { FeedbackAnswer } from '@/types/feedback';
 import { logger } from '@/lib/logger';
+import { getErrorMessage, getErrorDetails } from '@/lib/utils/errors';
 
 export const runtime = 'nodejs';
 
@@ -160,7 +161,7 @@ export async function POST(req: NextRequest) {
         if (orderData?.customer_name) {
           customerName = orderData.customer_name;
         }
-      } catch (error) {
+      } catch (error: unknown) {
       }
     }
 
@@ -199,7 +200,7 @@ export async function POST(req: NextRequest) {
     });
 
   } catch (error: unknown) {
-    logger.error('[FEEDBACK][R] insert exception:', error.message);
+    logger.error('[FEEDBACK][R] insert exception:', getErrorMessage(error));
     return NextResponse.json({ 
       error: 'Failed to submit feedback' 
     }, { status: 500 });

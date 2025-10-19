@@ -5,6 +5,7 @@ import OpenAI from "openai";
 import { zodResponseFormat } from "openai/helpers/zod";
 import { z } from "zod";
 import { aiLogger as logger } from '@/lib/logger';
+import { getErrorDetails } from '@/lib/utils/errors';
 import {
   AIAssistantContext,
   AIPlanResponse,
@@ -377,8 +378,8 @@ export async function planAssistantAction(
     }
     
     throw new Error("Failed to parse AI response: no parsed or content available");
-  } catch (error) {
-    logger.error(`[AI ASSISTANT] Planning error with ${selectedModel}:`, error);
+  } catch (error: unknown) {
+    logger.error(`[AI ASSISTANT] Planning error with ${selectedModel}:`, getErrorDetails(error));
     
     // If we used mini and got an error, try falling back to full model
     if (selectedModel === MODEL_MINI && !usedFallback) {
@@ -470,8 +471,8 @@ User Role: ${context.userRole}`;
     });
 
     return completion.choices[0].message.content || "Action explanation unavailable.";
-  } catch (error) {
-    logger.error("[AI ASSISTANT] Explanation error:", error);
+  } catch (error: unknown) {
+    logger.error("[AI ASSISTANT] Explanation error:", getErrorDetails(error));
     return "Unable to generate explanation.";
   }
 }
@@ -505,8 +506,8 @@ Focus on common tasks, optimizations, or insights based on the data.`;
 
     const response = JSON.parse(completion.choices[0].message.content || "{}");
     return response.suggestions || [];
-  } catch (error) {
-    logger.error("[AI ASSISTANT] Suggestion generation error:", error);
+  } catch (error: unknown) {
+    logger.error("[AI ASSISTANT] Suggestion generation error:", getErrorDetails(error));
     return [];
   }
 }

@@ -1,5 +1,6 @@
 import { createBrowserClient } from '@supabase/ssr';
 import { logger } from '@/lib/logger';
+import { getErrorDetails } from '@/lib/utils/errors';
 
 let supabaseBrowserInstance: ReturnType<typeof createBrowserClient> | null = null;
 
@@ -52,23 +53,23 @@ export const supabaseBrowser = () => {
               try {
                 // Allow all auth-related keys to be read for proper session management
                 return localStorage.getItem(key);
-              } catch (error) {
-                logger.error('[SUPABASE] Error reading from storage:', error);
+              } catch (error: unknown) {
+                logger.error('[SUPABASE] Error reading from storage:', getErrorDetails(error));
                 return null;
               }
             },
             setItem: (key: string, value: string) => {
               try {
                 localStorage.setItem(key, value);
-              } catch (error) {
-                logger.error('[SUPABASE] Error writing to storage:', error);
+              } catch (error: unknown) {
+                logger.error('[SUPABASE] Error writing to storage:', getErrorDetails(error));
               }
             },
             removeItem: (key: string) => {
               try {
                 localStorage.removeItem(key);
-              } catch (error) {
-                logger.error('[SUPABASE] Error removing from storage:', error);
+              } catch (error: unknown) {
+                logger.error('[SUPABASE] Error removing from storage:', getErrorDetails(error));
               }
             },
           },
@@ -108,7 +109,7 @@ export const clearSupabaseAuth = async () => {
       if (response.ok) {
       } else {
       }
-    } catch (error) {
+    } catch (error: unknown) {
     }
     
     // Clear any remaining auth-related storage
@@ -129,8 +130,8 @@ export const clearSupabaseAuth = async () => {
       sessionStorage.removeItem(key);
     });
     
-  } catch (error) {
-    logger.error('[SUPABASE] Error clearing auth state:', error);
+  } catch (error: unknown) {
+    logger.error('[SUPABASE] Error clearing auth state:', getErrorDetails(error));
   }
 };
 
@@ -150,8 +151,8 @@ export const checkAuthStatus = async () => {
       user,
       session: null // We don't need session data for authentication check
     };
-  } catch (error) {
-    logger.error('[SUPABASE] Error checking auth status:', error);
+  } catch (error: unknown) {
+    logger.error('[SUPABASE] Error checking auth status:', getErrorDetails(error));
     return { isAuthenticated: false, error };
   }
 };
@@ -168,8 +169,8 @@ export const refreshSession = async () => {
     }
     
     return { session, error: null };
-  } catch (error) {
-    logger.error('[SUPABASE] Error refreshing session:', error);
+  } catch (error: unknown) {
+    logger.error('[SUPABASE] Error refreshing session:', getErrorDetails(error));
     return { session: null, error };
   }
 };

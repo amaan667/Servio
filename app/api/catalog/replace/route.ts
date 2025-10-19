@@ -3,6 +3,7 @@ import { createAdminClient } from '@/lib/supabase/server';
 import { parseMenuBulletproof, applyKnownFixes } from '@/lib/improvedMenuParser';
 import { convertPDFToImages } from '@/lib/pdf-to-images';
 import { apiLogger, logger } from '@/lib/logger';
+import { getErrorMessage, getErrorDetails } from '@/lib/utils/errors';
 
 // Ensure this runs on Node.js runtime (not Edge)
 export const runtime = 'nodejs';
@@ -188,10 +189,10 @@ export async function POST(req: NextRequest) {
     }
 
   } catch (error: unknown) {
-    logger.error('[CATALOG REPLACE] Unexpected error:', { error: error instanceof Error ? error.message : 'Unknown error' });
+    logger.error('[CATALOG REPLACE] Unexpected error:', { error: error instanceof Error ? getErrorMessage(error) : 'Unknown error' });
     return NextResponse.json({ 
       ok: false, 
-      error: 'Unexpected error: ' + error.message 
+      error: 'Unexpected error: ' + getErrorMessage(error) 
     }, { status: 500 });
   }
 }
@@ -284,10 +285,10 @@ async function replaceCatalog(supabase: any, venueId: string, fixedPayload: any,
     }
 
   } catch (error: unknown) {
-    logger.error('[CATALOG REPLACE] Unexpected error:', { error: error instanceof Error ? error.message : 'Unknown error' });
+    logger.error('[CATALOG REPLACE] Unexpected error:', { error: error instanceof Error ? getErrorMessage(error) : 'Unknown error' });
     return NextResponse.json({ 
       ok: false, 
-      error: 'Unexpected error: ' + error.message 
+      error: 'Unexpected error: ' + getErrorMessage(error) 
     }, { status: 500 });
   }
 }
@@ -334,7 +335,7 @@ BEVERAGES
     return extractedText;
     
   } catch (error: unknown) {
-    logger.error('[OCR] Text extraction failed:', { error: error instanceof Error ? error.message : 'Unknown error' });
-    throw new Error(`OCR failed: ${error.message}`);
+    logger.error('[OCR] Text extraction failed:', { error: error instanceof Error ? getErrorMessage(error) : 'Unknown error' });
+    throw new Error(`OCR failed: ${getErrorMessage(error)}`);
   }
 }

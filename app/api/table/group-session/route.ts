@@ -4,6 +4,7 @@ export const dynamic = "force-dynamic";
 import { NextRequest, NextResponse } from 'next/server';
 import { createAdminClient } from '@/lib/supabase/server';
 import { logger } from '@/lib/logger';
+import { getErrorMessage, getErrorDetails } from '@/lib/utils/errors';
 
 export async function GET(request: NextRequest) {
   try {
@@ -71,8 +72,8 @@ export async function GET(request: NextRequest) {
       });
     }
 
-  } catch (error) {
-    logger.error('[GROUP SESSION] Error in GET group session API:', { error: error instanceof Error ? error.message : 'Unknown error' });
+  } catch (error: unknown) {
+    logger.error('[GROUP SESSION] Error in GET group session API:', { error: error instanceof Error ? getErrorMessage(error) : 'Unknown error' });
     return NextResponse.json({ 
       ok: false, 
       error: 'Internal server error' 
@@ -219,8 +220,8 @@ export async function POST(request: NextRequest) {
       });
     }
 
-  } catch (error) {
-    logger.error('[GROUP SESSION] Error in POST group session API:', { error: error instanceof Error ? error.message : 'Unknown error' });
+  } catch (error: unknown) {
+    logger.error('[GROUP SESSION] Error in POST group session API:', { error: error instanceof Error ? getErrorMessage(error) : 'Unknown error' });
     return NextResponse.json({ 
       ok: false, 
       error: 'Internal server error' 

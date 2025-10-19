@@ -4,6 +4,7 @@ export const dynamic = "force-dynamic";
 import { NextRequest, NextResponse } from 'next/server';
 import { createClient } from '@/lib/supabase/server';
 import { logger } from '@/lib/logger';
+import { getErrorMessage, getErrorDetails } from '@/lib/utils/errors';
 
 export async function PUT(req: NextRequest, context: { params: Promise<{ tableId: string }> }) {
   try {
@@ -38,8 +39,8 @@ export async function PUT(req: NextRequest, context: { params: Promise<{ tableId
     }
 
     return NextResponse.json({ table });
-  } catch (error) {
-    logger.error('[TABLES API] Unexpected error:', { error: error instanceof Error ? error.message : 'Unknown error' });
+  } catch (error: unknown) {
+    logger.error('[TABLES API] Unexpected error:', { error: error instanceof Error ? getErrorMessage(error) : 'Unknown error' });
     return NextResponse.json({ error: 'Internal server error' }, { status: 500 });
   }
 }
@@ -79,8 +80,8 @@ export async function DELETE(req: NextRequest, context: { params: Promise<{ tabl
       activeOrders = ordersResult.data || [];
       ordersError = ordersResult.error;
       
-    } catch (error) {
-      logger.error('[TABLES API] Exception during active orders check:', { error: error instanceof Error ? error.message : 'Unknown error' });
+    } catch (error: unknown) {
+      logger.error('[TABLES API] Exception during active orders check:', { error: error instanceof Error ? getErrorMessage(error) : 'Unknown error' });
       ordersError = error;
     }
 
@@ -122,8 +123,8 @@ export async function DELETE(req: NextRequest, context: { params: Promise<{ tabl
       activeReservations = reservationsResult.data || [];
       reservationsError = reservationsResult.error;
       
-    } catch (error) {
-      logger.error('[TABLES API] Exception during active reservations check:', { error: error instanceof Error ? error.message : 'Unknown error' });
+    } catch (error: unknown) {
+      logger.error('[TABLES API] Exception during active reservations check:', { error: error instanceof Error ? getErrorMessage(error) : 'Unknown error' });
       reservationsError = error;
     }
 
@@ -226,8 +227,8 @@ export async function DELETE(req: NextRequest, context: { params: Promise<{ tabl
     }
 
     return NextResponse.json({ success: true, deletedTable: existingTable });
-  } catch (error) {
-    logger.error('[TABLES API] Unexpected error:', { error: error instanceof Error ? error.message : 'Unknown error' });
+  } catch (error: unknown) {
+    logger.error('[TABLES API] Unexpected error:', { error: error instanceof Error ? getErrorMessage(error) : 'Unknown error' });
     return NextResponse.json({ error: 'Internal server error' }, { status: 500 });
   }
 }

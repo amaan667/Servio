@@ -4,6 +4,7 @@
 import OpenAI from "openai";
 import { createClient } from "@/lib/supabase/server";
 import { logger } from '@/lib/logger';
+import { getErrorDetails } from '@/lib/utils/errors';
 
 const client = new OpenAI({ 
   apiKey: process.env.OPENAI_API_KEY 
@@ -222,7 +223,7 @@ export async function handleUserMessage({
           } as any);
 
         } catch (error: unknown) {
-          logger.error(`[AI] Tool execution error for ${name}:`, error);
+          logger.error(`[AI] Tool execution error for ${name}:`, getErrorDetails(error));
           toolResult = { error: `Tool execution failed: ${error?.message || 'Unknown error'}` };
           
           await supabase.from("ai_messages").insert({
@@ -282,7 +283,7 @@ export async function handleUserMessage({
       };
     }
   } catch (error: unknown) {
-    logger.error("[AI] OpenAI service error:", error);
+    logger.error("[AI] OpenAI service error:", getErrorDetails(error));
     throw new Error(`AI service error: ${error?.message || 'Unknown error'}`);
   }
 }
@@ -383,8 +384,8 @@ export async function generateConversationTitle(firstUserMessage: string): Promi
 
     const title = response.choices[0].message.content?.trim() || "New Chat";
     return title.substring(0, 60); // Limit length
-  } catch (error) {
-    logger.error("[AI] Title generation error:", error);
+  } catch (error: unknown) {
+    logger.error("[AI] Title generation error:", getErrorDetails(error));
     return firstUserMessage.substring(0, 60);
   }
 }

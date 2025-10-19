@@ -33,7 +33,7 @@ export async function ocrPdfToText(pdfBuffer: Buffer, maxPages = 5): Promise<str
           .replace(/\s{2,}/g, ' ')
           .trim();
         texts.push(cleaned);
-      } catch (err) {
+      } catch (err: unknown) {
         // No more pages or decoding failed for this page
         break;
       }

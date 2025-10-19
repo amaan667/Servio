@@ -1,4 +1,5 @@
 import { logger } from '@/lib/logger';
+import { getErrorDetails } from '@/lib/utils/errors';
 // Email sending utilities for Servio
 // This is a basic implementation that can be enhanced with proper email service integration
 
@@ -243,8 +244,8 @@ export async function sendEmail(template: EmailTemplate): Promise<boolean> {
     // In production, you should configure an email service
     return process.env.NODE_ENV === 'development';
     
-  } catch (error) {
-    logger.error('❌ Failed to send email:', error);
+  } catch (error: unknown) {
+    logger.error('❌ Failed to send email:', getErrorDetails(error));
     return false;
   }
 }

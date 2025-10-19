@@ -14,6 +14,7 @@ import {
 import { z } from "zod";
 import { apiLogger, logger } from '@/lib/logger';
 import { assertVenueCapability } from "@/lib/auth/permissions";
+import { getErrorMessage, getErrorDetails } from '@/lib/utils/errors';
 
 const PlanRequestSchema = z.object({
   prompt: z.string().min(1).max(500),
@@ -51,7 +52,7 @@ export async function POST(request: NextRequest) {
         "venue.read"
       );
       userRole = role;
-    } catch (error: any) {
+    } catch (error: unknown) {
       if (error.statusCode === 403) {
         return NextResponse.json(
           { error: "Access denied to this venue" },
@@ -98,9 +99,9 @@ export async function POST(request: NextRequest) {
       modelUsed: plan.modelUsed, // Return model info to client
     });
   } catch (error: unknown) {
-    logger.error("[AI ASSISTANT] Planning error:", { error: error instanceof Error ? error.message : 'Unknown error' });
+    logger.error("[AI ASSISTANT] Planning error:", { error: error instanceof Error ? getErrorMessage(error) : 'Unknown error' });
 
-    if (error instanceof Error && error.name === "ZodError") {
+    if (error instanceof Error && getErrorDetails(error).name === "ZodError") {
       const zodError = error as any;
       return NextResponse.json(
         { error: "Invalid request format", details: zodError.errors },

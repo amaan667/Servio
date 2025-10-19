@@ -4,6 +4,7 @@ export const dynamic = "force-dynamic";
 import { NextRequest, NextResponse } from 'next/server';
 import { createServerSupabase } from '@/lib/supabase/server';
 import { cookies } from 'next/headers';
+import { getErrorMessage, getErrorDetails } from '@/lib/utils/errors';
 
 export async function GET() {
   try {
@@ -33,7 +34,7 @@ export async function GET() {
       }
     } catch (err: unknown) {
       sessionStatus = 'exception';
-      sessionError = err.message;
+      sessionError = getErrorMessage(err);
     }
 
     return NextResponse.json({
@@ -62,7 +63,7 @@ export async function GET() {
     return NextResponse.json({
       status: 'error',
       timestamp: new Date().toISOString(),
-      error: error.message
+      error: getErrorMessage(error)
     }, { status: 500 });
   }
 }

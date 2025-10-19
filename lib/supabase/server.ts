@@ -2,6 +2,7 @@ import { cookies } from 'next/headers';
 import { createServerClient } from '@supabase/ssr';
 import { hasSupabaseAuthCookies } from '@/lib/auth/utils';
 import { logger } from '@/lib/logger';
+import { getErrorMessage, getErrorDetails } from '@/lib/utils/errors';
 
 export async function createServerSupabase() {
   const cookieStore = await cookies();
@@ -17,8 +18,8 @@ export async function createServerSupabase() {
         get(name: string) { 
           try {
             return cookieStore.get(name)?.value; 
-          } catch (error) {
-            logger.error('[SUPABASE SERVER] Error getting cookie:', error);
+          } catch (error: unknown) {
+            logger.error('[SUPABASE SERVER] Error getting cookie:', getErrorDetails(error));
             return undefined;
           }
         },
@@ -31,10 +32,10 @@ export async function createServerSupabase() {
               httpOnly: false, // Allow client-side access for auth
               path: '/'
             });
-          } catch (error) {
+          } catch (error: unknown) {
             // Only log errors that aren't about cookie context
-            if (error instanceof Error && !error.message?.includes('Cookies can only be modified in a Server Action or Route Handler')) {
-              logger.error('[SUPABASE SERVER] Error setting cookie:', error);
+            if (error instanceof Error && !getErrorMessage(error)?.includes('Cookies can only be modified in a Server Action or Route Handler')) {
+              logger.error('[SUPABASE SERVER] Error setting cookie:', getErrorDetails(error));
             }
           }
         },
@@ -48,10 +49,10 @@ export async function createServerSupabase() {
               httpOnly: false,
               path: '/'
             });
-          } catch (error) {
+          } catch (error: unknown) {
             // Only log errors that aren't about cookie context
-            if (error instanceof Error && !error.message?.includes('Cookies can only be modified in a Server Action or Route Handler')) {
-              logger.error('[SUPABASE SERVER] Error removing cookie:', error);
+            if (error instanceof Error && !getErrorMessage(error)?.includes('Cookies can only be modified in a Server Action or Route Handler')) {
+              logger.error('[SUPABASE SERVER] Error removing cookie:', getErrorDetails(error));
             }
           }
         },
@@ -94,8 +95,8 @@ export async function getAuthenticatedUser() {
     }
     
     return { user, error: null };
-  } catch (error) {
-    logger.error('[SUPABASE SERVER] Error in getAuthenticatedUser:', error);
+  } catch (error: unknown) {
+    logger.error('[SUPABASE SERVER] Error in getAuthenticatedUser:', getErrorDetails(error));
     return { user: null, error: 'Failed to get authenticated user' };
   }
 }
@@ -112,8 +113,8 @@ export async function getSession() {
     }
     
     return { session, error: null };
-  } catch (error) {
-    logger.error('[SUPABASE SERVER] Error in getSession:', error);
+  } catch (error: unknown) {
+    logger.error('[SUPABASE SERVER] Error in getSession:', getErrorDetails(error));
     return { session: null, error: 'Failed to get session' };
   }
 }
@@ -130,8 +131,8 @@ export async function refreshSession() {
     }
     
     return { session, error: null };
-  } catch (error) {
-    logger.error('[SUPABASE SERVER] Error in refreshSession:', error);
+  } catch (error: unknown) {
+    logger.error('[SUPABASE SERVER] Error in refreshSession:', getErrorDetails(error));
     return { session: null, error: 'Failed to refresh session' };
   }
 }

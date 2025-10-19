@@ -7,6 +7,7 @@ import Stripe from "stripe";
 import { createClient } from "@/lib/supabase/server";
 import { stripe } from "@/lib/stripe-client";
 import { apiLogger as logger } from '@/lib/logger';
+import { getErrorMessage, getErrorDetails } from '@/lib/utils/errors';
 
 export async function POST(request: NextRequest) {
   try {
@@ -151,9 +152,9 @@ export async function POST(request: NextRequest) {
       );
     }
   } catch (error: unknown) {
-    logger.error("[STRIPE PORTAL] Error:", { error: error instanceof Error ? error.message : 'Unknown error' });
+    logger.error("[STRIPE PORTAL] Error:", { error: error instanceof Error ? getErrorMessage(error) : 'Unknown error' });
     return NextResponse.json(
-      { error: error.message || "Failed to create portal session" },
+      { error: getErrorMessage(error) || "Failed to create portal session" },
       { status: 500 }
     );
   }

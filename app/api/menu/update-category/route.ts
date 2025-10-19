@@ -5,6 +5,7 @@ import { NextRequest, NextResponse } from 'next/server';
 // Deployment trigger
 import { createClient } from '@/lib/supabase/server';
 import { logger } from '@/lib/logger';
+import { getErrorMessage, getErrorDetails } from '@/lib/utils/errors';
 
 export async function POST(request: NextRequest) {
   try {
@@ -77,8 +78,8 @@ export async function POST(request: NextRequest) {
       updatedItems: updatedItems?.length || 0
     });
 
-  } catch (error) {
-    logger.error('[UPDATE CATEGORY] Unexpected error:', { error: error instanceof Error ? error.message : 'Unknown error' });
+  } catch (error: unknown) {
+    logger.error('[UPDATE CATEGORY] Unexpected error:', { error: error instanceof Error ? getErrorMessage(error) : 'Unknown error' });
     return NextResponse.json(
       { error: 'Internal server error' },
       { status: 500 }

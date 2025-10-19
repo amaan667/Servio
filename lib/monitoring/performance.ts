@@ -4,6 +4,7 @@
  */
 
 import { logger } from '@/lib/logger';
+import { getErrorDetails } from '@/lib/utils/errors';
 
 export interface PerformanceMetric {
   name: string;
@@ -82,8 +83,8 @@ async function sendToAnalytics(metric: PerformanceMetric) {
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify(report),
     });
-  } catch (error) {
-    logger.error('Failed to send performance metrics', error);
+  } catch (error: unknown) {
+    logger.error('Failed to send performance metrics', getErrorDetails(error));
   }
 }
 
@@ -106,7 +107,7 @@ export async function trackAPIPerformance<T>(
     });
 
     return result;
-  } catch (error) {
+  } catch (error: unknown) {
     const duration = performance.now() - startTime;
 
     logger.error(`[API PERFORMANCE] ${name}:`, {

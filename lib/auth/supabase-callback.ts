@@ -1,5 +1,6 @@
 import { createClient } from "@supabase/supabase-js";
 import { authLogger as logger } from '@/lib/logger';
+import { getErrorMessage, getErrorDetails } from '@/lib/utils/errors';
 
 const supabase = createClient(
   process.env.SUPABASE_URL!,
@@ -74,8 +75,8 @@ export async function handleGoogleCallback(req: any, res: any) {
     return res.json(data);
   } catch (err: unknown) {
     logger.error("[OAuth Exception]", {
-      message: err.message,
-      stack: err.stack,
+      message: getErrorMessage(err),
+      stack: getErrorDetails(err).stack,
       authCodePreview: authCode.slice(0, 12) + "...",
       verifierLength: codeVerifier.length
     });

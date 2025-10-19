@@ -4,6 +4,7 @@ export const dynamic = "force-dynamic";
 import { NextRequest, NextResponse } from 'next/server';
 import { getUserSafe } from '@/utils/getUserSafe';
 import { apiLogger, logger } from '@/lib/logger';
+import { getErrorMessage, getErrorDetails } from '@/lib/utils/errors';
 
 // POST /api/send-invitation-dev - Send invitation email in development mode
 export async function POST(request: NextRequest) {
@@ -44,8 +45,8 @@ export async function POST(request: NextRequest) {
       instructions: 'Check server logs for manual email sending instructions'
     });
 
-  } catch (error) {
-    logger.error('[DEV EMAIL] Unexpected error:', { error: error instanceof Error ? error.message : 'Unknown error' });
+  } catch (error: unknown) {
+    logger.error('[DEV EMAIL] Unexpected error:', { error: error instanceof Error ? getErrorMessage(error) : 'Unknown error' });
     return NextResponse.json({ error: 'Internal server error' }, { status: 500 });
   }
 }

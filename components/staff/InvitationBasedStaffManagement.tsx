@@ -8,7 +8,7 @@ import { Input } from '@/components/ui/input';
 import { Badge } from '@/components/ui/badge';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Alert, AlertDescription } from '@/components/ui/alert';
-import { 
+import {
   Dialog,
   DialogContent,
   DialogDescription,
@@ -16,13 +16,13 @@ import {
   DialogTitle,
   DialogTrigger,
 } from '@/components/ui/dialog';
-import { 
-  Users, 
-  Mail, 
-  Plus, 
-  Clock, 
-  CheckCircle, 
-  XCircle, 
+import {
+  Users,
+  Mail,
+  Plus,
+  Clock,
+  CheckCircle,
+  XCircle,
   AlertCircle,
   Loader2,
   Crown,
@@ -33,13 +33,12 @@ import {
   CreditCard,
   Calendar,
   Trash2,
-  Edit
+  Edit,
 } from 'lucide-react';
 import { toast } from '@/hooks/use-toast';
 import TimeField24, { TimeValue24 } from '@/components/inputs/TimeField24';
 import { buildIsoFromLocal, isOvernight, addDaysISO } from '@/lib/time';
 import EnhancedShiftSchedule from '@/components/staff/EnhancedShiftSchedule';
-
 
 interface StaffMember {
   id: string;
@@ -77,17 +76,53 @@ interface InvitationBasedStaffManagementProps {
 }
 
 const ROLES = [
-  { id: 'owner', name: 'Owner', icon: Crown, color: 'bg-yellow-100 text-yellow-800 border-yellow-200', description: 'Full access to all features' },
-  { id: 'manager', name: 'Manager', icon: Shield, color: 'bg-blue-100 text-blue-800 border-blue-200', description: 'Manage daily operations' },
-  { id: 'staff', name: 'Staff', icon: UserCheck, color: 'bg-green-100 text-green-800 border-green-200', description: 'Handle orders and basic operations' },
-  { id: 'kitchen', name: 'Kitchen', icon: ChefHat, color: 'bg-orange-100 text-orange-800 border-orange-200', description: 'Food preparation focus' },
-  { id: 'server', name: 'Server', icon: User, color: 'bg-purple-100 text-purple-800 border-purple-200', description: 'Customer service' },
-  { id: 'cashier', name: 'Cashier', icon: CreditCard, color: 'bg-indigo-100 text-indigo-800 border-indigo-200', description: 'Payment processing' },
+  {
+    id: 'owner',
+    name: 'Owner',
+    icon: Crown,
+    color: 'bg-yellow-100 text-yellow-800 border-yellow-200',
+    description: 'Full access to all features',
+  },
+  {
+    id: 'manager',
+    name: 'Manager',
+    icon: Shield,
+    color: 'bg-blue-100 text-blue-800 border-blue-200',
+    description: 'Manage daily operations',
+  },
+  {
+    id: 'staff',
+    name: 'Staff',
+    icon: UserCheck,
+    color: 'bg-green-100 text-green-800 border-green-200',
+    description: 'Handle orders and basic operations',
+  },
+  {
+    id: 'kitchen',
+    name: 'Kitchen',
+    icon: ChefHat,
+    color: 'bg-orange-100 text-orange-800 border-orange-200',
+    description: 'Food preparation focus',
+  },
+  {
+    id: 'server',
+    name: 'Server',
+    icon: User,
+    color: 'bg-purple-100 text-purple-800 border-purple-200',
+    description: 'Customer service',
+  },
+  {
+    id: 'cashier',
+    name: 'Cashier',
+    icon: CreditCard,
+    color: 'bg-indigo-100 text-indigo-800 border-indigo-200',
+    description: 'Payment processing',
+  },
 ];
 
-export default function InvitationBasedStaffManagement({ 
-  venueId, 
-  venueName 
+export default function InvitationBasedStaffManagement({
+  venueId,
+  venueName,
 }: InvitationBasedStaffManagementProps) {
   const supabase = createClient();
   const [staff, setStaff] = useState<StaffMember[]>([]);
@@ -111,25 +146,31 @@ export default function InvitationBasedStaffManagement({
     setLoading(true);
     try {
       // Load staff members
-      const staffResponse = await fetch(`/api/staff/check?venue_id=${encodeURIComponent(venueId)}`);
+      const staffResponse = await fetch(
+        `/api/staff/check?venue_id=${encodeURIComponent(venueId)}`
+      );
       const staffData = await staffResponse.json();
-      
+
       if (staffResponse.ok) {
         setStaff(staffData.staff || []);
       }
 
       // Load invitations
-      const invitationsResponse = await fetch(`/api/staff/invitations?venue_id=${encodeURIComponent(venueId)}`);
+      const invitationsResponse = await fetch(
+        `/api/staff/invitations?venue_id=${encodeURIComponent(venueId)}`
+      );
       const invitationsData = await invitationsResponse.json();
-      
+
       if (invitationsResponse.ok) {
         setInvitations(invitationsData.invitations || []);
       }
 
       // Load shifts
-      const shiftsResponse = await fetch(`/api/staff/shifts/list?venue_id=${encodeURIComponent(venueId)}`);
+      const shiftsResponse = await fetch(
+        `/api/staff/shifts/list?venue_id=${encodeURIComponent(venueId)}`
+      );
       const shiftsData = await shiftsResponse.json();
-      
+
       if (shiftsResponse.ok) {
         setAllShifts(shiftsData.shifts || []);
       }
@@ -143,7 +184,9 @@ export default function InvitationBasedStaffManagement({
 
   const reloadAllShifts = useCallback(async () => {
     try {
-      const res = await fetch(`/api/staff/shifts/list?venue_id=${encodeURIComponent(venueId)}`);
+      const res = await fetch(
+        `/api/staff/shifts/list?venue_id=${encodeURIComponent(venueId)}`
+      );
       const j = await res.json().catch(() => ({}));
       if (res.ok && !j?.error) {
         const shifts = j.shifts || [];
@@ -161,11 +204,15 @@ export default function InvitationBasedStaffManagement({
     }
 
     // Get current user's email
-    const { data: { user } } = await supabase.auth.getUser();
-    
+    const {
+      data: { user },
+    } = await supabase.auth.getUser();
+
     // Prevent inviting yourself
     if (user?.email?.toLowerCase() === inviteEmail.trim().toLowerCase()) {
-      setError('You cannot invite yourself. You already have access to this venue.');
+      setError(
+        'You cannot invite yourself. You already have access to this venue.'
+      );
       return;
     }
 
@@ -196,7 +243,7 @@ export default function InvitationBasedStaffManagement({
         const isRefresh = data.message?.includes('refreshed');
         toast({
           title: isRefresh ? 'Invitation refreshed!' : 'Invitation sent!',
-          description: isRefresh 
+          description: isRefresh
             ? `A new invitation link has been sent to ${inviteEmail}`
             : `An invitation has been sent to ${inviteEmail}`,
         });
@@ -214,7 +261,7 @@ export default function InvitationBasedStaffManagement({
       setInviteDialogOpen(false);
       setInviteEmail('');
       setInviteRole('staff');
-      
+
       // Switch to invitations tab and reload data
       setActiveTab('invitations');
       loadData(); // Reload to show new invitation
@@ -225,9 +272,12 @@ export default function InvitationBasedStaffManagement({
     }
   };
 
-
   const handleRemoveInvitation = async (invitationId: string) => {
-    if (!confirm('Are you sure you want to remove this invitation? This action cannot be undone.')) {
+    if (
+      !confirm(
+        'Are you sure you want to remove this invitation? This action cannot be undone.'
+      )
+    ) {
       return;
     }
 
@@ -252,8 +302,8 @@ export default function InvitationBasedStaffManagement({
       });
 
       // Update the UI immediately by filtering out the removed invitation
-      setInvitations(prevInvitations => 
-        prevInvitations.filter(inv => inv.id !== invitationId)
+      setInvitations((prevInvitations) =>
+        prevInvitations.filter((inv) => inv.id !== invitationId)
       );
 
       // Also reload data to ensure consistency
@@ -268,7 +318,7 @@ export default function InvitationBasedStaffManagement({
   };
 
   const getRoleInfo = (roleId: string) => {
-    return ROLES.find(role => role.id === roleId) || ROLES[2]; // Default to staff
+    return ROLES.find((role) => role.id === roleId) || ROLES[2]; // Default to staff
   };
 
   const getStatusIcon = (status: string) => {
@@ -304,22 +354,25 @@ export default function InvitationBasedStaffManagement({
   };
 
   // Shift management component
-  const StaffRowItem = memo(function StaffRowItem({ 
-    row, 
-    onDeleteRow, 
-    onShiftsChanged, 
-    embedded = false, 
-    onClose 
-  }: { 
-    row: StaffMember; 
-    onDeleteRow: (r: StaffMember) => void; 
-    onShiftsChanged: () => void; 
-    embedded?: boolean; 
-    onClose?: () => void; 
+  const StaffRowItem = memo(function StaffRowItem({
+    row,
+    onDeleteRow,
+    onShiftsChanged,
+    embedded = false,
+    onClose,
+  }: {
+    row: StaffMember;
+    onDeleteRow: (r: StaffMember) => void;
+    onShiftsChanged: () => void;
+    embedded?: boolean;
+    onClose?: () => void;
   }) {
     const [showEditor, setShowEditor] = useState(embedded);
     const [date, setDate] = useState('');
-    const [start, setStart] = useState<TimeValue24>({ hour: null, minute: null });
+    const [start, setStart] = useState<TimeValue24>({
+      hour: null,
+      minute: null,
+    });
     const [end, setEnd] = useState<TimeValue24>({ hour: null, minute: null });
     const [area, setArea] = useState('');
     const [saving, setSaving] = useState(false);
@@ -328,7 +381,9 @@ export default function InvitationBasedStaffManagement({
 
     const load = useCallback(async () => {
       try {
-        const res = await fetch(`/api/staff/shifts/list?venue_id=${encodeURIComponent(venueId)}&staff_id=${encodeURIComponent(row.id)}`);
+        const res = await fetch(
+          `/api/staff/shifts/list?venue_id=${encodeURIComponent(venueId)}&staff_id=${encodeURIComponent(row.id)}`
+        );
         const j = await res.json().catch(() => ({}));
         if (res.ok && !j?.error) {
           setShifts(j.shifts || []);
@@ -338,35 +393,48 @@ export default function InvitationBasedStaffManagement({
       }
     }, [row.id, venueId]);
 
-    useEffect(() => { load(); }, [load]);
+    useEffect(() => {
+      load();
+    }, [load]);
 
     const save = useCallback(async () => {
       setErr(null);
-      if (!date || start.hour == null || start.minute == null || end.hour == null || end.minute == null) {
+      if (
+        !date ||
+        start.hour == null ||
+        start.minute == null ||
+        end.hour == null ||
+        end.minute == null
+      ) {
         setErr('Please select date, start and end time');
         return;
       }
       setSaving(true);
-      const overnight = isOvernight(start.hour, start.minute, end.hour, end.minute);
+      const overnight = isOvernight(
+        start.hour,
+        start.minute,
+        end.hour,
+        end.minute
+      );
       const startIso = buildIsoFromLocal(date, start.hour, start.minute);
       const endDate = overnight ? addDaysISO(date, 1) : date;
       const endIso = buildIsoFromLocal(endDate, end.hour, end.minute);
-      const res = await fetch('/api/staff/shifts/add', { 
-        method: 'POST', 
-        headers: { 'content-type': 'application/json' }, 
-        body: JSON.stringify({ 
-          staff_id: row.id, 
-          venue_id: venueId, 
-          start_time: startIso, 
-          end_time: endIso, 
-          area: area || null 
-        }) 
+      const res = await fetch('/api/staff/shifts/add', {
+        method: 'POST',
+        headers: { 'content-type': 'application/json' },
+        body: JSON.stringify({
+          staff_id: row.id,
+          venue_id: venueId,
+          start_time: startIso,
+          end_time: endIso,
+          area: area || null,
+        }),
       });
       const j = await res.json().catch(() => ({}));
-      if (!res.ok || j?.error) { 
-        setErr(j?.error || 'Failed to save shift'); 
-        setSaving(false); 
-        return; 
+      if (!res.ok || j?.error) {
+        setErr(j?.error || 'Failed to save shift');
+        setSaving(false);
+        return;
       }
       setSaving(false);
       setArea('');
@@ -377,7 +445,20 @@ export default function InvitationBasedStaffManagement({
       if (embedded && onClose) {
         onClose();
       }
-    }, [area, date, end.hour, end.minute, load, onShiftsChanged, row.id, start.hour, start.minute, venueId, embedded, onClose]);
+    }, [
+      area,
+      date,
+      end.hour,
+      end.minute,
+      load,
+      onShiftsChanged,
+      row.id,
+      start.hour,
+      start.minute,
+      venueId,
+      embedded,
+      onClose,
+    ]);
 
     return (
       <div className="rounded border p-3">
@@ -389,7 +470,7 @@ export default function InvitationBasedStaffManagement({
             </Button>
           )}
         </div>
-        
+
         <div className="grid grid-cols-1 md:grid-cols-4 gap-3 mb-3">
           <div>
             <label className="block text-sm font-medium mb-1">Date</label>
@@ -409,7 +490,9 @@ export default function InvitationBasedStaffManagement({
             <TimeField24 value={end} onChange={setEnd} />
           </div>
           <div>
-            <label className="block text-sm font-medium mb-1">Area (Optional)</label>
+            <label className="block text-sm font-medium mb-1">
+              Area (Optional)
+            </label>
             <Input
               value={area}
               onChange={(e) => setArea(e.target.value)}
@@ -438,11 +521,21 @@ export default function InvitationBasedStaffManagement({
             <h5 className="font-medium mb-2">Recent Shifts</h5>
             <div className="space-y-2">
               {shifts.slice(0, 5).map((shift) => (
-                <div key={shift.id} className="flex items-center justify-between text-sm bg-gray-50 p-2 rounded">
+                <div
+                  key={shift.id}
+                  className="flex items-center justify-between text-sm bg-gray-50 p-2 rounded"
+                >
                   <span>
-                    {new Date(shift.start_time).toLocaleDateString()} - 
-                    {new Date(shift.start_time).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })} to 
-                    {new Date(shift.end_time).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+                    {new Date(shift.start_time).toLocaleDateString()} -
+                    {new Date(shift.start_time).toLocaleTimeString([], {
+                      hour: '2-digit',
+                      minute: '2-digit',
+                    })}{' '}
+                    to
+                    {new Date(shift.end_time).toLocaleTimeString([], {
+                      hour: '2-digit',
+                      minute: '2-digit',
+                    })}
                     {shift.area && ` (${shift.area})`}
                   </span>
                 </div>
@@ -468,7 +561,9 @@ export default function InvitationBasedStaffManagement({
       <div className="flex items-center justify-between">
         <div>
           <h2 className="text-2xl font-bold text-gray-900">Staff Management</h2>
-          <p className="text-gray-600">Invite and manage your team members and their shifts</p>
+          <p className="text-gray-600">
+            Invite and manage your team members and their shifts
+          </p>
         </div>
       </div>
 
@@ -478,8 +573,12 @@ export default function InvitationBasedStaffManagement({
           <CardContent className="p-6">
             <div className="flex items-center justify-between">
               <div>
-                <p className="text-sm font-medium text-gray-600">Active Team Members</p>
-                <p className="text-2xl font-bold text-gray-900">{staff.length}</p>
+                <p className="text-sm font-medium text-gray-600">
+                  Active Team Members
+                </p>
+                <p className="text-2xl font-bold text-gray-900">
+                  {staff.length}
+                </p>
               </div>
               <Users className="h-8 w-8 text-blue-600" />
             </div>
@@ -489,9 +588,11 @@ export default function InvitationBasedStaffManagement({
           <CardContent className="p-6">
             <div className="flex items-center justify-between">
               <div>
-                <p className="text-sm font-medium text-gray-600">Pending Invitations</p>
+                <p className="text-sm font-medium text-gray-600">
+                  Pending Invitations
+                </p>
                 <p className="text-2xl font-bold text-gray-900">
-                  {invitations.filter(inv => inv.status === 'pending').length}
+                  {invitations.filter((inv) => inv.status === 'pending').length}
                 </p>
               </div>
               <Clock className="h-8 w-8 text-yellow-600" />
@@ -502,8 +603,12 @@ export default function InvitationBasedStaffManagement({
           <CardContent className="p-6">
             <div className="flex items-center justify-between">
               <div>
-                <p className="text-sm font-medium text-gray-600">Total Invitations</p>
-                <p className="text-2xl font-bold text-gray-900">{invitations.length}</p>
+                <p className="text-sm font-medium text-gray-600">
+                  Total Invitations
+                </p>
+                <p className="text-2xl font-bold text-gray-900">
+                  {invitations.length}
+                </p>
               </div>
               <Mail className="h-8 w-8 text-purple-600" />
             </div>
@@ -512,7 +617,11 @@ export default function InvitationBasedStaffManagement({
       </div>
 
       {/* Tabs */}
-      <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-4">
+      <Tabs
+        value={activeTab}
+        onValueChange={setActiveTab}
+        className="space-y-4"
+      >
         <TabsList>
           <TabsTrigger value="team">Team Members</TabsTrigger>
           <TabsTrigger value="invitations">Invitations</TabsTrigger>
@@ -525,7 +634,9 @@ export default function InvitationBasedStaffManagement({
             <Card>
               <CardContent className="p-8 text-center">
                 <Users className="h-12 w-12 text-gray-400 mx-auto mb-4" />
-                <h3 className="text-lg font-semibold text-gray-900 mb-2">No team members yet</h3>
+                <h3 className="text-lg font-semibold text-gray-900 mb-2">
+                  No team members yet
+                </h3>
                 <p className="text-gray-600 mb-4">
                   Start building your team by inviting staff members.
                 </p>
@@ -540,48 +651,52 @@ export default function InvitationBasedStaffManagement({
               {staff.map((member) => {
                 const roleInfo = getRoleInfo(member.role);
                 const IconComponent = roleInfo.icon;
-                
+
                 return (
                   <Card key={member.id}>
                     <CardContent className="p-4">
-                        <div className="flex items-center justify-between">
-                          <div className="flex items-center gap-3">
-                            <div className="w-10 h-10 bg-purple-100 rounded-full flex items-center justify-center">
-                              <IconComponent className="h-5 w-5 text-purple-600" />
-                            </div>
-                            <div>
-                              <p className="font-medium text-gray-900">{member.name}</p>
-                              <p className="text-sm text-gray-600">{member.email}</p>
-                            </div>
+                      <div className="flex items-center justify-between">
+                        <div className="flex items-center gap-3">
+                          <div className="w-10 h-10 bg-purple-100 rounded-full flex items-center justify-center">
+                            <IconComponent className="h-5 w-5 text-purple-600" />
                           </div>
-                          <div className="flex items-center gap-2">
-                            <Badge className={roleInfo.color}>
-                              {roleInfo.name}
-                            </Badge>
-                            <Button
-                              variant="outline"
-                              size="sm"
-                              onClick={() => setEditingShiftFor(member.id)}
-                              className="text-blue-600 hover:text-blue-700 hover:bg-blue-50"
-                            >
-                              <Calendar className="h-4 w-4 mr-1" />
-                              Manage Shifts
-                            </Button>
+                          <div>
+                            <p className="font-medium text-gray-900">
+                              {member.name}
+                            </p>
+                            <p className="text-sm text-gray-600">
+                              {member.email}
+                            </p>
                           </div>
                         </div>
-                        
-                        {/* Shift Editor */}
-                        {editingShiftFor === member.id && (
-                          <div className="mt-4">
-                            <StaffRowItem 
-                              row={member} 
-                              onDeleteRow={() => {}} 
-                              onShiftsChanged={reloadAllShifts}
-                              embedded={true}
-                              onClose={() => setEditingShiftFor(null)}
-                            />
-                          </div>
-                        )}
+                        <div className="flex items-center gap-2">
+                          <Badge className={roleInfo.color}>
+                            {roleInfo.name}
+                          </Badge>
+                          <Button
+                            variant="outline"
+                            size="sm"
+                            onClick={() => setEditingShiftFor(member.id)}
+                            className="text-blue-600 hover:text-blue-700 hover:bg-blue-50"
+                          >
+                            <Calendar className="h-4 w-4 mr-1" />
+                            Manage Shifts
+                          </Button>
+                        </div>
+                      </div>
+
+                      {/* Shift Editor */}
+                      {editingShiftFor === member.id && (
+                        <div className="mt-4">
+                          <StaffRowItem
+                            row={member}
+                            onDeleteRow={() => {}}
+                            onShiftsChanged={reloadAllShifts}
+                            embedded={true}
+                            onClose={() => setEditingShiftFor(null)}
+                          />
+                        </div>
+                      )}
                     </CardContent>
                   </Card>
                 );
@@ -595,7 +710,9 @@ export default function InvitationBasedStaffManagement({
             <Card>
               <CardContent className="p-8 text-center">
                 <Mail className="h-12 w-12 text-gray-400 mx-auto mb-4" />
-                <h3 className="text-lg font-semibold text-gray-900 mb-2">No invitations sent</h3>
+                <h3 className="text-lg font-semibold text-gray-900 mb-2">
+                  No invitations sent
+                </h3>
                 <p className="text-gray-600">
                   Send invitations to add new team members.
                 </p>
@@ -603,49 +720,62 @@ export default function InvitationBasedStaffManagement({
             </Card>
           ) : (
             <div className="grid gap-4">
-              {invitations.filter(invitation => invitation.status === 'pending').map((invitation) => {
-                const roleInfo = getRoleInfo(invitation.role);
-                const IconComponent = roleInfo.icon;
-                
-                return (
-                  <Card key={invitation.id}>
-                    <CardContent className="p-4">
-                      <div className="flex items-center justify-between">
-                        <div className="flex items-center gap-3">
-                          <div className="w-10 h-10 bg-gray-100 rounded-full flex items-center justify-center">
-                            <IconComponent className="h-5 w-5 text-gray-600" />
+              {invitations
+                .filter((invitation) => invitation.status === 'pending')
+                .map((invitation) => {
+                  const roleInfo = getRoleInfo(invitation.role);
+                  const IconComponent = roleInfo.icon;
+
+                  return (
+                    <Card key={invitation.id}>
+                      <CardContent className="p-4">
+                        <div className="flex items-center justify-between">
+                          <div className="flex items-center gap-3">
+                            <div className="w-10 h-10 bg-gray-100 rounded-full flex items-center justify-center">
+                              <IconComponent className="h-5 w-5 text-gray-600" />
+                            </div>
+                            <div>
+                              <p className="font-medium text-gray-900">
+                                {invitation.email}
+                              </p>
+                              <p className="text-sm text-gray-600">
+                                Invited by {invitation.invited_by_name} •{' '}
+                                {new Date(
+                                  invitation.created_at
+                                ).toLocaleDateString()}
+                              </p>
+                            </div>
                           </div>
-                          <div>
-                            <p className="font-medium text-gray-900">{invitation.email}</p>
-                            <p className="text-sm text-gray-600">
-                              Invited by {invitation.invited_by_name} • {new Date(invitation.created_at).toLocaleDateString()}
-                            </p>
-                          </div>
-                        </div>
-                        <div className="flex items-center gap-2">
-                          <Badge className={roleInfo.color}>
-                            {roleInfo.name}
-                          </Badge>
-                          <Badge className={getStatusColor(invitation.status)}>
-                            {getStatusIcon(invitation.status)}
-                            <span className="ml-1 capitalize">{invitation.status}</span>
-                          </Badge>
-                          {invitation.status === 'pending' && (
-                            <Button
-                              variant="outline"
-                              size="sm"
-                              onClick={() => handleRemoveInvitation(invitation.id)}
-                              className="text-red-600 hover:text-red-700 hover:bg-red-50"
+                          <div className="flex items-center gap-2">
+                            <Badge className={roleInfo.color}>
+                              {roleInfo.name}
+                            </Badge>
+                            <Badge
+                              className={getStatusColor(invitation.status)}
                             >
-                              Remove
-                            </Button>
-                          )}
+                              {getStatusIcon(invitation.status)}
+                              <span className="ml-1 capitalize">
+                                {invitation.status}
+                              </span>
+                            </Badge>
+                            {invitation.status === 'pending' && (
+                              <Button
+                                variant="outline"
+                                size="sm"
+                                onClick={() =>
+                                  handleRemoveInvitation(invitation.id)
+                                }
+                                className="text-red-600 hover:text-red-700 hover:bg-red-50"
+                              >
+                                Remove
+                              </Button>
+                            )}
+                          </div>
                         </div>
-                      </div>
-                    </CardContent>
-                  </Card>
-                );
-              })}
+                      </CardContent>
+                    </Card>
+                  );
+                })}
             </div>
           )}
         </TabsContent>
@@ -654,16 +784,22 @@ export default function InvitationBasedStaffManagement({
           <div className="space-y-6">
             <div className="flex items-center justify-between">
               <div>
-                <h3 className="text-lg font-semibold text-gray-900">Shift Management</h3>
-                <p className="text-gray-600">Add and manage shifts for your staff members</p>
+                <h3 className="text-lg font-semibold text-gray-900">
+                  Shift Management
+                </h3>
+                <p className="text-gray-600">
+                  Add and manage shifts for your staff members
+                </p>
               </div>
             </div>
-            
+
             {staff.length === 0 ? (
               <Card>
                 <CardContent className="p-8 text-center">
                   <Calendar className="h-12 w-12 text-gray-400 mx-auto mb-4" />
-                  <h3 className="text-lg font-semibold text-gray-900 mb-2">No staff members to manage shifts</h3>
+                  <h3 className="text-lg font-semibold text-gray-900 mb-2">
+                    No staff members to manage shifts
+                  </h3>
                   <p className="text-gray-600 mb-4">
                     Add staff members first to manage their shifts.
                   </p>
@@ -674,7 +810,7 @@ export default function InvitationBasedStaffManagement({
                 {staff.map((member) => {
                   const roleInfo = getRoleInfo(member.role);
                   const IconComponent = roleInfo.icon;
-                  
+
                   return (
                     <Card key={member.id}>
                       <CardContent className="p-4">
@@ -684,18 +820,22 @@ export default function InvitationBasedStaffManagement({
                               <IconComponent className="h-5 w-5 text-purple-600" />
                             </div>
                             <div>
-                              <p className="font-medium text-gray-900">{member.name}</p>
-                              <p className="text-sm text-gray-600">{member.email}</p>
+                              <p className="font-medium text-gray-900">
+                                {member.name}
+                              </p>
+                              <p className="text-sm text-gray-600">
+                                {member.email}
+                              </p>
                             </div>
                           </div>
                           <Badge className={roleInfo.color}>
                             {roleInfo.name}
                           </Badge>
                         </div>
-                        
-                        <StaffRowItem 
-                          row={member} 
-                          onDeleteRow={() => {}} 
+
+                        <StaffRowItem
+                          row={member}
+                          onDeleteRow={() => {}}
                           onShiftsChanged={reloadAllShifts}
                           embedded={false}
                         />
@@ -712,11 +852,15 @@ export default function InvitationBasedStaffManagement({
           <div className="space-y-6">
             <div className="flex items-center justify-between">
               <div>
-                <h3 className="text-lg font-semibold text-gray-900">Schedule View</h3>
-                <p className="text-gray-600">View and manage your team's schedule</p>
+                <h3 className="text-lg font-semibold text-gray-900">
+                  Schedule View
+                </h3>
+                <p className="text-gray-600">
+                  View and manage your team's schedule
+                </p>
               </div>
             </div>
-            
+
             <EnhancedShiftSchedule
               staff={staff}
               shifts={allShifts}

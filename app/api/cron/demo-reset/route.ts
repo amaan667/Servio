@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { createClient } from '@/lib/supabase/server';
 import { apiLogger } from '@/lib/logger';
+import { getErrorMessage, getErrorDetails } from '@/lib/utils/errors';
 
 export const dynamic = 'force-dynamic';
 export const runtime = 'edge';
@@ -63,13 +64,13 @@ export async function GET(request: NextRequest) {
         sessions: sessionsError?.message || null,
       }
     });
-  } catch (error) {
-    apiLogger.error('[DEMO RESET CRON] Error:', { error: error instanceof Error ? error.message : 'Unknown error' });
+  } catch (error: unknown) {
+    apiLogger.error('[DEMO RESET CRON] Error:', { error: error instanceof Error ? getErrorMessage(error) : 'Unknown error' });
     return NextResponse.json(
       { 
         success: false, 
         error: 'Failed to run demo reset cron',
-        details: error instanceof Error ? error.message : 'Unknown error'
+        details: error instanceof Error ? getErrorMessage(error) : 'Unknown error'
       },
       { status: 500 }
     );

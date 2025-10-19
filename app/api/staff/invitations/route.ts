@@ -4,6 +4,7 @@ export const dynamic = "force-dynamic";
 import { NextRequest, NextResponse } from 'next/server';
 import { createClient } from '@/lib/supabase/server';
 import { getUserSafe } from '@/utils/getUserSafe';
+import { getErrorMessage, getErrorDetails } from '@/lib/utils/errors';
 
 // GET /api/staff/invitations - List invitations for a venue
 export async function GET(request: NextRequest) {
@@ -67,8 +68,8 @@ export async function GET(request: NextRequest) {
     }
 
     return NextResponse.json({ invitations });
-  } catch (error) {
-    const errorMessage = error instanceof Error ? error.message : 'Internal server error';
+  } catch (error: unknown) {
+    const errorMessage = error instanceof Error ? getErrorMessage(error) : 'Internal server error';
     return NextResponse.json({ 
       error: errorMessage 
     }, { status: 500 });
@@ -358,8 +359,8 @@ export async function POST(request: NextRequest) {
       emailSent,
       invitationLink: emailSent ? undefined : (await import('@/lib/email')).generateInvitationLink(invitation.token)
     });
-  } catch (error) {
-    const errorMessage = error instanceof Error ? error.message : 'Internal server error';
+  } catch (error: unknown) {
+    const errorMessage = error instanceof Error ? getErrorMessage(error) : 'Internal server error';
     return NextResponse.json({ 
       error: errorMessage 
     }, { status: 500 });
@@ -449,8 +450,8 @@ export async function DELETE(request: NextRequest) {
       success: true,
       message: 'Invitation removed successfully'
     });
-  } catch (error) {
-    const errorMessage = error instanceof Error ? error.message : 'Internal server error';
+  } catch (error: unknown) {
+    const errorMessage = error instanceof Error ? getErrorMessage(error) : 'Internal server error';
     return NextResponse.json({ 
       error: errorMessage 
     }, { status: 500 });

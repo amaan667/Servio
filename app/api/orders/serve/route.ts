@@ -3,6 +3,7 @@ export const runtime = 'nodejs';
 import { createClient } from '@/lib/supabase/server';
 import { createAdminClient } from '@/lib/supabase/server';
 import { apiLogger as logger } from '@/lib/logger';
+import { getErrorMessage, getErrorDetails } from '@/lib/utils/errors';
 
 export async function POST(req: NextRequest) {
   try {
@@ -120,7 +121,7 @@ export async function POST(req: NextRequest) {
         .eq('order_id', orderId)
         .eq('venue_id', venueId);
       logger.debug('[ORDERS SERVE] table_sessions updated to SERVED', { orderId, venueId });
-    } catch (e) {
+    } catch (e: unknown) {
       // best-effort; don't fail the request if this errors (RLS or not found)
       logger.warn('[ORDERS SERVE] table_sessions update warning', { orderId, venueId, error: e });
     }
@@ -134,7 +135,7 @@ export async function POST(req: NextRequest) {
     logger.error('[ORDERS SERVE][UNCAUGHT]', { error: error?.message || error, stack: error?.stack });
     return NextResponse.json({ 
       error: 'Internal server error',
-      details: error.message 
+      details: getErrorMessage(error) 
     }, { status: 500 });
   }
 }

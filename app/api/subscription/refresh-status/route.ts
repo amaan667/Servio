@@ -6,6 +6,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { createClient } from "@/lib/supabase/server";
 import { stripe } from "@/lib/stripe-client";
 import { apiLogger, logger } from '@/lib/logger';
+import { getErrorMessage, getErrorDetails } from '@/lib/utils/errors';
 
 export async function POST(request: NextRequest) {
   try {
@@ -158,9 +159,9 @@ export async function POST(request: NextRequest) {
     }
 
   } catch (error: unknown) {
-    logger.error("[SUBSCRIPTION REFRESH] Error:", { error: error instanceof Error ? error.message : 'Unknown error' });
+    logger.error("[SUBSCRIPTION REFRESH] Error:", { error: error instanceof Error ? getErrorMessage(error) : 'Unknown error' });
     return NextResponse.json(
-      { error: error.message || "Failed to refresh subscription status" },
+      { error: getErrorMessage(error) || "Failed to refresh subscription status" },
       { status: 500 }
     );
   }

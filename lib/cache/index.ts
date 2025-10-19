@@ -5,6 +5,7 @@
 
 import { redisCache } from './redis';
 import { logger } from '@/lib/logger';
+import { getErrorDetails } from '@/lib/utils/errors';
 
 interface CacheOptions {
   ttl?: number; // Time to live in seconds
@@ -64,8 +65,8 @@ class Cache {
         expires: Date.now() + ttl * 1000,
       });
       return true;
-    } catch (error) {
-      logger.error('[CACHE] Error setting memory cache:', error);
+    } catch (error: unknown) {
+      logger.error('[CACHE] Error setting memory cache:', getErrorDetails(error));
       return false;
     }
   }

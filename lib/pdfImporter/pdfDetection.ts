@@ -5,6 +5,7 @@
 
 import { PDFSourceInfo, TextBlock, BoundingBox } from './types';
 import { logger } from '@/lib/logger';
+import { getErrorMessage, getErrorDetails } from '@/lib/utils/errors';
 
 /**
  * Detects the type of PDF and determines the best extraction method
@@ -36,8 +37,8 @@ export async function detectPDFSource(pdfBuffer: Buffer): Promise<PDFSourceInfo>
       extractionMethod: 'vision_ocr'
     };
     
-  } catch (error) {
-    logger.error('[PDF_DETECT] Detection failed:', error);
+  } catch (error: unknown) {
+    logger.error('[PDF_DETECT] Detection failed:', getErrorDetails(error));
     // Default to OCR
     return {
       type: 'vision_ocr',
@@ -66,8 +67,8 @@ async function extractNativeText(pdfBuffer: Buffer): Promise<string | null> {
     }
     
     return null;
-  } catch (error) {
-    logger.error('[PDF_DETECT] Native extraction failed:', error);
+  } catch (error: unknown) {
+    logger.error('[PDF_DETECT] Native extraction failed:', getErrorDetails(error));
     return null;
   }
 }
@@ -110,8 +111,8 @@ export async function extractTextWithBoxes(pdfBuffer: Buffer): Promise<TextBlock
     return blocks;
     
   } catch (error: unknown) {
-    logger.error('[PDF_EXTRACT] Text extraction failed:', error);
-    throw new Error(`Text extraction failed: ${error.message}`);
+    logger.error('[PDF_EXTRACT] Text extraction failed:', getErrorDetails(error));
+    throw new Error(`Text extraction failed: ${getErrorMessage(error)}`);
   }
 }
 

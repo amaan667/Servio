@@ -1,5 +1,6 @@
 import { useState } from 'react';
 import { logger } from '@/lib/logger';
+import { getErrorMessage, getErrorDetails } from '@/lib/utils/errors';
 
 export interface CreateTableParams {
   venue_id: string;
@@ -49,9 +50,9 @@ export function useTableManagement() {
       }
 
       return data.table;
-    } catch (err) {
-      logger.error('[TABLE MANAGEMENT HOOK] Error creating table:', err);
-      const errorMessage = err instanceof Error ? err.message : 'Failed to create table';
+    } catch (err: unknown) {
+      logger.error('[TABLE MANAGEMENT HOOK] Error creating table:', getErrorDetails(err));
+      const errorMessage = err instanceof Error ? getErrorMessage(err) : 'Failed to create table';
       setError(errorMessage);
       throw err;
     } finally {
@@ -84,9 +85,9 @@ export function useTableManagement() {
       }
 
       return data.table;
-    } catch (err) {
-      logger.error('[TABLE MANAGEMENT HOOK] Error updating table:', err);
-      const errorMessage = err instanceof Error ? err.message : 'Failed to update table';
+    } catch (err: unknown) {
+      logger.error('[TABLE MANAGEMENT HOOK] Error updating table:', getErrorDetails(err));
+      const errorMessage = err instanceof Error ? getErrorMessage(err) : 'Failed to update table';
       setError(errorMessage);
       throw err;
     } finally {
@@ -110,9 +111,9 @@ export function useTableManagement() {
       }
 
       return data;
-    } catch (err) {
-      logger.error('[TABLE MANAGEMENT HOOK] Error deleting table:', err);
-      const errorMessage = err instanceof Error ? err.message : 'Failed to delete table';
+    } catch (err: unknown) {
+      logger.error('[TABLE MANAGEMENT HOOK] Error deleting table:', getErrorDetails(err));
+      const errorMessage = err instanceof Error ? getErrorMessage(err) : 'Failed to delete table';
       setError(errorMessage);
       throw err;
     } finally {
@@ -136,9 +137,9 @@ export function useTableManagement() {
       }
 
       return data.table;
-    } catch (err) {
-      logger.error('[TABLE MANAGEMENT HOOK] Error reissuing QR:', err);
-      const errorMessage = err instanceof Error ? err.message : 'Failed to reissue QR';
+    } catch (err: unknown) {
+      logger.error('[TABLE MANAGEMENT HOOK] Error reissuing QR:', getErrorDetails(err));
+      const errorMessage = err instanceof Error ? getErrorMessage(err) : 'Failed to reissue QR';
       setError(errorMessage);
       throw err;
     } finally {

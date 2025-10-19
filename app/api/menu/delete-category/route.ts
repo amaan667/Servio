@@ -4,6 +4,7 @@ export const dynamic = "force-dynamic";
 import { NextRequest, NextResponse } from 'next/server';
 import { createAdminClient } from '@/lib/supabase/server';
 import { logger } from '@/lib/logger';
+import { getErrorMessage, getErrorDetails } from '@/lib/utils/errors';
 
 export async function POST(request: NextRequest) {
   try {
@@ -83,8 +84,8 @@ export async function POST(request: NextRequest) {
             logger.warn(`[CATEGORIES DELETE] Warning deleting from ${table}:`, error);
           }
         }
-      } catch (error) {
-        logger.warn(`[CATEGORIES DELETE] Warning processing ${table}:`, error);
+      } catch (error: unknown) {
+        logger.warn(`[CATEGORIES DELETE] Warning processing ${table}:`, getErrorDetails(error));
       }
     }
 
@@ -96,8 +97,8 @@ export async function POST(request: NextRequest) {
       deletedItems: itemsToDelete.map(item => item.name)
     });
 
-  } catch (error) {
-    logger.error('[CATEGORIES DELETE] Error in delete category API:', { error: error instanceof Error ? error.message : 'Unknown error' });
+  } catch (error: unknown) {
+    logger.error('[CATEGORIES DELETE] Error in delete category API:', { error: error instanceof Error ? getErrorMessage(error) : 'Unknown error' });
     return NextResponse.json({ 
       ok: false, 
       error: 'Internal server error' 

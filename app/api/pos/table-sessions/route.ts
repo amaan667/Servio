@@ -5,6 +5,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { createClient } from '@/lib/supabase/server';
 import { getAuthenticatedUser } from '@/lib/supabase/server';
 import { logger } from '@/lib/logger';
+import { getErrorMessage, getErrorDetails } from '@/lib/utils/errors';
 
 export async function GET(req: NextRequest) {
   try {
@@ -44,8 +45,8 @@ export async function GET(req: NextRequest) {
     }
 
     return NextResponse.json({ tables: tableStatus });
-  } catch (error) {
-    logger.error('[POS TABLE SESSIONS] Unexpected error:', { error: error instanceof Error ? error.message : 'Unknown error' });
+  } catch (error: unknown) {
+    logger.error('[POS TABLE SESSIONS] Unexpected error:', { error: error instanceof Error ? getErrorMessage(error) : 'Unknown error' });
     return NextResponse.json({ error: 'Internal server error' }, { status: 500 });
   }
 }
@@ -184,8 +185,8 @@ export async function POST(req: NextRequest) {
     }
 
     return NextResponse.json(result);
-  } catch (error) {
-    logger.error('[POS TABLE SESSIONS] Unexpected error:', { error: error instanceof Error ? error.message : 'Unknown error' });
+  } catch (error: unknown) {
+    logger.error('[POS TABLE SESSIONS] Unexpected error:', { error: error instanceof Error ? getErrorMessage(error) : 'Unknown error' });
     return NextResponse.json({ error: 'Internal server error' }, { status: 500 });
   }
 }

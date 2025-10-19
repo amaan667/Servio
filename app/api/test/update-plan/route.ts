@@ -5,6 +5,7 @@ export const dynamic = "force-dynamic";
 import { NextRequest, NextResponse } from "next/server";
 import { createClient } from "@/lib/supabase/server";
 import { apiLogger, logger } from '@/lib/logger';
+import { getErrorMessage, getErrorDetails } from '@/lib/utils/errors';
 
 export async function POST(request: NextRequest) {
   try {
@@ -110,9 +111,9 @@ export async function POST(request: NextRequest) {
     });
 
   } catch (error: unknown) {
-    logger.error("[UPDATE PLAN] Unexpected error:", { error: error instanceof Error ? error.message : 'Unknown error' });
+    logger.error("[UPDATE PLAN] Unexpected error:", { error: error instanceof Error ? getErrorMessage(error) : 'Unknown error' });
     return NextResponse.json(
-      { error: "Internal server error", details: error.message },
+      { error: "Internal server error", details: getErrorMessage(error) },
       { status: 500 }
     );
   }

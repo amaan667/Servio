@@ -1,5 +1,6 @@
 import { useEffect } from 'react';
 import { logger } from '@/lib/logger';
+import { getErrorDetails } from '@/lib/utils/errors';
 
 /**
  * Hook for monitoring performance metrics
@@ -43,10 +44,10 @@ export function useApiPerformanceMonitor(apiName: string) {
         }
         
         return result;
-      } catch (error) {
+      } catch (error: unknown) {
         const endTime = performance.now();
         const duration = endTime - startTime;
-        logger.error(`[API ERROR] ${apiName} failed after ${duration.toFixed(2)}ms:`, error);
+        logger.error(`[API ERROR] ${apiName} failed after ${duration.toFixed(2)}ms:`, getErrorDetails(error));
         throw error;
       }
     };

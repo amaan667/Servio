@@ -6,6 +6,7 @@ import Stripe from 'stripe';
 import { ENV } from '@/lib/env';
 import { stripe } from '@/lib/stripe-client';
 import { logger } from '@/lib/logger';
+import { getErrorMessage, getErrorDetails } from '@/lib/utils/errors';
 
 interface CreateIntentRequest {
   cartId: string;
@@ -107,12 +108,12 @@ export async function POST(req: NextRequest) {
       paymentIntentId: paymentIntent.id,
     });
 
-  } catch (error) {
-    logger.error('[PAYMENT INTENT] Error:', { error: error instanceof Error ? error.message : 'Unknown error' });
+  } catch (error: unknown) {
+    logger.error('[PAYMENT INTENT] Error:', { error: error instanceof Error ? getErrorMessage(error) : 'Unknown error' });
     
     if (error instanceof Stripe.errors.StripeError) {
       return NextResponse.json(
-        { error: error.message },
+        { error: getErrorMessage(error) },
         { status: 400 }
       );
     }

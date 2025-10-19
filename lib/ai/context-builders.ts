@@ -3,6 +3,7 @@
 
 import { createClient } from "@/lib/supabase/server";
 import { aiLogger } from '@/lib/logger';
+import { getErrorDetails } from '@/lib/utils/errors';
 import {
   MenuSummary,
   InventorySummary,
@@ -40,9 +41,9 @@ export async function getAssistantContext(
       if (roleData) {
         userRole = roleData.role;
       }
-    } catch (error) {
+    } catch (error: unknown) {
       // Table doesn't exist or other error - use default
-      logger.debug("[AI ASSISTANT] Could not get user role:", error);
+      logger.debug("[AI ASSISTANT] Could not get user role:", getErrorDetails(error));
     }
   }
 

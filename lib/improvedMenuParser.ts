@@ -1,6 +1,7 @@
 import { getOpenAI } from "./openai";
 import { MenuPayload, MenuPayloadT } from "./menuSchema";
 import { logger } from '@/lib/logger';
+import { getErrorMessage, getErrorDetails } from '@/lib/utils/errors';
 
 interface ParsedMenuItem {
   title: string;
@@ -139,7 +140,7 @@ ${extractedText}`;
     return converted;
 
   } catch (error: unknown) {
-    logger.error('[IMPROVED PARSER] Parsing failed:', error.message);
+    logger.error('[IMPROVED PARSER] Parsing failed:', getErrorMessage(error));
     
     // Try a simpler approach as fallback
     try {
@@ -237,7 +238,7 @@ function fixMalformedJson(jsonString: string): string {
   try {
     const { repairMenuJSON } = require('./pdfImporter/jsonRepair');
     fixed = repairMenuJSON(fixed);
-  } catch (error) {
+  } catch (error: unknown) {
     
     // Fallback to basic fixes
     // Fix common issues with unterminated strings

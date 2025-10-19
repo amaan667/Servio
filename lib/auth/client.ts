@@ -1,5 +1,6 @@
 import { createClient } from '@/lib/supabase/client';
 import { logger } from '@/lib/logger';
+import { getErrorDetails } from '@/lib/utils/errors';
 
 /**
  * SECURE: Get the currently authenticated user
@@ -17,8 +18,8 @@ export async function getAuthenticatedUser() {
     }
     
     return { user, error: null };
-  } catch (error) {
-    logger.error('[AUTH CLIENT] Exception getting authenticated user:', error);
+  } catch (error: unknown) {
+    logger.error('[AUTH CLIENT] Exception getting authenticated user:', getErrorDetails(error));
     return { user: null, error: 'Failed to get authenticated user' };
   }
 }
@@ -65,8 +66,8 @@ export async function signOut() {
     }
     
     return { success: true, error: null };
-  } catch (error) {
-    logger.error('[AUTH CLIENT] Exception signing out:', error);
+  } catch (error: unknown) {
+    logger.error('[AUTH CLIENT] Exception signing out:', getErrorDetails(error));
     return { success: false, error: 'Failed to sign out' };
   }
 }

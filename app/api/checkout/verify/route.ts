@@ -3,6 +3,7 @@ import Stripe from "stripe";
 import { createServerClient } from '@supabase/ssr';
 import { stripe } from "@/lib/stripe-client";
 import { logger } from '@/lib/logger';
+import { getErrorMessage, getErrorDetails } from '@/lib/utils/errors';
 
 export const runtime = 'nodejs';
 
@@ -84,7 +85,7 @@ export async function GET(req: NextRequest) {
 
     return NextResponse.json({ paid: false }, { status: 200 });
   } catch (e: unknown) {
-    logger.error("verify error", { error: e instanceof Error ? e.message : 'Unknown error' });
-    return NextResponse.json({ error: e.message ?? "verify failed" }, { status: 500 });
+    logger.error("verify error", { error: e instanceof Error ? getErrorMessage(e) : 'Unknown error' });
+    return NextResponse.json({ error: getErrorMessage(e) ?? "verify failed" }, { status: 500 });
   }
 }

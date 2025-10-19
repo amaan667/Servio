@@ -8,6 +8,7 @@ import { v4 as uuidv4 } from 'uuid';
 import { stripe } from '@/lib/stripe-client';
 import { createAdminClient } from '@/lib/supabase/server';
 import { logger } from '@/lib/logger';
+import { getErrorMessage, getErrorDetails } from '@/lib/utils/errors';
 
 interface CreateOrderRequest {
   paymentIntentId: string;
@@ -162,14 +163,14 @@ export async function POST(req: NextRequest) {
       },
     });
 
-  } catch (error) {
-    logger.error('[ORDER CREATION] Error:', { error: error instanceof Error ? error.message : 'Unknown error' });
+  } catch (error: unknown) {
+    logger.error('[ORDER CREATION] Error:', { error: error instanceof Error ? getErrorMessage(error) : 'Unknown error' });
     
     if (error instanceof Stripe.errors.StripeError) {
       return NextResponse.json(
         { 
           ok: false, 
-          message: `Stripe error: ${error.message}` 
+          message: `Stripe error: ${getErrorMessage(error)}` 
         },
         { status: 400 }
       );
@@ -268,8 +269,8 @@ async function createDemoOrder(cartId: string) {
       },
     });
 
-  } catch (error) {
-    logger.error('[DEMO ORDER] Error:', { error: error instanceof Error ? error.message : 'Unknown error' });
+  } catch (error: unknown) {
+    logger.error('[DEMO ORDER] Error:', { error: error instanceof Error ? getErrorMessage(error) : 'Unknown error' });
     return NextResponse.json(
       { 
         ok: false, 

@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react';
 import { logger } from '@/lib/logger';
+import { getErrorDetails } from '@/lib/utils/errors';
 
 interface DailyResetResult {
   success: boolean;
@@ -58,8 +59,8 @@ export function useDailyReset(venueId: string) {
       } else {
         logger.error('🔄 [DAILY RESET HOOK] Reset check failed:', result);
       }
-    } catch (error) {
-      logger.error('🔄 [DAILY RESET HOOK] Error checking daily reset:', error);
+    } catch (error: unknown) {
+      logger.error('🔄 [DAILY RESET HOOK] Error checking daily reset:', getErrorDetails(error));
     } finally {
       setIsChecking(false);
     }

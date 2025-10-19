@@ -4,6 +4,7 @@ export const dynamic = "force-dynamic";
 import { NextRequest, NextResponse } from 'next/server';
 import { createAdminClient } from '@/lib/supabase/server';
 import { logger } from '@/lib/logger';
+import { getErrorMessage, getErrorDetails } from '@/lib/utils/errors';
 
 export async function POST() {
   try {
@@ -46,7 +47,7 @@ export async function POST() {
             .delete()
             .eq('venue_id', 'test');
         }
-      } catch (error) {
+      } catch (error: unknown) {
       }
     }
     
@@ -168,11 +169,11 @@ export async function POST() {
       }
     });
     
-  } catch (error) {
-    logger.error('❌ Emergency fix failed:', { error: error instanceof Error ? error.message : 'Unknown error' });
+  } catch (error: unknown) {
+    logger.error('❌ Emergency fix failed:', { error: error instanceof Error ? getErrorMessage(error) : 'Unknown error' });
     return NextResponse.json({
       success: false,
-      error: error instanceof Error ? error.message : 'Unknown error'
+      error: error instanceof Error ? getErrorMessage(error) : 'Unknown error'
     }, { status: 500 });
   }
 }

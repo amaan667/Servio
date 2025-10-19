@@ -4,6 +4,7 @@ export const dynamic = "force-dynamic";
 import { NextRequest, NextResponse } from 'next/server';
 import { createAdminClient } from '@/lib/supabase/server';
 import { logger } from '@/lib/logger';
+import { getErrorMessage, getErrorDetails } from '@/lib/utils/errors';
 
 export async function POST(request: NextRequest) {
   try {
@@ -59,10 +60,10 @@ export async function POST(request: NextRequest) {
     });
 
   } catch (error: unknown) {
-    logger.error('[AUTH DEBUG] Clear menu error:', { error: error instanceof Error ? error.message : 'Unknown error' });
+    logger.error('[AUTH DEBUG] Clear menu error:', { error: error instanceof Error ? getErrorMessage(error) : 'Unknown error' });
     return NextResponse.json({ 
       ok: false, 
-      error: `Clear menu failed: ${error.message}` 
+      error: `Clear menu failed: ${getErrorMessage(error)}` 
     }, { status: 500 });
   }
 }

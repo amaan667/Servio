@@ -6,6 +6,7 @@
 import { createClient } from "@/lib/supabase/server";
 import { aiLogger as logger } from '@/lib/logger';
 import { AIAssistantError, AIExecutionResult } from "@/types/ai-assistant";
+import { getErrorMessage, getErrorDetails } from '@/lib/utils/errors';
 
 export abstract class BaseExecutor {
   protected supabase: Awaited<ReturnType<typeof createClient>>;
@@ -33,10 +34,10 @@ export abstract class BaseExecutor {
         message: 'Operation completed successfully',
       };
     } catch (error: unknown) {
-      logger.error(`[AI ASSISTANT] ${errorMessage}:`, error);
+      logger.error(`[AI ASSISTANT] ${errorMessage}:`, getErrorDetails(error));
       return {
         success: false,
-        error: error instanceof Error ? error.message : 'Unknown error',
+        error: error instanceof Error ? getErrorMessage(error) : 'Unknown error',
         message: errorMessage,
       };
     }

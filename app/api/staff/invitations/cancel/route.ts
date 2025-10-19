@@ -5,6 +5,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { createClient } from '@/lib/supabase/server';
 import { getUserSafe } from '@/utils/getUserSafe';
 import { apiLogger, logger } from '@/lib/logger';
+import { getErrorMessage, getErrorDetails } from '@/lib/utils/errors';
 
 // POST /api/staff/invitations/cancel - Cancel an invitation
 export async function POST(request: NextRequest) {
@@ -116,8 +117,8 @@ export async function POST(request: NextRequest) {
       success: true,
       message: 'Invitation cancelled successfully'
     });
-  } catch (error) {
-    logger.error('[INVITATION API] Unexpected error:', { error: error instanceof Error ? error.message : 'Unknown error' });
+  } catch (error: unknown) {
+    logger.error('[INVITATION API] Unexpected error:', { error: error instanceof Error ? getErrorMessage(error) : 'Unknown error' });
     return NextResponse.json({ error: 'Internal server error' }, { status: 500 });
   }
 }

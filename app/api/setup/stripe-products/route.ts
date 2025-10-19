@@ -4,6 +4,7 @@ export const dynamic = "force-dynamic";
 import { NextRequest, NextResponse } from 'next/server';
 import { stripe } from "@/lib/stripe-client";
 import { apiLogger, logger } from '@/lib/logger';
+import { getErrorMessage, getErrorDetails } from '@/lib/utils/errors';
 
 export async function POST() {
   try {
@@ -57,12 +58,12 @@ export async function POST() {
 
         logger.debug(`[STRIPE SETUP] Created ${product.tier}: Product ${stripeProduct.id}, Price ${price.id}`);
 
-      } catch (error) {
-        logger.error(`[STRIPE ERROR] Failed to create ${product.tier}:`, { error: error instanceof Error ? error.message : 'Unknown error' });
+      } catch (error: unknown) {
+        logger.error(`[STRIPE ERROR] Failed to create ${product.tier}:`, { error: error instanceof Error ? getErrorMessage(error) : 'Unknown error' });
         results.push({
           tier: product.tier,
           status: 'error',
-          error: error instanceof Error ? error.message : 'Unknown error'
+          error: error instanceof Error ? getErrorMessage(error) : 'Unknown error'
         });
       }
     }
@@ -73,11 +74,11 @@ export async function POST() {
       results
     });
 
-  } catch (error) {
-    logger.error('Stripe products setup error:', { error: error instanceof Error ? error.message : 'Unknown error' });
+  } catch (error: unknown) {
+    logger.error('Stripe products setup error:', { error: error instanceof Error ? getErrorMessage(error) : 'Unknown error' });
     return NextResponse.json({
       success: false,
-      error: error instanceof Error ? error.message : 'Unknown error'
+      error: error instanceof Error ? getErrorMessage(error) : 'Unknown error'
     }, { status: 500 });
   }
 }

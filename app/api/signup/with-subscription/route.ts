@@ -9,6 +9,7 @@ import Stripe from "stripe";
 import { createAdminClient } from "@/lib/supabase/server";
 import { stripe } from "@/lib/stripe-client";
 import { logger } from '@/lib/logger';
+import { getErrorMessage, getErrorDetails } from '@/lib/utils/errors';
 
 const PRICE_IDS = {
   basic: process.env.STRIPE_BASIC_PRICE_ID || "price_basic",
@@ -191,9 +192,9 @@ export async function POST(request: NextRequest) {
       });
     }
   } catch (error: unknown) {
-    logger.error("[SIGNUP WITH SUBSCRIPTION] Error:", { error: error instanceof Error ? error.message : 'Unknown error' });
+    logger.error("[SIGNUP WITH SUBSCRIPTION] Error:", { error: error instanceof Error ? getErrorMessage(error) : 'Unknown error' });
     return NextResponse.json(
-      { error: error.message || "Signup failed" },
+      { error: getErrorMessage(error) || "Signup failed" },
       { status: 500 }
     );
   }

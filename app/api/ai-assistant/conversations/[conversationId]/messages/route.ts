@@ -9,6 +9,7 @@ import { createClient, createAdminClient } from "@/lib/supabase/server";
 import { generateConversationTitle } from "@/lib/ai/openai-service";
 import { z } from "zod";
 import { apiLogger, logger } from '@/lib/logger';
+import { getErrorMessage, getErrorDetails } from '@/lib/utils/errors';
 
 const CreateMessageSchema = z.object({
   role: z.enum(["user", "assistant", "system"]),
@@ -72,7 +73,7 @@ export async function GET(
       messages: transformedMessages,
     });
   } catch (error: unknown) {
-    const errorMessage = error instanceof Error ? error.message : 'Unknown error';
+    const errorMessage = error instanceof Error ? getErrorMessage(error) : 'Unknown error';
     logger.error("[AI CHAT] Messages error:", { error: errorMessage });
     return NextResponse.json(
       { error: errorMessage || "Internal server error" },
@@ -159,8 +160,8 @@ export async function POST(
             })
             .eq("id", conversationId);
           logger.debug("[AI CHAT] Updated conversation title to:", { title: aiTitle });
-        } catch (error) {
-          logger.error("[AI CHAT] Failed to generate title:", { error: error instanceof Error ? error.message : 'Unknown error' });
+        } catch (error: unknown) {
+          logger.error("[AI CHAT] Failed to generate title:", { error: error instanceof Error ? getErrorMessage(error) : 'Unknown error' });
           // Continue without failing the message creation
         }
       }
@@ -182,11 +183,11 @@ export async function POST(
       message: transformedMessage,
     });
   } catch (error: unknown) {
-    const errorMessage = error instanceof Error ? error.message : 'Unknown error';
+    const errorMessage = error instanceof Error ? getErrorMessage(error) : 'Unknown error';
     logger.error("[AI CHAT] Create message error:", { error: errorMessage });
     
     // Type guard for ZodError
-    if (error && typeof error === 'object' && 'name' in error && error.name === "ZodError") {
+    if (error && typeof error === 'object' && 'name' in error && getErrorDetails(error).name === "ZodError") {
       const zodError = error as unknown as { errors: unknown };
       return NextResponse.json(
         { error: "Invalid request data", details: zodError.errors },

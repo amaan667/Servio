@@ -53,7 +53,7 @@ export const cache = {
       const data = await redis.get(key);
       if (!data) return null;
       return JSON.parse(data) as T;
-    } catch (error) {
+    } catch (error: unknown) {
       logger.error('Cache get error', error, { key });
       return null;
     }
@@ -66,7 +66,7 @@ export const cache = {
     if (!redis) return;
     try {
       await redis.setex(key, ttl, JSON.stringify(value));
-    } catch (error) {
+    } catch (error: unknown) {
       logger.error('Cache set error', error, { key, ttl });
     }
   },
@@ -78,7 +78,7 @@ export const cache = {
     if (!redis) return;
     try {
       await redis.del(key);
-    } catch (error) {
+    } catch (error: unknown) {
       logger.error('Cache delete error', error, { key });
     }
   },
@@ -94,7 +94,7 @@ export const cache = {
         await redis.del(...keys);
         logger.info('Cache invalidated', { pattern, count: keys.length });
       }
-    } catch (error) {
+    } catch (error: unknown) {
       logger.error('Cache invalidate error', error, { pattern });
     }
   },
@@ -107,7 +107,7 @@ export const cache = {
     try {
       const result = await redis.exists(key);
       return result === 1;
-    } catch (error) {
+    } catch (error: unknown) {
       logger.error('Cache exists error', error, { key });
       return false;
     }
@@ -121,7 +121,7 @@ export const cache = {
     try {
       const values = await redis.mget(...keys);
       return values.map((v: any) => v ? JSON.parse(v) : null);
-    } catch (error) {
+    } catch (error: unknown) {
       logger.error('Cache mget error', error, { keys });
       return keys.map(() => null);
     }
@@ -138,7 +138,7 @@ export const cache = {
         pipeline.setex(key, ttl, JSON.stringify(value));
       }
       await pipeline.exec();
-    } catch (error) {
+    } catch (error: unknown) {
       logger.error('Cache mset error', error, { keys: Object.keys(keyValues) });
     }
   },
