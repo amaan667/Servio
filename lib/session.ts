@@ -1,5 +1,6 @@
 // Session management utilities for QR rescan and order resume functionality
 
+import { logger } from '@/lib/logger';
 export interface SessionData {
   sessionId: string;
   tableId?: string | null;
@@ -79,7 +80,7 @@ export function getSessionData(sessionId: string): SessionData | null {
       try {
         return JSON.parse(stored);
       } catch (error) {
-        console.error('[SESSION] Error parsing session data:', error);
+        logger.error('[SESSION] Error parsing session data:', error);
       }
     }
   }
@@ -122,7 +123,7 @@ export async function checkForOpenOrder(sessionId: string): Promise<any | null> 
     
     return null;
   } catch (error) {
-    console.error('[SESSION] Error checking for open order:', error);
+    logger.error('[SESSION] Error checking for open order:', error);
     return null;
   }
 }

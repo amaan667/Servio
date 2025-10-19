@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import Stripe from "stripe";
 import { createAdminClient } from "@/lib/supabase/server";
 import { stripe } from "@/lib/stripe-client";
+import { apiLogger, logger } from '@/lib/logger';
 
 export const runtime = 'nodejs';
 
@@ -70,7 +71,7 @@ export async function POST(req: Request) {
 
     // CRITICAL FIX: Store the stripe_session_id immediately on the order
     // This prevents race condition where user reaches success page before webhook fires
-    console.log('[CHECKOUT DEBUG] Updating order with stripe_session_id:', session.id);
+    logger.debug('[CHECKOUT DEBUG] Updating order with stripe_session_id:', session.id);
     const { error: updateError } = await supabaseAdmin
       .from('orders')
       .update({
@@ -81,15 +82,15 @@ export async function POST(req: Request) {
       .eq('id', orderId);
 
     if (updateError) {
-      console.error('[CHECKOUT DEBUG] Failed to update order with session ID:', updateError);
+      logger.error('[CHECKOUT DEBUG] Failed to update order with session ID:', updateError);
       // Don't fail the checkout, webhook will handle it as fallback
     } else {
-      console.log('[CHECKOUT DEBUG] Successfully stored stripe_session_id on order:', orderId);
+      logger.debug('[CHECKOUT DEBUG] Successfully stored stripe_session_id on order:', orderId);
     }
 
     return NextResponse.json({ url: session.url, sessionId: session.id }, { status: 200 });
   } catch (e: any) {
-    console.error("Stripe session error:", e);
+    logger.error("Stripe session error:", e);
     return NextResponse.json({ error: e.message ?? "Stripe error" }, { status: 500 });
   }
 }

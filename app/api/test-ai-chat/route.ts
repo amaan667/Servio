@@ -1,6 +1,7 @@
 // Test endpoint to debug AI chat issues
 import { NextRequest, NextResponse } from "next/server";
 import { createClient } from "@/lib/supabase/server";
+import { apiLogger } from '@/lib/logger';
 
 export async function GET(request: NextRequest) {
   try {
@@ -12,7 +13,7 @@ export async function GET(request: NextRequest) {
       error: authError
     } = await supabase.auth.getUser();
 
-    console.log("[TEST] Auth check:", { 
+    logger.debug("[TEST] Auth check:", { 
       user: user ? { id: user.id, email: user.email } : null,
       authError 
     });
@@ -24,7 +25,7 @@ export async function GET(request: NextRequest) {
     const { searchParams } = new URL(request.url);
     const venueId = searchParams.get("venueId");
 
-    console.log("[TEST] Request venueId:", venueId);
+    logger.debug("[TEST] Request venueId:", venueId);
 
     if (!venueId) {
       return NextResponse.json({ error: "Missing venueId" }, { status: 400 });
@@ -37,7 +38,7 @@ export async function GET(request: NextRequest) {
       .eq("venue_id", venueId)
       .single();
 
-    console.log("[TEST] Venue check:", { venue, venueError });
+    logger.debug("[TEST] Venue check:", { venue, venueError });
 
     if (!venue) {
       return NextResponse.json({ 
@@ -60,7 +61,7 @@ export async function GET(request: NextRequest) {
       .select("*")
       .eq("venue_id", venueId);
 
-    console.log("[TEST] Conversations query:", { 
+    logger.debug("[TEST] Conversations query:", { 
       conversations, 
       conversationsError,
       count: conversations?.length || 0 
@@ -72,7 +73,7 @@ export async function GET(request: NextRequest) {
       .select("*")
       .limit(5);
 
-    console.log("[TEST] Messages query:", { 
+    logger.debug("[TEST] Messages query:", { 
       messages, 
       messagesError,
       count: messages?.length || 0 
@@ -95,7 +96,7 @@ export async function GET(request: NextRequest) {
     });
 
   } catch (error: any) {
-    console.error("[TEST] Error:", error);
+    logger.error("[TEST] Error:", { error: error instanceof Error ? error.message : 'Unknown error' });
     return NextResponse.json({ 
       error: "Internal server error", 
       details: error.message 

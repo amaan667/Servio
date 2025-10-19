@@ -1,6 +1,7 @@
 import { NextResponse } from 'next/server';
 import { createClient, getAuthenticatedUser } from '@/lib/supabase/server';
 import { cleanupTableOnOrderCompletion } from '@/lib/table-cleanup';
+import { apiLogger, logger } from '@/lib/logger';
 
 export const runtime = 'nodejs';
 
@@ -24,7 +25,7 @@ export async function POST(req: Request) {
       .select();
 
     if (error) {
-      console.error('[UPDATE STATUS] Error:', error);
+      logger.error('[UPDATE STATUS] Error:', { error: error instanceof Error ? error.message : 'Unknown error' });
       return NextResponse.json({ ok: false, error: error.message }, { status: 500 });
     }
 
@@ -38,9 +39,9 @@ export async function POST(req: Request) {
             p_order_id: orderId,
             p_venue_id: order.venue_id,
           });
-          console.log('[INVENTORY] Stock deducted for order:', orderId);
+          logger.debug('[INVENTORY] Stock deducted for order:', orderId);
         } catch (inventoryError) {
-          console.error('[INVENTORY] Error deducting stock:', inventoryError);
+          logger.error('[INVENTORY] Error deducting stock:', inventoryError);
           // Don't fail the order completion if inventory deduction fails
         }
       }
@@ -60,9 +61,9 @@ export async function POST(req: Request) {
         });
 
         if (!cleanupResult.success) {
-          console.error('[ORDER UPDATE] Table cleanup failed:', cleanupResult.error);
+          logger.error('[ORDER UPDATE] Table cleanup failed:', cleanupResult.error);
         } else {
-          console.log('[ORDER UPDATE] Table cleanup successful:', cleanupResult.details);
+          logger.debug('[ORDER UPDATE] Table cleanup successful:', cleanupResult.details);
         }
 
         // If order is completed and paid, check if reservations should be auto-completed
@@ -84,7 +85,7 @@ export async function POST(req: Request) {
               const completionResult = await completionResponse.json();
             }
           } catch (completionError) {
-            console.error('[UPDATE STATUS] Error checking reservation completion:', completionError);
+            logger.error('[UPDATE STATUS] Error checking reservation completion:', completionError);
             // Don't fail the main request if completion check fails
           }
         }
@@ -93,7 +94,7 @@ export async function POST(req: Request) {
 
     return NextResponse.json({ ok: true, order: data?.[0] });
   } catch (error) {
-    console.error('[UPDATE STATUS] Unexpected error:', error);
+    logger.error('[UPDATE STATUS] Unexpected error:', { error: error instanceof Error ? error.message : 'Unknown error' });
     return NextResponse.json({ ok: false, error: 'Internal server error' }, { status: 500 });
   }
 }

@@ -12,6 +12,7 @@ import { TrendingUp, ShoppingBag, Users, RefreshCw, Clock, Star, TrendingDown, C
 import { createClient } from "@/lib/supabase/client";
 import { ChartContainer } from "@/components/ui/chart";
 import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, BarChart, Bar, PieChart, Pie, Cell } from "recharts";
+import { logger } from '@/lib/logger';
 
 interface OrderWithItems {
   id: string;
@@ -101,7 +102,7 @@ export function AnalyticsDashboard({ venueId }: AnalyticsDashboardProps) {
         .gte("created_at", startDate.toISOString());
 
       if (ordersError) {
-        console.error("Error fetching orders:", ordersError);
+        logger.error("Error fetching orders:", ordersError);
         setStats({ revenue: 0, orderCount: 0, activeTables: 0, unpaidOrders: 0, averageOrderValue: 0, completionRate: 0 });
         return;
       }
@@ -280,7 +281,7 @@ export function AnalyticsDashboard({ venueId }: AnalyticsDashboardProps) {
       setDayOfWeekData(dow);
 
     } catch (error) {
-      console.error("Error calculating stats:", error);
+      logger.error("Error calculating stats:", error);
       setStats({ revenue: 0, orderCount: 0, activeTables: 0, unpaidOrders: 0, averageOrderValue: 0, completionRate: 0 });
     } finally {
       setLoading(false);

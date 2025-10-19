@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { createAdminClient } from '@/lib/supabase/server';
+import { logger } from '@/lib/logger';
 
 export async function POST(request: NextRequest) {
   try {
@@ -25,7 +26,7 @@ export async function POST(request: NextRequest) {
       .maybeSingle();
 
     if (uploadError) {
-      console.error('[CATEGORIES RESET] Error fetching upload data:', uploadError);
+      logger.error('[CATEGORIES RESET] Error fetching upload data:', uploadError);
       return NextResponse.json({ 
         ok: false, 
         error: `Failed to fetch original categories: ${uploadError.message}` 
@@ -48,7 +49,7 @@ export async function POST(request: NextRequest) {
       .eq('venue_id', venueId);
 
     if (menuItemsError) {
-      console.error('[CATEGORIES RESET] Error fetching menu items:', menuItemsError);
+      logger.error('[CATEGORIES RESET] Error fetching menu items:', menuItemsError);
       return NextResponse.json({ 
         ok: false, 
         error: `Failed to fetch menu items: ${menuItemsError.message}` 
@@ -87,7 +88,7 @@ export async function POST(request: NextRequest) {
         .in('category', manuallyAddedCategories);
 
       if (deleteError) {
-        console.error('[CATEGORIES RESET] Error deleting items from manual categories:', deleteError);
+        logger.error('[CATEGORIES RESET] Error deleting items from manual categories:', deleteError);
         return NextResponse.json({ 
           ok: false, 
           error: `Failed to delete items from manual categories: ${deleteError.message}` 
@@ -113,9 +114,9 @@ export async function POST(request: NextRequest) {
       .limit(1);
 
     if (updateError) {
-      console.error('[CATEGORIES RESET] Error updating category order:', updateError);
+      logger.error('[CATEGORIES RESET] Error updating category order:', updateError);
       // Don't fail the entire operation for this
-      console.warn('[CATEGORIES RESET] Continuing despite category order update error');
+      logger.warn('[CATEGORIES RESET] Continuing despite category order update error');
     }
 
 
@@ -130,7 +131,7 @@ export async function POST(request: NextRequest) {
     });
 
   } catch (error) {
-    console.error('[CATEGORIES RESET] Error in reset categories API:', error);
+    logger.error('[CATEGORIES RESET] Error in reset categories API:', { error: error instanceof Error ? error.message : 'Unknown error' });
     return NextResponse.json({ 
       ok: false, 
       error: 'Internal server error' 

@@ -6,6 +6,7 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Clock, CheckCircle, XCircle, RefreshCw, User, Hash, Loader2 } from "lucide-react";
 import { createClient } from "@/lib/supabase/client";
+import { logger } from '@/lib/logger';
 
 interface OrderItem {
   menu_item_id: string;
@@ -93,7 +94,7 @@ export function RealTimeOrderTimeline({ orderId, venueId, className }: RealTimeO
         .single();
 
       if (error) {
-        console.error('[REAL-TIME TIMELINE] Failed to fetch order:', error);
+        logger.error('[REAL-TIME TIMELINE] Failed to fetch order:', error);
         setError('Order not found or access denied');
         return;
       }
@@ -101,7 +102,7 @@ export function RealTimeOrderTimeline({ orderId, venueId, className }: RealTimeO
       setOrder(data);
       setLastUpdate(new Date());
     } catch (err) {
-      console.error('[REAL-TIME TIMELINE] Error fetching order:', err);
+      logger.error('[REAL-TIME TIMELINE] Error fetching order:', err);
       setError('Failed to load order details');
     } finally {
       setLoading(false);
@@ -125,7 +126,7 @@ export function RealTimeOrderTimeline({ orderId, venueId, className }: RealTimeO
           filter: `id=eq.${orderId}`,
         },
         (payload: any) => {
-          console.log('[REAL-TIME TIMELINE] Order update received:', {
+          logger.debug('[REAL-TIME TIMELINE] Order update received:', {
             eventType: payload.eventType,
             oldStatus: payload.old?.order_status,
             newStatus: payload.new?.order_status,
@@ -152,7 +153,7 @@ export function RealTimeOrderTimeline({ orderId, venueId, className }: RealTimeO
         
         if (status === 'SUBSCRIBED') {
         } else if (status === 'CHANNEL_ERROR') {
-          console.error('[REAL-TIME TIMELINE] Real-time subscription error');
+          logger.error('[REAL-TIME TIMELINE] Real-time subscription error');
         }
       });
 

@@ -2,6 +2,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { createClient } from "@/lib/supabase/server";
 import { stripe } from "@/lib/stripe-client";
+import { apiLogger as logger } from '@/lib/logger';
 
 export async function GET(request: NextRequest) {
   try {
@@ -16,7 +17,7 @@ export async function GET(request: NextRequest) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
 
-    console.log('[DEBUG] Fetching subscription status for user:', user.id);
+    logger.debug('[DEBUG] Fetching subscription status for user:', user.id);
 
     // Try multiple approaches to get organization info
     let orgFound = false;
@@ -29,7 +30,7 @@ export async function GET(request: NextRequest) {
         .select('organization_id, organizations(*)')
         .eq('user_id', user.id);
 
-      console.log('[DEBUG] User venue roles query result:', { userVenueRoles, userVenueError });
+      logger.debug('[DEBUG] User venue roles query result:', { userVenueRoles, userVenueError });
 
       if (!userVenueError && userVenueRoles && userVenueRoles.length > 0) {
         const userVenueRole = userVenueRoles[0];
@@ -39,7 +40,7 @@ export async function GET(request: NextRequest) {
         }
       }
     } catch (error) {
-      console.log('[DEBUG] user_venue_roles query failed:', error);
+      logger.debug('[DEBUG] user_venue_roles query failed:', { error: error instanceof Error ? error.message : 'Unknown error' });
     }
 
     // Approach 2: Try organizations table directly
@@ -51,20 +52,20 @@ export async function GET(request: NextRequest) {
           .eq('owner_user_id', user.id)
           .single();
         
-        console.log('[DEBUG] Direct organization query result:', { directOrgs, directError });
+        logger.debug('[DEBUG] Direct organization query result:', { directOrgs, directError });
         
         if (!directError && directOrgs) {
           org = directOrgs;
           orgFound = true;
         }
       } catch (error) {
-        console.log('[DEBUG] Direct organizations query failed:', error);
+        logger.debug('[DEBUG] Direct organizations query failed:', { error: error instanceof Error ? error.message : 'Unknown error' });
       }
     }
 
     // Approach 3: If no organization exists, create a real one
     if (!orgFound) {
-      console.log('[DEBUG] No organization found, creating real organization for user:', user.id);
+      logger.debug('[DEBUG] No organization found, creating real organization for user:', user.id);
       try {
         const userName = user.user_metadata?.full_name || user.email?.split('@')[0] || 'User';
         const { data: newOrg, error: createError } = await supabase
@@ -84,11 +85,11 @@ export async function GET(request: NextRequest) {
           .single();
 
         if (createError) {
-          console.error('[DEBUG] Failed to create organization:', createError);
+          logger.error('[DEBUG] Failed to create organization:', createError);
         } else {
           org = newOrg;
           orgFound = true;
-          console.log('[DEBUG] Created new organization:', org.id);
+          logger.debug('[DEBUG] Created new organization:', org.id);
           
           // Link any existing venues to this organization
           await supabase
@@ -98,7 +99,7 @@ export async function GET(request: NextRequest) {
             .is("organization_id", null);
         }
       } catch (error) {
-        console.log('[DEBUG] Error creating organization:', error);
+        logger.debug('[DEBUG] Error creating organization:', { error: error instanceof Error ? error.message : 'Unknown error' });
       }
     }
 
@@ -118,13 +119,13 @@ export async function GET(request: NextRequest) {
     if (org.stripe_subscription_id) {
       try {
         stripeSubscription = await stripe.subscriptions.retrieve(org.stripe_subscription_id);
-        console.log('[DEBUG] Stripe subscription data:', {
+        logger.debug('[DEBUG] Stripe subscription data:', {
           id: stripeSubscription.id,
           status: stripeSubscription.status,
           metadata: stripeSubscription.metadata
         });
       } catch (stripeError) {
-        console.error('[DEBUG] Error fetching Stripe subscription:', stripeError);
+        logger.error('[DEBUG] Error fetching Stripe subscription:', stripeError);
       }
     }
 
@@ -152,7 +153,7 @@ export async function GET(request: NextRequest) {
     });
 
   } catch (error: any) {
-    console.error("[DEBUG] Error:", error);
+    logger.error("[DEBUG] Error:", { error: error instanceof Error ? error.message : 'Unknown error' });
     return NextResponse.json(
       { error: error.message || "Failed to debug subscription status" },
       { status: 500 }
@@ -183,7 +184,7 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    console.log('[DEBUG] Manually updating subscription status:', {
+    logger.debug('[DEBUG] Manually updating subscription status:', {
       organizationId,
       tier,
       subscriptionStatus,
@@ -204,14 +205,14 @@ export async function POST(request: NextRequest) {
       .eq("id", organizationId);
 
     if (updateError) {
-      console.error('[DEBUG] Error updating organization:', updateError);
+      logger.error('[DEBUG] Error updating organization:', updateError);
       return NextResponse.json(
         { error: "Failed to update organization" },
         { status: 500 }
       );
     }
 
-    console.log('[DEBUG] Successfully updated organization subscription status');
+    logger.debug('[DEBUG] Successfully updated organization subscription status');
 
     return NextResponse.json({
       success: true,
@@ -219,7 +220,7 @@ export async function POST(request: NextRequest) {
     });
 
   } catch (error: any) {
-    console.error("[DEBUG] Error:", error);
+    logger.error("[DEBUG] Error:", { error: error instanceof Error ? error.message : 'Unknown error' });
     return NextResponse.json(
       { error: error.message || "Failed to update subscription status" },
       { status: 500 }

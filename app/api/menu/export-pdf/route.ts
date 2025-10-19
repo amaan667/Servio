@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { createAdminClient } from '@/lib/supabase/server';
+import { logger } from '@/lib/logger';
 
 export const runtime = 'nodejs';
 
@@ -59,7 +60,7 @@ export async function GET(req: NextRequest) {
     });
 
   } catch (error: any) {
-    console.error('[EXPORT PDF] Error:', error);
+    logger.error('[EXPORT PDF] Error:', { error: error instanceof Error ? error.message : 'Unknown error' });
     return NextResponse.json(
       { ok: false, error: error.message || 'Failed to export PDF' },
       { status: 500 }

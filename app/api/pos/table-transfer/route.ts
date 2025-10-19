@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { createClient } from '@/lib/supabase/server';
 import { getAuthenticatedUser } from '@/lib/supabase/server';
+import { logger } from '@/lib/logger';
 
 export async function POST(req: NextRequest) {
   try {
@@ -54,7 +55,7 @@ export async function POST(req: NextRequest) {
           .eq('table_id', source_table_id);
 
         if (transferError) {
-          console.error('[POS TABLE TRANSFER] Error transferring orders:', transferError);
+          logger.error('[POS TABLE TRANSFER] Error transferring orders:', transferError);
           return NextResponse.json({ error: 'Failed to transfer orders' }, { status: 500 });
         }
 
@@ -76,7 +77,7 @@ export async function POST(req: NextRequest) {
           .eq('is_active', true);
 
         if (sourceError) {
-          console.error('[POS TABLE TRANSFER] Error fetching source orders:', sourceError);
+          logger.error('[POS TABLE TRANSFER] Error fetching source orders:', sourceError);
           return NextResponse.json({ error: 'Failed to fetch source orders' }, { status: 500 });
         }
 
@@ -90,7 +91,7 @@ export async function POST(req: NextRequest) {
             .eq('venue_id', venue_id);
 
           if (mergeError) {
-            console.error('[POS TABLE TRANSFER] Error merging orders:', mergeError);
+            logger.error('[POS TABLE TRANSFER] Error merging orders:', mergeError);
             return NextResponse.json({ error: 'Failed to merge orders' }, { status: 500 });
           }
         }
@@ -108,7 +109,7 @@ export async function POST(req: NextRequest) {
             .eq('closed_at', null);
 
           if (sessionError) {
-            console.error('[POS TABLE TRANSFER] Error closing source session:', sessionError);
+            logger.error('[POS TABLE TRANSFER] Error closing source session:', sessionError);
           }
         }
 
@@ -135,7 +136,7 @@ export async function POST(req: NextRequest) {
           .eq('table_id', source_table_id);
 
         if (splitError) {
-          console.error('[POS TABLE TRANSFER] Error splitting orders:', splitError);
+          logger.error('[POS TABLE TRANSFER] Error splitting orders:', splitError);
           return NextResponse.json({ error: 'Failed to split orders' }, { status: 500 });
         }
 
@@ -153,7 +154,7 @@ export async function POST(req: NextRequest) {
 
     return NextResponse.json(result);
   } catch (error) {
-    console.error('[POS TABLE TRANSFER] Unexpected error:', error);
+    logger.error('[POS TABLE TRANSFER] Unexpected error:', { error: error instanceof Error ? error.message : 'Unknown error' });
     return NextResponse.json({ error: 'Internal server error' }, { status: 500 });
   }
 }

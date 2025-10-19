@@ -7,6 +7,7 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
 import type { StockLevel } from '@/types/inventory';
+import { logger } from '@/lib/logger';
 
 interface StocktakeDialogProps {
   open: boolean;
@@ -45,7 +46,7 @@ export function StocktakeDialog({ open, onOpenChange, ingredient, onSuccess }: S
         setNote('');
       }
     } catch (error) {
-      console.error('Error performing stocktake:', error);
+      logger.error('Error performing stocktake:', error);
     } finally {
       setLoading(false);
     }

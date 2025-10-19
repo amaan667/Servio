@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { createAdminClient } from '@/lib/supabase/server';
+import { logger } from '@/lib/logger';
 
 export async function GET(request: NextRequest) {
   try {
@@ -37,7 +38,7 @@ export async function GET(request: NextRequest) {
             message: 'Table not created yet - using fallback mode'
           });
         }
-        console.error('[GROUP SESSION] Error fetching group session:', error);
+        logger.error('[GROUP SESSION] Error fetching group session:', { error: error instanceof Error ? error.message : 'Unknown error' });
         return NextResponse.json({ 
           ok: false, 
           error: `Failed to fetch group session: ${error.message}` 
@@ -68,7 +69,7 @@ export async function GET(request: NextRequest) {
     }
 
   } catch (error) {
-    console.error('[GROUP SESSION] Error in GET group session API:', error);
+    logger.error('[GROUP SESSION] Error in GET group session API:', { error: error instanceof Error ? error.message : 'Unknown error' });
     return NextResponse.json({ 
       ok: false, 
       error: 'Internal server error' 
@@ -112,7 +113,7 @@ export async function POST(request: NextRequest) {
             message: 'Table not created yet - using fallback mode'
           });
         }
-        console.error('[GROUP SESSION] Error fetching existing session:', fetchError);
+        logger.error('[GROUP SESSION] Error fetching existing session:', fetchError);
         return NextResponse.json({ 
           ok: false, 
           error: `Failed to fetch existing session: ${fetchError.message}` 
@@ -136,7 +137,7 @@ export async function POST(request: NextRequest) {
         .single();
 
       if (updateError) {
-        console.error('[GROUP SESSION] Error updating group session:', updateError);
+        logger.error('[GROUP SESSION] Error updating group session:', updateError);
         return NextResponse.json({ 
           ok: false, 
           error: `Failed to update group session: ${updateError.message}` 
@@ -178,7 +179,7 @@ export async function POST(request: NextRequest) {
         .single();
 
       if (createError) {
-        console.error('[GROUP SESSION] Error creating group session:', createError);
+        logger.error('[GROUP SESSION] Error creating group session:', createError);
         return NextResponse.json({ 
           ok: false, 
           error: `Failed to create group session: ${createError.message}` 
@@ -216,7 +217,7 @@ export async function POST(request: NextRequest) {
     }
 
   } catch (error) {
-    console.error('[GROUP SESSION] Error in POST group session API:', error);
+    logger.error('[GROUP SESSION] Error in POST group session API:', { error: error instanceof Error ? error.message : 'Unknown error' });
     return NextResponse.json({ 
       ok: false, 
       error: 'Internal server error' 

@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { createClient } from '@/lib/supabase/server';
+import { logger } from '@/lib/logger';
 
 // GET /api/inventory/low-stock?venue_id=xxx
 export async function GET(request: NextRequest) {
@@ -24,7 +25,7 @@ export async function GET(request: NextRequest) {
       .order('on_hand', { ascending: true });
 
     if (error) {
-      console.error('[INVENTORY API] Error fetching low stock:', error);
+      logger.error('[INVENTORY API] Error fetching low stock:', { error: error instanceof Error ? error.message : 'Unknown error' });
       return NextResponse.json(
         { error: error.message },
         { status: 500 }
@@ -52,7 +53,7 @@ export async function GET(request: NextRequest) {
 
     return NextResponse.json({ data: alerts });
   } catch (error) {
-    console.error('[INVENTORY API] Unexpected error:', error);
+    logger.error('[INVENTORY API] Unexpected error:', { error: error instanceof Error ? error.message : 'Unknown error' });
     return NextResponse.json(
       { error: 'Internal server error' },
       { status: 500 }

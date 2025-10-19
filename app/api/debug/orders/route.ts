@@ -1,5 +1,6 @@
 import { NextResponse } from 'next/server';
 import { createAdminClient } from '@/lib/supabase/server';
+import { apiLogger as logger } from '@/lib/logger';
 
 export const runtime = 'nodejs';
 export const dynamic = 'force-dynamic';
@@ -11,7 +12,7 @@ export async function GET(req: Request) {
     const { searchParams } = new URL(req.url);
     const sessionId = searchParams.get('sessionId');
     
-    console.log('[DEBUG ORDERS] Debug request for session:', sessionId);
+    logger.debug('[DEBUG ORDERS] Debug request for session:', sessionId);
     
     // Get all recent orders
     const thirtyMinutesAgo = new Date(Date.now() - 30 * 60 * 1000).toISOString();
@@ -23,7 +24,7 @@ export async function GET(req: Request) {
       .limit(20);
 
     if (recentError) {
-      console.error('[DEBUG ORDERS] Error fetching recent orders:', recentError);
+      logger.error('[DEBUG ORDERS] Error fetching recent orders:', recentError);
       return NextResponse.json({ 
         error: 'Failed to fetch orders',
         details: recentError.message 
@@ -47,7 +48,7 @@ export async function GET(req: Request) {
     });
 
   } catch (error) {
-    console.error('[DEBUG ORDERS] Error:', error);
+    logger.error('[DEBUG ORDERS] Error:', { error: error instanceof Error ? error.message : 'Unknown error' });
     return NextResponse.json({ 
       error: 'Internal server error',
       details: error instanceof Error ? error.message : 'Unknown error'

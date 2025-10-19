@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { createClient } from '@/lib/supabase/server';
+import { logger } from '@/lib/logger';
 
 export async function POST(
   request: NextRequest,
@@ -22,7 +23,7 @@ export async function POST(
     });
 
     if (error) {
-      console.error('Error marking reservation as no-show:', error);
+      logger.error('Error marking reservation as no-show:', { error: error instanceof Error ? error.message : 'Unknown error' });
       return NextResponse.json(
         { error: error.message },
         { status: 500 }
@@ -32,7 +33,7 @@ export async function POST(
     return NextResponse.json({ success: true });
 
   } catch (error) {
-    console.error('Error in no-show reservation API:', error);
+    logger.error('Error in no-show reservation API:', { error: error instanceof Error ? error.message : 'Unknown error' });
     return NextResponse.json(
       { error: 'Internal server error' },
       { status: 500 }

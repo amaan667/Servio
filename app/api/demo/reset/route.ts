@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { createClient } from '@/lib/supabase/server';
+import { logger } from '@/lib/logger';
 
 export const dynamic = 'force-dynamic';
 
@@ -23,7 +24,7 @@ export async function POST(request: NextRequest) {
       .lt('created_at', oneHourAgo);
     
     if (ordersError) {
-      console.error('[DEMO RESET] Error deleting old orders:', ordersError);
+      logger.error('[DEMO RESET] Error deleting old orders:', ordersError);
     }
     
     // Clear demo table sessions (older than 1 hour)
@@ -34,7 +35,7 @@ export async function POST(request: NextRequest) {
       .lt('created_at', oneHourAgo);
     
     if (sessionsError) {
-      console.error('[DEMO RESET] Error deleting old sessions:', sessionsError);
+      logger.error('[DEMO RESET] Error deleting old sessions:', sessionsError);
     }
     
     return NextResponse.json({
@@ -43,7 +44,7 @@ export async function POST(request: NextRequest) {
       timestamp: new Date().toISOString(),
     });
   } catch (error) {
-    console.error('[DEMO RESET] Error:', error);
+    logger.error('[DEMO RESET] Error:', { error: error instanceof Error ? error.message : 'Unknown error' });
     return NextResponse.json(
       { 
         success: false, 

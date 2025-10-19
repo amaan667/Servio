@@ -1,6 +1,7 @@
 // API endpoint to ensure a user has a real organization
 import { NextRequest, NextResponse } from "next/server";
 import { createClient, createAdminClient } from "@/lib/supabase/server";
+import { apiLogger, logger } from '@/lib/logger';
 
 // Disable caching to always get fresh data
 export const dynamic = 'force-dynamic';
@@ -14,22 +15,22 @@ export async function POST(request: NextRequest) {
     const { data: { user }, error: userError } = await supabase.auth.getUser();
     
     if (userError || !user) {
-      console.error("[ORG ENSURE] Auth error:", userError);
+      logger.error("[ORG ENSURE] Auth error:", userError);
       return NextResponse.json(
         { error: "Unauthorized", details: userError?.message },
         { status: 401 }
       );
     }
 
-    console.log("[ORG ENSURE] User authenticated:", user.id);
+    logger.debug("[ORG ENSURE] User authenticated:", user.id);
 
     // Use admin client to bypass RLS for organization operations
     let adminClient;
     try {
       adminClient = createAdminClient();
-      console.log("[ORG ENSURE] Admin client created successfully");
+      logger.debug("[ORG ENSURE] Admin client created successfully");
     } catch (adminError) {
-      console.error("[ORG ENSURE] Failed to create admin client:", adminError);
+      logger.error("[ORG ENSURE] Failed to create admin client:", adminError);
       return NextResponse.json(
         { error: "Admin client creation failed", details: String(adminError) },
         { status: 500 }
@@ -38,7 +39,7 @@ export async function POST(request: NextRequest) {
     
     // Verify SERVICE_ROLE_KEY is set
     if (!process.env.SUPABASE_SERVICE_ROLE_KEY) {
-      console.error("[ORG ENSURE] SUPABASE_SERVICE_ROLE_KEY is not set!");
+      logger.error("[ORG ENSURE] SUPABASE_SERVICE_ROLE_KEY is not set!");
       return NextResponse.json(
         { error: "Server configuration error: Missing SERVICE_ROLE_KEY" },
         { status: 500 }
@@ -46,7 +47,7 @@ export async function POST(request: NextRequest) {
     }
 
     // Check if user already has an organization
-    console.log("[ORG ENSURE] Checking for existing organization for user:", user.id);
+    logger.debug("[ORG ENSURE] Checking for existing organization for user:", user.id);
     const { data: existingOrg, error: orgCheckError } = await adminClient
       .from("organizations")
       .select("id, subscription_tier, subscription_status, is_grandfathered, trial_ends_at")
@@ -54,12 +55,12 @@ export async function POST(request: NextRequest) {
       .maybeSingle();
 
     if (orgCheckError) {
-      console.error("[ORG ENSURE] Error checking existing org:", orgCheckError);
+      logger.error("[ORG ENSURE] Error checking existing org:", orgCheckError);
     }
 
     // If organization exists, return it with no-cache headers
     if (existingOrg && !orgCheckError) {
-      console.log("[ORG ENSURE] Found existing organization:", existingOrg.id);
+      logger.debug("[ORG ENSURE] Found existing organization:", existingOrg.id);
       const response = NextResponse.json({
         success: true,
         organization: existingOrg,
@@ -74,7 +75,7 @@ export async function POST(request: NextRequest) {
       return response;
     }
 
-    console.log("[ORG ENSURE] No existing organization, creating new one");
+    logger.debug("[ORG ENSURE] No existing organization, creating new one");
 
     // Get user's name for organization name
     const userName = user.user_metadata?.full_name || user.email?.split('@')[0] || 'User';
@@ -97,10 +98,10 @@ export async function POST(request: NextRequest) {
       .single();
 
     if (createError) {
-      console.error("[ORG ENSURE] Error creating organization:", createError);
-      console.error("[ORG ENSURE] Error details:", JSON.stringify(createError, null, 2));
-      console.error("[ORG ENSURE] User ID:", user.id);
-      console.error("[ORG ENSURE] User metadata:", user.user_metadata);
+      logger.error("[ORG ENSURE] Error creating organization:", createError);
+      logger.error("[ORG ENSURE] Error details:", JSON.stringify(createError, null, 2));
+      logger.error("[ORG ENSURE] User ID:", user.id);
+      logger.error("[ORG ENSURE] User metadata:", user.user_metadata);
       return NextResponse.json(
         { 
           error: "Failed to create organization", 
@@ -141,7 +142,7 @@ export async function POST(request: NextRequest) {
         });
     }
 
-    console.log("[ORG ENSURE] Created new organization:", newOrg.id, "for user:", user.id);
+    logger.debug("[ORG ENSURE] Created new organization:", newOrg.id, "for user:", user.id);
 
     const response = NextResponse.json({
       success: true,
@@ -157,7 +158,7 @@ export async function POST(request: NextRequest) {
     return response;
 
   } catch (error: any) {
-    console.error("[ORG ENSURE] Unexpected error:", error);
+    logger.error("[ORG ENSURE] Unexpected error:", { error: error instanceof Error ? error.message : 'Unknown error' });
     return NextResponse.json(
       { error: "Internal server error", details: error.message },
       { status: 500 }

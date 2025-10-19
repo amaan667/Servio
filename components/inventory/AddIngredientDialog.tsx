@@ -7,6 +7,7 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import type { IngredientUnit } from '@/types/inventory';
+import { logger } from '@/lib/logger';
 
 interface AddIngredientDialogProps {
   open: boolean;
@@ -66,7 +67,7 @@ export function AddIngredientDialog({ open, onOpenChange, venueId, onSuccess }: 
         });
       }
     } catch (error) {
-      console.error('Error adding ingredient:', error);
+      logger.error('Error adding ingredient:', error);
     } finally {
       setLoading(false);
     }

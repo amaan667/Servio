@@ -1,6 +1,7 @@
 import { NextResponse } from 'next/server';
 import { createAdminClient } from '@/lib/supabase/server';
 import type { FeedbackAnswer } from '@/types/feedback';
+import { logger } from '@/lib/logger';
 
 export const runtime = 'nodejs';
 
@@ -79,7 +80,7 @@ export async function POST(req: Request) {
         .eq('is_active', true);
 
       if (questionsError) {
-        console.error('[FEEDBACK][R] questions fetch error:', questionsError.message);
+        logger.error('[FEEDBACK][R] questions fetch error:', questionsError.message);
         return NextResponse.json({ error: 'Failed to validate questions' }, { status: 500 });
       }
       
@@ -186,7 +187,7 @@ export async function POST(req: Request) {
       .select('id');
 
     if (error) {
-      console.error('[FEEDBACK][R] insert error:', error.message);
+      logger.error('[FEEDBACK][R] insert error:', error.message);
       return NextResponse.json({ 
         error: 'Failed to save responses' 
       }, { status: 500 });
@@ -198,7 +199,7 @@ export async function POST(req: Request) {
     });
 
   } catch (error: any) {
-    console.error('[FEEDBACK][R] insert exception:', error.message);
+    logger.error('[FEEDBACK][R] insert exception:', error.message);
     return NextResponse.json({ 
       error: 'Failed to submit feedback' 
     }, { status: 500 });

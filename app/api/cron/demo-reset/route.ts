@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { createClient } from '@/lib/supabase/server';
+import { apiLogger } from '@/lib/logger';
 
 export const dynamic = 'force-dynamic';
 export const runtime = 'edge';
@@ -46,7 +47,7 @@ export async function GET(request: NextRequest) {
     
     const sessionsDeleted = deletedSessions?.length || 0;
     
-    console.log('[DEMO RESET CRON] Completed:', {
+    apiLogger.debug('[DEMO RESET CRON] Completed:', {
       ordersDeleted,
       sessionsDeleted,
       timestamp: new Date().toISOString(),
@@ -63,7 +64,7 @@ export async function GET(request: NextRequest) {
       }
     });
   } catch (error) {
-    console.error('[DEMO RESET CRON] Error:', error);
+    apiLogger.error('[DEMO RESET CRON] Error:', { error: error instanceof Error ? error.message : 'Unknown error' });
     return NextResponse.json(
       { 
         success: false, 

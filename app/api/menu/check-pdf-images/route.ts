@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { createAdminClient } from '@/lib/supabase/server';
+import { logger } from '@/lib/logger';
 
 /**
  * Check PDF images status for a venue
@@ -53,7 +54,7 @@ export async function GET(req: NextRequest) {
     });
 
   } catch (error: any) {
-    console.error('[CHECK PDF IMAGES] Error:', error);
+    logger.error('[CHECK PDF IMAGES] Error:', { error: error instanceof Error ? error.message : 'Unknown error' });
     return NextResponse.json({ 
       ok: false, 
       error: error.message || 'Failed to check PDF images' 

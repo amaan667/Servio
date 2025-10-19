@@ -1,12 +1,13 @@
 import { NextResponse } from 'next/server';
 import { createAdminClient } from '@/lib/supabase/server';
+import { apiLogger, logger } from '@/lib/logger';
 
 export const runtime = 'nodejs';
 
 export async function POST(req: Request) {
   try {
     const supabaseAdmin = createAdminClient();
-    console.log('[SETUP KDS] Starting KDS setup...');
+    logger.debug('[SETUP KDS] Starting KDS setup...');
     
     // Create KDS Stations table
     const createStationsTable = `
@@ -52,7 +53,7 @@ export async function POST(req: Request) {
     });
     
     if (stationsError) {
-      console.warn('[SETUP KDS] Stations table warning:', stationsError.message);
+      logger.warn('[SETUP KDS] Stations table warning:', stationsError.message);
     }
     
     const { error: ticketsError } = await supabaseAdmin.rpc('exec', {
@@ -60,7 +61,7 @@ export async function POST(req: Request) {
     });
     
     if (ticketsError) {
-      console.warn('[SETUP KDS] Tickets table warning:', ticketsError.message);
+      logger.warn('[SETUP KDS] Tickets table warning:', ticketsError.message);
     }
     
     // Create indexes
@@ -110,13 +111,13 @@ export async function POST(req: Request) {
             });
           
           if (insertError) {
-            console.warn(`[SETUP KDS] Station creation warning for ${venue.venue_id}:`, insertError.message);
+            logger.warn(`[SETUP KDS] Station creation warning for ${venue.venue_id}:`, insertError.message);
           }
         }
       }
     }
     
-    console.log('[SETUP KDS] KDS setup completed successfully');
+    logger.debug('[SETUP KDS] KDS setup completed successfully');
     
     return NextResponse.json({ 
       ok: true, 
@@ -125,7 +126,7 @@ export async function POST(req: Request) {
     });
     
   } catch (error: any) {
-    console.error('[SETUP KDS] Unexpected error:', error);
+    logger.error('[SETUP KDS] Unexpected error:', { error: error instanceof Error ? error.message : 'Unknown error' });
     return NextResponse.json({ 
       ok: false, 
       error: error.message || 'KDS setup failed' 

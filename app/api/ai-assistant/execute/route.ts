@@ -5,6 +5,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { createClient } from "@/lib/supabase/server";
 import { executeTool } from "@/lib/ai/tool-executors";
 import { z } from "zod";
+import { apiLogger, logger } from '@/lib/logger';
 import {
   ToolName,
   TOOL_SCHEMAS,
@@ -70,7 +71,7 @@ export async function POST(request: NextRequest) {
       }
     } catch (tableError) {
       // Table doesn't exist - check if user owns venue
-      console.log("[AI ASSISTANT] user_venue_roles table check failed, checking venue ownership:", tableError);
+      logger.debug("[AI ASSISTANT] user_venue_roles table check failed, checking venue ownership:", { error: tableError instanceof Error ? tableError.message : 'Unknown error' });
       
       const { data: venue } = await supabase
         .from("venues")
@@ -177,7 +178,7 @@ export async function POST(request: NextRequest) {
       executionTimeMs: executionTime,
     });
   } catch (error: any) {
-    console.error("[AI ASSISTANT] Execution error:", error);
+    logger.error("[AI ASSISTANT] Execution error:", { error: error instanceof Error ? error.message : 'Unknown error' });
 
     if (error.name === "ZodError") {
       return NextResponse.json(

@@ -5,6 +5,7 @@
 
 import { z } from 'zod';
 import { ParsedCatalog, ParsedItem, ParsedCategory, ValidationResult } from './types';
+import { logger } from '@/lib/logger';
 
 /**
  * Extended schema for the new catalog system with options and variants
@@ -228,7 +229,7 @@ export async function replaceCatalogAtomically(
     });
     
     if (error) {
-      console.error('[CATALOG_REPLACE] RPC call failed:', error);
+      logger.error('[CATALOG_REPLACE] RPC call failed:', error);
       throw new Error(`Database replacement failed: ${error.message}`);
     }
     
@@ -239,7 +240,7 @@ export async function replaceCatalogAtomically(
     };
     
   } catch (error: any) {
-    console.error('[CATALOG_REPLACE] Atomic replacement failed:', error);
+    logger.error('[CATALOG_REPLACE] Atomic replacement failed:', error);
     return {
       success: false,
       error: error.message
@@ -262,7 +263,7 @@ export async function validateCatalogPayload(
     });
     
     if (error) {
-      console.error('[CATALOG_VALIDATE] Validation RPC failed:', error);
+      logger.error('[CATALOG_VALIDATE] Validation RPC failed:', error);
       return {
         valid: false,
         errors: [`Validation RPC failed: ${error.message}`],
@@ -284,7 +285,7 @@ export async function validateCatalogPayload(
     };
     
   } catch (error: any) {
-    console.error('[CATALOG_VALIDATE] Validation failed:', error);
+    logger.error('[CATALOG_VALIDATE] Validation failed:', error);
     return {
       valid: false,
       errors: [`Validation failed: ${error.message}`],

@@ -1,6 +1,7 @@
 import { NextResponse } from 'next/server';
 import { createClient } from '@/lib/supabase/server';
 import { cleanupTableOnOrderCompletion } from '@/lib/table-cleanup';
+import { apiLogger, logger } from '@/lib/logger';
 
 export const runtime = 'nodejs';
 
@@ -41,9 +42,9 @@ export async function PATCH(req: Request, context: { params: Promise<{ id: strin
         p_order_id: id,
         p_venue_id: data.venue_id,
       });
-      console.log('[INVENTORY] Stock deducted for order:', id);
+      logger.debug('[INVENTORY] Stock deducted for order:', id);
     } catch (inventoryError) {
-      console.error('[INVENTORY] Error deducting stock:', inventoryError);
+      logger.error('[INVENTORY] Error deducting stock:', inventoryError);
       // Don't fail the order completion if inventory deduction fails
     }
   }
@@ -61,9 +62,9 @@ export async function PATCH(req: Request, context: { params: Promise<{ id: strin
       });
 
       if (!cleanupResult.success) {
-        console.error('[DASHBOARD ORDER] Table cleanup failed:', cleanupResult.error);
+        logger.error('[DASHBOARD ORDER] Table cleanup failed:', cleanupResult.error);
       } else {
-        console.log('[DASHBOARD ORDER] Table cleanup successful:', cleanupResult.details);
+        logger.debug('[DASHBOARD ORDER] Table cleanup successful:', cleanupResult.details);
       }
     }
   }

@@ -11,6 +11,7 @@ import { todayWindowForTZ } from "@/lib/time";
 import { useTabCounts } from "@/hooks/use-tab-counts";
 import { OrderCard } from '@/components/orders/OrderCard';
 import { mapOrderToCardData } from '@/lib/orders/mapOrderToCardData';
+import { logger } from '@/lib/logger';
 
 type OrdersClientProps = {
   venueId: string;
@@ -113,7 +114,7 @@ const OrdersClient: React.FC<OrdersClientProps> = ({ venueId, initialOrders = []
           .order('created_at', { ascending: false });
           
         if (fetchError) {
-          console.error('Error fetching orders:', fetchError);
+          logger.error('Error fetching orders:', fetchError);
           setLoading(false);
           return;
         }
@@ -166,7 +167,7 @@ const OrdersClient: React.FC<OrdersClientProps> = ({ venueId, initialOrders = []
       
       setLoading(false);
     } catch (error) {
-      console.error('Error loading orders:', error);
+      logger.error('Error loading orders:', error);
       setLoading(false);
     }
   }, [venueId, initialOrders]);

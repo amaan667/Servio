@@ -1,13 +1,14 @@
 import { NextResponse } from 'next/server';
 import { createServerSupabase } from '@/lib/supabase/server';
 import { createAdminClient } from '@/lib/supabase/server';
+import { apiLogger, logger } from '@/lib/logger';
 
 // Function to automatically backfill missing KDS tickets for orders
 async function autoBackfillMissingTickets(venueId: string) {
   try {
     const supabaseAdmin = createAdminClient();
     
-    console.log('[KDS AUTO-BACKFILL] Checking for orders without KDS tickets...');
+    logger.debug('[KDS AUTO-BACKFILL] Checking for orders without KDS tickets...');
     
     // Get today's orders that should have KDS tickets but don't
     const todayStart = new Date();
@@ -23,11 +24,11 @@ async function autoBackfillMissingTickets(venueId: string) {
       .not('id', 'in', `(SELECT DISTINCT order_id FROM kds_tickets WHERE venue_id = '${venueId}')`);
 
     if (!ordersWithoutTickets || ordersWithoutTickets.length === 0) {
-      console.log('[KDS AUTO-BACKFILL] No orders found without KDS tickets');
+      logger.debug('[KDS AUTO-BACKFILL] No orders found without KDS tickets');
       return;
     }
 
-    console.log(`[KDS AUTO-BACKFILL] Found ${ordersWithoutTickets.length} orders without KDS tickets, creating tickets...`);
+    logger.debug(`[KDS AUTO-BACKFILL] Found ${ordersWithoutTickets.length} orders without KDS tickets, creating tickets...`);
 
     // Get expo station for this venue
     const { data: expoStation } = await supabaseAdmin
@@ -40,7 +41,7 @@ async function autoBackfillMissingTickets(venueId: string) {
       .single();
 
     if (!expoStation) {
-      console.log('[KDS AUTO-BACKFILL] No expo station found, skipping backfill');
+      logger.debug('[KDS AUTO-BACKFILL] No expo station found, skipping backfill');
       return;
     }
 
@@ -73,13 +74,13 @@ async function autoBackfillMissingTickets(venueId: string) {
           .insert(ticketData);
       }
 
-      console.log(`[KDS AUTO-BACKFILL] Created tickets for order ${order.id}`);
+      logger.debug(`[KDS AUTO-BACKFILL] Created tickets for order ${order.id}`);
     }
 
-    console.log(`[KDS AUTO-BACKFILL] Auto-backfill completed for ${ordersWithoutTickets.length} orders`);
+    logger.debug(`[KDS AUTO-BACKFILL] Auto-backfill completed for ${ordersWithoutTickets.length} orders`);
 
   } catch (error) {
-    console.error('[KDS AUTO-BACKFILL] Error during auto-backfill:', error);
+    logger.error('[KDS AUTO-BACKFILL] Error during auto-backfill:', { error: error instanceof Error ? error.message : 'Unknown error' });
     throw error;
   }
 }
@@ -148,7 +149,7 @@ export async function GET(req: Request) {
     const { data: tickets, error } = await query;
 
     if (error) {
-      console.error('[KDS] Error fetching tickets:', error);
+      logger.error('[KDS] Error fetching tickets:', { error: error instanceof Error ? error.message : 'Unknown error' });
       return NextResponse.json(
         { ok: false, error: error.message },
         { status: 500 }
@@ -159,7 +160,7 @@ export async function GET(req: Request) {
     try {
       await autoBackfillMissingTickets(venueId);
     } catch (backfillError) {
-      console.warn('[KDS] Auto-backfill failed (non-critical):', backfillError);
+      logger.warn('[KDS] Auto-backfill failed (non-critical):', backfillError);
       // Don't fail the request if backfill fails
     }
 
@@ -167,7 +168,7 @@ export async function GET(req: Request) {
     const { data: finalTickets, error: finalError } = await query;
 
     if (finalError) {
-      console.error('[KDS] Error fetching tickets after backfill:', finalError);
+      logger.error('[KDS] Error fetching tickets after backfill:', finalError);
       return NextResponse.json(
         { ok: false, error: finalError.message },
         { status: 500 }
@@ -179,7 +180,7 @@ export async function GET(req: Request) {
       tickets: finalTickets || []
     });
   } catch (error: any) {
-    console.error('[KDS] Unexpected error:', error);
+    logger.error('[KDS] Unexpected error:', { error: error instanceof Error ? error.message : 'Unknown error' });
     return NextResponse.json(
       { ok: false, error: error.message || 'Internal server error' },
       { status: 500 }
@@ -257,7 +258,7 @@ export async function PATCH(req: Request) {
       .single();
 
     if (error) {
-      console.error('[KDS] Error updating ticket:', error);
+      logger.error('[KDS] Error updating ticket:', { error: error instanceof Error ? error.message : 'Unknown error' });
       return NextResponse.json(
         { ok: false, error: error.message },
         { status: 500 }
@@ -275,10 +276,10 @@ export async function PATCH(req: Request) {
         .eq('id', ticket.order_id);
 
       if (orderUpdateError) {
-        console.error('[KDS] Error updating order status after bump:', orderUpdateError);
+        logger.error('[KDS] Error updating order status after bump:', orderUpdateError);
         // Don't fail the request, just log the error
       } else {
-        console.log(`[KDS] Updated order ${ticket.order_id} status to SERVED after bump`);
+        logger.debug(`[KDS] Updated order ${ticket.order_id} status to SERVED after bump`);
       }
     }
 
@@ -287,7 +288,7 @@ export async function PATCH(req: Request) {
       ticket
     });
   } catch (error: any) {
-    console.error('[KDS] Unexpected error:', error);
+    logger.error('[KDS] Unexpected error:', { error: error instanceof Error ? error.message : 'Unknown error' });
     return NextResponse.json(
       { ok: false, error: error.message || 'Internal server error' },
       { status: 500 }

@@ -1,6 +1,7 @@
 import { NextResponse } from 'next/server';
 import { createServerClient } from '@supabase/ssr';
 import { cookies } from 'next/headers';
+import { logger } from '@/lib/logger';
 
 export const runtime = 'nodejs';
 
@@ -43,7 +44,7 @@ export async function POST(req: Request) {
       .single();
 
     if (updateError || !order) {
-      console.error('[PAY TILL] Failed to update order:', updateError);
+      logger.error('[PAY TILL] Failed to update order:', updateError);
       return NextResponse.json({ 
         success: false, 
         error: 'Failed to process order' 
@@ -62,7 +63,7 @@ export async function POST(req: Request) {
     });
 
   } catch (error) {
-    console.error('[PAY TILL] Error:', error);
+    logger.error('[PAY TILL] Error:', { error: error instanceof Error ? error.message : 'Unknown error' });
     return NextResponse.json({ 
       success: false, 
       error: 'Internal server error' 

@@ -1,6 +1,7 @@
 import { NextResponse } from 'next/server';
 import { createClient } from '@/lib/supabase/server';
 import { getAuthenticatedUser } from '@/lib/supabase/server';
+import { logger } from '@/lib/logger';
 
 export const runtime = 'nodejs';
 
@@ -53,7 +54,7 @@ export async function POST(
     });
 
     if (error) {
-      console.error('[TABLES CLOSE] Error:', error);
+      logger.error('[TABLES CLOSE] Error:', { error: error instanceof Error ? error.message : 'Unknown error' });
       return NextResponse.json({ ok: false, error: error.message }, { status: 400 });
     }
 
@@ -63,7 +64,7 @@ export async function POST(
     });
 
   } catch (error) {
-    console.error('[TABLES CLOSE] Unexpected error:', error);
+    logger.error('[TABLES CLOSE] Unexpected error:', { error: error instanceof Error ? error.message : 'Unknown error' });
     return NextResponse.json({ ok: false, error: 'Internal server error' }, { status: 500 });
   }
 }

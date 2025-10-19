@@ -1,6 +1,7 @@
 "use client";
 import { createClient } from "@/lib/supabase/client";
 import { getAuthRedirectUrl } from "@/lib/auth";
+import { authLogger as logger } from '@/lib/logger';
 
 export async function signInWithGoogle() {
   
@@ -37,14 +38,14 @@ export async function signInWithGoogle() {
 
   const redirectTo = getAuthRedirectUrl('/auth/callback');
 
-  console.log('[AUTH] Environment check:', {
+  logger.debug('[AUTH] Environment check:', {
     NEXT_PUBLIC_SITE_URL: process.env.NEXT_PUBLIC_SITE_URL,
     NEXT_PUBLIC_APP_URL: process.env.NEXT_PUBLIC_APP_URL,
     NODE_ENV: process.env.NODE_ENV,
     origin: window.location.origin
   });
 
-  console.log('[AUTH] Supabase config check:', {
+  logger.debug('[AUTH] Supabase config check:', {
     url: process.env.NEXT_PUBLIC_SUPABASE_URL?.substring(0, 20) + '...',
     hasAnonKey: !!process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY,
   });
@@ -52,13 +53,13 @@ export async function signInWithGoogle() {
   // Test Supabase connection before OAuth
   try {
     const { data: testData, error: testError } = await sb.auth.getSession();
-    console.log('[AUTH] Session test:', {
+    logger.debug('[AUTH] Session test:', {
       hasTestData: !!testData,
       hasTestError: !!testError,
       testErrorMessage: testError?.message
     });
   } catch (testErr) {
-    console.log('[AUTH] Session test error:', testErr);
+    logger.debug('[AUTH] Session test error:', testErr);
   }
 
   
@@ -67,7 +68,7 @@ export async function signInWithGoogle() {
     sessionStorage.setItem("sb_oauth_in_progress", "true");
     sessionStorage.setItem("sb_oauth_start_time", Date.now().toString());
   } catch (e) {
-    console.log('[AUTH] Session storage error:', e);
+    logger.debug('[AUTH] Session storage error:', e);
   }
   
   const { data, error } = await sb.auth.signInWithOAuth({
@@ -81,7 +82,7 @@ export async function signInWithGoogle() {
     },
   });
 
-  console.log('[AUTH] OAuth result:', {
+  logger.debug('[AUTH] OAuth result:', {
     hasData: !!data,
     hasError: !!error,
     errorMessage: error?.message,
@@ -91,7 +92,7 @@ export async function signInWithGoogle() {
   });
 
   if (error) {
-    console.error('[AUTH DEBUG] OAuth error details:', {
+    logger.error('[AUTH DEBUG] OAuth error details:', {
       message: error.message,
       status: error.status,
       name: error.name,
@@ -112,8 +113,8 @@ export async function signInWithGoogle() {
     // Redirect immediately - no artificial delay
     window.location.href = data.url;
   } else {
-    console.error('[AUTH DEBUG] No OAuth URL received from Supabase');
-    console.error('[AUTH DEBUG] Full OAuth response data:', data);
+    logger.error('[AUTH DEBUG] No OAuth URL received from Supabase');
+    logger.error('[AUTH DEBUG] Full OAuth response data:', data);
     throw new Error('No OAuth URL received');
   }
 

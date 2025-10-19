@@ -1,4 +1,5 @@
 import { useState, useEffect } from 'react';
+import { logger } from '@/lib/logger';
 
 export interface GroupSession {
   id: string;
@@ -47,7 +48,7 @@ export function useGroupSessions(venueId: string): UseGroupSessionsReturn {
         throw new Error(data.error || 'Failed to fetch group sessions');
       }
     } catch (err) {
-      console.error('[USE GROUP SESSIONS] Error fetching group sessions:', err);
+      logger.error('[USE GROUP SESSIONS] Error fetching group sessions:', err);
       setError(err instanceof Error ? err.message : 'Unknown error');
       setGroupSessions([]);
     } finally {

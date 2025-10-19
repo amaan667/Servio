@@ -1,6 +1,7 @@
 // Test API to manually update subscription status
 import { NextRequest, NextResponse } from "next/server";
 import { createClient } from "@/lib/supabase/server";
+import { apiLogger, logger } from '@/lib/logger';
 
 export async function POST(request: NextRequest) {
   try {
@@ -18,7 +19,7 @@ export async function POST(request: NextRequest) {
     const body = await request.json();
     const { tier, status = 'trialing' } = body;
 
-    console.log('[TEST] Manually updating subscription status for user:', user.id);
+    logger.debug('[TEST] Manually updating subscription status for user:', user.id);
 
     // If no tier provided, try to detect from Stripe
     let detectedTier = tier;
@@ -39,9 +40,9 @@ export async function POST(request: NextRequest) {
           const stripe = require('@/lib/stripe-client').stripe;
           const stripeSubscription = await stripe.subscriptions.retrieve(existingOrgs.stripe_subscription_id);
           detectedTier = stripeSubscription.metadata?.tier || 'basic';
-          console.log('[TEST] Detected tier from Stripe:', detectedTier);
+          logger.debug('[TEST] Detected tier from Stripe:', detectedTier);
         } catch (stripeError) {
-          console.error('[TEST] Error fetching from Stripe:', stripeError);
+          logger.error('[TEST] Error fetching from Stripe:', stripeError);
           detectedTier = 'basic'; // Default fallback
         }
       } else {
@@ -68,7 +69,7 @@ export async function POST(request: NextRequest) {
         }
       }
     } catch (error) {
-      console.log('[TEST] user_venue_roles query failed:', error);
+      logger.debug('[TEST] user_venue_roles query failed:', { error: error instanceof Error ? error.message : 'Unknown error' });
     }
 
     // Approach 2: Try organizations table directly
@@ -85,7 +86,7 @@ export async function POST(request: NextRequest) {
           orgFound = true;
         }
       } catch (error) {
-        console.log('[TEST] Direct organizations query failed:', error);
+        logger.debug('[TEST] Direct organizations query failed:', { error: error instanceof Error ? error.message : 'Unknown error' });
       }
     }
 
@@ -106,7 +107,7 @@ export async function POST(request: NextRequest) {
           .single();
 
         if (createError) {
-          console.error('[TEST] Error creating organization:', createError);
+          logger.error('[TEST] Error creating organization:', createError);
           return NextResponse.json(
             { error: "Failed to create organization" },
             { status: 500 }
@@ -115,9 +116,9 @@ export async function POST(request: NextRequest) {
 
         orgId = newOrg.id;
         orgFound = true;
-        console.log('[TEST] Created new organization:', orgId);
+        logger.debug('[TEST] Created new organization:', orgId);
       } catch (error) {
-        console.error('[TEST] Error creating organization:', error);
+        logger.error('[TEST] Error creating organization:', { error: error instanceof Error ? error.message : 'Unknown error' });
         return NextResponse.json(
           { error: "Failed to create organization" },
           { status: 500 }
@@ -133,7 +134,7 @@ export async function POST(request: NextRequest) {
       updated_at: new Date().toISOString(),
     };
 
-    console.log('[TEST] Updating organization with data:', updateData);
+    logger.debug('[TEST] Updating organization with data:', updateData);
 
     const { error: updateError } = await supabase
       .from("organizations")
@@ -141,14 +142,14 @@ export async function POST(request: NextRequest) {
       .eq("id", orgId);
 
     if (updateError) {
-      console.error('[TEST] Error updating organization:', updateError);
+      logger.error('[TEST] Error updating organization:', updateError);
       return NextResponse.json(
         { error: "Failed to update organization" },
         { status: 500 }
       );
     }
 
-    console.log('[TEST] Successfully updated organization subscription status');
+    logger.debug('[TEST] Successfully updated organization subscription status');
 
     return NextResponse.json({
       success: true,
@@ -157,7 +158,7 @@ export async function POST(request: NextRequest) {
     });
 
   } catch (error: any) {
-    console.error("[TEST] Error:", error);
+    logger.error("[TEST] Error:", { error: error instanceof Error ? error.message : 'Unknown error' });
     return NextResponse.json(
       { error: error.message || "Failed to update subscription status" },
       { status: 500 }

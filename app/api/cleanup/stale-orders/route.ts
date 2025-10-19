@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { createClient, getAuthenticatedUser } from '@/lib/supabase/server';
 import { cleanupTableOnOrderCompletion } from '@/lib/table-cleanup';
+import { apiLogger, logger } from '@/lib/logger';
 
 export const runtime = 'nodejs';
 
@@ -47,7 +48,7 @@ export async function POST(req: NextRequest) {
     const { data: staleOrders, error: fetchError } = await staleOrdersQuery;
 
     if (fetchError) {
-      console.error('[STALE ORDERS CLEANUP] Error fetching stale orders:', fetchError);
+      logger.error('[STALE ORDERS CLEANUP] Error fetching stale orders:', fetchError);
       return NextResponse.json({ error: 'Failed to fetch orders' }, { status: 500 });
     }
 
@@ -60,7 +61,7 @@ export async function POST(req: NextRequest) {
       });
     }
 
-    console.log(`[STALE ORDERS CLEANUP] Found ${staleOrders.length} stale orders to clean up`);
+    logger.debug(`[STALE ORDERS CLEANUP] Found ${staleOrders.length} stale orders to clean up`);
 
     // Update orders to completed
     const orderIds = staleOrders.map(order => order.id);
@@ -73,7 +74,7 @@ export async function POST(req: NextRequest) {
       .in('id', orderIds);
 
     if (updateError) {
-      console.error('[STALE ORDERS CLEANUP] Error updating orders:', updateError);
+      logger.error('[STALE ORDERS CLEANUP] Error updating orders:', updateError);
       return NextResponse.json({ error: 'Failed to update orders' }, { status: 500 });
     }
 
@@ -104,14 +105,14 @@ export async function POST(req: NextRequest) {
     cleanupResults.forEach((result, index) => {
       if (result.status === 'fulfilled' && result.value.success) {
         successfulCleanups++;
-        console.log(`[STALE ORDERS CLEANUP] Table cleanup ${index + 1} successful`);
+        logger.debug(`[STALE ORDERS CLEANUP] Table cleanup ${index + 1} successful`);
       } else {
-        console.error(`[STALE ORDERS CLEANUP] Table cleanup ${index + 1} failed:`, 
+        logger.error(`[STALE ORDERS CLEANUP] Table cleanup ${index + 1} failed:`, 
           result.status === 'fulfilled' ? result.value.error : result.reason);
       }
     });
 
-    console.log(`[STALE ORDERS CLEANUP] Completed ${staleOrders.length} orders and cleaned ${successfulCleanups} tables`);
+    logger.debug(`[STALE ORDERS CLEANUP] Completed ${staleOrders.length} orders and cleaned ${successfulCleanups} tables`);
 
     return NextResponse.json({
       success: true,
@@ -127,7 +128,7 @@ export async function POST(req: NextRequest) {
     });
 
   } catch (error) {
-    console.error('[STALE ORDERS CLEANUP] Unexpected error:', error);
+    logger.error('[STALE ORDERS CLEANUP] Unexpected error:', { error: error instanceof Error ? error.message : 'Unknown error' });
     return NextResponse.json({ error: 'Internal server error' }, { status: 500 });
   }
 }

@@ -1,5 +1,6 @@
 import { NextResponse } from 'next/server';
 import { createServerSupabase } from '@/lib/supabase/server';
+import { apiLogger, logger } from '@/lib/logger';
 
 // PATCH - Bulk update multiple tickets (e.g., bump all ready tickets for an order)
 export async function PATCH(req: Request) {
@@ -71,7 +72,7 @@ export async function PATCH(req: Request) {
     const { data: tickets, error } = await query.select();
 
     if (error) {
-      console.error('[KDS] Error bulk updating tickets:', error);
+      logger.error('[KDS] Error bulk updating tickets:', { error: error instanceof Error ? error.message : 'Unknown error' });
       return NextResponse.json(
         { ok: false, error: error.message },
         { status: 500 }
@@ -89,10 +90,10 @@ export async function PATCH(req: Request) {
         .eq('id', orderId);
 
       if (orderUpdateError) {
-        console.error('[KDS] Error updating order status after bump:', orderUpdateError);
+        logger.error('[KDS] Error updating order status after bump:', orderUpdateError);
         // Don't fail the request, just log the error
       } else {
-        console.log(`[KDS] Updated order ${orderId} status to SERVED after bump`);
+        logger.debug(`[KDS] Updated order ${orderId} status to SERVED after bump`);
       }
     }
 
@@ -102,7 +103,7 @@ export async function PATCH(req: Request) {
       tickets
     });
   } catch (error: any) {
-    console.error('[KDS] Unexpected error:', error);
+    logger.error('[KDS] Unexpected error:', { error: error instanceof Error ? error.message : 'Unknown error' });
     return NextResponse.json(
       { ok: false, error: error.message || 'Internal server error' },
       { status: 500 }

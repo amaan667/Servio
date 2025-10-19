@@ -16,6 +16,7 @@ import {
   ArrowRight
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
+import { logger } from '@/lib/logger';
 
 interface KDSStation {
   id: string;
@@ -81,7 +82,7 @@ export default function KDSClient({ venueId, venueName }: KDSClientProps) {
         setError(data.error || 'Failed to load stations');
       }
     } catch (err: any) {
-      console.error('[KDS] Error fetching stations:', err);
+      logger.error('[KDS] Error fetching stations:', err);
       setError(err.message);
     }
   }, [venueId, selectedStation]);
@@ -100,7 +101,7 @@ export default function KDSClient({ venueId, venueName }: KDSClientProps) {
         setError(data.error || 'Failed to load tickets');
       }
     } catch (err: any) {
-      console.error('[KDS] Error fetching tickets:', err);
+      logger.error('[KDS] Error fetching tickets:', err);
       setError(err.message);
     } finally {
       setLoading(false);
@@ -124,10 +125,10 @@ export default function KDSClient({ venueId, venueName }: KDSClientProps) {
           prev.map(t => t.id === ticketId ? { ...t, ...data.ticket } : t)
         );
       } else {
-        console.error('[KDS] Error updating ticket:', data.error);
+        logger.error('[KDS] Error updating ticket:', data.error);
       }
     } catch (err: any) {
-      console.error('[KDS] Error updating ticket:', err);
+      logger.error('[KDS] Error updating ticket:', err);
     }
   }, []);
 
@@ -147,7 +148,7 @@ export default function KDSClient({ venueId, venueName }: KDSClientProps) {
         setTickets(prev => prev.filter(t => t.order_id !== orderId));
       }
     } catch (err: any) {
-      console.error('[KDS] Error bumping order:', err);
+      logger.error('[KDS] Error bumping order:', err);
     }
   }, []);
 
@@ -215,7 +216,7 @@ export default function KDSClient({ venueId, venueName }: KDSClientProps) {
         table: 'kds_tickets',
         filter: `venue_id=eq.${venueId}`
       }, (payload: any) => {
-        console.log('[KDS] Realtime update:', payload);
+        logger.debug('[KDS] Realtime update:', payload);
         
         if (payload.eventType === 'INSERT') {
           fetchTickets();

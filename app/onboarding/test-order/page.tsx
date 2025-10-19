@@ -9,6 +9,7 @@ import OnboardingProgress from '@/components/onboarding-progress';
 import { createClient } from '@/lib/supabase/client';
 import Confetti from 'react-confetti';
 import { useWindowSize } from '@/hooks/use-mobile';
+import { logger } from '@/lib/logger';
 
 export default function OnboardingTestOrderPage() {
   const router = useRouter();
@@ -47,7 +48,7 @@ export default function OnboardingTestOrderPage() {
       setVenueId(venues[0].venue_id);
       setLoading(false);
     } catch (error) {
-      console.error('Auth check error:', error);
+      logger.error('Auth check error:', error);
       setLoading(false);
     }
   };

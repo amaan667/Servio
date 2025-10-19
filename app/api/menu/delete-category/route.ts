@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { createAdminClient } from '@/lib/supabase/server';
+import { logger } from '@/lib/logger';
 
 export async function POST(request: NextRequest) {
   try {
@@ -23,7 +24,7 @@ export async function POST(request: NextRequest) {
       .eq('category', categoryName);
 
     if (menuItemsError) {
-      console.error('[CATEGORIES DELETE] Error fetching menu items:', menuItemsError);
+      logger.error('[CATEGORIES DELETE] Error fetching menu items:', menuItemsError);
       return NextResponse.json({ 
         ok: false, 
         error: `Failed to fetch menu items: ${menuItemsError.message}` 
@@ -41,7 +42,7 @@ export async function POST(request: NextRequest) {
         .eq('category', categoryName);
 
       if (deleteError) {
-        console.error('[CATEGORIES DELETE] Error deleting menu items:', deleteError);
+        logger.error('[CATEGORIES DELETE] Error deleting menu items:', deleteError);
         return NextResponse.json({ 
           ok: false, 
           error: `Failed to delete menu items: ${deleteError.message}` 
@@ -64,7 +65,7 @@ export async function POST(request: NextRequest) {
               .in('menu_item_id', itemIds);
             
             if (error) {
-              console.warn(`[CATEGORIES DELETE] Warning deleting from ${table}:`, error);
+              logger.warn(`[CATEGORIES DELETE] Warning deleting from ${table}:`, error);
             }
           }
         } else if (table === 'options') {
@@ -76,11 +77,11 @@ export async function POST(request: NextRequest) {
             .eq('category', categoryName);
           
           if (error) {
-            console.warn(`[CATEGORIES DELETE] Warning deleting from ${table}:`, error);
+            logger.warn(`[CATEGORIES DELETE] Warning deleting from ${table}:`, error);
           }
         }
       } catch (error) {
-        console.warn(`[CATEGORIES DELETE] Warning processing ${table}:`, error);
+        logger.warn(`[CATEGORIES DELETE] Warning processing ${table}:`, error);
       }
     }
 
@@ -93,7 +94,7 @@ export async function POST(request: NextRequest) {
     });
 
   } catch (error) {
-    console.error('[CATEGORIES DELETE] Error in delete category API:', error);
+    logger.error('[CATEGORIES DELETE] Error in delete category API:', { error: error instanceof Error ? error.message : 'Unknown error' });
     return NextResponse.json({ 
       ok: false, 
       error: 'Internal server error' 

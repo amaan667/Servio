@@ -1,4 +1,5 @@
 import { useState } from 'react';
+import { logger } from '@/lib/logger';
 
 export interface CreateTableParams {
   venue_id: string;
@@ -49,7 +50,7 @@ export function useTableManagement() {
 
       return data.table;
     } catch (err) {
-      console.error('[TABLE MANAGEMENT HOOK] Error creating table:', err);
+      logger.error('[TABLE MANAGEMENT HOOK] Error creating table:', err);
       const errorMessage = err instanceof Error ? err.message : 'Failed to create table';
       setError(errorMessage);
       throw err;
@@ -84,7 +85,7 @@ export function useTableManagement() {
 
       return data.table;
     } catch (err) {
-      console.error('[TABLE MANAGEMENT HOOK] Error updating table:', err);
+      logger.error('[TABLE MANAGEMENT HOOK] Error updating table:', err);
       const errorMessage = err instanceof Error ? err.message : 'Failed to update table';
       setError(errorMessage);
       throw err;
@@ -110,7 +111,7 @@ export function useTableManagement() {
 
       return data;
     } catch (err) {
-      console.error('[TABLE MANAGEMENT HOOK] Error deleting table:', err);
+      logger.error('[TABLE MANAGEMENT HOOK] Error deleting table:', err);
       const errorMessage = err instanceof Error ? err.message : 'Failed to delete table';
       setError(errorMessage);
       throw err;
@@ -136,7 +137,7 @@ export function useTableManagement() {
 
       return data.table;
     } catch (err) {
-      console.error('[TABLE MANAGEMENT HOOK] Error reissuing QR:', err);
+      logger.error('[TABLE MANAGEMENT HOOK] Error reissuing QR:', err);
       const errorMessage = err instanceof Error ? err.message : 'Failed to reissue QR';
       setError(errorMessage);
       throw err;

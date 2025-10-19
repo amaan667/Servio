@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { createClient, getAuthenticatedUser } from '@/lib/supabase/server';
+import { logger } from '@/lib/logger';
 
 export const runtime = 'nodejs';
 
@@ -115,7 +116,7 @@ export async function POST(req: NextRequest) {
       .single();
 
     if (createError) {
-      console.error('[CREATE RESERVATION] Error:', createError);
+      logger.error('[CREATE RESERVATION] Error:', createError);
       return NextResponse.json({ 
         ok: false, 
         error: 'Failed to create reservation: ' + createError.message 
@@ -129,7 +130,7 @@ export async function POST(req: NextRequest) {
     });
 
   } catch (error: any) {
-    console.error('[CREATE RESERVATION] Error:', error);
+    logger.error('[CREATE RESERVATION] Error:', { error: error instanceof Error ? error.message : 'Unknown error' });
     return NextResponse.json({ 
       ok: false, 
       error: error.message || 'Internal server error' 

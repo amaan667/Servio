@@ -9,6 +9,7 @@ import { Menu, X, Settings, Home, LayoutDashboard, LogOut } from "lucide-react";
 import { useAuth } from "@/app/auth/AuthProvider";
 import { useRouter, usePathname } from "next/navigation";
 import SignInButton from "@/app/components/SignInButton";
+import { logger } from '@/lib/logger';
 
 
 export default function GlobalNav() {
@@ -116,7 +117,7 @@ export default function GlobalNav() {
             }
           }
         } catch (err) {
-          console.error('Error fetching user data:', err);
+          logger.error('Error fetching user data:', err);
         }
       } else {
         setPrimaryVenueId(null);

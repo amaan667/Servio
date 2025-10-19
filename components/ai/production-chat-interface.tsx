@@ -16,6 +16,7 @@ import { ScrollArea } from "@/components/ui/scroll-area";
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Plus, Send, Bot, User, Wrench } from "lucide-react";
+import { logger } from '@/lib/logger';
 
 interface Message {
   id: string;
@@ -77,7 +78,7 @@ export function ProductionChatInterface({ isOpen, onClose, venueId }: ChatInterf
         setError(errorData.error || "Failed to load conversations");
       }
     } catch (err) {
-      console.error("[AI CHAT] Failed to load conversations:", err);
+      logger.error("[AI CHAT] Failed to load conversations:", err);
       setError("Failed to load conversations");
     }
   };
@@ -94,7 +95,7 @@ export function ProductionChatInterface({ isOpen, onClose, venueId }: ChatInterf
         setError(errorData.error || "Failed to load messages");
       }
     } catch (err) {
-      console.error("[AI CHAT] Failed to load messages:", err);
+      logger.error("[AI CHAT] Failed to load messages:", err);
       setError("Failed to load messages");
     }
   };
@@ -161,7 +162,7 @@ export function ProductionChatInterface({ isOpen, onClose, venueId }: ChatInterf
         setError(errorData.error || "Failed to send message");
       }
     } catch (err) {
-      console.error("[AI CHAT] Failed to send message:", err);
+      logger.error("[AI CHAT] Failed to send message:", err);
       setError("Failed to send message");
     } finally {
       setLoading(false);

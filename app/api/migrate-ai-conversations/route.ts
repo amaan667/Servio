@@ -4,6 +4,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { createClient, createAdminClient } from "@/lib/supabase/server";
 import { generateConversationTitle } from "@/lib/ai/openai-service";
+import { apiLogger, logger } from '@/lib/logger';
 
 export async function POST(request: NextRequest) {
   try {
@@ -19,7 +20,7 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
 
-    console.log("[AI MIGRATION] Starting AI conversations migration...");
+    logger.debug("[AI MIGRATION] Starting AI conversations migration...");
 
     // Step 1: Check if old conversations exist
     const { data: oldConversations, error: oldError } = await adminSupabase
@@ -28,7 +29,7 @@ export async function POST(request: NextRequest) {
       .limit(5);
 
     if (oldError && oldError.code !== 'PGRST116') {
-      console.error("[AI MIGRATION] Error checking old conversations:", oldError);
+      logger.error("[AI MIGRATION] Error checking old conversations:", oldError);
       return NextResponse.json(
         { error: "Failed to check existing conversations", details: oldError.message },
         { status: 500 }
@@ -42,7 +43,7 @@ export async function POST(request: NextRequest) {
       .limit(5);
 
     if (newError && newError.code !== 'PGRST116') {
-      console.error("[AI MIGRATION] Error checking new conversations:", newError);
+      logger.error("[AI MIGRATION] Error checking new conversations:", newError);
       return NextResponse.json(
         { error: "Failed to check new conversations", details: newError.message },
         { status: 500 }
@@ -52,25 +53,25 @@ export async function POST(request: NextRequest) {
     const oldCount = oldConversations?.length || 0;
     const newCount = newConversations?.length || 0;
 
-    console.log("[AI MIGRATION] Old conversations:", oldCount, "New conversations:", newCount);
+    logger.debug("[AI MIGRATION] Old conversations:", oldCount, "New conversations:", newCount);
 
     // Step 3: If new conversations exist, just generate AI titles for existing ones
     if (newCount > 0) {
-      console.log("[AI MIGRATION] New conversations exist, generating AI titles...");
+      logger.debug("[AI MIGRATION] New conversations exist, generating AI titles...");
       
       // Get conversations that need AI title generation
       const { data: conversationsNeedingTitles, error: titlesError } = await adminSupabase
         .rpc('get_conversations_needing_ai_titles');
 
       if (titlesError) {
-        console.error("[AI MIGRATION] Error getting conversations needing titles:", titlesError);
+        logger.error("[AI MIGRATION] Error getting conversations needing titles:", titlesError);
         return NextResponse.json(
           { error: "Failed to get conversations needing titles", details: titlesError.message },
           { status: 500 }
         );
       }
 
-      console.log("[AI MIGRATION] Found", conversationsNeedingTitles?.length || 0, "conversations needing AI titles");
+      logger.debug("[AI MIGRATION] Found", conversationsNeedingTitles?.length || 0, "conversations needing AI titles");
 
       // Generate AI titles for each conversation
       let updatedCount = 0;
@@ -86,14 +87,14 @@ export async function POST(request: NextRequest) {
               });
 
             if (updateError) {
-              console.error("[AI MIGRATION] Error updating title for conversation", conv.conversation_id, ":", updateError);
+              logger.error("[AI MIGRATION] Error updating title for conversation", conv.conversation_id, ":", updateError);
             } else {
-              console.log("[AI MIGRATION] Updated conversation", conv.conversation_id, "title to:", aiTitle);
+              logger.debug("[AI MIGRATION] Updated conversation", conv.conversation_id, "title to:", aiTitle);
               updatedCount++;
             }
           }
         } catch (error) {
-          console.error("[AI MIGRATION] Error generating title for conversation", conv.conversation_id, ":", error);
+          logger.error("[AI MIGRATION] Error generating title for conversation", conv.conversation_id, ":", error);
         }
       }
 
@@ -110,7 +111,7 @@ export async function POST(request: NextRequest) {
 
     // Step 4: If no new conversations exist but old ones do, run full migration
     if (oldCount > 0 && newCount === 0) {
-      console.log("[AI MIGRATION] Running full migration from old to new system...");
+      logger.debug("[AI MIGRATION] Running full migration from old to new system...");
       
       // Get all old conversations
       const { data: allOldConversations, error: allOldError } = await adminSupabase
@@ -119,14 +120,14 @@ export async function POST(request: NextRequest) {
         .order("created_at", { ascending: true });
 
       if (allOldError) {
-        console.error("[AI MIGRATION] Error getting all old conversations:", allOldError);
+        logger.error("[AI MIGRATION] Error getting all old conversations:", allOldError);
         return NextResponse.json(
           { error: "Failed to get old conversations", details: allOldError.message },
           { status: 500 }
         );
       }
 
-      console.log("[AI MIGRATION] Found", allOldConversations?.length || 0, "old conversations to migrate");
+      logger.debug("[AI MIGRATION] Found", allOldConversations?.length || 0, "old conversations to migrate");
 
       // Migrate conversations one by one
       let migratedCount = 0;
@@ -148,7 +149,7 @@ export async function POST(request: NextRequest) {
             .single();
 
           if (createError) {
-            console.error("[AI MIGRATION] Error creating conversation", oldConv.id, ":", createError);
+            logger.error("[AI MIGRATION] Error creating conversation", oldConv.id, ":", createError);
             continue;
           }
 
@@ -160,7 +161,7 @@ export async function POST(request: NextRequest) {
             .order("created_at", { ascending: true });
 
           if (messagesError) {
-            console.error("[AI MIGRATION] Error getting messages for conversation", oldConv.id, ":", messagesError);
+            logger.error("[AI MIGRATION] Error getting messages for conversation", oldConv.id, ":", messagesError);
             continue;
           }
 
@@ -178,7 +179,7 @@ export async function POST(request: NextRequest) {
               });
 
             if (msgError) {
-              console.error("[AI MIGRATION] Error migrating message", message.id, ":", msgError);
+              logger.error("[AI MIGRATION] Error migrating message", message.id, ":", msgError);
             }
           }
 
@@ -194,17 +195,17 @@ export async function POST(request: NextRequest) {
                 .update({ title: aiTitle, updated_at: new Date().toISOString() })
                 .eq("id", oldConv.id);
               
-              console.log("[AI MIGRATION] Generated AI title for conversation", oldConv.id, ":", aiTitle);
+              logger.debug("[AI MIGRATION] Generated AI title for conversation", oldConv.id, ":", aiTitle);
             } catch (titleError) {
-              console.error("[AI MIGRATION] Error generating AI title for conversation", oldConv.id, ":", titleError);
+              logger.error("[AI MIGRATION] Error generating AI title for conversation", oldConv.id, ":", titleError);
             }
           }
 
           migratedCount++;
-          console.log("[AI MIGRATION] Migrated conversation", oldConv.id, "with", messages?.length || 0, "messages");
+          logger.debug("[AI MIGRATION] Migrated conversation", oldConv.id, "with", messages?.length || 0, "messages");
 
         } catch (error) {
-          console.error("[AI MIGRATION] Error migrating conversation", oldConv.id, ":", error);
+          logger.error("[AI MIGRATION] Error migrating conversation", oldConv.id, ":", error);
         }
       }
 
@@ -231,7 +232,7 @@ export async function POST(request: NextRequest) {
     });
 
   } catch (error: any) {
-    console.error("[AI MIGRATION] Migration error:", error);
+    logger.error("[AI MIGRATION] Migration error:", { error: error instanceof Error ? error.message : 'Unknown error' });
     return NextResponse.json(
       { error: "Migration failed", details: error.message },
       { status: 500 }
@@ -249,7 +250,7 @@ export async function GET(request: NextRequest) {
       .select("*");
 
     if (error) {
-      console.error("[AI MIGRATION] Error getting migration status:", error);
+      logger.error("[AI MIGRATION] Error getting migration status:", { error: error instanceof Error ? error.message : 'Unknown error' });
       return NextResponse.json(
         { error: "Failed to get migration status", details: error.message },
         { status: 500 }
@@ -268,7 +269,7 @@ export async function GET(request: NextRequest) {
     });
 
   } catch (error: any) {
-    console.error("[AI MIGRATION] Status check error:", error);
+    logger.error("[AI MIGRATION] Status check error:", { error: error instanceof Error ? error.message : 'Unknown error' });
     return NextResponse.json(
       { error: "Failed to check migration status", details: error.message },
       { status: 500 }

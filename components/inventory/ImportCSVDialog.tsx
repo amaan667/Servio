@@ -7,6 +7,7 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import { Upload, CheckCircle, XCircle } from 'lucide-react';
+import { logger } from '@/lib/logger';
 
 interface ImportCSVDialogProps {
   open: boolean;
@@ -49,7 +50,7 @@ export function ImportCSVDialog({ open, onOpenChange, venueId, onSuccess }: Impo
         }, 2000);
       }
     } catch (error) {
-      console.error('Error importing CSV:', error);
+      logger.error('Error importing CSV:', error);
       setResult({ success: false, error: 'Failed to import CSV' });
     } finally {
       setLoading(false);

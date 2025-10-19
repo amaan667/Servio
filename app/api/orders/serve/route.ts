@@ -2,14 +2,15 @@ import { NextResponse } from 'next/server';
 export const runtime = 'nodejs';
 import { createClient } from '@/lib/supabase/server';
 import { createAdminClient } from '@/lib/supabase/server';
+import { apiLogger as logger } from '@/lib/logger';
 
 export async function POST(req: Request) {
   try {
     const startedAt = new Date().toISOString();
-    console.log('[ORDERS SERVE][START]', { startedAt });
+    logger.debug('[ORDERS SERVE][START]', { startedAt });
 
     const { orderId } = await req.json();
-    console.log('[ORDERS SERVE] Incoming request body', { orderId });
+    logger.debug('[ORDERS SERVE] Incoming request body', { orderId });
     
     if (!orderId) {
       return NextResponse.json({ error: 'Order ID is required' }, { status: 400 });
@@ -17,15 +18,15 @@ export async function POST(req: Request) {
 
     const supabase = await createClient();
     const supabaseAdmin = createAdminClient();
-    console.log('[ORDERS SERVE] Supabase client created');
+    logger.debug('[ORDERS SERVE] Supabase client created');
 
     // Require authenticated user
     const { data: { user }, error: userError } = await supabase.auth.getUser();
     if (userError || !user) {
-      console.error('[ORDERS SERVE] Auth error or missing user', { userError });
+      logger.error('[ORDERS SERVE] Auth error or missing user', { userError });
       return NextResponse.json({ error: 'Not authenticated' }, { status: 401 });
     }
-    console.log('[ORDERS SERVE] Authenticated user', { userId: user.id });
+    logger.debug('[ORDERS SERVE] Authenticated user', { userId: user.id });
     
     // First get the order details before updating
     const { data: orderData, error: fetchError } = await supabase
@@ -35,19 +36,19 @@ export async function POST(req: Request) {
       .single();
 
     if (fetchError) {
-      console.error('[ORDERS SERVE] Failed to fetch order', { orderId, fetchError });
+      logger.error('[ORDERS SERVE] Failed to fetch order', { orderId, fetchError });
       return NextResponse.json({ error: fetchError.message }, { status: 500 });
     }
     if (!orderData) {
-      console.error('[ORDERS SERVE] Order not found', { orderId });
+      logger.error('[ORDERS SERVE] Order not found', { orderId });
       return NextResponse.json({ error: 'Order not found' }, { status: 404 });
     }
-    console.log('[ORDERS SERVE] Loaded order', { orderId: orderData.id, venueId: orderData.venue_id, order_status: orderData.order_status });
+    logger.debug('[ORDERS SERVE] Loaded order', { orderId: orderData.id, venueId: orderData.venue_id, order_status: orderData.order_status });
 
     // Only allow serving orders that are READY (case-insensitive)
     const currentStatus = (orderData.order_status || '').toString().toUpperCase();
     if (currentStatus !== 'READY') {
-      console.warn('[ORDERS SERVE] Refusing serve due to status', { orderId, currentStatus });
+      logger.warn('[ORDERS SERVE] Refusing serve due to status', { orderId, currentStatus });
       return NextResponse.json({ 
         error: 'Order must be READY to mark as SERVED' 
       }, { status: 400 });
@@ -76,18 +77,18 @@ export async function POST(req: Request) {
     ]);
 
     if (venueError) {
-      console.error('[ORDERS SERVE] Venue check error', { venueId, userId: user.id, venueError });
+      logger.error('[ORDERS SERVE] Venue check error', { venueId, userId: user.id, venueError });
     }
     if (roleError) {
-      console.error('[ORDERS SERVE] Role check error', { venueId, userId: user.id, roleError });
+      logger.error('[ORDERS SERVE] Role check error', { venueId, userId: user.id, roleError });
     }
 
     const hasAccess = Boolean(venue) || Boolean(role);
     if (!hasAccess) {
-      console.warn('[ORDERS SERVE] Forbidden: user lacks venue access (not owner or staff)', { venueId, userId: user.id });
+      logger.warn('[ORDERS SERVE] Forbidden: user lacks venue access (not owner or staff)', { venueId, userId: user.id });
       return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
     }
-    console.log('[ORDERS SERVE] Access granted via', { owner: Boolean(venue), role: role?.role || null });
+    logger.debug('[ORDERS SERVE] Access granted via', { owner: Boolean(venue), role: role?.role || null });
 
     // Update the order status to SERVING (guard by venue_id for RLS)
     // Use admin client to bypass RLS for the atomic order update; we already authorized above
@@ -103,10 +104,10 @@ export async function POST(req: Request) {
       .eq('venue_id', venueId);
 
     if (error) {
-      console.error('[ORDERS SERVE] Failed to update order status', { orderId, venueId, error });
+      logger.error('[ORDERS SERVE] Failed to update order status', { orderId, venueId, error });
       return NextResponse.json({ error: error.message }, { status: 500 });
     }
-    console.log('[ORDERS SERVE] Order updated to SERVING', { orderId, venueId });
+    logger.debug('[ORDERS SERVE] Order updated to SERVING', { orderId, venueId });
 
     // Also update table_sessions if present (best-effort)
     try {
@@ -118,10 +119,10 @@ export async function POST(req: Request) {
         })
         .eq('order_id', orderId)
         .eq('venue_id', venueId);
-      console.log('[ORDERS SERVE] table_sessions updated to SERVED', { orderId, venueId });
+      logger.debug('[ORDERS SERVE] table_sessions updated to SERVED', { orderId, venueId });
     } catch (e) {
       // best-effort; don't fail the request if this errors (RLS or not found)
-      console.warn('[ORDERS SERVE] table_sessions update warning', { orderId, venueId, error: e });
+      logger.warn('[ORDERS SERVE] table_sessions update warning', { orderId, venueId, error: e });
     }
 
     return NextResponse.json({ 
@@ -130,7 +131,7 @@ export async function POST(req: Request) {
     });
 
   } catch (error: any) {
-    console.error('[ORDERS SERVE][UNCAUGHT]', { error: error?.message || error, stack: error?.stack });
+    logger.error('[ORDERS SERVE][UNCAUGHT]', { error: error?.message || error, stack: error?.stack });
     return NextResponse.json({ 
       error: 'Internal server error',
       details: error.message 

@@ -1,5 +1,6 @@
 import { NextResponse } from 'next/server';
 import { createClient } from '@/lib/supabase/server';
+import { logger } from '@/lib/logger';
 
 export async function POST(req: Request) {
   try {
@@ -20,7 +21,7 @@ export async function POST(req: Request) {
       .single();
 
     if (fetchError) {
-      console.error('Failed to fetch order:', fetchError);
+      logger.error('Failed to fetch order:', fetchError);
       return NextResponse.json({ error: 'Order not found' }, { status: 404 });
     }
 
@@ -34,7 +35,7 @@ export async function POST(req: Request) {
       .eq('id', orderId);
 
     if (error) {
-      console.error('Failed to mark order as paid:', error);
+      logger.error('Failed to mark order as paid:', { error: error instanceof Error ? error.message : 'Unknown error' });
       return NextResponse.json({ error: error.message }, { status: 500 });
     }
 
@@ -57,7 +58,7 @@ export async function POST(req: Request) {
           const completionResult = await completionResponse.json();
         }
       } catch (completionError) {
-        console.error('[MARK PAID] Error checking reservation completion:', completionError);
+        logger.error('[MARK PAID] Error checking reservation completion:', completionError);
         // Don't fail the main request if completion check fails
       }
     }
@@ -70,7 +71,7 @@ export async function POST(req: Request) {
       updated_at: new Date().toISOString()
     });
   } catch (error: any) {
-    console.error('[MARK PAID] Error marking order as paid:', error);
+    logger.error('[MARK PAID] Error marking order as paid:', { error: error instanceof Error ? error.message : 'Unknown error' });
     return NextResponse.json({ error: error.message }, { status: 500 });
   }
 }

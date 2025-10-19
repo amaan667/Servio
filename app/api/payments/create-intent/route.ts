@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import Stripe from 'stripe';
 import { ENV } from '@/lib/env';
 import { stripe } from '@/lib/stripe-client';
+import { logger } from '@/lib/logger';
 
 interface CreateIntentRequest {
   cartId: string;
@@ -104,7 +105,7 @@ export async function POST(req: NextRequest) {
     });
 
   } catch (error) {
-    console.error('[PAYMENT INTENT] Error:', error);
+    logger.error('[PAYMENT INTENT] Error:', { error: error instanceof Error ? error.message : 'Unknown error' });
     
     if (error instanceof Stripe.errors.StripeError) {
       return NextResponse.json(

@@ -2,6 +2,7 @@
 
 import { useState } from 'react';
 import { useAuth } from '@/app/auth/AuthProvider';
+import { logger } from '@/lib/logger';
 
 interface SignOutButtonProps {
   className?: string;
@@ -24,7 +25,7 @@ export function SignOutButton({
       await signOut();
       
     } catch (error) {
-      console.error('[SIGN OUT BUTTON] Sign out error:', error);
+      logger.error('[SIGN OUT BUTTON] Sign out error:', error);
     } finally {
       setIsLoading(false);
     }

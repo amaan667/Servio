@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { createClient } from '@/lib/supabase/server';
+import { logger } from '@/lib/logger';
 
 export async function GET(request: NextRequest) {
   try {
@@ -23,7 +24,7 @@ export async function GET(request: NextRequest) {
       .order('label');
 
     if (tablesError) {
-      console.error('Error fetching table runtime state:', tablesError);
+      logger.error('Error fetching table runtime state:', tablesError);
       return NextResponse.json(
         { error: 'Failed to fetch tables' },
         { status: 500 }
@@ -35,7 +36,7 @@ export async function GET(request: NextRequest) {
       .rpc('api_table_counters', { p_venue_id: venueId });
 
     if (countersError) {
-      console.error('Error fetching table counters:', countersError);
+      logger.error('Error fetching table counters:', countersError);
       return NextResponse.json(
         { error: 'Failed to fetch counters' },
         { status: 500 }
@@ -49,7 +50,7 @@ export async function GET(request: NextRequest) {
       .eq('venue_id', venueId);
 
     if (reservationsError) {
-      console.error('Error fetching unassigned reservations:', reservationsError);
+      logger.error('Error fetching unassigned reservations:', reservationsError);
       return NextResponse.json(
         { error: 'Failed to fetch reservations' },
         { status: 500 }
@@ -70,7 +71,7 @@ export async function GET(request: NextRequest) {
     });
 
   } catch (error) {
-    console.error('Error in tables-runtime API:', error);
+    logger.error('Error in tables-runtime API:', { error: error instanceof Error ? error.message : 'Unknown error' });
     return NextResponse.json(
       { error: 'Internal server error' },
       { status: 500 }

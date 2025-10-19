@@ -3,6 +3,7 @@ import { NextRequest, NextResponse } from "next/server";
 import Stripe from "stripe";
 import { createClient } from "@/lib/supabase/server";
 import { stripe } from "@/lib/stripe-client";
+import { apiLogger } from '@/lib/logger';
 
 // Extend Invoice type to include subscription property
 interface InvoiceWithSubscription extends Stripe.Invoice {
@@ -30,7 +31,7 @@ export async function POST(request: NextRequest) {
       webhookSecret
     );
 
-    console.log("[STRIPE WEBHOOK] Event:", event.type, "ID:", event.id);
+    logger.debug("[STRIPE WEBHOOK] Event:", event.type, "ID:", event.id);
 
     // Handle the event
     switch (event.type) {
@@ -59,12 +60,12 @@ export async function POST(request: NextRequest) {
         break;
 
       default:
-        console.log(`[STRIPE WEBHOOK] Unhandled event type: ${event.type}`);
+        logger.debug(`[STRIPE WEBHOOK] Unhandled event type: ${event.type}`);
     }
 
     return NextResponse.json({ received: true });
   } catch (error: any) {
-    console.error("[STRIPE WEBHOOK] Error:", error);
+    logger.error("[STRIPE WEBHOOK] Error:", { error: error instanceof Error ? error.message : 'Unknown error' });
     return NextResponse.json(
       { error: error.message },
       { status: 400 }
@@ -73,8 +74,8 @@ export async function POST(request: NextRequest) {
 }
 
 async function handleCheckoutCompleted(session: Stripe.Checkout.Session) {
-  console.log("[STRIPE WEBHOOK] ===== CHECKOUT COMPLETED =====");
-  console.log("[STRIPE WEBHOOK] handleCheckoutCompleted called with session:", {
+  logger.debug("[STRIPE WEBHOOK] ===== CHECKOUT COMPLETED =====");
+  logger.debug("[STRIPE WEBHOOK] handleCheckoutCompleted called with session:", {
     id: session.id,
     customer: session.customer,
     subscription: session.subscription,
@@ -88,10 +89,10 @@ async function handleCheckoutCompleted(session: Stripe.Checkout.Session) {
   const tier = session.metadata?.tier;
   const userId = session.metadata?.user_id;
 
-  console.log("[STRIPE WEBHOOK] Extracted data:", { organizationId, tier, userId });
+  logger.debug("[STRIPE WEBHOOK] Extracted data:", { organizationId, tier, userId });
 
   if (!organizationId || !tier) {
-    console.error("[STRIPE WEBHOOK] ❌ Missing required metadata in checkout session:", session.metadata);
+    logger.error("[STRIPE WEBHOOK] ❌ Missing required metadata in checkout session:", session.metadata);
     return;
   }
 
@@ -103,10 +104,10 @@ async function handleCheckoutCompleted(session: Stripe.Checkout.Session) {
     .maybeSingle();
 
   if (orgCheckError) {
-    console.error("[STRIPE WEBHOOK] ❌ Error checking organization:", orgCheckError);
+    logger.error("[STRIPE WEBHOOK] ❌ Error checking organization:", orgCheckError);
     // If we have a user_id, try to find org by owner_id as fallback
     if (userId) {
-      console.log("[STRIPE WEBHOOK] 🔄 Attempting fallback lookup by user_id:", userId);
+      logger.debug("[STRIPE WEBHOOK] 🔄 Attempting fallback lookup by user_id:", userId);
       const { data: orgByOwner, error: ownerError } = await supabase
         .from("organizations")
         .select("id, subscription_tier, subscription_status, owner_id")
@@ -114,11 +115,11 @@ async function handleCheckoutCompleted(session: Stripe.Checkout.Session) {
         .maybeSingle();
       
       if (ownerError || !orgByOwner) {
-        console.error("[STRIPE WEBHOOK] ❌ Fallback lookup also failed:", ownerError);
+        logger.error("[STRIPE WEBHOOK] ❌ Fallback lookup also failed:", ownerError);
         return;
       }
       
-      console.log("[STRIPE WEBHOOK] ✅ Found organization via fallback:", orgByOwner.id);
+      logger.debug("[STRIPE WEBHOOK] ✅ Found organization via fallback:", orgByOwner.id);
       // Update the organizationId to use the correct one
       const actualOrgId = orgByOwner.id;
       await handleCheckoutWithOrg(session, actualOrgId, tier, orgByOwner, supabase);
@@ -128,10 +129,10 @@ async function handleCheckoutCompleted(session: Stripe.Checkout.Session) {
   }
 
   if (!existingOrg) {
-    console.error("[STRIPE WEBHOOK] ❌ Organization not found:", organizationId);
+    logger.error("[STRIPE WEBHOOK] ❌ Organization not found:", organizationId);
     // If we have a user_id, try to find org by owner_id as fallback
     if (userId) {
-      console.log("[STRIPE WEBHOOK] 🔄 Attempting fallback lookup by user_id:", userId);
+      logger.debug("[STRIPE WEBHOOK] 🔄 Attempting fallback lookup by user_id:", userId);
       const { data: orgByOwner, error: ownerError } = await supabase
         .from("organizations")
         .select("id, subscription_tier, subscription_status, owner_id")
@@ -139,11 +140,11 @@ async function handleCheckoutCompleted(session: Stripe.Checkout.Session) {
         .maybeSingle();
       
       if (ownerError || !orgByOwner) {
-        console.error("[STRIPE WEBHOOK] ❌ Fallback lookup also failed:", ownerError);
+        logger.error("[STRIPE WEBHOOK] ❌ Fallback lookup also failed:", ownerError);
         return;
       }
       
-      console.log("[STRIPE WEBHOOK] ✅ Found organization via fallback:", orgByOwner.id);
+      logger.debug("[STRIPE WEBHOOK] ✅ Found organization via fallback:", orgByOwner.id);
       // Update the organizationId to use the correct one
       const actualOrgId = orgByOwner.id;
       await handleCheckoutWithOrg(session, actualOrgId, tier, orgByOwner, supabase);
@@ -163,7 +164,7 @@ async function handleCheckoutWithOrg(
   supabase: any
 ) {
 
-  console.log("[STRIPE WEBHOOK] ✅ Processing update for organization:", {
+  logger.debug("[STRIPE WEBHOOK] ✅ Processing update for organization:", {
     id: existingOrg.id,
     current_tier: existingOrg.subscription_tier,
     current_status: existingOrg.subscription_status
@@ -179,7 +180,7 @@ async function handleCheckoutWithOrg(
     updated_at: new Date().toISOString(),
   };
 
-  console.log("[STRIPE WEBHOOK] 📝 Updating organization with data:", updateData);
+  logger.debug("[STRIPE WEBHOOK] 📝 Updating organization with data:", updateData);
 
   const { error: updateError, data: updatedOrg } = await supabase
     .from("organizations")
@@ -189,11 +190,11 @@ async function handleCheckoutWithOrg(
     .single();
 
   if (updateError) {
-    console.error("[STRIPE WEBHOOK] ❌ Error updating organization:", updateError);
+    logger.error("[STRIPE WEBHOOK] ❌ Error updating organization:", updateError);
     return;
   }
 
-  console.log("[STRIPE WEBHOOK] ✅ Successfully updated organization:", {
+  logger.debug("[STRIPE WEBHOOK] ✅ Successfully updated organization:", {
     id: organizationId,
     new_tier: updatedOrg.subscription_tier,
     new_status: updatedOrg.subscription_status
@@ -209,12 +210,12 @@ async function handleCheckoutWithOrg(
       stripe_event_id: session.id,
       metadata: { session_id: session.id },
     });
-    console.log("[STRIPE WEBHOOK] ✅ Logged subscription history");
+    logger.debug("[STRIPE WEBHOOK] ✅ Logged subscription history");
   } catch (historyError) {
-    console.warn("[STRIPE WEBHOOK] ⚠️ Failed to log subscription history (non-critical):", historyError);
+    logger.warn("[STRIPE WEBHOOK] ⚠️ Failed to log subscription history (non-critical):", historyError);
   }
 
-  console.log(`[STRIPE WEBHOOK] ===== CHECKOUT COMPLETED SUCCESSFULLY for org: ${organizationId} =====`);
+  logger.debug(`[STRIPE WEBHOOK] ===== CHECKOUT COMPLETED SUCCESSFULLY for org: ${organizationId} =====`);
 }
 
 async function handleSubscriptionCreated(subscription: Stripe.Subscription) {
@@ -223,7 +224,7 @@ async function handleSubscriptionCreated(subscription: Stripe.Subscription) {
   const organizationId = subscription.metadata?.organization_id;
   const tier = subscription.metadata?.tier;
 
-  console.log("[STRIPE WEBHOOK] handleSubscriptionCreated called with:", {
+  logger.debug("[STRIPE WEBHOOK] handleSubscriptionCreated called with:", {
     subscriptionId: subscription.id,
     organizationId,
     tier,
@@ -231,7 +232,7 @@ async function handleSubscriptionCreated(subscription: Stripe.Subscription) {
   });
 
   if (!organizationId) {
-    console.error("[STRIPE WEBHOOK] No organization_id in subscription metadata:", subscription.metadata);
+    logger.error("[STRIPE WEBHOOK] No organization_id in subscription metadata:", subscription.metadata);
     return;
   }
 
@@ -243,7 +244,7 @@ async function handleSubscriptionCreated(subscription: Stripe.Subscription) {
     .single();
 
   if (orgCheckError || !existingOrg) {
-    console.error("[STRIPE WEBHOOK] Organization not found:", organizationId, orgCheckError);
+    logger.error("[STRIPE WEBHOOK] Organization not found:", organizationId, orgCheckError);
     return;
   }
 
@@ -258,7 +259,7 @@ async function handleSubscriptionCreated(subscription: Stripe.Subscription) {
     .eq("id", organizationId);
 
   if (updateError) {
-    console.error("[STRIPE WEBHOOK] Error updating organization:", updateError);
+    logger.error("[STRIPE WEBHOOK] Error updating organization:", updateError);
     return;
   }
 
@@ -270,11 +271,11 @@ async function handleSubscriptionCreated(subscription: Stripe.Subscription) {
     metadata: { subscription_id: subscription.id },
   });
 
-  console.log(`[STRIPE WEBHOOK] Subscription created for org: ${organizationId}`);
+  logger.debug(`[STRIPE WEBHOOK] Subscription created for org: ${organizationId}`);
 }
 
 async function handleSubscriptionUpdated(subscription: Stripe.Subscription) {
-  console.log("[STRIPE WEBHOOK] handleSubscriptionUpdated called with subscription:", {
+  logger.debug("[STRIPE WEBHOOK] handleSubscriptionUpdated called with subscription:", {
     id: subscription.id,
     status: subscription.status,
     metadata: subscription.metadata
@@ -286,10 +287,10 @@ async function handleSubscriptionUpdated(subscription: Stripe.Subscription) {
   const tier = subscription.metadata?.tier;
   const userId = subscription.metadata?.user_id;
 
-  console.log("[STRIPE WEBHOOK] Extracted subscription data:", { organizationId, tier, userId });
+  logger.debug("[STRIPE WEBHOOK] Extracted subscription data:", { organizationId, tier, userId });
 
   if (!organizationId) {
-    console.error("[STRIPE WEBHOOK] No organization_id in subscription metadata:", subscription.metadata);
+    logger.error("[STRIPE WEBHOOK] No organization_id in subscription metadata:", subscription.metadata);
     return;
   }
 
@@ -301,10 +302,10 @@ async function handleSubscriptionUpdated(subscription: Stripe.Subscription) {
     .maybeSingle();
 
   if (orgCheckError || !org) {
-    console.error("[STRIPE WEBHOOK] Organization not found by ID:", organizationId, orgCheckError);
+    logger.error("[STRIPE WEBHOOK] Organization not found by ID:", organizationId, orgCheckError);
     // Try fallback by user_id
     if (userId) {
-      console.log("[STRIPE WEBHOOK] 🔄 Attempting fallback lookup by user_id:", userId);
+      logger.debug("[STRIPE WEBHOOK] 🔄 Attempting fallback lookup by user_id:", userId);
       const { data: orgByOwner, error: ownerError } = await supabase
         .from("organizations")
         .select("id, subscription_tier, owner_id")
@@ -312,12 +313,12 @@ async function handleSubscriptionUpdated(subscription: Stripe.Subscription) {
         .maybeSingle();
       
       if (ownerError || !orgByOwner) {
-        console.error("[STRIPE WEBHOOK] ❌ Fallback lookup also failed:", ownerError);
+        logger.error("[STRIPE WEBHOOK] ❌ Fallback lookup also failed:", ownerError);
         return;
       }
       
       org = orgByOwner;
-      console.log("[STRIPE WEBHOOK] ✅ Found organization via fallback:", org.id);
+      logger.debug("[STRIPE WEBHOOK] ✅ Found organization via fallback:", org.id);
     } else {
       return;
     }
@@ -329,7 +330,7 @@ async function handleSubscriptionUpdated(subscription: Stripe.Subscription) {
     updated_at: new Date().toISOString(),
   };
 
-  console.log("[STRIPE WEBHOOK] Updating organization subscription with data:", updateData);
+  logger.debug("[STRIPE WEBHOOK] Updating organization subscription with data:", updateData);
 
   const { error: updateError } = await supabase
     .from("organizations")
@@ -337,11 +338,11 @@ async function handleSubscriptionUpdated(subscription: Stripe.Subscription) {
     .eq("id", organizationId);
 
   if (updateError) {
-    console.error("[STRIPE WEBHOOK] Error updating organization subscription:", updateError);
+    logger.error("[STRIPE WEBHOOK] Error updating organization subscription:", updateError);
     return;
   }
 
-  console.log("[STRIPE WEBHOOK] Successfully updated organization subscription:", organizationId);
+  logger.debug("[STRIPE WEBHOOK] Successfully updated organization subscription:", organizationId);
 
   await supabase.from("subscription_history").insert({
     organization_id: organizationId,
@@ -352,7 +353,7 @@ async function handleSubscriptionUpdated(subscription: Stripe.Subscription) {
     metadata: { subscription_id: subscription.id, status: subscription.status },
   });
 
-  console.log(`[STRIPE WEBHOOK] Subscription updated for org: ${organizationId}`);
+  logger.debug(`[STRIPE WEBHOOK] Subscription updated for org: ${organizationId}`);
 }
 
 async function handleSubscriptionDeleted(subscription: Stripe.Subscription) {
@@ -361,7 +362,7 @@ async function handleSubscriptionDeleted(subscription: Stripe.Subscription) {
   const organizationId = subscription.metadata?.organization_id;
 
   if (!organizationId) {
-    console.error("[STRIPE] No organization_id in subscription");
+    logger.error("[STRIPE] No organization_id in subscription");
     return;
   }
 
@@ -391,7 +392,7 @@ async function handleSubscriptionDeleted(subscription: Stripe.Subscription) {
     metadata: { subscription_id: subscription.id },
   });
 
-  console.log(`[STRIPE] Subscription deleted for org: ${organizationId}`);
+  logger.debug(`[STRIPE] Subscription deleted for org: ${organizationId}`);
 }
 
 async function handlePaymentSucceeded(invoice: Stripe.Invoice) {
@@ -423,7 +424,7 @@ async function handlePaymentSucceeded(invoice: Stripe.Invoice) {
     })
     .eq("id", organizationId);
 
-  console.log(`[STRIPE] Payment succeeded for org: ${organizationId}`);
+  logger.debug(`[STRIPE] Payment succeeded for org: ${organizationId}`);
 }
 
 async function handlePaymentFailed(invoice: Stripe.Invoice) {
@@ -455,6 +456,6 @@ async function handlePaymentFailed(invoice: Stripe.Invoice) {
     })
     .eq("id", organizationId);
 
-  console.log(`[STRIPE] Payment failed for org: ${organizationId}`);
+  logger.debug(`[STRIPE] Payment failed for org: ${organizationId}`);
 }
 

@@ -2,6 +2,7 @@ import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { useEffect } from 'react';
 import { createClient } from '@/lib/supabase/client';
 import { todayWindowForTZ } from '@/lib/time';
+import { logger } from '@/lib/logger';
 
 const supabase = createClient();
 
@@ -115,7 +116,7 @@ export function useCounterOrdersRealtime(venueId: string) {
 	useEffect(() => {
 		if (!venueId) return;
 
-		console.log('[COUNTER ORDERS] Setting up real-time subscription for venue:', venueId);
+		logger.debug('[COUNTER ORDERS] Setting up real-time subscription for venue:', venueId);
 		const supabase = createClient();
 
 		const channel = supabase
@@ -129,18 +130,18 @@ export function useCounterOrdersRealtime(venueId: string) {
 				// Check if this is a counter order
 				const order = payload.new || payload.old;
 				if (order?.source === 'counter') {
-					console.log('[COUNTER ORDERS] Counter order update received:', payload.eventType);
+					logger.debug('[COUNTER ORDERS] Counter order update received:', payload.eventType);
 					// Invalidate both queries to trigger refetch
 					queryClient.invalidateQueries({ queryKey: ['counter-orders', venueId] });
 					queryClient.invalidateQueries({ queryKey: ['counter-order-counts', venueId] });
 				}
 			})
 			.subscribe((status: string) => {
-				console.log('[COUNTER ORDERS] Realtime subscription status:', status);
+				logger.debug('[COUNTER ORDERS] Realtime subscription status:', status);
 			});
 
 		return () => {
-			console.log('[COUNTER ORDERS] Cleaning up real-time subscription');
+			logger.debug('[COUNTER ORDERS] Cleaning up real-time subscription');
 			supabase.removeChannel(channel);
 		};
 	}, [venueId, queryClient]);

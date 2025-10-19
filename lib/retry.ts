@@ -1,4 +1,5 @@
 /**
+import { logger } from '@/lib/logger';
  * Retry utility with exponential backoff for handling network failures
  */
 
@@ -54,7 +55,7 @@ export async function withRetry<T>(
         config.maxDelay
       );
 
-      console.warn(`[RETRY] Attempt ${attempt} failed, retrying in ${delay}ms:`, (error as any)?.message);
+      logger.warn(`[RETRY] Attempt ${attempt} failed, retrying in ${delay}ms:`, (error as any)?.message);
       
       // Add jitter to prevent thundering herd
       const jitter = Math.random() * 0.1 * delay;

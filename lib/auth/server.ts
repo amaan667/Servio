@@ -1,5 +1,6 @@
 import { redirect } from 'next/navigation';
 import { getAuthenticatedUser } from '@/lib/supabase/server';
+import { logger } from '@/lib/logger';
 
 /**
  * SECURE: Get the authenticated user on the server side
@@ -9,7 +10,7 @@ export async function getAuthUser() {
   const { user, error } = await getAuthenticatedUser();
   
   if (error) {
-    console.error('[AUTH SERVER] Error getting authenticated user:', error);
+    logger.error('[AUTH SERVER] Error getting authenticated user:', error);
     return null;
   }
   

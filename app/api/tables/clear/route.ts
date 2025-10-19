@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { createAdminClient } from '@/lib/supabase/server';
+import { logger } from '@/lib/logger';
 
 export async function POST(request: NextRequest) {
   try {
@@ -37,7 +38,7 @@ export async function POST(request: NextRequest) {
       .eq('venue_id', venue_id);
 
     if (runtimeStateError) {
-      console.error('[AUTH DEBUG] Error clearing table runtime state:', runtimeStateError);
+      logger.error('[AUTH DEBUG] Error clearing table runtime state:', runtimeStateError);
       return NextResponse.json({ 
         ok: false, 
         error: `Failed to clear table runtime state: ${runtimeStateError.message}` 
@@ -51,7 +52,7 @@ export async function POST(request: NextRequest) {
     });
 
   } catch (error) {
-    console.error('[AUTH DEBUG] Error in clear tables API:', error);
+    logger.error('[AUTH DEBUG] Error in clear tables API:', { error: error instanceof Error ? error.message : 'Unknown error' });
     return NextResponse.json({ 
       ok: false, 
       error: 'Internal server error' 

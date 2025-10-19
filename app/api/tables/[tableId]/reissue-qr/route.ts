@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { createClient } from '@/lib/supabase/server';
+import { logger } from '@/lib/logger';
 
 export async function POST(req: NextRequest, context: { params: Promise<{ tableId: string }> }) {
   try {
@@ -29,13 +30,13 @@ export async function POST(req: NextRequest, context: { params: Promise<{ tableI
       .single();
 
     if (error) {
-      console.error('[TABLES API] Error reissuing QR:', error);
+      logger.error('[TABLES API] Error reissuing QR:', { error: error instanceof Error ? error.message : 'Unknown error' });
       return NextResponse.json({ error: 'Failed to reissue QR' }, { status: 500 });
     }
 
     return NextResponse.json({ table });
   } catch (error) {
-    console.error('[TABLES API] Unexpected error:', error);
+    logger.error('[TABLES API] Unexpected error:', { error: error instanceof Error ? error.message : 'Unknown error' });
     return NextResponse.json({ error: 'Internal server error' }, { status: 500 });
   }
 }

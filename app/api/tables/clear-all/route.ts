@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { createAdminClient } from '@/lib/supabase/server';
+import { logger } from '@/lib/logger';
 
 export async function POST(request: NextRequest) {
   try {
@@ -19,7 +20,7 @@ export async function POST(request: NextRequest) {
       .eq('venue_id', venue_id);
 
     if (sessionsError) {
-      console.error('[AUTH DEBUG] Error deleting table sessions:', sessionsError);
+      logger.error('[AUTH DEBUG] Error deleting table sessions:', sessionsError);
       return NextResponse.json({ 
         ok: false, 
         error: `Failed to delete table sessions: ${sessionsError.message}` 
@@ -34,7 +35,7 @@ export async function POST(request: NextRequest) {
       .eq('venue_id', venue_id);
 
     if (tablesError) {
-      console.error('[AUTH DEBUG] Error deleting tables:', tablesError);
+      logger.error('[AUTH DEBUG] Error deleting tables:', tablesError);
       return NextResponse.json({ 
         ok: false, 
         error: `Failed to delete tables: ${tablesError.message}` 
@@ -52,7 +53,7 @@ export async function POST(request: NextRequest) {
     });
 
   } catch (error) {
-    console.error('[AUTH DEBUG] Error in clear all tables API:', error);
+    logger.error('[AUTH DEBUG] Error in clear all tables API:', { error: error instanceof Error ? error.message : 'Unknown error' });
     return NextResponse.json({ 
       ok: false, 
       error: 'Internal server error' 

@@ -10,6 +10,7 @@ import { Label } from '@/components/ui/label';
 import { useToast } from '@/hooks/use-toast';
 import { createClient } from '@/lib/supabase/client';
 import type { FeedbackQuestion, FeedbackAnswer } from '@/types/feedback';
+import { logger } from '@/lib/logger';
 
 interface OrderFeedbackFormProps {
   venueId: string;
@@ -113,7 +114,7 @@ export default function OrderFeedbackForm({ venueId, orderId }: OrderFeedbackFor
         
       }
     } catch (error) {
-      console.error('[FEEDBACK] Error fetching questions:', error);
+      logger.error('[FEEDBACK] Error fetching questions:', error);
       // If API fails, fall back to generic questions
       setQuestions(genericQuestions);
       setTotalCount(genericQuestions.length);
@@ -248,7 +249,7 @@ export default function OrderFeedbackForm({ venueId, orderId }: OrderFeedbackFor
         });
       }
     } catch (error) {
-      console.error('[FEEDBACK] Error submitting feedback:', error);
+      logger.error('[FEEDBACK] Error submitting feedback:', error);
       
       // If we have generic questions and the main API fails, still show success
       if (questions.some(q => q.id.startsWith('generic'))) {

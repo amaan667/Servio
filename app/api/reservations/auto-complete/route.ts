@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { createClient, getAuthenticatedUser } from '@/lib/supabase/server';
+import { logger } from '@/lib/logger';
 
 export const runtime = 'nodejs';
 
@@ -51,7 +52,7 @@ export async function POST(req: NextRequest) {
       .in('status', ['BOOKED', 'CHECKED_IN']);
 
     if (fetchError) {
-      console.error('[AUTO COMPLETE] Error fetching active reservations:', fetchError);
+      logger.error('[AUTO COMPLETE] Error fetching active reservations:', fetchError);
       return NextResponse.json({ 
         ok: false, 
         error: 'Failed to fetch active reservations' 
@@ -131,7 +132,7 @@ export async function POST(req: NextRequest) {
       .select();
 
     if (updateError) {
-      console.error('[AUTO COMPLETE] Error updating reservations:', updateError);
+      logger.error('[AUTO COMPLETE] Error updating reservations:', updateError);
       return NextResponse.json({ 
         ok: false, 
         error: 'Failed to complete reservations' 
@@ -178,7 +179,7 @@ export async function POST(req: NextRequest) {
     });
 
   } catch (error: any) {
-    console.error('[AUTO COMPLETE] Error:', error);
+    logger.error('[AUTO COMPLETE] Error:', { error: error instanceof Error ? error.message : 'Unknown error' });
     return NextResponse.json({ 
       ok: false, 
       error: error.message || 'Internal server error' 

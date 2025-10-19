@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { createAdminClient } from '@/lib/supabase/server';
 import { parseMenuBulletproof, applyKnownFixes } from '@/lib/improvedMenuParser';
 import { convertPDFToImages } from '@/lib/pdf-to-images';
+import { apiLogger, logger } from '@/lib/logger';
 
 // Ensure this runs on Node.js runtime (not Edge)
 export const runtime = 'nodejs';
@@ -74,9 +75,9 @@ export async function POST(req: NextRequest) {
         };
 
         // Convert PDF to images for preview
-        console.log('[CATALOG REPLACE] Converting PDF to images...');
+        logger.debug('[CATALOG REPLACE] Converting PDF to images...');
         const pdfImages = await convertPDFToImages(fileBuffer, venueId);
-        console.log('[CATALOG REPLACE] PDF converted to', pdfImages.length, 'images');
+        logger.debug('[CATALOG REPLACE] PDF converted', { imageCount: pdfImages.length });
 
         // Validate and replace catalog
         return await replaceCatalog(supabase, venueId, fixedPayload, extractedText, pdfImages);
@@ -99,7 +100,7 @@ export async function POST(req: NextRequest) {
       try {
         requestBody = await req.json();
       } catch (jsonError) {
-        console.error('[CATALOG REPLACE] JSON parsing error:', jsonError);
+        logger.error('[CATALOG REPLACE] JSON parsing error:', { error: jsonError instanceof Error ? jsonError.message : 'Unknown error' });
         return NextResponse.json({ 
           ok: false, 
           error: 'Invalid JSON in request body' 
@@ -187,7 +188,7 @@ export async function POST(req: NextRequest) {
     }
 
   } catch (error: any) {
-    console.error('[CATALOG REPLACE] Unexpected error:', error);
+    logger.error('[CATALOG REPLACE] Unexpected error:', { error: error instanceof Error ? error.message : 'Unknown error' });
     return NextResponse.json({ 
       ok: false, 
       error: 'Unexpected error: ' + error.message 
@@ -208,7 +209,7 @@ async function replaceCatalog(supabase: any, venueId: string, fixedPayload: any,
       .eq('venue_id', venueId);
 
     if (deleteError) {
-      console.warn('[CATALOG REPLACE] Warning: Could not clear existing items:', deleteError.message);
+      logger.warn('[CATALOG REPLACE] Warning: Could not clear existing items:', deleteError.message);
     }
 
     // Insert new items
@@ -229,7 +230,7 @@ async function replaceCatalog(supabase: any, venueId: string, fixedPayload: any,
         .select('id, name, price, category');
 
       if (insertError) {
-        console.error('[CATALOG REPLACE] Insert error:', insertError);
+        logger.error('[CATALOG REPLACE] Insert error:', insertError);
         return NextResponse.json({ 
           ok: false, 
           error: 'Failed to insert menu items: ' + insertError.message,
@@ -239,7 +240,7 @@ async function replaceCatalog(supabase: any, venueId: string, fixedPayload: any,
 
       // Store PDF images in menu_uploads table
       if (pdfImages && pdfImages.length > 0) {
-        console.log('[CATALOG REPLACE] Saving PDF images to menu_uploads table...');
+        logger.debug('[CATALOG REPLACE] Saving PDF images to menu_uploads table...');
         const { data: insertData, error: insertError } = await supabase
           .from('menu_uploads')
           .insert({
@@ -255,9 +256,9 @@ async function replaceCatalog(supabase: any, venueId: string, fixedPayload: any,
           .select();
         
         if (insertError) {
-          console.error('[CATALOG REPLACE] Error storing PDF images:', insertError);
+          logger.error('[CATALOG REPLACE] Error storing PDF images:', insertError);
         } else {
-          console.log('[CATALOG REPLACE] Stored', pdfImages.length, 'PDF images:', insertData);
+          logger.debug('[CATALOG REPLACE] Stored', pdfImages.length, 'PDF images:', insertData);
         }
       }
 
@@ -283,7 +284,7 @@ async function replaceCatalog(supabase: any, venueId: string, fixedPayload: any,
     }
 
   } catch (error: any) {
-    console.error('[CATALOG REPLACE] Unexpected error:', error);
+    logger.error('[CATALOG REPLACE] Unexpected error:', { error: error instanceof Error ? error.message : 'Unknown error' });
     return NextResponse.json({ 
       ok: false, 
       error: 'Unexpected error: ' + error.message 
@@ -333,7 +334,7 @@ BEVERAGES
     return extractedText;
     
   } catch (error: any) {
-    console.error('[OCR] Text extraction failed:', error);
+    logger.error('[OCR] Text extraction failed:', { error: error instanceof Error ? error.message : 'Unknown error' });
     throw new Error(`OCR failed: ${error.message}`);
   }
 }

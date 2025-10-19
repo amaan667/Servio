@@ -7,6 +7,7 @@ import { Plus, Minus, ShoppingCart, X, Search, List, Grid, ZoomIn, ZoomOut } fro
 import { ItemDetailsModal } from '@/components/ItemDetailsModal';
 import { Input } from '@/components/ui/input';
 import { formatPriceWithCurrency } from '@/lib/pricing-utils';
+import { logger } from '@/lib/logger';
 
 interface MenuItem {
   id: string;
@@ -74,7 +75,7 @@ export function EnhancedPDFMenuDisplay({
       try {
         const supabase = createClient();
         
-        console.log('[PDF IMAGES] Fetching PDF images for venue:', venueId);
+        logger.debug('[PDF IMAGES] Fetching PDF images for venue:', venueId);
         
         // Fetch the most recent PDF upload for this venue
         const { data: uploadData, error } = await supabase
@@ -85,29 +86,29 @@ export function EnhancedPDFMenuDisplay({
           .limit(1)
           .single();
 
-        console.log('[PDF IMAGES] Upload data:', uploadData);
-        console.log('[PDF IMAGES] Error:', error);
+        logger.debug('[PDF IMAGES] Upload data:', uploadData);
+        logger.debug('[PDF IMAGES] Error:', error);
 
         if (uploadData) {
-          console.log('[PDF IMAGES] pdf_images column:', uploadData.pdf_images);
-          console.log('[PDF IMAGES] pdf_images_cc column:', uploadData.pdf_images_cc);
-          console.log('[PDF IMAGES] pdf_images type:', typeof uploadData.pdf_images);
-          console.log('[PDF IMAGES] pdf_images length:', uploadData.pdf_images?.length);
-          console.log('[PDF IMAGES] pdf_images_cc length:', uploadData.pdf_images_cc?.length);
+          logger.debug('[PDF IMAGES] pdf_images column:', uploadData.pdf_images);
+          logger.debug('[PDF IMAGES] pdf_images_cc column:', uploadData.pdf_images_cc);
+          logger.debug('[PDF IMAGES] pdf_images type:', typeof uploadData.pdf_images);
+          logger.debug('[PDF IMAGES] pdf_images length:', uploadData.pdf_images?.length);
+          logger.debug('[PDF IMAGES] pdf_images_cc length:', uploadData.pdf_images_cc?.length);
         }
 
         // Try pdf_images first, then fallback to pdf_images_cc
         const images = uploadData?.pdf_images || uploadData?.pdf_images_cc;
 
         if (uploadData && images && images.length > 0) {
-          console.log('[PDF IMAGES] Setting PDF images:', images);
+          logger.debug('[PDF IMAGES] Setting PDF images:', images);
           setPdfImages(images);
         } else {
-          console.log('[PDF IMAGES] No PDF images found, defaulting to list view');
+          logger.debug('[PDF IMAGES] No PDF images found, defaulting to list view');
           setViewMode('list');
         }
       } catch (error) {
-        console.error('[PDF IMAGES] Error fetching PDF images:', error);
+        logger.error('[PDF IMAGES] Error fetching PDF images:', error);
         setViewMode('list');
       } finally {
         setLoading(false);
@@ -131,7 +132,7 @@ export function EnhancedPDFMenuDisplay({
           setHotspots(data);
         }
       } catch (error) {
-        console.error('Error fetching hotspots:', error);
+        logger.error('Error fetching hotspots:', error);
       }
     };
 

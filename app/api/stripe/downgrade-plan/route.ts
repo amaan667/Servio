@@ -3,6 +3,7 @@ import { NextRequest, NextResponse } from "next/server";
 import Stripe from "stripe";
 import { createClient } from "@/lib/supabase/server";
 import { stripe } from "@/lib/stripe-client";
+import { apiLogger as logger } from '@/lib/logger';
 
 export async function POST(request: NextRequest) {
   try {
@@ -65,7 +66,7 @@ export async function POST(request: NextRequest) {
       });
     }
 
-    console.log(`[DOWNGRADE] Downgrading organization ${org.id} from ${org.subscription_tier} to ${newTier}`);
+    logger.debug(`[DOWNGRADE] Downgrading organization ${org.id} from ${org.subscription_tier} to ${newTier}`);
 
     // For downgrades, we'll update the organization immediately
     // and let Stripe handle the billing changes through their system
@@ -78,7 +79,7 @@ export async function POST(request: NextRequest) {
       .eq("id", org.id);
 
     if (updateError) {
-      console.error("[DOWNGRADE] Database update error:", updateError);
+      logger.error("[DOWNGRADE] Database update error:", updateError);
       return NextResponse.json(
         { error: "Failed to update subscription tier" },
         { status: 500 }
@@ -124,11 +125,11 @@ export async function POST(request: NextRequest) {
               },
             });
 
-            console.log(`[DOWNGRADE] Updated Stripe subscription ${subscription.id} to ${newTier} with immediate billing`);
+            logger.debug(`[DOWNGRADE] Updated Stripe subscription ${subscription.id} to ${newTier} with immediate billing`);
           }
         }
       } catch (stripeError) {
-        console.error("[DOWNGRADE] Stripe update error:", stripeError);
+        logger.error("[DOWNGRADE] Stripe update error:", stripeError);
         // Don't fail the entire operation if Stripe update fails
         // The database update already succeeded
       }
@@ -141,7 +142,7 @@ export async function POST(request: NextRequest) {
     });
 
   } catch (error: any) {
-    console.error("[DOWNGRADE] Error:", error);
+    logger.error("[DOWNGRADE] Error:", { error: error instanceof Error ? error.message : 'Unknown error' });
     return NextResponse.json(
       { error: error.message || "Failed to downgrade plan" },
       { status: 500 }

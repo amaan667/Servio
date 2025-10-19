@@ -4,6 +4,7 @@ import { getOpenAI } from '@/lib/openai';
 import { isMenuLike } from '@/lib/menuLike';
 import { tryParseMenuWithGPT } from '@/lib/safeParse';
 import { PDFDocument } from 'pdf-lib';
+import { apiLogger, logger } from '@/lib/logger';
 
 export async function POST(req: NextRequest) {
   try {
@@ -20,7 +21,7 @@ export async function POST(req: NextRequest) {
       .maybeSingle();
 
     if (fetchErr || !row) {
-      console.error('[AUTH DEBUG] Failed to fetch upload:', fetchErr);
+      logger.error('[AUTH DEBUG] Failed to fetch upload:', fetchErr);
       return NextResponse.json({ ok: false, error: 'Upload not found' }, { status: 404 });
     }
 
@@ -30,7 +31,7 @@ export async function POST(req: NextRequest) {
     
     const { data: file, error: dlErr } = await supa.storage.from('menus').download(storagePath);
     if (dlErr) {
-      console.error('[AUTH DEBUG] Failed to download file:', dlErr);
+      logger.error('[AUTH DEBUG] Failed to download file:', dlErr);
       return NextResponse.json({ ok: false, error: 'Failed to download file' }, { status: 500 });
     }
 
@@ -87,7 +88,7 @@ export async function POST(req: NextRequest) {
       
       rawText = visionResponse.choices[0]?.message?.content || '';
     } catch (textErr) {
-      console.error('[AUTH DEBUG] Failed to extract text:', textErr);
+      logger.error('[AUTH DEBUG] Failed to extract text:', textErr);
       rawText = 'Failed to extract text';
     }
 
@@ -156,14 +157,14 @@ IMPORTANT: For x_percent and y_percent, provide the approximate center position 
               return { items: itemsWithPage, tokens: response.usage?.total_tokens || 0, page: i + 1 };
             }
           } catch (parseErr) {
-            console.error('[AUTH DEBUG] Failed to parse JSON from page', i + 1, ':', parseErr);
+            logger.error('[AUTH DEBUG] Failed to parse JSON from page', i + 1, ':', parseErr);
           }
         }
 
         return { items: [], tokens: response.usage?.total_tokens || 0, page: i + 1 };
         
       } catch (visionErr) {
-        console.error('[AUTH DEBUG] Vision API error on page', i + 1, ':', visionErr);
+        logger.error('[AUTH DEBUG] Vision API error on page', i + 1, ':', visionErr);
         return { items: [], tokens: 0, page: i + 1 };
       }
     });
@@ -190,7 +191,7 @@ IMPORTANT: For x_percent and y_percent, provide the approximate center position 
       .eq('id', uploadId);
 
     if (updateErr) {
-      console.error('[AUTH DEBUG] Failed to update upload:', updateErr);
+      logger.error('[AUTH DEBUG] Failed to update upload:', updateErr);
       return NextResponse.json({ ok: false, error: 'Failed to save results' }, { status: 500 });
     }
 
@@ -198,7 +199,7 @@ IMPORTANT: For x_percent and y_percent, provide the approximate center position 
     let hotspotsCreated = 0;
     if (allMenuItems.length > 0 && allMenuItems[0].x_percent !== undefined) {
       try {
-        console.log('[AUTH DEBUG] Auto-creating hotspots from extraction...');
+        logger.debug('[AUTH DEBUG] Auto-creating hotspots from extraction...');
         
         // Get venue_id from upload record
         const { data: uploadData } = await supa
@@ -252,15 +253,15 @@ IMPORTANT: For x_percent and y_percent, provide the approximate center position 
               
               if (!hotspotsError) {
                 hotspotsCreated = hotspots.length;
-                console.log('[AUTH DEBUG] Auto-created', hotspotsCreated, 'hotspots');
+                logger.debug('[AUTH DEBUG] Auto-created', hotspotsCreated, 'hotspots');
               } else {
-                console.error('[AUTH DEBUG] Failed to create hotspots:', hotspotsError);
+                logger.error('[AUTH DEBUG] Failed to create hotspots:', hotspotsError);
               }
             }
           }
         }
       } catch (hotspotErr) {
-        console.error('[AUTH DEBUG] Hotspot creation error:', hotspotErr);
+        logger.error('[AUTH DEBUG] Hotspot creation error:', hotspotErr);
         // Don't fail the whole request if hotspot creation fails
       }
     }
@@ -275,7 +276,7 @@ IMPORTANT: For x_percent and y_percent, provide the approximate center position 
     });
 
   } catch (error) {
-    console.error('[AUTH DEBUG] Process error:', error);
+    logger.error('[AUTH DEBUG] Process error:', { error: error instanceof Error ? error.message : 'Unknown error' });
     return NextResponse.json({ ok: false, error: 'Processing failed' }, { status: 500 });
   }
 }

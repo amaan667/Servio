@@ -1,12 +1,13 @@
 import { NextResponse } from 'next/server';
 import { createAdminClient } from '@/lib/supabase/server';
+import { apiLogger, logger } from '@/lib/logger';
 
 export const runtime = 'nodejs';
 
 export async function POST(req: Request) {
   try {
     const supabaseAdmin = createAdminClient();
-    console.log('[KDS MIGRATION] Starting KDS schema migration...');
+    logger.debug('[KDS MIGRATION] Starting KDS schema migration...');
     
     // Create KDS Stations table
     const { error: stationsError } = await supabaseAdmin.rpc('exec', {
@@ -27,7 +28,7 @@ export async function POST(req: Request) {
     });
     
     if (stationsError) {
-      console.warn('[KDS MIGRATION] Stations table creation warning:', stationsError.message);
+      logger.warn('[KDS MIGRATION] Stations table creation warning:', stationsError.message);
     }
     
     // Create KDS Tickets table
@@ -55,7 +56,7 @@ export async function POST(req: Request) {
     });
     
     if (ticketsError) {
-      console.warn('[KDS MIGRATION] Tickets table creation warning:', ticketsError.message);
+      logger.warn('[KDS MIGRATION] Tickets table creation warning:', ticketsError.message);
     }
     
     // Create indexes
@@ -106,13 +107,13 @@ export async function POST(req: Request) {
             });
           
           if (insertError) {
-            console.warn(`[KDS MIGRATION] Station creation warning for ${venue.venue_id}:`, insertError.message);
+            logger.warn(`[KDS MIGRATION] Station creation warning for ${venue.venue_id}:`, insertError.message);
           }
         }
       }
     }
     
-    console.log('[KDS MIGRATION] Schema migration completed successfully');
+    logger.debug('[KDS MIGRATION] Schema migration completed successfully');
     
     return NextResponse.json({ 
       ok: true, 
@@ -121,7 +122,7 @@ export async function POST(req: Request) {
     });
     
   } catch (error: any) {
-    console.error('[KDS MIGRATION] Unexpected error:', error);
+    logger.error('[KDS MIGRATION] Unexpected error:', { error: error instanceof Error ? error.message : 'Unknown error' });
     return NextResponse.json({ 
       ok: false, 
       error: error.message || 'Migration failed' 

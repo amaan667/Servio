@@ -15,6 +15,7 @@ import { ArrowLeft, BarChart, TrendingUp, Clock, ShoppingBag, DollarSign, Calend
 import { toCSV, formatDateForCSV, formatCurrencyForCSV } from '@/lib/csv';
 import { useCsvDownload, generateTimestampedFilename } from '@/hooks/useCsvDownload';
 import { useToast } from '@/hooks/use-toast';
+import { logger } from '@/lib/logger';
 
 interface AnalyticsData {
   totalOrders: number;
@@ -112,7 +113,7 @@ export default function AnalyticsClient({ venueId, venueName }: { venueId: strin
         .order('created_at', { ascending: false });
 
       if (ordersError) {
-        console.error('🔍 [ANALYTICS] Orders error:', ordersError);
+        logger.error('🔍 [ANALYTICS] Orders error:', ordersError);
         throw new Error(`Failed to fetch orders: ${ordersError.message}`);
       }
 
@@ -125,7 +126,7 @@ export default function AnalyticsClient({ venueId, venueName }: { venueId: strin
         .eq('is_available', true);
 
       if (menuError) {
-        console.error('🔍 [ANALYTICS] Menu items error:', menuError);
+        logger.error('🔍 [ANALYTICS] Menu items error:', menuError);
       }
 
       // Process orders data - exclude demo orders and cancelled orders
@@ -319,7 +320,7 @@ export default function AnalyticsClient({ venueId, venueName }: { venueId: strin
       setFilteredOrders(validOrders);
 
     } catch (err: any) {
-      console.error('🔍 [ANALYTICS] Error fetching analytics:', err);
+      logger.error('🔍 [ANALYTICS] Error fetching analytics:', err);
       setError(err.message);
     } finally {
       setLoading(false);
@@ -404,7 +405,7 @@ export default function AnalyticsClient({ venueId, venueName }: { venueId: strin
       });
 
     } catch (error) {
-      console.error('Error exporting CSV:', error);
+      logger.error('Error exporting CSV:', error);
       toast({
         title: "Export Failed",
         description: "Failed to export analytics data. Please try again.",

@@ -1,6 +1,7 @@
 import { NextResponse } from 'next/server';
 import { createClient, getAuthenticatedUser } from '@/lib/supabase/server';
 import { cache } from '@/lib/cache';
+import { apiLogger, logger } from '@/lib/logger';
 
 export const runtime = 'nodejs';
 
@@ -22,11 +23,11 @@ export async function GET(req: Request) {
   const cachedOrders = await cache.get(cacheKey);
   
   if (cachedOrders) {
-    console.log('[LIVE ORDERS] Cache hit for:', venueId);
+    logger.debug('[LIVE ORDERS] Cache hit for:', venueId);
     return NextResponse.json(cachedOrders);
   }
   
-  console.log('[LIVE ORDERS] Cache miss for:', venueId);
+  logger.debug('[LIVE ORDERS] Cache miss for:', venueId);
   
   const supabase = await createClient();
 
@@ -60,7 +61,7 @@ export async function GET(req: Request) {
     .order('created_at', { ascending: false });
 
   if (error) {
-    console.error('[LIVE ORDERS] Error:', error);
+    logger.error('[LIVE ORDERS] Error:', { error: error instanceof Error ? error.message : 'Unknown error' });
     return NextResponse.json({ ok: false, error: error.message }, { status: 500 });
   }
 

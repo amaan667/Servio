@@ -10,6 +10,7 @@
  */
 
 import { createClient } from '@/lib/supabase/server';
+import { logger } from '@/lib/logger';
 
 export type SubscriptionTier = 'basic' | 'standard' | 'premium';
 
@@ -49,7 +50,7 @@ export async function checkFeatureAccess(
       .single();
 
     if (error) {
-      console.error('[FEATURE GATE] Error fetching venue:', error);
+      logger.error('[FEATURE GATE] Error fetching venue:', error);
       // Default to premium tier if error (allow all features)
       return {
         hasAccess: true,
@@ -80,7 +81,7 @@ export async function checkFeatureAccess(
         : `This feature requires ${requiredTier} tier. Your current tier is ${currentTier}.`,
     };
   } catch (error) {
-    console.error('[FEATURE GATE] Unexpected error:', error);
+    logger.error('[FEATURE GATE] Unexpected error:', error);
     return {
       hasAccess: true,
       tier: 'premium',
@@ -132,7 +133,7 @@ export async function clientCheckFeatureAccess(
     const response = await fetch(`/api/features/check?venue_id=${venueId}&feature=${feature}`);
     return await response.json();
   } catch (error) {
-    console.error('[FEATURE GATE CLIENT] Error:', error);
+    logger.error('[FEATURE GATE CLIENT] Error:', error);
     return {
       hasAccess: true,
       tier: 'premium',

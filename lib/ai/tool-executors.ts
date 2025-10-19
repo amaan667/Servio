@@ -2,6 +2,7 @@
 // Implements the actual tool logic with preview support
 
 import { createClient } from "@/lib/supabase/server";
+import { aiLogger as logger } from '@/lib/logger';
 import {
   ToolName,
   MenuUpdatePricesParams,
@@ -30,7 +31,7 @@ export async function executeMenuUpdatePrices(
 ): Promise<AIPreviewDiff | AIExecutionResult> {
   const supabase = await createClient();
 
-  console.log(`[AI ASSISTANT] Updating prices for ${params.items.length} items`);
+  logger.debug(`[AI ASSISTANT] Updating prices for ${params.items.length} items`);
 
   // Validate that we have items to update
   if (!params.items || params.items.length === 0) {
@@ -48,7 +49,7 @@ export async function executeMenuUpdatePrices(
     );
 
   if (fetchError) {
-    console.error("[AI ASSISTANT] Error fetching menu items:", fetchError);
+    logger.error("[AI ASSISTANT] Error fetching menu items:", fetchError);
     throw new AIAssistantError("Failed to fetch menu items", "EXECUTION_FAILED", fetchError);
   }
 
@@ -56,13 +57,13 @@ export async function executeMenuUpdatePrices(
     throw new AIAssistantError("No items found matching the provided IDs", "INVALID_PARAMS");
   }
 
-  console.log(`[AI ASSISTANT] Found ${currentItems.length} items in database`);
+  logger.debug(`[AI ASSISTANT] Found ${currentItems.length} items in database`);
 
   // Validate all item IDs exist
   const foundIds = new Set(currentItems.map(i => i.id));
   const missingIds = params.items.filter(i => !foundIds.has(i.id));
   if (missingIds.length > 0) {
-    console.error("[AI ASSISTANT] Missing item IDs:", missingIds.map(i => i.id));
+    logger.error("[AI ASSISTANT] Missing item IDs:", missingIds.map(i => i.id));
     throw new AIAssistantError(
       `Some items not found: ${missingIds.length} items do not exist`,
       "INVALID_PARAMS",
@@ -87,7 +88,7 @@ export async function executeMenuUpdatePrices(
     }
 
     const changePercent = Math.abs(((item.newPrice - current.price) / current.price) * 100);
-    console.log(`[AI ASSISTANT] ${current.name}: ${current.price} → ${item.newPrice} (${changePercent.toFixed(1)}% change)`);
+    logger.debug(`[AI ASSISTANT] ${current.name}: ${current.price} → ${item.newPrice} (${changePercent.toFixed(1)}% change)`);
     
     if (changePercent > maxChangePercent) {
       throw new AIAssistantError(
@@ -126,7 +127,7 @@ export async function executeMenuUpdatePrices(
   }
 
   // Execute - update prices for each item
-  console.log(`[AI ASSISTANT] Executing price updates for ${params.items.length} items`);
+  logger.debug(`[AI ASSISTANT] Executing price updates for ${params.items.length} items`);
   let updatedCount = 0;
   let failedUpdates: any[] = [];
   
@@ -145,13 +146,13 @@ export async function executeMenuUpdatePrices(
       .select("id, name, price");
 
     if (error) {
-      console.error(`[AI ASSISTANT] Failed to update price for "${itemName}":`, error);
+      logger.error(`[AI ASSISTANT] Failed to update price for "${itemName}":`, error);
       failedUpdates.push({ id: item.id, name: itemName, error: error.message });
     } else if (!data || data.length === 0) {
-      console.error(`[AI ASSISTANT] No item updated for "${itemName}" - possibly wrong venue_id`);
+      logger.error(`[AI ASSISTANT] No item updated for "${itemName}" - possibly wrong venue_id`);
       failedUpdates.push({ id: item.id, name: itemName, error: "Item not found or access denied" });
     } else {
-      console.log(`[AI ASSISTANT] Successfully updated "${itemName}" to £${item.newPrice}`);
+      logger.debug(`[AI ASSISTANT] Successfully updated "${itemName}" to £${item.newPrice}`);
       updatedCount++;
     }
   }
@@ -165,7 +166,7 @@ export async function executeMenuUpdatePrices(
     );
   }
 
-  console.log(`[AI ASSISTANT] Price update complete: ${updatedCount} items updated successfully`);
+  logger.debug(`[AI ASSISTANT] Price update complete: ${updatedCount} items updated successfully`);
 
   return {
     success: true,
@@ -466,7 +467,7 @@ export async function executeMenuTranslate(
     throw new AIAssistantError("No menu items found", "INVALID_PARAMS");
   }
 
-  console.log(`[AI ASSISTANT] Starting translation of ${items.length} items to ${params.targetLanguage}`);
+  logger.debug(`[AI ASSISTANT] Starting translation of ${items.length} items to ${params.targetLanguage}`);
 
   // Language code mapping
   const languageNames: Record<string, string> = {
@@ -647,19 +648,19 @@ export async function executeMenuTranslate(
       });
     });
     
-    console.log(`[AI ASSISTANT] Language detection: ${spanishCount} Spanish indicators, ${englishCount} English indicators`);
+    logger.debug(`[AI ASSISTANT] Language detection: ${spanishCount} Spanish indicators, ${englishCount} English indicators`);
     
     // If we have more Spanish indicators, assume source is Spanish
     if (spanishCount > englishCount) {
-      console.log(`[AI ASSISTANT] Detected source language: Spanish`);
+      logger.debug(`[AI ASSISTANT] Detected source language: Spanish`);
       return 'es';
     } else if (englishCount > spanishCount) {
-      console.log(`[AI ASSISTANT] Detected source language: English`);
+      logger.debug(`[AI ASSISTANT] Detected source language: English`);
       return 'en';
     } else {
       // If equal or no clear indicators, use opposite of target language
       const defaultSource = params.targetLanguage === 'es' ? 'en' : 'es';
-      console.log(`[AI ASSISTANT] Ambiguous language, defaulting to opposite of target: ${defaultSource}`);
+      logger.debug(`[AI ASSISTANT] Ambiguous language, defaulting to opposite of target: ${defaultSource}`);
       return defaultSource;
     }
   };
@@ -746,7 +747,7 @@ Remember: You MUST return ALL ${sampleItems.length} items with translations. No 
         const translatedArray = translated.items || [];
         
         if (translatedArray.length > 0) {
-          console.log("[AI ASSISTANT] Preview translation successful:", translatedArray.slice(0, 2));
+          logger.debug("[AI ASSISTANT] Preview translation successful:", translatedArray.slice(0, 2));
         }
 
         return {
@@ -769,7 +770,7 @@ Remember: You MUST return ALL ${sampleItems.length} items with translations. No 
         };
       }
     } catch (error) {
-      console.error("[AI ASSISTANT] Preview translation failed:", error);
+      logger.error("[AI ASSISTANT] Preview translation failed:", error);
       // Fallback to simple preview if translation fails
     }
 
@@ -809,7 +810,7 @@ Remember: You MUST return ALL ${sampleItems.length} items with translations. No 
     
     for (let i = 0; i < items.length; i += batchSize) {
       const batch = items.slice(i, i + batchSize);
-      console.log(`[AI ASSISTANT] Processing batch ${Math.floor(i/batchSize) + 1}/${Math.ceil(items.length/batchSize)} (${batch.length} items)`);
+      logger.debug(`[AI ASSISTANT] Processing batch ${Math.floor(i/batchSize) + 1}/${Math.ceil(items.length/batchSize)} (${batch.length} items)`);
       
       // Create translation prompt with explicit requirements
       const itemsToTranslate = batch.map(item => ({
@@ -881,7 +882,7 @@ Remember: You MUST return ALL ${batch.length} items with translations. No except
 
           const content = response.choices[0]?.message?.content;
           if (content) {
-            console.log(`[AI ASSISTANT] Translation response for batch ${Math.floor(i/batchSize) + 1}:`, content.substring(0, 200));
+            logger.debug(`[AI ASSISTANT] Translation response for batch ${Math.floor(i/batchSize) + 1}:`, content.substring(0, 200));
             const translated = JSON.parse(content);
             const translatedArray = translated.items || [];
             
@@ -893,39 +894,39 @@ Remember: You MUST return ALL ${batch.length} items with translations. No except
               );
               
               if (validItems.length === batch.length) {
-                console.log(`[AI ASSISTANT] Batch ${Math.floor(i/batchSize) + 1} translation successful: ${translatedArray.length} items`);
+                logger.debug(`[AI ASSISTANT] Batch ${Math.floor(i/batchSize) + 1} translation successful: ${translatedArray.length} items`);
                 translatedItems.push(...translatedArray);
                 batchTranslated = true;
               } else {
-                console.error(`[AI ASSISTANT] Batch ${Math.floor(i/batchSize) + 1} has ${validItems.length} valid items, expected ${batch.length}`);
+                logger.error(`[AI ASSISTANT] Batch ${Math.floor(i/batchSize) + 1} has ${validItems.length} valid items, expected ${batch.length}`);
                 retryCount++;
                 if (retryCount < maxRetries) {
-                  console.log(`[AI ASSISTANT] Retrying batch ${Math.floor(i/batchSize) + 1} (attempt ${retryCount + 1})`);
+                  logger.debug(`[AI ASSISTANT] Retrying batch ${Math.floor(i/batchSize) + 1} (attempt ${retryCount + 1})`);
                 }
               }
             } else {
-              console.error(`[AI ASSISTANT] Batch ${Math.floor(i/batchSize) + 1} returned ${translatedArray.length} items, expected ${batch.length}`);
+              logger.error(`[AI ASSISTANT] Batch ${Math.floor(i/batchSize) + 1} returned ${translatedArray.length} items, expected ${batch.length}`);
               retryCount++;
               if (retryCount < maxRetries) {
-                console.log(`[AI ASSISTANT] Retrying batch ${Math.floor(i/batchSize) + 1} (attempt ${retryCount + 1})`);
+                logger.debug(`[AI ASSISTANT] Retrying batch ${Math.floor(i/batchSize) + 1} (attempt ${retryCount + 1})`);
               }
             }
           } else {
-            console.error(`[AI ASSISTANT] No content in translation response for batch ${Math.floor(i/batchSize) + 1}`);
+            logger.error(`[AI ASSISTANT] No content in translation response for batch ${Math.floor(i/batchSize) + 1}`);
             retryCount++;
           }
         } catch (batchError) {
-          console.error(`[AI ASSISTANT] Batch ${Math.floor(i/batchSize) + 1} translation error:`, batchError);
+          logger.error(`[AI ASSISTANT] Batch ${Math.floor(i/batchSize) + 1} translation error:`, batchError);
           retryCount++;
           if (retryCount < maxRetries) {
-            console.log(`[AI ASSISTANT] Retrying batch ${Math.floor(i/batchSize) + 1} (attempt ${retryCount + 1})`);
+            logger.debug(`[AI ASSISTANT] Retrying batch ${Math.floor(i/batchSize) + 1} (attempt ${retryCount + 1})`);
           }
         }
       }
 
       // If batch failed after retries, add original items to maintain count
       if (!batchTranslated) {
-        console.error(`[AI ASSISTANT] Batch ${Math.floor(i/batchSize) + 1} failed after ${maxRetries} retries, using original items`);
+        logger.error(`[AI ASSISTANT] Batch ${Math.floor(i/batchSize) + 1} failed after ${maxRetries} retries, using original items`);
         const fallbackItems = batch.map(item => ({
           id: item.id,
           name: item.name,
@@ -938,7 +939,7 @@ Remember: You MUST return ALL ${batch.length} items with translations. No except
 
     // Validate that we have the same number of items
     if (translatedItems.length !== originalItemCount) {
-      console.error(`[AI ASSISTANT] Item count mismatch: expected ${originalItemCount}, got ${translatedItems.length}`);
+      logger.error(`[AI ASSISTANT] Item count mismatch: expected ${originalItemCount}, got ${translatedItems.length}`);
       throw new AIAssistantError(
         `Translation failed: Item count mismatch. Expected ${originalItemCount} items, got ${translatedItems.length}`,
         "EXECUTION_FAILED"
@@ -946,13 +947,13 @@ Remember: You MUST return ALL ${batch.length} items with translations. No except
     }
 
     // Update database with translations
-    console.log(`[AI ASSISTANT] Updating ${translatedItems.length} translated items in database`);
+    logger.debug(`[AI ASSISTANT] Updating ${translatedItems.length} translated items in database`);
     let updatedCount = 0;
     let failedCount = 0;
     
     for (const translatedItem of translatedItems) {
       if (!translatedItem || !translatedItem.id || !translatedItem.name) {
-        console.error(`[AI ASSISTANT] Invalid translated item:`, translatedItem);
+        logger.error(`[AI ASSISTANT] Invalid translated item:`, translatedItem);
         failedCount++;
         continue;
       }
@@ -971,7 +972,7 @@ Remember: You MUST return ALL ${batch.length} items with translations. No except
         updateData.description = translatedItem.description;
       }
 
-      console.log(`[AI ASSISTANT] Updating item ${translatedItem.id}: ${translatedItem.name}, category: ${translatedItem.category}`);
+      logger.debug(`[AI ASSISTANT] Updating item ${translatedItem.id}: ${translatedItem.name}, category: ${translatedItem.category}`);
 
       const { error } = await supabase
         .from("menu_items")
@@ -982,12 +983,12 @@ Remember: You MUST return ALL ${batch.length} items with translations. No except
       if (!error) {
         updatedCount++;
       } else {
-        console.error(`[AI ASSISTANT] Failed to update item ${translatedItem.id}:`, error);
+        logger.error(`[AI ASSISTANT] Failed to update item ${translatedItem.id}:`, error);
         failedCount++;
       }
     }
 
-    console.log(`[AI ASSISTANT] Translation complete: ${updatedCount} updated, ${failedCount} failed`);
+    logger.debug(`[AI ASSISTANT] Translation complete: ${updatedCount} updated, ${failedCount} failed`);
 
     if (updatedCount === 0 && translatedItems.length > 0) {
       throw new AIAssistantError(
@@ -1012,7 +1013,7 @@ Remember: You MUST return ALL ${batch.length} items with translations. No except
       auditId: "",
     };
   } catch (error: any) {
-    console.error("[AI ASSISTANT] Translation error:", error);
+    logger.error("[AI ASSISTANT] Translation error:", error);
     throw new AIAssistantError(
       `Translation failed: ${error.message}`,
       "EXECUTION_FAILED",
@@ -1576,7 +1577,7 @@ export async function executeAnalyticsGetStats(
 ): Promise<AIPreviewDiff | AIExecutionResult> {
   const supabase = await createClient();
 
-  console.log("[AI ASSISTANT] Analytics params:", JSON.stringify(params, null, 2));
+  logger.debug("[AI ASSISTANT] Analytics params:", JSON.stringify(params, null, 2));
 
   // Preview mode
   if (preview) {
@@ -1599,11 +1600,11 @@ export async function executeAnalyticsGetStats(
   try {
     // Build base query for orders
     const timeStart = getTimeRangeStart(params.timeRange);
-    console.log("[AI ASSISTANT] Time range start:", timeStart, "for range:", params.timeRange);
+    logger.debug("[AI ASSISTANT] Time range start:", timeStart, "for range:", params.timeRange);
     
     // If filtering by specific item, get order_items data
     if (params.itemId) {
-      console.log("[AI ASSISTANT] Searching for item:", params.itemName, "with ID:", params.itemId);
+      logger.debug("[AI ASSISTANT] Searching for item:", params.itemName, "with ID:", params.itemId);
       
       const { data: orderItems, error: orderItemsError } = await supabase
         .from("order_items")
@@ -1623,16 +1624,16 @@ export async function executeAnalyticsGetStats(
         .gte("orders.created_at", timeStart);
 
       if (orderItemsError) {
-        console.error("[AI ASSISTANT] Error fetching order items:", orderItemsError);
+        logger.error("[AI ASSISTANT] Error fetching order items:", orderItemsError);
       }
       
-      console.log("[AI ASSISTANT] Found", orderItems?.length || 0, "order items for this item");
+      logger.debug("[AI ASSISTANT] Found", orderItems?.length || 0, "order items for this item");
 
       const totalRevenue = orderItems?.reduce((sum, item) => sum + (item.price * item.quantity), 0) || 0;
       const totalQuantity = orderItems?.reduce((sum, item) => sum + item.quantity, 0) || 0;
       const orderCount = new Set(orderItems?.map((item: any) => item.orders.id)).size;
 
-      console.log("[AI ASSISTANT] Item stats:", { totalRevenue, totalQuantity, orderCount });
+      logger.debug("[AI ASSISTANT] Item stats:", { totalRevenue, totalQuantity, orderCount });
 
       stats = {
         itemName: params.itemName || "Unknown Item",
@@ -1711,11 +1712,11 @@ export async function executeAnalyticsGetStats(
       }
     }
   } catch (error) {
-    console.error("[AI ASSISTANT] Analytics error:", error);
+    logger.error("[AI ASSISTANT] Analytics error:", error);
     throw new AIAssistantError("Failed to get analytics data", "EXECUTION_FAILED", error);
   }
 
-  console.log("[AI ASSISTANT] Final analytics result:", JSON.stringify(stats, null, 2));
+  logger.debug("[AI ASSISTANT] Final analytics result:", JSON.stringify(stats, null, 2));
 
   return {
     success: true,

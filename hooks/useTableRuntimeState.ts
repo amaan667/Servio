@@ -1,5 +1,6 @@
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { createClient } from '@/lib/supabase/client';
+import { logger } from '@/lib/logger';
 
 const supabase = createClient();
 
@@ -79,13 +80,13 @@ export function useTableCounters(venueId: string) {
         p_venue_id: venueId 
       });
       if (error) {
-        console.error('[TABLE COUNTERS] Error:', error);
+        logger.error('[TABLE COUNTERS] Error:', error);
         throw error;
       }
       
       // The function returns a single JSON object, not an array
       const result = Array.isArray(data) ? data[0] : data;
-      console.log('[TABLE_RUNTIME_STATE] Fetched table counts:', {
+      logger.debug('[TABLE_RUNTIME_STATE] Fetched table counts:', {
         total_tables: result?.total_tables,
         available: result?.available,
         occupied: result?.occupied,
@@ -137,7 +138,7 @@ export function useSeatParty() {
         p_server_id: serverId || null
       });
       if (error) {
-        console.error('[TABLE HOOK] api_seat_party error:', error);
+        logger.error('[TABLE HOOK] api_seat_party error:', error);
         throw error;
       }
     },
@@ -159,7 +160,7 @@ export function useCloseTable() {
         p_venue_id: venueId
       });
       if (error) {
-        console.error('[TABLE HOOK] api_close_table error:', error);
+        logger.error('[TABLE HOOK] api_close_table error:', error);
         throw error;
       }
     },
@@ -243,7 +244,7 @@ export function useRemoveTable() {
 
       if (!response.ok) {
         const errorData = await response.json();
-        console.error('[TABLE HOOK] Delete table error:', errorData);
+        logger.error('[TABLE HOOK] Delete table error:', errorData);
         throw new Error(errorData.error || 'Failed to delete table');
       }
 
@@ -257,7 +258,7 @@ export function useRemoveTable() {
       qc.invalidateQueries({ queryKey: ['tables', 'counters', variables.venueId] });
     },
     onError: (error) => {
-      console.error('[TABLE HOOK] onError called:', error);
+      logger.error('[TABLE HOOK] onError called:', error);
     }
   });
 }
@@ -278,7 +279,7 @@ export function useClearAllTables() {
 
       if (!response.ok) {
         const errorData = await response.json();
-        console.error('[TABLE HOOK] Clear tables error:', errorData);
+        logger.error('[TABLE HOOK] Clear tables error:', errorData);
         throw new Error(errorData.error || 'Failed to clear table runtime state');
       }
 
@@ -292,7 +293,7 @@ export function useClearAllTables() {
       qc.invalidateQueries({ queryKey: ['tables', 'counters', variables.venueId] });
     },
     onError: (error) => {
-      console.error('[TABLE HOOK] Clear tables onError called:', error);
+      logger.error('[TABLE HOOK] Clear tables onError called:', error);
     }
   });
 }

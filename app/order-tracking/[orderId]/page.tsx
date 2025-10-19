@@ -7,6 +7,7 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Clock, CheckCircle, XCircle, RefreshCw, Truck, User, Hash } from "lucide-react";
 import { createClient } from "@/lib/supabase/client";
+import { logger } from '@/lib/logger';
 
 interface OrderItem {
   menu_item_id: string;
@@ -79,7 +80,7 @@ export default function OrderTrackingPage() {
       setOrder(data.order);
       setLastUpdate(new Date());
     } catch (err) {
-      console.error('Error fetching order:', err);
+      logger.error('Error fetching order:', err);
       setError('Failed to load order details');
     } finally {
       setLoading(false);
@@ -123,7 +124,7 @@ export default function OrderTrackingPage() {
         
         if (status === 'SUBSCRIBED') {
         } else if (status === 'CHANNEL_ERROR') {
-          console.error('Real-time subscription error');
+          logger.error('Real-time subscription error');
         }
       });
 

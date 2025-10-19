@@ -1,6 +1,7 @@
 import { getOpenAI } from "./openai";
 import { z } from "zod";
 import { MenuPayload, MenuPayloadT } from "./menuSchema";
+import { logger } from '@/lib/logger';
 
 
 export async function parseMenuStrict(extractedText: string): Promise<MenuPayloadT> {
@@ -51,7 +52,7 @@ export async function parseMenuStrict(extractedText: string): Promise<MenuPayloa
     const validated = MenuPayload.parse(parsed);
     return validated;
   } catch (e) {
-    console.error('[MENU PARSE] Initial parse failed, attempting repair:', e);
+    logger.error('[MENU PARSE] Initial parse failed, attempting repair:', e);
     // Fallback to repair flow if something still goes wrong
     return await repairMenuJson(raw);
   }
@@ -112,7 +113,7 @@ async function repairMenuJson(modelOutput: string) {
       const validated = MenuPayload.parse(parsed);
       return validated;
     } catch (finalError) {
-      console.error('[MENU PARSE] All repair attempts failed:', finalError);
+      logger.error('[MENU PARSE] All repair attempts failed:', finalError);
       throw new Error(`Failed to parse menu after all repair attempts: ${finalError}`);
     }
   }

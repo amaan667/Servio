@@ -4,6 +4,7 @@
 // Fixes common JSON parsing errors from GPT menu extraction
 
 /**
+import { logger } from '@/lib/logger';
  * Repairs malformed JSON from GPT output
  */
 export function repairMenuJSON(brokenJSON: string): string {
@@ -525,7 +526,7 @@ function validateAndCleanItems(json: string): string {
     return JSON.stringify(result, null, 2);
     
   } catch (error) {
-    console.error('[JSON_REPAIR] Failed to validate items:', error);
+    logger.error('[JSON_REPAIR] Failed to validate items:', error);
     return json;
   }
 }
@@ -613,7 +614,7 @@ export function repairAndValidateMenuJSON(brokenJSON: string): {
         items: validation.items
       };
     } else {
-      console.error('[JSON_REPAIR] Validation failed:', validation.errors);
+      logger.error('[JSON_REPAIR] Validation failed:', validation.errors);
       return {
         success: false,
         errors: validation.errors
@@ -621,7 +622,7 @@ export function repairAndValidateMenuJSON(brokenJSON: string): {
     }
     
   } catch (error) {
-    console.error('[JSON_REPAIR] Repair pipeline failed:', error);
+    logger.error('[JSON_REPAIR] Repair pipeline failed:', error);
     return {
       success: false,
       errors: [`Repair failed: ${(error as any).message}`]

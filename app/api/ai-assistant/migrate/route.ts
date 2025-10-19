@@ -3,6 +3,7 @@
 
 import { NextRequest, NextResponse } from "next/server";
 import { createClient } from "@/lib/supabase/server";
+import { apiLogger, logger } from '@/lib/logger';
 
 export async function POST(request: NextRequest) {
   try {
@@ -17,7 +18,7 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
 
-    console.log("[AI MIGRATION] Starting AI chat schema migration");
+    logger.debug("[AI MIGRATION] Starting AI chat schema migration");
 
     // Create tables sequentially to handle dependencies
     const migrationSQL = `
@@ -90,7 +91,7 @@ CREATE TABLE IF NOT EXISTS ai_action_audit (
 `;
 
     // Try to create tables using direct queries
-    console.log("[AI MIGRATION] Creating ai_chat_conversations table...");
+    logger.debug("[AI MIGRATION] Creating ai_chat_conversations table...");
     const { error: conversationsError } = await supabase
       .from('ai_chat_conversations')
       .select('id')
@@ -98,7 +99,7 @@ CREATE TABLE IF NOT EXISTS ai_action_audit (
 
     if (conversationsError && conversationsError.code === 'PGRST116') {
       // Table doesn't exist, we need to create it via SQL
-      console.log("[AI MIGRATION] Tables don't exist, returning instructions for manual creation");
+      logger.debug("[AI MIGRATION] Tables don't exist, returning instructions for manual creation");
       return NextResponse.json({
         success: false,
         message: "Database tables need to be created manually",
@@ -250,7 +251,7 @@ CREATE TRIGGER trigger_update_ai_chat_conversations_updated_at
 
     await supabase.rpc('exec_sql', { sql: triggerSQL });
 
-    console.log("[AI MIGRATION] Migration completed successfully");
+    logger.debug("[AI MIGRATION] Migration completed successfully");
 
     return NextResponse.json({
       success: true,
@@ -265,7 +266,7 @@ CREATE TRIGGER trigger_update_ai_chat_conversations_updated_at
     });
 
   } catch (error: any) {
-    console.error("[AI MIGRATION] Migration failed:", error);
+    logger.error("[AI MIGRATION] Migration failed:", { error: error instanceof Error ? error.message : 'Unknown error' });
     return NextResponse.json(
       { error: error.message || "Migration failed" },
       { status: 500 }

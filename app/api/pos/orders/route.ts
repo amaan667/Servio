@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { createClient } from '@/lib/supabase/server';
 import { getAuthenticatedUser } from '@/lib/supabase/server';
 import { cache } from '@/lib/cache';
+import { apiLogger, logger } from '@/lib/logger';
 
 export async function GET(req: NextRequest) {
   try {
@@ -25,11 +26,11 @@ export async function GET(req: NextRequest) {
     const cachedOrders = await cache.get(cacheKey);
     
     if (cachedOrders) {
-      console.log('[POS ORDERS] Cache hit for:', venueId);
+      logger.debug('[POS ORDERS] Cache hit for:', venueId);
       return NextResponse.json(cachedOrders);
     }
     
-    console.log('[POS ORDERS] Cache miss for:', venueId);
+    logger.debug('[POS ORDERS] Cache miss for:', venueId);
 
     const supabase = await createClient();
 
@@ -75,7 +76,7 @@ export async function GET(req: NextRequest) {
     const { data: orders, error } = await query;
 
     if (error) {
-      console.error('[POS ORDERS] Error:', error);
+      logger.error('[POS ORDERS] Error:', { error: error instanceof Error ? error.message : 'Unknown error' });
       return NextResponse.json({ error: error.message }, { status: 500 });
     }
 
@@ -92,7 +93,7 @@ export async function GET(req: NextRequest) {
 
     return NextResponse.json(response);
   } catch (error) {
-    console.error('[POS ORDERS] Unexpected error:', error);
+    logger.error('[POS ORDERS] Unexpected error:', { error: error instanceof Error ? error.message : 'Unknown error' });
     return NextResponse.json({ error: 'Internal server error' }, { status: 500 });
   }
 }

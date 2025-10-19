@@ -17,6 +17,7 @@ import { demoMenuItems } from "@/data/demoMenuItems";
 import { useRouter } from "next/navigation";
 import NavigationBreadcrumb from "@/components/navigation-breadcrumb";
 import { EnhancedPDFMenuDisplay } from "@/components/EnhancedPDFMenuDisplay";
+import { logger } from '@/lib/logger';
 
 // MenuItem interface for order page
 interface MenuItem {
@@ -168,7 +169,7 @@ export default function CustomerOrderPage() {
       }
       
     } catch (error) {
-      console.error('[ORDER PAGE] Error checking for existing order:', error);
+      logger.error('[ORDER PAGE] Error checking for existing order:', error);
       // Continue with normal flow if check fails
     }
   };
@@ -233,7 +234,7 @@ export default function CustomerOrderPage() {
           }
         }
       } catch (error) {
-        console.error('[ORDER PAGE] Error checking group session:', error);
+        logger.error('[ORDER PAGE] Error checking group session:', error);
         // On error, show modal to allow user to proceed
         setShowGroupSizeModal(true);
       }
@@ -261,7 +262,7 @@ export default function CustomerOrderPage() {
           .in('payment_status', ['UNPAID', 'PAY_LATER', 'IN_PROGRESS']);
 
         if (error) {
-          console.error('[ORDER PAGE] Error checking for active orders:', error);
+          logger.error('[ORDER PAGE] Error checking for active orders:', error);
         }
 
 
@@ -301,7 +302,7 @@ export default function CustomerOrderPage() {
               });
               
             } catch (error) {
-              console.error('[ORDER PAGE] Error parsing session data:', error);
+              logger.error('[ORDER PAGE] Error parsing session data:', error);
             }
           } else {
             // No session data but active orders exist - this shouldn't happen normally
@@ -319,7 +320,7 @@ export default function CustomerOrderPage() {
           }
         }
       } catch (error) {
-        console.error('[ORDER PAGE] Error in checkUnpaidOrders:', error);
+        logger.error('[ORDER PAGE] Error in checkUnpaidOrders:', error);
       }
     };
 
@@ -513,7 +514,7 @@ export default function CustomerOrderPage() {
         setGroupSessionId(data.groupSessionId);
       }
     } catch (error) {
-      console.error('[ORDER PAGE] Error creating group session:', error);
+      logger.error('[ORDER PAGE] Error creating group session:', error);
     }
   };
 
@@ -538,7 +539,7 @@ export default function CustomerOrderPage() {
         setGroupSessionId(data.groupSessionId);
       }
     } catch (error) {
-      console.error('[ORDER PAGE] Error updating group session:', error);
+      logger.error('[ORDER PAGE] Error updating group session:', error);
     }
   };
 
@@ -756,8 +757,8 @@ export default function CustomerOrderPage() {
         window.location.href = '/payment';
       }
     } catch (error) {
-      console.error('[ORDER SUBMIT] ERROR: Error preparing order:', error);
-      console.error('[ORDER SUBMIT] ERROR: Error stack:', error instanceof Error ? error.stack : 'No stack trace');
+      logger.error('[ORDER SUBMIT] ERROR: Error preparing order:', error);
+      logger.error('[ORDER SUBMIT] ERROR: Error stack:', error instanceof Error ? error.stack : 'No stack trace');
       
       // Provide more specific error messages
       let errorMessage = "Failed to place order. Please try again.";

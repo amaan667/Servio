@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { getUserSafe } from '@/utils/getUserSafe';
+import { apiLogger, logger } from '@/lib/logger';
 
 // POST /api/debug-email - Debug email sending
 export async function POST(request: NextRequest) {
@@ -16,9 +17,9 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: 'testEmail is required' }, { status: 400 });
     }
 
-    console.log('[DEBUG EMAIL] Testing email to:', testEmail);
-    console.log('[DEBUG EMAIL] Current user:', user.email);
-    console.log('[DEBUG EMAIL] RESEND_API_KEY present:', !!process.env.RESEND_API_KEY);
+    logger.debug('[DEBUG EMAIL] Testing email to:', testEmail);
+    logger.debug('[DEBUG EMAIL] Current user:', user.email);
+    logger.debug('[DEBUG EMAIL] RESEND_API_KEY present:', !!process.env.RESEND_API_KEY);
 
     // Test email sending
     try {
@@ -27,7 +28,7 @@ export async function POST(request: NextRequest) {
       const testToken = 'debug-' + Date.now();
       const invitationLink = generateInvitationLink(testToken);
       
-      console.log('[DEBUG EMAIL] Generated invitation link:', invitationLink);
+      logger.debug('[DEBUG EMAIL] Generated invitation link:', invitationLink);
       
       const emailSent = await sendInvitationEmail({
         email: testEmail,
@@ -38,7 +39,7 @@ export async function POST(request: NextRequest) {
         expiresAt: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000).toISOString()
       });
 
-      console.log('[DEBUG EMAIL] Email sent result:', emailSent);
+      logger.debug('[DEBUG EMAIL] Email sent result:', emailSent);
 
       return NextResponse.json({ 
         success: true,
@@ -50,7 +51,7 @@ export async function POST(request: NextRequest) {
       });
 
     } catch (emailError) {
-      console.error('[DEBUG EMAIL] Email error:', emailError);
+      logger.error('[DEBUG EMAIL] Email error:', emailError);
       return NextResponse.json({ 
         error: 'Email sending failed',
         details: emailError instanceof Error ? emailError.message : String(emailError),
@@ -60,7 +61,7 @@ export async function POST(request: NextRequest) {
     }
 
   } catch (error) {
-    console.error('[DEBUG EMAIL] Unexpected error:', error);
+    logger.error('[DEBUG EMAIL] Unexpected error:', { error: error instanceof Error ? error.message : 'Unknown error' });
     return NextResponse.json({ error: 'Internal server error' }, { status: 500 });
   }
 }

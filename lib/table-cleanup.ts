@@ -4,6 +4,7 @@
  */
 
 import { createClient } from '@/lib/supabase/server';
+import { logger } from '@/lib/logger';
 
 export interface TableCleanupParams {
   venueId: string;
@@ -58,20 +59,20 @@ export async function cleanupTableOnOrderCompletion(params: TableCleanupParams):
     const { data: activeOrders, error: activeOrdersError } = await activeOrdersQuery;
 
     if (activeOrdersError) {
-      console.error('[TABLE CLEANUP] Error checking active orders:', activeOrdersError);
+      logger.error('[TABLE CLEANUP] Error checking active orders:', activeOrdersError);
       return { success: false, error: 'Failed to check active orders' };
     }
 
     // If there are still active orders, don't clean up the table
     if (activeOrders && activeOrders.length > 0) {
-      console.log(`[TABLE CLEANUP] Table has ${activeOrders.length} active orders, skipping cleanup`);
+      logger.debug(`[TABLE CLEANUP] Table has ${activeOrders.length} active orders, skipping cleanup`);
       return { 
         success: true, 
         details: { sessionsCleared: 0, runtimeStateCleared: false }
       };
     }
 
-    console.log('[TABLE CLEANUP] No active orders found, proceeding with table cleanup');
+    logger.debug('[TABLE CLEANUP] No active orders found, proceeding with table cleanup');
 
     let sessionsCleared = 0;
     let runtimeStateCleared = false;
@@ -99,10 +100,10 @@ export async function cleanupTableOnOrderCompletion(params: TableCleanupParams):
     const { data: sessionData, error: sessionClearError } = await sessionQuery.select();
 
     if (sessionClearError) {
-      console.error('[TABLE CLEANUP] Error clearing table sessions:', sessionClearError);
+      logger.error('[TABLE CLEANUP] Error clearing table sessions:', sessionClearError);
     } else {
       sessionsCleared = sessionData?.length || 0;
-      console.log(`[TABLE CLEANUP] Cleared ${sessionsCleared} table sessions`);
+      logger.debug(`[TABLE CLEANUP] Cleared ${sessionsCleared} table sessions`);
     }
 
     // 2. Clear table runtime state
@@ -118,10 +119,10 @@ export async function cleanupTableOnOrderCompletion(params: TableCleanupParams):
         .eq('label', `Table ${tableNumber}`);
 
       if (runtimeClearError) {
-        console.error('[TABLE CLEANUP] Error clearing table runtime state:', runtimeClearError);
+        logger.error('[TABLE CLEANUP] Error clearing table runtime state:', runtimeClearError);
       } else {
         runtimeStateCleared = true;
-        console.log('[TABLE CLEANUP] Cleared table runtime state');
+        logger.debug('[TABLE CLEANUP] Cleared table runtime state');
       }
     }
 
@@ -138,14 +139,14 @@ export async function cleanupTableOnOrderCompletion(params: TableCleanupParams):
         .eq('table_id', tableId);
 
       if (runtimeClearErrorById) {
-        console.error('[TABLE CLEANUP] Error clearing table runtime state by ID:', runtimeClearErrorById);
+        logger.error('[TABLE CLEANUP] Error clearing table runtime state by ID:', runtimeClearErrorById);
       } else {
         runtimeStateCleared = true;
-        console.log('[TABLE CLEANUP] Cleared table runtime state by ID');
+        logger.debug('[TABLE CLEANUP] Cleared table runtime state by ID');
       }
     }
 
-    console.log('[TABLE CLEANUP] Table cleanup completed successfully');
+    logger.debug('[TABLE CLEANUP] Table cleanup completed successfully');
 
     return {
       success: true,
@@ -156,7 +157,7 @@ export async function cleanupTableOnOrderCompletion(params: TableCleanupParams):
     };
 
   } catch (error) {
-    console.error('[TABLE CLEANUP] Unexpected error during table cleanup:', error);
+    logger.error('[TABLE CLEANUP] Unexpected error during table cleanup:', error);
     return { 
       success: false, 
       error: error instanceof Error ? error.message : 'Unknown error during table cleanup'
@@ -200,7 +201,7 @@ export async function hasActiveOrders(params: TableCleanupParams): Promise<{
     const { count, error } = await query;
 
     if (error) {
-      console.error('[TABLE CLEANUP] Error checking active orders:', error);
+      logger.error('[TABLE CLEANUP] Error checking active orders:', error);
       return { hasActive: false, count: 0, error: error.message };
     }
 
@@ -210,7 +211,7 @@ export async function hasActiveOrders(params: TableCleanupParams): Promise<{
     };
 
   } catch (error) {
-    console.error('[TABLE CLEANUP] Unexpected error checking active orders:', error);
+    logger.error('[TABLE CLEANUP] Unexpected error checking active orders:', error);
     return { 
       hasActive: false, 
       count: 0, 

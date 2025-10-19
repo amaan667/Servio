@@ -3,6 +3,7 @@
 
 import { NextRequest, NextResponse } from "next/server";
 import { createAdminClient } from "@/lib/supabase/server";
+import { apiLogger, logger } from '@/lib/logger';
 
 export async function DELETE(
   _request: NextRequest,
@@ -20,7 +21,7 @@ export async function DELETE(
       );
     }
 
-    console.log("[AI CHAT DELETE] Deleting conversation:", conversationId);
+    logger.debug("[AI CHAT DELETE] Deleting conversation:", { conversationId });
 
     // Delete the conversation (messages will be cascade deleted due to foreign key)
     const { error } = await adminSupabase
@@ -29,17 +30,17 @@ export async function DELETE(
       .eq("id", conversationId);
 
     if (error) {
-      console.error("[AI CHAT] Failed to delete conversation:", error);
+      logger.error("[AI CHAT] Failed to delete conversation:", { error: error instanceof Error ? error.message : 'Unknown error' });
       return NextResponse.json(
         { error: "Failed to delete conversation" },
         { status: 500 }
       );
     }
 
-    console.log("[AI CHAT] Conversation deleted successfully");
+    logger.debug("[AI CHAT] Conversation deleted successfully");
     return NextResponse.json({ success: true });
   } catch (error: any) {
-    console.error("[AI CHAT] Delete conversation error:", error);
+    logger.error("[AI CHAT] Delete conversation error:", { error: error instanceof Error ? error.message : 'Unknown error' });
     return NextResponse.json(
       { error: error.message || "Internal server error" },
       { status: 500 }

@@ -1,5 +1,6 @@
 import { NextResponse } from 'next/server';
 import { createClient } from '@/lib/supabase/server';
+import { logger } from '@/lib/logger';
 
 export const runtime = 'nodejs';
 
@@ -34,7 +35,7 @@ export async function POST(req: Request) {
       .insert(feedbackData);
 
     if (error) {
-      console.error('[AUTH DEBUG] Feedback submission error:', error);
+      logger.error('[AUTH DEBUG] Feedback submission error:', { error: error instanceof Error ? error.message : 'Unknown error' });
       return NextResponse.json({ 
         ok: false, 
         error: error.message 
@@ -44,7 +45,7 @@ export async function POST(req: Request) {
     return NextResponse.json({ ok: true });
     
   } catch (e: any) {
-    console.error('[AUTH DEBUG] Feedback submission exception:', e);
+    logger.error('[AUTH DEBUG] Feedback submission exception:', e);
     return NextResponse.json({ 
       ok: false, 
       error: e.message 

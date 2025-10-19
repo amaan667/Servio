@@ -5,6 +5,7 @@ import { mapOrderToCardData } from './mapOrderToCardData';
 import { mapCounterOrderToCardData } from './mapCounterOrderToCardData';
 import type { LegacyOrder } from '@/types/orders';
 import type { CounterOrder } from '@/hooks/useCounterOrders';
+import { logger } from '@/lib/logger';
 
 
 // Test 1: Table order (has table_id and is_configured: true)
@@ -29,7 +30,7 @@ const tableOrder: LegacyOrder = {
 };
 
 const tableCardData = mapOrderToCardData(tableOrder);
-console.log('[TEST] Table card data:', {
+logger.debug('[TEST] Table card data:', {
   id: tableCardData.short_id,
   table_label: tableCardData.table_label,
   counter_label: tableCardData.counter_label,
@@ -54,7 +55,7 @@ const counterOrder: CounterOrder = {
 };
 
 const counterCardData = mapCounterOrderToCardData(counterOrder);
-console.log('[TEST] Counter card data:', {
+logger.debug('[TEST] Counter card data:', {
   id: counterCardData.short_id,
   table_label: counterCardData.table_label,
   counter_label: counterCardData.counter_label,
@@ -70,7 +71,7 @@ const unassignedOrder: LegacyOrder = {
 };
 
 const unassignedCardData = mapOrderToCardData(unassignedOrder);
-console.log('[TEST] Unassigned card data:', {
+logger.debug('[TEST] Unassigned card data:', {
   id: unassignedCardData.short_id,
   table_label: unassignedCardData.table_label,
   counter_label: unassignedCardData.counter_label

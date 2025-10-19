@@ -12,6 +12,7 @@ import {
 import { Building2, Plus } from "lucide-react";
 import { createClient } from "@/lib/supabase/client";
 import { Button } from "@/components/ui/button";
+import { logger } from '@/lib/logger';
 
 interface Venue {
   venue_id: string;
@@ -53,12 +54,12 @@ export function VenueSwitcher({ currentVenueId }: VenueSwitcherProps) {
       });
 
       if (error) {
-        console.error("Error loading venues:", error);
+        logger.error("Error loading venues:", error);
       } else {
         setVenues(data || []);
       }
     } catch (error) {
-      console.error("Error loading venues:", error);
+      logger.error("Error loading venues:", error);
     } finally {
       setLoading(false);
     }

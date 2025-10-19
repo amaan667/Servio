@@ -1,6 +1,7 @@
 // Debug endpoint to check organization subscription status
 import { NextRequest, NextResponse } from "next/server";
 import { createClient } from "@/lib/supabase/server";
+import { logger } from '@/lib/logger';
 
 export async function GET(request: NextRequest) {
   try {
@@ -63,7 +64,7 @@ export async function GET(request: NextRequest) {
     });
 
   } catch (error: any) {
-    console.error('Check organization error:', error);
+    logger.error('Check organization error:', { error: error instanceof Error ? error.message : 'Unknown error' });
     return NextResponse.json(
       { error: "Internal server error", details: error.message },
       { status: 500 }

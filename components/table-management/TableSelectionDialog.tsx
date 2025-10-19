@@ -13,6 +13,7 @@ import {
 import { Badge } from '@/components/ui/badge';
 import { Users, Clock, CheckCircle2 } from 'lucide-react';
 import { useTableActions } from '@/hooks/useTableActions';
+import { logger } from '@/lib/logger';
 
 interface Table {
   id: string;
@@ -107,7 +108,7 @@ export function TableSelectionDialog({
       onActionComplete?.();
       onClose();
     } catch (error) {
-      console.error(`[TABLE MERGE] Failed to ${action} table:`, {
+      logger.error(`[TABLE MERGE] Failed to ${action} table:`, {
         error,
         action,
         sourceTableId: sourceTable.id,

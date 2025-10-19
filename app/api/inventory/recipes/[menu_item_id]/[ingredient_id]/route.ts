@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { createClient } from '@/lib/supabase/server';
+import { logger } from '@/lib/logger';
 
 // DELETE /api/inventory/recipes/[menu_item_id]/[ingredient_id]
 // Remove a single ingredient from a recipe
@@ -18,7 +19,7 @@ export async function DELETE(
       .eq('ingredient_id', ingredient_id);
 
     if (error) {
-      console.error('[INVENTORY API] Error deleting recipe ingredient:', error);
+      logger.error('[INVENTORY API] Error deleting recipe ingredient:', { error: error instanceof Error ? error.message : 'Unknown error' });
       return NextResponse.json(
         { error: error.message },
         { status: 500 }
@@ -27,7 +28,7 @@ export async function DELETE(
 
     return NextResponse.json({ success: true });
   } catch (error) {
-    console.error('[INVENTORY API] Unexpected error:', error);
+    logger.error('[INVENTORY API] Unexpected error:', { error: error instanceof Error ? error.message : 'Unknown error' });
     return NextResponse.json(
       { error: 'Internal server error' },
       { status: 500 }

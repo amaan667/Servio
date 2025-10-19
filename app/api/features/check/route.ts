@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { checkFeatureAccess, PREMIUM_FEATURES } from '@/lib/feature-gates';
+import { logger } from '@/lib/logger';
 
 // GET /api/features/check?venue_id=xxx&feature=INVENTORY
 export async function GET(request: NextRequest) {
@@ -27,7 +28,7 @@ export async function GET(request: NextRequest) {
 
     return NextResponse.json(access);
   } catch (error) {
-    console.error('[FEATURE CHECK API] Error:', error);
+    logger.error('[FEATURE CHECK API] Error:', { error: error instanceof Error ? error.message : 'Unknown error' });
     return NextResponse.json(
       { error: 'Internal server error' },
       { status: 500 }

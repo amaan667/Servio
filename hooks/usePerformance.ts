@@ -1,6 +1,7 @@
 'use client';
 
 import React, { useEffect, useCallback } from 'react';
+import { logger } from '@/lib/logger';
 
 interface PerformanceMetrics {
   name: string;
@@ -25,7 +26,7 @@ export function usePerformance() {
           const measure = performance.getEntriesByName(measureName)[0];
           
           if (process.env.NODE_ENV === 'development') {
-            console.log(`[Performance] ${componentName} rendered in ${measure.duration.toFixed(2)}ms`);
+            logger.debug(`[Performance] ${componentName} rendered in ${measure.duration.toFixed(2)}ms`);
           }
 
           // Clean up marks
@@ -51,7 +52,7 @@ export function usePerformance() {
     const duration = performance.now() - start;
 
     if (process.env.NODE_ENV === 'development') {
-      console.log(`[Performance] ${actionName} completed in ${duration.toFixed(2)}ms`);
+      logger.debug(`[Performance] ${actionName} completed in ${duration.toFixed(2)}ms`);
     }
 
     return result;
@@ -90,7 +91,7 @@ export function usePerformance() {
   const reportLongTask = useCallback((taskName: string, duration: number) => {
     if (duration > 50) {
       // Long task threshold is 50ms
-      console.warn(
+      logger.warn(
         `[Performance Warning] Long task detected: ${taskName} took ${duration.toFixed(2)}ms`
       );
 
@@ -131,7 +132,7 @@ export function withPerformanceTracking<P extends object>(
       return () => {
         const duration = measure.end();
         if (duration && duration > 100) {
-          console.warn(
+          logger.warn(
             `[Performance] ${componentName} took ${duration.toFixed(2)}ms to render (>100ms threshold)`
           );
         }

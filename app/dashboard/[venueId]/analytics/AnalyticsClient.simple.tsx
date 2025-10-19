@@ -5,6 +5,7 @@ import { Button } from "@/components/ui/button";
 import { ArrowLeft, BarChart, TrendingUp, DollarSign } from "lucide-react";
 import { createClient } from "@/lib/supabase/client";
 import { useRouter } from "next/navigation";
+import { logger } from '@/lib/logger';
 
 interface Props {
   venueId: string;
@@ -36,7 +37,7 @@ export default function AnalyticsClientSimple({ venueId, venueName }: Props) {
           .gte('created_at', new Date(Date.now() - 30 * 24 * 60 * 60 * 1000).toISOString());
 
         if (ordersError) {
-          console.error('[ANALYTICS] Error loading orders:', ordersError);
+          logger.error('[ANALYTICS] Error loading orders:', ordersError);
           setError('Failed to load analytics data');
           return;
         }
@@ -48,7 +49,7 @@ export default function AnalyticsClientSimple({ venueId, venueName }: Props) {
           .eq('is_available', true);
 
         if (menuError) {
-          console.error('[ANALYTICS] Error loading menu items:', menuError);
+          logger.error('[ANALYTICS] Error loading menu items:', menuError);
         }
 
         const totalRevenue = orders?.reduce((sum: number, order: any) => sum + (Number(order.total_amount) || 0), 0) || 0;
@@ -62,7 +63,7 @@ export default function AnalyticsClientSimple({ venueId, venueName }: Props) {
           menuItemsCount: menuItems?.length || 0
         });
       } catch (err) {
-        console.error('[ANALYTICS] Unexpected error:', err);
+        logger.error('[ANALYTICS] Unexpected error:', err);
         setError('An unexpected error occurred');
       } finally {
         setLoading(false);

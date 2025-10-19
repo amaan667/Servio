@@ -2,6 +2,7 @@ import { NextResponse } from 'next/server';
 import Stripe from 'stripe';
 import { createClient } from '@/lib/supabase/server';
 import { stripe } from '@/lib/stripe-client';
+import { apiLogger, logger } from '@/lib/logger';
 
 export const runtime = 'nodejs';
 export const dynamic = 'force-dynamic';
@@ -11,7 +12,7 @@ export async function GET(req: Request) {
     const { searchParams } = new URL(req.url);
     const sessionId = searchParams.get('sessionId');
     
-    console.log('[VERIFY] Starting verification for session:', sessionId);
+    logger.debug('[VERIFY] Starting verification for session:', sessionId);
 
     if (!sessionId) {
       return NextResponse.json({ error: 'Session ID is required' }, { status: 400 });
@@ -19,7 +20,7 @@ export async function GET(req: Request) {
 
     // Retrieve the Stripe session
     const session = await stripe.checkout.sessions.retrieve(sessionId);
-    console.log('[VERIFY] Stripe session retrieved:', {
+    logger.debug('[VERIFY] Stripe session retrieved:', {
       id: session.id,
       paymentStatus: session.payment_status,
       metadata: session.metadata
@@ -35,7 +36,7 @@ export async function GET(req: Request) {
     const metadata = session.metadata || {};
     const orderId = metadata.orderId;
     
-    console.log('[VERIFY] Order ID from metadata:', orderId);
+    logger.debug('[VERIFY] Order ID from metadata:', orderId);
 
     if (!orderId) {
       return NextResponse.json({ 
@@ -44,7 +45,7 @@ export async function GET(req: Request) {
     }
 
     // Fetch the existing order (should have been created in order page)
-    console.log('[VERIFY] Fetching existing order:', orderId);
+    logger.debug('[VERIFY] Fetching existing order:', orderId);
     
     const supabase = await createClient();
     
@@ -55,7 +56,7 @@ export async function GET(req: Request) {
       .single();
 
     if (fetchError || !order) {
-      console.error('[VERIFY] Failed to fetch order:', fetchError);
+      logger.error('[VERIFY] Failed to fetch order:', fetchError);
       return NextResponse.json({ 
         error: 'Order not found. The order may not have been created properly.',
         details: fetchError?.message 
@@ -63,7 +64,7 @@ export async function GET(req: Request) {
     }
 
     // Update payment status to PAID
-    console.log('[VERIFY] Updating order payment status to PAID for order:', orderId);
+    logger.debug('[VERIFY] Updating order payment status to PAID for order:', orderId);
     
     const { data: updatedOrder, error: updateError } = await supabase
       .from('orders')
@@ -77,14 +78,14 @@ export async function GET(req: Request) {
       .single();
 
     if (updateError) {
-      console.error('[VERIFY] Failed to update payment status:', updateError);
+      logger.error('[VERIFY] Failed to update payment status:', updateError);
       return NextResponse.json({ 
         error: 'Failed to update order payment status',
         details: updateError.message 
       }, { status: 500 });
     }
 
-    console.log('[VERIFY] Payment status updated successfully for order:', orderId);
+    logger.debug('[VERIFY] Payment status updated successfully for order:', orderId);
 
     return NextResponse.json({ 
       order: updatedOrder,
@@ -92,7 +93,7 @@ export async function GET(req: Request) {
     });
 
   } catch (error) {
-    console.error('[VERIFY] Error:', error);
+    logger.error('[VERIFY] Error:', { error: error instanceof Error ? error.message : 'Unknown error' });
     return NextResponse.json({ 
       error: 'Internal server error',
       details: error instanceof Error ? error.message : 'Unknown error'

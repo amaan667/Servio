@@ -5,6 +5,7 @@
 
 import { NextResponse } from "next/server";
 import { repairAndValidateMenuJSON, validateMenuJSON } from '@/lib/pdfImporter/jsonRepair';
+import { logger } from '@/lib/logger';
 
 export const runtime = "nodejs";
 
@@ -50,7 +51,7 @@ export async function POST(req: Request) {
         itemsExtracted: repairResult.items?.length || 0
       });
     } else {
-      console.error('[JSON_REPAIR_API] Repair failed:', repairResult.errors);
+      logger.error('[JSON_REPAIR_API] Repair failed:', repairResult.errors);
       
       return NextResponse.json({
         success: false,
@@ -62,7 +63,7 @@ export async function POST(req: Request) {
     }
 
   } catch (error: any) {
-    console.error('[JSON_REPAIR_API] Fatal error:', error);
+    logger.error('[JSON_REPAIR_API] Fatal error:', { error: error instanceof Error ? error.message : 'Unknown error' });
     return NextResponse.json({ 
       success: false, 
       error: `JSON repair failed: ${error.message}` 

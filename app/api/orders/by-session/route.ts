@@ -1,5 +1,6 @@
 import { NextResponse } from 'next/server';
 import { createAdminClient } from '@/lib/supabase/server';
+import { apiLogger, logger } from '@/lib/logger';
 
 export const runtime = 'nodejs';
 export const dynamic = 'force-dynamic';
@@ -10,15 +11,15 @@ export async function GET(req: Request) {
     const { searchParams } = new URL(req.url);
     const sessionId = searchParams.get('sessionId');
     
-    console.log('[ORDER BY SESSION] Request URL:', req.url);
-    console.log('[ORDER BY SESSION] Session ID from params:', sessionId);
+    logger.debug('[ORDER BY SESSION] Request URL:', req.url);
+    logger.debug('[ORDER BY SESSION] Session ID from params:', sessionId);
     
     if (!sessionId) {
       return NextResponse.json({ error: 'Session ID is required' }, { status: 400 });
     }
 
     // First try to fetch order by Stripe session ID
-    console.log('[ORDER BY SESSION] Searching for order with stripe_session_id:', sessionId);
+    logger.debug('[ORDER BY SESSION] Searching for order with stripe_session_id:', sessionId);
     const { data: order, error: orderError } = await supabaseAdmin
       .from('orders')
       .select(`
@@ -37,7 +38,7 @@ export async function GET(req: Request) {
 
     // If not found by session ID, try to find recent orders that might be related
     if (orderError && orderError.code === 'PGRST116') {
-      console.log('[ORDER BY SESSION] No order found with session ID, checking recent orders...');
+      logger.debug('[ORDER BY SESSION] No order found with session ID, checking recent orders...');
       
       // Look for orders created in the last 15 minutes that are paid
       const fifteenMinutesAgo = new Date(Date.now() - 15 * 60 * 1000).toISOString();
@@ -61,7 +62,7 @@ export async function GET(req: Request) {
         .limit(1);
 
       if (recentPaidOrders && recentPaidOrders.length > 0) {
-        console.log('[ORDER BY SESSION] Found recent paid order:', recentPaidOrders[0].id);
+        logger.debug('[ORDER BY SESSION] Found recent paid order:', recentPaidOrders[0].id);
         const recentOrder = recentPaidOrders[0];
         
         // Transform the order to include items array
@@ -80,7 +81,7 @@ export async function GET(req: Request) {
     }
 
     if (orderError) {
-      console.error('[ORDER BY SESSION] Error fetching order by stripe_session_id:', orderError);
+      logger.error('[ORDER BY SESSION] Error fetching order by stripe_session_id:', orderError);
       return NextResponse.json({ 
         error: 'Order not found for this session ID' 
       }, { status: 404 });
@@ -106,7 +107,7 @@ export async function GET(req: Request) {
     });
 
   } catch (error) {
-    console.error('[ORDER BY SESSION] Error:', error);
+    logger.error('[ORDER BY SESSION] Error:', { error: error instanceof Error ? error.message : 'Unknown error' });
     return NextResponse.json({ 
       error: 'Internal server error' 
     }, { status: 500 });

@@ -7,6 +7,7 @@ import { Textarea } from '@/components/ui/textarea';
 import { Badge } from '@/components/ui/badge';
 import { Star, MessageSquare, Send, CheckCircle } from 'lucide-react';
 import { createClient } from '@/lib/supabase/client';
+import { logger } from '@/lib/logger';
 
 interface CustomerFeedbackFormProps {
   venueId: string;
@@ -133,7 +134,7 @@ export function CustomerFeedbackForm({
       onFeedbackSubmitted?.();
 
     } catch (err: any) {
-      console.error('Failed to submit feedback:', err);
+      logger.error('Failed to submit feedback:', err);
       setError(err.message || 'Failed to submit feedback. Please try again.');
     } finally {
       setIsSubmitting(false);

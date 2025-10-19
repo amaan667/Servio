@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { createClient } from '@/lib/supabase/server';
 import { getUserSafe } from '@/utils/getUserSafe';
+import { apiLogger, logger } from '@/lib/logger';
 
 // POST /api/migrate-database-constraint - Fix staff invitations constraint
 export async function POST(request: NextRequest) {
@@ -12,7 +13,7 @@ export async function POST(request: NextRequest) {
 
     const supabase = await createClient();
 
-    console.log('[MIGRATION] Starting staff invitations constraint fix...');
+    logger.debug('[MIGRATION] Starting staff invitations constraint fix...');
 
     // Step 1: Drop the existing unique constraint that includes status
     const { error: dropError } = await supabase.rpc('exec_sql', {
@@ -20,10 +21,10 @@ export async function POST(request: NextRequest) {
     });
 
     if (dropError) {
-      console.error('[MIGRATION] Error dropping constraint:', dropError);
+      logger.error('[MIGRATION] Error dropping constraint:', dropError);
       // Continue anyway, constraint might not exist
     } else {
-      console.log('[MIGRATION] Dropped existing constraint');
+      logger.debug('[MIGRATION] Dropped existing constraint');
     }
 
     // Step 2: Create the new partial unique index
@@ -34,14 +35,14 @@ export async function POST(request: NextRequest) {
     });
 
     if (createIndexError) {
-      console.error('[MIGRATION] Error creating new index:', createIndexError);
+      logger.error('[MIGRATION] Error creating new index:', createIndexError);
       return NextResponse.json({ 
         error: 'Failed to create new constraint',
         details: createIndexError.message 
       }, { status: 500 });
     }
 
-    console.log('[MIGRATION] Created new partial unique index');
+    logger.debug('[MIGRATION] Created new partial unique index');
 
     // Step 3: Add comment to the index
     const { error: commentError } = await supabase.rpc('exec_sql', {
@@ -49,7 +50,7 @@ export async function POST(request: NextRequest) {
     });
 
     if (commentError) {
-      console.warn('[MIGRATION] Warning: Could not add comment to index:', commentError);
+      logger.warn('[MIGRATION] Warning: Could not add comment to index:', commentError);
       // This is not critical, continue
     }
 
@@ -64,10 +65,10 @@ export async function POST(request: NextRequest) {
     });
 
     if (verifyError) {
-      console.warn('[MIGRATION] Warning: Could not verify constraints:', verifyError);
+      logger.warn('[MIGRATION] Warning: Could not verify constraints:', verifyError);
     }
 
-    console.log('[MIGRATION] Staff invitations constraint fix completed successfully');
+    logger.debug('[MIGRATION] Staff invitations constraint fix completed successfully');
 
     return NextResponse.json({ 
       success: true,
@@ -76,7 +77,7 @@ export async function POST(request: NextRequest) {
     });
 
   } catch (error) {
-    console.error('[MIGRATION] Unexpected error:', error);
+    logger.error('[MIGRATION] Unexpected error:', { error: error instanceof Error ? error.message : 'Unknown error' });
     return NextResponse.json({ error: 'Internal server error' }, { status: 500 });
   }
 }

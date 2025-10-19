@@ -3,6 +3,7 @@
 
 import OpenAI from "openai";
 import { createClient } from "@/lib/supabase/server";
+import { logger } from '@/lib/logger';
 
 const client = new OpenAI({ 
   apiKey: process.env.OPENAI_API_KEY 
@@ -221,7 +222,7 @@ export async function handleUserMessage({
           } as any);
 
         } catch (error: any) {
-          console.error(`[AI] Tool execution error for ${name}:`, error);
+          logger.error(`[AI] Tool execution error for ${name}:`, error);
           toolResult = { error: `Tool execution failed: ${error?.message || 'Unknown error'}` };
           
           await supabase.from("ai_messages").insert({
@@ -281,7 +282,7 @@ export async function handleUserMessage({
       };
     }
   } catch (error: any) {
-    console.error("[AI] OpenAI service error:", error);
+    logger.error("[AI] OpenAI service error:", error);
     throw new Error(`AI service error: ${error?.message || 'Unknown error'}`);
   }
 }
@@ -383,7 +384,7 @@ export async function generateConversationTitle(firstUserMessage: string): Promi
     const title = response.choices[0].message.content?.trim() || "New Chat";
     return title.substring(0, 60); // Limit length
   } catch (error) {
-    console.error("[AI] Title generation error:", error);
+    logger.error("[AI] Title generation error:", error);
     return firstUserMessage.substring(0, 60);
   }
 }

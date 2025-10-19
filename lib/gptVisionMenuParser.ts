@@ -1,5 +1,6 @@
 import { getOpenAI } from "./openai";
 import fs from "fs";
+import { logger } from '@/lib/logger';
 
 export async function extractMenuFromImage(imagePath: string) {
   const openai = getOpenAI();
@@ -50,7 +51,7 @@ Rules:
     const json = JSON.parse(text!);
     return json;
   } catch (err) {
-    console.error("Failed to parse JSON:", text);
+    logger.error("Failed to parse JSON:", text);
     throw new Error("Invalid JSON response from GPT Vision");
   }
 }

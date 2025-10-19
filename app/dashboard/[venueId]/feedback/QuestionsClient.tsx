@@ -12,6 +12,7 @@ import { ToggleSwitch } from '@/components/ui/toggle-switch';
 import { Badge } from '@/components/ui/badge';
 import { useToast } from '@/hooks/use-toast';
 import type { FeedbackQuestion, FeedbackType } from '@/types/feedback';
+import { dbLogger } from '@/lib/logger';
 // import MobileNav from '@/components/MobileNav';
 
 interface QuestionsClientProps {
@@ -63,18 +64,18 @@ export default function QuestionsClient({ venueId, venueName, mode = 'full' }: Q
 
   const fetchQuestions = async () => {
     try {
-      console.log('[FEEDBACK DEBUG] Fetching questions for venue:', venueId);
+      logger.debug('[FEEDBACK DEBUG] Fetching questions for venue:', venueId);
       
       const response = await fetch(`/api/feedback/questions?venueId=${venueId}`);
-      console.log('[FEEDBACK DEBUG] Fetch response status:', response.status);
+      logger.debug('[FEEDBACK DEBUG] Fetch response status:', response.status);
       
       if (response.ok) {
         const data = await response.json();
-        console.log('[FEEDBACK DEBUG] Fetched questions:', data);
+        logger.debug('[FEEDBACK DEBUG] Fetched questions:', data);
         setQuestions(data.questions || []);
         setTotalCount(data.totalCount || 0);
       } else {
-        console.error('[FEEDBACK DEBUG] Fetch failed:', response.status);
+        logger.error('[FEEDBACK DEBUG] Fetch failed:', response.status);
         toast({
           title: "Error",
           description: "Couldn't load questions",
@@ -82,7 +83,7 @@ export default function QuestionsClient({ venueId, venueName, mode = 'full' }: Q
         });
       }
     } catch (error) {
-      console.error('[FEEDBACK DEBUG] Fetch exception:', error);
+      logger.error('[FEEDBACK DEBUG] Fetch exception:', error);
       toast({
         title: "Error",
         description: "Couldn't load questions",
@@ -161,7 +162,7 @@ export default function QuestionsClient({ venueId, venueName, mode = 'full' }: Q
         });
       }
     } catch (error) {
-      console.error('[FEEDBACK DEBUG] Exception:', error);
+      logger.error('[FEEDBACK DEBUG] Exception:', error);
       toast({
         title: "Error",
         description: "Couldn't save question",

@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { createClient } from '@/lib/supabase/server';
 import type { StockAdjustmentRequest } from '@/types/inventory';
+import { logger } from '@/lib/logger';
 
 // POST /api/inventory/stock/adjust
 export async function POST(request: NextRequest) {
@@ -50,7 +51,7 @@ export async function POST(request: NextRequest) {
       .single();
 
     if (error) {
-      console.error('[INVENTORY API] Error creating stock adjustment:', error);
+      logger.error('[INVENTORY API] Error creating stock adjustment:', { error: error instanceof Error ? error.message : 'Unknown error' });
       return NextResponse.json(
         { error: error.message },
         { status: 500 }
@@ -59,7 +60,7 @@ export async function POST(request: NextRequest) {
 
     return NextResponse.json({ data }, { status: 201 });
   } catch (error) {
-    console.error('[INVENTORY API] Unexpected error:', error);
+    logger.error('[INVENTORY API] Unexpected error:', { error: error instanceof Error ? error.message : 'Unknown error' });
     return NextResponse.json(
       { error: 'Internal server error' },
       { status: 500 }

@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { createClient } from '@/lib/supabase/server';
 import { getAuthenticatedUser } from '@/lib/supabase/server';
+import { logger } from '@/lib/logger';
 
 export async function GET(req: NextRequest) {
   try {
@@ -35,13 +36,13 @@ export async function GET(req: NextRequest) {
       .rpc('get_counter_status', { p_venue_id: venueId });
 
     if (error) {
-      console.error('[POS COUNTER SESSIONS] Error:', error);
+      logger.error('[POS COUNTER SESSIONS] Error:', { error: error instanceof Error ? error.message : 'Unknown error' });
       return NextResponse.json({ error: error.message }, { status: 500 });
     }
 
     return NextResponse.json({ counters: counterStatus });
   } catch (error) {
-    console.error('[POS COUNTER SESSIONS] Unexpected error:', error);
+    logger.error('[POS COUNTER SESSIONS] Unexpected error:', { error: error instanceof Error ? error.message : 'Unknown error' });
     return NextResponse.json({ error: 'Internal server error' }, { status: 500 });
   }
 }
@@ -92,7 +93,7 @@ export async function POST(req: NextRequest) {
           .single();
 
         if (sessionError) {
-          console.error('[POS COUNTER SESSIONS] Error creating session:', sessionError);
+          logger.error('[POS COUNTER SESSIONS] Error creating session:', sessionError);
           return NextResponse.json({ error: 'Failed to create counter session' }, { status: 500 });
         }
 
@@ -114,7 +115,7 @@ export async function POST(req: NextRequest) {
           .single();
 
         if (closeError) {
-          console.error('[POS COUNTER SESSIONS] Error closing session:', closeError);
+          logger.error('[POS COUNTER SESSIONS] Error closing session:', closeError);
           return NextResponse.json({ error: 'Failed to close counter session' }, { status: 500 });
         }
 
@@ -135,7 +136,7 @@ export async function POST(req: NextRequest) {
             .eq('is_active', true);
 
           if (ordersError) {
-            console.error('[POS COUNTER SESSIONS] Error completing orders:', ordersError);
+            logger.error('[POS COUNTER SESSIONS] Error completing orders:', ordersError);
           }
         }
 
@@ -148,7 +149,7 @@ export async function POST(req: NextRequest) {
 
     return NextResponse.json(result);
   } catch (error) {
-    console.error('[POS COUNTER SESSIONS] Unexpected error:', error);
+    logger.error('[POS COUNTER SESSIONS] Unexpected error:', { error: error instanceof Error ? error.message : 'Unknown error' });
     return NextResponse.json({ error: 'Internal server error' }, { status: 500 });
   }
 }

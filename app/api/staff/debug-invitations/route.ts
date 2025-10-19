@@ -2,6 +2,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { createClient } from '@/lib/supabase/server';
 import { getUserSafe } from '@/utils/getUserSafe';
+import { logger } from '@/lib/logger';
 
 export async function GET(request: NextRequest) {
   try {
@@ -130,7 +131,7 @@ export async function GET(request: NextRequest) {
 
     return NextResponse.json(debugInfo);
   } catch (error) {
-    console.error('[DEBUG API] Unexpected error:', error);
+    logger.error('[DEBUG API] Unexpected error:', { error: error instanceof Error ? error.message : 'Unknown error' });
     return NextResponse.json({ 
       error: 'Internal server error',
       details: error instanceof Error ? error.message : 'Unknown error'

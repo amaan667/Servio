@@ -1,6 +1,7 @@
 import { NextResponse } from 'next/server';
 import { createClient, getAuthenticatedUser } from '@/lib/supabase/server';
 import { cleanupTableOnOrderCompletion } from '@/lib/table-cleanup';
+import { apiLogger, logger } from '@/lib/logger';
 
 export const runtime = 'nodejs';
 
@@ -28,7 +29,7 @@ export async function POST(req: Request) {
         .in('order_status', ['PLACED', 'IN_PREP', 'READY', 'SERVING']);
       
       if (fetchError) {
-        console.error('[BULK COMPLETE] Error fetching active orders:', fetchError);
+        logger.error('[BULK COMPLETE] Error fetching active orders:', fetchError);
         return NextResponse.json({ error: 'Failed to fetch active orders' }, { status: 500 });
       }
       
@@ -52,7 +53,7 @@ export async function POST(req: Request) {
       .eq('venue_id', venueId);
     
     if (fetchOrdersError) {
-      console.error('[BULK COMPLETE] Error fetching order details:', fetchOrdersError);
+      logger.error('[BULK COMPLETE] Error fetching order details:', fetchOrdersError);
       return NextResponse.json({ error: 'Failed to fetch order details' }, { status: 500 });
     }
     
@@ -68,7 +69,7 @@ export async function POST(req: Request) {
       .select('id, table_id, table_number, source');
 
     if (updateError) {
-      console.error('[BULK COMPLETE] Error updating orders:', updateError);
+      logger.error('[BULK COMPLETE] Error updating orders:', updateError);
       return NextResponse.json({ error: 'Failed to update orders' }, { status: 500 });
     }
 
@@ -97,12 +98,12 @@ export async function POST(req: Request) {
       cleanupResults.forEach((result, index) => {
         if (result.status === 'fulfilled') {
           if (result.value.success) {
-            console.log(`[BULK COMPLETE] Table cleanup ${index + 1} successful:`, result.value.details);
+            logger.debug(`[BULK COMPLETE] Table cleanup ${index + 1} successful:`, result.value.details);
           } else {
-            console.error(`[BULK COMPLETE] Table cleanup ${index + 1} failed:`, result.value.error);
+            logger.error(`[BULK COMPLETE] Table cleanup ${index + 1} failed:`, result.value.error);
           }
         } else {
-          console.error(`[BULK COMPLETE] Table cleanup ${index + 1} rejected:`, result.reason);
+          logger.error(`[BULK COMPLETE] Table cleanup ${index + 1} rejected:`, result.reason);
         }
       });
       
@@ -125,7 +126,7 @@ export async function POST(req: Request) {
             .single();
 
           if (tableDetailsError) {
-            console.error('[BULK COMPLETE] Error fetching table details:', tableDetailsError);
+            logger.error('[BULK COMPLETE] Error fetching table details:', tableDetailsError);
             continue; // Skip this table if we can't get details
           }
 
@@ -137,8 +138,8 @@ export async function POST(req: Request) {
             .eq('venue_id', venueId);
 
           if (clearTableRefsError) {
-            console.error('[BULK COMPLETE] Error clearing table references in orders:', clearTableRefsError);
-            console.warn('[BULK COMPLETE] Proceeding with table deletion despite table reference clear failure');
+            logger.error('[BULK COMPLETE] Error clearing table references in orders:', clearTableRefsError);
+            logger.warn('[BULK COMPLETE] Proceeding with table deletion despite table reference clear failure');
           } else {
           }
 
@@ -150,8 +151,8 @@ export async function POST(req: Request) {
             .eq('venue_id', venueId);
 
           if (deleteSessionError) {
-            console.error('[BULK COMPLETE] Error deleting table sessions:', deleteSessionError);
-            console.warn('[BULK COMPLETE] Proceeding with table deletion despite session deletion failure');
+            logger.error('[BULK COMPLETE] Error deleting table sessions:', deleteSessionError);
+            logger.warn('[BULK COMPLETE] Proceeding with table deletion despite session deletion failure');
           } else {
           }
           
@@ -163,8 +164,8 @@ export async function POST(req: Request) {
             .eq('venue_id', venueId);
 
           if (deleteRuntimeError) {
-            console.error('[BULK COMPLETE] Error deleting table runtime state:', deleteRuntimeError);
-            console.warn('[BULK COMPLETE] Proceeding with table deletion despite runtime state deletion failure');
+            logger.error('[BULK COMPLETE] Error deleting table runtime state:', deleteRuntimeError);
+            logger.warn('[BULK COMPLETE] Proceeding with table deletion despite runtime state deletion failure');
           } else {
           }
           
@@ -176,8 +177,8 @@ export async function POST(req: Request) {
             .eq('venue_id', venueId);
 
           if (deleteGroupSessionError) {
-            console.error('[BULK COMPLETE] Error deleting group sessions:', deleteGroupSessionError);
-            console.warn('[BULK COMPLETE] Proceeding with table deletion despite group session deletion failure');
+            logger.error('[BULK COMPLETE] Error deleting group sessions:', deleteGroupSessionError);
+            logger.warn('[BULK COMPLETE] Proceeding with table deletion despite group session deletion failure');
           } else {
           }
 
@@ -189,8 +190,8 @@ export async function POST(req: Request) {
             .eq('venue_id', venueId);
 
           if (deleteTableError) {
-            console.error('[BULK COMPLETE] Error deleting table:', deleteTableError);
-            console.error('[BULK COMPLETE] Error details:', {
+            logger.error('[BULK COMPLETE] Error deleting table:', deleteTableError);
+            logger.error('[BULK COMPLETE] Error details:', {
               message: deleteTableError.message,
               details: deleteTableError.details,
               hint: deleteTableError.hint,
@@ -200,7 +201,7 @@ export async function POST(req: Request) {
           }
           
         } catch (tableError) {
-          console.error('[BULK COMPLETE] Error handling table cleanup for table:', tableId, tableError);
+          logger.error('[BULK COMPLETE] Error handling table cleanup for table:', tableId, tableError);
         }
       }
       */
@@ -213,7 +214,7 @@ export async function POST(req: Request) {
     });
 
   } catch (error) {
-    console.error('[BULK COMPLETE] Unexpected error:', error);
+    logger.error('[BULK COMPLETE] Unexpected error:', { error: error instanceof Error ? error.message : 'Unknown error' });
     return NextResponse.json({ error: 'Internal server error' }, { status: 500 });
   }
 }

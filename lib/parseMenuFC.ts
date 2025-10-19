@@ -5,6 +5,7 @@ import { findSections, sliceSection } from "./menuSections";
 import { sectionPrompt } from "./prompts";
 import { filterSectionItems } from "./sectionPost";
 import { reassignMoved } from "./reassign";
+import { logger } from '@/lib/logger';
 
 
 const menuFunction = {
@@ -68,7 +69,7 @@ async function callMenuTool(system: string, user: string) {
 
   const call = resp.choices[0]?.message?.tool_calls?.[0];
   if (!call) {
-    console.error('[MENU PARSE] Model did not return tool_calls');
+    logger.error('[MENU PARSE] Model did not return tool_calls');
     throw new Error("Model did not return tool_calls.");
   }
 
@@ -83,8 +84,8 @@ async function callMenuTool(system: string, user: string) {
       const repaired = jsonrepair(args);
       return JSON.parse(repaired);
     } catch (repairError) {
-      console.error('[MENU PARSE] jsonrepair also failed:', repairError);
-      console.error('[MENU PARSE] Failed arguments:', args);
+      logger.error('[MENU PARSE] jsonrepair also failed:', repairError);
+      logger.error('[MENU PARSE] Failed arguments:', args);
       
       // Try to extract any valid JSON from the response
       const jsonMatch = args.match(/\{[\s\S]*\}/);
@@ -92,7 +93,7 @@ async function callMenuTool(system: string, user: string) {
         try {
           return JSON.parse(jsonMatch[0]);
         } catch (extractError) {
-          console.error('[MENU PARSE] JSON extraction failed:', extractError);
+          logger.error('[MENU PARSE] JSON extraction failed:', extractError);
         }
       }
       
@@ -151,7 +152,7 @@ export async function parseMenuInChunks(ocrText: string): Promise<MenuPayloadT> 
       movedAll.push(...reassigned);
       
     } catch (e) {
-      console.warn(`[MENU PARSE] Section "${sec.name}" failed:`, e);
+      logger.warn(`[MENU PARSE] Section "${sec.name}" failed:`, e);
       // Continue with other sections instead of failing completely
     }
   }
@@ -230,7 +231,7 @@ async function parseMenuInChunksFallback(ocrText: string): Promise<MenuPayloadT>
     const validated = MenuPayload.parse(parsed);
     return validated;
   } catch (e) {
-    console.error('[MENU PARSE] Fallback parsing failed:', e);
+    logger.error('[MENU PARSE] Fallback parsing failed:', e);
     throw new Error("Failed to parse menu with fallback method.");
   }
 }

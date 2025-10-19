@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { createServerSupabase } from '@/lib/supabase/server';
+import { logger } from '@/lib/logger';
 
 export async function POST(request: NextRequest) {
   try {
@@ -54,7 +55,7 @@ export async function POST(request: NextRequest) {
       .eq('venue_id', venueId);
 
     if (updateError) {
-      console.error('Error updating reset time:', updateError);
+      logger.error('Error updating reset time:', updateError);
       return NextResponse.json(
         { error: 'Failed to update reset time' },
         { status: 500 }
@@ -68,7 +69,7 @@ export async function POST(request: NextRequest) {
     });
 
   } catch (error) {
-    console.error('Error in update reset time API:', error);
+    logger.error('Error in update reset time API:', { error: error instanceof Error ? error.message : 'Unknown error' });
     return NextResponse.json(
       { error: 'Internal server error' },
       { status: 500 }

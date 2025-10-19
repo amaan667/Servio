@@ -4,6 +4,7 @@
 // Detects PDF type and extracts text with bounding boxes
 
 import { PDFSourceInfo, TextBlock, BoundingBox } from './types';
+import { logger } from '@/lib/logger';
 
 /**
  * Detects the type of PDF and determines the best extraction method
@@ -36,7 +37,7 @@ export async function detectPDFSource(pdfBuffer: Buffer): Promise<PDFSourceInfo>
     };
     
   } catch (error) {
-    console.error('[PDF_DETECT] Detection failed:', error);
+    logger.error('[PDF_DETECT] Detection failed:', error);
     // Default to OCR
     return {
       type: 'vision_ocr',
@@ -66,7 +67,7 @@ async function extractNativeText(pdfBuffer: Buffer): Promise<string | null> {
     
     return null;
   } catch (error) {
-    console.error('[PDF_DETECT] Native extraction failed:', error);
+    logger.error('[PDF_DETECT] Native extraction failed:', error);
     return null;
   }
 }
@@ -109,7 +110,7 @@ export async function extractTextWithBoxes(pdfBuffer: Buffer): Promise<TextBlock
     return blocks;
     
   } catch (error: any) {
-    console.error('[PDF_EXTRACT] Text extraction failed:', error);
+    logger.error('[PDF_EXTRACT] Text extraction failed:', error);
     throw new Error(`Text extraction failed: ${error.message}`);
   }
 }

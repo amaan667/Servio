@@ -1,6 +1,7 @@
 import { NextResponse } from 'next/server';
 import { createClient, getAuthenticatedUser, createAdminClient } from '@/lib/supabase/server';
 import type { FeedbackQuestion } from '@/types/feedback';
+import { logger } from '@/lib/logger';
 
 export const runtime = 'nodejs';
 
@@ -47,7 +48,7 @@ export async function GET(req: Request) {
       .order('created_at', { ascending: true });
 
     if (error) {
-      console.error('[FEEDBACK:Q] list error:', error.message);
+      logger.error('[FEEDBACK:Q] list error:', error.message);
       return NextResponse.json({ error: 'Failed to fetch questions' }, { status: 500 });
     }
 
@@ -62,7 +63,7 @@ export async function GET(req: Request) {
     });
 
   } catch (error: any) {
-    console.error('[FEEDBACK:Q] list exception:', error.message);
+    logger.error('[FEEDBACK:Q] list exception:', error.message);
     return NextResponse.json({ error: 'Internal server error' }, { status: 500 });
   }
 }
@@ -127,7 +128,7 @@ export async function POST(req: Request) {
       .single();
 
     if (maxSortError && maxSortError.message.includes('sort_index')) {
-      console.error('[FEEDBACK:Q] Database schema error - sort_index column missing');
+      logger.error('[FEEDBACK:Q] Database schema error - sort_index column missing');
       return NextResponse.json({ 
         error: 'Database schema not set up. Please contact support to apply the feedback questions schema.' 
       }, { status: 500 });
@@ -152,14 +153,14 @@ export async function POST(req: Request) {
       .single();
 
     if (error) {
-      console.error('[FEEDBACK:Q] add error:', error.message);
+      logger.error('[FEEDBACK:Q] add error:', error.message);
       return NextResponse.json({ error: 'Failed to create question' }, { status: 500 });
     }
 
     return NextResponse.json({ question });
 
   } catch (error: any) {
-    console.error('[FEEDBACK:Q] add exception:', error.message);
+    logger.error('[FEEDBACK:Q] add exception:', error.message);
     return NextResponse.json({ error: 'Internal server error' }, { status: 500 });
   }
 }
@@ -239,14 +240,14 @@ export async function PATCH(req: Request) {
       .single();
 
     if (error) {
-      console.error('[FEEDBACK:Q] update error:', error.message);
+      logger.error('[FEEDBACK:Q] update error:', error.message);
       return NextResponse.json({ error: 'Failed to update question' }, { status: 500 });
     }
 
     return NextResponse.json({ question });
 
   } catch (error: any) {
-    console.error('[FEEDBACK:Q] update exception:', error.message);
+    logger.error('[FEEDBACK:Q] update exception:', error.message);
     return NextResponse.json({ error: 'Internal server error' }, { status: 500 });
   }
 }
@@ -288,14 +289,14 @@ export async function DELETE(req: Request) {
       .eq('id', id);
 
     if (error) {
-      console.error('[FEEDBACK:Q] delete error:', error.message);
+      logger.error('[FEEDBACK:Q] delete error:', error.message);
       return NextResponse.json({ error: 'Failed to delete question' }, { status: 500 });
     }
 
     return NextResponse.json({ success: true });
 
   } catch (error: any) {
-    console.error('[FEEDBACK:Q] delete exception:', error.message);
+    logger.error('[FEEDBACK:Q] delete exception:', error.message);
     return NextResponse.json({ error: 'Internal server error' }, { status: 500 });
   }
 }

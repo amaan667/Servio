@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { createClient } from '@/lib/supabase/server';
 import { getAuthenticatedUser } from '@/lib/supabase/server';
+import { logger } from '@/lib/logger';
 
 export async function PATCH(req: NextRequest) {
   try {
@@ -55,13 +56,13 @@ export async function PATCH(req: NextRequest) {
       .single();
 
     if (updateError) {
-      console.error('[POS ORDERS STATUS] Error:', updateError);
+      logger.error('[POS ORDERS STATUS] Error:', updateError);
       return NextResponse.json({ error: updateError.message }, { status: 500 });
     }
 
     return NextResponse.json({ order: updatedOrder });
   } catch (error) {
-    console.error('[POS ORDERS STATUS] Unexpected error:', error);
+    logger.error('[POS ORDERS STATUS] Unexpected error:', { error: error instanceof Error ? error.message : 'Unknown error' });
     return NextResponse.json({ error: 'Internal server error' }, { status: 500 });
   }
 }

@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { getUserSafe } from '@/utils/getUserSafe';
+import { apiLogger, logger } from '@/lib/logger';
 
 // POST /api/send-invitation-dev - Send invitation email in development mode
 export async function POST(request: NextRequest) {
@@ -18,18 +19,18 @@ export async function POST(request: NextRequest) {
       }, { status: 400 });
     }
 
-    console.log('📧 DEVELOPMENT EMAIL SENDING:');
-    console.log('To:', email);
-    console.log('Subject: You\'re invited to join ' + venueName + ' on Servio');
-    console.log('Role:', role);
-    console.log('Invitation Link:', invitationLink);
-    console.log('---');
-    console.log('📋 INSTRUCTIONS FOR MANUAL EMAIL SENDING:');
-    console.log('1. Copy the invitation link above');
-    console.log('2. Send an email to:', email);
-    console.log('3. Subject: You\'re invited to join ' + venueName + ' on Servio');
-    console.log('4. Body: Click this link to accept your invitation: ' + invitationLink);
-    console.log('---');
+    logger.debug('📧 DEVELOPMENT EMAIL SENDING:');
+    logger.debug('To:', email);
+    logger.debug('Subject: You\'re invited to join ' + venueName + ' on Servio');
+    logger.debug('Role:', role);
+    logger.debug('Invitation Link:', invitationLink);
+    logger.debug('---');
+    logger.debug('📋 INSTRUCTIONS FOR MANUAL EMAIL SENDING:');
+    logger.debug('1. Copy the invitation link above');
+    logger.debug('2. Send an email to:', email);
+    logger.debug('3. Subject: You\'re invited to join ' + venueName + ' on Servio');
+    logger.debug('4. Body: Click this link to accept your invitation: ' + invitationLink);
+    logger.debug('---');
 
     // For development, we'll return success and log the details
     return NextResponse.json({ 
@@ -41,7 +42,7 @@ export async function POST(request: NextRequest) {
     });
 
   } catch (error) {
-    console.error('[DEV EMAIL] Unexpected error:', error);
+    logger.error('[DEV EMAIL] Unexpected error:', { error: error instanceof Error ? error.message : 'Unknown error' });
     return NextResponse.json({ error: 'Internal server error' }, { status: 500 });
   }
 }

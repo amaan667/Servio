@@ -1,5 +1,6 @@
 import { getOpenAI } from "./openai";
 import { MenuPayload, MenuPayloadT } from "./menuSchema";
+import { logger } from '@/lib/logger';
 
 interface ParsedMenuItem {
   title: string;
@@ -101,8 +102,8 @@ ${extractedText}`;
     try {
       parsed = JSON.parse(rawResponse);
     } catch (jsonError: any) {
-      console.error('[IMPROVED PARSER] JSON parse error:', jsonError.message);
-      console.error('[IMPROVED PARSER] Problematic JSON:', rawResponse);
+      logger.error('[IMPROVED PARSER] JSON parse error:', jsonError.message);
+      logger.error('[IMPROVED PARSER] Problematic JSON:', rawResponse);
       
       // Try to fix common JSON issues
       const fixedJson = fixMalformedJson(rawResponse);
@@ -110,7 +111,7 @@ ${extractedText}`;
       try {
         parsed = JSON.parse(fixedJson);
       } catch (fixError) {
-        console.error('[IMPROVED PARSER] Could not fix JSON, trying alternative parsing...');
+        logger.error('[IMPROVED PARSER] Could not fix JSON, trying alternative parsing...');
         
         // Try to extract items using regex as last resort
         const fallbackItems = extractItemsWithRegex(rawResponse);
@@ -138,7 +139,7 @@ ${extractedText}`;
     return converted;
 
   } catch (error: any) {
-    console.error('[IMPROVED PARSER] Parsing failed:', error.message);
+    logger.error('[IMPROVED PARSER] Parsing failed:', error.message);
     
     // Try a simpler approach as fallback
     try {
@@ -150,7 +151,7 @@ ${extractedText}`;
         };
       }
     } catch (fallbackError) {
-      console.error('[IMPROVED PARSER] Fallback extraction also failed:', fallbackError);
+      logger.error('[IMPROVED PARSER] Fallback extraction also failed:', fallbackError);
     }
     
     // Return empty result instead of throwing to prevent crashes

@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { createClient } from '@/lib/supabase/server';
 import { getAuthenticatedUser } from '@/lib/supabase/server';
+import { logger } from '@/lib/logger';
 
 export async function POST(req: NextRequest) {
   try {
@@ -75,13 +76,13 @@ export async function POST(req: NextRequest) {
       .single();
 
     if (updateError) {
-      console.error('[POS PAYMENTS] Error:', updateError);
+      logger.error('[POS PAYMENTS] Error:', updateError);
       return NextResponse.json({ error: updateError.message }, { status: 500 });
     }
 
     return NextResponse.json({ order: updatedOrder });
   } catch (error) {
-    console.error('[POS PAYMENTS] Unexpected error:', error);
+    logger.error('[POS PAYMENTS] Unexpected error:', { error: error instanceof Error ? error.message : 'Unknown error' });
     return NextResponse.json({ error: 'Internal server error' }, { status: 500 });
   }
 }
@@ -147,13 +148,13 @@ export async function GET(req: NextRequest) {
     const { data: orders, error } = await query;
 
     if (error) {
-      console.error('[POS PAYMENTS] Error:', error);
+      logger.error('[POS PAYMENTS] Error:', { error: error instanceof Error ? error.message : 'Unknown error' });
       return NextResponse.json({ error: error.message }, { status: 500 });
     }
 
     return NextResponse.json({ orders });
   } catch (error) {
-    console.error('[POS PAYMENTS] Unexpected error:', error);
+    logger.error('[POS PAYMENTS] Unexpected error:', { error: error instanceof Error ? error.message : 'Unknown error' });
     return NextResponse.json({ error: 'Internal server error' }, { status: 500 });
   }
 }

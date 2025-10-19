@@ -7,6 +7,7 @@ import vision from '@google-cloud/vision';
 import { Storage } from '@google-cloud/storage';
 import { v4 as uuidv4 } from 'uuid';
 import { TextBlock, BoundingBox } from './types';
+import { logger } from '@/lib/logger';
 
 const bucketName = process.env.GCS_BUCKET_NAME;
 
@@ -49,7 +50,7 @@ try {
   }
   
 } catch (error) {
-  console.error('[OCR] Failed to initialize Google Cloud clients:', error);
+  logger.error('[OCR] Failed to initialize Google Cloud clients:', error);
   throw new Error(`Google Cloud credentials not properly configured: ${(error as any).message}`);
 }
 
@@ -117,13 +118,13 @@ export async function extractTextBlocksFromPdf(pdfBuffer: Buffer, fileName: stri
     try {
       await storage.bucket(bucketName).file(tempFileName).delete();
     } catch (cleanupError) {
-      console.warn(`[OCR] Failed to cleanup temporary file:`, (cleanupError as any).message);
+      logger.warn(`[OCR] Failed to cleanup temporary file:`, (cleanupError as any).message);
     }
 
     return allBlocks;
 
   } catch (error) {
-    console.error('[OCR] Error during OCR process:', error);
+    logger.error('[OCR] Error during OCR process:', error);
     throw error;
   }
 }

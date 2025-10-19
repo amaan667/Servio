@@ -1,5 +1,6 @@
 import { NextResponse } from 'next/server';
 import { createServerClient } from '@supabase/ssr';
+import { logger } from '@/lib/logger';
 
 export const runtime = 'nodejs';
 
@@ -26,7 +27,7 @@ export async function POST() {
       .select('id, payment_status, payment_method');
 
     if (updateError) {
-      console.error('Error updating existing orders:', updateError);
+      logger.error('Error updating existing orders:', updateError);
       return NextResponse.json({ 
         success: false, 
         error: 'Failed to update existing orders: ' + updateError.message 
@@ -144,7 +145,7 @@ export async function POST() {
     });
 
     if (createError) {
-      console.error('Error creating function:', createError);
+      logger.error('Error creating function:', createError);
       return NextResponse.json({ 
         success: false, 
         error: 'Failed to create function: ' + createError.message 
@@ -161,7 +162,7 @@ export async function POST() {
       .single();
 
     if (testError) {
-      console.error('Error testing function:', testError);
+      logger.error('Error testing function:', testError);
       return NextResponse.json({ 
         success: false, 
         error: 'Function created but test failed: ' + testError.message 
@@ -176,7 +177,7 @@ export async function POST() {
     });
 
   } catch (error) {
-    console.error('Error:', error);
+    logger.error('Error:', { error: error instanceof Error ? error.message : 'Unknown error' });
     return NextResponse.json({ 
       success: false, 
       error: 'Internal server error' 

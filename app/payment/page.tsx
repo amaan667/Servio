@@ -19,6 +19,7 @@ import {
 } from "lucide-react";
 import { CustomerFeedbackForm } from "@/components/customer-feedback-form";
 import { OrderTimeline } from "@/components/order-timeline";
+import { logger } from '@/lib/logger';
 
 interface CheckoutData {
   venueId: string;
@@ -64,30 +65,30 @@ export default function PaymentPage() {
 
   useEffect(() => {
     // Debug current URL and search params
-    console.log('[PAYMENT DEBUG] Current URL:', window.location.href);
-    console.log('[PAYMENT DEBUG] Search params:', Object.fromEntries(searchParams?.entries() || []));
-    console.log('[PAYMENT DEBUG] isDemoFromUrl:', isDemoFromUrl);
+    logger.debug('[PAYMENT DEBUG] Current URL:', window.location.href);
+    logger.debug('[PAYMENT DEBUG] Search params:', Object.fromEntries(searchParams?.entries() || []));
+    logger.debug('[PAYMENT DEBUG] isDemoFromUrl:', isDemoFromUrl);
     
     // Get checkout data from localStorage
     const storedData = localStorage.getItem("servio-checkout-data");
     
-    console.log('[PAYMENT DEBUG] Loading checkout data:', storedData);
+    logger.debug('[PAYMENT DEBUG] Loading checkout data:', storedData);
     
     if (storedData) {
       try {
         const data = JSON.parse(storedData);
-        console.log('[PAYMENT DEBUG] Parsed checkout data:', data);
+        logger.debug('[PAYMENT DEBUG] Parsed checkout data:', data);
         setCheckoutData(data);
         setIsDemo(data.isDemo || false); // Set demo flag from checkout data
         setReceiptEmail(data.customerEmail || ''); // Load existing email if available
-        console.log('[PAYMENT DEBUG] Demo flag set to:', data.isDemo || false);
+        logger.debug('[PAYMENT DEBUG] Demo flag set to:', data.isDemo || false);
         
         // If demo mode is detected, show immediate redirect message
         if (data.isDemo || isDemoFromUrl) {
-          console.log('[PAYMENT DEBUG] DEMO MODE DETECTED - should redirect immediately');
+          logger.debug('[PAYMENT DEBUG] DEMO MODE DETECTED - should redirect immediately');
         }
       } catch (error) {
-        console.error('[PAYMENT DEBUG] Error parsing checkout data:', error);
+        logger.error('[PAYMENT DEBUG] Error parsing checkout data:', error);
         router.push("/order");
       }
     } else {
@@ -97,7 +98,7 @@ export default function PaymentPage() {
   }, [router, isDemoFromUrl]);
 
   const handlePayment = async (action: PaymentAction) => {
-    console.log('[PAYMENT DEBUG] handlePayment called with action:', action);
+    logger.debug('[PAYMENT DEBUG] handlePayment called with action:', action);
     
     if (!checkoutData) {
       setError('Missing order information. Please try again.');
@@ -110,7 +111,7 @@ export default function PaymentPage() {
 
     try {
       // Debug logging for demo mode
-      console.log('[PAYMENT DEBUG] Demo mode check:', { 
+      logger.debug('[PAYMENT DEBUG] Demo mode check:', { 
         isDemo, 
         checkoutDataIsDemo: checkoutData.isDemo, 
         isDemoFromUrl,
@@ -119,7 +120,7 @@ export default function PaymentPage() {
       
       // In demo mode, skip all payment processing and go straight to success
       if (isDemo || checkoutData.isDemo || isDemoFromUrl) {
-        console.log('[PAYMENT DEBUG] Demo mode detected - skipping payment processing');
+        logger.debug('[PAYMENT DEBUG] Demo mode detected - skipping payment processing');
         const demoOrderId = `demo-${Date.now()}`;
         
         // Redirect to payment success page immediately
@@ -137,7 +138,7 @@ export default function PaymentPage() {
           throw new Error('No order ID found. Please try submitting your order again.');
         }
 
-        console.log('[PAYMENT DEBUG] Using existing order ID for Stripe:', checkoutData.orderId);
+        logger.debug('[PAYMENT DEBUG] Using existing order ID for Stripe:', checkoutData.orderId);
         
         // Create Stripe checkout session with the existing order ID
         const checkoutResponse = await fetch('/api/checkout', {
@@ -168,7 +169,7 @@ export default function PaymentPage() {
           throw new Error(checkoutErr || 'Checkout failed');
         }
 
-        console.log('[PAYMENT DEBUG] Stripe session created:', sessionId, 'for order:', checkoutData.orderId);
+        logger.debug('[PAYMENT DEBUG] Stripe session created:', sessionId, 'for order:', checkoutData.orderId);
 
         // Redirect to Stripe checkout - payment will mark existing order as PAID
         if (url) {
@@ -210,8 +211,8 @@ export default function PaymentPage() {
 
       if (!orderResponse.ok) {
         const errorText = await orderResponse.text();
-        console.error('[PAYMENT DEBUG] Order creation failed with status:', orderResponse.status);
-        console.error('[PAYMENT DEBUG] Error response:', errorText);
+        logger.error('[PAYMENT DEBUG] Order creation failed with status:', orderResponse.status);
+        logger.error('[PAYMENT DEBUG] Error response:', errorText);
         throw new Error(`Failed to create order: ${orderResponse.status} - ${errorText}`);
       }
 
@@ -224,8 +225,8 @@ export default function PaymentPage() {
 
       // Check if we have a valid order ID
       if (!orderData.order?.id) {
-        console.error('[PAYMENT DEBUG] ERROR: No order ID in response');
-        console.error('[PAYMENT DEBUG] Response structure:', {
+        logger.error('[PAYMENT DEBUG] ERROR: No order ID in response');
+        logger.error('[PAYMENT DEBUG] Response structure:', {
           hasOrder: !!orderData.order,
           orderKeys: orderData.order ? Object.keys(orderData.order) : 'no order object',
           fullResponse: JSON.stringify(orderData, null, 2)
@@ -234,14 +235,14 @@ export default function PaymentPage() {
         // If the order was created but we can't get the ID, try to continue anyway
         // This might be a response parsing issue
         if (orderData.order) {
-          console.warn('[PAYMENT DEBUG] Order created but ID missing, attempting to continue...');
+          logger.warn('[PAYMENT DEBUG] Order created but ID missing, attempting to continue...');
           // Try to extract ID from other fields or use a fallback
           const fallbackId = (orderData.order as any).order_id || `temp-${Date.now()}`;
           orderData.order.id = fallbackId;
         } else {
           // Even if we can't get the order ID, the order was created
           // We can still proceed with payment processing
-          console.warn('[PAYMENT DEBUG] No order object in response, proceeding with fallback...');
+          logger.warn('[PAYMENT DEBUG] No order object in response, proceeding with fallback...');
           orderData.order = { id: `temp-${Date.now()}` };
         }
       }
@@ -256,7 +257,7 @@ export default function PaymentPage() {
       localStorage.removeItem("servio-checkout-data");
 
     } catch (error) {
-      console.error('[PAYMENT DEBUG] Payment error:', error);
+      logger.error('[PAYMENT DEBUG] Payment error:', error);
       setError(error instanceof Error ? error.message : 'Payment failed. Please try again.');
     } finally {
       setIsProcessing(false);

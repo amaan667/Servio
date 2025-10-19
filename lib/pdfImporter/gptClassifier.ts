@@ -4,6 +4,7 @@
 // Uses GPT sparingly as a classifier, not as an extractor
 
 import { getOpenAI } from '../openai';
+import { logger } from '@/lib/logger';
 import { 
   TextBlock, 
   GPTClassificationResult, 
@@ -82,7 +83,7 @@ Return ONLY a JSON object with "type" and "confidence" (0-1).`
     };
     
   } catch (error: any) {
-    console.error('[GPT_CLASSIFY] Classification failed:', error);
+    logger.error('[GPT_CLASSIFY] Classification failed:', error);
     
     // Fallback to rule-based classification
     return fallbackClassification(block, contextBlocks);
@@ -218,7 +219,7 @@ If this is not an option group, return null.`
     };
     
   } catch (error: any) {
-    console.error('[GPT_OPTIONS] Option group classification failed:', error);
+    logger.error('[GPT_OPTIONS] Option group classification failed:', error);
     return null;
   }
 }

@@ -5,6 +5,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { createClient, createAdminClient } from "@/lib/supabase/server";
 import { generateConversationTitle } from "@/lib/ai/openai-service";
 import { z } from "zod";
+import { apiLogger, logger } from '@/lib/logger';
 
 const CreateMessageSchema = z.object({
   role: z.enum(["user", "assistant", "system"]),
@@ -32,7 +33,7 @@ export async function GET(
       data: { user },
     } = await supabase.auth.getUser();
 
-    console.log("[AI CHAT MESSAGES] Auth check - user:", user ? "authenticated" : "not authenticated");
+    logger.debug("[AI CHAT MESSAGES] Auth check - user:", { authenticated: !!user });
 
     // Get messages for this conversation using admin client
     // Skip user verification for now to allow development/testing
@@ -43,7 +44,7 @@ export async function GET(
       .order("created_at", { ascending: true });
 
     if (error) {
-      console.error("[AI CHAT] Failed to fetch messages:", error);
+      logger.error("[AI CHAT] Failed to fetch messages:", { error: error.message });
       
       // If table doesn't exist, return empty messages array
       if (error.code === 'PGRST116' || error.message?.includes('relation "ai_chat_messages" does not exist')) {
@@ -68,7 +69,7 @@ export async function GET(
       messages: transformedMessages,
     });
   } catch (error: any) {
-    console.error("[AI CHAT] Messages error:", error);
+    logger.error("[AI CHAT] Messages error:", { error: error instanceof Error ? error.message : 'Unknown error' });
     return NextResponse.json(
       { error: error.message || "Internal server error" },
       { status: 500 }
@@ -91,13 +92,13 @@ export async function POST(
       data: { user },
     } = await supabase.auth.getUser();
 
-    console.log("[AI CHAT MESSAGES POST] Auth check - user:", user ? "authenticated" : "not authenticated");
+    logger.debug("[AI CHAT MESSAGES POST] Auth check - user:", { authenticated: !!user });
 
     // Parse request body
     const body = await request.json();
     const messageData = CreateMessageSchema.parse(body);
 
-    console.log("[AI CHAT MESSAGES POST] Creating message:", { conversationId, messageData });
+    logger.debug("[AI CHAT MESSAGES POST] Creating message:", { conversationId, messageData });
 
     // Create new message using admin client (skip user verification for now)
     const { data: message, error } = await adminSupabase
@@ -110,7 +111,7 @@ export async function POST(
       .single();
 
     if (error) {
-      console.error("[AI CHAT] Failed to create message:", error);
+      logger.error("[AI CHAT] Failed to create message:", { error: error.message });
       
       // If table doesn't exist, return a mock message
       if (error.code === 'PGRST116' || error.message?.includes('relation "ai_chat_messages" does not exist')) {
@@ -131,7 +132,7 @@ export async function POST(
       );
     }
 
-    console.log("[AI CHAT MESSAGES POST] Message created successfully:", message);
+    logger.debug("[AI CHAT MESSAGES POST] Message created successfully:", message);
 
     // Generate AI-powered conversation title if this is the first user message
     if (messageData.role === "user") {
@@ -153,9 +154,9 @@ export async function POST(
               updated_at: new Date().toISOString() 
             })
             .eq("id", conversationId);
-          console.log("[AI CHAT] Updated conversation title to:", aiTitle);
+          logger.debug("[AI CHAT] Updated conversation title to:", { title: aiTitle });
         } catch (error) {
-          console.error("[AI CHAT] Failed to generate title:", error);
+          logger.error("[AI CHAT] Failed to generate title:", { error: error instanceof Error ? error.message : 'Unknown error' });
           // Continue without failing the message creation
         }
       }
@@ -177,7 +178,7 @@ export async function POST(
       message: transformedMessage,
     });
   } catch (error: any) {
-    console.error("[AI CHAT] Create message error:", error);
+    logger.error("[AI CHAT] Create message error:", { error: error instanceof Error ? error.message : 'Unknown error' });
     
     if (error.name === "ZodError") {
       return NextResponse.json(

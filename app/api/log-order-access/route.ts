@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
+import { apiLogger, logger } from '@/lib/logger';
 
 export async function POST(req: NextRequest) {
   try {
@@ -19,11 +20,11 @@ export async function POST(req: NextRequest) {
       isDemo: data?.isDemo,
     };
 
-    console.log(log);
+    logger.debug(log);
 
     return NextResponse.json({ ok: true });
   } catch (err) {
-    console.error('[ORDER ACCESS] log failure:', err);
+    logger.error('[ORDER ACCESS] log failure:', err);
     return NextResponse.json({ ok: false }, { status: 500 });
   }
 }

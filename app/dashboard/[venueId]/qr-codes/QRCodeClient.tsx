@@ -10,6 +10,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { createClient } from "@/lib/supabase/client";
 import { QrCode, Plus, Trash2, Copy, Download, Settings, Table, Printer, Users } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
+import { logger } from '@/lib/logger';
 
 // Simple QR Code Canvas Component
 function QRCodeCanvas({ url, size }: { url: string; size: number }) {
@@ -27,7 +28,7 @@ function QRCodeCanvas({ url, size }: { url: string; size: number }) {
         });
         setQrDataUrl(dataUrl);
       } catch (error) {
-        console.error('Error generating QR code:', error);
+        logger.error('Error generating QR code:', error);
       } finally {
         setLoading(false);
       }
@@ -80,7 +81,7 @@ export default function QRCodeClient({ venueId, venueName }: { venueId: string; 
       const tableName = urlParams.get('table');
       
       if (tableName) {
-        console.log('[QR] Auto-generating QR for table from URL:', tableName);
+        logger.debug('[QR] Auto-generating QR for table from URL:', tableName);
         
         // Check if this QR already exists
         const existingQR = generatedQRs.find(qr => qr.name === tableName);
@@ -105,7 +106,7 @@ export default function QRCodeClient({ venueId, venueName }: { venueId: string; 
         .order('label', { ascending: true });
 
       if (tablesError) {
-        console.error('Error loading tables:', tablesError);
+        logger.error('Error loading tables:', tablesError);
       } else {
         setTables(tablesData || []);
       }
@@ -118,12 +119,12 @@ export default function QRCodeClient({ venueId, venueName }: { venueId: string; 
         .order('label', { ascending: true });
 
       if (countersError) {
-        console.error('Error loading counters:', countersError);
+        logger.error('Error loading counters:', countersError);
       } else {
         setCounters(countersData || []);
       }
     } catch (error) {
-      console.error('Error in loadTablesAndCounters:', error);
+      logger.error('Error in loadTablesAndCounters:', error);
       toast({
         title: "Error",
         description: "Failed to load tables and counters",
@@ -273,7 +274,7 @@ export default function QRCodeClient({ venueId, venueName }: { venueId: string; 
                 light: '#FFFFFF'
               }
             }, function (error) {
-              if (error) console.error(error);
+              if (error) logger.error(error);
             });
           </script>
         </body>
@@ -432,7 +433,7 @@ export default function QRCodeClient({ venueId, venueName }: { venueId: string; 
                   light: '#FFFFFF'
                 }
               }, function (error) {
-                if (error) console.error('Error generating QR code:', error);
+                if (error) logger.error('Error generating QR code:', error);
               });
             });
             

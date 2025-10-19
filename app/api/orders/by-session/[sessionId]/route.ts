@@ -1,5 +1,6 @@
 import { NextResponse } from 'next/server';
 import { createAdminClient } from '@/lib/supabase/server';
+import { apiLogger, logger } from '@/lib/logger';
 
 export const runtime = 'nodejs';
 export const dynamic = 'force-dynamic';
@@ -12,30 +13,30 @@ export async function GET(
     const supabaseAdmin = createAdminClient();
     const { sessionId } = await params;
     
-    console.log('[ORDER SESSION LOOKUP DEBUG] ===== LOOKING UP ORDER BY SESSION =====');
-    console.log('[ORDER SESSION LOOKUP DEBUG] Session ID:', sessionId);
+    logger.debug('[ORDER SESSION LOOKUP DEBUG] ===== LOOKING UP ORDER BY SESSION =====');
+    logger.debug('[ORDER SESSION LOOKUP DEBUG] Session ID:', sessionId);
     
     if (!sessionId) {
-      console.error('[ORDER SESSION LOOKUP DEBUG] No session ID provided');
+      logger.error('[ORDER SESSION LOOKUP DEBUG] No session ID provided');
       return NextResponse.json({ error: 'Session ID is required' }, { status: 400 });
     }
 
     // Look up order by stripe_session_id with all fields including Stripe details
     // Items are stored as JSONB in orders table, not in separate order_items table
-    console.log('[ORDER SESSION LOOKUP DEBUG] Querying orders table for stripe_session_id...');
+    logger.debug('[ORDER SESSION LOOKUP DEBUG] Querying orders table for stripe_session_id...');
     const { data: order, error: orderError } = await supabaseAdmin
       .from('orders')
       .select('*')
       .eq('stripe_session_id', sessionId)
       .single();
 
-    console.log('[ORDER SESSION LOOKUP DEBUG] Query result:');
-    console.log('[ORDER SESSION LOOKUP DEBUG] - Found order:', !!order);
-    console.log('[ORDER SESSION LOOKUP DEBUG] - Error:', orderError);
-    console.log('[ORDER SESSION LOOKUP DEBUG] - Order data:', order);
+    logger.debug('[ORDER SESSION LOOKUP DEBUG] Query result:');
+    logger.debug('[ORDER SESSION LOOKUP DEBUG] - Found order:', !!order);
+    logger.debug('[ORDER SESSION LOOKUP DEBUG] - Error:', orderError);
+    logger.debug('[ORDER SESSION LOOKUP DEBUG] - Order data:', order);
 
     if (orderError) {
-      console.error('[ORDER SESSION LOOKUP DEBUG] Database error:', orderError);
+      logger.error('[ORDER SESSION LOOKUP DEBUG] Database error:', orderError);
       return NextResponse.json({ 
         ok: false, 
         error: 'Order not found for this session' 
@@ -43,15 +44,15 @@ export async function GET(
     }
 
     if (!order) {
-      console.error('[ORDER SESSION LOOKUP DEBUG] No order found for session:', sessionId);
+      logger.error('[ORDER SESSION LOOKUP DEBUG] No order found for session:', sessionId);
       return NextResponse.json({ 
         ok: false, 
         error: 'Order not found for this session' 
       }, { status: 404 });
     }
 
-    console.log('[ORDER SESSION LOOKUP DEBUG] ===== ORDER FOUND =====');
-    console.log('[ORDER SESSION LOOKUP DEBUG] Order details:', {
+    logger.debug('[ORDER SESSION LOOKUP DEBUG] ===== ORDER FOUND =====');
+    logger.debug('[ORDER SESSION LOOKUP DEBUG] Order details:', {
       id: order.id,
       customer_name: order.customer_name,
       table_number: order.table_number,
@@ -71,8 +72,8 @@ export async function GET(
       items: order.items || []
     };
 
-    console.log('[ORDER SESSION LOOKUP DEBUG] ===== RETURNING TRANSFORMED ORDER =====');
-    console.log('[ORDER SESSION LOOKUP DEBUG] Transformed order keys:', Object.keys(transformedOrder));
+    logger.debug('[ORDER SESSION LOOKUP DEBUG] ===== RETURNING TRANSFORMED ORDER =====');
+    logger.debug('[ORDER SESSION LOOKUP DEBUG] Transformed order keys:', Object.keys(transformedOrder));
 
     return NextResponse.json({ 
       ok: true, 
@@ -81,7 +82,7 @@ export async function GET(
     });
 
   } catch (error) {
-    console.error('[ORDER SESSION LOOKUP DEBUG] Unexpected error:', error);
+    logger.error('[ORDER SESSION LOOKUP DEBUG] Unexpected error:', { error: error instanceof Error ? error.message : 'Unknown error' });
     return NextResponse.json({ 
       ok: false, 
       error: 'Internal server error' 

@@ -13,6 +13,7 @@ import {
 import { Badge } from '@/components/ui/badge';
 import { Switch } from '@/components/ui/switch';
 import { Label } from '@/components/ui/label';
+import { logger } from '@/lib/logger';
 import { 
   Users, 
   Clock, 
@@ -108,7 +109,7 @@ export function EnhancedTableMergeDialog({
       onActionComplete?.();
       onClose();
     } catch (error) {
-      console.error('Merge failed:', error);
+      logger.error('Merge failed:', error);
     } finally {
       setIsLoading(false);
     }

@@ -1,0 +1,226 @@
+/**
+ * Type-Safe API Route Helpers
+ * Provides type-safe utilities for API routes
+ */
+
+import { NextRequest, NextResponse } from 'next/server';
+import { ZodSchema, ZodError } from 'zod';
+import { ApiResponse } from '@/types/api';
+import { logger } from '@/lib/logger';
+
+/**
+ * Type-safe API handler wrapper
+ */
+export function createApiHandler<TRequest, TResponse>(
+  handler: (req: NextRequest, body: TRequest) => Promise<TResponse>,
+  schema?: ZodSchema<TRequest>
+) {
+  return async (req: NextRequest): Promise<NextResponse<ApiResponse<TResponse>>> => {
+    try {
+      // Parse and validate request body
+      let body: TRequest;
+      
+      if (schema) {
+        const rawBody = await req.json();
+        const validation = schema.safeParse(rawBody);
+        
+        if (!validation.success) {
+          logger.warn('Invalid request body', {
+            errors: validation.error.errors,
+            path: req.url,
+          });
+          
+          return NextResponse.json(
+            {
+              ok: false,
+              error: 'Invalid request data',
+              message: validation.error.errors.map(e => e.message).join(', '),
+            },
+            { status: 400 }
+          );
+        }
+        
+        body = validation.data;
+      } else {
+        body = {} as TRequest;
+      }
+      
+      // Execute handler
+      const result = await handler(req, body);
+      
+      // Return success response
+      return NextResponse.json({
+        ok: true,
+        data: result,
+      });
+    } catch (error) {
+      logger.error('API handler error', {
+        error,
+        path: req.url,
+      });
+      
+      // Handle known errors
+      if (error instanceof ZodError) {
+        return NextResponse.json(
+          {
+            ok: false,
+            error: 'Validation error',
+            message: error.errors.map(e => e.message).join(', '),
+          },
+          { status: 400 }
+        );
+      }
+      
+      // Handle unknown errors
+      return NextResponse.json(
+        {
+          ok: false,
+          error: error instanceof Error ? error.message : 'Internal server error',
+        },
+        { status: 500 }
+      );
+    }
+  };
+}
+
+/**
+ * Type-safe GET handler
+ */
+export function createGetHandler<TResponse>(
+  handler: (req: NextRequest) => Promise<TResponse>
+) {
+  return async (req: NextRequest): Promise<NextResponse<ApiResponse<TResponse>>> => {
+    try {
+      const result = await handler(req);
+      
+      return NextResponse.json({
+        ok: true,
+        data: result,
+      });
+    } catch (error) {
+      logger.error('GET handler error', {
+        error,
+        path: req.url,
+      });
+      
+      return NextResponse.json(
+        {
+          ok: false,
+          error: error instanceof Error ? error.message : 'Internal server error',
+        },
+        { status: 500 }
+      );
+    }
+  };
+}
+
+/**
+ * Type-safe POST handler
+ */
+export function createPostHandler<TRequest, TResponse>(
+  handler: (req: NextRequest, body: TRequest) => Promise<TResponse>,
+  schema?: ZodSchema<TRequest>
+) {
+  return createApiHandler(handler, schema);
+}
+
+/**
+ * Type-safe PUT handler
+ */
+export function createPutHandler<TRequest, TResponse>(
+  handler: (req: NextRequest, body: TRequest) => Promise<TResponse>,
+  schema?: ZodSchema<TRequest>
+) {
+  return createApiHandler(handler, schema);
+}
+
+/**
+ * Type-safe DELETE handler
+ */
+export function createDeleteHandler<TResponse>(
+  handler: (req: NextRequest) => Promise<TResponse>
+) {
+  return createGetHandler(handler);
+}
+
+/**
+ * Create success response
+ */
+export function successResponse<T>(data: T): NextResponse<ApiResponse<T>> {
+  return NextResponse.json({
+    ok: true,
+    data,
+  });
+}
+
+/**
+ * Create error response
+ */
+export function errorResponse(
+  error: string,
+  status: number = 500
+): NextResponse<ApiResponse> {
+  return NextResponse.json(
+    {
+      ok: false,
+      error,
+    },
+    { status }
+  );
+}
+
+/**
+ * Create validation error response
+ */
+export function validationErrorResponse(
+  errors: string[]
+): NextResponse<ApiResponse> {
+  return NextResponse.json(
+    {
+      ok: false,
+      error: 'Validation error',
+      message: errors.join(', '),
+    },
+    { status: 400 }
+  );
+}
+
+/**
+ * Create unauthorized response
+ */
+export function unauthorizedResponse(): NextResponse<ApiResponse> {
+  return NextResponse.json(
+    {
+      ok: false,
+      error: 'Unauthorized',
+    },
+    { status: 401 }
+  );
+}
+
+/**
+ * Create forbidden response
+ */
+export function forbiddenResponse(): NextResponse<ApiResponse> {
+  return NextResponse.json(
+    {
+      ok: false,
+      error: 'Forbidden',
+    },
+    { status: 403 }
+  );
+}
+
+/**
+ * Create not found response
+ */
+export function notFoundResponse(): NextResponse<ApiResponse> {
+  return NextResponse.json(
+    {
+      ok: false,
+      error: 'Not found',
+    },
+    { status: 404 }
+  );
+}
+

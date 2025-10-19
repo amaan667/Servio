@@ -29,6 +29,7 @@ import { calculateOrderTotal, formatPrice, normalizePrice } from "@/lib/pricing-
 import { OrderCard } from '@/components/orders/OrderCard';
 import { mapOrderToCardData } from '@/lib/orders/mapOrderToCardData';
 import MobileNav from '@/components/MobileNav';
+import { logger } from '@/lib/logger';
 
 
 interface Order {
@@ -157,7 +158,7 @@ export default function LiveOrdersClient({ venueId, venueName: venueNameProp }: 
   // Handle RPC function errors by using fallback logic
   useEffect(() => {
     if (countsError) {
-      console.error('[LIVE_ORDERS] RPC function error, using fallback logic:', countsError);
+      logger.error('[LIVE_ORDERS] RPC function error, using fallback logic:', countsError);
       // If RPC fails, we'll rely on local counts calculation
       recalcLocalCounts();
     }
@@ -212,7 +213,7 @@ export default function LiveOrdersClient({ venueId, venueName: venueNameProp }: 
 
       setLocalCounts({ live_count, earlier_today_count, history_count });
     } catch (err) {
-      console.error('[LIVE ORDERS] Failed to recalc local counts', err);
+      logger.error('[LIVE ORDERS] Failed to recalc local counts', err);
     }
   };
 
@@ -236,7 +237,7 @@ export default function LiveOrdersClient({ venueId, venueName: venueNameProp }: 
   useEffect(() => {
     const loadingTimeout = setTimeout(() => {
       if (loading) {
-        console.warn('[LIVE_ORDERS] Loading timeout reached, setting loading to false');
+        logger.warn('[LIVE_ORDERS] Loading timeout reached, setting loading to false');
         setLoading(false);
       }
     }, 10000); // 10 second timeout
@@ -247,7 +248,7 @@ export default function LiveOrdersClient({ venueId, venueName: venueNameProp }: 
   // Force loading to false if RPC function fails
   useEffect(() => {
     if (countsError && loading) {
-      console.warn('[LIVE_ORDERS] RPC function failed, forcing loading to false');
+      logger.warn('[LIVE_ORDERS] RPC function failed, forcing loading to false');
       setLoading(false);
     }
   }, [countsError, loading]);
@@ -346,13 +347,13 @@ export default function LiveOrdersClient({ venueId, venueName: venueNameProp }: 
 
       
       if (liveError) {
-        console.error('[LIVE ORDERS DEBUG] Live orders error:', liveError);
+        logger.error('[LIVE ORDERS DEBUG] Live orders error:', liveError);
       }
       if (allError) {
-        console.error('[LIVE ORDERS DEBUG] Earlier today orders error:', allError);
+        logger.error('[LIVE ORDERS DEBUG] Earlier today orders error:', allError);
       }
       if (historyError) {
-        console.error('[LIVE ORDERS DEBUG] History orders error:', historyError);
+        logger.error('[LIVE ORDERS DEBUG] History orders error:', historyError);
       }
 
       if (!liveError && liveData) {
@@ -671,7 +672,7 @@ export default function LiveOrdersClient({ venueId, venueName: venueNameProp }: 
           }
 
           if (activeOrdersError) {
-            console.error('[TABLE CLEAR] Error checking active orders:', activeOrdersError);
+            logger.error('[TABLE CLEAR] Error checking active orders:', activeOrdersError);
           } else if (!filteredActiveOrders || filteredActiveOrders.length === 0) {
             
             // Clear table sessions (active sessions)
@@ -697,13 +698,13 @@ export default function LiveOrdersClient({ venueId, venueName: venueNameProp }: 
             const { error: sessionClearError } = await sessionQuery;
 
             if (sessionClearError) {
-              console.error('[TABLE CLEAR] Error clearing table sessions:', sessionClearError);
+              logger.error('[TABLE CLEAR] Error clearing table sessions:', sessionClearError);
             } else {
-              console.log('[TABLE CLEAR] Successfully cleared table session for completed order');
+              logger.debug('[TABLE CLEAR] Successfully cleared table session for completed order');
             }
           }
         } catch (tableCleanupError) {
-          console.error('[TABLE CLEAR] Exception during table cleanup:', tableCleanupError);
+          logger.error('[TABLE CLEAR] Exception during table cleanup:', tableCleanupError);
         }
       }
       
@@ -736,7 +737,7 @@ export default function LiveOrdersClient({ venueId, venueName: venueNameProp }: 
         .eq('venue_id', venueId);
 
       if (error) {
-        console.error('[LIVE ORDERS DEBUG] Failed to update order to COMPLETED and PAID:', error);
+        logger.error('[LIVE ORDERS DEBUG] Failed to update order to COMPLETED and PAID:', error);
       } else {
         // Remove from live orders immediately when completed
         setOrders(prev => prev.filter(order => order.id !== orderId));
@@ -775,7 +776,7 @@ export default function LiveOrdersClient({ venueId, venueName: venueNameProp }: 
             }
 
             if (activeOrdersError) {
-              console.error('[TABLE CLEAR] Error checking active orders:', activeOrdersError);
+              logger.error('[TABLE CLEAR] Error checking active orders:', activeOrdersError);
             } else if (!filteredActiveOrders || filteredActiveOrders.length === 0) {
               
               // Clear table sessions (active sessions)
@@ -801,18 +802,18 @@ export default function LiveOrdersClient({ venueId, venueName: venueNameProp }: 
               const { error: sessionClearError } = await sessionQuery;
 
               if (sessionClearError) {
-                console.error('[TABLE CLEAR] Error clearing table sessions:', sessionClearError);
+                logger.error('[TABLE CLEAR] Error clearing table sessions:', sessionClearError);
               } else {
-                console.log('[TABLE CLEAR] Successfully cleared table session for completed order');
+                logger.debug('[TABLE CLEAR] Successfully cleared table session for completed order');
               }
             }
           } catch (tableCleanupError) {
-            console.error('[TABLE CLEAR] Exception during table cleanup:', tableCleanupError);
+            logger.error('[TABLE CLEAR] Exception during table cleanup:', tableCleanupError);
           }
         }
       }
     } catch (error) {
-      console.error('[LIVE ORDERS DEBUG] Exception updating order to COMPLETED and PAID:', error);
+      logger.error('[LIVE ORDERS DEBUG] Exception updating order to COMPLETED and PAID:', error);
     }
   };
 
@@ -912,7 +913,7 @@ export default function LiveOrdersClient({ venueId, venueName: venueNameProp }: 
             refetchCounts();
             
           } catch (error) {
-            console.error('[BULK COMPLETE] Error refreshing data:', error);
+            logger.error('[BULK COMPLETE] Error refreshing data:', error);
           } finally {
             setLoading(false);
           }
@@ -921,12 +922,12 @@ export default function LiveOrdersClient({ venueId, venueName: venueNameProp }: 
         await refreshData();
         
       } else {
-        console.error('[BULK COMPLETE] Error:', result.error);
+        logger.error('[BULK COMPLETE] Error:', result.error);
         alert(`Error completing orders: ${result.error || 'Unknown error'}`);
       }
       
     } catch (error) {
-      console.error('[BULK COMPLETE] Exception:', error);
+      logger.error('[BULK COMPLETE] Exception:', error);
       alert('Error completing orders. Please try again.');
     } finally {
       setIsBulkCompleting(false);
@@ -1100,7 +1101,7 @@ export default function LiveOrdersClient({ venueId, venueName: venueNameProp }: 
         .order('created_at', { ascending: false });
 
       if (liveError) {
-        console.error('[LiveOrdersClient DEBUG] Error fetching fresh live orders:', liveError);
+        logger.error('[LiveOrdersClient DEBUG] Error fetching fresh live orders:', liveError);
         return;
       }
 
@@ -1117,14 +1118,14 @@ export default function LiveOrdersClient({ venueId, venueName: venueNameProp }: 
         .order('created_at', { ascending: false });
 
       if (allError) {
-        console.error('[LiveOrdersClient DEBUG] Error fetching fresh all today orders:', allError);
+        logger.error('[LiveOrdersClient DEBUG] Error fetching fresh all today orders:', allError);
         return;
       }
 
       setAllTodayOrders(allData || []);
       
     } catch (error) {
-      console.error('[LiveOrdersClient DEBUG] Error in refreshOrders:', error);
+      logger.error('[LiveOrdersClient DEBUG] Error in refreshOrders:', error);
     }
   };
 

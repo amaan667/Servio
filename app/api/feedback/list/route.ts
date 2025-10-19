@@ -2,6 +2,7 @@ import { NextResponse } from 'next/server';
 import { cookies } from 'next/headers';
 import { createServerClient } from '@supabase/ssr';
 import { cookieAdapter } from '@/lib/server/supabase';
+import { logger } from '@/lib/logger';
 
 export const runtime = 'nodejs';
 
@@ -62,7 +63,7 @@ export async function POST(req: Request) {
       .order('created_at', { ascending: false });
 
     if (error) {
-      console.error('[AUTH DEBUG] Error fetching feedback:', error);
+      logger.error('[AUTH DEBUG] Error fetching feedback:', { error: error instanceof Error ? error.message : 'Unknown error' });
       return NextResponse.json({ 
         ok: false, 
         error: 'Failed to fetch feedback' 
@@ -84,7 +85,7 @@ export async function POST(req: Request) {
     });
 
   } catch (error: any) {
-    console.error('[AUTH DEBUG] Error in feedback list:', error);
+    logger.error('[AUTH DEBUG] Error in feedback list:', { error: error instanceof Error ? error.message : 'Unknown error' });
     return NextResponse.json({ 
       ok: false, 
       error: `Failed to fetch feedback: ${error.message}` 

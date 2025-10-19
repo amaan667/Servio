@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { createClient } from '@/lib/supabase/server';
 import type { CreateIngredientRequest } from '@/types/inventory';
+import { logger } from '@/lib/logger';
 
 // GET /api/inventory/ingredients?venue_id=xxx
 export async function GET(request: NextRequest) {
@@ -24,7 +25,7 @@ export async function GET(request: NextRequest) {
       .order('name', { ascending: true });
 
     if (error) {
-      console.error('[INVENTORY API] Error fetching ingredients:', error);
+      logger.error('[INVENTORY API] Error fetching ingredients:', { error: error instanceof Error ? error.message : 'Unknown error' });
       return NextResponse.json(
         { error: error.message },
         { status: 500 }
@@ -33,7 +34,7 @@ export async function GET(request: NextRequest) {
 
     return NextResponse.json({ data });
   } catch (error) {
-    console.error('[INVENTORY API] Unexpected error:', error);
+    logger.error('[INVENTORY API] Unexpected error:', { error: error instanceof Error ? error.message : 'Unknown error' });
     return NextResponse.json(
       { error: 'Internal server error' },
       { status: 500 }
@@ -85,7 +86,7 @@ export async function POST(request: NextRequest) {
       .single();
 
     if (ingredientError) {
-      console.error('[INVENTORY API] Error creating ingredient:', ingredientError);
+      logger.error('[INVENTORY API] Error creating ingredient:', ingredientError);
       return NextResponse.json(
         { error: ingredientError.message },
         { status: 500 }
@@ -109,14 +110,14 @@ export async function POST(request: NextRequest) {
         });
 
       if (ledgerError) {
-        console.error('[INVENTORY API] Error creating initial stock:', ledgerError);
+        logger.error('[INVENTORY API] Error creating initial stock:', ledgerError);
         // Don't fail the request, ingredient is already created
       }
     }
 
     return NextResponse.json({ data: ingredient }, { status: 201 });
   } catch (error) {
-    console.error('[INVENTORY API] Unexpected error:', error);
+    logger.error('[INVENTORY API] Unexpected error:', { error: error instanceof Error ? error.message : 'Unknown error' });
     return NextResponse.json(
       { error: 'Internal server error' },
       { status: 500 }

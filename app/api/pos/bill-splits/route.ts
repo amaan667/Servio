@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { createClient } from '@/lib/supabase/server';
 import { getAuthenticatedUser } from '@/lib/supabase/server';
+import { logger } from '@/lib/logger';
 
 export async function POST(req: NextRequest) {
   try {
@@ -61,7 +62,7 @@ export async function POST(req: NextRequest) {
             .single();
 
           if (splitError) {
-            console.error('[POS BILL SPLITS] Error creating split:', splitError);
+            logger.error('[POS BILL SPLITS] Error creating split:', splitError);
             return NextResponse.json({ error: 'Failed to create bill split' }, { status: 500 });
           }
 
@@ -78,7 +79,7 @@ export async function POST(req: NextRequest) {
               .insert(orderSplitLinks);
 
             if (linksError) {
-              console.error('[POS BILL SPLITS] Error linking orders:', linksError);
+              logger.error('[POS BILL SPLITS] Error linking orders:', linksError);
               return NextResponse.json({ error: 'Failed to link orders to split' }, { status: 500 });
             }
           }
@@ -109,7 +110,7 @@ export async function POST(req: NextRequest) {
           .single();
 
         if (payError) {
-          console.error('[POS BILL SPLITS] Error paying split:', payError);
+          logger.error('[POS BILL SPLITS] Error paying split:', payError);
           return NextResponse.json({ error: 'Failed to mark split as paid' }, { status: 500 });
         }
 
@@ -122,7 +123,7 @@ export async function POST(req: NextRequest) {
 
     return NextResponse.json(result);
   } catch (error) {
-    console.error('[POS BILL SPLITS] Unexpected error:', error);
+    logger.error('[POS BILL SPLITS] Unexpected error:', { error: error instanceof Error ? error.message : 'Unknown error' });
     return NextResponse.json({ error: 'Internal server error' }, { status: 500 });
   }
 }
@@ -185,13 +186,13 @@ export async function GET(req: NextRequest) {
     const { data: splits, error } = await query.order('split_number');
 
     if (error) {
-      console.error('[POS BILL SPLITS] Error fetching splits:', error);
+      logger.error('[POS BILL SPLITS] Error fetching splits:', { error: error instanceof Error ? error.message : 'Unknown error' });
       return NextResponse.json({ error: error.message }, { status: 500 });
     }
 
     return NextResponse.json({ splits });
   } catch (error) {
-    console.error('[POS BILL SPLITS] Unexpected error:', error);
+    logger.error('[POS BILL SPLITS] Unexpected error:', { error: error instanceof Error ? error.message : 'Unknown error' });
     return NextResponse.json({ error: 'Internal server error' }, { status: 500 });
   }
 }

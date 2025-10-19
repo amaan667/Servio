@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { createClient } from '@/lib/supabase/server';
 import type { UpdateIngredientRequest } from '@/types/inventory';
+import { logger } from '@/lib/logger';
 
 // PATCH /api/inventory/ingredients/[id]
 export async function PATCH(
@@ -20,7 +21,7 @@ export async function PATCH(
       .single();
 
     if (error) {
-      console.error('[INVENTORY API] Error updating ingredient:', error);
+      logger.error('[INVENTORY API] Error updating ingredient:', { error: error instanceof Error ? error.message : 'Unknown error' });
       return NextResponse.json(
         { error: error.message },
         { status: 500 }
@@ -29,7 +30,7 @@ export async function PATCH(
 
     return NextResponse.json({ data });
   } catch (error) {
-    console.error('[INVENTORY API] Unexpected error:', error);
+    logger.error('[INVENTORY API] Unexpected error:', { error: error instanceof Error ? error.message : 'Unknown error' });
     return NextResponse.json(
       { error: 'Internal server error' },
       { status: 500 }
@@ -52,7 +53,7 @@ export async function DELETE(
       .eq('id', id);
 
     if (error) {
-      console.error('[INVENTORY API] Error deleting ingredient:', error);
+      logger.error('[INVENTORY API] Error deleting ingredient:', { error: error instanceof Error ? error.message : 'Unknown error' });
       return NextResponse.json(
         { error: error.message },
         { status: 500 }
@@ -61,7 +62,7 @@ export async function DELETE(
 
     return NextResponse.json({ success: true });
   } catch (error) {
-    console.error('[INVENTORY API] Unexpected error:', error);
+    logger.error('[INVENTORY API] Unexpected error:', { error: error instanceof Error ? error.message : 'Unknown error' });
     return NextResponse.json(
       { error: 'Internal server error' },
       { status: 500 }

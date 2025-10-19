@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
 import { createClient } from "@/lib/supabase/server";
+import { apiLogger as logger } from '@/lib/logger';
 
 export async function GET() {
   try {
@@ -19,7 +20,7 @@ export async function GET() {
         .limit(1);
       checks.organizations = true;
     } catch (error) {
-      console.log('organizations table check failed:', error);
+      logger.debug('organizations table check failed:', { error: error instanceof Error ? error.message : 'Unknown error' });
     }
 
     try {
@@ -29,7 +30,7 @@ export async function GET() {
         .limit(1);
       checks.user_venue_roles = true;
     } catch (error) {
-      console.log('user_venue_roles table check failed:', error);
+      logger.debug('user_venue_roles table check failed:', { error: error instanceof Error ? error.message : 'Unknown error' });
     }
 
     try {
@@ -39,7 +40,7 @@ export async function GET() {
         .limit(1);
       checks.venues = true;
     } catch (error) {
-      console.log('venues table check failed:', error);
+      logger.debug('venues table check failed:', { error: error instanceof Error ? error.message : 'Unknown error' });
     }
 
     return NextResponse.json({
@@ -49,7 +50,7 @@ export async function GET() {
     });
 
   } catch (error) {
-    console.error('Database status check error:', error);
+    logger.error('Database status check error:', { error: error instanceof Error ? error.message : 'Unknown error' });
     return NextResponse.json({
       success: false,
       error: error instanceof Error ? error.message : 'Unknown error',

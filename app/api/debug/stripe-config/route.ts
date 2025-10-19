@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
 import { stripe } from "@/lib/stripe-client";
+import { logger } from '@/lib/logger';
 
 export async function GET() {
   try {
@@ -30,7 +31,7 @@ export async function GET() {
         recurring: price.recurring?.interval,
       }));
     } catch (error) {
-      console.error('Error listing Stripe prices:', error);
+      logger.error('Error listing Stripe prices:', { error: error instanceof Error ? error.message : 'Unknown error' });
     }
 
     return NextResponse.json({
@@ -41,7 +42,7 @@ export async function GET() {
     });
 
   } catch (error) {
-    console.error('Stripe config check error:', error);
+    logger.error('Stripe config check error:', { error: error instanceof Error ? error.message : 'Unknown error' });
     return NextResponse.json({
       success: false,
       error: error instanceof Error ? error.message : 'Unknown error'

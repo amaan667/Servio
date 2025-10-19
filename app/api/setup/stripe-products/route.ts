@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
 import { stripe } from "@/lib/stripe-client";
+import { apiLogger, logger } from '@/lib/logger';
 
 export async function POST() {
   try {
@@ -51,10 +52,10 @@ export async function POST() {
           status: 'created'
         });
 
-        console.log(`[STRIPE SETUP] Created ${product.tier}: Product ${stripeProduct.id}, Price ${price.id}`);
+        logger.debug(`[STRIPE SETUP] Created ${product.tier}: Product ${stripeProduct.id}, Price ${price.id}`);
 
       } catch (error) {
-        console.error(`[STRIPE ERROR] Failed to create ${product.tier}:`, error);
+        logger.error(`[STRIPE ERROR] Failed to create ${product.tier}:`, { error: error instanceof Error ? error.message : 'Unknown error' });
         results.push({
           tier: product.tier,
           status: 'error',
@@ -70,7 +71,7 @@ export async function POST() {
     });
 
   } catch (error) {
-    console.error('Stripe products setup error:', error);
+    logger.error('Stripe products setup error:', { error: error instanceof Error ? error.message : 'Unknown error' });
     return NextResponse.json({
       success: false,
       error: error instanceof Error ? error.message : 'Unknown error'

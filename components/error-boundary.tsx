@@ -3,6 +3,7 @@
 import React from 'react';
 import { Button } from '@/components/ui/button';
 import { clearAuthStorage } from '@/lib/supabase/client';
+import { logger } from '@/lib/logger';
 
 interface ErrorBoundaryState {
   hasError: boolean;
@@ -21,7 +22,7 @@ export class ErrorBoundary extends React.Component<ErrorBoundaryProps, ErrorBoun
   }
 
   static getDerivedStateFromError(error: Error): ErrorBoundaryState {
-    console.log('[ERROR BOUNDARY] getDerivedStateFromError called', {
+    logger.debug('[ERROR BOUNDARY] getDerivedStateFromError called', {
       timestamp: new Date().toISOString(),
       errorMessage: error.message,
       errorName: error.name,
@@ -30,7 +31,7 @@ export class ErrorBoundary extends React.Component<ErrorBoundaryProps, ErrorBoun
   }
 
   componentDidCatch(error: Error, errorInfo: React.ErrorInfo) {
-    console.error('[ERROR BOUNDARY] componentDidCatch - Caught error:', {
+    logger.error('[ERROR BOUNDARY] componentDidCatch - Caught error:', {
       timestamp: new Date().toISOString(),
       errorMessage: error.message,
       errorName: error.name,
@@ -42,7 +43,7 @@ export class ErrorBoundary extends React.Component<ErrorBoundaryProps, ErrorBoun
   }
 
   handleRetry = () => {
-    console.log('[ERROR BOUNDARY] Retry button clicked', {
+    logger.debug('[ERROR BOUNDARY] Retry button clicked', {
       timestamp: new Date().toISOString(),
     });
     this.setState({ hasError: false, error: undefined, errorInfo: undefined });
@@ -55,7 +56,7 @@ export class ErrorBoundary extends React.Component<ErrorBoundaryProps, ErrorBoun
         window.location.reload();
       }
     } catch (err) {
-      console.error('[ERROR BOUNDARY] Error clearing auth state:', err);
+      logger.error('[ERROR BOUNDARY] Error clearing auth state:', err);
       if (typeof window !== 'undefined') {
         window.location.reload();
       }

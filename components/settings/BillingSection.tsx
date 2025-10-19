@@ -15,6 +15,7 @@ import {
   Loader2
 } from "lucide-react";
 import { UpgradeModal } from "@/components/UpgradeModal";
+import { logger } from '@/lib/logger';
 
 interface BillingSectionProps {
   user: {
@@ -42,7 +43,7 @@ export default function BillingSection({ user, organization }: BillingSectionPro
   const handleManageBilling = async () => {
     setLoadingPortal(true);
     try {
-      console.log('[BILLING PORTAL] Creating portal session for org:', organization?.id);
+      logger.debug('[BILLING PORTAL] Creating portal session for org:', organization?.id);
       
       const response = await fetch("/api/stripe/create-portal-session", {
         method: "POST",
@@ -52,23 +53,23 @@ export default function BillingSection({ user, organization }: BillingSectionPro
 
       const data = await response.json();
       
-      console.log('[BILLING PORTAL] Response:', data);
+      logger.debug('[BILLING PORTAL] Response:', data);
       
       if (data.error) {
-        console.error("Billing portal error:", data.error);
+        logger.error("Billing portal error:", data.error);
         alert(`Failed to open billing portal: ${data.error}`);
         return;
       }
 
       if (data.url) {
-        console.log('[BILLING PORTAL] Redirecting to:', data.url);
+        logger.debug('[BILLING PORTAL] Redirecting to:', data.url);
         window.location.href = data.url;
       } else {
-        console.error('[BILLING PORTAL] No URL in response');
+        logger.error('[BILLING PORTAL] No URL in response');
         alert('Failed to open billing portal - no URL received');
       }
     } catch (error) {
-      console.error("Error creating portal session:", error);
+      logger.error("Error creating portal session:", error);
       alert('Failed to open billing portal. Please try again.');
     } finally {
       setLoadingPortal(false);
@@ -78,7 +79,7 @@ export default function BillingSection({ user, organization }: BillingSectionPro
   const handleSwitchToBasic = async () => {
     setLoadingPortal(true);
     try {
-      console.log('[SWITCH TO BASIC] Switching organization to basic plan:', organization?.id);
+      logger.debug('[SWITCH TO BASIC] Switching organization to basic plan:', organization?.id);
       
       const response = await fetch("/api/stripe/downgrade-plan", {
         method: "POST",
@@ -91,10 +92,10 @@ export default function BillingSection({ user, organization }: BillingSectionPro
 
       const data = await response.json();
       
-      console.log('[SWITCH TO BASIC] Response:', data);
+      logger.debug('[SWITCH TO BASIC] Response:', data);
       
       if (data.error) {
-        console.error("Switch to basic error:", data.error);
+        logger.error("Switch to basic error:", data.error);
         alert(`Failed to switch to basic plan: ${data.error}`);
         return;
       }
@@ -105,7 +106,7 @@ export default function BillingSection({ user, organization }: BillingSectionPro
         window.location.reload();
       }
     } catch (error) {
-      console.error("Error switching to basic plan:", error);
+      logger.error("Error switching to basic plan:", error);
       alert('Failed to switch to basic plan. Please try again.');
     } finally {
       setLoadingPortal(false);

@@ -4,6 +4,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { createClient } from "@/lib/supabase/server";
 import { getUserSafe } from "@/utils/getUserSafe";
+import { apiLogger, logger } from '@/lib/logger';
 
 export async function POST(request: NextRequest) {
   try {
@@ -12,7 +13,7 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
 
-    console.log('[STAFF MIGRATION] Starting staff invitation system migration...');
+    logger.debug('[STAFF MIGRATION] Starting staff invitation system migration...');
     
     const supabase = await createClient();
 
@@ -28,7 +29,7 @@ export async function POST(request: NextRequest) {
       });
     } catch (tableError: any) {
       if (tableError.code !== 'PGRST116' && !tableError.message?.includes('relation "staff_invitations" does not exist')) {
-        console.error('[STAFF MIGRATION] Unexpected error checking table:', tableError);
+        logger.error('[STAFF MIGRATION] Unexpected error checking table:', { error: tableError instanceof Error ? tableError.message : 'Unknown error' });
         return NextResponse.json({ 
           error: 'Database error. Please try again.' 
         }, { status: 500 });
@@ -38,7 +39,7 @@ export async function POST(request: NextRequest) {
     // Table doesn't exist, we need to create it
     // Since we can't execute raw SQL through the Supabase client in this environment,
     // we'll return the SQL that needs to be run manually
-    console.log('[STAFF MIGRATION] Table does not exist, returning SQL for manual execution');
+    logger.debug('[STAFF MIGRATION] Table does not exist, returning SQL for manual execution');
     
     const migrationSQL = `
 -- Staff Invitation System Migration
@@ -134,7 +135,7 @@ CREATE POLICY "Service role full access to invitations" ON staff_invitations
     });
 
   } catch (error) {
-    console.error('[STAFF MIGRATION] Error:', error);
+    logger.error('[STAFF MIGRATION] Error:', { error: error instanceof Error ? error.message : 'Unknown error' });
     return NextResponse.json({
       success: false,
       error: 'Failed to check migration status',

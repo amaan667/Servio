@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { createAdminClient } from '@/lib/supabase/server';
+import { logger } from '@/lib/logger';
 
 export async function POST(request: NextRequest) {
   try {
@@ -15,7 +16,7 @@ export async function POST(request: NextRequest) {
 
     // Check if service role key is available
     if (!process.env.SUPABASE_SERVICE_ROLE_KEY) {
-      console.error('🔄 [MANUAL DAILY RESET] SUPABASE_SERVICE_ROLE_KEY not found');
+      logger.error('🔄 [MANUAL DAILY RESET] SUPABASE_SERVICE_ROLE_KEY not found');
       return NextResponse.json(
         { error: 'Service role key not configured' },
         { status: 500 }
@@ -32,7 +33,7 @@ export async function POST(request: NextRequest) {
       .single();
 
     if (venueError) {
-      console.error('🔄 [MANUAL DAILY RESET] Error fetching venue:', venueError);
+      logger.error('🔄 [MANUAL DAILY RESET] Error fetching venue:', venueError);
       return NextResponse.json(
         { error: `Database error: ${venueError.message}` },
         { status: 500 }
@@ -57,7 +58,7 @@ export async function POST(request: NextRequest) {
       .limit(1);
 
     if (recentOrdersError) {
-      console.error('🔄 [MANUAL DAILY RESET] Error checking recent orders:', recentOrdersError);
+      logger.error('🔄 [MANUAL DAILY RESET] Error checking recent orders:', recentOrdersError);
       // Continue with reset if we can't check
     } else if (recentOrders && recentOrders.length > 0) {
     }
@@ -70,7 +71,7 @@ export async function POST(request: NextRequest) {
       .in('order_status', ['PLACED', 'ACCEPTED', 'IN_PREP', 'READY', 'SERVING']);
 
     if (activeOrdersError) {
-      console.error('🔄 [MANUAL DAILY RESET] Error fetching active orders:', activeOrdersError);
+      logger.error('🔄 [MANUAL DAILY RESET] Error fetching active orders:', activeOrdersError);
       return NextResponse.json(
         { error: 'Failed to fetch active orders' },
         { status: 500 }
@@ -89,7 +90,7 @@ export async function POST(request: NextRequest) {
         .in('order_status', ['PLACED', 'ACCEPTED', 'IN_PREP', 'READY', 'SERVING']);
 
       if (completeOrdersError) {
-        console.error('🔄 [MANUAL DAILY RESET] Error completing orders:', completeOrdersError);
+        logger.error('🔄 [MANUAL DAILY RESET] Error completing orders:', completeOrdersError);
         return NextResponse.json(
           { error: 'Failed to complete active orders' },
           { status: 500 }
@@ -106,7 +107,7 @@ export async function POST(request: NextRequest) {
       .eq('status', 'BOOKED');
 
     if (activeReservationsError) {
-      console.error('🔄 [MANUAL DAILY RESET] Error fetching active reservations:', activeReservationsError);
+      logger.error('🔄 [MANUAL DAILY RESET] Error fetching active reservations:', activeReservationsError);
       return NextResponse.json(
         { error: 'Failed to fetch active reservations' },
         { status: 500 }
@@ -125,7 +126,7 @@ export async function POST(request: NextRequest) {
         .eq('status', 'BOOKED');
 
       if (cancelReservationsError) {
-        console.error('🔄 [MANUAL DAILY RESET] Error canceling reservations:', cancelReservationsError);
+        logger.error('🔄 [MANUAL DAILY RESET] Error canceling reservations:', cancelReservationsError);
         return NextResponse.json(
           { error: 'Failed to cancel active reservations' },
           { status: 500 }
@@ -141,7 +142,7 @@ export async function POST(request: NextRequest) {
       .eq('venue_id', venueId);
 
     if (tablesError) {
-      console.error('🔄 [MANUAL DAILY RESET] Error fetching tables:', tablesError);
+      logger.error('🔄 [MANUAL DAILY RESET] Error fetching tables:', tablesError);
       return NextResponse.json(
         { error: 'Failed to fetch tables' },
         { status: 500 }
@@ -157,7 +158,7 @@ export async function POST(request: NextRequest) {
         .eq('venue_id', venueId);
 
       if (deleteSessionsError) {
-        console.warn('🔄 [MANUAL DAILY RESET] Warning clearing table sessions:', deleteSessionsError);
+        logger.warn('🔄 [MANUAL DAILY RESET] Warning clearing table sessions:', deleteSessionsError);
         // Don't fail for this, continue
       }
 
@@ -168,7 +169,7 @@ export async function POST(request: NextRequest) {
         .eq('venue_id', venueId);
 
       if (deleteTablesError) {
-        console.error('🔄 [MANUAL DAILY RESET] Error deleting tables:', deleteTablesError);
+        logger.error('🔄 [MANUAL DAILY RESET] Error deleting tables:', deleteTablesError);
         return NextResponse.json(
           { error: 'Failed to delete tables' },
           { status: 500 }
@@ -184,9 +185,9 @@ export async function POST(request: NextRequest) {
       .eq('venue_id', venueId);
 
     if (clearRuntimeError) {
-      console.error('🔄 [MANUAL DAILY RESET] Error clearing runtime state:', clearRuntimeError);
+      logger.error('🔄 [MANUAL DAILY RESET] Error clearing runtime state:', clearRuntimeError);
       // Don't fail the entire operation for this
-      console.warn('🔄 [MANUAL DAILY RESET] Continuing despite runtime state clear error');
+      logger.warn('🔄 [MANUAL DAILY RESET] Continuing despite runtime state clear error');
     } else {
     }
 
@@ -208,9 +209,9 @@ export async function POST(request: NextRequest) {
       });
 
     if (logError) {
-      console.error('🔄 [MANUAL DAILY RESET] Error logging reset:', logError);
+      logger.error('🔄 [MANUAL DAILY RESET] Error logging reset:', logError);
       // Don't fail the operation for this
-      console.warn('🔄 [MANUAL DAILY RESET] Continuing despite log error');
+      logger.warn('🔄 [MANUAL DAILY RESET] Continuing despite log error');
     } else {
     }
 
@@ -229,7 +230,7 @@ export async function POST(request: NextRequest) {
     });
 
   } catch (error) {
-    console.error('🔄 [MANUAL DAILY RESET] Error in manual daily reset:', error);
+    logger.error('🔄 [MANUAL DAILY RESET] Error in manual daily reset:', { error: error instanceof Error ? error.message : 'Unknown error' });
     return NextResponse.json(
       { error: 'Internal server error' },
       { status: 500 }

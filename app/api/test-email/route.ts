@@ -1,6 +1,7 @@
 // Test endpoint to verify email sending is working
 import { NextRequest, NextResponse } from 'next/server';
 import { sendEmail } from '@/lib/email';
+import { apiLogger, logger } from '@/lib/logger';
 
 export async function POST(request: NextRequest) {
   try {
@@ -11,7 +12,7 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: 'Email is required' }, { status: 400 });
     }
 
-    console.log('🧪 Testing email sending to:', email);
+    logger.debug('🧪 Testing email sending to:', email);
 
     const testTemplate = {
       to: email,
@@ -42,7 +43,7 @@ export async function POST(request: NextRequest) {
     });
 
   } catch (error) {
-    console.error('❌ Test email error:', error);
+    logger.error('❌ Test email error:', { error: error instanceof Error ? error.message : 'Unknown error' });
     return NextResponse.json({ 
       error: 'Failed to send test email',
       details: error instanceof Error ? error.message : 'Unknown error'

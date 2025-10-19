@@ -1,5 +1,6 @@
 import { NextResponse } from 'next/server';
 import { createAdminClient } from '@/lib/supabase/server';
+import { logger } from '@/lib/logger';
 
 export async function POST() {
   try {
@@ -165,7 +166,7 @@ export async function POST() {
     });
     
   } catch (error) {
-    console.error('❌ Emergency fix failed:', error);
+    logger.error('❌ Emergency fix failed:', { error: error instanceof Error ? error.message : 'Unknown error' });
     return NextResponse.json({
       success: false,
       error: error instanceof Error ? error.message : 'Unknown error'

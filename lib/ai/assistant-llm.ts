@@ -4,6 +4,7 @@
 import OpenAI from "openai";
 import { zodResponseFormat } from "openai/helpers/zod";
 import { z } from "zod";
+import { aiLogger as logger } from '@/lib/logger';
 import {
   AIAssistantContext,
   AIPlanResponse,
@@ -67,11 +68,11 @@ function selectModel(userPrompt: string, firstToolName?: ToolName): string {
   // If we know the tool name, use it for decision
   if (firstToolName) {
     if (COMPLEX_TOOLS.has(firstToolName)) {
-      console.log(`[AI ASSISTANT] Using GPT-4o (full) for complex tool: ${firstToolName}`);
+      logger.debug(`[AI ASSISTANT] Using GPT-4o (full) for complex tool: ${firstToolName}`);
       return MODEL_FULL;
     }
     if (SIMPLE_TOOLS.has(firstToolName)) {
-      console.log(`[AI ASSISTANT] Using GPT-4o-mini for simple tool: ${firstToolName}`);
+      logger.debug(`[AI ASSISTANT] Using GPT-4o-mini for simple tool: ${firstToolName}`);
       return MODEL_MINI;
     }
   }
@@ -87,12 +88,12 @@ function selectModel(userPrompt: string, firstToolName?: ToolName): string {
   ];
   
   if (complexIndicators.some(indicator => promptLower.includes(indicator))) {
-    console.log(`[AI ASSISTANT] Using GPT-4o (full) - detected complex prompt`);
+    logger.debug(`[AI ASSISTANT] Using GPT-4o (full) - detected complex prompt`);
     return MODEL_FULL;
   }
 
   // Default to mini for cost savings
-  console.log(`[AI ASSISTANT] Using GPT-4o-mini (default)`);
+  logger.debug(`[AI ASSISTANT] Using GPT-4o-mini (default)`);
   return MODEL_MINI;
 }
 
@@ -377,11 +378,11 @@ export async function planAssistantAction(
     
     throw new Error("Failed to parse AI response: no parsed or content available");
   } catch (error) {
-    console.error(`[AI ASSISTANT] Planning error with ${selectedModel}:`, error);
+    logger.error(`[AI ASSISTANT] Planning error with ${selectedModel}:`, error);
     
     // If we used mini and got an error, try falling back to full model
     if (selectedModel === MODEL_MINI && !usedFallback) {
-      console.log("[AI ASSISTANT] Falling back to GPT-4o (full) after mini failure");
+      logger.debug("[AI ASSISTANT] Falling back to GPT-4o (full) after mini failure");
       usedFallback = true;
       selectedModel = MODEL_FULL;
       
@@ -422,10 +423,10 @@ export async function planAssistantAction(
           };
         }
       } catch (fallbackError) {
-        console.error("[AI ASSISTANT] Fallback to GPT-4o also failed:", fallbackError);
+        logger.error("[AI ASSISTANT] Fallback to GPT-4o also failed:", fallbackError);
         // Re-throw the fallback error
         if (fallbackError instanceof z.ZodError) {
-          console.error("[AI ASSISTANT] Zod validation errors:", JSON.stringify(fallbackError.errors, null, 2));
+          logger.error("[AI ASSISTANT] Zod validation errors:", JSON.stringify(fallbackError.errors, null, 2));
         }
         throw fallbackError;
       }
@@ -433,7 +434,7 @@ export async function planAssistantAction(
     
     // If original error wasn't from mini, or fallback also failed
     if (error instanceof z.ZodError) {
-      console.error("[AI ASSISTANT] Zod validation errors:", JSON.stringify(error.errors, null, 2));
+      logger.error("[AI ASSISTANT] Zod validation errors:", JSON.stringify(error.errors, null, 2));
     }
     throw error;
   }
@@ -470,7 +471,7 @@ User Role: ${context.userRole}`;
 
     return completion.choices[0].message.content || "Action explanation unavailable.";
   } catch (error) {
-    console.error("[AI ASSISTANT] Explanation error:", error);
+    logger.error("[AI ASSISTANT] Explanation error:", error);
     return "Unable to generate explanation.";
   }
 }
@@ -505,7 +506,7 @@ Focus on common tasks, optimizations, or insights based on the data.`;
     const response = JSON.parse(completion.choices[0].message.content || "{}");
     return response.suggestions || [];
   } catch (error) {
-    console.error("[AI ASSISTANT] Suggestion generation error:", error);
+    logger.error("[AI ASSISTANT] Suggestion generation error:", error);
     return [];
   }
 }

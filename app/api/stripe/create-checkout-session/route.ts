@@ -3,6 +3,7 @@ import { NextRequest, NextResponse } from "next/server";
 import Stripe from "stripe";
 import { createClient } from "@/lib/supabase/server";
 import { stripe } from "@/lib/stripe-client";
+import { apiLogger as logger } from '@/lib/logger';
 
 // Pricing tiers from homepage
 const PRICE_IDS = {
@@ -62,10 +63,10 @@ const ensureStripeProducts = async () => {
       });
 
       priceIds[product.tier] = price.id;
-      console.log(`[STRIPE SETUP] Created ${product.tier} price: ${price.id}`);
+      logger.debug(`[STRIPE SETUP] Created ${product.tier} price: ${price.id}`);
 
     } catch (error) {
-      console.error(`[STRIPE ERROR] Failed to create ${product.tier} product/price:`, error);
+      logger.error(`[STRIPE ERROR] Failed to create ${product.tier} product/price:`, { error: error instanceof Error ? error.message : 'Unknown error' });
       throw error;
     }
   }
@@ -111,9 +112,9 @@ export async function POST(request: NextRequest) {
     
     if (orgByOwner) {
       org = orgByOwner;
-      console.log('[STRIPE DEBUG] Found existing organization by owner_id:', org.id);
+      logger.debug('[STRIPE DEBUG] Found existing organization by owner_id:', org.id);
     } else if (ownerError) {
-      console.log('[STRIPE DEBUG] Error querying organization by owner_id:', ownerError);
+      logger.debug('[STRIPE DEBUG] Error querying organization by owner_id:', ownerError);
     }
     
     // Second priority: If organizationId provided and valid, verify it matches user
@@ -126,17 +127,17 @@ export async function POST(request: NextRequest) {
       
       if (orgById && orgById.owner_id === user.id) {
         org = orgById;
-        console.log('[STRIPE DEBUG] Found organization by provided ID:', org.id);
+        logger.debug('[STRIPE DEBUG] Found organization by provided ID:', org.id);
       } else if (orgById) {
-        console.warn('[STRIPE DEBUG] Organization', organizationId, 'exists but belongs to different user');
+        logger.warn('[STRIPE DEBUG] Organization', organizationId, 'exists but belongs to different user');
       } else if (idError) {
-        console.log('[STRIPE DEBUG] Error querying organization by ID:', idError);
+        logger.debug('[STRIPE DEBUG] Error querying organization by ID:', idError);
       }
     }
 
     // If NO organization found, create a real one NOW
     if (!org) {
-      console.log('[STRIPE DEBUG] No organization found - creating real organization for user:', user.id);
+      logger.debug('[STRIPE DEBUG] No organization found - creating real organization for user:', user.id);
       const userName = user.user_metadata?.full_name || user.email?.split('@')[0] || 'User';
       
       const { data: newOrg, error: createError } = await supabase
@@ -156,7 +157,7 @@ export async function POST(request: NextRequest) {
         .single();
 
       if (createError) {
-        console.error('[STRIPE ERROR] Failed to create organization:', createError);
+        logger.error('[STRIPE ERROR] Failed to create organization:', createError);
         return NextResponse.json(
           { error: "Failed to create organization. Please try again." },
           { status: 500 }
@@ -164,7 +165,7 @@ export async function POST(request: NextRequest) {
       }
       
       org = newOrg;
-      console.log('[STRIPE DEBUG] ✅ Created new organization:', org.id);
+      logger.debug('[STRIPE DEBUG] ✅ Created new organization:', org.id);
       
       // Link any existing venues to this organization
       const { error: venueUpdateError } = await supabase
@@ -174,15 +175,15 @@ export async function POST(request: NextRequest) {
         .is("organization_id", null);
       
       if (venueUpdateError) {
-        console.warn('[STRIPE DEBUG] Warning: Could not link venues to organization:', venueUpdateError);
+        logger.warn('[STRIPE DEBUG] Warning: Could not link venues to organization:', venueUpdateError);
       } else {
-        console.log('[STRIPE DEBUG] Linked user venues to organization:', org.id);
+        logger.debug('[STRIPE DEBUG] Linked user venues to organization:', org.id);
       }
     }
 
     // Validate we have a real organization
     if (!org || !org.id) {
-      console.error("[STRIPE ERROR] Failed to get or create organization for user:", user.id);
+      logger.error("[STRIPE ERROR] Failed to get or create organization for user:", user.id);
       return NextResponse.json(
         { error: "Could not create organization. Please contact support." },
         { status: 500 }
@@ -191,9 +192,9 @@ export async function POST(request: NextRequest) {
     
     // Always use the actual organization ID from database
     const actualOrgId = org.id;
-    console.log('[STRIPE DEBUG] Using organization ID:', actualOrgId, 'for user:', user.id);
+    logger.debug('[STRIPE DEBUG] Using organization ID:', actualOrgId, 'for user:', user.id);
 
-    console.log('[STRIPE DEBUG] Using organization:', {
+    logger.debug('[STRIPE DEBUG] Using organization:', {
       id: org.id,
       owner_id: org.owner_id,
       subscription_tier: org.subscription_tier,
@@ -221,9 +222,9 @@ export async function POST(request: NextRequest) {
         .update({ stripe_customer_id: customerId })
         .eq("id", actualOrgId);
       
-      console.log('[STRIPE DEBUG] Created Stripe customer:', customerId, 'for org:', actualOrgId);
+      logger.debug('[STRIPE DEBUG] Created Stripe customer:', customerId, 'for org:', actualOrgId);
     } else {
-      console.log('[STRIPE DEBUG] Using existing Stripe customer:', customerId);
+      logger.debug('[STRIPE DEBUG] Using existing Stripe customer:', customerId);
     }
 
     // Create checkout session
@@ -254,11 +255,11 @@ export async function POST(request: NextRequest) {
       },
     };
 
-    console.log('[STRIPE DEBUG] Creating checkout session with data:', sessionData);
+    logger.debug('[STRIPE DEBUG] Creating checkout session with data:', sessionData);
 
     const session = await stripe.checkout.sessions.create(sessionData);
 
-    console.log('[STRIPE DEBUG] Checkout session created:', {
+    logger.debug('[STRIPE DEBUG] Checkout session created:', {
       id: session.id,
       url: session.url,
       customer: session.customer
@@ -266,7 +267,7 @@ export async function POST(request: NextRequest) {
 
     return NextResponse.json({ sessionId: session.id, url: session.url });
   } catch (error: any) {
-    console.error("[STRIPE CHECKOUT] Error:", error);
+    logger.error("[STRIPE CHECKOUT] Error:", { error: error instanceof Error ? error.message : 'Unknown error' });
     return NextResponse.json(
       { error: error.message || "Failed to create checkout session" },
       { status: 500 }

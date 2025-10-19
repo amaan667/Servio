@@ -1,5 +1,6 @@
 import { NextResponse } from 'next/server';
 import { createAdminClient } from '@/lib/supabase/server';
+import { apiLogger, logger } from '@/lib/logger';
 
 export const runtime = 'nodejs';
 export const dynamic = 'force-dynamic';
@@ -7,7 +8,7 @@ export const dynamic = 'force-dynamic';
 export async function GET(req: Request) {
   try {
     const supabaseAdmin = createAdminClient();
-    console.log('[KDS STATUS] Checking KDS system status...');
+    logger.debug('[KDS STATUS] Checking KDS system status...');
     
     // Check if KDS tables exist
     const { data: tables, error: tablesError } = await supabaseAdmin
@@ -17,7 +18,7 @@ export async function GET(req: Request) {
       .eq('table_schema', 'public');
 
     if (tablesError) {
-      console.error('[KDS STATUS] Error checking tables:', tablesError);
+      logger.error('[KDS STATUS] Error checking tables:', tablesError);
       return NextResponse.json({ 
         error: 'Failed to check KDS tables',
         details: tablesError.message 
@@ -25,7 +26,7 @@ export async function GET(req: Request) {
     }
 
     const tableNames = tables?.map(t => t.table_name) || [];
-    console.log('[KDS STATUS] Found KDS tables:', tableNames);
+    logger.debug('[KDS STATUS] Found KDS tables:', tableNames);
 
     // Check if there are any KDS stations
     let stationsCount = 0;
@@ -55,7 +56,7 @@ export async function GET(req: Request) {
       .limit(5);
 
     if (ordersError) {
-      console.error('[KDS STATUS] Error checking recent orders:', ordersError);
+      logger.error('[KDS STATUS] Error checking recent orders:', ordersError);
     }
 
     const status = {
@@ -67,7 +68,7 @@ export async function GET(req: Request) {
       system_ready: tableNames.length === 3 && stationsCount > 0
     };
 
-    console.log('[KDS STATUS] System status:', status);
+    logger.debug('[KDS STATUS] System status:', status);
 
     return NextResponse.json({ 
       ok: true,
@@ -75,7 +76,7 @@ export async function GET(req: Request) {
     });
 
   } catch (error) {
-    console.error('[KDS STATUS] Error:', error);
+    logger.error('[KDS STATUS] Error:', { error: error instanceof Error ? error.message : 'Unknown error' });
     return NextResponse.json({ 
       error: 'Internal server error',
       details: error instanceof Error ? error.message : 'Unknown error'

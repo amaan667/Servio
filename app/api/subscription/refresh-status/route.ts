@@ -2,6 +2,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { createClient } from "@/lib/supabase/server";
 import { stripe } from "@/lib/stripe-client";
+import { apiLogger, logger } from '@/lib/logger';
 
 export async function POST(request: NextRequest) {
   try {
@@ -26,7 +27,7 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    console.log('[SUBSCRIPTION REFRESH] Refreshing subscription status for org:', organizationId);
+    logger.debug('[SUBSCRIPTION REFRESH] Refreshing subscription status for org:', organizationId);
 
     // Get organization details
     const { data: org, error: orgError } = await supabase
@@ -36,7 +37,7 @@ export async function POST(request: NextRequest) {
       .single();
 
     if (orgError || !org) {
-      console.error('[SUBSCRIPTION REFRESH] Organization not found:', orgError);
+      logger.error('[SUBSCRIPTION REFRESH] Organization not found:', orgError);
       return NextResponse.json(
         { error: "Organization not found" },
         { status: 404 }
@@ -60,7 +61,7 @@ export async function POST(request: NextRequest) {
     try {
       const stripeSubscription = await stripe.subscriptions.retrieve(org.stripe_subscription_id);
       
-      console.log('[SUBSCRIPTION REFRESH] Stripe subscription status:', {
+      logger.debug('[SUBSCRIPTION REFRESH] Stripe subscription status:', {
         id: stripeSubscription.id,
         status: stripeSubscription.status,
         metadata: stripeSubscription.metadata
@@ -79,7 +80,7 @@ export async function POST(request: NextRequest) {
       // Use Stripe tier if available, otherwise keep current tier
       const finalTier = stripeTier || currentTier || 'basic';
       
-      console.log('[SUBSCRIPTION REFRESH] Tier detection:', {
+      logger.debug('[SUBSCRIPTION REFRESH] Tier detection:', {
         stripeTier,
         currentTier,
         finalTier
@@ -99,14 +100,14 @@ export async function POST(request: NextRequest) {
         .eq("id", organizationId);
 
       if (updateError) {
-        console.error('[SUBSCRIPTION REFRESH] Error updating organization:', updateError);
+        logger.error('[SUBSCRIPTION REFRESH] Error updating organization:', updateError);
         return NextResponse.json(
           { error: "Failed to update subscription status" },
           { status: 500 }
         );
       }
 
-      console.log('[SUBSCRIPTION REFRESH] Successfully updated organization subscription status');
+      logger.debug('[SUBSCRIPTION REFRESH] Successfully updated organization subscription status');
 
       return NextResponse.json({
         success: true,
@@ -119,7 +120,7 @@ export async function POST(request: NextRequest) {
       });
 
     } catch (stripeError: any) {
-      console.error('[SUBSCRIPTION REFRESH] Stripe error:', stripeError);
+      logger.error('[SUBSCRIPTION REFRESH] Stripe error:', stripeError);
       
       // If subscription doesn't exist in Stripe, reset to basic
       const { error: resetError } = await supabase
@@ -134,7 +135,7 @@ export async function POST(request: NextRequest) {
         .eq("id", organizationId);
 
       if (resetError) {
-        console.error('[SUBSCRIPTION REFRESH] Error resetting organization:', resetError);
+        logger.error('[SUBSCRIPTION REFRESH] Error resetting organization:', resetError);
         return NextResponse.json(
           { error: "Failed to reset subscription status" },
           { status: 500 }
@@ -154,7 +155,7 @@ export async function POST(request: NextRequest) {
     }
 
   } catch (error: any) {
-    console.error("[SUBSCRIPTION REFRESH] Error:", error);
+    logger.error("[SUBSCRIPTION REFRESH] Error:", { error: error instanceof Error ? error.message : 'Unknown error' });
     return NextResponse.json(
       { error: error.message || "Failed to refresh subscription status" },
       { status: 500 }

@@ -6,6 +6,7 @@
  */
 
 import { useState, useCallback } from 'react';
+import { logger } from '@/lib/logger';
 
 export interface CsvDownloadOptions {
   filename: string;
@@ -29,7 +30,7 @@ export function downloadCSV({ filename, csv }: CsvDownloadOptions): void {
   try {
     // Validate inputs
     if (!filename || !csv) {
-      console.warn('[CSV Download] Missing filename or CSV content');
+      logger.warn('[CSV Download] Missing filename or CSV content');
       return;
     }
 
@@ -58,9 +59,9 @@ export function downloadCSV({ filename, csv }: CsvDownloadOptions): void {
     // Clean up the URL object
     URL.revokeObjectURL(url);
 
-    console.log(`[CSV Download] Successfully downloaded: ${sanitizedFilename}`);
+    logger.debug(`[CSV Download] Successfully downloaded: ${sanitizedFilename}`);
   } catch (error) {
-    console.warn('[CSV Download] Failed to download CSV:', error);
+    logger.warn('[CSV Download] Failed to download CSV:', error);
     
     // Fallback: try to open in new window (may not work in all browsers)
     try {
@@ -70,7 +71,7 @@ export function downloadCSV({ filename, csv }: CsvDownloadOptions): void {
       // Note: We don't revoke this URL immediately as the new window might need it
       // It will be garbage collected when the window closes
     } catch (fallbackError) {
-      console.error('[CSV Download] Fallback method also failed:', fallbackError);
+      logger.error('[CSV Download] Fallback method also failed:', fallbackError);
     }
   }
 }

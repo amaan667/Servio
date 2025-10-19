@@ -1,6 +1,7 @@
 import { NextResponse } from 'next/server';
 import { createClient } from '@/lib/supabase/server';
 import { cleanupTableOnOrderCompletion } from '@/lib/table-cleanup';
+import { apiLogger as logger } from '@/lib/logger';
 
 export async function POST(req: Request) {
   try {
@@ -26,7 +27,7 @@ export async function POST(req: Request) {
       .single();
 
     if (fetchError) {
-      console.error('Failed to fetch order:', fetchError);
+      logger.error('Failed to fetch order:', fetchError);
       return NextResponse.json({ error: fetchError.message }, { status: 500 });
     }
 
@@ -37,7 +38,7 @@ export async function POST(req: Request) {
       .eq('id', orderId);
 
     if (error) {
-      console.error('Failed to set order status:', error);
+      logger.error('Failed to set order status:', { error: error instanceof Error ? error.message : 'Unknown error' });
       return NextResponse.json({ error: error.message }, { status: 500 });
     }
 
@@ -55,16 +56,16 @@ export async function POST(req: Request) {
         });
 
         if (!cleanupResult.success) {
-          console.error('[SET STATUS] Table cleanup failed:', cleanupResult.error);
+          logger.error('[SET STATUS] Table cleanup failed:', cleanupResult.error);
         } else {
-          console.log('[SET STATUS] Table cleanup successful:', cleanupResult.details);
+          logger.debug('[SET STATUS] Table cleanup successful:', cleanupResult.details);
         }
       }
     }
 
     return NextResponse.json({ success: true });
   } catch (error: any) {
-    console.error('Set status error:', error);
+    logger.error('Set status error:', { error: error instanceof Error ? error.message : 'Unknown error' });
     return NextResponse.json({ error: error.message }, { status: 500 });
   }
 }

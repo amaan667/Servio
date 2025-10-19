@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { createAdminClient, getAuthenticatedUser } from '@/lib/supabase/server';
+import { logger } from '@/lib/logger';
 
 export async function POST(req: NextRequest) {
   try {
@@ -17,7 +18,7 @@ export async function POST(req: NextRequest) {
     const { data, error } = await supabase.rpc('run_table_maintenance');
 
     if (error) {
-      console.error('[TABLE MAINTENANCE] Error running maintenance:', error);
+      logger.error('[TABLE MAINTENANCE] Error running maintenance:', { error: error instanceof Error ? error.message : 'Unknown error' });
       return NextResponse.json({ error: 'Failed to run table maintenance' }, { status: 500 });
     }
 
@@ -28,7 +29,7 @@ export async function POST(req: NextRequest) {
     });
 
   } catch (error) {
-    console.error('[TABLE MAINTENANCE] Unexpected error:', error);
+    logger.error('[TABLE MAINTENANCE] Unexpected error:', { error: error instanceof Error ? error.message : 'Unknown error' });
     return NextResponse.json({ error: 'Internal server error' }, { status: 500 });
   }
 }
@@ -54,7 +55,7 @@ export async function GET(req: NextRequest) {
       .not('reservation_duration_minutes', 'is', null);
 
     if (expiredError) {
-      console.error('[TABLE MAINTENANCE] Error checking expired reservations:', expiredError);
+      logger.error('[TABLE MAINTENANCE] Error checking expired reservations:', expiredError);
       return NextResponse.json({ error: 'Failed to check expired reservations' }, { status: 500 });
     }
 
@@ -74,7 +75,7 @@ export async function GET(req: NextRequest) {
     });
 
   } catch (error) {
-    console.error('[TABLE MAINTENANCE] Unexpected error:', error);
+    logger.error('[TABLE MAINTENANCE] Unexpected error:', { error: error instanceof Error ? error.message : 'Unknown error' });
     return NextResponse.json({ error: 'Internal server error' }, { status: 500 });
   }
 }

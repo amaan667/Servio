@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { createClient, createAdminClient } from '@/lib/supabase/server';
+import { logger } from '@/lib/logger';
 
 export async function POST(request: NextRequest) {
   try {
@@ -71,7 +72,7 @@ export async function POST(request: NextRequest) {
         if (!updateError) {
           updatedCount++;
         } else {
-          console.error(`Failed to update category ${category}:`, updateError);
+          logger.error(`Failed to update category ${category}:`, updateError);
         }
       }
     }
@@ -84,7 +85,7 @@ export async function POST(request: NextRequest) {
     });
 
   } catch (error) {
-    console.error('[DEBUG TRANSLATE CATEGORIES] Unexpected error:', error);
+    logger.error('[DEBUG TRANSLATE CATEGORIES] Unexpected error:', { error: error instanceof Error ? error.message : 'Unknown error' });
     return NextResponse.json(
       { error: 'Internal server error' },
       { status: 500 }

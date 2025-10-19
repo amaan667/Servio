@@ -6,6 +6,7 @@
 import { getOpenAI } from '../openai';
 import { getPrompt } from './gptPrompts';
 import { repairAndValidateMenuJSON, validateMenuJSON } from './jsonRepair';
+import { logger } from '@/lib/logger';
 
 export interface MenuParsingResult {
   success: boolean;
@@ -116,7 +117,7 @@ export async function parseMenuWithGPT(
       }
       
     } catch (error: any) {
-      console.error(`[ROBUST_PARSER] Attempt ${attempts} failed:`, error);
+      logger.error(`[ROBUST_PARSER] Attempt ${attempts} failed:`, error);
       lastError = error.message;
       
       if (attempts === finalOptions.maxRetries) {
@@ -128,7 +129,7 @@ export async function parseMenuWithGPT(
     }
   }
   
-  console.error('[ROBUST_PARSER] All attempts failed');
+  logger.error('[ROBUST_PARSER] All attempts failed');
   return {
     success: false,
     items: [],

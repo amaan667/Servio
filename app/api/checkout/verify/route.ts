@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import Stripe from "stripe";
 import { createServerClient } from '@supabase/ssr';
 import { stripe } from "@/lib/stripe-client";
+import { logger } from '@/lib/logger';
 
 export const runtime = 'nodejs';
 
@@ -68,13 +69,13 @@ export async function GET(req: Request) {
         }
 
         if (!orderFound) {
-          console.error("Order still not found after retry for session:", sessionId);
+          logger.error("Order still not found after retry for session:", sessionId);
           return NextResponse.json({ paid: false, error: "Order not found - webhook may be delayed" }, { status: 404 });
         }
       }
 
       if (!order) {
-        console.error("Order is null after all attempts to find it");
+        logger.error("Order is null after all attempts to find it");
         return NextResponse.json({ paid: false, error: "Order not found" }, { status: 404 });
       }
 
@@ -83,7 +84,7 @@ export async function GET(req: Request) {
 
     return NextResponse.json({ paid: false }, { status: 200 });
   } catch (e: any) {
-    console.error("verify error:", e);
+    logger.error("verify error:", e);
     return NextResponse.json({ error: e.message ?? "verify failed" }, { status: 500 });
   }
 }

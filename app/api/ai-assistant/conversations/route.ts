@@ -2,8 +2,9 @@
 // Handles creating and listing chat conversations
 
 import { NextRequest, NextResponse } from "next/server";
-import { createClient, createAdminClient } from "@/lib/supabase/server";
+import { createSupabaseClient } from "@/lib/supabase/unified-client";
 import { z } from "zod";
+import { apiLogger, logger } from '@/lib/logger';
 
 const CreateConversationSchema = z.object({
   venueId: z.string().min(1),
@@ -12,13 +13,13 @@ const CreateConversationSchema = z.object({
 
 export async function GET(request: NextRequest) {
   try {
-    const supabase = await createClient();
-    const adminSupabase = createAdminClient();
+    const supabase = await createSupabaseClient('server');
+    const adminSupabase = await createSupabaseClient('admin');
     
     const { searchParams } = new URL(request.url);
     const venueId = searchParams.get("venueId");
 
-    console.log("[AI CHAT] Request venueId:", venueId);
+    logger.debug("[AI CHAT] Request venueId:", { venueId });
 
     if (!venueId) {
       return NextResponse.json({ error: "Missing venueId" }, { status: 400 });
@@ -29,7 +30,7 @@ export async function GET(request: NextRequest) {
       data: { user },
     } = await supabase.auth.getUser();
 
-    console.log("[AI CHAT] Auth check - user:", user ? "authenticated" : "not authenticated");
+    logger.debug("[AI CHAT] Auth check - user:", { authenticated: !!user });
 
     let conversations, error;
 
@@ -48,7 +49,7 @@ export async function GET(request: NextRequest) {
           roleName = roleRow.role;
         }
       } catch (e) {
-        console.log('[AI CHAT] user_venue_roles lookup failed, will fallback to ownership check', e);
+        logger.debug('[AI CHAT] user_venue_roles lookup failed, will fallback to ownership check', { error: e instanceof Error ? e.message : 'Unknown error' });
       }
 
       if (!roleName) {
@@ -59,10 +60,10 @@ export async function GET(request: NextRequest) {
           .eq("venue_id", venueId)
           .single();
 
-        console.log("[AI CHAT] Venue check - found:", !!venue, "owner_id:", venue?.owner_id, "user_id:", user.id);
+        logger.debug("[AI CHAT] Venue check - found:", { found: !!venue, owner_id: venue?.owner_id, user_id: user.id });
 
         if (!venue || venue.owner_id !== user.id) {
-          console.log("[AI CHAT] Access denied - no role and user not owner");
+          logger.debug("[AI CHAT] Access denied - no role and user not owner");
           return NextResponse.json(
             { error: "Access denied to this venue" },
             { status: 403 }
@@ -71,7 +72,7 @@ export async function GET(request: NextRequest) {
         roleName = 'owner';
       }
 
-      console.log('[AI CHAT] Access granted with role:', { userId: user.id, venueId, role: roleName });
+      logger.debug('[AI CHAT] Access granted with role:', { userId: user.id, venueId, role: roleName });
 
       // Get conversations for this venue using admin client
       const result = await adminSupabase
@@ -85,7 +86,7 @@ export async function GET(request: NextRequest) {
       error = result.error;
     } else {
       // If no user auth, try to get conversations anyway (for development/testing)
-      console.log("[AI CHAT] No user auth - attempting to get conversations for venue");
+      logger.debug("[AI CHAT] No user auth - attempting to get conversations for venue");
       const result = await adminSupabase
         .from("ai_chat_conversations")
         .select("*")
@@ -97,7 +98,7 @@ export async function GET(request: NextRequest) {
     }
 
     if (error) {
-      console.error("[AI CHAT] Failed to fetch conversations:", error);
+      logger.error("[AI CHAT] Failed to fetch conversations:", { error: error instanceof Error ? error.message : 'Unknown error' });
       
       // Check if it's a table not found error - return empty conversations instead of error
       if (error.code === 'PGRST116' || error.message?.includes('relation "ai_chat_conversations" does not exist')) {
@@ -113,7 +114,7 @@ export async function GET(request: NextRequest) {
     }
 
     // Transform the data to match frontend expectations
-    const transformedConversations = (conversations || []).map(conv => ({
+    const transformedConversations = (conversations || []).map((conv: any) => ({
       ...conv,
       updatedAt: conv.updated_at,
       createdAt: conv.created_at,
@@ -126,8 +127,8 @@ export async function GET(request: NextRequest) {
       conversations: transformedConversations,
     });
   } catch (error: any) {
-    console.error("[AI CHAT] Conversations error:", error);
-    console.error("[AI CHAT] Error details:", {
+    logger.error("[AI CHAT] Conversations error:", { error: error instanceof Error ? error.message : 'Unknown error' });
+    logger.error("[AI CHAT] Error details:", {
       message: error.message,
       code: error.code,
       details: error.details,
@@ -146,21 +147,21 @@ export async function GET(request: NextRequest) {
 
 export async function POST(request: NextRequest) {
   try {
-    const supabase = await createClient();
-    const adminSupabase = createAdminClient();
+    const supabase = await createSupabaseClient('server');
+    const adminSupabase = await createSupabaseClient('admin');
     
     // Parse request body
     const body = await request.json();
     const { venueId, title } = CreateConversationSchema.parse(body);
 
-    console.log("[AI CHAT CONVERSATION POST] Creating conversation:", { venueId, title });
+    logger.debug("[AI CHAT CONVERSATION POST] Creating conversation:", { venueId, title });
 
     // Try to get user from auth, but don't fail if not available
     const {
       data: { user },
     } = await supabase.auth.getUser();
 
-    console.log("[AI CHAT CONVERSATION POST] Auth check - user:", user ? "authenticated" : "not authenticated");
+    logger.debug("[AI CHAT CONVERSATION POST] Auth check - user:", { authenticated: !!user });
 
     // Create new conversation using admin client (skip user verification for now)
     const { data: conversation, error } = await adminSupabase
@@ -174,7 +175,7 @@ export async function POST(request: NextRequest) {
       .single();
 
     if (error) {
-      console.error("[AI CHAT] Failed to create conversation:", error);
+      logger.error("[AI CHAT] Failed to create conversation:", { error: error instanceof Error ? error.message : 'Unknown error' });
       return NextResponse.json(
         { error: "Failed to create conversation" },
         { status: 500 }
@@ -195,7 +196,7 @@ export async function POST(request: NextRequest) {
       conversation: transformedConversation,
     });
   } catch (error: any) {
-    console.error("[AI CHAT] Create conversation error:", error);
+    logger.error("[AI CHAT] Create conversation error:", { error: error instanceof Error ? error.message : 'Unknown error' });
     
     if (error.name === "ZodError") {
       return NextResponse.json(
@@ -213,8 +214,8 @@ export async function POST(request: NextRequest) {
 
 export async function PATCH(request: NextRequest) {
   try {
-    const supabase = await createClient();
-    const adminSupabase = createAdminClient();
+    const supabase = await createSupabaseClient('server');
+    const adminSupabase = await createSupabaseClient('admin');
     
     // Check auth
     const {
@@ -263,7 +264,7 @@ export async function PATCH(request: NextRequest) {
       .single();
 
     if (error) {
-      console.error("[AI CHAT] Failed to update conversation:", error);
+      logger.error("[AI CHAT] Failed to update conversation:", { error: error instanceof Error ? error.message : 'Unknown error' });
       return NextResponse.json(
         { error: "Failed to update conversation" },
         { status: 500 }
@@ -284,7 +285,7 @@ export async function PATCH(request: NextRequest) {
       conversation: transformedConversation,
     });
   } catch (error: any) {
-    console.error("[AI CHAT] Update conversation error:", error);
+    logger.error("[AI CHAT] Update conversation error:", { error: error instanceof Error ? error.message : 'Unknown error' });
     return NextResponse.json(
       { error: error.message || "Internal server error" },
       { status: 500 }

@@ -3,10 +3,11 @@
 
 import { NextRequest, NextResponse } from "next/server";
 import { createClient } from "@/lib/supabase/server";
+import { apiLogger, logger } from '@/lib/logger';
 
 export async function POST(request: NextRequest) {
   try {
-    console.log("[MIGRATION] Starting AI Chat schema migration...");
+    logger.debug("[MIGRATION] Starting AI Chat schema migration...");
     
     const supabase = await createClient();
     
@@ -41,7 +42,7 @@ export async function POST(request: NextRequest) {
     const migrationPath = path.join(process.cwd(), 'migrations', 'ai-chat-schema.sql');
     const migrationSQL = fs.readFileSync(migrationPath, 'utf8');
     
-    console.log("[MIGRATION] Migration file loaded, size:", migrationSQL.length, "bytes");
+    logger.debug("[MIGRATION] Migration file loaded, size:", migrationSQL.length, "bytes");
     
     // Since we can't execute raw SQL through the Supabase client,
     // we'll provide detailed instructions
@@ -62,7 +63,7 @@ export async function POST(request: NextRequest) {
     });
     
   } catch (error: any) {
-    console.error("[MIGRATION] Error:", error);
+    logger.error("[MIGRATION] Error:", { error: error instanceof Error ? error.message : 'Unknown error' });
     return NextResponse.json(
       { 
         success: false, 
@@ -106,7 +107,7 @@ export async function GET(request: NextRequest) {
     });
     
   } catch (error: any) {
-    console.error("[MIGRATION] Error:", error);
+    logger.error("[MIGRATION] Error:", { error: error instanceof Error ? error.message : 'Unknown error' });
     return NextResponse.json(
       { 
         status: "error", 

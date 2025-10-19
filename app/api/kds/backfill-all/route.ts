@@ -1,5 +1,6 @@
 import { NextResponse } from 'next/server';
 import { createAdminClient } from '@/lib/supabase/server';
+import { apiLogger, logger } from '@/lib/logger';
 
 export const runtime = 'nodejs';
 
@@ -7,7 +8,7 @@ export async function POST(req: Request) {
   try {
     const supabaseAdmin = createAdminClient();
     
-    console.log('[KDS BACKFILL ALL] Starting comprehensive KDS backfill...');
+    logger.debug('[KDS BACKFILL ALL] Starting comprehensive KDS backfill...');
     
     const { venueId } = await req.json();
     
@@ -26,7 +27,7 @@ export async function POST(req: Request) {
     const scopes = ['live', 'today'];
     
     for (const scope of scopes) {
-      console.log(`[KDS BACKFILL ALL] Processing ${scope} scope...`);
+      logger.debug(`[KDS BACKFILL ALL] Processing ${scope} scope...`);
       
       // First, ensure KDS stations exist for this venue
       const { data: existingStations } = await supabaseAdmin
@@ -36,7 +37,7 @@ export async function POST(req: Request) {
         .eq('is_active', true);
 
       if (!existingStations || existingStations.length === 0) {
-        console.log('[KDS BACKFILL ALL] No stations found, creating default stations for venue:', venueId);
+        logger.debug('[KDS BACKFILL ALL] No stations found, creating default stations for venue:', venueId);
         
         // Create default stations
         const defaultStations = [
@@ -113,7 +114,7 @@ export async function POST(req: Request) {
       const { data: orders, error: ordersError } = await query;
 
       if (ordersError) {
-        console.error(`[KDS BACKFILL ALL] Error fetching orders for ${scope}:`, ordersError);
+        logger.error(`[KDS BACKFILL ALL] Error fetching orders for ${scope}:`, ordersError);
         results.push({ scope, error: ordersError.message });
         continue;
       }
@@ -123,7 +124,7 @@ export async function POST(req: Request) {
         continue;
       }
 
-      console.log(`[KDS BACKFILL ALL] Found ${orders.length} orders for ${scope} scope`);
+      logger.debug(`[KDS BACKFILL ALL] Found ${orders.length} orders for ${scope} scope`);
 
       let scopeOrdersProcessed = 0;
       let scopeTicketsCreated = 0;
@@ -140,7 +141,7 @@ export async function POST(req: Request) {
             .limit(1);
 
           if (existingTickets && existingTickets.length > 0) {
-            console.log(`[KDS BACKFILL ALL] Order ${order.id} already has KDS tickets, skipping`);
+            logger.debug(`[KDS BACKFILL ALL] Order ${order.id} already has KDS tickets, skipping`);
             continue;
           }
 
@@ -165,7 +166,7 @@ export async function POST(req: Request) {
               .insert(ticketData);
             
             if (ticketError) {
-              console.error('[KDS BACKFILL ALL] Failed to create ticket for item:', item, ticketError);
+              logger.error('[KDS BACKFILL ALL] Failed to create ticket for item:', item, ticketError);
               scopeErrors.push(`Failed to create ticket for order ${order.id}: ${ticketError.message}`);
               continue;
             }
@@ -174,10 +175,10 @@ export async function POST(req: Request) {
           }
           
           scopeOrdersProcessed++;
-          console.log(`[KDS BACKFILL ALL] Processed order ${order.id} with ${items.length} items for ${scope}`);
+          logger.debug(`[KDS BACKFILL ALL] Processed order ${order.id} with ${items.length} items for ${scope}`);
           
         } catch (error: any) {
-          console.error(`[KDS BACKFILL ALL] Error processing order ${order.id} for ${scope}:`, error);
+          logger.error(`[KDS BACKFILL ALL] Error processing order ${order.id} for ${scope}:`, { error: error instanceof Error ? error.message : 'Unknown error' });
           scopeErrors.push(`Error processing order ${order.id}: ${error.message}`);
         }
       }
@@ -192,10 +193,10 @@ export async function POST(req: Request) {
         errors: scopeErrors.length > 0 ? scopeErrors : undefined
       });
 
-      console.log(`[KDS BACKFILL ALL] Completed ${scope} scope: ${scopeOrdersProcessed} orders, ${scopeTicketsCreated} tickets`);
+      logger.debug(`[KDS BACKFILL ALL] Completed ${scope} scope: ${scopeOrdersProcessed} orders, ${scopeTicketsCreated} tickets`);
     }
 
-    console.log('[KDS BACKFILL ALL] Comprehensive backfill completed:', {
+    logger.debug('[KDS BACKFILL ALL] Comprehensive backfill completed:', {
       totalOrdersProcessed,
       totalTicketsCreated,
       results
@@ -210,7 +211,7 @@ export async function POST(req: Request) {
     });
 
   } catch (error: any) {
-    console.error('[KDS BACKFILL ALL] Unexpected error:', error);
+    logger.error('[KDS BACKFILL ALL] Unexpected error:', { error: error instanceof Error ? error.message : 'Unknown error' });
     return NextResponse.json({ 
       ok: false, 
       error: error.message || 'Comprehensive backfill failed' 

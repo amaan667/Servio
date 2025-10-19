@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { createAdminClient } from '@/lib/supabase/server';
 import type { IngredientUnit } from '@/types/inventory';
+import { logger } from '@/lib/logger';
 
 interface CSVRow {
   name: string;
@@ -152,7 +153,7 @@ export async function POST(request: NextRequest) {
       errors,
     });
   } catch (error) {
-    console.error('[INVENTORY API] Unexpected error:', error);
+    logger.error('[INVENTORY API] Unexpected error:', { error: error instanceof Error ? error.message : 'Unknown error' });
     return NextResponse.json(
       { error: 'Internal server error' },
       { status: 500 }

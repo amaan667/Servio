@@ -1,8 +1,56 @@
 import { NextResponse } from 'next/server';
 import { createServerClient } from '@supabase/ssr';
 import { createClient } from '@supabase/supabase-js';
+import { apiLogger, logger } from '@/lib/logger';
 
 export const runtime = 'nodejs';
+
+// GET handler for orders
+export async function GET(req: Request) {
+  try {
+    const { searchParams } = new URL(req.url);
+    const venueId = searchParams.get('venueId');
+    const status = searchParams.get('status');
+    
+    if (!venueId) {
+      return NextResponse.json({ ok: false, error: 'venueId is required' }, { status: 400 });
+    }
+
+    const supabase = createClient(
+      process.env.NEXT_PUBLIC_SUPABASE_URL!,
+      process.env.SUPABASE_SERVICE_ROLE_KEY!,
+      {
+        auth: {
+          autoRefreshToken: false,
+          persistSession: false
+        }
+      }
+    );
+
+    let query = supabase
+      .from('orders')
+      .select('*')
+      .eq('venue_id', venueId)
+      .order('created_at', { ascending: false });
+
+    if (status) {
+      query = query.eq('order_status', status);
+    }
+
+    const { data: orders, error } = await query;
+
+    if (error) {
+      apiLogger.error('Error fetching orders:', error);
+      return NextResponse.json({ ok: false, error: error.message }, { status: 500 });
+    }
+
+    return NextResponse.json({ ok: true, orders: orders || [] });
+  } catch (e: unknown) {
+    const msg = e instanceof Error ? e.message : 'Unknown server error';
+    apiLogger.error('GET orders error:', e);
+    return NextResponse.json({ ok: false, error: msg }, { status: 500 });
+  }
+}
 
 type OrderItem = {
   menu_item_id: string | null;
@@ -39,7 +87,7 @@ function bad(msg: string, status = 400) {
 // Function to create KDS tickets for an order
 async function createKDSTickets(supabase: any, order: any) {
   try {
-    console.log('[KDS TICKETS] Creating KDS tickets for order:', order.id);
+    logger.debug('[KDS TICKETS] Creating KDS tickets for order:', order.id);
     
     // First, ensure KDS stations exist for this venue
     const { data: existingStations } = await supabase
@@ -49,7 +97,7 @@ async function createKDSTickets(supabase: any, order: any) {
       .eq('is_active', true);
     
     if (!existingStations || existingStations.length === 0) {
-      console.log('[KDS TICKETS] No stations found, creating default stations for venue:', order.venue_id);
+      logger.debug('[KDS TICKETS] No stations found, creating default stations for venue:', order.venue_id);
       
       // Create default stations
       const defaultStations = [
@@ -123,26 +171,26 @@ async function createKDSTickets(supabase: any, order: any) {
         .insert(ticketData);
       
       if (ticketError) {
-        console.error('[KDS TICKETS] Failed to create ticket for item:', item, ticketError);
+        logger.error('[KDS TICKETS] Failed to create ticket for item:', item, ticketError);
         throw ticketError;
       }
     }
     
-    console.log('[KDS TICKETS] Successfully created', items.length, 'KDS tickets for order:', order.id);
+    logger.debug('[KDS TICKETS] Successfully created', items.length, 'KDS tickets for order:', order.id);
     
   } catch (error) {
-    console.error('[KDS TICKETS] Error creating KDS tickets:', error);
+    logger.error('[KDS TICKETS] Error creating KDS tickets:', { error: error instanceof Error ? error.message : 'Unknown error' });
     throw error;
   }
 }
 
 export async function POST(req: Request) {
   try {
-    console.log('[ORDER CREATION DEBUG] ===== ORDER CREATION STARTED =====');
-    console.log('[ORDER CREATION DEBUG] Timestamp:', new Date().toISOString());
+    logger.debug('[ORDER CREATION DEBUG] ===== ORDER CREATION STARTED =====');
+    logger.debug('[ORDER CREATION DEBUG] Timestamp:', new Date().toISOString());
     
     const body = (await req.json()) as Partial<OrderPayload>;
-    console.log('[ORDER CREATION DEBUG] Request body:', JSON.stringify(body, null, 2));
+    logger.debug('[ORDER CREATION DEBUG] Request body:', JSON.stringify(body, null, 2));
 
     
     if (!body.venue_id || typeof body.venue_id !== 'string') {
@@ -374,12 +422,12 @@ export async function POST(req: Request) {
       .maybeSingle();
 
     if (duplicateCheckError) {
-      console.warn('[ORDER API] Duplicate check failed:', duplicateCheckError);
+      logger.warn('[ORDER API] Duplicate check failed:', duplicateCheckError);
     }
 
     // If we found a recent duplicate, return it instead of creating a new one
     if (existingOrder) {
-      console.log('[ORDER API] Found duplicate order, returning existing:', existingOrder.id);
+      logger.debug('[ORDER API] Found duplicate order, returning existing:', existingOrder.id);
       return NextResponse.json({ 
         ok: true, 
         order: existingOrder,
@@ -393,15 +441,15 @@ export async function POST(req: Request) {
     }
 
     // Final validation before insertion
-    console.log('[ORDER CREATION DEBUG] ===== CREATING NEW ORDER =====');
-    console.log('[ORDER CREATION DEBUG] Customer:', payload.customer_name);
-    console.log('[ORDER CREATION DEBUG] Table:', payload.table_number);
-    console.log('[ORDER CREATION DEBUG] Venue ID:', payload.venue_id);
-    console.log('[ORDER CREATION DEBUG] Payment status:', payload.payment_status);
-    console.log('[ORDER CREATION DEBUG] Payment method:', payload.payment_method);
-    console.log('[ORDER CREATION DEBUG] Source:', payload.source);
-    console.log('[ORDER CREATION DEBUG] Total amount:', payload.total_amount);
-    console.log('[ORDER CREATION DEBUG] Items count:', payload.items?.length || 0);
+    logger.debug('[ORDER CREATION DEBUG] ===== CREATING NEW ORDER =====');
+    logger.debug('[ORDER CREATION DEBUG] Customer:', payload.customer_name);
+    logger.debug('[ORDER CREATION DEBUG] Table:', payload.table_number);
+    logger.debug('[ORDER CREATION DEBUG] Venue ID:', payload.venue_id);
+    logger.debug('[ORDER CREATION DEBUG] Payment status:', payload.payment_status);
+    logger.debug('[ORDER CREATION DEBUG] Payment method:', payload.payment_method);
+    logger.debug('[ORDER CREATION DEBUG] Source:', payload.source);
+    logger.debug('[ORDER CREATION DEBUG] Total amount:', payload.total_amount);
+    logger.debug('[ORDER CREATION DEBUG] Items count:', payload.items?.length || 0);
     
     const { data: inserted, error: insertErr } = await supabase
       .from('orders')
@@ -409,13 +457,13 @@ export async function POST(req: Request) {
       .select('*');
     
 
-    console.log('[ORDER CREATION DEBUG] Insert result:');
-    console.log('[ORDER CREATION DEBUG] - Inserted data:', inserted);
-    console.log('[ORDER CREATION DEBUG] - Insert error:', insertErr);
+    logger.debug('[ORDER CREATION DEBUG] Insert result:');
+    logger.debug('[ORDER CREATION DEBUG] - Inserted data:', inserted);
+    logger.debug('[ORDER CREATION DEBUG] - Insert error:', insertErr);
 
     if (insertErr) {
-      console.error('[ORDER CREATION DEBUG] ===== INSERT FAILED =====');
-      console.error('[ORDER CREATION DEBUG] Error details:', insertErr);
+      logger.error('[ORDER CREATION DEBUG] ===== INSERT FAILED =====');
+      logger.error('[ORDER CREATION DEBUG] Error details:', insertErr);
       
       // Try to provide more specific error messages
       let errorMessage = insertErr.message;
@@ -431,13 +479,13 @@ export async function POST(req: Request) {
     }
 
     if (!inserted || inserted.length === 0) {
-      console.error('[ORDER CREATION DEBUG] ===== NO DATA INSERTED =====');
+      logger.error('[ORDER CREATION DEBUG] ===== NO DATA INSERTED =====');
       return bad('Order creation failed - no data returned', 500);
     }
 
-    console.log('[ORDER CREATION DEBUG] ===== ORDER CREATED SUCCESSFULLY =====');
-    console.log('[ORDER CREATION DEBUG] Order ID:', inserted[0].id);
-    console.log('[ORDER CREATION DEBUG] Created order details:', {
+    logger.debug('[ORDER CREATION DEBUG] ===== ORDER CREATED SUCCESSFULLY =====');
+    logger.debug('[ORDER CREATION DEBUG] Order ID:', inserted[0].id);
+    logger.debug('[ORDER CREATION DEBUG] Created order details:', {
       id: inserted[0].id,
       customer_name: inserted[0].customer_name,
       table_number: inserted[0].table_number,
@@ -531,14 +579,14 @@ export async function POST(req: Request) {
       display_name: orderSource === 'counter' ? `Counter ${table_number}` : `Table ${table_number}` // Include display name for UI
     };
     
-    console.log('[ORDER CREATION DEBUG] ===== RETURNING RESPONSE =====');
-    console.log('[ORDER CREATION DEBUG] Response data:', JSON.stringify(response, null, 2));
+    logger.debug('[ORDER CREATION DEBUG] ===== RETURNING RESPONSE =====');
+    logger.debug('[ORDER CREATION DEBUG] Response data:', JSON.stringify(response, null, 2));
     
     // Create KDS tickets for the order
     try {
       await createKDSTickets(supabase, inserted[0]);
     } catch (kdsError) {
-      console.warn('[ORDER CREATION DEBUG] KDS ticket creation failed (non-critical):', kdsError);
+      logger.warn('[ORDER CREATION DEBUG] KDS ticket creation failed (non-critical):', kdsError);
       // Don't fail the order creation if KDS tickets fail
     }
     

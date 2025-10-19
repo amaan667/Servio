@@ -1,6 +1,7 @@
 // API endpoint to manually update organization plan (backup for webhook)
 import { NextRequest, NextResponse } from "next/server";
 import { createClient } from "@/lib/supabase/server";
+import { apiLogger, logger } from '@/lib/logger';
 
 export async function POST(request: NextRequest) {
   try {
@@ -25,7 +26,7 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    console.log("[UPDATE PLAN] Updating plan for user:", user.id, "to tier:", tier);
+    logger.debug("[UPDATE PLAN] Updating plan for user:", user.id, "to tier:", tier);
 
     // Find the user's organization
     const { data: organization, error: orgError } = await supabase
@@ -35,7 +36,7 @@ export async function POST(request: NextRequest) {
       .maybeSingle();
 
     if (orgError) {
-      console.error("[UPDATE PLAN] Error finding organization:", orgError);
+      logger.error("[UPDATE PLAN] Error finding organization:", orgError);
       return NextResponse.json(
         { error: "Failed to find organization", details: orgError.message },
         { status: 500 }
@@ -43,14 +44,14 @@ export async function POST(request: NextRequest) {
     }
 
     if (!organization) {
-      console.error("[UPDATE PLAN] No organization found for user:", user.id);
+      logger.error("[UPDATE PLAN] No organization found for user:", user.id);
       return NextResponse.json(
         { error: "No organization found" },
         { status: 404 }
       );
     }
 
-    console.log("[UPDATE PLAN] Found organization:", {
+    logger.debug("[UPDATE PLAN] Found organization:", {
       id: organization.id,
       current_tier: organization.subscription_tier,
       current_status: organization.subscription_status
@@ -72,14 +73,14 @@ export async function POST(request: NextRequest) {
       .single();
 
     if (updateError) {
-      console.error("[UPDATE PLAN] Error updating organization:", updateError);
+      logger.error("[UPDATE PLAN] Error updating organization:", updateError);
       return NextResponse.json(
         { error: "Failed to update organization", details: updateError.message },
         { status: 500 }
       );
     }
 
-    console.log("[UPDATE PLAN] Successfully updated organization:", {
+    logger.debug("[UPDATE PLAN] Successfully updated organization:", {
       id: organization.id,
       new_tier: updatedOrg.subscription_tier,
       new_status: updatedOrg.subscription_status
@@ -94,9 +95,9 @@ export async function POST(request: NextRequest) {
         new_tier: tier,
         metadata: { source: "checkout_success_backup", user_id: user.id },
       });
-      console.log("[UPDATE PLAN] Logged subscription history");
+      logger.debug("[UPDATE PLAN] Logged subscription history");
     } catch (historyError) {
-      console.warn("[UPDATE PLAN] Failed to log subscription history (non-critical):", historyError);
+      logger.warn("[UPDATE PLAN] Failed to log subscription history (non-critical):", historyError);
     }
 
     return NextResponse.json({
@@ -106,7 +107,7 @@ export async function POST(request: NextRequest) {
     });
 
   } catch (error: any) {
-    console.error("[UPDATE PLAN] Unexpected error:", error);
+    logger.error("[UPDATE PLAN] Unexpected error:", { error: error instanceof Error ? error.message : 'Unknown error' });
     return NextResponse.json(
       { error: "Internal server error", details: error.message },
       { status: 500 }

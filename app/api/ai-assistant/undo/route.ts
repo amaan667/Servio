@@ -4,6 +4,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { createClient } from "@/lib/supabase/server";
 import { z } from "zod";
+import { apiLogger, logger } from '@/lib/logger';
 
 const UndoRequestSchema = z.object({
   venueId: z.string().min(1),
@@ -134,7 +135,7 @@ export async function POST(request: NextRequest) {
       });
 
     if (undoRecordError) {
-      console.error("[AI UNDO] Failed to record undo action:", undoRecordError);
+      logger.error("[AI UNDO] Failed to record undo action:", undoRecordError);
     }
 
     // Mark the original message as no longer undoable
@@ -149,7 +150,7 @@ export async function POST(request: NextRequest) {
       undoResult,
     });
   } catch (error: any) {
-    console.error("[AI UNDO] Undo error:", error);
+    logger.error("[AI UNDO] Undo error:", { error: error instanceof Error ? error.message : 'Unknown error' });
     
     if (error.name === "ZodError") {
       return NextResponse.json(
@@ -283,18 +284,18 @@ async function undoMenuTranslation(venueId: string, undoData: any, supabase: any
         }
       });
       
-      console.log(`[AI UNDO] Language detection: ${spanishCount} Spanish indicators, ${englishCount} English indicators`);
+      logger.debug(`[AI UNDO] Language detection: ${spanishCount} Spanish indicators, ${englishCount} English indicators`);
       
       // If we have more Spanish indicators, assume source is Spanish
       if (spanishCount > englishCount) {
-        console.log(`[AI UNDO] Detected source language: Spanish`);
+        logger.debug(`[AI UNDO] Detected source language: Spanish`);
         return 'es';
       } else if (englishCount > spanishCount) {
-        console.log(`[AI UNDO] Detected source language: English`);
+        logger.debug(`[AI UNDO] Detected source language: English`);
         return 'en';
       } else {
         // If equal or no clear indicators, use the reverse language
-        console.log(`[AI UNDO] Ambiguous language, using reverse: ${reverseLanguage}`);
+        logger.debug(`[AI UNDO] Ambiguous language, using reverse: ${reverseLanguage}`);
         return reverseLanguage;
       }
     };
@@ -369,20 +370,20 @@ IMPORTANT: Every item in the input must appear in your output with a translated 
           );
           
           if (validItems.length === batch.length) {
-            console.log(`[AI UNDO] Batch translation successful: ${translatedArray.length} items`);
+            logger.debug(`[AI UNDO] Batch translation successful: ${translatedArray.length} items`);
             translatedItems.push(...translatedArray);
           } else {
-            console.warn(`[AI UNDO] Batch has ${validItems.length} valid items, expected ${batch.length}`);
+            logger.warn(`[AI UNDO] Batch has ${validItems.length} valid items, expected ${batch.length}`);
             // Still add the valid items to avoid losing translations
             translatedItems.push(...validItems);
           }
         } else {
-          console.warn(`[AI UNDO] Batch translation returned ${translatedArray.length} items, expected ${batch.length}`);
+          logger.warn(`[AI UNDO] Batch translation returned ${translatedArray.length} items, expected ${batch.length}`);
           // Still add what we got to avoid losing translations
           translatedItems.push(...translatedArray);
         }
       } else {
-        console.error("[AI UNDO] No content in translation response");
+        logger.error("[AI UNDO] No content in translation response");
       }
     }
 
@@ -413,7 +414,7 @@ IMPORTANT: Every item in the input must appear in your output with a translated 
     // Check for any items that weren't translated
     const missingItems = items.filter((item: any) => !translatedIds.has(item.id));
     if (missingItems.length > 0) {
-      console.warn(`[AI UNDO] ${missingItems.length} items were not translated:`, missingItems.map((item: any) => item.name));
+      logger.warn(`[AI UNDO] ${missingItems.length} items were not translated:`, missingItems.map((item: any) => item.name));
     }
 
     return {
@@ -422,7 +423,7 @@ IMPORTANT: Every item in the input must appear in your output with a translated 
       itemsUpdated: updatedCount,
     };
   } catch (error: any) {
-    console.error("[AI UNDO] Menu translation undo error:", error);
+    logger.error("[AI UNDO] Menu translation undo error:", { error: error instanceof Error ? error.message : 'Unknown error' });
     return { success: false, error: error.message };
   }
 }
@@ -456,7 +457,7 @@ async function undoMenuPriceUpdate(venueId: string, undoData: any, supabase: any
       itemsUpdated: updatedCount,
     };
   } catch (error: any) {
-    console.error("[AI UNDO] Menu price update undo error:", error);
+    logger.error("[AI UNDO] Menu price update undo error:", { error: error instanceof Error ? error.message : 'Unknown error' });
     return { success: false, error: error.message };
   }
 }
@@ -486,7 +487,7 @@ async function undoMenuAvailabilityToggle(venueId: string, undoData: any, supaba
       itemsUpdated: undoData.params.itemIds.length,
     };
   } catch (error: any) {
-    console.error("[AI UNDO] Menu availability toggle undo error:", error);
+    logger.error("[AI UNDO] Menu availability toggle undo error:", { error: error instanceof Error ? error.message : 'Unknown error' });
     return { success: false, error: error.message };
   }
 }
@@ -512,7 +513,7 @@ async function undoMenuItemCreation(venueId: string, undoData: any, supabase: an
       itemsDeleted: 1,
     };
   } catch (error: any) {
-    console.error("[AI UNDO] Menu item creation undo error:", error);
+    logger.error("[AI UNDO] Menu item creation undo error:", { error: error instanceof Error ? error.message : 'Unknown error' });
     return { success: false, error: error.message };
   }
 }
@@ -547,7 +548,7 @@ async function undoMenuItemDeletion(venueId: string, undoData: any, supabase: an
       itemsRecreated: 1,
     };
   } catch (error: any) {
-    console.error("[AI UNDO] Menu item deletion undo error:", error);
+    logger.error("[AI UNDO] Menu item deletion undo error:", { error: error instanceof Error ? error.message : 'Unknown error' });
     return { success: false, error: error.message };
   }
 }
@@ -578,7 +579,7 @@ async function undoInventoryAdjustment(venueId: string, undoData: any, supabase:
       ingredientsUpdated: updatedCount,
     };
   } catch (error: any) {
-    console.error("[AI UNDO] Inventory adjustment undo error:", error);
+    logger.error("[AI UNDO] Inventory adjustment undo error:", { error: error instanceof Error ? error.message : 'Unknown error' });
     return { success: false, error: error.message };
   }
 }

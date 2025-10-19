@@ -1,4 +1,5 @@
 import { createClient } from '@/lib/supabase/client';
+import { logger } from '@/lib/logger';
 
 /**
  * SECURE: Get the currently authenticated user
@@ -11,13 +12,13 @@ export async function getAuthenticatedUser() {
     const { data: { user }, error } = await supabase.auth.getUser();
     
     if (error) {
-      console.error('[AUTH CLIENT] Error getting authenticated user:', error);
+      logger.error('[AUTH CLIENT] Error getting authenticated user:', error);
       return { user: null, error: error.message };
     }
     
     return { user, error: null };
   } catch (error) {
-    console.error('[AUTH CLIENT] Exception getting authenticated user:', error);
+    logger.error('[AUTH CLIENT] Exception getting authenticated user:', error);
     return { user: null, error: 'Failed to get authenticated user' };
   }
 }
@@ -59,13 +60,13 @@ export async function signOut() {
     const { error } = await supabase.auth.signOut();
     
     if (error) {
-      console.error('[AUTH CLIENT] Error signing out:', error);
+      logger.error('[AUTH CLIENT] Error signing out:', error);
       return { success: false, error: error.message };
     }
     
     return { success: true, error: null };
   } catch (error) {
-    console.error('[AUTH CLIENT] Exception signing out:', error);
+    logger.error('[AUTH CLIENT] Exception signing out:', error);
     return { success: false, error: 'Failed to sign out' };
   }
 }

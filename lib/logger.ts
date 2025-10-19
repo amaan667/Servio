@@ -1,98 +1,20 @@
 /**
  * Production-ready logging utility
  * Replaces console.log with structured logging
+ * Now uses production logger with Sentry integration
  */
 
-type LogLevel = 'debug' | 'info' | 'warn' | 'error';
-
-interface LogContext {
-  [key: string]: any;
-}
-
-class Logger {
-  private isDevelopment = process.env.NODE_ENV === 'development';
-  private isProduction = process.env.NODE_ENV === 'production';
-
-  private log(level: LogLevel, message: string, context?: LogContext) {
-    const timestamp = new Date().toISOString();
-    const logEntry = {
-      timestamp,
-      level,
-      message,
-      ...context,
-    };
-
-    // In development, use console for readability
-    if (this.isDevelopment) {
-      const emoji = {
-        debug: '🔍',
-        info: 'ℹ️',
-        warn: '⚠️',
-        error: '❌',
-      }[level];
-
-      console.log(`${emoji} [${level.toUpperCase()}] ${message}`, context || '');
-    }
-
-    // In production, send to logging service
-    if (this.isProduction) {
-      // TODO: Send to logging service (e.g., LogRocket, Datadog, etc.)
-      // For now, only log errors in production
-      if (level === 'error') {
-        console.error(JSON.stringify(logEntry));
-      }
-    }
-  }
-
-  debug(message: string, context?: LogContext) {
-    this.log('debug', message, context);
-  }
-
-  info(message: string, context?: LogContext) {
-    this.log('info', message, context);
-  }
-
-  warn(message: string, errorOrContext?: Error | any | LogContext, context?: LogContext) {
-    // Handle both warn(message, error) and warn(message, context) signatures
-    if (errorOrContext instanceof Error || (errorOrContext && errorOrContext.message)) {
-      const errorContext = {
-        ...context,
-        error: errorOrContext.message,
-        stack: errorOrContext.stack,
-      };
-      this.log('warn', message, errorContext);
-    } else {
-      this.log('warn', message, errorOrContext as LogContext);
-    }
-  }
-
-  error(message: string, error?: Error | any, context?: LogContext) {
-    const errorContext = {
-      ...context,
-      error: error?.message,
-      stack: error?.stack,
-    };
-    this.log('error', message, errorContext);
-  }
-}
-
-export const logger = new Logger();
+export { logger, apiLogger, authLogger, dbLogger, cacheLogger, aiLogger } from './logger/production-logger';
+export { default } from './logger/production-logger';
 
 // Helper for API routes
 export function logApiCall(endpoint: string, method: string, duration: number, status: number) {
-  logger.info('API Call', {
-    endpoint,
-    method,
-    duration: `${duration}ms`,
-    status,
-  });
+  const { apiLogger } = require('./logger/production-logger');
+  apiLogger.apiResponse(method, endpoint, status, duration);
 }
 
 // Helper for database queries
 export function logDbQuery(query: string, duration: number, rows?: number) {
-  logger.debug('Database Query', {
-    query: query.substring(0, 100),
-    duration: `${duration}ms`,
-    rows,
-  });
+  const { dbLogger } = require('./logger/production-logger');
+  dbLogger.dbQuery(query, duration, { rows });
 }

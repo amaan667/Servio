@@ -4,6 +4,7 @@ import { ENV } from '@/lib/env';
 import { v4 as uuidv4 } from 'uuid';
 import { stripe } from '@/lib/stripe-client';
 import { createAdminClient } from '@/lib/supabase/server';
+import { logger } from '@/lib/logger';
 
 interface CreateOrderRequest {
   paymentIntentId: string;
@@ -119,7 +120,7 @@ export async function POST(req: NextRequest) {
       .single();
 
     if (orderError) {
-      console.error('[ORDER CREATION] Database error:', orderError);
+      logger.error('[ORDER CREATION] Database error:', orderError);
       return NextResponse.json(
         { 
           ok: false, 
@@ -146,7 +147,7 @@ export async function POST(req: NextRequest) {
           },
         });
     } catch (realtimeError) {
-      console.error('[ORDER CREATION] Failed to publish realtime event:', realtimeError);
+      logger.error('[ORDER CREATION] Failed to publish realtime event:', realtimeError);
       // Don't fail the order creation if realtime fails
     }
 
@@ -159,7 +160,7 @@ export async function POST(req: NextRequest) {
     });
 
   } catch (error) {
-    console.error('[ORDER CREATION] Error:', error);
+    logger.error('[ORDER CREATION] Error:', { error: error instanceof Error ? error.message : 'Unknown error' });
     
     if (error instanceof Stripe.errors.StripeError) {
       return NextResponse.json(
@@ -225,7 +226,7 @@ async function createDemoOrder(cartId: string) {
       .single();
 
     if (orderError) {
-      console.error('[DEMO ORDER] Database error:', orderError);
+      logger.error('[DEMO ORDER] Database error:', orderError);
       return NextResponse.json(
         { 
           ok: false, 
@@ -252,7 +253,7 @@ async function createDemoOrder(cartId: string) {
           },
         });
     } catch (realtimeError) {
-      console.error('[DEMO ORDER] Failed to publish realtime event:', realtimeError);
+      logger.error('[DEMO ORDER] Failed to publish realtime event:', realtimeError);
       // Don't fail the order creation if realtime fails
     }
 
@@ -265,7 +266,7 @@ async function createDemoOrder(cartId: string) {
     });
 
   } catch (error) {
-    console.error('[DEMO ORDER] Error:', error);
+    logger.error('[DEMO ORDER] Error:', { error: error instanceof Error ? error.message : 'Unknown error' });
     return NextResponse.json(
       { 
         ok: false, 

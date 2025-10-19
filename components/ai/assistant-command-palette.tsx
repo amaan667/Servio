@@ -20,6 +20,7 @@ import { Loader2, Sparkles, AlertTriangle, Check, X, TrendingUp, DollarSign, Mes
 import { AIPlanResponse, AIPreviewDiff } from "@/types/ai-assistant";
 import { AIAssistantFloat } from "./ai-assistant-float";
 import { ChatInterface } from "./chat-interface";
+import { aiLogger } from '@/lib/logger';
 
 interface AssistantCommandPaletteProps {
   venueId: string;
@@ -101,7 +102,7 @@ export function AssistantCommandPalette({
       if (!response.ok) {
         // If access denied, try to fix it automatically
         if (response.status === 403 && data.error?.includes("Access denied")) {
-          console.log("[AI ASSISTANT] Access denied, attempting to fix...");
+          logger.debug("[AI ASSISTANT] Access denied, attempting to fix...");
           
           const fixResponse = await fetch("/api/ai-assistant/fix-access", {
             method: "POST",
@@ -112,7 +113,7 @@ export function AssistantCommandPalette({
           const fixData = await fixResponse.json();
 
           if (fixResponse.ok) {
-            console.log("[AI ASSISTANT] Access fixed, retrying...");
+            logger.debug("[AI ASSISTANT] Access fixed, retrying...");
             // Retry the original request
             const retryResponse = await fetch("/api/ai-assistant/plan", {
               method: "POST",
@@ -174,13 +175,13 @@ export function AssistantCommandPalette({
             const json = await res.json();
             
             if (!res.ok) {
-              console.error(`[AI ASSISTANT] Preview failed for ${tool.name}:`, json.error);
+              logger.error(`[AI ASSISTANT] Preview failed for ${tool.name}:`, json.error);
               throw new Error(json.error || "Preview failed");
             }
             
             return json;
           } catch (error) {
-            console.error(`[AI ASSISTANT] Preview error for ${tool.name}:`, error);
+            logger.error(`[AI ASSISTANT] Preview error for ${tool.name}:`, error);
             throw error;
           }
         });
@@ -189,7 +190,7 @@ export function AssistantCommandPalette({
         setPreviews(previewResults.map((r) => r.preview).filter(Boolean));
       }
     } catch (err: any) {
-      console.error("[AI ASSISTANT] Planning error:", err);
+      logger.error("[AI ASSISTANT] Planning error:", err);
       setError(err.message || "Failed to plan action");
     } finally {
       setLoading(false);
@@ -199,7 +200,7 @@ export function AssistantCommandPalette({
   const handleExecute = async () => {
     if (!plan) return;
 
-    console.log("[AI ASSISTANT] Starting execution for plan:", plan);
+    logger.debug("[AI ASSISTANT] Starting execution for plan:", plan);
     setExecuting(true);
     setError(null);
 
@@ -259,7 +260,7 @@ export function AssistantCommandPalette({
       }
       // For analytics, keep modal open so user can see results
     } catch (err: any) {
-      console.error("[AI ASSISTANT] Execution error:", err);
+      logger.error("[AI ASSISTANT] Execution error:", err);
       setError(err.message || "Failed to execute action");
     } finally {
       setExecuting(false);

@@ -1,6 +1,7 @@
 import { NextResponse } from 'next/server';
 import { createClient } from '@/lib/supabase/server';
 import { getAuthenticatedUser } from '@/lib/supabase/server';
+import { logger } from '@/lib/logger';
 
 export const runtime = 'nodejs';
 
@@ -39,7 +40,7 @@ export async function GET(req: Request) {
     });
 
     if (error) {
-      console.error('[TABLES COUNTERS] Error:', error);
+      logger.error('[TABLES COUNTERS] Error:', { error: error instanceof Error ? error.message : 'Unknown error' });
       return NextResponse.json({ ok: false, error: error.message }, { status: 500 });
     }
 
@@ -59,7 +60,7 @@ export async function GET(req: Request) {
     });
 
     if (realtimeError) {
-      console.error('[TABLES COUNTERS] Realtime error:', realtimeError);
+      logger.error('[TABLES COUNTERS] Realtime error:', realtimeError);
     } else {
     }
 
@@ -76,7 +77,7 @@ export async function GET(req: Request) {
     });
 
   } catch (error) {
-    console.error('[TABLES COUNTERS] Unexpected error:', error);
+    logger.error('[TABLES COUNTERS] Unexpected error:', { error: error instanceof Error ? error.message : 'Unknown error' });
     return NextResponse.json({ ok: false, error: 'Internal server error' }, { status: 500 });
   }
 }

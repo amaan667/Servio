@@ -1,29 +1,30 @@
 // Test endpoint to verify database connection and table existence
 import { NextRequest, NextResponse } from "next/server";
 import { createClient } from "@/lib/supabase/server";
+import { apiLogger, logger } from '@/lib/logger';
 
 export async function GET(request: NextRequest) {
   try {
     const supabase = await createClient();
     
-    console.log("[TEST DB] Starting database test...");
+    logger.debug("[TEST DB] Starting database test...");
     
     // Test 1: Check authentication
     const {
       data: { user },
     } = await supabase.auth.getUser();
     
-    console.log("[TEST DB] User:", user ? "authenticated" : "not authenticated");
+    logger.debug("[TEST DB] User:", user ? "authenticated" : "not authenticated");
     
     // Test 2: Check if ai_chat_conversations table exists
-    console.log("[TEST DB] Testing ai_chat_conversations table...");
+    logger.debug("[TEST DB] Testing ai_chat_conversations table...");
     const { data: conversations, error: convError } = await supabase
       .from("ai_chat_conversations")
       .select("count")
       .limit(1);
     
     if (convError) {
-      console.log("[TEST DB] ai_chat_conversations error:", convError);
+      logger.debug("[TEST DB] ai_chat_conversations error:", convError);
       return NextResponse.json({
         success: false,
         error: "ai_chat_conversations table error",
@@ -34,14 +35,14 @@ export async function GET(request: NextRequest) {
     }
     
     // Test 3: Check if ai_chat_messages table exists
-    console.log("[TEST DB] Testing ai_chat_messages table...");
+    logger.debug("[TEST DB] Testing ai_chat_messages table...");
     const { data: messages, error: msgError } = await supabase
       .from("ai_chat_messages")
       .select("count")
       .limit(1);
     
     if (msgError) {
-      console.log("[TEST DB] ai_chat_messages error:", msgError);
+      logger.debug("[TEST DB] ai_chat_messages error:", msgError);
       return NextResponse.json({
         success: false,
         error: "ai_chat_messages table error", 
@@ -53,7 +54,7 @@ export async function GET(request: NextRequest) {
     
     // Test 4: Try to fetch conversations (if user is authenticated)
     if (user) {
-      console.log("[TEST DB] Testing conversation fetch...");
+      logger.debug("[TEST DB] Testing conversation fetch...");
       const { data: testConversations, error: fetchError } = await supabase
         .from("ai_chat_conversations")
         .select("*")
@@ -61,7 +62,7 @@ export async function GET(request: NextRequest) {
         .limit(5);
         
       if (fetchError) {
-        console.log("[TEST DB] Fetch conversations error:", fetchError);
+        logger.debug("[TEST DB] Fetch conversations error:", fetchError);
         return NextResponse.json({
           success: false,
           error: "Failed to fetch conversations",
@@ -70,10 +71,10 @@ export async function GET(request: NextRequest) {
         }, { status: 500 });
       }
       
-      console.log("[TEST DB] Found conversations:", testConversations?.length || 0);
+      logger.debug("[TEST DB] Found conversations:", testConversations?.length || 0);
     }
     
-    console.log("[TEST DB] All tests passed!");
+    logger.debug("[TEST DB] All tests passed!");
     
     return NextResponse.json({
       success: true,
@@ -83,7 +84,7 @@ export async function GET(request: NextRequest) {
     });
     
   } catch (error: any) {
-    console.error("[TEST DB] Unexpected error:", error);
+    logger.error("[TEST DB] Unexpected error:", { error: error instanceof Error ? error.message : 'Unknown error' });
     return NextResponse.json({
       success: false,
       error: "Unexpected error",

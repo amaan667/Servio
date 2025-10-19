@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { createAdminClient } from '@/lib/supabase/server';
+import { logger } from '@/lib/logger';
 
 // This endpoint can be called by a cron job or scheduled task
 // to automatically perform daily reset at midnight
@@ -33,7 +34,7 @@ export async function POST(request: NextRequest) {
       .not('daily_reset_time', 'is', null);
 
     if (venuesError) {
-      console.error('🕛 [CRON DAILY RESET] Error fetching venues:', venuesError);
+      logger.error('🕛 [CRON DAILY RESET] Error fetching venues:', venuesError);
       return NextResponse.json(
         { error: 'Failed to fetch venues' },
         { status: 500 }
@@ -171,7 +172,7 @@ export async function POST(request: NextRequest) {
 
 
       } catch (error) {
-        console.error(`🕛 [CRON DAILY RESET] Error resetting venue ${venue.venue_name}:`, error);
+        logger.error(`🕛 [CRON DAILY RESET] Error resetting venue ${venue.venue_name}:`, { error: error instanceof Error ? error.message : 'Unknown error' });
         resetResults.push({
           venueId: venue.venue_id,
           venueName: venue.venue_name,
@@ -193,7 +194,7 @@ export async function POST(request: NextRequest) {
     });
 
   } catch (error) {
-    console.error('🕛 [CRON DAILY RESET] Error in automatic daily reset:', error);
+    logger.error('🕛 [CRON DAILY RESET] Error in automatic daily reset:', { error: error instanceof Error ? error.message : 'Unknown error' });
     return NextResponse.json(
       { error: 'Internal server error' },
       { status: 500 }

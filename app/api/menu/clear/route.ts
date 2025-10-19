@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { createAdminClient } from '@/lib/supabase/server';
+import { logger } from '@/lib/logger';
 
 export async function POST(request: NextRequest) {
   try {
@@ -33,7 +34,7 @@ export async function POST(request: NextRequest) {
         .select('*');
 
       if (error) {
-        console.error(`[AUTH DEBUG] Error clearing ${operation.description}:`, error);
+        logger.error(`[AUTH DEBUG] Error clearing ${operation.description}:`, { error: error instanceof Error ? error.message : 'Unknown error' });
         return NextResponse.json({ 
           ok: false, 
           error: `Failed to clear ${operation.description}: ${error.message}` 
@@ -55,7 +56,7 @@ export async function POST(request: NextRequest) {
     });
 
   } catch (error: any) {
-    console.error('[AUTH DEBUG] Clear menu error:', error);
+    logger.error('[AUTH DEBUG] Clear menu error:', { error: error instanceof Error ? error.message : 'Unknown error' });
     return NextResponse.json({ 
       ok: false, 
       error: `Clear menu failed: ${error.message}` 

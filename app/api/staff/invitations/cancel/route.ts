@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { createClient } from '@/lib/supabase/server';
 import { getUserSafe } from '@/utils/getUserSafe';
+import { apiLogger, logger } from '@/lib/logger';
 
 // POST /api/staff/invitations/cancel - Cancel an invitation
 export async function POST(request: NextRequest) {
@@ -13,7 +14,7 @@ export async function POST(request: NextRequest) {
     const body = await request.json();
     const { id } = body;
 
-    console.log('[INVITATION API] Cancel request received:', { id, user: user.id });
+    logger.debug('[INVITATION API] Cancel request received:', { id, user: user.id });
 
     if (!id) {
       return NextResponse.json({ error: 'Invitation ID is required' }, { status: 400 });
@@ -26,12 +27,12 @@ export async function POST(request: NextRequest) {
       await supabase.from('staff_invitations').select('id').limit(1);
     } catch (tableError: any) {
       if (tableError.code === 'PGRST116' || tableError.message?.includes('relation "staff_invitations" does not exist')) {
-        console.log('[INVITATION API] staff_invitations table does not exist');
+        logger.debug('[INVITATION API] staff_invitations table does not exist');
         return NextResponse.json({ 
           error: 'Staff invitation system not set up. Please run the database migration first.' 
         }, { status: 503 });
       } else {
-        console.error('[INVITATION API] Unexpected table error:', tableError);
+        logger.error('[INVITATION API] Unexpected table error:', { error: tableError instanceof Error ? tableError.message : 'Unknown error' });
         return NextResponse.json({ 
           error: 'Database error. Please try again.' 
         }, { status: 500 });
@@ -46,7 +47,7 @@ export async function POST(request: NextRequest) {
       .single();
 
     if (fetchInvitationError) {
-      console.error('[INVITATION API] Error fetching invitation:', fetchInvitationError);
+      logger.error('[INVITATION API] Error fetching invitation:', fetchInvitationError);
       return NextResponse.json({ error: 'Invitation not found' }, { status: 404 });
     }
 
@@ -97,23 +98,23 @@ export async function POST(request: NextRequest) {
       .eq('id', id);
 
     if (updateError) {
-      console.error('[INVITATION API] Error updating invitation:', updateError);
+      logger.error('[INVITATION API] Error updating invitation:', updateError);
       return NextResponse.json({ 
         error: 'Failed to cancel invitation',
         details: updateError.message
       }, { status: 500 });
     }
 
-    console.log('[INVITATION API] Invitation marked as cancelled');
+    logger.debug('[INVITATION API] Invitation marked as cancelled');
 
-    console.log('[INVITATION API] Invitation cancelled and removed successfully:', id);
+    logger.debug('[INVITATION API] Invitation cancelled and removed successfully:', id);
 
     return NextResponse.json({ 
       success: true,
       message: 'Invitation cancelled successfully'
     });
   } catch (error) {
-    console.error('[INVITATION API] Unexpected error:', error);
+    logger.error('[INVITATION API] Unexpected error:', { error: error instanceof Error ? error.message : 'Unknown error' });
     return NextResponse.json({ error: 'Internal server error' }, { status: 500 });
   }
 }

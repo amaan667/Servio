@@ -26,6 +26,7 @@ import { StockAdjustmentDialog } from './StockAdjustmentDialog';
 import { StocktakeDialog } from './StocktakeDialog';
 import { ImportCSVDialog } from './ImportCSVDialog';
 import { ReceiveStockDialog } from './ReceiveStockDialog';
+import { logger } from '@/lib/logger';
 
 interface InventoryOverviewProps {
   venueId: string;
@@ -51,7 +52,7 @@ export function InventoryOverview({ venueId, canEdit = true }: InventoryOverview
         setIngredients(result.data);
       }
     } catch (error) {
-      console.error('Error fetching ingredients:', error);
+      logger.error('Error fetching ingredients:', error);
     } finally {
       setLoading(false);
     }
@@ -74,7 +75,7 @@ export function InventoryOverview({ venueId, canEdit = true }: InventoryOverview
       document.body.removeChild(a);
       window.URL.revokeObjectURL(url);
     } catch (error) {
-      console.error('Error exporting CSV:', error);
+      logger.error('Error exporting CSV:', error);
     }
   };
 
@@ -105,7 +106,7 @@ export function InventoryOverview({ venueId, canEdit = true }: InventoryOverview
         fetchIngredients();
       }
     } catch (error) {
-      console.error('Error deleting ingredient:', error);
+      logger.error('Error deleting ingredient:', error);
     }
   };
 

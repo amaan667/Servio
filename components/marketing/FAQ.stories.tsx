@@ -6,6 +6,7 @@
  */
 
 import { FAQ } from './FAQ';
+import { logger } from '@/lib/logger';
 
 /**
  * Example 1: Basic usage
@@ -24,7 +25,7 @@ export function BasicFAQ() {
 export function FAQWithAnalytics() {
   const handleToggle = (question: string, isOpen: boolean) => {
     // Send to your analytics service
-    console.log('FAQ Toggle:', { question, state: isOpen ? 'open' : 'closed' });
+    logger.debug('FAQ Toggle:', { question, state: isOpen ? 'open' : 'closed' });
     
     // Example with Google Analytics
     // if (typeof window !== 'undefined' && window.gtag) {
@@ -36,7 +37,7 @@ export function FAQWithAnalytics() {
   };
 
   const handleCTAClick = (type: 'contact' | 'trial') => {
-    console.log('FAQ CTA Click:', type);
+    logger.debug('FAQ CTA Click:', type);
     
     // Example with Google Analytics
     // if (typeof window !== 'undefined' && window.gtag) {

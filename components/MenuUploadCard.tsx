@@ -10,6 +10,7 @@ import { Label } from '@/components/ui/label';
 import { FileText, Upload, Info, Trash2, RefreshCw } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import { createClient } from '@/lib/supabase/client';
+import { logger } from '@/lib/logger';
 
 interface MenuUploadCardProps {
   venueId: string;
@@ -83,7 +84,7 @@ export function MenuUploadCard({ venueId, onSuccess }: MenuUploadCardProps) {
         });
       
       if (error) {
-        console.error('Error saving extracted style:', error);
+        logger.error('Error saving extracted style:', error);
       } else {
         toast({
           title: 'Menu style extracted',
@@ -91,7 +92,7 @@ export function MenuUploadCard({ venueId, onSuccess }: MenuUploadCardProps) {
         });
       }
     } catch (error) {
-      console.error('Error extracting style:', error);
+      logger.error('Error extracting style:', error);
     }
   };
 

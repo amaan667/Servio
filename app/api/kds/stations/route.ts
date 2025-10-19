@@ -1,5 +1,6 @@
 import { NextResponse } from 'next/server';
 import { createServerSupabase } from '@/lib/supabase/server';
+import { logger } from '@/lib/logger';
 
 // GET - Fetch all KDS stations for a venue
 export async function GET(req: Request) {
@@ -34,7 +35,7 @@ export async function GET(req: Request) {
       .order('display_order', { ascending: true });
 
     if (error) {
-      console.error('[KDS] Error fetching stations:', error);
+      logger.error('[KDS] Error fetching stations:', { error: error instanceof Error ? error.message : 'Unknown error' });
       return NextResponse.json(
         { ok: false, error: error.message },
         { status: 500 }
@@ -48,7 +49,7 @@ export async function GET(req: Request) {
       });
 
       if (setupError) {
-        console.error('[KDS] Error setting up default stations:', setupError);
+        logger.error('[KDS] Error setting up default stations:', setupError);
       }
 
       // Fetch again after setup
@@ -70,7 +71,7 @@ export async function GET(req: Request) {
       stations
     });
   } catch (error: any) {
-    console.error('[KDS] Unexpected error:', error);
+    logger.error('[KDS] Unexpected error:', { error: error instanceof Error ? error.message : 'Unknown error' });
     return NextResponse.json(
       { ok: false, error: error.message || 'Internal server error' },
       { status: 500 }
@@ -116,7 +117,7 @@ export async function POST(req: Request) {
       .single();
 
     if (error) {
-      console.error('[KDS] Error creating station:', error);
+      logger.error('[KDS] Error creating station:', { error: error instanceof Error ? error.message : 'Unknown error' });
       return NextResponse.json(
         { ok: false, error: error.message },
         { status: 500 }
@@ -128,7 +129,7 @@ export async function POST(req: Request) {
       station
     });
   } catch (error: any) {
-    console.error('[KDS] Unexpected error:', error);
+    logger.error('[KDS] Unexpected error:', { error: error instanceof Error ? error.message : 'Unknown error' });
     return NextResponse.json(
       { ok: false, error: error.message || 'Internal server error' },
       { status: 500 }

@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { createClient } from '@/lib/supabase/server';
 import { getAuthenticatedUser } from '@/lib/supabase/server';
+import { logger } from '@/lib/logger';
 
 export async function GET(req: NextRequest) {
   try {
@@ -35,13 +36,13 @@ export async function GET(req: NextRequest) {
       .rpc('get_table_status', { p_venue_id: venueId });
 
     if (error) {
-      console.error('[POS TABLE SESSIONS] Error:', error);
+      logger.error('[POS TABLE SESSIONS] Error:', { error: error instanceof Error ? error.message : 'Unknown error' });
       return NextResponse.json({ error: error.message }, { status: 500 });
     }
 
     return NextResponse.json({ tables: tableStatus });
   } catch (error) {
-    console.error('[POS TABLE SESSIONS] Unexpected error:', error);
+    logger.error('[POS TABLE SESSIONS] Unexpected error:', { error: error instanceof Error ? error.message : 'Unknown error' });
     return NextResponse.json({ error: 'Internal server error' }, { status: 500 });
   }
 }
@@ -93,7 +94,7 @@ export async function POST(req: NextRequest) {
           .single();
 
         if (sessionError) {
-          console.error('[POS TABLE SESSIONS] Error creating session:', sessionError);
+          logger.error('[POS TABLE SESSIONS] Error creating session:', sessionError);
           return NextResponse.json({ error: 'Failed to create table session' }, { status: 500 });
         }
 
@@ -115,7 +116,7 @@ export async function POST(req: NextRequest) {
           .single();
 
         if (closeError) {
-          console.error('[POS TABLE SESSIONS] Error closing session:', closeError);
+          logger.error('[POS TABLE SESSIONS] Error closing session:', closeError);
           return NextResponse.json({ error: 'Failed to close table session' }, { status: 500 });
         }
 
@@ -128,7 +129,7 @@ export async function POST(req: NextRequest) {
           .eq('is_active', true);
 
         if (ordersError) {
-          console.error('[POS TABLE SESSIONS] Error completing orders:', ordersError);
+          logger.error('[POS TABLE SESSIONS] Error completing orders:', ordersError);
         }
 
         result = { session: closedSession, action: 'closed' };
@@ -146,7 +147,7 @@ export async function POST(req: NextRequest) {
           .single();
 
         if (cleaningError) {
-          console.error('[POS TABLE SESSIONS] Error marking cleaning:', cleaningError);
+          logger.error('[POS TABLE SESSIONS] Error marking cleaning:', cleaningError);
           return NextResponse.json({ error: 'Failed to mark table as cleaning' }, { status: 500 });
         }
 
@@ -168,7 +169,7 @@ export async function POST(req: NextRequest) {
           .single();
 
         if (freeError) {
-          console.error('[POS TABLE SESSIONS] Error marking free:', freeError);
+          logger.error('[POS TABLE SESSIONS] Error marking free:', freeError);
           return NextResponse.json({ error: 'Failed to mark table as free' }, { status: 500 });
         }
 
@@ -181,7 +182,7 @@ export async function POST(req: NextRequest) {
 
     return NextResponse.json(result);
   } catch (error) {
-    console.error('[POS TABLE SESSIONS] Unexpected error:', error);
+    logger.error('[POS TABLE SESSIONS] Unexpected error:', { error: error instanceof Error ? error.message : 'Unknown error' });
     return NextResponse.json({ error: 'Internal server error' }, { status: 500 });
   }
 }

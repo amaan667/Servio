@@ -13,6 +13,7 @@
 
 import { createAdminClient } from '@/lib/supabase/server';
 import type { CreateIngredientRequest } from '@/types/inventory';
+import { logger } from '@/lib/logger';
 
 interface SeedIngredient {
   name: string;
@@ -158,7 +159,7 @@ const SAMPLE_RECIPES: RecipeMapping[] = [
 export async function seedInventoryData(venueId: string) {
   const supabase = createAdminClient();
 
-  console.log('[INVENTORY SEED] Starting seed for venue:', venueId);
+  logger.debug('[INVENTORY SEED] Starting seed for venue:', venueId);
 
   // Step 1: Create ingredients
   const createdIngredients: Record<string, string> = {}; // name -> id mapping
@@ -174,7 +175,7 @@ export async function seedInventoryData(venueId: string) {
         .single();
 
       if (existing) {
-        console.log(`[INVENTORY SEED] Ingredient "${ingredient.name}" already exists`);
+        logger.debug(`[INVENTORY SEED] Ingredient "${ingredient.name}" already exists`);
         createdIngredients[ingredient.name] = existing.id;
         continue;
       }
@@ -196,7 +197,7 @@ export async function seedInventoryData(venueId: string) {
         .single();
 
       if (error) {
-        console.error(`[INVENTORY SEED] Error creating ingredient "${ingredient.name}":`, error);
+        logger.error(`[INVENTORY SEED] Error creating ingredient "${ingredient.name}":`, error);
         continue;
       }
 
@@ -214,9 +215,9 @@ export async function seedInventoryData(venueId: string) {
         });
       }
 
-      console.log(`[INVENTORY SEED] Created ingredient: ${ingredient.name} (${data.id})`);
+      logger.debug(`[INVENTORY SEED] Created ingredient: ${ingredient.name} (${data.id})`);
     } catch (error) {
-      console.error(`[INVENTORY SEED] Unexpected error for ingredient "${ingredient.name}":`, error);
+      logger.error(`[INVENTORY SEED] Unexpected error for ingredient "${ingredient.name}":`, error);
     }
   }
 
@@ -233,7 +234,7 @@ export async function seedInventoryData(venueId: string) {
         .single();
 
       if (!menuItem) {
-        console.log(`[INVENTORY SEED] Menu item "${recipe.menuItemName}" not found, skipping recipe`);
+        logger.debug(`[INVENTORY SEED] Menu item "${recipe.menuItemName}" not found, skipping recipe`);
         continue;
       }
 
@@ -248,7 +249,7 @@ export async function seedInventoryData(venueId: string) {
         .map((ing) => {
           const ingredientId = createdIngredients[ing.ingredientName];
           if (!ingredientId) {
-            console.log(`[INVENTORY SEED] Ingredient "${ing.ingredientName}" not found for recipe`);
+            logger.debug(`[INVENTORY SEED] Ingredient "${ing.ingredientName}" not found for recipe`);
             return null;
           }
 
@@ -267,17 +268,17 @@ export async function seedInventoryData(venueId: string) {
           .insert(recipeData);
 
         if (error) {
-          console.error(`[INVENTORY SEED] Error creating recipe for "${recipe.menuItemName}":`, error);
+          logger.error(`[INVENTORY SEED] Error creating recipe for "${recipe.menuItemName}":`, error);
         } else {
-          console.log(`[INVENTORY SEED] Created recipe for: ${menuItem.name}`);
+          logger.debug(`[INVENTORY SEED] Created recipe for: ${menuItem.name}`);
         }
       }
     } catch (error) {
-      console.error(`[INVENTORY SEED] Unexpected error for recipe "${recipe.menuItemName}":`, error);
+      logger.error(`[INVENTORY SEED] Unexpected error for recipe "${recipe.menuItemName}":`, error);
     }
   }
 
-  console.log('[INVENTORY SEED] Seed complete!');
+  logger.debug('[INVENTORY SEED] Seed complete!');
   
   return {
     success: true,

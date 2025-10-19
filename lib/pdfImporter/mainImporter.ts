@@ -18,6 +18,7 @@ import { generateCoverageReport, generateCoverageSummary, validateCoverageReport
 import { runHighRecallMode, runPrecisionMode, HIGH_RECALL_OPTIONS, PRECISION_OPTIONS } from './processingModes';
 import { batchClassifyBlocks } from './gptClassifier';
 import { parseMenuWithGPT, parseMenuInBatches, validateMenuParsingResult } from './robustMenuParser';
+import { logger } from '@/lib/logger';
 
 /**
  * Main PDF importer function with comprehensive error handling
@@ -106,7 +107,7 @@ export async function importPDFToMenu(
         validation = precisionResult.validation;
       }
     } catch (layoutError: any) {
-      console.warn('[PDF_IMPORT] Layout parsing failed, falling back to robust GPT parser:', layoutError.message);
+      logger.warn('[PDF_IMPORT] Layout parsing failed, falling back to robust GPT parser:', layoutError.message);
       warnings.push(`Layout parsing failed: ${layoutError.message}`);
       
       // Fallback to robust GPT parser
@@ -229,7 +230,7 @@ export async function importPDFToMenu(
     
   } catch (error: any) {
     const processingTime = Date.now() - startTime;
-    console.error('[PDF_IMPORT] Import failed:', error);
+    logger.error('[PDF_IMPORT] Import failed:', error);
     
     return {
       success: false,

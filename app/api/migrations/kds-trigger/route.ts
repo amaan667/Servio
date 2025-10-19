@@ -1,12 +1,13 @@
 import { NextResponse } from 'next/server';
 import { createAdminClient } from '@/lib/supabase/server';
+import { apiLogger, logger } from '@/lib/logger';
 
 export const runtime = 'nodejs';
 
 export async function POST(req: Request) {
   try {
     const supabaseAdmin = createAdminClient();
-    console.log('[KDS TRIGGER] Creating KDS trigger function...');
+    logger.debug('[KDS TRIGGER] Creating KDS trigger function...');
     
     // Create the trigger function to automatically create KDS tickets
     const { error: functionError } = await supabaseAdmin.rpc('exec', {
@@ -109,7 +110,7 @@ export async function POST(req: Request) {
     });
     
     if (functionError) {
-      console.error('[KDS TRIGGER] Function creation error:', functionError.message);
+      logger.error('[KDS TRIGGER] Function creation error:', functionError.message);
       return NextResponse.json({ 
         ok: false, 
         error: functionError.message 
@@ -128,14 +129,14 @@ export async function POST(req: Request) {
     });
     
     if (triggerError) {
-      console.error('[KDS TRIGGER] Trigger creation error:', triggerError.message);
+      logger.error('[KDS TRIGGER] Trigger creation error:', triggerError.message);
       return NextResponse.json({ 
         ok: false, 
         error: triggerError.message 
       }, { status: 500 });
     }
     
-    console.log('[KDS TRIGGER] Trigger function and trigger created successfully');
+    logger.debug('[KDS TRIGGER] Trigger function and trigger created successfully');
     
     return NextResponse.json({ 
       ok: true, 
@@ -143,7 +144,7 @@ export async function POST(req: Request) {
     });
     
   } catch (error: any) {
-    console.error('[KDS TRIGGER] Unexpected error:', error);
+    logger.error('[KDS TRIGGER] Unexpected error:', { error: error instanceof Error ? error.message : 'Unknown error' });
     return NextResponse.json({ 
       ok: false, 
       error: error.message || 'Trigger creation failed' 

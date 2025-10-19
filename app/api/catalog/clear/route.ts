@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { createAdminClient } from '@/lib/supabase/server';
+import { logger } from '@/lib/logger';
 
 export async function POST(req: NextRequest) {
   try {
@@ -50,7 +51,7 @@ export async function POST(req: NextRequest) {
         .select('*');
 
       if (error) {
-        console.error(`[CATALOG CLEAR] Error clearing ${operation.description}:`, error);
+        logger.error(`[CATALOG CLEAR] Error clearing ${operation.description}:`, { error: error instanceof Error ? error.message : 'Unknown error' });
         return NextResponse.json({ 
           ok: false, 
           error: `Failed to clear ${operation.description}: ${error.message}` 
@@ -72,7 +73,7 @@ export async function POST(req: NextRequest) {
     });
 
   } catch (error: any) {
-    console.error('[CATALOG CLEAR] Unexpected error:', error);
+    logger.error('[CATALOG CLEAR] Unexpected error:', { error: error instanceof Error ? error.message : 'Unknown error' });
     return NextResponse.json({ 
       ok: false, 
       error: 'Unexpected error: ' + error.message 

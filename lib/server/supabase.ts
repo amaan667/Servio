@@ -1,5 +1,6 @@
 import { cookies } from 'next/headers';
 import { createServerClient } from '@supabase/ssr';
+import { logger } from '@/lib/logger';
 
 // Avoid throwing at import-time to keep webpack builds stable. We rely on
 // runtime environment correctness and server route handlers for validation.
@@ -23,7 +24,7 @@ export const supabaseServer = async () => {
   
   // Handle missing environment variables gracefully
   if (!supabaseUrl || !supabaseAnonKey) {
-    console.warn('[SUPABASE SERVER] Missing environment variables:', {
+    logger.warn('[SUPABASE SERVER] Missing environment variables:', {
       hasUrl: !!supabaseUrl,
       hasKey: !!supabaseAnonKey
     });

@@ -2,6 +2,7 @@ import { NextResponse } from 'next/server';
 import { createClient, createAdminClient } from '@/lib/supabase/server';
 import { getAuthenticatedUser } from '@/lib/supabase/server';
 import { enforceResourceLimit } from '@/lib/enforce-tier-limits';
+import { logger } from '@/lib/logger';
 
 export const runtime = 'nodejs';
 
@@ -45,7 +46,7 @@ export async function GET(req: Request) {
       .order('label');
 
     if (tablesError) {
-      console.error('[TABLES GET] Tables error:', tablesError);
+      logger.error('[TABLES GET] Tables error:', tablesError);
       return NextResponse.json({ ok: false, error: tablesError.message }, { status: 500 });
     }
 
@@ -58,7 +59,7 @@ export async function GET(req: Request) {
       .is('closed_at', null); // Only get active sessions
 
     if (sessionsError) {
-      console.error('[TABLES GET] Sessions error:', sessionsError);
+      logger.error('[TABLES GET] Sessions error:', sessionsError);
       return NextResponse.json({ ok: false, error: sessionsError.message }, { status: 500 });
     }
 
@@ -118,7 +119,7 @@ export async function GET(req: Request) {
           });
 
         if (sessionError) {
-          console.error('[TABLES API DEBUG] Error creating session for table:', table.id, sessionError);
+          logger.error('[TABLES API DEBUG] Error creating session for table:', table.id, sessionError);
         } else {
         }
       }
@@ -150,7 +151,7 @@ export async function GET(req: Request) {
     });
 
   } catch (error) {
-    console.error('[TABLES GET] Unexpected error:', error);
+    logger.error('[TABLES GET] Unexpected error:', { error: error instanceof Error ? error.message : 'Unknown error' });
     return NextResponse.json({ ok: false, error: 'Internal server error' }, { status: 500 });
   }
 }
@@ -252,7 +253,7 @@ export async function POST(req: Request) {
       .single();
 
     if (tableError) {
-      console.error('[TABLES POST] Table creation error:', tableError);
+      logger.error('[TABLES POST] Table creation error:', { error: tableError instanceof Error ? tableError.message : 'Unknown error' });
       return NextResponse.json({ ok: false, error: tableError.message }, { status: 500 });
     }
 
@@ -277,7 +278,7 @@ export async function POST(req: Request) {
         });
 
       if (sessionError) {
-        console.error('[TABLES POST] Session creation error:', sessionError);
+        logger.error('[TABLES POST] Session creation error:', sessionError);
         return NextResponse.json({ ok: false, error: sessionError.message }, { status: 500 });
       }
     }
@@ -289,7 +290,7 @@ export async function POST(req: Request) {
     });
 
   } catch (error) {
-    console.error('[TABLES POST] Unexpected error:', error);
+    logger.error('[TABLES POST] Unexpected error:', { error: error instanceof Error ? error.message : 'Unknown error' });
     return NextResponse.json({ ok: false, error: 'Internal server error' }, { status: 500 });
   }
 }

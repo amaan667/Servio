@@ -1,4 +1,5 @@
 import { createBrowserClient } from '@supabase/ssr'
+import { dbLogger as logger } from '@/lib/logger';
 
 let supabaseInstance: ReturnType<typeof createBrowserClient> | any | null = null;
 
@@ -28,7 +29,7 @@ function getOrCreateClient() {
   const url = process.env.NEXT_PUBLIC_SUPABASE_URL;
   const anon = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
 
-  console.log('[SUPABASE CLIENT] Creating client:', {
+  logger.debug('[SUPABASE CLIENT] Creating client:', {
     hasUrl: !!url,
     hasKey: !!anon,
     isBrowser: typeof window !== 'undefined',
@@ -38,7 +39,7 @@ function getOrCreateClient() {
 
   // If env is missing or not in a browser, return a mock to avoid build-time crashes
   if (typeof window === 'undefined' || !url || !anon) {
-    console.warn('[SUPABASE CLIENT] Missing environment variables or not in browser:', {
+    logger.warn('[SUPABASE CLIENT] Missing environment variables or not in browser:', {
       hasUrl: !!url,
       hasKey: !!anon,
       isBrowser: typeof window !== 'undefined'
@@ -66,10 +67,10 @@ function getOrCreateClient() {
       },
     });
     
-    console.log('[SUPABASE CLIENT] Client created successfully');
+    logger.debug('[SUPABASE CLIENT] Client created successfully');
     return client;
   } catch (error) {
-    console.error('[SUPABASE CLIENT] Error creating client:', error);
+    logger.error('[SUPABASE CLIENT] Error creating client:', error);
     // Fallback to mock if the browser client throws during initialization
     return createMockClient();
   }

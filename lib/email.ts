@@ -1,3 +1,4 @@
+import { logger } from '@/lib/logger';
 // Email sending utilities for Servio
 // This is a basic implementation that can be enhanced with proper email service integration
 
@@ -136,7 +137,7 @@ If you didn't expect this invitation, you can safely ignore this email.
 export async function sendEmail(template: EmailTemplate): Promise<boolean> {
   try {
     // Method 1: Try Resend (if API key is available)
-    console.log('🔍 Checking RESEND_API_KEY:', process.env.RESEND_API_KEY ? 'Present' : 'Missing');
+    logger.debug('🔍 Checking RESEND_API_KEY:', process.env.RESEND_API_KEY ? 'Present' : 'Missing');
     if (process.env.RESEND_API_KEY) {
       try {
         const { Resend } = await import('resend');
@@ -151,14 +152,14 @@ export async function sendEmail(template: EmailTemplate): Promise<boolean> {
         });
         
         if (result.data) {
-          console.log('✅ Email sent successfully via Resend:', result.data.id);
+          logger.debug('✅ Email sent successfully via Resend:', result.data.id);
           return true;
         } else {
-          console.error('❌ Resend returned no data:', result);
+          logger.error('❌ Resend returned no data:', result);
         }
       } catch (resendError) {
-        console.error('❌ Resend failed with error:', resendError);
-        console.warn('⚠️ Resend failed, trying fallback:', resendError);
+        logger.error('❌ Resend failed with error:', resendError);
+        logger.warn('⚠️ Resend failed, trying fallback:', resendError);
       }
     }
 
@@ -176,10 +177,10 @@ export async function sendEmail(template: EmailTemplate): Promise<boolean> {
           text: template.text,
         });
         
-        console.log('✅ Email sent successfully via SendGrid');
+        logger.debug('✅ Email sent successfully via SendGrid');
         return true;
       } catch (sendgridError) {
-        console.warn('⚠️ SendGrid failed, trying fallback:', sendgridError);
+        logger.warn('⚠️ SendGrid failed, trying fallback:', sendgridError);
       }
     }
 
@@ -206,44 +207,44 @@ export async function sendEmail(template: EmailTemplate): Promise<boolean> {
           text: template.text,
         });
         
-        console.log('✅ Email sent successfully via SMTP');
+        logger.debug('✅ Email sent successfully via SMTP');
         return true;
       } catch (smtpError) {
-        console.warn('⚠️ SMTP failed, using console fallback:', smtpError);
+        logger.warn('⚠️ SMTP failed, using console fallback:', smtpError);
       }
     }
 
     // Method 4: Try EmailJS (for development without domain)
     if (process.env.EMAILJS_SERVICE_ID && process.env.EMAILJS_TEMPLATE_ID && process.env.EMAILJS_PUBLIC_KEY) {
       try {
-        console.log('📧 Using EmailJS for development email sending');
+        logger.debug('📧 Using EmailJS for development email sending');
         
         // For now, we'll simulate success and log the details
         // In a real implementation, you'd use EmailJS API
-        console.log('📧 EMAIL TO SEND via EmailJS:');
-        console.log('To:', template.to);
-        console.log('Subject:', template.subject);
-        console.log('🔗 Invitation Link:', template.html.match(/href="([^"]+)"/)?.[1] || 'Not found');
+        logger.debug('📧 EMAIL TO SEND via EmailJS:');
+        logger.debug('To:', template.to);
+        logger.debug('Subject:', template.subject);
+        logger.debug('🔗 Invitation Link:', template.html.match(/href="([^"]+)"/)?.[1] || 'Not found');
         
         return true; // Simulate success for development
       } catch (emailjsError) {
-        console.warn('⚠️ EmailJS failed:', emailjsError);
+        logger.warn('⚠️ EmailJS failed:', emailjsError);
       }
     }
 
     // Fallback: Log to console (for development/testing)
-    console.log('📧 EMAIL TO SEND (No email service configured):');
-    console.log('To:', template.to);
-    console.log('Subject:', template.subject);
-    console.log('HTML Preview:', template.html.substring(0, 200) + '...');
-    console.log('🔗 Invitation Link:', template.html.match(/href="([^"]+)"/)?.[1] || 'Not found');
+    logger.debug('📧 EMAIL TO SEND (No email service configured):');
+    logger.debug('To:', template.to);
+    logger.debug('Subject:', template.subject);
+    logger.debug('HTML Preview:', template.html.substring(0, 200) + '...');
+    logger.debug('🔗 Invitation Link:', template.html.match(/href="([^"]+)"/)?.[1] || 'Not found');
     
     // In development, we'll return true so the invitation flow continues
     // In production, you should configure an email service
     return process.env.NODE_ENV === 'development';
     
   } catch (error) {
-    console.error('❌ Failed to send email:', error);
+    logger.error('❌ Failed to send email:', error);
     return false;
   }
 }

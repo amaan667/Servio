@@ -3,10 +3,11 @@
 
 import { NextRequest, NextResponse } from "next/server";
 import { createClient } from "@/lib/supabase/server";
+import { apiLogger, logger } from '@/lib/logger';
 
 export async function POST(request: NextRequest) {
   try {
-    console.log("[STAFF INVITATION SETUP] Starting staff invitation system setup...");
+    logger.debug("[STAFF INVITATION SETUP] Starting staff invitation system setup...");
     
     const supabase = await createClient();
     
@@ -34,7 +35,7 @@ export async function POST(request: NextRequest) {
       });
     }
 
-    console.log("[STAFF INVITATION SETUP] Creating staff_invitations table...");
+    logger.debug("[STAFF INVITATION SETUP] Creating staff_invitations table...");
 
     // Create the staff_invitations table
     const createTableSQL = `
@@ -83,7 +84,7 @@ export async function POST(request: NextRequest) {
 
       if (testError && testError.code === 'PGRST116') {
         // Table doesn't exist, we need to create it
-        console.log("[STAFF INVITATION SETUP] Table doesn't exist, returning instructions for manual creation");
+        logger.debug("[STAFF INVITATION SETUP] Table doesn't exist, returning instructions for manual creation");
         return NextResponse.json({
           success: false,
           message: "Database table needs to be created manually",
@@ -92,7 +93,7 @@ export async function POST(request: NextRequest) {
         });
       }
     } catch (error) {
-      console.log("[STAFF INVITATION SETUP] Error testing table existence:", error);
+      logger.debug("[STAFF INVITATION SETUP] Error testing table existence:", { error: error instanceof Error ? error.message : 'Unknown error' });
     }
 
     // If we get here, the table might exist or there was an error
@@ -149,7 +150,7 @@ export async function POST(request: NextRequest) {
         FOR ALL TO service_role USING (true);
     `;
 
-    console.log("[STAFF INVITATION SETUP] Setup completed successfully");
+    logger.debug("[STAFF INVITATION SETUP] Setup completed successfully");
     
     return NextResponse.json({
       success: true,
@@ -165,7 +166,7 @@ export async function POST(request: NextRequest) {
     });
 
   } catch (error) {
-    console.error("[STAFF INVITATION SETUP] Error:", error);
+    logger.error("[STAFF INVITATION SETUP] Error:", { error: error instanceof Error ? error.message : 'Unknown error' });
     return NextResponse.json({
       success: false,
       error: "Failed to set up staff invitation system",

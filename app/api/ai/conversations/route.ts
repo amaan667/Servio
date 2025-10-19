@@ -3,6 +3,7 @@
 
 import { NextRequest, NextResponse } from "next/server";
 import { createClient } from "@/lib/supabase/server";
+import { logger } from '@/lib/logger';
 
 export async function GET(request: NextRequest) {
   try {
@@ -49,7 +50,7 @@ export async function GET(request: NextRequest) {
       .range(parseInt(cursor), parseInt(cursor) + limit - 1);
 
     if (error) {
-      console.error("[AI CHAT] Failed to fetch conversations:", error);
+      logger.error("[AI CHAT] Failed to fetch conversations:", { error: error instanceof Error ? error.message : 'Unknown error' });
       return NextResponse.json(
         { error: "Failed to fetch conversations", details: error.message },
         { status: 500 }
@@ -73,7 +74,7 @@ export async function GET(request: NextRequest) {
       nextCursor: conversations?.length === limit ? (parseInt(cursor) + limit).toString() : null,
     });
   } catch (error: any) {
-    console.error("[AI CHAT] Conversations error:", error);
+    logger.error("[AI CHAT] Conversations error:", { error: error instanceof Error ? error.message : 'Unknown error' });
     return NextResponse.json(
       { error: error.message || "Internal server error" },
       { status: 500 }
@@ -131,7 +132,7 @@ export async function POST(request: NextRequest) {
       .single();
 
     if (error) {
-      console.error("[AI CHAT] Failed to create conversation:", error);
+      logger.error("[AI CHAT] Failed to create conversation:", { error: error instanceof Error ? error.message : 'Unknown error' });
       return NextResponse.json(
         { error: "Failed to create conversation" },
         { status: 500 }
@@ -153,7 +154,7 @@ export async function POST(request: NextRequest) {
       conversation: transformedConversation,
     });
   } catch (error: any) {
-    console.error("[AI CHAT] Create conversation error:", error);
+    logger.error("[AI CHAT] Create conversation error:", { error: error instanceof Error ? error.message : 'Unknown error' });
     return NextResponse.json(
       { error: error.message || "Internal server error" },
       { status: 500 }
@@ -225,7 +226,7 @@ export async function PATCH(request: NextRequest) {
       .single();
 
     if (error) {
-      console.error("[AI CHAT] Failed to update conversation:", error);
+      logger.error("[AI CHAT] Failed to update conversation:", { error: error instanceof Error ? error.message : 'Unknown error' });
       return NextResponse.json(
         { error: "Failed to update conversation" },
         { status: 500 }
@@ -247,7 +248,7 @@ export async function PATCH(request: NextRequest) {
       conversation: transformedConversation,
     });
   } catch (error: any) {
-    console.error("[AI CHAT] Update conversation error:", error);
+    logger.error("[AI CHAT] Update conversation error:", { error: error instanceof Error ? error.message : 'Unknown error' });
     return NextResponse.json(
       { error: error.message || "Internal server error" },
       { status: 500 }

@@ -31,6 +31,7 @@ import { DailyResetModal } from '@/components/daily-reset/DailyResetModal';
 import { toast } from '@/hooks/use-toast';
 import { createClient } from '@/lib/supabase/client';
 import MobileNav from '@/components/MobileNav';
+import { logger } from '@/lib/logger';
 
 interface TableManagementClientNewProps {
   venueId: string;
@@ -134,11 +135,11 @@ export function TableManagementClientNew({ venueId }: TableManagementClientNewPr
         setShowResetModal(false);
         alert(`Reset completed successfully!\n\nSummary:\n- Completed orders: ${result.summary.completedOrders}\n- Canceled reservations: ${result.summary.canceledReservations}\n- Deleted tables: ${result.summary.deletedTables}`);
       } else {
-        console.error('🔄 [MANUAL RESET] Reset failed:', result);
+        logger.error('🔄 [MANUAL RESET] Reset failed:', result);
         alert(`Reset failed: ${result.error}`);
       }
     } catch (error) {
-      console.error('🔄 [MANUAL RESET] Error during reset:', error);
+      logger.error('🔄 [MANUAL RESET] Error during reset:', error);
       alert('Reset failed: Network error');
     } finally {
       setIsManualResetting(false);
@@ -277,7 +278,7 @@ export function TableManagementClientNew({ venueId }: TableManagementClientNewPr
       try {
         await autoCompleteRef.current.mutateAsync({ venueId });
       } catch (error) {
-        console.error('[AUTO COMPLETE] Error:', error);
+        logger.error('[AUTO COMPLETE] Error:', error);
       }
     }, 5 * 60 * 1000); // 5 minutes
 
@@ -286,7 +287,7 @@ export function TableManagementClientNew({ venueId }: TableManagementClientNewPr
       try {
         await autoCompleteRef.current.mutateAsync({ venueId });
       } catch (error) {
-        console.error('[AUTO COMPLETE] Initial check error:', error);
+        logger.error('[AUTO COMPLETE] Initial check error:', error);
       }
     };
 

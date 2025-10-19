@@ -1,5 +1,6 @@
 import { NextResponse } from 'next/server';
 import { createAdminClient } from '@/lib/supabase/server';
+import { apiLogger, logger } from '@/lib/logger';
 
 export const runtime = 'nodejs';
 export const dynamic = 'force-dynamic';
@@ -7,7 +8,7 @@ export const dynamic = 'force-dynamic';
 export async function GET(req: Request) {
   try {
     const supabaseAdmin = createAdminClient();
-    console.log('[RECENT PAID] Fetching most recent paid order...');
+    logger.debug('[RECENT PAID] Fetching most recent paid order...');
     
     // Get the most recent paid order from the last hour
     const oneHourAgo = new Date(Date.now() - 60 * 60 * 1000).toISOString();
@@ -32,7 +33,7 @@ export async function GET(req: Request) {
       .maybeSingle();
 
     if (orderError) {
-      console.error('[RECENT PAID] Error fetching recent order:', orderError);
+      logger.error('[RECENT PAID] Error fetching recent order:', orderError);
       return NextResponse.json({ 
         error: 'Failed to fetch recent order',
         details: orderError.message 
@@ -40,13 +41,13 @@ export async function GET(req: Request) {
     }
 
     if (!recentOrder) {
-      console.log('[RECENT PAID] No recent paid orders found');
+      logger.debug('[RECENT PAID] No recent paid orders found');
       return NextResponse.json({ 
         error: 'No recent paid orders found' 
       }, { status: 404 });
     }
 
-    console.log('[RECENT PAID] Found recent paid order:', {
+    logger.debug('[RECENT PAID] Found recent paid order:', {
       id: recentOrder.id,
       customer: recentOrder.customer_name,
       table: recentOrder.table_number,
@@ -72,7 +73,7 @@ export async function GET(req: Request) {
     });
 
   } catch (error) {
-    console.error('[RECENT PAID] Error:', error);
+    logger.error('[RECENT PAID] Error:', { error: error instanceof Error ? error.message : 'Unknown error' });
     return NextResponse.json({ 
       error: 'Internal server error',
       details: error instanceof Error ? error.message : 'Unknown error'

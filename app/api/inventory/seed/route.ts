@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { seedInventoryData } from '@/lib/inventory-seed';
+import { logger } from '@/lib/logger';
 
 // POST /api/inventory/seed
 // Seeds inventory data for a venue (for testing/demo purposes)
@@ -19,7 +20,7 @@ export async function POST(request: NextRequest) {
 
     return NextResponse.json(result);
   } catch (error) {
-    console.error('[INVENTORY SEED API] Error:', error);
+    logger.error('[INVENTORY SEED API] Error:', { error: error instanceof Error ? error.message : 'Unknown error' });
     return NextResponse.json(
       { error: 'Failed to seed inventory data' },
       { status: 500 }

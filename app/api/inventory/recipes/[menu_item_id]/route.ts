@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { createClient } from '@/lib/supabase/server';
 import type { RecipeIngredient } from '@/types/inventory';
+import { logger } from '@/lib/logger';
 
 // GET /api/inventory/recipes/[menu_item_id]
 export async function GET(
@@ -20,7 +21,7 @@ export async function GET(
       .eq('menu_item_id', menu_item_id);
 
     if (error) {
-      console.error('[INVENTORY API] Error fetching recipe:', error);
+      logger.error('[INVENTORY API] Error fetching recipe:', { error: error instanceof Error ? error.message : 'Unknown error' });
       return NextResponse.json(
         { error: error.message },
         { status: 500 }
@@ -38,7 +39,7 @@ export async function GET(
       total_cost: totalCost,
     });
   } catch (error) {
-    console.error('[INVENTORY API] Unexpected error:', error);
+    logger.error('[INVENTORY API] Unexpected error:', { error: error instanceof Error ? error.message : 'Unknown error' });
     return NextResponse.json(
       { error: 'Internal server error' },
       { status: 500 }
@@ -71,7 +72,7 @@ export async function POST(
       .eq('menu_item_id', menu_item_id);
 
     if (deleteError) {
-      console.error('[INVENTORY API] Error deleting existing recipe:', deleteError);
+      logger.error('[INVENTORY API] Error deleting existing recipe:', deleteError);
       return NextResponse.json(
         { error: deleteError.message },
         { status: 500 }
@@ -93,7 +94,7 @@ export async function POST(
         .select();
 
       if (insertError) {
-        console.error('[INVENTORY API] Error inserting recipe:', insertError);
+        logger.error('[INVENTORY API] Error inserting recipe:', insertError);
         return NextResponse.json(
           { error: insertError.message },
           { status: 500 }
@@ -105,7 +106,7 @@ export async function POST(
 
     return NextResponse.json({ data: [] }, { status: 200 });
   } catch (error) {
-    console.error('[INVENTORY API] Unexpected error:', error);
+    logger.error('[INVENTORY API] Unexpected error:', { error: error instanceof Error ? error.message : 'Unknown error' });
     return NextResponse.json(
       { error: 'Internal server error' },
       { status: 500 }
@@ -129,7 +130,7 @@ export async function DELETE(
       .eq('menu_item_id', menu_item_id);
 
     if (error) {
-      console.error('[INVENTORY API] Error deleting recipe:', error);
+      logger.error('[INVENTORY API] Error deleting recipe:', { error: error instanceof Error ? error.message : 'Unknown error' });
       return NextResponse.json(
         { error: error.message },
         { status: 500 }
@@ -138,7 +139,7 @@ export async function DELETE(
 
     return NextResponse.json({ success: true });
   } catch (error) {
-    console.error('[INVENTORY API] Unexpected error:', error);
+    logger.error('[INVENTORY API] Unexpected error:', { error: error instanceof Error ? error.message : 'Unknown error' });
     return NextResponse.json(
       { error: 'Internal server error' },
       { status: 500 }

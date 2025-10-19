@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { createClient } from '@/lib/supabase/server';
 import { getUserSafe } from '@/utils/getUserSafe';
+import { apiLogger, logger } from '@/lib/logger';
 
 // POST /api/fix-owner-column - Fix the owner column name mismatch
 export async function POST(request: NextRequest) {
@@ -12,7 +13,7 @@ export async function POST(request: NextRequest) {
 
     const supabase = await createClient();
 
-    console.log('[COLUMN FIX] Starting owner column name fix...');
+    logger.debug('[COLUMN FIX] Starting owner column name fix...');
 
     // Check current column names
     const { data: columns, error: columnError } = await supabase.rpc('exec_sql', {
@@ -23,14 +24,14 @@ export async function POST(request: NextRequest) {
     });
 
     if (columnError) {
-      console.error('[COLUMN FIX] Error checking columns:', columnError);
+      logger.error('[COLUMN FIX] Error checking columns:', columnError);
       return NextResponse.json({ 
         error: 'Failed to check current column structure',
         details: columnError.message 
       }, { status: 500 });
     }
 
-    console.log('[COLUMN FIX] Current columns:', columns);
+    logger.debug('[COLUMN FIX] Current columns:', columns);
 
     // Try to rename the column
     const { error: renameError } = await supabase.rpc('exec_sql', {
@@ -38,11 +39,11 @@ export async function POST(request: NextRequest) {
     });
 
     if (renameError) {
-      console.error('[COLUMN FIX] Error renaming column:', renameError);
+      logger.error('[COLUMN FIX] Error renaming column:', renameError);
       // Column might already be renamed or not exist
-      console.log('[COLUMN FIX] Column rename failed, checking if already correct...');
+      logger.debug('[COLUMN FIX] Column rename failed, checking if already correct...');
     } else {
-      console.log('[COLUMN FIX] Column renamed successfully');
+      logger.debug('[COLUMN FIX] Column renamed successfully');
     }
 
     // Update indexes
@@ -52,9 +53,9 @@ export async function POST(request: NextRequest) {
     });
 
     if (indexError) {
-      console.warn('[COLUMN FIX] Index update warning:', indexError);
+      logger.warn('[COLUMN FIX] Index update warning:', indexError);
     } else {
-      console.log('[COLUMN FIX] Indexes updated successfully');
+      logger.debug('[COLUMN FIX] Indexes updated successfully');
     }
 
     // Verify the fix worked
@@ -66,10 +67,10 @@ export async function POST(request: NextRequest) {
     });
 
     if (finalError) {
-      console.error('[COLUMN FIX] Error verifying fix:', finalError);
+      logger.error('[COLUMN FIX] Error verifying fix:', finalError);
     }
 
-    console.log('[COLUMN FIX] Final columns:', finalColumns);
+    logger.debug('[COLUMN FIX] Final columns:', finalColumns);
 
     return NextResponse.json({ 
       success: true,
@@ -79,7 +80,7 @@ export async function POST(request: NextRequest) {
     });
 
   } catch (error) {
-    console.error('[COLUMN FIX] Unexpected error:', error);
+    logger.error('[COLUMN FIX] Unexpected error:', { error: error instanceof Error ? error.message : 'Unknown error' });
     return NextResponse.json({ error: 'Internal server error' }, { status: 500 });
   }
 }

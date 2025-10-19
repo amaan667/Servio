@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { createClient } from '@/lib/supabase/server';
+import { logger } from '@/lib/logger';
 
 export async function GET(
   req: NextRequest,
@@ -24,7 +25,7 @@ export async function GET(
       .maybeSingle();
 
     if (error) {
-      console.error('[CATEGORY ORDER API] Error fetching upload data:', error);
+      logger.error('[CATEGORY ORDER API] Error fetching upload data:', { error: error instanceof Error ? error.message : 'Unknown error' });
       return NextResponse.json({ error: 'Failed to fetch category order' }, { status: 500 });
     }
 
@@ -41,7 +42,7 @@ export async function GET(
     });
 
   } catch (error: any) {
-    console.error('[CATEGORY ORDER API] Unexpected error:', error);
+    logger.error('[CATEGORY ORDER API] Unexpected error:', { error: error instanceof Error ? error.message : 'Unknown error' });
     return NextResponse.json({ error: 'Internal server error' }, { status: 500 });
   }
 }

@@ -1,4 +1,5 @@
 import { useEffect } from 'react';
+import { logger } from '@/lib/logger';
 
 /**
  * Hook for monitoring performance metrics
@@ -15,7 +16,7 @@ export function usePerformanceMonitor(componentName: string) {
       const renderTime = endTime - startTime;
       
       if (renderTime > 16) { // More than one frame (16ms at 60fps)
-        console.warn(`[PERFORMANCE] ${componentName} took ${renderTime.toFixed(2)}ms to render`);
+        logger.warn(`[PERFORMANCE] ${componentName} took ${renderTime.toFixed(2)}ms to render`);
       }
     };
   }, [componentName]);
@@ -38,14 +39,14 @@ export function useApiPerformanceMonitor(apiName: string) {
         const duration = endTime - startTime;
         
         if (duration > 1000) { // More than 1 second
-          console.warn(`[API PERFORMANCE] ${apiName} took ${duration.toFixed(2)}ms`);
+          logger.warn(`[API PERFORMANCE] ${apiName} took ${duration.toFixed(2)}ms`);
         }
         
         return result;
       } catch (error) {
         const endTime = performance.now();
         const duration = endTime - startTime;
-        console.error(`[API ERROR] ${apiName} failed after ${duration.toFixed(2)}ms:`, error);
+        logger.error(`[API ERROR] ${apiName} failed after ${duration.toFixed(2)}ms:`, error);
         throw error;
       }
     };

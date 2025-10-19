@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react';
 import type { LowStockAlert } from '@/types/inventory';
+import { logger } from '@/lib/logger';
 
 export function useInventoryAlerts(venueId: string | null) {
   const [alerts, setAlerts] = useState<LowStockAlert[]>([]);
@@ -17,7 +18,7 @@ export function useInventoryAlerts(venueId: string | null) {
           setAlerts(result.data);
         }
       } catch (error) {
-        console.error('Error fetching inventory alerts:', error);
+        logger.error('Error fetching inventory alerts:', error);
       } finally {
         setLoading(false);
       }

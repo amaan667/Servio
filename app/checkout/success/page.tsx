@@ -8,6 +8,7 @@ import { Badge } from "@/components/ui/badge";
 import { CheckCircle, Clock, Calendar } from "lucide-react";
 import { useAuth } from "@/app/auth/AuthProvider";
 import { createClient } from "@/lib/supabase/client";
+import { logger } from '@/lib/logger';
 
 export default function CheckoutSuccessPage() {
   const searchParams = useSearchParams();
@@ -40,7 +41,7 @@ export default function CheckoutSuccessPage() {
     };
     
     if (!searchParams) {
-      console.log('[CHECKOUT SUCCESS] No search params available, redirecting to dashboard');
+      logger.debug('[CHECKOUT SUCCESS] No search params available, redirecting to dashboard');
       redirectToDashboard();
       return;
     }
@@ -48,7 +49,7 @@ export default function CheckoutSuccessPage() {
     const sessionId = searchParams.get("session_id");
     const tierParam = searchParams.get("tier");
     
-    console.log('[CHECKOUT SUCCESS] Page loaded with params:', { sessionId, tierParam });
+    logger.debug('[CHECKOUT SUCCESS] Page loaded with params:', { sessionId, tierParam });
     
     if (sessionId && tierParam) {
       setTier(tierParam);
@@ -60,7 +61,7 @@ export default function CheckoutSuccessPage() {
       
       // Update organization tier immediately as a backup in case webhook hasn't fired yet
       if (user) {
-        console.log('[CHECKOUT SUCCESS] Updating organization tier immediately');
+        logger.debug('[CHECKOUT SUCCESS] Updating organization tier immediately');
         
         // Retry logic for organization update
         const updateOrganization = async (retryCount = 0) => {
@@ -72,16 +73,16 @@ export default function CheckoutSuccessPage() {
             });
             
             const data = await response.json();
-            console.log('[CHECKOUT SUCCESS] Organization tier update result:', data);
+            logger.debug('[CHECKOUT SUCCESS] Organization tier update result:', data);
             
             if (!response.ok && retryCount < 3) {
-              console.log(`[CHECKOUT SUCCESS] Update failed, retrying in ${(retryCount + 1) * 2} seconds...`);
+              logger.debug(`[CHECKOUT SUCCESS] Update failed, retrying in ${(retryCount + 1) * 2} seconds...`);
               setTimeout(() => updateOrganization(retryCount + 1), (retryCount + 1) * 2000);
             }
           } catch (err) {
-            console.error('[CHECKOUT SUCCESS] Failed to update organization tier:', err);
+            logger.error('[CHECKOUT SUCCESS] Failed to update organization tier:', err);
             if (retryCount < 3) {
-              console.log(`[CHECKOUT SUCCESS] Network error, retrying in ${(retryCount + 1) * 2} seconds...`);
+              logger.debug(`[CHECKOUT SUCCESS] Network error, retrying in ${(retryCount + 1) * 2} seconds...`);
               setTimeout(() => updateOrganization(retryCount + 1), (retryCount + 1) * 2000);
             }
           }
@@ -93,7 +94,7 @@ export default function CheckoutSuccessPage() {
       setLoading(false);
     } else {
       // Redirect if missing required params
-      console.log('[CHECKOUT SUCCESS] Missing params, redirecting to dashboard');
+      logger.debug('[CHECKOUT SUCCESS] Missing params, redirecting to dashboard');
       redirectToDashboard();
     }
   }, [searchParams, router, user]);

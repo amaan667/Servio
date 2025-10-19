@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { createClient } from '@/lib/supabase/server';
+import { logger } from '@/lib/logger';
 
 export async function POST(req: NextRequest) {
   try {
@@ -25,7 +26,7 @@ export async function POST(req: NextRequest) {
       });
       
       if (error) {
-        console.error('[AUTH DEBUG] Venue deletion error:', error);
+        logger.error('[AUTH DEBUG] Venue deletion error:', { error: error instanceof Error ? error.message : 'Unknown error' });
         return NextResponse.json({ error: error.message }, { status: 500 });
       }
       
@@ -37,7 +38,7 @@ export async function POST(req: NextRequest) {
       });
       
       if (error) {
-        console.error('[AUTH DEBUG] Manual deletion error:', error);
+        logger.error('[AUTH DEBUG] Manual deletion error:', { error: error instanceof Error ? error.message : 'Unknown error' });
         return NextResponse.json({ error: error.message }, { status: 500 });
       }
       
@@ -51,7 +52,7 @@ export async function POST(req: NextRequest) {
     });
 
   } catch (error) {
-    console.error('[AUTH DEBUG] Table reset API error:', error);
+    logger.error('[AUTH DEBUG] Table reset API error:', { error: error instanceof Error ? error.message : 'Unknown error' });
     return NextResponse.json(
       { error: 'Internal server error' },
       { status: 500 }
@@ -81,7 +82,7 @@ export async function GET(req: NextRequest) {
       .limit(limit);
 
     if (error) {
-      console.error('[AUTH DEBUG] Reset logs error:', error);
+      logger.error('[AUTH DEBUG] Reset logs error:', { error: error instanceof Error ? error.message : 'Unknown error' });
       return NextResponse.json({ error: error.message }, { status: 500 });
     }
 
@@ -91,7 +92,7 @@ export async function GET(req: NextRequest) {
     });
 
   } catch (error) {
-    console.error('[AUTH DEBUG] Reset logs API error:', error);
+    logger.error('[AUTH DEBUG] Reset logs API error:', { error: error instanceof Error ? error.message : 'Unknown error' });
     return NextResponse.json(
       { error: 'Internal server error' },
       { status: 500 }

@@ -3,6 +3,7 @@
 import { useEffect, useState, useCallback } from 'react';
 import { User } from '@supabase/supabase-js';
 import { supabase } from '@/lib/supabase/client';
+import { logger } from '@/lib/logger';
 
 interface AuthState {
   user: User | null;
@@ -25,14 +26,14 @@ export function useAuth() {
       const { data: { user }, error } = await supabase.auth.getUser();
       
       if (error) {
-        console.error('[AUTH HOOK] Error getting user:', error);
+        logger.error('[AUTH HOOK] Error getting user:', error);
         setAuthState({ user: null, loading: false, error: error.message });
         return;
       }
       
       setAuthState({ user, loading: false, error: null });
     } catch (error) {
-      console.error('[AUTH HOOK] Unexpected error:', error);
+      logger.error('[AUTH HOOK] Unexpected error:', error);
       setAuthState({ 
         user: null, 
         loading: false, 
@@ -54,7 +55,7 @@ export function useAuth() {
       });
 
       if (!response.ok) {
-        console.error('[AUTH HOOK] Server signout failed:', response.status);
+        logger.error('[AUTH HOOK] Server signout failed:', response.status);
       } else {
       }
 
@@ -62,7 +63,7 @@ export function useAuth() {
       const { error } = await supabase.auth.signOut();
       
       if (error) {
-        console.error('[AUTH HOOK] Client signout error:', error);
+        logger.error('[AUTH HOOK] Client signout error:', error);
         throw error;
       }
 
@@ -70,7 +71,7 @@ export function useAuth() {
       setAuthState({ user: null, loading: false, error: null });
       
     } catch (error) {
-      console.error('[AUTH HOOK] Sign out error:', error);
+      logger.error('[AUTH HOOK] Sign out error:', error);
       setAuthState(prev => ({ 
         ...prev, 
         error: error instanceof Error ? error.message : 'Sign out failed' 

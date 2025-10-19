@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { createClient } from '@/lib/supabase/server';
+import { logger } from '@/lib/logger';
 
 export async function POST(req: NextRequest) {
   try {
@@ -26,13 +27,13 @@ export async function POST(req: NextRequest) {
       .single();
 
     if (error) {
-      console.error('[TABLE SESSIONS API] Error creating session:', error);
+      logger.error('[TABLE SESSIONS API] Error creating session:', { error: error instanceof Error ? error.message : 'Unknown error' });
       return NextResponse.json({ error: 'Failed to create table session' }, { status: 500 });
     }
 
     return NextResponse.json({ session });
   } catch (error) {
-    console.error('[TABLE SESSIONS API] Unexpected error:', error);
+    logger.error('[TABLE SESSIONS API] Unexpected error:', { error: error instanceof Error ? error.message : 'Unknown error' });
     return NextResponse.json({ error: 'Internal server error' }, { status: 500 });
   }
 }

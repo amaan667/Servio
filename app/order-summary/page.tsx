@@ -17,6 +17,7 @@ import {
   Users
 } from 'lucide-react';
 import Image from 'next/image';
+import { logger } from '@/lib/logger';
 
 interface PendingOrderData {
   venueId: string;
@@ -51,32 +52,32 @@ export default function OrderSummaryPage() {
     // Get order data from localStorage
     const storedData = localStorage.getItem('servio-pending-order');
     
-    console.log('[ORDER SUMMARY DEBUG] Loading order data:', storedData);
+    logger.debug('[ORDER SUMMARY DEBUG] Loading order data:', storedData);
     
     if (storedData) {
       try {
         const data = JSON.parse(storedData);
-        console.log('[ORDER SUMMARY DEBUG] Parsed data:', data);
-        console.log('[ORDER SUMMARY DEBUG] Is demo?', data.isDemo, data.venueId === 'demo-cafe');
+        logger.debug('[ORDER SUMMARY DEBUG] Parsed data:', data);
+        logger.debug('[ORDER SUMMARY DEBUG] Is demo?', data.isDemo, data.venueId === 'demo-cafe');
         setOrderData(data);
       } catch (error) {
-        console.error('Error parsing stored order data:', error);
+        logger.error('Error parsing stored order data:', error);
         router.push('/order');
       }
     } else {
-      console.log('[ORDER SUMMARY DEBUG] No stored data, redirecting to order page');
+      logger.debug('[ORDER SUMMARY DEBUG] No stored data, redirecting to order page');
       router.push('/order');
     }
     setLoading(false);
   }, [router]);
 
   const handlePayNow = async () => {
-    console.log('[ORDER SUMMARY DEBUG] ===== handlePayNow STARTED =====');
-    console.log('[ORDER SUMMARY DEBUG] Timestamp:', new Date().toISOString());
-    console.log('[ORDER SUMMARY DEBUG] Full orderData:', JSON.stringify(orderData, null, 2));
+    logger.debug('[ORDER SUMMARY DEBUG] ===== handlePayNow STARTED =====');
+    logger.debug('[ORDER SUMMARY DEBUG] Timestamp:', new Date().toISOString());
+    logger.debug('[ORDER SUMMARY DEBUG] Full orderData:', JSON.stringify(orderData, null, 2));
     
     if (!orderData) {
-      console.error('[ORDER SUMMARY DEBUG] No orderData found!');
+      logger.error('[ORDER SUMMARY DEBUG] No orderData found!');
       alert('Error: No order data available. Please try placing your order again.');
       return;
     }
@@ -84,23 +85,23 @@ export default function OrderSummaryPage() {
     // Check if this is a demo order - never redirect to Stripe for demos
     const isDemo = orderData.isDemo || orderData.venueId === 'demo-cafe';
     
-    console.log('[ORDER SUMMARY DEBUG] ===== DEMO CHECK =====');
-    console.log('[ORDER SUMMARY DEBUG] isDemo calculated:', isDemo);
-    console.log('[ORDER SUMMARY DEBUG] orderData.isDemo:', orderData.isDemo);
-    console.log('[ORDER SUMMARY DEBUG] orderData.venueId:', orderData.venueId);
-    console.log('[ORDER SUMMARY DEBUG] Comparison: venueId === "demo-cafe":', orderData.venueId === 'demo-cafe');
+    logger.debug('[ORDER SUMMARY DEBUG] ===== DEMO CHECK =====');
+    logger.debug('[ORDER SUMMARY DEBUG] isDemo calculated:', isDemo);
+    logger.debug('[ORDER SUMMARY DEBUG] orderData.isDemo:', orderData.isDemo);
+    logger.debug('[ORDER SUMMARY DEBUG] orderData.venueId:', orderData.venueId);
+    logger.debug('[ORDER SUMMARY DEBUG] Comparison: venueId === "demo-cafe":', orderData.venueId === 'demo-cafe');
     
     if (isDemo) {
-      console.log('[ORDER SUMMARY DEBUG] ===== DEMO ORDER DETECTED =====');
-      console.log('[ORDER SUMMARY DEBUG] Current page URL:', window.location.href);
+      logger.debug('[ORDER SUMMARY DEBUG] ===== DEMO ORDER DETECTED =====');
+      logger.debug('[ORDER SUMMARY DEBUG] Current page URL:', window.location.href);
       
       // For demo orders, create demo order data and redirect to payment success page
       const demoOrderId = `demo-${Date.now()}`;
-      console.log('[ORDER SUMMARY DEBUG] Generated demoOrderId:', demoOrderId);
+      logger.debug('[ORDER SUMMARY DEBUG] Generated demoOrderId:', demoOrderId);
       
-      console.log('[ORDER SUMMARY DEBUG] ===== BUILDING DEMO ORDER DATA =====');
-      console.log('[ORDER SUMMARY DEBUG] Cart items:', orderData.cart);
-      console.log('[ORDER SUMMARY DEBUG] Cart items count:', orderData.cart?.length || 0);
+      logger.debug('[ORDER SUMMARY DEBUG] ===== BUILDING DEMO ORDER DATA =====');
+      logger.debug('[ORDER SUMMARY DEBUG] Cart items:', orderData.cart);
+      logger.debug('[ORDER SUMMARY DEBUG] Cart items count:', orderData.cart?.length || 0);
       
       const demoOrderData = {
         id: demoOrderId,
@@ -122,73 +123,73 @@ export default function OrderSummaryPage() {
         created_at: new Date().toISOString(),
       };
 
-      console.log('[ORDER SUMMARY DEBUG] ===== CREATED DEMO ORDER DATA =====');
-      console.log('[ORDER SUMMARY DEBUG] demoOrderData structure:', {
+      logger.debug('[ORDER SUMMARY DEBUG] ===== CREATED DEMO ORDER DATA =====');
+      logger.debug('[ORDER SUMMARY DEBUG] demoOrderData structure:', {
         id: demoOrderData.id,
         venue_id: demoOrderData.venue_id,
         customer_name: demoOrderData.customer_name,
         total_amount: demoOrderData.total_amount,
         items_count: demoOrderData.items.length
       });
-      console.log('[ORDER SUMMARY DEBUG] demoOrderData FULL:', JSON.stringify(demoOrderData, null, 2));
+      logger.debug('[ORDER SUMMARY DEBUG] demoOrderData FULL:', JSON.stringify(demoOrderData, null, 2));
       
       // Check localStorage availability and state
-      console.log('[ORDER SUMMARY DEBUG] ===== CHECKING LOCALSTORAGE =====');
+      logger.debug('[ORDER SUMMARY DEBUG] ===== CHECKING LOCALSTORAGE =====');
       try {
         const testKey = 'servio-test-' + Date.now();
         localStorage.setItem(testKey, 'test');
         const testValue = localStorage.getItem(testKey);
         localStorage.removeItem(testKey);
-        console.log('[ORDER SUMMARY DEBUG] localStorage is available:', testValue === 'test');
+        logger.debug('[ORDER SUMMARY DEBUG] localStorage is available:', testValue === 'test');
       } catch (e) {
-        console.error('[ORDER SUMMARY DEBUG] localStorage test failed:', e);
+        logger.error('[ORDER SUMMARY DEBUG] localStorage test failed:', e);
       }
       
-      console.log('[ORDER SUMMARY DEBUG] localStorage before setItem:', localStorage.getItem('demo-order-data'));
-      console.log('[ORDER SUMMARY DEBUG] All localStorage keys:', Object.keys(localStorage));
+      logger.debug('[ORDER SUMMARY DEBUG] localStorage before setItem:', localStorage.getItem('demo-order-data'));
+      logger.debug('[ORDER SUMMARY DEBUG] All localStorage keys:', Object.keys(localStorage));
       
       // Store demo order data for the success page
       try {
-        console.log('[ORDER SUMMARY DEBUG] ===== STORING TO LOCALSTORAGE =====');
+        logger.debug('[ORDER SUMMARY DEBUG] ===== STORING TO LOCALSTORAGE =====');
         
         let localStorageSuccess = false;
         
         // Try localStorage first
         try {
           const dataToStore = JSON.stringify(demoOrderData);
-          console.log('[ORDER SUMMARY DEBUG] Data to store length:', dataToStore.length);
-          console.log('[ORDER SUMMARY DEBUG] Calling localStorage.setItem...');
+          logger.debug('[ORDER SUMMARY DEBUG] Data to store length:', dataToStore.length);
+          logger.debug('[ORDER SUMMARY DEBUG] Calling localStorage.setItem...');
           
           localStorage.setItem('demo-order-data', dataToStore);
-          console.log('[ORDER SUMMARY DEBUG] localStorage.setItem completed');
+          logger.debug('[ORDER SUMMARY DEBUG] localStorage.setItem completed');
           
           // Verify storage immediately
-          console.log('[ORDER SUMMARY DEBUG] ===== VERIFICATION =====');
+          logger.debug('[ORDER SUMMARY DEBUG] ===== VERIFICATION =====');
           const stored = localStorage.getItem('demo-order-data');
-          console.log('[ORDER SUMMARY DEBUG] Retrieved data length:', stored?.length || 0);
-          console.log('[ORDER SUMMARY DEBUG] Data matches:', stored === dataToStore);
+          logger.debug('[ORDER SUMMARY DEBUG] Retrieved data length:', stored?.length || 0);
+          logger.debug('[ORDER SUMMARY DEBUG] Data matches:', stored === dataToStore);
           
           if (!stored) {
             throw new Error('localStorage write verification failed - data is null');
           }
           
           if (stored !== dataToStore) {
-            console.warn('[ORDER SUMMARY DEBUG] Data mismatch after storage!');
-            console.warn('[ORDER SUMMARY DEBUG] Expected length:', dataToStore.length);
-            console.warn('[ORDER SUMMARY DEBUG] Got length:', stored.length);
+            logger.warn('[ORDER SUMMARY DEBUG] Data mismatch after storage!');
+            logger.warn('[ORDER SUMMARY DEBUG] Expected length:', dataToStore.length);
+            logger.warn('[ORDER SUMMARY DEBUG] Got length:', stored.length);
           } else {
-            console.log('[ORDER SUMMARY DEBUG] ✅ localStorage verification PASSED');
+            logger.debug('[ORDER SUMMARY DEBUG] ✅ localStorage verification PASSED');
             localStorageSuccess = true;
           }
         } catch (storageError) {
-          console.error('[ORDER SUMMARY DEBUG] ❌ localStorage failed:', storageError);
-          console.error('[ORDER SUMMARY DEBUG] Error type:', storageError instanceof Error ? storageError.constructor.name : typeof storageError);
-          console.error('[ORDER SUMMARY DEBUG] Error message:', storageError instanceof Error ? storageError.message : String(storageError));
+          logger.error('[ORDER SUMMARY DEBUG] ❌ localStorage failed:', storageError);
+          logger.error('[ORDER SUMMARY DEBUG] Error type:', storageError instanceof Error ? storageError.constructor.name : typeof storageError);
+          logger.error('[ORDER SUMMARY DEBUG] Error message:', storageError instanceof Error ? storageError.message : String(storageError));
           // If localStorage fails, we'll use URL parameters as fallback below
         }
         
         // Build redirect URL with data as backup in URL parameters
-        console.log('[ORDER SUMMARY DEBUG] ===== BUILDING REDIRECT URL =====');
+        logger.debug('[ORDER SUMMARY DEBUG] ===== BUILDING REDIRECT URL =====');
         const params = new URLSearchParams({
           orderId: demoOrderId,
           demo: '1',
@@ -200,37 +201,37 @@ export default function OrderSummaryPage() {
         });
         
         const redirectUrl = `/payment/success?${params.toString()}`;
-        console.log('[ORDER SUMMARY DEBUG] Redirect URL:', redirectUrl);
-        console.log('[ORDER SUMMARY DEBUG] URL parameters:', Object.fromEntries(params.entries()));
-        console.log('[ORDER SUMMARY DEBUG] localStorage success:', localStorageSuccess);
+        logger.debug('[ORDER SUMMARY DEBUG] Redirect URL:', redirectUrl);
+        logger.debug('[ORDER SUMMARY DEBUG] URL parameters:', Object.fromEntries(params.entries()));
+        logger.debug('[ORDER SUMMARY DEBUG] localStorage success:', localStorageSuccess);
         
         // Use a small delay to ensure any async storage operations complete
-        console.log('[ORDER SUMMARY DEBUG] ===== SCHEDULING REDIRECT =====');
-        console.log('[ORDER SUMMARY DEBUG] Setting timeout for 150ms...');
+        logger.debug('[ORDER SUMMARY DEBUG] ===== SCHEDULING REDIRECT =====');
+        logger.debug('[ORDER SUMMARY DEBUG] Setting timeout for 150ms...');
         
         setTimeout(() => {
-          console.log('[ORDER SUMMARY DEBUG] ===== EXECUTING REDIRECT =====');
-          console.log('[ORDER SUMMARY DEBUG] Timeout executed at:', new Date().toISOString());
+          logger.debug('[ORDER SUMMARY DEBUG] ===== EXECUTING REDIRECT =====');
+          logger.debug('[ORDER SUMMARY DEBUG] Timeout executed at:', new Date().toISOString());
           
           const finalCheck = localStorage.getItem('demo-order-data');
-          console.log('[ORDER SUMMARY DEBUG] Final localStorage check before redirect:');
-          console.log('[ORDER SUMMARY DEBUG] - Data exists:', !!finalCheck);
-          console.log('[ORDER SUMMARY DEBUG] - Data length:', finalCheck?.length || 0);
-          console.log('[ORDER SUMMARY DEBUG] - First 100 chars:', finalCheck?.substring(0, 100) + '...');
+          logger.debug('[ORDER SUMMARY DEBUG] Final localStorage check before redirect:');
+          logger.debug('[ORDER SUMMARY DEBUG] - Data exists:', !!finalCheck);
+          logger.debug('[ORDER SUMMARY DEBUG] - Data length:', finalCheck?.length || 0);
+          logger.debug('[ORDER SUMMARY DEBUG] - First 100 chars:', finalCheck?.substring(0, 100) + '...');
           
-          console.log('[ORDER SUMMARY DEBUG] About to redirect to:', redirectUrl);
-          console.log('[ORDER SUMMARY DEBUG] Current URL before redirect:', window.location.href);
+          logger.debug('[ORDER SUMMARY DEBUG] About to redirect to:', redirectUrl);
+          logger.debug('[ORDER SUMMARY DEBUG] Current URL before redirect:', window.location.href);
           
           window.location.href = redirectUrl;
           
-          console.log('[ORDER SUMMARY DEBUG] window.location.href called (this may not log if redirect is immediate)');
+          logger.debug('[ORDER SUMMARY DEBUG] window.location.href called (this may not log if redirect is immediate)');
         }, 150);
         
-        console.log('[ORDER SUMMARY DEBUG] Timeout scheduled, waiting for redirect...');
+        logger.debug('[ORDER SUMMARY DEBUG] Timeout scheduled, waiting for redirect...');
       } catch (error) {
-        console.error('[ORDER SUMMARY DEBUG] ===== STORAGE ERROR =====');
-        console.error('[ORDER SUMMARY DEBUG] Error storing demo order data:', error);
-        console.error('[ORDER SUMMARY DEBUG] Error stack:', error instanceof Error ? error.stack : 'No stack trace available');
+        logger.error('[ORDER SUMMARY DEBUG] ===== STORAGE ERROR =====');
+        logger.error('[ORDER SUMMARY DEBUG] Error storing demo order data:', error);
+        logger.error('[ORDER SUMMARY DEBUG] Error stack:', error instanceof Error ? error.stack : 'No stack trace available');
         // Fallback: redirect with minimal data in URL
         const fallbackParams = new URLSearchParams({
           orderId: demoOrderId,
@@ -240,7 +241,7 @@ export default function OrderSummaryPage() {
           total: orderData.total?.toString() || '0'
         });
         const fallbackUrl = `/payment/success?${fallbackParams.toString()}`;
-        console.error('[ORDER SUMMARY DEBUG] Using fallback URL:', fallbackUrl);
+        logger.error('[ORDER SUMMARY DEBUG] Using fallback URL:', fallbackUrl);
         window.location.href = fallbackUrl;
       }
       return;
@@ -284,8 +285,8 @@ export default function OrderSummaryPage() {
       const orderResult = await orderResponse.json();
       
       if (!orderResult.order?.id) {
-        console.error('[ORDER SUMMARY DEBUG] ERROR: No order ID in response:', orderResult);
-        console.error('[ORDER SUMMARY DEBUG] Full response structure:', JSON.stringify(orderResult, null, 2));
+        logger.error('[ORDER SUMMARY DEBUG] ERROR: No order ID in response:', orderResult);
+        logger.error('[ORDER SUMMARY DEBUG] Full response structure:', JSON.stringify(orderResult, null, 2));
         throw new Error('Order was created but no order ID was returned');
       }
 
@@ -312,7 +313,7 @@ export default function OrderSummaryPage() {
         throw new Error('No checkout URL received');
       }
     } catch (error) {
-      console.error('[ORDER SUMMARY DEBUG] Payment error:', error);
+      logger.error('[ORDER SUMMARY DEBUG] Payment error:', error);
       alert(error instanceof Error ? error.message : 'Payment failed. Please try again.');
     } finally {
       setLoading(false);
@@ -325,10 +326,10 @@ export default function OrderSummaryPage() {
     // Check if this is a demo order
     const isDemo = orderData.isDemo || orderData.venueId === 'demo-cafe';
     
-    console.log('[ORDER SUMMARY DEBUG] handlePayLater - isDemo:', isDemo);
+    logger.debug('[ORDER SUMMARY DEBUG] handlePayLater - isDemo:', isDemo);
     
     if (isDemo) {
-      console.log('[ORDER SUMMARY DEBUG] Demo order detected - redirecting to payment success');
+      logger.debug('[ORDER SUMMARY DEBUG] Demo order detected - redirecting to payment success');
       // For demo orders, create demo order data and redirect to payment success page
       const demoOrderId = `demo-${Date.now()}`;
       const demoOrderData = {
@@ -352,19 +353,19 @@ export default function OrderSummaryPage() {
       };
 
       // Store demo order data for the success page
-      console.log('[ORDER SUMMARY DEBUG] Storing demo order data (pay later):', demoOrderData);
+      logger.debug('[ORDER SUMMARY DEBUG] Storing demo order data (pay later):', demoOrderData);
       try {
         // Try localStorage first
         try {
           localStorage.setItem('demo-order-data', JSON.stringify(demoOrderData));
           const stored = localStorage.getItem('demo-order-data');
-          console.log('[ORDER SUMMARY DEBUG] Verified storage (pay later):', stored ? 'Success' : 'Failed');
+          logger.debug('[ORDER SUMMARY DEBUG] Verified storage (pay later):', stored ? 'Success' : 'Failed');
           
           if (!stored) {
             throw new Error('localStorage write verification failed');
           }
         } catch (storageError) {
-          console.warn('[ORDER SUMMARY DEBUG] localStorage not available (pay later):', storageError);
+          logger.warn('[ORDER SUMMARY DEBUG] localStorage not available (pay later):', storageError);
         }
         
         // Build URL with fallback parameters
@@ -381,7 +382,7 @@ export default function OrderSummaryPage() {
           window.location.href = `/payment/success?${params.toString()}`;
         }, 150);
       } catch (error) {
-        console.error('[ORDER SUMMARY DEBUG] Error storing demo order data (pay later):', error);
+        logger.error('[ORDER SUMMARY DEBUG] Error storing demo order data (pay later):', error);
         // Fallback: redirect with minimal data in URL
         const fallbackParams = new URLSearchParams({
           orderId: demoOrderId,
@@ -445,7 +446,7 @@ export default function OrderSummaryPage() {
       localStorage.removeItem('servio-checkout-data');
       
     } catch (error) {
-      console.error('Error creating order:', error);
+      logger.error('Error creating order:', error);
       alert('Failed to create order. Please try again.');
     } finally {
       setIsCreatingOrder(false);

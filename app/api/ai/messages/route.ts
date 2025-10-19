@@ -5,6 +5,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { createClient } from "@/lib/supabase/server";
 import { z } from "zod";
 import { handleUserMessage, generateConversationTitle } from "@/lib/ai/openai-service";
+import { apiLogger, logger } from '@/lib/logger';
 
 const CreateMessageSchema = z.object({
   venueId: z.string().min(1),
@@ -66,7 +67,7 @@ export async function GET(request: NextRequest) {
       .limit(limit);
 
     if (error) {
-      console.error("[AI CHAT] Failed to fetch messages:", error);
+      logger.error("[AI CHAT] Failed to fetch messages:", { error: error instanceof Error ? error.message : 'Unknown error' });
       return NextResponse.json(
         { error: "Failed to fetch messages" },
         { status: 500 }
@@ -90,7 +91,7 @@ export async function GET(request: NextRequest) {
       messages: transformedMessages,
     });
   } catch (error: any) {
-    console.error("[AI CHAT] Messages error:", error);
+    logger.error("[AI CHAT] Messages error:", { error: error instanceof Error ? error.message : 'Unknown error' });
     return NextResponse.json(
       { error: error.message || "Internal server error" },
       { status: 500 }
@@ -143,7 +144,7 @@ export async function POST(request: NextRequest) {
       }
       roleName = 'owner';
     }
-    console.log('[AI MESSAGES] Access granted with role:', { userId: user.id, venueId, role: roleName });
+    logger.debug('[AI MESSAGES] Access granted with role:', { userId: user.id, venueId, role: roleName });
 
     let currentConversationId = conversationId;
 
@@ -162,7 +163,7 @@ export async function POST(request: NextRequest) {
         .single();
 
       if (convError) {
-        console.error("[AI CHAT] Failed to create conversation:", convError);
+        logger.error("[AI CHAT] Failed to create conversation:", convError);
         return NextResponse.json(
           { error: "Failed to create conversation" },
           { status: 500 }
@@ -200,7 +201,7 @@ export async function POST(request: NextRequest) {
       .single();
 
     if (msgError) {
-      console.error("[AI CHAT] Failed to save user message:", msgError);
+      logger.error("[AI CHAT] Failed to save user message:", msgError);
       return NextResponse.json(
         { error: "Failed to save message" },
         { status: 500 }
@@ -253,7 +254,7 @@ export async function POST(request: NextRequest) {
       });
 
     } catch (aiError: any) {
-      console.error("[AI CHAT] AI service error:", aiError);
+      logger.error("[AI CHAT] AI service error:", aiError);
       
       const errorMessage = aiError?.message || "An unexpected error occurred";
       
@@ -309,7 +310,7 @@ export async function POST(request: NextRequest) {
             });
     }
   } catch (error: any) {
-    console.error("[AI CHAT] Create message error:", error);
+    logger.error("[AI CHAT] Create message error:", { error: error instanceof Error ? error.message : 'Unknown error' });
     
     if (error.name === "ZodError") {
       return NextResponse.json(

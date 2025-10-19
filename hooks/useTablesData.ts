@@ -1,5 +1,6 @@
 import { useState, useEffect, useCallback } from 'react';
 import { createClient } from '@/lib/supabase/client';
+import { logger } from '@/lib/logger';
 
 export interface TableWithSession {
   id: string;
@@ -58,7 +59,7 @@ export function useTablesData(venueId: string) {
       const response = await fetch(url);
       const fetchTime = Date.now() - startTime;
       
-      console.log('[TABLES HOOK] Fetch response:', {
+      logger.debug('[TABLES HOOK] Fetch response:', {
         status: response.status,
         statusText: response.statusText,
         ok: response.ok
@@ -66,7 +67,7 @@ export function useTablesData(venueId: string) {
       
       if (!response.ok) {
         const errorText = await response.text();
-        console.error('[TABLES HOOK] Response not OK:', {
+        logger.error('[TABLES HOOK] Response not OK:', {
           status: response.status,
           statusText: response.statusText,
           body: errorText
@@ -75,7 +76,7 @@ export function useTablesData(venueId: string) {
       }
       
       const data = await response.json();
-      console.log('[TABLES HOOK] Data received:', {
+      logger.debug('[TABLES HOOK] Data received:', {
         tablesCount: data.tables?.length || 0,
         hasError: !!data.error,
         error: data.error
@@ -87,7 +88,7 @@ export function useTablesData(venueId: string) {
 
       setTables(data.tables || []);
     } catch (err) {
-      console.error('[TABLES HOOK] Error fetching tables:', {
+      logger.error('[TABLES HOOK] Error fetching tables:', {
         error: err,
         message: err instanceof Error ? err.message : 'Unknown error',
         venueId,
@@ -160,7 +161,7 @@ export function useTablesData(venueId: string) {
 
   // Add debugging to track table data changes
   useEffect(() => {
-    console.log('[TABLES HOOK] Table data changed:', {
+    logger.debug('[TABLES HOOK] Table data changed:', {
       venueId,
       tablesCount: tables.length,
       tableIds: tables.map(t => t.id),

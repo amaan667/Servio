@@ -1,5 +1,6 @@
 import { NextResponse } from 'next/server';
 import { createClient } from '@/lib/supabase/server';
+import { logger } from '@/lib/logger';
 
 export const runtime = 'nodejs';
 
@@ -27,7 +28,7 @@ export async function POST(req: Request) {
       .single();
 
     if (findError || !order) {
-      console.error('[UPDATE SESSION] Order not found:', findError);
+      logger.error('[UPDATE SESSION] Order not found:', findError);
       return NextResponse.json({ 
         error: 'Order not found' 
       }, { status: 404 });
@@ -43,7 +44,7 @@ export async function POST(req: Request) {
       .eq('id', order.id);
 
     if (updateError) {
-      console.error('[UPDATE SESSION] Error updating order:', updateError);
+      logger.error('[UPDATE SESSION] Error updating order:', updateError);
       return NextResponse.json({ 
         error: 'Failed to update order' 
       }, { status: 500 });
@@ -52,7 +53,7 @@ export async function POST(req: Request) {
     return NextResponse.json({ success: true, orderId: order.id });
 
   } catch (error) {
-    console.error('[UPDATE SESSION] Unexpected error:', error);
+    logger.error('[UPDATE SESSION] Unexpected error:', { error: error instanceof Error ? error.message : 'Unknown error' });
     return NextResponse.json({ 
       error: 'Internal server error' 
     }, { status: 500 });

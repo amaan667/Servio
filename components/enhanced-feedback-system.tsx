@@ -81,7 +81,7 @@ export function EnhancedFeedbackSystem({ venueId }: FeedbackSystemProps) {
         setQuestions(data.questions || []);
       }
     } catch (error) {
-      console.error('Error fetching questions:', error);
+      logger.error('Error fetching questions:', error);
     }
   }, [venueId]);
 

@@ -1,3 +1,4 @@
+import { logger } from '@/lib/logger';
 /**
  * Google Maps API Loader
  * Loads Google Maps JavaScript API with Places library
@@ -37,12 +38,12 @@ export function loadGoogleMapsAPI(): Promise<void> {
     const apiKey = process.env.NEXT_PUBLIC_GOOGLE_MAPS_API_KEY;
     
     if (!apiKey) {
-      console.warn('Google Maps API key not found. Address autocomplete will not be available.');
+      logger.warn('Google Maps API key not found. Address autocomplete will not be available.');
       reject(new Error('Google Maps API key not configured'));
       return;
     }
 
-    console.log('Loading Google Maps API with key:', apiKey.substring(0, 10) + '...');
+    logger.debug('Loading Google Maps API with key:', apiKey.substring(0, 10) + '...');
 
     isLoading = true;
 
@@ -75,7 +76,7 @@ export function useGoogleMaps() {
   if (typeof window === 'undefined') return;
   
   loadGoogleMapsAPI().catch(error => {
-    console.warn('Google Maps failed to load:', error.message);
+    logger.warn('Google Maps failed to load:', error.message);
   });
 }
 

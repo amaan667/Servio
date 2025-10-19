@@ -5,6 +5,7 @@ import { AlertTriangle, RefreshCw, Home, Wifi, WifiOff } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { clearAuthStorage } from '@/lib/supabase/client';
+import { logger } from '@/lib/logger';
 
 interface EnhancedErrorBoundaryState {
   hasError: boolean;
@@ -46,7 +47,7 @@ export class EnhancedErrorBoundary extends React.Component<
   }
 
   componentDidCatch(error: Error, errorInfo: React.ErrorInfo) {
-    console.error('[ENHANCED ERROR BOUNDARY] Caught error:', error, errorInfo);
+    logger.error('[ENHANCED ERROR BOUNDARY] Caught error:', error, errorInfo);
     
     this.setState({
       error,
@@ -59,7 +60,7 @@ export class EnhancedErrorBoundary extends React.Component<
     }
 
     // Log error to console with more context
-    console.error('[ENHANCED ERROR BOUNDARY] Error details:', {
+    logger.error('[ENHANCED ERROR BOUNDARY] Error details:', {
       message: error.message,
       stack: error.stack,
       componentStack: errorInfo.componentStack,
@@ -77,7 +78,7 @@ export class EnhancedErrorBoundary extends React.Component<
     const { maxRetries = 3 } = this.props;
     
     if (this.state.retryCount >= maxRetries) {
-      console.warn('[ENHANCED ERROR BOUNDARY] Max retries reached');
+      logger.warn('[ENHANCED ERROR BOUNDARY] Max retries reached');
       return;
     }
 
@@ -100,7 +101,7 @@ export class EnhancedErrorBoundary extends React.Component<
       await clearAuthStorage();
       window.location.reload();
     } catch (err) {
-      console.error('[ENHANCED ERROR BOUNDARY] Error clearing auth state:', err);
+      logger.error('[ENHANCED ERROR BOUNDARY] Error clearing auth state:', err);
       window.location.reload();
     }
   };
@@ -258,7 +259,7 @@ export function useErrorHandler() {
   }, []);
 
   const handleError = React.useCallback((error: Error) => {
-    console.error('[ERROR HANDLER]', error);
+    logger.error('[ERROR HANDLER]', error);
     setError(error);
   }, []);
 

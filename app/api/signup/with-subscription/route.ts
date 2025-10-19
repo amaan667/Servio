@@ -5,6 +5,7 @@ import { NextRequest, NextResponse } from "next/server";
 import Stripe from "stripe";
 import { createAdminClient } from "@/lib/supabase/server";
 import { stripe } from "@/lib/stripe-client";
+import { logger } from '@/lib/logger';
 
 const PRICE_IDS = {
   basic: process.env.STRIPE_BASIC_PRICE_ID || "price_basic",
@@ -154,7 +155,7 @@ export async function POST(request: NextRequest) {
       message: "Account created! Complete payment setup to activate your 14-day free trial.",
     });
   } catch (error: any) {
-    console.error("[SIGNUP WITH SUBSCRIPTION] Error:", error);
+    logger.error("[SIGNUP WITH SUBSCRIPTION] Error:", { error: error instanceof Error ? error.message : 'Unknown error' });
     return NextResponse.json(
       { error: error.message || "Signup failed" },
       { status: 500 }

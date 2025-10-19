@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { createAdminClient } from '@/lib/supabase/server';
 import { cache, cacheKeys, cacheTTL } from '@/lib/cache';
+import { apiLogger, logger } from '@/lib/logger';
 
 export async function GET(
   request: NextRequest,
@@ -21,18 +22,18 @@ export async function GET(
     // Handle venue ID format - ensure it has 'venue-' prefix for database lookup
     const venueId = rawVenueId.startsWith('venue-') ? rawVenueId : `venue-${rawVenueId}`;
     
-    console.log('[MENU API] Looking up venue:', { rawVenueId, transformedVenueId: venueId });
+    logger.debug('[MENU API] Looking up venue:', { rawVenueId, transformedVenueId: venueId });
 
     // Try to get from cache first
     const cacheKey = cacheKeys.menuItems(venueId);
     const cachedMenu = await cache.get(cacheKey);
     
     if (cachedMenu) {
-      console.log('[MENU API] Cache hit for:', venueId);
+      logger.debug('[MENU API] Cache hit for:', venueId);
       return NextResponse.json(cachedMenu);
     }
     
-    console.log('[MENU API] Cache miss for:', venueId);
+    logger.debug('[MENU API] Cache miss for:', venueId);
 
     // Use admin client to bypass RLS for public menu access
     const supabase = createAdminClient();
@@ -46,7 +47,7 @@ export async function GET(
 
     // If not found with transformed ID, try with original ID as fallback
     if (venueError || !venue) {
-      console.log('[MENU API] Trying fallback venue lookup with original ID:', rawVenueId);
+      logger.debug('[MENU API] Trying fallback venue lookup with original ID:', rawVenueId);
       const { data: fallbackVenue, error: fallbackError } = await supabase
         .from('venues')
         .select('venue_id, venue_name')
@@ -60,7 +61,7 @@ export async function GET(
     }
 
     if (venueError || !venue) {
-      console.error('[MENU API] Venue not found:', { rawVenueId, transformedVenueId: venueId }, venueError);
+      logger.error('[MENU API] Venue not found:', { rawVenueId, transformedVenueId: venueId }, venueError);
       return NextResponse.json(
         { error: 'Venue not found', venueId: rawVenueId, searchedAs: venueId },
         { status: 404 }
@@ -77,7 +78,7 @@ export async function GET(
       .order('created_at', { ascending: true });
 
     if (menuError) {
-      console.error('[MENU API] Error fetching menu items:', menuError);
+      logger.error('[MENU API] Error fetching menu items:', menuError);
       return NextResponse.json(
         { error: 'Failed to load menu items' },
         { status: 500 }
@@ -100,7 +101,7 @@ export async function GET(
     return NextResponse.json(response);
 
   } catch (error) {
-    console.error('[MENU API] Unexpected error:', error);
+    logger.error('[MENU API] Unexpected error:', { error: error instanceof Error ? error.message : 'Unknown error' });
     return NextResponse.json(
       { error: 'Internal server error' },
       { status: 500 }

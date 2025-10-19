@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { createClient } from '@/lib/supabase/server';
+import { logger } from '@/lib/logger';
 
 export async function POST(req: NextRequest) {
   try {
@@ -32,7 +33,7 @@ export async function POST(req: NextRequest) {
       .single();
     
     if (error) {
-      console.error('[UPDATE PAYMENT STATUS] Failed to update payment status:', error);
+      logger.error('[UPDATE PAYMENT STATUS] Failed to update payment status:', { error: error instanceof Error ? error.message : 'Unknown error' });
       return NextResponse.json(
         { error: error.message },
         { status: 500 }
@@ -42,7 +43,7 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ success: true, data });
     
   } catch (error: any) {
-    console.error('[UPDATE PAYMENT STATUS] Error:', error);
+    logger.error('[UPDATE PAYMENT STATUS] Error:', { error: error instanceof Error ? error.message : 'Unknown error' });
     return NextResponse.json(
       { error: error.message || 'Internal server error' },
       { status: 500 }

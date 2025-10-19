@@ -3,6 +3,7 @@ import { NextRequest, NextResponse } from "next/server";
 import Stripe from "stripe";
 import { createClient } from "@/lib/supabase/server";
 import { stripe } from "@/lib/stripe-client";
+import { apiLogger as logger } from '@/lib/logger';
 
 export async function POST(request: NextRequest) {
   try {
@@ -53,23 +54,23 @@ export async function POST(request: NextRequest) {
     // Create billing portal session
     const returnUrl = `${process.env.NEXT_PUBLIC_SITE_URL || 'https://servio-production.up.railway.app'}/dashboard`;
     
-    console.log('[STRIPE PORTAL] Creating session for customer:', org.stripe_customer_id);
-    console.log('[STRIPE PORTAL] Return URL:', returnUrl);
+    logger.debug('[STRIPE PORTAL] Creating session for customer:', org.stripe_customer_id);
+    logger.debug('[STRIPE PORTAL] Return URL:', returnUrl);
     
     // Try to get or create a billing portal configuration
     let configurationId: string | undefined;
     
     try {
       // First, try to list existing configurations
-      console.log('[STRIPE PORTAL] Checking for existing configurations...');
+      logger.debug('[STRIPE PORTAL] Checking for existing configurations...');
       const configurations = await stripe.billingPortal.configurations.list({ limit: 1 });
       
       if (configurations.data.length > 0 && configurations.data[0].active) {
         configurationId = configurations.data[0].id;
-        console.log('[STRIPE PORTAL] Using existing configuration:', configurationId);
+        logger.debug('[STRIPE PORTAL] Using existing configuration:', configurationId);
       } else {
         // No active configuration found, create a new one
-        console.log('[STRIPE PORTAL] No active configuration found, creating default configuration...');
+        logger.debug('[STRIPE PORTAL] No active configuration found, creating default configuration...');
         
         const configuration = await stripe.billingPortal.configurations.create({
           business_profile: {
@@ -99,12 +100,12 @@ export async function POST(request: NextRequest) {
         });
 
         configurationId = configuration.id;
-        console.log('[STRIPE PORTAL] Created new configuration:', configurationId);
+        logger.debug('[STRIPE PORTAL] Created new configuration:', configurationId);
       }
     } catch (configError: any) {
-      console.error('[STRIPE PORTAL] Failed to get/create configuration:', configError);
+      logger.error('[STRIPE PORTAL] Failed to get/create configuration:', configError);
       // Continue without configuration - Stripe will use default if available
-      console.log('[STRIPE PORTAL] Continuing without explicit configuration...');
+      logger.debug('[STRIPE PORTAL] Continuing without explicit configuration...');
     }
 
     // Create billing portal session
@@ -118,7 +119,7 @@ export async function POST(request: NextRequest) {
         sessionParams.configuration = configurationId;
       }
       
-      console.log('[STRIPE PORTAL] Creating session with params:', { 
+      logger.debug('[STRIPE PORTAL] Creating session with params:', { 
         customer: org.stripe_customer_id, 
         configuration: configurationId || 'default' 
       });
@@ -127,7 +128,7 @@ export async function POST(request: NextRequest) {
 
       return NextResponse.json({ url: session.url });
     } catch (portalError: any) {
-      console.error('[STRIPE PORTAL] Failed to create session:', portalError);
+      logger.error('[STRIPE PORTAL] Failed to create session:', portalError);
       
       // Provide more specific error messages
       if (portalError.code === 'resource_missing') {
@@ -147,7 +148,7 @@ export async function POST(request: NextRequest) {
       );
     }
   } catch (error: any) {
-    console.error("[STRIPE PORTAL] Error:", error);
+    logger.error("[STRIPE PORTAL] Error:", { error: error instanceof Error ? error.message : 'Unknown error' });
     return NextResponse.json(
       { error: error.message || "Failed to create portal session" },
       { status: 500 }

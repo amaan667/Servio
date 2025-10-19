@@ -2,6 +2,7 @@
 // Gathers and summarizes data for LLM planning
 
 import { createClient } from "@/lib/supabase/server";
+import { aiLogger } from '@/lib/logger';
 import {
   MenuSummary,
   InventorySummary,
@@ -41,7 +42,7 @@ export async function getAssistantContext(
       }
     } catch (error) {
       // Table doesn't exist or other error - use default
-      console.log("[AI ASSISTANT] Could not get user role:", error);
+      logger.debug("[AI ASSISTANT] Could not get user role:", error);
     }
   }
 

@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { createAdminClient } from '@/lib/supabase/server';
+import { logger } from '@/lib/logger';
 
 export async function GET(request: NextRequest) {
   try {
@@ -33,7 +34,7 @@ export async function GET(request: NextRequest) {
             message: 'Table not created yet - returning empty data'
           });
         }
-        console.error('[GROUP SESSIONS] Error fetching group sessions:', error);
+        logger.error('[GROUP SESSIONS] Error fetching group sessions:', { error: error instanceof Error ? error.message : 'Unknown error' });
         return NextResponse.json({ 
           ok: false, 
           error: `Failed to fetch group sessions: ${error.message}` 
@@ -56,7 +57,7 @@ export async function GET(request: NextRequest) {
     }
 
   } catch (error) {
-    console.error('[GROUP SESSIONS] Error in GET group sessions API:', error);
+    logger.error('[GROUP SESSIONS] Error in GET group sessions API:', { error: error instanceof Error ? error.message : 'Unknown error' });
     return NextResponse.json({ 
       ok: false, 
       error: 'Internal server error' 

@@ -13,6 +13,7 @@ import { Card } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Check, Loader2, Mail } from "lucide-react";
 import { useRouter } from "next/navigation";
+import { logger } from '@/lib/logger';
 
 interface UpgradeModalProps {
   open: boolean;
@@ -177,7 +178,7 @@ export function UpgradeModal({
         }
       }
     } catch (error) {
-      console.error("Plan change error:", error);
+      logger.error("Plan change error:", error);
       alert("Failed to change plan. Please try again.");
       setLoading(null);
     }

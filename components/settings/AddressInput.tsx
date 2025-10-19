@@ -7,6 +7,7 @@ import { Button } from "@/components/ui/button";
 import { MapPin, Loader2, X } from "lucide-react";
 import { Card } from "@/components/ui/card";
 import { loadGoogleMapsAPI } from "@/lib/google-maps";
+import { logger } from '@/lib/logger';
 
 interface AddressInputProps {
   value: string;
@@ -72,7 +73,7 @@ export function AddressInput({ value, onChange, onCoordinatesChange }: AddressIn
         }
       }
     } catch (error) {
-      console.error('Error geocoding address:', error);
+      logger.error('Error geocoding address:', error);
     } finally {
       setIsLoadingMap(false);
     }

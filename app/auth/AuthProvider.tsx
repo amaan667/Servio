@@ -3,6 +3,7 @@
 import { createContext, useContext, useEffect, useMemo, useState } from 'react';
 import type { Session, User } from '@supabase/supabase-js';
 import { supabaseBrowser } from '@/lib/supabase/browser';
+import { authLogger } from '@/lib/logger';
 
 type AuthValue = {
   session: Session | null;
@@ -35,7 +36,7 @@ export default function AuthProvider({
   const [loading, setLoading] = useState(!initialSession);
 
   useEffect(() => {
-    console.log('[AUTH DEBUG] AuthProvider useEffect starting', {
+    logger.debug('[AUTH DEBUG] AuthProvider useEffect starting', {
       timestamp: new Date().toISOString(),
       hasInitialSession: !!initialSession,
       initialSessionUserId: initialSession?.user?.id,
@@ -44,9 +45,9 @@ export default function AuthProvider({
     let supabase;
     try {
       supabase = supabaseBrowser();
-      console.log('[AUTH DEBUG] Supabase browser client initialized successfully');
+      logger.debug('[AUTH DEBUG] Supabase browser client initialized successfully');
     } catch (error) {
-      console.error('[AUTH DEBUG] Error initializing Supabase browser client:', error);
+      logger.error('[AUTH DEBUG] Error initializing Supabase browser client:', error);
       setSession(null);
       setUser(null);
       setLoading(false);
@@ -57,18 +58,18 @@ export default function AuthProvider({
     const getInitialSession = async () => {
       if (initialSession) {
         // We already have a session, no need to fetch
-        console.log('[AUTH DEBUG] Using initial session from server', {
+        logger.debug('[AUTH DEBUG] Using initial session from server', {
           userId: initialSession.user.id,
         });
         setLoading(false);
         return;
       }
       
-      console.log('[AUTH DEBUG] Fetching session from client');
+      logger.debug('[AUTH DEBUG] Fetching session from client');
       try {
         const { data: { session: currentSession } } = await supabase.auth.getSession();
         
-        console.log('[AUTH DEBUG] Client session fetched', {
+        logger.debug('[AUTH DEBUG] Client session fetched', {
           hasSession: !!currentSession,
           userId: currentSession?.user?.id,
         });
@@ -77,7 +78,7 @@ export default function AuthProvider({
         setUser(currentSession?.user || null);
         setLoading(false);
       } catch (error) {
-        console.error('[AUTH DEBUG] Error fetching client session:', error);
+        logger.error('[AUTH DEBUG] Error fetching client session:', error);
         setSession(null);
         setUser(null);
         setLoading(false);
@@ -91,7 +92,7 @@ export default function AuthProvider({
     let subscription: any;
     try {
       const { data } = supabase.auth.onAuthStateChange(async (event: any, newSession: any) => {
-        console.log('[AUTH DEBUG] Auth state changed', {
+        logger.debug('[AUTH DEBUG] Auth state changed', {
           event,
           hasSession: !!newSession,
           userId: newSession?.user?.id,
@@ -126,9 +127,9 @@ export default function AuthProvider({
         }
       });
       subscription = data?.subscription;
-      console.log('[AUTH DEBUG] Auth state change listener registered');
+      logger.debug('[AUTH DEBUG] Auth state change listener registered');
     } catch (error) {
-      console.error('[AUTH DEBUG] Error setting up auth state listener:', error);
+      logger.error('[AUTH DEBUG] Error setting up auth state listener:', error);
       setLoading(false);
     }
     
@@ -146,14 +147,14 @@ export default function AuthProvider({
       const { error } = await supabase.auth.signOut();
       
       if (error) {
-        console.error('[AUTH DEBUG] Supabase signOut error:', error);
+        logger.error('[AUTH DEBUG] Supabase signOut error:', error);
       }
       
       // Clear local state immediately
       setSession(null);
       setUser(null);
     } catch (error) {
-      console.error('[AUTH DEBUG] AuthProvider signOut error:', error);
+      logger.error('[AUTH DEBUG] AuthProvider signOut error:', error);
       // Clear local state even if there's an error
       setSession(null);
       setUser(null);

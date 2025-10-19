@@ -1,12 +1,13 @@
 import { NextResponse } from 'next/server';
 import { createAdminClient } from '@/lib/supabase/server';
+import { apiLogger, logger } from '@/lib/logger';
 
 export const runtime = 'nodejs'; // KDS backfill endpoint
 
 export async function POST(req: Request) {
   try {
     const supabaseAdmin = createAdminClient();
-    console.log('[KDS BACKFILL] Starting KDS backfill for existing orders...');
+    logger.debug('[KDS BACKFILL] Starting KDS backfill for existing orders...');
     
     const { venueId, scope = 'today' } = await req.json();
     
@@ -25,7 +26,7 @@ export async function POST(req: Request) {
       .eq('is_active', true);
 
     if (!existingStations || existingStations.length === 0) {
-      console.log('[KDS BACKFILL] No stations found, creating default stations for venue:', venueId);
+      logger.debug('[KDS BACKFILL] No stations found, creating default stations for venue:', venueId);
       
       // Create default stations
       const defaultStations = [
@@ -102,7 +103,7 @@ export async function POST(req: Request) {
     const { data: orders, error: ordersError } = await query;
 
     if (ordersError) {
-      console.error('[KDS BACKFILL] Error fetching orders:', ordersError);
+      logger.error('[KDS BACKFILL] Error fetching orders:', ordersError);
       return NextResponse.json({ 
         ok: false, 
         error: ordersError.message 
@@ -118,7 +119,7 @@ export async function POST(req: Request) {
       });
     }
 
-    console.log(`[KDS BACKFILL] Found ${orders.length} orders to process`);
+    logger.debug(`[KDS BACKFILL] Found ${orders.length} orders to process`);
 
     let ordersProcessed = 0;
     let ticketsCreated = 0;
@@ -135,7 +136,7 @@ export async function POST(req: Request) {
           .limit(1);
 
         if (existingTickets && existingTickets.length > 0) {
-          console.log(`[KDS BACKFILL] Order ${order.id} already has KDS tickets, skipping`);
+          logger.debug(`[KDS BACKFILL] Order ${order.id} already has KDS tickets, skipping`);
           continue;
         }
 
@@ -160,7 +161,7 @@ export async function POST(req: Request) {
             .insert(ticketData);
           
           if (ticketError) {
-            console.error('[KDS BACKFILL] Failed to create ticket for item:', item, ticketError);
+            logger.error('[KDS BACKFILL] Failed to create ticket for item:', item, ticketError);
             errors.push(`Failed to create ticket for order ${order.id}: ${ticketError.message}`);
             continue;
           }
@@ -169,15 +170,15 @@ export async function POST(req: Request) {
         }
         
         ordersProcessed++;
-        console.log(`[KDS BACKFILL] Processed order ${order.id} with ${items.length} items`);
+        logger.debug(`[KDS BACKFILL] Processed order ${order.id} with ${items.length} items`);
         
       } catch (error: any) {
-        console.error(`[KDS BACKFILL] Error processing order ${order.id}:`, error);
+        logger.error(`[KDS BACKFILL] Error processing order ${order.id}:`, { error: error instanceof Error ? error.message : 'Unknown error' });
         errors.push(`Error processing order ${order.id}: ${error.message}`);
       }
     }
 
-    console.log('[KDS BACKFILL] Backfill completed:', {
+    logger.debug('[KDS BACKFILL] Backfill completed:', {
       ordersProcessed,
       ticketsCreated,
       errors: errors.length
@@ -192,7 +193,7 @@ export async function POST(req: Request) {
     });
 
   } catch (error: any) {
-    console.error('[KDS BACKFILL] Unexpected error:', error);
+    logger.error('[KDS BACKFILL] Unexpected error:', { error: error instanceof Error ? error.message : 'Unknown error' });
     return NextResponse.json({ 
       ok: false, 
       error: error.message || 'Backfill failed' 

@@ -3,6 +3,7 @@
  */
 
 import React from 'react';
+import { logger } from '@/lib/logger';
 
 export interface ConnectionState {
   isOnline: boolean;
@@ -32,12 +33,12 @@ class ConnectionMonitor {
   }
 
   private async handleOnline() {
-    console.log('[CONNECTION] Network is back online');
+    logger.debug('[CONNECTION] Network is back online');
     await this.checkConnectionQuality();
   }
 
   private handleOffline() {
-    console.warn('[CONNECTION] Network is offline');
+    logger.warn('[CONNECTION] Network is offline');
     this.updateState({ isOnline: false, isSlowConnection: false });
   }
 
@@ -62,7 +63,7 @@ class ConnectionMonitor {
       });
 
     } catch (error) {
-      console.warn('[CONNECTION] Connection check failed:', error);
+      logger.warn('[CONNECTION] Connection check failed:', error);
       this.updateState({
         isOnline: false,
         isSlowConnection: false,

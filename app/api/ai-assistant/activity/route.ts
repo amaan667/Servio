@@ -3,6 +3,7 @@
 
 import { NextRequest, NextResponse } from "next/server";
 import { createClient } from "@/lib/supabase/server";
+import { logger } from '@/lib/logger';
 
 export async function GET(request: NextRequest) {
   try {
@@ -61,7 +62,7 @@ export async function GET(request: NextRequest) {
       activities: activities || [],
     });
   } catch (error: any) {
-    console.error("[AI ASSISTANT] Activity fetch error:", error);
+    logger.error("[AI ASSISTANT] Activity fetch error:", { error: error instanceof Error ? error.message : 'Unknown error' });
     return NextResponse.json(
       { error: error.message || "Failed to fetch activity" },
       { status: 500 }

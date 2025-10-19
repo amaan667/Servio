@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 // Deployment trigger
 import { createClient } from '@/lib/supabase/server';
+import { logger } from '@/lib/logger';
 
 export async function POST(request: NextRequest) {
   try {
@@ -31,7 +32,7 @@ export async function POST(request: NextRequest) {
       .select('id, name, category');
 
     if (updateError) {
-      console.error('[UPDATE CATEGORY] Error updating menu items:', updateError);
+      logger.error('[UPDATE CATEGORY] Error updating menu items:', updateError);
       return NextResponse.json(
         { error: 'Failed to update menu items' },
         { status: 500 }
@@ -61,7 +62,7 @@ export async function POST(request: NextRequest) {
         .eq('id', uploadData.id);
 
       if (orderUpdateError) {
-        console.error('[UPDATE CATEGORY] Error updating category order:', orderUpdateError);
+        logger.error('[UPDATE CATEGORY] Error updating category order:', orderUpdateError);
         // Don't fail the whole operation for this
       }
     }
@@ -74,7 +75,7 @@ export async function POST(request: NextRequest) {
     });
 
   } catch (error) {
-    console.error('[UPDATE CATEGORY] Unexpected error:', error);
+    logger.error('[UPDATE CATEGORY] Unexpected error:', { error: error instanceof Error ? error.message : 'Unknown error' });
     return NextResponse.json(
       { error: 'Internal server error' },
       { status: 500 }

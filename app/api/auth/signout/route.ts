@@ -1,5 +1,6 @@
 import { NextResponse } from 'next/server';
 import { createServerSupabase } from '@/lib/supabase/server';
+import { logger } from '@/lib/logger';
 
 export async function POST() {
   try {
@@ -18,7 +19,7 @@ export async function POST() {
     const { error } = await supabase.auth.signOut();
     
     if (error) {
-      console.error('[SIGNOUT API] Supabase signout error:', error.message);
+      logger.error('[SIGNOUT API] Supabase signout error:', { error: error.message });
       return NextResponse.json({ 
         ok: false, 
         error: error.message 
@@ -50,7 +51,7 @@ export async function POST() {
     return response;
     
   } catch (error: any) {
-    console.error('[SIGNOUT API] Unexpected error:', error.message);
+    logger.error('[SIGNOUT API] Unexpected error:', error.message);
     return NextResponse.json({ 
       ok: false, 
       error: error.message || 'Internal server error'

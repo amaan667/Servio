@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { createClient } from '@/lib/supabase/server';
 import { getUserSafe } from '@/utils/getUserSafe';
+import { apiLogger, logger } from '@/lib/logger';
 
 // POST /api/cleanup-invitations - Clean up cancelled invitations and fix constraint
 export async function POST(request: NextRequest) {
@@ -12,7 +13,7 @@ export async function POST(request: NextRequest) {
 
     const supabase = await createClient();
 
-    console.log('[CLEANUP] Starting invitation cleanup...');
+    logger.debug('[CLEANUP] Starting invitation cleanup...');
 
     // Step 1: Delete all cancelled invitations to clean up the database
     const { data: deletedInvitations, error: deleteError } = await supabase
@@ -22,14 +23,14 @@ export async function POST(request: NextRequest) {
       .select('id, email, venue_id');
 
     if (deleteError) {
-      console.error('[CLEANUP] Error deleting cancelled invitations:', deleteError);
+      logger.error('[CLEANUP] Error deleting cancelled invitations:', deleteError);
       return NextResponse.json({ 
         error: 'Failed to clean up cancelled invitations',
         details: deleteError.message 
       }, { status: 500 });
     }
 
-    console.log(`[CLEANUP] Deleted ${deletedInvitations?.length || 0} cancelled invitations`);
+    logger.debug(`[CLEANUP] Deleted ${deletedInvitations?.length || 0} cancelled invitations`);
 
     // Step 2: Try to fix the database constraint
     try {
@@ -45,9 +46,9 @@ export async function POST(request: NextRequest) {
               WHERE status = 'pending';`
       });
 
-      console.log('[CLEANUP] Database constraint fixed successfully');
+      logger.debug('[CLEANUP] Database constraint fixed successfully');
     } catch (constraintError) {
-      console.warn('[CLEANUP] Could not fix constraint (this is okay):', constraintError);
+      logger.warn('[CLEANUP] Could not fix constraint (this is okay):', constraintError);
     }
 
     return NextResponse.json({ 
@@ -57,7 +58,7 @@ export async function POST(request: NextRequest) {
     });
 
   } catch (error) {
-    console.error('[CLEANUP] Unexpected error:', error);
+    logger.error('[CLEANUP] Unexpected error:', { error: error instanceof Error ? error.message : 'Unknown error' });
     return NextResponse.json({ error: 'Internal server error' }, { status: 500 });
   }
 }

@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { createClient } from '@/lib/supabase/server';
 import { getUserSafe } from '@/utils/getUserSafe';
+import { apiLogger, logger } from '@/lib/logger';
 
 // POST /api/fix-invitation-constraint - Direct fix for invitation constraint
 export async function POST(request: NextRequest) {
@@ -12,7 +13,7 @@ export async function POST(request: NextRequest) {
 
     const supabase = await createClient();
 
-    console.log('[CONSTRAINT FIX] Starting direct constraint fix...');
+    logger.debug('[CONSTRAINT FIX] Starting direct constraint fix...');
 
     // Step 1: Get all cancelled invitations and delete them
     const { data: cancelledInvitations, error: fetchError } = await supabase
@@ -21,9 +22,9 @@ export async function POST(request: NextRequest) {
       .eq('status', 'cancelled');
 
     if (fetchError) {
-      console.error('[CONSTRAINT FIX] Error fetching cancelled invitations:', fetchError);
+      logger.error('[CONSTRAINT FIX] Error fetching cancelled invitations:', fetchError);
     } else {
-      console.log(`[CONSTRAINT FIX] Found ${cancelledInvitations?.length || 0} cancelled invitations`);
+      logger.debug(`[CONSTRAINT FIX] Found ${cancelledInvitations?.length || 0} cancelled invitations`);
     }
 
     // Step 2: Delete all cancelled invitations
@@ -33,14 +34,14 @@ export async function POST(request: NextRequest) {
       .eq('status', 'cancelled');
 
     if (deleteError) {
-      console.error('[CONSTRAINT FIX] Error deleting cancelled invitations:', deleteError);
+      logger.error('[CONSTRAINT FIX] Error deleting cancelled invitations:', deleteError);
     } else {
-      console.log('[CONSTRAINT FIX] Deleted all cancelled invitations');
+      logger.debug('[CONSTRAINT FIX] Deleted all cancelled invitations');
     }
 
     // Step 3: Try to work around the constraint by using a different approach
     // We'll modify the cancel logic to handle this better
-    console.log('[CONSTRAINT FIX] Constraint fix completed');
+    logger.debug('[CONSTRAINT FIX] Constraint fix completed');
 
     return NextResponse.json({ 
       success: true,
@@ -49,7 +50,7 @@ export async function POST(request: NextRequest) {
     });
 
   } catch (error) {
-    console.error('[CONSTRAINT FIX] Unexpected error:', error);
+    logger.error('[CONSTRAINT FIX] Unexpected error:', { error: error instanceof Error ? error.message : 'Unknown error' });
     return NextResponse.json({ error: 'Internal server error' }, { status: 500 });
   }
 }

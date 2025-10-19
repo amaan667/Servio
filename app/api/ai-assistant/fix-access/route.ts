@@ -4,6 +4,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { createClient } from "@/lib/supabase/server";
 import { z } from "zod";
+import { apiLogger, logger } from '@/lib/logger';
 
 const FixAccessRequestSchema = z.object({
   venueId: z.string().min(1),
@@ -44,7 +45,7 @@ export async function POST(request: NextRequest) {
       }
     } catch (tableError) {
       // Table doesn't exist or other error - we'll create the role anyway
-      console.log("[AI ASSISTANT] user_venue_roles table check failed:", tableError);
+      logger.debug("[AI ASSISTANT] user_venue_roles table check failed:", { error: tableError instanceof Error ? tableError.message : 'Unknown error' });
     }
 
     // Check if user owns this venue
@@ -76,7 +77,7 @@ export async function POST(request: NextRequest) {
           .single();
 
         if (roleError) {
-          console.error("[AI ASSISTANT] Failed to create owner role:", roleError);
+          logger.error("[AI ASSISTANT] Failed to create owner role:", roleError);
           // If table doesn't exist, return success anyway since user owns the venue
           if (roleError.message?.includes("relation") && roleError.message?.includes("does not exist")) {
             return NextResponse.json({
@@ -97,7 +98,7 @@ export async function POST(request: NextRequest) {
           role: roleData.role,
         });
       } catch (insertError) {
-        console.error("[AI ASSISTANT] Failed to insert owner role:", insertError);
+        logger.error("[AI ASSISTANT] Failed to insert owner role:", { error: insertError instanceof Error ? insertError.message : 'Unknown error' });
         // If we can't create the role but user owns venue, allow access anyway
         return NextResponse.json({
           success: true,
@@ -113,7 +114,7 @@ export async function POST(request: NextRequest) {
       { status: 403 }
     );
   } catch (error: any) {
-    console.error("[AI ASSISTANT] Fix access error:", error);
+    logger.error("[AI ASSISTANT] Fix access error:", { error: error instanceof Error ? error.message : 'Unknown error' });
 
     if (error.name === "ZodError") {
       return NextResponse.json(
