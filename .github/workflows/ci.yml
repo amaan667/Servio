@@ -34,6 +34,25 @@ jobs:
         continue-on-error: true
       
       - name: Run type check
+        run: pnpm run typecheck
+      
+      - name: Run tests
+        run: pnpm run test
+        continue-on-error: true
+      
+      - name: Run tests with coverage
+        run: pnpm run test:coverage
+        continue-on-error: true
+      
+      - name: Upload test coverage
+        uses: actions/upload-artifact@v3
+        if: always()
+        with:
+          name: test-coverage
+          path: coverage/
+          retention-days: 7
+      
+      - name: Build application
         run: pnpm run build
       
       - name: Upload build artifacts
