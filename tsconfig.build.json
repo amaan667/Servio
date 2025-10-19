@@ -1,0 +1,16 @@
+{
+  "extends": "./tsconfig.json",
+  "compilerOptions": {
+    "noEmit": true
+  },
+  "exclude": [
+    "**/*.test.*",
+    "**/__tests__/**",
+    "**/tests/**",
+    "vitest.config.*",
+    "jest.config.*",
+    "coverage",
+    "node_modules"
+  ]
+}
+

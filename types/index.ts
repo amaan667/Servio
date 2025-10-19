@@ -8,10 +8,13 @@ export * from './api/responses';
 export * from './api/requests';
 export * from './api/errors';
 
-// Common Types
-export * from './common/pagination';
+// Common Types - explicitly export to avoid conflicts
+export type { PaginationMeta, PaginationParams } from './common/pagination';
+export type { PaginatedData } from './common/pagination';
+export { createPaginationMeta } from './common/pagination';
 export * from './common/filters';
-export * from './common/sorting';
+export type { SortOrder, SortParams } from './common/sorting';
+export { DEFAULT_SORT, parseSortParams } from './common/sorting';
 
 // Entity Types
 export * from './entities/order';

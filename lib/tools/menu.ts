@@ -866,7 +866,7 @@ Remember: You MUST return ALL ${batch.length} items with translations. No except
       if (!error) {
         updatedCount++;
       } else {
-        logger.error(`[AI ASSISTANT] Failed to update item ${translatedItem.id}:`, error);
+        logger.error(`[AI ASSISTANT] Failed to update item ${(translatedItem as any).id}:`, error);
         failedCount++;
       }
     }
@@ -896,9 +896,9 @@ Remember: You MUST return ALL ${batch.length} items with translations. No except
       auditId: "",
     };
   } catch (error: unknown) {
-    logger.error("[AI ASSISTANT] Translation error:", error);
+    logger.error("[AI ASSISTANT] Translation error:", { error: error instanceof Error ? error.message : 'Unknown error' });
     throw new AIAssistantError(
-      `Translation failed: ${error.message}`,
+      `Translation failed: ${error instanceof Error ? error.message : 'Unknown error'}`,
       "EXECUTION_FAILED",
       error
     );
