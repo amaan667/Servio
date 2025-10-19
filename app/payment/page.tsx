@@ -241,6 +241,7 @@ export default function PaymentPage() {
           <CustomerFeedbackForm
             venueId={paymentState.checkoutData.venueId}
             orderId={paymentState.orderNumber}
+            customerName={paymentState.checkoutData.customerName || 'Customer'}
             onFeedbackSubmitted={() => {
               paymentState.setFeedbackSubmitted(true);
               paymentState.setShowFeedback(false);
