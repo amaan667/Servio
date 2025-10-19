@@ -1,3 +1,6 @@
+export const runtime = "nodejs";
+export const dynamic = "force-dynamic";
+
 // AI Assistant - Plan Endpoint
 // Generates an execution plan from user's natural language request
 
@@ -10,6 +13,7 @@ import {
 } from "@/lib/ai/context-builders";
 import { z } from "zod";
 import { apiLogger, logger } from '@/lib/logger';
+import { assertVenueCapability } from "@/lib/auth/permissions";
 
 const PlanRequestSchema = z.object({
   prompt: z.string().min(1).max(500),
@@ -38,52 +42,23 @@ export async function POST(request: NextRequest) {
     const body = await request.json();
     const { prompt, venueId, context } = PlanRequestSchema.parse(body);
 
-    // Verify user has access to venue
-    let userRole = "owner"; // Default to owner for backward compatibility
-    
+    // Check user has access to venue (requires at least venue.read)
+    let userRole: string;
     try {
-      const { data: roleData, error: roleError } = await supabase
-        .from("user_venue_roles")
-        .select("role")
-        .eq("venue_id", venueId)
-        .eq("user_id", user.id)
-        .single();
-
-      if (roleData && !roleError) {
-        userRole = roleData.role;
-      } else {
-        // If no role found, check if user owns the venue
-        const { data: venue } = await supabase
-          .from("venues")
-          .select("owner_id")
-          .eq("venue_id", venueId)
-          .single();
-
-        if (!venue || venue.owner_id !== user.id) {
-          return NextResponse.json(
-            { error: "Access denied to this venue" },
-            { status: 403 }
-          );
-        }
-        // User owns venue, allow access
-      }
-    } catch (tableError) {
-      // Table doesn't exist - check if user owns venue
-      logger.debug("[AI ASSISTANT] user_venue_roles table check failed, checking venue ownership:", { error: tableError instanceof Error ? tableError.message : 'Unknown error' });
-      
-      const { data: venue } = await supabase
-        .from("venues")
-        .select("owner_id")
-        .eq("venue_id", venueId)
-        .single();
-
-      if (!venue || venue.owner_id !== user.id) {
+      const { role } = await assertVenueCapability(
+        user.id,
+        venueId,
+        "venue.read"
+      );
+      userRole = role;
+    } catch (error: any) {
+      if (error.statusCode === 403) {
         return NextResponse.json(
           { error: "Access denied to this venue" },
           { status: 403 }
         );
       }
-      // User owns venue, allow access
+      throw error;
     }
 
     // Get assistant context with the determined user role
@@ -122,7 +97,7 @@ export async function POST(request: NextRequest) {
       executionTimeMs: executionTime,
       modelUsed: plan.modelUsed, // Return model info to client
     });
-  } catch (error: any) {
+  } catch (error: unknown) {
     logger.error("[AI ASSISTANT] Planning error:", { error: error instanceof Error ? error.message : 'Unknown error' });
 
     if (error.name === "ZodError") {

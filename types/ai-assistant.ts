@@ -511,7 +511,30 @@ export interface ToolGuardrails {
   requiresManagerApproval?: boolean;
   blockedForRoles?: string[];
   minimumTier?: string;
+  requiredCapability?: string; // Maps to capability from permissions system
 }
+
+// Tool to Capability mapping for RBAC
+export const TOOL_CAPABILITIES: Record<ToolName, string> = {
+  "menu.update_prices": "menu.update",
+  "menu.toggle_availability": "menu.update",
+  "menu.create_item": "menu.create",
+  "menu.delete_item": "menu.delete",
+  "menu.translate": "menu.update",
+  "inventory.adjust_stock": "inventory.adjust",
+  "inventory.set_par_levels": "inventory.manage",
+  "inventory.generate_purchase_order": "inventory.read",
+  "orders.mark_served": "order.update",
+  "orders.complete": "order.complete",
+  "analytics.get_insights": "analytics.read",
+  "analytics.get_stats": "analytics.read",
+  "analytics.export": "analytics.export",
+  "analytics.create_report": "analytics.read",
+  "discounts.create": "discount.create",
+  "kds.get_overdue": "kds.read",
+  "kds.suggest_optimization": "kds.read",
+  "navigation.go_to_page": "venue.read",
+};
 
 export const DEFAULT_GUARDRAILS: Record<ToolName, ToolGuardrails> = {
   "menu.update_prices": {
