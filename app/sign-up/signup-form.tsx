@@ -78,39 +78,45 @@ export default function SignUpForm({ onGoogleSignIn, isSigningUp = false }: Sign
     }
 
     try {
-      // Call the new signup-with-subscription endpoint
-      const response = await fetch('/api/signup/with-subscription', {
+      // Store form data temporarily for after Stripe checkout
+      localStorage.setItem('signup_data', JSON.stringify({
+        email: formData.email,
+        password: formData.password,
+        fullName: formData.fullName,
+        venueName: formData.venueName,
+        venueType: formData.businessType,
+        serviceType: formData.serviceType,
+        tier: selectedTier,
+      }));
+
+      // Create Stripe checkout session FIRST
+      const response = await fetch('/api/stripe/create-checkout-session', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
+          tier: selectedTier,
           email: formData.email,
-          password: formData.password,
           fullName: formData.fullName,
           venueName: formData.venueName,
-          venueType: formData.businessType,
-          serviceType: formData.serviceType,
-          tier: selectedTier,
+          isSignup: true,
         }),
       });
 
       const data = await response.json();
 
-      if (data.error || !data.success) {
-        setError(data.error || 'Signup failed. Please try again.');
+      if (data.error || !data.url) {
+        setError(data.error || 'Failed to create checkout session. Please try again.');
+        localStorage.removeItem('signup_data');
         setLoading(false);
         return;
       }
 
-      // Redirect to Stripe checkout
-      if (data.checkoutUrl) {
-        window.location.href = data.checkoutUrl;
-      } else {
-        setError('Failed to create checkout session. Please try again.');
-        setLoading(false);
-      }
+      // Redirect to Stripe checkout FIRST
+      window.location.href = data.url;
     } catch (err: any) {
       console.error('Signup error:', err);
       setError(err.message || 'Sign-up failed. Please try again.');
+      localStorage.removeItem('signup_data');
       setLoading(false);
     }
   };
@@ -414,10 +420,10 @@ export default function SignUpForm({ onGoogleSignIn, isSigningUp = false }: Sign
               {loading ? (
                 <>
                   <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                  Creating account...
+                  Redirecting to payment...
                 </>
               ) : (
-                'Complete Signup & Start Trial'
+                'Continue to Payment & Start Trial'
               )}
             </Button>
           </form>
@@ -437,7 +443,7 @@ export default function SignUpForm({ onGoogleSignIn, isSigningUp = false }: Sign
           </div>
 
           <p className="text-xs text-center text-gray-500">
-            By signing up, you'll be taken to Stripe to enter payment details. Your card won't be charged for 14 days.
+            You'll enter payment details first. Your card won't be charged for 14 days. Your account will be created after payment setup.
           </p>
         </CardContent>
       </Card>

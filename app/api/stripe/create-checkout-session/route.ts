@@ -91,13 +91,49 @@ export async function POST(request: NextRequest) {
     }
 
     const body = await request.json();
-    const { tier, organizationId } = body;
+    const { tier, organizationId, isSignup, email, fullName, venueName } = body;
 
     if (!tier || !["basic", "standard", "premium"].includes(tier)) {
       return NextResponse.json(
         { error: "Invalid tier" },
         { status: 400 }
       );
+    }
+
+    // If this is a signup flow, handle it differently
+    if (isSignup) {
+      // Create checkout session for new signup
+      const sessionData: Stripe.Checkout.SessionCreateParams = {
+        mode: "subscription",
+        payment_method_types: ["card"],
+        line_items: [
+          {
+            price: priceIds[tier],
+            quantity: 1,
+          },
+        ],
+        success_url: `${process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:3000'}/auth/create-account?session_id={CHECKOUT_SESSION_ID}`,
+        cancel_url: `${process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:3000'}/sign-up?cancelled=true`,
+        customer_email: email,
+        metadata: {
+          tier,
+          is_signup: 'true',
+          full_name: fullName || '',
+          venue_name: venueName || '',
+        },
+        subscription_data: {
+          metadata: {
+            tier,
+            is_signup: 'true',
+            full_name: fullName || '',
+            venue_name: venueName || '',
+          },
+          trial_period_days: 14, // 14-day free trial
+        },
+      };
+
+      const session = await stripe.checkout.sessions.create(sessionData);
+      return NextResponse.json({ sessionId: session.id, url: session.url });
     }
 
     // ALWAYS get or create a real organization - NO MOCK IDs
