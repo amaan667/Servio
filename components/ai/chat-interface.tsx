@@ -1,9 +1,6 @@
 "use client";
 
-// AI Assistant Chat Interface with History and Undo
-// Provides a persistent chat experience with conversation history
-
-import { useState, useEffect, useRef, useCallback } from "react";
+import { useState, useEffect, useRef } from "react";
 import { useRouter } from "next/navigation";
 import {
   Dialog,
@@ -12,85 +9,64 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog";
-import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
-import { ScrollArea } from "@/components/ui/scroll-area";
-import { Badge } from "@/components/ui/badge";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Alert, AlertDescription } from "@/components/ui/alert";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { 
-  Loader2, 
-  Send, 
-  MessageSquare, 
-  History, 
-  Undo2, 
-  Check, 
-  AlertTriangle,
-  Sparkles,
-  Trash2,
-  Plus,
-  ChevronLeft,
-  ChevronRight,
-  X
-} from "lucide-react";
-import { AIPlanResponse, AIPreviewDiff } from "@/types/ai-assistant";
-import { aiLogger } from '@/lib/logger';
+import { AlertTriangle, Sparkles, History } from "lucide-react";
+import { ChatInterfaceProps } from './types';
 
-interface ChatMessage {
-  id: string;
-  role: "user" | "assistant" | "system";
-  content: string;
-  toolName?: string;
-  toolParams?: any;
-  executionResult?: any;
-  auditId?: string;
-  createdAt: string;
-  canUndo: boolean;
-  undoData?: any;
-}
+// Hooks
+import { useChatConversations } from './hooks/useChatConversations';
+import { useChatMessages } from './hooks/useChatMessages';
+import { useChatActions } from './hooks/useChatActions';
 
-interface ChatConversation {
-  id: string;
-  title: string;
-  venueId: string;
-  userId: string;
-  createdAt: string;
-  updatedAt: string;
-  isActive: boolean;
-  messages: ChatMessage[];
-}
-
-interface ChatInterfaceProps {
-  venueId: string;
-  isOpen: boolean;
-  onClose: () => void;
-  initialPrompt?: string;
-}
+// Components
+import { ConversationList } from './components/ConversationList';
+import { MessageList } from './components/MessageList';
+import { PlanPreview } from './components/PlanPreview';
+import { ChatInput } from './components/ChatInput';
 
 export function ChatInterface({ venueId, isOpen, onClose, initialPrompt }: ChatInterfaceProps) {
   const router = useRouter();
-  const [conversations, setConversations] = useState<ChatConversation[]>([]);
-  const [currentConversation, setCurrentConversation] = useState<ChatConversation | null>(null);
-  const [messages, setMessages] = useState<ChatMessage[]>([]);
   const [input, setInput] = useState("");
-  const [loading, setLoading] = useState(false);
-  const [plan, setPlan] = useState<AIPlanResponse | null>(null);
-  const [previews, setPreviews] = useState<AIPreviewDiff[]>([]);
-  const [executing, setExecuting] = useState(false);
+  const [activeTab, setActiveTab] = useState<"chat" | "history">("chat");
   const [error, setError] = useState<string | null>(null);
   const [success, setSuccess] = useState(false);
-  const [executionResults, setExecutionResults] = useState<any[]>([]);
-  const [undoing, setUndoing] = useState<string | null>(null);
-  
+
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLInputElement>(null);
 
-  // Load conversations on mount
-  useEffect(() => {
-    if (isOpen) {
-      loadConversations();
-    }
-  }, [isOpen, venueId]);
+  const {
+    conversations,
+    currentConversation,
+    setCurrentConversation,
+    loadConversations,
+    createNewConversation,
+    deleteConversation,
+  } = useChatConversations(venueId, isOpen);
+
+  const {
+    messages,
+    loadMessages,
+    addMessage,
+    updateMessage,
+    clearMessages,
+  } = useChatMessages();
+
+  const {
+    loading,
+    plan,
+    previews,
+    executing,
+    error: actionError,
+    success: actionSuccess,
+    executionResults,
+    undoing,
+    sendMessage,
+    executePlan,
+    undoAction,
+    setError: setActionError,
+    setSuccess: setActionSuccess,
+  } = useChatActions(venueId);
 
   // Set initial prompt
   useEffect(() => {
@@ -111,885 +87,199 @@ export function ChatInterface({ venueId, isOpen, onClose, initialPrompt }: ChatI
     }
   }, [isOpen]);
 
-  const loadConversations = async () => {
+  // Load messages when conversation changes
+  useEffect(() => {
+    if (currentConversation) {
+      loadMessages(currentConversation.id);
+    } else {
+      clearMessages();
+    }
+  }, [currentConversation]);
+
+  // Handle conversation selection
+  const handleSelectConversation = async (conversation: any) => {
+    setCurrentConversation(conversation);
+    await loadMessages(conversation.id);
+    setActiveTab("chat");
+  };
+
+  // Handle new conversation
+  const handleCreateNewConversation = async () => {
     try {
-      console.debug("[AI CHAT] Loading conversations for venue:", venueId);
-      const response = await fetch(`/api/ai-assistant/conversations?venueId=${venueId}`);
-      console.debug("[AI CHAT] Response status:", response.status);
-      
-      if (response.ok) {
-        const data = await response.json();
-        console.debug("[AI CHAT] Loaded conversations:", data.conversations);
-        console.debug("[AI CHAT] Number of conversations:", data.conversations?.length || 0);
-        setConversations(data.conversations || []);
-        
-        // Only auto-select if no conversation is currently selected
-        if (!currentConversation && data.conversations && data.conversations.length > 0) {
-          // Auto-select the most recent conversation only on first load
-          const latest = data.conversations[0];
-          console.debug("[AI CHAT] Auto-selecting latest conversation:", latest.id);
-          setCurrentConversation(latest);
-          loadMessages(latest.id);
-        }
-      } else {
-        const errorData = await response.text();
-        console.error("[AI CHAT] Failed to load conversations:", response.status, errorData);
-        
-        // Try to parse error data
-        try {
-          const errorJson = JSON.parse(errorData);
-          if (errorJson.migrationNeeded) {
-            console.error("[AI CHAT] Migration needed:", errorJson.instructions);
-            setError(`Database migration required. Please run the migration script or contact support.`);
-          } else {
-            setError(errorJson.error || "Failed to load conversations");
-          }
-        } catch {
-          setError("Failed to load conversations");
-        }
-      }
-    } catch (error) {
-      console.error("[AI CHAT] Failed to load conversations:", error);
-      setError("Failed to load conversations");
+      const newConv = await createNewConversation();
+      await loadMessages(newConv.id);
+      setActiveTab("chat");
+      setInput("");
+    } catch (error: any) {
+      setError(error.message);
     }
   };
 
-  const loadMessages = async (conversationId: string) => {
+  // Handle delete conversation
+  const handleDeleteConversation = async (conversationId: string) => {
+    if (!window.confirm("Are you sure you want to delete this conversation?")) {
+      return;
+    }
+    
     try {
-      console.debug("[AI CHAT] Loading messages for conversation:", conversationId);
-      setLoading(true); // Show loading state while fetching messages
-      
-      const url = `/api/ai-assistant/conversations/${conversationId}/messages`;
-      console.debug("[AI CHAT] Fetching from URL:", url);
-      const response = await fetch(url);
-      console.debug("[AI CHAT] Response status:", response.status);
-      
-      if (response.ok) {
-        const data = await response.json();
-        console.debug("[AI CHAT] Raw response data:", data);
-        console.debug("[AI CHAT] Loaded messages:", data.messages);
-        console.debug("[AI CHAT] Number of messages:", data.messages?.length || 0);
-        
-        // Transform messages to match the expected format
-        const transformedMessages = (data.messages || []).map((msg: any) => ({
-          id: msg.id,
-          role: msg.role,
-          content: msg.content,
-          createdAt: msg.created_at,
-          toolName: msg.tool_name,
-          toolParams: msg.tool_params,
-          executionResult: msg.execution_result,
-          auditId: msg.audit_id,
-          canUndo: msg.can_undo || false,
-          undoData: msg.undo_data,
-        }));
-        
-        console.debug("[AI CHAT] Transformed messages:", transformedMessages);
-        setMessages(transformedMessages);
-        
-        // Neutral empty state (no error banner)
-        if (transformedMessages.length === 0) {
-          console.debug("[AI CHAT] No messages found for conversation:", conversationId);
-        }
-        setError(null); // Always clear errors after a successful fetch
-      } else {
-        const errorData = await response.text();
-        console.error("[AI CHAT] Failed to load messages:", response.status, errorData);
-        setError(`Failed to load conversation messages: ${response.status}`);
-        setMessages([]);
-      }
-    } catch (error) {
-      console.error("[AI CHAT] Failed to load messages:", error);
-      setError(`Failed to load conversation messages: ${error instanceof Error ? error.message : String(error)}`);
-      setMessages([]);
-    } finally {
-      setLoading(false);
+      await deleteConversation(conversationId);
+      setActiveTab("chat");
+    } catch (error: any) {
+      setError(error.message);
     }
   };
 
-  const createNewConversation = async () => {
-    try {
-      console.debug("[AI CHAT] Creating new conversation now (Option A)");
-      setLoading(true);
+  // Handle send message
+  const handleSendMessage = async () => {
+    if (!input.trim() || loading) return;
 
-      // Generate a lightweight default title
-      const defaultTitle = "New Conversation";
+    const messageText = input.trim();
+    setInput("");
 
-      const response = await fetch("/api/ai-assistant/conversations", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ venueId, title: defaultTitle }),
-      });
-
-      if (!response.ok) {
-        const text = await response.text();
-        console.error("[AI CHAT] Failed to create conversation:", response.status, text);
-        setError("Failed to create conversation");
+    // Ensure we have a conversation
+    let conv = currentConversation;
+    if (!conv) {
+      try {
+        conv = await createNewConversation();
+      } catch (error: any) {
+        setError(error.message);
         return;
       }
-
-      const data = await response.json();
-      const newConversation = data.conversation;
-
-      // Insert at top and select
-      setConversations(prev => [newConversation, ...prev]);
-      setCurrentConversation(newConversation);
-      setMessages([]);
-      setInput("");
-      setPlan(null);
-      setPreviews([]);
-      setError(null);
-      setSuccess(false);
-      setExecutionResults([]);
-
-      // Focus input for immediate typing
-      setTimeout(() => inputRef.current?.focus(), 50);
-    } catch (error) {
-      console.error("[AI CHAT] Failed to create new conversation:", error);
-      setError("Failed to create conversation");
-    } finally {
-      setLoading(false);
     }
-  };
 
-  const updateConversationTitle = async (conversationId: string, newTitle: string) => {
-    try {
-      const response = await fetch(`/api/ai-assistant/conversations/${conversationId}`, {
-        method: "PATCH",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ title: newTitle }),
-      });
-
-      if (response.ok) {
-        const data = await response.json();
-        console.debug("[AI CHAT] Updated conversation title:", data.conversation);
-        
-        // Update local state
-        setCurrentConversation(prev => prev ? { ...prev, title: newTitle } : null);
-        setConversations(prev => 
-          prev.map(conv => 
-            conv.id === conversationId 
-              ? { ...conv, title: newTitle, updatedAt: data.conversation.updatedAt }
-              : conv
-          )
-        );
-      }
-    } catch (error) {
-      console.error("[AI CHAT] Failed to update conversation title:", error);
-    }
-  };
-
-
-  const createConversationFromMessage = async (userMessage: string) => {
-    try {
-      console.debug("[AI CHAT] Creating conversation from message:", userMessage);
-      
-      // Create conversation with temporary title - AI will generate proper title after first response
-      const tempTitle = "New Conversation";
-      
-      const response = await fetch("/api/ai-assistant/conversations", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          venueId,
-          title: tempTitle,
-        }),
-      });
-
-      if (response.ok) {
-        const data = await response.json();
-        console.debug("[AI CHAT] Created conversation with temp title:", tempTitle);
-        const newConversation = data.conversation;
-        setConversations(prev => [newConversation, ...prev]);
-        setCurrentConversation(newConversation);
-        setMessages([]);
-        setInput("");
-        setPlan(null);
-        setPreviews([]);
-        setError(null);
-        setSuccess(false);
-        setExecutionResults([]);
-        
-        return newConversation;
-      } else {
-        console.error("[AI CHAT] Failed to create conversation:", response.status);
-        setError("Failed to create conversation");
-        return null;
-      }
-    } catch (error) {
-      console.error("[AI CHAT] Failed to create conversation:", error);
-      setError("Failed to create conversation");
-      return null;
-    }
-  };
-
-  const sendMessageToConversation = async (userMessage: string, conversation: any) => {
-    // Add user message to chat
-    const userMsg: ChatMessage = {
-      id: `user-${Date.now()}`,
-      role: "user",
-      content: userMessage,
+    // Add user message
+    const userMessage = {
+      id: `temp-${Date.now()}`,
+      role: "user" as const,
+      content: messageText,
       createdAt: new Date().toISOString(),
       canUndo: false,
     };
+    addMessage(userMessage);
 
-    setMessages(prev => [...prev, userMsg]);
-    setLoading(true);
-    setError(null);
-    setPlan(null);
-    setPreviews([]);
-
+    // Send to AI
     try {
-      // Save user message to database
-      await fetch(`/api/ai-assistant/conversations/${conversation.id}/messages`, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          role: "user",
-          content: userMessage,
-        }),
-      });
-
-      // Refresh conversations ordering (latest first)
-      loadConversations();
-
-      // Get AI plan
-      const planResponse = await fetch("/api/ai-assistant/plan", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          prompt: userMessage,
-          venueId,
-          context: { page: "general" },
-        }),
-      });
-
-      const planData = await planResponse.json();
-
-      if (!planResponse.ok) {
-        throw new Error(planData.error || "Planning failed");
-      }
-
-      setPlan(planData.plan);
-
-      // Handle direct answers (no tools needed)
-      if (planData.plan.directAnswer) {
-        // Add assistant direct answer message
-        const assistantMsg: ChatMessage = {
-          id: `assistant-${Date.now()}`,
-          role: "assistant",
-          content: planData.plan.directAnswer,
-          createdAt: new Date().toISOString(),
-          canUndo: false,
-        };
-
-        setMessages(prev => [...prev, assistantMsg]);
-
-        // Save assistant message to database
-        await fetch(`/api/ai-assistant/conversations/${conversation.id}/messages`, {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({
-            role: "assistant",
-            content: assistantMsg.content,
-          }),
-        });
-
-        // Refresh conversations ordering
-        loadConversations();
-
-        setLoading(false);
-        return; // No need to fetch previews or show execute button
-      }
-
-      // Add assistant planning message for tool-based responses
-      const assistantMsg: ChatMessage = {
-        id: `assistant-${Date.now()}`,
-        role: "assistant",
-        content: `I'll help you ${planData.plan.intent.toLowerCase()}. ${planData.plan.reasoning}`,
-        toolName: planData.plan.tools[0]?.name,
-        toolParams: planData.plan.tools[0]?.params,
-        createdAt: new Date().toISOString(),
-        canUndo: false,
-      };
-
-      setMessages(prev => [...prev, assistantMsg]);
-
-      // Save assistant message to database
-      await fetch(`/api/ai-assistant/conversations/${conversation.id}/messages`, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          role: "assistant",
-          content: assistantMsg.content,
-          toolName: assistantMsg.toolName,
-          toolParams: assistantMsg.toolParams,
-        }),
-      });
-
-      // Refresh conversations to pick up any title updates
-      loadConversations();
-
-      // Fetch previews
-      const previewPromises = planData.plan.tools.map(async (tool: any) => {
-        try {
-          const res = await fetch("/api/ai-assistant/execute", {
-            method: "POST",
-            headers: { "Content-Type": "application/json" },
-            body: JSON.stringify({
-              venueId,
-              toolName: tool.name,
-              params: tool.params,
-              preview: true,
-            }),
-          });
-          
-          const json = await res.json();
-          return res.ok ? json : null;
-        } catch (error) {
-          console.error(`[AI CHAT] Preview error for ${tool.name}:`, error);
-          return null;
-        }
-      });
-
-      const previewResults = await Promise.all(previewPromises);
-      setPreviews(previewResults.map((r) => r?.preview).filter(Boolean));
+      await sendMessage(conv.id, messageText);
     } catch (error: any) {
-      console.error("[AI CHAT] Error sending message:", error);
-      setError(error.message || "Failed to send message");
+      setError(error.message);
+    }
+  };
+
+  // Handle execute plan
+  const handleExecutePlan = async () => {
+    if (!currentConversation || !plan) return;
+
+    try {
+      await executePlan(currentConversation.id);
       
-      // Add error message
-      const errorMsg: ChatMessage = {
-        id: `error-${Date.now()}`,
-        role: "assistant",
-        content: `I encountered an error: ${error.message}`,
+      // Add assistant message with execution result
+      const assistantMessage = {
+        id: `temp-${Date.now()}`,
+        role: "assistant" as const,
+        content: "Plan executed successfully!",
+        executionResult: executionResults,
         createdAt: new Date().toISOString(),
         canUndo: false,
       };
-      setMessages(prev => [...prev, errorMsg]);
-    } finally {
-      setLoading(false);
+      addMessage(assistantMessage);
+    } catch (error: any) {
+      setError(error.message);
     }
   };
 
-  const handleSendMessage = async (messageOverride?: string) => {
-    const userMessage = messageOverride || input.trim();
-    if (!userMessage || loading || executing) return;
-
-    if (!messageOverride) {
-      setInput("");
-    }
-
-    // Create new conversation if none exists
-    if (!currentConversation) {
-      const newConversation = await createConversationFromMessage(userMessage);
-      if (newConversation) {
-        // Now send the message with the new conversation
-        await sendMessageToConversation(userMessage, newConversation);
-      }
-      return;
-    }
-
-    // Use existing conversation
-    await sendMessageToConversation(userMessage, currentConversation);
-  };
-
-  const handleExecute = async () => {
-    if (!plan) return;
-
-    setExecuting(true);
-    setError(null);
-
+  // Handle undo
+  const handleUndo = async (messageId: string, auditId: string) => {
     try {
-      const results: any[] = [];
+      await undoAction(messageId, auditId);
       
-      for (const tool of plan.tools) {
-        const response = await fetch("/api/ai-assistant/execute", {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({
-            venueId,
-            toolName: tool.name,
-            params: tool.params,
-            preview: false,
-          }),
-        });
-
-        const data = await response.json();
-
-        if (!response.ok) {
-          throw new Error(data.error || "Execution failed");
-        }
-        
-        results.push({ tool: tool.name, result: data.result });
-
-          // Handle navigation results
-        if (tool.name === "navigation.go_to_page" && data.result?.result?.route) {
-          console.debug("[AI CHAT] Navigating to:", data.result.result.route);
-          // Navigate immediately
-          router.push(data.result.result.route);
-          
-          // Add navigation message (no undo for navigation)
-          const navMsg: ChatMessage = {
-            id: `execution-${Date.now()}-${tool.name}`,
-            role: "assistant",
-            content: `✅ Navigating to ${data.result.result.page} page...`,
-            toolName: tool.name,
-            toolParams: tool.params,
-            executionResult: data.result,
-            auditId: data.result.auditId,
-            createdAt: new Date().toISOString(),
-            canUndo: false,
-          };
-
-          setMessages(prev => [...prev, navMsg]);
-          
-          // Save navigation message to database
-          if (currentConversation) {
-            await fetch(`/api/ai-assistant/conversations/${currentConversation.id}/messages`, {
-              method: "POST",
-              headers: { "Content-Type": "application/json" },
-              body: JSON.stringify({
-                role: "assistant",
-                content: navMsg.content,
-                toolName: navMsg.toolName,
-                toolParams: navMsg.toolParams,
-                executionResult: navMsg.executionResult,
-                auditId: navMsg.auditId,
-                canUndo: false,
-              }),
-            });
-          }
-          
-          // Auto-close chat interface after navigation
-          setTimeout(() => {
-            onClose();
-          }, 1500); // Consistent timing with other executions
-          
-          continue; // Skip undo handling for navigation
-        }
-
-        // Add execution message with undo capability for non-navigation actions
-        const executionMsg: ChatMessage = {
-          id: `execution-${Date.now()}-${tool.name}`,
-          role: "assistant",
-          content: `✅ Executed: ${tool.name.replace(/\./g, " → ")}. ${data.result.result?.message || "Action completed successfully."}`,
-          toolName: tool.name,
-          toolParams: tool.params,
-          executionResult: data.result,
-          auditId: data.result.auditId,
-          createdAt: new Date().toISOString(),
-          canUndo: tool.name !== "analytics.get_stats" && tool.name !== "analytics.get_insights", // Don't allow undo for read-only actions
-          undoData: {
-            toolName: tool.name,
-            params: tool.params,
-            result: data.result,
-          },
-        };
-
-        setMessages(prev => [...prev, executionMsg]);
-
-        // Save execution message to database
-        if (!currentConversation) return;
-        await fetch(`/api/ai-assistant/conversations/${currentConversation.id}/messages`, {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({
-            role: "assistant",
-            content: executionMsg.content,
-            toolName: executionMsg.toolName,
-            toolParams: executionMsg.toolParams,
-            executionResult: executionMsg.executionResult,
-            auditId: executionMsg.auditId,
-            canUndo: true,
-            undoData: executionMsg.undoData,
-          }),
-        });
-
-        // Refresh conversations ordering
-        loadConversations();
-      }
-
-      setSuccess(true);
-      setExecutionResults(results);
-
-      // Auto-close the chat interface after successful execution
-      setTimeout(() => {
-        router.refresh();
-        onClose(); // Close the chat interface
-      }, 1500); // Reduced time for faster auto-close
-
-    } catch (err: any) {
-      console.error("[AI CHAT] Execution error:", err);
-      setError(err.message || "Failed to execute action");
-    } finally {
-      setExecuting(false);
-    }
-  };
-
-  const handleUndo = async (messageId: string, undoData: any) => {
-    setUndoing(messageId);
-    
-    try {
-      const response = await fetch("/api/ai-assistant/undo", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          venueId,
-          messageId,
-          undoData,
-        }),
-      });
-
-      const data = await response.json();
-
-      if (!response.ok) {
-        throw new Error(data.error || "Undo failed");
-      }
-
-      // Add undo confirmation message
-      const undoMsg: ChatMessage = {
-        id: `undo-${Date.now()}`,
-        role: "assistant",
-        content: `↩️ Undone: ${undoData.toolName.replace(/\./g, " → ")}. The action has been reversed.`,
-        createdAt: new Date().toISOString(),
+      // Update message to mark as undone
+      updateMessage(messageId, {
+        executionResult: null,
         canUndo: false,
-      };
-
-      setMessages(prev => [...prev, undoMsg]);
-
-      // Save undo message to database
-      if (!currentConversation) return;
-      await fetch(`/api/ai-assistant/conversations/${currentConversation.id}/messages`, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          role: "assistant",
-          content: undoMsg.content,
-        }),
       });
-
-      // Refresh the page to show undone changes
-      setTimeout(() => {
-        router.refresh();
-      }, 1000);
-
-    } catch (err: any) {
-      console.error("[AI CHAT] Undo error:", err);
-      setError(err.message || "Failed to undo action");
-    } finally {
-      setUndoing(null);
+    } catch (error: any) {
+      setError(error.message);
     }
   };
 
-  const selectConversation = (conversation: ChatConversation) => {
-    console.debug("[AI CHAT] Selecting conversation:", conversation.id, conversation.title);
-    setCurrentConversation(conversation);
-    // Don't clear messages immediately - let loadMessages handle it
-    setPlan(null);
-    setPreviews([]);
+  // Handle close
+  const handleClose = () => {
+    setInput("");
+    setActiveTab("chat");
     setError(null);
     setSuccess(false);
-    setExecutionResults([]);
-    console.debug("[AI CHAT] About to load messages for conversation:", conversation.id);
-    loadMessages(conversation.id);
-  };
-
-  const deleteConversation = async (conversationId: string, event: React.MouseEvent) => {
-    event.stopPropagation(); // Prevent triggering conversation selection
-    
-    if (!confirm("Are you sure you want to delete this conversation? This action cannot be undone.")) {
-      return;
-    }
-
-    try {
-      console.debug("[AI CHAT] Deleting conversation:", conversationId);
-      
-      const response = await fetch(`/api/ai-assistant/conversations/${conversationId}`, {
-        method: "DELETE",
-      });
-
-      if (response.ok) {
-        // Remove from local state
-        setConversations(prev => prev.filter(conv => conv.id !== conversationId));
-        
-        // If this was the current conversation, clear it
-        if (currentConversation?.id === conversationId) {
-          setCurrentConversation(null);
-          setMessages([]);
-        }
-        
-        console.debug("[AI CHAT] Conversation deleted successfully");
-      } else {
-        const errorData = await response.text();
-        console.error("[AI CHAT] Failed to delete conversation:", errorData);
-        setError("Failed to delete conversation");
-      }
-    } catch (error) {
-      console.error("[AI CHAT] Error deleting conversation:", error);
-      setError("Failed to delete conversation");
-    }
-  };
-
-  const formatMessageContent = (content: string) => {
-    // Simple formatting for better readability
-    return content.split('\n').map((line, index) => (
-      <span key={index}>
-        {line}
-        {index < content.split('\n').length - 1 && <br />}
-      </span>
-    ));
+    onClose();
   };
 
   return (
-    <Dialog open={isOpen} onOpenChange={onClose}>
-      <DialogContent className="max-w-6xl w-[95vw] h-[95vh] max-h-[95vh] flex flex-col p-0 z-50">
-        <DialogHeader className="p-4 sm:p-6 pb-2 sm:pb-4 relative">
-          <DialogTitle className="flex items-center gap-2 text-lg sm:text-xl">
-            <Sparkles className="h-5 w-5 text-purple-500" />
-            <span className="hidden sm:inline">Servio AI Assistant - Chat History</span>
-            <span className="sm:hidden">AI Assistant</span>
-          </DialogTitle>
-          <DialogDescription className="hidden sm:block">
-            Chat with your AI assistant and manage conversation history
+    <Dialog open={isOpen} onOpenChange={handleClose}>
+      <DialogContent className="max-w-4xl h-[80vh] flex flex-col p-0">
+        <DialogHeader className="p-6 border-b">
+          <div className="flex items-center justify-between">
+            <div className="flex items-center space-x-2">
+              <Sparkles className="h-5 w-5 text-purple-600" />
+              <DialogTitle>AI Assistant</DialogTitle>
+            </div>
+          </div>
+          <DialogDescription>
+            Ask me anything about your menu, orders, or business. I can help you manage your venue.
           </DialogDescription>
         </DialogHeader>
 
-        <div className="flex-1 flex flex-col sm:flex-row overflow-hidden">
-          {/* Sidebar - Conversations */}
-          <div className="w-full sm:w-80 border-r bg-muted/20 flex flex-col h-48 sm:h-auto">
-            <div className="p-4 border-b">
-              <Button
-                onClick={createNewConversation}
-                className="w-full"
-                variant="outline"
-                disabled={false}
-              >
-                <Plus className="h-4 w-4 mr-2" />
-                {(loading || executing) ? "Cancel & New Conversation" : "New Conversation"}
-              </Button>
-            </div>
-            
-            <ScrollArea className="flex-1">
-              <div className="p-4 space-y-2">
-                {conversations.length > 0 ? (
-                  conversations.map((conv) => (
-                    <Card
-                      key={conv.id}
-                      className={`cursor-pointer transition-colors group relative ${
-                        currentConversation?.id === conv.id
-                          ? "ring-2 ring-primary bg-primary/5"
-                          : "hover:bg-accent"
-                      }`}
-                      onClick={() => selectConversation(conv)}
-                    >
-                      <CardContent className="p-3">
-                        <div className="flex items-start justify-between">
-                          <div className="flex-1 min-w-0">
-                            <p className="text-sm font-medium truncate">
-                              {conv.title}
-                            </p>
-                            <p className="text-xs text-muted-foreground">
-                              {new Date(conv.updatedAt).toLocaleDateString()}
-                            </p>
-                          </div>
-                          {/* Hover delete button */}
-                          <button
-                            onClick={(e) => deleteConversation(conv.id, e)}
-                            className="opacity-0 group-hover:opacity-100 transition-opacity ml-2 p-1 rounded-full hover:bg-destructive/10 text-muted-foreground hover:text-destructive"
-                            title="Delete conversation"
-                          >
-                            <X className="h-4 w-4" />
-                          </button>
-                        </div>
-                      </CardContent>
-                    </Card>
-                  ))
-                ) : (
-                  <div className="text-center py-8 text-muted-foreground">
-                    <MessageSquare className="h-8 w-8 mx-auto mb-2 opacity-50" />
-                    <p className="text-sm">No conversations yet</p>
-                    <p className="text-xs mt-1">Start a new conversation to see it here</p>
-                  </div>
-                )}
-              </div>
-            </ScrollArea>
-          </div>
+        <Tabs value={activeTab} onValueChange={(v) => setActiveTab(v as any)} className="flex-1 flex flex-col overflow-hidden">
+          <TabsList className="mx-6 mt-4">
+            <TabsTrigger value="chat" className="flex items-center space-x-2">
+              <Sparkles className="h-4 w-4" />
+              <span>Chat</span>
+            </TabsTrigger>
+            <TabsTrigger value="history" className="flex items-center space-x-2">
+              <History className="h-4 w-4" />
+              <span>History</span>
+            </TabsTrigger>
+          </TabsList>
 
-          {/* Main Chat Area */}
-          <div className="flex-1 flex flex-col min-h-0">
-            {/* Messages */}
-            <ScrollArea className="flex-1 p-3 sm:p-4">
-              <div className="space-y-3 sm:space-y-4">
-                {messages.map((message) => (
-                  <div
-                    key={message.id}
-                    className={`flex ${
-                      message.role === "user" ? "justify-end" : "justify-start"
-                    }`}
-                  >
-                    <div
-                      className={`max-w-[90%] sm:max-w-[80%] rounded-lg p-3 text-sm sm:text-base ${
-                        message.role === "user"
-                          ? "bg-primary text-primary-foreground"
-                          : message.role === "system"
-                          ? "bg-muted text-muted-foreground"
-                          : "bg-background border"
-                      }`}
-                    >
-                      <div className="text-sm">
-                        {formatMessageContent(message.content)}
-                      </div>
-                      {message.canUndo && (
-                        <div className="mt-2 pt-2 border-t border-border">
-                          <Button
-                            size="sm"
-                            variant="outline"
-                            onClick={() => handleUndo(message.id, message.undoData)}
-                            disabled={undoing === message.id}
-                            className="text-xs"
-                          >
-                            {undoing === message.id ? (
-                              <Loader2 className="h-3 w-3 mr-1 animate-spin" />
-                            ) : (
-                              <Undo2 className="h-3 w-3 mr-1" />
-                            )}
-                            Undo Action
-                          </Button>
-                        </div>
-                      )}
-                    </div>
-                  </div>
-                ))}
-                
-                {loading && (
-                  <div className="flex justify-start">
-                    <div className="bg-background border rounded-lg p-3 flex items-center gap-2">
-                      <Loader2 className="h-4 w-4 animate-spin" />
-                      <span className="text-sm text-muted-foreground">
-                        {messages.length === 0 ? "Loading conversation..." : "Planning your request..."}
-                      </span>
-                    </div>
-                  </div>
-                )}
-                
-                {!loading && messages.length === 0 && currentConversation && (
-                  <div className="flex justify-center items-center h-32">
-                    <div className="text-center text-muted-foreground">
-                      <MessageSquare className="h-8 w-8 mx-auto mb-2 opacity-50" />
-                      <p className="text-sm">No messages in this conversation yet</p>
-                    </div>
-                  </div>
-                )}
-                
-                <div ref={messagesEndRef} />
-              </div>
-            </ScrollArea>
-
-            {/* Error Display */}
-            {error && (
-              <div className="mx-4 mb-4 p-3 bg-destructive/10 border border-destructive/20 rounded-md">
-                <div className="flex items-start gap-2">
-                  <AlertTriangle className="h-4 w-4 text-destructive mt-0.5" />
-                  <div className="flex-1">
-                    <p className="text-sm font-medium text-destructive">Error</p>
-                    <p className="text-sm text-muted-foreground">{error}</p>
-                  </div>
-                </div>
-              </div>
+          <TabsContent value="chat" className="flex-1 flex flex-col overflow-hidden m-0 p-0">
+            {(error || actionError) && (
+              <Alert variant="destructive" className="m-4">
+                <AlertTriangle className="h-4 w-4" />
+                <AlertDescription>{error || actionError}</AlertDescription>
+              </Alert>
             )}
 
-            {/* Plan & Preview */}
-            {plan && !success && (
-              <div className="mx-4 mb-4 space-y-4">
-                <div className="bg-muted/50 rounded-lg p-4">
-                  <h3 className="text-sm font-semibold mb-2">Plan</h3>
-                  <p className="text-sm text-muted-foreground mb-3">{plan.intent}</p>
-                  <p className="text-sm text-muted-foreground">{plan.reasoning}</p>
-                </div>
+            <MessageList
+              messages={messages}
+              undoing={undoing || ""}
+              onUndo={handleUndo}
+            />
 
-                {previews.map((preview, i) => (
-                  <div key={i} className="border rounded-lg p-4">
-                    <div className="flex items-center justify-between mb-2">
-                      <h3 className="text-sm font-semibold capitalize">
-                        {preview.toolName.replace(/\./g, " → ")}
-                      </h3>
-                      <Badge variant="outline">
-                        {preview.impact.itemsAffected} items
-                      </Badge>
-                    </div>
-                    <p className="text-sm text-muted-foreground mb-3">
-                      {preview.impact.description}
-                    </p>
-                    
-                    <div className="flex gap-2">
-                      <Button
-                        variant="outline"
-                        size="sm"
-                        onClick={() => {
-                          setPlan(null);
-                          setPreviews([]);
-                        }}
-                        disabled={executing}
-                      >
-                        Cancel
-                      </Button>
-                      <Button
-                        size="sm"
-                        onClick={handleExecute}
-                        disabled={executing}
-                      >
-                        {executing ? (
-                          <>
-                            <Loader2 className="h-4 w-4 mr-2 animate-spin" />
-                            Executing...
-                          </>
-                        ) : (
-                          <>
-                            <Check className="h-4 w-4 mr-2" />
-                            Execute
-                          </>
-                        )}
-                      </Button>
-                    </div>
-                  </div>
-                ))}
-              </div>
-            )}
+            <div ref={messagesEndRef} />
 
-            {/* Input */}
-            <div className="p-3 sm:p-4 border-t bg-background sticky bottom-0">
-              <div className="flex gap-2">
-                <Input
-                  ref={inputRef}
-                  placeholder="Ask your AI assistant anything..."
-                  value={input}
-                  onChange={(e) => setInput(e.target.value)}
-                  onKeyDown={(e) => {
-                    if (e.key === "Enter" && !e.shiftKey) {
-                      e.preventDefault();
-                      handleSendMessage();
-                    }
-                  }}
-                  disabled={loading || executing}
-                  className="flex-1 min-h-[44px] text-base"
-                />
-                <Button
-                  onClick={() => handleSendMessage()}
-                  disabled={loading || executing || !input.trim()}
-                  size="sm"
-                  className="min-h-[44px] px-3"
-                >
-                  {loading ? (
-                    <Loader2 className="h-4 w-4 animate-spin" />
-                  ) : (
-                    <Send className="h-4 w-4" />
-                  )}
-                </Button>
-              </div>
-            </div>
-          </div>
-        </div>
+            <PlanPreview
+              plan={plan}
+              previews={previews}
+              executing={executing}
+              onExecute={handleExecutePlan}
+            />
+
+            <ChatInput
+              input={input}
+              loading={loading}
+              disabled={executing}
+              onInputChange={setInput}
+              onSend={handleSendMessage}
+            />
+          </TabsContent>
+
+          <TabsContent value="history" className="flex-1 overflow-hidden m-0 p-0">
+            <ConversationList
+              conversations={conversations}
+              currentConversation={currentConversation}
+              onSelectConversation={handleSelectConversation}
+              onCreateNew={handleCreateNewConversation}
+              onDelete={handleDeleteConversation}
+            />
+          </TabsContent>
+        </Tabs>
       </DialogContent>
     </Dialog>
   );

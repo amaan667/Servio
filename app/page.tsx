@@ -1,1065 +1,286 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
-import Link from "next/link";
+import { supabase } from "@/lib/supabase/client";
 import { Button } from "@/components/ui/button";
-import { Card, CardContent } from "@/components/ui/card";
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import {
-  QrCode,
-  Smartphone,
-  CreditCard,
-  BarChart3,
-  Clock,
-  Users,
-  Star,
-  CheckCircle,
-  ArrowRight,
-} from "lucide-react";
-import { useAuth } from "@/app/auth/AuthProvider";
-import { FAQ, faqSchema } from "@/components/marketing/FAQ";
-import { UpgradeModal } from "@/components/UpgradeModal";
-import { createClient } from "@/lib/supabase/client";
-
-
-function PricingQuickCompare({
-  isSignedIn,
-  currentTier,
-  onPrimaryClick,
-  onUpgradeClick,
-  subscriptionStatus,
-  trialEndsAt,
-}: {
-  isSignedIn: boolean;
-  currentTier?: string;
-  onPrimaryClick: () => void;
-  onUpgradeClick: () => void;
-  subscriptionStatus?: string;
-  trialEndsAt?: string;
-}) {
-  const tierInfo = {
-    basic: { name: 'Basic', order: 1 },
-    standard: { name: 'Standard', order: 2 },
-    premium: { name: 'Premium', order: 3 },
-    grandfathered: { name: 'Grandfathered', order: 999 },
-  };
-
-  const getCurrentTierOrder = () => {
-    return currentTier ? tierInfo[currentTier as keyof typeof tierInfo]?.order || 0 : 0;
-  };
-
-  const currentOrder = getCurrentTierOrder();
-  
-  const getTrialDaysRemaining = () => {
-    if (!trialEndsAt) return null;
-    const endDate = new Date(trialEndsAt);
-    const now = new Date();
-    const diffTime = endDate.getTime() - now.getTime();
-    const daysRemaining = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
-    return daysRemaining > 0 ? daysRemaining : 0;
-  };
-
-  const trialDays = getTrialDaysRemaining();
-  const isTrialing = subscriptionStatus === 'trialing';
-  
-
-  return (
-    <div className="w-full flex flex-col items-center gap-6 sm:gap-8 py-6 sm:py-10">
-      <div className="text-center px-4">
-        <h2 className="text-2xl sm:text-3xl font-bold mb-4">Choose the plan that works best for your business</h2>
-        {isSignedIn && currentTier && (
-          <Badge className="bg-green-500 text-white text-sm px-4 py-1 mb-4">
-            Current Plan: {tierInfo[currentTier as keyof typeof tierInfo]?.name || currentTier.toUpperCase()}
-          </Badge>
-        )}
-        {!isSignedIn && (
-          <p className="text-gray-600 text-sm sm:text-base">All plans include a 14-day free trial</p>
-        )}
-      </div>
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3 sm:gap-4 md:gap-6 w-full max-w-7xl mx-auto px-3 sm:px-4 mb-6 sm:mb-8">
-        {/* Basic */}
-        <Card className={`relative flex flex-col items-center p-3 sm:p-4 md:p-6 gap-3 sm:gap-4 h-full min-h-[420px] sm:min-h-[480px] ${
-          currentTier === 'basic' 
-            ? 'border-2 border-green-500 bg-green-50 shadow-lg' 
-            : 'border border-gray-200 hover:shadow-md transition-shadow'
-        }`}>
-          {currentTier === 'basic' && (
-            <Badge className="absolute -top-3 left-1/2 -translate-x-1/2 bg-green-500 text-white">
-              Current Plan
-            </Badge>
-          )}
-          <div className="text-lg sm:text-xl md:text-2xl font-semibold">Basic</div>
-          <div className="text-xl sm:text-2xl md:text-3xl font-bold mb-1">£99<span className="text-sm sm:text-base md:text-lg font-normal">/month</span></div>
-          <ul className="mb-3 sm:mb-4 space-y-1 sm:space-y-2 text-left flex-1 text-xs sm:text-sm md:text-base">
-            <li className="flex items-start gap-2">
-              <span className="text-green-500 mt-1">✔</span>
-              <span>Up to 10 tables</span>
-            </li>
-            <li className="flex items-start gap-2">
-              <span className="text-green-500 mt-1">✔</span>
-              <span>50 menu items</span>
-            </li>
-            <li className="flex items-start gap-2">
-              <span className="text-green-500 mt-1">✔</span>
-              <span>QR ordering</span>
-            </li>
-            <li className="flex items-start gap-2">
-              <span className="text-green-500 mt-1">✔</span>
-              <span>Basic analytics</span>
-            </li>
-            <li className="flex items-start gap-2">
-              <span className="text-green-500 mt-1">✔</span>
-              <span>14-day free trial</span>
-            </li>
-          </ul>
-          <Button variant="servio" className="w-full mt-auto" onClick={() => {
-            if (isSignedIn && currentTier === 'basic') return;
-            if (isSignedIn) onUpgradeClick(); // Show modal for all plan changes
-            else onPrimaryClick();
-          }} disabled={isSignedIn && currentTier === 'basic'}>
-            {currentTier === 'basic' ? 'Current Plan' : 
-             isSignedIn ? 'Switch to Basic' : 'Start Free Trial'}
-          </Button>
-        </Card>
-        
-        {/* Standard */}
-        <Card className={`relative flex flex-col items-center p-3 sm:p-4 md:p-6 gap-3 sm:gap-4 h-full min-h-[420px] sm:min-h-[480px] border-2 shadow-lg ${
-          currentTier === 'standard' 
-            ? 'border-green-500 bg-green-50' 
-            : 'border-purple-500'
-        }`}>
-          {currentTier === 'standard' ? (
-            <Badge className="absolute -top-3 left-1/2 -translate-x-1/2 bg-green-500 text-white">
-              Current Plan
-            </Badge>
-          ) : (
-            <Badge className="absolute -top-3 left-1/2 -translate-x-1/2 bg-purple-500 text-white">
-              Most Popular
-            </Badge>
-          )}
-          <div className="text-lg sm:text-xl md:text-2xl font-semibold">Standard</div>
-          <div className="text-xl sm:text-2xl md:text-3xl font-bold mb-1">£249<span className="text-sm sm:text-base md:text-lg font-normal">/month</span></div>
-          <ul className="mb-3 sm:mb-4 space-y-1 sm:space-y-2 text-left flex-1 text-xs sm:text-sm md:text-base">
-            <li className="flex items-start gap-2">
-              <span className="text-green-500 mt-1">✔</span>
-              <span>Everything in Basic, plus:</span>
-            </li>
-            <li className="flex items-start gap-2">
-              <span className="text-green-500 mt-1">✔</span>
-              <span>Up to 20 tables</span>
-            </li>
-            <li className="flex items-start gap-2">
-              <span className="text-green-500 mt-1">✔</span>
-              <span>200 menu items</span>
-            </li>
-            <li className="flex items-start gap-2">
-              <span className="text-green-500 mt-1">✔</span>
-              <span>KDS & Inventory</span>
-            </li>
-            <li className="flex items-start gap-2">
-              <span className="text-green-500 mt-1">✔</span>
-              <span>Advanced analytics</span>
-            </li>
-          </ul>
-          <Button variant="servio" className="w-full mt-auto" onClick={() => {
-            if (isSignedIn && currentTier === 'standard') return;
-            if (isSignedIn) onUpgradeClick();
-            else onPrimaryClick();
-          }} disabled={isSignedIn && currentTier === 'standard'}>
-            {currentTier === 'standard' ? 'Current Plan' :
-             isSignedIn ? 'Switch to Standard' : 'Start Free Trial'}
-          </Button>
-        </Card>
-        
-        {/* Premium */}
-        <Card className={`relative flex flex-col items-center p-3 sm:p-4 md:p-6 gap-3 sm:gap-4 h-full min-h-[420px] sm:min-h-[480px] ${
-          currentTier === 'premium' 
-            ? 'border-2 border-green-500 bg-green-50 shadow-lg' 
-            : 'border border-gray-200 hover:shadow-md transition-shadow'
-        }`}>
-          {currentTier === 'premium' && (
-            <Badge className="absolute -top-3 left-1/2 -translate-x-1/2 bg-green-500 text-white">
-              Current Plan
-            </Badge>
-          )}
-          <div className="text-lg sm:text-xl md:text-2xl font-semibold">Premium</div>
-          <div className="text-xl sm:text-2xl md:text-3xl font-bold mb-1">£449+<span className="text-sm sm:text-base md:text-lg font-normal">/month</span></div>
-          <ul className="mb-3 sm:mb-4 space-y-1 sm:space-y-2 text-left flex-1 text-xs sm:text-sm md:text-base">
-            <li className="flex items-start gap-2">
-              <span className="text-green-500 mt-1">✔</span>
-              <span>Everything in Standard, plus:</span>
-            </li>
-            <li className="flex items-start gap-2">
-              <span className="text-green-500 mt-1">✔</span>
-              <span>Unlimited tables & venues</span>
-            </li>
-            <li className="flex items-start gap-2">
-              <span className="text-green-500 mt-1">✔</span>
-              <span>AI Assistant (13 tools)</span>
-            </li>
-            <li className="flex items-start gap-2">
-              <span className="text-green-500 mt-1">✔</span>
-              <span>Priority support</span>
-            </li>
-            <li className="flex items-start gap-2">
-              <span className="text-green-500 mt-1">✔</span>
-              <span>Custom integrations</span>
-            </li>
-          </ul>
-          <Button variant="servio" className="w-full mt-auto" onClick={() => {
-            window.location.href = 'mailto:sales@servio.app?subject=Premium Plan Inquiry';
-          }}>
-            {currentTier === 'premium' ? 'Current Plan' : 'Contact Sales'}
-          </Button>
-        </Card>
-      </div>
-    </div>
-  );
-}
-
+import { Check, X } from "lucide-react";
+import { HeroSection } from './components/HeroSection';
+import { FeaturesSection } from './components/FeaturesSection';
+import { TestimonialsSection } from './components/TestimonialsSection';
+import { CTASection } from './components/CTASection';
+import { Footer } from './components/Footer';
 
 export default function HomePage() {
   const router = useRouter();
-  const { user, loading: authLoading } = useAuth();
-  const [currentTier, setCurrentTier] = useState<string | undefined>();
-  const [organizationId, setOrganizationId] = useState<string | undefined>();
-  const [showUpgradeModal, setShowUpgradeModal] = useState(false);
-  const [trialEndsAt, setTrialEndsAt] = useState<string | undefined>();
-  const [subscriptionStatus, setSubscriptionStatus] = useState<string | undefined>();
-  const [isRefreshing, setIsRefreshing] = useState(false);
+  const [isSignedIn, setIsSignedIn] = useState(false);
+  const [authLoading, setAuthLoading] = useState(true);
+  const [userTier, setUserTier] = useState<string | null>(null);
 
-  // Fetch user's current tier
-  const fetchUserTier = async () => {
-    if (!user) {
-      setCurrentTier(undefined);
-      setOrganizationId(undefined);
-      return;
-    }
-
-    try {
-      console.debug('[TIER DEBUG] Fetching tier for user:', user.id);
-      
-      // First, ensure user has a real organization (non-blocking)
-      let organization = null;
-      let created = false;
-      
+  useEffect(() => {
+    const checkAuth = async () => {
       try {
-        const ensureOrgResponse = await fetch('/api/organization/ensure', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' }
-        });
+        const { data: { user } } = await supabase.auth.getUser();
+        setIsSignedIn(!!user);
+        
+        if (user) {
+          const { data: profile } = await supabase
+            .from("profiles")
+            .select("tier")
+            .eq("id", user.id)
+            .single();
+          
+          setUserTier(profile?.tier || null);
+        }
+      } catch (error) {
+        console.error("Error checking auth:", error);
+      } finally {
+        setAuthLoading(false);
+      }
+    };
 
-        if (ensureOrgResponse.ok) {
-          const result = await ensureOrgResponse.json();
-          organization = result.organization;
-          created = result.created;
-          console.debug('[TIER DEBUG] ✅ Organization ensured successfully:', {
-            orgId: organization.id,
-            tier: organization.subscription_tier,
-            status: organization.subscription_status,
-            wasCreated: created
-          });
+    checkAuth();
+
+    const { data: { subscription } } = supabase.auth.onAuthStateChange(
+      async (_event: string, session: any) => {
+        setIsSignedIn(!!session?.user);
+        if (session?.user) {
+          const { data: profile } = await supabase
+            .from("profiles")
+            .select("tier")
+            .eq("id", session.user.id)
+            .single();
+          setUserTier(profile?.tier || null);
         } else {
-          const errorText = await ensureOrgResponse.text();
-          let errorDetail;
-          try {
-            errorDetail = JSON.parse(errorText);
-          } catch {
-            errorDetail = errorText;
-          }
-          console.error('[TIER DEBUG] ❌ Organization ensure failed:', {
-            status: ensureOrgResponse.status,
-            statusText: ensureOrgResponse.statusText,
-            error: errorDetail
-          });
-          alert(`Organization creation failed: ${JSON.stringify(errorDetail, null, 2)}\n\nCheck console for details.`);
-          // Continue anyway with default tier
-          setCurrentTier('basic');
-          return;
+          setUserTier(null);
         }
-      } catch (orgError) {
-        console.error('[TIER DEBUG] ❌ Organization ensure error:', orgError);
-        alert(`Organization API error: ${orgError}\n\nCheck console for details.`);
-        // Continue anyway with default tier
-        setCurrentTier('basic');
-        return;
       }
-      
-      if (!organization) {
-        setCurrentTier('basic');
-        return;
-      }
-      
-      console.debug('[TIER DEBUG] Organization ensured:', { 
-        id: organization.id, 
-        tier: organization.subscription_tier,
-        status: organization.subscription_status,
-        created 
-      });
+    );
 
-      // Set organization data
-      setOrganizationId(organization.id);
-      
-      if (organization.is_grandfathered) {
-        setCurrentTier('grandfathered');
-      } else {
-        const tier = organization.subscription_tier || 'basic';
-        console.debug('[TIER DEBUG] Setting tier to:', tier);
-        setCurrentTier(tier);
-      }
-      
-      setTrialEndsAt(organization.trial_ends_at);
-      setSubscriptionStatus(organization.subscription_status);
-
-    } catch (error) {
-      console.error('[TIER DEBUG] Error in tier detection:', error);
-      // Default to basic if everything fails
-      setCurrentTier('basic');
-    }
-  };
-
-  useEffect(() => {
-    fetchUserTier();
-  }, [user]);
-
-  // Refresh subscription status function with improved logic
-  const refreshSubscriptionStatus = async (retryCount = 0) => {
-    const maxRetries = 3;
-    setIsRefreshing(true);
-    
-    try {
-      console.debug(`[TIER REFRESH] Attempt ${retryCount + 1}/${maxRetries + 1}`);
-      
-      // Re-fetch organization data directly for accuracy
-      console.debug('[TIER REFRESH] Re-fetching tier info from organization endpoint');
-      const ensureOrgResponse = await fetch('/api/organization/ensure', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' }
-      });
-
-      if (!ensureOrgResponse.ok) {
-        console.error('[TIER REFRESH] Failed to fetch organization');
-        if (retryCount < maxRetries) {
-          console.debug(`[TIER REFRESH] Retrying in ${(retryCount + 1) * 2} seconds...`);
-          setTimeout(() => {
-            refreshSubscriptionStatus(retryCount + 1);
-          }, (retryCount + 1) * 2000);
-          return false;
-        }
-        setIsRefreshing(false);
-        return false;
-      }
-
-      const { organization } = await ensureOrgResponse.json();
-      
-      // Update local state with fresh organization data
-      setOrganizationId(organization.id);
-      
-      if (organization.is_grandfathered) {
-        setCurrentTier('grandfathered');
-      } else {
-        const tier = organization.subscription_tier || 'basic';
-        console.debug('[TIER REFRESH] Updated tier to:', tier);
-        setCurrentTier(tier);
-      }
-      
-      setTrialEndsAt(organization.trial_ends_at);
-      setSubscriptionStatus(organization.subscription_status);
-      
-      // Check if we got a non-basic tier or if we've exhausted retries
-      const fetchedTier = organization.subscription_tier || 'basic';
-      if (retryCount < maxRetries && fetchedTier === 'basic') {
-        console.debug(`[TIER REFRESH] Still showing basic tier, retrying in ${(retryCount + 1) * 2} seconds...`);
-        setTimeout(() => {
-          refreshSubscriptionStatus(retryCount + 1);
-        }, (retryCount + 1) * 2000);
-        return false;
-      }
-      
-      console.debug('[TIER REFRESH] Refresh completed with tier:', fetchedTier);
-      setIsRefreshing(false);
-      return true;
-      
-    } catch (error) {
-      console.error('[TIER REFRESH] Error refreshing subscription:', error);
-      if (retryCount < maxRetries) {
-        console.debug(`[TIER REFRESH] Error occurred, retrying in ${(retryCount + 1) * 2} seconds...`);
-        setTimeout(() => {
-          refreshSubscriptionStatus(retryCount + 1);
-        }, (retryCount + 1) * 2000);
-        return false;
-      }
-      setIsRefreshing(false);
-      return false;
-    }
-  };
-
-  // Refresh tier info when returning from checkout
-  useEffect(() => {
-    const urlParams = new URLSearchParams(window.location.search);
-    if (urlParams.get('upgrade') === 'success') {
-      console.debug('[UPGRADE SUCCESS] Detected upgrade success, starting immediate refresh');
-      
-      // Start immediate refresh with retry logic
-      refreshSubscriptionStatus();
-      
-      // Remove query params after a short delay
-      setTimeout(() => {
-        const url = new URL(window.location.href);
-        url.searchParams.delete('upgrade');
-        window.history.replaceState({}, document.title, url.toString());
-        console.debug('[UPGRADE SUCCESS] Removed upgrade parameter from URL');
-      }, 3000);
-    }
+    return () => {
+      subscription.unsubscribe();
+    };
   }, []);
 
-  // Analytics handler for FAQ interactions (optional)
-  const handleFAQToggle = (question: string, isOpen: boolean) => {
-    // Fire analytics event if you have analytics configured
-    // Example: analytics.track('faq_toggle', { question, state: isOpen ? 'open' : 'closed' });
-    console.debug('FAQ toggled:', question, isOpen ? 'opened' : 'closed');
-  };
-
-  const handleFAQCTAClick = (type: "contact" | "trial") => {
-    // Fire analytics event if you have analytics configured
-    // Example: analytics.track('faq_cta_click', { type });
-    console.debug('FAQ CTA clicked:', type);
-  };
-
-  const handleGetStarted = async () => {
-    if (user) {
-      // User is signed in, fetch primary venue and redirect to their dashboard
-      const supabase = createClient();
-      const { data: venues, error } = await supabase
-        .from('venues')
-        .select('venue_id')
-        .eq('owner_user_id', user.id)
-        .order('created_at', { ascending: true })
-        .limit(1);
-      
-      if (!error && venues && venues.length > 0) {
-        router.push(`/dashboard/${venues[0].venue_id}`);
-      } else {
-        // No venue found, redirect to home
-        router.push("/");
-      }
+  const handleGetStarted = () => {
+    if (isSignedIn) {
+      router.push("/dashboard");
     } else {
-      // User is not signed in, redirect to sign-up
       router.push("/sign-up");
     }
   };
 
-  const handleSignIn = async () => {
-    // Fetch primary venue and navigate to dashboard
-    if (user) {
-      const supabase = createClient();
-      const { data: venues, error } = await supabase
-        .from('venues')
-        .select('venue_id')
-        .eq('owner_user_id', user.id)
-        .order('created_at', { ascending: true })
-        .limit(1);
-      
-      if (!error && venues && venues.length > 0) {
-        router.push(`/dashboard/${venues[0].venue_id}`);
-      } else {
-        // No venue found, redirect to home
-        router.push("/");
-      }
-    } else {
-      // Not authenticated, redirect to sign-in
-      router.push("/sign-in");
-    }
+  const handleSignIn = () => {
+    router.push("/sign-in");
   };
 
   const handleDemo = () => {
-    // Log to server for Railway logs using sendBeacon (guaranteed to send even during navigation)
-    const logData = {
-      action: 'view_demo_clicked',
-      url: window.location.href,
-      referrer: document.referrer,
-      timestamp: new Date().toISOString(),
-      userAgent: navigator.userAgent,
-      user: user ? { id: user.id, email: user.email } : null
-    };
-    
-    // Try sendBeacon first (best for navigation scenarios)
-    const blob = new Blob([JSON.stringify(logData)], { type: 'application/json' });
-    const sent = navigator.sendBeacon('/api/log-demo-access', blob);
-    
-    // Fallback to fetch if sendBeacon fails
-    if (!sent) {
-      fetch('/api/log-demo-access', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(logData),
-        keepalive: true
-      }).catch(() => {
-        // Silent fail for analytics
-      });
-    }
-    
     router.push("/demo");
   };
 
-  const handlePricingPrimary = async () => {
-    // If signed in, send to dashboard/billing; if not, to sign-up
-    if (user) {
-      const supabase = createClient();
-      const { data: venues, error } = await supabase
-        .from('venues')
-        .select('venue_id')
-        .eq('owner_user_id', user.id)
-        .order('created_at', { ascending: true })
-        .limit(1);
-      
-      if (!error && venues && venues.length > 0) {
-        router.push(`/dashboard/${venues[0].venue_id}`);
-      } else {
-        // No venue found, redirect to home
-        router.push("/");
-      }
-    } else {
-      router.push('/sign-up');
-    }
-  };
+  const pricingPlans = [
+    {
+      name: "Free",
+      price: "£0",
+      period: "forever",
+      description: "Perfect for testing Servio",
+      features: [
+        "Up to 10 menu items",
+        "Basic QR ordering",
+        "Order management",
+        "Email support",
+      ],
+      notIncluded: [
+        "Advanced analytics",
+        "Custom branding",
+        "Priority support",
+      ],
+      cta: "Get Started",
+      popular: false,
+    },
+    {
+      name: "Starter",
+      price: "£29",
+      period: "per month",
+      description: "For small cafes and food trucks",
+      features: [
+        "Unlimited menu items",
+        "QR ordering",
+        "Order management",
+        "Payment processing",
+        "Basic analytics",
+        "Email support",
+      ],
+      notIncluded: [
+        "Custom branding",
+        "Priority support",
+      ],
+      cta: "Start Free Trial",
+      popular: true,
+    },
+    {
+      name: "Professional",
+      price: "£79",
+      period: "per month",
+      description: "For established restaurants",
+      features: [
+        "Everything in Starter",
+        "Custom branding",
+        "Advanced analytics",
+        "Inventory management",
+        "Staff management",
+        "Priority support",
+      ],
+      notIncluded: [],
+      cta: "Start Free Trial",
+      popular: false,
+    },
+  ];
 
-  const handleUpgradeClick = () => {
-    setShowUpgradeModal(true);
-  };
+  const faqs = [
+    {
+      question: "How do I set up QR codes for my tables?",
+      answer: "Once you create your account, you can generate unique QR codes for each table directly from the dashboard. Simply print them out and place them on your tables.",
+    },
+    {
+      question: "Do I need special hardware or equipment?",
+      answer: "No! Servio works on any device with a web browser. You can manage orders from a tablet, smartphone, or computer. Your customers just need a smartphone to scan the QR code.",
+    },
+    {
+      question: "How do customers pay for their orders?",
+      answer: "Customers can pay directly through the ordering interface using credit cards or digital wallets. Payment is processed securely through Stripe.",
+    },
+    {
+      question: "Can I customize the menu appearance?",
+      answer: "Yes! With the Professional plan, you can customize colors, fonts, and branding to match your venue's style.",
+    },
+    {
+      question: "What if I need help setting up?",
+      answer: "We offer email support for all plans, and priority support for Professional plan users. We also have detailed documentation to guide you through setup.",
+    },
+    {
+      question: "Can I try Servio before committing?",
+      answer: "Absolutely! We offer a 14-day free trial for all paid plans. No credit card required to start.",
+    },
+  ];
 
   return (
-    <>
-      <UpgradeModal
-        open={showUpgradeModal}
-        onOpenChange={setShowUpgradeModal}
-        currentTier={currentTier}
-        organizationId={organizationId}
-      />
     <div className="min-h-screen bg-white">
-      {/* JSON-LD Schema for FAQ SEO */}
-      <script
-        type="application/ld+json"
-        dangerouslySetInnerHTML={{ __html: JSON.stringify(faqSchema) }}
+      <HeroSection
+        isSignedIn={isSignedIn}
+        authLoading={authLoading}
+        onGetStarted={handleGetStarted}
+        onSignIn={handleSignIn}
+        onDemo={handleDemo}
       />
 
-      {/* Hero Section */}
-      <section className="relative bg-gradient-to-br from-[#7c3aed] via-[#7a3bec] to-[#6d28d9] text-white overflow-hidden">
-        {/* Add animated background effects */}
-        <div className="absolute inset-0 bg-gradient-to-b from-black/30 to-black/5 pointer-events-none"></div>
-        <div className="absolute inset-0 opacity-20 pointer-events-none">
-          <div className="absolute top-0 -left-4 w-96 h-96 bg-purple-300 rounded-full mix-blend-multiply filter blur-3xl animate-pulse"></div>
-          <div className="absolute top-0 -right-4 w-96 h-96 bg-pink-300 rounded-full mix-blend-multiply filter blur-3xl animate-pulse" style={{animationDelay: '2s'}}></div>
-          <div className="absolute -bottom-8 left-20 w-96 h-96 bg-purple-300 rounded-full mix-blend-multiply filter blur-3xl animate-pulse" style={{animationDelay: '4s'}}></div>
-        </div>
-        <div className="relative max-w-screen-xl mx-auto px-6 py-24 lg:py-32">
-          <div className="grid grid-cols-1 lg:grid-cols-2 gap-12 items-center">
-            <div className="max-w-3xl sm:max-w-xl md:max-w-2xl">
-              <Badge className="bg-white text-purple-700 border-2 border-white mb-6 shadow-2xl font-semibold" style={{boxShadow: '0 4px 20px rgba(255,255,255,0.4), 0 0 40px rgba(255,255,255,0.3)'}}>
-                <QrCode className="w-4 h-4 mr-2" />
-                Transform Your Business
-              </Badge>
-              <h1 className="!text-white text-[clamp(2rem,6vw,4.5rem)] leading-[1.05] tracking-tight font-extrabold" style={{textShadow: '0 0 40px rgba(255,255,255,0.5), 0 0 80px rgba(255,255,255,0.3), 0 8px 32px rgba(0,0,0,0.8), 0 16px 64px rgba(0,0,0,0.6), 0 4px 16px rgba(0,0,0,0.9), 0 2px 4px rgba(0,0,0,1)', filter: 'drop-shadow(0 0 20px rgba(255,255,255,0.4))'}}>
-                POS & QR Ordering Made Simple
-              </h1>
-              <p className="mt-5 !text-white text-[clamp(1rem,2.2vw,1.25rem)] leading-relaxed max-w-[50ch]" style={{textShadow: '0 2px 20px rgba(0,0,0,0.8), 0 4px 40px rgba(0,0,0,0.5), 0 0 30px rgba(255,255,255,0.2)'}}>
-                Run your entire venue from any device — no hardware required. Accept orders, manage payments, display tickets in the kitchen, and track inventory — all in one simple platform.
-              </p>
-              <div className="mt-8 flex items-center gap-4 flex-wrap">
-                {!authLoading && !user && (
-                  <Button
-                    size="lg"
-                    onClick={handleGetStarted}
-                    variant="servio"
-                    className="text-lg px-8 py-4"
-                  >
-                    Start Free Trial
-                    <ArrowRight className="ml-2 h-5 w-5" />
-                  </Button>
-                )}
-                {!authLoading && !user && (
-                  <Button
-                    size="lg"
-                    onClick={handleSignIn}
-                    variant="servio"
-                    className="text-lg px-8 py-4"
-                  >
-                    Sign In
-                  </Button>
-                )}
-                {!authLoading && user && (
-                  <Button
-                    size="lg"
-                    onClick={handleGetStarted}
-                    variant="servio"
-                    className="text-lg px-8 py-4"
-                  >
-                    Go to Dashboard
-                    <ArrowRight className="ml-2 h-5 w-5" />
-                  </Button>
-                )}
-                <Button
-                  size="lg"
-                  onClick={handleDemo}
-                  variant="servio"
-                  className="text-lg px-8 py-4"
-                >
-                  <QrCode className="mr-2 h-5 w-5" />
-                  View Demo
-                </Button>
-              </div>
-              <div className="mt-12 flex items-center space-x-8 !text-white">
-                <div className="flex items-center">
-                  <CheckCircle className="h-5 w-5 mr-2 text-green-400" />
-                  <span className="font-semibold !text-white drop-shadow-sm">14-day free trial</span>
-                </div>
-                <div className="flex items-center">
-                  <CheckCircle className="h-5 w-5 mr-2 text-green-400" />
-                  <span className="font-semibold !text-white drop-shadow-sm">No setup fees</span>
-                </div>
-                <div className="flex items-center">
-                  <CheckCircle className="h-5 w-5 mr-2 text-green-400" />
-                  <span className="font-semibold !text-white drop-shadow-sm">Cancel anytime</span>
-                </div>
-              </div>
-            </div>
-            <div className="relative">
-              <div className="absolute -inset-4 bg-gradient-to-r from-purple-400 to-pink-400 rounded-3xl blur-2xl opacity-40 animate-pulse"></div>
-              <div className="relative bg-white rounded-2xl p-8 transform rotate-3 hover:rotate-0 transition-all duration-300" style={{boxShadow: '0 25px 50px -12px rgba(0,0,0,0.6), 0 0 60px rgba(255,255,255,0.3), 0 0 100px rgba(124,58,237,0.5)'}}>
-                <div className="text-center">
-                  <div className="w-32 h-32 bg-purple-100 rounded-2xl mx-auto mb-6 flex items-center justify-center">
-                    <QrCode className="w-16 h-16 text-purple-600" />
-                  </div>
-                  <h3 className="text-2xl font-bold text-gray-900 mb-2">
-                    Table 5
-                  </h3>
-                  <p className="text-gray-800 mb-4">
-                    Scan to view menu & order
-                  </p>
-                  <Badge className="bg-green-100 text-green-800">
-                    Ready to Order
-                  </Badge>
-                </div>
-              </div>
-            </div>
-          </div>
-        </div>
-      </section>
+      <FeaturesSection />
 
-      {/* Features Section */}
-      <section id="features" className="py-24 bg-gray-50">
+      {/* Pricing Section */}
+      <section id="pricing" className="py-24 bg-gray-50">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="text-center mb-16">
             <h2 className="text-4xl font-bold text-gray-900 mb-4">
-              Everything You Need to Run Your Food Business
-            </h2>
-            <p className="text-xl text-gray-800 max-w-3xl mx-auto">
-              From QR code ordering to kitchen management and inventory, Servio
-              provides all the tools you need to streamline operations and serve
-              customers efficiently.
-            </p>
-          </div>
-
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
-            <Card className="border-0 shadow-lg hover:shadow-xl transition-shadow">
-              <CardContent className="p-8">
-                <div className="w-12 h-12 bg-purple-100 rounded-lg flex items-center justify-center mb-6">
-                  <QrCode className="h-6 w-6 text-purple-600" />
-                </div>
-                <h3 className="text-xl font-semibold text-gray-900 mb-4">
-                  QR Code Generation
-                </h3>
-                <p className="text-gray-800">
-                  Generate unique QR codes for each table. Customers scan to
-                  instantly access your menu and start ordering.
-                </p>
-              </CardContent>
-            </Card>
-
-            <Card className="border-0 shadow-lg hover:shadow-xl transition-shadow">
-              <CardContent className="p-8">
-                <div className="w-12 h-12 bg-blue-100 rounded-lg flex items-center justify-center mb-6">
-                  <Smartphone className="h-6 w-6 text-blue-600" />
-                </div>
-                <h3 className="text-xl font-semibold text-gray-900 mb-4">
-                  Mobile-First Design
-                </h3>
-                <p className="text-gray-800">
-                  Beautiful, responsive interface optimized for mobile devices.
-                  Your customers will love the smooth ordering experience.
-                </p>
-              </CardContent>
-            </Card>
-
-            <Card className="border-0 shadow-lg hover:shadow-xl transition-shadow">
-              <CardContent className="p-8">
-                <div className="w-12 h-12 bg-green-100 rounded-lg flex items-center justify-center mb-6">
-                  <Clock className="h-6 w-6 text-green-600" />
-                </div>
-                <h3 className="text-xl font-semibold text-gray-900 mb-4">
-                  Real-Time Orders
-                </h3>
-                <p className="text-gray-800">
-                  Receive orders instantly in your dashboard. Track order status
-                  and manage your kitchen workflow efficiently.
-                </p>
-              </CardContent>
-            </Card>
-
-            <Card className="border-0 shadow-lg hover:shadow-xl transition-shadow">
-              <CardContent className="p-8">
-                <div className="w-12 h-12 bg-yellow-100 rounded-lg flex items-center justify-center mb-6">
-                  <CreditCard className="h-6 w-6 text-yellow-600" />
-                </div>
-                <h3 className="text-xl font-semibold text-gray-900 mb-4">
-                  Payment Integration
-                </h3>
-                <p className="text-gray-800">
-                  Secure payment processing built-in. Accept all major credit
-                  cards and digital wallets seamlessly.
-                </p>
-              </CardContent>
-            </Card>
-
-            <Card className="border-0 shadow-lg hover:shadow-xl transition-shadow">
-              <CardContent className="p-8">
-                <div className="w-12 h-12 bg-red-100 rounded-lg flex items-center justify-center mb-6">
-                  <BarChart3 className="h-6 w-6 text-red-600" />
-                </div>
-                <h3 className="text-xl font-semibold text-gray-900 mb-4">
-                  Analytics & Insights
-                </h3>
-                <p className="text-gray-800">
-                  Detailed analytics on sales, popular items, and customer
-                  behavior to help you make data-driven decisions.
-                </p>
-              </CardContent>
-            </Card>
-
-            <Card className="border-0 shadow-lg hover:shadow-xl transition-shadow">
-              <CardContent className="p-8">
-                <div className="w-12 h-12 bg-indigo-100 rounded-lg flex items-center justify-center mb-6">
-                  <Users className="h-6 w-6 text-indigo-600" />
-                </div>
-                <h3 className="text-xl font-semibold text-gray-900 mb-4">
-                  Staff Management
-                </h3>
-                <p className="text-gray-800">
-                  Manage your team with role-based access. Kitchen staff,
-                  front-of-house, and managers each get the tools they need.
-                </p>
-              </CardContent>
-            </Card>
-          </div>
-        </div>
-      </section>
-
-      {/* Testimonials Section */}
-      <section id="testimonials" className="py-24 bg-white">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="text-center mb-16">
-            <h2 className="text-4xl font-bold text-gray-900 mb-4">
-              Loved by Businesses Everywhere
+              Simple, Transparent Pricing
             </h2>
             <p className="text-xl text-gray-800">
-              See what business owners are saying about Servio
+              Choose the plan that's right for your business
             </p>
           </div>
 
           <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
-            <Card className="border-0 shadow-lg">
-              <CardContent className="p-8">
-                <div className="flex items-center mb-4">
-                  {[...Array(5)].map((_, i) => (
-                    <Star
-                      key={i}
-                      className="h-5 w-5 text-yellow-400 fill-current"
-                    />
-                  ))}
-                </div>
-                <p className="text-gray-800 mb-6">
-                  "Servio transformed our cafe completely. Orders are faster,
-                  more accurate, and our customers love the convenience. Revenue
-                  is up 30%!"
-                </p>
-                <div className="flex items-center">
-                  <div className="w-12 h-12 bg-purple-100 rounded-full flex items-center justify-center mr-4">
-                    <span className="text-purple-600 font-semibold">SM</span>
+            {pricingPlans.map((plan, index) => (
+              <Card
+                key={index}
+                className={`border-2 shadow-lg ${plan.popular ? 'border-purple-500 relative' : ''}`}
+              >
+                {plan.popular && (
+                  <div className="absolute -top-4 left-1/2 transform -translate-x-1/2">
+                    <Badge className="bg-purple-600 text-white px-4 py-1">
+                      Most Popular
+                    </Badge>
                   </div>
-                  <div>
-                    <p className="font-semibold text-gray-900">
-                      Sarah Mitchell
-                    </p>
-                    <p className="text-gray-800">Owner, Corner Cafe</p>
+                )}
+                <CardHeader className="text-center pb-8">
+                  <CardTitle className="text-2xl mb-2">{plan.name}</CardTitle>
+                  <div className="flex items-baseline justify-center">
+                    <span className="text-5xl font-bold text-gray-900">{plan.price}</span>
+                    {plan.period && (
+                      <span className="text-gray-800 ml-2">/{plan.period}</span>
+                    )}
                   </div>
-                </div>
-              </CardContent>
-            </Card>
-
-            <Card className="border-0 shadow-lg">
-              <CardContent className="p-8">
-                <div className="flex items-center mb-4">
-                  {[...Array(5)].map((_, i) => (
-                    <Star
-                      key={i}
-                      className="h-5 w-5 text-yellow-400 fill-current"
-                    />
-                  ))}
-                </div>
-                <p className="text-gray-800 mb-6">
-                  "The setup was incredibly easy. Within an hour, we had QR
-                  codes on all our tables. The real-time order management is a
-                  game-changer."
-                </p>
-                <div className="flex items-center">
-                  <div className="w-12 h-12 bg-blue-100 rounded-full flex items-center justify-center mr-4">
-                    <span className="text-blue-600 font-semibold">MR</span>
-                  </div>
-                  <div>
-                    <p className="font-semibold text-gray-900">
-                      Mike Rodriguez
-                    </p>
-                    <p className="text-gray-800">Manager, Pizza Palace</p>
-                  </div>
-                </div>
-              </CardContent>
-            </Card>
-
-            <Card className="border-0 shadow-lg">
-              <CardContent className="p-8">
-                <div className="flex items-center mb-4">
-                  {[...Array(5)].map((_, i) => (
-                    <Star
-                      key={i}
-                      className="h-5 w-5 text-yellow-400 fill-current"
-                    />
-                  ))}
-                </div>
-                <p className="text-gray-800 mb-6">
-                  "Our staff can focus on food quality instead of taking orders.
-                  Customer satisfaction has improved dramatically since we
-                  started using Servio."
-                </p>
-                <div className="flex items-center">
-                  <div className="w-12 h-12 bg-green-100 rounded-full flex items-center justify-center mr-4">
-                    <span className="text-green-600 font-semibold">LC</span>
-                  </div>
-                  <div>
-                    <p className="font-semibold text-gray-900">Lisa Chen</p>
-                    <p className="text-gray-800">Chef, Bistro 42</p>
-                  </div>
-                </div>
-              </CardContent>
-            </Card>
+                  <CardDescription className="mt-4">{plan.description}</CardDescription>
+                </CardHeader>
+                <CardContent className="space-y-6">
+                  <ul className="space-y-3">
+                    {plan.features.map((feature, idx) => (
+                      <li key={idx} className="flex items-start">
+                        <Check className="h-5 w-5 text-green-500 mr-2 flex-shrink-0 mt-0.5" />
+                        <span className="text-gray-800">{feature}</span>
+                      </li>
+                    ))}
+                    {plan.notIncluded.map((feature, idx) => (
+                      <li key={idx} className="flex items-start opacity-50">
+                        <X className="h-5 w-5 text-gray-400 mr-2 flex-shrink-0 mt-0.5" />
+                        <span className="text-gray-800">{feature}</span>
+                      </li>
+                    ))}
+                  </ul>
+                  <Button
+                    onClick={handleGetStarted}
+                    className={`w-full ${plan.popular ? 'bg-purple-600 hover:bg-purple-700' : ''}`}
+                    variant={plan.popular ? 'default' : 'outline'}
+                    size="lg"
+                  >
+                    {plan.cta}
+                  </Button>
+                </CardContent>
+              </Card>
+            ))}
           </div>
         </div>
       </section>
 
-      {/* PricingQuickCompare Section */}
-      <section id="pricing" className="py-24 bg-white">
-        <PricingQuickCompare 
-          isSignedIn={!!user} 
-          currentTier={currentTier}
-          onPrimaryClick={handlePricingPrimary}
-          onUpgradeClick={handleUpgradeClick}
-          subscriptionStatus={subscriptionStatus}
-          trialEndsAt={trialEndsAt}
-        />
-      </section>
+      <TestimonialsSection />
 
       {/* FAQ Section */}
-      <section className="py-24 bg-gray-50">
-        <FAQ onToggle={handleFAQToggle} onCTAClick={handleFAQCTAClick} />
-      </section>
+      <section id="faq" className="py-24 bg-white">
+        <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8">
+          <div className="text-center mb-16">
+            <h2 className="text-4xl font-bold text-gray-900 mb-4">
+              Frequently Asked Questions
+            </h2>
+            <p className="text-xl text-gray-800">
+              Everything you need to know about Servio
+            </p>
+          </div>
 
-      {/* Pricing Section */}
-      <section className="py-24 bg-gradient-to-r from-purple-600 to-purple-700 text-white">
-        <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 text-center">
-          <h2 className="text-4xl font-bold mb-6 !text-white">
-            Ready to Transform Your Food Business?
-          </h2>
-          <p className="text-xl !text-white mb-8">
-            Join restaurants, cafes, food trucks, and stalls across the UK using Servio to streamline operations and delight customers.
-          </p>
-          <div className="flex flex-col sm:flex-row gap-4 justify-center">
-            <Button
-              size="lg"
-              onClick={handleGetStarted}
-              variant="servio"
-              className="text-lg px-8 py-4"
-              disabled={authLoading}
-            >
-              {authLoading ? 'Loading...' : (user ? 'Go to Dashboard' : 'Start Your Free Trial')}
-              <ArrowRight className="ml-2 h-5 w-5" />
-            </Button>
-            {!authLoading && !user && (
-              <Button
-                size="lg"
-                onClick={handleSignIn}
-                variant="servio"
-                className="text-lg px-8 py-4"
-              >
-                Sign In
-              </Button>
-            )}
-            <Button
-              size="lg"
-              onClick={handleDemo}
-              variant="servio"
-              className="text-lg px-8 py-4"
-            >
-              <QrCode className="mr-2 h-5 w-5" />
-              Try the Demo
-            </Button>
+          <div className="space-y-6">
+            {faqs.map((faq, index) => (
+              <Card key={index} className="border-0 shadow-md">
+                <CardHeader>
+                  <CardTitle className="text-lg">{faq.question}</CardTitle>
+                </CardHeader>
+                <CardContent>
+                  <p className="text-gray-800">{faq.answer}</p>
+                </CardContent>
+              </Card>
+            ))}
           </div>
         </div>
       </section>
 
-      {/* Footer */}
-      <footer className="bg-gray-900 text-white py-16">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="grid grid-cols-1 md:grid-cols-4 gap-8">
-            <div className="col-span-1 md:col-span-2">
-              <p className="text-gray-300 mb-6 max-w-md">
-                Servio provides complete POS and ordering solutions for
-                food businesses of all sizes. Transform your operations
-                today.
-              </p>
-              <div className="flex space-x-4">
-                <Button
-                  variant="ghost"
-                  size="icon"
-                  className="text-gray-300 hover:text-white"
-                >
-                  <span className="sr-only">Facebook</span>
-                  <svg
-                    className="h-5 w-5"
-                    fill="currentColor"
-                    viewBox="0 0 20 20"
-                  >
-                    <path
-                      fillRule="evenodd"
-                      d="M20 10C20 4.477 15.523 0 10 0S0 4.477 0 10c0 4.991 3.657 9.128 8.438 9.878v-6.987h-2.54V10h2.54V7.797c0-2.506 1.492-3.89 3.777-3.89 1.094 0 2.238.195 2.238.195v2.46h-1.26c-1.243 0-1.63.771-1.63 1.562V10h2.773l-.443 2.89h-2.33v6.988C16.343 19.128 20 14.991 20 10z"
-                      clipRule="evenodd"
-                    />
-                  </svg>
-                </Button>
-                <Button
-                  variant="ghost"
-                  size="icon"
-                  className="text-gray-300 hover:text-white"
-                >
-                  <span className="sr-only">Twitter</span>
-                  <svg
-                    className="h-5 w-5"
-                    fill="currentColor"
-                    viewBox="0 0 20 20"
-                  >
-                    <path d="M6.29 18.251c7.547 0 11.675-6.253 11.675-11.675 0-.178 0-.355-.012-.53A8.348 8.348 0 0020 3.92a8.19 8.19 0 01-2.357.646 4.118 4.118 0 001.804-2.27 8.224 8.224 0 01-2.605.996 4.107 4.107 0 00-6.993 3.743 11.65 11.65 0 01-8.457-4.287 4.106 4.106 0 001.27 5.477A4.073 4.073 0 01.8 7.713v.052a4.105 4.105 0 003.292 4.022 4.095 4.095 0 01-1.853.07 4.108 4.108 0 003.834 2.85A8.233 8.233 0 010 16.407a11.616 11.616 0 006.29 1.84" />
-                  </svg>
-                </Button>
-                <Button
-                  variant="ghost"
-                  size="icon"
-                  className="text-gray-300 hover:text-white"
-                >
-                  <span className="sr-only">LinkedIn</span>
-                  <svg
-                    className="h-5 w-5"
-                    fill="currentColor"
-                    viewBox="0 0 20 20"
-                  >
-                    <path
-                      fillRule="evenodd"
-                      d="M16.338 16.338H13.67V12.16c0-.995-.017-2.277-1.387-2.277-1.39 0-1.601 1.086-1.601 2.207v4.248H8.014v-8.59h2.559v1.174h.037c.356-.675 1.227-1.387 2.526-1.387 2.703 0 3.203 1.778 3.203 4.092v4.711zM5.005 6.575a1.548 1.548 0 11-.003-3.096 1.548 1.548 0 01.003 3.096zm-1.337 9.763H6.34v-8.59H3.667v8.59zM17.668 1H2.328C1.595 1 1 1.581 1 2.298v15.403C1 18.418 1.595 19 2.328 19h15.34c.734 0 1.332-.582 1.332-1.299V2.298C19 1.581 18.402 1 17.668 1z"
-                      clipRule="evenodd"
-                    />
-                  </svg>
-                </Button>
-              </div>
-            </div>
-            <div>
-              <h3 className="text-lg font-semibold mb-4">Product</h3>
-              <ul className="space-y-2">
-                <li>
-                  <Link
-                    href="#features"
-                    className="text-gray-300 hover:text-white transition-colors"
-                  >
-                    Features
-                  </Link>
-                </li>
-                <li>
-                  <Link
-                    href="#pricing"
-                    className="text-gray-300 hover:text-white transition-colors"
-                  >
-                    Pricing
-                  </Link>
-                </li>
-                <li>
-                  <Link
-                    href="/demo"
-                    className="text-gray-300 hover:text-white transition-colors"
-                  >
-                    Demo
-                  </Link>
-                </li>
-                <li>
-                  <Link
-                    href="/refund-policy"
-                    className="text-gray-300 hover:text-white transition-colors"
-                  >
-                    Refund Policy
-                  </Link>
-                </li>
-              </ul>
-            </div>
-            <div>
-              <h3 className="text-lg font-semibold mb-4">Support</h3>
-              <ul className="space-y-2">
-                <li>
-                  <Link
-                    href="mailto:support@servio.app"
-                    className="text-gray-300 hover:text-white transition-colors"
-                  >
-                    Contact Us
-                  </Link>
-                </li>
-                <li>
-                  <Link
-                    href="/privacy"
-                    className="text-gray-300 hover:text-white transition-colors"
-                  >
-                    Privacy Policy
-                  </Link>
-                </li>
-                <li>
-                  <Link
-                    href="/terms"
-                    className="text-gray-300 hover:text-white transition-colors"
-                  >
-                    Terms of Service
-                  </Link>
-                </li>
-                <li>
-                  <Link
-                    href="/cookies"
-                    className="text-gray-300 hover:text-white transition-colors"
-                  >
-                    Cookie Policy
-                  </Link>
-                </li>
-              </ul>
-            </div>
-          </div>
-          <div className="border-t border-gray-800 mt-12 pt-8 text-center text-gray-400">
-            <p>&copy; 2024 Servio. All rights reserved.</p>
-          </div>
-        </div>
-      </footer>
+      <CTASection
+        isSignedIn={isSignedIn}
+        authLoading={authLoading}
+        onGetStarted={handleGetStarted}
+        onSignIn={handleSignIn}
+        onDemo={handleDemo}
+      />
+
+      <Footer />
     </div>
-    </>
   );
 }
