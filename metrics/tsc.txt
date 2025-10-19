@@ -1,0 +1,24 @@
+app/checkout/success/page.tsx(68,13): error TS1005: 'try' expected.
+app/checkout/success/page.tsx(79,7): error TS1005: ',' expected.
+app/checkout/success/page.tsx(79,24): error TS1005: ')' expected.
+app/checkout/success/page.tsx(80,7): error TS1128: Declaration or statement expected.
+app/checkout/success/page.tsx(84,3): error TS1128: Declaration or statement expected.
+app/checkout/success/page.tsx(84,4): error TS1128: Declaration or statement expected.
+app/checkout/success/page.tsx(84,34): error TS1005: ';' expected.
+app/checkout/success/page.tsx(239,1): error TS1128: Declaration or statement expected.
+app/dashboard/[venueId]/menu-management/MenuManagementClient.tsx(345,7): error TS1005: 'try' expected.
+app/dashboard/[venueId]/menu-management/MenuManagementClient.tsx(502,4): error TS1472: 'catch' or 'finally' expected.
+app/dashboard/[venueId]/menu-management/MenuManagementClient.tsx(1375,19): error TS1005: '}' expected.
+app/dashboard/[venueId]/menu-management/MenuManagementClient.tsx(1466,2): error TS1005: '}' expected.
+app/dashboard/[venueId]/page.client.tsx(846,1): error TS1005: '}' expected.
+components/account-migrator.tsx(417,1): error TS1005: '}' expected.
+components/menu-management.tsx(367,7): error TS1005: 'try' expected.
+components/menu-management.tsx(370,4): error TS1472: 'catch' or 'finally' expected.
+components/menu-management.tsx(408,7): error TS1005: 'try' expected.
+components/menu-management.tsx(411,4): error TS1472: 'catch' or 'finally' expected.
+components/menu-management.tsx(1117,1): error TS1005: '}' expected.
+components/TrialStatusBanner.tsx(184,11): error TS1005: ',' expected.
+components/TrialStatusBanner.tsx(202,3): error TS1005: ',' expected.
+components/TrialStatusBanner.tsx(202,4): error TS1128: Declaration or statement expected.
+components/TrialStatusBanner.tsx(202,8): error TS1005: ';' expected.
+components/TrialStatusBanner.tsx(302,1): error TS1128: Declaration or statement expected.

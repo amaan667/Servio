@@ -1,0 +1,38 @@
+./app/dashboard/[venueId]/tables/table-management-client-new.tsx:269:  // TODO: Re-enable once the useEffect dependency issue is resolved
+./app/api/feedback/questions/route.ts:285:    // TODO: Implement soft delete when is_deleted column is added
+./app/api/table-management/seat-party/route.ts:26:      p_server_id: null // TODO: Get from auth context
+./components/table-management/TableOrderCard.tsx:329:                  onClick={() => {/* TODO: Implement bill splitting */}}
+./components/orders/OrderCard.tsx:220:                  onClick={() => {/* TODO: Implement bill splitting */}}
+./components/account-migrator.tsx:85:      // TODO: Implement signUpUser function
+./__tests__/api/orders-critical.test.ts:11:      // TODO: Implement actual test
+./__tests__/api/orders-critical.test.ts:16:      // TODO: Implement actual test
+./__tests__/api/orders-critical.test.ts:21:      // TODO: Implement actual test
+./__tests__/api/orders-critical.test.ts:28:      // TODO: Implement actual test
+./__tests__/api/orders-critical.test.ts:33:      // TODO: Implement actual test
+./__tests__/api/orders-critical.test.ts:40:      // TODO: Implement actual test
+./__tests__/api/orders-critical.test.ts:45:      // TODO: Implement actual test
+./__tests__/services/OrderService-critical.test.ts:11:      // TODO: Implement actual test
+./__tests__/services/OrderService-critical.test.ts:16:      // TODO: Implement actual test
+./__tests__/services/OrderService-critical.test.ts:21:      // TODO: Implement actual test
+./__tests__/services/OrderService-critical.test.ts:28:      // TODO: Implement actual test
+./__tests__/services/OrderService-critical.test.ts:33:      // TODO: Implement actual test
+./__tests__/services/OrderService-critical.test.ts:38:      // TODO: Implement actual test
+./__tests__/services/OrderService-critical.test.ts:45:      // TODO: Implement actual test
+./__tests__/services/OrderService-critical.test.ts:50:      // TODO: Implement actual test
+./scripts/comprehensive-10-10-fix.ts:7: * 2. Creates TODO ledger
+./scripts/comprehensive-10-10-fix.ts:94:// Step 2: Create TODO ledger
+./scripts/comprehensive-10-10-fix.ts:95:function createTODOLedger() {
+./scripts/comprehensive-10-10-fix.ts:96:  log('\n📝 Step 2: Creating TODO ledger...', 'blue');
+./scripts/comprehensive-10-10-fix.ts:107:      if (line.includes('TODO') || line.includes('FIXME') || line.includes('XXX')) {
+./scripts/comprehensive-10-10-fix.ts:117:  const ledgerPath = path.join(process.cwd(), 'TODO_LEDGER_2025-01-19.md');
+./scripts/comprehensive-10-10-fix.ts:118:  const ledgerContent = `# TODO Ledger - Generated ${new Date().toISOString()}
+./scripts/comprehensive-10-10-fix.ts:120:Total TODOs/FIXMEs found: ${todos.length}
+./scripts/comprehensive-10-10-fix.ts:127:    return `- ${file}: ${count} TODO(s)`;
+./scripts/comprehensive-10-10-fix.ts:142:  log(`   ✓ Found ${todos.length} TODOs/FIXMEs`, 'green');
+./scripts/comprehensive-10-10-fix.ts:269:    // Step 2: Create TODO ledger
+./scripts/comprehensive-10-10-fix.ts:270:    const todos = createTODOLedger();
+./scripts/comprehensive-10-10-fix.ts:283:    log(`✓ Found ${todos.length} TODOs/FIXMEs`, 'green');
+./lib/tools/orders.ts:68:    // TODO: Implement FOH notification
+./lib/feature-gates.ts:64:    // TODO: Re-enable premium gates when payment plans are implemented
+./lib/ai/tool-executors.ts:380:    // TODO: Implement FOH notification
+./lib/api/route-wrapper.ts:26:    // TODO: Implement actual auth logic

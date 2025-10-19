@@ -1,0 +1,154 @@
+
+> servio-mvp@0.1.1 build /Users/amaan/Downloads/servio-mvp-cleaned
+> NODE_NO_WARNINGS=1 next build
+
+   ▲ Next.js 15.5.2
+   - Environments: .env.local
+   - Experiments (use with caution):
+     · optimizePackageImports
+
+   Creating an optimized production build ...
+Failed to compile.
+
+./app/api/auth/self-test/route.ts
+Module parse failed: Identifier 'dynamic' has already been declared (3:13)
+File was processed with these loaders:
+ * ./node_modules/next/dist/build/webpack/loaders/next-flight-loader/index.js
+ * ./node_modules/next/dist/build/webpack/loaders/next-swc-loader.js
+You may need an additional loader to handle the result of these loaders.
+| export const runtime = "nodejs";
+| export const dynamic = "force-dynamic";
+> export const dynamic = "force-dynamic";
+| export const revalidate = false;
+| import { NextResponse } from "next/server";
+
+Import trace for requested module:
+./app/api/auth/self-test/route.ts
+
+./app/api/demo/reset/route.ts
+Module parse failed: Identifier 'dynamic' has already been declared (6:13)
+File was processed with these loaders:
+ * ./node_modules/next/dist/build/webpack/loaders/next-flight-loader/index.js
+ * ./node_modules/next/dist/build/webpack/loaders/next-swc-loader.js
+You may need an additional loader to handle the result of these loaders.
+| import { createClient } from '@/lib/supabase/server';
+| import { logger } from '@/lib/logger';
+> export const dynamic = 'force-dynamic';
+| /**
+|  * Demo Reset API
+
+Import trace for requested module:
+./app/api/demo/reset/route.ts
+
+./app/api/organization/ensure/route.ts
+Module parse failed: Identifier 'dynamic' has already been declared (8:13)
+File was processed with these loaders:
+ * ./node_modules/next/dist/build/webpack/loaders/next-flight-loader/index.js
+ * ./node_modules/next/dist/build/webpack/loaders/next-swc-loader.js
+You may need an additional loader to handle the result of these loaders.
+| import { logger } from '@/lib/logger';
+| // Disable caching to always get fresh data
+> export const dynamic = 'force-dynamic';
+| export const revalidate = 0;
+| export async function POST(request) {
+
+Import trace for requested module:
+./app/api/organization/ensure/route.ts
+
+./app/checkout/success/page.tsx
+Error:   [31mx[0m await isn't allowed in non-async function
+    ,-[[36;1;4m/Users/amaan/Downloads/servio-mvp-cleaned/app/checkout/success/page.tsx[0m:63:1]
+ [2m60[0m |       // Update organization tier immediately as a backup in case webhook hasn't fired yet
+ [2m61[0m |       if (user) {
+ [2m62[0m |             
+ [2m63[0m |             const data = await response.json();
+    : [35;1m                         ^^^^^[0m
+ [2m64[0m |             
+ [2m65[0m |             if (!response.ok && retryCount < 3) {
+ [2m66[0m |               setTimeout(() => updateOrganization(retryCount + 1), (retryCount + 1) * 2000);
+    `----
+  [31mx[0m Expected a semicolon
+    ,-[[36;1;4m/Users/amaan/Downloads/servio-mvp-cleaned/app/checkout/success/page.tsx[0m:68:1]
+ [2m65[0m |             if (!response.ok && retryCount < 3) {
+ [2m66[0m |               setTimeout(() => updateOrganization(retryCount + 1), (retryCount + 1) * 2000);
+ [2m67[0m |             }
+ [2m68[0m |           } catch (err) {
+    : [35;1m            ^^^^^[0m
+ [2m69[0m |             console.error('[CHECKOUT SUCCESS] Failed to update organization tier:', err);
+ [2m70[0m |             if (retryCount < 3) {
+ [2m71[0m |               setTimeout(() => updateOrganization(retryCount + 1), (retryCount + 1) * 2000);
+    `----
+  [31mx[0m Expected ',', got 'setLoading'
+    ,-[[36;1;4m/Users/amaan/Downloads/servio-mvp-cleaned/app/checkout/success/page.tsx[0m:79:1]
+ [2m76[0m |         updateOrganization();
+ [2m77[0m |       }
+ [2m78[0m |       
+ [2m79[0m |       setLoading(false);
+    : [35;1m      ^^^^^^^^^^[0m
+ [2m80[0m |     } else {
+ [2m81[0m |       // Redirect if missing required params
+ [2m82[0m |       redirectToDashboard();
+    `----
+
+Caused by:
+    Syntax Error
+
+Import trace for requested module:
+./app/checkout/success/page.tsx
+
+./app/dashboard/[venueId]/menu-management/MenuManagementClient.tsx
+Error:   [31mx[0m Expected a semicolon
+     ,-[[36;1;4m/Users/amaan/Downloads/servio-mvp-cleaned/app/dashboard/[venueId]/menu-management/MenuManagementClient.tsx[0m:345:1]
+ [2m342[0m |         description: `Failed to load menu items: ${error instanceof Error ? error.message : 'Unknown error'}`,
+ [2m343[0m |         variant: "destructive",
+ [2m344[0m |       });
+ [2m345[0m |     } finally {
+     : [35;1m      ^^^^^^^[0m
+ [2m346[0m |       setLoading(false);
+ [2m347[0m |     }
+ [2m348[0m |   };
+     `----
+  [31mx[0m Expected a semicolon
+     ,-[[36;1;4m/Users/amaan/Downloads/servio-mvp-cleaned/app/dashboard/[venueId]/menu-management/MenuManagementClient.tsx[0m:502:1]
+ [2m499[0m |     } finally {
+ [2m500[0m |       setIsUploadingLogo(false);
+ [2m501[0m |     }
+ [2m502[0m |   };
+     : [35;1m   ^[0m
+ [2m503[0m | 
+ [2m504[0m |   const saveDesignSettings = async () => {
+ [2m505[0m |     try {
+     `----
+  [31mx[0m Expected a semicolon
+      ,-[[36;1;4m/Users/amaan/Downloads/servio-mvp-cleaned/app/dashboard/[venueId]/menu-management/MenuManagementClient.tsx[0m:1375:1]
+ [2m1372[0m |                           // User cancelled or error occurred
+ [2m1373[0m |                       }
+ [2m1374[0m |                     }}
+ [2m1375[0m |                   >
+      : [35;1m                  ^[0m
+ [2m1376[0m |                     <Share className="h-4 w-4 mr-2" />
+ [2m1377[0m |                     Share Link
+ [2m1378[0m |                   </Button>
+      `----
+  [31mx[0m Expected '</', got 'Share'
+      ,-[[36;1;4m/Users/amaan/Downloads/servio-mvp-cleaned/app/dashboard/[venueId]/menu-management/MenuManagementClient.tsx[0m:1377:1]
+ [2m1374[0m |                     }}
+ [2m1375[0m |                   >
+ [2m1376[0m |                     <Share className="h-4 w-4 mr-2" />
+ [2m1377[0m |                     Share Link
+      : [35;1m                    ^^^^^[0m
+ [2m1378[0m |                   </Button>
+ [2m1379[0m |                 </div>
+ [2m1380[0m |               </CardTitle>
+      `----
+
+Caused by:
+    Syntax Error
+
+Import trace for requested module:
+./app/dashboard/[venueId]/menu-management/MenuManagementClient.tsx
+./app/dashboard/[venueId]/menu-management/page.tsx
+
+
+> Build failed because of webpack errors
+ ELIFECYCLE  Command failed with exit code 1.

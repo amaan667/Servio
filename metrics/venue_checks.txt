@@ -1,0 +1,11 @@
+./app/api/ai-assistant/plan/route.ts:16:import { assertVenueCapability } from "@/lib/auth/permissions";
+./app/api/ai-assistant/plan/route.ts:48:      const { role } = await assertVenueCapability(
+./app/api/ai-assistant/execute/route.ts:20:import { assertVenueCapability, Capability } from "@/lib/auth/permissions";
+./app/api/ai-assistant/execute/route.ts:59:      const { role } = await assertVenueCapability(
+./lib/auth/permissions.ts:275:export async function assertVenueCapability(
+./lib/auth/permissions.ts:307:    await assertVenueCapability(userId, venueId, action);
+./lib/auth/permissions.ts:330: * @deprecated Use assertVenueCapability instead
+./lib/auth/permissions.ts:333:export async function isVenueOwner(
+./lib/auth/permissions.ts:342: * @deprecated Use assertVenueCapability instead
+./lib/auth/permissions.ts:345:export async function isVenueManager(
+./lib/auth/permissions.ts:354: * @deprecated Use assertVenueCapability instead

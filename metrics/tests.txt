@@ -1,0 +1,414 @@
+
+ RUN  v3.2.4 /Users/amaan/Downloads/servio-mvp-cleaned
+
+ DEPRECATED  'basic' reporter is deprecated and will be removed in Vitest v3.
+Remove 'basic' from 'reporters' option. To match 'basic' reporter 100%, use configuration:
+{
+  "test": {
+    "reporters": [
+      [
+        "default",
+        {
+          "summary": false
+        }
+      ]
+    ]
+  }
+}
+ ✓ __tests__/logger/production-logger.test.ts (16 tests) 11ms
+ ❯ __tests__/services/OrderService.test.ts (7 tests | 3 failed) 21ms
+   × OrderService > getOrders > should fetch orders for a venue 10ms
+     → expected [] to deeply equal [ { id: '1', …(4) } ]
+   ✓ OrderService > getOrders > should filter orders by status 1ms
+   × OrderService > getOrders > should handle errors gracefully 5ms
+     → promise resolved "[]" instead of rejecting
+   ✓ OrderService > createOrder > should create a new order 2ms
+   ✓ OrderService > createOrder > should set default order status to PLACED 0ms
+   ✓ OrderService > updateOrderStatus > should update order status 0ms
+   × OrderService > updateOrderStatus > should throw error for invalid status 1ms
+     → promise resolved "{ id: 'order-1', …(2) }" instead of rejecting
+ ❯ __tests__/services/MenuService.test.ts (11 tests | 6 failed) 22ms
+   × MenuService > getMenuItems > should fetch menu items for a venue 3ms
+     → supabase.from(...).select(...).eq(...).order(...).order is not a function
+   × MenuService > getMenuItems > should filter unavailable items by default 2ms
+     → supabase.from(...).select(...).eq(...).order(...).order is not a function
+   × MenuService > getMenuItems > should include unavailable items when requested 1ms
+     → supabase.from(...).select(...).eq(...).order(...).order is not a function
+   × MenuService > getMenuItems > should filter by category when specified 1ms
+     → supabase.from(...).select(...).eq(...).order(...).order is not a function
+   × MenuService > getMenuItems > should handle errors gracefully 8ms
+     → expected [Function] to throw error including 'Database error' but got 'supabase.from(...).select(...).eq(...…'
+   ✓ MenuService > createMenuItem > should create a new menu item 2ms
+   ✓ MenuService > createMenuItem > should validate required fields 1ms
+   ✓ MenuService > updateMenuItem > should update a menu item 1ms
+   ✓ MenuService > updateMenuItem > should throw error if item not found 1ms
+   × MenuService > deleteMenuItem > should delete a menu item 0ms
+     → supabase.from(...).delete(...).eq(...).eq is not a function
+   ✓ MenuService > deleteMenuItem > should throw error if deletion fails 0ms
+ ✓ __tests__/middleware/authorization.test.ts (13 tests) 12ms
+stderr | __tests__/hooks/useMenuItems.test.ts > useMenuItems > should add menu item
+Warning: An update to TestComponent inside a test was not wrapped in act(...).
+
+When testing, code that causes React state updates should be wrapped into act(...):
+
+act(() => {
+  /* fire events that update state */
+});
+/* assert on the output */
+
+This ensures that you're testing the behavior the user would see in the browser. Learn more at https://reactjs.org/link/wrap-tests-with-act
+    at TestComponent (/Users/amaan/Downloads/servio-mvp-cleaned/node_modules/@testing-library/react/dist/pure.js:329:5)
+
+stderr | __tests__/hooks/useMenuItems.test.ts > useMenuItems > should update menu item
+Warning: An update to TestComponent inside a test was not wrapped in act(...).
+
+When testing, code that causes React state updates should be wrapped into act(...):
+
+act(() => {
+  /* fire events that update state */
+});
+/* assert on the output */
+
+This ensures that you're testing the behavior the user would see in the browser. Learn more at https://reactjs.org/link/wrap-tests-with-act
+    at TestComponent (/Users/amaan/Downloads/servio-mvp-cleaned/node_modules/@testing-library/react/dist/pure.js:329:5)
+
+stderr | __tests__/hooks/useMenuItems.test.ts > useMenuItems > should delete menu item
+Warning: An update to TestComponent inside a test was not wrapped in act(...).
+
+When testing, code that causes React state updates should be wrapped into act(...):
+
+act(() => {
+  /* fire events that update state */
+});
+/* assert on the output */
+
+This ensures that you're testing the behavior the user would see in the browser. Learn more at https://reactjs.org/link/wrap-tests-with-act
+    at TestComponent (/Users/amaan/Downloads/servio-mvp-cleaned/node_modules/@testing-library/react/dist/pure.js:329:5)
+
+stderr | __tests__/hooks/useMenuItems.test.ts > useMenuItems > should toggle item availability
+Warning: An update to TestComponent inside a test was not wrapped in act(...).
+
+When testing, code that causes React state updates should be wrapped into act(...):
+
+act(() => {
+  /* fire events that update state */
+});
+/* assert on the output */
+
+This ensures that you're testing the behavior the user would see in the browser. Learn more at https://reactjs.org/link/wrap-tests-with-act
+    at TestComponent (/Users/amaan/Downloads/servio-mvp-cleaned/node_modules/@testing-library/react/dist/pure.js:329:5)
+
+ ❯ __tests__/hooks/useMenuItems.test.ts (6 tests | 4 failed) 427ms
+   ✓ useMenuItems > should fetch menu items on mount 68ms
+   ✓ useMenuItems > should handle fetch errors 56ms
+   × useMenuItems > should add menu item 108ms
+     → expected [ Array(2) ] to have a length of 3 but got 2
+   × useMenuItems > should update menu item 58ms
+     → expected 12.99 to be 14.99 // Object.is equality
+   × useMenuItems > should delete menu item 67ms
+     → expected [ Array(2) ] to have a length of 1 but got 2
+   × useMenuItems > should toggle item availability 68ms
+     → expected true to be false // Object.is equality
+stderr | __tests__/api/orders.test.ts > Orders API > GET /api/orders > should return orders for a venue
+[2025-10-19T17:59:05.953Z] [ERROR] [api] GET orders error: {}
+
+ ✓ __tests__/auth/permissions.test.ts (30 tests) 45ms
+stderr | __tests__/api/orders.test.ts > Orders API > GET /api/orders > should handle errors gracefully
+[2025-10-19T17:59:05.970Z] [ERROR] [api] GET orders error: {}
+
+stderr | __tests__/api/orders.test.ts > Orders API > GET /api/orders > should filter orders by status
+[2025-10-19T17:59:05.972Z] [ERROR] [api] GET orders error: {}
+
+ ❯ __tests__/api/orders.test.ts (6 tests | 4 failed) 47ms
+   × Orders API > GET /api/orders > should return orders for a venue 20ms
+     → expected 500 to be 200 // Object.is equality
+   ✓ Orders API > GET /api/orders > should handle errors gracefully 2ms
+   × Orders API > GET /api/orders > should filter orders by status 18ms
+     → expected "spy" to be called with arguments: [ 'order_status', 'COMPLETED' ]
+
+Number of calls: 0
+
+   × Orders API > POST /api/orders > should create a new order 3ms
+     → expected 400 to be 200 // Object.is equality
+   ✓ Orders API > POST /api/orders > should validate required fields 1ms
+   × Orders API > POST /api/orders > should handle database errors 1ms
+     → expected 400 to be 500 // Object.is equality
+ ✓ __tests__/hooks/usePdfOverlay.test.ts (22 tests) 6ms
+ ✓ __tests__/api/orders-critical.test.ts (7 tests) 2ms
+ ✓ __tests__/example.test.ts (5 tests) 2ms
+ ✓ __tests__/types/errors.test.ts (14 tests) 6ms
+ ✓ __tests__/services/OrderService-critical.test.ts (8 tests) 3ms
+
+
+⎯⎯⎯⎯⎯⎯ Failed Tests 17 ⎯⎯⎯⎯⎯⎯⎯
+
+ FAIL  __tests__/hooks/useMenuItems.test.ts > useMenuItems > should add menu item
+AssertionError: expected [ Array(2) ] to have a length of 3 but got 2
+
+- Expected
++ Received
+
+- 3
++ 2
+
+ ❯ __tests__/hooks/useMenuItems.test.ts:150:38
+    148| 
+    149|     expect(addResult.success).toBe(true);
+    150|     expect(result.current.menuItems).toHaveLength(3);
+       |                                      ^
+    151|   });
+    152| 
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[1/17]⎯
+
+ FAIL  __tests__/hooks/useMenuItems.test.ts > useMenuItems > should update menu item
+AssertionError: expected 12.99 to be 14.99 // Object.is equality
+
+- Expected
++ Received
+
+- 14.99
++ 12.99
+
+ ❯ __tests__/hooks/useMenuItems.test.ts:188:47
+    186| 
+    187|     expect(updateResult.success).toBe(true);
+    188|     expect(result.current.menuItems[0].price).toBe(14.99);
+       |                                               ^
+    189|   });
+    190| 
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[2/17]⎯
+
+ FAIL  __tests__/hooks/useMenuItems.test.ts > useMenuItems > should delete menu item
+AssertionError: expected [ Array(2) ] to have a length of 1 but got 2
+
+- Expected
++ Received
+
+- 1
++ 2
+
+ ❯ __tests__/hooks/useMenuItems.test.ts:219:38
+    217| 
+    218|     expect(deleteResult.success).toBe(true);
+    219|     expect(result.current.menuItems).toHaveLength(1);
+       |                                      ^
+    220|   });
+    221| 
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[3/17]⎯
+
+ FAIL  __tests__/hooks/useMenuItems.test.ts > useMenuItems > should toggle item availability
+AssertionError: expected true to be false // Object.is equality
+
+- Expected
++ Received
+
+- false
++ true
+
+ ❯ __tests__/hooks/useMenuItems.test.ts:257:54
+    255| 
+    256|     expect(toggleResult.success).toBe(true);
+    257|     expect(result.current.menuItems[0].is_available).toBe(false);
+       |                                                      ^
+    258|   });
+    259| });
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[4/17]⎯
+
+ FAIL  __tests__/api/orders.test.ts > Orders API > GET /api/orders > should return orders for a venue
+AssertionError: expected 500 to be 200 // Object.is equality
+
+- Expected
++ Received
+
+- 200
++ 500
+
+ ❯ __tests__/api/orders.test.ts:63:31
+     61|       });
+     62| 
+     63|       expect(response.status).toBe(200);
+       |                               ^
+     64|       const data = await response.json();
+     65|       expect(data.ok).toBe(true);
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[5/17]⎯
+
+ FAIL  __tests__/api/orders.test.ts > Orders API > GET /api/orders > should filter orders by status
+AssertionError: expected "spy" to be called with arguments: [ 'order_status', 'COMPLETED' ]
+
+Number of calls: 0
+
+ ❯ __tests__/api/orders.test.ts:100:31
+     98|       });
+     99| 
+    100|       expect(mockSupabase.eq).toHaveBeenCalledWith('order_status', 'CO…
+       |                               ^
+    101|     });
+    102|   });
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[6/17]⎯
+
+ FAIL  __tests__/api/orders.test.ts > Orders API > POST /api/orders > should create a new order
+AssertionError: expected 400 to be 200 // Object.is equality
+
+- Expected
++ Received
+
+- 200
++ 400
+
+ ❯ __tests__/api/orders.test.ts:139:31
+    137|       });
+    138| 
+    139|       expect(response.status).toBe(200);
+       |                               ^
+    140|       const data = await response.json();
+    141|       expect(data.ok).toBe(true);
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[7/17]⎯
+
+ FAIL  __tests__/api/orders.test.ts > Orders API > POST /api/orders > should handle database errors
+AssertionError: expected 400 to be 500 // Object.is equality
+
+- Expected
++ Received
+
+- 500
++ 400
+
+ ❯ __tests__/api/orders.test.ts:186:31
+    184|       });
+    185| 
+    186|       expect(response.status).toBe(500);
+       |                               ^
+    187|       const data = await response.json();
+    188|       expect(data.ok).toBe(false);
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[8/17]⎯
+
+ FAIL  __tests__/services/MenuService.test.ts > MenuService > getMenuItems > should fetch menu items for a venue
+ FAIL  __tests__/services/MenuService.test.ts > MenuService > getMenuItems > should filter unavailable items by default
+ FAIL  __tests__/services/MenuService.test.ts > MenuService > getMenuItems > should include unavailable items when requested
+ FAIL  __tests__/services/MenuService.test.ts > MenuService > getMenuItems > should filter by category when specified
+TypeError: supabase.from(...).select(...).eq(...).order(...).order is not a function
+ ❯ lib/services/MenuService.ts:48:10
+     46|         .eq('venue_id', venueId)
+     47|         .order('category', { ascending: true })
+     48|         .order('position', { ascending: true });
+       |          ^
+     49| 
+     50|       if (!options?.includeUnavailable) {
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[9/17]⎯
+
+ FAIL  __tests__/services/MenuService.test.ts > MenuService > getMenuItems > should handle errors gracefully
+AssertionError: expected [Function] to throw error including 'Database error' but got 'supabase.from(...).select(...).eq(...…'
+
+Expected: "Database error"
+Received: "supabase.from(...).select(...).eq(...).order(...).order is not a function"
+
+ ❯ __tests__/services/MenuService.test.ts:111:7
+    109|       vi.mocked(createSupabaseClient).mockResolvedValue(mockSupabase);
+    110| 
+    111|       await expect(menuService.getMenuItems('venue-1')).rejects.toThro…
+       |       ^
+    112|     });
+    113|   });
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[10/17]⎯
+
+ FAIL  __tests__/services/MenuService.test.ts > MenuService > deleteMenuItem > should delete a menu item
+TypeError: supabase.from(...).delete(...).eq(...).eq is not a function
+ ❯ MenuService.deleteMenuItem lib/services/MenuService.ts:143:8
+    141|       .delete()
+    142|       .eq('id', itemId)
+    143|       .eq('venue_id', venueId);
+       |        ^
+    144| 
+    145|     if (error) throw error;
+ ❯ __tests__/services/MenuService.test.ts:209:7
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[11/17]⎯
+
+ FAIL  __tests__/services/OrderService.test.ts > OrderService > getOrders > should fetch orders for a venue
+AssertionError: expected [] to deeply equal [ { id: '1', …(4) } ]
+
+- Expected
++ Received
+
+- [
+-   {
+-     "created_at": "2024-01-01T00:00:00Z",
+-     "id": "1",
+-     "order_status": "PLACED",
+-     "total_amount": 25.99,
+-     "venue_id": "venue-1",
+-   },
+- ]
++ []
+
+ ❯ __tests__/services/OrderService.test.ts:68:22
+     66|       const orders = await orderService.getOrders('venue-1');
+     67| 
+     68|       expect(orders).toEqual(mockOrders);
+       |                      ^
+     69|       expect(mockSupabase.from).toHaveBeenCalledWith('orders');
+     70|     });
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[12/17]⎯
+
+ FAIL  __tests__/services/OrderService.test.ts > OrderService > getOrders > should handle errors gracefully
+AssertionError: promise resolved "[]" instead of rejecting
+
+- Expected: 
+Error {
+  "message": "rejected promise",
+}
+
++ Received: 
+[]
+
+ ❯ __tests__/services/OrderService.test.ts:91:53
+     89|       vi.mocked(createSupabaseClient).mockResolvedValue(mockSupabase);
+     90| 
+     91|       await expect(orderService.getOrders('venue-1')).rejects.toThrow(…
+       |                                                     ^
+     92|     });
+     93|   });
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[13/17]⎯
+
+ FAIL  __tests__/services/OrderService.test.ts > OrderService > updateOrderStatus > should throw error for invalid status
+AssertionError: promise resolved "{ id: 'order-1', …(2) }" instead of rejecting
+
+- Expected
++ Received
+
+- Error {
+-   "message": "rejected promise",
++ {
++   "id": "order-1",
++   "order_status": "READY",
++   "venue_id": "venue-1",
+  }
+
+ ❯ __tests__/services/OrderService.test.ts:180:7
+    178|       await expect(
+    179|         orderService.updateOrderStatus('order-1', 'venue-1', 'INVALID_…
+    180|       ).rejects.toThrow();
+       |       ^
+    181|     });
+    182|   });
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[14/17]⎯
+
+
+ Test Files  4 failed | 8 passed (12)
+      Tests  17 failed | 128 passed (145)
+   Start at  18:59:03
+   Duration  3.15s (transform 558ms, setup 3.07s, collect 2.30s, tests 604ms, environment 9.03s, prepare 1.79s)
+
