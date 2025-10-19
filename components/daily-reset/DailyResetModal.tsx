@@ -11,7 +11,7 @@ import {
   DialogTitle,
 } from '@/components/ui/dialog';
 import { AlertTriangle, Loader2, CheckCircle2 } from 'lucide-react';
-import { logger } from '@/lib/logger';
+
 
 interface DailyResetModalProps {
   isOpen: boolean;
@@ -37,7 +37,7 @@ export function DailyResetModal({
       await onConfirm();
       onClose();
     } catch (error) {
-      logger.error('Daily reset failed:', error);
+      console.error('Daily reset failed:', error);
       // Error handling is done in the parent component
     }
   };

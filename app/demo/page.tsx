@@ -10,7 +10,7 @@ import Link from 'next/link';
 import dynamic from 'next/dynamic';
 import { demoMenuItems } from '@/data/demoMenuItems';
 import { createClient } from '@/lib/supabase/client';
-import { logger } from '@/lib/logger';
+
 
 // Dynamically import heavy components to avoid hydration issues
 const DemoAnalytics = dynamic(() => import('@/components/demo-analytics'), {
@@ -38,7 +38,7 @@ class DemoErrorBoundary extends React.Component<
   }
 
   componentDidCatch(error: Error, errorInfo: React.ErrorInfo) {
-    logger.error('Demo component error:', error, errorInfo);
+    console.error('Demo component error:', error, errorInfo);
   }
 
   render() {
@@ -63,14 +63,14 @@ export default function DemoPage() {
   
   // Check auth status safely after component mounts
   useEffect(() => {
-    logger.debug('[DEMO DEBUG] Running auth check effect');
+    console.debug('[DEMO DEBUG] Running auth check effect');
     const checkAuth = async () => {
       try {
-        logger.debug('[DEMO DEBUG] Checking for auth cookies...');
+        console.debug('[DEMO DEBUG] Checking for auth cookies...');
         // Check if user has auth cookies without using the hook during render
         const hasAuthCookies = document.cookie.includes('sb-') || 
                               document.cookie.includes('supabase');
-        logger.debug('[DEMO DEBUG] Auth cookies present:', hasAuthCookies);
+        console.debug('[DEMO DEBUG] Auth cookies present:', hasAuthCookies);
         setIsAuthenticated(hasAuthCookies);
         
         // If authenticated, fetch primary venue
@@ -92,7 +92,7 @@ export default function DemoPage() {
           }
         }
       } catch (error) {
-        logger.error('[DEMO DEBUG] Auth check error:', error);
+        console.error('[DEMO DEBUG] Auth check error:', error);
         // If auth check fails, default to unauthenticated
         setIsAuthenticated(false);
         setPrimaryVenueId(null);
@@ -103,32 +103,32 @@ export default function DemoPage() {
   }, []);
 
   useEffect(() => {
-    logger.debug('[DEMO DEBUG] Setting mounted state to true');
+    console.debug('[DEMO DEBUG] Setting mounted state to true');
     setMounted(true);
-    logger.debug('[DEMO DEBUG] Demo page fully mounted');
+    console.debug('[DEMO DEBUG] Demo page fully mounted');
   }, []);
 
   // Global error handler
   useEffect(() => {
-    logger.debug('[DEMO DEBUG] Setting up global error handler');
+    console.debug('[DEMO DEBUG] Setting up global error handler');
     const handleError = (error: ErrorEvent) => {
-      logger.error('[DEMO DEBUG] Global error caught:', error);
-      logger.error('[DEMO DEBUG] Error message:', error.message);
-      logger.error('[DEMO DEBUG] Error filename:', error.filename);
-      logger.error('[DEMO DEBUG] Error line/col:', error.lineno, error.colno);
+      console.error('[DEMO DEBUG] Global error caught:', error);
+      console.error('[DEMO DEBUG] Error message:', error.message);
+      console.error('[DEMO DEBUG] Error filename:', error.filename);
+      console.error('[DEMO DEBUG] Error line/col:', error.lineno, error.colno);
       setHasError(true);
     };
 
     window.addEventListener('error', handleError);
     return () => {
-      logger.debug('[DEMO DEBUG] Cleaning up error handler');
+      console.debug('[DEMO DEBUG] Cleaning up error handler');
       window.removeEventListener('error', handleError);
     };
   }, []);
 
   // NOW we can do conditional rendering after all hooks are called
   if (!mounted) {
-    logger.debug('[DEMO DEBUG] Component not mounted yet, showing loading state');
+    console.debug('[DEMO DEBUG] Component not mounted yet, showing loading state');
     return (
       <div className="min-h-screen bg-gradient-to-br from-purple-50 via-white to-purple-50 flex items-center justify-center">
         <div className="animate-pulse h-32 w-32 rounded-lg bg-gray-100" />
@@ -137,7 +137,7 @@ export default function DemoPage() {
   }
 
   if (hasError) {
-    logger.debug('[DEMO DEBUG] Error state detected, showing error UI');
+    console.debug('[DEMO DEBUG] Error state detected, showing error UI');
     return (
       <div className="min-h-screen bg-gradient-to-br from-purple-50 via-white to-purple-50 flex items-center justify-center">
         <Card className="max-w-md w-full mx-4">
@@ -229,7 +229,7 @@ export default function DemoPage() {
 }
 
 function CustomerDemoView() {
-  logger.debug('[DEMO DEBUG] Rendering CustomerDemoView');
+  console.debug('[DEMO DEBUG] Rendering CustomerDemoView');
   return (
     <div className="space-y-8">
       {/* Hero Section */}
@@ -308,7 +308,7 @@ function CustomerDemoView() {
 }
 
 function OwnerDemoView({ isAuthenticated }: { isAuthenticated: boolean }) {
-  logger.debug('[DEMO DEBUG] Rendering OwnerDemoView, isAuthenticated:', isAuthenticated);
+  console.debug('[DEMO DEBUG] Rendering OwnerDemoView, isAuthenticated:', isAuthenticated);
   return (
     <div className="space-y-8">
       {/* Owner Hero */}

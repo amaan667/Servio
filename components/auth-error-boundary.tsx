@@ -1,7 +1,7 @@
 'use client';
 
 import React from 'react';
-import { logger } from '@/lib/logger';
+
 
 interface AuthErrorBoundaryState {
   hasError: boolean;
@@ -25,8 +25,8 @@ export class AuthErrorBoundary extends React.Component<AuthErrorBoundaryProps, A
   }
 
   componentDidCatch(error: Error, errorInfo: React.ErrorInfo) {
-    logger.error('[AUTH ERROR BOUNDARY] Caught error:', error);
-    logger.error('[AUTH ERROR BOUNDARY] Error info:', errorInfo);
+    console.error('[AUTH ERROR BOUNDARY] Caught error:', error);
+    console.error('[AUTH ERROR BOUNDARY] Error info:', errorInfo);
     
     this.setState({
       error,
@@ -124,7 +124,7 @@ export class AuthErrorBoundary extends React.Component<AuthErrorBoundaryProps, A
 // Hook for functional components to use error boundary
 export const useAuthErrorHandler = () => {
   const handleAuthError = (error: Error) => {
-    logger.error('[AUTH ERROR HANDLER] Handling auth error:', error);
+    console.error('[AUTH ERROR HANDLER] Handling auth error:', error);
     
     // You can add custom error handling logic here
     // For example, redirect to sign-in page for specific errors

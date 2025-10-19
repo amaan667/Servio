@@ -22,7 +22,7 @@ import {
 } from '@/components/ui/tooltip';
 import { TableOrder } from '@/hooks/useTableOrders';
 import { calculateOrderTotal, formatPrice, normalizePrice } from '@/lib/pricing-utils';
-import { logger } from '@/lib/logger';
+
 
 // Helper functions for order status flow
 const getNextOrderStatus = (currentStatus: string) => {
@@ -88,7 +88,7 @@ export function TableOrderCard({ order, venueId, onActionComplete }: TableOrderC
 
       onActionComplete?.();
     } catch (error) {
-      logger.error('Error removing order:', error);
+      console.error('Error removing order:', error);
     } finally {
       setIsRemoving(false);
     }
@@ -150,7 +150,7 @@ export function TableOrderCard({ order, venueId, onActionComplete }: TableOrderC
 
       onActionComplete?.();
     } catch (error) {
-      logger.error('Error processing payment:', error);
+      console.error('Error processing payment:', error);
     } finally {
       setIsProcessingPayment(false);
     }
@@ -177,7 +177,7 @@ export function TableOrderCard({ order, venueId, onActionComplete }: TableOrderC
 
       onActionComplete?.();
     } catch (error) {
-      logger.error('Error updating order status:', error);
+      console.error('Error updating order status:', error);
     } finally {
       setIsProcessingPayment(false);
     }

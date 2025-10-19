@@ -16,7 +16,7 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@
 import { Badge } from '@/components/ui/badge';
 import { Plus, Trash2 } from 'lucide-react';
 import type { IngredientUnit, StockLevel } from '@/types/inventory';
-import { logger } from '@/lib/logger';
+
 
 interface RecipeDialogProps {
   open: boolean;
@@ -56,7 +56,7 @@ export function RecipeDialog({ open, onOpenChange, menuItemId, menuItemName, ven
         setIngredients(result.data);
       }
     } catch (error) {
-      logger.error('Error fetching ingredients:', error);
+      console.error('Error fetching ingredients:', error);
     }
   };
 
@@ -75,7 +75,7 @@ export function RecipeDialog({ open, onOpenChange, menuItemId, menuItemName, ven
         setRecipe(mappedRecipe);
       }
     } catch (error) {
-      logger.error('Error fetching recipe:', error);
+      console.error('Error fetching recipe:', error);
     }
   };
 
@@ -123,7 +123,7 @@ export function RecipeDialog({ open, onOpenChange, menuItemId, menuItemName, ven
         onOpenChange(false);
       }
     } catch (error) {
-      logger.error('Error saving recipe:', error);
+      console.error('Error saving recipe:', error);
     } finally {
       setLoading(false);
     }

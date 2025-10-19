@@ -108,7 +108,7 @@ export default function CompleteProfileForm({ user }: CompleteProfileFormProps) 
           password: formData.password
         });
         if (passwordError) {
-          logger.error('[COMPLETE-PROFILE] Password update error', passwordError);
+          console.error('[COMPLETE-PROFILE] Password update error', passwordError);
           setError(`Failed to set password: ${passwordError.message}`);
           setLoading(false);
           return;
@@ -137,7 +137,7 @@ export default function CompleteProfileForm({ user }: CompleteProfileFormProps) 
       const j = await res.json().catch(()=>({}));
       
       if (!res.ok || !j?.ok) {
-        logger.error("[COMPLETE-PROFILE] Venue upsert failed:", j);
+        console.error("[COMPLETE-PROFILE] Venue upsert failed:", j);
         throw new Error(j?.error || 'Failed to save venue');
       }
 
@@ -153,12 +153,12 @@ export default function CompleteProfileForm({ user }: CompleteProfileFormProps) 
           phone: formData.phone || null
         }
       });
-      if (metadataError) logger.error('[COMPLETE-PROFILE] metadata update error', metadataError);
+      if (metadataError) console.error('[COMPLETE-PROFILE] metadata update error', metadataError);
 
       router.replace(`/dashboard/${returnedVenueId}`);
     } catch (error: any) {
-      logger.error("[COMPLETE-PROFILE] Failed to complete profile:", error);
-      logger.error("Failed to complete profile", { error });
+      console.error("[COMPLETE-PROFILE] Failed to complete profile:", error);
+      console.error("Failed to complete profile", { error });
       setError(error.message || "Failed to complete profile setup");
     } finally {
       setLoading(false);

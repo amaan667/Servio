@@ -11,7 +11,7 @@ import { Badge } from '@/components/ui/badge';
 import { supabaseBrowser } from '@/lib/supabase/browser';
 import Link from 'next/link';
 import { Check, Loader2, Mail } from 'lucide-react';
-import { logger } from '@/lib/logger';
+
 
 interface SignUpFormProps {
   onGoogleSignIn: () => Promise<void>;
@@ -109,7 +109,7 @@ export default function SignUpForm({ onGoogleSignIn, isSigningUp = false }: Sign
         setLoading(false);
       }
     } catch (err: any) {
-      logger.error('Signup error:', err);
+      console.error('Signup error:', err);
       setError(err.message || 'Sign-up failed. Please try again.');
       setLoading(false);
     }
@@ -123,7 +123,7 @@ export default function SignUpForm({ onGoogleSignIn, isSigningUp = false }: Sign
       await onGoogleSignIn();
       // The redirect will happen automatically
     } catch (err: any) {
-      logger.error('[SIGN-UP] Google sign-up error:', err);
+      console.error('[SIGN-UP] Google sign-up error:', err);
       setError(err.message || 'Google sign-up failed. Please try again.');
       setLoading(false);
     }

@@ -256,9 +256,9 @@ async function replaceCatalog(supabase: any, venueId: string, fixedPayload: any,
           .select();
         
         if (insertError) {
-          logger.error('[CATALOG REPLACE] Error storing PDF images:', insertError);
+          logger.error('[CATALOG REPLACE] Error storing PDF images:', { error: insertError });
         } else {
-          logger.debug('[CATALOG REPLACE] Stored', pdfImages.length, 'PDF images:', insertData);
+          logger.debug('[CATALOG REPLACE] Stored PDF images', { count: pdfImages.length, data: insertData });
         }
       }
 

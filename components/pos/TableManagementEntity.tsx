@@ -30,7 +30,7 @@ import {
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
-import { logger } from '@/lib/logger';
+
 import {
   Select,
   SelectContent,
@@ -108,7 +108,7 @@ export function TableManagementEntity({ venueId }: TableManagementEntityProps) {
         setCounters(countersData.counters || []);
       }
     } catch (error) {
-      logger.error('Error fetching entities:', error);
+      console.error('Error fetching entities:', error);
     } finally {
       setLoading(false);
     }
@@ -137,7 +137,7 @@ export function TableManagementEntity({ venueId }: TableManagementEntityProps) {
         fetchEntities();
       }
     } catch (error) {
-      logger.error('Error seating party:', error);
+      console.error('Error seating party:', error);
     }
   };
 
@@ -157,7 +157,7 @@ export function TableManagementEntity({ venueId }: TableManagementEntityProps) {
         fetchEntities();
       }
     } catch (error) {
-      logger.error(`Error ${action}:`, error);
+      console.error(`Error ${action}:`, error);
     }
   };
 

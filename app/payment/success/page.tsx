@@ -3,7 +3,7 @@
 import { useSearchParams } from "next/navigation";
 import OrderSummary from "@/components/order-summary";
 import { useEffect, useState } from "react";
-import { logger } from '@/lib/logger';
+
 
 export default function PaymentSuccessPage() {
   const searchParams = useSearchParams();
@@ -31,7 +31,7 @@ export default function PaymentSuccessPage() {
           }
         })
         .catch(error => {
-          logger.error('Error looking up order by session:', error);
+          console.error('Error looking up order by session:', error);
         });
     }
     
@@ -47,7 +47,7 @@ export default function PaymentSuccessPage() {
           // Clean up after loading
           localStorage.removeItem("demo-order-data");
         } catch (error) {
-          logger.error('Error parsing demo order data:', error);
+          console.error('Error parsing demo order data:', error);
         }
       } else {
         // Fallback: try to reconstruct order from URL parameters

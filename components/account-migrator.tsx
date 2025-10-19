@@ -52,7 +52,7 @@ export function AccountMigrator() {
 
   useEffect(() => {
     loadLocalAccounts();
-    logger.debug("ACCOUNT_MIGRATOR: Component initialized", {
+    console.debug("ACCOUNT_MIGRATOR: Component initialized", {
       hasSupabase: hasSupabaseConfig,
       timestamp: new Date().toISOString(),
     });
@@ -63,11 +63,11 @@ export function AccountMigrator() {
       const stored = localStorage.getItem("servio-accounts");
       const accounts = stored ? JSON.parse(stored) : [];
       setLocalAccounts(accounts);
-      logger.debug("ACCOUNT_MIGRATOR: Local accounts loaded", {
+      console.debug("ACCOUNT_MIGRATOR: Local accounts loaded", {
         count: accounts.length,
       });
     } catch (error) {
-      logger.error(
+      console.error(
         "ACCOUNT_MIGRATOR: Failed to load local accounts",
         error as any,
       );
@@ -79,7 +79,7 @@ export function AccountMigrator() {
     const timestamp = new Date().toLocaleTimeString();
     const logEntry = `[${timestamp}] ${message}`;
     setLogs((prev: string[]) => [...prev, logEntry]);
-    logger.info("MIGRATION_LOG: " + message);
+    console.info("MIGRATION_LOG: " + message);
   };
 
   const migrateAccount = async (account: LocalAccount): Promise<boolean> => {
@@ -95,7 +95,7 @@ export function AccountMigrator() {
       return false;
     } catch (error: any) {
       addLog(`❌ Error migrating ${account.contactEmail}: ${error.message}`);
-      logger.error("ACCOUNT_MIGRATOR: Migration error", {
+      console.error("ACCOUNT_MIGRATOR: Migration error", {
         email: account.contactEmail,
         error,
       } as any);
@@ -159,7 +159,7 @@ export function AccountMigrator() {
       setLocalAccounts([]);
       setMigrationStatus({});
       addLog("🗑️ Local accounts cleared");
-      logger.info("ACCOUNT_MIGRATOR: Local accounts cleared");
+      console.info("ACCOUNT_MIGRATOR: Local accounts cleared");
     }
   };
 
@@ -192,7 +192,7 @@ export function AccountMigrator() {
         }
       } catch (error) {
         addLog("❌ Failed to import accounts");
-        logger.error("ACCOUNT_MIGRATOR: Import error", error as any);
+        console.error("ACCOUNT_MIGRATOR: Import error", error as any);
       }
     };
     reader.readAsText(file);

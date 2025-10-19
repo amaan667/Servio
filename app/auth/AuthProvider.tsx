@@ -36,7 +36,7 @@ export default function AuthProvider({
   const [loading, setLoading] = useState(!initialSession);
 
   useEffect(() => {
-    logger.debug('[AUTH DEBUG] AuthProvider useEffect starting', {
+    console.debug('[AUTH DEBUG] AuthProvider useEffect starting', {
       timestamp: new Date().toISOString(),
       hasInitialSession: !!initialSession,
       initialSessionUserId: initialSession?.user?.id,
@@ -45,9 +45,9 @@ export default function AuthProvider({
     let supabase;
     try {
       supabase = supabaseBrowser();
-      logger.debug('[AUTH DEBUG] Supabase browser client initialized successfully');
+      console.debug('[AUTH DEBUG] Supabase browser client initialized successfully');
     } catch (error) {
-      logger.error('[AUTH DEBUG] Error initializing Supabase browser client:', error);
+      console.error('[AUTH DEBUG] Error initializing Supabase browser client:', error);
       setSession(null);
       setUser(null);
       setLoading(false);
@@ -58,18 +58,18 @@ export default function AuthProvider({
     const getInitialSession = async () => {
       if (initialSession) {
         // We already have a session, no need to fetch
-        logger.debug('[AUTH DEBUG] Using initial session from server', {
+        console.debug('[AUTH DEBUG] Using initial session from server', {
           userId: initialSession.user.id,
         });
         setLoading(false);
         return;
       }
       
-      logger.debug('[AUTH DEBUG] Fetching session from client');
+      console.debug('[AUTH DEBUG] Fetching session from client');
       try {
         const { data: { session: currentSession } } = await supabase.auth.getSession();
         
-        logger.debug('[AUTH DEBUG] Client session fetched', {
+        console.debug('[AUTH DEBUG] Client session fetched', {
           hasSession: !!currentSession,
           userId: currentSession?.user?.id,
         });
@@ -78,7 +78,7 @@ export default function AuthProvider({
         setUser(currentSession?.user || null);
         setLoading(false);
       } catch (error) {
-        logger.error('[AUTH DEBUG] Error fetching client session:', error);
+        console.error('[AUTH DEBUG] Error fetching client session:', error);
         setSession(null);
         setUser(null);
         setLoading(false);
@@ -92,7 +92,7 @@ export default function AuthProvider({
     let subscription: any;
     try {
       const { data } = supabase.auth.onAuthStateChange(async (event: any, newSession: any) => {
-        logger.debug('[AUTH DEBUG] Auth state changed', {
+        console.debug('[AUTH DEBUG] Auth state changed', {
           event,
           hasSession: !!newSession,
           userId: newSession?.user?.id,
@@ -127,9 +127,9 @@ export default function AuthProvider({
         }
       });
       subscription = data?.subscription;
-      logger.debug('[AUTH DEBUG] Auth state change listener registered');
+      console.debug('[AUTH DEBUG] Auth state change listener registered');
     } catch (error) {
-      logger.error('[AUTH DEBUG] Error setting up auth state listener:', error);
+      console.error('[AUTH DEBUG] Error setting up auth state listener:', error);
       setLoading(false);
     }
     
@@ -147,14 +147,14 @@ export default function AuthProvider({
       const { error } = await supabase.auth.signOut();
       
       if (error) {
-        logger.error('[AUTH DEBUG] Supabase signOut error:', error);
+        console.error('[AUTH DEBUG] Supabase signOut error:', error);
       }
       
       // Clear local state immediately
       setSession(null);
       setUser(null);
     } catch (error) {
-      logger.error('[AUTH DEBUG] AuthProvider signOut error:', error);
+      console.error('[AUTH DEBUG] AuthProvider signOut error:', error);
       // Clear local state even if there's an error
       setSession(null);
       setUser(null);

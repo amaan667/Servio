@@ -64,18 +64,18 @@ export default function QuestionsClient({ venueId, venueName, mode = 'full' }: Q
 
   const fetchQuestions = async () => {
     try {
-      logger.debug('[FEEDBACK DEBUG] Fetching questions for venue:', venueId);
+      console.debug('[FEEDBACK DEBUG] Fetching questions for venue:', venueId);
       
       const response = await fetch(`/api/feedback/questions?venueId=${venueId}`);
-      logger.debug('[FEEDBACK DEBUG] Fetch response status:', response.status);
+      console.debug('[FEEDBACK DEBUG] Fetch response status:', response.status);
       
       if (response.ok) {
         const data = await response.json();
-        logger.debug('[FEEDBACK DEBUG] Fetched questions:', data);
+        console.debug('[FEEDBACK DEBUG] Fetched questions:', data);
         setQuestions(data.questions || []);
         setTotalCount(data.totalCount || 0);
       } else {
-        logger.error('[FEEDBACK DEBUG] Fetch failed:', response.status);
+        console.error('[FEEDBACK DEBUG] Fetch failed:', response.status);
         toast({
           title: "Error",
           description: "Couldn't load questions",
@@ -83,7 +83,7 @@ export default function QuestionsClient({ venueId, venueName, mode = 'full' }: Q
         });
       }
     } catch (error) {
-      logger.error('[FEEDBACK DEBUG] Fetch exception:', error);
+      console.error('[FEEDBACK DEBUG] Fetch exception:', error);
       toast({
         title: "Error",
         description: "Couldn't load questions",
@@ -162,7 +162,7 @@ export default function QuestionsClient({ venueId, venueName, mode = 'full' }: Q
         });
       }
     } catch (error) {
-      logger.error('[FEEDBACK DEBUG] Exception:', error);
+      console.error('[FEEDBACK DEBUG] Exception:', error);
       toast({
         title: "Error",
         description: "Couldn't save question",

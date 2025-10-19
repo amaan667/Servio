@@ -24,7 +24,7 @@ import {
 } from "lucide-react";
 import { createClient } from "@/lib/supabase/client";
 import { toast } from "@/hooks/use-toast";
-import { logger } from '@/lib/logger';
+
 
 interface OrderItem {
   menu_item_id: string;
@@ -176,7 +176,7 @@ export default function OrderSummaryPage() {
         .single();
 
       if (error) {
-        logger.error('Failed to fetch order:', error);
+        console.error('Failed to fetch order:', error);
         setError('Order not found or access denied');
         return;
       }
@@ -184,7 +184,7 @@ export default function OrderSummaryPage() {
       setOrder(data);
       setLastUpdate(new Date());
     } catch (err) {
-      logger.error('Error fetching order:', err);
+      console.error('Error fetching order:', err);
       setError('Failed to load order details');
     } finally {
       setLoading(false);
@@ -203,7 +203,7 @@ export default function OrderSummaryPage() {
         .order('sort_index', { ascending: true });
 
       if (error) {
-        logger.error('Failed to fetch feedback questions:', error);
+        console.error('Failed to fetch feedback questions:', error);
         // Use generic questions as fallback
         setFeedbackQuestions(GENERIC_QUESTIONS);
         return;
@@ -216,7 +216,7 @@ export default function OrderSummaryPage() {
         setFeedbackQuestions(GENERIC_QUESTIONS);
       }
     } catch (err) {
-      logger.error('Error fetching feedback questions:', err);
+      console.error('Error fetching feedback questions:', err);
       setFeedbackQuestions(GENERIC_QUESTIONS);
     }
   };
@@ -374,7 +374,7 @@ export default function OrderSummaryPage() {
         });
       }
     } catch (error) {
-      logger.error('Error submitting feedback:', error);
+      console.error('Error submitting feedback:', error);
       toast({
         title: "Error",
         description: "Failed to submit feedback. Please try again.",

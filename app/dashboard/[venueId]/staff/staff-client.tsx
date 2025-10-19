@@ -13,7 +13,7 @@ import { buildIsoFromLocal, isOvernight, addDaysISO } from '@/lib/time';
 import { Users, Clock, Calendar, ChevronLeft, ChevronRight, Plus } from 'lucide-react';
 import SimpleStaffGrid from '@/components/staff/SimpleStaffGrid';
 import EnhancedShiftSchedule from '@/components/staff/EnhancedShiftSchedule';
-import { logger } from '@/lib/logger';
+
 
 
 type StaffRow = {
@@ -77,10 +77,10 @@ export default function StaffClient({
           setStaff(j.staff || []);
           setStaffLoaded(true);
         } else {
-          logger.error('[AUTH DEBUG] Failed to load staff:', j?.error);
+          console.error('[AUTH DEBUG] Failed to load staff:', j?.error);
         }
       } catch (e) {
-        logger.error('[AUTH DEBUG] Failed to load staff:', e);
+        console.error('[AUTH DEBUG] Failed to load staff:', e);
       }
     };
 
@@ -100,7 +100,7 @@ export default function StaffClient({
         setAllShifts(shifts);
         setShiftsLoaded(true);
       } else {
-        logger.error('[AUTH DEBUG] Failed to load shifts:', j?.error);
+        console.error('[AUTH DEBUG] Failed to load shifts:', j?.error);
         setShiftsLoaded(true); // Set to true even on error to prevent infinite loading
       }
     };

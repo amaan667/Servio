@@ -13,7 +13,7 @@ import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Check, Loader2, Sparkles } from "lucide-react";
 import { loadStripe } from "@stripe/stripe-js";
-import { logger } from '@/lib/logger';
+
 
 const stripePromise = loadStripe(process.env.NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY!);
 
@@ -92,12 +92,12 @@ export function UpgradeModal({
         if (stripe) {
           const { error } = await stripe.redirectToCheckout({ sessionId });
           if (error) {
-            logger.error(error);
+            console.error(error);
           }
         }
       }
     } catch (error) {
-      logger.error("Error creating checkout session:", error);
+      console.error("Error creating checkout session:", error);
     } finally {
       setLoading(null);
     }

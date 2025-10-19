@@ -10,7 +10,7 @@ import { ScrollArea } from "@/components/ui/scroll-area";
 import { Sparkles, Clock, Check, X, Eye, Keyboard } from "lucide-react";
 import { formatDistanceToNow } from "date-fns";
 import { AIActionAudit } from "@/types/ai-assistant";
-import { logger } from '@/lib/logger';
+
 
 interface ActivityLogProps {
   venueId: string;
@@ -36,7 +36,7 @@ export function AIActivityLog({ venueId, limit = 20 }: ActivityLogProps) {
         setActivities(data.activities || []);
       }
     } catch (error) {
-      logger.error("[AI ACTIVITY] Fetch error:", error);
+      console.error("[AI ACTIVITY] Fetch error:", error);
     } finally {
       setLoading(false);
     }

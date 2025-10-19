@@ -29,7 +29,7 @@ import { deriveEntityKind, shouldShowUnpaidChip } from '@/lib/orders/entity-type
 import { OrderStatusChip, PaymentStatusChip } from '@/components/ui/chips';
 import { formatCurrency, formatOrderTime } from '@/lib/orders/mapOrderToCardData';
 import { createClient } from '@/lib/supabase/client';
-import { logger } from '@/lib/logger';
+
 
 interface OrderCardProps {
   order: OrderForCard;
@@ -64,7 +64,7 @@ export function OrderCard({
       
       const label = order.table_label || 'Table Order';
       if (!order.table_label) {
-        logger.warn(`[OrderCard] Missing table_label for table order ${order.id}`);
+        console.warn(`[OrderCard] Missing table_label for table order ${order.id}`);
       }
       return {
         icon: <MapPin className="h-4 w-4" />,
@@ -103,7 +103,7 @@ export function OrderCard({
       if (!response.ok) throw new Error('Failed to delete order');
       onActionComplete?.();
     } catch (error) {
-      logger.error('Error removing order:', error);
+      console.error('Error removing order:', error);
     } finally {
       setIsProcessing(false);
     }
@@ -129,7 +129,7 @@ export function OrderCard({
       if (!response.ok) throw new Error('Failed to process payment');
       onActionComplete?.();
     } catch (error) {
-      logger.error('Error processing payment:', error);
+      console.error('Error processing payment:', error);
     } finally {
       setIsProcessing(false);
     }
@@ -146,7 +146,7 @@ export function OrderCard({
       
       if (nextStatus === 'SERVED' || nextStatus === 'SERVING') {
         // Use server endpoint for serving to ensure related side-effects
-        logger.debug('[OrderCard] Clicking Mark Served', { orderId: order.id, venueId });
+        console.debug('[OrderCard] Clicking Mark Served', { orderId: order.id, venueId });
         const response = await fetch('/api/orders/serve', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
@@ -154,11 +154,11 @@ export function OrderCard({
         });
         if (!response.ok) {
           const errorText = await response.text();
-          logger.error('[OrderCard DEBUG] Serve API error:', errorText);
+          console.error('[OrderCard DEBUG] Serve API error:', errorText);
           throw new Error('Failed to mark order as served');
         }
         const json = await response.json().catch(() => null);
-        logger.debug('[OrderCard] Serve API success', { orderId: order.id, response: json });
+        console.debug('[OrderCard] Serve API success', { orderId: order.id, response: json });
       } else {
         // Directly update status via Supabase for other transitions
         const supabase = createClient();
@@ -171,15 +171,15 @@ export function OrderCard({
           .eq('id', order.id)
           .eq('venue_id', venueId);
         if (error) {
-          logger.error('[OrderCard DEBUG] Supabase status update error:', error);
+          console.error('[OrderCard DEBUG] Supabase status update error:', error);
           throw new Error('Failed to update order status');
         }
-        logger.debug('[OrderCard] Direct status update success', { orderId: order.id, nextStatus });
+        console.debug('[OrderCard] Direct status update success', { orderId: order.id, nextStatus });
       }
       
       await onActionComplete?.();
     } catch (error) {
-      logger.error('[OrderCard DEBUG] Error updating order status:', error);
+      console.error('[OrderCard DEBUG] Error updating order status:', error);
     } finally {
       setIsProcessing(false);
     }

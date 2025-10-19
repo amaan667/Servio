@@ -69,7 +69,7 @@ export async function GET(req: Request) {
         }
 
         if (!orderFound) {
-          logger.error("Order still not found after retry for session:", sessionId);
+          logger.error("Order still not found after retry for session", { sessionId });
           return NextResponse.json({ paid: false, error: "Order not found - webhook may be delayed" }, { status: 404 });
         }
       }
@@ -84,7 +84,7 @@ export async function GET(req: Request) {
 
     return NextResponse.json({ paid: false }, { status: 200 });
   } catch (e: any) {
-    logger.error("verify error:", e);
+    logger.error("verify error", { error: e instanceof Error ? e.message : 'Unknown error' });
     return NextResponse.json({ error: e.message ?? "verify failed" }, { status: 500 });
   }
 }

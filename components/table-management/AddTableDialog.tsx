@@ -17,7 +17,7 @@ import { Alert, AlertDescription } from '@/components/ui/alert';
 import { Plus, AlertTriangle } from 'lucide-react';
 import { useTableManagement } from '@/hooks/useTableManagement';
 import { toast } from '@/hooks/use-toast';
-import { logger } from '@/lib/logger';
+
 
 interface AddTableDialogProps {
   venueId: string;
@@ -59,7 +59,7 @@ export function AddTableDialog({ venueId, onTableAdded }: AddTableDialogProps) {
       setOpen(false);
       onTableAdded?.();
     } catch (error: any) {
-      logger.error('[ADD TABLE DIALOG] Failed to create table:', error);
+      console.error('[ADD TABLE DIALOG] Failed to create table:', error);
       
       // Handle specific constraint error
       if (error.message?.includes('CONSTRAINT_ERROR') || error.message?.includes('temporarily unavailable')) {

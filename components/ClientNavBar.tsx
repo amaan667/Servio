@@ -9,7 +9,7 @@ import { Menu, X, Settings } from "lucide-react";
 import { useAuth } from "@/app/auth/AuthProvider";
 import { useRouter, usePathname } from "next/navigation";
 import SignInButton from "@/app/components/SignInButton";
-import { logger } from '@/lib/logger';
+
 
 export default function ClientNavBar() {
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
@@ -48,7 +48,7 @@ export default function ClientNavBar() {
             setPrimaryVenueId(data[0].venue_id);
           }
         } catch (err) {
-          logger.error('Error fetching primary venue:', err);
+          console.error('Error fetching primary venue:', err);
         }
       } else {
         setPrimaryVenueId(null);
@@ -85,7 +85,7 @@ export default function ClientNavBar() {
       router.replace('/');
       
     } catch (error) {
-      logger.error('Sign out error:', error);
+      console.error('Sign out error:', error);
       // Force redirect even if there's an error
       router.replace('/');
     }

@@ -7,7 +7,7 @@ import Link from "next/link";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { LayoutDashboard, Users, QrCode, BarChart3 } from "lucide-react";
-import { logger } from '@/lib/logger';
+
 
 // This component will show home page content for both authenticated and non-authenticated users
 const HomePage = React.memo(function HomePage() {
@@ -43,7 +43,7 @@ const HomePage = React.memo(function HomePage() {
       }
     } catch (error) {
       // On error, show public home page
-      logger.error('[HOME PAGE] Auth check error:', error);
+      console.error('[HOME PAGE] Auth check error:', error);
       setUser(null);
       setPrimaryVenueId(null);
     } finally {

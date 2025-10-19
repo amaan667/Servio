@@ -18,7 +18,7 @@ import {
 } from "lucide-react";
 import { UpgradeModal } from "@/components/upgrade-modal";
 import { formatDistanceToNow } from "date-fns";
-import { logger } from '@/lib/logger';
+
 
 interface BillingClientProps {
   venueId: string;
@@ -88,7 +88,7 @@ export default function BillingClient({
   const handleManageBilling = async () => {
     setLoadingPortal(true);
     try {
-      logger.debug('[BILLING PORTAL] Creating portal session for org:', organization?.id);
+      console.debug('[BILLING PORTAL] Creating portal session for org:', organization?.id);
       
       const response = await fetch("/api/stripe/create-portal-session", {
         method: "POST",
@@ -98,23 +98,23 @@ export default function BillingClient({
 
       const data = await response.json();
       
-      logger.debug('[BILLING PORTAL] Response:', data);
+      console.debug('[BILLING PORTAL] Response:', data);
       
       if (data.error) {
-        logger.error("Billing portal error:", data.error);
+        console.error("Billing portal error:", data.error);
         alert(`Failed to open billing portal: ${data.error}`);
         return;
       }
 
       if (data.url) {
-        logger.debug('[BILLING PORTAL] Redirecting to:', data.url);
+        console.debug('[BILLING PORTAL] Redirecting to:', data.url);
         window.location.href = data.url;
       } else {
-        logger.error('[BILLING PORTAL] No URL in response');
+        console.error('[BILLING PORTAL] No URL in response');
         alert('Failed to open billing portal - no URL received');
       }
     } catch (error) {
-      logger.error("Error creating portal session:", error);
+      console.error("Error creating portal session:", error);
       alert('Failed to open billing portal. Please try again.');
     } finally {
       setLoadingPortal(false);

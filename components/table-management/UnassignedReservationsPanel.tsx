@@ -16,7 +16,7 @@ import {
 import { UnassignedReservation, TableRuntimeState } from '@/hooks/useTableRuntimeState';
 import { useAssignReservation, useCancelReservation, useNoShowReservation } from '@/hooks/useTableRuntimeState';
 import { formatDistanceToNow } from 'date-fns';
-import { logger } from '@/lib/logger';
+
 
 interface UnassignedReservationsPanelProps {
   venueId: string;
@@ -58,7 +58,7 @@ export function UnassignedReservationsPanel({
       }
       onActionComplete();
     } catch (error) {
-      logger.error('Action failed:', error);
+      console.error('Action failed:', error);
     } finally {
       setIsLoading(null);
     }

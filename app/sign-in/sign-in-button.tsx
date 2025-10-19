@@ -1,7 +1,7 @@
 'use client';
 
 import { useRouter } from 'next/navigation';
-import { logger } from '@/lib/logger';
+
 
 export default function SignInButton() {
   const router = useRouter();
@@ -10,7 +10,7 @@ export default function SignInButton() {
     try {
       router.push('/sign-in');
     } catch (error) {
-      logger.error('[AUTH DEBUG] SignInButton error:', error);
+      console.error('[AUTH DEBUG] SignInButton error:', error);
     }
   };
 

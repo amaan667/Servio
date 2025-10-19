@@ -189,14 +189,14 @@ export function MenuManagement({ venueId, session, refreshTrigger }: MenuManagem
 
 
       if (error) {
-        logger.error("Failed to fetch menu from Supabase", {
+        console.error("Failed to fetch menu from Supabase", {
           error: error.message,
           code: error.code,
           venueUuid,
         });
         setError("Failed to load menu items.");
       } else {
-        logger.info("Menu fetched successfully", {
+        console.info("Menu fetched successfully", {
           itemCount: data?.length || 0,
           categories: [...new Set(data?.map((item: any) => item.category) || [])],
         });
@@ -227,7 +227,7 @@ export function MenuManagement({ venueId, session, refreshTrigger }: MenuManagem
         }
       }
     } catch (error: any) {
-      logger.error("Unexpected error fetching menu", { error });
+      console.error("Unexpected error fetching menu", { error });
       setError("An unexpected error occurred.");
     } finally {
       setLoading(false);
@@ -239,7 +239,7 @@ export function MenuManagement({ venueId, session, refreshTrigger }: MenuManagem
 
     if (!supabase) return;
 
-    logger.info("Setting up real-time subscription");
+    console.info("Setting up real-time subscription");
     const channel = supabase
       .channel(`menu-management-${venueUuid}`)
       .on(
@@ -251,18 +251,18 @@ export function MenuManagement({ venueId, session, refreshTrigger }: MenuManagem
           filter: `venue_id=eq.${venueUuid}`,
         },
         (payload: any) => {
-          logger.info("Real-time change detected, refetching menu", {
+          console.info("Real-time change detected, refetching menu", {
             payload,
           });
           fetchMenu();
         },
       )
       .subscribe((status: any) => {
-        logger.info("Real-time subscription status", { status });
+        console.info("Real-time subscription status", { status });
       });
 
     return () => {
-      logger.info("Cleaning up real-time subscription");
+      console.info("Cleaning up real-time subscription");
       if (supabase) {
         createClient().removeChannel(channel);
       }
@@ -285,7 +285,7 @@ export function MenuManagement({ venueId, session, refreshTrigger }: MenuManagem
   // Removed drag-and-drop handlers
 
   const handleAddItem = async () => {
-    logger.info("Starting add item process", {
+    console.info("Starting add item process", {
       name: newItem.name.trim(),
       category: newItem.category.trim(),
       price: newItem.price,
@@ -323,14 +323,14 @@ export function MenuManagement({ venueId, session, refreshTrigger }: MenuManagem
       });
       const result = await res.json();
       if (!res.ok || result.error) {
-        logger.error("Failed to add item to Supabase", {
+        console.error("Failed to add item to Supabase", {
           error: result.error,
           venueUuid,
           userId: session.user.id,
         });
         setError(result.error || "Failed to add item.");
       } else {
-        logger.info("Item added successfully");
+        console.info("Item added successfully");
         setNewItem({
           name: "",
           description: "",
@@ -340,7 +340,7 @@ export function MenuManagement({ venueId, session, refreshTrigger }: MenuManagem
         });
       }
     } catch (error: any) {
-      logger.error("Unexpected error adding item", { error });
+      console.error("Unexpected error adding item", { error });
       setError("An unexpected error occurred.");
     } finally {
       setSaving(null);
@@ -351,7 +351,7 @@ export function MenuManagement({ venueId, session, refreshTrigger }: MenuManagem
     itemId: string,
     updates: Partial<MenuItem>,
   ) => {
-    logger.info("Updating item", { itemId, updates });
+    console.info("Updating item", { itemId, updates });
 
     if (!supabase) return;
 
@@ -371,7 +371,7 @@ export function MenuManagement({ venueId, session, refreshTrigger }: MenuManagem
         .eq("id", itemId);
 
       if (error) {
-        logger.error("Failed to update item", {
+        console.error("Failed to update item", {
           itemId,
           error: error.message,
           code: error.code,
@@ -384,10 +384,10 @@ export function MenuManagement({ venueId, session, refreshTrigger }: MenuManagem
           )
         );
       } else {
-        logger.info("Item updated successfully", { itemId });
+        console.info("Item updated successfully", { itemId });
       }
     } catch (error: any) {
-      logger.error("Unexpected error updating item", { error });
+      console.error("Unexpected error updating item", { error });
       setError("An unexpected error occurred.");
       // Revert optimistic update on error
       setMenuItems(prevItems => 
@@ -402,7 +402,7 @@ export function MenuManagement({ venueId, session, refreshTrigger }: MenuManagem
 
   const handleDeleteItem = async (itemId: string) => {
     if (!window.confirm("Are you sure you want to delete this menu item?")) return;
-    logger.info("Deleting item", { itemId });
+    console.info("Deleting item", { itemId });
 
     if (!supabase) return;
 
@@ -421,7 +421,7 @@ export function MenuManagement({ venueId, session, refreshTrigger }: MenuManagem
         .eq("id", itemId);
 
       if (error) {
-        logger.error("Failed to delete item", {
+        console.error("Failed to delete item", {
           itemId,
           error: error.message,
           code: error.code,
@@ -432,10 +432,10 @@ export function MenuManagement({ venueId, session, refreshTrigger }: MenuManagem
           setMenuItems(prevItems => [...prevItems, itemToDelete]);
         }
       } else {
-        logger.info("Item deleted successfully", { itemId });
+        console.info("Item deleted successfully", { itemId });
       }
     } catch (error: any) {
-      logger.error("Unexpected error deleting item", { error });
+      console.error("Unexpected error deleting item", { error });
       setError("An unexpected error occurred.");
       // Revert optimistic update on error
       if (itemToDelete) {

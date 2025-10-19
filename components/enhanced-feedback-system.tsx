@@ -81,7 +81,7 @@ export function EnhancedFeedbackSystem({ venueId }: FeedbackSystemProps) {
         setQuestions(data.questions || []);
       }
     } catch (error) {
-      logger.error('Error fetching questions:', error);
+      console.error('Error fetching questions:', error);
     }
   }, [venueId]);
 
@@ -148,7 +148,7 @@ export function EnhancedFeedbackSystem({ venueId }: FeedbackSystemProps) {
       calculateStats(filteredFeedback);
 
     } catch (err: any) {
-      logger.error('Failed to fetch feedback', { error: err.message, venueId });
+      console.error('Failed to fetch feedback', { error: err.message, venueId });
       setError(err.message);
     } finally {
       setLoading(false);

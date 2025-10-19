@@ -39,7 +39,7 @@ import { toast } from '@/hooks/use-toast';
 import TimeField24, { TimeValue24 } from '@/components/inputs/TimeField24';
 import { buildIsoFromLocal, isOvernight, addDaysISO } from '@/lib/time';
 import EnhancedShiftSchedule from '@/components/staff/EnhancedShiftSchedule';
-import { logger } from '@/lib/logger';
+
 
 interface StaffMember {
   id: string;
@@ -134,7 +134,7 @@ export default function InvitationBasedStaffManagement({
         setAllShifts(shiftsData.shifts || []);
       }
     } catch (err) {
-      logger.error('Error loading data:', err);
+      console.error('Error loading data:', err);
       setError('Failed to load staff data');
     } finally {
       setLoading(false);
@@ -150,7 +150,7 @@ export default function InvitationBasedStaffManagement({
         setAllShifts(shifts);
       }
     } catch (e) {
-      logger.error('Failed to load shifts:', e);
+      console.error('Failed to load shifts:', e);
     }
   }, [venueId]);
 
@@ -209,7 +209,7 @@ export default function InvitationBasedStaffManagement({
             : `Invitation created but email failed to send. Check server logs for invitation link.`,
           variant: 'destructive',
         });
-        logger.debug('📧 Invitation link:', data.invitationLink);
+        console.debug('📧 Invitation link:', data.invitationLink);
       }
 
       setInviteDialogOpen(false);
@@ -335,7 +335,7 @@ export default function InvitationBasedStaffManagement({
           setShifts(j.shifts || []);
         }
       } catch (e) {
-        logger.error('Failed to load shifts:', e);
+        console.error('Failed to load shifts:', e);
       }
     }, [row.id, venueId]);
 

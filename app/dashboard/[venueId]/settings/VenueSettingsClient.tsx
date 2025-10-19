@@ -19,7 +19,7 @@ import { toast } from "@/hooks/use-toast";
 import MobileNav from '@/components/MobileNav';
 import { AddressInput } from '@/components/settings/AddressInput';
 import BillingSection from '@/components/settings/BillingSection';
-import { logger } from '@/lib/logger';
+
 
 interface Venue {
   venue_id: string;
@@ -270,7 +270,7 @@ export default function VenueSettingsClient({ user, venue, venues, organization,
         });
         
         if (metadataError) {
-          logger.error('Error updating password metadata:', metadataError);
+          console.error('Error updating password metadata:', metadataError);
         }
       }
 
@@ -328,7 +328,7 @@ export default function VenueSettingsClient({ user, venue, venues, organization,
         .eq('owner_user_id', user.id);
 
       if (venueError) {
-        logger.error('Error deleting venues:', venueError);
+        console.error('Error deleting venues:', venueError);
       }
 
       const { error } = await createClient().auth.admin.deleteUser(user.id);
@@ -345,14 +345,14 @@ export default function VenueSettingsClient({ user, venue, venues, organization,
           },
         });
       } catch (error) {
-        logger.error('Sign out error:', error);
+        console.error('Sign out error:', error);
       }
       
       try {
         const { clearAuthStorage } = await import('@/lib/supabase/client');
         clearAuthStorage();
       } catch (error) {
-        logger.error('Clear storage error:', error);
+        console.error('Clear storage error:', error);
       }
       
       router.push('/');

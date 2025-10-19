@@ -5,7 +5,7 @@ import { createClient } from '@/lib/supabase/client';
 import { MenuStyle, getMenuStyleClasses } from '@/lib/menu-style-extractor';
 import { Button } from '@/components/ui/button';
 import { Plus, Minus } from 'lucide-react';
-import { logger } from '@/lib/logger';
+
 
 interface MenuItem {
   id: string;
@@ -75,7 +75,7 @@ export function StyledMenuDisplay({
           setMenuStyle(style);
         }
       } catch (error) {
-        logger.error('Error fetching menu style:', error);
+        console.error('Error fetching menu style:', error);
       } finally {
         setLoading(false);
       }

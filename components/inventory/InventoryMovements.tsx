@@ -23,7 +23,7 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { ArrowUp, ArrowDown, ChevronLeft, ChevronRight, Download, Calendar } from 'lucide-react';
 import type { StockLedger } from '@/types/inventory';
-import { logger } from '@/lib/logger';
+
 
 interface InventoryMovementsProps {
   venueId: string;
@@ -79,7 +79,7 @@ export function InventoryMovements({ venueId, canEdit = true }: InventoryMovemen
         setHasMore(result.data.length === limit);
       }
     } catch (error) {
-      logger.error('Error fetching movements:', error);
+      console.error('Error fetching movements:', error);
     } finally {
       setLoading(false);
     }
@@ -118,7 +118,7 @@ export function InventoryMovements({ venueId, canEdit = true }: InventoryMovemen
       document.body.removeChild(a);
       window.URL.revokeObjectURL(url);
     } catch (error) {
-      logger.error('Error exporting CSV:', error);
+      console.error('Error exporting CSV:', error);
     }
   };
 

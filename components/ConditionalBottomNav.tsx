@@ -4,7 +4,7 @@ import { usePathname } from 'next/navigation';
 import GlobalBottomNav from './GlobalBottomNav';
 import { createClient } from '@/lib/supabase/client';
 import { useEffect, useState } from 'react';
-import { logger } from '@/lib/logger';
+
 
 export default function ConditionalBottomNav() {
   const pathname = usePathname();
@@ -69,7 +69,7 @@ export default function ConditionalBottomNav() {
         table: 'orders',
         filter: `venue_id=eq.${venueIdFromPath}`
       }, () => {
-        logger.debug('[BOTTOM NAV] Order update received, refreshing counts');
+        console.debug('[BOTTOM NAV] Order update received, refreshing counts');
         loadCounts();
       })
       .subscribe();

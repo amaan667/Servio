@@ -48,7 +48,7 @@ export async function POST(request: NextRequest) {
 
       logger.debug('[CLEANUP] Database constraint fixed successfully');
     } catch (constraintError) {
-      logger.warn('[CLEANUP] Could not fix constraint (this is okay):', constraintError);
+      logger.warn('[CLEANUP] Could not fix constraint (this is okay)', { error: constraintError instanceof Error ? constraintError.message : 'Unknown error' });
     }
 
     return NextResponse.json({ 

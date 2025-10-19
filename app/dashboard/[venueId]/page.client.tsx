@@ -19,7 +19,7 @@ import OnboardingCompletionBanner from '@/components/onboarding-completion-banne
 import TrialStatusBanner from '@/components/TrialStatusBanner';
 import RoleManagementPopup from '@/components/role-management-popup';
 import VenueSwitcherPopup from '@/components/venue-switcher-popup';
-import { logger } from '@/lib/logger';
+
 
 interface DashboardCounts {
   live_count: number;
@@ -82,7 +82,7 @@ const VenueDashboardClient = React.memo(function VenueDashboardClient({
   
   // Handle venue change
   const handleVenueChange = (newVenueId: string) => {
-    logger.debug('[VENUE SWITCH] Switching from', venueId, 'to', newVenueId);
+    console.debug('[VENUE SWITCH] Switching from', venueId, 'to', newVenueId);
     router.push(`/dashboard/${newVenueId}`);
   };
   
@@ -171,10 +171,10 @@ const VenueDashboardClient = React.memo(function VenueDashboardClient({
 
             if (response.ok) {
             } else {
-              logger.error('[DASHBOARD] Failed to clear all tables and sessions:', response.status);
+              console.error('[DASHBOARD] Failed to clear all tables and sessions:', response.status);
             }
           } catch (error) {
-            logger.error('[DASHBOARD] Error clearing all tables and sessions:', error);
+            console.error('[DASHBOARD] Error clearing all tables and sessions:', error);
           }
 
           // Reload stats for new day
@@ -196,7 +196,7 @@ const VenueDashboardClient = React.memo(function VenueDashboardClient({
       return;
     }
 
-    logger.debug('[DASHBOARD] Setting up real-time subscriptions for venue:', venueId);
+    console.debug('[DASHBOARD] Setting up real-time subscriptions for venue:', venueId);
     const supabase = createClient();
     
     // Create a unified channel for all dashboard updates
@@ -211,7 +211,7 @@ const VenueDashboardClient = React.memo(function VenueDashboardClient({
           filter: `venue_id=eq.${venueId}`
         }, 
         async (payload: any) => {
-          logger.debug('[DASHBOARD] Order update received:', payload.eventType, payload.new?.id);
+          console.debug('[DASHBOARD] Order update received:', payload.eventType, payload.new?.id);
           
           // Get the order date from the payload with proper type checking
           const orderCreatedAt = (payload.new as any)?.created_at || (payload.old as any)?.created_at;
@@ -223,7 +223,7 @@ const VenueDashboardClient = React.memo(function VenueDashboardClient({
           const isInTodayWindow = orderCreatedAt >= todayWindow.startUtcISO && orderCreatedAt < todayWindow.endUtcISO;
           
           if (isInTodayWindow) {
-            logger.debug('[DASHBOARD] Refreshing counts due to order change');
+            console.debug('[DASHBOARD] Refreshing counts due to order change');
             // Always refresh counts for any order change
             await refreshCounts();
             
@@ -249,7 +249,7 @@ const VenueDashboardClient = React.memo(function VenueDashboardClient({
           filter: `venue_id=eq.${venueId}`
         },
         async (payload: any) => {
-          logger.debug('[DASHBOARD] Table update received:', payload.eventType);
+          console.debug('[DASHBOARD] Table update received:', payload.eventType);
           await refreshCounts();
         }
       )
@@ -262,7 +262,7 @@ const VenueDashboardClient = React.memo(function VenueDashboardClient({
           filter: `venue_id=eq.${venueId}`
         },
         async (payload: any) => {
-          logger.debug('[DASHBOARD] Table session update received:', payload.eventType);
+          console.debug('[DASHBOARD] Table session update received:', payload.eventType);
           await refreshCounts();
         }
       )
@@ -275,7 +275,7 @@ const VenueDashboardClient = React.memo(function VenueDashboardClient({
           filter: `venue_id=eq.${venueId}`
         },
         async (payload: any) => {
-          logger.debug('[DASHBOARD] Menu item update received:', payload.eventType);
+          console.debug('[DASHBOARD] Menu item update received:', payload.eventType);
           // Refresh menu items count
           try {
             const { data: menuItems } = await supabase
@@ -289,25 +289,25 @@ const VenueDashboardClient = React.memo(function VenueDashboardClient({
               menuItems: menuItems?.length || 0
             }));
           } catch (error) {
-            logger.error('[DASHBOARD] Error updating menu items count:', error);
+            console.error('[DASHBOARD] Error updating menu items count:', error);
           }
         }
       )
       .subscribe((status: string) => {
-        logger.debug('[DASHBOARD] Realtime subscription status:', status);
+        console.debug('[DASHBOARD] Realtime subscription status:', status);
         if (status === 'SUBSCRIBED') {
-          logger.debug('[DASHBOARD] ✓ Successfully subscribed to realtime updates');
+          console.debug('[DASHBOARD] ✓ Successfully subscribed to realtime updates');
         } else if (status === 'CHANNEL_ERROR') {
-          logger.error('[DASHBOARD] ✗ Realtime subscription error - falling back to polling');
+          console.error('[DASHBOARD] ✗ Realtime subscription error - falling back to polling');
         } else if (status === 'TIMED_OUT') {
-          logger.error('[DASHBOARD] ✗ Realtime subscription timed out');
+          console.error('[DASHBOARD] ✗ Realtime subscription timed out');
         }
       });
 
     // Also listen for custom order events from other components
     const handleOrderCreated = (event: CustomEvent) => {
       if (event.detail.venueId === venueId) {
-        logger.debug('[DASHBOARD] Custom order created event received');
+        console.debug('[DASHBOARD] Custom order created event received');
         // Trigger immediate refresh of counts and revenue
         refreshCounts();
         if (event.detail.order) {
@@ -351,7 +351,7 @@ const VenueDashboardClient = React.memo(function VenueDashboardClient({
   useEffect(() => {
     const urlParams = new URLSearchParams(window.location.search);
     if (urlParams.get('upgrade') === 'success') {
-      logger.debug('[DASHBOARD] Detected upgrade success, refreshing dashboard data');
+      console.debug('[DASHBOARD] Detected upgrade success, refreshing dashboard data');
       // Refresh dashboard data after successful upgrade
       setTimeout(() => {
         handleRefresh();
@@ -379,7 +379,7 @@ const VenueDashboardClient = React.memo(function VenueDashboardClient({
       );
       
       if (error) {
-        logger.warn('[DASHBOARD] Failed to refresh counts:', error);
+        console.warn('[DASHBOARD] Failed to refresh counts:', error);
         setError('Failed to refresh dashboard data');
         return;
       }
@@ -475,7 +475,7 @@ const VenueDashboardClient = React.memo(function VenueDashboardClient({
       const { data: menuItems, error: menuItemsError } = menuItemsResult;
 
       if (ordersError || menuItemsError) {
-        logger.warn('[DASHBOARD] Failed to load stats:', { ordersError, menuItemsError });
+        console.warn('[DASHBOARD] Failed to load stats:', { ordersError, menuItemsError });
         setError('Failed to load dashboard statistics');
         return;
       }
@@ -506,7 +506,7 @@ const VenueDashboardClient = React.memo(function VenueDashboardClient({
       
       setStatsLoaded(true);
     } catch (error) {
-      logger.error('[DASHBOARD] Error loading stats:', error);
+      console.error('[DASHBOARD] Error loading stats:', error);
       setError('Failed to load dashboard statistics');
     }
   }, [initialStats, statsLoaded]);

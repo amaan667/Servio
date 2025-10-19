@@ -22,7 +22,7 @@ import {
 } from '@/components/ui/dropdown-menu';
 import { MoreHorizontal, ArrowRight } from 'lucide-react';
 import { useCheckInReservation, useCancelReservation, Reservation } from '@/hooks/useTableReservations';
-import { logger } from '@/lib/logger';
+
 
 interface ReservationsPanelProps {
   venueId: string;
@@ -41,7 +41,7 @@ export function ReservationsPanel({ venueId, reservations, onActionComplete }: R
       await checkInReservation.mutateAsync({ reservationId, tableId });
       onActionComplete?.();
     } catch (error) {
-      logger.error('Failed to check in reservation:', error);
+      console.error('Failed to check in reservation:', error);
     } finally {
       setIsLoading(null);
     }
@@ -53,7 +53,7 @@ export function ReservationsPanel({ venueId, reservations, onActionComplete }: R
       await cancelReservation.mutateAsync({ reservationId });
       onActionComplete?.();
     } catch (error) {
-      logger.error('Failed to cancel reservation:', error);
+      console.error('Failed to cancel reservation:', error);
     } finally {
       setIsLoading(null);
     }

@@ -7,7 +7,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import UnifiedFeedbackForm from "@/components/UnifiedFeedbackForm";
 import { createClient } from '@/lib/supabase/client';
-import { logger } from '@/lib/logger';
+
 
 interface OrderSummaryProps {
   orderId?: string;
@@ -158,7 +158,7 @@ export default function OrderSummary({ orderId, sessionId, orderData, isDemo = f
           }
         }
       } catch (error) {
-        logger.error('Error fetching order:', error);
+        console.error('Error fetching order:', error);
         setError('Failed to load order details');
       } finally {
         setLoading(false);

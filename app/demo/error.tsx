@@ -3,7 +3,7 @@
 import { useEffect } from 'react';
 import { Button } from '@/components/ui/button';
 import { useRouter } from 'next/navigation';
-import { logger } from '@/lib/logger';
+
 
 export default function Error({
   error,
@@ -16,7 +16,7 @@ export default function Error({
 
   useEffect(() => {
     // Log error for debugging but don't crash the app
-    logger.warn('[DEMO PAGE] Recovering from error:', error.message);
+    console.warn('[DEMO PAGE] Recovering from error:', error.message);
     
     // Auto-redirect to home page after a short delay to prevent users from getting stuck
     const timeout = setTimeout(() => {

@@ -10,7 +10,7 @@ import { Upload, Plus, ArrowRight, Sparkles } from 'lucide-react';
 import OnboardingProgress from '@/components/onboarding-progress';
 import { createClient } from '@/lib/supabase/client';
 import { toast } from '@/hooks/use-toast';
-import { logger } from '@/lib/logger';
+
 
 export default function OnboardingMenuPage() {
   const router = useRouter();
@@ -50,7 +50,7 @@ export default function OnboardingMenuPage() {
       setVenueId(venues[0].venue_id);
       setLoading(false);
     } catch (error) {
-      logger.error('Auth check error:', error);
+      console.error('Auth check error:', error);
       setLoading(false);
     }
   };
@@ -89,7 +89,7 @@ export default function OnboardingMenuPage() {
       // Move to next step
       router.push('/onboarding/tables');
     } catch (error: any) {
-      logger.error('Upload error:', error);
+      console.error('Upload error:', error);
       toast({
         title: 'Upload failed',
         description: error.message || 'Failed to upload menu. Please try again.',
@@ -148,7 +148,7 @@ export default function OnboardingMenuPage() {
       // Move to next step
       router.push('/onboarding/tables');
     } catch (error: any) {
-      logger.error('Manual create error:', error);
+      console.error('Manual create error:', error);
       toast({
         title: 'Failed to create items',
         description: error.message || 'Please try again.',
