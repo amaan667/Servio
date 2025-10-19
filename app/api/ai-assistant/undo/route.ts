@@ -155,15 +155,16 @@ export async function POST(request: NextRequest) {
   } catch (error: unknown) {
     logger.error("[AI UNDO] Undo error:", { error: error instanceof Error ? error.message : 'Unknown error' });
     
-    if (error.name === "ZodError") {
+    if (error instanceof Error && error.name === "ZodError") {
+      const zodError = error as any;
       return NextResponse.json(
-        { error: "Invalid request data", details: error.errors },
+        { error: "Invalid request data", details: zodError.errors },
         { status: 400 }
       );
     }
 
     return NextResponse.json(
-      { error: error.message || "Undo failed" },
+      { error: error instanceof Error ? error.message : "Undo failed" },
       { status: 500 }
     );
   }
@@ -271,7 +272,7 @@ async function undoMenuTranslation(venueId: string, undoData: any, supabase: any
 
     // Detect the source language by analyzing the current categories
     const detectSourceLanguage = (items: unknown[]): string => {
-      const categories = items.map(item => item.category).filter(Boolean);
+      const categories = items.map((item: any) => item.category).filter(Boolean);
       const spanishIndicators = ['CAFÉ', 'BEBIDAS', 'TÉ', 'ESPECIALES', 'NIÑOS', 'ENSALADAS', 'POSTRES', 'ENTRADAS', 'PLATOS PRINCIPALES', 'APERITIVOS', 'MALTEADAS', 'BATIDOS', 'SÁNDWICHES', 'DESAYUNO', 'ALMUERZO', 'CENA', 'SOPA', 'SOPAS', 'MARISCOS', 'POLLO', 'CARNE DE RES', 'CERDO', 'VEGETARIANO', 'VEGANO', 'SIN GLUTEN'];
       const englishIndicators = ['STARTERS', 'APPETIZERS', 'MAIN COURSES', 'ENTREES', 'DESSERTS', 'SALADS', 'KIDS', 'CHILDREN', 'DRINKS', 'BEVERAGES', 'COFFEE', 'TEA', 'SPECIALS', 'WRAPS', 'SANDWICHES', 'MILKSHAKES', 'SHAKES', 'SMOOTHIES', 'BRUNCH', 'BREAKFAST', 'LUNCH', 'DINNER', 'SOUP', 'SOUPS', 'PASTA', 'PIZZA', 'SEAFOOD', 'CHICKEN', 'BEEF', 'PORK', 'VEGETARIAN', 'VEGAN', 'GLUTEN FREE'];
       
@@ -392,21 +393,22 @@ IMPORTANT: Every item in the input must appear in your output with a translated 
 
     // Update database with reverse translations
     let updatedCount = 0;
-    const translatedIds = new Set(translatedItems.map(item => item.id));
+    const translatedIds = new Set(translatedItems.map((item: any) => item.id));
     
     for (const translatedItem of translatedItems) {
-      if (!translatedItem || !translatedItem.id || !translatedItem.name) {
+      const item = translatedItem as any;
+      if (!item || !item.id || !item.name) {
         continue;
       }
 
       const { error } = await supabase
         .from("menu_items")
         .update({
-          name: translatedItem.name,
-          category: translatedItem.category,
+          name: item.name,
+          category: item.category,
           updated_at: new Date().toISOString()
         })
-        .eq("id", translatedItem.id)
+        .eq("id", item.id)
         .eq("venue_id", venueId);
 
       if (!error) {

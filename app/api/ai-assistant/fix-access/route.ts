@@ -119,15 +119,16 @@ export async function POST(request: NextRequest) {
   } catch (error: unknown) {
     logger.error("[AI ASSISTANT] Fix access error:", { error: error instanceof Error ? error.message : 'Unknown error' });
 
-    if (error.name === "ZodError") {
+    if (error instanceof Error && error.name === "ZodError") {
+      const zodError = error as any;
       return NextResponse.json(
-        { error: "Invalid request format", details: error.errors },
+        { error: "Invalid request format", details: zodError.errors },
         { status: 400 }
       );
     }
 
     return NextResponse.json(
-      { error: error.message || "Failed to fix access" },
+      { error: error instanceof Error ? error.message : "Failed to fix access" },
       { status: 500 }
     );
   }

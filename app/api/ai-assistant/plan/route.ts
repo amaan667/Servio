@@ -100,15 +100,16 @@ export async function POST(request: NextRequest) {
   } catch (error: unknown) {
     logger.error("[AI ASSISTANT] Planning error:", { error: error instanceof Error ? error.message : 'Unknown error' });
 
-    if (error.name === "ZodError") {
+    if (error instanceof Error && error.name === "ZodError") {
+      const zodError = error as any;
       return NextResponse.json(
-        { error: "Invalid request format", details: error.errors },
+        { error: "Invalid request format", details: zodError.errors },
         { status: 400 }
       );
     }
 
     return NextResponse.json(
-      { error: error.message || "Planning failed" },
+      { error: error instanceof Error ? error.message : "Planning failed" },
       { status: 500 }
     );
   }
