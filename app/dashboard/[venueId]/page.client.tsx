@@ -1,14 +1,29 @@
-"use client";
+'use client';
 
-import React, { useEffect, useMemo, useState, useCallback } from "react";
-import { useRouter } from "next/navigation";
-import { Button } from "@/components/ui/button";
-import { Card, CardContent, CardHeader } from "@/components/ui/card";
-import Link from "next/link";
-import { Clock, Users, TrendingUp, ShoppingBag, BarChart, QrCode, Settings, Plus, Table, Wifi, WifiOff, AlertTriangle, ChefHat, Package } from "lucide-react";
-import { createClient } from "@/lib/supabase/client";
-import RoleBasedNavigation from "@/components/RoleBasedNavigation";
-import { todayWindowForTZ } from "@/lib/time";
+import React, { useEffect, useMemo, useState, useCallback } from 'react';
+import { useRouter } from 'next/navigation';
+import { Button } from '@/components/ui/button';
+import { Card, CardContent, CardHeader } from '@/components/ui/card';
+import Link from 'next/link';
+import {
+  Clock,
+  Users,
+  TrendingUp,
+  ShoppingBag,
+  BarChart,
+  QrCode,
+  Settings,
+  Plus,
+  Table,
+  Wifi,
+  WifiOff,
+  AlertTriangle,
+  ChefHat,
+  Package,
+} from 'lucide-react';
+import { createClient } from '@/lib/supabase/client';
+import RoleBasedNavigation from '@/components/RoleBasedNavigation';
+import { todayWindowForTZ } from '@/lib/time';
 import { useDashboardPrefetch } from '@/hooks/usePrefetch';
 import PullToRefresh from '@/components/PullToRefresh';
 import { withSupabaseRetry } from '@/lib/retry';
@@ -19,7 +34,6 @@ import OnboardingCompletionBanner from '@/components/onboarding-completion-banne
 import TrialStatusBanner from '@/components/TrialStatusBanner';
 import RoleManagementPopup from '@/components/role-management-popup';
 import VenueSwitcherPopup from '@/components/venue-switcher-popup';
-
 
 interface DashboardCounts {
   live_count: number;
@@ -38,20 +52,20 @@ interface DashboardStats {
   unpaid: number;
 }
 
-const VenueDashboardClient = React.memo(function VenueDashboardClient({ 
-  venueId, 
-  userId, 
-  venue: initialVenue, 
+const VenueDashboardClient = React.memo(function VenueDashboardClient({
+  venueId,
+  userId,
+  venue: initialVenue,
   userName,
   venueTz,
   initialCounts,
   initialStats,
   userRole,
-  isOwner
-}: { 
-  venueId: string; 
-  userId: string; 
-  venue?: any; 
+  isOwner,
+}: {
+  venueId: string;
+  userId: string;
+  venue?: any;
   userName: string;
   venueTz: string;
   initialCounts?: DashboardCounts;
@@ -61,33 +75,37 @@ const VenueDashboardClient = React.memo(function VenueDashboardClient({
 }) {
   const [venue, setVenue] = useState<unknown>(initialVenue);
   const [loading, setLoading] = useState(!initialVenue); // Only show loading if no initial data
-  const [counts, setCounts] = useState<DashboardCounts>(initialCounts || {
-    live_count: 0,
-    earlier_today_count: 0,
-    history_count: 0,
-    today_orders_count: 0,
-    active_tables_count: 0,
-    tables_set_up: 0,
-    tables_in_use: 0,
-    tables_reserved_now: 0
-  });
-  const [stats, setStats] = useState<DashboardStats>(initialStats || { revenue: 0, menuItems: 0, unpaid: 0 });
+  const [counts, setCounts] = useState<DashboardCounts>(
+    initialCounts || {
+      live_count: 0,
+      earlier_today_count: 0,
+      history_count: 0,
+      today_orders_count: 0,
+      active_tables_count: 0,
+      tables_set_up: 0,
+      tables_in_use: 0,
+      tables_reserved_now: 0,
+    }
+  );
+  const [stats, setStats] = useState<DashboardStats>(
+    initialStats || { revenue: 0, menuItems: 0, unpaid: 0 }
+  );
   const [statsLoaded, setStatsLoaded] = useState(false);
   const [todayWindow, setTodayWindow] = useState<unknown>(null);
   const [error, setError] = useState<string | null>(null);
   const router = useRouter();
-  
+
   // Monitor connection status
   const connectionState = useConnectionMonitor();
-  
+
   // Handle venue change
   const handleVenueChange = (newVenueId: string) => {
     router.push(`/dashboard/${newVenueId}`);
   };
-  
+
   // Request cancellation
   const { createRequest, cancelRequest } = useRequestCancellation();
-  
+
   // Enable intelligent prefetching for dashboard routes
   useDashboardPrefetch(venueId);
 
@@ -101,14 +119,14 @@ const VenueDashboardClient = React.memo(function VenueDashboardClient({
           await loadStats(venue.venue_id, window);
           return;
         }
-        
+
         // Load venue data and stats (userId already verified by SSR)
         const { data: venueData, error } = await createClient()
-          .from("venues")
-          .select("*")
-          .eq("venue_id", venueId)
+          .from('venues')
+          .select('*')
+          .eq('venue_id', venueId)
           .single();
-        
+
         if (!error && venueData) {
           setVenue(venueData);
           const window = todayWindowForTZ(venueTz);
@@ -147,16 +165,16 @@ const VenueDashboardClient = React.memo(function VenueDashboardClient({
   // Reset stats and clear tables when day changes to ensure fresh data
   useEffect(() => {
     if (!todayWindow) return;
-    
+
     const checkDayChange = async () => {
       const now = new Date();
       const currentDay = now.toDateString();
       const lastDay = new Date(todayWindow.startUtcISO).toDateString();
-      
+
       if (currentDay !== lastDay) {
         setStatsLoaded(false);
         setStats({ revenue: 0, menuItems: 0, unpaid: 0 });
-        
+
         // Clear all tables and sessions for new day
         if (venue) {
           try {
@@ -170,10 +188,16 @@ const VenueDashboardClient = React.memo(function VenueDashboardClient({
 
             if (response.ok) {
             } else {
-              console.error('[DASHBOARD] Failed to clear all tables and sessions:', response.status);
+              console.error(
+                '[DASHBOARD] Failed to clear all tables and sessions:',
+                response.status
+              );
             }
           } catch (error) {
-            console.error('[DASHBOARD] Error clearing all tables and sessions:', error);
+            console.error(
+              '[DASHBOARD] Error clearing all tables and sessions:',
+              error
+            );
           }
 
           // Reload stats for new day
@@ -183,7 +207,7 @@ const VenueDashboardClient = React.memo(function VenueDashboardClient({
         }
       }
     };
-    
+
     // Check every minute for day change
     const interval = setInterval(checkDayChange, 120000);
     return () => clearInterval(interval);
@@ -196,40 +220,47 @@ const VenueDashboardClient = React.memo(function VenueDashboardClient({
     }
 
     const supabase = createClient();
-    
+
     // Create a unified channel for all dashboard updates
     const channel = supabase
       .channel('dashboard-realtime')
       // Subscribe to order changes
-      .on('postgres_changes', 
-        { 
-          event: '*', 
-          schema: 'public', 
+      .on(
+        'postgres_changes',
+        {
+          event: '*',
+          schema: 'public',
           table: 'orders',
-          filter: `venue_id=eq.${venueId}`
-        }, 
+          filter: `venue_id=eq.${venueId}`,
+        },
         async (payload: unknown) => {
-          
           // Get the order date from the payload with proper type checking
-          const orderCreatedAt = (payload.new as any)?.created_at || (payload.old as any)?.created_at;
+          const orderCreatedAt =
+            (payload.new as any)?.created_at ||
+            (payload.old as any)?.created_at;
           if (!orderCreatedAt) {
             return;
           }
-          
+
           // Only refresh counts if the order is within today's window
-          const isInTodayWindow = orderCreatedAt >= todayWindow.startUtcISO && orderCreatedAt < todayWindow.endUtcISO;
-          
+          const isInTodayWindow =
+            orderCreatedAt >= todayWindow.startUtcISO &&
+            orderCreatedAt < todayWindow.endUtcISO;
+
           if (isInTodayWindow) {
             // Always refresh counts for any order change
             await refreshCounts();
-            
+
             // Update revenue incrementally for new orders to prevent flickering
             if (payload.eventType === 'INSERT' && payload.new) {
               updateRevenueIncrementally(payload.new);
             } else if (payload.eventType === 'UPDATE' && payload.new) {
               // For order updates, we might need to recalculate revenue if order status changed
               // If order was cancelled or refunded, we should recalculate total revenue
-              if (payload.new.order_status === 'CANCELLED' || payload.new.order_status === 'REFUNDED') {
+              if (
+                payload.new.order_status === 'CANCELLED' ||
+                payload.new.order_status === 'REFUNDED'
+              ) {
                 await loadStats(venue.venue_id, todayWindow);
               }
             }
@@ -237,56 +268,64 @@ const VenueDashboardClient = React.memo(function VenueDashboardClient({
         }
       )
       // Subscribe to table changes
-      .on('postgres_changes',
+      .on(
+        'postgres_changes',
         {
           event: '*',
           schema: 'public',
           table: 'tables',
-          filter: `venue_id=eq.${venueId}`
+          filter: `venue_id=eq.${venueId}`,
         },
         async (payload: unknown) => {
           await refreshCounts();
         }
       )
       // Subscribe to table session changes
-      .on('postgres_changes',
+      .on(
+        'postgres_changes',
         {
           event: '*',
           schema: 'public',
           table: 'table_sessions',
-          filter: `venue_id=eq.${venueId}`
+          filter: `venue_id=eq.${venueId}`,
         },
         async (payload: unknown) => {
           await refreshCounts();
         }
       )
       // Subscribe to menu item changes
-      .on('postgres_changes',
+      .on(
+        'postgres_changes',
         {
           event: '*',
           schema: 'public',
           table: 'menu_items',
-          filter: `venue_id=eq.${venueId}`
+          filter: `venue_id=eq.${venueId}`,
         },
         async (payload: unknown) => {
           // Refresh menu items count
           try {
             const { data: menuItems } = await supabase
-              .from("menu_items")
-              .select("id")
-              .eq("venue_id", venueId)
-              .eq("is_available", true);
-            
-            setStats(prev => ({
+              .from('menu_items')
+              .select('id')
+              .eq('venue_id', venueId)
+              .eq('is_available', true);
+
+            setStats((prev) => ({
               ...prev,
-              menuItems: menuItems?.length || 0
+              menuItems: menuItems?.length || 0,
             }));
           } catch (error) {
-            console.error('[DASHBOARD] Error updating menu items count:', error);
+            console.error(
+              '[DASHBOARD] Error updating menu items count:',
+              error
+            );
           }
         }
       )
       .subscribe((status: string) => {
+        // Subscription status handler
+      });
 
     // Also listen for custom order events from other components
     const handleOrderCreated = (event: CustomEvent) => {
@@ -299,11 +338,17 @@ const VenueDashboardClient = React.memo(function VenueDashboardClient({
       }
     };
 
-    window.addEventListener('orderCreated', handleOrderCreated as EventListener);
+    window.addEventListener(
+      'orderCreated',
+      handleOrderCreated as EventListener
+    );
 
     return () => {
       supabase.removeChannel(channel);
-      window.removeEventListener('orderCreated', handleOrderCreated as EventListener);
+      window.removeEventListener(
+        'orderCreated',
+        handleOrderCreated as EventListener
+      );
     };
   }, [venueId, venueTz]); // Simplified dependencies - only what's truly needed
 
@@ -350,16 +395,18 @@ const VenueDashboardClient = React.memo(function VenueDashboardClient({
     try {
       setError(null);
       const supabase = createClient();
-      
+
       // Use retry logic for dashboard counts
-      const { data: newCounts, error } = await withSupabaseRetry(
-        () => supabase.rpc('dashboard_counts', { 
-          p_venue_id: venueId, 
-          p_tz: venueTz, 
-          p_live_window_mins: 30 
-        }).single()
+      const { data: newCounts, error } = await withSupabaseRetry(() =>
+        supabase
+          .rpc('dashboard_counts', {
+            p_venue_id: venueId,
+            p_tz: venueTz,
+            p_live_window_mins: 30,
+          })
+          .single()
       );
-      
+
       if (error) {
         console.warn('[DASHBOARD] Failed to refresh counts:', error);
         setError('Failed to refresh dashboard data');
@@ -367,24 +414,30 @@ const VenueDashboardClient = React.memo(function VenueDashboardClient({
       }
 
       // Also get table counters for consistency with retry
-      const { data: tableCounters, error: tableCountersError } = await withSupabaseRetry(
-        () => supabase.rpc('api_table_counters', {
-          p_venue_id: venueId
-        })
-      );
+      const { data: tableCounters, error: tableCountersError } =
+        await withSupabaseRetry(() =>
+          supabase.rpc('api_table_counters', {
+            p_venue_id: venueId,
+          })
+        );
 
       // Ensure newCounts is properly typed
       if (newCounts && typeof newCounts === 'object') {
         const counts = newCounts as DashboardCounts;
-        
-        if (!tableCountersError && tableCounters && Array.isArray(tableCounters) && tableCounters.length > 0) {
+
+        if (
+          !tableCountersError &&
+          tableCounters &&
+          Array.isArray(tableCounters) &&
+          tableCounters.length > 0
+        ) {
           const tableCounter = tableCounters[0] as any;
           // Override table counts with consistent data
           counts.tables_set_up = Number(tableCounter.total_tables) || 0;
           counts.tables_in_use = Number(tableCounter.occupied) || 0;
           counts.active_tables_count = Number(tableCounter.total_tables) || 0;
         }
-        
+
         setCounts(counts);
       }
     } catch (error) {
@@ -395,23 +448,29 @@ const VenueDashboardClient = React.memo(function VenueDashboardClient({
   // Function to update revenue incrementally when new orders come in
   const updateRevenueIncrementally = (newOrder: any) => {
     if (!newOrder || !statsLoaded) return;
-    
+
     try {
-      let amount = Number(newOrder.total_amount) || parseFloat(newOrder.total_amount as any) || 0;
+      let amount =
+        Number(newOrder.total_amount) ||
+        parseFloat(newOrder.total_amount as any) ||
+        0;
       if (!Number.isFinite(amount) || amount <= 0) {
         if (Array.isArray(newOrder.items)) {
           amount = newOrder.items.reduce((s: number, it: any) => {
             const unit = Number(it.unit_price ?? it.price ?? 0);
             const qty = Number(it.quantity ?? it.qty ?? 0);
-            return s + (Number.isFinite(unit) && Number.isFinite(qty) ? unit * qty : 0);
+            return (
+              s +
+              (Number.isFinite(unit) && Number.isFinite(qty) ? unit * qty : 0)
+            );
           }, 0);
         }
       }
-      
+
       if (amount > 0) {
-        setStats(prev => ({
+        setStats((prev) => ({
           ...prev,
-          revenue: prev.revenue + amount
+          revenue: prev.revenue + amount,
         }));
       }
     } catch (error) {
@@ -419,80 +478,97 @@ const VenueDashboardClient = React.memo(function VenueDashboardClient({
     }
   };
 
-  const loadStats = useCallback(async (vId: string, window: any) => {
-    // If we have initial stats from SSR, use those and skip client-side calculation
-    if (initialStats && initialStats.revenue > 0) {
-      setStats(initialStats);
-      setStatsLoaded(true);
-      return;
-    }
-
-    // Only load stats once per day to prevent flickering
-    if (statsLoaded) {
-      return;
-    }
-
-    try {
-      setError(null);
-      const supabase = createClient();
-
-      // Use retry logic for both queries
-      const [ordersResult, menuItemsResult] = await Promise.all([
-        withSupabaseRetry(() => supabase
-          .from("orders")
-          .select("total_amount, table_number, order_status, payment_status, created_at, items")
-          .eq("venue_id", vId)
-          .gte("created_at", window.startUtcISO)
-          .lt("created_at", window.endUtcISO)
-        ),
-        withSupabaseRetry(() => supabase
-          .from("menu_items")
-          .select("id")
-          .eq("venue_id", vId)
-          .eq("is_available", true)
-        )
-      ]);
-
-      const { data: orders, error: ordersError } = ordersResult;
-      const { data: menuItems, error: menuItemsError } = menuItemsResult;
-
-      if (ordersError || menuItemsError) {
-        console.warn('[DASHBOARD] Failed to load stats:', { ordersError, menuItemsError });
-        setError('Failed to load dashboard statistics');
+  const loadStats = useCallback(
+    async (vId: string, window: any) => {
+      // If we have initial stats from SSR, use those and skip client-side calculation
+      if (initialStats && initialStats.revenue > 0) {
+        setStats(initialStats);
+        setStatsLoaded(true);
         return;
       }
 
-      // Calculate revenue from today's paid orders only (robust amount fallback)
-      const ordersArray = Array.isArray(orders) ? orders : [];
-      const todayRevenue = ordersArray.reduce((sum: number, order: any) => {
-        let amount = Number(order.total_amount) || parseFloat(order.total_amount as any) || 0;
-        if (!Number.isFinite(amount) || amount <= 0) {
-          if (Array.isArray(order.items)) {
-            amount = order.items.reduce((s: number, it: any) => {
-              const unit = Number(it.unit_price ?? it.price ?? 0);
-              const qty = Number(it.quantity ?? it.qty ?? 0);
-              return s + (Number.isFinite(unit) && Number.isFinite(qty) ? unit * qty : 0);
-            }, 0);
-          }
+      // Only load stats once per day to prevent flickering
+      if (statsLoaded) {
+        return;
+      }
+
+      try {
+        setError(null);
+        const supabase = createClient();
+
+        // Use retry logic for both queries
+        const [ordersResult, menuItemsResult] = await Promise.all([
+          withSupabaseRetry(() =>
+            supabase
+              .from('orders')
+              .select(
+                'total_amount, table_number, order_status, payment_status, created_at, items'
+              )
+              .eq('venue_id', vId)
+              .gte('created_at', window.startUtcISO)
+              .lt('created_at', window.endUtcISO)
+          ),
+          withSupabaseRetry(() =>
+            supabase
+              .from('menu_items')
+              .select('id')
+              .eq('venue_id', vId)
+              .eq('is_available', true)
+          ),
+        ]);
+
+        const { data: orders, error: ordersError } = ordersResult;
+        const { data: menuItems, error: menuItemsError } = menuItemsResult;
+
+        if (ordersError || menuItemsError) {
+          console.warn('[DASHBOARD] Failed to load stats:', {
+            ordersError,
+            menuItemsError,
+          });
+          setError('Failed to load dashboard statistics');
+          return;
         }
-        // All orders are now paid since they only appear after payment
-        return sum + amount;
-      }, 0);
 
-      const menuItemsArray = Array.isArray(menuItems) ? menuItems : [];
-      setStats({
-        revenue: todayRevenue,
-        menuItems: menuItemsArray.length,
-        unpaid: 0, // All orders are now paid since they only appear after payment
-      });
-      
-      setStatsLoaded(true);
-    } catch (error) {
-      console.error('[DASHBOARD] Error loading stats:', error);
-      setError('Failed to load dashboard statistics');
-    }
-  }, [initialStats, statsLoaded]);
+        // Calculate revenue from today's paid orders only (robust amount fallback)
+        const ordersArray = Array.isArray(orders) ? orders : [];
+        const todayRevenue = ordersArray.reduce((sum: number, order: any) => {
+          let amount =
+            Number(order.total_amount) ||
+            parseFloat(order.total_amount as any) ||
+            0;
+          if (!Number.isFinite(amount) || amount <= 0) {
+            if (Array.isArray(order.items)) {
+              amount = order.items.reduce((s: number, it: any) => {
+                const unit = Number(it.unit_price ?? it.price ?? 0);
+                const qty = Number(it.quantity ?? it.qty ?? 0);
+                return (
+                  s +
+                  (Number.isFinite(unit) && Number.isFinite(qty)
+                    ? unit * qty
+                    : 0)
+                );
+              }, 0);
+            }
+          }
+          // All orders are now paid since they only appear after payment
+          return sum + amount;
+        }, 0);
 
+        const menuItemsArray = Array.isArray(menuItems) ? menuItems : [];
+        setStats({
+          revenue: todayRevenue,
+          menuItems: menuItemsArray.length,
+          unpaid: 0, // All orders are now paid since they only appear after payment
+        });
+
+        setStatsLoaded(true);
+      } catch (error) {
+        console.error('[DASHBOARD] Error loading stats:', error);
+        setError('Failed to load dashboard statistics');
+      }
+    },
+    [initialStats, statsLoaded]
+  );
 
   // Show skeleton only while loading AND no initial data
   if (loading && !venue && !initialVenue) {
@@ -509,336 +585,412 @@ const VenueDashboardClient = React.memo(function VenueDashboardClient({
     <PullToRefresh onRefresh={handleRefresh}>
       <div className="min-h-screen bg-background">
         <div className="max-w-7xl mx-auto px-3 sm:px-4 lg:px-8 py-4 sm:py-6 lg:py-8 pb-24 md:pb-8">
-        {/* Simple breadcrumb for main dashboard */}
-        <RoleBasedNavigation 
-          venueId={venueId} 
-          userRole={userRole as any}
-          userName={userName}
-        />
-        
-        {/* Onboarding completion banner */}
-        <OnboardingCompletionBanner />
-        
-        {/* Trial status banner - Only for owners */}
-        <TrialStatusBanner userRole={userRole} />
-        
-        <div className="mb-6 sm:mb-8">
-          <div className="flex items-start justify-between">
-            <div>
-              <h2 className="text-xl sm:text-2xl font-bold text-foreground mb-2">
-                Welcome back, {userName}!
-              </h2>
-              <p className="text-gray-700 text-sm sm:text-base font-medium">Here's what's happening at {venue?.venue_name || "your venue"} today</p>
-            </div>
-            
-            <div className="flex items-center gap-3">
-              {/* Venue Switcher - Only for owners */}
-              {(userRole === 'owner' || isOwner) && (
-                <VenueSwitcherPopup 
-                  currentVenueId={venueId}
-                  onVenueChange={handleVenueChange}
-                />
-              )}
-              
-              {/* Role Management Popup */}
-              <RoleManagementPopup 
-                currentUserRole={userRole || 'owner'}
-              />
-              
-              {/* Connection Status Indicator */}
-              <div className="flex items-center gap-2 text-xs">
-                {!connectionState.isOnline ? (
-                  <div className="flex items-center gap-1 text-red-600">
-                    <WifiOff className="h-4 w-4" />
-                    <span>Offline</span>
-                  </div>
-                ) : connectionState.isSlowConnection ? (
-                  <div className="flex items-center gap-1 text-yellow-600">
-                    <AlertTriangle className="h-4 w-4" />
-                    <span>Slow</span>
-                  </div>
-                ) : (
-                  <div className="flex items-center gap-1 text-green-600">
-                    <Wifi className="h-4 w-4" />
-                    <span>Online</span>
-                  </div>
+          {/* Simple breadcrumb for main dashboard */}
+          <RoleBasedNavigation
+            venueId={venueId}
+            userRole={userRole as any}
+            userName={userName}
+          />
+
+          {/* Onboarding completion banner */}
+          <OnboardingCompletionBanner />
+
+          {/* Trial status banner - Only for owners */}
+          <TrialStatusBanner userRole={userRole} />
+
+          <div className="mb-6 sm:mb-8">
+            <div className="flex items-start justify-between">
+              <div>
+                <h2 className="text-xl sm:text-2xl font-bold text-foreground mb-2">
+                  Welcome back, {userName}!
+                </h2>
+                <p className="text-gray-700 text-sm sm:text-base font-medium">
+                  Here's what's happening at {venue?.venue_name || 'your venue'}{' '}
+                  today
+                </p>
+              </div>
+
+              <div className="flex items-center gap-3">
+                {/* Venue Switcher - Only for owners */}
+                {(userRole === 'owner' || isOwner) && (
+                  <VenueSwitcherPopup
+                    currentVenueId={venueId}
+                    onVenueChange={handleVenueChange}
+                  />
                 )}
-              </div>
-            </div>
-          </div>
-          
-          {/* Error Banner */}
-          {error && (
-            <div className="mt-4 p-3 bg-red-50 border border-red-200 rounded-lg">
-              <div className="flex items-center gap-2">
-                <AlertTriangle className="h-4 w-4 text-red-600" />
-                <span className="text-sm text-red-800">{error}</span>
-                <button
-                  onClick={handleRefresh}
-                  className="ml-auto text-xs bg-red-100 hover:bg-red-200 px-2 py-1 rounded"
-                >
-                  Retry
-                </button>
-              </div>
-            </div>
-          )}
-        </div>
 
-        {/* Stats Overview */}
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 sm:gap-6 mb-6 sm:mb-8">
-           <Link href={`/dashboard/${venueId}/live-orders?since=today`}>
-            <Card className="cursor-pointer hover:shadow-lg transition-shadow">
-              <CardContent className="p-4 sm:p-6">
-                <div className="flex items-center justify-between">
-                  <div>
-                    <p className="text-xs sm:text-sm font-medium text-gray-700">Today's Orders</p>
-                    <p className="text-xl sm:text-2xl font-bold text-foreground">{counts.today_orders_count}</p>
-                  </div>
-                  <div className="w-10 h-10 sm:w-12 sm:h-12 bg-blue-100 rounded-lg flex items-center justify-center">
-                    <Clock className="h-5 w-5 sm:h-6 sm:w-6 text-blue-600" />
-                  </div>
+                {/* Role Management Popup */}
+                <RoleManagementPopup currentUserRole={userRole || 'owner'} />
+
+                {/* Connection Status Indicator */}
+                <div className="flex items-center gap-2 text-xs">
+                  {!connectionState.isOnline ? (
+                    <div className="flex items-center gap-1 text-red-600">
+                      <WifiOff className="h-4 w-4" />
+                      <span>Offline</span>
+                    </div>
+                  ) : connectionState.isSlowConnection ? (
+                    <div className="flex items-center gap-1 text-yellow-600">
+                      <AlertTriangle className="h-4 w-4" />
+                      <span>Slow</span>
+                    </div>
+                  ) : (
+                    <div className="flex items-center gap-1 text-green-600">
+                      <Wifi className="h-4 w-4" />
+                      <span>Online</span>
+                    </div>
+                  )}
                 </div>
-              </CardContent>
-            </Card>
-          </Link>
+              </div>
+            </div>
 
-          {(userRole === 'owner' || userRole === 'manager') && (
-            <Link href={`/dashboard/${venueId}/analytics`}>
+            {/* Error Banner */}
+            {error && (
+              <div className="mt-4 p-3 bg-red-50 border border-red-200 rounded-lg">
+                <div className="flex items-center gap-2">
+                  <AlertTriangle className="h-4 w-4 text-red-600" />
+                  <span className="text-sm text-red-800">{error}</span>
+                  <button
+                    onClick={handleRefresh}
+                    className="ml-auto text-xs bg-red-100 hover:bg-red-200 px-2 py-1 rounded"
+                  >
+                    Retry
+                  </button>
+                </div>
+              </div>
+            )}
+          </div>
+
+          {/* Stats Overview */}
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 sm:gap-6 mb-6 sm:mb-8">
+            <Link href={`/dashboard/${venueId}/live-orders?since=today`}>
               <Card className="cursor-pointer hover:shadow-lg transition-shadow">
                 <CardContent className="p-4 sm:p-6">
                   <div className="flex items-center justify-between">
                     <div>
-                      <p className="text-xs sm:text-sm font-medium text-gray-700">Revenue</p>
-                      <p className="text-xl sm:text-2xl font-bold text-foreground">£{stats.revenue.toFixed(2)}</p>
+                      <p className="text-xs sm:text-sm font-medium text-gray-700">
+                        Today's Orders
+                      </p>
+                      <p className="text-xl sm:text-2xl font-bold text-foreground">
+                        {counts.today_orders_count}
+                      </p>
                     </div>
-                    <div className="w-10 h-10 sm:w-12 sm:h-12 bg-green-100 rounded-lg flex items-center justify-center">
-                      <TrendingUp className="h-5 w-5 sm:h-6 sm:w-6 text-green-600" />
+                    <div className="w-10 h-10 sm:w-12 sm:h-12 bg-blue-100 rounded-lg flex items-center justify-center">
+                      <Clock className="h-5 w-5 sm:h-6 sm:w-6 text-blue-600" />
                     </div>
                   </div>
                 </CardContent>
               </Card>
             </Link>
-          )}
 
-           <Link href={`/dashboard/${venueId}/tables`}>
-            <Card className="cursor-pointer hover:shadow-lg transition-shadow">
-              <CardContent className="p-4 sm:p-6">
-                <div className="flex items-center justify-between">
-                  <div>
-                    <p className="text-xs sm:text-sm font-medium text-gray-700">Tables Set Up</p>
-                    <p className="text-xl sm:text-2xl font-bold text-foreground">{counts.tables_set_up}</p>
-                  </div>
-                  <div className="w-10 h-10 sm:w-12 sm:h-12 bg-purple-100 rounded-lg flex items-center justify-center">
-                    <Table className="h-5 w-5 sm:h-6 sm:w-6 text-purple-600" />
-                  </div>
-                </div>
-              </CardContent>
-            </Card>
-          </Link>
+            {(userRole === 'owner' || userRole === 'manager') && (
+              <Link href={`/dashboard/${venueId}/analytics`}>
+                <Card className="cursor-pointer hover:shadow-lg transition-shadow">
+                  <CardContent className="p-4 sm:p-6">
+                    <div className="flex items-center justify-between">
+                      <div>
+                        <p className="text-xs sm:text-sm font-medium text-gray-700">
+                          Revenue
+                        </p>
+                        <p className="text-xl sm:text-2xl font-bold text-foreground">
+                          £{stats.revenue.toFixed(2)}
+                        </p>
+                      </div>
+                      <div className="w-10 h-10 sm:w-12 sm:h-12 bg-green-100 rounded-lg flex items-center justify-center">
+                        <TrendingUp className="h-5 w-5 sm:h-6 sm:w-6 text-green-600" />
+                      </div>
+                    </div>
+                  </CardContent>
+                </Card>
+              </Link>
+            )}
 
-          <Link href={`/dashboard/${venueId}/menu-management`}>
-            <Card className="cursor-pointer hover:shadow-lg transition-shadow">
-              <CardContent className="p-4 sm:p-6">
-                <div className="flex items-center justify-between">
-                  <div>
-                    <p className="text-xs sm:text-sm font-medium text-gray-700">Menu Items</p>
-                    <p className="text-xl sm:text-2xl font-bold text-foreground">{stats.menuItems}</p>
+            <Link href={`/dashboard/${venueId}/tables`}>
+              <Card className="cursor-pointer hover:shadow-lg transition-shadow">
+                <CardContent className="p-4 sm:p-6">
+                  <div className="flex items-center justify-between">
+                    <div>
+                      <p className="text-xs sm:text-sm font-medium text-gray-700">
+                        Tables Set Up
+                      </p>
+                      <p className="text-xl sm:text-2xl font-bold text-foreground">
+                        {counts.tables_set_up}
+                      </p>
+                    </div>
+                    <div className="w-10 h-10 sm:w-12 sm:h-12 bg-purple-100 rounded-lg flex items-center justify-center">
+                      <Table className="h-5 w-5 sm:h-6 sm:w-6 text-purple-600" />
+                    </div>
                   </div>
-                  <div className="w-10 h-10 sm:w-12 sm:h-12 bg-orange-100 rounded-lg flex items-center justify-center">
+                </CardContent>
+              </Card>
+            </Link>
+
+            <Link href={`/dashboard/${venueId}/menu-management`}>
+              <Card className="cursor-pointer hover:shadow-lg transition-shadow">
+                <CardContent className="p-4 sm:p-6">
+                  <div className="flex items-center justify-between">
+                    <div>
+                      <p className="text-xs sm:text-sm font-medium text-gray-700">
+                        Menu Items
+                      </p>
+                      <p className="text-xl sm:text-2xl font-bold text-foreground">
+                        {stats.menuItems}
+                      </p>
+                    </div>
+                    <div className="w-10 h-10 sm:w-12 sm:h-12 bg-orange-100 rounded-lg flex items-center justify-center">
+                      <ShoppingBag className="h-5 w-5 sm:h-6 sm:w-6 text-orange-600" />
+                    </div>
+                  </div>
+                </CardContent>
+              </Card>
+            </Link>
+          </div>
+
+          {/* Feature grid */}
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 sm:gap-6">
+            <Link href={`/dashboard/${venueId}/live-orders`}>
+              <Card className="hover:shadow-lg transition-shadow cursor-pointer">
+                <CardContent className="p-4 sm:p-6">
+                  <div className="w-10 h-10 sm:w-12 sm:h-12 bg-blue-100 rounded-lg flex items-center justify-center mb-4">
+                    <Clock className="h-5 w-5 sm:h-6 sm:w-6 text-blue-600" />
+                  </div>
+                  <h3 className="text-base sm:text-lg font-semibold mb-2 text-foreground">
+                    Live Orders
+                  </h3>
+                  <p className="text-gray-700 text-xs sm:text-sm font-medium">
+                    Monitor and manage incoming orders in real-time
+                  </p>
+                </CardContent>
+              </Card>
+            </Link>
+
+            {(userRole === 'owner' ||
+              userRole === 'manager' ||
+              userRole === 'kitchen') && (
+              <Link href={`/dashboard/${venueId}/kds`}>
+                <Card className="hover:shadow-lg transition-shadow cursor-pointer">
+                  <CardContent className="p-4 sm:p-6">
+                    <div className="w-10 h-10 sm:w-12 sm:h-12 bg-red-100 rounded-lg flex items-center justify-center mb-4">
+                      <ChefHat className="h-5 w-5 sm:h-6 sm:w-6 text-red-600" />
+                    </div>
+                    <h3 className="text-base sm:text-lg font-semibold mb-2 text-foreground">
+                      Kitchen Display
+                    </h3>
+                    <p className="text-gray-700 text-xs sm:text-sm font-medium">
+                      Real-time kitchen order management and display
+                    </p>
+                  </CardContent>
+                </Card>
+              </Link>
+            )}
+
+            <Link href={`/dashboard/${venueId}/menu-management`}>
+              <Card className="hover:shadow-lg transition-shadow cursor-pointer">
+                <CardContent className="p-4 sm:p-6">
+                  <div className="w-10 h-10 sm:w-12 sm:h-12 bg-orange-100 rounded-lg flex items-center justify-center mb-4">
                     <ShoppingBag className="h-5 w-5 sm:h-6 sm:w-6 text-orange-600" />
                   </div>
+                  <h3 className="text-base sm:text-lg font-semibold mb-2 text-foreground">
+                    Menu Builder
+                  </h3>
+                  <p className="text-gray-700 text-xs sm:text-sm font-medium">
+                    Design, manage, and customize your menu
+                  </p>
+                </CardContent>
+              </Card>
+            </Link>
+
+            <Link href={`/dashboard/${venueId}/qr-codes`}>
+              <Card className="hover:shadow-lg transition-shadow cursor-pointer">
+                <CardContent className="p-4 sm:p-6">
+                  <div className="w-10 h-10 sm:w-12 sm:h-12 bg-purple-100 rounded-lg flex items-center justify-center mb-4">
+                    <QrCode className="h-5 w-5 sm:h-6 sm:w-6 text-purple-600" />
+                  </div>
+                  <h3 className="text-base sm:text-lg font-semibold mb-2 text-foreground">
+                    QR Codes
+                  </h3>
+                  <p className="text-gray-700 text-xs sm:text-sm font-medium">
+                    Generate and manage QR codes for your tables
+                  </p>
+                </CardContent>
+              </Card>
+            </Link>
+
+            {venue?.has_tables !== false && (
+              <Link
+                href={`/dashboard/${venueId}/tables`}
+                onClick={() => {
+                  // Track table management click
+                }}
+              >
+                <Card className="hover:shadow-lg transition-shadow cursor-pointer">
+                  <CardContent className="p-4 sm:p-6">
+                    <div className="w-10 h-10 sm:w-12 sm:h-12 bg-indigo-100 rounded-lg flex items-center justify-center mb-4">
+                      <Table className="h-5 w-5 sm:h-6 sm:w-6 text-indigo-600" />
+                    </div>
+                    <h3 className="text-base sm:text-lg font-semibold mb-2 text-foreground">
+                      Table Management
+                    </h3>
+                    <p className="text-gray-700 text-xs sm:text-sm font-medium">
+                      Monitor table status and manage service flow
+                    </p>
+                  </CardContent>
+                </Card>
+              </Link>
+            )}
+
+            {(userRole === 'owner' || userRole === 'manager') && (
+              <Link href={`/dashboard/${venueId}/analytics`}>
+                <Card className="hover:shadow-lg transition-shadow cursor-pointer">
+                  <CardContent className="p-4 sm:p-6">
+                    <div className="w-10 h-10 sm:w-12 sm:h-12 bg-green-100 rounded-lg flex items-center justify-center mb-4">
+                      <BarChart className="h-5 w-5 sm:h-6 sm:w-6 text-green-600" />
+                    </div>
+                    <h3 className="text-base sm:text-lg font-semibold mb-2 text-foreground">
+                      Analytics
+                    </h3>
+                    <p className="text-gray-700 text-xs sm:text-sm font-medium">
+                      Deep insights into your restaurant performance
+                    </p>
+                  </CardContent>
+                </Card>
+              </Link>
+            )}
+
+            <Link href={`/dashboard/${venueId}/feedback`}>
+              <Card className="hover:shadow-lg transition-shadow cursor-pointer">
+                <CardContent className="p-4 sm:p-6">
+                  <div className="w-10 h-10 sm:w-12 sm:h-12 bg-yellow-100 rounded-lg flex items-center justify-center mb-4">
+                    <BarChart className="h-5 w-5 sm:h-6 sm:w-6 text-yellow-600" />
+                  </div>
+                  <h3 className="text-base sm:text-lg font-semibold mb-2 text-foreground">
+                    Feedback
+                  </h3>
+                  <p className="text-gray-700 text-xs sm:text-sm font-medium">
+                    See customer reviews and ratings
+                  </p>
+                </CardContent>
+              </Card>
+            </Link>
+
+            {(userRole === 'owner' || userRole === 'manager') && (
+              <Link href={`/dashboard/${venueId}/staff`}>
+                <Card className="hover:shadow-lg transition-shadow cursor-pointer">
+                  <CardContent className="p-4 sm:p-6">
+                    <div className="w-10 h-10 sm:w-12 sm:h-12 bg-slate-100 rounded-lg flex items-center justify-center mb-4">
+                      <Users className="h-5 w-5 sm:h-6 sm:w-6 text-slate-700" />
+                    </div>
+                    <h3 className="text-base sm:text-lg font-semibold mb-2 text-foreground">
+                      Staff Management
+                    </h3>
+                    <p className="text-gray-700 text-xs sm:text-sm font-medium">
+                      Manage your team, roles, and permissions
+                    </p>
+                  </CardContent>
+                </Card>
+              </Link>
+            )}
+
+            <Link href={`/dashboard/${venueId}/inventory`}>
+              <Card className="hover:shadow-lg transition-shadow cursor-pointer">
+                <CardContent className="p-4 sm:p-6">
+                  <div className="w-10 h-10 sm:w-12 sm:h-12 bg-emerald-100 rounded-lg flex items-center justify-center mb-4">
+                    <Package className="h-5 w-5 sm:h-6 sm:w-6 text-emerald-600" />
+                  </div>
+                  <h3 className="text-base sm:text-lg font-semibold mb-2 text-foreground">
+                    Inventory Management
+                  </h3>
+                  <p className="text-gray-700 text-xs sm:text-sm font-medium">
+                    Track ingredients, stock levels, and costs
+                  </p>
+                </CardContent>
+              </Card>
+            </Link>
+          </div>
+
+          {/* Getting Started Section */}
+          <div className="mt-12">
+            <Card>
+              <CardHeader>
+                <h3 className="text-lg font-semibold text-foreground">
+                  Getting Started
+                </h3>
+                <p className="text-gray-700 font-medium">
+                  Complete these steps to set up your venue
+                </p>
+              </CardHeader>
+              <CardContent className="space-y-4">
+                <div className="flex items-center justify-between p-4 bg-muted rounded-lg">
+                  <div className="flex items-center space-x-4">
+                    <div className="w-8 h-8 bg-purple-100 rounded-full flex items-center justify-center">
+                      <Plus className="h-4 w-4 text-purple-600" />
+                    </div>
+                    <div>
+                      <h4 className="font-medium text-foreground">
+                        Add Menu Items
+                      </h4>
+                      <p className="text-sm text-gray-700 font-medium">
+                        Upload your menu or add items manually
+                      </p>
+                    </div>
+                  </div>
+                  <Button variant="outline" asChild>
+                    <Link
+                      href={`/dashboard/${venueId}/menu-management?openAdd=true`}
+                    >
+                      Get Started
+                    </Link>
+                  </Button>
+                </div>
+
+                <div className="flex items-center justify-between p-4 bg-muted rounded-lg">
+                  <div className="flex items-center space-x-4">
+                    <div className="w-8 h-8 bg-purple-100 rounded-full flex items-center justify-center">
+                      <QrCode className="h-4 w-4 text-purple-600" />
+                    </div>
+                    <div>
+                      <h4 className="font-medium text-foreground">
+                        Generate QR Codes
+                      </h4>
+                      <p className="text-sm text-gray-700 font-medium">
+                        Create QR codes for your tables
+                      </p>
+                    </div>
+                  </div>
+                  <Button variant="outline" asChild>
+                    <Link href={`/dashboard/${venueId}/qr-codes`}>
+                      Generate
+                    </Link>
+                  </Button>
+                </div>
+
+                <div className="flex items-center justify-between p-4 bg-muted rounded-lg">
+                  <div className="flex items-center space-x-4">
+                    <div className="w-8 h-8 bg-purple-100 rounded-full flex items-center justify-center">
+                      <Settings className="h-4 w-4 text-purple-600" />
+                    </div>
+                    <div>
+                      <h4 className="font-medium text-foreground">
+                        Configure Settings
+                      </h4>
+                      <p className="text-sm text-gray-900 font-medium">
+                        Customize your venue settings
+                      </p>
+                    </div>
+                  </div>
+                  <Button variant="outline" asChild>
+                    <Link href={`/dashboard/${venueId}/settings`}>
+                      Configure
+                    </Link>
+                  </Button>
                 </div>
               </CardContent>
             </Card>
-          </Link>
+          </div>
         </div>
-
-        {/* Feature grid */}
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 sm:gap-6">
-          <Link href={`/dashboard/${venueId}/live-orders`}>
-            <Card className="hover:shadow-lg transition-shadow cursor-pointer">
-              <CardContent className="p-4 sm:p-6">
-                <div className="w-10 h-10 sm:w-12 sm:h-12 bg-blue-100 rounded-lg flex items-center justify-center mb-4">
-                  <Clock className="h-5 w-5 sm:h-6 sm:w-6 text-blue-600" />
-                </div>
-                <h3 className="text-base sm:text-lg font-semibold mb-2 text-foreground">Live Orders</h3>
-                <p className="text-gray-700 text-xs sm:text-sm font-medium">Monitor and manage incoming orders in real-time</p>
-              </CardContent>
-            </Card>
-          </Link>
-
-          {(userRole === 'owner' || userRole === 'manager' || userRole === 'kitchen') && (
-            <Link href={`/dashboard/${venueId}/kds`}>
-              <Card className="hover:shadow-lg transition-shadow cursor-pointer">
-                <CardContent className="p-4 sm:p-6">
-                  <div className="w-10 h-10 sm:w-12 sm:h-12 bg-red-100 rounded-lg flex items-center justify-center mb-4">
-                    <ChefHat className="h-5 w-5 sm:h-6 sm:w-6 text-red-600" />
-                  </div>
-                  <h3 className="text-base sm:text-lg font-semibold mb-2 text-foreground">Kitchen Display</h3>
-                  <p className="text-gray-700 text-xs sm:text-sm font-medium">Real-time kitchen order management and display</p>
-                </CardContent>
-              </Card>
-            </Link>
-          )}
-
-          <Link href={`/dashboard/${venueId}/menu-management`}>
-            <Card className="hover:shadow-lg transition-shadow cursor-pointer">
-              <CardContent className="p-4 sm:p-6">
-                <div className="w-10 h-10 sm:w-12 sm:h-12 bg-orange-100 rounded-lg flex items-center justify-center mb-4">
-                  <ShoppingBag className="h-5 w-5 sm:h-6 sm:w-6 text-orange-600" />
-                </div>
-                <h3 className="text-base sm:text-lg font-semibold mb-2 text-foreground">Menu Builder</h3>
-                <p className="text-gray-700 text-xs sm:text-sm font-medium">Design, manage, and customize your menu</p>
-              </CardContent>
-            </Card>
-          </Link>
-
-          <Link href={`/dashboard/${venueId}/qr-codes`}>
-            <Card className="hover:shadow-lg transition-shadow cursor-pointer">
-              <CardContent className="p-4 sm:p-6">
-                <div className="w-10 h-10 sm:w-12 sm:h-12 bg-purple-100 rounded-lg flex items-center justify-center mb-4">
-                  <QrCode className="h-5 w-5 sm:h-6 sm:w-6 text-purple-600" />
-                </div>
-                <h3 className="text-base sm:text-lg font-semibold mb-2 text-foreground">QR Codes</h3>
-                <p className="text-gray-700 text-xs sm:text-sm font-medium">Generate and manage QR codes for your tables</p>
-              </CardContent>
-            </Card>
-          </Link>
-
-          {venue?.has_tables !== false && (
-            <Link 
-              href={`/dashboard/${venueId}/tables`}
-              onClick={() => {
-                // Track table management click
-              }}
-            >
-              <Card className="hover:shadow-lg transition-shadow cursor-pointer">
-                <CardContent className="p-4 sm:p-6">
-                  <div className="w-10 h-10 sm:w-12 sm:h-12 bg-indigo-100 rounded-lg flex items-center justify-center mb-4">
-                    <Table className="h-5 w-5 sm:h-6 sm:w-6 text-indigo-600" />
-                  </div>
-                  <h3 className="text-base sm:text-lg font-semibold mb-2 text-foreground">Table Management</h3>
-                  <p className="text-gray-700 text-xs sm:text-sm font-medium">Monitor table status and manage service flow</p>
-                </CardContent>
-              </Card>
-            </Link>
-          )}
-
-          {(userRole === 'owner' || userRole === 'manager') && (
-            <Link href={`/dashboard/${venueId}/analytics`}>
-              <Card className="hover:shadow-lg transition-shadow cursor-pointer">
-                <CardContent className="p-4 sm:p-6">
-                  <div className="w-10 h-10 sm:w-12 sm:h-12 bg-green-100 rounded-lg flex items-center justify-center mb-4">
-                    <BarChart className="h-5 w-5 sm:h-6 sm:w-6 text-green-600" />
-                  </div>
-                  <h3 className="text-base sm:text-lg font-semibold mb-2 text-foreground">Analytics</h3>
-                  <p className="text-gray-700 text-xs sm:text-sm font-medium">Deep insights into your restaurant performance</p>
-                </CardContent>
-              </Card>
-            </Link>
-          )}
-
-          <Link href={`/dashboard/${venueId}/feedback`}>
-            <Card className="hover:shadow-lg transition-shadow cursor-pointer">
-              <CardContent className="p-4 sm:p-6">
-                <div className="w-10 h-10 sm:w-12 sm:h-12 bg-yellow-100 rounded-lg flex items-center justify-center mb-4">
-                  <BarChart className="h-5 w-5 sm:h-6 sm:w-6 text-yellow-600" />
-                </div>
-                <h3 className="text-base sm:text-lg font-semibold mb-2 text-foreground">Feedback</h3>
-                <p className="text-gray-700 text-xs sm:text-sm font-medium">See customer reviews and ratings</p>
-              </CardContent>
-            </Card>
-          </Link>
-
-          {(userRole === 'owner' || userRole === 'manager') && (
-            <Link href={`/dashboard/${venueId}/staff`}>
-              <Card className="hover:shadow-lg transition-shadow cursor-pointer">
-                <CardContent className="p-4 sm:p-6">
-                  <div className="w-10 h-10 sm:w-12 sm:h-12 bg-slate-100 rounded-lg flex items-center justify-center mb-4">
-                    <Users className="h-5 w-5 sm:h-6 sm:w-6 text-slate-700" />
-                  </div>
-                  <h3 className="text-base sm:text-lg font-semibold mb-2 text-foreground">Staff Management</h3>
-                  <p className="text-gray-700 text-xs sm:text-sm font-medium">Manage your team, roles, and permissions</p>
-                </CardContent>
-              </Card>
-            </Link>
-          )}
-
-          <Link href={`/dashboard/${venueId}/inventory`}>
-            <Card className="hover:shadow-lg transition-shadow cursor-pointer">
-              <CardContent className="p-4 sm:p-6">
-                <div className="w-10 h-10 sm:w-12 sm:h-12 bg-emerald-100 rounded-lg flex items-center justify-center mb-4">
-                  <Package className="h-5 w-5 sm:h-6 sm:w-6 text-emerald-600" />
-                </div>
-                <h3 className="text-base sm:text-lg font-semibold mb-2 text-foreground">Inventory Management</h3>
-                <p className="text-gray-700 text-xs sm:text-sm font-medium">Track ingredients, stock levels, and costs</p>
-              </CardContent>
-            </Card>
-          </Link>
-
-        </div>
-
-        {/* Getting Started Section */}
-        <div className="mt-12">
-          <Card>
-            <CardHeader>
-              <h3 className="text-lg font-semibold text-foreground">Getting Started</h3>
-              <p className="text-gray-700 font-medium">Complete these steps to set up your venue</p>
-            </CardHeader>
-            <CardContent className="space-y-4">
-              <div className="flex items-center justify-between p-4 bg-muted rounded-lg">
-                <div className="flex items-center space-x-4">
-                  <div className="w-8 h-8 bg-purple-100 rounded-full flex items-center justify-center">
-                    <Plus className="h-4 w-4 text-purple-600" />
-                  </div>
-                  <div>
-                    <h4 className="font-medium text-foreground">Add Menu Items</h4>
-                    <p className="text-sm text-gray-700 font-medium">Upload your menu or add items manually</p>
-                  </div>
-                </div>
-                <Button variant="outline" asChild>
-                  <Link href={`/dashboard/${venueId}/menu-management?openAdd=true`}>Get Started</Link>
-                </Button>
-              </div>
-
-              <div className="flex items-center justify-between p-4 bg-muted rounded-lg">
-                <div className="flex items-center space-x-4">
-                  <div className="w-8 h-8 bg-purple-100 rounded-full flex items-center justify-center">
-                    <QrCode className="h-4 w-4 text-purple-600" />
-                  </div>
-                  <div>
-                    <h4 className="font-medium text-foreground">Generate QR Codes</h4>
-                    <p className="text-sm text-gray-700 font-medium">Create QR codes for your tables</p>
-                  </div>
-                </div>
-                <Button variant="outline" asChild>
-                  <Link href={`/dashboard/${venueId}/qr-codes`}>Generate</Link>
-                </Button>
-              </div>
-
-              <div className="flex items-center justify-between p-4 bg-muted rounded-lg">
-                <div className="flex items-center space-x-4">
-                  <div className="w-8 h-8 bg-purple-100 rounded-full flex items-center justify-center">
-                    <Settings className="h-4 w-4 text-purple-600" />
-                  </div>
-                  <div>
-                    <h4 className="font-medium text-foreground">Configure Settings</h4>
-                    <p className="text-sm text-gray-900 font-medium">Customize your venue settings</p>
-                  </div>
-                </div>
-                <Button variant="outline" asChild>
-                  <Link href={`/dashboard/${venueId}/settings`}>Configure</Link>
-                </Button>
-              </div>
-            </CardContent>
-          </Card>
-        </div>
-      </div>
       </div>
     </PullToRefresh>
   );
 });
 
 export default VenueDashboardClient;
-
-
