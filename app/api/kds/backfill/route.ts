@@ -1,10 +1,10 @@
-import { NextResponse } from 'next/server';
+import { NextRequest, NextResponse } from 'next/server';
 import { createAdminClient } from '@/lib/supabase/server';
 import { apiLogger, logger } from '@/lib/logger';
 
 export const runtime = 'nodejs'; // KDS backfill endpoint
 
-export async function POST(req: Request) {
+export async function POST(req: NextRequest) {
   try {
     const supabaseAdmin = createAdminClient();
     logger.debug('[KDS BACKFILL] Starting KDS backfill for existing orders...');
@@ -172,7 +172,7 @@ export async function POST(req: Request) {
         ordersProcessed++;
         logger.debug(`[KDS BACKFILL] Processed order ${order.id} with ${items.length} items`);
         
-      } catch (error: any) {
+      } catch (error: unknown) {
         logger.error(`[KDS BACKFILL] Error processing order ${order.id}:`, { error: error instanceof Error ? error.message : 'Unknown error' });
         errors.push(`Error processing order ${order.id}: ${error.message}`);
       }
@@ -192,7 +192,7 @@ export async function POST(req: Request) {
       errors: errors.length > 0 ? errors : undefined
     });
 
-  } catch (error: any) {
+  } catch (error: unknown) {
     logger.error('[KDS BACKFILL] Unexpected error:', { error: error instanceof Error ? error.message : 'Unknown error' });
     return NextResponse.json({ 
       ok: false, 

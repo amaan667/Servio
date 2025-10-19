@@ -1,4 +1,4 @@
-import { NextResponse } from 'next/server';
+import { NextRequest, NextResponse } from 'next/server';
 import { createClient } from '@/lib/supabase/server';
 import { getAuthenticatedUser } from '@/lib/supabase/server';
 import { logger } from '@/lib/logger';
@@ -6,7 +6,7 @@ import { logger } from '@/lib/logger';
 export const runtime = 'nodejs';
 
 // POST /api/tables/cleanup-duplicates - Remove duplicate tables
-export async function POST(req: Request) {
+export async function POST(req: NextRequest) {
   try {
     const { venue_id } = await req.json();
 
@@ -51,7 +51,7 @@ export async function POST(req: Request) {
     }
 
     // Group tables by label to find duplicates
-    const tablesByLabel = new Map<string, any[]>();
+    const tablesByLabel = new Map<string, unknown[]>();
     tables.forEach(table => {
       if (!tablesByLabel.has(table.label)) {
         tablesByLabel.set(table.label, []);

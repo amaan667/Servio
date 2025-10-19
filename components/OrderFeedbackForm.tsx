@@ -143,7 +143,7 @@ export default function OrderFeedbackForm({ venueId, orderId }: OrderFeedbackFor
           table: 'feedback_questions',
           filter: `venue_id=eq.${venueId}`,
         },
-        (payload: any) => {
+        (payload: unknown) => {
           fetchQuestions();
         },
       )

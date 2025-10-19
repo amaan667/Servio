@@ -2,10 +2,10 @@
 const nextConfig = {
   reactStrictMode: true,
   eslint: {
-    ignoreDuringBuilds: true, // Disable ESLint during builds to avoid config issues
+    ignoreDuringBuilds: false, // ✅ Enforce code quality in production
   },
   typescript: {
-    ignoreBuildErrors: true, // Ignore TS errors temporarily
+    ignoreBuildErrors: false, // ✅ Enforce type safety in production
   },
   // Performance optimizations
   experimental: {

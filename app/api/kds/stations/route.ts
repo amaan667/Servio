@@ -1,9 +1,12 @@
-import { NextResponse } from 'next/server';
+export const runtime = "nodejs";
+export const dynamic = "force-dynamic";
+
+import { NextRequest, NextResponse } from 'next/server';
 import { createServerSupabase } from '@/lib/supabase/server';
 import { logger } from '@/lib/logger';
 
 // GET - Fetch all KDS stations for a venue
-export async function GET(req: Request) {
+export async function GET(req: NextRequest) {
   try {
     const { searchParams } = new URL(req.url);
     const venueId = searchParams.get('venueId');
@@ -70,7 +73,7 @@ export async function GET(req: Request) {
       ok: true,
       stations
     });
-  } catch (error: any) {
+  } catch (error: unknown) {
     logger.error('[KDS] Unexpected error:', { error: error instanceof Error ? error.message : 'Unknown error' });
     return NextResponse.json(
       { ok: false, error: error.message || 'Internal server error' },
@@ -80,7 +83,7 @@ export async function GET(req: Request) {
 }
 
 // POST - Create a new KDS station
-export async function POST(req: Request) {
+export async function POST(req: NextRequest) {
   try {
     const body = await req.json();
     const { venueId, stationName, stationType, displayOrder, colorCode } = body;
@@ -128,7 +131,7 @@ export async function POST(req: Request) {
       ok: true,
       station
     });
-  } catch (error: any) {
+  } catch (error: unknown) {
     logger.error('[KDS] Unexpected error:', { error: error instanceof Error ? error.message : 'Unknown error' });
     return NextResponse.json(
       { ok: false, error: error.message || 'Internal server error' },

@@ -1,6 +1,6 @@
 export const runtime = 'nodejs';
 
-import { NextResponse } from 'next/server';
+import { NextRequest, NextResponse } from 'next/server';
 import { cookies } from 'next/headers';
 import { createServerClient } from '@supabase/ssr';
 import { todayWindowForTZ } from '@/lib/time';
@@ -12,14 +12,14 @@ type OrderRow = {
   venue_id: string;
   table_number: number | null;
   customer_name: string | null;
-  items: any[];                    // jsonb[]
+  items: unknown[];                    // jsonb[]
   total_amount: number;
   created_at: string;              // timestamptz
   order_status: 'pending' | 'preparing' | 'served' | 'delivered' | 'cancelled';
   payment_status: 'paid' | 'unpaid' | null;
 };
 
-export async function GET(req: Request) {
+export async function GET(req: NextRequest) {
   try {
     const url = new URL(req.url);
     const venueId = url.searchParams.get('venueId');
@@ -118,7 +118,7 @@ export async function GET(req: Request) {
       meta: { scope, zone, count: transformedOrders?.length ?? 0 },
       orders: (transformedOrders || []) as OrderRow[],
     });
-  } catch (e: any) {
+  } catch (e: unknown) {
     return NextResponse.json({ ok: false, error: e.message }, { status: 500 });
   }
 }

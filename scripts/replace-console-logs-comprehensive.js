@@ -121,7 +121,6 @@ function processFile(filePath) {
       fs.writeFileSync(filePath, content, 'utf8');
       stats.filesProcessed++;
       stats.replacements += replacements;
-      console.log(`✅ Processed: ${filePath} (${replacements} replacements)`);
     }
 
   } catch (error) {
@@ -155,23 +154,16 @@ function processDirectory(dirPath) {
  * Main execution
  */
 function main() {
-  console.log('🚀 Starting comprehensive console.log replacement...\n');
 
   const projectRoot = path.resolve(__dirname, '..');
 
   for (const dir of DIRECTORIES) {
     const dirPath = path.join(projectRoot, dir);
     if (fs.existsSync(dirPath)) {
-      console.log(`📁 Processing directory: ${dir}`);
       processDirectory(dirPath);
     }
   }
 
-  console.log('\n📊 Statistics:');
-  console.log(`   Files processed: ${stats.filesProcessed}`);
-  console.log(`   Total replacements: ${stats.replacements}`);
-  console.log(`   Errors: ${stats.errors}`);
-  console.log('\n✅ Console.log replacement complete!');
 }
 
 main();

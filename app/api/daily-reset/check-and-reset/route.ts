@@ -1,3 +1,6 @@
+export const runtime = "nodejs";
+export const dynamic = "force-dynamic";
+
 import { NextRequest, NextResponse } from 'next/server';
 import { createAdminClient } from '@/lib/supabase/server';
 import { logger } from '@/lib/logger';
@@ -119,7 +122,7 @@ export async function POST(request: NextRequest) {
 
 
     // Perform the reset
-    let resetSummary = {
+    const resetSummary = {
       completedOrders: 0,
       canceledReservations: 0,
       resetTables: 0

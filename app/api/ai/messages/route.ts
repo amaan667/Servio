@@ -1,3 +1,6 @@
+export const runtime = "nodejs";
+export const dynamic = "force-dynamic";
+
 // Production AI Messages API
 // Handles message loading and creation with proper tool calling support
 
@@ -90,7 +93,7 @@ export async function GET(request: NextRequest) {
     return NextResponse.json({
       messages: transformedMessages,
     });
-  } catch (error: any) {
+  } catch (error: unknown) {
     logger.error("[AI CHAT] Messages error:", { error: error instanceof Error ? error.message : 'Unknown error' });
     return NextResponse.json(
       { error: error.message || "Internal server error" },
@@ -309,7 +312,7 @@ export async function POST(request: NextRequest) {
               error: errorMessage
             });
     }
-  } catch (error: any) {
+  } catch (error: unknown) {
     logger.error("[AI CHAT] Create message error:", { error: error instanceof Error ? error.message : 'Unknown error' });
     
     if (error.name === "ZodError") {

@@ -1,3 +1,6 @@
+export const runtime = "nodejs";
+export const dynamic = "force-dynamic";
+
 // Minimal status endpoint - no imports, no dependencies
 // Healthcheck for Railway deployment - connected
 export async function GET() {

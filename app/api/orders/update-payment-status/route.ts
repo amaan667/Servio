@@ -1,3 +1,6 @@
+export const runtime = "nodejs";
+export const dynamic = "force-dynamic";
+
 import { NextRequest, NextResponse } from 'next/server';
 import { createClient } from '@/lib/supabase/server';
 import { logger } from '@/lib/logger';
@@ -42,7 +45,7 @@ export async function POST(req: NextRequest) {
     
     return NextResponse.json({ success: true, data });
     
-  } catch (error: any) {
+  } catch (error: unknown) {
     logger.error('[UPDATE PAYMENT STATUS] Error:', { error: error instanceof Error ? error.message : 'Unknown error' });
     return NextResponse.json(
       { error: error.message || 'Internal server error' },

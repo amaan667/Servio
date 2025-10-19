@@ -1,3 +1,6 @@
+export const runtime = "nodejs";
+export const dynamic = "force-dynamic";
+
 import { NextRequest, NextResponse } from 'next/server';
 import { createClient, createAdminClient, getAuthenticatedUser } from '@/lib/supabase/server';
 import { logger } from '@/lib/logger';

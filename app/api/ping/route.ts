@@ -1,3 +1,6 @@
+export const runtime = "nodejs";
+export const dynamic = "force-dynamic";
+
 // Ultra-simple ping endpoint for health checks
 export async function GET() {
   return new Response('pong', { 

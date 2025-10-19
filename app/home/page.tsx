@@ -12,7 +12,7 @@ import { LayoutDashboard, Users, QrCode, BarChart3 } from "lucide-react";
 // This component will show home page content for both authenticated and non-authenticated users
 const HomePage = React.memo(function HomePage() {
   const router = useRouter();
-  const [user, setUser] = useState<any>(null);
+  const [user, setUser] = useState<unknown>(null);
   const [loading, setLoading] = useState(true);
   const [primaryVenueId, setPrimaryVenueId] = useState<string | null>(null);
 

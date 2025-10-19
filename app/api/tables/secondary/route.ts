@@ -1,4 +1,4 @@
-import { NextResponse } from 'next/server';
+import { NextRequest, NextResponse } from 'next/server';
 import { createClient } from '@/lib/supabase/server';
 import { getAuthenticatedUser } from '@/lib/supabase/server';
 import { logger } from '@/lib/logger';
@@ -6,7 +6,7 @@ import { logger } from '@/lib/logger';
 export const runtime = 'nodejs';
 
 // GET /api/tables/secondary?primary_table_id=xxx&venue_id=xxx - Find secondary table for a primary table
-export async function GET(req: Request) {
+export async function GET(req: NextRequest) {
   try {
     const { searchParams } = new URL(req.url);
     const primaryTableId = searchParams.get('primary_table_id');

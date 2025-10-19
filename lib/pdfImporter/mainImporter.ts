@@ -228,7 +228,7 @@ export async function importPDFToMenu(
       }
     };
     
-  } catch (error: any) {
+  } catch (error: unknown) {
     const processingTime = Date.now() - startTime;
     logger.error('[PDF_IMPORT] Import failed:', error);
     

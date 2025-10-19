@@ -43,17 +43,9 @@ export default function BillingSection({ user, organization }: BillingSectionPro
   const handleManageBilling = async () => {
     setLoadingPortal(true);
     try {
-      console.debug('[BILLING PORTAL] Creating portal session for org:', organization?.id);
-      
-      const response = await fetch("/api/stripe/create-portal-session", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ organizationId: organization?.id }),
-      });
 
       const data = await response.json();
       
-      console.debug('[BILLING PORTAL] Response:', data);
       
       if (data.error) {
         console.error("Billing portal error:", data.error);
@@ -62,7 +54,6 @@ export default function BillingSection({ user, organization }: BillingSectionPro
       }
 
       if (data.url) {
-        console.debug('[BILLING PORTAL] Redirecting to:', data.url);
         window.location.href = data.url;
       } else {
         console.error('[BILLING PORTAL] No URL in response');
@@ -79,20 +70,9 @@ export default function BillingSection({ user, organization }: BillingSectionPro
   const handleSwitchToBasic = async () => {
     setLoadingPortal(true);
     try {
-      console.debug('[SWITCH TO BASIC] Switching organization to basic plan:', organization?.id);
-      
-      const response = await fetch("/api/stripe/downgrade-plan", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ 
-          organizationId: organization?.id, 
-          newTier: "basic" 
-        }),
-      });
 
       const data = await response.json();
       
-      console.debug('[SWITCH TO BASIC] Response:', data);
       
       if (data.error) {
         console.error("Switch to basic error:", data.error);

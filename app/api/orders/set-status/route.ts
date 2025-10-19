@@ -1,9 +1,12 @@
-import { NextResponse } from 'next/server';
+export const runtime = "nodejs";
+export const dynamic = "force-dynamic";
+
+import { NextRequest, NextResponse } from 'next/server';
 import { createClient } from '@/lib/supabase/server';
 import { cleanupTableOnOrderCompletion } from '@/lib/table-cleanup';
 import { apiLogger as logger } from '@/lib/logger';
 
-export async function POST(req: Request) {
+export async function POST(req: NextRequest) {
   try {
     const { orderId, status } = await req.json();
     
@@ -64,7 +67,7 @@ export async function POST(req: Request) {
     }
 
     return NextResponse.json({ success: true });
-  } catch (error: any) {
+  } catch (error: unknown) {
     logger.error('Set status error:', { error: error instanceof Error ? error.message : 'Unknown error' });
     return NextResponse.json({ error: error.message }, { status: 500 });
   }

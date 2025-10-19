@@ -19,7 +19,7 @@ interface ImportCSVDialogProps {
 export function ImportCSVDialog({ open, onOpenChange, venueId, onSuccess }: ImportCSVDialogProps) {
   const [loading, setLoading] = useState(false);
   const [file, setFile] = useState<File | null>(null);
-  const [result, setResult] = useState<any>(null);
+  const [result, setResult] = useState<unknown>(null);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();

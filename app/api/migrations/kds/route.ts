@@ -1,10 +1,10 @@
-import { NextResponse } from 'next/server';
+import { NextRequest, NextResponse } from 'next/server';
 import { createAdminClient } from '@/lib/supabase/server';
 import { apiLogger, logger } from '@/lib/logger';
 
 export const runtime = 'nodejs';
 
-export async function POST(req: Request) {
+export async function POST(req: NextRequest) {
   try {
     const supabaseAdmin = createAdminClient();
     logger.debug('[KDS MIGRATION] Starting KDS schema migration...');
@@ -121,7 +121,7 @@ export async function POST(req: Request) {
       venues_processed: venues?.length || 0
     });
     
-  } catch (error: any) {
+  } catch (error: unknown) {
     logger.error('[KDS MIGRATION] Unexpected error:', { error: error instanceof Error ? error.message : 'Unknown error' });
     return NextResponse.json({ 
       ok: false, 

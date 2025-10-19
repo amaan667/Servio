@@ -209,7 +209,6 @@ export default function InvitationBasedStaffManagement({
             : `Invitation created but email failed to send. Check server logs for invitation link.`,
           variant: 'destructive',
         });
-        console.debug('📧 Invitation link:', data.invitationLink);
       }
 
       setInviteDialogOpen(false);
@@ -219,7 +218,7 @@ export default function InvitationBasedStaffManagement({
       // Switch to invitations tab and reload data
       setActiveTab('invitations');
       loadData(); // Reload to show new invitation
-    } catch (err: any) {
+    } catch (err: unknown) {
       setError(err.message || 'Failed to send invitation');
     } finally {
       setInviteLoading(false);
@@ -259,7 +258,7 @@ export default function InvitationBasedStaffManagement({
 
       // Also reload data to ensure consistency
       loadData();
-    } catch (err: any) {
+    } catch (err: unknown) {
       toast({
         title: 'Error',
         description: err.message || 'Failed to remove invitation',

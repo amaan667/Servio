@@ -1,4 +1,4 @@
-import { NextResponse } from 'next/server';
+import { NextRequest, NextResponse } from 'next/server';
 import { cookies } from 'next/headers';
 import { createServerClient } from '@supabase/ssr';
 import { cookieAdapter } from '@/lib/server/supabase';
@@ -6,7 +6,7 @@ import { logger } from '@/lib/logger';
 
 export const runtime = 'nodejs';
 
-export async function POST(req: Request) {
+export async function POST(req: NextRequest) {
   try {
     const { venue_id } = await req.json();
     
@@ -84,7 +84,7 @@ export async function POST(req: Request) {
       feedback: transformedFeedback
     });
 
-  } catch (error: any) {
+  } catch (error: unknown) {
     logger.error('[AUTH DEBUG] Error in feedback list:', { error: error instanceof Error ? error.message : 'Unknown error' });
     return NextResponse.json({ 
       ok: false, 

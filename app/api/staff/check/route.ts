@@ -1,9 +1,9 @@
-import { NextResponse } from 'next/server';
+import { NextRequest, NextResponse } from 'next/server';
 import { createAdminClient } from '@/lib/supabase/server';
 
 export const runtime = 'nodejs';
 
-export async function GET(req: Request) {
+export async function GET(req: NextRequest) {
   const { searchParams } = new URL(req.url);
   const venue_id = searchParams.get('venue_id');
 
@@ -32,7 +32,7 @@ export async function GET(req: Request) {
       return NextResponse.json({ ok:true, exists: !missing, error: error.message });
     }
     return NextResponse.json({ ok:true, exists:true });
-  } catch (e:any) {
+  } catch (e: unknown) {
     return NextResponse.json({ ok:false, error: e?.message || 'Unknown error' }, { status:500 });
   }
 }

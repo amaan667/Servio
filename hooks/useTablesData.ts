@@ -121,7 +121,7 @@ export function useTablesData(venueId: string) {
           table: 'table_sessions',
           filter: `venue_id=eq.${venueId}`,
         },
-        (payload: any) => {
+        (payload: unknown) => {
           // Refetch tables when sessions change
           fetchTables();
         }
@@ -134,7 +134,7 @@ export function useTablesData(venueId: string) {
           table: 'orders',
           filter: `venue_id=eq.${venueId}`,
         },
-        (payload: any) => {
+        (payload: unknown) => {
           // Refetch tables when orders change
           fetchTables();
         }
@@ -147,7 +147,7 @@ export function useTablesData(venueId: string) {
           table: 'tables',
           filter: `venue_id=eq.${venueId}`,
         },
-        (payload: any) => {
+        (payload: unknown) => {
           // Refetch tables when tables change
           fetchTables();
         }

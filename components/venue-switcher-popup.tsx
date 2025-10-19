@@ -93,7 +93,7 @@ export default function VenueSwitcherPopup({
 
       if (error) throw error;
       setVenues(data || []);
-    } catch (error: any) {
+    } catch (error: unknown) {
       console.error('Error loading venues:', error);
       toast({
         title: "Error",
@@ -161,13 +161,12 @@ export default function VenueSwitcherPopup({
       await loadVenues();
       
       // Automatically switch to the newly added venue
-      console.debug('[VENUE SWITCHER] Auto-switching to new venue:', data.venue_id);
       onVenueChange(data.venue_id);
       
       // Close the main modal
       setOpen(false);
       
-    } catch (error: any) {
+    } catch (error: unknown) {
       console.error('Error adding venue:', error);
       toast({
         title: "Error",
@@ -214,7 +213,7 @@ export default function VenueSwitcherPopup({
       setEditingVenue(null);
       await loadVenues();
       setOpen(false);
-    } catch (error: any) {
+    } catch (error: unknown) {
       console.error('Error updating venue:', error);
       toast({
         title: "Error",
@@ -248,7 +247,7 @@ export default function VenueSwitcherPopup({
       });
 
       loadVenues();
-    } catch (error: any) {
+    } catch (error: unknown) {
       console.error('Error deleting venue:', error);
       toast({
         title: "Error",
@@ -337,14 +336,10 @@ export default function VenueSwitcherPopup({
                     : "border-border hover:border-primary/50 cursor-pointer hover:bg-gray-50"
                 }`}
                 onClick={() => {
-                  console.debug('[VENUE SWITCHER] Clicked venue:', venue.venue_name, 'ID:', venue.venue_id);
-                  console.debug('[VENUE SWITCHER] Current venue ID:', currentVenueId);
                   if (venue.venue_id !== currentVenueId) {
-                    console.debug('[VENUE SWITCHER] Calling onVenueChange with:', venue.venue_id);
                     onVenueChange(venue.venue_id);
                     setOpen(false);
                   } else {
-                    console.debug('[VENUE SWITCHER] Same venue, not switching');
                   }
                 }}
               >

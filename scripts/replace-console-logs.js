@@ -156,7 +156,6 @@ function findTypeScriptFiles(dir, fileList = []) {
 }
 
 function main() {
-  console.log('🚀 Starting console.log replacement...\n');
 
   const directories = [
     'app',
@@ -179,11 +178,9 @@ function main() {
 
   directories.forEach(dir => {
     if (!fs.existsSync(dir)) {
-      console.log(`⚠️  Directory ${dir} not found, skipping...`);
       return;
     }
 
-    console.log(`📁 Processing ${dir}...`);
     
     const files = findTypeScriptFiles(dir);
     let dirProcessed = 0;
@@ -202,38 +199,9 @@ function main() {
         dirProcessed++;
         totalProcessed++;
         results[result.logger]++;
-        console.log(`  ✅ ${path.relative(process.cwd(), file)} -> ${result.logger}`);
-      } else if (result.reason !== 'no console.log') {
-        totalErrors++;
-        console.log(`  ❌ ${path.relative(process.cwd(), file)}: ${result.reason}`);
-      } else {
-        dirSkipped++;
-        totalSkipped++;
-      }
-    });
 
-    console.log(`  📊 ${dir}: ${dirProcessed} processed, ${dirSkipped} skipped\n`);
-  });
 
   // Summary
-  console.log('\n' + '='.repeat(60));
-  console.log('📊 REPLACEMENT SUMMARY');
-  console.log('='.repeat(60));
-  console.log(`✅ Total files processed: ${totalProcessed}`);
-  console.log(`⏭️  Total files skipped: ${totalSkipped}`);
-  console.log(`❌ Total errors: ${totalErrors}`);
-  console.log('\n📈 Logger usage:');
-  console.log(`  - logger: ${results.logger}`);
-  console.log(`  - authLogger: ${results.authLogger}`);
-  console.log(`  - apiLogger: ${results.apiLogger}`);
-  console.log(`  - dbLogger: ${results.dbLogger}`);
-  console.log(`  - aiLogger: ${results.aiLogger}`);
-  console.log('\n✅ Console.log replacement complete!');
-  console.log('💡 Next steps:');
-  console.log('   1. Review the changes');
-  console.log('   2. Run: pnpm run lint');
-  console.log('   3. Run: pnpm run typecheck');
-  console.log('   4. Test the application');
 }
 
 main();

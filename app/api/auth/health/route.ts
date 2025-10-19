@@ -1,4 +1,7 @@
-import { NextResponse } from 'next/server';
+export const runtime = "nodejs";
+export const dynamic = "force-dynamic";
+
+import { NextRequest, NextResponse } from 'next/server';
 import { createServerSupabase } from '@/lib/supabase/server';
 import { cookies } from 'next/headers';
 
@@ -28,7 +31,7 @@ export async function GET() {
       } else {
         sessionStatus = 'none';
       }
-    } catch (err: any) {
+    } catch (err: unknown) {
       sessionStatus = 'exception';
       sessionError = err.message;
     }
@@ -55,7 +58,7 @@ export async function GET() {
         appUrl: process.env.NEXT_PUBLIC_APP_URL
       }
     });
-  } catch (error: any) {
+  } catch (error: unknown) {
     return NextResponse.json({
       status: 'error',
       timestamp: new Date().toISOString(),

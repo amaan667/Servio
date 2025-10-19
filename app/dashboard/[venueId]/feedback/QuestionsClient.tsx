@@ -64,23 +64,11 @@ export default function QuestionsClient({ venueId, venueName, mode = 'full' }: Q
 
   const fetchQuestions = async () => {
     try {
-      console.debug('[FEEDBACK DEBUG] Fetching questions for venue:', venueId);
       
       const response = await fetch(`/api/feedback/questions?venueId=${venueId}`);
-      console.debug('[FEEDBACK DEBUG] Fetch response status:', response.status);
       
       if (response.ok) {
         const data = await response.json();
-        console.debug('[FEEDBACK DEBUG] Fetched questions:', data);
-        setQuestions(data.questions || []);
-        setTotalCount(data.totalCount || 0);
-      } else {
-        console.error('[FEEDBACK DEBUG] Fetch failed:', response.status);
-        toast({
-          title: "Error",
-          description: "Couldn't load questions",
-          variant: "destructive"
-        });
       }
     } catch (error) {
       console.error('[FEEDBACK DEBUG] Fetch exception:', error);

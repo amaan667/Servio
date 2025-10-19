@@ -36,16 +36,10 @@ export default function AuthProvider({
   const [loading, setLoading] = useState(!initialSession);
 
   useEffect(() => {
-    console.debug('[AUTH DEBUG] AuthProvider useEffect starting', {
-      timestamp: new Date().toISOString(),
-      hasInitialSession: !!initialSession,
-      initialSessionUserId: initialSession?.user?.id,
-    });
 
     let supabase;
     try {
       supabase = supabaseBrowser();
-      console.debug('[AUTH DEBUG] Supabase browser client initialized successfully');
     } catch (error) {
       console.error('[AUTH DEBUG] Error initializing Supabase browser client:', error);
       setSession(null);
@@ -58,21 +52,12 @@ export default function AuthProvider({
     const getInitialSession = async () => {
       if (initialSession) {
         // We already have a session, no need to fetch
-        console.debug('[AUTH DEBUG] Using initial session from server', {
-          userId: initialSession.user.id,
-        });
         setLoading(false);
         return;
       }
       
-      console.debug('[AUTH DEBUG] Fetching session from client');
       try {
         const { data: { session: currentSession } } = await supabase.auth.getSession();
-        
-        console.debug('[AUTH DEBUG] Client session fetched', {
-          hasSession: !!currentSession,
-          userId: currentSession?.user?.id,
-        });
         
         setSession(currentSession);
         setUser(currentSession?.user || null);
@@ -92,12 +77,6 @@ export default function AuthProvider({
     let subscription: any;
     try {
       const { data } = supabase.auth.onAuthStateChange(async (event: any, newSession: any) => {
-        console.debug('[AUTH DEBUG] Auth state changed', {
-          event,
-          hasSession: !!newSession,
-          userId: newSession?.user?.id,
-          timestamp: new Date().toISOString(),
-        });
 
         switch (event) {
           case 'SIGNED_IN':
@@ -127,7 +106,6 @@ export default function AuthProvider({
         }
       });
       subscription = data?.subscription;
-      console.debug('[AUTH DEBUG] Auth state change listener registered');
     } catch (error) {
       console.error('[AUTH DEBUG] Error setting up auth state listener:', error);
       setLoading(false);

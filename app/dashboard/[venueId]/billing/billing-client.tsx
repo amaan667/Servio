@@ -88,17 +88,9 @@ export default function BillingClient({
   const handleManageBilling = async () => {
     setLoadingPortal(true);
     try {
-      console.debug('[BILLING PORTAL] Creating portal session for org:', organization?.id);
-      
-      const response = await fetch("/api/stripe/create-portal-session", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ organizationId: organization?.id }),
-      });
 
       const data = await response.json();
       
-      console.debug('[BILLING PORTAL] Response:', data);
       
       if (data.error) {
         console.error("Billing portal error:", data.error);
@@ -107,7 +99,6 @@ export default function BillingClient({
       }
 
       if (data.url) {
-        console.debug('[BILLING PORTAL] Redirecting to:', data.url);
         window.location.href = data.url;
       } else {
         console.error('[BILLING PORTAL] No URL in response');

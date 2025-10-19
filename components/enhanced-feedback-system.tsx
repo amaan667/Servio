@@ -61,7 +61,7 @@ interface FeedbackSystemProps {
 export function EnhancedFeedbackSystem({ venueId }: FeedbackSystemProps) {
   const [feedback, setFeedback] = useState<Feedback[]>([]);
   const [stats, setStats] = useState<FeedbackStats | null>(null);
-  const [questions, setQuestions] = useState<any[]>([]);
+  const [questions, setQuestions] = useState<unknown[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [activeTab, setActiveTab] = useState<'overview' | 'feedback' | 'create'>('overview');
@@ -112,7 +112,7 @@ export function EnhancedFeedbackSystem({ venueId }: FeedbackSystemProps) {
 
       // Apply date range
       const now = new Date();
-      let startDate = new Date();
+      const startDate = new Date();
       switch (filters.dateRange) {
         case '7d':
           startDate.setDate(now.getDate() - 7);
@@ -147,7 +147,7 @@ export function EnhancedFeedbackSystem({ venueId }: FeedbackSystemProps) {
       setFeedback(filteredFeedback);
       calculateStats(filteredFeedback);
 
-    } catch (err: any) {
+    } catch (err: unknown) {
       console.error('Failed to fetch feedback', { error: err.message, venueId });
       setError(err.message);
     } finally {

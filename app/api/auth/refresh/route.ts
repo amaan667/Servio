@@ -1,4 +1,7 @@
-import { NextResponse } from 'next/server';
+export const runtime = "nodejs";
+export const dynamic = "force-dynamic";
+
+import { NextRequest, NextResponse } from 'next/server';
 import { refreshSession } from '@/lib/supabase/server';
 import { logger } from '@/lib/logger';
 
@@ -32,7 +35,7 @@ export async function POST() {
       }
     });
     
-  } catch (error: any) {
+  } catch (error: unknown) {
     logger.error('[REFRESH API] Unexpected error:', error.message);
     return NextResponse.json({ 
       ok: false, 

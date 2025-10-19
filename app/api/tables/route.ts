@@ -1,4 +1,4 @@
-import { NextResponse } from 'next/server';
+import { NextRequest, NextResponse } from 'next/server';
 import { createClient, createAdminClient } from '@/lib/supabase/server';
 import { getAuthenticatedUser } from '@/lib/supabase/server';
 import { enforceResourceLimit } from '@/lib/enforce-tier-limits';
@@ -7,7 +7,7 @@ import { logger } from '@/lib/logger';
 export const runtime = 'nodejs';
 
 // GET /api/tables?venueId=xxx - Get table runtime state for a venue
-export async function GET(req: Request) {
+export async function GET(req: NextRequest) {
   try {
     const { searchParams } = new URL(req.url);
     const venueId = searchParams.get('venue_id') || searchParams.get('venueId');
@@ -157,7 +157,7 @@ export async function GET(req: Request) {
 }
 
 // POST /api/tables - Create a new table
-export async function POST(req: Request) {
+export async function POST(req: NextRequest) {
   try {
     const body = await req.json();
     const { venue_id, label, seat_count, area } = body;

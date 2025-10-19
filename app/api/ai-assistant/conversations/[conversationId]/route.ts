@@ -1,3 +1,6 @@
+export const runtime = "nodejs";
+export const dynamic = "force-dynamic";
+
 // AI Assistant Individual Conversation API
 // Handles operations on a specific conversation (DELETE, etc.)
 
@@ -39,10 +42,11 @@ export async function DELETE(
 
     logger.debug("[AI CHAT] Conversation deleted successfully");
     return NextResponse.json({ success: true });
-  } catch (error: any) {
-    logger.error("[AI CHAT] Delete conversation error:", { error: error instanceof Error ? error.message : 'Unknown error' });
+  } catch (error: unknown) {
+    const errorMessage = error instanceof Error ? error.message : 'Unknown error';
+    logger.error("[AI CHAT] Delete conversation error:", { error: errorMessage });
     return NextResponse.json(
-      { error: error.message || "Internal server error" },
+      { error: errorMessage || "Internal server error" },
       { status: 500 }
     );
   }

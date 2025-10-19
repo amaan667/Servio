@@ -52,10 +52,6 @@ export function AccountMigrator() {
 
   useEffect(() => {
     loadLocalAccounts();
-    console.debug("ACCOUNT_MIGRATOR: Component initialized", {
-      hasSupabase: hasSupabaseConfig,
-      timestamp: new Date().toISOString(),
-    });
   }, []);
 
   const loadLocalAccounts = () => {
@@ -63,9 +59,6 @@ export function AccountMigrator() {
       const stored = localStorage.getItem("servio-accounts");
       const accounts = stored ? JSON.parse(stored) : [];
       setLocalAccounts(accounts);
-      console.debug("ACCOUNT_MIGRATOR: Local accounts loaded", {
-        count: accounts.length,
-      });
     } catch (error) {
       console.error(
         "ACCOUNT_MIGRATOR: Failed to load local accounts",
@@ -79,7 +72,6 @@ export function AccountMigrator() {
     const timestamp = new Date().toLocaleTimeString();
     const logEntry = `[${timestamp}] ${message}`;
     setLogs((prev: string[]) => [...prev, logEntry]);
-    console.info("MIGRATION_LOG: " + message);
   };
 
   const migrateAccount = async (account: LocalAccount): Promise<boolean> => {
@@ -93,7 +85,7 @@ export function AccountMigrator() {
       // TODO: Implement signUpUser function
       addLog(`⚠️ Sign up not implemented yet for ${account.contactEmail}`);
       return false;
-    } catch (error: any) {
+    } catch (error: unknown) {
       addLog(`❌ Error migrating ${account.contactEmail}: ${error.message}`);
       console.error("ACCOUNT_MIGRATOR: Migration error", {
         email: account.contactEmail,
@@ -159,13 +151,13 @@ export function AccountMigrator() {
       setLocalAccounts([]);
       setMigrationStatus({});
       addLog("🗑️ Local accounts cleared");
-      console.info("ACCOUNT_MIGRATOR: Local accounts cleared");
     }
   };
 
   const exportAccounts = () => {
-    const dataStr = JSON.stringify(localAccounts, null, 2);
-    const dataBlob = new Blob([dataStr], { type: "application/json" });
+    const dataBlob = new Blob([JSON.stringify(localAccounts, null, 2)], {
+      type: "application/json",
+    });
     const url = URL.createObjectURL(dataBlob);
     const link = document.createElement("a");
     link.href = url;

@@ -238,7 +238,6 @@ export default function HomePage() {
     }
 
     try {
-      console.debug('[TIER DEBUG] Fetching tier for user:', user.id);
       
       // First, ensure user has a real organization (non-blocking)
       let organization = null;
@@ -254,12 +253,6 @@ export default function HomePage() {
           const result = await ensureOrgResponse.json();
           organization = result.organization;
           created = result.created;
-          console.debug('[TIER DEBUG] ✅ Organization ensured successfully:', {
-            orgId: organization.id,
-            tier: organization.subscription_tier,
-            status: organization.subscription_status,
-            wasCreated: created
-          });
         } else {
           const errorText = await ensureOrgResponse.text();
           let errorDetail;
@@ -291,12 +284,6 @@ export default function HomePage() {
         return;
       }
       
-      console.debug('[TIER DEBUG] Organization ensured:', { 
-        id: organization.id, 
-        tier: organization.subscription_tier,
-        status: organization.subscription_status,
-        created 
-      });
 
       // Set organization data
       setOrganizationId(organization.id);
@@ -305,7 +292,6 @@ export default function HomePage() {
         setCurrentTier('grandfathered');
       } else {
         const tier = organization.subscription_tier || 'basic';
-        console.debug('[TIER DEBUG] Setting tier to:', tier);
         setCurrentTier(tier);
       }
       
@@ -329,19 +315,10 @@ export default function HomePage() {
     setIsRefreshing(true);
     
     try {
-      console.debug(`[TIER REFRESH] Attempt ${retryCount + 1}/${maxRetries + 1}`);
-      
-      // Re-fetch organization data directly for accuracy
-      console.debug('[TIER REFRESH] Re-fetching tier info from organization endpoint');
-      const ensureOrgResponse = await fetch('/api/organization/ensure', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' }
-      });
 
       if (!ensureOrgResponse.ok) {
         console.error('[TIER REFRESH] Failed to fetch organization');
         if (retryCount < maxRetries) {
-          console.debug(`[TIER REFRESH] Retrying in ${(retryCount + 1) * 2} seconds...`);
           setTimeout(() => {
             refreshSubscriptionStatus(retryCount + 1);
           }, (retryCount + 1) * 2000);
@@ -360,7 +337,6 @@ export default function HomePage() {
         setCurrentTier('grandfathered');
       } else {
         const tier = organization.subscription_tier || 'basic';
-        console.debug('[TIER REFRESH] Updated tier to:', tier);
         setCurrentTier(tier);
       }
       
@@ -370,21 +346,18 @@ export default function HomePage() {
       // Check if we got a non-basic tier or if we've exhausted retries
       const fetchedTier = organization.subscription_tier || 'basic';
       if (retryCount < maxRetries && fetchedTier === 'basic') {
-        console.debug(`[TIER REFRESH] Still showing basic tier, retrying in ${(retryCount + 1) * 2} seconds...`);
         setTimeout(() => {
           refreshSubscriptionStatus(retryCount + 1);
         }, (retryCount + 1) * 2000);
         return false;
       }
       
-      console.debug('[TIER REFRESH] Refresh completed with tier:', fetchedTier);
       setIsRefreshing(false);
       return true;
       
     } catch (error) {
       console.error('[TIER REFRESH] Error refreshing subscription:', error);
       if (retryCount < maxRetries) {
-        console.debug(`[TIER REFRESH] Error occurred, retrying in ${(retryCount + 1) * 2} seconds...`);
         setTimeout(() => {
           refreshSubscriptionStatus(retryCount + 1);
         }, (retryCount + 1) * 2000);
@@ -399,7 +372,6 @@ export default function HomePage() {
   useEffect(() => {
     const urlParams = new URLSearchParams(window.location.search);
     if (urlParams.get('upgrade') === 'success') {
-      console.debug('[UPGRADE SUCCESS] Detected upgrade success, starting immediate refresh');
       
       // Start immediate refresh with retry logic
       refreshSubscriptionStatus();
@@ -409,7 +381,6 @@ export default function HomePage() {
         const url = new URL(window.location.href);
         url.searchParams.delete('upgrade');
         window.history.replaceState({}, document.title, url.toString());
-        console.debug('[UPGRADE SUCCESS] Removed upgrade parameter from URL');
       }, 3000);
     }
   }, []);
@@ -418,13 +389,11 @@ export default function HomePage() {
   const handleFAQToggle = (question: string, isOpen: boolean) => {
     // Fire analytics event if you have analytics configured
     // Example: analytics.track('faq_toggle', { question, state: isOpen ? 'open' : 'closed' });
-    console.debug('FAQ toggled:', question, isOpen ? 'opened' : 'closed');
   };
 
   const handleFAQCTAClick = (type: "contact" | "trial") => {
     // Fire analytics event if you have analytics configured
     // Example: analytics.track('faq_cta_click', { type });
-    console.debug('FAQ CTA clicked:', type);
   };
 
   const handleGetStarted = async () => {

@@ -125,13 +125,7 @@ export function RealTimeOrderTimeline({ orderId, venueId, className }: RealTimeO
           table: 'orders',
           filter: `id=eq.${orderId}`,
         },
-        (payload: any) => {
-          console.debug('[REAL-TIME TIMELINE] Order update received:', {
-            eventType: payload.eventType,
-            oldStatus: payload.old?.order_status,
-            newStatus: payload.new?.order_status,
-            orderId: payload.new?.id
-          });
+        (payload: unknown) => {
           
           if (payload.eventType === 'UPDATE') {
             

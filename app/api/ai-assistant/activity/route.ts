@@ -1,3 +1,6 @@
+export const runtime = "nodejs";
+export const dynamic = "force-dynamic";
+
 // AI Assistant - Activity Log Endpoint
 // Fetches recent AI assistant actions for a venue
 
@@ -61,10 +64,11 @@ export async function GET(request: NextRequest) {
       success: true,
       activities: activities || [],
     });
-  } catch (error: any) {
-    logger.error("[AI ASSISTANT] Activity fetch error:", { error: error instanceof Error ? error.message : 'Unknown error' });
+  } catch (error: unknown) {
+    const errorMessage = error instanceof Error ? error.message : 'Unknown error';
+    logger.error("[AI ASSISTANT] Activity fetch error:", { error: errorMessage });
     return NextResponse.json(
-      { error: error.message || "Failed to fetch activity" },
+      { error: errorMessage || "Failed to fetch activity" },
       { status: 500 }
     );
   }

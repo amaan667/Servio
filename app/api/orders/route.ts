@@ -1,4 +1,4 @@
-import { NextResponse } from 'next/server';
+import { NextRequest, NextResponse } from 'next/server';
 import { createServerClient } from '@supabase/ssr';
 import { createClient } from '@supabase/supabase-js';
 import { apiLogger, logger } from '@/lib/logger';
@@ -6,7 +6,7 @@ import { apiLogger, logger } from '@/lib/logger';
 export const runtime = 'nodejs';
 
 // GET handler for orders
-export async function GET(req: Request) {
+export async function GET(req: NextRequest) {
   try {
     const { searchParams } = new URL(req.url);
     const venueId = searchParams.get('venueId');
@@ -184,7 +184,7 @@ async function createKDSTickets(supabase: any, order: any) {
   }
 }
 
-export async function POST(req: Request) {
+export async function POST(req: NextRequest) {
   try {
     logger.debug('[ORDER CREATION DEBUG] ===== ORDER CREATION STARTED =====');
     logger.debug('[ORDER CREATION DEBUG] Timestamp:', new Date().toISOString());
@@ -593,7 +593,7 @@ export async function POST(req: Request) {
     // Log that real-time updates should be triggered
     
     return NextResponse.json(response);
-  } catch (e: any) {
+  } catch (e: unknown) {
     const msg = e?.message || (typeof e === 'string' ? e : 'Unknown server error');
     return bad(`Server error: ${msg}`, 500);
   }

@@ -22,11 +22,6 @@ export class ErrorBoundary extends React.Component<ErrorBoundaryProps, ErrorBoun
   }
 
   static getDerivedStateFromError(error: Error): ErrorBoundaryState {
-    console.debug('[ERROR BOUNDARY] getDerivedStateFromError called', {
-      timestamp: new Date().toISOString(),
-      errorMessage: error.message,
-      errorName: error.name,
-    });
     return { hasError: true, error };
   }
 
@@ -43,9 +38,6 @@ export class ErrorBoundary extends React.Component<ErrorBoundaryProps, ErrorBoun
   }
 
   handleRetry = () => {
-    console.debug('[ERROR BOUNDARY] Retry button clicked', {
-      timestamp: new Date().toISOString(),
-    });
     this.setState({ hasError: false, error: undefined, errorInfo: undefined });
   };
 

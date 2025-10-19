@@ -1,8 +1,11 @@
-import { NextResponse } from 'next/server';
+export const runtime = "nodejs";
+export const dynamic = "force-dynamic";
+
+import { NextRequest, NextResponse } from 'next/server';
 import { createClient } from '@/lib/supabase/server';
 import { logger } from '@/lib/logger';
 
-export async function POST(req: Request) {
+export async function POST(req: NextRequest) {
   try {
     
     const { orderId } = await req.json();
@@ -70,7 +73,7 @@ export async function POST(req: Request) {
       payment_status: 'PAID',
       updated_at: new Date().toISOString()
     });
-  } catch (error: any) {
+  } catch (error: unknown) {
     logger.error('[MARK PAID] Error marking order as paid:', { error: error instanceof Error ? error.message : 'Unknown error' });
     return NextResponse.json({ error: error.message }, { status: 500 });
   }

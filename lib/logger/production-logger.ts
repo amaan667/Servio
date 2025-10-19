@@ -46,11 +46,9 @@ class ProductionLogger {
     switch (level) {
       case LogLevel.DEBUG:
         if (process.env.NODE_ENV !== 'production') {
-          console.debug(formatted);
         }
         break;
       case LogLevel.INFO:
-        console.info(formatted);
         break;
       case LogLevel.WARN:
         console.warn(formatted);

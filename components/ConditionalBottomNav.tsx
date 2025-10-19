@@ -69,7 +69,6 @@ export default function ConditionalBottomNav() {
         table: 'orders',
         filter: `venue_id=eq.${venueIdFromPath}`
       }, () => {
-        console.debug('[BOTTOM NAV] Order update received, refreshing counts');
         loadCounts();
       })
       .subscribe();

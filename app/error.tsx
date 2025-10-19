@@ -26,7 +26,6 @@ export default function Error({
     // Only redirect to home for certain types of errors, not order-related ones
     if (error.message.includes('Cannot access uninitialized variable') || 
         error.message.includes('Missing Supabase environment variables')) {
-      console.debug('[ERROR BOUNDARY] Redirecting to home due to error type');
       router.push('/');
     }
     // For other errors, don't redirect - let the component handle it
@@ -41,9 +40,6 @@ export default function Error({
         <p className="text-gray-600 mb-4">{error.message || 'An unexpected error occurred'}</p>
         <button
           onClick={() => {
-            console.debug('[ERROR BOUNDARY] Reset button clicked', {
-              timestamp: new Date().toISOString(),
-            });
             reset();
           }}
           className="bg-purple-600 hover:bg-purple-700 text-white font-semibold py-2 px-6 rounded-lg"

@@ -1,4 +1,7 @@
-import { NextResponse } from 'next/server';
+export const runtime = "nodejs";
+export const dynamic = "force-dynamic";
+
+import { NextRequest, NextResponse } from 'next/server';
 import { createServerSupabase } from '@/lib/supabase/server';
 import { createAdminClient } from '@/lib/supabase/server';
 import { apiLogger, logger } from '@/lib/logger';
@@ -86,7 +89,7 @@ async function autoBackfillMissingTickets(venueId: string) {
 }
 
 // GET - Fetch KDS tickets for a venue or station
-export async function GET(req: Request) {
+export async function GET(req: NextRequest) {
   try {
     const supabaseAdmin = createAdminClient();
     const { searchParams } = new URL(req.url);
@@ -179,7 +182,7 @@ export async function GET(req: Request) {
       ok: true,
       tickets: finalTickets || []
     });
-  } catch (error: any) {
+  } catch (error: unknown) {
     logger.error('[KDS] Unexpected error:', { error: error instanceof Error ? error.message : 'Unknown error' });
     return NextResponse.json(
       { ok: false, error: error.message || 'Internal server error' },
@@ -189,7 +192,7 @@ export async function GET(req: Request) {
 }
 
 // PATCH - Update ticket status
-export async function PATCH(req: Request) {
+export async function PATCH(req: NextRequest) {
   try {
     const supabaseAdmin = createAdminClient();
     const body = await req.json();
@@ -287,7 +290,7 @@ export async function PATCH(req: Request) {
       ok: true,
       ticket
     });
-  } catch (error: any) {
+  } catch (error: unknown) {
     logger.error('[KDS] Unexpected error:', { error: error instanceof Error ? error.message : 'Unknown error' });
     return NextResponse.json(
       { ok: false, error: error.message || 'Internal server error' },

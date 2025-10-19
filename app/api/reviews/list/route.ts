@@ -1,10 +1,10 @@
-import { NextResponse } from 'next/server';
+import { NextRequest, NextResponse } from 'next/server';
 import { z } from 'zod';
 import { createClient } from '@/lib/supabase/server';
 
 export const runtime = 'nodejs';
 
-export async function GET(req: Request) {
+export async function GET(req: NextRequest) {
   const { searchParams } = new URL(req.url);
   const venueId = searchParams.get('venueId');
   if (!venueId) return NextResponse.json({ ok:false, error:'venueId required' }, { status:400 });

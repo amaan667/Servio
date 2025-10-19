@@ -94,7 +94,7 @@ export function MenuManagement({ venueId, session, refreshTrigger }: MenuManagem
   const [editingItemId, setEditingItemId] = useState<string | null>(null);
   const [selectedItems, setSelectedItems] = useState<string[]>([]);
   const [batchAction, setBatchAction] = useState<null | "edit" | "unavailable" | "category" | "price" | "delete">(null);
-  const [batchEditValue, setBatchEditValue] = useState<any>(null);
+  const [batchEditValue, setBatchEditValue] = useState<unknown>(null);
   const [editItemDraft, setEditItemDraft] = useState<Partial<MenuItem> | null>(null);
   const [expandedCategories, setExpandedCategories] = useState<Set<string>>(new Set());
   const [recipeDialogOpen, setRecipeDialogOpen] = useState(false);
@@ -196,10 +196,6 @@ export function MenuManagement({ venueId, session, refreshTrigger }: MenuManagem
         });
         setError("Failed to load menu items.");
       } else {
-        console.info("Menu fetched successfully", {
-          itemCount: data?.length || 0,
-          categories: [...new Set(data?.map((item: any) => item.category) || [])],
-        });
         setMenuItems(data || []);
       }
 
@@ -226,7 +222,7 @@ export function MenuManagement({ venueId, session, refreshTrigger }: MenuManagem
         } else {
         }
       }
-    } catch (error: any) {
+    } catch (error: unknown) {
       console.error("Unexpected error fetching menu", { error });
       setError("An unexpected error occurred.");
     } finally {
@@ -239,7 +235,6 @@ export function MenuManagement({ venueId, session, refreshTrigger }: MenuManagem
 
     if (!supabase) return;
 
-    console.info("Setting up real-time subscription");
     const channel = supabase
       .channel(`menu-management-${venueUuid}`)
       .on(
@@ -250,19 +245,13 @@ export function MenuManagement({ venueId, session, refreshTrigger }: MenuManagem
           table: "menu_items",
           filter: `venue_id=eq.${venueUuid}`,
         },
-        (payload: any) => {
-          console.info("Real-time change detected, refetching menu", {
-            payload,
-          });
+        (payload: unknown) => {
           fetchMenu();
         },
       )
       .subscribe((status: any) => {
-        console.info("Real-time subscription status", { status });
-      });
 
     return () => {
-      console.info("Cleaning up real-time subscription");
       if (supabase) {
         createClient().removeChannel(channel);
       }
@@ -285,13 +274,6 @@ export function MenuManagement({ venueId, session, refreshTrigger }: MenuManagem
   // Removed drag-and-drop handlers
 
   const handleAddItem = async () => {
-    console.info("Starting add item process", {
-      name: newItem.name.trim(),
-      category: newItem.category.trim(),
-      price: newItem.price,
-      venueUuid,
-      userId: session.user.id,
-    });
     if (
       !newItem.name.trim() ||
       !newItem.category.trim() ||
@@ -330,16 +312,8 @@ export function MenuManagement({ venueId, session, refreshTrigger }: MenuManagem
         });
         setError(result.error || "Failed to add item.");
       } else {
-        console.info("Item added successfully");
-        setNewItem({
-          name: "",
-          description: "",
-          price: 0,
-          category: "",
-          available: true,
-        });
       }
-    } catch (error: any) {
+    } catch (error: unknown) {
       console.error("Unexpected error adding item", { error });
       setError("An unexpected error occurred.");
     } finally {
@@ -351,7 +325,6 @@ export function MenuManagement({ venueId, session, refreshTrigger }: MenuManagem
     itemId: string,
     updates: Partial<MenuItem>,
   ) => {
-    console.info("Updating item", { itemId, updates });
 
     if (!supabase) return;
 
@@ -383,11 +356,9 @@ export function MenuManagement({ venueId, session, refreshTrigger }: MenuManagem
             item.id === itemId ? { ...item, ...updates } : item
           )
         );
-      } else {
-        console.info("Item updated successfully", { itemId });
       }
-    } catch (error: any) {
-      console.error("Unexpected error updating item", { error });
+    } catch (error) {
+      console.error("Unexpected error updating item:", error);
       setError("An unexpected error occurred.");
       // Revert optimistic update on error
       setMenuItems(prevItems => 
@@ -402,7 +373,6 @@ export function MenuManagement({ venueId, session, refreshTrigger }: MenuManagem
 
   const handleDeleteItem = async (itemId: string) => {
     if (!window.confirm("Are you sure you want to delete this menu item?")) return;
-    console.info("Deleting item", { itemId });
 
     if (!supabase) return;
 
@@ -431,11 +401,9 @@ export function MenuManagement({ venueId, session, refreshTrigger }: MenuManagem
         if (itemToDelete) {
           setMenuItems(prevItems => [...prevItems, itemToDelete]);
         }
-      } else {
-        console.info("Item deleted successfully", { itemId });
       }
-    } catch (error: any) {
-      console.error("Unexpected error deleting item", { error });
+    } catch (error) {
+      console.error("Unexpected error deleting item:", error);
       setError("An unexpected error occurred.");
       // Revert optimistic update on error
       if (itemToDelete) {
@@ -466,7 +434,7 @@ export function MenuManagement({ venueId, session, refreshTrigger }: MenuManagem
       } else {
         setMenuItems([]);
       }
-    } catch (error: any) {
+    } catch (error: unknown) {
       setError("An unexpected error occurred.");
     } finally {
       setSaving(null);
@@ -494,7 +462,7 @@ export function MenuManagement({ venueId, session, refreshTrigger }: MenuManagem
       }
       setBatchEditOpen(false);
       fetchMenu();
-    } catch (error: any) {
+    } catch (error: unknown) {
       setError("Failed to save batch edits.");
     } finally {
       setSaving(null);
@@ -541,7 +509,7 @@ export function MenuManagement({ venueId, session, refreshTrigger }: MenuManagem
       
       setNewCategoryName("");
       fetchMenu();
-    } catch (error: any) {
+    } catch (error: unknown) {
       setError(`Failed to add category: ${error.message}`);
     } finally {
       setSaving(null);
@@ -595,7 +563,7 @@ export function MenuManagement({ venueId, session, refreshTrigger }: MenuManagem
       setBatchAction(null);
       setSelectedItems([]);
       fetchMenu();
-    } catch (error: any) {
+    } catch (error: unknown) {
       setError("Failed to perform batch action.");
     } finally {
       setSaving(null);
@@ -1150,3 +1118,4 @@ export function MenuManagement({ venueId, session, refreshTrigger }: MenuManagem
     </div>
   );
 }
+

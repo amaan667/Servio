@@ -54,7 +54,7 @@ export default function AnalyticsClient({ venueId, venueName }: { venueId: strin
     peakDay: { date: '', revenue: 0 },
     lowestDay: { date: '', revenue: 0 }
   });
-  const [filteredOrders, setFilteredOrders] = useState<any[]>([]);
+  const [filteredOrders, setFilteredOrders] = useState<unknown[]>([]);
   const [error, setError] = useState<string | null>(null);
   const router = useRouter();
   const { toast } = useToast();
@@ -188,7 +188,7 @@ export default function AnalyticsClient({ venueId, venueName }: { venueId: strin
         // Calculate revenue and order count for this period
         let periodRevenue = 0;
         let periodOrders = 0;
-        let periodOrdersList: any[] = [];
+        let periodOrdersList: unknown[] = [];
         
         if (dateFormat === 'day') {
           periodOrdersList = validOrders.filter((order: any) => {
@@ -319,7 +319,7 @@ export default function AnalyticsClient({ venueId, venueName }: { venueId: strin
       // Store filtered orders for CSV export
       setFilteredOrders(validOrders);
 
-    } catch (err: any) {
+    } catch (err: unknown) {
       console.error('🔍 [ANALYTICS] Error fetching analytics:', err);
       setError(err.message);
     } finally {
@@ -343,7 +343,7 @@ export default function AnalyticsClient({ venueId, venueName }: { venueId: strin
 
     try {
       // Flatten orders into individual item rows for CSV
-      const csvRows: any[] = [];
+      const csvRows: unknown[] = [];
       
       filteredOrders.forEach((order: any) => {
         if (order.items && Array.isArray(order.items)) {

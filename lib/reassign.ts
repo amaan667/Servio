@@ -1,4 +1,4 @@
-export function reassignMoved(moved: any[]) {
+export function reassignMoved(moved: unknown[]) {
   return moved.map(m => {
     const t = (m.name||"").toUpperCase();
     if (/PLATTER|MOUNTAIN|THERMIDOR|RACK|SURF AND TURF/.test(t)) return { ...m, category: "MAIN COURSES" };

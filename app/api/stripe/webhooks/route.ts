@@ -1,3 +1,6 @@
+export const runtime = "nodejs";
+export const dynamic = "force-dynamic";
+
 // Stripe Webhooks - Handle subscription events
 import { NextRequest, NextResponse } from "next/server";
 import Stripe from "stripe";
@@ -64,7 +67,7 @@ export async function POST(request: NextRequest) {
     }
 
     return NextResponse.json({ received: true });
-  } catch (error: any) {
+  } catch (error: unknown) {
     logger.error("[STRIPE WEBHOOK] Error:", { error: error instanceof Error ? error.message : 'Unknown error' });
     return NextResponse.json(
       { error: error.message },

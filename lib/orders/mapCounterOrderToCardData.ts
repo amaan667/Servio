@@ -41,7 +41,7 @@ export function mapCounterOrderToCardData(counterOrder: CounterOrder, currency: 
     const paymentStatus = (order.payment_status || 'UNPAID').toUpperCase();
 
     // Counter orders are typically pay-at-till or pay-later
-    let mode: OrderForCard['payment']['mode'] = 'pay_at_till';
+    const mode: OrderForCard['payment']['mode'] = 'pay_at_till';
     
     // Determine status
     let status: OrderForCard['payment']['status'] = 'unpaid';

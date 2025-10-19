@@ -1,3 +1,6 @@
+export const runtime = "nodejs";
+export const dynamic = "force-dynamic";
+
 // Test API to manually update subscription status
 import { NextRequest, NextResponse } from "next/server";
 import { createClient } from "@/lib/supabase/server";
@@ -25,7 +28,7 @@ export async function POST(request: NextRequest) {
     let detectedTier = tier;
     if (!detectedTier) {
       // Try to find existing organization first to get Stripe subscription ID
-      let existingOrg = null;
+      const existingOrg = null;
       
       // Check for existing organization
       const { data: existingOrgs, error: existingError } = await supabase
@@ -157,7 +160,7 @@ export async function POST(request: NextRequest) {
       updated: updateData
     });
 
-  } catch (error: any) {
+  } catch (error: unknown) {
     logger.error("[TEST] Error:", { error: error instanceof Error ? error.message : 'Unknown error' });
     return NextResponse.json(
       { error: error.message || "Failed to update subscription status" },

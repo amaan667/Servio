@@ -122,7 +122,7 @@ export default function InvitationAcceptanceClient({
         router.push(`/dashboard/${invitation.venue_id}`);
       }, 2000);
 
-    } catch (err: any) {
+    } catch (err: unknown) {
       setError(err.message || 'Failed to accept invitation');
     } finally {
       setLoading(false);

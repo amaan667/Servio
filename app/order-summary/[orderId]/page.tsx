@@ -245,7 +245,7 @@ export default function OrderSummaryPage() {
           table: 'orders',
           filter: `id=eq.${orderId}`,
         },
-        (payload: any) => {
+        (payload: unknown) => {
           if (payload.eventType === 'UPDATE') {
             
             setOrder(prevOrder => {

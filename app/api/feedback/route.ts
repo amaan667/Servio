@@ -1,10 +1,10 @@
-import { NextResponse } from 'next/server';
+import { NextRequest, NextResponse } from 'next/server';
 import { createClient } from '@/lib/supabase/server';
 import { logger } from '@/lib/logger';
 
 export const runtime = 'nodejs';
 
-export async function POST(req: Request) {
+export async function POST(req: NextRequest) {
   try {
     const { order_id, rating, comment } = await req.json();
     const url = process.env.NEXT_PUBLIC_SUPABASE_URL!;
@@ -44,7 +44,7 @@ export async function POST(req: Request) {
 
     return NextResponse.json({ ok: true });
     
-  } catch (e: any) {
+  } catch (e: unknown) {
     logger.error('[AUTH DEBUG] Feedback submission exception:', e);
     return NextResponse.json({ 
       ok: false, 

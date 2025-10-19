@@ -1,7 +1,7 @@
 import { createBrowserClient } from '@supabase/ssr'
 import { dbLogger as logger } from '@/lib/logger';
 
-let supabaseInstance: ReturnType<typeof createBrowserClient> | any | null = null;
+const supabaseInstance: ReturnType<typeof createBrowserClient> | any | null = null;
 
 function createMockClient() {
   // Minimal mock to satisfy build-time and non-configured environments

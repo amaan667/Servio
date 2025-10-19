@@ -106,10 +106,8 @@ export default function TrialStatusBanner({ userRole }: TrialStatusBannerProps) 
 
   useEffect(() => {
     if (user) {
-      console.debug('[TRIAL BANNER] Fetching trial status for user:', user.id);
       fetchTrialStatus();
     } else {
-      console.debug('[TRIAL BANNER] No user, clearing trial status');
       setTrialStatus(null);
       setLoading(false);
     }
@@ -129,12 +127,10 @@ export default function TrialStatusBanner({ userRole }: TrialStatusBannerProps) 
     
     // Set timeout to refresh at midnight
     const timeoutId = setTimeout(() => {
-      console.debug('[TRIAL BANNER] Daily refresh - updating trial countdown');
       fetchTrialStatus();
       
       // Set up recurring daily refresh
       const dailyInterval = setInterval(() => {
-        console.debug('[TRIAL BANNER] Daily refresh - updating trial countdown');
         fetchTrialStatus();
       }, 24 * 60 * 60 * 1000); // 24 hours
       
@@ -150,7 +146,6 @@ export default function TrialStatusBanner({ userRole }: TrialStatusBannerProps) 
     if (!user || !trialStatus?.isTrialing) return;
 
     const hourlyInterval = setInterval(() => {
-      console.debug('[TRIAL BANNER] Hourly refresh - updating trial countdown');
       fetchTrialStatus();
     }, 60 * 60 * 1000); // 1 hour
 
@@ -161,19 +156,12 @@ export default function TrialStatusBanner({ userRole }: TrialStatusBannerProps) 
   useEffect(() => {
     const urlParams = new URLSearchParams(window.location.search);
     if (urlParams.get('upgrade') === 'success') {
-      console.debug('[TRIAL BANNER] Detected upgrade success, starting refresh');
       
       // Refresh trial status after successful upgrade with retry logic
       const refreshWithRetry = async (attempt = 0) => {
-        console.debug(`[TRIAL BANNER REFRESH] Attempt ${attempt + 1}/4`);
-        
         try {
-          // Directly fetch organization data
-          const ensureOrgResponse = await fetch('/api/organization/ensure', {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' }
-          });
-
+          const ensureOrgResponse = await fetch('/api/organization/ensure');
+          
           if (!ensureOrgResponse.ok) {
             console.error('[TRIAL BANNER REFRESH] Failed to fetch organization');
             if (attempt < 3) {
@@ -183,11 +171,6 @@ export default function TrialStatusBanner({ userRole }: TrialStatusBannerProps) 
           }
 
           const { organization } = await ensureOrgResponse.json();
-          console.debug('[TRIAL BANNER REFRESH] Fetched organization:', {
-            tier: organization.subscription_tier,
-            status: organization.subscription_status,
-            trial_ends_at: organization.trial_ends_at
-          });
           
           // Process and update trial status
           if (organization) {
@@ -196,7 +179,6 @@ export default function TrialStatusBanner({ userRole }: TrialStatusBannerProps) 
               subscription_tier: organization.subscription_tier,
               trial_ends_at: organization.trial_ends_at
             });
-            console.debug('[TRIAL BANNER REFRESH] Successfully updated trial status');
           } else if (attempt < 3) {
             // If no organization data, retry
             setTimeout(() => refreshWithRetry(attempt + 1), (attempt + 1) * 2000);
@@ -217,7 +199,6 @@ export default function TrialStatusBanner({ userRole }: TrialStatusBannerProps) 
         const url = new URL(window.location.href);
         url.searchParams.delete('upgrade');
         window.history.replaceState({}, document.title, url.toString());
-        console.debug('[TRIAL BANNER] Removed upgrade parameter from URL');
       }, 3000);
     }
   }, []);

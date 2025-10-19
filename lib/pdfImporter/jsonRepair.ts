@@ -121,7 +121,7 @@ function reconstructJSONFromMalformed(json: string): string | null {
     }
     
     // Group properties into items based on common patterns
-    const items: any[] = [];
+    const items: unknown[] = [];
     let currentItem: any = {};
     
     for (const prop of properties) {
@@ -537,10 +537,10 @@ function validateAndCleanItems(json: string): string {
 export function validateMenuJSON(json: string): {
   valid: boolean;
   errors: string[];
-  items: any[];
+  items: unknown[];
 } {
   const errors: string[] = [];
-  let items: any[] = [];
+  let items: unknown[] = [];
   
   try {
     const parsed = JSON.parse(json);
@@ -596,7 +596,7 @@ export function validateMenuJSON(json: string): {
 export function repairAndValidateMenuJSON(brokenJSON: string): {
   success: boolean;
   json?: string;
-  items?: any[];
+  items?: unknown[];
   errors?: string[];
 } {
   

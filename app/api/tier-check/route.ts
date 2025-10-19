@@ -1,3 +1,6 @@
+export const runtime = "nodejs";
+export const dynamic = "force-dynamic";
+
 // Tier Check API - Check if user can perform an action
 import { NextRequest, NextResponse } from "next/server";
 import { createClient } from "@/lib/supabase/server";
@@ -98,7 +101,7 @@ export async function POST(request: NextRequest) {
       limits,
       tier: organization?.subscription_tier,
     });
-  } catch (error: any) {
+  } catch (error: unknown) {
     logger.error("[TIER CHECK] Error:", { error: error instanceof Error ? error.message : 'Unknown error' });
     return NextResponse.json(
       { error: error.message || "Tier check failed" },

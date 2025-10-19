@@ -1,3 +1,6 @@
+export const runtime = "nodejs";
+export const dynamic = "force-dynamic";
+
 import { NextRequest, NextResponse } from 'next/server';
 import { createClient } from '@/lib/supabase/server';
 import { getOpenAI } from '@/lib/openai';
@@ -117,7 +120,7 @@ export async function POST(req: NextRequest) {
 
     // Process pages/images with OpenAI Vision
     
-    const allMenuItems: any[] = [];
+    const allMenuItems: unknown[] = [];
     let totalTokens = 0;
 
     // Process all pages in parallel for faster processing

@@ -58,7 +58,7 @@ export function AddTableDialog({ venueId, onTableAdded }: AddTableDialogProps) {
       setSeatCount(2);
       setOpen(false);
       onTableAdded?.();
-    } catch (error: any) {
+    } catch (error: unknown) {
       console.error('[ADD TABLE DIALOG] Failed to create table:', error);
       
       // Handle specific constraint error

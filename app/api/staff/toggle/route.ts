@@ -1,9 +1,9 @@
-import { NextResponse } from 'next/server';
+import { NextRequest, NextResponse } from 'next/server';
 import { createAdminClient } from '@/lib/supabase/server';
 
 export const runtime = 'nodejs';
 
-export async function POST(req: Request) {
+export async function POST(req: NextRequest) {
   const { id, active } = await req.json().catch(()=>({}));
   if (!id || typeof active !== 'boolean') return NextResponse.json({ error:'id and active required' }, { status:400 });
   const admin = createAdminClient();

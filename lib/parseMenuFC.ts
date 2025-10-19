@@ -73,7 +73,7 @@ async function callMenuTool(system: string, user: string) {
     throw new Error("Model did not return tool_calls.");
   }
 
-  let args = (call as any).function.arguments || "{}";
+  const args = (call as any).function.arguments || "{}";
 
   // Enhanced error handling for JSON parsing
   try {
@@ -113,8 +113,8 @@ export async function parseMenuInChunks(ocrText: string): Promise<MenuPayloadT> 
   }
 
   // 2) Process each section individually with strict windowing
-  const itemsAll: any[] = [];
-  const movedAll: any[] = [];
+  const itemsAll: unknown[] = [];
+  const movedAll: unknown[] = [];
   let rawTotal = 0;
 
   for (const sec of sections) {

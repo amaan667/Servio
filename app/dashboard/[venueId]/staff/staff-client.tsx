@@ -150,7 +150,7 @@ export default function StaffClient({
       setStaff((s) => s.map((r) => (r.id === tempId ? (out.data?.[0] as StaffRow) : r)));
       setName('');
       setRole('Server');
-    } catch (e: any) {
+    } catch (e: unknown) {
       setError(e?.message || 'Failed to add staff member');
       setStaff((s) => s.filter((r) => r.id !== tempId));
     } finally {

@@ -210,7 +210,7 @@ export function MenuUploadCard({ venueId, onSuccess }: MenuUploadCardProps) {
       onSuccess?.();
     }
       
-    } catch (error: any) {
+    } catch (error: unknown) {
       toast({
         title: 'Upload failed',
         description: error.message,
@@ -284,7 +284,7 @@ export function MenuUploadCard({ venueId, onSuccess }: MenuUploadCardProps) {
       } else {
         throw new Error(`Clear catalog failed: ${result.error}`);
       }
-    } catch (error: any) {
+    } catch (error: unknown) {
       toast({
         title: 'Clear catalog failed',
         description: error.message,

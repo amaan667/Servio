@@ -88,7 +88,7 @@ export default function OnboardingMenuPage() {
 
       // Move to next step
       router.push('/onboarding/tables');
-    } catch (error: any) {
+    } catch (error: unknown) {
       console.error('Upload error:', error);
       toast({
         title: 'Upload failed',
@@ -147,7 +147,7 @@ export default function OnboardingMenuPage() {
 
       // Move to next step
       router.push('/onboarding/tables');
-    } catch (error: any) {
+    } catch (error: unknown) {
       console.error('Manual create error:', error);
       toast({
         title: 'Failed to create items',

@@ -1,9 +1,9 @@
-import { NextResponse } from 'next/server';
+import { NextRequest, NextResponse } from 'next/server';
 import { createClient } from '@/lib/supabase/server';
 
 export const runtime = 'nodejs';
 
-export async function POST(req: Request) {
+export async function POST(req: NextRequest) {
   const { orderId, venue_id } = await req.json().catch(()=>({}));
   if (!orderId || !venue_id) return NextResponse.json({ ok:false, error:'orderId and venue_id required' }, { status:400 });
       const admin = await createClient();

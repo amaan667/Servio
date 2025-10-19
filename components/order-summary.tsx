@@ -36,7 +36,7 @@ const ORDER_STATUSES = {
 };
 
 export default function OrderSummary({ orderId, sessionId, orderData, isDemo = false, onClose }: OrderSummaryProps) {
-  const [order, setOrder] = useState<any>(orderData);
+  const [order, setOrder] = useState<unknown>(orderData);
   const [loading, setLoading] = useState(!orderData);
   const [error, setError] = useState<string | null>(null);
   const [showFeedback, setShowFeedback] = useState(false);
@@ -186,7 +186,7 @@ export default function OrderSummary({ orderId, sessionId, orderData, isDemo = f
           table: 'orders',
           filter: `id=eq.${order.id}`,
         },
-        (payload: any) => {
+        (payload: unknown) => {
           
           if (payload.eventType === 'UPDATE') {
             

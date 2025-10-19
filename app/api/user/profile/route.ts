@@ -1,4 +1,7 @@
-import { NextResponse } from 'next/server';
+export const runtime = "nodejs";
+export const dynamic = "force-dynamic";
+
+import { NextRequest, NextResponse } from 'next/server';
 import { getAuthUserForAPI } from '@/lib/auth/server';
 import { logger } from '@/lib/logger';
 

@@ -1,3 +1,6 @@
+export const runtime = "nodejs";
+export const dynamic = "force-dynamic";
+
 // AI Assistant Undo API
 // Handles undoing AI assistant actions
 
@@ -149,7 +152,7 @@ export async function POST(request: NextRequest) {
       message: "Action successfully undone",
       undoResult,
     });
-  } catch (error: any) {
+  } catch (error: unknown) {
     logger.error("[AI UNDO] Undo error:", { error: error instanceof Error ? error.message : 'Unknown error' });
     
     if (error.name === "ZodError") {
@@ -267,7 +270,7 @@ async function undoMenuTranslation(venueId: string, undoData: any, supabase: any
     const targetLangName = languageNames[reverseLanguage] || reverseLanguage;
 
     // Detect the source language by analyzing the current categories
-    const detectSourceLanguage = (items: any[]): string => {
+    const detectSourceLanguage = (items: unknown[]): string => {
       const categories = items.map(item => item.category).filter(Boolean);
       const spanishIndicators = ['CAFÉ', 'BEBIDAS', 'TÉ', 'ESPECIALES', 'NIÑOS', 'ENSALADAS', 'POSTRES', 'ENTRADAS', 'PLATOS PRINCIPALES', 'APERITIVOS', 'MALTEADAS', 'BATIDOS', 'SÁNDWICHES', 'DESAYUNO', 'ALMUERZO', 'CENA', 'SOPA', 'SOPAS', 'MARISCOS', 'POLLO', 'CARNE DE RES', 'CERDO', 'VEGETARIANO', 'VEGANO', 'SIN GLUTEN'];
       const englishIndicators = ['STARTERS', 'APPETIZERS', 'MAIN COURSES', 'ENTREES', 'DESSERTS', 'SALADS', 'KIDS', 'CHILDREN', 'DRINKS', 'BEVERAGES', 'COFFEE', 'TEA', 'SPECIALS', 'WRAPS', 'SANDWICHES', 'MILKSHAKES', 'SHAKES', 'SMOOTHIES', 'BRUNCH', 'BREAKFAST', 'LUNCH', 'DINNER', 'SOUP', 'SOUPS', 'PASTA', 'PIZZA', 'SEAFOOD', 'CHICKEN', 'BEEF', 'PORK', 'VEGETARIAN', 'VEGAN', 'GLUTEN FREE'];
@@ -304,7 +307,7 @@ async function undoMenuTranslation(venueId: string, undoData: any, supabase: any
 
     // Translate items back
     const batchSize = 15;
-    const translatedItems: any[] = [];
+    const translatedItems: unknown[] = [];
     
     for (let i = 0; i < items.length; i += batchSize) {
       const batch = items.slice(i, i + batchSize);
@@ -422,7 +425,7 @@ IMPORTANT: Every item in the input must appear in your output with a translated 
       message: `Successfully reversed translation: ${updatedCount} items translated back to ${targetLangName}`,
       itemsUpdated: updatedCount,
     };
-  } catch (error: any) {
+  } catch (error: unknown) {
     logger.error("[AI UNDO] Menu translation undo error:", { error: error instanceof Error ? error.message : 'Unknown error' });
     return { success: false, error: error.message };
   }
@@ -456,7 +459,7 @@ async function undoMenuPriceUpdate(venueId: string, undoData: any, supabase: any
       message: `Successfully restored original prices for ${updatedCount} items`,
       itemsUpdated: updatedCount,
     };
-  } catch (error: any) {
+  } catch (error: unknown) {
     logger.error("[AI UNDO] Menu price update undo error:", { error: error instanceof Error ? error.message : 'Unknown error' });
     return { success: false, error: error.message };
   }
@@ -486,7 +489,7 @@ async function undoMenuAvailabilityToggle(venueId: string, undoData: any, supaba
       message: `Successfully restored availability for ${undoData.params.itemIds.length} items`,
       itemsUpdated: undoData.params.itemIds.length,
     };
-  } catch (error: any) {
+  } catch (error: unknown) {
     logger.error("[AI UNDO] Menu availability toggle undo error:", { error: error instanceof Error ? error.message : 'Unknown error' });
     return { success: false, error: error.message };
   }
@@ -512,7 +515,7 @@ async function undoMenuItemCreation(venueId: string, undoData: any, supabase: an
       message: `Successfully deleted created item: ${undoData.result.name}`,
       itemsDeleted: 1,
     };
-  } catch (error: any) {
+  } catch (error: unknown) {
     logger.error("[AI UNDO] Menu item creation undo error:", { error: error instanceof Error ? error.message : 'Unknown error' });
     return { success: false, error: error.message };
   }
@@ -547,7 +550,7 @@ async function undoMenuItemDeletion(venueId: string, undoData: any, supabase: an
       message: `Successfully recreated deleted item: ${deletedItem.name}`,
       itemsRecreated: 1,
     };
-  } catch (error: any) {
+  } catch (error: unknown) {
     logger.error("[AI UNDO] Menu item deletion undo error:", { error: error instanceof Error ? error.message : 'Unknown error' });
     return { success: false, error: error.message };
   }
@@ -578,7 +581,7 @@ async function undoInventoryAdjustment(venueId: string, undoData: any, supabase:
       message: `Successfully reversed inventory adjustments for ${updatedCount} ingredients`,
       ingredientsUpdated: updatedCount,
     };
-  } catch (error: any) {
+  } catch (error: unknown) {
     logger.error("[AI UNDO] Inventory adjustment undo error:", { error: error instanceof Error ? error.message : 'Unknown error' });
     return { success: false, error: error.message };
   }

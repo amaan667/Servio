@@ -56,8 +56,8 @@ function QRCodeCanvas({ url, size }: { url: string; size: number }) {
 }
 
 export default function QRCodeClient({ venueId, venueName }: { venueId: string; venueName: string }) {
-  const [tables, setTables] = useState<any[]>([]);
-  const [counters, setCounters] = useState<any[]>([]);
+  const [tables, setTables] = useState<unknown[]>([]);
+  const [counters, setCounters] = useState<unknown[]>([]);
   const [loading, setLoading] = useState(true);
   const [generatedQRs, setGeneratedQRs] = useState<Array<{name: string, url: string, type: 'table' | 'counter'}>>([]);
   const [qrCodeType, setQrCodeType] = useState<'tables' | 'counters'>('tables');
@@ -81,7 +81,6 @@ export default function QRCodeClient({ venueId, venueName }: { venueId: string; 
       const tableName = urlParams.get('table');
       
       if (tableName) {
-        console.debug('[QR] Auto-generating QR for table from URL:', tableName);
         
         // Check if this QR already exists
         const existingQR = generatedQRs.find(qr => qr.name === tableName);

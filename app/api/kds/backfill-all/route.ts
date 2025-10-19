@@ -1,10 +1,10 @@
-import { NextResponse } from 'next/server';
+import { NextRequest, NextResponse } from 'next/server';
 import { createAdminClient } from '@/lib/supabase/server';
 import { apiLogger, logger } from '@/lib/logger';
 
 export const runtime = 'nodejs';
 
-export async function POST(req: Request) {
+export async function POST(req: NextRequest) {
   try {
     const supabaseAdmin = createAdminClient();
     
@@ -177,7 +177,7 @@ export async function POST(req: Request) {
           scopeOrdersProcessed++;
           logger.debug(`[KDS BACKFILL ALL] Processed order ${order.id} with ${items.length} items for ${scope}`);
           
-        } catch (error: any) {
+        } catch (error: unknown) {
           logger.error(`[KDS BACKFILL ALL] Error processing order ${order.id} for ${scope}:`, { error: error instanceof Error ? error.message : 'Unknown error' });
           scopeErrors.push(`Error processing order ${order.id}: ${error.message}`);
         }
@@ -210,7 +210,7 @@ export async function POST(req: Request) {
       results
     });
 
-  } catch (error: any) {
+  } catch (error: unknown) {
     logger.error('[KDS BACKFILL ALL] Unexpected error:', { error: error instanceof Error ? error.message : 'Unknown error' });
     return NextResponse.json({ 
       ok: false, 

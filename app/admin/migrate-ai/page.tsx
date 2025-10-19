@@ -10,9 +10,20 @@ import { Alert, AlertDescription } from "@/components/ui/alert";
 import { Badge } from "@/components/ui/badge";
 import { Loader2, Database, CheckCircle, AlertCircle, RefreshCw } from "lucide-react";
 
+interface MigrationStatus {
+  migrationStatus?: Array<{
+    table_name: string;
+    total_conversations: number;
+    generic_titles: number;
+    oldest_conversation: string;
+    newest_conversation: string;
+  }>;
+  conversationsNeedingAiTitles?: number;
+}
+
 export default function MigrateAIPage() {
   const [loading, setLoading] = useState(false);
-  const [migrationStatus, setMigrationStatus] = useState<any>(null);
+  const [migrationStatus, setMigrationStatus] = useState<MigrationStatus | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [success, setSuccess] = useState<string | null>(null);
 
@@ -31,8 +42,9 @@ export default function MigrateAIPage() {
       } else {
         setError(data.error || "Failed to check migration status");
       }
-    } catch (error: any) {
-      setError("Failed to check migration status: " + error.message);
+    } catch (error: unknown) {
+      const errorMessage = error instanceof Error ? error.message : 'Unknown error';
+      setError("Failed to check migration status: " + errorMessage);
     } finally {
       setLoading(false);
     }
@@ -56,8 +68,9 @@ export default function MigrateAIPage() {
       } else {
         setError(data.error || "Migration failed");
       }
-    } catch (error: any) {
-      setError("Migration failed: " + error.message);
+    } catch (error: unknown) {
+      const errorMessage = error instanceof Error ? error.message : 'Unknown error';
+      setError("Migration failed: " + errorMessage);
     } finally {
       setLoading(false);
     }

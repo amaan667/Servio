@@ -3,20 +3,10 @@
 
 async function runMigration() {
   try {
-    console.log('🔄 Starting database migration...');
-    
-    const response = await fetch('/api/migrate-database-constraint', {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-      },
-    });
 
     const data = await response.json();
 
     if (response.ok) {
-      console.log('✅ Migration completed successfully!');
-      console.log('📋 Response:', data);
     } else {
       console.error('❌ Migration failed:', data);
     }

@@ -1,3 +1,6 @@
+export const runtime = "nodejs";
+export const dynamic = "force-dynamic";
+
 import { NextRequest, NextResponse } from 'next/server';
 import { checkFeatureAccess, PREMIUM_FEATURES } from '@/lib/feature-gates';
 import { logger } from '@/lib/logger';

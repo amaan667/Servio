@@ -1,3 +1,6 @@
+export const runtime = "nodejs";
+export const dynamic = "force-dynamic";
+
 // Stripe Billing Portal - Let customers manage their subscription
 import { NextRequest, NextResponse } from "next/server";
 import Stripe from "stripe";
@@ -147,7 +150,7 @@ export async function POST(request: NextRequest) {
         { status: 500 }
       );
     }
-  } catch (error: any) {
+  } catch (error: unknown) {
     logger.error("[STRIPE PORTAL] Error:", { error: error instanceof Error ? error.message : 'Unknown error' });
     return NextResponse.json(
       { error: error.message || "Failed to create portal session" },

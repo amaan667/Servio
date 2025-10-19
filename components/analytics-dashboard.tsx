@@ -306,7 +306,7 @@ export function AnalyticsDashboard({ venueId }: AnalyticsDashboardProps) {
           table: 'orders',
           filter: `venue_id=eq.${venueId}`
         }, 
-        (payload: any) => {
+        (payload: unknown) => {
           
           // Check if the order is within the current time range
           const orderCreatedAt = (payload.new as any)?.created_at || (payload.old as any)?.created_at;

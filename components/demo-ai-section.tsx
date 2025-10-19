@@ -97,10 +97,10 @@ export default function DemoAISection() {
 
   const [selectedPrompt, setSelectedPrompt] = useState('');
   const [customPrompt, setCustomPrompt] = useState('');
-  const [response, setResponse] = useState<any>(null);
+  const [response, setResponse] = useState<unknown>(null);
   const [isProcessing, setIsProcessing] = useState(false);
   const [showConfirmation, setShowConfirmation] = useState(false);
-  const [confirmedChanges, setConfirmedChanges] = useState<any>(null);
+  const [confirmedChanges, setConfirmedChanges] = useState<unknown>(null);
 
   const handleRunPreview = (prompt: string) => {
     setIsProcessing(true);

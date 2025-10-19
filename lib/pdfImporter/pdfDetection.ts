@@ -109,7 +109,7 @@ export async function extractTextWithBoxes(pdfBuffer: Buffer): Promise<TextBlock
     
     return blocks;
     
-  } catch (error: any) {
+  } catch (error: unknown) {
     logger.error('[PDF_EXTRACT] Text extraction failed:', error);
     throw new Error(`Text extraction failed: ${error.message}`);
   }

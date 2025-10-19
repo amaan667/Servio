@@ -44,7 +44,7 @@ export function AssistantCommandPalette({
   const [executing, setExecuting] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [success, setSuccess] = useState(false);
-  const [executionResults, setExecutionResults] = useState<any[]>([]);
+  const [executionResults, setExecutionResults] = useState<unknown[]>([]);
   const [showChatInterface, setShowChatInterface] = useState(false);
 
   // Keyboard shortcut: ⌘K / Ctrl-K - Opens expanded chat interface directly
@@ -102,18 +102,10 @@ export function AssistantCommandPalette({
       if (!response.ok) {
         // If access denied, try to fix it automatically
         if (response.status === 403 && data.error?.includes("Access denied")) {
-          console.debug("[AI ASSISTANT] Access denied, attempting to fix...");
-          
-          const fixResponse = await fetch("/api/ai-assistant/fix-access", {
-            method: "POST",
-            headers: { "Content-Type": "application/json" },
-            body: JSON.stringify({ venueId }),
-          });
 
           const fixData = await fixResponse.json();
 
           if (fixResponse.ok) {
-            console.debug("[AI ASSISTANT] Access fixed, retrying...");
             // Retry the original request
             const retryResponse = await fetch("/api/ai-assistant/plan", {
               method: "POST",
@@ -189,7 +181,7 @@ export function AssistantCommandPalette({
         const previewResults = await Promise.all(previewPromises);
         setPreviews(previewResults.map((r) => r.preview).filter(Boolean));
       }
-    } catch (err: any) {
+    } catch (err: unknown) {
       console.error("[AI ASSISTANT] Planning error:", err);
       setError(err.message || "Failed to plan action");
     } finally {
@@ -200,13 +192,12 @@ export function AssistantCommandPalette({
   const handleExecute = async () => {
     if (!plan) return;
 
-    console.debug("[AI ASSISTANT] Starting execution for plan:", plan);
     setExecuting(true);
     setError(null);
 
     try {
       // Execute each tool in sequence and collect results
-      const results: any[] = [];
+      const results: unknown[] = [];
       
       for (const tool of plan.tools) {
         const response = await fetch("/api/ai-assistant/execute", {
@@ -259,7 +250,7 @@ export function AssistantCommandPalette({
         }, 3000);
       }
       // For analytics, keep modal open so user can see results
-    } catch (err: any) {
+    } catch (err: unknown) {
       console.error("[AI ASSISTANT] Execution error:", err);
       setError(err.message || "Failed to execute action");
     } finally {

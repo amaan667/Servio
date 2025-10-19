@@ -1,3 +1,6 @@
+export const runtime = "nodejs";
+export const dynamic = "force-dynamic";
+
 import { NextRequest, NextResponse } from 'next/server';
 import { createAdminClient } from '@/lib/supabase/server';
 import { logger } from '@/lib/logger';
@@ -55,7 +58,7 @@ export async function POST(request: NextRequest) {
       details: results
     });
 
-  } catch (error: any) {
+  } catch (error: unknown) {
     logger.error('[AUTH DEBUG] Clear menu error:', { error: error instanceof Error ? error.message : 'Unknown error' });
     return NextResponse.json({ 
       ok: false, 

@@ -1,3 +1,6 @@
+export const runtime = "nodejs";
+export const dynamic = "force-dynamic";
+
 import { NextRequest, NextResponse } from "next/server";
 import { createClient } from "@/lib/supabase/server";
 
@@ -17,7 +20,7 @@ export async function POST(req: NextRequest) {
       if (error) throw error;
     }
     return NextResponse.json({ success: true });
-  } catch (error: any) {
+  } catch (error: unknown) {
     return NextResponse.json(
       { success: false, message: error.message || "Failed to delete account" },
       { status: 500 },

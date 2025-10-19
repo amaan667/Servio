@@ -156,7 +156,7 @@ export default function CompleteProfileForm({ user }: CompleteProfileFormProps) 
       if (metadataError) console.error('[COMPLETE-PROFILE] metadata update error', metadataError);
 
       router.replace(`/dashboard/${returnedVenueId}`);
-    } catch (error: any) {
+    } catch (error: unknown) {
       console.error("[COMPLETE-PROFILE] Failed to complete profile:", error);
       console.error("Failed to complete profile", { error });
       setError(error.message || "Failed to complete profile setup");

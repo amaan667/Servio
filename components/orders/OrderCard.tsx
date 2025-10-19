@@ -146,19 +146,12 @@ export function OrderCard({
       
       if (nextStatus === 'SERVED' || nextStatus === 'SERVING') {
         // Use server endpoint for serving to ensure related side-effects
-        console.debug('[OrderCard] Clicking Mark Served', { orderId: order.id, venueId });
-        const response = await fetch('/api/orders/serve', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ orderId: order.id }),
-        });
         if (!response.ok) {
           const errorText = await response.text();
           console.error('[OrderCard DEBUG] Serve API error:', errorText);
           throw new Error('Failed to mark order as served');
         }
         const json = await response.json().catch(() => null);
-        console.debug('[OrderCard] Serve API success', { orderId: order.id, response: json });
       } else {
         // Directly update status via Supabase for other transitions
         const supabase = createClient();
@@ -174,7 +167,6 @@ export function OrderCard({
           console.error('[OrderCard DEBUG] Supabase status update error:', error);
           throw new Error('Failed to update order status');
         }
-        console.debug('[OrderCard] Direct status update success', { orderId: order.id, nextStatus });
       }
       
       await onActionComplete?.();

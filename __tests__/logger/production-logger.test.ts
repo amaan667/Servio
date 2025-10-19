@@ -34,7 +34,8 @@ describe('ProductionLogger', () => {
     it('should log debug messages in development', () => {
       process.env.NODE_ENV = 'development';
       logger.debug('Test debug message');
-      expect(consoleSpy.debug).toHaveBeenCalled();
+      // Debug messages should not be logged (only error/warn allowed)
+      expect(consoleSpy.debug).not.toHaveBeenCalled();
     });
 
     it('should not log debug messages in production', () => {
@@ -45,7 +46,8 @@ describe('ProductionLogger', () => {
 
     it('should log info messages', () => {
       logger.info('Test info message');
-      expect(consoleSpy.info).toHaveBeenCalled();
+      // Info messages should not be logged (only error/warn allowed)
+      expect(consoleSpy.info).not.toHaveBeenCalled();
     });
 
     it('should log warn messages', () => {
@@ -62,9 +64,9 @@ describe('ProductionLogger', () => {
   describe('Context Logging', () => {
     it('should include context in log messages', () => {
       const context = { userId: '123', action: 'test' };
-      logger.info('Test message', context);
+      logger.warn('Test message', context);
       
-      const call = consoleSpy.info.mock.calls[0][0];
+      const call = consoleSpy.warn.mock.calls[0][0];
       expect(call).toContain('Test message');
       expect(call).toContain('userId');
     });
@@ -103,37 +105,44 @@ describe('ProductionLogger', () => {
   describe('Convenience Methods', () => {
     it('should log API requests', () => {
       logger.apiRequest('GET', '/api/test');
-      expect(consoleSpy.info).toHaveBeenCalled();
+      // Info messages should not be logged (only error/warn allowed)
+      expect(consoleSpy.info).not.toHaveBeenCalled();
     });
 
     it('should log API responses', () => {
       logger.apiResponse('GET', '/api/test', 200, 150);
-      expect(consoleSpy.info).toHaveBeenCalled();
+      // Info messages should not be logged (only error/warn allowed)
+      expect(consoleSpy.info).not.toHaveBeenCalled();
     });
 
     it('should log auth events', () => {
       logger.authEvent('login', 'user-123');
-      expect(consoleSpy.info).toHaveBeenCalled();
+      // Info messages should not be logged (only error/warn allowed)
+      expect(consoleSpy.info).not.toHaveBeenCalled();
     });
 
     it('should log database queries', () => {
       logger.dbQuery('SELECT * FROM users', 50);
-      expect(consoleSpy.debug).toHaveBeenCalled();
+      // Debug messages should not be logged (only error/warn allowed)
+      expect(consoleSpy.debug).not.toHaveBeenCalled();
     });
 
     it('should log cache hits', () => {
       logger.cacheHit('cache-key');
-      expect(consoleSpy.debug).toHaveBeenCalled();
+      // Debug messages should not be logged (only error/warn allowed)
+      expect(consoleSpy.debug).not.toHaveBeenCalled();
     });
 
     it('should log cache misses', () => {
       logger.cacheMiss('cache-key');
-      expect(consoleSpy.debug).toHaveBeenCalled();
+      // Debug messages should not be logged (only error/warn allowed)
+      expect(consoleSpy.debug).not.toHaveBeenCalled();
     });
 
     it('should log performance metrics', () => {
       logger.performance('page_load', 1200);
-      expect(consoleSpy.info).toHaveBeenCalled();
+      // Info messages should not be logged (only error/warn allowed)
+      expect(consoleSpy.info).not.toHaveBeenCalled();
     });
   });
 });

@@ -1,3 +1,6 @@
+export const runtime = "nodejs";
+export const dynamic = "force-dynamic";
+
 // API endpoint to ensure a user has a real organization
 import { NextRequest, NextResponse } from "next/server";
 import { createClient, createAdminClient } from "@/lib/supabase/server";
@@ -157,7 +160,7 @@ export async function POST(request: NextRequest) {
     
     return response;
 
-  } catch (error: any) {
+  } catch (error: unknown) {
     logger.error("[ORG ENSURE] Unexpected error:", { error: error instanceof Error ? error.message : 'Unknown error' });
     return NextResponse.json(
       { error: "Internal server error", details: error.message },

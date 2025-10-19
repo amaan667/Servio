@@ -59,7 +59,7 @@ const VenueDashboardClient = React.memo(function VenueDashboardClient({
   userRole?: string;
   isOwner?: boolean;
 }) {
-  const [venue, setVenue] = useState<any>(initialVenue);
+  const [venue, setVenue] = useState<unknown>(initialVenue);
   const [loading, setLoading] = useState(!initialVenue); // Only show loading if no initial data
   const [counts, setCounts] = useState<DashboardCounts>(initialCounts || {
     live_count: 0,
@@ -73,7 +73,7 @@ const VenueDashboardClient = React.memo(function VenueDashboardClient({
   });
   const [stats, setStats] = useState<DashboardStats>(initialStats || { revenue: 0, menuItems: 0, unpaid: 0 });
   const [statsLoaded, setStatsLoaded] = useState(false);
-  const [todayWindow, setTodayWindow] = useState<any>(null);
+  const [todayWindow, setTodayWindow] = useState<unknown>(null);
   const [error, setError] = useState<string | null>(null);
   const router = useRouter();
   
@@ -82,7 +82,6 @@ const VenueDashboardClient = React.memo(function VenueDashboardClient({
   
   // Handle venue change
   const handleVenueChange = (newVenueId: string) => {
-    console.debug('[VENUE SWITCH] Switching from', venueId, 'to', newVenueId);
     router.push(`/dashboard/${newVenueId}`);
   };
   
@@ -196,7 +195,6 @@ const VenueDashboardClient = React.memo(function VenueDashboardClient({
       return;
     }
 
-    console.debug('[DASHBOARD] Setting up real-time subscriptions for venue:', venueId);
     const supabase = createClient();
     
     // Create a unified channel for all dashboard updates
@@ -210,8 +208,7 @@ const VenueDashboardClient = React.memo(function VenueDashboardClient({
           table: 'orders',
           filter: `venue_id=eq.${venueId}`
         }, 
-        async (payload: any) => {
-          console.debug('[DASHBOARD] Order update received:', payload.eventType, payload.new?.id);
+        async (payload: unknown) => {
           
           // Get the order date from the payload with proper type checking
           const orderCreatedAt = (payload.new as any)?.created_at || (payload.old as any)?.created_at;
@@ -223,7 +220,6 @@ const VenueDashboardClient = React.memo(function VenueDashboardClient({
           const isInTodayWindow = orderCreatedAt >= todayWindow.startUtcISO && orderCreatedAt < todayWindow.endUtcISO;
           
           if (isInTodayWindow) {
-            console.debug('[DASHBOARD] Refreshing counts due to order change');
             // Always refresh counts for any order change
             await refreshCounts();
             
@@ -248,8 +244,7 @@ const VenueDashboardClient = React.memo(function VenueDashboardClient({
           table: 'tables',
           filter: `venue_id=eq.${venueId}`
         },
-        async (payload: any) => {
-          console.debug('[DASHBOARD] Table update received:', payload.eventType);
+        async (payload: unknown) => {
           await refreshCounts();
         }
       )
@@ -261,8 +256,7 @@ const VenueDashboardClient = React.memo(function VenueDashboardClient({
           table: 'table_sessions',
           filter: `venue_id=eq.${venueId}`
         },
-        async (payload: any) => {
-          console.debug('[DASHBOARD] Table session update received:', payload.eventType);
+        async (payload: unknown) => {
           await refreshCounts();
         }
       )
@@ -274,8 +268,7 @@ const VenueDashboardClient = React.memo(function VenueDashboardClient({
           table: 'menu_items',
           filter: `venue_id=eq.${venueId}`
         },
-        async (payload: any) => {
-          console.debug('[DASHBOARD] Menu item update received:', payload.eventType);
+        async (payload: unknown) => {
           // Refresh menu items count
           try {
             const { data: menuItems } = await supabase
@@ -294,20 +287,10 @@ const VenueDashboardClient = React.memo(function VenueDashboardClient({
         }
       )
       .subscribe((status: string) => {
-        console.debug('[DASHBOARD] Realtime subscription status:', status);
-        if (status === 'SUBSCRIBED') {
-          console.debug('[DASHBOARD] ✓ Successfully subscribed to realtime updates');
-        } else if (status === 'CHANNEL_ERROR') {
-          console.error('[DASHBOARD] ✗ Realtime subscription error - falling back to polling');
-        } else if (status === 'TIMED_OUT') {
-          console.error('[DASHBOARD] ✗ Realtime subscription timed out');
-        }
-      });
 
     // Also listen for custom order events from other components
     const handleOrderCreated = (event: CustomEvent) => {
       if (event.detail.venueId === venueId) {
-        console.debug('[DASHBOARD] Custom order created event received');
         // Trigger immediate refresh of counts and revenue
         refreshCounts();
         if (event.detail.order) {
@@ -351,7 +334,6 @@ const VenueDashboardClient = React.memo(function VenueDashboardClient({
   useEffect(() => {
     const urlParams = new URLSearchParams(window.location.search);
     if (urlParams.get('upgrade') === 'success') {
-      console.debug('[DASHBOARD] Detected upgrade success, refreshing dashboard data');
       // Refresh dashboard data after successful upgrade
       setTimeout(() => {
         handleRefresh();
@@ -852,8 +834,7 @@ const VenueDashboardClient = React.memo(function VenueDashboardClient({
           </Card>
         </div>
       </div>
-      
-    </div>
+      </div>
     </PullToRefresh>
   );
 });

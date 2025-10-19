@@ -1,3 +1,6 @@
+export const runtime = "nodejs";
+export const dynamic = "force-dynamic";
+
 // API endpoint to manually update organization plan (backup for webhook)
 import { NextRequest, NextResponse } from "next/server";
 import { createClient } from "@/lib/supabase/server";
@@ -106,7 +109,7 @@ export async function POST(request: NextRequest) {
       message: `Plan updated to ${tier} successfully`
     });
 
-  } catch (error: any) {
+  } catch (error: unknown) {
     logger.error("[UPDATE PLAN] Unexpected error:", { error: error instanceof Error ? error.message : 'Unknown error' });
     return NextResponse.json(
       { error: "Internal server error", details: error.message },

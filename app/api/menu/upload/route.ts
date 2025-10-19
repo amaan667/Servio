@@ -1,4 +1,4 @@
-import { NextResponse } from 'next/server';
+import { NextRequest, NextResponse } from 'next/server';
 import { createAdminClient } from '@/lib/supabase/server';
 import { logger } from '@/lib/logger';
 
@@ -16,7 +16,7 @@ async function sha256(buffer: ArrayBuffer): Promise<string> {
   return bytes.map((b) => b.toString(16).padStart(2, '0')).join('');
 }
 
-export async function POST(req: Request) {
+export async function POST(req: NextRequest) {
   const supa = admin();
   try {
     const form = await req.formData();
@@ -113,7 +113,7 @@ export async function POST(req: Request) {
     }
 
     return NextResponse.json({ ok: true, upload_id: uploadId, sha256: hash, path });
-  } catch (e: any) {
+  } catch (e: unknown) {
     logger.error('[MENU_UPLOAD] fatal', e);
     return NextResponse.json({ ok: false, error: e?.message || 'upload failed' }, { status: 500 });
   }

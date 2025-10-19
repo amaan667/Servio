@@ -1,4 +1,4 @@
-import { NextResponse } from 'next/server';
+import { NextRequest, NextResponse } from 'next/server';
 import { createClient, getAuthenticatedUser, createAdminClient } from '@/lib/supabase/server';
 import type { FeedbackQuestion } from '@/types/feedback';
 import { logger } from '@/lib/logger';
@@ -10,7 +10,7 @@ function getServiceClient() {
 }
 
 // GET - List questions for venue
-export async function GET(req: Request) {
+export async function GET(req: NextRequest) {
   try {
     const { searchParams } = new URL(req.url);
     const venueId = searchParams.get('venueId');
@@ -62,14 +62,14 @@ export async function GET(req: Request) {
       activeCount: activeCount
     });
 
-  } catch (error: any) {
+  } catch (error: unknown) {
     logger.error('[FEEDBACK:Q] list exception:', error.message);
     return NextResponse.json({ error: 'Internal server error' }, { status: 500 });
   }
 }
 
 // POST - Create new question
-export async function POST(req: Request) {
+export async function POST(req: NextRequest) {
   try {
     const { venue_id, prompt, type, choices, is_active = true } = await req.json();
 
@@ -159,14 +159,14 @@ export async function POST(req: Request) {
 
     return NextResponse.json({ question });
 
-  } catch (error: any) {
+  } catch (error: unknown) {
     logger.error('[FEEDBACK:Q] add exception:', error.message);
     return NextResponse.json({ error: 'Internal server error' }, { status: 500 });
   }
 }
 
 // PATCH - Update question
-export async function PATCH(req: Request) {
+export async function PATCH(req: NextRequest) {
   try {
     const { id, venue_id, prompt, type, choices, is_active, sort_index } = await req.json();
 
@@ -246,14 +246,14 @@ export async function PATCH(req: Request) {
 
     return NextResponse.json({ question });
 
-  } catch (error: any) {
+  } catch (error: unknown) {
     logger.error('[FEEDBACK:Q] update exception:', error.message);
     return NextResponse.json({ error: 'Internal server error' }, { status: 500 });
   }
 }
 
 // DELETE - Delete question
-export async function DELETE(req: Request) {
+export async function DELETE(req: NextRequest) {
   try {
     const { id, venue_id } = await req.json();
 
@@ -295,7 +295,7 @@ export async function DELETE(req: Request) {
 
     return NextResponse.json({ success: true });
 
-  } catch (error: any) {
+  } catch (error: unknown) {
     logger.error('[FEEDBACK:Q] delete exception:', error.message);
     return NextResponse.json({ error: 'Internal server error' }, { status: 500 });
   }

@@ -1,3 +1,6 @@
+export const runtime = "nodejs";
+export const dynamic = "force-dynamic";
+
 // Debug endpoint to help troubleshoot staff invitation issues
 import { NextRequest, NextResponse } from 'next/server';
 import { createClient } from '@/lib/supabase/server';
@@ -39,7 +42,7 @@ export async function GET(request: NextRequest) {
         exists: !tableError,
         error: tableError?.message || null
       };
-    } catch (error: any) {
+    } catch (error: unknown) {
       debugInfo.checks.staff_invitations_table = {
         exists: false,
         error: error.message
@@ -59,7 +62,7 @@ export async function GET(request: NextRequest) {
         roles: userRoles || [],
         error: roleError?.message || null
       };
-    } catch (error: any) {
+    } catch (error: unknown) {
       debugInfo.checks.user_venue_roles = {
         found: 0,
         roles: [],
@@ -80,7 +83,7 @@ export async function GET(request: NextRequest) {
         venue: venue || null,
         error: venueError?.message || null
       };
-    } catch (error: any) {
+    } catch (error: unknown) {
       debugInfo.checks.venue = {
         exists: false,
         venue: null,
@@ -101,7 +104,7 @@ export async function GET(request: NextRequest) {
         owner_user_id: venue?.owner_user_id,
         error: venueError?.message || null
       };
-    } catch (error: any) {
+    } catch (error: unknown) {
       debugInfo.checks.is_owner = {
         is_owner: false,
         owner_user_id: null,
@@ -121,7 +124,7 @@ export async function GET(request: NextRequest) {
         invitations: invitations || [],
         error: invitationError?.message || null
       };
-    } catch (error: any) {
+    } catch (error: unknown) {
       debugInfo.checks.existing_invitations = {
         count: 0,
         invitations: [],

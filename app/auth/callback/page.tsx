@@ -281,7 +281,7 @@ function CallbackContent() {
           setError('Failed to create session - no session data returned');
           setLoading(false);
         }
-      } catch (err: any) {
+      } catch (err: unknown) {
         addDebugLog(`[AUTH CALLBACK] Unexpected error: ${err.message}`);
         addDebugLog(`[AUTH CALLBACK] Error details: ${JSON.stringify({
           message: err.message,

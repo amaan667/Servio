@@ -1,3 +1,6 @@
+export const runtime = "nodejs";
+export const dynamic = "force-dynamic";
+
 // AI Assistant Messages API
 // Handles messages within conversations
 
@@ -68,10 +71,11 @@ export async function GET(
     return NextResponse.json({
       messages: transformedMessages,
     });
-  } catch (error: any) {
-    logger.error("[AI CHAT] Messages error:", { error: error instanceof Error ? error.message : 'Unknown error' });
+  } catch (error: unknown) {
+    const errorMessage = error instanceof Error ? error.message : 'Unknown error';
+    logger.error("[AI CHAT] Messages error:", { error: errorMessage });
     return NextResponse.json(
-      { error: error.message || "Internal server error" },
+      { error: errorMessage || "Internal server error" },
       { status: 500 }
     );
   }
@@ -177,18 +181,21 @@ export async function POST(
     return NextResponse.json({
       message: transformedMessage,
     });
-  } catch (error: any) {
-    logger.error("[AI CHAT] Create message error:", { error: error instanceof Error ? error.message : 'Unknown error' });
+  } catch (error: unknown) {
+    const errorMessage = error instanceof Error ? error.message : 'Unknown error';
+    logger.error("[AI CHAT] Create message error:", { error: errorMessage });
     
-    if (error.name === "ZodError") {
+    // Type guard for ZodError
+    if (error && typeof error === 'object' && 'name' in error && error.name === "ZodError") {
+      const zodError = error as unknown as { errors: unknown };
       return NextResponse.json(
-        { error: "Invalid request data", details: error.errors },
+        { error: "Invalid request data", details: zodError.errors },
         { status: 400 }
       );
     }
 
     return NextResponse.json(
-      { error: error.message || "Internal server error" },
+      { error: errorMessage || "Internal server error" },
       { status: 500 }
     );
   }

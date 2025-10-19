@@ -1,4 +1,4 @@
-import { NextResponse } from "next/server";
+import { NextRequest, NextResponse } from 'next/server';
 import Stripe from "stripe";
 import { createAdminClient } from "@/lib/supabase/server";
 import { stripe } from "@/lib/stripe-client";
@@ -6,7 +6,7 @@ import { apiLogger, logger } from '@/lib/logger';
 
 export const runtime = 'nodejs';
 
-export async function POST(req: Request) {
+export async function POST(req: NextRequest) {
   try {
     const supabaseAdmin = createAdminClient();
     
@@ -89,7 +89,7 @@ export async function POST(req: Request) {
     }
 
     return NextResponse.json({ url: session.url, sessionId: session.id }, { status: 200 });
-  } catch (e: any) {
+  } catch (e: unknown) {
     logger.error("Stripe session error", { error: e instanceof Error ? e.message : 'Unknown error' });
     return NextResponse.json({ error: e.message ?? "Stripe error" }, { status: 500 });
   }

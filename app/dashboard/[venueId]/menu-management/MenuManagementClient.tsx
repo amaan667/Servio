@@ -296,12 +296,6 @@ export default function MenuManagementClient({ venueId, canEdit = true }: { venu
       setLoading(true);
       const supabase = createClient();
       
-      console.debug('[MENU LOAD] Loading menu items for venue:', { venueId });
-      console.debug('[MENU LOAD] Supabase client:', { client: supabase });
-      console.debug('[MENU LOAD] Env vars:', {
-        hasUrl: !!process.env.NEXT_PUBLIC_SUPABASE_URL,
-        hasKey: !!process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY
-      });
       
       // Query menu items ordered by position within category
       const { data: items, error } = await supabase
@@ -331,7 +325,6 @@ export default function MenuManagementClient({ venueId, canEdit = true }: { venu
         return;
       }
 
-      console.debug(`[MENU LOAD] Loaded ${items?.length || 0} menu items`, { count: items?.length || 0 });
       setMenuItems(items || []);
       
       // Load category order only if we have menu items
@@ -344,12 +337,14 @@ export default function MenuManagementClient({ venueId, canEdit = true }: { venu
           .limit(1);
 
         if (!uploadError && uploadData && uploadData.length > 0) {
-          console.debug('[MENU LOAD] Loaded category order:', uploadData[0].category_order);
-          setCategoryOrder(uploadData[0].category_order);
+          const categoryOrder = uploadData[0].category_order;
+          if (categoryOrder && Array.isArray(categoryOrder)) {
+            setCategoryOrder(categoryOrder);
+          }
         }
       }
     } catch (error) {
-      console.error('[MENU LOAD] Exception in loadMenuItems:', { error: error instanceof Error ? error.message : 'Unknown error' });
+      console.error('[MENU LOAD] Unexpected error:', error);
       toast({
         title: "Error",
         description: `Failed to load menu items: ${error instanceof Error ? error.message : 'Unknown error'}`,
@@ -363,7 +358,6 @@ export default function MenuManagementClient({ venueId, canEdit = true }: { venu
   const loadDesignSettings = async () => {
     try {
       const supabase = createClient();
-      console.debug('[DESIGN SETTINGS] Loading design settings for venue:', { venueId });
       
       const { data, error } = await supabase
         .from('menu_design_settings')
@@ -374,10 +368,6 @@ export default function MenuManagementClient({ venueId, canEdit = true }: { venu
       if (error) {
         if (error.code === 'PGRST116') {
           // No rows returned - this is normal for new venues
-          console.debug('[DESIGN SETTINGS] No design settings found, using defaults');
-        } else if (error.code === '42P01') {
-          // Table doesn't exist - need to create it
-          console.error('[DESIGN SETTINGS] Table menu_design_settings does not exist. Please run the migration script.', {});
           toast({
             title: "Database Setup Required",
             description: "Please run the menu design settings migration script in your database.",
@@ -390,7 +380,6 @@ export default function MenuManagementClient({ venueId, canEdit = true }: { venu
       }
 
       if (data) {
-        console.debug('[DESIGN SETTINGS] Loaded design settings:', data);
         setDesignSettings({
           venue_name: data.venue_name || '',
           logo_url: data.logo_url,
@@ -447,11 +436,9 @@ export default function MenuManagementClient({ venueId, canEdit = true }: { venu
           allowedMimeTypes: ['image/png', 'image/jpeg', 'image/jpg', 'image/gif', 'image/webp'],
           fileSizeLimit: 2097152 // 2MB
         });
-        console.debug('[LOGO UPLOAD] Created venue-assets bucket');
       } catch (bucketError: any) {
         // Bucket might already exist, which is fine
         if (!bucketError.message?.includes('already exists')) {
-          console.debug('[LOGO UPLOAD] Bucket creation info:', bucketError.message);
         }
       }
 
@@ -473,9 +460,7 @@ export default function MenuManagementClient({ venueId, canEdit = true }: { venu
         .getPublicUrl(fileName);
 
       // Detect colors from the uploaded logo
-      console.debug('[LOGO UPLOAD] Detecting colors from logo...');
       const detectedColors = await detectColorsFromImage(urlData.publicUrl);
-      console.debug('[LOGO UPLOAD] Detected colors:', detectedColors);
 
       // Update design settings with new logo URL and detected colors
       const updatedSettings = {
@@ -487,27 +472,20 @@ export default function MenuManagementClient({ venueId, canEdit = true }: { venu
         primary_color: detectedColors.primary,
         secondary_color: detectedColors.secondary
       };
-      console.debug('[LOGO UPLOAD] Updating design settings with logo URL and auto-detected theme:', urlData.publicUrl);
       setDesignSettings(updatedSettings);
 
       // Also save to database immediately
-      try {
-        const { error: saveError } = await supabase
-          .from('menu_design_settings')
-          .upsert({
-            venue_id: venueId,
-            ...updatedSettings,
-            updated_at: new Date().toISOString()
-          });
+      const { error: saveError } = await supabase
+        .from('menu_design_settings')
+        .upsert({
+          venue_id: venueId,
+          ...updatedSettings,
+          updated_at: new Date().toISOString()
+        });
 
-        if (saveError) {
-          console.error('[LOGO UPLOAD] Error saving to database:', { error: saveError.message });
-          // Don't fail the upload if database save fails
-        } else {
-          console.debug('[LOGO UPLOAD] Successfully saved to database');
-        }
-      } catch (dbError) {
-        console.error('[LOGO UPLOAD] Database save exception:', { error: dbError instanceof Error ? dbError.message : 'Unknown error' });
+      if (saveError) {
+        console.error('[LOGO UPLOAD] Error saving to database:', { error: saveError.message });
+        // Don't fail the upload if database save fails
       }
 
       toast({
@@ -516,11 +494,12 @@ export default function MenuManagementClient({ venueId, canEdit = true }: { venu
         duration: 5000,
       });
 
-    } catch (error: any) {
-      console.error('Error uploading logo:', { error: error instanceof Error ? error.message : 'Unknown error' });
+    } catch (error: unknown) {
+      const errorMessage = error instanceof Error ? error.message : 'Unknown error';
+      console.error('Error uploading logo:', { error: errorMessage });
       toast({
         title: "Upload failed",
-        description: error.message || "Failed to upload logo",
+        description: errorMessage || "Failed to upload logo",
         variant: "destructive",
       });
     } finally {
@@ -533,32 +512,19 @@ export default function MenuManagementClient({ venueId, canEdit = true }: { venu
       setIsSavingDesign(true);
       const supabase = createClient();
 
-      console.debug('[SAVE DESIGN] Saving design settings:', designSettings);
-
-      const { error } = await supabase
-        .from('menu_design_settings')
-        .upsert({
-          venue_id: venueId,
-          ...designSettings,
-          updated_at: new Date().toISOString()
-        });
 
       if (error) {
         console.error('[SAVE DESIGN] Database error:', { error: error.message });
         throw error;
       }
 
-      console.debug('[SAVE DESIGN] Successfully saved design settings');
-      toast({
-        title: "Design saved successfully",
-        description: "Your design settings have been saved and will appear in the preview.",
-      });
 
-    } catch (error: any) {
-      console.error('[SAVE DESIGN] Error saving design settings:', { error: error instanceof Error ? error.message : 'Unknown error' });
+    } catch (error: unknown) {
+      const errorMessage = error instanceof Error ? error.message : 'Unknown error';
+      console.error('[SAVE DESIGN] Error saving design settings:', { error: errorMessage });
       toast({
         title: "Save failed",
-        description: error.message || "Failed to save design settings. Please check if the database table exists.",
+        description: errorMessage || "Failed to save design settings. Please check if the database table exists.",
         variant: "destructive",
       });
     } finally {
@@ -633,11 +599,12 @@ export default function MenuManagementClient({ venueId, canEdit = true }: { venu
       
       // Reload menu items
       await loadMenuItems();
-    } catch (error: any) {
-      console.error('Error saving menu item:', { error: error instanceof Error ? error.message : 'Unknown error' });
+    } catch (error: unknown) {
+      const errorMessage = error instanceof Error ? error.message : 'Unknown error';
+      console.error('Error saving menu item:', { error: errorMessage });
       toast({
         title: "Error",
-        description: error.message || "Failed to save menu item",
+        description: errorMessage || "Failed to save menu item",
         variant: "destructive",
       });
     }
@@ -665,11 +632,12 @@ export default function MenuManagementClient({ venueId, canEdit = true }: { venu
       });
 
       await loadMenuItems();
-    } catch (error: any) {
-      console.error('Error deleting menu item:', { error: error instanceof Error ? error.message : 'Unknown error' });
+    } catch (error: unknown) {
+      const errorMessage = error instanceof Error ? error.message : 'Unknown error';
+      console.error('Error deleting menu item:', { error: errorMessage });
       toast({
         title: "Error",
-        description: error.message || "Failed to delete menu item",
+        description: errorMessage || "Failed to delete menu item",
         variant: "destructive",
       });
     }
@@ -734,11 +702,12 @@ export default function MenuManagementClient({ venueId, canEdit = true }: { venu
       });
 
       await loadMenuItems();
-    } catch (error: any) {
-      console.error('Error clearing menu:', { error: error instanceof Error ? error.message : 'Unknown error' });
+    } catch (error: unknown) {
+      const errorMessage = error instanceof Error ? error.message : 'Unknown error';
+      console.error('Error clearing menu:', { error: errorMessage });
       toast({
         title: "Error",
-        description: error.message || "Failed to clear menu",
+        description: errorMessage || "Failed to clear menu",
         variant: "destructive",
       });
     } finally {
@@ -1407,15 +1376,7 @@ export default function MenuManagementClient({ venueId, canEdit = true }: { venu
                           });
                         } catch (err) {
                           // User cancelled or error occurred
-                          console.debug('Error sharing:', { error: err instanceof Error ? err.message : 'Unknown error' });
                         }
-                      } else {
-                        // Fallback: copy to clipboard
-                        await navigator.clipboard.writeText(shareUrl);
-                        toast({
-                          title: 'Link copied!',
-                          description: 'Menu link has been copied to your clipboard',
-                        });
                       }
                     }}
                   >

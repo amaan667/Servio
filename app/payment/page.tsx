@@ -65,27 +65,20 @@ export default function PaymentPage() {
 
   useEffect(() => {
     // Debug current URL and search params
-    console.debug('[PAYMENT DEBUG] Current URL:', window.location.href);
-    console.debug('[PAYMENT DEBUG] Search params:', Object.fromEntries(searchParams?.entries() || []));
-    console.debug('[PAYMENT DEBUG] isDemoFromUrl:', isDemoFromUrl);
     
     // Get checkout data from localStorage
     const storedData = localStorage.getItem("servio-checkout-data");
     
-    console.debug('[PAYMENT DEBUG] Loading checkout data:', storedData);
     
     if (storedData) {
       try {
         const data = JSON.parse(storedData);
-        console.debug('[PAYMENT DEBUG] Parsed checkout data:', data);
         setCheckoutData(data);
         setIsDemo(data.isDemo || false); // Set demo flag from checkout data
         setReceiptEmail(data.customerEmail || ''); // Load existing email if available
-        console.debug('[PAYMENT DEBUG] Demo flag set to:', data.isDemo || false);
         
         // If demo mode is detected, show immediate redirect message
         if (data.isDemo || isDemoFromUrl) {
-          console.debug('[PAYMENT DEBUG] DEMO MODE DETECTED - should redirect immediately');
         }
       } catch (error) {
         console.error('[PAYMENT DEBUG] Error parsing checkout data:', error);
@@ -98,7 +91,6 @@ export default function PaymentPage() {
   }, [router, isDemoFromUrl]);
 
   const handlePayment = async (action: PaymentAction) => {
-    console.debug('[PAYMENT DEBUG] handlePayment called with action:', action);
     
     if (!checkoutData) {
       setError('Missing order information. Please try again.');
@@ -111,16 +103,9 @@ export default function PaymentPage() {
 
     try {
       // Debug logging for demo mode
-      console.debug('[PAYMENT DEBUG] Demo mode check:', { 
-        isDemo, 
-        checkoutDataIsDemo: checkoutData.isDemo, 
-        isDemoFromUrl,
-        finalDemoCheck: isDemo || checkoutData.isDemo || isDemoFromUrl
-      });
       
       // In demo mode, skip all payment processing and go straight to success
       if (isDemo || checkoutData.isDemo || isDemoFromUrl) {
-        console.debug('[PAYMENT DEBUG] Demo mode detected - skipping payment processing');
         const demoOrderId = `demo-${Date.now()}`;
         
         // Redirect to payment success page immediately
@@ -138,7 +123,6 @@ export default function PaymentPage() {
           throw new Error('No order ID found. Please try submitting your order again.');
         }
 
-        console.debug('[PAYMENT DEBUG] Using existing order ID for Stripe:', checkoutData.orderId);
         
         // Create Stripe checkout session with the existing order ID
         const checkoutResponse = await fetch('/api/checkout', {
@@ -169,7 +153,6 @@ export default function PaymentPage() {
           throw new Error(checkoutErr || 'Checkout failed');
         }
 
-        console.debug('[PAYMENT DEBUG] Stripe session created:', sessionId, 'for order:', checkoutData.orderId);
 
         // Redirect to Stripe checkout - payment will mark existing order as PAID
         if (url) {

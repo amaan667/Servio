@@ -187,7 +187,7 @@ export async function POST(req: NextRequest) {
       return await replaceCatalog(supabase, venueId, fixedPayload, undefined);
     }
 
-  } catch (error: any) {
+  } catch (error: unknown) {
     logger.error('[CATALOG REPLACE] Unexpected error:', { error: error instanceof Error ? error.message : 'Unknown error' });
     return NextResponse.json({ 
       ok: false, 
@@ -283,7 +283,7 @@ async function replaceCatalog(supabase: any, venueId: string, fixedPayload: any,
       });
     }
 
-  } catch (error: any) {
+  } catch (error: unknown) {
     logger.error('[CATALOG REPLACE] Unexpected error:', { error: error instanceof Error ? error.message : 'Unknown error' });
     return NextResponse.json({ 
       ok: false, 
@@ -333,7 +333,7 @@ BEVERAGES
     
     return extractedText;
     
-  } catch (error: any) {
+  } catch (error: unknown) {
     logger.error('[OCR] Text extraction failed:', { error: error instanceof Error ? error.message : 'Unknown error' });
     throw new Error(`OCR failed: ${error.message}`);
   }

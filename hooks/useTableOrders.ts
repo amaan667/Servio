@@ -158,7 +158,7 @@ export function useTableOrdersRealtime(venueId: string) {
 				schema: 'public',
 				table: 'orders',
 				filter: `venue_id=eq.${venueId}`
-			}, (payload: any) => {
+			}, (payload: unknown) => {
 				// Check if this is a table order (QR order)
 				const order = payload.new || payload.old;
 				if (order?.source === 'qr') {

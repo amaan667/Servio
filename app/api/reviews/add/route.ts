@@ -1,4 +1,4 @@
-import { NextResponse } from 'next/server';
+import { NextRequest, NextResponse } from 'next/server';
 import { z } from 'zod';
 import { createClient } from '@/lib/supabase/server';
 
@@ -10,7 +10,7 @@ const Body = z.object({
   comment: z.string().optional(),
 });
 
-export async function POST(req: Request) {
+export async function POST(req: NextRequest) {
   try {
     const json = await req.json();
     const { orderId, rating, comment } = Body.parse(json);
@@ -26,7 +26,7 @@ export async function POST(req: Request) {
     });
     if (insErr) return NextResponse.json({ ok:false, error: insErr.message }, { status:500 });
     return NextResponse.json({ ok:true });
-  } catch (e:any) {
+  } catch (e: unknown) {
     return NextResponse.json({ ok:false, error: e.message }, { status:400 });
   }
 }

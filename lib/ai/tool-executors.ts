@@ -129,7 +129,7 @@ export async function executeMenuUpdatePrices(
   // Execute - update prices for each item
   logger.debug(`[AI ASSISTANT] Executing price updates for ${params.items.length} items`);
   let updatedCount = 0;
-  let failedUpdates: any[] = [];
+  const failedUpdates: unknown[] = [];
   
   for (const item of params.items) {
     const currentItem = currentItems.find(i => i.id === item.id);
@@ -803,7 +803,7 @@ Remember: You MUST return ALL ${sampleItems.length} items with translations. No 
 
     // Store original item count for validation
     const originalItemCount = items.length;
-    const translatedItems: any[] = [];
+    const translatedItems: unknown[] = [];
     
     // Process items in smaller batches to ensure reliability
     const batchSize = 15; // Reduced batch size for better reliability
@@ -1012,7 +1012,7 @@ Remember: You MUST return ALL ${batch.length} items with translations. No except
       },
       auditId: "",
     };
-  } catch (error: any) {
+  } catch (error: unknown) {
     logger.error("[AI ASSISTANT] Translation error:", error);
     throw new AIAssistantError(
       `Translation failed: ${error.message}`,

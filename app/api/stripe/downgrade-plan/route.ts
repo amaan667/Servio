@@ -1,3 +1,6 @@
+export const runtime = "nodejs";
+export const dynamic = "force-dynamic";
+
 // Stripe Plan Downgrade - Handle immediate downgrades
 import { NextRequest, NextResponse } from "next/server";
 import Stripe from "stripe";
@@ -141,7 +144,7 @@ export async function POST(request: NextRequest) {
       newTier 
     });
 
-  } catch (error: any) {
+  } catch (error: unknown) {
     logger.error("[DOWNGRADE] Error:", { error: error instanceof Error ? error.message : 'Unknown error' });
     return NextResponse.json(
       { error: error.message || "Failed to downgrade plan" },

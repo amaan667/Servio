@@ -247,7 +247,7 @@ export function getMergeScenario(sourceTable: any, targetTable: any): MergeScena
 /**
  * Filters tables for merge selection based on source table state
  */
-export function getMergeableTables(sourceTable: any, availableTables: any[], showAllTables: boolean = false) {
+export function getMergeableTables(sourceTable: any, availableTables: unknown[], showAllTables: boolean = false) {
   const sourceState = getTableState(sourceTable);
   
   return availableTables

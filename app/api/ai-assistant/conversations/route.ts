@@ -1,3 +1,6 @@
+export const runtime = "nodejs";
+export const dynamic = "force-dynamic";
+
 // AI Assistant Conversations API
 // Handles creating and listing chat conversations
 
@@ -126,19 +129,23 @@ export async function GET(request: NextRequest) {
     return NextResponse.json({
       conversations: transformedConversations,
     });
-  } catch (error: any) {
-    logger.error("[AI CHAT] Conversations error:", { error: error instanceof Error ? error.message : 'Unknown error' });
+  } catch (error: unknown) {
+    const errorMessage = error instanceof Error ? error.message : 'Unknown error';
+    logger.error("[AI CHAT] Conversations error:", { error: errorMessage });
+    
+    const errorObj = error && typeof error === 'object' ? error as Record<string, unknown> : {};
     logger.error("[AI CHAT] Error details:", {
-      message: error.message,
-      code: error.code,
-      details: error.details,
-      hint: error.hint
+      message: errorObj.message,
+      code: errorObj.code,
+      details: errorObj.details,
+      hint: errorObj.hint
     });
+    
     return NextResponse.json(
       { 
-        error: error.message || "Internal server error",
-        details: error.details,
-        code: error.code
+        error: errorObj.message || errorMessage || "Internal server error",
+        details: errorObj.details,
+        code: errorObj.code
       },
       { status: 500 }
     );
@@ -195,18 +202,21 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({
       conversation: transformedConversation,
     });
-  } catch (error: any) {
-    logger.error("[AI CHAT] Create conversation error:", { error: error instanceof Error ? error.message : 'Unknown error' });
+  } catch (error: unknown) {
+    const errorMessage = error instanceof Error ? error.message : 'Unknown error';
+    logger.error("[AI CHAT] Create conversation error:", { error: errorMessage });
     
-    if (error.name === "ZodError") {
+    // Type guard for ZodError
+    if (error && typeof error === 'object' && 'name' in error && error.name === "ZodError") {
+      const zodError = error as unknown as { errors: unknown };
       return NextResponse.json(
-        { error: "Invalid request data", details: error.errors },
+        { error: "Invalid request data", details: zodError.errors },
         { status: 400 }
       );
     }
 
     return NextResponse.json(
-      { error: error.message || "Internal server error" },
+      { error: errorMessage || "Internal server error" },
       { status: 500 }
     );
   }
@@ -284,10 +294,11 @@ export async function PATCH(request: NextRequest) {
     return NextResponse.json({
       conversation: transformedConversation,
     });
-  } catch (error: any) {
-    logger.error("[AI CHAT] Update conversation error:", { error: error instanceof Error ? error.message : 'Unknown error' });
+  } catch (error: unknown) {
+    const errorMessage = error instanceof Error ? error.message : 'Unknown error';
+    logger.error("[AI CHAT] Update conversation error:", { error: errorMessage });
     return NextResponse.json(
-      { error: error.message || "Internal server error" },
+      { error: errorMessage || "Internal server error" },
       { status: 500 }
     );
   }

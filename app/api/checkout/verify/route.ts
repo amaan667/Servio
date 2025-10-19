@@ -1,4 +1,4 @@
-import { NextResponse } from "next/server";
+import { NextRequest, NextResponse } from 'next/server';
 import Stripe from "stripe";
 import { createServerClient } from '@supabase/ssr';
 import { stripe } from "@/lib/stripe-client";
@@ -6,7 +6,7 @@ import { logger } from '@/lib/logger';
 
 export const runtime = 'nodejs';
 
-export async function GET(req: Request) {
+export async function GET(req: NextRequest) {
   try {
     const { searchParams } = new URL(req.url);
     const orderId = searchParams.get("orderId")!;
@@ -83,7 +83,7 @@ export async function GET(req: Request) {
     }
 
     return NextResponse.json({ paid: false }, { status: 200 });
-  } catch (e: any) {
+  } catch (e: unknown) {
     logger.error("verify error", { error: e instanceof Error ? e.message : 'Unknown error' });
     return NextResponse.json({ error: e.message ?? "verify failed" }, { status: 500 });
   }

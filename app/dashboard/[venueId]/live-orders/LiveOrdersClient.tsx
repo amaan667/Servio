@@ -297,7 +297,7 @@ export default function LiveOrdersClient({ venueId, venueName: venueNameProp }: 
 
   useEffect(() => {
     const loadVenueAndOrders = async () => {
-      let venueTimezone = 'Europe/London';
+      const venueTimezone = 'Europe/London';
       if (!venueNameProp) {
         const { data: venueData } = await createClient()
           .from('venues')
@@ -416,7 +416,7 @@ export default function LiveOrdersClient({ venueId, venueName: venueNameProp }: 
       // Compute local counts as a robust fallback for badges
       try {
         const liveCount = (liveData || []).length;
-        const earlierCount = (allTodayOrders || []).length > 0 ? (allTodayOrders as Order[]).length : (allData ? (allData as any[]).length - (liveData ? (liveData as any[]).length : 0) : 0);
+        const earlierCount = (allTodayOrders || []).length > 0 ? (allTodayOrders as Order[]).length : (allData ? (allData as unknown[]).length - (liveData ? (liveData as unknown[]).length : 0) : 0);
         const historyCount = (historyData || []).length || 0;
         setLocalCounts({ live_count: liveCount, earlier_today_count: Math.max(0, earlierCount), history_count: historyCount });
       } catch {}
@@ -436,7 +436,7 @@ export default function LiveOrdersClient({ venueId, venueName: venueNameProp }: 
           table: 'orders',
           filter: `venue_id=eq.${venueId}`
         }, 
-        (payload: any) => {
+        (payload: unknown) => {
           
           const newOrder = payload.new as Order;
           const oldOrder = payload.old as Order;
@@ -700,7 +700,6 @@ export default function LiveOrdersClient({ venueId, venueName: venueNameProp }: 
             if (sessionClearError) {
               console.error('[TABLE CLEAR] Error clearing table sessions:', sessionClearError);
             } else {
-              console.debug('[TABLE CLEAR] Successfully cleared table session for completed order');
             }
           }
         } catch (tableCleanupError) {
@@ -804,7 +803,6 @@ export default function LiveOrdersClient({ venueId, venueName: venueNameProp }: 
               if (sessionClearError) {
                 console.error('[TABLE CLEAR] Error clearing table sessions:', sessionClearError);
               } else {
-                console.debug('[TABLE CLEAR] Successfully cleared table session for completed order');
               }
             }
           } catch (tableCleanupError) {

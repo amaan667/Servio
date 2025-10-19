@@ -138,7 +138,7 @@ ${extractedText}`;
     
     return converted;
 
-  } catch (error: any) {
+  } catch (error: unknown) {
     logger.error('[IMPROVED PARSER] Parsing failed:', error.message);
     
     // Try a simpler approach as fallback
@@ -261,9 +261,9 @@ function fixMalformedJson(jsonString: string): string {
 /**
  * Fallback regex-based extraction for when JSON parsing fails
  */
-function extractItemsWithRegex(text: string): any[] {
+function extractItemsWithRegex(text: string): unknown[] {
   
-  const items: any[] = [];
+  const items: unknown[] = [];
   
   // Common price patterns
   const pricePatterns = [
@@ -324,7 +324,7 @@ function extractItemsWithRegex(text: string): any[] {
 /**
  * Post-processing function to apply specific fixes based on known issues
  */
-export function applyKnownFixes(items: any[]): any[] {
+export function applyKnownFixes(items: unknown[]): unknown[] {
   
   return items.map(item => {
     // Fix specific price issues

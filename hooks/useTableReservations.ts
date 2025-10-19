@@ -190,7 +190,7 @@ export function useTableGrid(venueId: string, leadTimeMinutes: number = 30) {
           table: 'table_sessions',
           filter: `venue_id=eq.${venueId}`,
         },
-        (payload: any) => {
+        (payload: unknown) => {
           // Invalidate and refetch the table grid data
           queryClient.invalidateQueries({ queryKey: ['tables', 'grid', venueId, leadTimeMinutes] });
         }
@@ -208,7 +208,7 @@ export function useTableGrid(venueId: string, leadTimeMinutes: number = 30) {
           table: 'reservations',
           filter: `venue_id=eq.${venueId}`,
         },
-        (payload: any) => {
+        (payload: unknown) => {
           // Invalidate and refetch the table grid data
           queryClient.invalidateQueries({ queryKey: ['tables', 'grid', venueId, leadTimeMinutes] });
         }
@@ -226,7 +226,7 @@ export function useTableGrid(venueId: string, leadTimeMinutes: number = 30) {
           table: 'tables',
           filter: `venue_id=eq.${venueId}`,
         },
-        (payload: any) => {
+        (payload: unknown) => {
           // Invalidate and refetch the table grid data
           queryClient.invalidateQueries({ queryKey: ['tables', 'grid', venueId, leadTimeMinutes] });
         }

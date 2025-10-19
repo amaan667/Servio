@@ -196,7 +196,7 @@ export default function CustomerOrderPage() {
     });
   };
   const [showMobileCart, setShowMobileCart] = useState(false);
-  const [session, setSession] = useState<any>(null);
+  const [session, setSession] = useState<unknown>(null);
   const [venueName, setVenueName] = useState<string>('Our Venue');
   const [showGroupSizeModal, setShowGroupSizeModal] = useState(false);
   const [showGroupSizePopup, setShowGroupSizePopup] = useState(false);
@@ -423,7 +423,7 @@ export default function CustomerOrderPage() {
         clearTimeout((window as any).menuLoadTimeout);
         (window as any).menuLoadTimeout = null;
       }
-    } catch (err: any) {
+    } catch (err: unknown) {
       setMenuError(`Error loading menu: ${err.message}`);
       setLoadingMenu(false);
     }

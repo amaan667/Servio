@@ -3,13 +3,13 @@
 // =====================================================
 // Repairs broken JSON from GPT menu extraction
 
-import { NextResponse } from "next/server";
+import { NextRequest, NextResponse } from 'next/server';
 import { repairAndValidateMenuJSON, validateMenuJSON } from '@/lib/pdfImporter/jsonRepair';
 import { logger } from '@/lib/logger';
 
 export const runtime = "nodejs";
 
-export async function POST(req: Request) {
+export async function POST(req: NextRequest) {
   try {
     
     const { json } = await req.json();
@@ -62,7 +62,7 @@ export async function POST(req: Request) {
       }, { status: 400 });
     }
 
-  } catch (error: any) {
+  } catch (error: unknown) {
     logger.error('[JSON_REPAIR_API] Fatal error:', { error: error instanceof Error ? error.message : 'Unknown error' });
     return NextResponse.json({ 
       success: false, 

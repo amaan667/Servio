@@ -1,9 +1,9 @@
-import { NextResponse } from 'next/server';
+import { NextRequest, NextResponse } from 'next/server';
 import { createAdminClient } from '@/lib/supabase/server';
 
 export const runtime = 'nodejs';
 
-export async function POST(req: Request) {
+export async function POST(req: NextRequest) {
   try {
     const body = await req.json().catch(() => ({}));
     const { venue_id, name, role } = body || {};
@@ -16,7 +16,7 @@ export async function POST(req: Request) {
     const { data, error } = await admin.from('staff').insert([{ venue_id, name, role: role || 'Server' }]).select('*');
     if (error) return NextResponse.json({ error: error.message }, { status: 400 });
     return NextResponse.json({ success: true, data: data ?? [] });
-  } catch (e: any) {
+  } catch (e: unknown) {
     return NextResponse.json({ error: e?.message || 'Unknown error' }, { status: 500 });
   }
 }

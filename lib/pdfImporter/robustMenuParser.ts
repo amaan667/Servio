@@ -10,7 +10,7 @@ import { logger } from '@/lib/logger';
 
 export interface MenuParsingResult {
   success: boolean;
-  items: any[];
+  items: unknown[];
   json?: string;
   errors?: string[];
   warnings?: string[];
@@ -116,7 +116,7 @@ export async function parseMenuWithGPT(
         }
       }
       
-    } catch (error: any) {
+    } catch (error: unknown) {
       logger.error(`[ROBUST_PARSER] Attempt ${attempts} failed:`, error);
       lastError = error.message;
       
@@ -245,7 +245,7 @@ async function repairJSONWithGPT(
       };
     }
     
-  } catch (error: any) {
+  } catch (error: unknown) {
     return {
       success: false,
       items: [],
@@ -270,7 +270,7 @@ export async function parseMenuInBatches(
   // Split menu text into batches
   const batches = splitTextIntoBatches(menuText, batchSize);
   
-  const allItems: any[] = [];
+  const allItems: unknown[] = [];
   const allErrors: string[] = [];
   const allWarnings: string[] = [];
   
@@ -333,9 +333,9 @@ function splitTextIntoBatches(text: string, batchSize: number): string[] {
 /**
  * Deduplicates items based on normalized title
  */
-function deduplicateItems(items: any[]): any[] {
+function deduplicateItems(items: unknown[]): unknown[] {
   const seen = new Set<string>();
-  const unique: any[] = [];
+  const unique: unknown[] = [];
   
   for (const item of items) {
     const normalizedTitle = item.title?.toLowerCase().trim();

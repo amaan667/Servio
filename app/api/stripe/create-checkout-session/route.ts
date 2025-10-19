@@ -1,3 +1,6 @@
+export const runtime = "nodejs";
+export const dynamic = "force-dynamic";
+
 // Stripe Checkout Session - Create subscription checkout
 import { NextRequest, NextResponse } from "next/server";
 import Stripe from "stripe";
@@ -301,7 +304,7 @@ export async function POST(request: NextRequest) {
     });
 
     return NextResponse.json({ sessionId: session.id, url: session.url });
-  } catch (error: any) {
+  } catch (error: unknown) {
     logger.error("[STRIPE CHECKOUT] Error:", { error: error instanceof Error ? error.message : 'Unknown error' });
     return NextResponse.json(
       { error: error.message || "Failed to create checkout session" },

@@ -99,7 +99,7 @@ export async function extractTextBlocksFromPdf(pdfBuffer: Buffer, fileName: stri
     });
 
     const allBlocks: TextBlock[] = [];
-    let blockId = 0;
+    const blockId = 0;
 
     for (const file of files) {
       const [contents] = await file.download();
@@ -176,7 +176,7 @@ function extractBlocksFromPage(pageAnnotation: any, pageIndex: number): TextBloc
 /**
  * Groups words into lines based on y-coordinate proximity
  */
-function groupWordsIntoLines(words: any[]): Array<{ words: any[] }> {
+function groupWordsIntoLines(words: unknown[]): Array<{ words: unknown[] }> {
   if (words.length === 0) return [];
 
   // Sort words by y-coordinate
@@ -186,8 +186,8 @@ function groupWordsIntoLines(words: any[]): Array<{ words: any[] }> {
     return aY - bY;
   });
 
-  const lines: Array<{ words: any[] }> = [];
-  let currentLine: any[] = [sortedWords[0]];
+  const lines: Array<{ words: unknown[] }> = [];
+  let currentLine: unknown[] = [sortedWords[0]];
   let currentY = sortedWords[0].boundingBox.vertices[0].y;
 
   for (let i = 1; i < sortedWords.length; i++) {
@@ -216,7 +216,7 @@ function groupWordsIntoLines(words: any[]): Array<{ words: any[] }> {
 /**
  * Calculates bounding box for a line of words
  */
-function calculateLineBoundingBox(words: any[]): BoundingBox {
+function calculateLineBoundingBox(words: unknown[]): BoundingBox {
   if (words.length === 0) {
     return { x: 0, y: 0, width: 0, height: 0 };
   }
@@ -243,7 +243,7 @@ function calculateLineBoundingBox(words: any[]): BoundingBox {
 /**
  * Calculates average confidence for a line of words
  */
-function calculateAverageConfidence(words: any[]): number {
+function calculateAverageConfidence(words: unknown[]): number {
   if (words.length === 0) return 0;
 
   const totalConfidence = words.reduce((sum, word) => {
@@ -264,7 +264,7 @@ function estimateFontSize(height: number): number {
 /**
  * Estimates if text is bold based on word properties
  */
-function estimateBoldness(words: any[]): boolean {
+function estimateBoldness(words: unknown[]): boolean {
   // This is a heuristic - in practice, you'd need more sophisticated analysis
   // For now, we'll use text characteristics
   const text = words.map((w: any) => w.text).join(' ');

@@ -1,8 +1,8 @@
 import { belongsToSection } from "./validators";
 
-export function filterSectionItems(section: string, items: any[]) {
-  const kept: any[] = [];
-  const moved: any[] = [];
+export function filterSectionItems(section: string, items: unknown[]) {
+  const kept: unknown[] = [];
+  const moved: unknown[] = [];
   for (const it of items) {
     const price = Number(it.price);
     const verdict = belongsToSection(section, it.name||"", it.description||null, isFinite(price)?price:0);

@@ -154,7 +154,7 @@ export function createCancellablePromise<T>(
 /**
  * Debounced function that cancels previous calls
  */
-export function createCancellableDebounce<T extends (...args: any[]) => any>(
+export function createCancellableDebounce<T extends (...args: unknown[]) => any>(
   func: T,
   delay: number
 ): T & { cancel: () => void } {

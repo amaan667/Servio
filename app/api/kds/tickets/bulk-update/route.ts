@@ -1,9 +1,12 @@
-import { NextResponse } from 'next/server';
+export const runtime = "nodejs";
+export const dynamic = "force-dynamic";
+
+import { NextRequest, NextResponse } from 'next/server';
 import { createServerSupabase } from '@/lib/supabase/server';
 import { apiLogger, logger } from '@/lib/logger';
 
 // PATCH - Bulk update multiple tickets (e.g., bump all ready tickets for an order)
-export async function PATCH(req: Request) {
+export async function PATCH(req: NextRequest) {
   try {
     const body = await req.json();
     const { orderId, stationId, status } = body;
@@ -102,7 +105,7 @@ export async function PATCH(req: Request) {
       updated: tickets?.length || 0,
       tickets
     });
-  } catch (error: any) {
+  } catch (error: unknown) {
     logger.error('[KDS] Unexpected error:', { error: error instanceof Error ? error.message : 'Unknown error' });
     return NextResponse.json(
       { ok: false, error: error.message || 'Internal server error' },

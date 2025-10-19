@@ -1,3 +1,6 @@
+export const runtime = "nodejs";
+export const dynamic = "force-dynamic";
+
 import { NextRequest, NextResponse } from 'next/server';
 
 // This route is now disabled - OAuth exchange is handled in /auth/callback/route.ts

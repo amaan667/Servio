@@ -28,7 +28,7 @@ export function createLazyComponent<P extends object>(
  * Preload a lazy component
  */
 export function preloadComponent(
-  importFn: () => Promise<{ default: ComponentType<any> }>
+  importFn: () => Promise<{ default: ComponentType<unknown> }>
 ): void {
   importFn();
 }

@@ -1,4 +1,4 @@
-import { NextResponse } from 'next/server';
+import { NextRequest, NextResponse } from 'next/server';
 import { createClient, getAuthenticatedUser } from '@/lib/supabase/server';
 import { liveOrdersWindow, earlierTodayWindow, historyWindow } from '@/lib/dates';
 import { cache } from '@/lib/cache';
@@ -6,7 +6,7 @@ import { apiLogger, logger } from '@/lib/logger';
 
 export const runtime = 'nodejs';
 
-export async function GET(req: Request) {
+export async function GET(req: NextRequest) {
   const { searchParams } = new URL(req.url);
   const venueId = searchParams.get('venueId');
   const status = searchParams.get('status') || 'all';

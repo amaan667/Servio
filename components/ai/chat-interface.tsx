@@ -79,7 +79,7 @@ export function ChatInterface({ venueId, isOpen, onClose, initialPrompt }: ChatI
   const [executing, setExecuting] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [success, setSuccess] = useState(false);
-  const [executionResults, setExecutionResults] = useState<any[]>([]);
+  const [executionResults, setExecutionResults] = useState<unknown[]>([]);
   const [undoing, setUndoing] = useState<string | null>(null);
   
   const messagesEndRef = useRef<HTMLDivElement>(null);
@@ -113,21 +113,16 @@ export function ChatInterface({ venueId, isOpen, onClose, initialPrompt }: ChatI
 
   const loadConversations = async () => {
     try {
-      console.debug("[AI CHAT] Loading conversations for venue:", venueId);
       const response = await fetch(`/api/ai-assistant/conversations?venueId=${venueId}`);
-      console.debug("[AI CHAT] Response status:", response.status);
       
       if (response.ok) {
         const data = await response.json();
-        console.debug("[AI CHAT] Loaded conversations:", data.conversations);
-        console.debug("[AI CHAT] Number of conversations:", data.conversations?.length || 0);
         setConversations(data.conversations || []);
         
         // Only auto-select if no conversation is currently selected
         if (!currentConversation && data.conversations && data.conversations.length > 0) {
           // Auto-select the most recent conversation only on first load
           const latest = data.conversations[0];
-          console.debug("[AI CHAT] Auto-selecting latest conversation:", latest.id);
           setCurrentConversation(latest);
           loadMessages(latest.id);
         }
@@ -156,19 +151,13 @@ export function ChatInterface({ venueId, isOpen, onClose, initialPrompt }: ChatI
 
   const loadMessages = async (conversationId: string) => {
     try {
-      console.debug("[AI CHAT] Loading messages for conversation:", conversationId);
       setLoading(true); // Show loading state while fetching messages
       
       const url = `/api/ai-assistant/conversations/${conversationId}/messages`;
-      console.debug("[AI CHAT] Fetching from URL:", url);
       const response = await fetch(url);
-      console.debug("[AI CHAT] Response status:", response.status);
       
       if (response.ok) {
         const data = await response.json();
-        console.debug("[AI CHAT] Raw response data:", data);
-        console.debug("[AI CHAT] Loaded messages:", data.messages);
-        console.debug("[AI CHAT] Number of messages:", data.messages?.length || 0);
         
         // Transform messages to match the expected format
         const transformedMessages = (data.messages || []).map((msg: any) => ({
@@ -184,12 +173,10 @@ export function ChatInterface({ venueId, isOpen, onClose, initialPrompt }: ChatI
           undoData: msg.undo_data,
         }));
         
-        console.debug("[AI CHAT] Transformed messages:", transformedMessages);
         setMessages(transformedMessages);
         
         // Neutral empty state (no error banner)
         if (transformedMessages.length === 0) {
-          console.debug("[AI CHAT] No messages found for conversation:", conversationId);
         }
         setError(null); // Always clear errors after a successful fetch
       } else {
@@ -209,7 +196,6 @@ export function ChatInterface({ venueId, isOpen, onClose, initialPrompt }: ChatI
 
   const createNewConversation = async () => {
     try {
-      console.debug("[AI CHAT] Creating new conversation now (Option A)");
       setLoading(true);
 
       // Generate a lightweight default title
@@ -262,7 +248,6 @@ export function ChatInterface({ venueId, isOpen, onClose, initialPrompt }: ChatI
 
       if (response.ok) {
         const data = await response.json();
-        console.debug("[AI CHAT] Updated conversation title:", data.conversation);
         
         // Update local state
         setCurrentConversation(prev => prev ? { ...prev, title: newTitle } : null);
@@ -282,7 +267,6 @@ export function ChatInterface({ venueId, isOpen, onClose, initialPrompt }: ChatI
 
   const createConversationFromMessage = async (userMessage: string) => {
     try {
-      console.debug("[AI CHAT] Creating conversation from message:", userMessage);
       
       // Create conversation with temporary title - AI will generate proper title after first response
       const tempTitle = "New Conversation";
@@ -298,7 +282,6 @@ export function ChatInterface({ venueId, isOpen, onClose, initialPrompt }: ChatI
 
       if (response.ok) {
         const data = await response.json();
-        console.debug("[AI CHAT] Created conversation with temp title:", tempTitle);
         const newConversation = data.conversation;
         setConversations(prev => [newConversation, ...prev]);
         setCurrentConversation(newConversation);
@@ -454,7 +437,7 @@ export function ChatInterface({ venueId, isOpen, onClose, initialPrompt }: ChatI
 
       const previewResults = await Promise.all(previewPromises);
       setPreviews(previewResults.map((r) => r?.preview).filter(Boolean));
-    } catch (error: any) {
+    } catch (error: unknown) {
       console.error("[AI CHAT] Error sending message:", error);
       setError(error.message || "Failed to send message");
       
@@ -501,7 +484,7 @@ export function ChatInterface({ venueId, isOpen, onClose, initialPrompt }: ChatI
     setError(null);
 
     try {
-      const results: any[] = [];
+      const results: unknown[] = [];
       
       for (const tool of plan.tools) {
         const response = await fetch("/api/ai-assistant/execute", {
@@ -525,7 +508,6 @@ export function ChatInterface({ venueId, isOpen, onClose, initialPrompt }: ChatI
 
           // Handle navigation results
         if (tool.name === "navigation.go_to_page" && data.result?.result?.route) {
-          console.debug("[AI CHAT] Navigating to:", data.result.result.route);
           // Navigate immediately
           router.push(data.result.result.route);
           
@@ -619,7 +601,7 @@ export function ChatInterface({ venueId, isOpen, onClose, initialPrompt }: ChatI
         onClose(); // Close the chat interface
       }, 1500); // Reduced time for faster auto-close
 
-    } catch (err: any) {
+    } catch (err: unknown) {
       console.error("[AI CHAT] Execution error:", err);
       setError(err.message || "Failed to execute action");
     } finally {
@@ -674,7 +656,7 @@ export function ChatInterface({ venueId, isOpen, onClose, initialPrompt }: ChatI
         router.refresh();
       }, 1000);
 
-    } catch (err: any) {
+    } catch (err: unknown) {
       console.error("[AI CHAT] Undo error:", err);
       setError(err.message || "Failed to undo action");
     } finally {
@@ -683,7 +665,6 @@ export function ChatInterface({ venueId, isOpen, onClose, initialPrompt }: ChatI
   };
 
   const selectConversation = (conversation: ChatConversation) => {
-    console.debug("[AI CHAT] Selecting conversation:", conversation.id, conversation.title);
     setCurrentConversation(conversation);
     // Don't clear messages immediately - let loadMessages handle it
     setPlan(null);
@@ -691,7 +672,6 @@ export function ChatInterface({ venueId, isOpen, onClose, initialPrompt }: ChatI
     setError(null);
     setSuccess(false);
     setExecutionResults([]);
-    console.debug("[AI CHAT] About to load messages for conversation:", conversation.id);
     loadMessages(conversation.id);
   };
 
@@ -703,11 +683,6 @@ export function ChatInterface({ venueId, isOpen, onClose, initialPrompt }: ChatI
     }
 
     try {
-      console.debug("[AI CHAT] Deleting conversation:", conversationId);
-      
-      const response = await fetch(`/api/ai-assistant/conversations/${conversationId}`, {
-        method: "DELETE",
-      });
 
       if (response.ok) {
         // Remove from local state
@@ -719,7 +694,6 @@ export function ChatInterface({ venueId, isOpen, onClose, initialPrompt }: ChatI
           setMessages([]);
         }
         
-        console.debug("[AI CHAT] Conversation deleted successfully");
       } else {
         const errorData = await response.text();
         console.error("[AI CHAT] Failed to delete conversation:", errorData);

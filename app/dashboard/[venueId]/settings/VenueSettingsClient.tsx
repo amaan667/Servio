@@ -228,7 +228,7 @@ export default function VenueSettingsClient({ user, venue, venues, organization,
       setTimeout(() => {
         router.refresh();
       }, 1500);
-    } catch (err: any) {
+    } catch (err: unknown) {
       setError(err.message || 'Failed to update venue settings');
       toast({
         title: "Error",
@@ -300,7 +300,7 @@ export default function VenueSettingsClient({ user, venue, venues, organization,
         }, 2500);
       }
       
-    } catch (err: any) {
+    } catch (err: unknown) {
       setError(err.message || 'Failed to update password');
       toast({
         title: "Error",
@@ -361,7 +361,7 @@ export default function VenueSettingsClient({ user, venue, venues, organization,
         title: "Account Deleted",
         description: "Your account has been permanently deleted.",
       });
-    } catch (err: any) {
+    } catch (err: unknown) {
       setError(err.message || 'Failed to delete account');
       toast({
         title: "Error",

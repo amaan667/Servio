@@ -63,14 +63,11 @@ export default function DemoPage() {
   
   // Check auth status safely after component mounts
   useEffect(() => {
-    console.debug('[DEMO DEBUG] Running auth check effect');
     const checkAuth = async () => {
       try {
-        console.debug('[DEMO DEBUG] Checking for auth cookies...');
         // Check if user has auth cookies without using the hook during render
         const hasAuthCookies = document.cookie.includes('sb-') || 
                               document.cookie.includes('supabase');
-        console.debug('[DEMO DEBUG] Auth cookies present:', hasAuthCookies);
         setIsAuthenticated(hasAuthCookies);
         
         // If authenticated, fetch primary venue
@@ -103,14 +100,11 @@ export default function DemoPage() {
   }, []);
 
   useEffect(() => {
-    console.debug('[DEMO DEBUG] Setting mounted state to true');
     setMounted(true);
-    console.debug('[DEMO DEBUG] Demo page fully mounted');
   }, []);
 
   // Global error handler
   useEffect(() => {
-    console.debug('[DEMO DEBUG] Setting up global error handler');
     const handleError = (error: ErrorEvent) => {
       console.error('[DEMO DEBUG] Global error caught:', error);
       console.error('[DEMO DEBUG] Error message:', error.message);
@@ -121,14 +115,12 @@ export default function DemoPage() {
 
     window.addEventListener('error', handleError);
     return () => {
-      console.debug('[DEMO DEBUG] Cleaning up error handler');
       window.removeEventListener('error', handleError);
     };
   }, []);
 
   // NOW we can do conditional rendering after all hooks are called
   if (!mounted) {
-    console.debug('[DEMO DEBUG] Component not mounted yet, showing loading state');
     return (
       <div className="min-h-screen bg-gradient-to-br from-purple-50 via-white to-purple-50 flex items-center justify-center">
         <div className="animate-pulse h-32 w-32 rounded-lg bg-gray-100" />
@@ -137,7 +129,6 @@ export default function DemoPage() {
   }
 
   if (hasError) {
-    console.debug('[DEMO DEBUG] Error state detected, showing error UI');
     return (
       <div className="min-h-screen bg-gradient-to-br from-purple-50 via-white to-purple-50 flex items-center justify-center">
         <Card className="max-w-md w-full mx-4">
@@ -229,7 +220,6 @@ export default function DemoPage() {
 }
 
 function CustomerDemoView() {
-  console.debug('[DEMO DEBUG] Rendering CustomerDemoView');
   return (
     <div className="space-y-8">
       {/* Hero Section */}
@@ -308,7 +298,6 @@ function CustomerDemoView() {
 }
 
 function OwnerDemoView({ isAuthenticated }: { isAuthenticated: boolean }) {
-  console.debug('[DEMO DEBUG] Rendering OwnerDemoView, isAuthenticated:', isAuthenticated);
   return (
     <div className="space-y-8">
       {/* Owner Hero */}

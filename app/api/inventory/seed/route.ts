@@ -1,3 +1,6 @@
+export const runtime = "nodejs";
+export const dynamic = "force-dynamic";
+
 import { NextRequest, NextResponse } from 'next/server';
 import { seedInventoryData } from '@/lib/inventory-seed';
 import { logger } from '@/lib/logger';

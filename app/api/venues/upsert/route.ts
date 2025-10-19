@@ -1,11 +1,11 @@
-import { NextResponse } from 'next/server';
+import { NextRequest, NextResponse } from 'next/server';
 import { createClient, getAuthenticatedUser } from '@/lib/supabase/server';
 import { cache, cacheKeys, cacheTTL } from '@/lib/cache';
 import { logger } from '@/lib/logger';
 
 export const runtime = 'nodejs';
 
-export async function POST(req: Request) {
+export async function POST(req: NextRequest) {
   try {
     const { venueId, name, business_type, address, phone, email } = await req.json();
 
@@ -71,7 +71,7 @@ export async function POST(req: Request) {
       if (error) throw error;
       return NextResponse.json({ ok: true, venue: data });
     }
-  } catch (error: any) {
+  } catch (error: unknown) {
     logger.error('[VENUES UPSERT] Error:', { error: error instanceof Error ? error.message : 'Unknown error' });
     return NextResponse.json({ ok: false, error: error.message }, { status: 500 });
   }

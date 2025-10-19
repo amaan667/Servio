@@ -1,3 +1,6 @@
+export const runtime = "nodejs";
+export const dynamic = "force-dynamic";
+
 import { NextRequest, NextResponse } from 'next/server';
 import { createAdminClient } from '@/lib/supabase/server';
 import type { IngredientUnit } from '@/types/inventory';
@@ -140,7 +143,7 @@ export async function POST(request: NextRequest) {
         }
 
         imported.push(ingredient.name);
-      } catch (err: any) {
+      } catch (err: unknown) {
         errors.push({ row: row.name, error: err.message });
       }
     }

@@ -1,9 +1,12 @@
-import { NextResponse } from 'next/server';
+export const runtime = "nodejs";
+export const dynamic = "force-dynamic";
+
+import { NextRequest, NextResponse } from 'next/server';
 import { createAdminClient } from '@/lib/supabase/server';
 import { logger } from '@/lib/logger';
 
 // GET - List active questions for venue (public endpoint for customers)
-export async function GET(req: Request) {
+export async function GET(req: NextRequest) {
   try {
     const { searchParams } = new URL(req.url);
     const venueId = searchParams.get('venueId');
@@ -34,7 +37,7 @@ export async function GET(req: Request) {
       count: questions?.length || 0
     });
 
-  } catch (error: any) {
+  } catch (error: unknown) {
     logger.error('[FEEDBACK:PUBLIC] Exception:', error.message);
     return NextResponse.json({ error: 'Internal server error' }, { status: 500 });
   }

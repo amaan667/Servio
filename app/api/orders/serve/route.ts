@@ -1,10 +1,10 @@
-import { NextResponse } from 'next/server';
+import { NextRequest, NextResponse } from 'next/server';
 export const runtime = 'nodejs';
 import { createClient } from '@/lib/supabase/server';
 import { createAdminClient } from '@/lib/supabase/server';
 import { apiLogger as logger } from '@/lib/logger';
 
-export async function POST(req: Request) {
+export async function POST(req: NextRequest) {
   try {
     const startedAt = new Date().toISOString();
     logger.debug('[ORDERS SERVE][START]', { startedAt });
@@ -130,7 +130,7 @@ export async function POST(req: Request) {
       message: 'Order marked as served'
     });
 
-  } catch (error: any) {
+  } catch (error: unknown) {
     logger.error('[ORDERS SERVE][UNCAUGHT]', { error: error?.message || error, stack: error?.stack });
     return NextResponse.json({ 
       error: 'Internal server error',

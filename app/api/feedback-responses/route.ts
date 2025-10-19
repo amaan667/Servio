@@ -1,4 +1,4 @@
-import { NextResponse } from 'next/server';
+import { NextRequest, NextResponse } from 'next/server';
 import { createAdminClient } from '@/lib/supabase/server';
 import type { FeedbackAnswer } from '@/types/feedback';
 import { logger } from '@/lib/logger';
@@ -10,7 +10,7 @@ function getServiceClient() {
 }
 
 // POST - Submit feedback responses
-export async function POST(req: Request) {
+export async function POST(req: NextRequest) {
   try {
     const { venue_id, order_id, answers } = await req.json();
 
@@ -70,7 +70,7 @@ export async function POST(req: Request) {
     // Filter out generic questions (they start with 'generic-')
     const nonGenericQuestionIds = questionIds.filter(id => !id.startsWith('generic-'));
     
-    let questions: any[] = [];
+    let questions: unknown[] = [];
     if (nonGenericQuestionIds.length > 0) {
       const { data: dbQuestions, error: questionsError } = await serviceClient
         .from('feedback_questions')
@@ -198,7 +198,7 @@ export async function POST(req: Request) {
       saved_count: data?.length || 0
     });
 
-  } catch (error: any) {
+  } catch (error: unknown) {
     logger.error('[FEEDBACK][R] insert exception:', error.message);
     return NextResponse.json({ 
       error: 'Failed to submit feedback' 

@@ -1,5 +1,5 @@
 import Stripe from 'stripe';
-import { NextResponse } from 'next/server';
+import { NextRequest, NextResponse } from 'next/server';
 import { createAdminClient } from '@/lib/supabase/server';
 import { stripe } from '@/lib/stripe-client';
 import { apiLogger } from '@/lib/logger';
@@ -8,7 +8,7 @@ export const runtime = 'nodejs';            // ensure Node runtime (not Edge)
 export const dynamic = 'force-dynamic';
 export const revalidate = 0;
 
-export async function POST(req: Request) {
+export async function POST(req: NextRequest) {
   const supabaseAdmin = createAdminClient();
   
   logger.debug('[STRIPE WEBHOOK DEBUG] ===== WEBHOOK RECEIVED =====');
@@ -35,7 +35,7 @@ export async function POST(req: Request) {
     logger.debug('[STRIPE WEBHOOK DEBUG] Event constructed successfully');
     logger.debug('[STRIPE WEBHOOK DEBUG] Event type:', event.type);
     logger.debug('[STRIPE WEBHOOK DEBUG] Event ID:', event.id);
-  } catch (err: any) {
+  } catch (err: unknown) {
     logger.error('[STRIPE WEBHOOK DEBUG] Webhook construction error:', err.message);
     return new NextResponse(`Webhook Error: ${err.message}`, { status: 400 });
   }

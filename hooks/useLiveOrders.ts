@@ -91,7 +91,7 @@ export function useLiveOrders(venueId: string) {
       
       setData(transformedOrders)
       
-    } catch (err: any) {
+    } catch (err: unknown) {
       setIsError(true)
       setError(err.message || 'Failed to load orders')
     } finally {

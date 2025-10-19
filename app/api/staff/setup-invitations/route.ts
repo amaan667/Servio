@@ -1,3 +1,6 @@
+export const runtime = "nodejs";
+export const dynamic = "force-dynamic";
+
 // API endpoint to set up the staff invitation system
 // Creates the required database tables for staff invitations
 

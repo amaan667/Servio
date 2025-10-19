@@ -103,7 +103,7 @@ export default function OrderTrackingPage() {
           table: 'orders',
           filter: `id=eq.${orderId}`,
         },
-        (payload: any) => {
+        (payload: unknown) => {
           if (payload.eventType === 'UPDATE') {
             
             // Update the order with new data

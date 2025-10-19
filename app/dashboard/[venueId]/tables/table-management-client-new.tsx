@@ -211,7 +211,7 @@ export function TableManagementClientNew({ venueId }: TableManagementClientNewPr
 
   // Group table orders by table
   const groupedTableOrders = useMemo(() => {
-    const groups: { [key: string]: any[] } = {};
+    const groups: { [key: string]: unknown[] } = {};
     
     // Filter out duplicate orders by ID to prevent double counting
     const uniqueOrders = tableOrders.filter((order, index, self) => 

@@ -239,7 +239,7 @@ export async function replaceCatalogAtomically(
       result: data
     };
     
-  } catch (error: any) {
+  } catch (error: unknown) {
     logger.error('[CATALOG_REPLACE] Atomic replacement failed:', error);
     return {
       success: false,
@@ -284,7 +284,7 @@ export async function validateCatalogPayload(
       missingPriceCount: data.missing_price_count || 0
     };
     
-  } catch (error: any) {
+  } catch (error: unknown) {
     logger.error('[CATALOG_VALIDATE] Validation failed:', error);
     return {
       valid: false,
