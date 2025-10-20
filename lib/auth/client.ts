@@ -1,4 +1,4 @@
-import { createClient } from '@/lib/supabase';
+import { supabaseBrowser } from '@/lib/supabase';
 import { logger } from '@/lib/logger';
 
 /**
@@ -8,7 +8,7 @@ import { logger } from '@/lib/logger';
  */
 export async function getAuthenticatedUser() {
   try {
-    const supabase = createClient();
+    const supabase = supabaseBrowser();
     const { data: { user }, error } = await supabase.auth.getUser();
     
     if (error) {
@@ -56,7 +56,7 @@ export async function getUserEmail(): Promise<string | null> {
  */
 export async function signOut() {
   try {
-    const supabase = createClient();
+    const supabase = supabaseBrowser();
     const { error } = await supabase.auth.signOut();
     
     if (error) {

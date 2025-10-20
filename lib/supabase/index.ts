@@ -68,8 +68,18 @@ export async function createServerSupabase() {
   });
 }
 
+// Alias for backward compatibility
 export async function createSupabaseClient() {
   return createServerSupabase();
+}
+
+// Context-aware createClient that works in both browser and server
+export function createClientContextAware() {
+  if (typeof window !== 'undefined') {
+    return supabaseBrowser();
+  }
+  // For server-side, this will need to be awaited with cookies
+  throw new Error('createClientContextAware cannot be used on server without cookies. Use createServerSupabase() instead.');
 }
 
 // Get authenticated user (server-side)
