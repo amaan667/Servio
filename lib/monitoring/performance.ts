@@ -171,16 +171,16 @@ export function monitorBundleSize() {
  * Get performance summary
  */
 export function getPerformanceSummary(): {
-  memory?: any;
-  timing?: any;
-  navigation?: any;
+  memory?: unknown;
+  timing?: unknown;
+  navigation?: unknown;
 } {
   if (typeof window === 'undefined') return {};
 
   const performance = window.performance;
-  const memory = (performance as any).memory;
+  const memory = (performance as unknown).memory;
   const timing = performance.timing;
-  const navigation = performance.getEntriesByType('navigation')[0] as any;
+  const navigation = performance.getEntriesByType('navigation')[0] as unknown;
 
   return {
     memory: memory ? {

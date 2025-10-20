@@ -63,7 +63,7 @@ export function usePerformance() {
       return null;
     }
 
-    const connection = (navigator as any).connection;
+    const connection = (navigator as unknown).connection;
     return {
       effectiveType: connection?.effectiveType,
       downlink: connection?.downlink,
@@ -77,7 +77,7 @@ export function usePerformance() {
       return null;
     }
 
-    const memory = (performance as any).memory;
+    const memory = (performance as unknown).memory;
     return {
       usedJSHeapSize: memory?.usedJSHeapSize,
       totalJSHeapSize: memory?.totalJSHeapSize,

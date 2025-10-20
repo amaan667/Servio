@@ -76,7 +76,7 @@ export function TableSelectionDialog({
           const canMerge = table.status === 'FREE';
           return canMerge;
         } else if (['ORDERING', 'IN_PREP', 'READY', 'SERVED', 'AWAITING_BILL'].includes(sourceTable.status)) {
-          // OCCUPIED tables (any occupied status) can only merge with FREE
+          // OCCUPIED tables (unknown occupied status) can only merge with FREE
           const canMerge = table.status === 'FREE';
           return canMerge;
         }

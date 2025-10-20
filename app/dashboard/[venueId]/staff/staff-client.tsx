@@ -29,8 +29,8 @@ export default function StaffClient({
 }: {
   venueId: string;
   venueName?: string;
-  initialStaff?: any[];
-  initialCounts?: any;
+  initialStaff?: unknown[];
+  initialCounts?: unknown;
 }) {
   const [activeTab, setActiveTab] = useState('staff');
 

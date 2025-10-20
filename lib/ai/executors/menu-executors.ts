@@ -104,7 +104,7 @@ export async function executeMenuUpdatePrices(
 
   logger.debug(`[AI ASSISTANT] Executing price updates for ${params.items.length} items`);
   let updatedCount = 0;
-  let failedUpdates: any[] = [];
+  let failedUpdates: unknown[] = [];
   
   for (const item of params.items) {
     const currentItem = currentItems.find(i => i.id === item.id);

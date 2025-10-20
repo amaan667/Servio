@@ -26,7 +26,7 @@ export default function ConditionalBottomNav() {
   
   const shouldHide = isCustomerOrderPage || isPaymentPage || isOrderSummaryPage || isOrderTrackingPage || isHomePage || isAuthPage || isCompleteProfilePage;
 
-  // Get venue ID from pathname and set up real-time updates - MUST be called before any returns
+  // Get venue ID from pathname and set up real-time updates - MUST be called before unknown returns
   useEffect(() => {
     const venueIdFromPath = pathname?.match(/\/dashboard\/([^/]+)/)?.[1];
     if (!venueIdFromPath) return;

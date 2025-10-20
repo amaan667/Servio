@@ -14,14 +14,14 @@ interface MenuItem {
   price: number;
   category: string;
   is_available: boolean;
-  [key: string]: any; // Allow additional properties
+  [key: string]: unknown; // Allow additional properties
 }
 
 interface StyledMenuDisplayProps {
   venueId: string;
   menuItems: MenuItem[];
   categoryOrder: string[] | null;
-  onAddToCart: (item: any) => void;
+  onAddToCart: (item: unknown) => void;
   cart: Array<{ id: string; quantity: number }>;
   onRemoveFromCart: (itemId: string) => void;
   onUpdateQuantity: (itemId: string, quantity: number) => void;

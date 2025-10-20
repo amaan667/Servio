@@ -14,7 +14,7 @@ interface CacheStats {
   size: number;
 }
 
-export class CacheManager<T = any> {
+export class CacheManager<T = unknown> {
   private cache = new Map<string, CacheEntry<T>>();
   private maxSize: number;
   private maxAge: number;

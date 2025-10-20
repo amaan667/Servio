@@ -11,8 +11,8 @@ import { BatchAction } from '../types';
 
 interface BatchActionDialogProps {
   batchAction: BatchAction;
-  batchEditValue: any;
-  setBatchEditValue: (value: any) => void;
+  batchEditValue: unknown;
+  setBatchEditValue: (value: unknown) => void;
   onClose: () => void;
   onConfirm: () => void;
   saving: string | null;

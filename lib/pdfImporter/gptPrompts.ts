@@ -219,7 +219,7 @@ Respond with:
 - "MEDIUM QUALITY: [issues]" if there are minor issues
 - "LOW QUALITY: [issues]" if there are major issues
 
-Provide specific feedback on any problems found.`;
+Provide specific feedback on unknown problems found.`;
 
 /**
  * Error recovery prompt
@@ -274,7 +274,7 @@ Output JSON for this batch:
 /**
  * Gets the appropriate prompt based on the task
  */
-export function getPrompt(task: 'extract' | 'repair' | 'validate' | 'categorize' | 'deduplicate' | 'quality' | 'recovery' | 'batch', context?: any): string {
+export function getPrompt(task: 'extract' | 'repair' | 'validate' | 'categorize' | 'deduplicate' | 'quality' | 'recovery' | 'batch', context?: unknown): string {
   switch (task) {
     case 'extract':
       return MENU_EXTRACTION_PROMPT;

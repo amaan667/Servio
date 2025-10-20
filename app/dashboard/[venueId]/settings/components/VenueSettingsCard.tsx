@@ -176,7 +176,7 @@ export function VenueSettingsCard({
             <Input
               id="latitude"
               type="number"
-              step="any"
+              step="unknown"
               value={latitude || ''}
               onChange={(e) => setLatitude(e.target.value ? parseFloat(e.target.value) : undefined)}
               placeholder="51.5074"
@@ -189,7 +189,7 @@ export function VenueSettingsCard({
             <Input
               id="longitude"
               type="number"
-              step="any"
+              step="unknown"
               value={longitude || ''}
               onChange={(e) => setLongitude(e.target.value ? parseFloat(e.target.value) : undefined)}
               placeholder="-0.1278"

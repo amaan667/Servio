@@ -70,7 +70,7 @@ export async function GET(req: Request) {
       ok: true,
       stations
     });
-  } catch (error: any) {
+  } catch (error: unknown) {
     logger.error('[KDS] Unexpected error:', { error: error instanceof Error ? error.message : 'Unknown error' });
     return NextResponse.json(
       { ok: false, error: error.message || 'Internal server error' },
@@ -128,7 +128,7 @@ export async function POST(req: Request) {
       ok: true,
       station
     });
-  } catch (error: any) {
+  } catch (error: unknown) {
     logger.error('[KDS] Unexpected error:', { error: error instanceof Error ? error.message : 'Unknown error' });
     return NextResponse.json(
       { ok: false, error: error.message || 'Internal server error' },

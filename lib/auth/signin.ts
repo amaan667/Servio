@@ -65,7 +65,7 @@ export async function signInWithGoogle() {
   }
 
   
-  // Clear any existing OAuth state before starting
+  // Clear unknown existing OAuth state before starting
   try {
     sessionStorage.setItem("sb_oauth_in_progress", "true");
     sessionStorage.setItem("sb_oauth_start_time", Date.now().toString());

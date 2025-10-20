@@ -13,11 +13,11 @@ export default function SimpleDashboardClient({
 }: { 
   venueId: string; 
   userId: string; 
-  venue?: any; 
+  venue?: unknown; 
   userName: string;
   venueTz: string;
-  initialCounts?: any;
-  initialStats?: any;
+  initialCounts?: unknown;
+  initialStats?: unknown;
 }) {
   return (
     <div className="min-h-screen bg-gray-50 p-4">

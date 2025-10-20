@@ -72,7 +72,7 @@ export default function TrialStatusBanner({ userRole }: TrialStatusBannerProps) 
     }
   };
 
-  const processTrialStatus = (org: any) => {
+  const processTrialStatus = (org: unknown) => {
     const subscriptionStatus = org.subscription_status || 'basic';
     const isTrialing = subscriptionStatus === 'trialing';
     const tier = org.subscription_tier || 'basic';
@@ -145,7 +145,7 @@ export default function TrialStatusBanner({ userRole }: TrialStatusBannerProps) 
     return () => clearTimeout(timeoutId);
   }, [user, trialStatus?.isTrialing]);
 
-  // Hourly refresh to catch any edge cases
+  // Hourly refresh to catch unknown edge cases
   useEffect(() => {
     if (!user || !trialStatus?.isTrialing) return;
 

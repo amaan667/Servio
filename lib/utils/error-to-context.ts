@@ -31,7 +31,7 @@ export function errorToContext(error: unknown): LogContext {
 }
 
 /**
- * Convert any value to log context
+ * Convert unknown value to log context
  */
 export function toContext(value: unknown): LogContext {
   if (typeof value === 'string') {

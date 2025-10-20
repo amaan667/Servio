@@ -31,7 +31,7 @@ export async function GET(request: NextRequest) {
     }
 
     // Group by category to see what categories exist
-    const categoryGroups: Record<string, any[]> = {};
+    const categoryGroups: Record<string, unknown[]> = {};
     menuItems?.forEach(item => {
       const cat = item.category || 'Uncategorized';
       if (!categoryGroups[cat]) categoryGroups[cat] = [];

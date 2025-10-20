@@ -267,7 +267,7 @@ export function EnhancedOrderLifecycle({ venueId, order, onUpdate }: OrderLifecy
       });
 
       onUpdate();
-    } catch (error: any) {
+    } catch (error: unknown) {
       console.error('Failed to update order status', { 
         orderId: order.id, 
         error: error.message 

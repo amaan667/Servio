@@ -44,7 +44,7 @@ export function AssistantCommandPalette({
   const [executing, setExecuting] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [success, setSuccess] = useState(false);
-  const [executionResults, setExecutionResults] = useState<any[]>([]);
+  const [executionResults, setExecutionResults] = useState<unknown[]>([]);
   const [showChatInterface, setShowChatInterface] = useState(false);
 
   // Keyboard shortcut: ⌘K / Ctrl-K - Opens expanded chat interface directly
@@ -134,7 +134,7 @@ export function AssistantCommandPalette({
             setPlan(retryData.plan);
             
             // Fetch previews for each tool after successful retry
-            const retryPreviewPromises = retryData.plan.tools.map((tool: any) =>
+            const retryPreviewPromises = retryData.plan.tools.map((tool: unknown) =>
               fetch("/api/ai-assistant/execute", {
                 method: "POST",
                 headers: { "Content-Type": "application/json" },
@@ -159,7 +159,7 @@ export function AssistantCommandPalette({
         setPlan(data.plan);
         
         // Fetch previews for each tool
-        const previewPromises = data.plan.tools.map(async (tool: any) => {
+        const previewPromises = data.plan.tools.map(async (tool: unknown) => {
           try {
             const res = await fetch("/api/ai-assistant/execute", {
               method: "POST",
@@ -189,7 +189,7 @@ export function AssistantCommandPalette({
         const previewResults = await Promise.all(previewPromises);
         setPreviews(previewResults.map((r) => r.preview).filter(Boolean));
       }
-    } catch (err: any) {
+    } catch (err: unknown) {
       console.error("[AI ASSISTANT] Planning error:", err);
       setError(err.message || "Failed to plan action");
     } finally {
@@ -206,7 +206,7 @@ export function AssistantCommandPalette({
 
     try {
       // Execute each tool in sequence and collect results
-      const results: any[] = [];
+      const results: unknown[] = [];
       
       for (const tool of plan.tools) {
         const response = await fetch("/api/ai-assistant/execute", {
@@ -232,12 +232,12 @@ export function AssistantCommandPalette({
       setSuccess(true);
       setExecutionResults(results);
       
-      // Check if any tool was analytics
+      // Check if unknown tool was analytics
       const hasAnalytics = plan.tools.some(tool => 
         tool.name.startsWith("analytics.")
       );
       
-      // Check if any tool was a navigation action
+      // Check if unknown tool was a navigation action
       const hasNavigation = plan.tools.some(tool => tool.name === "navigation.go_to_page");
       
       if (hasNavigation) {
@@ -259,7 +259,7 @@ export function AssistantCommandPalette({
         }, 3000);
       }
       // For analytics, keep modal open so user can see results
-    } catch (err: any) {
+    } catch (err: unknown) {
       console.error("[AI ASSISTANT] Execution error:", err);
       setError(err.message || "Failed to execute action");
     } finally {
@@ -481,7 +481,7 @@ export function AssistantCommandPalette({
                             <div className="bg-white dark:bg-gray-800 p-3 rounded border">
                               <p className="text-xs font-medium text-muted-foreground mb-2">Top Items</p>
                               <div className="space-y-1">
-                                {result.topItems.slice(0, 5).map((item: any, i: number) => (
+                                {result.topItems.slice(0, 5).map((item: unknown, i: number) => (
                                   <div key={i} className="flex justify-between text-sm">
                                     <span>{item.name}</span>
                                     <span className="font-semibold">£{item.revenue.toFixed(2)}</span>
@@ -571,7 +571,7 @@ export function AssistantCommandPalette({
                         <div>
                           <p className="font-medium mb-2">Before</p>
                           <div className="space-y-1">
-                            {preview.before.slice(0, 5).map((item: any, j: number) => (
+                            {preview.before.slice(0, 5).map((item: unknown, j: number) => (
                               <div
                                 key={j}
                                 className="text-muted-foreground"
@@ -589,7 +589,7 @@ export function AssistantCommandPalette({
                         <div>
                           <p className="font-medium mb-2">After</p>
                           <div className="space-y-1">
-                            {preview.after.slice(0, 5).map((item: any, j: number) => (
+                            {preview.after.slice(0, 5).map((item: unknown, j: number) => (
                               <div
                                 key={j}
                                 className="text-green-600 dark:text-green-400"

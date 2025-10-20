@@ -100,7 +100,7 @@ export async function convertPDFToImages(pdfBytes: ArrayBuffer, venueId: string)
     logger.debug('[PDF_TO_IMAGES] Conversion complete', { totalImages: imageUrls.length });
     return imageUrls;
     
-  } catch (error: any) {
+  } catch (error: unknown) {
     logger.error('[PDF_TO_IMAGES] Error converting PDF to images:', errorToContext(error));
     logger.error('[PDF_TO_IMAGES] Error stack:', error.stack);
     // Return empty array instead of throwing - let the calling code handle it

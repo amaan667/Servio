@@ -107,7 +107,7 @@ export async function POST(request: NextRequest) {
       message: `Plan updated to ${tier} successfully`
     });
 
-  } catch (error: any) {
+  } catch (error: unknown) {
     logger.error("[UPDATE PLAN] Unexpected error:", { error: error instanceof Error ? error.message : 'Unknown error' });
     return NextResponse.json(
       { error: "Internal server error", details: error.message },

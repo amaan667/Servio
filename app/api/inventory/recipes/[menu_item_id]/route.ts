@@ -29,7 +29,7 @@ export async function GET(
     }
 
     // Calculate total recipe cost
-    const totalCost = data?.reduce((sum, item: any) => {
+    const totalCost = data?.reduce((sum, item: unknown) => {
       const ingredientCost = item.ingredient?.cost_per_unit || 0;
       return sum + (ingredientCost * item.qty_per_item);
     }, 0) || 0;

@@ -46,11 +46,11 @@ const DashboardClient = React.memo(function DashboardClient({
 }: { 
   venueId: string; 
   userId: string; 
-  venue?: any; 
+  venue?: unknown; 
   userName: string;
   venueTz: string;
-  initialCounts?: any;
-  initialStats?: any;
+  initialCounts?: unknown;
+  initialStats?: unknown;
   userRole?: string;
   isOwner?: boolean;
 }) {

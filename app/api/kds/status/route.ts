@@ -28,7 +28,7 @@ export async function GET(req: Request) {
     const tableNames = tables?.map(t => t.table_name) || [];
     logger.debug('[KDS STATUS] Found KDS tables:', tableNames);
 
-    // Check if there are any KDS stations
+    // Check if there are unknown KDS stations
     let stationsCount = 0;
     let ticketsCount = 0;
     
@@ -46,7 +46,7 @@ export async function GET(req: Request) {
       ticketsCount = ticketsCountResult || 0;
     }
 
-    // Check recent orders to see if any should have KDS tickets
+    // Check recent orders to see if unknown should have KDS tickets
     const { data: recentOrders, error: ordersError } = await supabaseAdmin
       .from('orders')
       .select('id, customer_name, table_number, order_status, payment_status, created_at')

@@ -25,8 +25,8 @@ export async function POST(req: Request) {
       {
         cookies: {
           get(name: string) { return cookieStore.get(name)?.value; },
-          set(name: string, value: string, options: any) { },
-          remove(name: string, options: any) { },
+          set(name: string, value: string, options: unknown) { },
+          remove(name: string, options: unknown) { },
         },
       }
     );
@@ -35,7 +35,7 @@ export async function POST(req: Request) {
     // In a real implementation, you would:
     // 1. Verify the payment intent with Stripe
     // 2. Confirm the payment was successful
-    // 3. Handle any failed payments
+    // 3. Handle unknown failed payments
     
     // For now, we'll simulate a successful payment
     const paymentSuccess = true; // In production, verify with Stripe API

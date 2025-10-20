@@ -13,7 +13,7 @@ import { apiLogger, logger } from '@/lib/logger';
 
 const PlanRequestSchema = z.object({
   prompt: z.string().min(1).max(500),
-  venueId: z.string().min(1), // Accept any non-empty string for venue ID
+  venueId: z.string().min(1), // Accept unknown non-empty string for venue ID
   context: z
     .object({
       page: z.enum(["menu", "inventory", "kds", "orders", "analytics", "general"]).optional(),
@@ -122,7 +122,7 @@ export async function POST(request: NextRequest) {
       executionTimeMs: executionTime,
       modelUsed: plan.modelUsed, // Return model info to client
     });
-  } catch (error: any) {
+  } catch (error: unknown) {
     logger.error("[AI ASSISTANT] Planning error:", { error: error instanceof Error ? error.message : 'Unknown error' });
 
     if (error.name === "ZodError") {

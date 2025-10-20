@@ -130,7 +130,7 @@ export async function POST(req: Request) {
       message: 'Order marked as served'
     });
 
-  } catch (error: any) {
+  } catch (error: unknown) {
     logger.error('[ORDERS SERVE][UNCAUGHT]', { error: error?.message || error, stack: error?.stack });
     return NextResponse.json({ 
       error: 'Internal server error',

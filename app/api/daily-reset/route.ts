@@ -146,7 +146,7 @@ export async function POST(request: NextRequest) {
 
     }
 
-    // Step 4: Clear any table runtime state
+    // Step 4: Clear unknown table runtime state
     const { error: clearRuntimeError } = await supabase
       .from('table_runtime_state')
       .delete()

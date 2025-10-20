@@ -50,7 +50,7 @@ export async function GET(request: NextRequest) {
     
     return NextResponse.json(testResults);
     
-  } catch (error: any) {
+  } catch (error: unknown) {
     return NextResponse.json({ 
       error: error.message,
       timestamp: new Date().toISOString()

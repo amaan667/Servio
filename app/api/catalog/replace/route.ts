@@ -187,7 +187,7 @@ export async function POST(req: NextRequest) {
       return await replaceCatalog(supabase, venueId, fixedPayload, undefined);
     }
 
-  } catch (error: any) {
+  } catch (error: unknown) {
     logger.error('[CATALOG REPLACE] Unexpected error:', { error: error instanceof Error ? error.message : 'Unknown error' });
     return NextResponse.json({ 
       ok: false, 
@@ -197,7 +197,7 @@ export async function POST(req: NextRequest) {
 }
 
 // Helper function to replace catalog
-async function replaceCatalog(supabase: any, venueId: string, fixedPayload: any, extractedText?: string, pdfImages?: string[]) {
+async function replaceCatalog(supabase: unknown, venueId: string, fixedPayload: unknown, extractedText?: string, pdfImages?: string[]) {
 
   // Skip validation for now to focus on maximum extraction
   // Just try to insert items directly
@@ -215,7 +215,7 @@ async function replaceCatalog(supabase: any, venueId: string, fixedPayload: any,
     // Insert new items
     if (fixedPayload.items && fixedPayload.items.length > 0) {
       
-      const itemsToInsert = fixedPayload.items.map((item: any, index: number) => ({
+      const itemsToInsert = fixedPayload.items.map((item: unknown, index: number) => ({
         venue_id: venueId,
         name: item.name || `Item ${index + 1}`,
         description: item.description || null,
@@ -249,7 +249,7 @@ async function replaceCatalog(supabase: any, venueId: string, fixedPayload: any,
             storage_path: `menus/${venueId}/catalog-replace-${Date.now()}.pdf`,
             file_size: 0,
             extracted_text_length: extractedText?.length || 0,
-            category_order: [...new Set(fixedPayload.items.map((item: any) => item.category))],
+            category_order: [...new Set(fixedPayload.items.map((item: unknown) => item.category))],
             pdf_images: pdfImages,
             created_at: new Date().toISOString()
           })
@@ -267,7 +267,7 @@ async function replaceCatalog(supabase: any, venueId: string, fixedPayload: any,
         message: 'Catalog replaced successfully',
         result: {
           items_created: insertedItems?.length || 0,
-          categories_created: [...new Set(itemsToInsert.map((item: any) => item.category))].length,
+          categories_created: [...new Set(itemsToInsert.map((item: unknown) => item.category))].length,
           extracted_text: extractedText // Include extracted text for style extraction
         }
       });
@@ -283,7 +283,7 @@ async function replaceCatalog(supabase: any, venueId: string, fixedPayload: any,
       });
     }
 
-  } catch (error: any) {
+  } catch (error: unknown) {
     logger.error('[CATALOG REPLACE] Unexpected error:', { error: error instanceof Error ? error.message : 'Unknown error' });
     return NextResponse.json({ 
       ok: false, 
@@ -333,7 +333,7 @@ BEVERAGES
     
     return extractedText;
     
-  } catch (error: any) {
+  } catch (error: unknown) {
     logger.error('[OCR] Text extraction failed:', { error: error instanceof Error ? error.message : 'Unknown error' });
     throw new Error(`OCR failed: ${error.message}`);
   }

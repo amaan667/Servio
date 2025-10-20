@@ -38,7 +38,7 @@ export function useChatConversations(venueId: string, isOpen: boolean) {
           throw new Error("Failed to load conversations");
         }
       }
-    } catch (error: any) {
+    } catch (error: unknown) {
       console.error("[AI CHAT] Error loading conversations:", error);
       throw error;
     }
@@ -61,7 +61,7 @@ export function useChatConversations(venueId: string, isOpen: boolean) {
       } else {
         throw new Error("Failed to create conversation");
       }
-    } catch (error: any) {
+    } catch (error: unknown) {
       console.error("[AI CHAT] Error creating conversation:", error);
       throw error;
     }
@@ -81,7 +81,7 @@ export function useChatConversations(venueId: string, isOpen: boolean) {
       } else {
         throw new Error("Failed to delete conversation");
       }
-    } catch (error: any) {
+    } catch (error: unknown) {
       console.error("[AI CHAT] Error deleting conversation:", error);
       throw error;
     }

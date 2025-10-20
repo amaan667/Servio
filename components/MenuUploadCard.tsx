@@ -27,7 +27,7 @@ export function MenuUploadCard({ venueId, onSuccess }: MenuUploadCardProps) {
   const { toast } = useToast();
   const supabase = createClient();
   
-  // Check if venue has any existing menu uploads
+  // Check if venue has unknown existing menu uploads
   useEffect(() => {
     const checkExistingUploads = async () => {
       try {
@@ -210,7 +210,7 @@ export function MenuUploadCard({ venueId, onSuccess }: MenuUploadCardProps) {
       onSuccess?.();
     }
       
-    } catch (error: any) {
+    } catch (error: unknown) {
       toast({
         title: 'Upload failed',
         description: error.message,
@@ -284,7 +284,7 @@ export function MenuUploadCard({ venueId, onSuccess }: MenuUploadCardProps) {
       } else {
         throw new Error(`Clear catalog failed: ${result.error}`);
       }
-    } catch (error: any) {
+    } catch (error: unknown) {
       toast({
         title: 'Clear catalog failed',
         description: error.message,

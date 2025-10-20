@@ -18,7 +18,7 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    // Check if it's time for any venue's daily reset
+    // Check if it's time for unknown venue's daily reset
     const now = new Date();
     const currentTime = now.toTimeString().split(' ')[0]; // HH:MM:SS format
     const currentHour = now.getHours();

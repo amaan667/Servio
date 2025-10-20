@@ -451,7 +451,7 @@ export function TableCardNew({ table, venueId, onActionComplete, availableTables
 
         <div className="space-y-2">
           <div className="flex items-center gap-2">
-            <StatusPill status={table.session_status as any} />
+            <StatusPill status={table.session_status as unknown} />
           </div>
           
           {table.order_id && (

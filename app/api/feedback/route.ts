@@ -44,7 +44,7 @@ export async function POST(req: Request) {
 
     return NextResponse.json({ ok: true });
     
-  } catch (e: any) {
+  } catch (e: unknown) {
     logger.error('[AUTH DEBUG] Feedback submission exception:', e);
     return NextResponse.json({ 
       ok: false, 

@@ -13,16 +13,16 @@ import { Badge } from '@/components/ui/badge';
 
 
 // Safe dynamic imports for recharts
-let ChartContainer: any = null;
-let ResponsiveContainer: any = null;
-let LineChart: any = null;
-let BarChart: any = null;
-let Bar: any = null;
-let Line: any = null;
-let XAxis: any = null;
-let YAxis: any = null;
-let CartesianGrid: any = null;
-let Tooltip: any = null;
+let ChartContainer: unknown = null;
+let ResponsiveContainer: unknown = null;
+let LineChart: unknown = null;
+let BarChart: unknown = null;
+let Bar: unknown = null;
+let Line: unknown = null;
+let XAxis: unknown = null;
+let YAxis: unknown = null;
+let CartesianGrid: unknown = null;
+let Tooltip: unknown = null;
 
 // Function to safely load recharts components
 const loadRechartsComponents = async () => {
@@ -143,7 +143,7 @@ export default function DemoAnalytics() {
       .catch(() => setChartsError(true));
   }, []);
 
-  const StatCard = ({ title, value, icon: Icon, subtitle, trend }: any) => (
+  const StatCard = ({ title, value, icon: Icon, subtitle, trend }: unknown) => (
     <Card>
       <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
         <CardTitle className="text-sm font-medium">{title}</CardTitle>

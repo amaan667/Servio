@@ -47,7 +47,7 @@ function sanitizeText(s: string) {
   return s.replace(/\u0000/g, "").slice(0, 180_000);
 }
 
-function reassignCategory(it: any) {
+function reassignCategory(it: unknown) {
   const t = (it.name||'').toUpperCase();
   if (/PLATTER|MOUNTAIN|THERMIDOR|RACK|SURF AND TURF|SEA BASS|RIBS/.test(t)) return 'MAIN COURSES';
   if (/FRIES|GARLIC BREAD|ONION RINGS|SIDE/.test(t)) return 'SIDES';
@@ -75,7 +75,7 @@ async function callMenuTool(system: string, user: string) {
     throw new Error("Model did not return tool_calls.");
   }
 
-  let args = (call as any).function.arguments || "{}";
+  let args = (call as unknown).function.arguments || "{}";
 
   // Enhanced error handling for JSON parsing
   try {
@@ -89,7 +89,7 @@ async function callMenuTool(system: string, user: string) {
       logger.error('[MENU PARSE] jsonrepair also failed:', repairError);
       logger.error('[MENU PARSE] Failed arguments:', args);
       
-      // Try to extract any valid JSON from the response
+      // Try to extract unknown valid JSON from the response
       const jsonMatch = args.match(/\{[\s\S]*\}/);
       if (jsonMatch) {
         try {
@@ -115,8 +115,8 @@ export async function parseMenuInChunks(ocrText: string): Promise<MenuPayloadT> 
   }
 
   // 2) Process each section individually with strict windowing
-  const itemsAll: any[] = [];
-  const movedAll: any[] = [];
+  const itemsAll: unknown[] = [];
+  const movedAll: unknown[] = [];
   let rawTotal = 0;
 
   for (const sec of sections) {
@@ -129,26 +129,26 @@ export async function parseMenuInChunks(ocrText: string): Promise<MenuPayloadT> 
       // A) Instrument the funnel (counts + reasons)
       rawTotal += raw.items.length;
 
-      const tooLong = raw.items.filter((i: any) => (i.name||'').length > 80);
+      const tooLong = raw.items.filter((i: unknown) => (i.name||'').length > 80);
 
-      const noPrice = raw.items.filter((i: any) => typeof i.price !== 'number' || isNaN(i.price) || i.price === 0);
+      const noPrice = raw.items.filter((i: unknown) => typeof i.price !== 'number' || isNaN(i.price) || i.price === 0);
 
-      const afterBasic = raw.items.filter((i: any) => (i.name||'').length && typeof i.price === 'number' && !isNaN(i.price) && i.price > 0);
+      const afterBasic = raw.items.filter((i: unknown) => (i.name||'').length && typeof i.price === 'number' && !isNaN(i.price) && i.price > 0);
 
       const { kept, moved } = filterSectionItems(sec.name, afterBasic);
 
       // B) Soft-normalize instead of reject
-      const normalizedKept = kept.map((item: any) => ({
+      const normalizedKept = kept.map((item: unknown) => ({
         ...item,
         name: clampName(item.name || 'Item'),
         price: parsePriceAny(item.price),
         category: sec.name
-      })).filter((item: any) => !isNaN(item.price));
+      })).filter((item: unknown) => !isNaN(item.price));
 
-      const reassigned = moved.map((m: any) => {
+      const reassigned = moved.map((m: unknown) => {
         const newCategory = reassignCategory(m);
         return newCategory ? { ...m, category: newCategory, name: clampName(m.name || 'Item'), price: parsePriceAny(m.price) } : null;
-      }).filter((m: any) => m && !isNaN(m.price));
+      }).filter((m: unknown) => m && !isNaN(m.price));
 
       itemsAll.push(...normalizedKept);
       movedAll.push(...reassigned);
@@ -163,14 +163,14 @@ export async function parseMenuInChunks(ocrText: string): Promise<MenuPayloadT> 
   const finalItems = itemsAll.concat(movedAll);
 
   // D) Soft validation with transformation
-  const validatedItems = finalItems.map((item: any, index: number) => ({
+  const validatedItems = finalItems.map((item: unknown, index: number) => ({
     name: clampName(item.name || 'Item'),
     description: item.description || null,
     price: parsePriceAny(item.price),
     category: item.category || 'Uncategorized',
     available: Boolean(item.available ?? true),
     order_index: Number.isFinite(item.order_index) ? item.order_index : index,
-  })).filter((item: any) => !isNaN(item.price) && item.price > 0 && item.name.length > 0);
+  })).filter((item: unknown) => !isNaN(item.price) && item.price > 0 && item.name.length > 0);
 
 
   // 5) Validate final shape
@@ -201,10 +201,10 @@ async function parseMenuInChunksFallback(ocrText: string): Promise<MenuPayloadT>
     "- The 'categories' array must list categories in the same order they appear in the PDF.",
     "- MANDATORY: Read the PDF from TOP TO BOTTOM and list categories in that exact sequence.",
     "- DO NOT alphabetize or reorder categories - maintain PDF layout order.",
-    "- UNIVERSAL: This works for any menu structure - preserve whatever order the PDF shows.",
+    "- UNIVERSAL: This works for unknown menu structure - preserve whatever order the PDF shows.",
     "- CRITICAL: Only include items with clear prices. If no price is visible, DO NOT include the item.",
     "- Look for price patterns like £X.XX, €X.XX, $X.XX, or just numbers.",
-    "- Extract EVERY single menu item with a price - do not miss any.",
+    "- Extract EVERY single menu item with a price - do not miss unknown.",
     "- If no clear categories exist, group items logically (e.g., 'FOOD', 'DRINKS').",
     "- Be thorough - extract ALL items with prices, even if they seem incomplete.",
     "- For items without clear categories, assign a default category based on context.",

@@ -69,7 +69,7 @@ export async function GET(req: Request) {
   // Transform orders to include table_label
   const transformedOrders = orders?.map(order => ({
     ...order,
-    table_label: (order.tables as any)?.label || (order.source === 'counter' ? `Counter ${order.table_number}` : `Table ${order.table_number}`)
+    table_label: (order.tables as unknown)?.label || (order.source === 'counter' ? `Counter ${order.table_number}` : `Table ${order.table_number}`)
   })) || [];
 
   const response = {

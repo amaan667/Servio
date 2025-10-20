@@ -136,7 +136,7 @@ function detectSourceLanguage(items: Array<{ name: string; category: string }>, 
 }
 
 export async function executeMenuTranslate(
-  params: any,
+  params: unknown,
   venueId: string,
   userId: string,
   preview: boolean
@@ -228,7 +228,7 @@ OUTPUT FORMAT:
             description: i.description || "",
             category: i.category || ""
           })),
-          after: translatedArray.map((i: any) => ({
+          after: translatedArray.map((i: unknown) => ({
             name: i.name || i.originalName,
             description: i.description || "",
             category: i.category || ""
@@ -270,7 +270,7 @@ OUTPUT FORMAT:
     const openai = getOpenAI();
 
     const originalItemCount = items.length;
-    const translatedItems: any[] = [];
+    const translatedItems: unknown[] = [];
     const batchSize = 15;
     
     for (let i = 0; i < items.length; i += batchSize) {
@@ -339,7 +339,7 @@ OUTPUT FORMAT:
             const translatedArray = translated.items || [];
             
             if (translatedArray.length === batch.length) {
-              const validItems = translatedArray.filter((item: any) => 
+              const validItems = translatedArray.filter((item: unknown) => 
                 item && item.id && item.name && item.category
               );
               
@@ -390,7 +390,7 @@ OUTPUT FORMAT:
         continue;
       }
 
-      const updateData: any = {
+      const updateData: unknown = {
         name: translatedItem.name,
         updated_at: new Date().toISOString()
       };
@@ -420,7 +420,7 @@ OUTPUT FORMAT:
 
     if (updatedCount === 0 && translatedItems.length > 0) {
       throw new AIAssistantError(
-        `Translation failed: Could not update any items (${failedCount} failed)`,
+        `Translation failed: Could not update unknown items (${failedCount} failed)`,
         "EXECUTION_FAILED"
       );
     }
@@ -440,7 +440,7 @@ OUTPUT FORMAT:
       },
       auditId: "",
     };
-  } catch (error: any) {
+  } catch (error: unknown) {
     logger.error("[AI ASSISTANT] Translation error:", error);
     throw new AIAssistantError(
       `Translation failed: ${error.message}`,

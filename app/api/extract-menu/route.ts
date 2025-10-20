@@ -9,7 +9,7 @@ export async function POST(req: NextRequest) {
     if (body.items && Array.isArray(body.items) && body.venue_id) {
           const supabase = await createClient();
       // Attach venue_id to each item if not present
-      const itemsToInsert = body.items.map((item: any) => ({
+      const itemsToInsert = body.items.map((item: unknown) => ({
         ...item,
         venue_id: body.venue_id,
         is_available: item.available !== false, // default to true
@@ -25,7 +25,7 @@ export async function POST(req: NextRequest) {
       { error: "Missing items or venue_id" },
       { status: 400 },
     );
-  } catch (err: any) {
+  } catch (err: unknown) {
     return NextResponse.json(
       { error: err?.message || "Failed to save menu." },
       { status: 500 },

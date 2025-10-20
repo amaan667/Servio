@@ -9,7 +9,7 @@ export function useChatActions(venueId: string) {
   const [executing, setExecuting] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [success, setSuccess] = useState(false);
-  const [executionResults, setExecutionResults] = useState<any[]>([]);
+  const [executionResults, setExecutionResults] = useState<unknown[]>([]);
   const [undoing, setUndoing] = useState<string | null>(null);
 
   const sendMessage = async (conversationId: string, message: string) => {
@@ -39,7 +39,7 @@ export function useChatActions(venueId: string) {
       setPlan(data.plan);
       setPreviews(data.previews || []);
       setSuccess(true);
-    } catch (error: any) {
+    } catch (error: unknown) {
       console.error("[AI CHAT] Error sending message:", error);
       setError(error.message || "Failed to send message");
     } finally {
@@ -72,7 +72,7 @@ export function useChatActions(venueId: string) {
       const data = await response.json();
       setExecutionResults(data.results || []);
       setSuccess(true);
-    } catch (error: any) {
+    } catch (error: unknown) {
       console.error("[AI CHAT] Error executing plan:", error);
       setError(error.message || "Failed to execute plan");
     } finally {
@@ -99,7 +99,7 @@ export function useChatActions(venueId: string) {
       }
 
       setSuccess(true);
-    } catch (error: any) {
+    } catch (error: unknown) {
       console.error("[AI CHAT] Error undoing action:", error);
       setError(error.message || "Failed to undo action");
     } finally {

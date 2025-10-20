@@ -26,7 +26,7 @@ import { logger } from '@/lib/logger';
 export async function importPDFToMenu(
   pdfBuffer: Buffer,
   venueId: string,
-  supabaseClient: any,
+  supabaseClient: unknown,
   options: {
     mode?: 'high_recall' | 'precision' | 'auto';
     customOptions?: Partial<ProcessingOptions>;
@@ -106,7 +106,7 @@ export async function importPDFToMenu(
         coverage = precisionResult.coverage;
         validation = precisionResult.validation;
       }
-    } catch (layoutError: any) {
+    } catch (layoutError: unknown) {
       logger.warn('[PDF_IMPORT] Layout parsing failed, falling back to robust GPT parser:', layoutError.message);
       warnings.push(`Layout parsing failed: ${layoutError.message}`);
       
@@ -125,7 +125,7 @@ export async function importPDFToMenu(
         catalog = {
           categories: [{
             name: 'UNCATEGORIZED',
-            items: gptResult.items.map((item: any) => ({
+            items: gptResult.items.map((item: unknown) => ({
               title: item.title,
               subtitle: undefined,
               description: item.description,
@@ -228,7 +228,7 @@ export async function importPDFToMenu(
       }
     };
     
-  } catch (error: any) {
+  } catch (error: unknown) {
     const processingTime = Date.now() - startTime;
     logger.error('[PDF_IMPORT] Import failed:', error);
     
@@ -275,7 +275,7 @@ function determineProcessingMode(
 /**
  * Applies post-processing to the catalog
  */
-function applyPostProcessing(catalog: ParsedCatalog, options: any): ParsedCatalog {
+function applyPostProcessing(catalog: ParsedCatalog, options: unknown): ParsedCatalog {
   
   // Sanitize item data
   const sanitizedCategories = catalog.categories.map(category => ({
@@ -304,7 +304,7 @@ function applyPostProcessing(catalog: ParsedCatalog, options: any): ParsedCatalo
 /**
  * Generates a comprehensive import report
  */
-export function generateImportReport(result: any): string {
+export function generateImportReport(result: unknown): string {
   const lines: string[] = [];
   
   lines.push('=== PDF IMPORT REPORT ===');
@@ -330,18 +330,18 @@ export function generateImportReport(result: any): string {
     lines.push(`Valid: ${result.validation.valid ? 'YES' : 'NO'}`);
     if (result.validation.errors.length > 0) {
       lines.push('Errors:');
-      result.validation.errors.forEach((error: any) => lines.push(`  • ${error}`));
+      result.validation.errors.forEach((error: unknown) => lines.push(`  • ${error}`));
     }
     if (result.validation.warnings.length > 0) {
       lines.push('Warnings:');
-      result.validation.warnings.forEach((warning: any) => lines.push(`  • ${warning}`));
+      result.validation.warnings.forEach((warning: unknown) => lines.push(`  • ${warning}`));
     }
   }
   
   if (result.warnings && result.warnings.length > 0) {
     lines.push('');
     lines.push('=== PROCESSING WARNINGS ===');
-    result.warnings.forEach((warning: any) => lines.push(`  • ${warning}`));
+    result.warnings.forEach((warning: unknown) => lines.push(`  • ${warning}`));
   }
   
   if (result.error) {
@@ -356,7 +356,7 @@ export function generateImportReport(result: any): string {
 /**
  * Validates import result for quality assurance
  */
-export function validateImportResult(result: any): {
+export function validateImportResult(result: unknown): {
   isHighQuality: boolean;
   issues: string[];
   recommendations: string[];
@@ -401,7 +401,7 @@ export function validateImportResult(result: any): {
 /**
  * Exports import result to JSON format
  */
-export function exportImportResult(result: any): string {
+export function exportImportResult(result: unknown): string {
   return JSON.stringify({
     timestamp: new Date().toISOString(),
     success: result.success,

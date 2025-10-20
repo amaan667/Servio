@@ -48,7 +48,7 @@ export async function POST(request: NextRequest) {
     }
 
 
-    // Check if there are any recent orders (within last 2 hours) - if so, warn user
+    // Check if there are unknown recent orders (within last 2 hours) - if so, warn user
     const twoHoursAgo = new Date(Date.now() - 2 * 60 * 60 * 1000).toISOString();
     const { data: recentOrders, error: recentOrdersError } = await supabase
       .from('orders')
@@ -178,7 +178,7 @@ export async function POST(request: NextRequest) {
 
     }
 
-    // Step 4: Clear any table runtime state
+    // Step 4: Clear unknown table runtime state
     const { error: clearRuntimeError } = await supabase
       .from('table_runtime_state')
       .delete()

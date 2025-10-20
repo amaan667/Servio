@@ -1,7 +1,7 @@
 import { TableCardNew } from '@/components/table-management/TableCardNew';
 
 interface TableGridSectionProps {
-  tables: any[];
+  tables: unknown[];
   searchQuery: string;
   onTableActionComplete: () => void;
 }

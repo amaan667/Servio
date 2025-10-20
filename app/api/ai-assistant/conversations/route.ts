@@ -114,7 +114,7 @@ export async function GET(request: NextRequest) {
     }
 
     // Transform the data to match frontend expectations
-    const transformedConversations = (conversations || []).map((conv: any) => ({
+    const transformedConversations = (conversations || []).map((conv: unknown) => ({
       ...conv,
       updatedAt: conv.updated_at,
       createdAt: conv.created_at,
@@ -126,7 +126,7 @@ export async function GET(request: NextRequest) {
     return NextResponse.json({
       conversations: transformedConversations,
     });
-  } catch (error: any) {
+  } catch (error: unknown) {
     logger.error("[AI CHAT] Conversations error:", { error: error instanceof Error ? error.message : 'Unknown error' });
     logger.error("[AI CHAT] Error details:", {
       message: error.message,
@@ -195,7 +195,7 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({
       conversation: transformedConversation,
     });
-  } catch (error: any) {
+  } catch (error: unknown) {
     logger.error("[AI CHAT] Create conversation error:", { error: error instanceof Error ? error.message : 'Unknown error' });
     
     if (error.name === "ZodError") {
@@ -284,7 +284,7 @@ export async function PATCH(request: NextRequest) {
     return NextResponse.json({
       conversation: transformedConversation,
     });
-  } catch (error: any) {
+  } catch (error: unknown) {
     logger.error("[AI CHAT] Update conversation error:", { error: error instanceof Error ? error.message : 'Unknown error' });
     return NextResponse.json(
       { error: error.message || "Internal server error" },

@@ -96,7 +96,7 @@ export async function GET(request: NextRequest) {
       }
     });
 
-  } catch (error: any) {
+  } catch (error: unknown) {
     logger.error("[TEST] Error:", { error: error instanceof Error ? error.message : 'Unknown error' });
     return NextResponse.json({ 
       error: "Internal server error", 

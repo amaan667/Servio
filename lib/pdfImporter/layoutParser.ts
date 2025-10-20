@@ -21,7 +21,7 @@ import {
 export async function parseLayout(
   blocks: TextBlock[], 
   options: ProcessingOptions
-): Promise<{ categories: ParsedCategory[], coverage: any }> {
+): Promise<{ categories: ParsedCategory[], coverage: unknown }> {
   
   // Step 1: Page layout & reading order
   const readingOrder = analyzePageLayout(blocks);
@@ -505,7 +505,7 @@ function generateCoverageReport(
   priceTokens: PriceToken[], 
   items: ParsedItem[], 
   sections: SectionInfo[]
-): any {
+): unknown {
   const usedPriceLineIds = new Set<string>();
   
   for (const item of items) {

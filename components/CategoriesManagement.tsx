@@ -337,7 +337,7 @@ export function CategoriesManagement({ venueId, onCategoriesUpdate }: Categories
   };
 
   const handleResetCategories = async () => {
-    if (!confirm('Are you sure you want to reset categories to the original order from the PDF? This will remove any manually added categories and restore the original order.')) {
+    if (!confirm('Are you sure you want to reset categories to the original order from the PDF? This will remove unknown manually added categories and restore the original order.')) {
       return;
     }
 

@@ -170,7 +170,7 @@ export function validateParsedCatalog(catalog: ParsedCatalog): ValidationResult 
 /**
  * Converts parsed catalog to database format
  */
-export function convertToDatabaseFormat(catalog: ParsedCatalog): any {
+export function convertToDatabaseFormat(catalog: ParsedCatalog): unknown {
   const dbCategories = catalog.categories.map(category => ({
     name: category.name,
     sort_order: category.sortOrder,
@@ -209,8 +209,8 @@ export function convertToDatabaseFormat(catalog: ParsedCatalog): any {
 export async function replaceCatalogAtomically(
   venueId: string, 
   catalog: ParsedCatalog,
-  supabaseClient: any
-): Promise<{ success: boolean; result?: any; error?: string }> {
+  supabaseClient: unknown
+): Promise<{ success: boolean; result?: unknown; error?: string }> {
   try {
     
     // Validate before replacement
@@ -239,7 +239,7 @@ export async function replaceCatalogAtomically(
       result: data
     };
     
-  } catch (error: any) {
+  } catch (error: unknown) {
     logger.error('[CATALOG_REPLACE] Atomic replacement failed:', error);
     return {
       success: false,
@@ -252,8 +252,8 @@ export async function replaceCatalogAtomically(
  * Validates catalog payload before replacement (pre-check)
  */
 export async function validateCatalogPayload(
-  payload: any,
-  supabaseClient: any
+  payload: unknown,
+  supabaseClient: unknown
 ): Promise<ValidationResult> {
   try {
     
@@ -284,7 +284,7 @@ export async function validateCatalogPayload(
       missingPriceCount: data.missing_price_count || 0
     };
     
-  } catch (error: any) {
+  } catch (error: unknown) {
     logger.error('[CATALOG_VALIDATE] Validation failed:', error);
     return {
       valid: false,

@@ -203,7 +203,7 @@ export async function POST(request: NextRequest) {
       org = newOrg;
       logger.debug('[STRIPE DEBUG] ✅ Created new organization:', org.id);
       
-      // Link any existing venues to this organization
+      // Link unknown existing venues to this organization
       const { error: venueUpdateError } = await supabase
         .from("venues")
         .update({ organization_id: org.id })
@@ -302,7 +302,7 @@ export async function POST(request: NextRequest) {
     });
 
     return NextResponse.json({ sessionId: session.id, url: session.url });
-  } catch (error: any) {
+  } catch (error: unknown) {
     logger.error("[STRIPE CHECKOUT] Error:", { error: error instanceof Error ? error.message : 'Unknown error' });
     return NextResponse.json(
       { error: error.message || "Failed to create checkout session" },

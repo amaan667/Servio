@@ -72,7 +72,7 @@ export async function POST(req: NextRequest) {
       details: results
     });
 
-  } catch (error: any) {
+  } catch (error: unknown) {
     logger.error('[CATALOG CLEAR] Unexpected error:', { error: error instanceof Error ? error.message : 'Unknown error' });
     return NextResponse.json({ 
       ok: false, 

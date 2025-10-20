@@ -158,7 +158,7 @@ export async function POST(request: NextRequest) {
       updated: updateData
     });
 
-  } catch (error: any) {
+  } catch (error: unknown) {
     logger.error("[TEST] Error:", { error: error instanceof Error ? error.message : 'Unknown error' });
     return NextResponse.json(
       { error: error.message || "Failed to update subscription status" },

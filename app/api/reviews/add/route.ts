@@ -26,7 +26,7 @@ export async function POST(req: Request) {
     });
     if (insErr) return NextResponse.json({ ok:false, error: insErr.message }, { status:500 });
     return NextResponse.json({ ok:true });
-  } catch (e:any) {
+  } catch (e:unknown) {
     return NextResponse.json({ ok:false, error: e.message }, { status:400 });
   }
 }

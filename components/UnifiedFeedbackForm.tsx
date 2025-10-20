@@ -31,7 +31,7 @@ export default function UnifiedFeedbackForm({
   const [loading, setLoading] = useState(true);
   const [submitting, setSubmitting] = useState(false);
   const [isSubmitted, setIsSubmitted] = useState(false);
-  const [answers, setAnswers] = useState<{[key: string]: any}>({});
+  const [answers, setAnswers] = useState<{[key: string]: unknown}>({});
   const { toast } = useToast();
 
   // Generic feedback questions (matching the screenshot layout)
@@ -129,7 +129,7 @@ export default function UnifiedFeedbackForm({
     fetchQuestions();
   }, [fetchQuestions]);
 
-  const handleAnswerChange = (questionId: string, answer: any) => {
+  const handleAnswerChange = (questionId: string, answer: unknown) => {
     setAnswers(prev => ({
       ...prev,
       [questionId]: answer

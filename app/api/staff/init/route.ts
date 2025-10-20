@@ -28,7 +28,7 @@ export async function POST() {
     const { error } = await admin.rpc('exec_sql', { sql });
     if (error) return NextResponse.json({ ok:false, error: error.message }, { status:500 });
     return NextResponse.json({ ok:true });
-  } catch (e:any) {
+  } catch (e:unknown) {
     return NextResponse.json({ ok:false, error: e?.message || 'RPC exec failed' }, { status:500 });
   }
 }

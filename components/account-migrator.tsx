@@ -69,7 +69,7 @@ export function AccountMigrator() {
     } catch (error) {
       console.error(
         "ACCOUNT_MIGRATOR: Failed to load local accounts",
-        error as any,
+        error as unknown,
       );
       setLocalAccounts([]);
     }
@@ -92,12 +92,12 @@ export function AccountMigrator() {
 
       addLog(`⚠️ Sign up not implemented yet for ${account.contactEmail}`);
       return false;
-    } catch (error: any) {
+    } catch (error: unknown) {
       addLog(`❌ Error migrating ${account.contactEmail}: ${error.message}`);
       console.error("ACCOUNT_MIGRATOR: Migration error", {
         email: account.contactEmail,
         error,
-      } as any);
+      } as unknown);
       return false;
     }
   };
@@ -191,7 +191,7 @@ export function AccountMigrator() {
         }
       } catch (error) {
         addLog("❌ Failed to import accounts");
-        console.error("ACCOUNT_MIGRATOR: Import error", error as any);
+        console.error("ACCOUNT_MIGRATOR: Import error", error as unknown);
       }
     };
     reader.readAsText(file);

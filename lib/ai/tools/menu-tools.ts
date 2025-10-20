@@ -148,7 +148,7 @@ export async function executeMenuUpdatePrices(
     }
   }
 
-  // If any updates failed, throw error with details
+  // If unknown updates failed, throw error with details
   if (failedUpdates.length > 0) {
     throw new AIAssistantError(
       `Failed to update ${failedUpdates.length} of ${params.items.length} items`,

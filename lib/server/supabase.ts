@@ -42,7 +42,7 @@ export const supabaseServer = async () => {
         update: () => ({ eq: () => ({ eq: async () => ({ error: null }) }) }),
         delete: () => ({ eq: async () => ({ error: null }) })
       })
-    } as any;
+    } as unknown;
   }
 
   const cookieStore = await cookies();
@@ -94,12 +94,12 @@ export async function createServerSupabaseClient() {
 
 // Export a cookie adapter for use in Route Handlers that directly construct Supabase clients
 // with custom cookie handling.
-export function cookieAdapter(jar: any) {
+export function cookieAdapter(jar: unknown) {
   return {
     get(name: string) {
       return jar.get(name)?.value;
     },
-    set(name: string, value: string, options?: any) {
+    set(name: string, value: string, options?: unknown) {
       // Route handlers may set cookies safely
       jar.set({
         name,
@@ -110,7 +110,7 @@ export function cookieAdapter(jar: any) {
         sameSite: 'lax',
       });
     },
-    remove(name: string, options?: any) {
+    remove(name: string, options?: unknown) {
       jar.set({
         name,
         value: '',

@@ -86,7 +86,7 @@ function bad(msg: string, status = 400) {
 }
 
 // Function to create KDS tickets for an order
-async function createKDSTickets(supabase: any, order: any) {
+async function createKDSTickets(supabase: unknown, order: unknown) {
   try {
     logger.debug('[KDS TICKETS] Creating KDS tickets for order:', order.id);
     
@@ -145,7 +145,7 @@ async function createKDSTickets(supabase: any, order: any) {
       throw new Error('No KDS stations available');
     }
     
-    const expoStation = existingStations.find((s: any) => s.station_type === 'expo') || existingStations[0];
+    const expoStation = existingStations.find((s: unknown) => s.station_type === 'expo') || existingStations[0];
     
     if (!expoStation) {
       throw new Error('No KDS station available');
@@ -383,7 +383,7 @@ export async function POST(req: Request) {
       quantity: Number(it.quantity) || 0,
       price: Number(it.price) || 0, // Use 'price' field directly
       item_name: it.item_name,
-      specialInstructions: (it as any).special_instructions ?? it.specialInstructions ?? null,
+      specialInstructions: (it as unknown).special_instructions ?? it.specialInstructions ?? null,
     }));
 
     // Use the source provided by the client (determined from URL parameters)
@@ -434,7 +434,7 @@ export async function POST(req: Request) {
         order: existingOrder,
         table_auto_created: tableId !== null,
         table_id: tableId,
-        session_id: (body as any).session_id || null,
+        session_id: (body as unknown).session_id || null,
         source: orderSource,
         display_name: orderSource === 'counter' ? `Counter ${table_number}` : `Table ${table_number}`,
         duplicate: true
@@ -575,7 +575,7 @@ export async function POST(req: Request) {
       order: createdOrder,
       table_auto_created: tableId !== null, // True if we auto-created a table
       table_id: tableId,
-      session_id: (body as any).session_id || null, // Include session_id in response for client-side storage
+      session_id: (body as unknown).session_id || null, // Include session_id in response for client-side storage
       source: orderSource, // Include the correctly determined source
       display_name: orderSource === 'counter' ? `Counter ${table_number}` : `Table ${table_number}` // Include display name for UI
     };
@@ -594,7 +594,7 @@ export async function POST(req: Request) {
     // Log that real-time updates should be triggered
     
     return NextResponse.json(response);
-  } catch (e: any) {
+  } catch (e: unknown) {
     const msg = e?.message || (typeof e === 'string' ? e : 'Unknown server error');
     return bad(`Server error: ${msg}`, 500);
   }

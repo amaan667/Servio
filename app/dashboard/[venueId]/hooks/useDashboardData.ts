@@ -20,10 +20,10 @@ export interface DashboardStats {
   unpaid: number;
 }
 
-export function useDashboardData(venueId: string, venueTz: string, initialVenue: any, initialCounts?: DashboardCounts, initialStats?: DashboardStats) {
+export function useDashboardData(venueId: string, venueTz: string, initialVenue: unknown, initialCounts?: DashboardCounts, initialStats?: DashboardStats) {
   console.log('[useDashboardData] Hook called with:', { venueId, venueTz, hasInitialVenue: !!initialVenue, hasInitialCounts: !!initialCounts, hasInitialStats: !!initialStats });
   
-  const [venue, setVenue] = useState<any>(initialVenue);
+  const [venue, setVenue] = useState<unknown>(initialVenue);
   const [loading, setLoading] = useState(!initialVenue);
   const [counts, setCounts] = useState<DashboardCounts>(initialCounts || {
     live_count: 0,
@@ -37,12 +37,12 @@ export function useDashboardData(venueId: string, venueTz: string, initialVenue:
   });
   const [stats, setStats] = useState<DashboardStats>(initialStats || { revenue: 0, menuItems: 0, unpaid: 0 });
   const [statsLoaded, setStatsLoaded] = useState(false);
-  const [todayWindow, setTodayWindow] = useState<any>(null);
+  const [todayWindow, setTodayWindow] = useState<unknown>(null);
   const [error, setError] = useState<string | null>(null);
 
   console.log('[useDashboardData] Initial state:', { loading, hasVenue: !!venue, hasTodayWindow: !!todayWindow, hasError: !!error });
 
-  const loadStats = useCallback(async (venueId: string, window: any) => {
+  const loadStats = useCallback(async (venueId: string, window: unknown) => {
     try {
       const supabase = createClient();
       
@@ -61,7 +61,7 @@ export function useDashboardData(venueId: string, venueTz: string, initialVenue:
         .eq('is_available', true);
 
       const revenue = orders?.reduce((sum, order) => sum + (order.total_amount || 0), 0) || 0;
-      const unpaid = orders?.filter((o: any) => o.order_status === 'UNPAID').length || 0;
+      const unpaid = orders?.filter((o: unknown) => o.order_status === 'UNPAID').length || 0;
 
       setStats({
         revenue,
@@ -103,7 +103,7 @@ export function useDashboardData(venueId: string, venueTz: string, initialVenue:
         const counts = newCounts as DashboardCounts;
         
         if (tableCounters && Array.isArray(tableCounters) && tableCounters.length > 0) {
-          const tableCounter = tableCounters[0] as any;
+          const tableCounter = tableCounters[0] as unknown;
           setCounts({
             ...counts,
             tables_set_up: tableCounter.tables_set_up || 0,
@@ -121,7 +121,7 @@ export function useDashboardData(venueId: string, venueTz: string, initialVenue:
     }
   }, [venueId, venueTz]);
 
-  const updateRevenueIncrementally = useCallback((order: any) => {
+  const updateRevenueIncrementally = useCallback((order: unknown) => {
     if (order.order_status !== 'CANCELLED' && order.total_amount) {
       setStats(prev => ({
         ...prev,

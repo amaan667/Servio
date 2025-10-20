@@ -5,12 +5,12 @@ export interface ChatMessage {
   role: "user" | "assistant" | "system";
   content: string;
   toolName?: string;
-  toolParams?: any;
-  executionResult?: any;
+  toolParams?: unknown;
+  executionResult?: unknown;
   auditId?: string;
   createdAt: string;
   canUndo: boolean;
-  undoData?: any;
+  undoData?: unknown;
 }
 
 export interface ChatConversation {
@@ -42,7 +42,7 @@ export interface ChatState {
   executing: boolean;
   error: string | null;
   success: boolean;
-  executionResults: any[];
+  executionResults: unknown[];
   undoing: string | null;
 }
 

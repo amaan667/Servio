@@ -101,7 +101,7 @@ export function generateCoverageReport(
 }
 
 /**
- * Determines why a price was not attached to any item
+ * Determines why a price was not attached to unknown item
  */
 function determineUnattachedReason(
   price: PriceToken, 
@@ -129,7 +129,7 @@ function determineUnattachedReason(
     return 'No nearby title candidates found';
   }
   
-  // Check if price is too far from any title
+  // Check if price is too far from unknown title
   const minDistance = Math.min(...nearbyTitles.map(title => 
     Math.abs(title.bbox.y - priceBlock.bbox.y)
   ));

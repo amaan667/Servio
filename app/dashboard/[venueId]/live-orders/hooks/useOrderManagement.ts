@@ -57,8 +57,8 @@ export function useOrderManagement(venueId: string) {
       }
       
       if (!allError && allData) {
-        const liveOrderIds = new Set((liveData || []).map((order: any) => order.id));
-        const allTodayFiltered = allData.filter((order: any) => !liveOrderIds.has(order.id));
+        const liveOrderIds = new Set((liveData || []).map((order: unknown) => order.id));
+        const allTodayFiltered = allData.filter((order: unknown) => !liveOrderIds.has(order.id));
         setAllTodayOrders(allTodayFiltered as Order[]);
       }
       
@@ -99,7 +99,7 @@ export function useOrderManagement(venueId: string) {
           table: 'orders',
           filter: `venue_id=eq.${venueId}`
         }, 
-        (payload: any) => {
+        (payload: unknown) => {
           const newOrder = payload.new as Order;
           const oldOrder = payload.old as Order;
           

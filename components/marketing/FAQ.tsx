@@ -26,7 +26,7 @@ const faqItems: FAQItem[] = [
   {
     id: "hardware",
     question: "Do I need new hardware to use Servio?",
-    answer: "**No.** Customers use their own phones. You print the QR codes; staff manage orders from any device with a browser.",
+    answer: "**No.** Customers use their own phones. You print the QR codes; staff manage orders from unknown device with a browser.",
   },
   {
     id: "free-trial",

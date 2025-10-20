@@ -138,7 +138,7 @@ export async function POST(req: NextRequest) {
 /**
  * Merge two free tables
  */
-async function mergeFreeTables(supabase: any, sourceTable: any, targetTable: any) {
+async function mergeFreeTables(supabase: unknown, sourceTable: unknown, targetTable: unknown) {
   try {
     
     // Create a new combined session for both tables
@@ -201,7 +201,7 @@ async function mergeFreeTables(supabase: any, sourceTable: any, targetTable: any
 /**
  * Expand occupied table with free table
  */
-async function expandOccupiedTable(supabase: any, sourceTable: any, targetTable: any, sourceIsFree: boolean) {
+async function expandOccupiedTable(supabase: unknown, sourceTable: unknown, targetTable: unknown, sourceIsFree: boolean) {
   try {
     const freeTable = sourceIsFree ? sourceTable : targetTable;
     const occupiedTable = sourceIsFree ? targetTable : sourceTable;
@@ -265,7 +265,7 @@ async function expandOccupiedTable(supabase: any, sourceTable: any, targetTable:
 /**
  * Expand reserved table with free table
  */
-async function expandReservedTable(supabase: any, sourceTable: any, targetTable: any, sourceIsFree: boolean) {
+async function expandReservedTable(supabase: unknown, sourceTable: unknown, targetTable: unknown, sourceIsFree: boolean) {
   try {
     const freeTable = sourceIsFree ? sourceTable : targetTable;
     const reservedTable = sourceIsFree ? targetTable : sourceTable;
@@ -316,7 +316,7 @@ async function expandReservedTable(supabase: any, sourceTable: any, targetTable:
 /**
  * Merge two occupied tables (risky operation)
  */
-async function mergeOccupiedTables(supabase: any, sourceTable: any, targetTable: any) {
+async function mergeOccupiedTables(supabase: unknown, sourceTable: unknown, targetTable: unknown) {
   try {
     
     // Get both sessions
@@ -330,8 +330,8 @@ async function mergeOccupiedTables(supabase: any, sourceTable: any, targetTable:
       return { error: 'Could not find both active sessions' };
     }
 
-    const sourceSession = sessions.find((s: any) => s.table_id === sourceTable.id);
-    const targetSession = sessions.find((s: any) => s.table_id === targetTable.id);
+    const sourceSession = sessions.find((s: unknown) => s.table_id === sourceTable.id);
+    const targetSession = sessions.find((s: unknown) => s.table_id === targetTable.id);
 
     if (!sourceSession || !targetSession) {
       return { error: 'Could not find both active sessions' };
@@ -417,7 +417,7 @@ async function mergeOccupiedTables(supabase: any, sourceTable: any, targetTable:
 /**
  * Merge two reserved tables (same reservation only)
  */
-async function mergeReservedTables(supabase: any, sourceTable: any, targetTable: any) {
+async function mergeReservedTables(supabase: unknown, sourceTable: unknown, targetTable: unknown) {
   try {
     
     // Update table labels

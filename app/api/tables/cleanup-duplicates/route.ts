@@ -51,7 +51,7 @@ export async function POST(req: Request) {
     }
 
     // Group tables by label to find duplicates
-    const tablesByLabel = new Map<string, any[]>();
+    const tablesByLabel = new Map<string, unknown[]>();
     tables.forEach(table => {
       if (!tablesByLabel.has(table.label)) {
         tablesByLabel.set(table.label, []);

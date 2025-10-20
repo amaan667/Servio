@@ -81,7 +81,7 @@ export default function KDSClient({ venueId, venueName }: KDSClientProps) {
       } else {
         setError(data.error || 'Failed to load stations');
       }
-    } catch (err: any) {
+    } catch (err: unknown) {
       console.error('[KDS] Error fetching stations:', err);
       setError(err.message);
     }
@@ -100,7 +100,7 @@ export default function KDSClient({ venueId, venueName }: KDSClientProps) {
       } else {
         setError(data.error || 'Failed to load tickets');
       }
-    } catch (err: any) {
+    } catch (err: unknown) {
       console.error('[KDS] Error fetching tickets:', err);
       setError(err.message);
     } finally {
@@ -127,7 +127,7 @@ export default function KDSClient({ venueId, venueName }: KDSClientProps) {
       } else {
         console.error('[KDS] Error updating ticket:', data.error);
       }
-    } catch (err: any) {
+    } catch (err: unknown) {
       console.error('[KDS] Error updating ticket:', err);
     }
   }, []);
@@ -147,7 +147,7 @@ export default function KDSClient({ venueId, venueName }: KDSClientProps) {
         // Remove bumped tickets from view
         setTickets(prev => prev.filter(t => t.order_id !== orderId));
       }
-    } catch (err: any) {
+    } catch (err: unknown) {
       console.error('[KDS] Error bumping order:', err);
     }
   }, []);
@@ -215,7 +215,7 @@ export default function KDSClient({ venueId, venueName }: KDSClientProps) {
         schema: 'public',
         table: 'kds_tickets',
         filter: `venue_id=eq.${venueId}`
-      }, (payload: any) => {
+      }, (payload: unknown) => {
         console.debug('[KDS] Realtime update:', payload);
         
         if (payload.eventType === 'INSERT') {

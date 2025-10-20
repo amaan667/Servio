@@ -134,7 +134,7 @@ export function useVenueSettings(venue: Venue, user: User) {
       setTimeout(() => {
         router.refresh();
       }, 1500);
-    } catch (err: any) {
+    } catch (err: unknown) {
       setError(err.message || 'Failed to update venue settings');
       toast({
         title: "Error",

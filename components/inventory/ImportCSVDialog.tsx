@@ -19,7 +19,7 @@ interface ImportCSVDialogProps {
 export function ImportCSVDialog({ open, onOpenChange, venueId, onSuccess }: ImportCSVDialogProps) {
   const [loading, setLoading] = useState(false);
   const [file, setFile] = useState<File | null>(null);
-  const [result, setResult] = useState<any>(null);
+  const [result, setResult] = useState<unknown>(null);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -105,7 +105,7 @@ export function ImportCSVDialog({ open, onOpenChange, venueId, onSuccess }: Impo
             {result?.errors && result.errors.length > 0 && (
               <div className="max-h-32 overflow-y-auto text-sm">
                 <p className="font-medium mb-1">Errors:</p>
-                {result.errors.map((err: any, i: number) => (
+                {result.errors.map((err: unknown, i: number) => (
                   <p key={i} className="text-red-600">
                     {err.row}: {err.error}
                   </p>

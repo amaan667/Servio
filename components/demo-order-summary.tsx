@@ -31,7 +31,7 @@ interface DemoOrderSummaryProps {
 interface OrderTimelineItem {
   status: string;
   label: string;
-  icon: any;
+  icon: unknown;
   timestamp?: string;
   completed: boolean;
   current: boolean;

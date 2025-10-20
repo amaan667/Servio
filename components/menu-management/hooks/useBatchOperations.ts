@@ -7,7 +7,7 @@ export function useBatchOperations(menuItems: MenuItem[], onRefresh: () => void)
   const [batchEditItems, setBatchEditItems] = useState<MenuItem[]>([]);
   const [selectedItems, setSelectedItems] = useState<string[]>([]);
   const [batchAction, setBatchAction] = useState<BatchAction>(null);
-  const [batchEditValue, setBatchEditValue] = useState<any>(null);
+  const [batchEditValue, setBatchEditValue] = useState<unknown>(null);
 
   const openBatchEdit = () => {
     setBatchEditItems(menuItems.map(item => ({ ...item })));
@@ -28,7 +28,7 @@ export function useBatchOperations(menuItems: MenuItem[], onRefresh: () => void)
       }
       setBatchEditOpen(false);
       onRefresh();
-    } catch (error: any) {
+    } catch (error: unknown) {
       console.error("Failed to save batch edits:", error);
     }
   };
@@ -80,7 +80,7 @@ export function useBatchOperations(menuItems: MenuItem[], onRefresh: () => void)
       setBatchAction(null);
       setSelectedItems([]);
       onRefresh();
-    } catch (error: any) {
+    } catch (error: unknown) {
       console.error("Failed to perform batch action:", error);
     }
   };

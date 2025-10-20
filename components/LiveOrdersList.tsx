@@ -38,7 +38,7 @@ const LiveOrdersList = React.memo(function LiveOrdersList({ venueId }: { venueId
   if (isError) {
     return (
       <div className="text-rose-600">
-        <div>Failed to load orders. {(error as any)?.message ?? 'Unknown error'}</div>
+        <div>Failed to load orders. {(error as unknown)?.message ?? 'Unknown error'}</div>
       </div>
     )
   }

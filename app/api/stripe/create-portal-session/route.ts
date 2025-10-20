@@ -103,7 +103,7 @@ export async function POST(request: NextRequest) {
         configurationId = configuration.id;
         logger.debug('[STRIPE PORTAL] Created new configuration:', { value: configurationId });
       }
-    } catch (configError: any) {
+    } catch (configError: unknown) {
       logger.error('[STRIPE PORTAL] Failed to get/create configuration:', { value: configError });
       // Continue without configuration - Stripe will use default if available
       logger.debug('[STRIPE PORTAL] Continuing without explicit configuration...');
@@ -128,7 +128,7 @@ export async function POST(request: NextRequest) {
       const session = await stripe.billingPortal.sessions.create(sessionParams);
 
       return NextResponse.json({ url: session.url });
-    } catch (portalError: any) {
+    } catch (portalError: unknown) {
       logger.error('[STRIPE PORTAL] Failed to create session:', { value: portalError });
       
       // Provide more specific error messages
@@ -148,7 +148,7 @@ export async function POST(request: NextRequest) {
         { status: 500 }
       );
     }
-  } catch (error: any) {
+  } catch (error: unknown) {
     logger.error("[STRIPE PORTAL] Error:", { error: error instanceof Error ? error.message : 'Unknown error' });
     return NextResponse.json(
       { error: error.message || "Failed to create portal session" },

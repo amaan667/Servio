@@ -18,7 +18,7 @@ export function getErrorDetails(error: unknown): ErrorDetails {
       message: error.message,
       stack: error.stack,
       name: error.name,
-      ...(error as any).code && { code: (error as any).code },
+      ...(error as unknown).code && { code: (error as unknown).code },
     };
   }
 
@@ -28,10 +28,10 @@ export function getErrorDetails(error: unknown): ErrorDetails {
 
   if (error && typeof error === 'object') {
     return {
-      message: (error as any).message || 'Unknown error',
-      ...(error as any).stack && { stack: (error as any).stack },
-      ...(error as any).name && { name: (error as any).name },
-      ...(error as any).code && { code: (error as any).code },
+      message: (error as unknown).message || 'Unknown error',
+      ...(error as unknown).stack && { stack: (error as unknown).stack },
+      ...(error as unknown).name && { name: (error as unknown).name },
+      ...(error as unknown).code && { code: (error as unknown).code },
     };
   }
 

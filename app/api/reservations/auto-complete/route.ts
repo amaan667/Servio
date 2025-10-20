@@ -139,10 +139,10 @@ export async function POST(req: NextRequest) {
       }, { status: 500 });
     }
 
-    // Also check if any tables should be set to FREE if they have no active orders
+    // Also check if unknown tables should be set to FREE if they have no active orders
     for (const reservation of reservationsToComplete) {
       if (reservation.table_id) {
-        // Check if there are any active orders for this table
+        // Check if there are unknown active orders for this table
         const { data: activeOrders } = await supabase
           .from('orders')
           .select('id')
@@ -178,7 +178,7 @@ export async function POST(req: NextRequest) {
       }))
     });
 
-  } catch (error: any) {
+  } catch (error: unknown) {
     logger.error('[AUTO COMPLETE] Error:', { error: error instanceof Error ? error.message : 'Unknown error' });
     return NextResponse.json({ 
       ok: false, 

@@ -36,7 +36,7 @@ export async function POST(req: Request) {
     logger.debug('[STRIPE WEBHOOK DEBUG] Event constructed successfully');
     logger.debug('[STRIPE WEBHOOK DEBUG] Event type:', event.type);
     logger.debug('[STRIPE WEBHOOK DEBUG] Event ID:', event.id);
-  } catch (err: any) {
+  } catch (err: unknown) {
     logger.error('[STRIPE WEBHOOK DEBUG] Webhook construction error:', err.message);
     return new NextResponse(`Webhook Error: ${err.message}`, { status: 400 });
   }

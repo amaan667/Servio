@@ -23,7 +23,7 @@ export async function PATCH(req: Request, context: { params: Promise<{ id: strin
     return NextResponse.json({ ok: false, error: 'Invalid payload' }, { status: 400 });
   }
   const supa = await admin();
-  const update: Record<string, any> = {};
+  const update: Record<string, unknown> = {};
   if (order_status) {
     update.order_status = order_status;
   }

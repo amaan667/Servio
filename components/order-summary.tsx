@@ -12,7 +12,7 @@ import { createClient } from '@/lib/supabase';
 interface OrderSummaryProps {
   orderId?: string;
   sessionId?: string;
-  orderData?: any;
+  orderData?: unknown;
   isDemo?: boolean;
   onClose?: () => void;
 }
@@ -20,7 +20,7 @@ interface OrderSummaryProps {
 interface OrderTimelineItem {
   status: string;
   label: string;
-  icon: any;
+  icon: unknown;
   timestamp?: string;
   completed: boolean;
   current: boolean;
@@ -36,7 +36,7 @@ const ORDER_STATUSES = {
 };
 
 export default function OrderSummary({ orderId, sessionId, orderData, isDemo = false, onClose }: OrderSummaryProps) {
-  const [order, setOrder] = useState<any>(orderData);
+  const [order, setOrder] = useState<unknown>(orderData);
   const [loading, setLoading] = useState(!orderData);
   const [error, setError] = useState<string | null>(null);
   const [showFeedback, setShowFeedback] = useState(false);
@@ -186,11 +186,11 @@ export default function OrderSummary({ orderId, sessionId, orderData, isDemo = f
           table: 'orders',
           filter: `id=eq.${order.id}`,
         },
-        (payload: any) => {
+        (payload: unknown) => {
           
           if (payload.eventType === 'UPDATE') {
             
-            setOrder((prevOrder: any) => {
+            setOrder((prevOrder: unknown) => {
               if (!prevOrder) return null;
               return { ...prevOrder, ...payload.new };
             });
@@ -330,7 +330,7 @@ export default function OrderSummary({ orderId, sessionId, orderData, isDemo = f
             </CardHeader>
             <CardContent>
               <div className="space-y-4">
-                {order.items.map((item: any, index: number) => (
+                {order.items.map((item: unknown, index: number) => (
                   <div key={index} className="flex justify-between items-start py-3 border-b border-gray-100 last:border-b-0">
                     <div className="flex-1">
                       <div className="flex items-center gap-3">

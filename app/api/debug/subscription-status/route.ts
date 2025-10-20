@@ -92,7 +92,7 @@ export async function GET(request: NextRequest) {
           orgFound = true;
           logger.debug('[DEBUG] Created new organization:', org.id);
           
-          // Link any existing venues to this organization
+          // Link unknown existing venues to this organization
           await supabase
             .from("venues")
             .update({ organization_id: org.id })
@@ -153,7 +153,7 @@ export async function GET(request: NextRequest) {
       }
     });
 
-  } catch (error: any) {
+  } catch (error: unknown) {
     logger.error("[DEBUG] Error:", { error: error instanceof Error ? error.message : 'Unknown error' });
     return NextResponse.json(
       { error: error.message || "Failed to debug subscription status" },
@@ -220,7 +220,7 @@ export async function POST(request: NextRequest) {
       updated: updateData
     });
 
-  } catch (error: any) {
+  } catch (error: unknown) {
     logger.error("[DEBUG] Error:", { error: error instanceof Error ? error.message : 'Unknown error' });
     return NextResponse.json(
       { error: error.message || "Failed to update subscription status" },

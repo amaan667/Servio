@@ -32,7 +32,7 @@ export async function GET(req: Request) {
       return NextResponse.json({ ok:true, exists: !missing, error: error.message });
     }
     return NextResponse.json({ ok:true, exists:true });
-  } catch (e:any) {
+  } catch (e:unknown) {
     return NextResponse.json({ ok:false, error: e?.message || 'Unknown error' }, { status:500 });
   }
 }

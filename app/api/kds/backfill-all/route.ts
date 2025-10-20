@@ -85,7 +85,7 @@ export async function POST(req: Request) {
         throw new Error('No KDS stations available');
       }
       
-      const expoStation = existingStations.find((s: any) => s.station_type === 'expo') || existingStations[0];
+      const expoStation = existingStations.find((s: unknown) => s.station_type === 'expo') || existingStations[0];
       
       if (!expoStation) {
         throw new Error('No KDS station available');
@@ -178,7 +178,7 @@ export async function POST(req: Request) {
           scopeOrdersProcessed++;
           logger.debug(`[KDS BACKFILL ALL] Processed order ${order.id} with ${items.length} items for ${scope}`);
           
-        } catch (error: any) {
+        } catch (error: unknown) {
           logger.error(`[KDS BACKFILL ALL] Error processing order ${order.id} for ${scope}:`, { error: error instanceof Error ? error.message : 'Unknown error' });
           scopeErrors.push(`Error processing order ${order.id}: ${error.message}`);
         }
@@ -211,7 +211,7 @@ export async function POST(req: Request) {
       results
     });
 
-  } catch (error: any) {
+  } catch (error: unknown) {
     logger.error('[KDS BACKFILL ALL] Unexpected error:', { error: error instanceof Error ? error.message : 'Unknown error' });
     return NextResponse.json({ 
       ok: false, 

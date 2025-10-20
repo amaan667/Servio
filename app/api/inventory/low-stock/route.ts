@@ -46,7 +46,7 @@ export async function GET(request: NextRequest) {
           current_stock: item.on_hand,
           reorder_level: item.reorder_level,
           unit: item.unit,
-          affected_menu_items: menuItems?.map((mi: any) => mi.menu_item?.name).filter(Boolean) || [],
+          affected_menu_items: menuItems?.map((mi: unknown) => mi.menu_item?.name).filter(Boolean) || [],
         };
       })
     );

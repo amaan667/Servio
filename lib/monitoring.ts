@@ -34,7 +34,7 @@ export const errorTracking = {
   /**
    * Capture exception
    */
-  captureException(error: Error, context?: Record<string, any>) {
+  captureException(error: Error, context?: Record<string, unknown>) {
     Sentry.captureException(error, {
       extra: context,
     });
@@ -43,7 +43,7 @@ export const errorTracking = {
   /**
    * Capture message
    */
-  captureMessage(message: string, level: 'info' | 'warning' | 'error' = 'error', context?: Record<string, any>) {
+  captureMessage(message: string, level: 'info' | 'warning' | 'error' = 'error', context?: Record<string, unknown>) {
     Sentry.captureMessage(message, {
       level,
       extra: context,
@@ -64,7 +64,7 @@ export const errorTracking = {
     message: string;
     category?: string;
     level?: 'info' | 'warning' | 'error';
-    data?: Record<string, any>;
+    data?: Record<string, unknown>;
   }) {
     Sentry.addBreadcrumb(breadcrumb);
   },

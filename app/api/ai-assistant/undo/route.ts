@@ -11,8 +11,8 @@ const UndoRequestSchema = z.object({
   messageId: z.string().uuid(),
   undoData: z.object({
     toolName: z.string(),
-    params: z.any(),
-    result: z.any(),
+    params: z.unknown(),
+    result: z.unknown(),
   }),
 });
 
@@ -149,7 +149,7 @@ export async function POST(request: NextRequest) {
       message: "Action successfully undone",
       undoResult,
     });
-  } catch (error: any) {
+  } catch (error: unknown) {
     logger.error("[AI UNDO] Undo error:", { error: error instanceof Error ? error.message : 'Unknown error' });
     
     if (error.name === "ZodError") {
@@ -167,7 +167,7 @@ export async function POST(request: NextRequest) {
 }
 
 // Undo handlers for different tool types
-async function undoMenuTranslation(venueId: string, undoData: any, supabase: any) {
+async function undoMenuTranslation(venueId: string, undoData: unknown, supabase: unknown) {
   try {
     // For translation, we need to translate back to the original language
     // This is complex because we need to know what the original language was
@@ -267,7 +267,7 @@ async function undoMenuTranslation(venueId: string, undoData: any, supabase: any
     const targetLangName = languageNames[reverseLanguage] || reverseLanguage;
 
     // Detect the source language by analyzing the current categories
-    const detectSourceLanguage = (items: any[]): string => {
+    const detectSourceLanguage = (items: unknown[]): string => {
       const categories = items.map(item => item.category).filter(Boolean);
       const spanishIndicators = ['CAFÉ', 'BEBIDAS', 'TÉ', 'ESPECIALES', 'NIÑOS', 'ENSALADAS', 'POSTRES', 'ENTRADAS', 'PLATOS PRINCIPALES', 'APERITIVOS', 'MALTEADAS', 'BATIDOS', 'SÁNDWICHES', 'DESAYUNO', 'ALMUERZO', 'CENA', 'SOPA', 'SOPAS', 'MARISCOS', 'POLLO', 'CARNE DE RES', 'CERDO', 'VEGETARIANO', 'VEGANO', 'SIN GLUTEN'];
       const englishIndicators = ['STARTERS', 'APPETIZERS', 'MAIN COURSES', 'ENTREES', 'DESSERTS', 'SALADS', 'KIDS', 'CHILDREN', 'DRINKS', 'BEVERAGES', 'COFFEE', 'TEA', 'SPECIALS', 'WRAPS', 'SANDWICHES', 'MILKSHAKES', 'SHAKES', 'SMOOTHIES', 'BRUNCH', 'BREAKFAST', 'LUNCH', 'DINNER', 'SOUP', 'SOUPS', 'PASTA', 'PIZZA', 'SEAFOOD', 'CHICKEN', 'BEEF', 'PORK', 'VEGETARIAN', 'VEGAN', 'GLUTEN FREE'];
@@ -304,19 +304,19 @@ async function undoMenuTranslation(venueId: string, undoData: any, supabase: any
 
     // Translate items back
     const batchSize = 15;
-    const translatedItems: any[] = [];
+    const translatedItems: unknown[] = [];
     
     for (let i = 0; i < items.length; i += batchSize) {
       const batch = items.slice(i, i + batchSize);
       
-      const itemsToTranslate = batch.map((item: any) => ({
+      const itemsToTranslate = batch.map((item: unknown) => ({
         id: item.id,
         name: item.name,
         category: item.category,
       }));
 
       // Generate comprehensive category mapping instructions for undo
-      const categoryMappingList = Object.entries((categoryMappings as any)[detectedSourceLanguage] || {})
+      const categoryMappingList = Object.entries((categoryMappings as unknown)[detectedSourceLanguage] || {})
         .map(([from, to]) => `   - "${from}" → "${to}"`)
         .join('\n');
 
@@ -328,7 +328,7 @@ CRITICAL REQUIREMENTS:
 1. You MUST return EXACTLY ${batch.length} items (same count as input)
 2. You MUST translate EVERY SINGLE item name and category name back to ${targetLangName}
 3. Each item must have the same 'id' field as the input
-4. Do NOT skip any items - translate ALL of them
+4. Do NOT skip unknown items - translate ALL of them
 5. For category translation, use these mappings:
 ${categoryMappingList}
 6. If a category is not in the mapping list, translate it naturally to ${targetLangName}
@@ -365,7 +365,7 @@ IMPORTANT: Every item in the input must appear in your output with a translated 
         // Validate that we got the expected number of items and all have required fields
         if (translatedArray.length === batch.length) {
           // Additional validation: check that all items have required fields
-          const validItems = translatedArray.filter((item: any) => 
+          const validItems = translatedArray.filter((item: unknown) => 
             item && item.id && item.name && item.category
           );
           
@@ -411,10 +411,10 @@ IMPORTANT: Every item in the input must appear in your output with a translated 
       }
     }
 
-    // Check for any items that weren't translated
-    const missingItems = items.filter((item: any) => !translatedIds.has(item.id));
+    // Check for unknown items that weren't translated
+    const missingItems = items.filter((item: unknown) => !translatedIds.has(item.id));
     if (missingItems.length > 0) {
-      logger.warn(`[AI UNDO] ${missingItems.length} items were not translated:`, missingItems.map((item: any) => item.name));
+      logger.warn(`[AI UNDO] ${missingItems.length} items were not translated:`, missingItems.map((item: unknown) => item.name));
     }
 
     return {
@@ -422,13 +422,13 @@ IMPORTANT: Every item in the input must appear in your output with a translated 
       message: `Successfully reversed translation: ${updatedCount} items translated back to ${targetLangName}`,
       itemsUpdated: updatedCount,
     };
-  } catch (error: any) {
+  } catch (error: unknown) {
     logger.error("[AI UNDO] Menu translation undo error:", { error: error instanceof Error ? error.message : 'Unknown error' });
     return { success: false, error: error.message };
   }
 }
 
-async function undoMenuPriceUpdate(venueId: string, undoData: any, supabase: any) {
+async function undoMenuPriceUpdate(venueId: string, undoData: unknown, supabase: unknown) {
   try {
     // For price updates, we need to restore original prices
     // The undoData should contain the original prices from the execution result
@@ -456,13 +456,13 @@ async function undoMenuPriceUpdate(venueId: string, undoData: any, supabase: any
       message: `Successfully restored original prices for ${updatedCount} items`,
       itemsUpdated: updatedCount,
     };
-  } catch (error: any) {
+  } catch (error: unknown) {
     logger.error("[AI UNDO] Menu price update undo error:", { error: error instanceof Error ? error.message : 'Unknown error' });
     return { success: false, error: error.message };
   }
 }
 
-async function undoMenuAvailabilityToggle(venueId: string, undoData: any, supabase: any) {
+async function undoMenuAvailabilityToggle(venueId: string, undoData: unknown, supabase: unknown) {
   try {
     // For availability toggle, we need to restore original availability
     const originalAvailability = undoData.params.available;
@@ -486,13 +486,13 @@ async function undoMenuAvailabilityToggle(venueId: string, undoData: any, supaba
       message: `Successfully restored availability for ${undoData.params.itemIds.length} items`,
       itemsUpdated: undoData.params.itemIds.length,
     };
-  } catch (error: any) {
+  } catch (error: unknown) {
     logger.error("[AI UNDO] Menu availability toggle undo error:", { error: error instanceof Error ? error.message : 'Unknown error' });
     return { success: false, error: error.message };
   }
 }
 
-async function undoMenuItemCreation(venueId: string, undoData: any, supabase: any) {
+async function undoMenuItemCreation(venueId: string, undoData: unknown, supabase: unknown) {
   try {
     // For item creation, we need to delete the created item
     const createdItemId = undoData.result.id;
@@ -512,13 +512,13 @@ async function undoMenuItemCreation(venueId: string, undoData: any, supabase: an
       message: `Successfully deleted created item: ${undoData.result.name}`,
       itemsDeleted: 1,
     };
-  } catch (error: any) {
+  } catch (error: unknown) {
     logger.error("[AI UNDO] Menu item creation undo error:", { error: error instanceof Error ? error.message : 'Unknown error' });
     return { success: false, error: error.message };
   }
 }
 
-async function undoMenuItemDeletion(venueId: string, undoData: any, supabase: any) {
+async function undoMenuItemDeletion(venueId: string, undoData: unknown, supabase: unknown) {
   try {
     // For item deletion, we need to recreate the deleted item
     const deletedItem = undoData.result.deletedItem;
@@ -547,13 +547,13 @@ async function undoMenuItemDeletion(venueId: string, undoData: any, supabase: an
       message: `Successfully recreated deleted item: ${deletedItem.name}`,
       itemsRecreated: 1,
     };
-  } catch (error: any) {
+  } catch (error: unknown) {
     logger.error("[AI UNDO] Menu item deletion undo error:", { error: error instanceof Error ? error.message : 'Unknown error' });
     return { success: false, error: error.message };
   }
 }
 
-async function undoInventoryAdjustment(venueId: string, undoData: any, supabase: any) {
+async function undoInventoryAdjustment(venueId: string, undoData: unknown, supabase: unknown) {
   try {
     // For inventory adjustments, we need to reverse the stock changes
     const adjustments = undoData.params.adjustments;
@@ -578,7 +578,7 @@ async function undoInventoryAdjustment(venueId: string, undoData: any, supabase:
       message: `Successfully reversed inventory adjustments for ${updatedCount} ingredients`,
       ingredientsUpdated: updatedCount,
     };
-  } catch (error: any) {
+  } catch (error: unknown) {
     logger.error("[AI UNDO] Inventory adjustment undo error:", { error: error instanceof Error ? error.message : 'Unknown error' });
     return { success: false, error: error.message };
   }

@@ -30,7 +30,7 @@ export async function GET(req: Request) {
   
   // Transform the data to flatten the nested staff object
   const transformedShifts = data?.map(shift => {
-    const staff = shift.staff as any;
+    const staff = shift.staff as unknown;
     return {
       ...shift,
       staff_name: Array.isArray(staff) ? staff[0]?.name || 'Unknown' : staff?.name || 'Unknown',

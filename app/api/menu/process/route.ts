@@ -118,7 +118,7 @@ export async function POST(req: NextRequest) {
 
     // Process pages/images with OpenAI Vision
     
-    const allMenuItems: any[] = [];
+    const allMenuItems: unknown[] = [];
     let totalTokens = 0;
 
     // Process all pages in parallel for faster processing
@@ -151,7 +151,7 @@ IMPORTANT: For x_percent and y_percent, provide the approximate center position 
             const items = JSON.parse(content);
             if (Array.isArray(items)) {
               // Add page_index to each item for hotspot creation
-              const itemsWithPage = items.map((item: any) => ({
+              const itemsWithPage = items.map((item: unknown) => ({
                 ...item,
                 page_index: i
               }));
@@ -211,7 +211,7 @@ IMPORTANT: For x_percent and y_percent, provide the approximate center position 
         
         if (uploadData?.venue_id) {
           // Insert menu items first
-          const itemsToInsert = allMenuItems.map((item: any) => ({
+          const itemsToInsert = allMenuItems.map((item: unknown) => ({
             venue_id: uploadData.venue_id,
             name: item.name,
             description: item.description || null,
@@ -228,8 +228,8 @@ IMPORTANT: For x_percent and y_percent, provide the approximate center position 
           if (!itemsError && insertedItems) {
             // Create hotspots by matching items
             const hotspots = allMenuItems
-              .map((item: any, index: number) => {
-                const menuItem = insertedItems.find((mi: any) => mi.name === item.name);
+              .map((item: unknown, index: number) => {
+                const menuItem = insertedItems.find((mi: unknown) => mi.name === item.name);
                 if (menuItem && item.x_percent !== undefined && item.y_percent !== undefined) {
                   return {
                     venue_id: uploadData.venue_id,
@@ -245,7 +245,7 @@ IMPORTANT: For x_percent and y_percent, provide the approximate center position 
                 }
                 return null;
               })
-              .filter((h: any) => h !== null);
+              .filter((h: unknown) => h !== null);
             
             if (hotspots.length > 0) {
               const { error: hotspotsError } = await supa

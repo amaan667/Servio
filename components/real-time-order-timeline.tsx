@@ -125,7 +125,7 @@ export function RealTimeOrderTimeline({ orderId, venueId, className }: RealTimeO
           table: 'orders',
           filter: `id=eq.${orderId}`,
         },
-        (payload: any) => {
+        (payload: unknown) => {
           console.debug('[REAL-TIME TIMELINE] Order update received:', {
             eventType: payload.eventType,
             oldStatus: payload.old?.order_status,
@@ -149,7 +149,7 @@ export function RealTimeOrderTimeline({ orderId, venueId, className }: RealTimeO
           }
         }
       )
-      .subscribe((status: any) => {
+      .subscribe((status: unknown) => {
         
         if (status === 'SUBSCRIBED') {
         } else if (status === 'CHANNEL_ERROR') {

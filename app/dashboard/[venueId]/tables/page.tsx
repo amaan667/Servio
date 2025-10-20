@@ -79,7 +79,7 @@ export default async function TableManagementPage({ params }: TableManagementPag
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 pb-24 md:pb-8">
         <RoleBasedNavigation 
           venueId={venueId} 
-          userRole={finalUserRole as any}
+          userRole={finalUserRole as unknown}
           userName={user.user_metadata?.full_name || user.email?.split('@')[0] || 'User'}
         />
         <Suspense fallback={<div className="text-center py-8 text-gray-900">Loading tables...</div>}>

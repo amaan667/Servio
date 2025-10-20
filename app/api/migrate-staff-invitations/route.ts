@@ -27,7 +27,7 @@ export async function POST(request: NextRequest) {
           staff_invitations: true
         }
       });
-    } catch (tableError: any) {
+    } catch (tableError: unknown) {
       if (tableError.code !== 'PGRST116' && !tableError.message?.includes('relation "staff_invitations" does not exist')) {
         logger.error('[STAFF MIGRATION] Unexpected error checking table:', { error: tableError instanceof Error ? tableError.message : 'Unknown error' });
         return NextResponse.json({ 

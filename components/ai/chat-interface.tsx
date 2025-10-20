@@ -97,7 +97,7 @@ export function ChatInterface({ venueId, isOpen, onClose, initialPrompt }: ChatI
   }, [currentConversation]);
 
   // Handle conversation selection
-  const handleSelectConversation = async (conversation: any) => {
+  const handleSelectConversation = async (conversation: unknown) => {
     setCurrentConversation(conversation);
     await loadMessages(conversation.id);
     setActiveTab("chat");
@@ -110,7 +110,7 @@ export function ChatInterface({ venueId, isOpen, onClose, initialPrompt }: ChatI
       await loadMessages(newConv.id);
       setActiveTab("chat");
       setInput("");
-    } catch (error: any) {
+    } catch (error: unknown) {
       setError(error.message);
     }
   };
@@ -124,7 +124,7 @@ export function ChatInterface({ venueId, isOpen, onClose, initialPrompt }: ChatI
     try {
       await deleteConversation(conversationId);
       setActiveTab("chat");
-    } catch (error: any) {
+    } catch (error: unknown) {
       setError(error.message);
     }
   };
@@ -141,7 +141,7 @@ export function ChatInterface({ venueId, isOpen, onClose, initialPrompt }: ChatI
     if (!conv) {
       try {
         conv = await createNewConversation();
-      } catch (error: any) {
+      } catch (error: unknown) {
         setError(error.message);
         return;
       }
@@ -160,7 +160,7 @@ export function ChatInterface({ venueId, isOpen, onClose, initialPrompt }: ChatI
     // Send to AI
     try {
       await sendMessage(conv.id, messageText);
-    } catch (error: any) {
+    } catch (error: unknown) {
       setError(error.message);
     }
   };
@@ -182,7 +182,7 @@ export function ChatInterface({ venueId, isOpen, onClose, initialPrompt }: ChatI
         canUndo: false,
       };
       addMessage(assistantMessage);
-    } catch (error: any) {
+    } catch (error: unknown) {
       setError(error.message);
     }
   };
@@ -197,7 +197,7 @@ export function ChatInterface({ venueId, isOpen, onClose, initialPrompt }: ChatI
         executionResult: null,
         canUndo: false,
       });
-    } catch (error: any) {
+    } catch (error: unknown) {
       setError(error.message);
     }
   };
@@ -226,7 +226,7 @@ export function ChatInterface({ venueId, isOpen, onClose, initialPrompt }: ChatI
           </DialogDescription>
         </DialogHeader>
 
-        <Tabs value={activeTab} onValueChange={(v) => setActiveTab(v as any)} className="flex-1 flex flex-col overflow-hidden">
+        <Tabs value={activeTab} onValueChange={(v) => setActiveTab(v as unknown)} className="flex-1 flex flex-col overflow-hidden">
           <TabsList className="mx-6 mt-4">
             <TabsTrigger value="chat" className="flex items-center space-x-2">
               <Sparkles className="h-4 w-4" />

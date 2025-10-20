@@ -121,7 +121,7 @@ export async function POST(request: NextRequest) {
     // Check if staff_invitations table exists
     try {
       await supabase.from('staff_invitations').select('id').limit(1);
-    } catch (tableError: any) {
+    } catch (tableError: unknown) {
       if (tableError.code === 'PGRST116' || tableError.message?.includes('relation "staff_invitations" does not exist')) {
         // Table doesn't exist
         return NextResponse.json({ 

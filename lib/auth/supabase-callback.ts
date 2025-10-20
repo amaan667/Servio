@@ -6,7 +6,7 @@ const supabase = createClient(
   process.env.SUPABASE_ANON_KEY!
 );
 
-export async function handleGoogleCallback(req: any, res: any) {
+export async function handleGoogleCallback(req: unknown, res: unknown) {
   // code can be array-like in some frameworks; ensure it's a string
   const rawCode = req.query?.code;
   const authCode = Array.isArray(rawCode) ? rawCode[0] : rawCode;
@@ -36,7 +36,7 @@ export async function handleGoogleCallback(req: any, res: any) {
   }
 
   try {
-    const payload: any = {
+    const payload: unknown = {
       code: authCode,
       code_verifier: codeVerifier,
     };
@@ -72,7 +72,7 @@ export async function handleGoogleCallback(req: any, res: any) {
     });
 
     return res.json(data);
-  } catch (err: any) {
+  } catch (err: unknown) {
     logger.error("[OAuth Exception]", {
       message: err.message,
       stack: err.stack,

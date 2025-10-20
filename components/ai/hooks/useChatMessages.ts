@@ -17,7 +17,7 @@ export function useChatMessages() {
       } else {
         throw new Error("Failed to load messages");
       }
-    } catch (error: any) {
+    } catch (error: unknown) {
       console.error("[AI CHAT] Error loading messages:", error);
       throw error;
     }

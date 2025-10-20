@@ -89,7 +89,7 @@ export function generateInvitationEmail(data: InvitationEmailData): EmailTemplat
           </p>
           
           <p style="font-size: 14px; color: #6b7280;">
-            This invitation will expire on ${new Date(expiresAt).toLocaleDateString()}. If you have any questions, please contact ${invitedBy} at ${venueName}.
+            This invitation will expire on ${new Date(expiresAt).toLocaleDateString()}. If you have unknown questions, please contact ${invitedBy} at ${venueName}.
           </p>
         </div>
         
@@ -120,7 +120,7 @@ Details:
 We'd love to have you on our team! To accept your invitation and get started, visit:
 ${invitationLink}
 
-This invitation will expire on ${new Date(expiresAt).toLocaleDateString()}. If you have any questions, please contact ${invitedBy} at ${venueName}.
+This invitation will expire on ${new Date(expiresAt).toLocaleDateString()}. If you have unknown questions, please contact ${invitedBy} at ${venueName}.
 
 ---
 This invitation was sent by ${venueName}
@@ -169,9 +169,9 @@ export async function sendEmail(template: EmailTemplate): Promise<boolean> {
     if (process.env.SENDGRID_API_KEY) {
       try {
         const sgMail = await import('@sendgrid/mail');
-        (sgMail as any).default.setApiKey(process.env.SENDGRID_API_KEY);
+        (sgMail as unknown).default.setApiKey(process.env.SENDGRID_API_KEY);
         
-        await (sgMail as any).default.send({
+        await (sgMail as unknown).default.send({
           to: template.to,
           from: 'noreply@servio.app',
           subject: template.subject,
@@ -191,7 +191,7 @@ export async function sendEmail(template: EmailTemplate): Promise<boolean> {
       try {
         const nodemailer = await import('nodemailer');
         
-        const transporter = (nodemailer as any).default.createTransporter({
+        const transporter = (nodemailer as unknown).default.createTransporter({
           host: process.env.SMTP_HOST,
           port: parseInt(process.env.SMTP_PORT || '587'),
           secure: process.env.SMTP_PORT === '465',

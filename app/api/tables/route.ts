@@ -204,7 +204,7 @@ export async function POST(req: Request) {
       }, { status: 400 });
     }
 
-    // Check if there are any active orders for a table with the same label
+    // Check if there are unknown active orders for a table with the same label
     // This handles cases where the table might have been deleted but orders still exist
     const { data: activeOrders } = await adminSupabase
       .from('orders')
@@ -213,7 +213,7 @@ export async function POST(req: Request) {
       .in('order_status', ['PLACED', 'ACCEPTED', 'IN_PREP', 'READY', 'OUT_FOR_DELIVERY', 'SERVING'])
       .not('table_number', 'is', null);
 
-    // Check if any active orders have a table number that matches the label
+    // Check if unknown active orders have a table number that matches the label
     const tableNumber = parseInt(label.replace(/\D/g, '')); // Extract number from label
     const hasActiveOrders = activeOrders?.some(order => {
       // Check if the order's table number matches the extracted number from the label

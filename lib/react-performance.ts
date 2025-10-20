@@ -28,7 +28,7 @@ export function useExpensiveCalculation<T>(
 /**
  * Memoize callback functions
  */
-export function useStableCallback<T extends (...args: any[]) => any>(
+export function useStableCallback<T extends (...args: unknown[]) => unknown>(
   callback: T,
   deps: React.DependencyList
 ): T {
@@ -72,7 +72,7 @@ export function shallowEqual<T extends object>(a: T, b: T): boolean {
 /**
  * Deep comparison for objects
  */
-export function deepEqual(a: any, b: any): boolean {
+export function deepEqual(a: unknown, b: unknown): boolean {
   if (a === b) return true;
   if (a == null || b == null) return false;
   if (typeof a !== 'object' || typeof b !== 'object') return false;

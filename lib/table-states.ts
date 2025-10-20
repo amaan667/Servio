@@ -29,7 +29,7 @@ export interface MergeScenario {
 /**
  * Determines the current state of a table based on its session and reservation data
  */
-export function getTableState(table: any): TableStateInfo {
+export function getTableState(table: unknown): TableStateInfo {
   const hasSession = !!table.session_id && table.status !== 'FREE';
   const hasActiveOrder = !!table.order_id;
   const hasReservation = !!(table.reserved_now_id || table.reserved_later_id);
@@ -111,7 +111,7 @@ export function getTableState(table: any): TableStateInfo {
 /**
  * Determines the merge scenario between two tables
  */
-export function getMergeScenario(sourceTable: any, targetTable: any): MergeScenario {
+export function getMergeScenario(sourceTable: unknown, targetTable: unknown): MergeScenario {
   const sourceState = getTableState(sourceTable);
   const targetState = getTableState(targetTable);
 
@@ -247,7 +247,7 @@ export function getMergeScenario(sourceTable: any, targetTable: any): MergeScena
 /**
  * Filters tables for merge selection based on source table state
  */
-export function getMergeableTables(sourceTable: any, availableTables: any[], showAllTables: boolean = false) {
+export function getMergeableTables(sourceTable: unknown, availableTables: unknown[], showAllTables: boolean = false) {
   const sourceState = getTableState(sourceTable);
   
   return availableTables

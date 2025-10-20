@@ -9,8 +9,8 @@ export interface GeneratedQR {
 }
 
 export function useQRCodeManagement(venueId: string) {
-  const [tables, setTables] = useState<any[]>([]);
-  const [counters, setCounters] = useState<any[]>([]);
+  const [tables, setTables] = useState<unknown[]>([]);
+  const [counters, setCounters] = useState<unknown[]>([]);
   const [loading, setLoading] = useState(true);
   const [generatedQRs, setGeneratedQRs] = useState<GeneratedQR[]>([]);
   const [qrCodeType, setQrCodeType] = useState<'tables' | 'counters'>('tables');

@@ -42,7 +42,7 @@ export async function PATCH(req: Request) {
     }
 
     // Build update object with timestamp
-    const updateData: any = { status };
+    const updateData: unknown = { status };
     const now = new Date().toISOString();
 
     switch (status) {
@@ -102,7 +102,7 @@ export async function PATCH(req: Request) {
       updated: tickets?.length || 0,
       tickets
     });
-  } catch (error: any) {
+  } catch (error: unknown) {
     logger.error('[KDS] Unexpected error:', { error: error instanceof Error ? error.message : 'Unknown error' });
     return NextResponse.json(
       { ok: false, error: error.message || 'Internal server error' },

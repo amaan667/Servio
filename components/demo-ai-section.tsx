@@ -20,7 +20,7 @@ const examplePrompts = [
   "Create a happy hour discount for Cold Drinks",
 ];
 
-const demoResponses: { [key: string]: any } = {
+const demoResponses: { [key: string]: unknown } = {
   "Rename all Coffee items to include '12oz'": {
     success: true,
     changes: 5,
@@ -97,10 +97,10 @@ export default function DemoAISection() {
 
   const [selectedPrompt, setSelectedPrompt] = useState('');
   const [customPrompt, setCustomPrompt] = useState('');
-  const [response, setResponse] = useState<any>(null);
+  const [response, setResponse] = useState<unknown>(null);
   const [isProcessing, setIsProcessing] = useState(false);
   const [showConfirmation, setShowConfirmation] = useState(false);
-  const [confirmedChanges, setConfirmedChanges] = useState<any>(null);
+  const [confirmedChanges, setConfirmedChanges] = useState<unknown>(null);
 
   const handleRunPreview = (prompt: string) => {
     setIsProcessing(true);
@@ -247,7 +247,7 @@ export default function DemoAISection() {
                   <h5 className="font-semibold text-gray-900">Preview Changes:</h5>
                 </div>
                 <div className="divide-y divide-gray-200">
-                  {response.preview.map((change: any, index: number) => (
+                  {response.preview.map((change: unknown, index: number) => (
                     <div key={index} className="px-4 py-3 hover:bg-gray-50">
                       {change.old && change.new ? (
                         <div className="flex items-center justify-between">
@@ -344,7 +344,7 @@ export default function DemoAISection() {
                   <h5 className="font-semibold text-green-900">Applied Changes:</h5>
                 </div>
                 <div className="divide-y divide-gray-200">
-                  {confirmedChanges.preview.map((change: any, index: number) => (
+                  {confirmedChanges.preview.map((change: unknown, index: number) => (
                     <div key={index} className="px-4 py-3 hover:bg-gray-50">
                       {change.old && change.new ? (
                         <div className="flex items-center justify-between">

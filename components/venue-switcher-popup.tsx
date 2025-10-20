@@ -93,7 +93,7 @@ export default function VenueSwitcherPopup({
 
       if (error) throw error;
       setVenues(data || []);
-    } catch (error: any) {
+    } catch (error: unknown) {
       console.error('Error loading venues:', error);
       toast({
         title: "Error",
@@ -167,7 +167,7 @@ export default function VenueSwitcherPopup({
       // Close the main modal
       setOpen(false);
       
-    } catch (error: any) {
+    } catch (error: unknown) {
       console.error('Error adding venue:', error);
       toast({
         title: "Error",
@@ -214,7 +214,7 @@ export default function VenueSwitcherPopup({
       setEditingVenue(null);
       await loadVenues();
       setOpen(false);
-    } catch (error: any) {
+    } catch (error: unknown) {
       console.error('Error updating venue:', error);
       toast({
         title: "Error",
@@ -248,7 +248,7 @@ export default function VenueSwitcherPopup({
       });
 
       loadVenues();
-    } catch (error: any) {
+    } catch (error: unknown) {
       console.error('Error deleting venue:', error);
       toast({
         title: "Error",

@@ -5,7 +5,7 @@
  * Handles proper escaping, BOM for UTF-8 compatibility, and null/undefined values.
  */
 
-export interface CsvColumn<T extends Record<string, any>> {
+export interface CsvColumn<T extends Record<string, unknown>> {
   key: keyof T;
   header: string;
 }
@@ -32,7 +32,7 @@ export interface CsvColumn<T extends Record<string, any>> {
  * ]);
  * ```
  */
-export function toCSV<T extends Record<string, any>>(
+export function toCSV<T extends Record<string, unknown>>(
   rows: T[],
   columns: CsvColumn<T>[],
   includeBOM = true
@@ -115,7 +115,7 @@ export function formatCurrencyForCSV(value: number | string | null | undefined):
 }
 
 /**
- * Safely formats any value for CSV export
+ * Safely formats unknown value for CSV export
  * Handles various data types and edge cases
  */
 export function formatValueForCSV(value: unknown): string {

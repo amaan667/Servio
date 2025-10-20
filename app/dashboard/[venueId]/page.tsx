@@ -81,9 +81,9 @@ export default async function VenuePage({ params }: { params: Promise<{ venueId:
   // Use table counters data to override dashboard counts for consistency
   const tableCounter = tableCounters?.[0];
   if (tableCounter && counts) {
-    (counts as any).tables_set_up = Number(tableCounter.total_tables) || 0;
-    (counts as any).tables_in_use = Number(tableCounter.occupied) || 0;
-    (counts as any).active_tables_count = Number(tableCounter.total_tables) || 0;
+    (counts as unknown).tables_set_up = Number(tableCounter.total_tables) || 0;
+    (counts as unknown).tables_in_use = Number(tableCounter.occupied) || 0;
+    (counts as unknown).active_tables_count = Number(tableCounter.total_tables) || 0;
   }
 
   // Calculate today's revenue
@@ -95,11 +95,11 @@ export default async function VenuePage({ params }: { params: Promise<{ venueId:
     .gte("created_at", todayWindow.startUtcISO)
     .lt("created_at", todayWindow.endUtcISO);
 
-  const todayRevenue = (todayOrdersForRevenue ?? []).reduce((sum: number, order: any) => {
-    let amount = Number(order.total_amount) || parseFloat(order.total_amount as any) || 0;
+  const todayRevenue = (todayOrdersForRevenue ?? []).reduce((sum: number, order: unknown) => {
+    let amount = Number(order.total_amount) || parseFloat(order.total_amount as unknown) || 0;
     if (!Number.isFinite(amount) || amount <= 0) {
       if (Array.isArray(order.items)) {
-        amount = order.items.reduce((s: number, it: any) => {
+        amount = order.items.reduce((s: number, it: unknown) => {
           const unit = Number(it.unit_price ?? it.price ?? 0);
           const qty = Number(it.quantity ?? it.qty ?? 0);
           return s + (Number.isFinite(unit) && Number.isFinite(qty) ? unit * qty : 0);
@@ -129,7 +129,7 @@ export default async function VenuePage({ params }: { params: Promise<{ venueId:
       venue={finalVenue}
       userName={user.user_metadata?.full_name || user.email?.split('@')[0] || 'User'}
       venueTz={venueTz}
-      initialCounts={counts as any}
+      initialCounts={counts as unknown}
       initialStats={initialStats}
       userRole={userRole?.role || (isOwner ? 'owner' : 'staff')}
       isOwner={isOwner}

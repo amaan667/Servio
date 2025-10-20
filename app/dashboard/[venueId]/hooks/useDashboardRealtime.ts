@@ -3,11 +3,11 @@ import { createClient } from '@/lib/supabase';
 
 interface UseDashboardRealtimeProps {
   venueId: string;
-  todayWindow: any;
+  todayWindow: unknown;
   refreshCounts: () => Promise<void>;
-  loadStats: (venueId: string, window: any) => Promise<void>;
-  updateRevenueIncrementally: (order: any) => void;
-  venue: any;
+  loadStats: (venueId: string, window: unknown) => Promise<void>;
+  updateRevenueIncrementally: (order: unknown) => void;
+  venue: unknown;
 }
 
 export function useDashboardRealtime({
@@ -34,10 +34,10 @@ export function useDashboardRealtime({
           table: 'orders',
           filter: `venue_id=eq.${venueId}`
         }, 
-        async (payload: any) => {
+        async (payload: unknown) => {
           console.debug('[DASHBOARD] Order update received:', payload.eventType, payload.new?.id);
           
-          const orderCreatedAt = (payload.new as any)?.created_at || (payload.old as any)?.created_at;
+          const orderCreatedAt = (payload.new as unknown)?.created_at || (payload.old as unknown)?.created_at;
           if (!orderCreatedAt) {
             return;
           }
@@ -65,7 +65,7 @@ export function useDashboardRealtime({
           table: 'tables',
           filter: `venue_id=eq.${venueId}`
         },
-        async (payload: any) => {
+        async (payload: unknown) => {
           console.debug('[DASHBOARD] Table update received:', payload.eventType);
           await refreshCounts();
         }
@@ -77,7 +77,7 @@ export function useDashboardRealtime({
           table: 'table_sessions',
           filter: `venue_id=eq.${venueId}`
         },
-        async (payload: any) => {
+        async (payload: unknown) => {
           console.debug('[DASHBOARD] Table session update received:', payload.eventType);
           await refreshCounts();
         }
@@ -89,7 +89,7 @@ export function useDashboardRealtime({
           table: 'menu_items',
           filter: `venue_id=eq.${venueId}`
         },
-        async (payload: any) => {
+        async (payload: unknown) => {
           console.debug('[DASHBOARD] Menu item update received:', payload.eventType);
           try {
             const { data: menuItems } = await supabase

@@ -93,7 +93,7 @@ export async function runPrecisionMode(
   blocks: TextBlock[],
   highRecallResults?: { catalog: ParsedCatalog; coverage: CoverageReport },
   customOptions?: Partial<ProcessingOptions>
-): Promise<{ catalog: ParsedCatalog; coverage: CoverageReport; validation: any }> {
+): Promise<{ catalog: ParsedCatalog; coverage: CoverageReport; validation: unknown }> {
   
   const options = { ...PRECISION_OPTIONS, ...customOptions };
   
@@ -276,8 +276,8 @@ function pairTitlesWithPricesRelaxed(
   titleCandidates: TitleCandidate[], 
   priceTokens: PriceToken[], 
   options: ProcessingOptions
-): any[] {
-  const items: any[] = [];
+): unknown[] {
+  const items: unknown[] = [];
   const usedPrices = new Set<string>();
   
   for (const title of titleCandidates) {
@@ -307,8 +307,8 @@ function pairTitlesWithPricesStrict(
   titleCandidates: TitleCandidate[], 
   priceTokens: PriceToken[], 
   options: ProcessingOptions
-): any[] {
-  const items: any[] = [];
+): unknown[] {
+  const items: unknown[] = [];
   const usedPrices = new Set<string>();
   
   for (const title of titleCandidates) {
@@ -415,7 +415,7 @@ function isSectionHeader(block: TextBlock): boolean {
 /**
  * Applies strict filtering to items
  */
-function applyStrictFiltering(items: any[], options: ProcessingOptions): any[] {
+function applyStrictFiltering(items: unknown[], options: ProcessingOptions): unknown[] {
   return items.filter(item => {
     // Filter by minimum price
     if (item.price < options.minPriceValue) {
@@ -439,8 +439,8 @@ function applyStrictFiltering(items: any[], options: ProcessingOptions): any[] {
 /**
  * Merges and deduplicates items
  */
-function mergeAndDeduplicateItems(highRecallItems: any[], strictItems: any[]): any[] {
-  const merged = new Map<string, any>();
+function mergeAndDeduplicateItems(highRecallItems: unknown[], strictItems: unknown[]): unknown[] {
+  const merged = new Map<string, unknown>();
   
   // Add high-recall items first
   for (const item of highRecallItems) {
@@ -462,7 +462,7 @@ function mergeAndDeduplicateItems(highRecallItems: any[], strictItems: any[]): a
 /**
  * Applies category guards
  */
-function applyCategoryGuards(items: any[], options: ProcessingOptions): any[] {
+function applyCategoryGuards(items: unknown[], options: ProcessingOptions): unknown[] {
   if (!options.enableCategoryGuards) {
     return items;
   }
@@ -489,9 +489,9 @@ function applyCategoryGuards(items: any[], options: ProcessingOptions): any[] {
 /**
  * Builds categories with relaxed assignment
  */
-function buildCategoriesRelaxed(items: any[], blocks: TextBlock[]): any[] {
+function buildCategoriesRelaxed(items: unknown[], blocks: TextBlock[]): unknown[] {
   // Simple category building - group by detected sections
-  const categoryMap = new Map<string, any[]>();
+  const categoryMap = new Map<string, unknown[]>();
   
   for (const item of items) {
     const categoryName = item.category || 'UNCATEGORIZED';
@@ -511,9 +511,9 @@ function buildCategoriesRelaxed(items: any[], blocks: TextBlock[]): any[] {
 /**
  * Builds categories with strict assignment
  */
-function buildCategoriesStrict(items: any[], blocks: TextBlock[]): any[] {
+function buildCategoriesStrict(items: unknown[], blocks: TextBlock[]): unknown[] {
   // More sophisticated category building
-  const categoryMap = new Map<string, any[]>();
+  const categoryMap = new Map<string, unknown[]>();
   
   for (const item of items) {
     const categoryName = item.category || 'UNCATEGORIZED';
@@ -533,7 +533,7 @@ function buildCategoriesStrict(items: any[], blocks: TextBlock[]): any[] {
 /**
  * Validates precision results
  */
-function validatePrecisionResults(categories: any[], priceTokens: PriceToken[]): any {
+function validatePrecisionResults(categories: unknown[], priceTokens: PriceToken[]): unknown {
   const totalItems = categories.reduce((sum, cat) => sum + cat.items.length, 0);
   const totalPrices = priceTokens.length;
   
@@ -550,8 +550,8 @@ function validatePrecisionResults(categories: any[], priceTokens: PriceToken[]):
  */
 function generateHighRecallCoverage(
   priceTokens: PriceToken[], 
-  items: any[], 
-  categories: any[], 
+  items: unknown[], 
+  categories: unknown[], 
   blocks: TextBlock[]
 ): CoverageReport {
   // Simplified coverage report for high-recall mode
@@ -570,8 +570,8 @@ function generateHighRecallCoverage(
  */
 function generatePrecisionCoverage(
   priceTokens: PriceToken[], 
-  items: any[], 
-  categories: any[], 
+  items: unknown[], 
+  categories: unknown[], 
   blocks: TextBlock[]
 ): CoverageReport {
   // More detailed coverage report for precision mode

@@ -6,7 +6,7 @@ interface PendingRequest<T> {
 }
 
 class RequestDeduplicator {
-  private pendingRequests = new Map<string, PendingRequest<any>>();
+  private pendingRequests = new Map<string, PendingRequest<unknown>>();
   private dedupWindow = 100; // 100ms deduplication window
 
   async deduplicate<T>(

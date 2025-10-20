@@ -12,7 +12,7 @@ let isLoaded = false;
 export function loadGoogleMapsAPI(): Promise<void> {
   return new Promise((resolve, reject) => {
     // Check if already loaded
-    if (isLoaded || (window as any).google?.maps?.places) {
+    if (isLoaded || (window as unknown).google?.maps?.places) {
       isLoaded = true;
       resolve();
       return;
@@ -22,7 +22,7 @@ export function loadGoogleMapsAPI(): Promise<void> {
     if (isLoading) {
       // Wait for the existing load to complete
       const checkInterval = setInterval(() => {
-        if (isLoaded || (window as any).google?.maps?.places) {
+        if (isLoaded || (window as unknown).google?.maps?.places) {
           isLoaded = true;
           clearInterval(checkInterval);
           resolve();
@@ -56,7 +56,7 @@ export function loadGoogleMapsAPI(): Promise<void> {
     script.defer = true;
 
     // Define global callback
-    (window as any).initGoogleMaps = () => {
+    (window as unknown).initGoogleMaps = () => {
       isLoaded = true;
       isLoading = false;
       resolve();

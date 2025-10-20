@@ -114,7 +114,7 @@ export function AnalyticsDashboard({ venueId }: AnalyticsDashboardProps) {
         .select("id, category")
         .eq("venue_id", venueId);
       const itemIdToCategory = new Map<string, string>();
-      (menuItems || []).forEach((mi: any) => {
+      (menuItems || []).forEach((mi: unknown) => {
         if (mi?.id) itemIdToCategory.set(mi.id, mi.category || 'Other');
       });
       const filteredOrders = orders.filter((order) => {
@@ -306,10 +306,10 @@ export function AnalyticsDashboard({ venueId }: AnalyticsDashboardProps) {
           table: 'orders',
           filter: `venue_id=eq.${venueId}`
         }, 
-        (payload: any) => {
+        (payload: unknown) => {
           
           // Check if the order is within the current time range
-          const orderCreatedAt = (payload.new as any)?.created_at || (payload.old as any)?.created_at;
+          const orderCreatedAt = (payload.new as unknown)?.created_at || (payload.old as unknown)?.created_at;
           if (!orderCreatedAt) return;
           
           const now = new Date();
@@ -353,7 +353,7 @@ export function AnalyticsDashboard({ venueId }: AnalyticsDashboardProps) {
     formatAsCurrency = false,
     subtitle,
     trend,
-  }: any) => (
+  }: unknown) => (
     <Card>
       <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
         <CardTitle className="text-sm font-medium">{title}</CardTitle>

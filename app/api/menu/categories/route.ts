@@ -69,7 +69,7 @@ export async function GET(request: NextRequest) {
     // Use stored order if available, otherwise use database order
     let orderedCategories = uniqueCategories;
     if (uploadData?.category_order && Array.isArray(uploadData.category_order)) {
-      // Merge stored order with any new categories
+      // Merge stored order with unknown new categories
       const storedOrder = uploadData.category_order;
       const newCategories = uniqueCategories.filter(cat => !storedOrder.includes(cat));
       orderedCategories = [...storedOrder, ...newCategories];

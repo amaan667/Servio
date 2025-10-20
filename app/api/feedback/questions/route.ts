@@ -63,7 +63,7 @@ export async function GET(req: Request) {
       activeCount: activeCount
     });
 
-  } catch (error: any) {
+  } catch (error: unknown) {
     logger.error('[FEEDBACK:Q] list exception:', error.message);
     return NextResponse.json({ error: 'Internal server error' }, { status: 500 });
   }
@@ -160,7 +160,7 @@ export async function POST(req: Request) {
 
     return NextResponse.json({ question });
 
-  } catch (error: any) {
+  } catch (error: unknown) {
     logger.error('[FEEDBACK:Q] add exception:', error.message);
     return NextResponse.json({ error: 'Internal server error' }, { status: 500 });
   }
@@ -195,7 +195,7 @@ export async function PATCH(req: Request) {
     }
 
     const serviceClient = getServiceClient();
-    const updateData: any = {};
+    const updateData: unknown = {};
 
     if (prompt !== undefined) {
       if (prompt.length < 4 || prompt.length > 160) {
@@ -247,7 +247,7 @@ export async function PATCH(req: Request) {
 
     return NextResponse.json({ question });
 
-  } catch (error: any) {
+  } catch (error: unknown) {
     logger.error('[FEEDBACK:Q] update exception:', error.message);
     return NextResponse.json({ error: 'Internal server error' }, { status: 500 });
   }
@@ -294,7 +294,7 @@ export async function DELETE(req: Request) {
 
     return NextResponse.json({ success: true });
 
-  } catch (error: any) {
+  } catch (error: unknown) {
     logger.error('[FEEDBACK:Q] delete exception:', error.message);
     return NextResponse.json({ error: 'Internal server error' }, { status: 500 });
   }

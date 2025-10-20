@@ -133,7 +133,7 @@ export function CustomerFeedbackForm({
       setIsSubmitted(true);
       onFeedbackSubmitted?.();
 
-    } catch (err: any) {
+    } catch (err: unknown) {
       console.error('Failed to submit feedback:', err);
       setError(err.message || 'Failed to submit feedback. Please try again.');
     } finally {
@@ -241,7 +241,7 @@ export function CustomerFeedbackForm({
             Tell us more about your experience *
           </label>
           <Textarea
-            placeholder="Share your thoughts, suggestions, or any specific feedback..."
+            placeholder="Share your thoughts, suggestions, or unknown specific feedback..."
             value={comment}
             onChange={(e) => setComment(e.target.value)}
             rows={4}

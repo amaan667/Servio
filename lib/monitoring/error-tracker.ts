@@ -10,7 +10,7 @@ export interface ErrorContext {
   userId?: string;
   venueId?: string;
   action?: string;
-  metadata?: Record<string, any>;
+  metadata?: Record<string, unknown>;
 }
 
 /**
@@ -79,7 +79,7 @@ export function trackAPIError(
 export function trackComponentError(
   componentName: string,
   error: Error | unknown,
-  props?: Record<string, any>
+  props?: Record<string, unknown>
 ) {
   const errorMessage = error instanceof Error ? error.message : String(error);
 
@@ -241,7 +241,7 @@ export function trackPerformanceIssue(
  */
 export function trackSecurityEvent(
   event: string,
-  details: Record<string, any>
+  details: Record<string, unknown>
 ) {
   logger.warn(`[SECURITY EVENT] ${event}:`, details);
 

@@ -6,7 +6,7 @@ function pickCandidateLines(raw: string, limit = 150): string {
   return candidates.join('\n');
 }
 
-export async function tryParseMenuWithGPT(raw: string): Promise<{ ok: boolean; parsed: any }> {
+export async function tryParseMenuWithGPT(raw: string): Promise<{ ok: boolean; parsed: unknown }> {
   try {
     const openai = getOpenAI();
     const sample = pickCandidateLines(raw);
@@ -18,7 +18,7 @@ export async function tryParseMenuWithGPT(raw: string): Promise<{ ok: boolean; p
       temperature: 0,
     });
     const content = chat.choices[0].message.content || '{}';
-    let parsed: any = {};
+    let parsed: unknown = {};
     try { parsed = JSON.parse(content); } catch { parsed = {}; }
     const arr = Array.isArray(parsed) ? parsed : (parsed.items || parsed.menu || []);
     const ok = Array.isArray(arr) && arr.length > 0;

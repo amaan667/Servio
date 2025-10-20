@@ -44,8 +44,8 @@ export function useTableManagement() {
         
         // Create a more detailed error object
         const error = new Error(errorMessage);
-        (error as any).details = errorDetails;
-        (error as any).code = errorCode;
+        (error as unknown).details = errorDetails;
+        (error as unknown).code = errorCode;
         
         throw error;
       }

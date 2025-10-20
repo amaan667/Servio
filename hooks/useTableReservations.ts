@@ -78,12 +78,12 @@ export function useTableGrid(venueId: string, leadTimeMinutes: number = 30) {
       
       
       // Transform the data to match the expected TableGridItem interface
-      return tableData.map((item: any) => {
+      return tableData.map((item: unknown) => {
         // Find active table session for this table
-        const activeSession = tableSessions.find((s: any) => s.table_id === item.id);
+        const activeSession = tableSessions.find((s: unknown) => s.table_id === item.id);
         
         // Find reservations for this table
-        const tableReservations = reservations.filter((r: any) => r.table_id === item.id);
+        const tableReservations = reservations.filter((r: unknown) => r.table_id === item.id);
         
         let reservationStatus = 'NONE';
         let activeReservation = null;
@@ -190,7 +190,7 @@ export function useTableGrid(venueId: string, leadTimeMinutes: number = 30) {
           table: 'table_sessions',
           filter: `venue_id=eq.${venueId}`,
         },
-        (payload: any) => {
+        (payload: unknown) => {
           // Invalidate and refetch the table grid data
           queryClient.invalidateQueries({ queryKey: ['tables', 'grid', venueId, leadTimeMinutes] });
         }
@@ -208,7 +208,7 @@ export function useTableGrid(venueId: string, leadTimeMinutes: number = 30) {
           table: 'reservations',
           filter: `venue_id=eq.${venueId}`,
         },
-        (payload: any) => {
+        (payload: unknown) => {
           // Invalidate and refetch the table grid data
           queryClient.invalidateQueries({ queryKey: ['tables', 'grid', venueId, leadTimeMinutes] });
         }
@@ -226,7 +226,7 @@ export function useTableGrid(venueId: string, leadTimeMinutes: number = 30) {
           table: 'tables',
           filter: `venue_id=eq.${venueId}`,
         },
-        (payload: any) => {
+        (payload: unknown) => {
           // Invalidate and refetch the table grid data
           queryClient.invalidateQueries({ queryKey: ['tables', 'grid', venueId, leadTimeMinutes] });
         }

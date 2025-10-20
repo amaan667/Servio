@@ -53,7 +53,7 @@ export async function GET(request: NextRequest) {
 
     // Generate CSV
     const headers = ['Date', 'Ingredient', 'Delta', 'Unit', 'Reason', 'Ref Type', 'Note', 'User'];
-    const rows = data?.map((movement: any) => [
+    const rows = data?.map((movement: unknown) => [
       new Date(movement.created_at).toISOString(),
       movement.ingredient?.name || 'Unknown',
       movement.delta,

@@ -15,9 +15,9 @@ import {
 } from "@/types/ai-assistant";
 
 const ExecuteRequestSchema = z.object({
-  venueId: z.string().min(1), // Accept any non-empty string for venue ID
+  venueId: z.string().min(1), // Accept unknown non-empty string for venue ID
   toolName: z.string(),
-  params: z.record(z.any()),
+  params: z.record(z.unknown()),
   preview: z.boolean().default(false),
   auditId: z.string().uuid().optional(), // Link to planning audit
 });
@@ -177,7 +177,7 @@ export async function POST(request: NextRequest) {
       result: result as AIExecutionResult,
       executionTimeMs: executionTime,
     });
-  } catch (error: any) {
+  } catch (error: unknown) {
     logger.error("[AI ASSISTANT] Execution error:", { error: error instanceof Error ? error.message : 'Unknown error' });
 
     if (error.name === "ZodError") {

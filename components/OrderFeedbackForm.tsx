@@ -24,10 +24,10 @@ export default function OrderFeedbackForm({ venueId, orderId }: OrderFeedbackFor
   const [loading, setLoading] = useState(true);
   const [submitting, setSubmitting] = useState(false);
   const [showForm, setShowForm] = useState(false);
-  const [answers, setAnswers] = useState<{[key: string]: any}>({});
+  const [answers, setAnswers] = useState<{[key: string]: unknown}>({});
   const { toast } = useToast();
 
-  // Generic feedback questions to show if owner hasn't created any
+  // Generic feedback questions to show if owner hasn't created unknown
   const genericQuestions: FeedbackQuestion[] = [
     {
       id: 'generic-food-quality',
@@ -143,11 +143,11 @@ export default function OrderFeedbackForm({ venueId, orderId }: OrderFeedbackFor
           table: 'feedback_questions',
           filter: `venue_id=eq.${venueId}`,
         },
-        (payload: any) => {
+        (payload: unknown) => {
           fetchQuestions();
         },
       )
-      .subscribe((status: any) => {
+      .subscribe((status: unknown) => {
       });
 
     return () => {

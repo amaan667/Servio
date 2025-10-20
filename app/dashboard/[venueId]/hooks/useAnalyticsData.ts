@@ -57,7 +57,7 @@ export function useAnalyticsData(venueId: string, venueTz: string) {
         hourlyOrders[i] = 0;
       }
 
-      (todayOrders || []).forEach((order: any) => {
+      (todayOrders || []).forEach((order: unknown) => {
         const hour = new Date(order.created_at).getHours();
         hourlyOrders[hour]++;
       });
@@ -69,9 +69,9 @@ export function useAnalyticsData(venueId: string, venueTz: string) {
 
       // Calculate revenue by category from order items
       const categoryRevenue: { [key: string]: number } = {};
-      (todayOrders || []).forEach((order: any) => {
+      (todayOrders || []).forEach((order: unknown) => {
         if (Array.isArray(order.items)) {
-          order.items.forEach((item: any) => {
+          order.items.forEach((item: unknown) => {
             const category = item.category || 'Other';
             const price = parseFloat(item.unit_price || item.price || 0);
             const qty = parseInt(item.quantity || item.qty || 1);
@@ -91,9 +91,9 @@ export function useAnalyticsData(venueId: string, venueTz: string) {
 
       // Get top selling items
       const itemCounts: { [key: string]: { name: string; price: number; count: number } } = {};
-      (todayOrders || []).forEach((order: any) => {
+      (todayOrders || []).forEach((order: unknown) => {
         if (Array.isArray(order.items)) {
-          order.items.forEach((item: any) => {
+          order.items.forEach((item: unknown) => {
             const name = item.name || 'Unknown';
             const price = parseFloat(item.unit_price || item.price || 0);
             if (!itemCounts[name]) {

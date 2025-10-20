@@ -142,7 +142,7 @@ export async function POST(request: NextRequest) {
       newTier 
     });
 
-  } catch (error: any) {
+  } catch (error: unknown) {
     logger.error("[DOWNGRADE] Error:", { error: error instanceof Error ? error.message : 'Unknown error' });
     return NextResponse.json(
       { error: error.message || "Failed to downgrade plan" },

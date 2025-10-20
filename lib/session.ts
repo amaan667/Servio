@@ -114,7 +114,7 @@ export function clearSession(sessionId: string): void {
 /**
  * Check if there's an open order for the current session
  */
-export async function checkForOpenOrder(sessionId: string): Promise<any | null> {
+export async function checkForOpenOrder(sessionId: string): Promise<unknown | null> {
   try {
     const response = await fetch(`/api/orders/session/${sessionId}/open`);
     const result = await response.json();

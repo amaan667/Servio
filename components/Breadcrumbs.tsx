@@ -35,7 +35,7 @@ export default function Breadcrumbs() {
             {'current' in c && c.current ? (
               <span className="font-medium text-foreground">{c.label}</span>
             ) : (
-              <Link href={(c as any).href} className="hover:underline">{c.label}</Link>
+              <Link href={(c as unknown).href} className="hover:underline">{c.label}</Link>
             )}
             {i < crumbs.length - 1 && <span>→</span>}
           </li>

@@ -24,7 +24,7 @@ export async function GET(req: Request) {
     }
 
     return NextResponse.json({ success: true, staff: data || [] });
-  } catch (e: any) {
+  } catch (e: unknown) {
     return NextResponse.json({ error: e?.message || 'Unknown error' }, { status: 500 });
   }
 }

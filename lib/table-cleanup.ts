@@ -39,7 +39,7 @@ export async function cleanupTableOnOrderCompletion(params: TableCleanupParams):
   try {
     const supabase = await createClient();
     
-    // First, check if there are any other active orders for this table
+    // First, check if there are unknown other active orders for this table
     let activeOrdersQuery = supabase
       .from('orders')
       .select('id, order_status, table_id, table_number')
@@ -168,7 +168,7 @@ export async function cleanupTableOnOrderCompletion(params: TableCleanupParams):
 }
 
 /**
- * Check if a table has any active orders
+ * Check if a table has unknown active orders
  */
 export async function hasActiveOrders(params: TableCleanupParams): Promise<{
   hasActive: boolean;

@@ -10,12 +10,12 @@ export async function ocrPdfToText(pdfBuffer: Buffer, maxPages = 5): Promise<str
   const texts: string[] = [];
   let pageIndex = 0;
   // If buffer is an image (not a multi-page PDF), sharp will still handle it; we try page loop with try/catch
-  const worker = await createWorker() as any;
+  const worker = await createWorker() as unknown;
   try {
     await worker.loadLanguage('eng');
     await worker.initialize('eng');
     // PSM 6: Assume a single uniform block of text
-    await worker.setParameters({ tessedit_pageseg_mode: '6' as any });
+    await worker.setParameters({ tessedit_pageseg_mode: '6' as unknown });
 
     while (pageIndex < maxPages) {
       try {

@@ -82,7 +82,7 @@ Return ONLY a JSON object with "type" and "confidence" (0-1).`
       reason: result.reason
     };
     
-  } catch (error: any) {
+  } catch (error: unknown) {
     logger.error('[GPT_CLASSIFY] Classification failed:', error);
     
     // Fallback to rule-based classification
@@ -218,7 +218,7 @@ If this is not an option group, return null.`
       confidence: result.confidence || 0.8
     };
     
-  } catch (error: any) {
+  } catch (error: unknown) {
     logger.error('[GPT_OPTIONS] Option group classification failed:', error);
     return null;
   }

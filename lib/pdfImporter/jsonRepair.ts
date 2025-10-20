@@ -122,8 +122,8 @@ function reconstructJSONFromMalformed(json: string): string | null {
     }
     
     // Group properties into items based on common patterns
-    const items: any[] = [];
-    let currentItem: any = {};
+    const items: unknown[] = [];
+    let currentItem: unknown = {};
     
     for (const prop of properties) {
       // If we encounter a title and we already have a title, start a new item
@@ -228,7 +228,7 @@ function fixTruncatedJSON(json: string): string {
 /**
  * Checks if an item has the minimum required properties
  */
-function isValidItem(item: any): boolean {
+function isValidItem(item: unknown): boolean {
   return item.title && item.category && item.price;
 }
 
@@ -485,7 +485,7 @@ function validateAndCleanItems(json: string): string {
     
     // Clean each item
     const cleanedItems = parsed.items
-      .filter((item: any) => {
+      .filter((item: unknown) => {
         // Remove items with missing required fields
         if (!item.title || !item.category || typeof item.price !== 'number') {
           return false;
@@ -498,14 +498,14 @@ function validateAndCleanItems(json: string): string {
         
         return true;
       })
-      .map((item: any) => ({
+      .map((item: unknown) => ({
         title: String(item.title || '').trim(),
         category: String(item.category || '').trim(),
         price: Number(item.price || 0),
         currency: 'GBP',
         description: String(item.description || '').trim()
       }))
-      .filter((item: any) => item.title && item.category && item.price > 0);
+      .filter((item: unknown) => item.title && item.category && item.price > 0);
     
     // Remove duplicates based on title
     const uniqueItems = [];
@@ -538,10 +538,10 @@ function validateAndCleanItems(json: string): string {
 export function validateMenuJSON(json: string): {
   valid: boolean;
   errors: string[];
-  items: any[];
+  items: unknown[];
 } {
   const errors: string[] = [];
-  let items: any[] = [];
+  let items: unknown[] = [];
   
   try {
     const parsed = JSON.parse(json);
@@ -565,7 +565,7 @@ export function validateMenuJSON(json: string): {
         errors.push(`Item ${i}: Missing or invalid category`);
       }
       
-      // RELAXED: Allow any price value for now
+      // RELAXED: Allow unknown price value for now
       if (typeof item.price !== 'number') {
         errors.push(`Item ${i}: Missing or invalid price`);
       }
@@ -586,7 +586,7 @@ export function validateMenuJSON(json: string): {
     };
     
   } catch (error) {
-    errors.push(`JSON parse error: ${(error as any).message}`);
+    errors.push(`JSON parse error: ${(error as unknown).message}`);
     return { valid: false, errors, items };
   }
 }
@@ -597,7 +597,7 @@ export function validateMenuJSON(json: string): {
 export function repairAndValidateMenuJSON(brokenJSON: string): {
   success: boolean;
   json?: string;
-  items?: any[];
+  items?: unknown[];
   errors?: string[];
 } {
   
@@ -626,7 +626,7 @@ export function repairAndValidateMenuJSON(brokenJSON: string): {
     logger.error('[JSON_REPAIR] Repair pipeline failed:', error);
     return {
       success: false,
-      errors: [`Repair failed: ${(error as any).message}`]
+      errors: [`Repair failed: ${(error as unknown).message}`]
     };
   }
 }

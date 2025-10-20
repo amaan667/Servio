@@ -19,7 +19,7 @@ export function createLazyComponent<P extends object>(
 
   const WrappedComponent = (props: P) => (
     <Suspense fallback={FallbackComponent ? <FallbackComponent /> : <div>Loading...</div>}>
-      <LazyComponent {...(props as any)} />
+      <LazyComponent {...(props as unknown)} />
     </Suspense>
   );
 
@@ -30,7 +30,7 @@ export function createLazyComponent<P extends object>(
  * Preload a lazy component
  */
 export function preloadComponent(
-  importFn: () => Promise<{ default: ComponentType<any> }>
+  importFn: () => Promise<{ default: ComponentType<unknown> }>
 ): void {
   importFn();
 }

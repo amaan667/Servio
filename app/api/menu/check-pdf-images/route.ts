@@ -53,7 +53,7 @@ export async function GET(req: NextRequest) {
       latest_upload: results[0] || null
     });
 
-  } catch (error: any) {
+  } catch (error: unknown) {
     logger.error('[CHECK PDF IMAGES] Error:', { error: error instanceof Error ? error.message : 'Unknown error' });
     return NextResponse.json({ 
       ok: false, 

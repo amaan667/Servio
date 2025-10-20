@@ -79,21 +79,21 @@ export function useLiveOrders(venueId: string) {
         .limit(100) // avoid accidental infinite loading
         .throwOnError()
 
-      const { data, error } = await withTimeout(queryPromise) as any
+      const { data, error } = await withTimeout(queryPromise) as unknown
 
       if (error) {
         throw error
       }
 
       // Transform orders to include table_label
-      const transformedOrders = (data ?? []).map((order: any) => ({
+      const transformedOrders = (data ?? []).map((order: unknown) => ({
         ...order,
-        table_label: (order.tables as any)?.label || (order.source === 'counter' ? `Counter ${order.table_number}` : `Table ${order.table_number}`)
+        table_label: (order.tables as unknown)?.label || (order.source === 'counter' ? `Counter ${order.table_number}` : `Table ${order.table_number}`)
       }))
       
       setData(transformedOrders)
       
-    } catch (err: any) {
+    } catch (err: unknown) {
       setIsError(true)
       setError(err.message || 'Failed to load orders')
     } finally {

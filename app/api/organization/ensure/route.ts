@@ -114,7 +114,7 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    // Update any venues to link to this organization (using admin client)
+    // Update unknown venues to link to this organization (using admin client)
     await adminClient
       .from("venues")
       .update({ organization_id: newOrg.id })
@@ -158,7 +158,7 @@ export async function POST(request: NextRequest) {
     
     return response;
 
-  } catch (error: any) {
+  } catch (error: unknown) {
     logger.error("[ORG ENSURE] Unexpected error:", { error: error instanceof Error ? error.message : 'Unknown error' });
     return NextResponse.json(
       { error: "Internal server error", details: error.message },

@@ -11,11 +11,11 @@ const CreateMessageSchema = z.object({
   role: z.enum(["user", "assistant", "system"]),
   content: z.string().min(1),
   toolName: z.string().optional(),
-  toolParams: z.any().optional(),
-  executionResult: z.any().optional(),
+  toolParams: z.unknown().optional(),
+  executionResult: z.unknown().optional(),
   auditId: z.string().uuid().optional(),
   canUndo: z.boolean().default(false),
-  undoData: z.any().optional(),
+  undoData: z.unknown().optional(),
 });
 
 export async function GET(
@@ -68,7 +68,7 @@ export async function GET(
     return NextResponse.json({
       messages: transformedMessages,
     });
-  } catch (error: any) {
+  } catch (error: unknown) {
     logger.error("[AI CHAT] Messages error:", { error: error instanceof Error ? error.message : 'Unknown error' });
     return NextResponse.json(
       { error: error.message || "Internal server error" },
@@ -177,7 +177,7 @@ export async function POST(
     return NextResponse.json({
       message: transformedMessage,
     });
-  } catch (error: any) {
+  } catch (error: unknown) {
     logger.error("[AI CHAT] Create message error:", { error: error instanceof Error ? error.message : 'Unknown error' });
     
     if (error.name === "ZodError") {

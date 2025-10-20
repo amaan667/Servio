@@ -35,7 +35,7 @@ export async function GET(req: Request) {
       count: questions?.length || 0
     });
 
-  } catch (error: any) {
+  } catch (error: unknown) {
     logger.error('[FEEDBACK:PUBLIC] Exception:', error.message);
     return NextResponse.json({ error: 'Internal server error' }, { status: 500 });
   }

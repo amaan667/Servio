@@ -41,7 +41,7 @@ export function useMenuItemActions(venueId: string, onRefresh: () => void) {
       } else {
         console.info("Item added successfully");
       }
-    } catch (error: any) {
+    } catch (error: unknown) {
       console.error("Unexpected error adding item", { error });
       setError("An unexpected error occurred.");
     } finally {
@@ -69,7 +69,7 @@ export function useMenuItemActions(venueId: string, onRefresh: () => void) {
       } else {
         console.info("Item updated successfully", { itemId });
       }
-    } catch (error: any) {
+    } catch (error: unknown) {
       console.error("Unexpected error updating item", { error });
       setError("An unexpected error occurred.");
     } finally {
@@ -99,7 +99,7 @@ export function useMenuItemActions(venueId: string, onRefresh: () => void) {
       } else {
         console.info("Item deleted successfully", { itemId });
       }
-    } catch (error: any) {
+    } catch (error: unknown) {
       console.error("Unexpected error deleting item", { error });
       setError("An unexpected error occurred.");
     } finally {
@@ -129,7 +129,7 @@ export function useMenuItemActions(venueId: string, onRefresh: () => void) {
       if (error) {
         setError("Failed to clear menu: " + error.message);
       }
-    } catch (error: any) {
+    } catch (error: unknown) {
       setError("An unexpected error occurred.");
     } finally {
       setSaving(null);

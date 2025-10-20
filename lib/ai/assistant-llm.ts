@@ -147,7 +147,7 @@ ANALYTICS & REPORTING:
 - Navigate to analytics pages
 
 NAVIGATION:
-- Take users to any page in the system
+- Take users to unknown page in the system
 - Find specific features and sections
 
 CONTEXT:
@@ -253,7 +253,7 @@ Return a structured plan with:
 - intent: what the user wants (clear, natural language)
 - tools: ordered array of tool calls with exact params
 - reasoning: why this plan is safe and appropriate
-- warnings: any caveats or considerations (null if none)`;
+- warnings: unknown caveats or considerations (null if none)`;
 }
 
 // ============================================================================
@@ -351,7 +351,7 @@ export async function planAssistantAction(
     const message = completion.choices[0].message;
     
     // Try to get parsed response (available when using zodResponseFormat)
-    const parsed = (message as any).parsed;
+    const parsed = (message as unknown).parsed;
     
     if (parsed) {
       // Response was successfully parsed and validated by zodResponseFormat
@@ -400,7 +400,7 @@ export async function planAssistantAction(
         });
 
         const message = completion.choices[0].message;
-        const parsed = (message as any).parsed;
+        const parsed = (message as unknown).parsed;
         
         if (parsed) {
           return {
@@ -448,7 +448,7 @@ export async function planAssistantAction(
 
 export async function explainAction(
   toolName: ToolName,
-  params: any,
+  params: unknown,
   context: AIAssistantContext
 ): Promise<string> {
   const systemPrompt = `You are Servio Assistant. Explain the following action in simple, human terms.
@@ -484,7 +484,7 @@ User Role: ${context.userRole}`;
 
 export async function generateSuggestions(
   pageContext: "menu" | "inventory" | "kds" | "orders" | "analytics",
-  dataSummary: any
+  dataSummary: unknown
 ): Promise<string[]> {
   const systemPrompt = `Generate 3-4 actionable suggestions for a ${pageContext} dashboard.
 Return ONLY a JSON array of strings. Each suggestion should be a natural language command.

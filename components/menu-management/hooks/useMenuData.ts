@@ -72,7 +72,7 @@ export function useMenuData(venueId: string, refreshTrigger?: number) {
       } else {
         console.info("Menu fetched successfully", {
           itemCount: data?.length || 0,
-          categories: [...new Set(data?.map((item: any) => item.category) || [])],
+          categories: [...new Set(data?.map((item: unknown) => item.category) || [])],
         });
         setMenuItems(data || []);
       }
@@ -82,7 +82,7 @@ export function useMenuData(venueId: string, refreshTrigger?: number) {
       } else {
         setCategoryOrder(null);
       }
-    } catch (error: any) {
+    } catch (error: unknown) {
       console.error("Unexpected error fetching menu", { error });
       setError("An unexpected error occurred.");
     } finally {
@@ -106,12 +106,12 @@ export function useMenuData(venueId: string, refreshTrigger?: number) {
           table: "menu_items",
           filter: `venue_id=eq.${venueUuid}`,
         },
-        (payload: any) => {
+        (payload: unknown) => {
           console.info("Real-time change detected, refetching menu", { payload });
           fetchMenu();
         },
       )
-      .subscribe((status: any) => {
+      .subscribe((status: unknown) => {
         console.info("Real-time subscription status", { status });
       });
 

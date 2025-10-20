@@ -65,7 +65,7 @@ export async function POST(request: NextRequest) {
     }
 
     return NextResponse.json({ received: true });
-  } catch (error: any) {
+  } catch (error: unknown) {
     logger.error("[STRIPE WEBHOOK] Error:", { error: error instanceof Error ? error.message : 'Unknown error' });
     return NextResponse.json(
       { error: error.message },
@@ -161,8 +161,8 @@ async function handleCheckoutWithOrg(
   session: Stripe.Checkout.Session,
   organizationId: string,
   tier: string,
-  existingOrg: any,
-  supabase: any
+  existingOrg: unknown,
+  supabase: unknown
 ) {
 
   logger.debug("[STRIPE WEBHOOK] ✅ Processing update for organization:", {

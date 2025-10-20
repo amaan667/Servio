@@ -50,7 +50,7 @@ export async function POST() {
     
     return response;
     
-  } catch (error: any) {
+  } catch (error: unknown) {
     logger.error('[SIGNOUT API] Unexpected error:', error.message);
     return NextResponse.json({ 
       ok: false, 

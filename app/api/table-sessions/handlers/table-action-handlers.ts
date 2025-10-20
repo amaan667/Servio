@@ -7,7 +7,7 @@ import { logger } from '@/lib/logger';
  * Extracted from the main route for better organization
  */
 
-export async function handleStartPreparing(supabase: any, table_id: string, order_id: string) {
+export async function handleStartPreparing(supabase: unknown, table_id: string, order_id: string) {
   // Update order status to IN_PREP
   const { error: orderError } = await supabase
     .from('orders')
@@ -40,7 +40,7 @@ export async function handleStartPreparing(supabase: any, table_id: string, orde
   return NextResponse.json({ success: true });
 }
 
-export async function handleMarkReady(supabase: any, table_id: string, order_id: string) {
+export async function handleMarkReady(supabase: unknown, table_id: string, order_id: string) {
   // Update order status to READY
   const { error: orderError } = await supabase
     .from('orders')
@@ -73,7 +73,7 @@ export async function handleMarkReady(supabase: any, table_id: string, order_id:
   return NextResponse.json({ success: true });
 }
 
-export async function handleMarkServed(supabase: any, table_id: string, order_id: string) {
+export async function handleMarkServed(supabase: unknown, table_id: string, order_id: string) {
   // Update order status to SERVED
   const { error: orderError } = await supabase
     .from('orders')
@@ -106,7 +106,7 @@ export async function handleMarkServed(supabase: any, table_id: string, order_id
   return NextResponse.json({ success: true });
 }
 
-export async function handleMarkAwaitingBill(supabase: any, table_id: string) {
+export async function handleMarkAwaitingBill(supabase: unknown, table_id: string) {
   // Update table session status to AWAITING_BILL
   const { error: sessionError } = await supabase
     .from('table_sessions')
@@ -125,7 +125,7 @@ export async function handleMarkAwaitingBill(supabase: any, table_id: string) {
   return NextResponse.json({ success: true });
 }
 
-export async function handleCloseTable(supabase: any, table_id: string) {
+export async function handleCloseTable(supabase: unknown, table_id: string) {
   try {
     // Get the venue_id for the table
     const { data: table, error: tableError } = await supabase
@@ -185,7 +185,7 @@ export async function handleCloseTable(supabase: any, table_id: string) {
   }
 }
 
-export async function handleReserveTable(supabase: any, table_id: string, customer_name: string, reservation_time: string, reservation_duration: number = 60) {
+export async function handleReserveTable(supabase: unknown, table_id: string, customer_name: string, reservation_time: string, reservation_duration: number = 60) {
   try {
     // Get venue_id from table
     const { data: table, error: tableError } = await supabase
@@ -364,7 +364,7 @@ export async function handleReserveTable(supabase: any, table_id: string, custom
   }
 }
 
-export async function handleOccupyTable(supabase: any, table_id: string) {
+export async function handleOccupyTable(supabase: unknown, table_id: string) {
   // First, check if there's an existing open session
   const { data: existingSession, error: checkError } = await supabase
     .from('table_sessions')
@@ -443,7 +443,7 @@ export async function handleOccupyTable(supabase: any, table_id: string) {
   return NextResponse.json({ success: true });
 }
 
-export async function handleMoveTable(supabase: any, table_id: string, destination_table_id: string) {
+export async function handleMoveTable(supabase: unknown, table_id: string, destination_table_id: string) {
   // Get current session
   const { data: currentSession, error: sessionError } = await supabase
     .from('table_sessions')
@@ -501,7 +501,7 @@ export async function handleMoveTable(supabase: any, table_id: string, destinati
   return NextResponse.json({ success: true });
 }
 
-export async function handleMergeTable(supabase: any, venue_id: string, table_id: string, destination_table_id: string) {
+export async function handleMergeTable(supabase: unknown, venue_id: string, table_id: string, destination_table_id: string) {
   try {
     const { data, error } = await supabase.rpc('api_merge_tables', {
       p_venue_id: venue_id,
@@ -524,7 +524,7 @@ export async function handleMergeTable(supabase: any, venue_id: string, table_id
   }
 }
 
-export async function handleUnmergeTable(supabase: any, table_id: string) {
+export async function handleUnmergeTable(supabase: unknown, table_id: string) {
   try {
     // Get the current table info to understand its state
     const { data: currentTable, error: currentTableError } = await supabase
@@ -590,7 +590,7 @@ export async function handleUnmergeTable(supabase: any, table_id: string) {
   }
 }
 
-export async function handleCancelReservation(supabase: any, table_id: string, reservation_id: string) {
+export async function handleCancelReservation(supabase: unknown, table_id: string, reservation_id: string) {
   try {
     // First, cancel the reservation in the reservations table (if it exists)
     const { error: reservationError } = await supabase
