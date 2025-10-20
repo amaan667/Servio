@@ -132,6 +132,6 @@ export function useDashboardRealtime({
       supabase.removeChannel(channel);
       window.removeEventListener('orderCreated', handleOrderCreated as EventListener);
     };
-  }, [venueId, venueTz, venue?.venue_id, todayWindow?.startUtcISO, refreshCounts, loadStats, updateRevenueIncrementally]);
+  }, [venueId, venue?.venue_id, todayWindow?.startUtcISO, refreshCounts, loadStats, updateRevenueIncrementally]);
 }
 
