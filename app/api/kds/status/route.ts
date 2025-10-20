@@ -56,7 +56,7 @@ export async function GET() {
       .limit(5);
 
     if (ordersError) {
-      logger.error('[KDS STATUS] Error checking recent orders:', ordersError);
+      logger.error('[KDS STATUS] Error checking recent orders:', { error: ordersError.message });
     }
 
     const status = {
