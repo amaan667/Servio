@@ -28,13 +28,6 @@ export async function middleware(req: NextRequest) {
   const url = new URL(req.url);
   const path = url.pathname;
 
-  console.log('[MIDDLEWARE] Request:', {
-    path,
-    method: req.method,
-    cookies: Object.keys(req.cookies.getAll()),
-    timestamp: new Date().toISOString()
-  });
-
   // Allow public assets and auth routes
   if (
     path.startsWith('/_next') || 
@@ -43,25 +36,20 @@ export async function middleware(req: NextRequest) {
     path.startsWith('/manifest.json') ||
     path.startsWith('/sw.js')
   ) {
-    console.log('[MIDDLEWARE] Allowing public asset:', path);
     return NextResponse.next();
   }
 
   // Allow public routes
   const isPublicRoute = PUBLIC_ROUTES.some(route => path.startsWith(route));
   if (isPublicRoute) {
-    console.log('[MIDDLEWARE] Allowing public route:', path);
     return NextResponse.next();
   }
 
   // Check if route is protected
   const isProtectedRoute = PROTECTED_MATCHER.some(m => path.startsWith(m));
   if (!isProtectedRoute) {
-    console.log('[MIDDLEWARE] Not a protected route:', path);
     return NextResponse.next();
   }
-
-  console.log('[MIDDLEWARE] Protected route detected:', path);
 
   // For protected routes, verify authentication
   const res = NextResponse.next();
@@ -74,15 +62,12 @@ export async function middleware(req: NextRequest) {
         cookies: {
           get: (name) => {
             const value = req.cookies.get(name)?.value;
-            console.log('[MIDDLEWARE] Cookie get:', name, value ? 'present' : 'missing');
             return value;
           },
           set: (name, value, options) => {
-            console.log('[MIDDLEWARE] Cookie set:', name);
             res.cookies.set(name, value, options);
           },
-          remove: (name, options) => {
-            console.log('[MIDDLEWARE] Cookie remove:', name);
+          remove: (name) => {
             res.cookies.delete(name);
           },
         },
@@ -91,27 +76,26 @@ export async function middleware(req: NextRequest) {
 
     const { data: { user }, error } = await supabase.auth.getUser();
     
-    console.log('[MIDDLEWARE] Auth check result:', {
-      hasUser: !!user,
-      userId: user?.id,
-      error: error?.message,
-      path
-    });
-    
-    if (!user) {
-      console.log('[MIDDLEWARE] No user found, redirecting to sign-in');
+    // Only redirect to sign-in if there's no user AND no error (meaning user is genuinely not logged in)
+    // If there's an error, let the page handle it - don't force redirect
+    if (!user && !error) {
       const redirect = new URL('/sign-in', req.url);
       redirect.searchParams.set('next', encodeURIComponent(path));
       return NextResponse.redirect(redirect);
     }
 
-    console.log('[MIDDLEWARE] User authenticated, allowing access:', user.id);
+    // If there's an error but no user, log it but don't redirect - let the page handle it
+    if (error && !user) {
+      console.warn('[MIDDLEWARE] Auth error detected but not redirecting:', error.message);
+      // Allow the request to proceed - the page will handle the auth state
+      return res;
+    }
+
     return res;
   } catch (error) {
     console.error('[MIDDLEWARE] Error during auth check:', error);
-    const redirect = new URL('/sign-in', req.url);
-    redirect.searchParams.set('error', 'auth_error');
-    return NextResponse.redirect(redirect);
+    // Don't redirect on errors - let the page handle it
+    return res;
   }
 }
 

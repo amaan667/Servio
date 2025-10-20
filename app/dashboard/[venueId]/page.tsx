@@ -11,17 +11,25 @@ export default async function VenuePage({ params }: { params: Promise<{ venueId:
   const supabase = await createClient();
   
   if (!supabase) {
-    redirect('/sign-in');
+    // Don't redirect, just show error
+    return <div>Error: Unable to connect to database</div>;
   }
 
   const { data: { user }, error: userError } = await supabase.auth.getUser();
   
-  if (userError || !user) {
+  // Only redirect if there's no user and no error (user genuinely not logged in)
+  // If there's an error, let the page handle it
+  if (!user && !userError) {
     redirect('/sign-in');
   }
   
+  // If there's an error, don't redirect - let the page handle it
+  if (userError) {
+    console.error('[DASHBOARD] Auth error:', userError.message);
+  }
+  
   // Check if user is the venue owner
-  const { data: venue, error: venueError } = await supabase
+  const { data: venue } = await supabase
     .from('venues')
     .select('*')
     .eq('venue_id', venueId)
@@ -29,7 +37,7 @@ export default async function VenuePage({ params }: { params: Promise<{ venueId:
     .maybeSingle();
 
   // Check if user has a staff role for this venue
-  const { data: userRole, error: roleError } = await supabase
+  const { data: userRole } = await supabase
     .from('user_venue_roles')
     .select('role')
     .eq('user_id', user.id)
