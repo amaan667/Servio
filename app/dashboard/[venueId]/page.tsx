@@ -2,7 +2,7 @@ export const dynamic = 'force-dynamic';
 
 import { redirect } from 'next/navigation';
 import { createClient } from '@/lib/supabase/server';
-import DashboardClient from './page.client';
+import DashboardClient from './page.client.modern';
 import { todayWindowForTZ } from '@/lib/time';
 
 export default async function VenuePage({ params }: { params: Promise<{ venueId: string }> }) {
