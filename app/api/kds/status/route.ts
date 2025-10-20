@@ -1,11 +1,11 @@
 import { NextResponse } from 'next/server';
 import { createAdminClient } from '@/lib/supabase';
-import { apiLogger, logger } from '@/lib/logger';
+import { logger } from '@/lib/logger';
 
 export const runtime = 'nodejs';
 export const dynamic = 'force-dynamic';
 
-export async function GET(req: Request) {
+export async function GET() {
   try {
     const supabaseAdmin = createAdminClient();
     logger.debug('[KDS STATUS] Checking KDS system status...');
@@ -18,7 +18,7 @@ export async function GET(req: Request) {
       .eq('table_schema', 'public');
 
     if (tablesError) {
-      logger.error('[KDS STATUS] Error checking tables:', tablesError);
+      logger.error('[KDS STATUS] Error checking tables:', { error: tablesError.message });
       return NextResponse.json({ 
         error: 'Failed to check KDS tables',
         details: tablesError.message 
