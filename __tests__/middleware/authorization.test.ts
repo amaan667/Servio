@@ -161,8 +161,14 @@ describe('Authorization Middleware', () => {
 
   describe('requireOwner', () => {
     it('should return true for owner', () => {
-      const context = {
-        venue: { venue_id: 'venue-1' },
+      const context: AuthorizedContext = {
+        venue: {
+          venue_id: 'venue-1',
+          owner_id: 'user-1',
+          name: 'Test Venue',
+          created_at: new Date().toISOString(),
+          updated_at: new Date().toISOString(),
+        },
         user: { id: 'user-1' },
         role: 'owner',
         venueId: 'venue-1',
@@ -185,8 +191,14 @@ describe('Authorization Middleware', () => {
 
   describe('requireStaffOrOwner', () => {
     it('should return true for owner', () => {
-      const context = {
-        venue: { venue_id: 'venue-1' },
+      const context: AuthorizedContext = {
+        venue: {
+          venue_id: 'venue-1',
+          owner_id: 'user-1',
+          name: 'Test Venue',
+          created_at: new Date().toISOString(),
+          updated_at: new Date().toISOString(),
+        },
         user: { id: 'user-1' },
         role: 'owner',
         venueId: 'venue-1',

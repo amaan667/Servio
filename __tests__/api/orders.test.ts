@@ -57,9 +57,7 @@ describe('Orders API', () => {
       const { supabaseServer } = await import('@/lib/supabase');
       vi.mocked(supabaseServer).mockResolvedValue(mockSupabase);
 
-      const response = await GET(mockRequest as NextRequest, {
-        params: { venueId: 'venue-1' },
-      });
+      const response = await GET(mockRequest as NextRequest);
 
       expect(response.status).toBe(200);
       const data = await response.json();
@@ -76,9 +74,7 @@ describe('Orders API', () => {
       const { supabaseServer } = await import('@/lib/supabase');
       vi.mocked(supabaseServer).mockResolvedValue(mockSupabase);
 
-      const response = await GET(mockRequest as NextRequest, {
-        params: { venueId: 'venue-1' },
-      });
+      const response = await GET(mockRequest as NextRequest);
 
       expect(response.status).toBe(500);
       const data = await response.json();

@@ -4,6 +4,7 @@
  */
 
 import { describe, it, expect, vi, beforeEach } from 'vitest';
+import { NextRequest } from 'next/server';
 import { callRoute } from '../../test/utils/next-api';
 import { GET as getMenu } from '@/app/api/menu/[venueId]/route';
 
@@ -32,7 +33,7 @@ describe('GET /api/menu/[venueId]', () => {
       params: Promise.resolve({}),
     };
 
-    const req = new Request('http://localhost/api/menu');
+    const req = new NextRequest('http://localhost/api/menu');
     const res = await getMenu(req, mockContext);
 
     expect(res.status).toBeGreaterThanOrEqual(400);
@@ -43,7 +44,7 @@ describe('GET /api/menu/[venueId]', () => {
       params: Promise.resolve({ venueId: 'venue-123' }),
     };
 
-    const req = new Request('http://localhost/api/menu/venue-123');
+    const req = new NextRequest('http://localhost/api/menu/venue-123');
     const res = await getMenu(req, mockContext);
 
     // Should return 200 or 404 depending on mock
