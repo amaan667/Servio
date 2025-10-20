@@ -12,6 +12,12 @@ export interface RetryOptions {
   retryCondition?: (error: unknown) => boolean;
 }
 
+interface RetryableError {
+  message?: string;
+  code?: string;
+  status?: number;
+}
+
 export const DEFAULT_RETRY_OPTIONS: Required<RetryOptions> = {
   maxAttempts: 3,
   baseDelay: 1000, // 1 second
@@ -19,14 +25,15 @@ export const DEFAULT_RETRY_OPTIONS: Required<RetryOptions> = {
   backoffFactor: 2,
   retryCondition: (error: unknown) => {
     // Retry on network errors, timeouts, and 5xx server errors
+    const err = error as RetryableError;
     return (
-      error?.message?.includes('network') ||
-      error?.message?.includes('timeout') ||
-      error?.message?.includes('fetch') ||
-      error?.code === 'NETWORK_ERROR' ||
-      error?.code === 'TIMEOUT_ERROR' ||
-      (error?.status >= 500 && error?.status < 600) ||
-      error?.status === 429 // Rate limited
+      err?.message?.includes('network') ||
+      err?.message?.includes('timeout') ||
+      err?.message?.includes('fetch') ||
+      err?.code === 'NETWORK_ERROR' ||
+      err?.code === 'TIMEOUT_ERROR' ||
+      (err?.status !== undefined && err.status >= 500 && err.status < 600) ||
+      err?.status === 429 // Rate limited
     );
   }
 };
@@ -56,7 +63,8 @@ export async function withRetry<T>(
         config.maxDelay
       );
 
-      logger.warn(`[RETRY] Attempt ${attempt} failed, retrying in ${delay}ms:`, (error as unknown)?.message);
+      const err = error as RetryableError;
+      logger.warn(`[RETRY] Attempt ${attempt} failed, retrying in ${delay}ms:`, err?.message);
       
       // Add jitter to prevent thundering herd
       const jitter = Math.random() * 0.1 * delay;
@@ -77,8 +85,8 @@ export function createRetryableFetch(
       
       // Throw error for non-2xx responses to trigger retry logic
       if (!response.ok) {
-        const error = new Error(`HTTP ${response.status}: ${response.statusText}`);
-        (error as unknown).status = response.status;
+        const error = new Error(`HTTP ${response.status}: ${response.statusText}`) as RetryableError;
+        error.status = response.status;
         throw error;
       }
       
