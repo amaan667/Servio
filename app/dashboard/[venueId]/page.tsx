@@ -28,6 +28,11 @@ export default async function VenuePage({ params }: { params: Promise<{ venueId:
     console.error('[DASHBOARD] Auth error:', userError.message);
   }
   
+  // If no user after checks, return early
+  if (!user) {
+    return <div>Please sign in to access the dashboard</div>;
+  }
+  
   // Check if user is the venue owner
   const { data: venue } = await supabase
     .from('venues')
