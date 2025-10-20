@@ -18,8 +18,11 @@ export default [
     },
     rules: {
       ...react.configs.recommended.rules,
-      "no-console": ["error", { "allow": ["error"] }],
+      "no-console": ["error", { 
+        "allow": process.env.NODE_ENV === 'production' ? [] : ['warn', 'error', 'info'] 
+      }],
       "@typescript-eslint/no-unused-vars": "error",
+      "@typescript-eslint/no-explicit-any": "warn",
       "react-hooks/exhaustive-deps": "warn",
       // Ban direct subpath imports & old factories
       "no-restricted-imports": ["error", {
