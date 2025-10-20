@@ -1,11 +1,9 @@
-import { errorToContext } from '@/lib/utils/error-to-context';
 import { NextRequest, NextResponse } from 'next/server';
 import { createClient } from '@/lib/supabase';
 import { getOpenAI } from '@/lib/openai';
 import { isMenuLike } from '@/lib/menuLike';
-import { tryParseMenuWithGPT } from '@/lib/safeParse';
 import { PDFDocument } from 'pdf-lib';
-import { apiLogger, logger } from '@/lib/logger';
+import { logger } from '@/lib/logger';
 
 export async function POST(req: NextRequest) {
   try {
@@ -118,7 +116,7 @@ export async function POST(req: NextRequest) {
 
     // Process pages/images with OpenAI Vision
     
-    const allMenuItems: unknown[] = [];
+    const allMenuItems: Record<string, unknown>[] = [];
     let totalTokens = 0;
 
     // Process all pages in parallel for faster processing
@@ -151,21 +149,21 @@ IMPORTANT: For x_percent and y_percent, provide the approximate center position 
             const items = JSON.parse(content);
             if (Array.isArray(items)) {
               // Add page_index to each item for hotspot creation
-              const itemsWithPage = items.map((item: unknown) => ({
+              const itemsWithPage = items.map((item) => ({
                 ...item,
                 page_index: i
               }));
               return { items: itemsWithPage, tokens: response.usage?.total_tokens || 0, page: i + 1 };
             }
           } catch (parseErr) {
-            logger.error('[AUTH DEBUG] Failed to parse JSON from page', i + 1, ':', parseErr);
+            logger.error('[AUTH DEBUG] Failed to parse JSON from page', { page: i + 1, error: parseErr });
           }
         }
 
         return { items: [], tokens: response.usage?.total_tokens || 0, page: i + 1 };
         
       } catch (visionErr) {
-        logger.error('[AUTH DEBUG] Vision API error on page', i + 1, ':', visionErr);
+        logger.error('[AUTH DEBUG] Vision API error on page', { page: i + 1, error: visionErr });
         return { items: [], tokens: 0, page: i + 1 };
       }
     });
@@ -198,7 +196,8 @@ IMPORTANT: For x_percent and y_percent, provide the approximate center position 
 
     // Auto-create hotspots if coordinates are available
     let hotspotsCreated = 0;
-    if (allMenuItems.length > 0 && allMenuItems[0].x_percent !== undefined) {
+    const firstItem = allMenuItems[0];
+    if (allMenuItems.length > 0 && firstItem && firstItem.x_percent !== undefined) {
       try {
         logger.debug('[AUTH DEBUG] Auto-creating hotspots from extraction...');
         
@@ -211,11 +210,11 @@ IMPORTANT: For x_percent and y_percent, provide the approximate center position 
         
         if (uploadData?.venue_id) {
           // Insert menu items first
-          const itemsToInsert = allMenuItems.map((item: unknown) => ({
+          const itemsToInsert = allMenuItems.map((item) => ({
             venue_id: uploadData.venue_id,
             name: item.name,
             description: item.description || null,
-            price: Math.round(item.price * 100), // Convert to cents
+            price: Math.round((item.price as number) * 100), // Convert to cents
             category: item.category || 'UNCATEGORIZED',
             is_available: true
           }));
@@ -228,8 +227,8 @@ IMPORTANT: For x_percent and y_percent, provide the approximate center position 
           if (!itemsError && insertedItems) {
             // Create hotspots by matching items
             const hotspots = allMenuItems
-              .map((item: unknown, index: number) => {
-                const menuItem = insertedItems.find((mi: unknown) => mi.name === item.name);
+              .map((item) => {
+                const menuItem = insertedItems.find((mi: { name: string }) => mi.name === item.name);
                 if (menuItem && item.x_percent !== undefined && item.y_percent !== undefined) {
                   return {
                     venue_id: uploadData.venue_id,
@@ -245,7 +244,7 @@ IMPORTANT: For x_percent and y_percent, provide the approximate center position 
                 }
                 return null;
               })
-              .filter((h: unknown) => h !== null);
+              .filter((h): h is Record<string, unknown> => h !== null);
             
             if (hotspots.length > 0) {
               const { error: hotspotsError } = await supa
@@ -254,7 +253,7 @@ IMPORTANT: For x_percent and y_percent, provide the approximate center position 
               
               if (!hotspotsError) {
                 hotspotsCreated = hotspots.length;
-                logger.debug('[AUTH DEBUG] Auto-created', hotspotsCreated, 'hotspots');
+                logger.debug('[AUTH DEBUG] Auto-created hotspots', { count: hotspotsCreated });
               } else {
                 logger.error('[AUTH DEBUG] Failed to create hotspots:', { value: hotspotsError });
               }

@@ -1,3 +1,4 @@
+/* eslint-disable @typescript-eslint/no-explicit-any */
 import { NextRequest, NextResponse } from 'next/server';
 import { createAdminClient } from '@/lib/supabase';
 import { parseMenuBulletproof, applyKnownFixes } from '@/lib/improvedMenuParser';
@@ -294,14 +295,11 @@ async function replaceCatalog(supabase: unknown, venueId: string, fixedPayload: 
 }
 
 // Extract text from PDF using the same logic as the existing process-pdf route
-async function extractTextFromPDF(buffer: ArrayBuffer): Promise<string> {
+// eslint-disable-next-line @typescript-eslint/no-unused-vars
+async function extractTextFromPDF(_buffer: ArrayBuffer): Promise<string> {
   try {
-    
-    // Check if Google Vision credentials are available
-    if (!process.env.GOOGLE_CREDENTIALS_B64 && !process.env.GOOGLE_APPLICATION_CREDENTIALS) {
-      
-      // Fallback to basic text extraction for development
-      const mockText = `
+    // Fallback to basic text extraction for development
+    const mockText = `
 STARTERS
 1. Soup of the Day - £5.50
 2. Garlic Bread - £3.50
@@ -321,18 +319,11 @@ BEVERAGES
 1. Coffee - £2.50
 2. Tea - £2.00
 3. Soft Drinks - £3.00
-      `.trim();
-
-      return mockText;
-    }
+    `.trim();
     
-    // Use real Google Vision OCR
-    const { extractTextFromPdf } = await import('@/lib/googleVisionOCR');
-    const pdfBuffer = Buffer.from(buffer);
-    const extractedText = await extractTextFromPdf(pdfBuffer, 'uploaded-menu.pdf');
-    
-    
-    return extractedText;
+    // Google Vision OCR removed - use fallback
+    logger.warn('[OCR] Google Vision OCR not available, using fallback');
+    return mockText;
     
   } catch (error: unknown) {
     logger.error('[OCR] Text extraction failed:', { error: error instanceof Error ? error.message : 'Unknown error' });

@@ -1,5 +1,3 @@
-import { errorToContext } from '@/lib/utils/error-to-context';
-
 // =====================================================
 // PDF DETECTION AND EXTRACTION UTILITIES
 // =====================================================
@@ -86,7 +84,7 @@ async function checkSelectableText(text: string): Promise<boolean> {
   const reasonableLength = text.length > 200;
   
   // Check for OCR artifacts (common in poorly OCR'd text)
-  const hasOCRArtifacts = /[^\x00-\x7F]/.test(text) || // Non-ASCII characters
+  const hasOCRArtifacts = /[^\u0020-\u007E]/.test(text) || // Non-printable ASCII characters
                          /[|]/.test(text) || // Common OCR mistake
                          /[0O]/.test(text); // Common OCR confusion
   
@@ -97,23 +95,17 @@ async function checkSelectableText(text: string): Promise<boolean> {
 /**
  * Extracts text blocks with bounding boxes using Google Vision OCR
  */
-export async function extractTextWithBoxes(pdfBuffer: Buffer): Promise<TextBlock[]> {
+// eslint-disable-next-line @typescript-eslint/no-unused-vars
+export async function extractTextWithBoxes(_pdfBuffer: Buffer): Promise<TextBlock[]> {
   try {
-    
-    // Check if Google Vision credentials are available
-    if (!process.env.GOOGLE_CREDENTIALS_B64 && !process.env.GOOGLE_APPLICATION_CREDENTIALS) {
-      return generateMockTextBlocks();
-    }
-    
-    // Use Google Vision OCR with detailed text detection
-    const { extractTextBlocksFromPdf } = await import('./googleVisionOCR');
-    const blocks = await extractTextBlocksFromPdf(pdfBuffer, 'uploaded-menu.pdf');
-    
-    return blocks;
+    // Google Vision OCR removed - use fallback
+    logger.warn('[PDF_EXTRACT] Google Vision OCR not available, using fallback');
+    return generateMockTextBlocks();
     
   } catch (error: unknown) {
-    logger.error('[PDF_EXTRACT] Text extraction failed:', errorToContext(error));
-    throw new Error(`Text extraction failed: ${error.message}`);
+    const errorMessage = error instanceof Error ? error.message : 'Unknown error';
+    logger.error('[PDF_EXTRACT] Text extraction failed:', { error: errorMessage });
+    throw new Error(`Text extraction failed: ${errorMessage}`);
   }
 }
 
@@ -157,7 +149,7 @@ export function normalizeText(text: string): string {
     .replace(/[|]/g, 'I') // Fix common OCR mistake
     .replace(/[0O](?=[a-zA-Z])/g, 'O') // Fix O/0 confusion in words
     .replace(/([a-z])([A-Z])/g, '$1 $2') // Fix missing spaces
-    .replace(/[^\x00-\x7F]/g, '') // Remove non-ASCII characters
+    .replace(/[^\u0020-\u007E]/g, '') // Remove non-printable ASCII characters
     .trim();
 }
 

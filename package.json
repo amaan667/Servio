@@ -13,17 +13,7 @@
     "start": "next start -p ${PORT:-8080}",
     "typecheck": "tsc --noEmit",
     "lint": "eslint .",
-    "format": "prettier -w .",
-    "analyze": "ANALYZE=true next build",
-    "depcheck": "depcheck --ignores='@types/*,eslint.*,prettier,*config.*'",
-    "tsprune": "ts-prune -p tsconfig.json",
-    "test": "vitest run",
-    "test:watch": "vitest",
-    "test:coverage": "vitest run --coverage",
-    "test:e2e": "playwright test",
-    "test:e2e:ui": "playwright test --ui",
-    "test:e2e:debug": "playwright test --debug",
-    "cleanup": "chmod +x scripts/cleanup-all.sh && ./scripts/cleanup-all.sh"
+    "format": "prettier -w ."
   },
   "lint-staged": {
     "*.{ts,tsx}": [

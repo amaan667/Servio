@@ -43,25 +43,9 @@ class ProductionLogger {
   private log(level: LogLevel, levelName: string, message: string, context?: FlexibleLogContext) {
     if (!this.shouldLog(level)) return;
 
-    const formatted = this.formatMessage(levelName, message, context);
-
-    // Console output
-    switch (level) {
-      case LogLevel.DEBUG:
-        if (process.env.NODE_ENV !== 'production') {
-          // eslint-disable-next-line no-console
-          console.debug(formatted);
-        }
-        break;
-      case LogLevel.INFO:
-        console.info(formatted);
-        break;
-      case LogLevel.WARN:
-        console.warn(formatted);
-        break;
-      case LogLevel.ERROR:
-        console.error(formatted);
-        break;
+    // No console output in production
+    if (process.env.NODE_ENV === 'production') {
+      return;
     }
 
     // Sentry integration for errors and warnings
