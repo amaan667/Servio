@@ -33,7 +33,12 @@ export default function CheckoutSuccessPage() {
         .limit(1);
       
       if (!error && venues && venues.length > 0) {
-        router.push(`/dashboard/${venues[0].venue_id}`);
+        const primaryVenue = venues[0];
+        if (primaryVenue) {
+          router.push(`/dashboard/${primaryVenue.venue_id}`);
+        } else {
+          router.push('/');
+        }
       } else {
         router.push('/');
       }
@@ -217,7 +222,12 @@ export default function CheckoutSuccessPage() {
                       .limit(1);
                     
                     if (!error && venues && venues.length > 0) {
-                      router.push(`/dashboard/${venues[0].venue_id}?upgrade=success`);
+                      const primaryVenue = venues[0];
+                      if (primaryVenue) {
+                        router.push(`/dashboard/${primaryVenue.venue_id}?upgrade=success`);
+                      } else {
+                        router.push('/');
+                      }
                     } else {
                       router.push('/');
                     }
