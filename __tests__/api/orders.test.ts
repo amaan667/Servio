@@ -92,7 +92,7 @@ describe('Orders API', () => {
       const { supabaseServer } = await import('@/lib/supabase');
       vi.mocked(supabaseServer).mockResolvedValue(mockSupabase);
 
-      mockRequest.url = 'http://localhost:3000/api/orders?venueId=venue-1&status=COMPLETED';
+      Object.defineProperty(mockRequest, 'url', { value: 'http://localhost:3000/api/orders?venueId=venue-1&status=COMPLETED', writable: true });
 
       await GET(mockRequest as NextRequest, {
         params: { venueId: 'venue-1' },
@@ -130,7 +130,7 @@ describe('Orders API', () => {
       const { supabaseServer } = await import('@/lib/supabase');
       vi.mocked(supabaseServer).mockResolvedValue(mockSupabase);
 
-      mockRequest.method = 'POST';
+      Object.defineProperty(mockRequest, 'method', { value: 'POST', writable: true });
       mockRequest.json = vi.fn().mockResolvedValue(orderData);
 
       const response = await POST(mockRequest as NextRequest, {
@@ -149,7 +149,7 @@ describe('Orders API', () => {
         total_amount: -10,
       };
 
-      mockRequest.method = 'POST';
+      Object.defineProperty(mockRequest, 'method', { value: 'POST', writable: true });
       mockRequest.json = vi.fn().mockResolvedValue(invalidData);
 
       const response = await POST(mockRequest as NextRequest, {
@@ -177,7 +177,7 @@ describe('Orders API', () => {
       const { supabaseServer } = await import('@/lib/supabase');
       vi.mocked(supabaseServer).mockResolvedValue(mockSupabase);
 
-      mockRequest.method = 'POST';
+      Object.defineProperty(mockRequest, 'method', { value: 'POST', writable: true });
       mockRequest.json = vi.fn().mockResolvedValue(orderData);
 
       const response = await POST(mockRequest as NextRequest, {

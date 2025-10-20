@@ -1,3 +1,4 @@
+import { afterEach } from 'vitest';
 /**
  * Tests for Production Logger
  * Ensures logging works correctly in all environments
@@ -32,13 +33,13 @@ describe('ProductionLogger', () => {
 
   describe('Log Levels', () => {
     it('should log debug messages in development', () => {
-      process.env.NODE_ENV = 'development';
+      Object.defineProperty(process.env, 'NODE_ENV', { value: 'development', writable: true });
       logger.debug('Test debug message');
       expect(consoleSpy.debug).toHaveBeenCalled();
     });
 
     it('should not log debug messages in production', () => {
-      process.env.NODE_ENV = 'production';
+      Object.defineProperty(process.env, 'NODE_ENV', { value: 'production', writable: true });
       logger.debug('Test debug message');
       expect(consoleSpy.debug).not.toHaveBeenCalled();
     });
@@ -72,7 +73,7 @@ describe('ProductionLogger', () => {
 
   describe('Sentry Integration', () => {
     it('should send errors to Sentry in production', async () => {
-      process.env.NODE_ENV = 'production';
+      Object.defineProperty(process.env, 'NODE_ENV', { value: 'production', writable: true });
       const { captureException } = await import('@sentry/nextjs');
       
       logger.error('Test error', { userId: '123' });
@@ -81,7 +82,7 @@ describe('ProductionLogger', () => {
     });
 
     it('should send warnings to Sentry in production', async () => {
-      process.env.NODE_ENV = 'production';
+      Object.defineProperty(process.env, 'NODE_ENV', { value: 'production', writable: true });
       const { captureMessage } = await import('@sentry/nextjs');
       
       logger.warn('Test warning', { userId: '123' });
@@ -90,7 +91,7 @@ describe('ProductionLogger', () => {
     });
 
     it('should not send debug messages to Sentry', async () => {
-      process.env.NODE_ENV = 'production';
+      Object.defineProperty(process.env, 'NODE_ENV', { value: 'production', writable: true });
       const { captureException, captureMessage } = await import('@sentry/nextjs');
       
       logger.debug('Test debug');
