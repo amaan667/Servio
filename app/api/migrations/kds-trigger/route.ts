@@ -148,7 +148,7 @@ export async function POST(req: Request) {
     logger.error('[KDS TRIGGER] Unexpected error:', { error: error instanceof Error ? error.message : 'Unknown error' });
     return NextResponse.json({ 
       ok: false, 
-      error: error.message || 'Trigger creation failed' 
+      error: error instanceof Error ? error.message : 'Trigger creation failed' 
     }, { status: 500 });
   }
 }

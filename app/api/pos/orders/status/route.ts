@@ -43,7 +43,7 @@ export async function PATCH(req: NextRequest) {
     }
 
     // Update order status
-    const updateData: unknown = { order_status };
+    const updateData: any = { order_status };
     if (payment_status) {
       updateData.payment_status = payment_status;
     }

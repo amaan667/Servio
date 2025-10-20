@@ -28,10 +28,7 @@ export async function GET(
       .eq('id', orderId)
       .single();
 
-    logger.debug('[ORDER FETCH DEBUG] Query result:');
-    logger.debug('[ORDER FETCH DEBUG] - Found order:', !!order);
-    logger.debug('[ORDER FETCH DEBUG] - Error:', { value: orderError });
-    logger.debug('[ORDER FETCH DEBUG] - Order data keys:', order ? Object.keys(order) : 'N/A');
+    logger.debug('[ORDER FETCH DEBUG] Query result:', { found: !!order, error: orderError, keys: order ? Object.keys(order) : 'N/A' });
 
     if (orderError) {
       logger.error('[ORDER FETCH DEBUG] ===== ORDER NOT FOUND =====');

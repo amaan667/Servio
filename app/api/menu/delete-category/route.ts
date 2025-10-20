@@ -78,11 +78,11 @@ export async function POST(request: NextRequest) {
             .eq('category', categoryName);
           
           if (error) {
-            logger.warn(`[CATEGORIES DELETE] Warning deleting from ${table}:`, error);
+            logger.warn(`[CATEGORIES DELETE] Warning deleting from ${table}:`, { table, error });
           }
         }
       } catch (error) {
-        logger.warn(`[CATEGORIES DELETE] Warning processing ${table}:`, error);
+        logger.warn(`[CATEGORIES DELETE] Warning processing ${table}:`, { table, error });
       }
     }
 

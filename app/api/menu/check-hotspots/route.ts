@@ -94,7 +94,7 @@ export async function GET(req: NextRequest) {
 
   } catch (error: unknown) {
     return NextResponse.json(
-      { ok: false, error: error.message },
+      { ok: false, error: error instanceof Error ? error.message : 'Unknown error' },
       { status: 500 }
     );
   }

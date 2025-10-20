@@ -1,6 +1,7 @@
 import { NextResponse } from 'next/server';
 import { createAdminClient } from '@/lib/supabase';
 import { logger } from '@/lib/logger';
+import { getErrorMessage } from '@/lib/utils/errors';
 
 export async function POST() {
   try {
@@ -13,7 +14,9 @@ export async function POST() {
     });
     
     if (columnError) {
+      logger.warn('Column already exists or error adding column:', { error: getErrorMessage(columnError) });
     } else {
+      logger.info('Successfully added reservation_duration_minutes column');
     }
     
     // 2. Check and fix enum values by testing each one
@@ -44,6 +47,7 @@ export async function POST() {
             .eq('venue_id', 'test');
         }
       } catch (error) {
+        logger.debug('Test record cleanup failed:', { error: getErrorMessage(error) });
       }
     }
     
@@ -54,6 +58,7 @@ export async function POST() {
           sql: `ALTER TYPE table_status ADD VALUE IF NOT EXISTS '${status}';`
         });
       } catch (enumError) {
+        logger.warn('Error adding enum value:', { status, error: getErrorMessage(enumError) });
       }
     }
     
@@ -64,7 +69,9 @@ export async function POST() {
       .is('status', null);
     
     if (updateError) {
+      logger.warn('Error updating null statuses:', { error: getErrorMessage(updateError) });
     } else {
+      logger.info('Successfully updated null statuses to FREE');
     }
     
     // 4. Ensure all tables have sessions
@@ -75,6 +82,7 @@ export async function POST() {
       .eq('is_active', true);
     
     if (tablesError) {
+      logger.warn('Error fetching tables:', { error: getErrorMessage(tablesError) });
     } else {
       
       for (const table of tables) {
@@ -96,7 +104,9 @@ export async function POST() {
             });
           
           if (sessionError) {
+            logger.warn('Error creating session for table:', { tableId: table.id, error: getErrorMessage(sessionError) });
           } else {
+            logger.debug('Created session for table:', { tableId: table.id });
           }
         }
       }
@@ -109,7 +119,9 @@ export async function POST() {
     });
     
     if (orderSourceError) {
+      logger.warn('Error adding source column:', { error: getErrorMessage(orderSourceError) });
     } else {
+      logger.info('Successfully added source column');
     }
     
     // Fix orders that are incorrectly marked as counter orders
@@ -121,7 +133,9 @@ export async function POST() {
     });
     
     if (orderUpdateError) {
+      logger.warn('Error updating order sources:', { error: getErrorMessage(orderUpdateError) });
     } else {
+      logger.info('Successfully updated order sources');
     }
     
     // Fix table 10 order visibility - ensure it shows in Earlier Today tab
@@ -134,7 +148,9 @@ export async function POST() {
     });
     
     if (table10Error) {
+      logger.warn('Error fixing table 10 orders:', { error: getErrorMessage(table10Error) });
     } else {
+      logger.info('Successfully fixed table 10 orders');
     }
     
     // Fix Earlier Today order status - change from COMPLETED to IN_PREP so action buttons appear
@@ -148,7 +164,9 @@ export async function POST() {
     });
     
     if (earlierTodayError) {
+      logger.warn('Error fixing earlier today orders:', { error: getErrorMessage(earlierTodayError) });
     } else {
+      logger.info('Successfully fixed earlier today orders');
     }
     
     return NextResponse.json({

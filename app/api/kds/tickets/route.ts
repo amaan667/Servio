@@ -210,7 +210,12 @@ export async function PATCH(req: Request) {
     }
 
     // Build update object with timestamp
-    const updateData: unknown = { status };
+    const updateData: {
+      status: string;
+      started_at?: string;
+      ready_at?: string;
+      bumped_at?: string;
+    } = { status };
     const now = new Date().toISOString();
 
     switch (status) {

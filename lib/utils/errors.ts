@@ -27,12 +27,16 @@ export function getErrorDetails(error: unknown): ErrorDetails {
   }
 
   if (error && typeof error === 'object') {
-    return {
-      message: (error as Record<string, unknown>).message || 'Unknown error',
-      ...(error as Record<string, unknown>).stack && { stack: (error as Record<string, unknown>).stack },
-      ...(error as Record<string, unknown>).name && { name: (error as Record<string, unknown>).name },
-      ...(error as Record<string, unknown>).code && { code: (error as Record<string, unknown>).code },
+    const errorObj = error as Record<string, unknown>;
+    const result: ErrorDetails = {
+      message: String(errorObj.message) || 'Unknown error',
     };
+    
+    if (errorObj.stack) result.stack = String(errorObj.stack);
+    if (errorObj.name) result.name = String(errorObj.name);
+    if (errorObj.code) result.code = String(errorObj.code);
+    
+    return result;
   }
 
   return { message: 'Unknown error occurred' };
@@ -67,4 +71,20 @@ export function getErrorMessage(error: unknown): string {
     return String(error.message);
   }
   return 'An unknown error occurred';
+}
+
+/**
+ * Convert unknown error to Error object
+ */
+export function toError(error: unknown): Error {
+  if (error instanceof Error) {
+    return error;
+  }
+  if (typeof error === 'string') {
+    return new Error(error);
+  }
+  if (error && typeof error === 'object' && 'message' in error) {
+    return new Error(String(error.message));
+  }
+  return new Error('An unknown error occurred');
 }

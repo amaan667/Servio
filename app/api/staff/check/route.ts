@@ -33,7 +33,7 @@ export async function GET(req: Request) {
     }
     return NextResponse.json({ ok:true, exists:true });
   } catch (e:unknown) {
-    return NextResponse.json({ ok:false, error: e?.message || 'Unknown error' }, { status:500 });
+    return NextResponse.json({ ok:false, error: e instanceof Error ? e.message : 'Unknown error' }, { status:500 });
   }
 }
 

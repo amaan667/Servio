@@ -31,10 +31,7 @@ export async function GET(
       .eq('stripe_session_id', sessionId)
       .single();
 
-    logger.debug('[ORDER SESSION LOOKUP DEBUG] Query result:');
-    logger.debug('[ORDER SESSION LOOKUP DEBUG] - Found order:', !!order);
-    logger.debug('[ORDER SESSION LOOKUP DEBUG] - Error:', { value: orderError });
-    logger.debug('[ORDER SESSION LOOKUP DEBUG] - Order data:', { value: order });
+    logger.debug('[ORDER SESSION LOOKUP DEBUG] Query result:', { found: !!order, error: orderError, order });
 
     if (orderError) {
       logger.error('[ORDER SESSION LOOKUP DEBUG] Database error:', { value: orderError });

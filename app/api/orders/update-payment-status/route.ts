@@ -16,7 +16,7 @@ export async function POST(req: NextRequest) {
     const supabase = await createClient();
     
     // Convert to uppercase for database consistency
-    const updateData: unknown = {
+    const updateData: any = {
       payment_status: paymentStatus.toUpperCase(),
       updated_at: new Date().toISOString()
     };
@@ -45,7 +45,7 @@ export async function POST(req: NextRequest) {
   } catch (error: unknown) {
     logger.error('[UPDATE PAYMENT STATUS] Error:', { error: error instanceof Error ? error.message : 'Unknown error' });
     return NextResponse.json(
-      { error: error.message || 'Internal server error' },
+      { error: error instanceof Error ? error.message : 'Internal server error' },
       { status: 500 }
     );
   }

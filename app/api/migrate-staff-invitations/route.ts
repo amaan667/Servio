@@ -28,7 +28,8 @@ export async function POST(request: NextRequest) {
         }
       });
     } catch (tableError: unknown) {
-      if (tableError.code !== 'PGRST116' && !tableError.message?.includes('relation "staff_invitations" does not exist')) {
+      const error = tableError as any;
+      if (error.code !== 'PGRST116' && !error.message?.includes('relation "staff_invitations" does not exist')) {
         logger.error('[STAFF MIGRATION] Unexpected error checking table:', { error: tableError instanceof Error ? tableError.message : 'Unknown error' });
         return NextResponse.json({ 
           error: 'Database error. Please try again.' 

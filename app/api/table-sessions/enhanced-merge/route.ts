@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { createAdminClient, getAuthenticatedUser } from '@/lib/supabase';
 import { getTableState, getMergeScenario } from '@/lib/table-states';
 import { logger } from '@/lib/logger';
+import type { SupabaseClient } from '@supabase/supabase-js';
 
 export async function POST(req: NextRequest) {
   try {
@@ -138,7 +139,7 @@ export async function POST(req: NextRequest) {
 /**
  * Merge two free tables
  */
-async function mergeFreeTables(supabase: unknown, sourceTable: unknown, targetTable: unknown) {
+async function mergeFreeTables(supabase: SupabaseClient, sourceTable: { id: string; label: string; seat_count: number; venue_id: string }, targetTable: { id: string; label: string; seat_count: number }) {
   try {
     
     // Create a new combined session for both tables
@@ -201,7 +202,7 @@ async function mergeFreeTables(supabase: unknown, sourceTable: unknown, targetTa
 /**
  * Expand occupied table with free table
  */
-async function expandOccupiedTable(supabase: unknown, sourceTable: unknown, targetTable: unknown, sourceIsFree: boolean) {
+async function expandOccupiedTable(supabase: SupabaseClient, sourceTable: { id: string; seat_count: number; venue_id: string }, targetTable: { id: string; seat_count: number; venue_id: string }, sourceIsFree: boolean) {
   try {
     const freeTable = sourceIsFree ? sourceTable : targetTable;
     const occupiedTable = sourceIsFree ? targetTable : sourceTable;
@@ -265,7 +266,7 @@ async function expandOccupiedTable(supabase: unknown, sourceTable: unknown, targ
 /**
  * Expand reserved table with free table
  */
-async function expandReservedTable(supabase: unknown, sourceTable: unknown, targetTable: unknown, sourceIsFree: boolean) {
+async function expandReservedTable(supabase: SupabaseClient, sourceTable: { id: string; seat_count: number; venue_id: string }, targetTable: { id: string; seat_count: number; venue_id: string }, sourceIsFree: boolean) {
   try {
     const freeTable = sourceIsFree ? sourceTable : targetTable;
     const reservedTable = sourceIsFree ? targetTable : sourceTable;
@@ -316,7 +317,7 @@ async function expandReservedTable(supabase: unknown, sourceTable: unknown, targ
 /**
  * Merge two occupied tables (risky operation)
  */
-async function mergeOccupiedTables(supabase: unknown, sourceTable: unknown, targetTable: unknown) {
+async function mergeOccupiedTables(supabase: SupabaseClient, sourceTable: { id: string; seat_count: number; venue_id: string }, targetTable: { id: string; seat_count: number; venue_id: string }) {
   try {
     
     // Get both sessions
@@ -417,7 +418,7 @@ async function mergeOccupiedTables(supabase: unknown, sourceTable: unknown, targ
 /**
  * Merge two reserved tables (same reservation only)
  */
-async function mergeReservedTables(supabase: unknown, sourceTable: unknown, targetTable: unknown) {
+async function mergeReservedTables(supabase: SupabaseClient, sourceTable: { id: string; seat_count: number; venue_id: string }, targetTable: { id: string; seat_count: number; venue_id: string }) {
   try {
     
     // Update table labels

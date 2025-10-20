@@ -131,10 +131,11 @@ export async function POST(req: Request) {
     });
 
   } catch (error: unknown) {
-    logger.error('[ORDERS SERVE][UNCAUGHT]', { error: error?.message || error, stack: error?.stack });
+    const err = error instanceof Error ? error : new Error(String(error));
+    logger.error('[ORDERS SERVE][UNCAUGHT]', { error: err.message, stack: err.stack });
     return NextResponse.json({ 
       error: 'Internal server error',
-      details: error.message 
+      details: err.message 
     }, { status: 500 });
   }
 }

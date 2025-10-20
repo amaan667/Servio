@@ -17,7 +17,7 @@ export async function GET(request: NextRequest) {
     }
 
     // Try to get from cache first
-    const cacheKey = cacheKeys.categories(venueId);
+    const cacheKey = cacheKeys.menuCategories(venueId);
     const cachedCategories = await cache.get(cacheKey);
     
     if (cachedCategories) {
@@ -82,7 +82,7 @@ export async function GET(request: NextRequest) {
     };
 
     // Cache the response for 10 minutes
-    await cache.set(cacheKey, response, cacheTTL.categories);
+    await cache.set(cacheKey, response, { ttl: cacheTTL.medium });
     
     return NextResponse.json(response);
 

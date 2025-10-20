@@ -55,7 +55,7 @@ export async function POST(req: NextRequest) {
     }
 
     // Update order payment status
-    const updateData: unknown = { 
+    const updateData: any = { 
       payment_status,
       payment_method 
     };

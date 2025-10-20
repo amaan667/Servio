@@ -18,6 +18,7 @@ export default [
     },
     rules: {
       ...react.configs.recommended.rules,
+      "react/react-in-jsx-scope": "off",
       "no-console": ["error", { 
         "allow": process.env.NODE_ENV === 'production' ? ['error'] : ['warn', 'error', 'info'] 
       }],

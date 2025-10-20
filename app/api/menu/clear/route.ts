@@ -59,7 +59,7 @@ export async function POST(request: NextRequest) {
     logger.error('[AUTH DEBUG] Clear menu error:', { error: error instanceof Error ? error.message : 'Unknown error' });
     return NextResponse.json({ 
       ok: false, 
-      error: `Clear menu failed: ${error.message}` 
+      error: `Clear menu failed: ${error instanceof Error ? error.message : 'Unknown error'}` 
     }, { status: 500 });
   }
 }

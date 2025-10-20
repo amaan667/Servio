@@ -94,7 +94,7 @@ export async function PUT(req: NextRequest, context: { params: Promise<{ reserva
     logger.error('[MODIFY RESERVATION] Error:', { error: error instanceof Error ? error.message : 'Unknown error' });
     return NextResponse.json({ 
       ok: false, 
-      error: error.message || 'Internal server error' 
+      error: error instanceof Error ? error.message : 'Internal server error' 
     }, { status: 500 });
   }
 }

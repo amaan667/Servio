@@ -66,7 +66,7 @@ export async function POST(req: Request) {
     logger.error('[JSON_REPAIR_API] Fatal error:', { error: error instanceof Error ? error.message : 'Unknown error' });
     return NextResponse.json({ 
       success: false, 
-      error: `JSON repair failed: ${error.message}` 
+      error: `JSON repair failed: ${error instanceof Error ? error.message : 'Unknown error'}` 
     }, { status: 500 });
   }
 }

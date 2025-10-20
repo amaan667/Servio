@@ -62,7 +62,7 @@ export async function GET(req: NextRequest) {
   } catch (error: unknown) {
     logger.error('[EXPORT PDF] Error:', { error: error instanceof Error ? error.message : 'Unknown error' });
     return NextResponse.json(
-      { ok: false, error: error.message || 'Failed to export PDF' },
+      { ok: false, error: error instanceof Error ? error.message : 'Failed to export PDF' },
       { status: 500 }
     );
   }

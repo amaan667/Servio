@@ -7,7 +7,7 @@ export async function POST(req: NextRequest) {
     const data = await req.json().catch(() => ({}));
 
     const ipFromHeaders = req.headers.get('x-forwarded-for') || req.headers.get('cf-connecting-ip') || req.headers.get('x-real-ip');
-    const log = {
+    const logData = {
       tag: '[ORDER ACCESS]'.padEnd(16),
       timestamp: new Date().toISOString(),
       ip: ipFromHeaders || 'unknown',
@@ -21,7 +21,7 @@ export async function POST(req: NextRequest) {
       isDemo: data?.isDemo,
     };
 
-    logger.debug(log);
+    logger.debug('[ORDER ACCESS]', logData);
 
     return NextResponse.json({ ok: true });
   } catch (err) {

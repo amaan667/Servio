@@ -69,7 +69,7 @@ export async function GET(req: NextRequest, context: { params: Promise<{ tableId
     logger.error('[GET RESERVATION BY TABLE] Error:', { error: error instanceof Error ? error.message : 'Unknown error' });
     return NextResponse.json({ 
       ok: false, 
-      error: error.message || 'Internal server error' 
+      error: error instanceof Error ? error.message : 'Internal server error' 
     }, { status: 500 });
   }
 }

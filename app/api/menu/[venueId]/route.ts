@@ -62,7 +62,7 @@ export async function GET(
     }
 
     if (venueError || !venue) {
-      logger.error('[MENU API] Venue not found:', { rawVenueId, transformedVenueId: venueId }, venueError);
+      logger.error('[MENU API] Venue not found:', { rawVenueId, transformedVenueId: venueId, error: venueError });
       return NextResponse.json(
         { error: 'Venue not found', venueId: rawVenueId, searchedAs: venueId },
         { status: 404 }

@@ -31,7 +31,7 @@ export async function POST(request: NextRequest) {
       adminClient = createAdminClient();
       logger.debug("[ORG ENSURE] Admin client created successfully");
     } catch (adminError) {
-      logger.error("[ORG ENSURE] Failed to create admin client:", adminError);
+      logger.error("[ORG ENSURE] Failed to create admin client:", { error: adminError });
       return NextResponse.json(
         { error: "Admin client creation failed", details: String(adminError) },
         { status: 500 }
@@ -143,7 +143,7 @@ export async function POST(request: NextRequest) {
         });
     }
 
-    logger.debug("[ORG ENSURE] Created new organization:", newOrg.id, "for user:", user.id);
+    logger.debug("[ORG ENSURE] Created new organization", { orgId: newOrg.id, userId: user.id });
 
     const response = NextResponse.json({
       success: true,
@@ -161,7 +161,7 @@ export async function POST(request: NextRequest) {
   } catch (error: unknown) {
     logger.error("[ORG ENSURE] Unexpected error:", { error: error instanceof Error ? error.message : 'Unknown error' });
     return NextResponse.json(
-      { error: "Internal server error", details: error.message },
+      { error: "Internal server error", details: error instanceof Error ? error.message : 'Unknown error' },
       { status: 500 }
     );
   }

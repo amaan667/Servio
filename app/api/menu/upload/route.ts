@@ -30,7 +30,7 @@ export async function POST(req: Request) {
     try {
       // Use a lightweight insert-select approach to avoid ts complaints; Supabase JS doesn't support arbitrary SQL without a function.
       // Expect this to fail harmlessly if a security defers creation; DDL should be applied via scripts as the primary path.
-      await supa.from('menu_uploads' as unknown).select('id').limit(1);
+      await supa.from('menu_uploads').select('id').limit(1);
     } catch (e) {
       logger.warn('[MENU_UPLOAD] menu_uploads not accessible yet');
     }
@@ -60,7 +60,7 @@ export async function POST(req: Request) {
     // Ensure bucket exists
     try {
       const { data: buckets } = await supa.storage.listBuckets();
-      const has = (buckets || []).some((b: unknown) => b.name === 'menus');
+      const has = (buckets || []).some((b: any) => b.name === 'menus');
       if (!has) {
         await supa.storage.createBucket('menus', { public: false });
       }
@@ -114,8 +114,8 @@ export async function POST(req: Request) {
 
     return NextResponse.json({ ok: true, upload_id: uploadId, sha256: hash, path });
   } catch (e: unknown) {
-    logger.error('[MENU_UPLOAD] fatal', e);
-    return NextResponse.json({ ok: false, error: e?.message || 'upload failed' }, { status: 500 });
+    logger.error('[MENU_UPLOAD] fatal', { error: e });
+    return NextResponse.json({ ok: false, error: e instanceof Error ? e.message : 'upload failed' }, { status: 500 });
   }
 }
 

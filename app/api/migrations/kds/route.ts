@@ -126,7 +126,7 @@ export async function POST(req: Request) {
     logger.error('[KDS MIGRATION] Unexpected error:', { error: error instanceof Error ? error.message : 'Unknown error' });
     return NextResponse.json({ 
       ok: false, 
-      error: error.message || 'Migration failed' 
+      error: error instanceof Error ? error.message : 'Migration failed' 
     }, { status: 500 });
   }
 }

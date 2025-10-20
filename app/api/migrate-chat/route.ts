@@ -43,7 +43,7 @@ export async function POST(request: NextRequest) {
     const migrationPath = path.join(process.cwd(), 'migrations', 'ai-chat-schema.sql');
     const migrationSQL = fs.readFileSync(migrationPath, 'utf8');
     
-    logger.debug("[MIGRATION] Migration file loaded, size:", migrationSQL.length, "bytes");
+    logger.debug("[MIGRATION] Migration file loaded", { size: migrationSQL.length });
     
     // Since we can't execute raw SQL through the Supabase client,
     // we'll provide detailed instructions
@@ -68,7 +68,7 @@ export async function POST(request: NextRequest) {
     return NextResponse.json(
       { 
         success: false, 
-        error: error.message,
+        error: error instanceof Error ? error.message : 'Unknown error',
         message: "Migration check failed"
       },
       { status: 500 }
@@ -112,7 +112,7 @@ export async function GET(request: NextRequest) {
     return NextResponse.json(
       { 
         status: "error", 
-        error: error.message 
+        error: error instanceof Error ? error.message : 'Unknown error' 
       },
       { status: 500 }
     );

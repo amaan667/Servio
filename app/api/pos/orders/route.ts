@@ -90,7 +90,7 @@ export async function GET(req: NextRequest) {
     const response = { orders: transformedOrders };
 
     // Cache the response for 1 minute (POS orders change frequently)
-    await cache.set(cacheKey, response, 60);
+    await cache.set(cacheKey, response, { ttl: 60 });
 
     return NextResponse.json(response);
   } catch (error) {
