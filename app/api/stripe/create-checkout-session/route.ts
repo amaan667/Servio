@@ -1,3 +1,4 @@
+import { errorToContext } from '@/lib/utils/error-to-context';
 // Stripe Checkout Session - Create subscription checkout
 import { NextRequest, NextResponse } from "next/server";
 import Stripe from "stripe";
@@ -149,7 +150,7 @@ export async function POST(request: NextRequest) {
       org = orgByOwner;
       logger.debug('[STRIPE DEBUG] Found existing organization by owner_id:', org.id);
     } else if (ownerError) {
-      logger.debug('[STRIPE DEBUG] Error querying organization by owner_id:', ownerError);
+      logger.debug('[STRIPE DEBUG] Error querying organization by owner_id:', { value: ownerError });
     }
     
     // Second priority: If organizationId provided and valid, verify it matches user
@@ -166,7 +167,7 @@ export async function POST(request: NextRequest) {
       } else if (orgById) {
         logger.warn('[STRIPE DEBUG] Organization', organizationId, 'exists but belongs to different user');
       } else if (idError) {
-        logger.debug('[STRIPE DEBUG] Error querying organization by ID:', idError);
+        logger.debug('[STRIPE DEBUG] Error querying organization by ID:', { value: idError });
       }
     }
 
@@ -192,7 +193,7 @@ export async function POST(request: NextRequest) {
         .single();
 
       if (createError) {
-        logger.error('[STRIPE ERROR] Failed to create organization:', createError);
+        logger.error('[STRIPE ERROR] Failed to create organization:', { value: createError });
         return NextResponse.json(
           { error: "Failed to create organization. Please try again." },
           { status: 500 }
@@ -210,7 +211,7 @@ export async function POST(request: NextRequest) {
         .is("organization_id", null);
       
       if (venueUpdateError) {
-        logger.warn('[STRIPE DEBUG] Warning: Could not link venues to organization:', venueUpdateError);
+        logger.warn('[STRIPE DEBUG] Warning: Could not link venues to organization:', { value: venueUpdateError });
       } else {
         logger.debug('[STRIPE DEBUG] Linked user venues to organization:', org.id);
       }
@@ -259,7 +260,7 @@ export async function POST(request: NextRequest) {
       
       logger.debug('[STRIPE DEBUG] Created Stripe customer:', customerId, 'for org:', actualOrgId);
     } else {
-      logger.debug('[STRIPE DEBUG] Using existing Stripe customer:', customerId);
+      logger.debug('[STRIPE DEBUG] Using existing Stripe customer:', { value: customerId });
     }
 
     // Create checkout session
@@ -290,7 +291,7 @@ export async function POST(request: NextRequest) {
       },
     };
 
-    logger.debug('[STRIPE DEBUG] Creating checkout session with data:', sessionData);
+    logger.debug('[STRIPE DEBUG] Creating checkout session with data:', { value: sessionData });
 
     const session = await stripe.checkout.sessions.create(sessionData);
 

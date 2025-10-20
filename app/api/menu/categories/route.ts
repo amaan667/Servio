@@ -1,3 +1,4 @@
+import { errorToContext } from '@/lib/utils/error-to-context';
 import { NextRequest, NextResponse } from 'next/server';
 import { createClient } from '@/lib/supabase';
 import { cache, cacheKeys, cacheTTL } from '@/lib/cache';
@@ -20,11 +21,11 @@ export async function GET(request: NextRequest) {
     const cachedCategories = await cache.get(cacheKey);
     
     if (cachedCategories) {
-      logger.debug('[CATEGORIES API] Cache hit for:', venueId);
+      logger.debug('[CATEGORIES API] Cache hit for:', { value: venueId });
       return NextResponse.json(cachedCategories);
     }
     
-    logger.debug('[CATEGORIES API] Cache miss for:', venueId);
+    logger.debug('[CATEGORIES API] Cache miss for:', { value: venueId });
 
     const supabase = await createClient();
 
@@ -39,7 +40,7 @@ export async function GET(request: NextRequest) {
 
 
     if (uploadError) {
-      logger.error('[CATEGORIES API] Error fetching category order:', uploadError);
+      logger.error('[CATEGORIES API] Error fetching category order:', { value: uploadError });
       return NextResponse.json(
         { error: 'Failed to fetch category order' },
         { status: 500 }
@@ -53,7 +54,7 @@ export async function GET(request: NextRequest) {
       .eq('venue_id', venueId);
 
     if (menuError) {
-      logger.error('[CATEGORIES API] Error fetching menu items:', menuError);
+      logger.error('[CATEGORIES API] Error fetching menu items:', { value: menuError });
       return NextResponse.json(
         { error: 'Failed to fetch menu items' },
         { status: 500 }
@@ -117,7 +118,7 @@ export async function PUT(request: NextRequest) {
       .maybeSingle();
 
     if (fetchError) {
-      logger.error('[CATEGORIES API] Error fetching existing upload:', fetchError);
+      logger.error('[CATEGORIES API] Error fetching existing upload:', { value: fetchError });
       return NextResponse.json(
         { error: 'Failed to fetch existing upload' },
         { status: 500 }
@@ -135,7 +136,7 @@ export async function PUT(request: NextRequest) {
         .eq('id', existingUpload.id);
 
       if (updateError) {
-        logger.error('[CATEGORIES API] Error updating category order:', updateError);
+        logger.error('[CATEGORIES API] Error updating category order:', { value: updateError });
         return NextResponse.json(
           { error: 'Failed to update category order' },
           { status: 500 }
@@ -153,7 +154,7 @@ export async function PUT(request: NextRequest) {
         });
 
       if (insertError) {
-        logger.error('[CATEGORIES API] Error creating category order:', insertError);
+        logger.error('[CATEGORIES API] Error creating category order:', { value: insertError });
         return NextResponse.json(
           { error: 'Failed to create category order' },
           { status: 500 }
@@ -199,7 +200,7 @@ export async function POST(request: NextRequest) {
       .maybeSingle();
 
     if (fetchError) {
-      logger.error('[CATEGORIES API] Error fetching category order:', fetchError);
+      logger.error('[CATEGORIES API] Error fetching category order:', { value: fetchError });
       return NextResponse.json(
         { error: 'Failed to fetch category order' },
         { status: 500 }
@@ -229,7 +230,7 @@ export async function POST(request: NextRequest) {
         .eq('id', existingUpload.id);
 
       if (updateError) {
-        logger.error('[CATEGORIES API] Error updating category order:', updateError);
+        logger.error('[CATEGORIES API] Error updating category order:', { value: updateError });
         return NextResponse.json(
           { error: 'Failed to update category order' },
           { status: 500 }

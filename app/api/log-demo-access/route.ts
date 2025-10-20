@@ -1,3 +1,4 @@
+import { errorToContext } from '@/lib/utils/error-to-context';
 import { NextResponse } from 'next/server';
 import { apiLogger, logger } from '@/lib/logger';
 
@@ -22,8 +23,8 @@ export async function POST(req: Request) {
     try {
       body = JSON.parse(text);
     } catch (parseError) {
-      logger.error('[DEMO ACCESS ERROR] Failed to parse JSON:', parseError);
-      logger.error('[DEMO ACCESS ERROR] Body text:', text);
+      logger.error('[DEMO ACCESS ERROR] Failed to parse JSON:', { value: parseError });
+      logger.error('[DEMO ACCESS ERROR] Body text:', { value: text });
       throw parseError;
     }
     

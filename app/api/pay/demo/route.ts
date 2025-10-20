@@ -1,3 +1,4 @@
+import { errorToContext } from '@/lib/utils/error-to-context';
 import { NextResponse } from 'next/server';
 import { createServerClient } from '@supabase/ssr';
 import { cookies } from 'next/headers';
@@ -44,7 +45,7 @@ export async function POST(req: Request) {
       .single();
 
     if (updateError || !order) {
-      logger.error('[PAY DEMO] Failed to update order:', updateError);
+      logger.error('[PAY DEMO] Failed to update order:', { value: updateError });
       return NextResponse.json({ 
         success: false, 
         error: 'Failed to process payment' 

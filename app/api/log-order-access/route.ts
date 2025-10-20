@@ -1,3 +1,4 @@
+import { errorToContext } from '@/lib/utils/error-to-context';
 import { NextRequest, NextResponse } from 'next/server';
 import { apiLogger, logger } from '@/lib/logger';
 
@@ -24,7 +25,7 @@ export async function POST(req: NextRequest) {
 
     return NextResponse.json({ ok: true });
   } catch (err) {
-    logger.error('[ORDER ACCESS] log failure:', err);
+    logger.error('[ORDER ACCESS] log failure:', { value: err });
     return NextResponse.json({ ok: false }, { status: 500 });
   }
 }

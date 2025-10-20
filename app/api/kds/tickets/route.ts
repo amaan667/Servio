@@ -1,3 +1,4 @@
+import { errorToContext } from '@/lib/utils/error-to-context';
 import { NextResponse } from 'next/server';
 import { createServerSupabase } from '@/lib/supabase';
 import { createAdminClient } from '@/lib/supabase';
@@ -160,7 +161,7 @@ export async function GET(req: Request) {
     try {
       await autoBackfillMissingTickets(venueId);
     } catch (backfillError) {
-      logger.warn('[KDS] Auto-backfill failed (non-critical):', backfillError);
+      logger.warn('[KDS] Auto-backfill failed (non-critical):', { value: backfillError });
       // Don't fail the request if backfill fails
     }
 
@@ -168,7 +169,7 @@ export async function GET(req: Request) {
     const { data: finalTickets, error: finalError } = await query;
 
     if (finalError) {
-      logger.error('[KDS] Error fetching tickets after backfill:', finalError);
+      logger.error('[KDS] Error fetching tickets after backfill:', { value: finalError });
       return NextResponse.json(
         { ok: false, error: finalError.message },
         { status: 500 }
@@ -276,7 +277,7 @@ export async function PATCH(req: Request) {
         .eq('id', ticket.order_id);
 
       if (orderUpdateError) {
-        logger.error('[KDS] Error updating order status after bump:', orderUpdateError);
+        logger.error('[KDS] Error updating order status after bump:', { value: orderUpdateError });
         // Don't fail the request, just log the error
       } else {
         logger.debug(`[KDS] Updated order ${ticket.order_id} status to SERVED after bump`);

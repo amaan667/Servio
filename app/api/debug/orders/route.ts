@@ -1,3 +1,4 @@
+import { errorToContext } from '@/lib/utils/error-to-context';
 import { NextResponse } from 'next/server';
 import { createAdminClient } from '@/lib/supabase';
 import { apiLogger as logger } from '@/lib/logger';
@@ -12,7 +13,7 @@ export async function GET(req: Request) {
     const { searchParams } = new URL(req.url);
     const sessionId = searchParams.get('sessionId');
     
-    logger.debug('[DEBUG ORDERS] Debug request for session:', sessionId);
+    logger.debug('[DEBUG ORDERS] Debug request for session:', { value: sessionId });
     
     // Get all recent orders
     const thirtyMinutesAgo = new Date(Date.now() - 30 * 60 * 1000).toISOString();
@@ -24,7 +25,7 @@ export async function GET(req: Request) {
       .limit(20);
 
     if (recentError) {
-      logger.error('[DEBUG ORDERS] Error fetching recent orders:', recentError);
+      logger.error('[DEBUG ORDERS] Error fetching recent orders:', { value: recentError });
       return NextResponse.json({ 
         error: 'Failed to fetch orders',
         details: recentError.message 

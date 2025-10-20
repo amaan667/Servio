@@ -1,3 +1,4 @@
+import { errorToContext } from '@/lib/utils/error-to-context';
 import { NextRequest, NextResponse } from 'next/server';
 import { createClient } from '@/lib/supabase';
 import { getAuthenticatedUser } from '@/lib/supabase';
@@ -26,11 +27,11 @@ export async function GET(req: NextRequest) {
     const cachedOrders = await cache.get(cacheKey);
     
     if (cachedOrders) {
-      logger.debug('[POS ORDERS] Cache hit for:', venueId);
+      logger.debug('[POS ORDERS] Cache hit for:', { value: venueId });
       return NextResponse.json(cachedOrders);
     }
     
-    logger.debug('[POS ORDERS] Cache miss for:', venueId);
+    logger.debug('[POS ORDERS] Cache miss for:', { value: venueId });
 
     const supabase = await createClient();
 

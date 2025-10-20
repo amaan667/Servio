@@ -1,3 +1,4 @@
+import { errorToContext } from '@/lib/utils/error-to-context';
 import { NextResponse } from 'next/server';
 import { createAdminClient } from '@/lib/supabase';
 import { apiLogger, logger } from '@/lib/logger';
@@ -18,7 +19,7 @@ export async function GET(
     }
 
     logger.debug('[ORDER FETCH DEBUG] ===== FETCHING ORDER BY ID =====');
-    logger.debug('[ORDER FETCH DEBUG] Order ID:', orderId);
+    logger.debug('[ORDER FETCH DEBUG] Order ID:', { value: orderId });
 
     // Fetch order with items (items are stored as JSONB in orders table)
     const { data: order, error: orderError } = await supabaseAdmin
@@ -29,12 +30,12 @@ export async function GET(
 
     logger.debug('[ORDER FETCH DEBUG] Query result:');
     logger.debug('[ORDER FETCH DEBUG] - Found order:', !!order);
-    logger.debug('[ORDER FETCH DEBUG] - Error:', orderError);
+    logger.debug('[ORDER FETCH DEBUG] - Error:', { value: orderError });
     logger.debug('[ORDER FETCH DEBUG] - Order data keys:', order ? Object.keys(order) : 'N/A');
 
     if (orderError) {
       logger.error('[ORDER FETCH DEBUG] ===== ORDER NOT FOUND =====');
-      logger.error('[ORDER FETCH DEBUG] Error fetching order:', orderError);
+      logger.error('[ORDER FETCH DEBUG] Error fetching order:', { value: orderError });
       return NextResponse.json({ 
         error: 'Order not found' 
       }, { status: 404 });

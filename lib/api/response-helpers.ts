@@ -35,7 +35,7 @@ export function fail(
     {
       ok: false,
       error,
-      ...(details && { details }),
+      ...(details ? { details } : {}),
     },
     { status }
   );

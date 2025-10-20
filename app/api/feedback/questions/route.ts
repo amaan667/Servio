@@ -1,3 +1,4 @@
+import { errorToContext } from '@/lib/utils/error-to-context';
 import { NextResponse } from 'next/server';
 import { createClient, getAuthenticatedUser, createAdminClient } from '@/lib/supabase';
 import type { FeedbackQuestion } from '@/types/feedback';

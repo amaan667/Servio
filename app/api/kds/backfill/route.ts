@@ -1,3 +1,4 @@
+import { errorToContext } from '@/lib/utils/error-to-context';
 import { NextResponse } from 'next/server';
 import { createAdminClient } from '@/lib/supabase';
 import { apiLogger, logger } from '@/lib/logger';
@@ -26,7 +27,7 @@ export async function POST(req: Request) {
       .eq('is_active', true);
 
     if (!existingStations || existingStations.length === 0) {
-      logger.debug('[KDS BACKFILL] No stations found, creating default stations for venue:', venueId);
+      logger.debug('[KDS BACKFILL] No stations found, creating default stations for venue:', { value: venueId });
       
       // Create default stations
       const defaultStations = [
@@ -103,7 +104,7 @@ export async function POST(req: Request) {
     const { data: orders, error: ordersError } = await query;
 
     if (ordersError) {
-      logger.error('[KDS BACKFILL] Error fetching orders:', ordersError);
+      logger.error('[KDS BACKFILL] Error fetching orders:', { value: ordersError });
       return NextResponse.json({ 
         ok: false, 
         error: ordersError.message 

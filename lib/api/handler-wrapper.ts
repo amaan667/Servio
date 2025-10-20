@@ -39,7 +39,7 @@ export function withErrorHandling<TRequest = unknown, TResponse = unknown>(
   handler: ApiHandler<TRequest, TResponse>,
   options: HandlerOptions = {}
 ): (req: NextRequest) => Promise<NextResponse<ApiResponse<TResponse>>> {
-  return async (req: NextRequest) => {
+  return async (req: NextRequest): Promise<NextResponse<ApiResponse<TResponse>>> => {
     const startTime = Date.now();
 
     try {

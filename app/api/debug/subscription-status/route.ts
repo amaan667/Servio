@@ -1,3 +1,4 @@
+import { errorToContext } from '@/lib/utils/error-to-context';
 // Debug API endpoint to check and manually update subscription status
 import { NextRequest, NextResponse } from "next/server";
 import { createClient } from "@/lib/supabase";
@@ -85,7 +86,7 @@ export async function GET(request: NextRequest) {
           .single();
 
         if (createError) {
-          logger.error('[DEBUG] Failed to create organization:', createError);
+          logger.error('[DEBUG] Failed to create organization:', { value: createError });
         } else {
           org = newOrg;
           orgFound = true;
@@ -125,7 +126,7 @@ export async function GET(request: NextRequest) {
           metadata: stripeSubscription.metadata
         });
       } catch (stripeError) {
-        logger.error('[DEBUG] Error fetching Stripe subscription:', stripeError);
+        logger.error('[DEBUG] Error fetching Stripe subscription:', { value: stripeError });
       }
     }
 
@@ -205,7 +206,7 @@ export async function POST(request: NextRequest) {
       .eq("id", organizationId);
 
     if (updateError) {
-      logger.error('[DEBUG] Error updating organization:', updateError);
+      logger.error('[DEBUG] Error updating organization:', { value: updateError });
       return NextResponse.json(
         { error: "Failed to update organization" },
         { status: 500 }

@@ -1,3 +1,4 @@
+import { errorToContext } from '@/lib/utils/error-to-context';
 import { NextResponse } from 'next/server';
 import { createAdminClient } from '@/lib/supabase';
 import { apiLogger, logger } from '@/lib/logger';
@@ -14,7 +15,7 @@ export async function GET(
     const { sessionId } = await params;
     
     logger.debug('[ORDER SESSION LOOKUP DEBUG] ===== LOOKING UP ORDER BY SESSION =====');
-    logger.debug('[ORDER SESSION LOOKUP DEBUG] Session ID:', sessionId);
+    logger.debug('[ORDER SESSION LOOKUP DEBUG] Session ID:', { value: sessionId });
     
     if (!sessionId) {
       logger.error('[ORDER SESSION LOOKUP DEBUG] No session ID provided');
@@ -32,11 +33,11 @@ export async function GET(
 
     logger.debug('[ORDER SESSION LOOKUP DEBUG] Query result:');
     logger.debug('[ORDER SESSION LOOKUP DEBUG] - Found order:', !!order);
-    logger.debug('[ORDER SESSION LOOKUP DEBUG] - Error:', orderError);
-    logger.debug('[ORDER SESSION LOOKUP DEBUG] - Order data:', order);
+    logger.debug('[ORDER SESSION LOOKUP DEBUG] - Error:', { value: orderError });
+    logger.debug('[ORDER SESSION LOOKUP DEBUG] - Order data:', { value: order });
 
     if (orderError) {
-      logger.error('[ORDER SESSION LOOKUP DEBUG] Database error:', orderError);
+      logger.error('[ORDER SESSION LOOKUP DEBUG] Database error:', { value: orderError });
       return NextResponse.json({ 
         ok: false, 
         error: 'Order not found for this session' 
@@ -44,7 +45,7 @@ export async function GET(
     }
 
     if (!order) {
-      logger.error('[ORDER SESSION LOOKUP DEBUG] No order found for session:', sessionId);
+      logger.error('[ORDER SESSION LOOKUP DEBUG] No order found for session:', { value: sessionId });
       return NextResponse.json({ 
         ok: false, 
         error: 'Order not found for this session' 

@@ -1,3 +1,4 @@
+import { errorToContext } from '@/lib/utils/error-to-context';
 // API endpoint to migrate AI conversations from old to new system
 // and generate AI-powered titles for existing conversations
 

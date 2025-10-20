@@ -1,3 +1,4 @@
+import { errorToContext } from '@/lib/utils/error-to-context';
 import { NextRequest, NextResponse } from 'next/server';
 import { createClient } from '@/lib/supabase';
 import { logger } from '@/lib/logger';
@@ -55,7 +56,7 @@ export async function DELETE(req: NextRequest, context: { params: Promise<{ tabl
       .single();
 
     if (checkError) {
-      logger.error('[TABLES API] Error checking table existence:', checkError);
+      logger.error('[TABLES API] Error checking table existence:', { value: checkError });
       return NextResponse.json({ error: 'Table not found' }, { status: 404 });
     }
 
@@ -82,7 +83,7 @@ export async function DELETE(req: NextRequest, context: { params: Promise<{ tabl
     }
 
     if (ordersError) {
-      logger.error('[TABLES API] Error checking active orders:', ordersError);
+      logger.error('[TABLES API] Error checking active orders:', { value: ordersError });
       
       // Instead of failing completely, we'll log the error and continue with a warning
       logger.warn('[TABLES API] Proceeding with table removal despite orders check failure - this may be due to database connectivity issues');
@@ -99,7 +100,7 @@ export async function DELETE(req: NextRequest, context: { params: Promise<{ tabl
           logger.warn('[TABLES API] Fallback query found orders for this table - proceeding with caution');
         }
       } catch (fallbackError) {
-        logger.error('[TABLES API] Fallback query also failed:', fallbackError);
+        logger.error('[TABLES API] Fallback query also failed:', { value: fallbackError });
       }
     }
 
@@ -125,7 +126,7 @@ export async function DELETE(req: NextRequest, context: { params: Promise<{ tabl
     }
 
     if (reservationsError) {
-      logger.error('[TABLES API] Error checking active reservations:', reservationsError);
+      logger.error('[TABLES API] Error checking active reservations:', { value: reservationsError });
       
       // Instead of failing completely, we'll log the error and continue with a warning
       logger.warn('[TABLES API] Proceeding with table removal despite reservations check failure - this may be due to database connectivity issues');
@@ -167,7 +168,7 @@ export async function DELETE(req: NextRequest, context: { params: Promise<{ tabl
       .eq('venue_id', existingTable.venue_id);
 
     if (clearTableRefsError) {
-      logger.error('[TABLES API] Error clearing table references in orders:', clearTableRefsError);
+      logger.error('[TABLES API] Error clearing table references in orders:', { value: clearTableRefsError });
       // Continue with deletion anyway - this might be due to RLS or other issues
       logger.warn('[TABLES API] Proceeding with table deletion despite table reference clear failure');
     } else {
@@ -181,7 +182,7 @@ export async function DELETE(req: NextRequest, context: { params: Promise<{ tabl
       .eq('venue_id', existingTable.venue_id);
 
     if (deleteSessionsError) {
-      logger.error('[TABLES API] Error deleting table sessions:', deleteSessionsError);
+      logger.error('[TABLES API] Error deleting table sessions:', { value: deleteSessionsError });
       // Continue with table deletion anyway
       logger.warn('[TABLES API] Proceeding with table deletion despite session deletion failure');
     } else {
@@ -198,7 +199,7 @@ export async function DELETE(req: NextRequest, context: { params: Promise<{ tabl
       .eq('venue_id', existingTable.venue_id);
 
     if (deleteGroupSessionError) {
-      logger.error('[TABLES API] Error deleting group sessions:', deleteGroupSessionError);
+      logger.error('[TABLES API] Error deleting group sessions:', { value: deleteGroupSessionError });
       // Continue with table deletion anyway
       logger.warn('[TABLES API] Proceeding with table deletion despite group session deletion failure');
     } else {

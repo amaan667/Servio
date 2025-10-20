@@ -1,3 +1,4 @@
+import { errorToContext } from '@/lib/utils/error-to-context';
 // Test API to manually update subscription status
 import { NextRequest, NextResponse } from "next/server";
 import { createClient } from "@/lib/supabase";
@@ -40,9 +41,9 @@ export async function POST(request: NextRequest) {
           const stripe = require('@/lib/stripe-client').stripe;
           const stripeSubscription = await stripe.subscriptions.retrieve(existingOrgs.stripe_subscription_id);
           detectedTier = stripeSubscription.metadata?.tier || 'basic';
-          logger.debug('[TEST] Detected tier from Stripe:', detectedTier);
+          logger.debug('[TEST] Detected tier from Stripe:', { value: detectedTier });
         } catch (stripeError) {
-          logger.error('[TEST] Error fetching from Stripe:', stripeError);
+          logger.error('[TEST] Error fetching from Stripe:', { value: stripeError });
           detectedTier = 'basic'; // Default fallback
         }
       } else {
@@ -107,7 +108,7 @@ export async function POST(request: NextRequest) {
           .single();
 
         if (createError) {
-          logger.error('[TEST] Error creating organization:', createError);
+          logger.error('[TEST] Error creating organization:', { value: createError });
           return NextResponse.json(
             { error: "Failed to create organization" },
             { status: 500 }
@@ -116,7 +117,7 @@ export async function POST(request: NextRequest) {
 
         orgId = newOrg.id;
         orgFound = true;
-        logger.debug('[TEST] Created new organization:', orgId);
+        logger.debug('[TEST] Created new organization:', { value: orgId });
       } catch (error) {
         logger.error('[TEST] Error creating organization:', { error: error instanceof Error ? error.message : 'Unknown error' });
         return NextResponse.json(
@@ -134,7 +135,7 @@ export async function POST(request: NextRequest) {
       updated_at: new Date().toISOString(),
     };
 
-    logger.debug('[TEST] Updating organization with data:', updateData);
+    logger.debug('[TEST] Updating organization with data:', { value: updateData });
 
     const { error: updateError } = await supabase
       .from("organizations")
@@ -142,7 +143,7 @@ export async function POST(request: NextRequest) {
       .eq("id", orgId);
 
     if (updateError) {
-      logger.error('[TEST] Error updating organization:', updateError);
+      logger.error('[TEST] Error updating organization:', { value: updateError });
       return NextResponse.json(
         { error: "Failed to update organization" },
         { status: 500 }

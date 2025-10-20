@@ -1,3 +1,4 @@
+import { errorToContext } from '@/lib/utils/error-to-context';
 import { NextRequest, NextResponse } from 'next/server';
 import Stripe from 'stripe';
 import { ENV } from '@/lib/env';
@@ -120,7 +121,7 @@ export async function POST(req: NextRequest) {
       .single();
 
     if (orderError) {
-      logger.error('[ORDER CREATION] Database error:', orderError);
+      logger.error('[ORDER CREATION] Database error:', { value: orderError });
       return NextResponse.json(
         { 
           ok: false, 
@@ -147,7 +148,7 @@ export async function POST(req: NextRequest) {
           },
         });
     } catch (realtimeError) {
-      logger.error('[ORDER CREATION] Failed to publish realtime event:', realtimeError);
+      logger.error('[ORDER CREATION] Failed to publish realtime event:', { value: realtimeError });
       // Don't fail the order creation if realtime fails
     }
 
@@ -226,7 +227,7 @@ async function createDemoOrder(cartId: string) {
       .single();
 
     if (orderError) {
-      logger.error('[DEMO ORDER] Database error:', orderError);
+      logger.error('[DEMO ORDER] Database error:', { value: orderError });
       return NextResponse.json(
         { 
           ok: false, 
@@ -253,7 +254,7 @@ async function createDemoOrder(cartId: string) {
           },
         });
     } catch (realtimeError) {
-      logger.error('[DEMO ORDER] Failed to publish realtime event:', realtimeError);
+      logger.error('[DEMO ORDER] Failed to publish realtime event:', { value: realtimeError });
       // Don't fail the order creation if realtime fails
     }
 

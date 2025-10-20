@@ -1,3 +1,4 @@
+import { errorToContext } from '@/lib/utils/error-to-context';
 import { NextResponse } from 'next/server';
 import { logger } from '@/lib/logger';
 
@@ -17,7 +18,7 @@ export async function handleStartPreparing(supabase: any, table_id: string, orde
     .eq('id', order_id);
 
   if (orderError) {
-    logger.error('[TABLE ACTIONS] Error updating order status:', orderError);
+    logger.error('[TABLE ACTIONS] Error updating order status:', { value: orderError });
     return NextResponse.json({ error: 'Failed to update order status' }, { status: 500 });
   }
 
@@ -32,7 +33,7 @@ export async function handleStartPreparing(supabase: any, table_id: string, orde
     .eq('order_id', order_id);
 
   if (sessionError) {
-    logger.error('[TABLE ACTIONS] Error updating session status:', sessionError);
+    logger.error('[TABLE ACTIONS] Error updating session status:', { value: sessionError });
     return NextResponse.json({ error: 'Failed to update session status' }, { status: 500 });
   }
 
@@ -50,7 +51,7 @@ export async function handleMarkReady(supabase: any, table_id: string, order_id:
     .eq('id', order_id);
 
   if (orderError) {
-    logger.error('[TABLE ACTIONS] Error updating order status:', orderError);
+    logger.error('[TABLE ACTIONS] Error updating order status:', { value: orderError });
     return NextResponse.json({ error: 'Failed to update order status' }, { status: 500 });
   }
 
@@ -65,7 +66,7 @@ export async function handleMarkReady(supabase: any, table_id: string, order_id:
     .eq('order_id', order_id);
 
   if (sessionError) {
-    logger.error('[TABLE ACTIONS] Error updating session status:', sessionError);
+    logger.error('[TABLE ACTIONS] Error updating session status:', { value: sessionError });
     return NextResponse.json({ error: 'Failed to update session status' }, { status: 500 });
   }
 
@@ -83,7 +84,7 @@ export async function handleMarkServed(supabase: any, table_id: string, order_id
     .eq('id', order_id);
 
   if (orderError) {
-    logger.error('[TABLE ACTIONS] Error updating order status:', orderError);
+    logger.error('[TABLE ACTIONS] Error updating order status:', { value: orderError });
     return NextResponse.json({ error: 'Failed to update order status' }, { status: 500 });
   }
 
@@ -98,7 +99,7 @@ export async function handleMarkServed(supabase: any, table_id: string, order_id
     .eq('order_id', order_id);
 
   if (sessionError) {
-    logger.error('[TABLE ACTIONS] Error updating session status:', sessionError);
+    logger.error('[TABLE ACTIONS] Error updating session status:', { value: sessionError });
     return NextResponse.json({ error: 'Failed to update session status' }, { status: 500 });
   }
 
@@ -117,7 +118,7 @@ export async function handleMarkAwaitingBill(supabase: any, table_id: string) {
     .is('closed_at', null);
 
   if (sessionError) {
-    logger.error('[TABLE ACTIONS] Error updating session status:', sessionError);
+    logger.error('[TABLE ACTIONS] Error updating session status:', { value: sessionError });
     return NextResponse.json({ error: 'Failed to update session status' }, { status: 500 });
   }
 
@@ -151,7 +152,7 @@ export async function handleCloseTable(supabase: any, table_id: string) {
       .select();
 
     if (sessionError) {
-      logger.error('[TABLE ACTIONS] Error closing session:', sessionError);
+      logger.error('[TABLE ACTIONS] Error closing session:', { value: sessionError });
       return NextResponse.json({ error: 'Failed to close session' }, { status: 500 });
     }
 
@@ -167,7 +168,7 @@ export async function handleCloseTable(supabase: any, table_id: string) {
       .select();
 
     if (newSessionError) {
-      logger.error('[TABLE ACTIONS] Error creating new FREE session:', newSessionError);
+      logger.error('[TABLE ACTIONS] Error creating new FREE session:', { value: newSessionError });
       return NextResponse.json({ error: 'Failed to create new session' }, { status: 500 });
     }
 
@@ -223,7 +224,7 @@ export async function handleReserveTable(supabase: any, table_id: string, custom
       .single();
 
     if (sessionCheckError && sessionCheckError.code !== 'PGRST116') {
-      logger.error('[TABLE ACTIONS] Error checking existing session:', sessionCheckError);
+      logger.error('[TABLE ACTIONS] Error checking existing session:', { value: sessionCheckError });
       return NextResponse.json({ error: 'Failed to check table availability' }, { status: 500 });
     }
 
@@ -268,7 +269,7 @@ export async function handleReserveTable(supabase: any, table_id: string, custom
       .single();
 
     if (checkError && checkError.code !== 'PGRST116') {
-      logger.error('[TABLE ACTIONS] Error checking existing reservation:', checkError);
+      logger.error('[TABLE ACTIONS] Error checking existing reservation:', { value: checkError });
       return NextResponse.json({ error: 'Failed to check existing reservation' }, { status: 500 });
     }
 
@@ -285,7 +286,7 @@ export async function handleReserveTable(supabase: any, table_id: string, custom
         .eq('id', existingReservation.id);
 
       if (updateError) {
-        logger.error('[TABLE ACTIONS] Error updating reservation:', updateError);
+        logger.error('[TABLE ACTIONS] Error updating reservation:', { value: updateError });
         return NextResponse.json({ error: 'Failed to update reservation' }, { status: 500 });
       }
     } else {
@@ -302,7 +303,7 @@ export async function handleReserveTable(supabase: any, table_id: string, custom
         });
 
       if (reservationError) {
-        logger.error('[TABLE ACTIONS] Error creating reservation:', reservationError);
+        logger.error('[TABLE ACTIONS] Error creating reservation:', { value: reservationError });
       }
     }
 
@@ -315,7 +316,7 @@ export async function handleReserveTable(supabase: any, table_id: string, custom
       .maybeSingle();
 
     if (currentSessionError) {
-      logger.error('[TABLE ACTIONS] Error checking existing session:', currentSessionError);
+      logger.error('[TABLE ACTIONS] Error checking existing session:', { value: currentSessionError });
       return NextResponse.json({ error: 'Failed to check existing session' }, { status: 500 });
     }
 
@@ -332,7 +333,7 @@ export async function handleReserveTable(supabase: any, table_id: string, custom
         .eq('id', currentSession.id);
 
       if (sessionError) {
-        logger.error('[TABLE ACTIONS] Error updating session status:', sessionError);
+        logger.error('[TABLE ACTIONS] Error updating session status:', { value: sessionError });
         return NextResponse.json({ error: 'Failed to update session status' }, { status: 500 });
       }
     } else {
@@ -351,7 +352,7 @@ export async function handleReserveTable(supabase: any, table_id: string, custom
         });
 
       if (sessionError) {
-        logger.error('[TABLE ACTIONS] Error creating session:', sessionError);
+        logger.error('[TABLE ACTIONS] Error creating session:', { value: sessionError });
         return NextResponse.json({ error: 'Failed to create session' }, { status: 500 });
       }
     }
@@ -373,7 +374,7 @@ export async function handleOccupyTable(supabase: any, table_id: string) {
     .single();
 
   if (checkError && checkError.code !== 'PGRST116') {
-    logger.error('[TABLE ACTIONS] Error checking existing session:', checkError);
+    logger.error('[TABLE ACTIONS] Error checking existing session:', { value: checkError });
     return NextResponse.json({ error: 'Failed to check table status' }, { status: 500 });
   }
 
@@ -387,7 +388,7 @@ export async function handleOccupyTable(supabase: any, table_id: string) {
       .eq('id', existingSession.id);
 
     if (updateError) {
-      logger.error('[TABLE ACTIONS] Error updating session to ORDERING:', updateError);
+      logger.error('[TABLE ACTIONS] Error updating session to ORDERING:', { value: updateError });
       return NextResponse.json({ error: 'Failed to occupy table' }, { status: 500 });
     }
   } else {
@@ -420,7 +421,7 @@ export async function handleOccupyTable(supabase: any, table_id: string) {
     }
 
     if (!table) {
-      logger.error('[TABLE ACTIONS] Table not found for ID:', table_id);
+      logger.error('[TABLE ACTIONS] Table not found for ID:', { value: table_id });
       return NextResponse.json({ error: 'Table not found' }, { status: 404 });
     }
 
@@ -434,7 +435,7 @@ export async function handleOccupyTable(supabase: any, table_id: string) {
       });
 
     if (createError) {
-      logger.error('[TABLE ACTIONS] Error creating new ORDERING session:', createError);
+      logger.error('[TABLE ACTIONS] Error creating new ORDERING session:', { value: createError });
       return NextResponse.json({ error: 'Failed to occupy table' }, { status: 500 });
     }
   }
@@ -452,7 +453,7 @@ export async function handleMoveTable(supabase: any, table_id: string, destinati
     .single();
 
   if (sessionError || !currentSession) {
-    logger.error('[TABLE ACTIONS] Error fetching current session:', sessionError);
+    logger.error('[TABLE ACTIONS] Error fetching current session:', { value: sessionError });
     return NextResponse.json({ error: 'No active session found for table' }, { status: 400 });
   }
 
@@ -478,7 +479,7 @@ export async function handleMoveTable(supabase: any, table_id: string, destinati
     .eq('id', currentSession.id);
 
   if (closeError) {
-    logger.error('[TABLE ACTIONS] Error closing current session:', closeError);
+    logger.error('[TABLE ACTIONS] Error closing current session:', { value: closeError });
     return NextResponse.json({ error: 'Failed to close current session' }, { status: 500 });
   }
 
@@ -493,7 +494,7 @@ export async function handleMoveTable(supabase: any, table_id: string, destinati
     .eq('id', destSession.id);
 
   if (updateError) {
-    logger.error('[TABLE ACTIONS] Error updating destination session:', updateError);
+    logger.error('[TABLE ACTIONS] Error updating destination session:', { value: updateError });
     return NextResponse.json({ error: 'Failed to update destination session' }, { status: 500 });
   }
 
@@ -533,7 +534,7 @@ export async function handleUnmergeTable(supabase: any, table_id: string) {
       .single();
 
     if (currentTableError || !currentTable) {
-      logger.error('[TABLE ACTIONS] Error getting current table:', currentTableError);
+      logger.error('[TABLE ACTIONS] Error getting current table:', { value: currentTableError });
       return NextResponse.json({ error: 'Table not found' }, { status: 404 });
     }
 
@@ -562,7 +563,7 @@ export async function handleUnmergeTable(supabase: any, table_id: string) {
       .single();
 
     if (findError && findError.code !== 'PGRST116') {
-      logger.error('[TABLE ACTIONS] Error finding secondary table:', findError);
+      logger.error('[TABLE ACTIONS] Error finding secondary table:', { value: findError });
       return NextResponse.json({ error: 'Failed to find merged table' }, { status: 500 });
     }
 
@@ -613,12 +614,12 @@ export async function handleCancelReservation(supabase: any, table_id: string, r
       .single();
 
     if (sessionError) {
-      logger.error('[TABLE ACTIONS] Error fetching current session:', sessionError);
+      logger.error('[TABLE ACTIONS] Error fetching current session:', { value: sessionError });
       return NextResponse.json({ error: 'Failed to fetch table session' }, { status: 500 });
     }
 
     if (!currentSession) {
-      logger.error('[TABLE ACTIONS] No active session found for table:', table_id);
+      logger.error('[TABLE ACTIONS] No active session found for table:', { value: table_id });
       return NextResponse.json({ error: 'No active session found' }, { status: 404 });
     }
 
@@ -632,7 +633,7 @@ export async function handleCancelReservation(supabase: any, table_id: string, r
       .eq('id', currentSession.id);
 
     if (closeError) {
-      logger.error('[TABLE ACTIONS] Error closing session:', closeError);
+      logger.error('[TABLE ACTIONS] Error closing session:', { value: closeError });
       return NextResponse.json({ error: 'Failed to close session' }, { status: 500 });
     }
 
@@ -648,7 +649,7 @@ export async function handleCancelReservation(supabase: any, table_id: string, r
       .select();
 
     if (newSessionError) {
-      logger.error('[TABLE ACTIONS] Error creating new FREE session:', newSessionError);
+      logger.error('[TABLE ACTIONS] Error creating new FREE session:', { value: newSessionError });
       return NextResponse.json({ error: 'Failed to create new session' }, { status: 500 });
     }
 

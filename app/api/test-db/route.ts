@@ -1,3 +1,4 @@
+import { errorToContext } from '@/lib/utils/error-to-context';
 // Test endpoint to verify database connection and table existence
 import { NextRequest, NextResponse } from "next/server";
 import { createClient } from "@/lib/supabase";

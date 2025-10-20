@@ -1,3 +1,4 @@
+import { errorToContext } from '@/lib/utils/error-to-context';
 import { NextResponse } from 'next/server';
 import { createClient, getAuthenticatedUser } from '@/lib/supabase';
 import { cache } from '@/lib/cache';
@@ -23,11 +24,11 @@ export async function GET(req: Request) {
   const cachedOrders = await cache.get(cacheKey);
   
   if (cachedOrders) {
-    logger.debug('[LIVE ORDERS] Cache hit for:', venueId);
+    logger.debug('[LIVE ORDERS] Cache hit for:', { value: venueId });
     return NextResponse.json(cachedOrders);
   }
   
-  logger.debug('[LIVE ORDERS] Cache miss for:', venueId);
+  logger.debug('[LIVE ORDERS] Cache miss for:', { value: venueId });
   
   const supabase = await createClient();
 
@@ -77,7 +78,7 @@ export async function GET(req: Request) {
   };
 
   // Cache the response for 30 seconds (live orders change frequently)
-  await cache.set(cacheKey, response, 30);
+  await cache.set(cacheKey, response, { ttl: 30 });
 
   return NextResponse.json(response);
 }

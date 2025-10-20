@@ -1,3 +1,4 @@
+import { errorToContext } from '@/lib/utils/error-to-context';
 import { NextRequest, NextResponse } from 'next/server';
 import { createClient } from '@/lib/supabase';
 import { getOpenAI } from '@/lib/openai';
@@ -21,7 +22,7 @@ export async function POST(req: NextRequest) {
       .maybeSingle();
 
     if (fetchErr || !row) {
-      logger.error('[AUTH DEBUG] Failed to fetch upload:', fetchErr);
+      logger.error('[AUTH DEBUG] Failed to fetch upload:', { value: fetchErr });
       return NextResponse.json({ ok: false, error: 'Upload not found' }, { status: 404 });
     }
 
@@ -31,7 +32,7 @@ export async function POST(req: NextRequest) {
     
     const { data: file, error: dlErr } = await supa.storage.from('menus').download(storagePath);
     if (dlErr) {
-      logger.error('[AUTH DEBUG] Failed to download file:', dlErr);
+      logger.error('[AUTH DEBUG] Failed to download file:', { value: dlErr });
       return NextResponse.json({ ok: false, error: 'Failed to download file' }, { status: 500 });
     }
 
@@ -88,7 +89,7 @@ export async function POST(req: NextRequest) {
       
       rawText = visionResponse.choices[0]?.message?.content || '';
     } catch (textErr) {
-      logger.error('[AUTH DEBUG] Failed to extract text:', textErr);
+      logger.error('[AUTH DEBUG] Failed to extract text:', { value: textErr });
       rawText = 'Failed to extract text';
     }
 
@@ -191,7 +192,7 @@ IMPORTANT: For x_percent and y_percent, provide the approximate center position 
       .eq('id', uploadId);
 
     if (updateErr) {
-      logger.error('[AUTH DEBUG] Failed to update upload:', updateErr);
+      logger.error('[AUTH DEBUG] Failed to update upload:', { value: updateErr });
       return NextResponse.json({ ok: false, error: 'Failed to save results' }, { status: 500 });
     }
 
@@ -255,13 +256,13 @@ IMPORTANT: For x_percent and y_percent, provide the approximate center position 
                 hotspotsCreated = hotspots.length;
                 logger.debug('[AUTH DEBUG] Auto-created', hotspotsCreated, 'hotspots');
               } else {
-                logger.error('[AUTH DEBUG] Failed to create hotspots:', hotspotsError);
+                logger.error('[AUTH DEBUG] Failed to create hotspots:', { value: hotspotsError });
               }
             }
           }
         }
       } catch (hotspotErr) {
-        logger.error('[AUTH DEBUG] Hotspot creation error:', hotspotErr);
+        logger.error('[AUTH DEBUG] Hotspot creation error:', { value: hotspotErr });
         // Don't fail the whole request if hotspot creation fails
       }
     }

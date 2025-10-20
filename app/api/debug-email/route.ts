@@ -1,3 +1,4 @@
+import { errorToContext } from '@/lib/utils/error-to-context';
 import { NextRequest, NextResponse } from 'next/server';
 import { getUserSafe } from '@/utils/getUserSafe';
 import { apiLogger, logger } from '@/lib/logger';
@@ -17,7 +18,7 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: 'testEmail is required' }, { status: 400 });
     }
 
-    logger.debug('[DEBUG EMAIL] Testing email to:', testEmail);
+    logger.debug('[DEBUG EMAIL] Testing email to:', { value: testEmail });
     logger.debug('[DEBUG EMAIL] Current user:', user.email);
     logger.debug('[DEBUG EMAIL] RESEND_API_KEY present:', !!process.env.RESEND_API_KEY);
 
@@ -28,7 +29,7 @@ export async function POST(request: NextRequest) {
       const testToken = 'debug-' + Date.now();
       const invitationLink = generateInvitationLink(testToken);
       
-      logger.debug('[DEBUG EMAIL] Generated invitation link:', invitationLink);
+      logger.debug('[DEBUG EMAIL] Generated invitation link:', { value: invitationLink });
       
       const emailSent = await sendInvitationEmail({
         email: testEmail,
@@ -39,7 +40,7 @@ export async function POST(request: NextRequest) {
         expiresAt: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000).toISOString()
       });
 
-      logger.debug('[DEBUG EMAIL] Email sent result:', emailSent);
+      logger.debug('[DEBUG EMAIL] Email sent result:', { value: emailSent });
 
       return NextResponse.json({ 
         success: true,
@@ -51,7 +52,7 @@ export async function POST(request: NextRequest) {
       });
 
     } catch (emailError) {
-      logger.error('[DEBUG EMAIL] Email error:', emailError);
+      logger.error('[DEBUG EMAIL] Email error:', { value: emailError });
       return NextResponse.json({ 
         error: 'Email sending failed',
         details: emailError instanceof Error ? emailError.message : String(emailError),

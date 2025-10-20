@@ -1,3 +1,4 @@
+import { errorToContext } from '@/lib/utils/error-to-context';
 import { NextResponse } from 'next/server';
 import { createClient } from '@/lib/supabase';
 import { logger } from '@/lib/logger';
@@ -21,7 +22,7 @@ export async function POST(req: Request) {
       .single();
 
     if (fetchError) {
-      logger.error('Failed to fetch order:', fetchError);
+      logger.error('Failed to fetch order:', { value: fetchError });
       return NextResponse.json({ error: 'Order not found' }, { status: 404 });
     }
 
@@ -58,7 +59,7 @@ export async function POST(req: Request) {
           const completionResult = await completionResponse.json();
         }
       } catch (completionError) {
-        logger.error('[MARK PAID] Error checking reservation completion:', completionError);
+        logger.error('[MARK PAID] Error checking reservation completion:', { value: completionError });
         // Don't fail the main request if completion check fails
       }
     }

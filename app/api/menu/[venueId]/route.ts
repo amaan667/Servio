@@ -1,3 +1,4 @@
+import { errorToContext } from '@/lib/utils/error-to-context';
 import { NextRequest, NextResponse } from 'next/server';
 import { createAdminClient } from '@/lib/supabase';
 import { cache, cacheKeys, cacheTTL } from '@/lib/cache';
@@ -29,11 +30,11 @@ export async function GET(
     const cachedMenu = await cache.get(cacheKey);
     
     if (cachedMenu) {
-      logger.debug('[MENU API] Cache hit for:', venueId);
+      logger.debug('[MENU API] Cache hit for:', { value: venueId });
       return NextResponse.json(cachedMenu);
     }
     
-    logger.debug('[MENU API] Cache miss for:', venueId);
+    logger.debug('[MENU API] Cache miss for:', { value: venueId });
 
     // Use admin client to bypass RLS for public menu access
     const supabase = createAdminClient();
@@ -47,7 +48,7 @@ export async function GET(
 
     // If not found with transformed ID, try with original ID as fallback
     if (venueError || !venue) {
-      logger.debug('[MENU API] Trying fallback venue lookup with original ID:', rawVenueId);
+      logger.debug('[MENU API] Trying fallback venue lookup with original ID:', { value: rawVenueId });
       const { data: fallbackVenue, error: fallbackError } = await supabase
         .from('venues')
         .select('venue_id, venue_name')
@@ -78,7 +79,7 @@ export async function GET(
       .order('created_at', { ascending: true });
 
     if (menuError) {
-      logger.error('[MENU API] Error fetching menu items:', menuError);
+      logger.error('[MENU API] Error fetching menu items:', { value: menuError });
       return NextResponse.json(
         { error: 'Failed to load menu items' },
         { status: 500 }
@@ -96,7 +97,7 @@ export async function GET(
     };
 
     // Cache the response for 5 minutes
-    await cache.set(cacheKey, response, cacheTTL.menuItems);
+    await cache.set(cacheKey, response, { ttl: cacheTTL.medium });
     
     return NextResponse.json(response);
 

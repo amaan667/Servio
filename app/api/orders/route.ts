@@ -1,3 +1,4 @@
+import { errorToContext } from '@/lib/utils/error-to-context';
 import { NextResponse } from 'next/server';
 import { createServerClient } from '@supabase/ssr';
 import { createClient } from '@supabase/supabase-js';
@@ -422,7 +423,7 @@ export async function POST(req: Request) {
       .maybeSingle();
 
     if (duplicateCheckError) {
-      logger.warn('[ORDER API] Duplicate check failed:', duplicateCheckError);
+      logger.warn('[ORDER API] Duplicate check failed:', { value: duplicateCheckError });
     }
 
     // If we found a recent duplicate, return it instead of creating a new one
@@ -458,12 +459,12 @@ export async function POST(req: Request) {
     
 
     logger.debug('[ORDER CREATION DEBUG] Insert result:');
-    logger.debug('[ORDER CREATION DEBUG] - Inserted data:', inserted);
-    logger.debug('[ORDER CREATION DEBUG] - Insert error:', insertErr);
+    logger.debug('[ORDER CREATION DEBUG] - Inserted data:', { value: inserted });
+    logger.debug('[ORDER CREATION DEBUG] - Insert error:', { value: insertErr });
 
     if (insertErr) {
       logger.error('[ORDER CREATION DEBUG] ===== INSERT FAILED =====');
-      logger.error('[ORDER CREATION DEBUG] Error details:', insertErr);
+      logger.error('[ORDER CREATION DEBUG] Error details:', { value: insertErr });
       
       // Try to provide more specific error messages
       let errorMessage = insertErr.message;
@@ -586,7 +587,7 @@ export async function POST(req: Request) {
     try {
       await createKDSTickets(supabase, inserted[0]);
     } catch (kdsError) {
-      logger.warn('[ORDER CREATION DEBUG] KDS ticket creation failed (non-critical):', kdsError);
+      logger.warn('[ORDER CREATION DEBUG] KDS ticket creation failed (non-critical):', { value: kdsError });
       // Don't fail the order creation if KDS tickets fail
     }
     

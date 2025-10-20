@@ -1,3 +1,4 @@
+import { errorToContext } from '@/lib/utils/error-to-context';
 import { NextResponse } from 'next/server';
 import Stripe from 'stripe';
 import { createClient } from '@/lib/supabase';
@@ -12,7 +13,7 @@ export async function GET(req: Request) {
     const { searchParams } = new URL(req.url);
     const sessionId = searchParams.get('sessionId');
     
-    logger.debug('[VERIFY] Starting verification for session:', sessionId);
+    logger.debug('[VERIFY] Starting verification for session:', { value: sessionId });
 
     if (!sessionId) {
       return NextResponse.json({ error: 'Session ID is required' }, { status: 400 });
@@ -36,7 +37,7 @@ export async function GET(req: Request) {
     const metadata = session.metadata || {};
     const orderId = metadata.orderId;
     
-    logger.debug('[VERIFY] Order ID from metadata:', orderId);
+    logger.debug('[VERIFY] Order ID from metadata:', { value: orderId });
 
     if (!orderId) {
       return NextResponse.json({ 
@@ -45,7 +46,7 @@ export async function GET(req: Request) {
     }
 
     // Fetch the existing order (should have been created in order page)
-    logger.debug('[VERIFY] Fetching existing order:', orderId);
+    logger.debug('[VERIFY] Fetching existing order:', { value: orderId });
     
     const supabase = await createClient();
     
@@ -56,7 +57,7 @@ export async function GET(req: Request) {
       .single();
 
     if (fetchError || !order) {
-      logger.error('[VERIFY] Failed to fetch order:', fetchError);
+      logger.error('[VERIFY] Failed to fetch order:', { value: fetchError });
       return NextResponse.json({ 
         error: 'Order not found. The order may not have been created properly.',
         details: fetchError?.message 
@@ -64,7 +65,7 @@ export async function GET(req: Request) {
     }
 
     // Update payment status to PAID
-    logger.debug('[VERIFY] Updating order payment status to PAID for order:', orderId);
+    logger.debug('[VERIFY] Updating order payment status to PAID for order:', { value: orderId });
     
     const { data: updatedOrder, error: updateError } = await supabase
       .from('orders')
@@ -78,14 +79,14 @@ export async function GET(req: Request) {
       .single();
 
     if (updateError) {
-      logger.error('[VERIFY] Failed to update payment status:', updateError);
+      logger.error('[VERIFY] Failed to update payment status:', { value: updateError });
       return NextResponse.json({ 
         error: 'Failed to update order payment status',
         details: updateError.message 
       }, { status: 500 });
     }
 
-    logger.debug('[VERIFY] Payment status updated successfully for order:', orderId);
+    logger.debug('[VERIFY] Payment status updated successfully for order:', { value: orderId });
 
     return NextResponse.json({ 
       order: updatedOrder,

@@ -49,7 +49,7 @@ export async function getUserId(): Promise<string | null> {
  */
 export async function getUserEmail(): Promise<string | null> {
   const { user, error } = await getAuthenticatedUser();
-  return !error && user ? user.email : null;
+  return !error && user ? user.email ?? null : null;
 }
 
 /**

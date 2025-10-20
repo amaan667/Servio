@@ -1,3 +1,4 @@
+import { errorToContext } from '@/lib/utils/error-to-context';
 import { NextResponse } from 'next/server';
 import { createClient, getAuthenticatedUser } from '@/lib/supabase';
 import { cleanupTableOnOrderCompletion } from '@/lib/table-cleanup';
@@ -39,9 +40,9 @@ export async function POST(req: Request) {
             p_order_id: orderId,
             p_venue_id: order.venue_id,
           });
-          logger.debug('[INVENTORY] Stock deducted for order:', orderId);
+          logger.debug('[INVENTORY] Stock deducted for order:', { value: orderId });
         } catch (inventoryError) {
-          logger.error('[INVENTORY] Error deducting stock:', inventoryError);
+          logger.error('[INVENTORY] Error deducting stock:', { value: inventoryError });
           // Don't fail the order completion if inventory deduction fails
         }
       }
@@ -85,7 +86,7 @@ export async function POST(req: Request) {
               const completionResult = await completionResponse.json();
             }
           } catch (completionError) {
-            logger.error('[UPDATE STATUS] Error checking reservation completion:', completionError);
+            logger.error('[UPDATE STATUS] Error checking reservation completion:', { value: completionError });
             // Don't fail the main request if completion check fails
           }
         }

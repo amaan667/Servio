@@ -1,3 +1,4 @@
+import { errorToContext } from '@/lib/utils/error-to-context';
 import { NextResponse } from 'next/server';
 import { createAdminClient } from '@/lib/supabase';
 import { apiLogger, logger } from '@/lib/logger';
@@ -12,14 +13,14 @@ export async function GET(req: Request) {
     const sessionId = searchParams.get('sessionId');
     
     logger.debug('[ORDER BY SESSION] Request URL:', req.url);
-    logger.debug('[ORDER BY SESSION] Session ID from params:', sessionId);
+    logger.debug('[ORDER BY SESSION] Session ID from params:', { value: sessionId });
     
     if (!sessionId) {
       return NextResponse.json({ error: 'Session ID is required' }, { status: 400 });
     }
 
     // First try to fetch order by Stripe session ID
-    logger.debug('[ORDER BY SESSION] Searching for order with stripe_session_id:', sessionId);
+    logger.debug('[ORDER BY SESSION] Searching for order with stripe_session_id:', { value: sessionId });
     const { data: order, error: orderError } = await supabaseAdmin
       .from('orders')
       .select(`
@@ -81,7 +82,7 @@ export async function GET(req: Request) {
     }
 
     if (orderError) {
-      logger.error('[ORDER BY SESSION] Error fetching order by stripe_session_id:', orderError);
+      logger.error('[ORDER BY SESSION] Error fetching order by stripe_session_id:', { value: orderError });
       return NextResponse.json({ 
         error: 'Order not found for this session ID' 
       }, { status: 404 });

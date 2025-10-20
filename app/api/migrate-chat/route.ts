@@ -1,3 +1,4 @@
+import { errorToContext } from '@/lib/utils/error-to-context';
 // API endpoint to apply the AI Chat schema migration
 // This can be called to set up the chat tables
 

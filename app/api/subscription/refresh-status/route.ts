@@ -1,3 +1,4 @@
+import { errorToContext } from '@/lib/utils/error-to-context';
 // API endpoint to manually refresh subscription status
 import { NextRequest, NextResponse } from "next/server";
 import { createClient } from "@/lib/supabase";
@@ -27,7 +28,7 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    logger.debug('[SUBSCRIPTION REFRESH] Refreshing subscription status for org:', organizationId);
+    logger.debug('[SUBSCRIPTION REFRESH] Refreshing subscription status for org:', { value: organizationId });
 
     // Get organization details
     const { data: org, error: orgError } = await supabase
@@ -37,7 +38,7 @@ export async function POST(request: NextRequest) {
       .single();
 
     if (orgError || !org) {
-      logger.error('[SUBSCRIPTION REFRESH] Organization not found:', orgError);
+      logger.error('[SUBSCRIPTION REFRESH] Organization not found:', { value: orgError });
       return NextResponse.json(
         { error: "Organization not found" },
         { status: 404 }
@@ -100,7 +101,7 @@ export async function POST(request: NextRequest) {
         .eq("id", organizationId);
 
       if (updateError) {
-        logger.error('[SUBSCRIPTION REFRESH] Error updating organization:', updateError);
+        logger.error('[SUBSCRIPTION REFRESH] Error updating organization:', { value: updateError });
         return NextResponse.json(
           { error: "Failed to update subscription status" },
           { status: 500 }
@@ -120,7 +121,7 @@ export async function POST(request: NextRequest) {
       });
 
     } catch (stripeError: any) {
-      logger.error('[SUBSCRIPTION REFRESH] Stripe error:', stripeError);
+      logger.error('[SUBSCRIPTION REFRESH] Stripe error:', { value: stripeError });
       
       // If subscription doesn't exist in Stripe, reset to basic
       const { error: resetError } = await supabase
@@ -135,7 +136,7 @@ export async function POST(request: NextRequest) {
         .eq("id", organizationId);
 
       if (resetError) {
-        logger.error('[SUBSCRIPTION REFRESH] Error resetting organization:', resetError);
+        logger.error('[SUBSCRIPTION REFRESH] Error resetting organization:', { value: resetError });
         return NextResponse.json(
           { error: "Failed to reset subscription status" },
           { status: 500 }

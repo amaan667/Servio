@@ -1,3 +1,4 @@
+import { errorToContext } from '@/lib/utils/error-to-context';
 // API endpoint to manually update organization plan (backup for webhook)
 import { NextRequest, NextResponse } from "next/server";
 import { createClient } from "@/lib/supabase";

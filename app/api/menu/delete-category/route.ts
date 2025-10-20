@@ -1,3 +1,4 @@
+import { errorToContext } from '@/lib/utils/error-to-context';
 import { NextRequest, NextResponse } from 'next/server';
 import { createAdminClient } from '@/lib/supabase';
 import { logger } from '@/lib/logger';
@@ -24,7 +25,7 @@ export async function POST(request: NextRequest) {
       .eq('category', categoryName);
 
     if (menuItemsError) {
-      logger.error('[CATEGORIES DELETE] Error fetching menu items:', menuItemsError);
+      logger.error('[CATEGORIES DELETE] Error fetching menu items:', { value: menuItemsError });
       return NextResponse.json({ 
         ok: false, 
         error: `Failed to fetch menu items: ${menuItemsError.message}` 
@@ -42,7 +43,7 @@ export async function POST(request: NextRequest) {
         .eq('category', categoryName);
 
       if (deleteError) {
-        logger.error('[CATEGORIES DELETE] Error deleting menu items:', deleteError);
+        logger.error('[CATEGORIES DELETE] Error deleting menu items:', { value: deleteError });
         return NextResponse.json({ 
           ok: false, 
           error: `Failed to delete menu items: ${deleteError.message}` 

@@ -1,3 +1,4 @@
+import { errorToContext } from '@/lib/utils/error-to-context';
 /**
  * Type-Safe Orders API Route Example
  * This demonstrates how to use the type-safe route helpers

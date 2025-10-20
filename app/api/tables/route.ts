@@ -1,3 +1,4 @@
+import { errorToContext } from '@/lib/utils/error-to-context';
 import { NextResponse } from 'next/server';
 import { createClient, createAdminClient } from '@/lib/supabase';
 import { getAuthenticatedUser } from '@/lib/supabase';
@@ -46,7 +47,7 @@ export async function GET(req: Request) {
       .order('label');
 
     if (tablesError) {
-      logger.error('[TABLES GET] Tables error:', tablesError);
+      logger.error('[TABLES GET] Tables error:', { value: tablesError });
       return NextResponse.json({ ok: false, error: tablesError.message }, { status: 500 });
     }
 
@@ -59,7 +60,7 @@ export async function GET(req: Request) {
       .is('closed_at', null); // Only get active sessions
 
     if (sessionsError) {
-      logger.error('[TABLES GET] Sessions error:', sessionsError);
+      logger.error('[TABLES GET] Sessions error:', { value: sessionsError });
       return NextResponse.json({ ok: false, error: sessionsError.message }, { status: 500 });
     }
 
@@ -278,7 +279,7 @@ export async function POST(req: Request) {
         });
 
       if (sessionError) {
-        logger.error('[TABLES POST] Session creation error:', sessionError);
+        logger.error('[TABLES POST] Session creation error:', { value: sessionError });
         return NextResponse.json({ ok: false, error: sessionError.message }, { status: 500 });
       }
     }

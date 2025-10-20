@@ -1,3 +1,4 @@
+import { errorToContext } from '@/lib/utils/error-to-context';
 import Stripe from 'stripe';
 import { NextResponse } from 'next/server';
 import { createAdminClient } from '@/lib/supabase';
@@ -53,7 +54,7 @@ export async function POST(req: Request) {
   logger.debug('[STRIPE WEBHOOK DEBUG] ===== SESSION PROCESSING =====');
   logger.debug('[STRIPE WEBHOOK DEBUG] Processing checkout session:', session.id);
   logger.debug('[STRIPE WEBHOOK DEBUG] Session metadata:', JSON.stringify(session.metadata, null, 2));
-  logger.debug('[STRIPE WEBHOOK DEBUG] Original order ID from metadata:', originalOrderId);
+  logger.debug('[STRIPE WEBHOOK DEBUG] Original order ID from metadata:', { value: originalOrderId });
   logger.debug('[STRIPE WEBHOOK DEBUG] Session payment status:', session.payment_status);
   logger.debug('[STRIPE WEBHOOK DEBUG] Session customer details:', session.customer_details);
   logger.debug('[STRIPE WEBHOOK DEBUG] Session amount total:', session.amount_total);
@@ -77,7 +78,7 @@ export async function POST(req: Request) {
 
   // Verify the original order exists
   logger.debug('[STRIPE WEBHOOK DEBUG] ===== ORDER LOOKUP =====');
-  logger.debug('[STRIPE WEBHOOK DEBUG] Looking for order with ID:', originalOrderId);
+  logger.debug('[STRIPE WEBHOOK DEBUG] Looking for order with ID:', { value: originalOrderId });
   
   const { data: originalOrder, error: fetchError } = await supabaseAdmin
     .from('orders')
@@ -87,13 +88,13 @@ export async function POST(req: Request) {
 
   logger.debug('[STRIPE WEBHOOK DEBUG] Order lookup result:');
   logger.debug('[STRIPE WEBHOOK DEBUG] - Found order:', !!originalOrder);
-  logger.debug('[STRIPE WEBHOOK DEBUG] - Fetch error:', fetchError);
-  logger.debug('[STRIPE WEBHOOK DEBUG] - Order data:', originalOrder);
+  logger.debug('[STRIPE WEBHOOK DEBUG] - Fetch error:', { value: fetchError });
+  logger.debug('[STRIPE WEBHOOK DEBUG] - Order data:', { value: originalOrder });
 
   if (fetchError || !originalOrder) {
     logger.error('[STRIPE WEBHOOK DEBUG] ===== ORDER NOT FOUND =====');
-    logger.error('[STRIPE WEBHOOK DEBUG] Original order not found:', originalOrderId);
-    logger.error('[STRIPE WEBHOOK DEBUG] Fetch error details:', fetchError);
+    logger.error('[STRIPE WEBHOOK DEBUG] Original order not found:', { value: originalOrderId });
+    logger.error('[STRIPE WEBHOOK DEBUG] Fetch error details:', { value: fetchError });
     
     // Fallback: Look for recent orders that might match this session
     logger.debug('[WEBHOOK] Trying to find order by recent timestamp...');
@@ -125,7 +126,7 @@ export async function POST(req: Request) {
         .eq('id', fallbackOrder.id);
 
       if (updateErr) {
-        logger.error('[WEBHOOK] Fallback order update failed:', updateErr);
+        logger.error('[WEBHOOK] Fallback order update failed:', { value: updateErr });
         return NextResponse.json({ ok: false, error: updateErr.message }, { status: 500 });
       }
 
@@ -169,12 +170,12 @@ export async function POST(req: Request) {
     .eq('id', originalOrderId);
 
   logger.debug('[STRIPE WEBHOOK DEBUG] Update result:');
-  logger.debug('[STRIPE WEBHOOK DEBUG] - Update error:', updateErr);
+  logger.debug('[STRIPE WEBHOOK DEBUG] - Update error:', { value: updateErr });
   logger.debug('[STRIPE WEBHOOK DEBUG] - Update successful:', !updateErr);
 
   if (updateErr) {
     logger.error('[STRIPE WEBHOOK DEBUG] ===== UPDATE FAILED =====');
-    logger.error('[STRIPE WEBHOOK DEBUG] Order update failed:', updateErr);
+    logger.error('[STRIPE WEBHOOK DEBUG] Order update failed:', { value: updateErr });
     logger.error('[STRIPE WEBHOOK DEBUG] Error details:', JSON.stringify(updateErr, null, 2));
     return NextResponse.json({ ok: false, error: updateErr.message }, { status: 500 });
   }

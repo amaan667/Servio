@@ -1,3 +1,4 @@
+import { errorToContext } from '@/lib/utils/error-to-context';
 // Stripe Billing Portal - Let customers manage their subscription
 import { NextRequest, NextResponse } from "next/server";
 import Stripe from "stripe";
@@ -55,7 +56,7 @@ export async function POST(request: NextRequest) {
     const returnUrl = `${process.env.NEXT_PUBLIC_SITE_URL || 'https://servio-production.up.railway.app'}/dashboard`;
     
     logger.debug('[STRIPE PORTAL] Creating session for customer:', org.stripe_customer_id);
-    logger.debug('[STRIPE PORTAL] Return URL:', returnUrl);
+    logger.debug('[STRIPE PORTAL] Return URL:', { value: returnUrl });
     
     // Try to get or create a billing portal configuration
     let configurationId: string | undefined;
@@ -67,7 +68,7 @@ export async function POST(request: NextRequest) {
       
       if (configurations.data.length > 0 && configurations.data[0].active) {
         configurationId = configurations.data[0].id;
-        logger.debug('[STRIPE PORTAL] Using existing configuration:', configurationId);
+        logger.debug('[STRIPE PORTAL] Using existing configuration:', { value: configurationId });
       } else {
         // No active configuration found, create a new one
         logger.debug('[STRIPE PORTAL] No active configuration found, creating default configuration...');
@@ -100,10 +101,10 @@ export async function POST(request: NextRequest) {
         });
 
         configurationId = configuration.id;
-        logger.debug('[STRIPE PORTAL] Created new configuration:', configurationId);
+        logger.debug('[STRIPE PORTAL] Created new configuration:', { value: configurationId });
       }
     } catch (configError: any) {
-      logger.error('[STRIPE PORTAL] Failed to get/create configuration:', configError);
+      logger.error('[STRIPE PORTAL] Failed to get/create configuration:', { value: configError });
       // Continue without configuration - Stripe will use default if available
       logger.debug('[STRIPE PORTAL] Continuing without explicit configuration...');
     }
@@ -128,7 +129,7 @@ export async function POST(request: NextRequest) {
 
       return NextResponse.json({ url: session.url });
     } catch (portalError: any) {
-      logger.error('[STRIPE PORTAL] Failed to create session:', portalError);
+      logger.error('[STRIPE PORTAL] Failed to create session:', { value: portalError });
       
       // Provide more specific error messages
       if (portalError.code === 'resource_missing') {

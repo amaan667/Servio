@@ -1,3 +1,4 @@
+import { errorToContext } from '@/lib/utils/error-to-context';
 import { NextResponse } from 'next/server';
 import { createClient, getAuthenticatedUser } from '@/lib/supabase';
 import { cleanupTableOnOrderCompletion } from '@/lib/table-cleanup';
@@ -29,7 +30,7 @@ export async function POST(req: Request) {
         .in('order_status', ['PLACED', 'IN_PREP', 'READY', 'SERVING']);
       
       if (fetchError) {
-        logger.error('[BULK COMPLETE] Error fetching active orders:', fetchError);
+        logger.error('[BULK COMPLETE] Error fetching active orders:', { value: fetchError });
         return NextResponse.json({ error: 'Failed to fetch active orders' }, { status: 500 });
       }
       
@@ -53,7 +54,7 @@ export async function POST(req: Request) {
       .eq('venue_id', venueId);
     
     if (fetchOrdersError) {
-      logger.error('[BULK COMPLETE] Error fetching order details:', fetchOrdersError);
+      logger.error('[BULK COMPLETE] Error fetching order details:', { value: fetchOrdersError });
       return NextResponse.json({ error: 'Failed to fetch order details' }, { status: 500 });
     }
     
@@ -69,7 +70,7 @@ export async function POST(req: Request) {
       .select('id, table_id, table_number, source');
 
     if (updateError) {
-      logger.error('[BULK COMPLETE] Error updating orders:', updateError);
+      logger.error('[BULK COMPLETE] Error updating orders:', { value: updateError });
       return NextResponse.json({ error: 'Failed to update orders' }, { status: 500 });
     }
 
@@ -126,7 +127,7 @@ export async function POST(req: Request) {
             .single();
 
           if (tableDetailsError) {
-            logger.error('[BULK COMPLETE] Error fetching table details:', tableDetailsError);
+            logger.error('[BULK COMPLETE] Error fetching table details:', { value: tableDetailsError });
             continue; // Skip this table if we can't get details
           }
 
@@ -138,7 +139,7 @@ export async function POST(req: Request) {
             .eq('venue_id', venueId);
 
           if (clearTableRefsError) {
-            logger.error('[BULK COMPLETE] Error clearing table references in orders:', clearTableRefsError);
+            logger.error('[BULK COMPLETE] Error clearing table references in orders:', { value: clearTableRefsError });
             logger.warn('[BULK COMPLETE] Proceeding with table deletion despite table reference clear failure');
           } else {
           }
@@ -151,7 +152,7 @@ export async function POST(req: Request) {
             .eq('venue_id', venueId);
 
           if (deleteSessionError) {
-            logger.error('[BULK COMPLETE] Error deleting table sessions:', deleteSessionError);
+            logger.error('[BULK COMPLETE] Error deleting table sessions:', { value: deleteSessionError });
             logger.warn('[BULK COMPLETE] Proceeding with table deletion despite session deletion failure');
           } else {
           }
@@ -164,7 +165,7 @@ export async function POST(req: Request) {
             .eq('venue_id', venueId);
 
           if (deleteRuntimeError) {
-            logger.error('[BULK COMPLETE] Error deleting table runtime state:', deleteRuntimeError);
+            logger.error('[BULK COMPLETE] Error deleting table runtime state:', { value: deleteRuntimeError });
             logger.warn('[BULK COMPLETE] Proceeding with table deletion despite runtime state deletion failure');
           } else {
           }
@@ -177,7 +178,7 @@ export async function POST(req: Request) {
             .eq('venue_id', venueId);
 
           if (deleteGroupSessionError) {
-            logger.error('[BULK COMPLETE] Error deleting group sessions:', deleteGroupSessionError);
+            logger.error('[BULK COMPLETE] Error deleting group sessions:', { value: deleteGroupSessionError });
             logger.warn('[BULK COMPLETE] Proceeding with table deletion despite group session deletion failure');
           } else {
           }
@@ -190,7 +191,7 @@ export async function POST(req: Request) {
             .eq('venue_id', venueId);
 
           if (deleteTableError) {
-            logger.error('[BULK COMPLETE] Error deleting table:', deleteTableError);
+            logger.error('[BULK COMPLETE] Error deleting table:', { value: deleteTableError });
             logger.error('[BULK COMPLETE] Error details:', {
               message: deleteTableError.message,
               details: deleteTableError.details,
