@@ -1,23 +1,22 @@
 import React from 'react';
-import { createClient } from '@/lib/supabase';
+import { createServerSupabase } from '@/lib/supabase';
 import { redirect } from 'next/navigation';
 
 export default async function DashboardPage() {
-  const supabase = await createClient();
+  const supabase = await createServerSupabase();
   const { data: { user }, error: userError } = await supabase.auth.getUser();
   
-  // Only redirect if there's no user and no error (user genuinely not logged in)
-  // If there's an error, let the page handle it
-  if (!user && !userError) {
-    redirect('/sign-in');
-  }
-  
-  // If there's an error, don't redirect - let the page handle it
+  // Log auth errors but don't redirect
   if (userError) {
     console.error('[DASHBOARD] Auth error:', userError.message);
   }
   
-  // If no user, return early
+  // Only redirect if there's genuinely no user (not an error)
+  if (!user && !userError) {
+    redirect('/sign-in');
+  }
+  
+  // If no user after checks, show message
   if (!user) {
     return <div>Please sign in to access the dashboard</div>;
   }

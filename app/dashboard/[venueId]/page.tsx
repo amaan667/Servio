@@ -2,13 +2,13 @@ export const dynamic = 'force-dynamic';
 
 import React from 'react';
 import { redirect } from 'next/navigation';
-import { createClient } from '@/lib/supabase';
+import { createServerSupabase } from '@/lib/supabase';
 import DashboardClient from './page.client.modern';
 import { todayWindowForTZ } from '@/lib/time';
 
 export default async function VenuePage({ params }: { params: Promise<{ venueId: string }> }) {
   const { venueId } = await params;
-  const supabase = await createClient();
+  const supabase = await createServerSupabase();
   
   if (!supabase) {
     // Don't redirect, just show error
@@ -17,18 +17,17 @@ export default async function VenuePage({ params }: { params: Promise<{ venueId:
 
   const { data: { user }, error: userError } = await supabase.auth.getUser();
   
-  // Only redirect if there's no user and no error (user genuinely not logged in)
-  // If there's an error, let the page handle it
-  if (!user && !userError) {
-    redirect('/sign-in');
-  }
-  
-  // If there's an error, don't redirect - let the page handle it
+  // Log auth errors but don't redirect
   if (userError) {
     console.error('[DASHBOARD] Auth error:', userError.message);
   }
   
-  // If no user after checks, return early
+  // Only redirect if there's genuinely no user (not an error)
+  if (!user && !userError) {
+    redirect('/sign-in');
+  }
+  
+  // If no user after checks, show message
   if (!user) {
     return <div>Please sign in to access the dashboard</div>;
   }
