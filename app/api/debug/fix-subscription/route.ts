@@ -53,7 +53,7 @@ export async function POST(request: NextRequest) {
       .single();
 
     if (updateError) {
-      logger.error('Error updating organization:', updateError);
+      logger.error('Error updating organization:', { error: updateError.message });
       return NextResponse.json(
         { error: "Failed to update organization", details: updateError.message },
         { status: 500 }
@@ -77,7 +77,7 @@ export async function POST(request: NextRequest) {
   } catch (error: unknown) {
     logger.error('Fix subscription error:', { error: error instanceof Error ? error.message : 'Unknown error' });
     return NextResponse.json(
-      { error: "Internal server error", details: error.message },
+      { error: "Internal server error", details: error instanceof Error ? error.message : 'Unknown error' },
       { status: 500 }
     );
   }

@@ -86,7 +86,7 @@ export async function POST(request: NextRequest) {
       .single();
 
     if (ingredientError) {
-      logger.error('[INVENTORY API] Error creating ingredient:', ingredientError);
+      logger.error('[INVENTORY API] Error creating ingredient:', { error: ingredientError.message });
       return NextResponse.json(
         { error: ingredientError.message },
         { status: 500 }
@@ -110,7 +110,7 @@ export async function POST(request: NextRequest) {
         });
 
       if (ledgerError) {
-        logger.error('[INVENTORY API] Error creating initial stock:', ledgerError);
+        logger.error('[INVENTORY API] Error creating initial stock:', { error: ledgerError.message });
         // Don't fail the request, ingredient is already created
       }
     }

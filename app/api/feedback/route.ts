@@ -7,8 +7,6 @@ export const runtime = 'nodejs';
 export async function POST(req: Request) {
   try {
     const { order_id, rating, comment } = await req.json();
-    const url = process.env.NEXT_PUBLIC_SUPABASE_URL!;
-    const key = process.env.SUPABASE_SERVICE_ROLE_KEY!;
     const admin = await createClient();
     
     // Validate required fields
@@ -45,10 +43,10 @@ export async function POST(req: Request) {
     return NextResponse.json({ ok: true });
     
   } catch (e: unknown) {
-    logger.error('[AUTH DEBUG] Feedback submission exception:', e);
+    logger.error('[AUTH DEBUG] Feedback submission exception:', { error: e instanceof Error ? e.message : 'Unknown error' });
     return NextResponse.json({ 
       ok: false, 
-      error: e.message 
+      error: e instanceof Error ? e.message : 'Unknown error'
     }, { status: 500 });
   }
 }

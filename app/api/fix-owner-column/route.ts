@@ -1,10 +1,10 @@
-import { NextRequest, NextResponse } from 'next/server';
+import { NextResponse } from 'next/server';
 import { createClient } from '@/lib/supabase';
 import { getUserSafe } from '@/utils/getUserSafe';
-import { apiLogger, logger } from '@/lib/logger';
+import { logger } from '@/lib/logger';
 
 // POST /api/fix-owner-column - Fix the owner column name mismatch
-export async function POST(request: NextRequest) {
+export async function POST() {
   try {
     const user = await getUserSafe('POST /api/fix-owner-column');
     if (!user) {
@@ -24,7 +24,7 @@ export async function POST(request: NextRequest) {
     });
 
     if (columnError) {
-      logger.error('[COLUMN FIX] Error checking columns:', columnError);
+      logger.error('[COLUMN FIX] Error checking columns:', { error: columnError.message });
       return NextResponse.json({ 
         error: 'Failed to check current column structure',
         details: columnError.message 
@@ -39,7 +39,7 @@ export async function POST(request: NextRequest) {
     });
 
     if (renameError) {
-      logger.error('[COLUMN FIX] Error renaming column:', renameError);
+      logger.error('[COLUMN FIX] Error renaming column:', { error: renameError.message });
       // Column might already be renamed or not exist
       logger.debug('[COLUMN FIX] Column rename failed, checking if already correct...');
     } else {
@@ -53,7 +53,7 @@ export async function POST(request: NextRequest) {
     });
 
     if (indexError) {
-      logger.warn('[COLUMN FIX] Index update warning:', indexError);
+      logger.warn('[COLUMN FIX] Index update warning:', { error: indexError.message });
     } else {
       logger.debug('[COLUMN FIX] Indexes updated successfully');
     }
@@ -67,7 +67,7 @@ export async function POST(request: NextRequest) {
     });
 
     if (finalError) {
-      logger.error('[COLUMN FIX] Error verifying fix:', finalError);
+      logger.error('[COLUMN FIX] Error verifying fix:', { error: finalError.message });
     }
 
     logger.debug('[COLUMN FIX] Final columns:', finalColumns);

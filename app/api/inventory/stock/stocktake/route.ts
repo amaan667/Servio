@@ -40,7 +40,7 @@ export async function POST(request: NextRequest) {
       .single();
 
     if (stockError) {
-      logger.error('[INVENTORY API] Error fetching stock level:', stockError);
+      logger.error('[INVENTORY API] Error fetching stock level:', { error: stockError.message });
       return NextResponse.json(
         { error: stockError.message },
         { status: 500 }

@@ -142,3 +142,29 @@ export async function getSession() {
 // Export supabase instance for backward compatibility (getter to ensure singleton)
 export const supabase = (() => supabaseBrowser())();
 
+// Clear authentication storage (client-side only)
+export function clearAuthStorage() {
+  if (typeof window === 'undefined') {
+    console.warn('clearAuthStorage called on server - no-op');
+    return;
+  }
+  
+  // Clear localStorage
+  localStorage.removeItem('supabase.auth.token');
+  localStorage.removeItem('sb-auth-token');
+  
+  // Clear sessionStorage
+  sessionStorage.removeItem('supabase.auth.token');
+  sessionStorage.removeItem('sb-auth-token');
+  
+  // Clear cookies
+  document.cookie.split(";").forEach((c) => {
+    document.cookie = c
+      .replace(/^ +/, "")
+      .replace(/=.*/, "=;expires=" + new Date().toUTCString() + ";path=/");
+  });
+}
+
+// Alias for backward compatibility
+export const clearSupabaseAuth = clearAuthStorage;
+

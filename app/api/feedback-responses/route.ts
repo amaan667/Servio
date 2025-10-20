@@ -1,7 +1,5 @@
-import { errorToContext } from '@/lib/utils/error-to-context';
 import { NextResponse } from 'next/server';
 import { createAdminClient } from '@/lib/supabase';
-import type { FeedbackAnswer } from '@/types/feedback';
 import { logger } from '@/lib/logger';
 
 export const runtime = 'nodejs';
@@ -71,7 +69,7 @@ export async function POST(req: Request) {
     // Filter out generic questions (they start with 'generic-')
     const nonGenericQuestionIds = questionIds.filter(id => !id.startsWith('generic-'));
     
-    let questions: unknown[] = [];
+    let questions: any[] = [];
     if (nonGenericQuestionIds.length > 0) {
       const { data: dbQuestions, error: questionsError } = await serviceClient
         .from('feedback_questions')
@@ -81,7 +79,7 @@ export async function POST(req: Request) {
         .eq('is_active', true);
 
       if (questionsError) {
-        logger.error('[FEEDBACK][R] questions fetch error:', questionsError.message);
+        logger.error('[FEEDBACK][R] questions fetch error:', { error: questionsError.message });
         return NextResponse.json({ error: 'Failed to validate questions' }, { status: 500 });
       }
       
@@ -161,7 +159,8 @@ export async function POST(req: Request) {
         if (orderData?.customer_name) {
           customerName = orderData.customer_name;
         }
-      } catch (error) {
+      } catch {
+        // Ignore errors fetching order data
       }
     }
 
@@ -188,7 +187,7 @@ export async function POST(req: Request) {
       .select('id');
 
     if (error) {
-      logger.error('[FEEDBACK][R] insert error:', error.message);
+      logger.error('[FEEDBACK][R] insert error:', { error: error.message });
       return NextResponse.json({ 
         error: 'Failed to save responses' 
       }, { status: 500 });
@@ -200,7 +199,7 @@ export async function POST(req: Request) {
     });
 
   } catch (error: unknown) {
-    logger.error('[FEEDBACK][R] insert exception:', error.message);
+    logger.error('[FEEDBACK][R] insert exception:', { error: error instanceof Error ? error.message : 'Unknown error' });
     return NextResponse.json({ 
       error: 'Failed to submit feedback' 
     }, { status: 500 });

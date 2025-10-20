@@ -1,11 +1,10 @@
 "use client";
 
-import { useState } from "react";
+import React, { useState } from "react";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { CheckCircle2, AlertTriangle, Save } from "lucide-react";
-import { toast } from "@/hooks/use-toast";
 import MobileNav from '@/components/MobileNav';
 import BillingSection from '@/components/settings/BillingSection';
 
@@ -48,7 +47,7 @@ export default function VenueSettingsClient({ user, venue, venues, organization,
   const [twoFactorEnabled, setTwoFactorEnabled] = useState(false);
 
   // Custom hooks for different sections
-  const venueSettings = useVenueSettings(venue, user);
+  const venueSettings = useVenueSettings(venue);
   const passwordManagement = usePasswordManagement(user);
   const accountDeletion = useAccountDeletion(user);
 

@@ -4,6 +4,8 @@ import { createClient } from '@/lib/supabase';
 import { toast } from '@/hooks/use-toast';
 import { TIMEZONES } from '../constants';
 
+export const DAYS_OF_WEEK = ['monday', 'tuesday', 'wednesday', 'thursday', 'friday', 'saturday', 'sunday'] as const;
+
 export interface Venue {
   venue_id: string;
   venue_name: string;
@@ -51,7 +53,7 @@ export interface OperatingHours {
   sunday?: DayHours;
 }
 
-export function useVenueSettings(venue: Venue, user: User) {
+export function useVenueSettings(venue: Venue) {
   const router = useRouter();
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);

@@ -8,7 +8,7 @@ export const dynamic = 'force-dynamic';
  * Demo Reset API
  * Resets demo data for the demo-cafe venue
  */
-export async function POST(request: NextRequest) {
+export async function POST() {
   try {
     const supabase = await createClient();
     
@@ -24,7 +24,7 @@ export async function POST(request: NextRequest) {
       .lt('created_at', oneHourAgo);
     
     if (ordersError) {
-      logger.error('[DEMO RESET] Error deleting old orders:', ordersError);
+      logger.error('[DEMO RESET] Error deleting old orders:', { error: ordersError.message });
     }
     
     // Clear demo table sessions (older than 1 hour)
@@ -35,7 +35,7 @@ export async function POST(request: NextRequest) {
       .lt('created_at', oneHourAgo);
     
     if (sessionsError) {
-      logger.error('[DEMO RESET] Error deleting old sessions:', sessionsError);
+      logger.error('[DEMO RESET] Error deleting old sessions:', { error: sessionsError.message });
     }
     
     return NextResponse.json({

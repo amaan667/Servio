@@ -2,6 +2,14 @@ import { NextRequest, NextResponse } from 'next/server';
 import { createClient } from '@/lib/supabase';
 import { logger } from '@/lib/logger';
 
+interface MenuItemLink {
+  menu_item?: {
+    name: string;
+  } | {
+    name: string;
+  }[];
+}
+
 // GET /api/inventory/low-stock?venue_id=xxx
 export async function GET(request: NextRequest) {
   try {
@@ -46,7 +54,13 @@ export async function GET(request: NextRequest) {
           current_stock: item.on_hand,
           reorder_level: item.reorder_level,
           unit: item.unit,
-          affected_menu_items: menuItems?.map((mi: unknown) => mi.menu_item?.name).filter(Boolean) || [],
+          affected_menu_items: menuItems?.map((mi: MenuItemLink) => {
+            const menuItem = mi.menu_item;
+            if (Array.isArray(menuItem)) {
+              return menuItem[0]?.name;
+            }
+            return menuItem?.name;
+          }).filter(Boolean) || [],
         };
       })
     );

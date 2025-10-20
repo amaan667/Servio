@@ -11,7 +11,8 @@ export const dynamic = 'force-dynamic';
 
 export async function POST(req: NextRequest) {
   try {
-    let venueId, pdfFileId, mode = 'replace';
+    let venueId, pdfFileId;
+    let requestBody: any;
     
     // Check if request is FormData (file upload) or JSON
     const contentType = req.headers.get('content-type') || '';
@@ -47,7 +48,7 @@ export async function POST(req: NextRequest) {
         const fileBuffer = await file.arrayBuffer();
         const fileName = `${venueId}/${Date.now()}-${file.name}`;
         
-        const { error: uploadError } = await (supabase as Record<string, unknown>).storage
+        const { error: uploadError } = await (supabase as any).storage
           .from('menus')
           .upload(fileName, fileBuffer, {
             contentType: file.type,

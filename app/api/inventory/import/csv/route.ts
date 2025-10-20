@@ -46,7 +46,7 @@ export async function POST(request: NextRequest) {
 
     for (let i = 1; i < lines.length; i++) {
       const values = lines[i].split(',').map(v => v.trim().replace(/"/g, ''));
-      const row: unknown = {};
+      const row: any = {};
 
       headers.forEach((header, index) => {
         const value = values[index] || '';
@@ -141,7 +141,7 @@ export async function POST(request: NextRequest) {
 
         imported.push(ingredient.name);
       } catch (err: unknown) {
-        errors.push({ row: row.name, error: err.message });
+        errors.push({ row: row.name, error: err instanceof Error ? err.message : 'Unknown error' });
       }
     }
 

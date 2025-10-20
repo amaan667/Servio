@@ -1,7 +1,11 @@
-import { errorToContext } from '@/lib/utils/error-to-context';
 import { NextResponse } from 'next/server';
 import { createAdminClient } from '@/lib/supabase';
-import { apiLogger, logger } from '@/lib/logger';
+import { logger } from '@/lib/logger';
+
+interface KDSStation {
+  station_type: string;
+  [key: string]: any;
+}
 
 export const runtime = 'nodejs';
 
@@ -85,7 +89,7 @@ export async function POST(req: Request) {
         throw new Error('No KDS stations available');
       }
       
-      const expoStation = existingStations.find((s: unknown) => s.station_type === 'expo') || existingStations[0];
+      const expoStation = existingStations.find((s: KDSStation) => s.station_type === 'expo') || existingStations[0];
       
       if (!expoStation) {
         throw new Error('No KDS station available');
@@ -115,7 +119,7 @@ export async function POST(req: Request) {
       const { data: orders, error: ordersError } = await query;
 
       if (ordersError) {
-        logger.error(`[KDS BACKFILL ALL] Error fetching orders for ${scope}:`, ordersError);
+        logger.error(`[KDS BACKFILL ALL] Error fetching orders for ${scope}:`, { error: ordersError.message });
         results.push({ scope, error: ordersError.message });
         continue;
       }
@@ -167,7 +171,7 @@ export async function POST(req: Request) {
               .insert(ticketData);
             
             if (ticketError) {
-              logger.error('[KDS BACKFILL ALL] Failed to create ticket for item:', item, ticketError);
+              logger.error('[KDS BACKFILL ALL] Failed to create ticket for item:', { item, error: ticketError.message });
               scopeErrors.push(`Failed to create ticket for order ${order.id}: ${ticketError.message}`);
               continue;
             }
@@ -180,7 +184,7 @@ export async function POST(req: Request) {
           
         } catch (error: unknown) {
           logger.error(`[KDS BACKFILL ALL] Error processing order ${order.id} for ${scope}:`, { error: error instanceof Error ? error.message : 'Unknown error' });
-          scopeErrors.push(`Error processing order ${order.id}: ${error.message}`);
+          scopeErrors.push(`Error processing order ${order.id}: ${error instanceof Error ? error.message : 'Unknown error'}`);
         }
       }
 
@@ -215,7 +219,7 @@ export async function POST(req: Request) {
     logger.error('[KDS BACKFILL ALL] Unexpected error:', { error: error instanceof Error ? error.message : 'Unknown error' });
     return NextResponse.json({ 
       ok: false, 
-      error: error.message || 'Comprehensive backfill failed' 
+      error: error instanceof Error ? error.message : 'Comprehensive backfill failed' 
     }, { status: 500 });
   }
 }

@@ -1,7 +1,5 @@
-import { errorToContext } from '@/lib/utils/error-to-context';
 import { NextResponse } from 'next/server';
 import { createClient, getAuthenticatedUser, createAdminClient } from '@/lib/supabase';
-import type { FeedbackQuestion } from '@/types/feedback';
 import { logger } from '@/lib/logger';
 
 export const runtime = 'nodejs';
@@ -49,7 +47,7 @@ export async function GET(req: Request) {
       .order('created_at', { ascending: true });
 
     if (error) {
-      logger.error('[FEEDBACK:Q] list error:', error.message);
+      logger.error('[FEEDBACK:Q] list error:', { error: error.message });
       return NextResponse.json({ error: 'Failed to fetch questions' }, { status: 500 });
     }
 
@@ -64,7 +62,7 @@ export async function GET(req: Request) {
     });
 
   } catch (error: unknown) {
-    logger.error('[FEEDBACK:Q] list exception:', error.message);
+    logger.error('[FEEDBACK:Q] list exception:', { error: error instanceof Error ? error.message : 'Unknown error' });
     return NextResponse.json({ error: 'Internal server error' }, { status: 500 });
   }
 }
@@ -154,14 +152,14 @@ export async function POST(req: Request) {
       .single();
 
     if (error) {
-      logger.error('[FEEDBACK:Q] add error:', error.message);
+      logger.error('[FEEDBACK:Q] add error:', { error: error.message });
       return NextResponse.json({ error: 'Failed to create question' }, { status: 500 });
     }
 
     return NextResponse.json({ question });
 
   } catch (error: unknown) {
-    logger.error('[FEEDBACK:Q] add exception:', error.message);
+    logger.error('[FEEDBACK:Q] add exception:', { error: error instanceof Error ? error.message : 'Unknown error' });
     return NextResponse.json({ error: 'Internal server error' }, { status: 500 });
   }
 }
@@ -195,7 +193,7 @@ export async function PATCH(req: Request) {
     }
 
     const serviceClient = getServiceClient();
-    const updateData: unknown = {};
+    const updateData: any = {};
 
     if (prompt !== undefined) {
       if (prompt.length < 4 || prompt.length > 160) {
@@ -241,14 +239,14 @@ export async function PATCH(req: Request) {
       .single();
 
     if (error) {
-      logger.error('[FEEDBACK:Q] update error:', error.message);
+      logger.error('[FEEDBACK:Q] update error:', { error: error.message });
       return NextResponse.json({ error: 'Failed to update question' }, { status: 500 });
     }
 
     return NextResponse.json({ question });
 
   } catch (error: unknown) {
-    logger.error('[FEEDBACK:Q] update exception:', error.message);
+    logger.error('[FEEDBACK:Q] update exception:', { error: error instanceof Error ? error.message : 'Unknown error' });
     return NextResponse.json({ error: 'Internal server error' }, { status: 500 });
   }
 }
@@ -288,14 +286,14 @@ export async function DELETE(req: Request) {
       .eq('id', id);
 
     if (error) {
-      logger.error('[FEEDBACK:Q] delete error:', error.message);
+      logger.error('[FEEDBACK:Q] delete error:', { error: error.message });
       return NextResponse.json({ error: 'Failed to delete question' }, { status: 500 });
     }
 
     return NextResponse.json({ success: true });
 
   } catch (error: unknown) {
-    logger.error('[FEEDBACK:Q] delete exception:', error.message);
+    logger.error('[FEEDBACK:Q] delete exception:', { error: error instanceof Error ? error.message : 'Unknown error' });
     return NextResponse.json({ error: 'Internal server error' }, { status: 500 });
   }
 }

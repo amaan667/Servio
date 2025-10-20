@@ -1,7 +1,5 @@
 import { NextResponse } from 'next/server';
-import { cookies } from 'next/headers';
-import { createServerClient } from '@supabase/ssr';
-// cookieAdapter removed - use createServerSupabase instead
+import { createServerSupabase } from '@/lib/supabase';
 import { logger } from '@/lib/logger';
 
 export const runtime = 'nodejs';
@@ -18,12 +16,7 @@ export async function POST(req: Request) {
     }
 
     // Get user session
-    const jar = await cookies();
-    const supa = createServerClient(
-      process.env.NEXT_PUBLIC_SUPABASE_URL!,
-      process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
-      { cookies: cookieAdapter(jar) }
-    );
+    const supa = await createServerSupabase();
 
     const { data: { user } } = await supa.auth.getUser();
     if (!user) {
@@ -88,7 +81,7 @@ export async function POST(req: Request) {
     logger.error('[AUTH DEBUG] Error in feedback list:', { error: error instanceof Error ? error.message : 'Unknown error' });
     return NextResponse.json({ 
       ok: false, 
-      error: `Failed to fetch feedback: ${error.message}` 
+      error: `Failed to fetch feedback: ${error instanceof Error ? error.message : 'Unknown error'}` 
     }, { status: 500 });
   }
 }

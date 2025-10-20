@@ -1,7 +1,11 @@
-import { errorToContext } from '@/lib/utils/error-to-context';
 import { NextResponse } from 'next/server';
 import { createAdminClient } from '@/lib/supabase';
-import { apiLogger, logger } from '@/lib/logger';
+import { logger } from '@/lib/logger';
+
+interface KDSStation {
+  station_type: string;
+  [key: string]: any;
+}
 
 export const runtime = 'nodejs'; // KDS backfill endpoint
 
@@ -74,7 +78,7 @@ export async function POST(req: Request) {
       throw new Error('No KDS stations available');
     }
     
-    const expoStation = existingStations.find((s: unknown) => s.station_type === 'expo') || existingStations[0];
+    const expoStation = existingStations.find((s: KDSStation) => s.station_type === 'expo') || existingStations[0];
     
     if (!expoStation) {
       throw new Error('No KDS station available');
@@ -162,7 +166,7 @@ export async function POST(req: Request) {
             .insert(ticketData);
           
           if (ticketError) {
-            logger.error('[KDS BACKFILL] Failed to create ticket for item:', item, ticketError);
+            logger.error('[KDS BACKFILL] Failed to create ticket for item:', { item, error: ticketError.message });
             errors.push(`Failed to create ticket for order ${order.id}: ${ticketError.message}`);
             continue;
           }
@@ -175,7 +179,7 @@ export async function POST(req: Request) {
         
       } catch (error: unknown) {
         logger.error(`[KDS BACKFILL] Error processing order ${order.id}:`, { error: error instanceof Error ? error.message : 'Unknown error' });
-        errors.push(`Error processing order ${order.id}: ${error.message}`);
+        errors.push(`Error processing order ${order.id}: ${error instanceof Error ? error.message : 'Unknown error'}`);
       }
     }
 
@@ -197,7 +201,7 @@ export async function POST(req: Request) {
     logger.error('[KDS BACKFILL] Unexpected error:', { error: error instanceof Error ? error.message : 'Unknown error' });
     return NextResponse.json({ 
       ok: false, 
-      error: error.message || 'Backfill failed' 
+      error: error instanceof Error ? error.message : 'Backfill failed' 
     }, { status: 500 });
   }
 }

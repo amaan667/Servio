@@ -30,11 +30,14 @@ export async function GET(req: Request) {
       );
       
       // Find the order by session ID
-      const { data: order } = await supabase
+      let order: any = null;
+      const { data: initialOrder } = await supabase
         .from("orders")
         .select("id, stripe_session_id, payment_status")
         .eq("stripe_session_id", sessionId)
         .maybeSingle();
+
+      order = initialOrder;
 
       // If not found by session ID, wait for webhook to create order
       if (!order) {

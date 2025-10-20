@@ -49,7 +49,7 @@ export async function GET(req: Request) {
       });
 
       if (setupError) {
-        logger.error('[KDS] Error setting up default stations:', setupError);
+        logger.error('[KDS] Error setting up default stations:', { error: setupError.message });
       }
 
       // Fetch again after setup
@@ -73,7 +73,7 @@ export async function GET(req: Request) {
   } catch (error: unknown) {
     logger.error('[KDS] Unexpected error:', { error: error instanceof Error ? error.message : 'Unknown error' });
     return NextResponse.json(
-      { ok: false, error: error.message || 'Internal server error' },
+      { ok: false, error: error instanceof Error ? error.message : 'Internal server error' },
       { status: 500 }
     );
   }

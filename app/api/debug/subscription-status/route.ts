@@ -1,11 +1,10 @@
-import { errorToContext } from '@/lib/utils/error-to-context';
 // Debug API endpoint to check and manually update subscription status
-import { NextRequest, NextResponse } from "next/server";
+import { NextResponse } from "next/server";
 import { createClient } from "@/lib/supabase";
 import { stripe } from "@/lib/stripe-client";
 import { apiLogger as logger } from '@/lib/logger';
 
-export async function GET(request: NextRequest) {
+export async function GET() {
   try {
     const supabase = await createClient();
 
@@ -18,7 +17,7 @@ export async function GET(request: NextRequest) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
 
-    logger.debug('[DEBUG] Fetching subscription status for user:', user.id);
+    logger.debug('[DEBUG] Fetching subscription status for user:', { userId: user.id });
 
     // Try multiple approaches to get organization info
     let orgFound = false;
@@ -66,7 +65,7 @@ export async function GET(request: NextRequest) {
 
     // Approach 3: If no organization exists, create a real one
     if (!orgFound) {
-      logger.debug('[DEBUG] No organization found, creating real organization for user:', user.id);
+      logger.debug('[DEBUG] No organization found, creating real organization for user:', { userId: user.id });
       try {
         const userName = user.user_metadata?.full_name || user.email?.split('@')[0] || 'User';
         const { data: newOrg, error: createError } = await supabase
@@ -156,7 +155,7 @@ export async function GET(request: NextRequest) {
   } catch (error: unknown) {
     logger.error("[DEBUG] Error:", { error: error instanceof Error ? error.message : 'Unknown error' });
     return NextResponse.json(
-      { error: error.message || "Failed to debug subscription status" },
+      { error: error instanceof Error ? error.message : "Failed to debug subscription status" },
       { status: 500 }
     );
   }
@@ -223,7 +222,7 @@ export async function POST(request: NextRequest) {
   } catch (error: unknown) {
     logger.error("[DEBUG] Error:", { error: error instanceof Error ? error.message : 'Unknown error' });
     return NextResponse.json(
-      { error: error.message || "Failed to update subscription status" },
+      { error: error instanceof Error ? error.message : "Failed to update subscription status" },
       { status: 500 }
     );
   }

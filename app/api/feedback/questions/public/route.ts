@@ -1,4 +1,3 @@
-import { errorToContext } from '@/lib/utils/error-to-context';
 import { NextResponse } from 'next/server';
 import { createAdminClient } from '@/lib/supabase';
 import { logger } from '@/lib/logger';
@@ -25,7 +24,7 @@ export async function GET(req: Request) {
       .order('created_at', { ascending: true });
 
     if (error) {
-      logger.error('[FEEDBACK:PUBLIC] Error fetching questions:', error.message);
+      logger.error('[FEEDBACK:PUBLIC] Error fetching questions:', { error: error.message });
       return NextResponse.json({ error: 'Failed to fetch questions' }, { status: 500 });
     }
 
@@ -36,7 +35,7 @@ export async function GET(req: Request) {
     });
 
   } catch (error: unknown) {
-    logger.error('[FEEDBACK:PUBLIC] Exception:', error.message);
+    logger.error('[FEEDBACK:PUBLIC] Exception:', { error: error instanceof Error ? error.message : 'Unknown error' });
     return NextResponse.json({ error: 'Internal server error' }, { status: 500 });
   }
 }

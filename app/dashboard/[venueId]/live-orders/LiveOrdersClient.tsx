@@ -11,7 +11,7 @@
  * Orders automatically move from "Live Orders" to "Earlier Today" after a period of time
  */
 
-import { useEffect, useState, useRef } from "react";
+import React, { useEffect, useState, useRef } from "react";
 import { useSearchParams } from "next/navigation";
 import { createClient } from "@/lib/supabase";
 import { useTabCounts } from "@/hooks/use-tab-counts";
@@ -30,15 +30,13 @@ import { EmptyState } from './components/EmptyState';
 import { BulkCompleteButton } from './components/BulkCompleteButton';
 
 // Utils
-import { isCounterOrder, formatTime, getStatusColor, getPaymentStatusColor } from './utils/orderHelpers';
-import { getTableSummary } from './utils/tableHelpers';
-import { LIVE_ORDER_WINDOW_MS, LIVE_WINDOW_STATUSES, ACTIVE_TABLE_ORDER_STATUSES, LIVE_TABLE_ORDER_STATUSES } from './constants';
+import { isCounterOrder } from './utils/orderHelpers';
+import { LIVE_ORDER_WINDOW_MS, LIVE_WINDOW_STATUSES, LIVE_TABLE_ORDER_STATUSES } from './constants';
 
 // Types
 import { LiveOrdersClientProps } from './types';
 
 export default function LiveOrdersClient({ venueId, venueName: venueNameProp }: LiveOrdersClientProps) {
-  const router = useRouter();
   const searchParams = useSearchParams();
   const tableFilter = searchParams?.get('table');
   const tabParam = searchParams?.get('tab');
@@ -49,7 +47,6 @@ export default function LiveOrdersClient({ venueId, venueName: venueNameProp }: 
   
   const [activeTab, setActiveTab] = useState(tabParam || "live");
   const [venueName, setVenueName] = useState<string>(venueNameProp || '');
-  const [expandedTables, setExpandedTables] = useState<Set<number>>(new Set());
   const [autoRefreshEnabled, setAutoRefreshEnabled] = useState(true);
   const [refreshInterval, setRefreshInterval] = useState(120000);
   const autoRefreshRef = useRef<NodeJS.Timeout | null>(null);
@@ -58,7 +55,6 @@ export default function LiveOrdersClient({ venueId, venueName: venueNameProp }: 
   const { 
     orders, 
     allTodayOrders, 
-    historyOrders, 
     groupedHistoryOrders, 
     loading, 
     todayWindow,
@@ -66,7 +62,7 @@ export default function LiveOrdersClient({ venueId, venueName: venueNameProp }: 
     setAllTodayOrders
   } = useOrderManagement(venueId);
 
-  const { data: tabCounts, isLoading: countsLoading, refetch: refetchCounts } = useTabCounts(venueId, 'Europe/London', 30);
+  const { data: tabCounts, refetch: refetchCounts } = useTabCounts(venueId, 'Europe/London', 30);
   const { isBulkCompleting, bulkCompleteAllOrders } = useBulkOperations(venueId);
 
   // Update active tab when URL parameter changes
@@ -156,31 +152,6 @@ export default function LiveOrdersClient({ venueId, venueName: venueNameProp }: 
     window.history.replaceState({}, '', newUrl.toString());
   };
 
-  const handleOrderStatusUpdate = async (orderId: string, status: any) => {
-    await updateOrderStatus(
-      orderId,
-      status,
-      venueId,
-      todayWindow,
-      (id, newStatus) => {
-        setOrders(prev => prev.map(order => order.id === id ? { ...order, order_status: newStatus } : order));
-        setAllTodayOrders(prev => prev.map(order => order.id === id ? { ...order, order_status: newStatus } : order));
-      },
-      (id, newStatus) => {
-        setAllTodayOrders(prev => {
-          const updatedOrder = { id, order_status: newStatus } as any;
-          const exists = prev.find(order => order.id === id);
-          if (!exists) return [updatedOrder, ...prev];
-          return prev.map(order => order.id === id ? updatedOrder : order);
-        });
-      },
-      (id) => {
-        setOrders(prev => prev.filter(order => order.id !== id));
-      }
-    );
-    refetchCounts();
-  };
-
   const handleBulkComplete = () => {
     const currentOrders = activeTab === 'live' ? orders : allTodayOrders;
     const activeOrders = currentOrders.filter(order => 
@@ -188,18 +159,6 @@ export default function LiveOrdersClient({ venueId, venueName: venueNameProp }: 
     );
     bulkCompleteAllOrders(activeOrders, () => {
       window.location.reload();
-    });
-  };
-
-  const toggleTableExpansion = (tableNumber: number) => {
-    setExpandedTables(prev => {
-      const newSet = new Set(prev);
-      if (newSet.has(tableNumber)) {
-        newSet.delete(tableNumber);
-      } else {
-        newSet.add(tableNumber);
-      }
-      return newSet;
     });
   };
 

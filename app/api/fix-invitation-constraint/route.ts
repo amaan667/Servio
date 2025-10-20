@@ -1,10 +1,10 @@
-import { NextRequest, NextResponse } from 'next/server';
+import { NextResponse } from 'next/server';
 import { createClient } from '@/lib/supabase';
 import { getUserSafe } from '@/utils/getUserSafe';
-import { apiLogger, logger } from '@/lib/logger';
+import { logger } from '@/lib/logger';
 
 // POST /api/fix-invitation-constraint - Direct fix for invitation constraint
-export async function POST(request: NextRequest) {
+export async function POST() {
   try {
     const user = await getUserSafe('POST /api/fix-invitation-constraint');
     if (!user) {
@@ -22,7 +22,7 @@ export async function POST(request: NextRequest) {
       .eq('status', 'cancelled');
 
     if (fetchError) {
-      logger.error('[CONSTRAINT FIX] Error fetching cancelled invitations:', fetchError);
+      logger.error('[CONSTRAINT FIX] Error fetching cancelled invitations:', { error: fetchError.message });
     } else {
       logger.debug(`[CONSTRAINT FIX] Found ${cancelledInvitations?.length || 0} cancelled invitations`);
     }
@@ -34,7 +34,7 @@ export async function POST(request: NextRequest) {
       .eq('status', 'cancelled');
 
     if (deleteError) {
-      logger.error('[CONSTRAINT FIX] Error deleting cancelled invitations:', deleteError);
+      logger.error('[CONSTRAINT FIX] Error deleting cancelled invitations:', { error: deleteError.message });
     } else {
       logger.debug('[CONSTRAINT FIX] Deleted all cancelled invitations');
     }

@@ -49,7 +49,7 @@ export async function POST(request: NextRequest) {
         .eq("user_id", user.id)
         .single();
 
-      if (roleData && !roleError) {
+      if (roleData) {
         userRole = roleData.role;
       } else {
         // If no role found, check if user owns the venue

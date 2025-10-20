@@ -2,6 +2,21 @@ import { NextRequest, NextResponse } from 'next/server';
 import { createClient } from '@/lib/supabase';
 import { logger } from '@/lib/logger';
 
+interface StockMovement {
+  created_at: string;
+  delta: number;
+  reason: string;
+  ref_type?: string;
+  note?: string;
+  ingredient?: {
+    name: string;
+    unit: string;
+  };
+  user?: {
+    email: string;
+  };
+}
+
 // GET /api/inventory/export/movements?venue_id=xxx&from=&to=&reason=
 export async function GET(request: NextRequest) {
   try {
@@ -53,7 +68,7 @@ export async function GET(request: NextRequest) {
 
     // Generate CSV
     const headers = ['Date', 'Ingredient', 'Delta', 'Unit', 'Reason', 'Ref Type', 'Note', 'User'];
-    const rows = data?.map((movement: unknown) => [
+    const rows = data?.map((movement: StockMovement) => [
       new Date(movement.created_at).toISOString(),
       movement.ingredient?.name || 'Unknown',
       movement.delta,

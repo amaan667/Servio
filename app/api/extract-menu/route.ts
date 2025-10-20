@@ -10,9 +10,9 @@ export async function POST(req: NextRequest) {
           const supabase = await createClient();
       // Attach venue_id to each item if not present
       const itemsToInsert = body.items.map((item: unknown) => ({
-        ...item,
+        ...(item as any),
         venue_id: body.venue_id,
-        is_available: item.available !== false, // default to true
+        is_available: (item as any).available !== false, // default to true
       }));
               const { error } = await supabase.from("menu_items").insert(itemsToInsert);
       if (error) {
@@ -27,7 +27,7 @@ export async function POST(req: NextRequest) {
     );
   } catch (err: unknown) {
     return NextResponse.json(
-      { error: err?.message || "Failed to save menu." },
+      { error: err instanceof Error ? err.message : "Failed to save menu." },
       { status: 500 },
     );
   }

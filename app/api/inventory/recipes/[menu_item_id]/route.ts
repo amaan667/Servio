@@ -3,6 +3,13 @@ import { createClient } from '@/lib/supabase';
 import type { RecipeIngredient } from '@/types/inventory';
 import { logger } from '@/lib/logger';
 
+interface RecipeItem {
+  ingredient?: {
+    cost_per_unit: number;
+  };
+  qty_per_item: number;
+}
+
 // GET /api/inventory/recipes/[menu_item_id]
 export async function GET(
   request: NextRequest,
@@ -29,7 +36,7 @@ export async function GET(
     }
 
     // Calculate total recipe cost
-    const totalCost = data?.reduce((sum, item: unknown) => {
+    const totalCost = data?.reduce((sum, item: RecipeItem) => {
       const ingredientCost = item.ingredient?.cost_per_unit || 0;
       return sum + (ingredientCost * item.qty_per_item);
     }, 0) || 0;
@@ -72,7 +79,7 @@ export async function POST(
       .eq('menu_item_id', menu_item_id);
 
     if (deleteError) {
-      logger.error('[INVENTORY API] Error deleting existing recipe:', deleteError);
+      logger.error('[INVENTORY API] Error deleting existing recipe:', { error: deleteError.message });
       return NextResponse.json(
         { error: deleteError.message },
         { status: 500 }
@@ -94,7 +101,7 @@ export async function POST(
         .select();
 
       if (insertError) {
-        logger.error('[INVENTORY API] Error inserting recipe:', insertError);
+        logger.error('[INVENTORY API] Error inserting recipe:', { error: insertError.message });
         return NextResponse.json(
           { error: insertError.message },
           { status: 500 }

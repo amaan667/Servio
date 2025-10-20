@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { createClient, createAdminClient } from '@/lib/supabase';
+import { createAdminClient } from '@/lib/supabase';
 import { logger } from '@/lib/logger';
 
 export async function POST(request: NextRequest) {
@@ -72,7 +72,7 @@ export async function POST(request: NextRequest) {
         if (!updateError) {
           updatedCount++;
         } else {
-          logger.error(`Failed to update category ${category}:`, updateError);
+          logger.error(`Failed to update category ${category}:`, { error: updateError.message });
         }
       }
     }
