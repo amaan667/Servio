@@ -1,6 +1,6 @@
 import { NextResponse } from 'next/server';
-import { createServerSupabase } from '@/lib/supabase/server';
-import { createAdminClient } from '@/lib/supabase/server';
+import { createServerSupabase } from '@/lib/supabase';
+import { createAdminClient } from '@/lib/supabase';
 import { apiLogger, logger } from '@/lib/logger';
 
 // Function to automatically backfill missing KDS tickets for orders

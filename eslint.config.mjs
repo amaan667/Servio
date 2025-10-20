@@ -1,18 +1,33 @@
 import js from "@eslint/js";
 import globals from "globals";
 import tseslint from "typescript-eslint";
-import pluginReact from "eslint-plugin-react";
+import react from "eslint-plugin-react";
+import reactHooks from "eslint-plugin-react-hooks";
 
 export default [
   js.configs.recommended,
-  { files: ["**/*.{js,mjs,cjs,ts,mts,cts,jsx,tsx}"], languageOptions: { globals: {...globals.browser, ...globals.node} } },
   ...tseslint.configs.recommended,
-  pluginReact.configs.recommended,
   {
+    files: ["**/*.{js,mjs,cjs,ts,mts,cts,jsx,tsx}"],
+    languageOptions: {
+      globals: {...globals.browser, ...globals.node},
+    },
+    plugins: {
+      react,
+      "react-hooks": reactHooks,
+    },
     rules: {
+      ...react.configs.recommended.rules,
       "no-console": ["error", { "allow": ["error"] }],
       "@typescript-eslint/no-unused-vars": "error",
       "react-hooks/exhaustive-deps": "warn",
+      // Ban direct subpath imports & old factories
+      "no-restricted-imports": ["error", {
+        "patterns": [
+          { "group": ["@/lib/supabase/*"], "message": "Import only from '@/lib/supabase'." },
+          { "group": ["@/lib/supabase/browser", "@/lib/supabase/client", "@/lib/supabase/server", "@/lib/supabase/unified-client"], "message": "Deprecated. Use '@/lib/supabase'." }
+        ]
+      }],
     },
   },
 ];

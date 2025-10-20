@@ -8,7 +8,7 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import { Badge } from '@/components/ui/badge';
-import { supabaseBrowser } from '@/lib/supabase/browser';
+import { supabaseBrowser } from '@/lib/supabase';
 import Link from 'next/link';
 import { Check, Loader2, Mail } from 'lucide-react';
 

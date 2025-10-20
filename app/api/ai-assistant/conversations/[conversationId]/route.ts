@@ -2,7 +2,7 @@
 // Handles operations on a specific conversation (DELETE, etc.)
 
 import { NextRequest, NextResponse } from "next/server";
-import { createAdminClient } from "@/lib/supabase/server";
+import { createAdminClient } from "@/lib/supabase";
 import { apiLogger, logger } from '@/lib/logger';
 
 export async function DELETE(

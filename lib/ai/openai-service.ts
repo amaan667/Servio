@@ -2,7 +2,7 @@
 // Implements proper tool correlation and error handling
 
 import OpenAI from "openai";
-import { createClient } from "@/lib/supabase/server";
+import { createClient } from "@/lib/supabase";
 import { logger } from '@/lib/logger';
 
 const client = new OpenAI({ 

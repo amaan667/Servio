@@ -1,6 +1,6 @@
 import KDSClient from './KDSClient';
 import RoleBasedNavigation from '@/components/RoleBasedNavigation';
-import { createClient } from '@/lib/supabase/server';
+import { createClient } from '@/lib/supabase';
 import { redirect } from 'next/navigation';
 
 export default async function KDSPage({ params }: { params: Promise<{ venueId: string }> }) {

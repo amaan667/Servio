@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { createAdminClient, getAuthenticatedUser } from '@/lib/supabase/server';
+import { createAdminClient, getAuthenticatedUser } from '@/lib/supabase';
 import { getTableState, getMergeScenario } from '@/lib/table-states';
 import { logger } from '@/lib/logger';
 

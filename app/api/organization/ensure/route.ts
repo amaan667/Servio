@@ -1,6 +1,6 @@
 // API endpoint to ensure a user has a real organization
 import { NextRequest, NextResponse } from "next/server";
-import { createClient, createAdminClient } from "@/lib/supabase/server";
+import { createClient, createAdminClient } from "@/lib/supabase";
 import { apiLogger, logger } from '@/lib/logger';
 
 // Disable caching to always get fresh data

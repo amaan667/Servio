@@ -6,7 +6,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { createGetHandler, createPostHandler, successResponse, errorResponse } from '@/lib/api/route-helpers';
 import { CreateOrderSchema, OrderResponse, CreateOrderRequest } from '@/types/api';
-import { createSupabaseClient } from '@/lib/supabase/unified-client';
+import { createSupabaseClient } from '@/lib/supabase';
 import { withAuthorization } from '@/lib/middleware/authorization';
 
 // ============================================================================

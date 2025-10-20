@@ -1,5 +1,5 @@
 import { NextResponse } from 'next/server';
-import { createAdminClient } from '@/lib/supabase/server';
+import { createAdminClient } from '@/lib/supabase';
 import { logger } from '@/lib/logger';
 
 export const runtime = 'nodejs';

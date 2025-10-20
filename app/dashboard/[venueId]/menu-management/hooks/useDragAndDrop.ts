@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { createClient } from "@/lib/supabase/client";
+import { createClient } from "@/lib/supabase";
 import { useToast } from "@/hooks/use-toast";
 import { DropResult } from "@hello-pangea/dnd";
 import { MenuItem } from "../types";

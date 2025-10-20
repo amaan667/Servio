@@ -13,8 +13,8 @@ import {
 } from '@/lib/middleware/authorization';
 
 // Mock Supabase client
-vi.mock('@/lib/supabase/unified-client', () => ({
-  createSupabaseClient: vi.fn(),
+vi.mock('@/lib/supabase', () => ({
+  supabaseServer: vi.fn(),
 }));
 
 // Mock logger
@@ -56,8 +56,8 @@ describe('Authorization Middleware', () => {
         .mockResolvedValueOnce({ data: null, error: null }) // user_venue_roles check
         .mockResolvedValueOnce({ data: mockVenue, error: null }); // venues check
 
-      const { createSupabaseClient } = await import('@/lib/supabase/unified-client');
-      vi.mocked(createSupabaseClient).mockResolvedValue(mockSupabase);
+      const { supabaseServer } = await import('@/lib/supabase');
+      vi.mocked(supabaseServer).mockResolvedValue(mockSupabase);
 
       const access = await verifyVenueAccess('venue-1', 'user-1');
 
@@ -79,8 +79,8 @@ describe('Authorization Middleware', () => {
       mockSupabase.maybeSingle.mockResolvedValueOnce({ data: mockRole, error: null });
       mockSupabase.single.mockResolvedValueOnce({ data: mockVenue, error: null });
 
-      const { createSupabaseClient } = await import('@/lib/supabase/unified-client');
-      vi.mocked(createSupabaseClient).mockResolvedValue(mockSupabase);
+      const { supabaseServer } = await import('@/lib/supabase');
+      vi.mocked(supabaseServer).mockResolvedValue(mockSupabase);
 
       const access = await verifyVenueAccess('venue-1', 'user-1');
 
@@ -93,8 +93,8 @@ describe('Authorization Middleware', () => {
       mockSupabase.single.mockResolvedValue({ data: null, error: { message: 'Not found' } });
       mockSupabase.maybeSingle.mockResolvedValue({ data: null, error: null });
 
-      const { createSupabaseClient } = await import('@/lib/supabase/unified-client');
-      vi.mocked(createSupabaseClient).mockResolvedValue(mockSupabase);
+      const { supabaseServer } = await import('@/lib/supabase');
+      vi.mocked(supabaseServer).mockResolvedValue(mockSupabase);
 
       const access = await verifyVenueAccess('venue-1', 'user-1');
 
@@ -104,8 +104,8 @@ describe('Authorization Middleware', () => {
     it('should handle database errors gracefully', async () => {
       mockSupabase.single.mockResolvedValue({ data: null, error: new Error('Database error') });
 
-      const { createSupabaseClient } = await import('@/lib/supabase/unified-client');
-      vi.mocked(createSupabaseClient).mockResolvedValue(mockSupabase);
+      const { supabaseServer } = await import('@/lib/supabase');
+      vi.mocked(supabaseServer).mockResolvedValue(mockSupabase);
 
       const access = await verifyVenueAccess('venue-1', 'user-1');
 
@@ -122,8 +122,8 @@ describe('Authorization Middleware', () => {
 
       mockSupabase.auth.getUser.mockResolvedValue({ data: { user: mockUser }, error: null });
 
-      const { createSupabaseClient } = await import('@/lib/supabase/unified-client');
-      vi.mocked(createSupabaseClient).mockResolvedValue(mockSupabase);
+      const { supabaseServer } = await import('@/lib/supabase');
+      vi.mocked(supabaseServer).mockResolvedValue(mockSupabase);
 
       const { user, error } = await getAuthenticatedUser();
 
@@ -134,8 +134,8 @@ describe('Authorization Middleware', () => {
     it('should return null for unauthenticated user', async () => {
       mockSupabase.auth.getUser.mockResolvedValue({ data: { user: null }, error: null });
 
-      const { createSupabaseClient } = await import('@/lib/supabase/unified-client');
-      vi.mocked(createSupabaseClient).mockResolvedValue(mockSupabase);
+      const { supabaseServer } = await import('@/lib/supabase');
+      vi.mocked(supabaseServer).mockResolvedValue(mockSupabase);
 
       const { user, error } = await getAuthenticatedUser();
 
@@ -149,8 +149,8 @@ describe('Authorization Middleware', () => {
         error: { message: 'Token expired' },
       });
 
-      const { createSupabaseClient } = await import('@/lib/supabase/unified-client');
-      vi.mocked(createSupabaseClient).mockResolvedValue(mockSupabase);
+      const { supabaseServer } = await import('@/lib/supabase');
+      vi.mocked(supabaseServer).mockResolvedValue(mockSupabase);
 
       const { user, error } = await getAuthenticatedUser();
 

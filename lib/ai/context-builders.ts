@@ -1,7 +1,7 @@
 // Servio AI Assistant - Context Builders (RAG Layer)
 // Gathers and summarizes data for LLM planning
 
-import { createClient } from "@/lib/supabase/server";
+import { createClient } from "@/lib/supabase";
 import { aiLogger } from '@/lib/logger';
 import {
   MenuSummary,

@@ -1,7 +1,7 @@
 import { NextResponse } from 'next/server';
 export const runtime = 'nodejs';
-import { createClient } from '@/lib/supabase/server';
-import { createAdminClient } from '@/lib/supabase/server';
+import { createClient } from '@/lib/supabase';
+import { createAdminClient } from '@/lib/supabase';
 import { apiLogger as logger } from '@/lib/logger';
 
 export async function POST(req: Request) {

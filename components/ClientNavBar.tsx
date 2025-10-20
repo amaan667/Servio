@@ -4,7 +4,7 @@ import { useState, useEffect } from "react";
 import Link from "next/link";
 import Image from "next/image";
 import { Button } from "@/components/ui/button";
-import { createClient } from "@/lib/supabase/client";
+import { createClient } from "@/lib/supabase";
 import { Menu, X, Settings } from "lucide-react";
 import { useAuth } from "@/app/auth/AuthProvider";
 import { useRouter, usePathname } from "next/navigation";
@@ -73,7 +73,7 @@ export default function ClientNavBar() {
       
       // Clear client storage to avoid auto sign-in or stale sessions
       try {
-        const { clearAuthStorage } = await import('@/lib/supabase/client');
+        const { clearAuthStorage } = await import('@/lib/supabase');
         clearAuthStorage();
       } catch (error) {
       }

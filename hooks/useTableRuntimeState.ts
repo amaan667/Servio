@@ -1,5 +1,5 @@
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
-import { createClient } from '@/lib/supabase/client';
+import { createClient } from '@/lib/supabase';
 import { logger } from '@/lib/logger';
 
 const supabase = createClient();

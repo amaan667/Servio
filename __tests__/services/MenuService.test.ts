@@ -7,7 +7,7 @@ import { describe, it, expect, beforeEach, vi } from 'vitest';
 import { MenuService } from '@/lib/services/MenuService';
 
 // Mock Supabase client
-vi.mock('@/lib/supabase/unified-client', () => ({
+vi.mock('@/lib/supabase', () => ({
   createSupabaseClient: vi.fn(),
 }));
 
@@ -58,7 +58,7 @@ describe('MenuService', () => {
 
       mockSupabase.order.mockResolvedValue({ data: mockItems, error: null });
 
-      const { createSupabaseClient } = await import('@/lib/supabase/unified-client');
+      const { createSupabaseClient } = await import('@/lib/supabase');
       vi.mocked(createSupabaseClient).mockResolvedValue(mockSupabase);
 
       const items = await menuService.getMenuItems('venue-1');
@@ -70,7 +70,7 @@ describe('MenuService', () => {
     it('should filter unavailable items by default', async () => {
       mockSupabase.order.mockResolvedValue({ data: [], error: null });
 
-      const { createSupabaseClient } = await import('@/lib/supabase/unified-client');
+      const { createSupabaseClient } = await import('@/lib/supabase');
       vi.mocked(createSupabaseClient).mockResolvedValue(mockSupabase);
 
       await menuService.getMenuItems('venue-1');
@@ -81,7 +81,7 @@ describe('MenuService', () => {
     it('should include unavailable items when requested', async () => {
       mockSupabase.order.mockResolvedValue({ data: [], error: null });
 
-      const { createSupabaseClient } = await import('@/lib/supabase/unified-client');
+      const { createSupabaseClient } = await import('@/lib/supabase');
       vi.mocked(createSupabaseClient).mockResolvedValue(mockSupabase);
 
       await menuService.getMenuItems('venue-1', { includeUnavailable: true });
@@ -93,7 +93,7 @@ describe('MenuService', () => {
     it('should filter by category when specified', async () => {
       mockSupabase.order.mockResolvedValue({ data: [], error: null });
 
-      const { createSupabaseClient } = await import('@/lib/supabase/unified-client');
+      const { createSupabaseClient } = await import('@/lib/supabase');
       vi.mocked(createSupabaseClient).mockResolvedValue(mockSupabase);
 
       await menuService.getMenuItems('venue-1', { category: 'Mains' });
@@ -105,7 +105,7 @@ describe('MenuService', () => {
       const mockError = new Error('Database error');
       mockSupabase.order.mockResolvedValue({ data: null, error: mockError });
 
-      const { createSupabaseClient } = await import('@/lib/supabase/unified-client');
+      const { createSupabaseClient } = await import('@/lib/supabase');
       vi.mocked(createSupabaseClient).mockResolvedValue(mockSupabase);
 
       await expect(menuService.getMenuItems('venue-1')).rejects.toThrow('Database error');
@@ -130,7 +130,7 @@ describe('MenuService', () => {
 
       mockSupabase.single.mockResolvedValue({ data: mockItem, error: null });
 
-      const { createSupabaseClient } = await import('@/lib/supabase/unified-client');
+      const { createSupabaseClient } = await import('@/lib/supabase');
       vi.mocked(createSupabaseClient).mockResolvedValue(mockSupabase);
 
       const item = await menuService.createMenuItem('venue-1', itemData);
@@ -176,7 +176,7 @@ describe('MenuService', () => {
 
       mockSupabase.single.mockResolvedValue({ data: mockItem, error: null });
 
-      const { createSupabaseClient } = await import('@/lib/supabase/unified-client');
+      const { createSupabaseClient } = await import('@/lib/supabase');
       vi.mocked(createSupabaseClient).mockResolvedValue(mockSupabase);
 
       const item = await menuService.updateMenuItem('item-1', 'venue-1', updates);
@@ -190,7 +190,7 @@ describe('MenuService', () => {
     it('should throw error if item not found', async () => {
       mockSupabase.single.mockResolvedValue({ data: null, error: { message: 'Not found' } });
 
-      const { createSupabaseClient } = await import('@/lib/supabase/unified-client');
+      const { createSupabaseClient } = await import('@/lib/supabase');
       vi.mocked(createSupabaseClient).mockResolvedValue(mockSupabase);
 
       await expect(
@@ -203,7 +203,7 @@ describe('MenuService', () => {
     it('should delete a menu item', async () => {
       mockSupabase.eq.mockResolvedValue({ error: null });
 
-      const { createSupabaseClient } = await import('@/lib/supabase/unified-client');
+      const { createSupabaseClient } = await import('@/lib/supabase');
       vi.mocked(createSupabaseClient).mockResolvedValue(mockSupabase);
 
       await menuService.deleteMenuItem('item-1', 'venue-1');
@@ -216,7 +216,7 @@ describe('MenuService', () => {
     it('should throw error if deletion fails', async () => {
       mockSupabase.eq.mockResolvedValue({ error: { message: 'Deletion failed' } });
 
-      const { createSupabaseClient } = await import('@/lib/supabase/unified-client');
+      const { createSupabaseClient } = await import('@/lib/supabase');
       vi.mocked(createSupabaseClient).mockResolvedValue(mockSupabase);
 
       await expect(

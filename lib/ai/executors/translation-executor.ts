@@ -1,4 +1,4 @@
-import { createClient } from "@/lib/supabase/server";
+import { createClient } from "@/lib/supabase";
 import { aiLogger as logger } from '@/lib/logger';
 import { AIPreviewDiff, AIExecutionResult, AIAssistantError } from "@/types/ai-assistant";
 

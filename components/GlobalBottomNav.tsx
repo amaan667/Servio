@@ -10,7 +10,7 @@ import {
   LayoutDashboard
 } from 'lucide-react';
 import { useIsMobile } from '@/hooks/use-mobile';
-import { createClient } from '@/lib/supabase/client';
+import { createClient } from '@/lib/supabase';
 
 interface GlobalBottomNavProps {
   venueId?: string;

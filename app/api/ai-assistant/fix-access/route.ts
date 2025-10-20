@@ -2,7 +2,7 @@
 // Ensures user has proper venue role for AI assistant access
 
 import { NextRequest, NextResponse } from "next/server";
-import { createClient } from "@/lib/supabase/server";
+import { createClient } from "@/lib/supabase";
 import { z } from "zod";
 import { apiLogger, logger } from '@/lib/logger';
 

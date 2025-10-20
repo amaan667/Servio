@@ -1,6 +1,6 @@
 import VenueSettingsClient from './VenueSettingsClient';
 import RoleBasedNavigation from '@/components/RoleBasedNavigation';
-import { createClient } from '@/lib/supabase/server';
+import { createClient } from '@/lib/supabase';
 import { redirect } from 'next/navigation';
 
 export default async function VenueSettings({ params }: { params: Promise<{ venueId: string }> }) {

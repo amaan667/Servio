@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { useRouter } from 'next/navigation';
-import { createClient } from '@/lib/supabase/client';
+import { createClient } from '@/lib/supabase';
 import { toast } from '@/hooks/use-toast';
 import { User } from './useVenueSettings';
 
@@ -48,7 +48,7 @@ export function useAccountDeletion(user: User) {
       }
       
       try {
-        const { clearAuthStorage } = await import('@/lib/supabase/client');
+        const { clearAuthStorage } = await import('@/lib/supabase');
         clearAuthStorage();
       } catch (error) {
         console.error('Clear storage error:', error);

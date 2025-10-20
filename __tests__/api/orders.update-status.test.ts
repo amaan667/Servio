@@ -8,7 +8,7 @@ import { callRoute } from '../../test/utils/next-api';
 import { POST as updateOrderStatus } from '@/app/api/orders/update-status/route';
 
 // Mock Supabase
-vi.mock('@/lib/supabase/server', () => ({
+vi.mock('@/lib/supabase', () => ({
   createClient: vi.fn(),
   createAdminClient: vi.fn(),
   getAuthenticatedUser: vi.fn(),

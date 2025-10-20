@@ -1,6 +1,6 @@
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { useEffect } from 'react';
-import { createClient } from '@/lib/supabase/client';
+import { createClient } from '@/lib/supabase';
 import { todayWindowForTZ } from '@/lib/time';
 import { logger } from '@/lib/logger';
 

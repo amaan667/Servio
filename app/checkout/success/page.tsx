@@ -7,7 +7,7 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { CheckCircle, Clock, Calendar } from "lucide-react";
 import { useAuth } from "@/app/auth/AuthProvider";
-import { createClient } from "@/lib/supabase/client";
+import { createClient } from "@/lib/supabase";
 
 
 export default function CheckoutSuccessPage() {

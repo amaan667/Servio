@@ -6,7 +6,7 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import UnifiedFeedbackForm from "@/components/UnifiedFeedbackForm";
-import { createClient } from '@/lib/supabase/client';
+import { createClient } from '@/lib/supabase';
 
 
 interface OrderSummaryProps {

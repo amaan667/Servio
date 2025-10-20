@@ -3,7 +3,7 @@ import Stripe from 'stripe';
 import { ENV } from '@/lib/env';
 import { v4 as uuidv4 } from 'uuid';
 import { stripe } from '@/lib/stripe-client';
-import { createAdminClient } from '@/lib/supabase/server';
+import { createAdminClient } from '@/lib/supabase';
 import { logger } from '@/lib/logger';
 
 interface CreateOrderRequest {

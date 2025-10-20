@@ -1,7 +1,7 @@
 export const dynamic = 'force-dynamic';
 
 import { redirect } from 'next/navigation';
-import { createClient } from '@/lib/supabase/server';
+import { createClient } from '@/lib/supabase';
 import DashboardClient from './page.client.modern';
 import { todayWindowForTZ } from '@/lib/time';
 

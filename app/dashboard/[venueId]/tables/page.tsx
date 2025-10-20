@@ -1,7 +1,7 @@
 import { Suspense } from 'react';
 import dynamicImport from 'next/dynamic';
 import RoleBasedNavigation from '@/components/RoleBasedNavigation';
-import { createClient } from '@/lib/supabase/server';
+import { createClient } from '@/lib/supabase';
 import { redirect } from 'next/navigation';
 
 // Lazy load the heavy table management component

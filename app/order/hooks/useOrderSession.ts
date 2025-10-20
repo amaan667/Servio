@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
-import { supabase } from '@/lib/supabase/client';
+import { supabase } from '@/lib/supabase';
 import { CustomerInfo, OrderParams } from '../types';
 
 export function useOrderSession(orderParams: OrderParams) {

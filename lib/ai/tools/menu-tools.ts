@@ -1,7 +1,7 @@
 // Servio AI Assistant - Menu Tools
 // Handles menu-related operations
 
-import { createClient } from "@/lib/supabase/server";
+import { createClient } from "@/lib/supabase";
 import { aiLogger } from '@/lib/logger';
 import {
   MenuUpdatePricesParams,

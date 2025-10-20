@@ -2,7 +2,7 @@
 
 import { useRouter } from 'next/navigation';
 import { useState } from 'react';
-import { supabaseBrowser } from '@/lib/supabase/browser';
+import { supabaseBrowser } from '@/lib/supabase';
 import { getAuthRedirectUrl } from '@/lib/auth';
 import SignUpForm from './signup-form';
 

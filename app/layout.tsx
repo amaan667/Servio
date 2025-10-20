@@ -3,7 +3,7 @@ import type { Metadata } from "next";
 import { Inter } from "next/font/google";
 import "./globals.css";
 import { cookies } from 'next/headers';
-import { createServerSupabase } from '@/lib/supabase/server';
+import { createServerSupabase } from '@/lib/supabase';
 import { hasSupabaseAuthCookies } from '@/lib/auth/utils';
 import AuthProvider from '@/app/auth/AuthProvider';
 import Providers from "./providers";

@@ -6,7 +6,7 @@ import { Button } from '@/components/ui/button';
 import { Textarea } from '@/components/ui/textarea';
 import { Badge } from '@/components/ui/badge';
 import { Star, MessageSquare, Send, CheckCircle } from 'lucide-react';
-import { createClient } from '@/lib/supabase/client';
+import { createClient } from '@/lib/supabase';
 
 
 interface CustomerFeedbackFormProps {

@@ -26,7 +26,7 @@ import {
   Store,
   Settings
 } from "lucide-react";
-import { createClient } from "@/lib/supabase/client";
+import { createClient } from "@/lib/supabase";
 import { toast } from "@/hooks/use-toast";
 import { useRouter } from "next/navigation";
 

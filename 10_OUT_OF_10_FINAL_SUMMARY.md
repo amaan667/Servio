@@ -128,7 +128,7 @@
 
 ### **1. Supabase Client**
 ```typescript
-import { createSupabaseClient } from '@/lib/supabase/unified-client';
+import { createSupabaseClient } from '@/lib/supabase';
 
 // Browser context
 const client = await createSupabaseClient('browser');

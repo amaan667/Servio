@@ -1,5 +1,5 @@
 import { useState, useEffect, useRef } from "react";
-import { createClient } from "@/lib/supabase/client";
+import { createClient } from "@/lib/supabase";
 import { todayWindowForTZ } from "@/lib/time";
 import { Order } from "../types";
 

@@ -1,6 +1,6 @@
 import { NextResponse } from 'next/server';
-import { createClient, createAdminClient } from '@/lib/supabase/server';
-import { getAuthenticatedUser } from '@/lib/supabase/server';
+import { createClient, createAdminClient } from '@/lib/supabase';
+import { getAuthenticatedUser } from '@/lib/supabase';
 import { enforceResourceLimit } from '@/lib/enforce-tier-limits';
 import { logger } from '@/lib/logger';
 

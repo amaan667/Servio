@@ -2,7 +2,7 @@
 
 import { usePathname } from 'next/navigation';
 import GlobalBottomNav from './GlobalBottomNav';
-import { createClient } from '@/lib/supabase/client';
+import { createClient } from '@/lib/supabase';
 import { useEffect, useState } from 'react';
 
 

@@ -8,7 +8,7 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Upload, Plus, ArrowRight, Sparkles } from 'lucide-react';
 import OnboardingProgress from '@/components/onboarding-progress';
-import { createClient } from '@/lib/supabase/client';
+import { createClient } from '@/lib/supabase';
 import { toast } from '@/hooks/use-toast';
 
 

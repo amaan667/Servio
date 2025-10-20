@@ -8,8 +8,8 @@ import { renderHook, waitFor } from '@testing-library/react';
 import { useMenuItems } from '@/hooks/useMenuItems';
 
 // Mock Supabase client
-vi.mock('@/lib/supabase/client', () => ({
-  createClient: vi.fn(),
+vi.mock('@/lib/supabase', () => ({
+  supabaseBrowser: vi.fn(),
 }));
 
 // Mock logger
@@ -62,8 +62,8 @@ describe('useMenuItems', () => {
       })),
     };
 
-    const { createClient } = await import('@/lib/supabase/client');
-    vi.mocked(createClient).mockReturnValue(mockSupabase as any);
+    const { supabaseBrowser } = await import('@/lib/supabase');
+    vi.mocked(supabaseBrowser).mockReturnValue(mockSupabase as any);
 
     const { result } = renderHook(() => useMenuItems('venue-123'));
 
@@ -88,8 +88,8 @@ describe('useMenuItems', () => {
       })),
     };
 
-    const { createClient } = await import('@/lib/supabase/client');
-    vi.mocked(createClient).mockReturnValue(mockSupabase as any);
+    const { supabaseBrowser } = await import('@/lib/supabase');
+    vi.mocked(supabaseBrowser).mockReturnValue(mockSupabase as any);
 
     const { result } = renderHook(() => useMenuItems('venue-123'));
 
@@ -135,8 +135,8 @@ describe('useMenuItems', () => {
       }),
     };
 
-    const { createClient } = await import('@/lib/supabase/client');
-    vi.mocked(createClient).mockReturnValue(mockSupabase as any);
+    const { supabaseBrowser } = await import('@/lib/supabase');
+    vi.mocked(supabaseBrowser).mockReturnValue(mockSupabase as any);
 
     const { result } = renderHook(() => useMenuItems('venue-123'));
 
@@ -173,8 +173,8 @@ describe('useMenuItems', () => {
       })),
     };
 
-    const { createClient } = await import('@/lib/supabase/client');
-    vi.mocked(createClient).mockReturnValue(mockSupabase as any);
+    const { supabaseBrowser } = await import('@/lib/supabase');
+    vi.mocked(supabaseBrowser).mockReturnValue(mockSupabase as any);
 
     const { result } = renderHook(() => useMenuItems('venue-123'));
 
@@ -204,8 +204,8 @@ describe('useMenuItems', () => {
       })),
     };
 
-    const { createClient } = await import('@/lib/supabase/client');
-    vi.mocked(createClient).mockReturnValue(mockSupabase as any);
+    const { supabaseBrowser } = await import('@/lib/supabase');
+    vi.mocked(supabaseBrowser).mockReturnValue(mockSupabase as any);
 
     const { result } = renderHook(() => useMenuItems('venue-123'));
 
@@ -242,8 +242,8 @@ describe('useMenuItems', () => {
       })),
     };
 
-    const { createClient } = await import('@/lib/supabase/client');
-    vi.mocked(createClient).mockReturnValue(mockSupabase as any);
+    const { supabaseBrowser } = await import('@/lib/supabase');
+    vi.mocked(supabaseBrowser).mockReturnValue(mockSupabase as any);
 
     const { result } = renderHook(() => useMenuItems('venue-123'));
 

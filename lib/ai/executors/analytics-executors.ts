@@ -1,4 +1,4 @@
-import { createClient } from "@/lib/supabase/server";
+import { createClient } from "@/lib/supabase";
 import { AIPreviewDiff, AIExecutionResult, AIAssistantError } from "@/types/ai-assistant";
 
 export async function executeAnalyticsGetInsights(

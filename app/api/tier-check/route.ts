@@ -1,6 +1,6 @@
 // Tier Check API - Check if user can perform an action
 import { NextRequest, NextResponse } from "next/server";
-import { createClient } from "@/lib/supabase/server";
+import { createClient } from "@/lib/supabase";
 import { checkLimit, checkFeatureAccess, getTierLimits } from "@/lib/tier-restrictions";
 import { logger } from '@/lib/logger';
 

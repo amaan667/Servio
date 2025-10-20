@@ -1,6 +1,6 @@
 import BillingClient from './billing-client';
 import RoleBasedNavigation from '@/components/RoleBasedNavigation';
-import { createClient } from '@/lib/supabase/server';
+import { createClient } from '@/lib/supabase';
 import { redirect } from 'next/navigation';
 
 export default async function BillingPage({ params }: { params: Promise<{ venueId: string }> }) {

@@ -9,7 +9,7 @@
  * - premium: Unlimited tables/venues, KDS, Inventory, Staff management
  */
 
-import { createClient } from '@/lib/supabase/server';
+import { createClient } from '@/lib/supabase';
 import { logger } from '@/lib/logger';
 
 export type SubscriptionTier = 'basic' | 'standard' | 'premium';

@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 // Deployment trigger
-import { createClient } from '@/lib/supabase/server';
+import { createClient } from '@/lib/supabase';
 import { logger } from '@/lib/logger';
 
 export async function POST(request: NextRequest) {

@@ -1,6 +1,6 @@
 import { Suspense } from 'react';
 import InvitationAcceptanceClient from './InvitationAcceptanceClient';
-import { createClient } from '@/lib/supabase/server';
+import { createClient } from '@/lib/supabase';
 import { redirect } from 'next/navigation';
 
 interface InvitationPageProps {

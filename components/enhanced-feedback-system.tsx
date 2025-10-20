@@ -24,7 +24,7 @@ import {
   Plus,
   MessageSquare
 } from "lucide-react";
-import { createClient } from "@/lib/supabase/client";
+import { createClient } from "@/lib/supabase";
 import { logger } from "@/lib/logger";
 import QuestionsClient from "@/app/dashboard/[venueId]/feedback/QuestionsClient";
 

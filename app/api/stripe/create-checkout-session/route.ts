@@ -1,7 +1,7 @@
 // Stripe Checkout Session - Create subscription checkout
 import { NextRequest, NextResponse } from "next/server";
 import Stripe from "stripe";
-import { createClient } from "@/lib/supabase/server";
+import { createClient } from "@/lib/supabase";
 import { stripe } from "@/lib/stripe-client";
 import { apiLogger as logger } from '@/lib/logger';
 

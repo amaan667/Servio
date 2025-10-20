@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { createClient } from '@/lib/supabase/server';
+import { createClient } from '@/lib/supabase';
 import { getOpenAI } from '@/lib/openai';
 import { isMenuLike } from '@/lib/menuLike';
 import { tryParseMenuWithGPT } from '@/lib/safeParse';

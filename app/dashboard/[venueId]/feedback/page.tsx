@@ -1,6 +1,6 @@
 import SimpleFeedbackClient from './SimpleFeedbackClient';
 import RoleBasedNavigation from '@/components/RoleBasedNavigation';
-import { createClient } from '@/lib/supabase/server';
+import { createClient } from '@/lib/supabase';
 import { redirect } from 'next/navigation';
 
 export default async function FeedbackPage({ params }: { params: Promise<{ venueId: string }> }) {

@@ -15,6 +15,7 @@ import VenueSwitcherPopup from '@/components/venue-switcher-popup';
 // Hooks
 import { useDashboardData } from './hooks/useDashboardData';
 import { useDashboardRealtime } from './hooks/useDashboardRealtime';
+import { useAnalyticsData } from './hooks/useAnalyticsData';
 
 // New Modern Components
 import { StatusBanner } from './components/StatusBanner';
@@ -109,6 +110,9 @@ const DashboardClient = React.memo(function DashboardClient({
     venue: dashboardData.venue
   });
 
+  // Fetch live analytics data for charts
+  const analyticsData = useAnalyticsData(venueId, venueTz);
+
   const handleRefresh = useCallback(async () => {
     console.log('[DASHBOARD DEBUG] handleRefresh called');
     await dashboardData.refreshCounts();
@@ -131,33 +135,29 @@ const DashboardClient = React.memo(function DashboardClient({
     }
   }, [handleRefresh]);
 
-  // Mock data for charts (replace with real data from API)
-  const ordersByHour = useMemo(() => [
-    { hour: '9AM', orders: 5 },
-    { hour: '10AM', orders: 8 },
-    { hour: '11AM', orders: 12 },
-    { hour: '12PM', orders: 20 },
-    { hour: '1PM', orders: 18 },
-    { hour: '2PM', orders: 15 },
-    { hour: '3PM', orders: 10 },
-    { hour: '4PM', orders: 8 },
-  ], []);
+  // Use live analytics data or fallback to empty data
+  const ordersByHour = useMemo(() => {
+    if (analyticsData.data?.ordersByHour && analyticsData.data.ordersByHour.length > 0) {
+      return analyticsData.data.ordersByHour;
+    }
+    // Fallback: return empty data for all hours
+    return Array.from({ length: 24 }, (_, i) => ({
+      hour: `${i}:00`,
+      orders: 0,
+    }));
+  }, [analyticsData.data?.ordersByHour]);
 
   const tableUtilization = useMemo(() => {
     if (!dashboardData.counts.tables_set_up) return 0;
     return Math.round((dashboardData.counts.tables_in_use / dashboardData.counts.tables_set_up) * 100);
   }, [dashboardData.counts]);
 
-  const revenueByCategory = useMemo(() => [
-    { name: 'Food', value: 450, color: '#3b82f6' },
-    { name: 'Drinks', value: 230, color: '#10b981' },
-    { name: 'Desserts', value: 120, color: '#f59e0b' },
-  ], []);
-
-  const topSellingItem = useMemo(() => ({
-    name: 'Margherita Pizza',
-    price: 13.50
-  }), []);
+  const revenueByCategory = useMemo(() => {
+    if (analyticsData.data?.revenueByCategory && analyticsData.data.revenueByCategory.length > 0) {
+      return analyticsData.data.revenueByCategory;
+    }
+    return [];
+  }, [analyticsData.data?.revenueByCategory]);
 
   console.log('[DASHBOARD DEBUG] Checking loading state:', dashboardData.loading);
 
@@ -214,7 +214,10 @@ const DashboardClient = React.memo(function DashboardClient({
                 icon={Clock}
                 iconColor="text-blue-600"
                 iconBgColor="bg-blue-100"
-                trend={{ value: 12, label: 'vs yesterday' }}
+                trend={analyticsData.data?.yesterdayComparison ? {
+                  value: dashboardData.counts.today_orders_count - analyticsData.data.yesterdayComparison.orders,
+                  label: 'vs yesterday'
+                } : undefined}
                 tooltip="View all orders placed today"
               />
             </Link>
@@ -227,7 +230,10 @@ const DashboardClient = React.memo(function DashboardClient({
                   icon={TrendingUp}
                   iconColor="text-green-600"
                   iconBgColor="bg-green-100"
-                  trend={{ value: 8, label: 'vs yesterday' }}
+                  trend={analyticsData.data?.yesterdayComparison ? {
+                    value: dashboardData.stats.revenue - analyticsData.data.yesterdayComparison.revenue,
+                    label: 'vs yesterday'
+                  } : undefined}
                   tooltip="View detailed revenue analytics"
                 />
               </Link>
@@ -266,7 +272,8 @@ const DashboardClient = React.memo(function DashboardClient({
               menuItems: dashboardData.stats.menuItems,
               todayOrdersCount: dashboardData.counts.today_orders_count
             }}
-            topSellingItem={topSellingItem}
+            topSellingItems={analyticsData.data?.topSellingItems}
+            yesterdayComparison={analyticsData.data?.yesterdayComparison}
           />
 
           {/* Today at a Glance */}
@@ -275,6 +282,7 @@ const DashboardClient = React.memo(function DashboardClient({
               ordersByHour={ordersByHour}
               tableUtilization={tableUtilization}
               revenueByCategory={revenueByCategory}
+              loading={analyticsData.loading}
             />
           </Suspense>
 

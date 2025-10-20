@@ -6,7 +6,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { Button } from '@/components/ui/button';
 import { ArrowRight, QrCode, Download } from 'lucide-react';
 import OnboardingProgress from '@/components/onboarding-progress';
-import { createClient } from '@/lib/supabase/client';
+import { createClient } from '@/lib/supabase';
 import { toast } from '@/hooks/use-toast';
 import QRCode from 'qrcode';
 

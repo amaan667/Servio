@@ -1,5 +1,5 @@
 import { NextResponse } from 'next/server';
-import { createClient, getAuthenticatedUser } from '@/lib/supabase/server';
+import { createClient, getAuthenticatedUser } from '@/lib/supabase';
 import { liveOrdersWindow, earlierTodayWindow, historyWindow } from '@/lib/dates';
 import { cache } from '@/lib/cache';
 import { apiLogger, logger } from '@/lib/logger';

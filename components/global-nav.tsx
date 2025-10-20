@@ -4,7 +4,7 @@ import { useState, useEffect } from "react";
 import Link from "next/link";
 import Image from "next/image";
 import { Button } from "@/components/ui/button";
-import { createClient } from "@/lib/supabase/client";
+import { createClient } from "@/lib/supabase";
 import { Menu, X, Settings, Home, LayoutDashboard, LogOut } from "lucide-react";
 import { useAuth } from "@/app/auth/AuthProvider";
 import { useRouter, usePathname } from "next/navigation";

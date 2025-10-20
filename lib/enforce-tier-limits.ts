@@ -1,5 +1,5 @@
 // Middleware helpers for enforcing tier limits in API routes
-import { createClient } from "@/lib/supabase/server";
+import { createClient } from "@/lib/supabase";
 import { NextResponse } from "next/server";
 import { checkLimit, checkFeatureAccess } from "./tier-restrictions";
 

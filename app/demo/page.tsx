@@ -9,7 +9,7 @@ import { User, Briefcase, ArrowRight, RefreshCw } from 'lucide-react';
 import Link from 'next/link';
 import dynamic from 'next/dynamic';
 import { demoMenuItems } from '@/data/demoMenuItems';
-import { createClient } from '@/lib/supabase/client';
+import { createClient } from '@/lib/supabase';
 
 
 // Dynamically import heavy components to avoid hydration issues

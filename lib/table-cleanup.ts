@@ -3,7 +3,7 @@
  * Ensures consistent table state management when orders are completed
  */
 
-import { createClient } from '@/lib/supabase/server';
+import { createClient } from '@/lib/supabase';
 import { logger } from '@/lib/logger';
 
 export interface TableCleanupParams {

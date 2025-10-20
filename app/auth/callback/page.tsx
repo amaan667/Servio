@@ -4,7 +4,7 @@ import { useEffect, useState, useCallback, Suspense } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
 
 // Import supabase browser directly to avoid lazy loading issues
-import { supabaseBrowser, clearSupabaseAuth } from '@/lib/supabase/browser';
+import { supabaseBrowser, clearSupabaseAuth } from '@/lib/supabase';
 
 function CallbackContent() {
   const router = useRouter();

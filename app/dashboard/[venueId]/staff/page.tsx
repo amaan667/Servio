@@ -1,6 +1,6 @@
 import InvitationBasedStaffManagement from '@/components/staff/InvitationBasedStaffManagement';
 import RoleBasedNavigation from '@/components/RoleBasedNavigation';
-import { createClient } from '@/lib/supabase/server';
+import { createClient } from '@/lib/supabase';
 import { redirect } from 'next/navigation';
 
 export default async function StaffPage({ params }: { params: Promise<{ venueId: string }> }) {

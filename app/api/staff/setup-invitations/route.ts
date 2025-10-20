@@ -2,7 +2,7 @@
 // Creates the required database tables for staff invitations
 
 import { NextRequest, NextResponse } from "next/server";
-import { createClient } from "@/lib/supabase/server";
+import { createClient } from "@/lib/supabase";
 import { apiLogger, logger } from '@/lib/logger';
 
 export async function POST(request: NextRequest) {

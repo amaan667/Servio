@@ -20,7 +20,7 @@ import {
   Timer,
   Zap
 } from "lucide-react";
-import { createClient } from "@/lib/supabase/client";
+import { createClient } from "@/lib/supabase";
 import { logger } from "@/lib/logger";
 
 interface OrderItem {

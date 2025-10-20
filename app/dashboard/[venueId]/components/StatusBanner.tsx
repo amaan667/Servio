@@ -54,7 +54,12 @@ export function StatusBanner({
   return (
     <div className={`${getStatusColor()} border rounded-lg px-4 py-3 flex items-center justify-between gap-4 transition-all duration-300`}>
       <div className="flex items-center gap-3 flex-1 min-w-0">
-        {getStatusIcon()}
+        <div className="relative">
+          {getStatusIcon()}
+          {isOnline && (
+            <span className="absolute -top-0.5 -right-0.5 w-2 h-2 bg-green-500 rounded-full animate-pulse" />
+          )}
+        </div>
         <div className="flex-1 min-w-0">
           <p className="text-sm font-medium truncate">{getStatusText()}</p>
           {isOffline && (

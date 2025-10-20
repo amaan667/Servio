@@ -1,5 +1,5 @@
 import { redirect } from 'next/navigation';
-import { getAuthenticatedUser } from '@/lib/supabase/server';
+import { getAuthenticatedUser } from '@/lib/supabase';
 import { logger } from '@/lib/logger';
 
 /**

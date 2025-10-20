@@ -1,5 +1,5 @@
 import { NextResponse } from 'next/server';
-import { createServerSupabase } from '@/lib/supabase/server';
+import { createServerSupabase } from '@/lib/supabase';
 import { apiLogger, logger } from '@/lib/logger';
 
 // PATCH - Bulk update multiple tickets (e.g., bump all ready tickets for an order)

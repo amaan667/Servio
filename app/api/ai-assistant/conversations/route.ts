@@ -2,7 +2,7 @@
 // Handles creating and listing chat conversations
 
 import { NextRequest, NextResponse } from "next/server";
-import { createSupabaseClient } from "@/lib/supabase/unified-client";
+import { createSupabaseClient } from "@/lib/supabase";
 import { z } from "zod";
 import { apiLogger, logger } from '@/lib/logger';
 

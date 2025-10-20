@@ -1,4 +1,4 @@
-import { createClient } from "@/lib/supabase/client";
+import { createClient } from "@/lib/supabase";
 import { Order } from "../types";
 import { TERMINAL_STATUSES } from "../constants";
 

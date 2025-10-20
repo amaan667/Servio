@@ -1,5 +1,5 @@
 'use client'
-import { supabase } from '@/lib/supabase/client'
+import { supabase } from '@/lib/supabase'
 import { getAuthRedirectUrl } from '@/lib/auth'
 
 export function GoogleButton() {

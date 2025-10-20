@@ -1,5 +1,5 @@
 import { useEffect } from 'react';
-import { createClient } from '@/lib/supabase/client';
+import { createClient } from '@/lib/supabase';
 
 interface UseDashboardRealtimeProps {
   venueId: string;

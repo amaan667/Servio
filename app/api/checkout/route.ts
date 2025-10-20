@@ -1,6 +1,6 @@
 import { NextResponse } from "next/server";
 import Stripe from "stripe";
-import { createAdminClient } from "@/lib/supabase/server";
+import { createAdminClient } from "@/lib/supabase";
 import { stripe } from "@/lib/stripe-client";
 import { apiLogger, logger } from '@/lib/logger';
 

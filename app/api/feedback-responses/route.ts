@@ -1,5 +1,5 @@
 import { NextResponse } from 'next/server';
-import { createAdminClient } from '@/lib/supabase/server';
+import { createAdminClient } from '@/lib/supabase';
 import type { FeedbackAnswer } from '@/types/feedback';
 import { logger } from '@/lib/logger';
 

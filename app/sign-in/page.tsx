@@ -2,7 +2,7 @@
 
 import { useEffect, Suspense, useState } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
-import { supabaseBrowser } from '@/lib/supabase/browser';
+import { supabaseBrowser } from '@/lib/supabase';
 import { getAuthRedirectUrl } from '@/lib/auth';
 import { useAuth } from '@/app/auth/AuthProvider';
 import SignInForm from './signin-form';

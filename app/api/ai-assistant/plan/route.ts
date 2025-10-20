@@ -2,7 +2,7 @@
 // Generates an execution plan from user's natural language request
 
 import { NextRequest, NextResponse } from "next/server";
-import { createClient } from "@/lib/supabase/server";
+import { createClient } from "@/lib/supabase";
 import { planAssistantAction } from "@/lib/ai/assistant-llm";
 import {
   getAssistantContext,

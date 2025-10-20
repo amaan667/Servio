@@ -3,7 +3,7 @@
 
 import { NextRequest, NextResponse } from "next/server";
 import Stripe from "stripe";
-import { createAdminClient } from "@/lib/supabase/server";
+import { createAdminClient } from "@/lib/supabase";
 import { stripe } from "@/lib/stripe-client";
 import { logger } from '@/lib/logger';
 

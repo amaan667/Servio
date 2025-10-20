@@ -36,7 +36,7 @@ import { StatusPill } from './StatusPill';
 import { useCloseTable, TableGridItem } from '@/hooks/useTableReservations';
 import { useTableActions } from '@/hooks/useTableActions';
 import { GroupSession } from '@/hooks/useGroupSessions';
-import { createClient } from '@/lib/supabase/client';
+import { createClient } from '@/lib/supabase';
 import { TableSelectionDialog } from './TableSelectionDialog';
 import { ReservationDialog } from './ReservationDialog';
 

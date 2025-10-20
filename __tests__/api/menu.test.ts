@@ -8,7 +8,7 @@ import { callRoute } from '../../test/utils/next-api';
 import { GET as getMenu } from '@/app/api/menu/[venueId]/route';
 
 // Mock Supabase
-vi.mock('@/lib/supabase/server', () => ({
+vi.mock('@/lib/supabase', () => ({
   createClient: vi.fn(),
   createAdminClient: vi.fn(),
 }));

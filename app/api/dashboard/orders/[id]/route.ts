@@ -1,5 +1,5 @@
 import { NextResponse } from 'next/server';
-import { createClient } from '@/lib/supabase/server';
+import { createClient } from '@/lib/supabase';
 import { cleanupTableOnOrderCompletion } from '@/lib/table-cleanup';
 import { apiLogger, logger } from '@/lib/logger';
 

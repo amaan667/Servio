@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { createClient, createAdminClient } from '@/lib/supabase/server';
+import { createClient, createAdminClient } from '@/lib/supabase';
 
 // GET /api/staff/invitations/[token] - Get invitation details by token
 export async function GET(

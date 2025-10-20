@@ -1,6 +1,6 @@
 // API endpoint to manually refresh subscription status
 import { NextRequest, NextResponse } from "next/server";
-import { createClient } from "@/lib/supabase/server";
+import { createClient } from "@/lib/supabase";
 import { stripe } from "@/lib/stripe-client";
 import { apiLogger, logger } from '@/lib/logger';
 

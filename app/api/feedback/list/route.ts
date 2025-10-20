@@ -1,7 +1,7 @@
 import { NextResponse } from 'next/server';
 import { cookies } from 'next/headers';
 import { createServerClient } from '@supabase/ssr';
-import { cookieAdapter } from '@/lib/server/supabase';
+import { cookieAdapter } from '@/lib/supabase';
 import { logger } from '@/lib/logger';
 
 export const runtime = 'nodejs';

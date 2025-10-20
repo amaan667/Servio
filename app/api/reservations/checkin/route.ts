@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { createClient, getAuthenticatedUser } from '@/lib/supabase/server';
+import { createClient, getAuthenticatedUser } from '@/lib/supabase';
 import { logger } from '@/lib/logger';
 
 export const runtime = 'nodejs';

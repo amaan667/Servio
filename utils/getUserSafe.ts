@@ -1,4 +1,4 @@
-import { createClient } from '@/lib/supabase/server'
+import { createClient } from '@/lib/supabase'
 import { hasServerAuthCookie } from '@/lib/server-utils'
 
 export async function getUserSafe(context?: string) {

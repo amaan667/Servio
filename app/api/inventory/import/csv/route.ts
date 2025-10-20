@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { createAdminClient } from '@/lib/supabase/server';
+import { createAdminClient } from '@/lib/supabase';
 import type { IngredientUnit } from '@/types/inventory';
 import { logger } from '@/lib/logger';
 

@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { createClient } from '@/lib/supabase/server';
+import { createClient } from '@/lib/supabase';
 import { getUserSafe } from '@/utils/getUserSafe';
 
 // GET /api/staff/invitations - List invitations for a venue

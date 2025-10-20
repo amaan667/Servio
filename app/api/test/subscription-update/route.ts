@@ -1,6 +1,6 @@
 // Test API to manually update subscription status
 import { NextRequest, NextResponse } from "next/server";
-import { createClient } from "@/lib/supabase/server";
+import { createClient } from "@/lib/supabase";
 import { apiLogger, logger } from '@/lib/logger';
 
 export async function POST(request: NextRequest) {

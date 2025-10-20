@@ -1,4 +1,4 @@
-import { createClient } from '@/lib/supabase/client'
+import { createClient } from '@/lib/supabase'
 import { useState, useEffect, useCallback, useMemo } from 'react'
 import { logger } from '@/lib/logger';
 

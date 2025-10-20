@@ -25,7 +25,7 @@ export default function SignOutPage() {
         
         // Clear client storage
         try {
-          const { clearAuthStorage } = await import('@/lib/supabase/client');
+          const { clearAuthStorage } = await import('@/lib/supabase');
           clearAuthStorage();
         } catch (error) {
         }

@@ -14,9 +14,9 @@ NC='\033[0m' # No Color
 
 # Step 1: Update Supabase client imports
 echo -e "${BLUE}Step 1: Updating Supabase client imports...${NC}"
-find app components hooks -type f \( -name "*.ts" -o -name "*.tsx" \) -exec sed -i '' 's|from "@/lib/supabase/client"|from "@/lib/supabase/unified-client"|g' {} +
-find app components hooks -type f \( -name "*.ts" -o -name "*.tsx" \) -exec sed -i '' 's|from "@/lib/supabase/browser"|from "@/lib/supabase/unified-client"|g' {} +
-find app components hooks -type f \( -name "*.ts" -o -name "*.tsx" \) -exec sed -i '' 's|from "@/lib/supabase/server"|from "@/lib/supabase/unified-client"|g' {} +
+find app components hooks -type f \( -name "*.ts" -o -name "*.tsx" \) -exec sed -i '' 's|from "@/lib/supabase"|from "@/lib/supabase"|g' {} +
+find app components hooks -type f \( -name "*.ts" -o -name "*.tsx" \) -exec sed -i '' 's|from "@/lib/supabase"|from "@/lib/supabase"|g' {} +
+find app components hooks -type f \( -name "*.ts" -o -name "*.tsx" \) -exec sed -i '' 's|from "@/lib/supabase"|from "@/lib/supabase"|g' {} +
 echo -e "${GREEN}✅ Updated Supabase client imports${NC}"
 echo ""
 

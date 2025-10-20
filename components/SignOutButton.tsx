@@ -1,5 +1,5 @@
 "use client";
-import { createClient } from "@/lib/supabase/client";
+import { createClient } from "@/lib/supabase";
 import { useRouter } from "next/navigation";
 import { useAuth } from "@/app/auth/AuthProvider";
 
@@ -29,7 +29,7 @@ export function SignOutButton() {
         
         // Clear client-side storage and redirect
         try {
-          const { clearAuthStorage } = await import('@/lib/supabase/client');
+          const { clearAuthStorage } = await import('@/lib/supabase');
           clearAuthStorage();
         } catch (error) {
         }

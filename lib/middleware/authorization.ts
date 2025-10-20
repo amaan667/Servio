@@ -4,7 +4,7 @@
  */
 
 import { NextRequest, NextResponse } from 'next/server';
-import { createSupabaseClient } from '@/lib/supabase/unified-client';
+import { createSupabaseClient } from '@/lib/supabase';
 import { logger } from '@/lib/logger';
 
 export interface Venue {

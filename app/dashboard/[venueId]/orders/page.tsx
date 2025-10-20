@@ -1,6 +1,6 @@
 import OrdersClient from './OrdersClient';
 import RoleBasedNavigation from '@/components/RoleBasedNavigation';
-import { createClient } from '@/lib/supabase/server';
+import { createClient } from '@/lib/supabase';
 import { redirect } from 'next/navigation';
 
 export default async function OrdersPage({ params }: { params: Promise<{ venueId: string }> }) {

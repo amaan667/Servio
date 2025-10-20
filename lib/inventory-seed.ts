@@ -11,7 +11,7 @@
  *   - Recipe mappings for 3 menu items (if they exist)
  */
 
-import { createAdminClient } from '@/lib/supabase/server';
+import { createAdminClient } from '@/lib/supabase';
 import type { CreateIngredientRequest } from '@/types/inventory';
 import { logger } from '@/lib/logger';
 

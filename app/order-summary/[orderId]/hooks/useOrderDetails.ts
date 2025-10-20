@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { createClient } from '@/lib/supabase/client';
+import { createClient } from '@/lib/supabase';
 import { toast } from '@/hooks/use-toast';
 
 export interface OrderItem {

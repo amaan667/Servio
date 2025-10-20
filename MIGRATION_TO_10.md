@@ -58,14 +58,14 @@
 **Before:**
 ```typescript
 // Different imports everywhere
-import { createClient } from '@/lib/supabase/client';
-import { supabaseBrowser } from '@/lib/supabase/browser';
-import { createServerSupabase } from '@/lib/supabase/server';
+import { createClient } from '@/lib/supabase';
+import { supabaseBrowser } from '@/lib/supabase';
+import { createServerSupabase } from '@/lib/supabase';
 ```
 
 **After:**
 ```typescript
-import { createSupabaseClient } from '@/lib/supabase/unified-client';
+import { createSupabaseClient } from '@/lib/supabase';
 
 // Browser context
 const client = await createSupabaseClient('browser');

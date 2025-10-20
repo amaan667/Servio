@@ -1,5 +1,5 @@
 import { NextResponse } from 'next/server';
-import { createAdminClient } from '@/lib/supabase/server';
+import { createAdminClient } from '@/lib/supabase';
 import { logger } from '@/lib/logger';
 
 // GET - List active questions for venue (public endpoint for customers)

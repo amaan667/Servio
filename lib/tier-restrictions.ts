@@ -1,5 +1,5 @@
 // Tier-based feature restrictions
-import { createClient } from "@/lib/supabase/server";
+import { createClient } from "@/lib/supabase";
 
 export interface TierLimits {
   maxTables: number;

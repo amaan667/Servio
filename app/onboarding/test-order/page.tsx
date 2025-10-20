@@ -6,7 +6,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { Button } from '@/components/ui/button';
 import { CheckCircle, ExternalLink, Sparkles, Users } from 'lucide-react';
 import OnboardingProgress from '@/components/onboarding-progress';
-import { createClient } from '@/lib/supabase/client';
+import { createClient } from '@/lib/supabase';
 import Confetti from 'react-confetti';
 import { useWindowSize } from '@/hooks/use-mobile';
 

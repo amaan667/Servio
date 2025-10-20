@@ -4,7 +4,7 @@
  */
 
 import { BaseService } from './BaseService';
-import { createSupabaseClient } from '@/lib/supabase/unified-client';
+import { createSupabaseClient } from '@/lib/supabase';
 
 export interface OrderItem {
   menu_item_id: string;

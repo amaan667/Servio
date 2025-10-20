@@ -28,7 +28,7 @@ import { OrderForCard } from '@/types/orders';
 import { deriveEntityKind, shouldShowUnpaidChip } from '@/lib/orders/entity-types';
 import { OrderStatusChip, PaymentStatusChip } from '@/components/ui/chips';
 import { formatCurrency, formatOrderTime } from '@/lib/orders/mapOrderToCardData';
-import { createClient } from '@/lib/supabase/client';
+import { createClient } from '@/lib/supabase';
 
 
 interface OrderCardProps {

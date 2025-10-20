@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { createAdminClient } from '@/lib/supabase/server';
+import { createAdminClient } from '@/lib/supabase';
 import { parseMenuBulletproof, applyKnownFixes } from '@/lib/improvedMenuParser';
 import { convertPDFToImages } from '@/lib/pdf-to-images';
 import { apiLogger, logger } from '@/lib/logger';

@@ -1,7 +1,7 @@
 'use client';
 
 import { useState, useEffect, useRef } from 'react';
-import { createClient } from '@/lib/supabase/client';
+import { createClient } from '@/lib/supabase';
 import { Button } from '@/components/ui/button';
 import { Plus, Minus, ShoppingCart, X, Search, List, Grid, ZoomIn, ZoomOut } from 'lucide-react';
 import { ItemDetailsModal } from '@/components/ItemDetailsModal';

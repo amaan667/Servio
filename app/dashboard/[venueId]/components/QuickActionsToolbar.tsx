@@ -5,6 +5,12 @@ import Link from 'next/link';
 import { LucideIcon, Plus, Clock, ShoppingBag, QrCode, BarChart, Settings, Users, Package, ChefHat } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { cn } from '@/lib/utils';
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipProvider,
+  TooltipTrigger,
+} from "@/components/ui/tooltip";
 
 interface QuickAction {
   label: string;
@@ -85,27 +91,36 @@ export function QuickActionsToolbar({ venueId, userRole }: QuickActionsToolbarPr
   }
 
   return (
-    <div className="bg-white border-b border-gray-200 sticky top-0 z-40">
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-        <div className="flex items-center gap-2 py-3 overflow-x-auto scrollbar-hide">
-          {actions.map((action) => (
-            <Link key={action.href} href={action.href} className="flex-shrink-0">
-              <Button
-                variant={action.variant || 'outline'}
-                size="sm"
-                className={cn(
-                  'gap-2 transition-all duration-200 hover:scale-105',
-                  action.color || ''
-                )}
-              >
-                <action.icon className="h-4 w-4" />
-                <span className="hidden sm:inline">{action.label}</span>
-              </Button>
-            </Link>
-          ))}
+    <TooltipProvider>
+      <div className="bg-white border-b border-gray-200 sticky top-0 z-40">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+          <div className="flex items-center gap-2 py-3 overflow-x-auto scrollbar-hide">
+            {actions.map((action) => (
+              <Tooltip key={action.href}>
+                <TooltipTrigger asChild>
+                  <Link href={action.href} className="flex-shrink-0">
+                    <Button
+                      variant={action.variant || 'outline'}
+                      size="sm"
+                      className={cn(
+                        'gap-2 transition-all duration-200 hover:scale-105',
+                        action.color || ''
+                      )}
+                    >
+                      <action.icon className="h-4 w-4" />
+                      <span className="hidden sm:inline">{action.label}</span>
+                    </Button>
+                  </Link>
+                </TooltipTrigger>
+                <TooltipContent>
+                  <p>{action.description}</p>
+                </TooltipContent>
+              </Tooltip>
+            ))}
+          </div>
         </div>
       </div>
-    </div>
+    </TooltipProvider>
   );
 }
 

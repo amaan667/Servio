@@ -2,7 +2,7 @@
 // Executes a planned action after user confirmation
 
 import { NextRequest, NextResponse } from "next/server";
-import { createClient } from "@/lib/supabase/server";
+import { createClient } from "@/lib/supabase";
 import { executeTool } from "@/lib/ai/tool-executors";
 import { z } from "zod";
 import { apiLogger, logger } from '@/lib/logger';

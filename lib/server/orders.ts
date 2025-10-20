@@ -1,4 +1,4 @@
-import { createClient } from '@/lib/supabase/server'
+import { createClient } from '@/lib/supabase'
 
 export async function markPaid(orderId: string) {
   const supabase = await createClient()

@@ -7,7 +7,7 @@ import { describe, it, expect, beforeEach, vi } from 'vitest';
 import { OrderService } from '@/lib/services/OrderService';
 
 // Mock Supabase client
-vi.mock('@/lib/supabase/unified-client', () => ({
+vi.mock('@/lib/supabase', () => ({
   createSupabaseClient: vi.fn(),
 }));
 
@@ -60,7 +60,7 @@ describe('OrderService', () => {
 
       mockSupabase.limit.mockResolvedValue({ data: mockOrders, error: null });
 
-      const { createSupabaseClient } = await import('@/lib/supabase/unified-client');
+      const { createSupabaseClient } = await import('@/lib/supabase');
       vi.mocked(createSupabaseClient).mockResolvedValue(mockSupabase);
 
       const orders = await orderService.getOrders('venue-1');
@@ -72,7 +72,7 @@ describe('OrderService', () => {
     it('should filter orders by status', async () => {
       mockSupabase.limit.mockResolvedValue({ data: [], error: null });
 
-      const { createSupabaseClient } = await import('@/lib/supabase/unified-client');
+      const { createSupabaseClient } = await import('@/lib/supabase');
       vi.mocked(createSupabaseClient).mockResolvedValue(mockSupabase);
 
       await orderService.getOrders('venue-1', { status: 'COMPLETED' });
@@ -85,7 +85,7 @@ describe('OrderService', () => {
       const mockError = new Error('Database error');
       mockSupabase.limit.mockResolvedValue({ data: null, error: mockError });
 
-      const { createSupabaseClient } = await import('@/lib/supabase/unified-client');
+      const { createSupabaseClient } = await import('@/lib/supabase');
       vi.mocked(createSupabaseClient).mockResolvedValue(mockSupabase);
 
       await expect(orderService.getOrders('venue-1')).rejects.toThrow('Database error');
@@ -110,7 +110,7 @@ describe('OrderService', () => {
 
       mockSupabase.single.mockResolvedValue({ data: mockOrder, error: null });
 
-      const { createSupabaseClient } = await import('@/lib/supabase/unified-client');
+      const { createSupabaseClient } = await import('@/lib/supabase');
       vi.mocked(createSupabaseClient).mockResolvedValue(mockSupabase);
 
       const order = await orderService.createOrder('venue-1', orderData);
@@ -134,7 +134,7 @@ describe('OrderService', () => {
 
       mockSupabase.single.mockResolvedValue({ data: {}, error: null });
 
-      const { createSupabaseClient } = await import('@/lib/supabase/unified-client');
+      const { createSupabaseClient } = await import('@/lib/supabase');
       vi.mocked(createSupabaseClient).mockResolvedValue(mockSupabase);
 
       await orderService.createOrder('venue-1', orderData);
@@ -166,7 +166,7 @@ describe('OrderService', () => {
         update: vi.fn().mockReturnValue(queryBuilder),
       });
 
-      const { createSupabaseClient } = await import('@/lib/supabase/unified-client');
+      const { createSupabaseClient } = await import('@/lib/supabase');
       vi.mocked(createSupabaseClient).mockResolvedValue(mockSupabase);
 
       const order = await orderService.updateOrderStatus('order-1', 'venue-1', 'READY');

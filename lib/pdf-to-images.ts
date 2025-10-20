@@ -1,4 +1,4 @@
-import { createAdminClient } from '@/lib/supabase/server';
+import { createAdminClient } from '@/lib/supabase';
 import fs from 'fs/promises';
 import path from 'path';
 import { fromPath } from 'pdf2pic';
