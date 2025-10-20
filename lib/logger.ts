@@ -1,11 +1,13 @@
 /**
- * Production-ready logging utility
- * Replaces console.log with structured logging
- * Now uses production logger with Sentry integration
+ * Unified Logger
+ * Single source of truth for all logging in the application
+ * Production-ready with Sentry integration
  */
 
 export { logger, apiLogger, authLogger, dbLogger, cacheLogger, aiLogger } from './logger/production-logger';
-export { default } from './logger/production-logger';
+
+// Re-export as default for convenience
+export { logger as default } from './logger/production-logger';
 
 // Helper for API routes
 export function logApiCall(endpoint: string, method: string, duration: number, status: number) {

@@ -1,6 +1,7 @@
 /**
  * Unified Cache Interface
- * Supports both Redis and in-memory caching
+ * Single source of truth for all caching in the application
+ * Supports both Redis and in-memory caching with automatic fallback
  */
 
 import { redisCache } from './redis';
@@ -11,7 +12,7 @@ interface CacheOptions {
 }
 
 class Cache {
-  private memoryCache: Map<string, { value: any; expires: number }> = new Map();
+  private memoryCache: Map<string, { value: unknown; expires: number }> = new Map();
   private useRedis: boolean = false;
 
   constructor() {
@@ -50,22 +51,21 @@ class Cache {
    * Set value in cache
    */
   async set<T>(key: string, value: T, options: CacheOptions = {}): Promise<boolean> {
-    const ttl = options.ttl || 300; // Default 5 minutes
+    const { ttl = 300 } = options; // Default 5 minutes
 
-    // Set in Redis if available
-    if (this.useRedis) {
-      return await redisCache.set(key, value, ttl);
-    }
-
-    // Fall back to memory cache
     try {
-      this.memoryCache.set(key, {
-        value,
-        expires: Date.now() + ttl * 1000,
-      });
+      // Try Redis first if available
+      if (this.useRedis) {
+        await redisCache.set(key, value, ttl);
+        return true;
+      }
+
+      // Fall back to memory cache
+      const expires = Date.now() + ttl * 1000;
+      this.memoryCache.set(key, { value, expires });
       return true;
     } catch (error) {
-      logger.error('[CACHE] Error setting memory cache:', error);
+      logger.error('[CACHE] Error setting cache:', { error, key });
       return false;
     }
   }
@@ -74,100 +74,124 @@ class Cache {
    * Delete value from cache
    */
   async delete(key: string): Promise<boolean> {
-    // Delete from Redis if available
-    if (this.useRedis) {
-      return await redisCache.delete(key);
-    }
+    try {
+      // Try Redis first if available
+      if (this.useRedis) {
+        await redisCache.delete(key);
+      }
 
-    // Delete from memory cache
-    return this.memoryCache.delete(key);
+      // Also delete from memory cache
+      this.memoryCache.delete(key);
+      return true;
+    } catch (error) {
+      logger.error('[CACHE] Error deleting cache:', { error, key });
+      return false;
+    }
   }
 
   /**
-   * Delete multiple keys matching pattern
+   * Invalidate cache pattern
    */
-  async deletePattern(pattern: string): Promise<boolean> {
-    // Delete from Redis if available
-    if (this.useRedis) {
-      return await redisCache.deletePattern(pattern);
-    }
-
-    // Delete from memory cache
-    const regex = new RegExp(pattern.replace('*', '.*'));
-    let deleted = 0;
-    
-    for (const key of this.memoryCache.keys()) {
-      if (regex.test(key)) {
-        this.memoryCache.delete(key);
-        deleted++;
+  async invalidate(pattern: string): Promise<boolean> {
+    try {
+      // Try Redis first if available
+      if (this.useRedis) {
+        await redisCache.invalidate(pattern);
       }
-    }
 
-    return deleted > 0;
+      // Also clear matching memory cache entries
+      const regex = new RegExp(pattern.replace('*', '.*'));
+      for (const key of this.memoryCache.keys()) {
+        if (regex.test(key)) {
+          this.memoryCache.delete(key);
+        }
+      }
+      return true;
+    } catch (error) {
+      logger.error('[CACHE] Error invalidating cache:', { error, pattern });
+      return false;
+    }
+  }
+
+  /**
+   * Check if key exists in cache
+   */
+  async has(key: string): Promise<boolean> {
+    const value = await this.get(key);
+    return value !== null;
+  }
+
+  /**
+   * Get multiple values from cache
+   */
+  async mget<T>(keys: string[]): Promise<(T | null)[]> {
+    const results = await Promise.all(keys.map(key => this.get<T>(key)));
+    return results;
+  }
+
+  /**
+   * Set multiple values in cache
+   */
+  async mset<T>(keyValues: Record<string, T>, options: CacheOptions = {}): Promise<boolean> {
+    try {
+      await Promise.all(
+        Object.entries(keyValues).map(([key, value]) => this.set(key, value, options))
+      );
+      return true;
+    } catch (error) {
+      logger.error('[CACHE] Error setting multiple cache values:', { error });
+      return false;
+    }
   }
 
   /**
    * Clear all cache
    */
   async clear(): Promise<boolean> {
-    // Clear Redis if available
-    if (this.useRedis) {
-      return await redisCache.clear();
+    try {
+      if (this.useRedis) {
+        await redisCache.clear();
+      }
+      this.memoryCache.clear();
+      return true;
+    } catch (error) {
+      logger.error('[CACHE] Error clearing cache:', { error });
+      return false;
     }
-
-    // Clear memory cache
-    this.memoryCache.clear();
-    return true;
-  }
-
-  /**
-   * Get or set with callback (cache-aside pattern)
-   */
-  async getOrSet<T>(
-    key: string,
-    callback: () => Promise<T>,
-    options: CacheOptions = {}
-  ): Promise<T> {
-    // Try to get from cache
-    const cached = await this.get<T>(key);
-    if (cached !== null) {
-      return cached;
-    }
-
-    // Execute callback and cache result
-    const value = await callback();
-    await this.set(key, value, options);
-    return value;
-  }
-
-  /**
-   * Invalidate cache for venue
-   */
-  async invalidateVenue(venueId: string): Promise<boolean> {
-    return await this.deletePattern(`*:${venueId}:*`);
-  }
-
-  /**
-   * Invalidate cache for user
-   */
-  async invalidateUser(userId: string): Promise<boolean> {
-    return await this.deletePattern(`*:user:${userId}:*`);
-  }
-
-  /**
-   * Get cache statistics
-   */
-  getStats(): { size: number; type: 'redis' | 'memory' } {
-    if (this.useRedis) {
-      return { size: 0, type: 'redis' };
-    }
-    return { size: this.memoryCache.size, type: 'memory' };
   }
 }
 
 // Export singleton instance
 export const cache = new Cache();
 
-// Export types
-export type { CacheOptions };
+// Export cache key generators
+export const cacheKeys = {
+  menu: (venueId: string) => `menu:${venueId}`,
+  menuItems: (venueId: string) => `menu:items:${venueId}`,
+  menuCategories: (venueId: string) => `menu:categories:${venueId}`,
+  orders: (venueId: string) => `orders:${venueId}`,
+  order: (orderId: string) => `order:${orderId}`,
+  venue: (venueId: string) => `venue:${venueId}`,
+  user: (userId: string) => `user:${userId}`,
+  analytics: (venueId: string) => `analytics:${venueId}`,
+};
 
+// Export TTL constants
+export const cacheTTL = {
+  short: 60, // 1 minute
+  medium: 300, // 5 minutes
+  long: 1800, // 30 minutes
+  veryLong: 3600, // 1 hour
+};
+
+// Export cache interface for type safety
+export interface CacheInterface {
+  get<T>(key: string): Promise<T | null>;
+  set<T>(key: string, value: T, options?: CacheOptions): Promise<boolean>;
+  delete(key: string): Promise<boolean>;
+  invalidate(pattern: string): Promise<boolean>;
+  has(key: string): Promise<boolean>;
+  mget<T>(keys: string[]): Promise<(T | null)[]>;
+  mset<T>(keyValues: Record<string, T>, options?: CacheOptions): Promise<boolean>;
+  clear(): Promise<boolean>;
+}
