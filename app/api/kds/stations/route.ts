@@ -131,7 +131,7 @@ export async function POST(req: Request) {
   } catch (error: unknown) {
     logger.error('[KDS] Unexpected error:', { error: error instanceof Error ? error.message : 'Unknown error' });
     return NextResponse.json(
-      { ok: false, error: error.message || 'Internal server error' },
+      { ok: false, error: error instanceof Error ? error.message : 'Internal server error' },
       { status: 500 }
     );
   }
