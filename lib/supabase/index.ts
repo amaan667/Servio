@@ -47,6 +47,11 @@ export function supabaseServer(cookies: {
       set: (name, value, options) => cookies.set(name, value, options),
       remove: (name, options) => cookies.set(name, '', { ...options, maxAge: 0 }),
     },
+    auth: {
+      persistSession: false, // Don't persist session on server
+      autoRefreshToken: false, // Don't auto-refresh tokens on server
+      detectSessionInUrl: false, // Don't detect session in URL on server
+    },
   });
 }
 
@@ -65,20 +70,34 @@ export const createAdminClient = supabaseAdmin;
 export async function createServerSupabase() {
   const { cookies } = await import('next/headers');
   const cookieStore = await cookies();
-  return supabaseServer({
-    get: (name) => cookieStore.get(name)?.value,
-    set: (name, value, options) => {
-      try {
-        cookieStore.set(name, value, {
-          ...options,
-          sameSite: 'lax',
-          secure: process.env.NODE_ENV === 'production',
-          httpOnly: false,
-          path: '/',
-        });
-      } catch {
-        // Silent error handling for cookie context
-      }
+  return createSSRServerClient(getSupabaseUrl(), getSupabaseAnonKey(), {
+    cookies: {
+      get: (name) => cookieStore.get(name)?.value,
+      set: (name, value, options) => {
+        try {
+          cookieStore.set(name, value, {
+            ...options,
+            sameSite: 'lax',
+            secure: process.env.NODE_ENV === 'production',
+            httpOnly: false,
+            path: '/',
+          });
+        } catch {
+          // Silent error handling for cookie context
+        }
+      },
+      remove: (name, options) => {
+        try {
+          cookieStore.set(name, '', { ...options, maxAge: 0 });
+        } catch {
+          // Silent error handling for cookie context
+        }
+      },
+    },
+    auth: {
+      persistSession: false, // Don't persist session on server
+      autoRefreshToken: false, // Don't auto-refresh tokens on server
+      detectSessionInUrl: false, // Don't detect session in URL on server
     },
   });
 }

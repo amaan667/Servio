@@ -71,6 +71,11 @@ export async function middleware(req: NextRequest) {
             res.cookies.delete(name);
           },
         },
+        auth: {
+          persistSession: false, // Don't persist session in middleware
+          autoRefreshToken: false, // Don't auto-refresh tokens in middleware
+          detectSessionInUrl: false, // Don't detect session in URL in middleware
+        },
       }
     );
 
