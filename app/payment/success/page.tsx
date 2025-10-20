@@ -11,7 +11,7 @@ export default function PaymentSuccessPage() {
   const isDemo = searchParams?.get('demo') === '1';
   const paymentMethod = searchParams?.get('paymentMethod') || 'demo';
   const [verifiedOrderId, setVerifiedOrderId] = useState<string | undefined>(orderId || undefined);
-  const [demoOrderData, setDemoOrderData] = useState<any>(null);
+  const [demoOrderData, setDemoOrderData] = useState<unknown>(null);
   
   // URL parameter fallbacks
   const customerNameParam = searchParams?.get('customerName');

@@ -102,7 +102,7 @@ export default function OrderTrackingPage() {
           table: 'orders',
           filter: `id=eq.${orderId}`,
         },
-        (payload: any) => {
+        (payload: unknown) => {
           if (payload.eventType === 'UPDATE') {
             
             // Update the order with new data
@@ -119,7 +119,7 @@ export default function OrderTrackingPage() {
           }
         }
       )
-      .subscribe((status: any) => {
+      .subscribe((status: unknown) => {
         
         if (status === 'SUBSCRIBED') {
         } else if (status === 'CHANNEL_ERROR') {

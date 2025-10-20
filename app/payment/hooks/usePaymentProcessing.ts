@@ -7,7 +7,7 @@ export function usePaymentProcessing() {
 
   const processPayment = async (
     action: PaymentAction,
-    checkoutData: any,
+    checkoutData: unknown,
     setOrderNumber: (orderNumber: string) => void,
     setPaymentComplete: (complete: boolean) => void,
     setIsProcessing: (processing: boolean) => void,
@@ -115,7 +115,7 @@ export function usePaymentProcessing() {
 
         localStorage.removeItem('servio-checkout-data');
       }
-    } catch (err: any) {
+    } catch (err: unknown) {
 
       setError(err.message || 'Payment failed. Please try again.');
       toast({

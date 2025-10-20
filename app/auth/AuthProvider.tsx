@@ -81,9 +81,9 @@ export default function AuthProvider({
     getInitialSession();
     
     // Handle auth state changes
-    let subscription: any;
+    let subscription: unknown;
     try {
-      const { data } = supabase.auth.onAuthStateChange(async (event: any, newSession: any) => {
+      const { data } = supabase.auth.onAuthStateChange(async (event: unknown, newSession: unknown) => {
         console.debug('[AUTH DEBUG] Auth state changed', {
           event,
           hasSession: !!newSession,

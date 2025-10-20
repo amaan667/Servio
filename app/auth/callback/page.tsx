@@ -196,7 +196,7 @@ function CallbackContent() {
           addDebugLog('[AUTH CALLBACK] Attempting fallback authentication...');
           
           try {
-            // Clear any existing auth state
+            // Clear unknown existing auth state
             await clearAuthState();
             
             // Remove artificial delay - proceed immediately
@@ -239,7 +239,7 @@ function CallbackContent() {
               router.push(`/dashboard/${venues[0].venue_id}`);
               return;
             }
-          } catch (fallbackErr: any) {
+          } catch (fallbackErr: unknown) {
             addDebugLog(`[AUTH CALLBACK] Fallback authentication error: ${fallbackErr.message}`);
             setError(`Authentication failed: ${fallbackErr.message}`);
             setLoading(false);
@@ -281,7 +281,7 @@ function CallbackContent() {
           setError('Failed to create session - no session data returned');
           setLoading(false);
         }
-      } catch (err: any) {
+      } catch (err: unknown) {
         addDebugLog(`[AUTH CALLBACK] Unexpected error: ${err.message}`);
         addDebugLog(`[AUTH CALLBACK] Error details: ${JSON.stringify({
           message: err.message,

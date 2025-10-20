@@ -16,7 +16,7 @@ export default function OnboardingTablesPage() {
   const [creating, setCreating] = useState(false);
   const [venueId, setVenueId] = useState<string | null>(null);
   const [selectedCount, setSelectedCount] = useState(5);
-  const [previewTables, setPreviewTables] = useState<any[]>([]);
+  const [previewTables, setPreviewTables] = useState<unknown[]>([]);
 
   useEffect(() => {
     checkAuth();
@@ -132,7 +132,7 @@ export default function OnboardingTablesPage() {
 
       // Move to next step
       router.push('/onboarding/test-order');
-    } catch (error: any) {
+    } catch (error: unknown) {
 
       toast({
         title: 'Failed to create tables',

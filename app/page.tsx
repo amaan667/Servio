@@ -42,7 +42,7 @@ export default function HomePage() {
 
     if (!supabase) return;
     const { data: { subscription } } = supabase.auth.onAuthStateChange(
-      async (_event: string, session: any) => {
+      async (_event: string, session: unknown) => {
         setIsSignedIn(!!session?.user);
         if (session?.user) {
           // Check user metadata for tier instead of profiles table
@@ -141,7 +141,7 @@ export default function HomePage() {
     },
     {
       question: "Do I need special hardware or equipment?",
-      answer: "No! Servio works on any device with a web browser. You can manage orders from a tablet, smartphone, or computer. Your customers just need a smartphone to scan the QR code.",
+      answer: "No! Servio works on unknown device with a web browser. You can manage orders from a tablet, smartphone, or computer. Your customers just need a smartphone to scan the QR code.",
     },
     {
       question: "How do customers pay for their orders?",

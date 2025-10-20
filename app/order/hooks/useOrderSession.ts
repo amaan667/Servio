@@ -6,7 +6,7 @@ import { CustomerInfo, OrderParams } from '../types';
 export function useOrderSession(orderParams: OrderParams) {
   const router = useRouter();
   const searchParams = useSearchParams();
-  const [session, setSession] = useState<any>(null);
+  const [session, setSession] = useState<unknown>(null);
   const [customerInfo, setCustomerInfo] = useState<CustomerInfo>({
     name: "",
     phone: "",
@@ -187,12 +187,12 @@ export function useOrderSession(orderParams: OrderParams) {
 
     try {
       if (supabase?.auth?.onAuthStateChange) {
-        const result = supabase.auth.onAuthStateChange((_event: any, session: any) => {
+        const result = supabase.auth.onAuthStateChange((_event: unknown, session: unknown) => {
           setSession(session);
         });
         return () => {
           try {
-            (result as any)?.data?.subscription?.unsubscribe?.();
+            (result as unknown)?.data?.subscription?.unsubscribe?.();
           } catch {}
         };
       }

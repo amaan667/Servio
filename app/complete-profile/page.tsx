@@ -9,7 +9,7 @@ export default function CompleteProfilePage() {
   const router = useRouter();
   const [loading, setLoading] = useState(true);
   const [showForm, setShowForm] = useState(false);
-  const [user, setUser] = useState<any>(null);
+  const [user, setUser] = useState<unknown>(null);
 
   useEffect(() => {
     // Only run on client side
@@ -28,7 +28,7 @@ export default function CompleteProfilePage() {
         }
 
         // Check if user is a Google OAuth user (new sign-up)
-        const isOAuthUser = user.identities?.some((identity: any) => 
+        const isOAuthUser = user.identities?.some((identity: unknown) => 
           identity.provider === 'google' || identity.provider === 'oauth'
         );
 

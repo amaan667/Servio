@@ -186,7 +186,7 @@ export default function PrivacyPolicyPage() {
           <section className="mb-8">
             <h2 className="text-2xl font-semibold mb-4">12. Changes to This Policy</h2>
             <p className="text-gray-700 mb-4">
-              We may update this Privacy Policy from time to time. We will notify you of any material changes by:
+              We may update this Privacy Policy from time to time. We will notify you of unknown material changes by:
             </p>
             <ul className="list-disc pl-6 mb-4 text-gray-700">
               <li>Posting the new policy on this page with an updated date</li>

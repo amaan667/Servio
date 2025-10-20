@@ -12,7 +12,7 @@ import { Loader2, Database, CheckCircle, AlertCircle, RefreshCw } from "lucide-r
 
 export default function MigrateAIPage() {
   const [loading, setLoading] = useState(false);
-  const [migrationStatus, setMigrationStatus] = useState<any>(null);
+  const [migrationStatus, setMigrationStatus] = useState<unknown>(null);
   const [error, setError] = useState<string | null>(null);
   const [success, setSuccess] = useState<string | null>(null);
 
@@ -31,7 +31,7 @@ export default function MigrateAIPage() {
       } else {
         setError(data.error || "Failed to check migration status");
       }
-    } catch (error: any) {
+    } catch (error: unknown) {
       setError("Failed to check migration status: " + error.message);
     } finally {
       setLoading(false);
@@ -56,7 +56,7 @@ export default function MigrateAIPage() {
       } else {
         setError(data.error || "Migration failed");
       }
-    } catch (error: any) {
+    } catch (error: unknown) {
       setError("Migration failed: " + error.message);
     } finally {
       setLoading(false);
@@ -105,7 +105,7 @@ export default function MigrateAIPage() {
             {migrationStatus && (
               <div className="space-y-3">
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                  {migrationStatus.migrationStatus?.map((status: any, index: number) => (
+                  {migrationStatus.migrationStatus?.map((status: unknown, index: number) => (
                     <div key={index} className="border rounded-lg p-3">
                       <div className="flex items-center justify-between mb-2">
                         <span className="font-medium">{status.table_name}</span>

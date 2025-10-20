@@ -13,7 +13,7 @@ export default function CreateAccountPage() {
   const searchParams = useSearchParams();
   const [status, setStatus] = useState<'loading' | 'form' | 'success' | 'error'>('loading');
   const [error, setError] = useState<string | null>(null);
-  const [sessionData, setSessionData] = useState<any>(null);
+  const [sessionData, setSessionData] = useState<unknown>(null);
   const [loading, setLoading] = useState(false);
   const [formData, setFormData] = useState({
     password: '',
@@ -44,7 +44,7 @@ export default function CreateAccountPage() {
 
         setSessionData(data);
         setStatus('form');
-      } catch (err: any) {
+      } catch (err: unknown) {
 
         setError(err.message || 'Failed to fetch session details.');
         setStatus('error');
@@ -87,7 +87,7 @@ export default function CreateAccountPage() {
       setTimeout(() => {
         router.push(`/dashboard/${data.venueId}?welcome=true`);
       }, 2000);
-    } catch (err: any) {
+    } catch (err: unknown) {
 
       setError(err.message || 'Failed to create account. Please try again.');
       setLoading(false);

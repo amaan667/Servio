@@ -71,7 +71,7 @@ export default function TermsOfServicePage() {
             <ul className="list-disc pl-6 mb-4 text-gray-700">
               <li>Maintaining the confidentiality of your account credentials</li>
               <li>All activities that occur under your account</li>
-              <li>Notifying us immediately of any unauthorized access</li>
+              <li>Notifying us immediately of unknown unauthorized access</li>
             </ul>
           </section>
 
@@ -108,7 +108,7 @@ export default function TermsOfServicePage() {
             
             <h3 className="text-xl font-semibold mb-3 mt-6">5.1 Cancellation</h3>
             <p className="text-gray-700 mb-4">
-              You may cancel your subscription at any time through your account settings or by contacting support. 
+              You may cancel your subscription at unknown time through your account settings or by contacting support. 
               Cancellation takes effect at the end of your current billing period.
             </p>
 
@@ -119,7 +119,7 @@ export default function TermsOfServicePage() {
             <ul className="list-disc pl-6 mb-4 text-gray-700">
               <li><strong>Service Failure:</strong> If our Service is unavailable for more than 24 consecutive hours (pro-rata refund)</li>
               <li><strong>14-Day Money-Back:</strong> Full refund if you cancel within 14 days of your first paid subscription (after trial)</li>
-              <li><strong>Billing Errors:</strong> Full refund for any incorrect charges</li>
+              <li><strong>Billing Errors:</strong> Full refund for unknown incorrect charges</li>
             </ul>
             <p className="text-gray-700 mb-4">
               Refunds are not provided for partial months or unused features.
@@ -130,8 +130,8 @@ export default function TermsOfServicePage() {
             <h2 className="text-2xl font-semibold mb-4">6. Acceptable Use Policy</h2>
             <p className="text-gray-700 mb-4">You agree not to:</p>
             <ul className="list-disc pl-6 mb-4 text-gray-700">
-              <li>Use the Service for any illegal or unauthorized purpose</li>
-              <li>Violate any laws in your jurisdiction</li>
+              <li>Use the Service for unknown illegal or unauthorized purpose</li>
+              <li>Violate unknown laws in your jurisdiction</li>
               <li>Upload malicious code or attempt to breach security</li>
               <li>Interfere with or disrupt the Service</li>
               <li>Scrape, copy, or reverse engineer our platform</li>
@@ -181,12 +181,12 @@ export default function TermsOfServicePage() {
           <section className="mb-8">
             <h2 className="text-2xl font-semibold mb-4">10. Indemnification</h2>
             <p className="text-gray-700 mb-4">
-              You agree to indemnify and hold Servio harmless from any claims, damages, or expenses arising from:
+              You agree to indemnify and hold Servio harmless from unknown claims, damages, or expenses arising from:
             </p>
             <ul className="list-disc pl-6 mb-4 text-gray-700">
               <li>Your use of the Service</li>
               <li>Your violation of these Terms</li>
-              <li>Your violation of any third-party rights</li>
+              <li>Your violation of unknown third-party rights</li>
               <li>Content you upload or process through our Service</li>
             </ul>
           </section>
@@ -217,7 +217,7 @@ export default function TermsOfServicePage() {
           <section className="mb-8">
             <h2 className="text-2xl font-semibold mb-4">13. Changes to Terms</h2>
             <p className="text-gray-700 mb-4">
-              We reserve the right to modify these Terms at any time. Material changes will be communicated via email at least 30 days before taking effect. 
+              We reserve the right to modify these Terms at unknown time. Material changes will be communicated via email at least 30 days before taking effect. 
               Continued use of the Service after changes constitutes acceptance.
             </p>
           </section>

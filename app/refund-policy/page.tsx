@@ -138,7 +138,7 @@ export default function RefundPolicyPage() {
                 <li>Email <a href="mailto:support@servio.app" className="text-purple-600 hover:underline font-semibold">support@servio.app</a> with subject "Refund Request"</li>
                 <li>Include your account email and subscription details</li>
                 <li>State the reason for your refund request</li>
-                <li>Provide any supporting documentation (for service failures)</li>
+                <li>Provide unknown supporting documentation (for service failures)</li>
               </ol>
             </div>
             <p className="text-gray-700 mb-4">

@@ -75,7 +75,7 @@ export function useOrderSubmission() {
             price: item.price,
             quantity: item.quantity,
             specialInstructions: item.specialInstructions || null,
-            image: (item as any).image || null,
+            image: (item as unknown).image || null,
           })),
           total: cart.reduce((total, item) => total + item.price * item.quantity, 0),
           notes: cart
@@ -152,7 +152,7 @@ export function useOrderSubmission() {
           price: item.price,
           quantity: item.quantity,
           specialInstructions: item.specialInstructions || null,
-          image: (item as any).image || null,
+          image: (item as unknown).image || null,
         })),
         total: cart.reduce((total, item) => total + item.price * item.quantity, 0),
         notes: cart
@@ -179,7 +179,7 @@ export function useOrderSubmission() {
           price: item.price,
           quantity: item.quantity,
           specialInstructions: item.specialInstructions || null,
-          image: (item as any).image || null,
+          image: (item as unknown).image || null,
         })),
         total: cart.reduce((total, item) => total + item.price * item.quantity, 0),
         orderId: orderResult.order?.id,

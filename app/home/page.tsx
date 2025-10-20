@@ -11,7 +11,7 @@ import { LayoutDashboard, Users, QrCode, BarChart3 } from "lucide-react";
 // This component will show home page content for both authenticated and non-authenticated users
 const HomePage = React.memo(function HomePage() {
   const router = useRouter();
-  const [user, setUser] = useState<any>(null);
+  const [user, setUser] = useState<unknown>(null);
   const [loading, setLoading] = useState(true);
   const [primaryVenueId, setPrimaryVenueId] = useState<string | null>(null);
 
@@ -61,7 +61,7 @@ const HomePage = React.memo(function HomePage() {
 
     // Listen for auth state changes
     const supabase = createClient();
-    const result = supabase?.auth?.onAuthStateChange?.((event: any, session: any) => {
+    const result = supabase?.auth?.onAuthStateChange?.((event: unknown, session: unknown) => {
       if (session?.user) {
         setUser(session.user);
       } else {
@@ -73,7 +73,7 @@ const HomePage = React.memo(function HomePage() {
     // Cleanup subscription on unmount
     return () => {
       try {
-        (result as any)?.data?.subscription?.unsubscribe?.();
+        (result as unknown)?.data?.subscription?.unsubscribe?.();
       } catch {}
     };
   }, [router]);
