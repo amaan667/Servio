@@ -21,6 +21,8 @@ export interface DashboardStats {
 }
 
 export function useDashboardData(venueId: string, venueTz: string, initialVenue: any, initialCounts?: DashboardCounts, initialStats?: DashboardStats) {
+  console.log('[useDashboardData] Hook called with:', { venueId, venueTz, hasInitialVenue: !!initialVenue, hasInitialCounts: !!initialCounts, hasInitialStats: !!initialStats });
+  
   const [venue, setVenue] = useState<any>(initialVenue);
   const [loading, setLoading] = useState(!initialVenue);
   const [counts, setCounts] = useState<DashboardCounts>(initialCounts || {
@@ -37,6 +39,8 @@ export function useDashboardData(venueId: string, venueTz: string, initialVenue:
   const [statsLoaded, setStatsLoaded] = useState(false);
   const [todayWindow, setTodayWindow] = useState<any>(null);
   const [error, setError] = useState<string | null>(null);
+
+  console.log('[useDashboardData] Initial state:', { loading, hasVenue: !!venue, hasTodayWindow: !!todayWindow, hasError: !!error });
 
   const loadStats = useCallback(async (venueId: string, window: any) => {
     try {
@@ -127,20 +131,28 @@ export function useDashboardData(venueId: string, venueTz: string, initialVenue:
   }, []);
 
   useEffect(() => {
+    console.log('[useDashboardData] useEffect triggered:', { hasVenue: !!venue, loading, venueTz, statsLoaded });
+    
     const loadVenueAndStats = async () => {
       try {
         if (venue && !loading) {
+          console.log('[useDashboardData] Loading venue and stats...');
           const window = todayWindowForTZ(venueTz);
+          console.log('[useDashboardData] Today window:', window);
           setTodayWindow(window);
           
           if (!statsLoaded) {
+            console.log('[useDashboardData] Loading stats...');
             await loadStats(venue.venue_id, window);
           }
+        } else {
+          console.log('[useDashboardData] Skipping load - venue:', !!venue, 'loading:', loading);
         }
       } catch (err) {
-        console.error('[DASHBOARD] Error loading venue and stats:', err);
+        console.error('[useDashboardData] Error loading venue and stats:', err);
         setError('Failed to load dashboard data');
       } finally {
+        console.log('[useDashboardData] Setting loading to false');
         setLoading(false);
       }
     };

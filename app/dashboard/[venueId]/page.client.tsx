@@ -54,6 +54,18 @@ const DashboardClient = React.memo(function DashboardClient({
   userRole?: string;
   isOwner?: boolean;
 }) {
+  console.log('[DASHBOARD DEBUG] Component rendering with props:', {
+    venueId,
+    userId,
+    hasVenue: !!initialVenue,
+    userName,
+    venueTz,
+    hasInitialCounts: !!initialCounts,
+    hasInitialStats: !!initialStats,
+    userRole,
+    isOwner
+  });
+
   const router = useRouter();
   
   // Monitor connection status
@@ -72,8 +84,18 @@ const DashboardClient = React.memo(function DashboardClient({
   useDashboardPrefetch(venueId);
 
   // Custom hooks for dashboard data and realtime
+  console.log('[DASHBOARD DEBUG] Calling useDashboardData hook...');
   const dashboardData = useDashboardData(venueId, venueTz, initialVenue, initialCounts, initialStats);
+  console.log('[DASHBOARD DEBUG] useDashboardData returned:', {
+    loading: dashboardData.loading,
+    hasVenue: !!dashboardData.venue,
+    hasTodayWindow: !!dashboardData.todayWindow,
+    hasError: !!dashboardData.error,
+    counts: dashboardData.counts,
+    stats: dashboardData.stats
+  });
   
+  console.log('[DASHBOARD DEBUG] Setting up realtime subscription...');
   useDashboardRealtime({
     venueId,
     todayWindow: dashboardData.todayWindow,
@@ -84,6 +106,7 @@ const DashboardClient = React.memo(function DashboardClient({
   });
 
   const handleRefresh = useCallback(async () => {
+    console.log('[DASHBOARD DEBUG] handleRefresh called');
     await dashboardData.refreshCounts();
     if (dashboardData.venue?.venue_id && dashboardData.todayWindow) {
       await dashboardData.loadStats(dashboardData.venue.venue_id, dashboardData.todayWindow);
@@ -122,9 +145,14 @@ const DashboardClient = React.memo(function DashboardClient({
     return actions;
   }, [venueId, userRole]);
 
+  console.log('[DASHBOARD DEBUG] Checking loading state:', dashboardData.loading);
+
   if (dashboardData.loading) {
+    console.log('[DASHBOARD DEBUG] Rendering loading skeleton');
     return <DashboardSkeleton />;
   }
+
+  console.log('[DASHBOARD DEBUG] Rendering main dashboard content');
 
   return (
     <PullToRefresh onRefresh={handleRefresh}>
