@@ -127,8 +127,15 @@ function CallbackContent() {
             return;
           }
           
-          addDebugLog(`[AUTH CALLBACK] Redirecting to dashboard for venue: ${venues[0].venue_id}`);
-          router.push(`/dashboard/${venues[0].venue_id}`);
+          const primaryVenue = venues[0];
+          if (!primaryVenue) {
+            addDebugLog('[AUTH CALLBACK] No primary venue, redirecting to home');
+            router.push('/');
+            return;
+          }
+          
+          addDebugLog(`[AUTH CALLBACK] Redirecting to dashboard for venue: ${primaryVenue.venue_id}`);
+          router.push(`/dashboard/${primaryVenue.venue_id}`);
           return;
         }
 
@@ -235,8 +242,15 @@ function CallbackContent() {
                 return;
               }
               
-              addDebugLog(`[AUTH CALLBACK] Redirecting to dashboard for venue: ${venues[0].venue_id}`);
-              router.push(`/dashboard/${venues[0].venue_id}`);
+              const primaryVenue = venues[0];
+              if (!primaryVenue) {
+                addDebugLog('[AUTH CALLBACK] No primary venue, redirecting to home');
+                router.push('/');
+                return;
+              }
+              
+              addDebugLog(`[AUTH CALLBACK] Redirecting to dashboard for venue: ${primaryVenue.venue_id}`);
+              router.push(`/dashboard/${primaryVenue.venue_id}`);
               return;
             }
           } catch (fallbackErr: unknown) {
@@ -273,8 +287,15 @@ function CallbackContent() {
             return;
           }
           
-          addDebugLog(`[AUTH CALLBACK] Redirecting to dashboard for venue: ${venues[0].venue_id}`);
-          router.push(`/dashboard/${venues[0].venue_id}`);
+          const primaryVenue = venues[0];
+          if (!primaryVenue) {
+            addDebugLog('[AUTH CALLBACK] No primary venue, redirecting to home');
+            router.push('/');
+            return;
+          }
+          
+          addDebugLog(`[AUTH CALLBACK] Redirecting to dashboard for venue: ${primaryVenue.venue_id}`);
+          router.push(`/dashboard/${primaryVenue.venue_id}`);
         } else {
           addDebugLog('[AUTH CALLBACK] No session returned from exchange');
           addDebugLog(`[AUTH CALLBACK] Data received: ${JSON.stringify(data)}`);
