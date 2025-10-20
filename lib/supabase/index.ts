@@ -44,9 +44,33 @@ export function supabaseAdmin() {
 
 // Backward compatibility exports
 export const createClient = supabaseBrowser;
-export const createSupabaseClient = supabaseServer;
 export const createAdminClient = supabaseAdmin;
-export const createServerSupabase = supabaseServer;
+
+// Server client factory with cookies
+export async function createServerSupabase() {
+  const { cookies } = await import('next/headers');
+  const cookieStore = await cookies();
+  return supabaseServer({
+    get: (name) => cookieStore.get(name)?.value,
+    set: (name, value, options) => {
+      try {
+        cookieStore.set(name, value, {
+          ...options,
+          sameSite: 'lax',
+          secure: process.env.NODE_ENV === 'production',
+          httpOnly: false,
+          path: '/',
+        });
+      } catch (error) {
+        // Silent error handling for cookie context
+      }
+    },
+  });
+}
+
+export async function createSupabaseClient() {
+  return createServerSupabase();
+}
 
 // Get authenticated user (server-side)
 export async function getAuthenticatedUser() {
