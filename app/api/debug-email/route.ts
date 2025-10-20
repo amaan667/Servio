@@ -1,7 +1,6 @@
-import { errorToContext } from '@/lib/utils/error-to-context';
 import { NextRequest, NextResponse } from 'next/server';
 import { getUserSafe } from '@/utils/getUserSafe';
-import { apiLogger, logger } from '@/lib/logger';
+import { logger } from '@/lib/logger';
 
 // POST /api/debug-email - Debug email sending
 export async function POST(request: NextRequest) {
@@ -19,8 +18,8 @@ export async function POST(request: NextRequest) {
     }
 
     logger.debug('[DEBUG EMAIL] Testing email to:', { value: testEmail });
-    logger.debug('[DEBUG EMAIL] Current user:', user.email);
-    logger.debug('[DEBUG EMAIL] RESEND_API_KEY present:', !!process.env.RESEND_API_KEY);
+    logger.debug('[DEBUG EMAIL] Current user:', { email: user.email });
+    logger.debug('[DEBUG EMAIL] RESEND_API_KEY present:', { present: !!process.env.RESEND_API_KEY });
 
     // Test email sending
     try {

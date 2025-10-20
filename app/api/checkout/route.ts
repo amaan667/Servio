@@ -2,7 +2,7 @@ import { NextResponse } from "next/server";
 import Stripe from "stripe";
 import { createAdminClient } from "@/lib/supabase";
 import { stripe } from "@/lib/stripe-client";
-import { apiLogger, logger } from '@/lib/logger';
+import { logger } from '@/lib/logger';
 
 export const runtime = 'nodejs';
 
@@ -51,7 +51,7 @@ export async function POST(req: Request) {
         customerPhone: customerPhone || '+1234567890',
         source: source || 'qr',
         // Truncate items to stay within 500 char limit, keeping only essential info
-        items: JSON.stringify(items.map((item: unknown) => ({
+        items: JSON.stringify(items.map((item: any) => ({
           id: item.id,
           name: item.name,
           quantity: item.quantity,
@@ -91,6 +91,6 @@ export async function POST(req: Request) {
     return NextResponse.json({ url: session.url, sessionId: session.id }, { status: 200 });
   } catch (e: unknown) {
     logger.error("Stripe session error", { error: e instanceof Error ? e.message : 'Unknown error' });
-    return NextResponse.json({ error: e.message ?? "Stripe error" }, { status: 500 });
+    return NextResponse.json({ error: e instanceof Error ? e.message : "Stripe error" }, { status: 500 });
   }
 }

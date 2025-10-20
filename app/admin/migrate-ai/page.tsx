@@ -3,7 +3,7 @@
 // Admin page to run AI conversations migration
 // This should only be accessible to admin users
 
-import { useState } from "react";
+import React, { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Alert, AlertDescription } from "@/components/ui/alert";
@@ -12,7 +12,16 @@ import { Loader2, Database, CheckCircle, AlertCircle, RefreshCw } from "lucide-r
 
 export default function MigrateAIPage() {
   const [loading, setLoading] = useState(false);
-  const [migrationStatus, setMigrationStatus] = useState<unknown>(null);
+  const [migrationStatus, setMigrationStatus] = useState<{
+    migrationStatus?: Array<{
+      table_name: string;
+      total_conversations: number;
+      generic_titles: number;
+      oldest_conversation: string;
+      newest_conversation: string;
+    }>;
+    conversationsNeedingAiTitles?: number;
+  } | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [success, setSuccess] = useState<string | null>(null);
 
@@ -32,7 +41,8 @@ export default function MigrateAIPage() {
         setError(data.error || "Failed to check migration status");
       }
     } catch (error: unknown) {
-      setError("Failed to check migration status: " + error.message);
+      const errorMessage = error instanceof Error ? error.message : String(error);
+      setError("Failed to check migration status: " + errorMessage);
     } finally {
       setLoading(false);
     }
@@ -57,7 +67,8 @@ export default function MigrateAIPage() {
         setError(data.error || "Migration failed");
       }
     } catch (error: unknown) {
-      setError("Migration failed: " + error.message);
+      const errorMessage = error instanceof Error ? error.message : String(error);
+      setError("Migration failed: " + errorMessage);
     } finally {
       setLoading(false);
     }
@@ -105,7 +116,7 @@ export default function MigrateAIPage() {
             {migrationStatus && (
               <div className="space-y-3">
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                  {migrationStatus.migrationStatus?.map((status: unknown, index: number) => (
+                  {migrationStatus.migrationStatus?.map((status, index: number) => (
                     <div key={index} className="border rounded-lg p-3">
                       <div className="flex items-center justify-between mb-2">
                         <span className="font-medium">{status.table_name}</span>
@@ -145,7 +156,7 @@ export default function MigrateAIPage() {
             <div className="space-y-2">
               <h4 className="font-medium">What this migration does:</h4>
               <ul className="list-disc list-inside space-y-1 text-sm text-muted-foreground">
-                <li>Creates new AI chat tables if they don't exist</li>
+                <li>Creates new AI chat tables if they don&apos;t exist</li>
                 <li>Migrates conversations from old system to new system</li>
                 <li>Generates AI-powered titles for existing conversations</li>
                 <li>Preserves all conversation history and messages</li>

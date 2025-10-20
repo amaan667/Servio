@@ -1,11 +1,7 @@
 export const runtime = 'nodejs';
 
 import { NextResponse } from 'next/server';
-import { cookies } from 'next/headers';
-import { createServerClient } from '@supabase/ssr';
-import { todayWindowForTZ } from '@/lib/time';
-import { liveOrdersWindow, earlierTodayWindow, historyWindow } from '@/lib/dates';
-// cookieAdapter removed - use createServerSupabase instead
+import { createServerSupabase } from '@/lib/supabase';
 
 type OrderRow = {
   id: string;
@@ -31,12 +27,7 @@ export async function GET(req: Request) {
     }
 
     // SSR supabase client (uses user cookies for RLS)
-    const jar = cookies();
-    const supabase = createServerClient(
-      process.env.NEXT_PUBLIC_SUPABASE_URL!,
-      process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
-      { cookies: cookieAdapter(jar) }
-    );
+    const supabase = await createServerSupabase();
 
     // Use default timezone since venues table doesn't have timezone column
     const zone = 'Europe/London';
@@ -81,37 +72,30 @@ export async function GET(req: Request) {
     // Transform orders to include table_label
     const transformedOrders = data?.map(order => ({
       ...order,
-      table_label: (order.tables as unknown)?.label || (order.source === 'counter' ? `Counter ${order.table_number}` : `Table ${order.table_number}`)
+      table_label: (order.tables as any)?.label || (order.source === 'counter' ? `Counter ${order.table_number}` : `Table ${order.table_number}`)
     })) || [];
 
-    // Detailed logging for Railway deployment monitoring
-    
-    if (data && data.length > 0) {
-      data.slice(0, 3).forEach((order, index) => {
-        const orderDate = new Date(order.created_at);
-        const ageMinutes = Math.round((Date.now() - orderDate.getTime()) / (1000 * 60));
-      });
-      
-      // Age distribution analysis
-      const ageDistribution = data.reduce((acc, order) => {
-        const orderDate = new Date(order.created_at);
-        const ageMinutes = Math.round((Date.now() - orderDate.getTime()) / (1000 * 60));
-        if (ageMinutes < 30) acc['<30min'] = (acc['<30min'] || 0) + 1;
-        else if (ageMinutes < 60) acc['30-60min'] = (acc['30-60min'] || 0) + 1;
-        else if (ageMinutes < 1440) acc['1-24hrs'] = (acc['1-24hrs'] || 0) + 1;
-        else acc['>24hrs'] = (acc['>24hrs'] || 0) + 1;
-        return acc;
-      }, {} as Record<string, number>);
-      
-      
-      // Status distribution
-      const statusDistribution = data.reduce((acc, order) => {
-        acc[order.order_status] = (acc[order.order_status] || 0) + 1;
-        return acc;
-      }, {} as Record<string, number>);
-      
-    } else {
-    }
+    // Detailed logging for Railway deployment monitoring (disabled for performance)
+    // if (data && data.length > 0) {
+    //   // Age distribution analysis
+    //   const ageDistribution = data.reduce((acc, order) => {
+    //     const orderDate = new Date(order.created_at);
+    //     const ageMinutes = Math.round((Date.now() - orderDate.getTime()) / (1000 * 60));
+    //     if (ageMinutes < 30) acc['<30min'] = (acc['<30min'] || 0) + 1;
+    //     else if (ageMinutes < 60) acc['30-60min'] = (acc['30-60min'] || 0) + 1;
+    //     else if (ageMinutes < 1440) acc['1-24hrs'] = (acc['1-24hrs'] || 0) + 1;
+    //     else acc['>24hrs'] = (acc['>24hrs'] || 0) + 1;
+    //     return acc;
+    //   }, {} as Record<string, number>);
+    //   
+    //   
+    //   // Status distribution
+    //   const statusDistribution = data.reduce((acc, order) => {
+    //     acc[order.order_status] = (acc[order.order_status] || 0) + 1;
+    //     return acc;
+    //   }, {} as Record<string, number>);
+    //   
+    // }
 
     return NextResponse.json({
       ok: true,
@@ -119,6 +103,6 @@ export async function GET(req: Request) {
       orders: (transformedOrders || []) as OrderRow[],
     });
   } catch (e: unknown) {
-    return NextResponse.json({ ok: false, error: e.message }, { status: 500 });
+    return NextResponse.json({ ok: false, error: e instanceof Error ? e.message : 'Unknown error' }, { status: 500 });
   }
 }

@@ -5,7 +5,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { createClient } from "@/lib/supabase";
 import { executeTool } from "@/lib/ai/tool-executors";
 import { z } from "zod";
-import { apiLogger, logger } from '@/lib/logger';
+import { logger } from '@/lib/logger';
 import {
   ToolName,
   TOOL_SCHEMAS,
@@ -180,14 +180,14 @@ export async function POST(request: NextRequest) {
   } catch (error: unknown) {
     logger.error("[AI ASSISTANT] Execution error:", { error: error instanceof Error ? error.message : 'Unknown error' });
 
-    if (error.name === "ZodError") {
+    if ((error as any)?.name === "ZodError") {
       return NextResponse.json(
-        { error: "Invalid parameters", details: error.errors },
+        { error: "Invalid parameters", details: (error as any)?.errors },
         { status: 400 }
       );
     }
 
-    if (error.code) {
+    if ((error as any)?.code) {
       // AIAssistantError
       const statusMap: Record<string, number> = {
         UNAUTHORIZED: 403,
@@ -199,13 +199,13 @@ export async function POST(request: NextRequest) {
       };
 
       return NextResponse.json(
-        { error: error.message, code: error.code, details: error.details },
-        { status: statusMap[error.code] || 500 }
+        { error: (error as any)?.message, code: (error as any)?.code, details: (error as any)?.details },
+        { status: statusMap[(error as any)?.code] || 500 }
       );
     }
 
     return NextResponse.json(
-      { error: error.message || "Execution failed" },
+      { error: error instanceof Error ? error.message : "Execution failed" },
       { status: 500 }
     );
   }

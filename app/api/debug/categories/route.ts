@@ -23,7 +23,7 @@ export async function GET(request: NextRequest) {
       .eq('venue_id', venueId);
 
     if (menuError) {
-      logger.error('[DEBUG CATEGORIES] Error fetching menu items:', menuError);
+      logger.error('[DEBUG CATEGORIES] Error fetching menu items:', { error: menuError.message || 'Unknown error' });
       return NextResponse.json(
         { error: 'Failed to fetch menu items' },
         { status: 500 }

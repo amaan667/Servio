@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { createClient, getAuthenticatedUser } from '@/lib/supabase';
 import { cleanupTableOnOrderCompletion } from '@/lib/table-cleanup';
-import { apiLogger, logger } from '@/lib/logger';
+import { logger } from '@/lib/logger';
 
 export const runtime = 'nodejs';
 
@@ -48,7 +48,7 @@ export async function POST(req: NextRequest) {
     const { data: staleOrders, error: fetchError } = await staleOrdersQuery;
 
     if (fetchError) {
-      logger.error('[STALE ORDERS CLEANUP] Error fetching stale orders:', fetchError);
+      logger.error('[STALE ORDERS CLEANUP] Error fetching stale orders:', { error: fetchError.message || 'Unknown error' });
       return NextResponse.json({ error: 'Failed to fetch orders' }, { status: 500 });
     }
 
@@ -74,7 +74,7 @@ export async function POST(req: NextRequest) {
       .in('id', orderIds);
 
     if (updateError) {
-      logger.error('[STALE ORDERS CLEANUP] Error updating orders:', updateError);
+      logger.error('[STALE ORDERS CLEANUP] Error updating orders:', { error: updateError.message || 'Unknown error' });
       return NextResponse.json({ error: 'Failed to update orders' }, { status: 500 });
     }
 

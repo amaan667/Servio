@@ -1,5 +1,4 @@
 import { NextResponse } from "next/server";
-import Stripe from "stripe";
 import { createServerClient } from '@supabase/ssr';
 import { stripe } from "@/lib/stripe-client";
 import { logger } from '@/lib/logger';
@@ -23,25 +22,21 @@ export async function GET(req: Request) {
         process.env.SUPABASE_SERVICE_ROLE_KEY!,
         {
           cookies: {
-            get(name: string) { return undefined; },
-            set(name: string, value: string, options: unknown) { },
-            remove(name: string, options: unknown) { },
+            get() { return undefined; },
+            set() { },
+            remove() { },
           },
         }
       );
       
       // Find the order by session ID
-      let { data: order, error: orderError } = await supabase
+      const { data: order } = await supabase
         .from("orders")
         .select("id, stripe_session_id, payment_status")
         .eq("stripe_session_id", sessionId)
         .maybeSingle();
 
       // If not found by session ID, wait for webhook to create order
-      if (orderError) {
-        return NextResponse.json({ paid: false, error: "Database error" }, { status: 500 });
-      }
-
       if (!order) {
         
         // Wait a bit for the webhook to create the order, then try again with retry logic
@@ -85,6 +80,6 @@ export async function GET(req: Request) {
     return NextResponse.json({ paid: false }, { status: 200 });
   } catch (e: unknown) {
     logger.error("verify error", { error: e instanceof Error ? e.message : 'Unknown error' });
-    return NextResponse.json({ error: e.message ?? "verify failed" }, { status: 500 });
+    return NextResponse.json({ error: e instanceof Error ? e.message : "verify failed" }, { status: 500 });
   }
 }

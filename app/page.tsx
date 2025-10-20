@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import React, { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import { supabase } from "@/lib/supabase";
 import { Button } from "@/components/ui/button";
@@ -17,7 +17,6 @@ export default function HomePage() {
   const router = useRouter();
   const [isSignedIn, setIsSignedIn] = useState(false);
   const [authLoading, setAuthLoading] = useState(true);
-  const [userTier, setUserTier] = useState<string | null>(null);
 
   useEffect(() => {
     const checkAuth = async () => {
@@ -25,13 +24,7 @@ export default function HomePage() {
         if (!supabase) return;
         const { data: { user } } = await supabase.auth.getUser();
         setIsSignedIn(!!user);
-        
-        if (user) {
-          // Check user metadata for tier instead of profiles table
-          const tier = user.user_metadata?.tier || user.app_metadata?.tier || null;
-          setUserTier(tier);
-        }
-      } catch (error) {
+      } catch {
         // Silent error handling
       } finally {
         setAuthLoading(false);
@@ -42,15 +35,8 @@ export default function HomePage() {
 
     if (!supabase) return;
     const { data: { subscription } } = supabase.auth.onAuthStateChange(
-      async (_event: string, session: unknown) => {
+      async (_event: string, session: { user?: { user_metadata?: Record<string, unknown>; app_metadata?: Record<string, unknown> } } | null) => {
         setIsSignedIn(!!session?.user);
-        if (session?.user) {
-          // Check user metadata for tier instead of profiles table
-          const tier = session.user.user_metadata?.tier || session.user.app_metadata?.tier || null;
-          setUserTier(tier);
-        } else {
-          setUserTier(null);
-        }
       }
     );
 
@@ -181,7 +167,7 @@ export default function HomePage() {
               Simple, Transparent Pricing
             </h2>
             <p className="text-xl text-gray-800">
-              Choose the plan that's right for your business
+              Choose the plan that&apos;s right for your business
             </p>
           </div>
 

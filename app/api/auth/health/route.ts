@@ -30,7 +30,7 @@ export async function GET() {
       }
     } catch (err: unknown) {
       sessionStatus = 'exception';
-      sessionError = err.message;
+      sessionError = err instanceof Error ? err.message : 'Unknown error';
     }
 
     return NextResponse.json({
@@ -59,7 +59,7 @@ export async function GET() {
     return NextResponse.json({
       status: 'error',
       timestamp: new Date().toISOString(),
-      error: error.message
+      error: error instanceof Error ? error.message : 'Unknown error'
     }, { status: 500 });
   }
 }

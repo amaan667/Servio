@@ -2,9 +2,9 @@
 // Handles creating and listing chat conversations
 
 import { NextRequest, NextResponse } from "next/server";
-import { createSupabaseClient } from "@/lib/supabase";
+import { createSupabaseClient, createAdminClient } from "@/lib/supabase";
 import { z } from "zod";
-import { apiLogger, logger } from '@/lib/logger';
+import { logger } from '@/lib/logger';
 
 const CreateConversationSchema = z.object({
   venueId: z.string().min(1),
@@ -13,8 +13,8 @@ const CreateConversationSchema = z.object({
 
 export async function GET(request: NextRequest) {
   try {
-    const supabase = await createSupabaseClient('server');
-    const adminSupabase = await createSupabaseClient('admin');
+    const supabase = await createSupabaseClient();
+    const adminSupabase = createAdminClient();
     
     const { searchParams } = new URL(request.url);
     const venueId = searchParams.get("venueId");
@@ -114,7 +114,7 @@ export async function GET(request: NextRequest) {
     }
 
     // Transform the data to match frontend expectations
-    const transformedConversations = (conversations || []).map((conv: unknown) => ({
+    const transformedConversations = (conversations || []).map((conv: any) => ({
       ...conv,
       updatedAt: conv.updated_at,
       createdAt: conv.created_at,
@@ -129,16 +129,16 @@ export async function GET(request: NextRequest) {
   } catch (error: unknown) {
     logger.error("[AI CHAT] Conversations error:", { error: error instanceof Error ? error.message : 'Unknown error' });
     logger.error("[AI CHAT] Error details:", {
-      message: error.message,
-      code: error.code,
-      details: error.details,
-      hint: error.hint
+      message: error instanceof Error ? error.message : 'Unknown error',
+      code: (error as any)?.code,
+      details: (error as any)?.details,
+      hint: (error as any)?.hint
     });
     return NextResponse.json(
       { 
-        error: error.message || "Internal server error",
-        details: error.details,
-        code: error.code
+        error: error instanceof Error ? error.message : "Internal server error",
+        details: (error as any)?.details,
+        code: (error as any)?.code
       },
       { status: 500 }
     );
@@ -147,8 +147,8 @@ export async function GET(request: NextRequest) {
 
 export async function POST(request: NextRequest) {
   try {
-    const supabase = await createSupabaseClient('server');
-    const adminSupabase = await createSupabaseClient('admin');
+    const supabase = await createSupabaseClient();
+    const adminSupabase = createAdminClient();
     
     // Parse request body
     const body = await request.json();
@@ -198,15 +198,15 @@ export async function POST(request: NextRequest) {
   } catch (error: unknown) {
     logger.error("[AI CHAT] Create conversation error:", { error: error instanceof Error ? error.message : 'Unknown error' });
     
-    if (error.name === "ZodError") {
+    if ((error as any)?.name === "ZodError") {
       return NextResponse.json(
-        { error: "Invalid request data", details: error.errors },
+        { error: "Invalid request data", details: (error as any)?.errors },
         { status: 400 }
       );
     }
 
     return NextResponse.json(
-      { error: error.message || "Internal server error" },
+      { error: error instanceof Error ? error.message : "Internal server error" },
       { status: 500 }
     );
   }
@@ -214,8 +214,8 @@ export async function POST(request: NextRequest) {
 
 export async function PATCH(request: NextRequest) {
   try {
-    const supabase = await createSupabaseClient('server');
-    const adminSupabase = await createSupabaseClient('admin');
+    const supabase = await createSupabaseClient();
+    const adminSupabase = createAdminClient();
     
     // Check auth
     const {
@@ -287,7 +287,7 @@ export async function PATCH(request: NextRequest) {
   } catch (error: unknown) {
     logger.error("[AI CHAT] Update conversation error:", { error: error instanceof Error ? error.message : 'Unknown error' });
     return NextResponse.json(
-      { error: error.message || "Internal server error" },
+      { error: error instanceof Error ? error.message : "Internal server error" },
       { status: 500 }
     );
   }

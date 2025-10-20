@@ -12,7 +12,7 @@
  */
 
 import { useEffect, useState, useRef } from "react";
-import { useRouter, useSearchParams } from "next/navigation";
+import { useSearchParams } from "next/navigation";
 import { createClient } from "@/lib/supabase";
 import { useTabCounts } from "@/hooks/use-tab-counts";
 import { OrderCard } from '@/components/orders/OrderCard';
@@ -22,7 +22,6 @@ import MobileNav from '@/components/MobileNav';
 // Hooks
 import { useOrderManagement } from './hooks/useOrderManagement';
 import { useBulkOperations } from './hooks/useBulkOperations';
-import { updateOrderStatus } from './hooks/useOrderStatusUpdates';
 
 // Components
 import { OrderTabs } from './components/OrderTabs';
@@ -88,7 +87,7 @@ export default function LiveOrdersClient({ venueId, venueName: venueNameProp }: 
         .select('venue_name')
         .eq('venue_id', venueId)
         .single()
-        .then(({ data }: { data: unknown }) => setVenueName(data?.venue_name || ''));
+        .then(({ data }: { data: any }) => setVenueName(data?.venue_name || ''));
     }
   }, [venueId, venueNameProp]);
 
@@ -157,7 +156,7 @@ export default function LiveOrdersClient({ venueId, venueName: venueNameProp }: 
     window.history.replaceState({}, '', newUrl.toString());
   };
 
-  const handleOrderStatusUpdate = async (orderId: string, status: unknown) => {
+  const handleOrderStatusUpdate = async (orderId: string, status: any) => {
     await updateOrderStatus(
       orderId,
       status,
@@ -169,7 +168,7 @@ export default function LiveOrdersClient({ venueId, venueName: venueNameProp }: 
       },
       (id, newStatus) => {
         setAllTodayOrders(prev => {
-          const updatedOrder = { id, order_status: newStatus } as unknown;
+          const updatedOrder = { id, order_status: newStatus } as any;
           const exists = prev.find(order => order.id === id);
           if (!exists) return [updatedOrder, ...prev];
           return prev.map(order => order.id === id ? updatedOrder : order);
@@ -209,7 +208,7 @@ export default function LiveOrdersClient({ venueId, venueName: venueNameProp }: 
     return typeof rpc === 'number' ? rpc : 0;
   };
 
-  const renderOrderCard = (order: unknown, showActions: boolean = true) => {
+  const renderOrderCard = (order: any, showActions: boolean = true) => {
     const legacyOrder = {
       ...order,
       table_number: order.table_number,
@@ -231,7 +230,7 @@ export default function LiveOrdersClient({ venueId, venueName: venueNameProp }: 
     );
   };
 
-  const renderOrdersSection = (ordersToRender: unknown[], title: string, iconColor: string) => {
+  const renderOrdersSection = (ordersToRender: any[], title: string, iconColor: string) => {
     const filteredOrders = ordersToRender.filter(order => 
       !parsedTableFilter || order.table_number?.toString() === parsedTableFilter
     );

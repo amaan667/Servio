@@ -1,18 +1,17 @@
 import { NextResponse } from 'next/server';
-// refreshSession removed - use createServerSupabase instead
+import { getSession } from '@/lib/supabase';
 import { logger } from '@/lib/logger';
 
 export async function POST() {
   try {
     
-    const { session, error } = await refreshSession();
+    const { session, error } = await getSession();
     
     if (error) {
-      const errorMessage = (error && typeof error === 'object' && 'message' in error) ? (error as Error).message : 'Unknown error';
-      logger.error('[REFRESH API] Error refreshing session:', { error: errorMessage });
+      logger.error('[REFRESH API] Error getting session:', { error });
       return NextResponse.json({ 
         ok: false, 
-        error: errorMessage
+        error
       }, { status: 401 });
     }
     
@@ -33,10 +32,10 @@ export async function POST() {
     });
     
   } catch (error: unknown) {
-    logger.error('[REFRESH API] Unexpected error:', error.message);
+    logger.error('[REFRESH API] Unexpected error:', { error: error instanceof Error ? error.message : 'Unknown error' });
     return NextResponse.json({ 
       ok: false, 
-      error: error.message || 'Internal server error'
+      error: error instanceof Error ? error.message : 'Internal server error'
     }, { status: 500 });
   }
 }

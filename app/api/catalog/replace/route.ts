@@ -2,7 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { createAdminClient } from '@/lib/supabase';
 import { parseMenuBulletproof, applyKnownFixes } from '@/lib/improvedMenuParser';
 import { convertPDFToImages } from '@/lib/pdf-to-images';
-import { apiLogger, logger } from '@/lib/logger';
+import { logger } from '@/lib/logger';
 
 // Ensure this runs on Node.js runtime (not Edge)
 export const runtime = 'nodejs';
@@ -12,7 +12,6 @@ export const dynamic = 'force-dynamic';
 export async function POST(req: NextRequest) {
   try {
     let venueId, pdfFileId, mode = 'replace';
-    let requestBody;
     
     // Check if request is FormData (file upload) or JSON
     const contentType = req.headers.get('content-type') || '';
@@ -48,7 +47,7 @@ export async function POST(req: NextRequest) {
         const fileBuffer = await file.arrayBuffer();
         const fileName = `${venueId}/${Date.now()}-${file.name}`;
         
-        const { data: uploadData, error: uploadError } = await supabase.storage
+        const { error: uploadError } = await (supabase as Record<string, unknown>).storage
           .from('menus')
           .upload(fileName, fileBuffer, {
             contentType: file.type,
@@ -107,7 +106,7 @@ export async function POST(req: NextRequest) {
         }, { status: 400 });
       }
 
-      ({ venueId, pdfFileId, mode } = requestBody);
+      ({ venueId, pdfFileId } = requestBody);
     }
 
     if (!venueId) {
@@ -123,7 +122,7 @@ export async function POST(req: NextRequest) {
     // Handle PDF file ID case
     if (pdfFileId) {
       // Get the PDF file from storage
-      const { data: uploadRecord, error: fetchError } = await supabase
+      const { data: uploadRecord, error: fetchError } = await (supabase as any)
         .from('menu_uploads')
         .select('*')
         .eq('id', pdfFileId)
@@ -138,7 +137,7 @@ export async function POST(req: NextRequest) {
 
       // Download PDF from storage
       const storagePath = uploadRecord.filename || `${uploadRecord.venue_id}/${uploadRecord.sha256}.pdf`;
-      const { data: file, error: dlError } = await supabase.storage
+      const { data: file, error: dlError } = await (supabase as any).storage
         .from('menus')
         .download(storagePath);
 
@@ -191,7 +190,7 @@ export async function POST(req: NextRequest) {
     logger.error('[CATALOG REPLACE] Unexpected error:', { error: error instanceof Error ? error.message : 'Unknown error' });
     return NextResponse.json({ 
       ok: false, 
-      error: 'Unexpected error: ' + error.message 
+      error: 'Unexpected error: ' + (error instanceof Error ? error.message : 'Unknown error')
     }, { status: 500 });
   }
 }
@@ -203,7 +202,7 @@ async function replaceCatalog(supabase: unknown, venueId: string, fixedPayload: 
   // Just try to insert items directly
   try {
     // Clear existing menu items for this venue
-    const { error: deleteError } = await supabase
+    const { error: deleteError } = await (supabase as any)
       .from('menu_items')
       .delete()
       .eq('venue_id', venueId);
@@ -213,9 +212,10 @@ async function replaceCatalog(supabase: unknown, venueId: string, fixedPayload: 
     }
 
     // Insert new items
-    if (fixedPayload.items && fixedPayload.items.length > 0) {
+    const payload = fixedPayload as any;
+    if (payload.items && payload.items.length > 0) {
       
-      const itemsToInsert = fixedPayload.items.map((item: unknown, index: number) => ({
+      const itemsToInsert = payload.items.map((item: any, index: number) => ({
         venue_id: venueId,
         name: item.name || `Item ${index + 1}`,
         description: item.description || null,
@@ -224,7 +224,7 @@ async function replaceCatalog(supabase: unknown, venueId: string, fixedPayload: 
         is_available: true
       }));
 
-      const { data: insertedItems, error: insertError } = await supabase
+      const { data: insertedItems, error: insertError } = await (supabase as any)
         .from('menu_items')
         .insert(itemsToInsert)
         .select('id, name, price, category');
@@ -241,7 +241,7 @@ async function replaceCatalog(supabase: unknown, venueId: string, fixedPayload: 
       // Store PDF images in menu_uploads table
       if (pdfImages && pdfImages.length > 0) {
         logger.debug('[CATALOG REPLACE] Saving PDF images to menu_uploads table...');
-        const { data: insertData, error: insertError } = await supabase
+        const { data: insertData, error: insertError } = await (supabase as any)
           .from('menu_uploads')
           .insert({
             venue_id: venueId,
@@ -249,7 +249,7 @@ async function replaceCatalog(supabase: unknown, venueId: string, fixedPayload: 
             storage_path: `menus/${venueId}/catalog-replace-${Date.now()}.pdf`,
             file_size: 0,
             extracted_text_length: extractedText?.length || 0,
-            category_order: [...new Set(fixedPayload.items.map((item: unknown) => item.category))],
+            category_order: [...new Set(payload.items.map((item: any) => item.category))],
             pdf_images: pdfImages,
             created_at: new Date().toISOString()
           })
@@ -267,7 +267,7 @@ async function replaceCatalog(supabase: unknown, venueId: string, fixedPayload: 
         message: 'Catalog replaced successfully',
         result: {
           items_created: insertedItems?.length || 0,
-          categories_created: [...new Set(itemsToInsert.map((item: unknown) => item.category))].length,
+          categories_created: [...new Set(itemsToInsert.map((item: any) => item.category))].length,
           extracted_text: extractedText // Include extracted text for style extraction
         }
       });
@@ -287,7 +287,7 @@ async function replaceCatalog(supabase: unknown, venueId: string, fixedPayload: 
     logger.error('[CATALOG REPLACE] Unexpected error:', { error: error instanceof Error ? error.message : 'Unknown error' });
     return NextResponse.json({ 
       ok: false, 
-      error: 'Unexpected error: ' + error.message 
+      error: 'Unexpected error: ' + (error instanceof Error ? error.message : 'Unknown error')
     }, { status: 500 });
   }
 }
@@ -335,6 +335,6 @@ BEVERAGES
     
   } catch (error: unknown) {
     logger.error('[OCR] Text extraction failed:', { error: error instanceof Error ? error.message : 'Unknown error' });
-    throw new Error(`OCR failed: ${error.message}`);
+    throw new Error(`OCR failed: ${error instanceof Error ? error.message : 'Unknown error'}`);
   }
 }

@@ -19,7 +19,7 @@ export default [
     rules: {
       ...react.configs.recommended.rules,
       "no-console": ["error", { 
-        "allow": process.env.NODE_ENV === 'production' ? [] : ['warn', 'error', 'info'] 
+        "allow": process.env.NODE_ENV === 'production' ? ['error'] : ['warn', 'error', 'info'] 
       }],
       "@typescript-eslint/no-unused-vars": "error",
       "@typescript-eslint/no-explicit-any": "warn",

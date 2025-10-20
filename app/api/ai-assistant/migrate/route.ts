@@ -3,9 +3,9 @@
 
 import { NextRequest, NextResponse } from "next/server";
 import { createClient } from "@/lib/supabase";
-import { apiLogger, logger } from '@/lib/logger';
+import { logger } from '@/lib/logger';
 
-export async function POST(request: NextRequest) {
+export async function POST(_request: NextRequest) {
   try {
     const supabase = await createClient();
     
@@ -268,7 +268,7 @@ CREATE TRIGGER trigger_update_ai_chat_conversations_updated_at
   } catch (error: unknown) {
     logger.error("[AI MIGRATION] Migration failed:", { error: error instanceof Error ? error.message : 'Unknown error' });
     return NextResponse.json(
-      { error: error.message || "Migration failed" },
+      { error: error instanceof Error ? error.message : "Migration failed" },
       { status: 500 }
     );
   }

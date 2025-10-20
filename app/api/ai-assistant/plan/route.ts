@@ -9,7 +9,7 @@ import {
   getAllSummaries,
 } from "@/lib/ai/context-builders";
 import { z } from "zod";
-import { apiLogger, logger } from '@/lib/logger';
+import { logger } from '@/lib/logger';
 
 const PlanRequestSchema = z.object({
   prompt: z.string().min(1).max(500),
@@ -36,13 +36,13 @@ export async function POST(request: NextRequest) {
 
     // Parse request
     const body = await request.json();
-    const { prompt, venueId, context } = PlanRequestSchema.parse(body);
+    const { prompt, venueId } = PlanRequestSchema.parse(body);
 
     // Verify user has access to venue
     let userRole = "owner"; // Default to owner for backward compatibility
     
     try {
-      const { data: roleData, error: roleError } = await supabase
+      const { data: roleData } = await supabase
         .from("user_venue_roles")
         .select("role")
         .eq("venue_id", venueId)
@@ -94,7 +94,7 @@ export async function POST(request: NextRequest) {
 
     // Plan the action (now returns model used)
     const startTime = Date.now();
-    const plan = await planAssistantAction(prompt, assistantContext, summaries);
+    const plan = await planAssistantAction(prompt, assistantContext, summaries as any);
     const executionTime = Date.now() - startTime;
 
     // Log the planning request (not executed yet) with actual model used
@@ -125,15 +125,15 @@ export async function POST(request: NextRequest) {
   } catch (error: unknown) {
     logger.error("[AI ASSISTANT] Planning error:", { error: error instanceof Error ? error.message : 'Unknown error' });
 
-    if (error.name === "ZodError") {
+    if ((error as any)?.name === "ZodError") {
       return NextResponse.json(
-        { error: "Invalid request format", details: error.errors },
+        { error: "Invalid request format", details: (error as any)?.errors },
         { status: 400 }
       );
     }
 
     return NextResponse.json(
-      { error: error.message || "Planning failed" },
+      { error: error instanceof Error ? error.message : "Planning failed" },
       { status: 500 }
     );
   }

@@ -39,7 +39,7 @@ export async function POST(request: NextRequest) {
       .in('order_status', ['PLACED', 'ACCEPTED', 'IN_PREP', 'READY', 'SERVING']);
 
     if (activeOrdersError) {
-      logger.error('🔄 [DAILY RESET] Error fetching active orders:', activeOrdersError);
+      logger.error('🔄 [DAILY RESET] Error fetching active orders:', { error: activeOrdersError.message || 'Unknown error' });
       return NextResponse.json(
         { error: 'Failed to fetch active orders' },
         { status: 500 }
@@ -58,7 +58,7 @@ export async function POST(request: NextRequest) {
         .in('order_status', ['PLACED', 'ACCEPTED', 'IN_PREP', 'READY', 'SERVING']);
 
       if (completeOrdersError) {
-        logger.error('🔄 [DAILY RESET] Error completing orders:', completeOrdersError);
+        logger.error('🔄 [DAILY RESET] Error completing orders:', { error: completeOrdersError.message || 'Unknown error' });
         return NextResponse.json(
           { error: 'Failed to complete active orders' },
           { status: 500 }
@@ -75,7 +75,7 @@ export async function POST(request: NextRequest) {
       .eq('status', 'BOOKED');
 
     if (activeReservationsError) {
-      logger.error('🔄 [DAILY RESET] Error fetching active reservations:', activeReservationsError);
+      logger.error('🔄 [DAILY RESET] Error fetching active reservations:', { error: activeReservationsError.message || 'Unknown error' });
       return NextResponse.json(
         { error: 'Failed to fetch active reservations' },
         { status: 500 }
@@ -94,7 +94,7 @@ export async function POST(request: NextRequest) {
         .eq('status', 'BOOKED');
 
       if (cancelReservationsError) {
-        logger.error('🔄 [DAILY RESET] Error canceling reservations:', cancelReservationsError);
+        logger.error('🔄 [DAILY RESET] Error canceling reservations:', { error: cancelReservationsError.message || 'Unknown error' });
         return NextResponse.json(
           { error: 'Failed to cancel active reservations' },
           { status: 500 }
@@ -110,7 +110,7 @@ export async function POST(request: NextRequest) {
       .eq('venue_id', venueId);
 
     if (tablesError) {
-      logger.error('🔄 [DAILY RESET] Error fetching tables:', tablesError);
+      logger.error('🔄 [DAILY RESET] Error fetching tables:', { error: tablesError.message || 'Unknown error' });
       return NextResponse.json(
         { error: 'Failed to fetch tables' },
         { status: 500 }
@@ -126,7 +126,7 @@ export async function POST(request: NextRequest) {
         .eq('venue_id', venueId);
 
       if (deleteSessionsError) {
-        logger.warn('🔄 [DAILY RESET] Warning clearing table sessions:', deleteSessionsError);
+        logger.warn('🔄 [DAILY RESET] Warning clearing table sessions:', { error: deleteSessionsError.message || 'Unknown error' });
         // Don't fail for this, continue
       }
 
@@ -137,7 +137,7 @@ export async function POST(request: NextRequest) {
         .eq('venue_id', venueId);
 
       if (deleteTablesError) {
-        logger.error('🔄 [DAILY RESET] Error deleting tables:', deleteTablesError);
+        logger.error('🔄 [DAILY RESET] Error deleting tables:', { error: deleteTablesError.message || 'Unknown error' });
         return NextResponse.json(
           { error: 'Failed to delete tables' },
           { status: 500 }
@@ -153,10 +153,9 @@ export async function POST(request: NextRequest) {
       .eq('venue_id', venueId);
 
     if (clearRuntimeError) {
-      logger.error('🔄 [DAILY RESET] Error clearing runtime state:', clearRuntimeError);
+      logger.error('🔄 [DAILY RESET] Error clearing runtime state:', { error: clearRuntimeError.message || 'Unknown error' });
       // Don't fail the entire operation for this
       logger.warn('🔄 [DAILY RESET] Continuing despite runtime state clear error');
-    } else {
     }
 
     // Step 5: If force is true, also delete ALL orders for this venue
@@ -168,7 +167,7 @@ export async function POST(request: NextRequest) {
         .eq('venue_id', venueId);
 
       if (deleteOrdersError) {
-        logger.error('🔄 [DAILY RESET] Error deleting all orders:', deleteOrdersError);
+        logger.error('🔄 [DAILY RESET] Error deleting all orders:', { error: deleteOrdersError.message || 'Unknown error' });
         return NextResponse.json(
           { error: 'Failed to delete all orders' },
           { status: 500 }
@@ -217,21 +216,21 @@ export async function GET(request: NextRequest) {
     const supabase = createAdminClient();
 
     // Check for active orders
-    const { data: activeOrders, error: ordersError } = await supabase
+    const { data: activeOrders } = await supabase
       .from('orders')
       .select('id')
       .eq('venue_id', venueId)
       .in('order_status', ['PLACED', 'ACCEPTED', 'IN_PREP', 'READY', 'SERVING']);
 
     // Check for active reservations
-    const { data: activeReservations, error: reservationsError } = await supabase
+    const { data: activeReservations } = await supabase
       .from('reservations')
       .select('id')
       .eq('venue_id', venueId)
       .eq('status', 'BOOKED');
 
     // Check for occupied tables by looking at table_sessions instead
-    const { data: occupiedTables, error: tablesError } = await supabase
+    const { data: occupiedTables } = await supabase
       .from('table_sessions')
       .select('table_id')
       .eq('venue_id', venueId)

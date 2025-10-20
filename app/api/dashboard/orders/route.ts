@@ -1,9 +1,7 @@
-import { errorToContext } from '@/lib/utils/error-to-context';
 import { NextResponse } from 'next/server';
 import { createClient, getAuthenticatedUser } from '@/lib/supabase';
-import { liveOrdersWindow, earlierTodayWindow, historyWindow } from '@/lib/dates';
 import { cache } from '@/lib/cache';
-import { apiLogger, logger } from '@/lib/logger';
+import { logger } from '@/lib/logger';
 
 export const runtime = 'nodejs';
 
@@ -94,37 +92,30 @@ export async function GET(req: Request) {
   // Transform orders to include table_label
   const transformedOrders = orders?.map(order => ({
     ...order,
-    table_label: (order.tables as unknown)?.label || (order.source === 'counter' ? `Counter ${order.table_number}` : `Table ${order.table_number}`)
+    table_label: (order.tables as any)?.label || (order.source === 'counter' ? `Counter ${order.table_number}` : `Table ${order.table_number}`)
   })) || [];
 
-  // Detailed logging for Railway deployment monitoring
-  
-  if (orders && orders.length > 0) {
-    orders.slice(0, 3).forEach((order, index) => {
-      const orderDate = new Date(order.created_at);
-      const ageMinutes = Math.round((Date.now() - orderDate.getTime()) / (1000 * 60));
-    });
-    
-    // Age distribution analysis
-    const ageDistribution = orders.reduce((acc, order) => {
-      const orderDate = new Date(order.created_at);
-      const ageMinutes = Math.round((Date.now() - orderDate.getTime()) / (1000 * 60));
-      if (ageMinutes < 30) acc['<30min'] = (acc['<30min'] || 0) + 1;
-      else if (ageMinutes < 60) acc['30-60min'] = (acc['30-60min'] || 0) + 1;
-      else if (ageMinutes < 1440) acc['1-24hrs'] = (acc['1-24hrs'] || 0) + 1;
-      else acc['>24hrs'] = (acc['>24hrs'] || 0) + 1;
-      return acc;
-    }, {} as Record<string, number>);
-    
-    
-    // Status distribution
-    const statusDistribution = orders.reduce((acc, order) => {
-      acc[order.order_status] = (acc[order.order_status] || 0) + 1;
-      return acc;
-    }, {} as Record<string, number>);
-    
-  } else {
-  }
+  // Detailed logging for Railway deployment monitoring (disabled for performance)
+  // if (orders && orders.length > 0) {
+  //   // Age distribution analysis
+  //   const ageDistribution = orders.reduce((acc, order) => {
+  //     const orderDate = new Date(order.created_at);
+  //     const ageMinutes = Math.round((Date.now() - orderDate.getTime()) / (1000 * 60));
+  //     if (ageMinutes < 30) acc['<30min'] = (acc['<30min'] || 0) + 1;
+  //     else if (ageMinutes < 60) acc['30-60min'] = (acc['30-60min'] || 0) + 1;
+  //     else if (ageMinutes < 1440) acc['1-24hrs'] = (acc['1-24hrs'] || 0) + 1;
+  //     else acc['>24hrs'] = (acc['>24hrs'] || 0) + 1;
+  //     return acc;
+  //   }, {} as Record<string, number>);
+  //   
+  //   
+  //   // Status distribution
+  //   const statusDistribution = orders.reduce((acc, order) => {
+  //     acc[order.order_status] = (acc[order.order_status] || 0) + 1;
+  //     return acc;
+  //   }, {} as Record<string, number>);
+  //   
+  // }
 
   // Get active tables count based on scope
   let activeTablesQuery = supabase
@@ -146,7 +137,7 @@ export async function GET(req: Request) {
 
   const { data: activeTables } = await activeTablesQuery;
 
-  const activeTablesToday = new Set(activeTables?.map((o: unknown) => o.table_number) || []).size;
+  const activeTablesToday = new Set(activeTables?.map((o: any) => o.table_number) || []).size;
 
   const response = {
     ok: true,

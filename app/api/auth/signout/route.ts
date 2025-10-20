@@ -8,12 +8,7 @@ export async function POST() {
     const supabase = await createServerSupabase();
     
     // SECURE: Use getUser() instead of getSession() for authentication check
-    const { data: { user }, error: userError } = await supabase.auth.getUser();
-    
-    if (userError) {
-    } else if (user) {
-    } else {
-    }
+    await supabase.auth.getUser();
     
     // Perform the signout
     const { error } = await supabase.auth.signOut();
@@ -51,10 +46,10 @@ export async function POST() {
     return response;
     
   } catch (error: unknown) {
-    logger.error('[SIGNOUT API] Unexpected error:', error.message);
+    logger.error('[SIGNOUT API] Unexpected error:', { error: error instanceof Error ? error.message : 'Unknown error' });
     return NextResponse.json({ 
       ok: false, 
-      error: error.message || 'Internal server error'
+      error: error instanceof Error ? error.message : 'Internal server error'
     }, { status: 500 });
   }
 }

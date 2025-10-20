@@ -12,10 +12,6 @@ export async function GET(request: NextRequest) {
     // Test Supabase connection
     const { data: { session }, error: sessionError } = await supabase.auth.getSession();
     
-    // Test OAuth providers - removed listIdentities as it doesn't exist
-    const providers = null;
-    const providersError = null;
-    
     const testResults = {
       timestamp: new Date().toISOString(),
       environment: {
@@ -52,7 +48,7 @@ export async function GET(request: NextRequest) {
     
   } catch (error: unknown) {
     return NextResponse.json({ 
-      error: error.message,
+      error: error instanceof Error ? error.message : 'Unknown error',
       timestamp: new Date().toISOString()
     }, { status: 500 });
   }

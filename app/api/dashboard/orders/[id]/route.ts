@@ -1,14 +1,11 @@
-import { errorToContext } from '@/lib/utils/error-to-context';
 import { NextResponse } from 'next/server';
 import { createClient } from '@/lib/supabase';
 import { cleanupTableOnOrderCompletion } from '@/lib/table-cleanup';
-import { apiLogger, logger } from '@/lib/logger';
+import { logger } from '@/lib/logger';
 
 export const runtime = 'nodejs';
 
 function admin() {
-  const url = process.env.NEXT_PUBLIC_SUPABASE_URL!;
-  const key = process.env.SUPABASE_SERVICE_ROLE_KEY!;
   return createClient();
 }
 
@@ -63,9 +60,9 @@ export async function PATCH(req: Request, context: { params: Promise<{ id: strin
       });
 
       if (!cleanupResult.success) {
-        logger.error('[DASHBOARD ORDER] Table cleanup failed:', cleanupResult.error);
+        logger.error('[DASHBOARD ORDER] Table cleanup failed:', { error: cleanupResult.error });
       } else {
-        logger.debug('[DASHBOARD ORDER] Table cleanup successful:', cleanupResult.details);
+        logger.debug('[DASHBOARD ORDER] Table cleanup successful:', { details: cleanupResult.details });
       }
     }
   }

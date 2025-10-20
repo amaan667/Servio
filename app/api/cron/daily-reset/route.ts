@@ -34,7 +34,7 @@ export async function POST(request: NextRequest) {
       .not('daily_reset_time', 'is', null);
 
     if (venuesError) {
-      logger.error('🕛 [CRON DAILY RESET] Error fetching venues:', venuesError);
+      logger.error('🕛 [CRON DAILY RESET] Error fetching venues:', { error: venuesError.message || 'Unknown error' });
       return NextResponse.json(
         { error: 'Failed to fetch venues' },
         { status: 500 }

@@ -5,7 +5,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { createClient, createAdminClient } from "@/lib/supabase";
 import { generateConversationTitle } from "@/lib/ai/openai-service";
 import { z } from "zod";
-import { apiLogger, logger } from '@/lib/logger';
+import { logger } from '@/lib/logger';
 
 const CreateMessageSchema = z.object({
   role: z.enum(["user", "assistant", "system"]),
@@ -69,9 +69,10 @@ export async function GET(
       messages: transformedMessages,
     });
   } catch (error: unknown) {
-    logger.error("[AI CHAT] Messages error:", { error: error instanceof Error ? error.message : 'Unknown error' });
+    const errorMessage = error instanceof Error ? error.message : 'Unknown error';
+    logger.error("[AI CHAT] Messages error:", { error: errorMessage });
     return NextResponse.json(
-      { error: error.message || "Internal server error" },
+      { error: errorMessage || "Internal server error" },
       { status: 500 }
     );
   }
@@ -178,17 +179,18 @@ export async function POST(
       message: transformedMessage,
     });
   } catch (error: unknown) {
-    logger.error("[AI CHAT] Create message error:", { error: error instanceof Error ? error.message : 'Unknown error' });
+    const errorMessage = error instanceof Error ? error.message : 'Unknown error';
+    logger.error("[AI CHAT] Create message error:", { error: errorMessage });
     
-    if (error.name === "ZodError") {
+    if (error instanceof Error && error.name === "ZodError") {
       return NextResponse.json(
-        { error: "Invalid request data", details: error.errors },
+        { error: "Invalid request data", details: (error as any).errors },
         { status: 400 }
       );
     }
 
     return NextResponse.json(
-      { error: error.message || "Internal server error" },
+      { error: errorMessage || "Internal server error" },
       { status: 500 }
     );
   }

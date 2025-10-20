@@ -33,7 +33,7 @@ export async function POST(request: NextRequest) {
       .single();
 
     if (venueError) {
-      logger.error('🔄 [MANUAL DAILY RESET] Error fetching venue:', venueError);
+      logger.error('🔄 [MANUAL DAILY RESET] Error fetching venue:', { error: venueError.message || 'Unknown error' });
       return NextResponse.json(
         { error: `Database error: ${venueError.message}` },
         { status: 500 }
@@ -50,7 +50,7 @@ export async function POST(request: NextRequest) {
 
     // Check if there are unknown recent orders (within last 2 hours) - if so, warn user
     const twoHoursAgo = new Date(Date.now() - 2 * 60 * 60 * 1000).toISOString();
-    const { data: recentOrders, error: recentOrdersError } = await supabase
+    const { error: recentOrdersError } = await supabase
       .from('orders')
       .select('id, created_at')
       .eq('venue_id', venueId)
@@ -58,9 +58,8 @@ export async function POST(request: NextRequest) {
       .limit(1);
 
     if (recentOrdersError) {
-      logger.error('🔄 [MANUAL DAILY RESET] Error checking recent orders:', recentOrdersError);
+      logger.error('🔄 [MANUAL DAILY RESET] Error checking recent orders:', { error: recentOrdersError.message || 'Unknown error' });
       // Continue with reset if we can't check
-    } else if (recentOrders && recentOrders.length > 0) {
     }
 
     // Step 1: Complete all active orders (mark as COMPLETED)
@@ -71,7 +70,7 @@ export async function POST(request: NextRequest) {
       .in('order_status', ['PLACED', 'ACCEPTED', 'IN_PREP', 'READY', 'SERVING']);
 
     if (activeOrdersError) {
-      logger.error('🔄 [MANUAL DAILY RESET] Error fetching active orders:', activeOrdersError);
+      logger.error('🔄 [MANUAL DAILY RESET] Error fetching active orders:', { error: activeOrdersError.message || 'Unknown error' });
       return NextResponse.json(
         { error: 'Failed to fetch active orders' },
         { status: 500 }
@@ -90,7 +89,7 @@ export async function POST(request: NextRequest) {
         .in('order_status', ['PLACED', 'ACCEPTED', 'IN_PREP', 'READY', 'SERVING']);
 
       if (completeOrdersError) {
-        logger.error('🔄 [MANUAL DAILY RESET] Error completing orders:', completeOrdersError);
+        logger.error('🔄 [MANUAL DAILY RESET] Error completing orders:', { error: completeOrdersError.message || 'Unknown error' });
         return NextResponse.json(
           { error: 'Failed to complete active orders' },
           { status: 500 }
@@ -107,7 +106,7 @@ export async function POST(request: NextRequest) {
       .eq('status', 'BOOKED');
 
     if (activeReservationsError) {
-      logger.error('🔄 [MANUAL DAILY RESET] Error fetching active reservations:', activeReservationsError);
+      logger.error('🔄 [MANUAL DAILY RESET] Error fetching active reservations:', { error: activeReservationsError.message || 'Unknown error' });
       return NextResponse.json(
         { error: 'Failed to fetch active reservations' },
         { status: 500 }
@@ -126,7 +125,7 @@ export async function POST(request: NextRequest) {
         .eq('status', 'BOOKED');
 
       if (cancelReservationsError) {
-        logger.error('🔄 [MANUAL DAILY RESET] Error canceling reservations:', cancelReservationsError);
+        logger.error('🔄 [MANUAL DAILY RESET] Error canceling reservations:', { error: cancelReservationsError.message || 'Unknown error' });
         return NextResponse.json(
           { error: 'Failed to cancel active reservations' },
           { status: 500 }
@@ -142,7 +141,7 @@ export async function POST(request: NextRequest) {
       .eq('venue_id', venueId);
 
     if (tablesError) {
-      logger.error('🔄 [MANUAL DAILY RESET] Error fetching tables:', tablesError);
+      logger.error('🔄 [MANUAL DAILY RESET] Error fetching tables:', { error: tablesError.message || 'Unknown error' });
       return NextResponse.json(
         { error: 'Failed to fetch tables' },
         { status: 500 }
@@ -158,7 +157,7 @@ export async function POST(request: NextRequest) {
         .eq('venue_id', venueId);
 
       if (deleteSessionsError) {
-        logger.warn('🔄 [MANUAL DAILY RESET] Warning clearing table sessions:', deleteSessionsError);
+        logger.warn('🔄 [MANUAL DAILY RESET] Warning clearing table sessions:', { error: deleteSessionsError.message || 'Unknown error' });
         // Don't fail for this, continue
       }
 
@@ -169,7 +168,7 @@ export async function POST(request: NextRequest) {
         .eq('venue_id', venueId);
 
       if (deleteTablesError) {
-        logger.error('🔄 [MANUAL DAILY RESET] Error deleting tables:', deleteTablesError);
+        logger.error('🔄 [MANUAL DAILY RESET] Error deleting tables:', { error: deleteTablesError.message || 'Unknown error' });
         return NextResponse.json(
           { error: 'Failed to delete tables' },
           { status: 500 }
@@ -185,10 +184,9 @@ export async function POST(request: NextRequest) {
       .eq('venue_id', venueId);
 
     if (clearRuntimeError) {
-      logger.error('🔄 [MANUAL DAILY RESET] Error clearing runtime state:', clearRuntimeError);
+      logger.error('🔄 [MANUAL DAILY RESET] Error clearing runtime state:', { error: clearRuntimeError.message || 'Unknown error' });
       // Don't fail the entire operation for this
       logger.warn('🔄 [MANUAL DAILY RESET] Continuing despite runtime state clear error');
-    } else {
     }
 
     // Step 5: Record the manual reset in the log (but don't prevent future resets)
@@ -209,10 +207,9 @@ export async function POST(request: NextRequest) {
       });
 
     if (logError) {
-      logger.error('🔄 [MANUAL DAILY RESET] Error logging reset:', logError);
+      logger.error('🔄 [MANUAL DAILY RESET] Error logging reset:', { error: logError.message || 'Unknown error' });
       // Don't fail the operation for this
       logger.warn('🔄 [MANUAL DAILY RESET] Continuing despite log error');
-    } else {
     }
 
 

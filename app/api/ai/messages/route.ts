@@ -5,7 +5,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { createClient } from "@/lib/supabase";
 import { z } from "zod";
 import { handleUserMessage, generateConversationTitle } from "@/lib/ai/openai-service";
-import { apiLogger, logger } from '@/lib/logger';
+import { logger } from '@/lib/logger';
 
 const CreateMessageSchema = z.object({
   venueId: z.string().min(1),
@@ -93,7 +93,7 @@ export async function GET(request: NextRequest) {
   } catch (error: unknown) {
     logger.error("[AI CHAT] Messages error:", { error: error instanceof Error ? error.message : 'Unknown error' });
     return NextResponse.json(
-      { error: error.message || "Internal server error" },
+      { error: error instanceof Error ? error.message : "Internal server error" },
       { status: 500 }
     );
   }
@@ -126,7 +126,7 @@ export async function POST(request: NextRequest) {
         .eq('user_id', user.id)
         .maybeSingle();
       if (!roleErr && roleRow?.role) roleName = roleRow.role;
-    } catch (e) {
+    } catch {
       // ignore, fallback to owner
     }
 
@@ -163,7 +163,7 @@ export async function POST(request: NextRequest) {
         .single();
 
       if (convError) {
-        logger.error("[AI CHAT] Failed to create conversation:", convError);
+        logger.error("[AI CHAT] Failed to create conversation:", { error: convError.message || 'Unknown error' });
         return NextResponse.json(
           { error: "Failed to create conversation" },
           { status: 500 }
@@ -201,7 +201,7 @@ export async function POST(request: NextRequest) {
       .single();
 
     if (msgError) {
-      logger.error("[AI CHAT] Failed to save user message:", msgError);
+      logger.error("[AI CHAT] Failed to save user message:", { error: msgError.message || 'Unknown error' });
       return NextResponse.json(
         { error: "Failed to save message" },
         { status: 500 }
@@ -254,9 +254,9 @@ export async function POST(request: NextRequest) {
       });
 
     } catch (aiError: unknown) {
-      logger.error("[AI CHAT] AI service error:", aiError);
+      logger.error("[AI CHAT] AI service error:", { error: aiError instanceof Error ? aiError.message : 'Unknown error' });
       
-      const errorMessage = aiError?.message || "An unexpected error occurred";
+      const errorMessage = aiError instanceof Error ? aiError.message : "An unexpected error occurred";
       
       // Save error message
       const { data: errorMsg } = await supabase
@@ -312,15 +312,15 @@ export async function POST(request: NextRequest) {
   } catch (error: unknown) {
     logger.error("[AI CHAT] Create message error:", { error: error instanceof Error ? error.message : 'Unknown error' });
     
-    if (error.name === "ZodError") {
+    if ((error as any)?.name === "ZodError") {
       return NextResponse.json(
-        { error: "Invalid request data", details: error.errors },
+        { error: "Invalid request data", details: (error as any)?.errors },
         { status: 400 }
       );
     }
 
     return NextResponse.json(
-      { error: error.message || "Internal server error" },
+      { error: error instanceof Error ? error.message : "Internal server error" },
       { status: 500 }
     );
   }

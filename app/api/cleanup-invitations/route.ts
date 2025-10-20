@@ -1,10 +1,10 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { createClient } from '@/lib/supabase';
 import { getUserSafe } from '@/utils/getUserSafe';
-import { apiLogger, logger } from '@/lib/logger';
+import { logger } from '@/lib/logger';
 
 // POST /api/cleanup-invitations - Clean up cancelled invitations and fix constraint
-export async function POST(request: NextRequest) {
+export async function POST(_request: NextRequest) {
   try {
     const user = await getUserSafe('POST /api/cleanup-invitations');
     if (!user) {
@@ -23,7 +23,7 @@ export async function POST(request: NextRequest) {
       .select('id, email, venue_id');
 
     if (deleteError) {
-      logger.error('[CLEANUP] Error deleting cancelled invitations:', deleteError);
+      logger.error('[CLEANUP] Error deleting cancelled invitations:', { error: deleteError.message || 'Unknown error' });
       return NextResponse.json({ 
         error: 'Failed to clean up cancelled invitations',
         details: deleteError.message 
