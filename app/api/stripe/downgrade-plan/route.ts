@@ -1,7 +1,5 @@
-import { errorToContext } from '@/lib/utils/error-to-context';
 // Stripe Plan Downgrade - Handle immediate downgrades
 import { NextRequest, NextResponse } from "next/server";
-import Stripe from "stripe";
 import { createClient } from "@/lib/supabase";
 import { stripe } from "@/lib/stripe-client";
 import { apiLogger as logger } from '@/lib/logger';
@@ -129,8 +127,9 @@ export async function POST(request: NextRequest) {
             logger.debug(`[DOWNGRADE] Updated Stripe subscription ${subscription.id} to ${newTier} with immediate billing`);
           }
         }
-      } catch (stripeError) {
-        logger.error("[DOWNGRADE] Stripe update error:", stripeError);
+      } catch (stripeError: unknown) {
+        const errorMessage = stripeError instanceof Error ? stripeError.message : 'Unknown error';
+        logger.error("[DOWNGRADE] Stripe update error:", { error: errorMessage });
         // Don't fail the entire operation if Stripe update fails
         // The database update already succeeded
       }
@@ -143,9 +142,10 @@ export async function POST(request: NextRequest) {
     });
 
   } catch (error: unknown) {
-    logger.error("[DOWNGRADE] Error:", { error: error instanceof Error ? error.message : 'Unknown error' });
+    const errorMessage = error instanceof Error ? error.message : 'Unknown error';
+    logger.error("[DOWNGRADE] Error:", { error: errorMessage });
     return NextResponse.json(
-      { error: error.message || "Failed to downgrade plan" },
+      { error: errorMessage || "Failed to downgrade plan" },
       { status: 500 }
     );
   }

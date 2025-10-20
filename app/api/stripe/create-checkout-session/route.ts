@@ -1,4 +1,3 @@
-import { errorToContext } from '@/lib/utils/error-to-context';
 // Stripe Checkout Session - Create subscription checkout
 import { NextRequest, NextResponse } from "next/server";
 import Stripe from "stripe";
@@ -163,11 +162,11 @@ export async function POST(request: NextRequest) {
       
       if (orgById && orgById.owner_id === user.id) {
         org = orgById;
-        logger.debug('[STRIPE DEBUG] Found organization by provided ID:', org.id);
+        logger.debug('[STRIPE DEBUG] Found organization by provided ID:', { id: org.id });
       } else if (orgById) {
-        logger.warn('[STRIPE DEBUG] Organization', organizationId, 'exists but belongs to different user');
+        logger.warn('[STRIPE DEBUG] Organization exists but belongs to different user', { organizationId });
       } else if (idError) {
-        logger.debug('[STRIPE DEBUG] Error querying organization by ID:', { value: idError });
+        logger.debug('[STRIPE DEBUG] Error querying organization by ID:', { error: idError });
       }
     }
 
@@ -228,7 +227,7 @@ export async function POST(request: NextRequest) {
     
     // Always use the actual organization ID from database
     const actualOrgId = org.id;
-    logger.debug('[STRIPE DEBUG] Using organization ID:', actualOrgId, 'for user:', user.id);
+    logger.debug('[STRIPE DEBUG] Using organization ID:', { orgId: actualOrgId, userId: user.id });
 
     logger.debug('[STRIPE DEBUG] Using organization:', {
       id: org.id,
@@ -258,7 +257,7 @@ export async function POST(request: NextRequest) {
         .update({ stripe_customer_id: customerId })
         .eq("id", actualOrgId);
       
-      logger.debug('[STRIPE DEBUG] Created Stripe customer:', customerId, 'for org:', actualOrgId);
+      logger.debug('[STRIPE DEBUG] Created Stripe customer:', { customerId, orgId: actualOrgId });
     } else {
       logger.debug('[STRIPE DEBUG] Using existing Stripe customer:', { value: customerId });
     }
@@ -303,9 +302,10 @@ export async function POST(request: NextRequest) {
 
     return NextResponse.json({ sessionId: session.id, url: session.url });
   } catch (error: unknown) {
-    logger.error("[STRIPE CHECKOUT] Error:", { error: error instanceof Error ? error.message : 'Unknown error' });
+    const errorMessage = error instanceof Error ? error.message : 'Unknown error';
+    logger.error("[STRIPE CHECKOUT] Error:", { error: errorMessage });
     return NextResponse.json(
-      { error: error.message || "Failed to create checkout session" },
+      { error: errorMessage || "Failed to create checkout session" },
       { status: 500 }
     );
   }

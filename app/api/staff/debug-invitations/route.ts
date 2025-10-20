@@ -19,7 +19,7 @@ export async function GET(request: NextRequest) {
     }
 
     const supabase = await createClient();
-    const debugInfo: unknown = {
+    const debugInfo: Record<string, unknown> = {
       user: {
         id: user.id,
         email: user.email,
@@ -30,7 +30,7 @@ export async function GET(request: NextRequest) {
 
     // Check if staff_invitations table exists
     try {
-      const { data: tableCheck, error: tableError } = await supabase
+      const { error: tableError } = await supabase
         .from('staff_invitations')
         .select('id')
         .limit(1);
@@ -42,7 +42,7 @@ export async function GET(request: NextRequest) {
     } catch (error: unknown) {
       debugInfo.checks.staff_invitations_table = {
         exists: false,
-        error: error.message
+        error: error instanceof Error ? error.message : 'Unknown error'
       };
     }
 
@@ -63,7 +63,7 @@ export async function GET(request: NextRequest) {
       debugInfo.checks.user_venue_roles = {
         found: 0,
         roles: [],
-        error: error.message
+        error: error instanceof Error ? error.message : 'Unknown error'
       };
     }
 
@@ -84,7 +84,7 @@ export async function GET(request: NextRequest) {
       debugInfo.checks.venue = {
         exists: false,
         venue: null,
-        error: error.message
+        error: error instanceof Error ? error.message : 'Unknown error'
       };
     }
 
@@ -105,7 +105,7 @@ export async function GET(request: NextRequest) {
       debugInfo.checks.is_owner = {
         is_owner: false,
         owner_user_id: null,
-        error: error.message
+        error: error instanceof Error ? error.message : 'Unknown error'
       };
     }
 
@@ -125,7 +125,7 @@ export async function GET(request: NextRequest) {
       debugInfo.checks.existing_invitations = {
         count: 0,
         invitations: [],
-        error: error.message
+        error: error instanceof Error ? error.message : 'Unknown error'
       };
     }
 

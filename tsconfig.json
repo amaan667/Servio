@@ -17,6 +17,7 @@
     "noUnusedParameters": false,
     "noImplicitReturns": true,
     "noFallthroughCasesInSwitch": true,
+    "noUncheckedIndexedAccess": true,
     "plugins": [
       {
         "name": "next"
@@ -35,4 +36,3 @@
   ],
   "exclude": ["node_modules"]
 }
-

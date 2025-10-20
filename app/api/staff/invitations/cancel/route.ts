@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { createClient } from '@/lib/supabase';
 import { getUserSafe } from '@/utils/getUserSafe';
-import { apiLogger, logger } from '@/lib/logger';
+import { logger } from '@/lib/logger';
 
 // POST /api/staff/invitations/cancel - Cancel an invitation
 export async function POST(request: NextRequest) {
@@ -26,13 +26,16 @@ export async function POST(request: NextRequest) {
     try {
       await supabase.from('staff_invitations').select('id').limit(1);
     } catch (tableError: unknown) {
-      if (tableError.code === 'PGRST116' || tableError.message?.includes('relation "staff_invitations" does not exist')) {
+      const errorMessage = tableError instanceof Error ? tableError.message : 'Unknown error';
+      const errorCode = tableError && typeof tableError === 'object' && 'code' in tableError ? String(tableError.code) : undefined;
+      
+      if (errorCode === 'PGRST116' || errorMessage?.includes('relation "staff_invitations" does not exist')) {
         logger.debug('[INVITATION API] staff_invitations table does not exist');
         return NextResponse.json({ 
           error: 'Staff invitation system not set up. Please run the database migration first.' 
         }, { status: 503 });
       } else {
-        logger.error('[INVITATION API] Unexpected table error:', { error: tableError instanceof Error ? tableError.message : 'Unknown error' });
+        logger.error('[INVITATION API] Unexpected table error:', { error: errorMessage });
         return NextResponse.json({ 
           error: 'Database error. Please try again.' 
         }, { status: 500 });
@@ -52,7 +55,7 @@ export async function POST(request: NextRequest) {
     }
 
     // Check if user has permission to cancel invitations for this venue
-    const { data: userRole, error: roleError } = await supabase
+    const { data: userRole } = await supabase
       .from('user_venue_roles')
       .select('role')
       .eq('user_id', user.id)
@@ -65,7 +68,7 @@ export async function POST(request: NextRequest) {
       hasPermission = true;
     } else {
       // Check if user is the venue owner
-      const { data: venue, error: venueError } = await supabase
+      const { data: venue } = await supabase
         .from('venues')
         .select('owner_user_id')
         .eq('venue_id', invitation.venue_id)

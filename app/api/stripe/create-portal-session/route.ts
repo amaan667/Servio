@@ -1,4 +1,3 @@
-import { errorToContext } from '@/lib/utils/error-to-context';
 // Stripe Billing Portal - Let customers manage their subscription
 import { NextRequest, NextResponse } from "next/server";
 import Stripe from "stripe";
@@ -131,8 +130,11 @@ export async function POST(request: NextRequest) {
     } catch (portalError: unknown) {
       logger.error('[STRIPE PORTAL] Failed to create session:', { value: portalError });
       
+      const errorMessage = portalError instanceof Error ? portalError.message : 'Unknown error';
+      const errorCode = portalError && typeof portalError === 'object' && 'code' in portalError ? String(portalError.code) : undefined;
+      
       // Provide more specific error messages
-      if (portalError.code === 'resource_missing') {
+      if (errorCode === 'resource_missing') {
         return NextResponse.json(
           { 
             error: 'Customer not found in Stripe. Please contact support to resolve your billing setup.' 
@@ -143,15 +145,16 @@ export async function POST(request: NextRequest) {
       
       return NextResponse.json(
         { 
-          error: portalError.message || 'Failed to create billing portal session. Please try again or contact support.' 
+          error: errorMessage || 'Failed to create billing portal session. Please try again or contact support.' 
         },
         { status: 500 }
       );
     }
   } catch (error: unknown) {
-    logger.error("[STRIPE PORTAL] Error:", { error: error instanceof Error ? error.message : 'Unknown error' });
+    const errorMessage = error instanceof Error ? error.message : 'Unknown error';
+    logger.error("[STRIPE PORTAL] Error:", { error: errorMessage });
     return NextResponse.json(
-      { error: error.message || "Failed to create portal session" },
+      { error: errorMessage || "Failed to create portal session" },
       { status: 500 }
     );
   }

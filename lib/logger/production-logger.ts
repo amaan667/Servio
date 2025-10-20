@@ -18,6 +18,9 @@ interface LogContext {
   [key: string]: unknown;
 }
 
+// Allow flexible context types for logging
+type FlexibleLogContext = LogContext | Error | object | string | null | undefined;
+
 class ProductionLogger {
   private level: LogLevel;
   private serviceName: string;
@@ -31,13 +34,13 @@ class ProductionLogger {
     return level >= this.level;
   }
 
-  private formatMessage(level: string, message: string, context?: LogContext): string {
+  private formatMessage(level: string, message: string, context?: FlexibleLogContext): string {
     const timestamp = new Date().toISOString();
     const contextStr = context ? ` ${JSON.stringify(context)}` : '';
     return `[${timestamp}] [${level}] [${this.serviceName}] ${message}${contextStr}`;
   }
 
-  private log(level: LogLevel, levelName: string, message: string, context?: LogContext) {
+  private log(level: LogLevel, levelName: string, message: string, context?: FlexibleLogContext) {
     if (!this.shouldLog(level)) return;
 
     const formatted = this.formatMessage(levelName, message, context);
@@ -46,17 +49,18 @@ class ProductionLogger {
     switch (level) {
       case LogLevel.DEBUG:
         if (process.env.NODE_ENV !== 'production') {
-
+          // eslint-disable-next-line no-console
+          console.debug(formatted);
         }
         break;
       case LogLevel.INFO:
-
+        console.info(formatted);
         break;
       case LogLevel.WARN:
-
+        console.warn(formatted);
         break;
       case LogLevel.ERROR:
-
+        console.error(formatted);
         break;
     }
 
@@ -82,36 +86,36 @@ class ProductionLogger {
     }
   }
 
-  debug(message: string, context?: LogContext) {
+  debug(message: string, context?: FlexibleLogContext) {
     this.log(LogLevel.DEBUG, 'DEBUG', message, context);
   }
 
-  info(message: string, context?: LogContext) {
+  info(message: string, context?: FlexibleLogContext) {
     this.log(LogLevel.INFO, 'INFO', message, context);
   }
 
-  warn(message: string, context?: LogContext) {
+  warn(message: string, context?: FlexibleLogContext) {
     this.log(LogLevel.WARN, 'WARN', message, context);
   }
 
-  error(message: string, context?: LogContext) {
+  error(message: string, context?: FlexibleLogContext) {
     this.log(LogLevel.ERROR, 'ERROR', message, context);
   }
 
   // Convenience methods for common scenarios
-  apiRequest(method: string, path: string, context?: LogContext) {
+  apiRequest(method: string, path: string, context?: FlexibleLogContext) {
     this.info(`API Request: ${method} ${path}`, context);
   }
 
-  apiResponse(method: string, path: string, status: number, duration: number, context?: LogContext) {
+  apiResponse(method: string, path: string, status: number, duration: number, context?: FlexibleLogContext) {
     this.info(`API Response: ${method} ${path} ${status} (${duration}ms)`, context);
   }
 
-  authEvent(event: string, userId: string, context?: LogContext) {
+  authEvent(event: string, userId: string, context?: FlexibleLogContext) {
     this.info(`Auth Event: ${event}`, { userId, ...context });
   }
 
-  dbQuery(query: string, duration: number, context?: LogContext) {
+  dbQuery(query: string, duration: number, context?: FlexibleLogContext) {
     this.debug(`DB Query: ${query} (${duration}ms)`, context);
   }
 
@@ -123,7 +127,7 @@ class ProductionLogger {
     this.debug(`Cache Miss: ${key}`);
   }
 
-  performance(metric: string, value: number, context?: LogContext) {
+  performance(metric: string, value: number, context?: FlexibleLogContext) {
     this.info(`Performance: ${metric} = ${value}ms`, context);
   }
 }

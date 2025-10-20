@@ -29,7 +29,8 @@ export async function POST() {
     if (error) return NextResponse.json({ ok:false, error: error.message }, { status:500 });
     return NextResponse.json({ ok:true });
   } catch (e:unknown) {
-    return NextResponse.json({ ok:false, error: e?.message || 'RPC exec failed' }, { status:500 });
+    const errorMessage = e instanceof Error ? e.message : 'Unknown error';
+    return NextResponse.json({ ok:false, error: errorMessage || 'RPC exec failed' }, { status:500 });
   }
 }
 

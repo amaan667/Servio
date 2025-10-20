@@ -31,10 +31,12 @@ export async function GET(req: Request) {
   // Transform the data to flatten the nested staff object
   const transformedShifts = data?.map(shift => {
     const staff = shift.staff as unknown;
+    const staffObj = Array.isArray(staff) ? staff[0] : staff;
+    const staffData = staffObj && typeof staffObj === 'object' ? staffObj as Record<string, unknown> : {};
     return {
       ...shift,
-      staff_name: Array.isArray(staff) ? staff[0]?.name || 'Unknown' : staff?.name || 'Unknown',
-      staff_role: Array.isArray(staff) ? staff[0]?.role || 'Unknown' : staff?.role || 'Unknown'
+      staff_name: staffData.name ? String(staffData.name) : 'Unknown',
+      staff_role: staffData.role ? String(staffData.role) : 'Unknown'
     };
   }) || [];
   

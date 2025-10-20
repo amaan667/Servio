@@ -1,0 +1,49 @@
+import { NextResponse } from 'next/server';
+import { createClient } from '@/lib/supabase';
+import { redisCache } from '@/lib/cache/redis';
+
+export const runtime = 'nodejs';
+
+export async function GET() {
+  const checks: Record<string, { status: string; responseTime?: number }> = {};
+  let overallStatus = 'ready';
+
+  // Check Supabase connectivity
+  try {
+    const supabaseStart = Date.now();
+    const supabase = createClient();
+    const { error } = await supabase.from('organizations').select('id').limit(1);
+    const supabaseTime = Date.now() - supabaseStart;
+    
+    if (error) {
+      checks.supabase = { status: 'error', responseTime: supabaseTime };
+      overallStatus = 'not_ready';
+    } else {
+      checks.supabase = { status: 'ok', responseTime: supabaseTime };
+    }
+  } catch {
+    checks.supabase = { status: 'error' };
+    overallStatus = 'not_ready';
+  }
+
+  // Check Redis connectivity
+  try {
+    const redisStart = Date.now();
+    // Try to get a key to verify Redis is working
+    await redisCache.exists('health-check');
+    const redisTime = Date.now() - redisStart;
+    checks.redis = { status: 'ok', responseTime: redisTime };
+  } catch {
+    checks.redis = { status: 'error' };
+    overallStatus = 'not_ready';
+  }
+
+  return NextResponse.json({
+    status: overallStatus,
+    checks,
+    timestamp: new Date().toISOString(),
+  }, { 
+    status: overallStatus === 'ready' ? 200 : 503,
+  });
+}
+

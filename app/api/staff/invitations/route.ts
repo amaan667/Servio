@@ -20,7 +20,7 @@ export async function GET(request: NextRequest) {
     const supabase = await createClient();
 
     // Check if user has permission to view invitations for this venue
-    const { data: userRole, error: roleError } = await supabase
+    const { data: userRole } = await supabase
       .from('user_venue_roles')
       .select('role')
       .eq('user_id', user.id)
@@ -33,7 +33,7 @@ export async function GET(request: NextRequest) {
       hasPermission = true;
     } else {
       // Check if user is the venue owner
-      const { data: venue, error: venueError } = await supabase
+      const { data: venue } = await supabase
         .from('venues')
         .select('owner_user_id')
         .eq('venue_id', venueId)
@@ -83,7 +83,7 @@ export async function POST(request: NextRequest) {
     let body;
     try {
       body = await request.json();
-    } catch (parseError) {
+    } catch {
       return NextResponse.json({ 
         error: 'Invalid request body' 
       }, { status: 400 });
@@ -122,7 +122,10 @@ export async function POST(request: NextRequest) {
     try {
       await supabase.from('staff_invitations').select('id').limit(1);
     } catch (tableError: unknown) {
-      if (tableError.code === 'PGRST116' || tableError.message?.includes('relation "staff_invitations" does not exist')) {
+      const errorMessage = tableError instanceof Error ? tableError.message : 'Unknown error';
+      const errorCode = tableError && typeof tableError === 'object' && 'code' in tableError ? String(tableError.code) : undefined;
+      
+      if (errorCode === 'PGRST116' || errorMessage?.includes('relation "staff_invitations" does not exist')) {
         // Table doesn't exist
         return NextResponse.json({ 
           error: 'Staff invitation system not set up. Please run the database migration first.' 
@@ -149,7 +152,7 @@ export async function POST(request: NextRequest) {
     }
 
     // Check if user has permission to create invitations for this venue
-    const { data: userRole, error: roleError } = await supabase
+    const { data: userRole } = await supabase
       .from('user_venue_roles')
       .select('role')
       .eq('user_id', user.id)
@@ -162,7 +165,7 @@ export async function POST(request: NextRequest) {
       hasPermission = true;
     } else {
       // Check if user is the venue owner
-      const { data: venue, error: venueError } = await supabase
+      const { data: venue } = await supabase
         .from('venues')
         .select('owner_user_id')
         .eq('venue_id', venue_id)
@@ -228,8 +231,7 @@ export async function POST(request: NextRequest) {
         .eq('id', venueOwner.owner_user_id)
         .single();
 
-      if (ownerUserError) {
-      } else if (ownerUser?.email?.toLowerCase() === email.toLowerCase()) {
+      if (!ownerUserError && ownerUser?.email?.toLowerCase() === email.toLowerCase()) {
         return NextResponse.json({ 
           error: 'This is the owner\'s email address. The owner already has full access to this venue.' 
         }, { status: 409 });
@@ -243,7 +245,7 @@ export async function POST(request: NextRequest) {
       .eq('venue_id', venue_id)
       .single();
 
-    if (venueError) {
+    if (venueError || !venue) {
       return NextResponse.json({ error: 'Venue not found' }, { status: 404 });
     }
 
@@ -343,7 +345,7 @@ export async function POST(request: NextRequest) {
           ? 'Invitation refreshed successfully. Email service not configured.' 
           : 'Invitation created successfully. Email service not configured.';
       }
-    } catch (emailError) {
+    } catch {
       emailMessage = isUpdate 
         ? 'Invitation refreshed successfully. Email service error.' 
         : 'Invitation created successfully. Email service error.';
@@ -374,7 +376,7 @@ export async function DELETE(request: NextRequest) {
     let body;
     try {
       body = await request.json();
-    } catch (parseError) {
+    } catch {
       return NextResponse.json({ 
         error: 'Invalid request body' 
       }, { status: 400 });
@@ -402,7 +404,7 @@ export async function DELETE(request: NextRequest) {
     }
 
     // Check if user has permission to delete invitations for this venue
-    const { data: userRole, error: roleError } = await supabase
+    const { data: userRole } = await supabase
       .from('user_venue_roles')
       .select('role')
       .eq('user_id', user.id)
@@ -414,7 +416,7 @@ export async function DELETE(request: NextRequest) {
       hasPermission = true;
     } else {
       // Check if user is the venue owner
-      const { data: venue, error: venueError } = await supabase
+      const { data: venue } = await supabase
         .from('venues')
         .select('owner_user_id')
         .eq('venue_id', invitation.venue_id)
