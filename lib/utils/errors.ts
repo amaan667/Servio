@@ -28,10 +28,10 @@ export function getErrorDetails(error: unknown): ErrorDetails {
 
   if (error && typeof error === 'object') {
     return {
-      message: (error as unknown).message || 'Unknown error',
-      ...(error as unknown).stack && { stack: (error as unknown).stack },
-      ...(error as unknown).name && { name: (error as unknown).name },
-      ...(error as unknown).code && { code: (error as unknown).code },
+      message: (error as Record<string, unknown>).message || 'Unknown error',
+      ...(error as Record<string, unknown>).stack && { stack: (error as Record<string, unknown>).stack },
+      ...(error as Record<string, unknown>).name && { name: (error as Record<string, unknown>).name },
+      ...(error as Record<string, unknown>).code && { code: (error as Record<string, unknown>).code },
     };
   }
 
