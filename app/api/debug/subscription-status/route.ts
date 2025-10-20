@@ -1,5 +1,5 @@
 // Debug API endpoint to check and manually update subscription status
-import { NextResponse } from "next/server";
+import { NextRequest, NextResponse } from "next/server";
 import { createClient } from "@/lib/supabase";
 import { stripe } from "@/lib/stripe-client";
 import { apiLogger as logger } from '@/lib/logger';
