@@ -14,11 +14,26 @@ export function getSupabaseAnonKey() {
   return key;
 }
 
-// Browser (RSC/CSR safe)
+// Singleton browser client to prevent multiple instances
+let browserClient: ReturnType<typeof createBrowserClient> | null = null;
+
+// Browser (RSC/CSR safe) - Singleton pattern
 export function supabaseBrowser() {
-  return createBrowserClient(getSupabaseUrl(), getSupabaseAnonKey(), {
-    auth: { persistSession: true, detectSessionInUrl: true },
-  });
+  if (typeof window === 'undefined') {
+    // Server-side: return a new instance (can't use singleton on server)
+    return createBrowserClient(getSupabaseUrl(), getSupabaseAnonKey(), {
+      auth: { persistSession: false },
+    });
+  }
+  
+  // Client-side: use singleton
+  if (!browserClient) {
+    browserClient = createBrowserClient(getSupabaseUrl(), getSupabaseAnonKey(), {
+      auth: { persistSession: true, detectSessionInUrl: true },
+    });
+  }
+  
+  return browserClient;
 }
 
 // Server in Route Handlers / Server Components with cookies
@@ -61,7 +76,7 @@ export async function createServerSupabase() {
           httpOnly: false,
           path: '/',
         });
-      } catch (error) {
+      } catch {
         // Silent error handling for cookie context
       }
     },
@@ -98,7 +113,7 @@ export async function getAuthenticatedUser() {
     }
     
     return { user, error: null };
-  } catch (error) {
+  } catch {
     return { user: null, error: 'Failed to get authenticated user' };
   }
 }
@@ -119,11 +134,11 @@ export async function getSession() {
     }
     
     return { session, error: null };
-  } catch (error) {
+  } catch {
     return { session: null, error: 'Failed to get session' };
   }
 }
 
-// Export supabase instance for backward compatibility
-export const supabase = supabaseBrowser();
+// Export supabase instance for backward compatibility (getter to ensure singleton)
+export const supabase = (() => supabaseBrowser())();
 

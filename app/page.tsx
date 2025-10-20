@@ -22,20 +22,17 @@ export default function HomePage() {
   useEffect(() => {
     const checkAuth = async () => {
       try {
+        if (!supabase) return;
         const { data: { user } } = await supabase.auth.getUser();
         setIsSignedIn(!!user);
         
         if (user) {
-          const { data: profile } = await supabase
-            .from("profiles")
-            .select("tier")
-            .eq("id", user.id)
-            .single();
-          
-          setUserTier(profile?.tier || null);
+          // Check user metadata for tier instead of profiles table
+          const tier = user.user_metadata?.tier || user.app_metadata?.tier || null;
+          setUserTier(tier);
         }
       } catch (error) {
-        console.error("Error checking auth:", error);
+        // Silent error handling
       } finally {
         setAuthLoading(false);
       }
@@ -43,16 +40,14 @@ export default function HomePage() {
 
     checkAuth();
 
+    if (!supabase) return;
     const { data: { subscription } } = supabase.auth.onAuthStateChange(
       async (_event: string, session: any) => {
         setIsSignedIn(!!session?.user);
         if (session?.user) {
-          const { data: profile } = await supabase
-            .from("profiles")
-            .select("tier")
-            .eq("id", session.user.id)
-            .single();
-          setUserTier(profile?.tier || null);
+          // Check user metadata for tier instead of profiles table
+          const tier = session.user.user_metadata?.tier || session.user.app_metadata?.tier || null;
+          setUserTier(tier);
         } else {
           setUserTier(null);
         }

@@ -80,7 +80,10 @@ export default function LiveOrdersClient({ venueId, venueName: venueNameProp }: 
   // Load venue name
   useEffect(() => {
     if (!venueNameProp) {
-      createClient()
+      const client = createClient();
+      if (!client) return;
+      
+      client
         .from('venues')
         .select('venue_name')
         .eq('venue_id', venueId)

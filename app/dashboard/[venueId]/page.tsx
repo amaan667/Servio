@@ -6,17 +6,16 @@ import DashboardClient from './page.client.modern';
 import { todayWindowForTZ } from '@/lib/time';
 
 export default async function VenuePage({ params }: { params: Promise<{ venueId: string }> }) {
-  console.log('[DASHBOARD SERVER] Starting VenuePage render');
   const { venueId } = await params;
-  console.log('[DASHBOARD SERVER] VenueId:', venueId);
   const supabase = await createClient();
-  console.log('[DASHBOARD SERVER] Supabase client created');
+  
+  if (!supabase) {
+    redirect('/sign-in');
+  }
 
   const { data: { user }, error: userError } = await supabase.auth.getUser();
-  console.log('[DASHBOARD SERVER] User auth result:', { user: !!user, error: !!userError });
   
   if (userError || !user) {
-    console.log('[DASHBOARD SERVER] Redirecting to sign-in');
     redirect('/sign-in');
   }
   
@@ -27,7 +26,6 @@ export default async function VenuePage({ params }: { params: Promise<{ venueId:
     .eq('venue_id', venueId)
     .eq('owner_user_id', user.id)
     .maybeSingle();
-  console.log('[DASHBOARD SERVER] Venue check result:', { venue: !!venue, error: !!venueError });
 
   // Check if user has a staff role for this venue
   const { data: userRole, error: roleError } = await supabase
@@ -36,15 +34,12 @@ export default async function VenuePage({ params }: { params: Promise<{ venueId:
     .eq('user_id', user.id)
     .eq('venue_id', venueId)
     .maybeSingle();
-  console.log('[DASHBOARD SERVER] User role check result:', { userRole: !!userRole, error: !!roleError });
 
   const isOwner = !!venue;
   const isStaff = !!userRole;
-  console.log('[DASHBOARD SERVER] Access check:', { isOwner, isStaff });
 
   // If user is not owner or staff, redirect
   if (!isOwner && !isStaff) {
-    console.log('[DASHBOARD SERVER] No access - redirecting to complete-profile');
     redirect('/complete-profile');
   }
   
@@ -69,7 +64,6 @@ export default async function VenuePage({ params }: { params: Promise<{ venueId:
 
   // Get dashboard counts
   const venueTz = 'Europe/London';
-  console.log('[DASHBOARD SERVER] Getting dashboard counts for venue:', venueId);
   const { data: counts } = await supabase
     .rpc('dashboard_counts', { 
       p_venue_id: venueId, 
@@ -77,7 +71,6 @@ export default async function VenuePage({ params }: { params: Promise<{ venueId:
       p_live_window_mins: 30 
     })
     .single();
-  console.log('[DASHBOARD SERVER] Dashboard counts result:', counts);
 
   // Get table counters
   const { data: tableCounters } = await supabase
@@ -128,18 +121,6 @@ export default async function VenuePage({ params }: { params: Promise<{ venueId:
     menuItems: menuItems?.length || 0,
     unpaid: 0,
   };
-
-  console.log('[DASHBOARD SERVER] Rendering DashboardClient with props:', {
-    venueId,
-    userId: user.id,
-    venueName: finalVenue?.name,
-    userName: user.user_metadata?.full_name || user.email?.split('@')[0] || 'User',
-    venueTz,
-    hasInitialCounts: !!counts,
-    hasInitialStats: !!initialStats,
-    userRole: userRole?.role || (isOwner ? 'owner' : 'staff'),
-    isOwner
-  });
 
   return (
     <DashboardClient 
