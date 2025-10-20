@@ -110,6 +110,11 @@ export async function POST(req: Request) {
       apiLogger.debug('[WEBHOOK] Found recent unpaid orders:', recentOrders.map(o => o.id));
       // Use the most recent unpaid order
       const fallbackOrder = recentOrders[0];
+      
+      if (!fallbackOrder) {
+        return NextResponse.json({ ok: false, error: 'No fallback order available' }, { status: 404 });
+      }
+      
       apiLogger.debug('[WEBHOOK] Using fallback order:', fallbackOrder.id);
       
       // Update the fallback order
