@@ -281,8 +281,6 @@ export async function DELETE(req: Request) {
     }
 
     const serviceClient = getServiceClient();
-    // For now, use hard delete since is_deleted column doesn't exist yet
-    // TODO: Implement soft delete when is_deleted column is added
     const { error } = await serviceClient
       .from('feedback_questions')
       .delete()

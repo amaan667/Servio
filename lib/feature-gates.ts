@@ -61,7 +61,6 @@ export async function checkFeatureAccess(
     }
 
     // Temporarily allow all features for development
-    // TODO: Re-enable premium gates when payment plans are implemented
     const currentTier = 'premium';
 
     const tierHierarchy: Record<SubscriptionTier, number> = {

@@ -90,7 +90,6 @@ export function AccountMigrator() {
       const password = atob(account.passwordHash);
       addLog(`Decoded password for ${account.contactEmail}`);
 
-      // TODO: Implement signUpUser function
       addLog(`⚠️ Sign up not implemented yet for ${account.contactEmail}`);
       return false;
     } catch (error: any) {

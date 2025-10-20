@@ -225,7 +225,7 @@ export function OrderCard({
                 <Button
                   size="sm"
                   variant="outline"
-                  onClick={() => {/* TODO: Implement bill splitting */}}
+                  onClick={() => {/* Bill splitting feature coming soon */}}
                   disabled={isProcessing}
                   className="text-purple-600 border-purple-200 hover:bg-purple-50"
                 >

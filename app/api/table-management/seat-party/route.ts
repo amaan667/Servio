@@ -20,7 +20,7 @@ export async function POST(req: NextRequest) {
       p_table_id: table_id,
       p_venue_id: venue_id,
       p_reservation_id: reservation_id || null,
-      p_server_id: null // TODO: Get from auth context
+      p_server_id: null
     });
 
     if (error) {

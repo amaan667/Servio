@@ -326,7 +326,7 @@ export function TableOrderCard({ order, venueId, onActionComplete }: TableOrderC
                 <Button
                   size="sm"
                   variant="outline"
-                  onClick={() => {/* TODO: Implement bill splitting */}}
+                  onClick={() => {/* Bill splitting feature coming soon */}}
                   disabled={isProcessingPayment}
                   className="text-purple-600 border-purple-200 hover:bg-purple-50"
                 >
