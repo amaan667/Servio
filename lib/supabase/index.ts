@@ -42,4 +42,54 @@ export function supabaseAdmin() {
   return createBrowserClient(getSupabaseUrl(), key, { auth: { persistSession: false } });
 }
 
+// Backward compatibility exports
+export const createClient = supabaseBrowser;
+export const createSupabaseClient = supabaseServer;
+export const createAdminClient = supabaseAdmin;
+export const createServerSupabase = supabaseServer;
+
+// Get authenticated user (server-side)
+export async function getAuthenticatedUser() {
+  try {
+    const { cookies } = await import('next/headers');
+    const cookieStore = await cookies();
+    const supabase = supabaseServer({
+      get: (name) => cookieStore.get(name)?.value,
+      set: () => {},
+    });
+    const { data: { user }, error } = await supabase.auth.getUser();
+    
+    if (error) {
+      return { user: null, error: error.message };
+    }
+    
+    return { user, error: null };
+  } catch (error) {
+    return { user: null, error: 'Failed to get authenticated user' };
+  }
+}
+
+// Get session (server-side)
+export async function getSession() {
+  try {
+    const { cookies } = await import('next/headers');
+    const cookieStore = await cookies();
+    const supabase = supabaseServer({
+      get: (name) => cookieStore.get(name)?.value,
+      set: () => {},
+    });
+    const { data: { session }, error } = await supabase.auth.getSession();
+    
+    if (error) {
+      return { session: null, error: error.message };
+    }
+    
+    return { session, error: null };
+  } catch (error) {
+    return { session: null, error: 'Failed to get session' };
+  }
+}
+
+// Export supabase instance for backward compatibility
+export const supabase = supabaseBrowser();
 
