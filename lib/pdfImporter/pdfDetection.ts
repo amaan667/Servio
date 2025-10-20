@@ -36,8 +36,9 @@ export async function detectPDFSource(pdfBuffer: Buffer): Promise<PDFSourceInfo>
       extractionMethod: 'vision_ocr'
     };
     
-  } catch (error) {
-    logger.error('[PDF_DETECT] Detection failed:', errorToContext(error));
+  } catch (error: unknown) {
+    const errorMessage = error instanceof Error ? error.message : 'Unknown error';
+    logger.error('[PDF_DETECT] Detection failed:', { error: errorMessage });
     // Default to OCR
     return {
       type: 'vision_ocr',
@@ -66,8 +67,9 @@ async function extractNativeText(pdfBuffer: Buffer): Promise<string | null> {
     }
     
     return null;
-  } catch (error) {
-    logger.error('[PDF_DETECT] Native extraction failed:', errorToContext(error));
+  } catch (error: unknown) {
+    const errorMessage = error instanceof Error ? error.message : 'Unknown error';
+    logger.error('[PDF_DETECT] Native extraction failed:', { error: errorMessage });
     return null;
   }
 }
@@ -165,7 +167,7 @@ export function mergeHyphenatedWords(blocks: TextBlock[]): TextBlock[] {
     const next = blocks[i + 1];
     
     // Check if current block ends with hyphen and next block is on next line
-    if (current.text.endsWith('-') && next && 
+    if (current && next && current.text.endsWith('-') && 
         Math.abs(current.bbox.y - next.bbox.y) < 30 && // Same line area
         current.bbox.x < next.bbox.x) { // Next block is to the right
       
@@ -186,7 +188,9 @@ export function mergeHyphenatedWords(blocks: TextBlock[]): TextBlock[] {
       
       i += 2; // Skip both blocks
     } else {
-      merged.push(current);
+      if (current) {
+        merged.push(current);
+      }
       i += 1;
     }
   }

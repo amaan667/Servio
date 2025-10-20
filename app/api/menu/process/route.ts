@@ -79,7 +79,7 @@ export async function POST(req: NextRequest) {
             content: [
               { type: 'text', text: 'Extract all text from this page/image. Return only the raw text, no formatting or structure.' },
               { type: 'image_url', image_url: { url: firstPage } }
-            ]
+            ] as any
           }
         ],
         max_tokens: 2000
@@ -136,7 +136,7 @@ IMPORTANT: For x_percent and y_percent, provide the approximate center position 
               content: [
                 { type: 'text', text: 'Extract menu items from this page/image with their positions. Return valid JSON array only. Include x_percent and y_percent for each item based on where it appears on the page.' },
                 { type: 'image_url', image_url: { url: page } }
-              ]
+              ] as any
             }
           ],
           max_tokens: 2000,
@@ -244,7 +244,7 @@ IMPORTANT: For x_percent and y_percent, provide the approximate center position 
                 }
                 return null;
               })
-              .filter((h): h is Record<string, unknown> => h !== null);
+              .filter((h): h is NonNullable<typeof h> => h !== null);
             
             if (hotspots.length > 0) {
               const { error: hotspotsError } = await supa
