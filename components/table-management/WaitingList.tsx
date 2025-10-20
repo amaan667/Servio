@@ -24,7 +24,6 @@ import {
 } from '@/components/ui/dialog';
 import { createClient } from '@/lib/supabase';
 
-
 interface WaitingParty {
   id: string;
   customer_name: string;
@@ -72,7 +71,7 @@ export function WaitingList({ venueId, availableTables, onPartySeated }: Waiting
       if (error) throw error;
       setWaitingParties(data || []);
     } catch (error) {
-      console.error('[WAITING LIST] Error fetching parties:', error);
+
     } finally {
       setLoading(false);
     }
@@ -97,7 +96,7 @@ export function WaitingList({ venueId, availableTables, onPartySeated }: Waiting
       setNewParty({ customer_name: '', customer_phone: '', party_size: 2 });
       setShowAddDialog(false);
     } catch (error) {
-      console.error('[WAITING LIST] Error adding party:', error);
+
     }
   };
 
@@ -119,7 +118,7 @@ export function WaitingList({ venueId, availableTables, onPartySeated }: Waiting
         onPartySeated?.();
       }
     } catch (error) {
-      console.error('[WAITING LIST] Error seating party:', error);
+
     } finally {
       setSeatingParty(null);
     }
@@ -136,7 +135,7 @@ export function WaitingList({ venueId, availableTables, onPartySeated }: Waiting
 
       setWaitingParties(prev => prev.filter(p => p.id !== waitingId));
     } catch (error) {
-      console.error('[WAITING LIST] Error removing party:', error);
+
     }
   };
 

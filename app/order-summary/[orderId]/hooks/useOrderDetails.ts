@@ -59,7 +59,7 @@ export function useOrderDetails(orderId: string) {
 
         setOrder(data as Order);
       } catch (err: any) {
-        console.error('Error fetching order:', err);
+
         setError(err.message || 'Failed to load order details');
         toast({
           title: "Error",

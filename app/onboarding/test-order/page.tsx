@@ -10,7 +10,6 @@ import { createClient } from '@/lib/supabase';
 import Confetti from 'react-confetti';
 import { useWindowSize } from '@/hooks/use-mobile';
 
-
 export default function OnboardingTestOrderPage() {
   const router = useRouter();
   const [loading, setLoading] = useState(true);
@@ -48,7 +47,7 @@ export default function OnboardingTestOrderPage() {
       setVenueId(venues[0].venue_id);
       setLoading(false);
     } catch (error) {
-      console.error('Auth check error:', error);
+
       setLoading(false);
     }
   };

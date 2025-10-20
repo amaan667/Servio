@@ -17,7 +17,6 @@ import {
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 
-
 interface KDSStation {
   id: string;
   venue_id: string;
@@ -82,7 +81,7 @@ export default function KDSClient({ venueId, venueName }: KDSClientProps) {
         setError(data.error || 'Failed to load stations');
       }
     } catch (err: unknown) {
-      console.error('[KDS] Error fetching stations:', err);
+
       setError(err.message);
     }
   }, [venueId, selectedStation]);
@@ -101,7 +100,7 @@ export default function KDSClient({ venueId, venueName }: KDSClientProps) {
         setError(data.error || 'Failed to load tickets');
       }
     } catch (err: unknown) {
-      console.error('[KDS] Error fetching tickets:', err);
+
       setError(err.message);
     } finally {
       setLoading(false);
@@ -125,10 +124,10 @@ export default function KDSClient({ venueId, venueName }: KDSClientProps) {
           prev.map(t => t.id === ticketId ? { ...t, ...data.ticket } : t)
         );
       } else {
-        console.error('[KDS] Error updating ticket:', data.error);
+
       }
     } catch (err: unknown) {
-      console.error('[KDS] Error updating ticket:', err);
+
     }
   }, []);
 
@@ -148,7 +147,7 @@ export default function KDSClient({ venueId, venueName }: KDSClientProps) {
         setTickets(prev => prev.filter(t => t.order_id !== orderId));
       }
     } catch (err: unknown) {
-      console.error('[KDS] Error bumping order:', err);
+
     }
   }, []);
 
@@ -216,8 +215,7 @@ export default function KDSClient({ venueId, venueName }: KDSClientProps) {
         table: 'kds_tickets',
         filter: `venue_id=eq.${venueId}`
       }, (payload: unknown) => {
-        console.debug('[KDS] Realtime update:', payload);
-        
+
         if (payload.eventType === 'INSERT') {
           fetchTickets();
         } else if (payload.eventType === 'UPDATE') {

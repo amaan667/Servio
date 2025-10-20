@@ -2,7 +2,6 @@
 
 import { useEffect } from "react";
 
-
 export default function SessionClearer() {
   useEffect(() => {
     const clearSession = async () => {
@@ -15,7 +14,7 @@ export default function SessionClearer() {
           },
         });
       } catch (error) {
-        console.error('Error clearing session:', error);
+
       }
     }
     clearSession()

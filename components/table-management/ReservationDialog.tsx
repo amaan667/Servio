@@ -15,7 +15,6 @@ import { Label } from '@/components/ui/label';
 import { Calendar, Clock, User } from 'lucide-react';
 import { useReserveTable, useModifyReservation } from '@/hooks/useTableReservations';
 
-
 interface ReservationDialogProps {
   isOpen: boolean;
   onClose: () => void;
@@ -159,7 +158,7 @@ export function ReservationDialog({
       onClose();
       handleClose();
     } catch (error) {
-      console.error(`Failed to ${isModifyMode ? 'modify' : 'create'} reservation:`, error);
+
       setError(error instanceof Error ? error.message : `Failed to ${isModifyMode ? 'modify' : 'create'} reservation`);
     }
   };

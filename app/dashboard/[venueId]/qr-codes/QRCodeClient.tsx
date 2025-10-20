@@ -38,8 +38,7 @@ export default function QRCodeClient({ venueId, venueName }: { venueId: string; 
       const tableName = urlParams.get('table');
       
       if (tableName) {
-        console.debug('[QR] Auto-generating QR for table from URL:', tableName);
-        
+
         const existingQR = qrManagement.generatedQRs.find(qr => qr.name === tableName);
         if (!existingQR) {
           qrManagement.generateQRForName(tableName);

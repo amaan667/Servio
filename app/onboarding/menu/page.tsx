@@ -11,7 +11,6 @@ import OnboardingProgress from '@/components/onboarding-progress';
 import { createClient } from '@/lib/supabase';
 import { toast } from '@/hooks/use-toast';
 
-
 export default function OnboardingMenuPage() {
   const router = useRouter();
   const [loading, setLoading] = useState(true);
@@ -50,7 +49,7 @@ export default function OnboardingMenuPage() {
       setVenueId(venues[0].venue_id);
       setLoading(false);
     } catch (error) {
-      console.error('Auth check error:', error);
+
       setLoading(false);
     }
   };
@@ -89,7 +88,7 @@ export default function OnboardingMenuPage() {
       // Move to next step
       router.push('/onboarding/tables');
     } catch (error: any) {
-      console.error('Upload error:', error);
+
       toast({
         title: 'Upload failed',
         description: error.message || 'Failed to upload menu. Please try again.',
@@ -148,7 +147,7 @@ export default function OnboardingMenuPage() {
       // Move to next step
       router.push('/onboarding/tables');
     } catch (error: any) {
-      console.error('Manual create error:', error);
+
       toast({
         title: 'Failed to create items',
         description: error.message || 'Please try again.',

@@ -10,7 +10,6 @@ import { useAuth } from "@/app/auth/AuthProvider";
 import { useRouter, usePathname } from "next/navigation";
 import SignInButton from "@/app/components/SignInButton";
 
-
 export default function ClientNavBar() {
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [primaryVenueId, setPrimaryVenueId] = useState<string | null>(null);
@@ -23,7 +22,6 @@ export default function ClientNavBar() {
   // Ensure we don't show authenticated navigation while loading
   // Also add additional checks to ensure session is valid
   const isAuthenticated = !loading && !!session?.user && !!session?.access_token;
-
 
   // Determine if we're on dashboard pages
   const isOnDashboard = pathname?.startsWith('/dashboard');
@@ -48,7 +46,7 @@ export default function ClientNavBar() {
             setPrimaryVenueId(data[0].venue_id);
           }
         } catch (err) {
-          console.error('Error fetching primary venue:', err);
+
         }
       } else {
         setPrimaryVenueId(null);
@@ -85,7 +83,7 @@ export default function ClientNavBar() {
       router.replace('/');
       
     } catch (error) {
-      console.error('Sign out error:', error);
+
       // Force redirect even if there's an error
       router.replace('/');
     }

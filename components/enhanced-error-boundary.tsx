@@ -6,7 +6,6 @@ import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { clearAuthStorage } from '@/lib/supabase';
 
-
 interface EnhancedErrorBoundaryState {
   hasError: boolean;
   error: Error | null;
@@ -47,8 +46,7 @@ export class EnhancedErrorBoundary extends React.Component<
   }
 
   componentDidCatch(error: Error, errorInfo: React.ErrorInfo) {
-    console.error('[ENHANCED ERROR BOUNDARY] Caught error:', error, errorInfo);
-    
+
     this.setState({
       error,
       errorInfo,
@@ -60,12 +58,7 @@ export class EnhancedErrorBoundary extends React.Component<
     }
 
     // Log error to console with more context
-    console.error('[ENHANCED ERROR BOUNDARY] Error details:', {
-      message: error.message,
-      stack: error.stack,
-      componentStack: errorInfo.componentStack,
-      retryCount: this.state.retryCount,
-    });
+
   }
 
   componentWillUnmount() {
@@ -78,7 +71,7 @@ export class EnhancedErrorBoundary extends React.Component<
     const { maxRetries = 3 } = this.props;
     
     if (this.state.retryCount >= maxRetries) {
-      console.warn('[ENHANCED ERROR BOUNDARY] Max retries reached');
+
       return;
     }
 
@@ -101,7 +94,7 @@ export class EnhancedErrorBoundary extends React.Component<
       await clearAuthStorage();
       window.location.reload();
     } catch (err) {
-      console.error('[ENHANCED ERROR BOUNDARY] Error clearing auth state:', err);
+
       window.location.reload();
     }
   };
@@ -259,7 +252,7 @@ export function useErrorHandler() {
   }, []);
 
   const handleError = React.useCallback((error: Error) => {
-    console.error('[ERROR HANDLER]', error);
+
     setError(error);
   }, []);
 

@@ -12,7 +12,6 @@ import { supabaseBrowser } from '@/lib/supabase';
 import Link from 'next/link';
 import { Check, Loader2, Mail } from 'lucide-react';
 
-
 interface SignUpFormProps {
   onGoogleSignIn: () => Promise<void>;
   isSigningUp?: boolean;
@@ -114,7 +113,7 @@ export default function SignUpForm({ onGoogleSignIn, isSigningUp = false }: Sign
       // Redirect to Stripe checkout FIRST
       window.location.href = data.url;
     } catch (err: any) {
-      console.error('Signup error:', err);
+
       setError(err.message || 'Sign-up failed. Please try again.');
       localStorage.removeItem('signup_data');
       setLoading(false);
@@ -129,7 +128,7 @@ export default function SignUpForm({ onGoogleSignIn, isSigningUp = false }: Sign
       await onGoogleSignIn();
       // The redirect will happen automatically
     } catch (err: any) {
-      console.error('[SIGN-UP] Google sign-up error:', err);
+
       setError(err.message || 'Google sign-up failed. Please try again.');
       setLoading(false);
     }
@@ -263,7 +262,7 @@ export default function SignUpForm({ onGoogleSignIn, isSigningUp = false }: Sign
                     // Redirect to Stripe checkout
                     window.location.href = data.url;
                   } catch (err: any) {
-                    console.error('Checkout error:', err);
+
                     setError(err.message || 'Failed to create checkout session. Please try again.');
                     setLoading(false);
                   }

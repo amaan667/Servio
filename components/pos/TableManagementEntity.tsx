@@ -108,7 +108,7 @@ export function TableManagementEntity({ venueId }: TableManagementEntityProps) {
         setCounters(countersData.counters || []);
       }
     } catch (error) {
-      console.error('Error fetching entities:', error);
+
     } finally {
       setLoading(false);
     }
@@ -137,7 +137,7 @@ export function TableManagementEntity({ venueId }: TableManagementEntityProps) {
         fetchEntities();
       }
     } catch (error) {
-      console.error('Error seating party:', error);
+
     }
   };
 
@@ -157,7 +157,7 @@ export function TableManagementEntity({ venueId }: TableManagementEntityProps) {
         fetchEntities();
       }
     } catch (error) {
-      console.error(`Error ${action}:`, error);
+
     }
   };
 

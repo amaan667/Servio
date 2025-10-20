@@ -9,7 +9,6 @@ import { CheckCircle, Clock, Calendar } from "lucide-react";
 import { useAuth } from "@/app/auth/AuthProvider";
 import { createClient } from "@/lib/supabase";
 
-
 export default function CheckoutSuccessPage() {
   const searchParams = useSearchParams();
   const router = useRouter();
@@ -41,16 +40,14 @@ export default function CheckoutSuccessPage() {
     };
     
     if (!searchParams) {
-      console.debug('[CHECKOUT SUCCESS] No search params available, redirecting to dashboard');
+
       redirectToDashboard();
       return;
     }
 
     const sessionId = searchParams.get("session_id");
     const tierParam = searchParams.get("tier");
-    
-    console.debug('[CHECKOUT SUCCESS] Page loaded with params:', { sessionId, tierParam });
-    
+
     if (sessionId && tierParam) {
       setTier(tierParam);
       
@@ -61,8 +58,7 @@ export default function CheckoutSuccessPage() {
       
       // Update organization tier immediately as a backup in case webhook hasn't fired yet
       if (user) {
-        console.debug('[CHECKOUT SUCCESS] Updating organization tier immediately');
-        
+
         // Retry logic for organization update
         const updateOrganization = async (retryCount = 0) => {
           try {
@@ -73,14 +69,13 @@ export default function CheckoutSuccessPage() {
             });
             
             const data = await response.json();
-            console.debug('[CHECKOUT SUCCESS] Organization tier update result:', data);
-            
+
             if (!response.ok && retryCount < 3) {
               console.debug(`[CHECKOUT SUCCESS] Update failed, retrying in ${(retryCount + 1) * 2} seconds...`);
               setTimeout(() => updateOrganization(retryCount + 1), (retryCount + 1) * 2000);
             }
           } catch (err) {
-            console.error('[CHECKOUT SUCCESS] Failed to update organization tier:', err);
+
             if (retryCount < 3) {
               console.debug(`[CHECKOUT SUCCESS] Network error, retrying in ${(retryCount + 1) * 2} seconds...`);
               setTimeout(() => updateOrganization(retryCount + 1), (retryCount + 1) * 2000);
@@ -94,7 +89,7 @@ export default function CheckoutSuccessPage() {
       setLoading(false);
     } else {
       // Redirect if missing required params
-      console.debug('[CHECKOUT SUCCESS] Missing params, redirecting to dashboard');
+
       redirectToDashboard();
     }
   }, [searchParams, router, user]);

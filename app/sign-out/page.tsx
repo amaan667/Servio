@@ -4,7 +4,6 @@ import { useAuth } from '@/app/auth/AuthProvider';
 import { useRouter } from 'next/navigation';
 import { useEffect } from 'react';
 
-
 export default function SignOutPage() {
   const { signOut } = useAuth();
   const router = useRouter();
@@ -37,7 +36,7 @@ export default function SignOutPage() {
         router.replace('/');
         
       } catch (error) {
-        console.error('[AUTH DEBUG] SignOutPage: Sign out error:', error);
+
         router.replace('/');
       }
     };

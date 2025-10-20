@@ -40,7 +40,7 @@ export function useFeedbackManagement(venueId: string) {
 
         setFeedbackQuestions(data || []);
       } catch (err) {
-        console.error('Error fetching feedback questions:', err);
+
       }
     };
 
@@ -83,7 +83,7 @@ export function useFeedbackManagement(venueId: string) {
 
       setFeedbackResponses([]);
     } catch (err: any) {
-      console.error('Error submitting feedback:', err);
+
       toast({
         title: "Error",
         description: "Failed to submit feedback",

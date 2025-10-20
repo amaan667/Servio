@@ -12,7 +12,6 @@ import { useTabCounts } from "@/hooks/use-tab-counts";
 import { OrderCard } from '@/components/orders/OrderCard';
 import { mapOrderToCardData } from '@/lib/orders/mapOrderToCardData';
 
-
 type OrdersClientProps = {
   venueId: string;
   initialOrders?: Order[];
@@ -114,7 +113,7 @@ const OrdersClient: React.FC<OrdersClientProps> = ({ venueId, initialOrders = []
           .order('created_at', { ascending: false });
           
         if (fetchError) {
-          console.error('Error fetching orders:', fetchError);
+
           setLoading(false);
           return;
         }
@@ -167,7 +166,7 @@ const OrdersClient: React.FC<OrdersClientProps> = ({ venueId, initialOrders = []
       
       setLoading(false);
     } catch (error) {
-      console.error('Error loading orders:', error);
+
       setLoading(false);
     }
   }, [venueId, initialOrders]);

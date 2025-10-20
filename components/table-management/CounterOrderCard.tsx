@@ -23,7 +23,6 @@ import { StatusPill } from './StatusPill';
 import { CounterOrder } from '@/hooks/useCounterOrders';
 import { calculateOrderTotal, formatPrice, normalizePrice } from '@/lib/pricing-utils';
 
-
 // Helper functions for order status flow
 const getNextOrderStatus = (currentStatus: string) => {
   // Normalize to uppercase for comparison
@@ -88,7 +87,7 @@ export function CounterOrderCard({ order, venueId, onActionComplete }: CounterOr
 
       onActionComplete?.();
     } catch (error) {
-      console.error('Error removing order:', error);
+
     } finally {
       setIsRemoving(false);
     }
@@ -150,7 +149,7 @@ export function CounterOrderCard({ order, venueId, onActionComplete }: CounterOr
 
       onActionComplete?.();
     } catch (error) {
-      console.error('Error processing payment:', error);
+
     } finally {
       setIsProcessingPayment(false);
     }
@@ -177,12 +176,11 @@ export function CounterOrderCard({ order, venueId, onActionComplete }: CounterOr
 
       onActionComplete?.();
     } catch (error) {
-      console.error('Error updating order status:', error);
+
     } finally {
       setIsProcessingPayment(false);
     }
   };
-
 
   return (
     <Card 

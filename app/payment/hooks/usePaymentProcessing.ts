@@ -116,7 +116,7 @@ export function usePaymentProcessing() {
         localStorage.removeItem('servio-checkout-data');
       }
     } catch (err: any) {
-      console.error('[PAYMENT DEBUG] Payment error:', err);
+
       setError(err.message || 'Payment failed. Please try again.');
       toast({
         title: "Payment Error",

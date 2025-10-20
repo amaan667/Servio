@@ -18,7 +18,6 @@ import { Plus, AlertTriangle } from 'lucide-react';
 import { useTableManagement } from '@/hooks/useTableManagement';
 import { toast } from '@/hooks/use-toast';
 
-
 interface AddTableDialogProps {
   venueId: string;
   onTableAdded?: () => void;
@@ -44,7 +43,6 @@ export function AddTableDialog({ venueId, onTableAdded }: AddTableDialogProps) {
       seat_count: seatCount,
     };
 
-
     try {
       const result = await createTable(tableData);
       
@@ -59,8 +57,7 @@ export function AddTableDialog({ venueId, onTableAdded }: AddTableDialogProps) {
       setOpen(false);
       onTableAdded?.();
     } catch (error: unknown) {
-      console.error('[ADD TABLE DIALOG] Failed to create table:', error);
-      
+
       // Handle specific constraint error
       if (error.message?.includes('CONSTRAINT_ERROR') || error.message?.includes('temporarily unavailable')) {
         setError('Table creation is temporarily unavailable due to a database constraint issue. Please try again in a few moments.');

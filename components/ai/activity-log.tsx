@@ -11,7 +11,6 @@ import { Sparkles, Clock, Check, X, Eye, Keyboard } from "lucide-react";
 import { formatDistanceToNow } from "date-fns";
 import { AIActionAudit } from "@/types/ai-assistant";
 
-
 interface ActivityLogProps {
   venueId: string;
   limit?: number;
@@ -36,7 +35,7 @@ export function AIActivityLog({ venueId, limit = 20 }: ActivityLogProps) {
         setActivities(data.activities || []);
       }
     } catch (error) {
-      console.error("[AI ACTIVITY] Fetch error:", error);
+
     } finally {
       setLoading(false);
     }

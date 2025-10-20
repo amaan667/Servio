@@ -64,18 +64,16 @@ export default function QuestionsClient({ venueId, venueName, mode = 'full' }: Q
 
   const fetchQuestions = async () => {
     try {
-      console.debug('[FEEDBACK DEBUG] Fetching questions for venue:', venueId);
-      
+
       const response = await fetch(`/api/feedback/questions?venueId=${venueId}`);
-      console.debug('[FEEDBACK DEBUG] Fetch response status:', response.status);
-      
+
       if (response.ok) {
         const data = await response.json();
-        console.debug('[FEEDBACK DEBUG] Fetched questions:', data);
+
         setQuestions(data.questions || []);
         setTotalCount(data.totalCount || 0);
       } else {
-        console.error('[FEEDBACK DEBUG] Fetch failed:', response.status);
+
         toast({
           title: "Error",
           description: "Couldn't load questions",
@@ -83,7 +81,7 @@ export default function QuestionsClient({ venueId, venueName, mode = 'full' }: Q
         });
       }
     } catch (error) {
-      console.error('[FEEDBACK DEBUG] Fetch exception:', error);
+
       toast({
         title: "Error",
         description: "Couldn't load questions",
@@ -99,8 +97,7 @@ export default function QuestionsClient({ venueId, venueName, mode = 'full' }: Q
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    
-    
+
     if (!formData.prompt.trim()) {
       toast({
         title: "Error",
@@ -130,13 +127,11 @@ export default function QuestionsClient({ venueId, venueName, mode = 'full' }: Q
         is_active: formData.is_active
       };
 
-
       const response = await fetch('/api/feedback/questions', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(payload)
       });
-
 
       if (response.ok) {
         const result = await response.json();
@@ -162,7 +157,7 @@ export default function QuestionsClient({ venueId, venueName, mode = 'full' }: Q
         });
       }
     } catch (error) {
-      console.error('[FEEDBACK DEBUG] Exception:', error);
+
       toast({
         title: "Error",
         description: "Couldn't save question",

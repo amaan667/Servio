@@ -40,7 +40,7 @@ export function useChatActions(venueId: string) {
       setPreviews(data.previews || []);
       setSuccess(true);
     } catch (error: unknown) {
-      console.error("[AI CHAT] Error sending message:", error);
+
       setError(error.message || "Failed to send message");
     } finally {
       setLoading(false);
@@ -73,7 +73,7 @@ export function useChatActions(venueId: string) {
       setExecutionResults(data.results || []);
       setSuccess(true);
     } catch (error: unknown) {
-      console.error("[AI CHAT] Error executing plan:", error);
+
       setError(error.message || "Failed to execute plan");
     } finally {
       setExecuting(false);
@@ -100,7 +100,7 @@ export function useChatActions(venueId: string) {
 
       setSuccess(true);
     } catch (error: unknown) {
-      console.error("[AI CHAT] Error undoing action:", error);
+
       setError(error.message || "Failed to undo action");
     } finally {
       setUndoing(null);

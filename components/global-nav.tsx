@@ -10,8 +10,6 @@ import { useAuth } from "@/app/auth/AuthProvider";
 import { useRouter, usePathname } from "next/navigation";
 import SignInButton from "@/app/components/SignInButton";
 
-
-
 export default function GlobalNav() {
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [primaryVenueId, setPrimaryVenueId] = useState<string | null>(null);
@@ -55,7 +53,6 @@ export default function GlobalNav() {
   const primaryButtonClasses = isAuthenticatedRoute
     ? "bg-white text-servio-purple border-2 border-servio-purple hover:bg-gray-50 hover:text-servio-purple-dark"
     : "bg-white text-servio-purple border-2 border-servio-purple hover:bg-gray-50 hover:text-servio-purple-dark";
-
 
   // Determine if we're on dashboard pages
   const isOnDashboard = pathname?.startsWith('/dashboard');
@@ -115,7 +112,7 @@ export default function GlobalNav() {
             sessionStorage.setItem(`venue_id_${session.user.id}`, staffResult.data.venue_id);
           }
         } catch (err) {
-          console.error('Error fetching user data:', err);
+
         }
       } else {
         setPrimaryVenueId(null);

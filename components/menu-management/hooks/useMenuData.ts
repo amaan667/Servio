@@ -63,11 +63,7 @@ export function useMenuData(venueId: string, refreshTrigger?: number) {
       }
 
       if (error) {
-        console.error("Failed to fetch menu from Supabase", {
-          error: error.message,
-          code: error.code,
-          venueUuid,
-        });
+
         setError("Failed to load menu items.");
       } else {
         console.info("Menu fetched successfully", {
@@ -83,7 +79,7 @@ export function useMenuData(venueId: string, refreshTrigger?: number) {
         setCategoryOrder(null);
       }
     } catch (error: unknown) {
-      console.error("Unexpected error fetching menu", { error });
+
       setError("An unexpected error occurred.");
     } finally {
       setLoading(false);
@@ -95,7 +91,6 @@ export function useMenuData(venueId: string, refreshTrigger?: number) {
 
     if (!supabase) return;
 
-    console.info("Setting up real-time subscription");
     const channel = supabase
       .channel(`menu-management-${venueUuid}`)
       .on(
@@ -107,16 +102,16 @@ export function useMenuData(venueId: string, refreshTrigger?: number) {
           filter: `venue_id=eq.${venueUuid}`,
         },
         (payload: unknown) => {
-          console.info("Real-time change detected, refetching menu", { payload });
+
           fetchMenu();
         },
       )
       .subscribe((status: unknown) => {
-        console.info("Real-time subscription status", { status });
+
       });
 
     return () => {
-      console.info("Cleaning up real-time subscription");
+
       if (supabase) {
         createClient().removeChannel(channel);
       }

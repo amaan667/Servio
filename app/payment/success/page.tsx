@@ -4,7 +4,6 @@ import { useSearchParams } from "next/navigation";
 import OrderSummary from "@/components/order-summary";
 import { useEffect, useState } from "react";
 
-
 export default function PaymentSuccessPage() {
   const searchParams = useSearchParams();
   const sessionId = searchParams?.get('session_id');
@@ -31,7 +30,7 @@ export default function PaymentSuccessPage() {
           }
         })
         .catch(error => {
-          console.error('Error looking up order by session:', error);
+
         });
     }
     
@@ -47,7 +46,7 @@ export default function PaymentSuccessPage() {
           // Clean up after loading
           localStorage.removeItem("demo-order-data");
         } catch (error) {
-          console.error('Error parsing demo order data:', error);
+
         }
       } else {
         // Fallback: try to reconstruct order from URL parameters

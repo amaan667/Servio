@@ -7,7 +7,6 @@ import { Label } from '@/components/ui/label';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Clock, Save, Loader2, CheckCircle2, AlertCircle } from 'lucide-react';
 
-
 interface DailyResetSettingsProps {
   venueId: string;
   venueName?: string;
@@ -23,7 +22,6 @@ export function DailyResetSettings({
   const [isSaving, setIsSaving] = useState(false);
   const [saveStatus, setSaveStatus] = useState<'idle' | 'success' | 'error'>('idle');
   const [error, setError] = useState<string | null>(null);
-
 
   useEffect(() => {
     setResetTime(currentResetTime);
@@ -68,7 +66,7 @@ export function DailyResetSettings({
       setTimeout(() => setSaveStatus('idle'), 3000);
 
     } catch (err: unknown) {
-      console.error('Error updating reset time:', err);
+
       setError(err.message || 'Failed to update reset time');
       setSaveStatus('error');
     } finally {

@@ -45,7 +45,7 @@ export default function CreateAccountPage() {
         setSessionData(data);
         setStatus('form');
       } catch (err: any) {
-        console.error('Session fetch error:', err);
+
         setError(err.message || 'Failed to fetch session details.');
         setStatus('error');
       }
@@ -88,7 +88,7 @@ export default function CreateAccountPage() {
         router.push(`/dashboard/${data.venueId}?welcome=true`);
       }, 2000);
     } catch (err: any) {
-      console.error('Account creation error:', err);
+
       setError(err.message || 'Failed to create account. Please try again.');
       setLoading(false);
     }

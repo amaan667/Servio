@@ -170,7 +170,7 @@ export function BillSplittingDialog({
         onClose();
       }
     } catch (error) {
-      console.error('Error creating bill splits:', error);
+
     } finally {
       setLoading(false);
     }

@@ -109,7 +109,7 @@ export function EnhancedTableMergeDialog({
       onActionComplete?.();
       onClose();
     } catch (error) {
-      console.error('Merge failed:', error);
+
     } finally {
       setIsLoading(false);
     }

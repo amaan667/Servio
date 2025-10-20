@@ -40,7 +40,6 @@ import TimeField24, { TimeValue24 } from '@/components/inputs/TimeField24';
 import { buildIsoFromLocal, isOvernight, addDaysISO } from '@/lib/time';
 import EnhancedShiftSchedule from '@/components/staff/EnhancedShiftSchedule';
 
-
 interface StaffMember {
   id: string;
   name: string;
@@ -134,7 +133,7 @@ export default function InvitationBasedStaffManagement({
         setAllShifts(shiftsData.shifts || []);
       }
     } catch (err) {
-      console.error('Error loading data:', err);
+
       setError('Failed to load staff data');
     } finally {
       setLoading(false);
@@ -150,7 +149,7 @@ export default function InvitationBasedStaffManagement({
         setAllShifts(shifts);
       }
     } catch (e) {
-      console.error('Failed to load shifts:', e);
+
     }
   }, [venueId]);
 
@@ -209,7 +208,7 @@ export default function InvitationBasedStaffManagement({
             : `Invitation created but email failed to send. Check server logs for invitation link.`,
           variant: 'destructive',
         });
-        console.debug('📧 Invitation link:', data.invitationLink);
+
       }
 
       setInviteDialogOpen(false);
@@ -225,7 +224,6 @@ export default function InvitationBasedStaffManagement({
       setInviteLoading(false);
     }
   };
-
 
   const handleRemoveInvitation = async (invitationId: string) => {
     if (!confirm('Are you sure you want to remove this invitation? This action cannot be undone.')) {
@@ -335,7 +333,7 @@ export default function InvitationBasedStaffManagement({
           setShifts(j.shifts || []);
         }
       } catch (e) {
-        console.error('Failed to load shifts:', e);
+
       }
     }, [row.id, venueId]);
 

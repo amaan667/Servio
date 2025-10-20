@@ -14,7 +14,6 @@ import { Badge } from "@/components/ui/badge";
 import { Check, Loader2, Mail } from "lucide-react";
 import { useRouter } from "next/navigation";
 
-
 interface UpgradeModalProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
@@ -178,7 +177,7 @@ export function UpgradeModal({
         }
       }
     } catch (error) {
-      console.error("Plan change error:", error);
+
       alert("Failed to change plan. Please try again.");
       setLoading(null);
     }

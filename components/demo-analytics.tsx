@@ -11,7 +11,6 @@ import {
 import { TrendingUp, ShoppingBag, Users, Clock, Star, TrendingDown, Zap, AlertTriangle } from 'lucide-react';
 import { Badge } from '@/components/ui/badge';
 
-
 // Safe dynamic imports for recharts
 let ChartContainer: unknown = null;
 let ResponsiveContainer: unknown = null;
@@ -46,7 +45,7 @@ const loadRechartsComponents = async () => {
     CartesianGrid = rechartsModule.CartesianGrid;
     Tooltip = rechartsModule.Tooltip;
   } catch (error) {
-    console.error('Failed to load recharts components:', error);
+
   }
 };
 

@@ -8,7 +8,6 @@ import { Badge } from "@/components/ui/badge";
 import UnifiedFeedbackForm from "@/components/UnifiedFeedbackForm";
 import { createClient } from '@/lib/supabase';
 
-
 interface OrderSummaryProps {
   orderId?: string;
   sessionId?: string;
@@ -158,7 +157,7 @@ export default function OrderSummary({ orderId, sessionId, orderData, isDemo = f
           }
         }
       } catch (error) {
-        console.error('Error fetching order:', error);
+
         setError('Failed to load order details');
       } finally {
         setLoading(false);
@@ -175,7 +174,6 @@ export default function OrderSummary({ orderId, sessionId, orderData, isDemo = f
     const supabase = createClient();
     if (!supabase) return;
 
-    
     const channel = supabase
       .channel(`order-summary-${order.id}`)
       .on(

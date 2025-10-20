@@ -30,7 +30,6 @@ import { createClient } from "@/lib/supabase";
 import { toast } from "@/hooks/use-toast";
 import { useRouter } from "next/navigation";
 
-
 interface Venue {
   venue_id: string;
   venue_name: string;
@@ -79,7 +78,7 @@ export default function VenueSwitcherPopup({
       // Get current user first
       const { data: { user } } = await supabase.auth.getUser();
       if (!user) {
-        console.error('No authenticated user found');
+
         return;
       }
 
@@ -94,7 +93,7 @@ export default function VenueSwitcherPopup({
       if (error) throw error;
       setVenues(data || []);
     } catch (error: unknown) {
-      console.error('Error loading venues:', error);
+
       toast({
         title: "Error",
         description: "Failed to load venues",
@@ -161,14 +160,14 @@ export default function VenueSwitcherPopup({
       await loadVenues();
       
       // Automatically switch to the newly added venue
-      console.debug('[VENUE SWITCHER] Auto-switching to new venue:', data.venue_id);
+
       onVenueChange(data.venue_id);
       
       // Close the main modal
       setOpen(false);
       
     } catch (error: unknown) {
-      console.error('Error adding venue:', error);
+
       toast({
         title: "Error",
         description: error.message || "Failed to add venue",
@@ -215,7 +214,7 @@ export default function VenueSwitcherPopup({
       await loadVenues();
       setOpen(false);
     } catch (error: unknown) {
-      console.error('Error updating venue:', error);
+
       toast({
         title: "Error",
         description: error.message || "Failed to update venue",
@@ -249,7 +248,7 @@ export default function VenueSwitcherPopup({
 
       loadVenues();
     } catch (error: unknown) {
-      console.error('Error deleting venue:', error);
+
       toast({
         title: "Error",
         description: error.message || "Failed to delete venue",
@@ -337,14 +336,13 @@ export default function VenueSwitcherPopup({
                     : "border-border hover:border-primary/50 cursor-pointer hover:bg-gray-50"
                 }`}
                 onClick={() => {
-                  console.debug('[VENUE SWITCHER] Clicked venue:', venue.venue_name, 'ID:', venue.venue_id);
-                  console.debug('[VENUE SWITCHER] Current venue ID:', currentVenueId);
+
                   if (venue.venue_id !== currentVenueId) {
-                    console.debug('[VENUE SWITCHER] Calling onVenueChange with:', venue.venue_id);
+
                     onVenueChange(venue.venue_id);
                     setOpen(false);
                   } else {
-                    console.debug('[VENUE SWITCHER] Same venue, not switching');
+
                   }
                 }}
               >

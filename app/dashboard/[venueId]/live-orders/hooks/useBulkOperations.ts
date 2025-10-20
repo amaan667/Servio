@@ -35,7 +35,7 @@ export function useBulkOperations(venueId: string) {
         alert(`Error completing orders: ${result.error || 'Unknown error'}`);
       }
     } catch (error) {
-      console.error('[BULK COMPLETE] Exception:', error);
+
       alert('Error completing orders. Please try again.');
     } finally {
       setIsBulkCompleting(false);

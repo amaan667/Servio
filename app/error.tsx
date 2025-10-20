@@ -26,7 +26,7 @@ export default function Error({
     // Only redirect to home for certain types of errors, not order-related ones
     if (error.message.includes('Cannot access uninitialized variable') || 
         error.message.includes('Missing Supabase environment variables')) {
-      console.debug('[ERROR BOUNDARY] Redirecting to home due to error type');
+
       router.push('/');
     }
     // For other errors, don't redirect - let the component handle it

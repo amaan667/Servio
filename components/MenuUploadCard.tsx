@@ -11,7 +11,6 @@ import { FileText, Upload, Info, Trash2, RefreshCw } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import { createClient } from '@/lib/supabase';
 
-
 interface MenuUploadCardProps {
   venueId: string;
   onSuccess?: () => void;
@@ -84,7 +83,7 @@ export function MenuUploadCard({ venueId, onSuccess }: MenuUploadCardProps) {
         });
       
       if (error) {
-        console.error('Error saving extracted style:', error);
+
       } else {
         toast({
           title: 'Menu style extracted',
@@ -92,7 +91,7 @@ export function MenuUploadCard({ venueId, onSuccess }: MenuUploadCardProps) {
         });
       }
     } catch (error) {
-      console.error('Error extracting style:', error);
+
     }
   };
 
@@ -137,8 +136,7 @@ export function MenuUploadCard({ venueId, onSuccess }: MenuUploadCardProps) {
           const formData = new FormData();
           formData.append('file', file);
           formData.append('venue_id', venueId);
-          
-          
+
           const response = await fetch('/api/catalog/replace', {
             method: 'POST',
             body: formData
@@ -320,7 +318,6 @@ export function MenuUploadCard({ venueId, onSuccess }: MenuUploadCardProps) {
           </div>
         )}
 
-
         <div className="space-y-2">
           {/* Drag and Drop Area */}
           <div
@@ -380,7 +377,6 @@ export function MenuUploadCard({ venueId, onSuccess }: MenuUploadCardProps) {
             </div>
           </AlertDescription>
         </Alert>
-
 
       </CardContent>
     </Card>

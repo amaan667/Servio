@@ -14,7 +14,6 @@ import { Badge } from '@/components/ui/badge';
 import { Users, Clock, CheckCircle2 } from 'lucide-react';
 import { useTableActions } from '@/hooks/useTableActions';
 
-
 interface Table {
   id: string;
   label: string;
@@ -88,13 +87,11 @@ export function TableSelectionDialog({
   };
 
   const filteredTables = getAvailableTables();
-  
 
   const handleConfirm = async () => {
     if (!selectedTableId) {
       return;
     }
-
 
     try {
       setIsLoading(true);
@@ -108,13 +105,7 @@ export function TableSelectionDialog({
       onActionComplete?.();
       onClose();
     } catch (error) {
-      console.error(`[TABLE MERGE] Failed to ${action} table:`, {
-        error,
-        action,
-        sourceTableId: sourceTable.id,
-        destinationTableId: selectedTableId,
-        venueId
-      });
+
     } finally {
       setIsLoading(false);
     }

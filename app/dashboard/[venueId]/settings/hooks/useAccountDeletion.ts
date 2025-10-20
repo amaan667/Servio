@@ -27,7 +27,7 @@ export function useAccountDeletion(user: User) {
         .eq('owner_user_id', user.id);
 
       if (venueError) {
-        console.error('Error deleting venues:', venueError);
+
       }
 
       const { error } = await createClient().auth.admin.deleteUser(user.id);
@@ -44,14 +44,14 @@ export function useAccountDeletion(user: User) {
           },
         });
       } catch (error) {
-        console.error('Sign out error:', error);
+
       }
       
       try {
         const { clearAuthStorage } = await import('@/lib/supabase');
         clearAuthStorage();
       } catch (error) {
-        console.error('Clear storage error:', error);
+
       }
       
       router.push('/');

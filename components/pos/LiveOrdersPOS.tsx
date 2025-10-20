@@ -31,7 +31,6 @@ import {
 } from '@/components/ui/select';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 
-
 interface OrderItem {
   menu_item_id: string;
   quantity: number;
@@ -123,7 +122,7 @@ export function LiveOrdersPOS({ venueId }: LiveOrdersPOSProps) {
         setOrders(data.orders || []);
       }
     } catch (error) {
-      console.error('Error fetching orders:', error);
+
     } finally {
       setLoading(false);
     }
@@ -144,7 +143,7 @@ export function LiveOrdersPOS({ venueId }: LiveOrdersPOSProps) {
         fetchOrders();
       }
     } catch (error) {
-      console.error('Error updating order status:', error);
+
     }
   };
 
@@ -164,7 +163,7 @@ export function LiveOrdersPOS({ venueId }: LiveOrdersPOSProps) {
         fetchOrders();
       }
     } catch (error) {
-      console.error('Error updating item status:', error);
+
     }
   };
 

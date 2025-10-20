@@ -23,7 +23,6 @@ import {
 import { TableOrder } from '@/hooks/useTableOrders';
 import { calculateOrderTotal, formatPrice, normalizePrice } from '@/lib/pricing-utils';
 
-
 // Helper functions for order status flow
 const getNextOrderStatus = (currentStatus: string) => {
   // Normalize to uppercase for comparison
@@ -88,7 +87,7 @@ export function TableOrderCard({ order, venueId, onActionComplete }: TableOrderC
 
       onActionComplete?.();
     } catch (error) {
-      console.error('Error removing order:', error);
+
     } finally {
       setIsRemoving(false);
     }
@@ -150,7 +149,7 @@ export function TableOrderCard({ order, venueId, onActionComplete }: TableOrderC
 
       onActionComplete?.();
     } catch (error) {
-      console.error('Error processing payment:', error);
+
     } finally {
       setIsProcessingPayment(false);
     }
@@ -177,7 +176,7 @@ export function TableOrderCard({ order, venueId, onActionComplete }: TableOrderC
 
       onActionComplete?.();
     } catch (error) {
-      console.error('Error updating order status:', error);
+
     } finally {
       setIsProcessingPayment(false);
     }

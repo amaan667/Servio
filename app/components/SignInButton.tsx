@@ -4,7 +4,6 @@ import { useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { Button } from '@/components/ui/button';
 
-
 export default function SignInButton() {
   const [loading, setLoading] = useState(false);
   const router = useRouter();
@@ -16,7 +15,7 @@ export default function SignInButton() {
     try {
       router.push('/sign-in');
     } catch (error) {
-      console.error('[AUTH DEBUG] SignInButton error:', error);
+
       setLoading(false);
     }
   };

@@ -45,9 +45,9 @@ export default function AuthProvider({
     let supabase;
     try {
       supabase = supabaseBrowser();
-      console.debug('[AUTH DEBUG] Supabase browser client initialized successfully');
+
     } catch (error) {
-      console.error('[AUTH DEBUG] Error initializing Supabase browser client:', error);
+
       setSession(null);
       setUser(null);
       setLoading(false);
@@ -58,27 +58,19 @@ export default function AuthProvider({
     const getInitialSession = async () => {
       if (initialSession) {
         // We already have a session, no need to fetch
-        console.debug('[AUTH DEBUG] Using initial session from server', {
-          userId: initialSession.user.id,
-        });
+
         setLoading(false);
         return;
       }
-      
-      console.debug('[AUTH DEBUG] Fetching session from client');
+
       try {
         const { data: { session: currentSession } } = await supabase.auth.getSession();
-        
-        console.debug('[AUTH DEBUG] Client session fetched', {
-          hasSession: !!currentSession,
-          userId: currentSession?.user?.id,
-        });
-        
+
         setSession(currentSession);
         setUser(currentSession?.user || null);
         setLoading(false);
       } catch (error) {
-        console.error('[AUTH DEBUG] Error fetching client session:', error);
+
         setSession(null);
         setUser(null);
         setLoading(false);
@@ -127,9 +119,9 @@ export default function AuthProvider({
         }
       });
       subscription = data?.subscription;
-      console.debug('[AUTH DEBUG] Auth state change listener registered');
+
     } catch (error) {
-      console.error('[AUTH DEBUG] Error setting up auth state listener:', error);
+
       setLoading(false);
     }
     
@@ -147,14 +139,14 @@ export default function AuthProvider({
       const { error } = await supabase.auth.signOut();
       
       if (error) {
-        console.error('[AUTH DEBUG] Supabase signOut error:', error);
+
       }
       
       // Clear local state immediately
       setSession(null);
       setUser(null);
     } catch (error) {
-      console.error('[AUTH DEBUG] AuthProvider signOut error:', error);
+
       // Clear local state even if there's an error
       setSession(null);
       setUser(null);

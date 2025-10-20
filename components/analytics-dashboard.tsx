@@ -13,7 +13,6 @@ import { createClient } from "@/lib/supabase";
 import { ChartContainer } from "@/components/ui/chart";
 import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, BarChart, Bar, PieChart, Pie, Cell } from "recharts";
 
-
 interface OrderWithItems {
   id: string;
   venue_id: string;
@@ -93,7 +92,6 @@ export function AnalyticsDashboard({ venueId }: AnalyticsDashboardProps) {
           startDate = new Date(now.getFullYear(), now.getMonth(), now.getDate());
       }
 
-
       // Fetch orders from database
       const { data: ordersData, error: ordersError } = await supabase
         .from("orders")
@@ -102,7 +100,7 @@ export function AnalyticsDashboard({ venueId }: AnalyticsDashboardProps) {
         .gte("created_at", startDate.toISOString());
 
       if (ordersError) {
-        console.error("Error fetching orders:", ordersError);
+
         setStats({ revenue: 0, orderCount: 0, activeTables: 0, unpaidOrders: 0, averageOrderValue: 0, completionRate: 0 });
         return;
       }
@@ -281,7 +279,7 @@ export function AnalyticsDashboard({ venueId }: AnalyticsDashboardProps) {
       setDayOfWeekData(dow);
 
     } catch (error) {
-      console.error("Error calculating stats:", error);
+
       setStats({ revenue: 0, orderCount: 0, activeTables: 0, unpaidOrders: 0, averageOrderValue: 0, completionRate: 0 });
     } finally {
       setLoading(false);
@@ -295,8 +293,7 @@ export function AnalyticsDashboard({ venueId }: AnalyticsDashboardProps) {
   // Set up real-time subscription for instant analytics updates
   useEffect(() => {
     const supabase = createClient();
-    
-    
+
     const channel = supabase
       .channel(`analytics-${venueId}`)
       .on('postgres_changes', 

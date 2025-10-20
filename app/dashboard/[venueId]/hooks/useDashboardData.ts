@@ -21,8 +21,7 @@ export interface DashboardStats {
 }
 
 export function useDashboardData(venueId: string, venueTz: string, initialVenue: unknown, initialCounts?: DashboardCounts, initialStats?: DashboardStats) {
-  console.log('[useDashboardData] Hook called with:', { venueId, venueTz, hasInitialVenue: !!initialVenue, hasInitialCounts: !!initialCounts, hasInitialStats: !!initialStats });
-  
+
   const [venue, setVenue] = useState<unknown>(initialVenue);
   const [loading, setLoading] = useState(!initialVenue);
   const [counts, setCounts] = useState<DashboardCounts>(initialCounts || {
@@ -39,8 +38,6 @@ export function useDashboardData(venueId: string, venueTz: string, initialVenue:
   const [statsLoaded, setStatsLoaded] = useState(false);
   const [todayWindow, setTodayWindow] = useState<unknown>(null);
   const [error, setError] = useState<string | null>(null);
-
-  console.log('[useDashboardData] Initial state:', { loading, hasVenue: !!venue, hasTodayWindow: !!todayWindow, hasError: !!error });
 
   const loadStats = useCallback(async (venueId: string, window: unknown) => {
     try {
@@ -70,7 +67,7 @@ export function useDashboardData(venueId: string, venueTz: string, initialVenue:
       });
       setStatsLoaded(true);
     } catch (err) {
-      console.error('[DASHBOARD] Error loading stats:', err);
+
     }
   }, []);
 
@@ -88,7 +85,7 @@ export function useDashboardData(venueId: string, venueTz: string, initialVenue:
       );
       
       if (error) {
-        console.warn('[DASHBOARD] Failed to refresh counts:', error);
+
         setError('Failed to refresh dashboard data');
         return;
       }
@@ -116,7 +113,7 @@ export function useDashboardData(venueId: string, venueTz: string, initialVenue:
         }
       }
     } catch (err) {
-      console.error('[DASHBOARD] Error refreshing counts:', err);
+
       setError('Failed to refresh dashboard data');
     }
   }, [venueId, venueTz]);
@@ -131,28 +128,27 @@ export function useDashboardData(venueId: string, venueTz: string, initialVenue:
   }, []);
 
   useEffect(() => {
-    console.log('[useDashboardData] useEffect triggered:', { hasVenue: !!venue, loading, venueTz, statsLoaded });
-    
+
     const loadVenueAndStats = async () => {
       try {
         if (venue && !loading) {
-          console.log('[useDashboardData] Loading venue and stats...');
+
           const window = todayWindowForTZ(venueTz);
-          console.log('[useDashboardData] Today window:', window);
+
           setTodayWindow(window);
           
           if (!statsLoaded) {
-            console.log('[useDashboardData] Loading stats...');
+
             await loadStats(venue.venue_id, window);
           }
         } else {
-          console.log('[useDashboardData] Skipping load - venue:', !!venue, 'loading:', loading);
+
         }
       } catch (err) {
-        console.error('[useDashboardData] Error loading venue and stats:', err);
+
         setError('Failed to load dashboard data');
       } finally {
-        console.log('[useDashboardData] Setting loading to false');
+
         setLoading(false);
       }
     };

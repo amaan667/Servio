@@ -118,7 +118,7 @@ export function useOrderSession(orderParams: OrderParams) {
         }
       }
     } catch (error) {
-      console.error('[ORDER PAGE] Error checking for existing order:', error);
+
     }
   };
 
@@ -165,7 +165,7 @@ export function useOrderSession(orderParams: OrderParams) {
                 phone: session.customerPhone
               });
             } catch (error) {
-              console.error('[ORDER PAGE] Error parsing session data:', error);
+
             }
           }
         } else {
@@ -179,7 +179,7 @@ export function useOrderSession(orderParams: OrderParams) {
           }
         }
       } catch (error) {
-        console.error('[ORDER PAGE] Error in checkUnpaidOrders:', error);
+
       }
     };
 

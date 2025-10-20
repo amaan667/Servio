@@ -8,7 +8,6 @@ import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
 import type { StockLevel, StockMovementReason } from '@/types/inventory';
 
-
 interface StockAdjustmentDialogProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
@@ -47,7 +46,7 @@ export function StockAdjustmentDialog({ open, onOpenChange, ingredient, onSucces
         setNote('');
       }
     } catch (error) {
-      console.error('Error adjusting stock:', error);
+
     } finally {
       setLoading(false);
     }

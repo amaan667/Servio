@@ -4,7 +4,6 @@ import React, { useState, useEffect } from 'react';
 import { RefreshCw, CheckCircle } from 'lucide-react';
 import { usePullToRefresh } from '@/hooks/useGestures';
 
-
 interface PullToRefreshProps {
   onRefresh: () => Promise<void>;
   children: React.ReactNode;
@@ -34,7 +33,7 @@ export default function PullToRefresh({
         setRefreshSuccess(false);
       }, 1000);
     } catch (error) {
-      console.error('Pull-to-refresh failed:', error);
+
     } finally {
       setIsRefreshing(false);
     }
@@ -127,7 +126,7 @@ export function usePullToRefreshWrapper(onRefresh: () => Promise<void>) {
     try {
       await onRefresh();
     } catch (error) {
-      console.error('Refresh failed:', error);
+
     } finally {
       setIsRefreshing(false);
     }

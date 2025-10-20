@@ -2,7 +2,6 @@
 
 import React from 'react';
 
-
 interface AuthErrorBoundaryState {
   hasError: boolean;
   error: Error | null;
@@ -25,9 +24,7 @@ export class AuthErrorBoundary extends React.Component<AuthErrorBoundaryProps, A
   }
 
   componentDidCatch(error: Error, errorInfo: React.ErrorInfo) {
-    console.error('[AUTH ERROR BOUNDARY] Caught error:', error);
-    console.error('[AUTH ERROR BOUNDARY] Error info:', errorInfo);
-    
+
     this.setState({
       error,
       errorInfo
@@ -124,8 +121,7 @@ export class AuthErrorBoundary extends React.Component<AuthErrorBoundaryProps, A
 // Hook for functional components to use error boundary
 export const useAuthErrorHandler = () => {
   const handleAuthError = (error: Error) => {
-    console.error('[AUTH ERROR HANDLER] Handling auth error:', error);
-    
+
     // You can add custom error handling logic here
     // For example, redirect to sign-in page for specific errors
     if (error.message?.includes('auth') || error.message?.includes('session')) {

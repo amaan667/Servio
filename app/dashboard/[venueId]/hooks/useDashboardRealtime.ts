@@ -35,8 +35,7 @@ export function useDashboardRealtime({
           filter: `venue_id=eq.${venueId}`
         }, 
         async (payload: unknown) => {
-          console.debug('[DASHBOARD] Order update received:', payload.eventType, payload.new?.id);
-          
+
           const orderCreatedAt = (payload.new as unknown)?.created_at || (payload.old as unknown)?.created_at;
           if (!orderCreatedAt) {
             return;
@@ -45,7 +44,7 @@ export function useDashboardRealtime({
           const isInTodayWindow = orderCreatedAt >= todayWindow.startUtcISO && orderCreatedAt < todayWindow.endUtcISO;
           
           if (isInTodayWindow) {
-            console.debug('[DASHBOARD] Refreshing counts due to order change');
+
             await refreshCounts();
             
             if (payload.eventType === 'INSERT' && payload.new) {
@@ -66,7 +65,7 @@ export function useDashboardRealtime({
           filter: `venue_id=eq.${venueId}`
         },
         async (payload: unknown) => {
-          console.debug('[DASHBOARD] Table update received:', payload.eventType);
+
           await refreshCounts();
         }
       )
@@ -78,7 +77,7 @@ export function useDashboardRealtime({
           filter: `venue_id=eq.${venueId}`
         },
         async (payload: unknown) => {
-          console.debug('[DASHBOARD] Table session update received:', payload.eventType);
+
           await refreshCounts();
         }
       )
@@ -90,7 +89,7 @@ export function useDashboardRealtime({
           filter: `venue_id=eq.${venueId}`
         },
         async (payload: unknown) => {
-          console.debug('[DASHBOARD] Menu item update received:', payload.eventType);
+
           try {
             const { data: menuItems } = await supabase
               .from("menu_items")
@@ -101,24 +100,24 @@ export function useDashboardRealtime({
             // Update menu items count in parent component
             // This will be handled by the parent component
           } catch (error) {
-            console.error('[DASHBOARD] Error updating menu items count:', error);
+
           }
         }
       )
       .subscribe((status: string) => {
-        console.debug('[DASHBOARD] Realtime subscription status:', status);
+
         if (status === 'SUBSCRIBED') {
-          console.debug('[DASHBOARD] ✓ Successfully subscribed to realtime updates');
+
         } else if (status === 'CHANNEL_ERROR') {
-          console.error('[DASHBOARD] ✗ Realtime subscription error - falling back to polling');
+
         } else if (status === 'TIMED_OUT') {
-          console.error('[DASHBOARD] ✗ Realtime subscription timed out');
+
         }
       });
 
     const handleOrderCreated = (event: CustomEvent) => {
       if (event.detail.venueId === venueId) {
-        console.debug('[DASHBOARD] Custom order created event received');
+
         refreshCounts();
         if (event.detail.order) {
           updateRevenueIncrementally(event.detail.order);

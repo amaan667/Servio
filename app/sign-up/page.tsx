@@ -6,7 +6,6 @@ import { supabaseBrowser } from '@/lib/supabase';
 import { getAuthRedirectUrl } from '@/lib/auth';
 import SignUpForm from './signup-form';
 
-
 export default function SignUpPage() {
   const router = useRouter();
   const [isSigningUp, setIsSigningUp] = useState(false);
@@ -37,7 +36,7 @@ export default function SignUpPage() {
       });
       
       if (error) {
-        console.error('OAuth sign up error:', error);
+
         alert(`Sign up failed: ${error.message}`);
         setIsSigningUp(false);
         return;
@@ -48,7 +47,7 @@ export default function SignUpPage() {
         window.location.href = data.url;
       }
     } catch (error) {
-      console.error('Sign up error:', error);
+
       alert('Sign up failed. Please try again.');
       setIsSigningUp(false);
     }

@@ -8,7 +8,6 @@ import { Badge } from '@/components/ui/badge';
 import { Star, MessageSquare, Send, CheckCircle } from 'lucide-react';
 import { createClient } from '@/lib/supabase';
 
-
 interface CustomerFeedbackFormProps {
   venueId: string;
   orderId?: string;
@@ -134,7 +133,7 @@ export function CustomerFeedbackForm({
       onFeedbackSubmitted?.();
 
     } catch (err: unknown) {
-      console.error('Failed to submit feedback:', err);
+
       setError(err.message || 'Failed to submit feedback. Please try again.');
     } finally {
       setIsSubmitting(false);

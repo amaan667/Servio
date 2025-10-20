@@ -6,7 +6,6 @@ import { MenuStyle, getMenuStyleClasses } from '@/lib/menu-style-extractor';
 import { Button } from '@/components/ui/button';
 import { Plus, Minus } from 'lucide-react';
 
-
 interface MenuItem {
   id: string;
   name: string;
@@ -75,7 +74,7 @@ export function StyledMenuDisplay({
           setMenuStyle(style);
         }
       } catch (error) {
-        console.error('Error fetching menu style:', error);
+
       } finally {
         setLoading(false);
       }

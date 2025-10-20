@@ -42,7 +42,7 @@ export function useLogoUpload(venueId: string, designSettings: DesignSettings, s
         });
       } catch (bucketError: unknown) {
         if (!bucketError.message?.includes('already exists')) {
-          console.debug('[LOGO UPLOAD] Bucket creation info:', bucketError.message);
+
         }
       }
 
@@ -84,7 +84,7 @@ export function useLogoUpload(venueId: string, designSettings: DesignSettings, s
             updated_at: new Date().toISOString()
           });
       } catch (dbError) {
-        console.error('[LOGO UPLOAD] Database save exception:', dbError);
+
       }
 
       toast({
@@ -93,7 +93,7 @@ export function useLogoUpload(venueId: string, designSettings: DesignSettings, s
         duration: 5000,
       });
     } catch (error: unknown) {
-      console.error('Error uploading logo:', error);
+
       toast({
         title: "Upload failed",
         description: error.message || "Failed to upload logo",

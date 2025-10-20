@@ -56,7 +56,7 @@ export function usePasswordManagement(user: User) {
         });
         
         if (metadataError) {
-          console.error('Error updating password metadata:', metadataError);
+
         }
       }
 

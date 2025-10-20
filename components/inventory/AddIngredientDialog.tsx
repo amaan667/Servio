@@ -8,7 +8,6 @@ import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import type { IngredientUnit } from '@/types/inventory';
 
-
 interface AddIngredientDialogProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
@@ -67,7 +66,7 @@ export function AddIngredientDialog({ open, onOpenChange, venueId, onSuccess }: 
         });
       }
     } catch (error) {
-      console.error('Error adding ingredient:', error);
+
     } finally {
       setLoading(false);
     }

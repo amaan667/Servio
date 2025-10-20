@@ -91,7 +91,7 @@ async function clearTableSession(orderData: unknown, venueId: string, orderId: s
       await sessionQuery;
     }
   } catch (error) {
-    console.error('[TABLE CLEAR] Exception during table cleanup:', error);
+
   }
 }
 

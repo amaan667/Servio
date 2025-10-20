@@ -8,7 +8,6 @@ import { MapPin, Loader2, X } from "lucide-react";
 import { Card } from "@/components/ui/card";
 import { loadGoogleMapsAPI } from "@/lib/google-maps";
 
-
 interface AddressInputProps {
   value: string;
   onChange: (value: string, coordinates?: { lat: number; lng: number }) => void;
@@ -73,12 +72,11 @@ export function AddressInput({ value, onChange, onCoordinatesChange }: AddressIn
         }
       }
     } catch (error) {
-      console.error('Error geocoding address:', error);
+
     } finally {
       setIsLoadingMap(false);
     }
   };
-
 
   return (
     <div className="space-y-3">

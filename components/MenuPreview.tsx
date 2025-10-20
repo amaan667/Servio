@@ -4,7 +4,6 @@ import { useEffect, useState } from 'react';
 import { createClient } from '@/lib/supabase';
 import { MenuStyle, getMenuStyleClasses } from '@/lib/menu-style-extractor';
 
-
 interface MenuItem {
   id: string;
   name: string;
@@ -65,7 +64,7 @@ export function MenuPreview({
           setMenuStyle(style);
         }
       } catch (error) {
-        console.error('Error fetching menu style:', error);
+
       } finally {
         setLoading(false);
       }

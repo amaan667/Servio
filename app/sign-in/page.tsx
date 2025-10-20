@@ -7,7 +7,6 @@ import { getAuthRedirectUrl } from '@/lib/auth';
 import { useAuth } from '@/app/auth/AuthProvider';
 import SignInForm from './signin-form';
 
-
 function SignInPageContent() {
   const router = useRouter();
   const sp = useSearchParams();
@@ -33,9 +32,7 @@ function SignInPageContent() {
     const errorParam = urlParams.get('error');
     const messageParam = urlParams.get('message');
     const nextParam = urlParams.get('next');
-    
-    console.log('[SIGN-IN] URL params:', { errorParam, messageParam, nextParam });
-    
+
     if (messageParam) {
       setError(messageParam);
     } else if (errorParam) {
@@ -53,7 +50,7 @@ function SignInPageContent() {
 
     // If user is already signed in, redirect to dashboard or next URL
     if (session && !loading) {
-      console.log('[SIGN-IN] User already signed in, redirecting...');
+
       const redirectTo = nextParam || '/dashboard';
       router.push(redirectTo);
     }
@@ -66,12 +63,10 @@ function SignInPageContent() {
     
     try {
       setIsSigningIn(true);
-      console.log('[SIGN-IN] Starting Google OAuth flow...');
 
       // Use stable redirect URL helper
       const redirectTo = getAuthRedirectUrl('/auth/callback');
-      console.log('[SIGN-IN] Redirect URL:', redirectTo);
-      
+
       const { data, error } = await supabaseBrowser().auth.signInWithOAuth({
         provider: 'google',
         options: {
@@ -87,7 +82,7 @@ function SignInPageContent() {
       });
       
       if (error) {
-        console.error('OAuth sign in error:', error);
+
         const msg = error?.message || 'Sign in failed.';
         // If rate limited, display a friendlier message with longer wait time
         if (/rate limit/i.test(msg)) {
@@ -110,7 +105,7 @@ function SignInPageContent() {
         window.location.href = data.url;
       }
     } catch (error) {
-      console.error('Sign in error:', error);
+
       alert('Sign in failed. Please try again.');
       setIsSigningIn(false);
     }

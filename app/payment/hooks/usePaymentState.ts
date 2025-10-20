@@ -43,28 +43,24 @@ export function usePaymentState() {
   const isDemoFromUrl = searchParams?.get('demo') === '1';
 
   useEffect(() => {
-    console.debug('[PAYMENT DEBUG] Current URL:', window.location.href);
+
     console.debug('[PAYMENT DEBUG] Search params:', Object.fromEntries(searchParams?.entries() || []));
-    console.debug('[PAYMENT DEBUG] isDemoFromUrl:', isDemoFromUrl);
-    
+
     const storedData = localStorage.getItem("servio-checkout-data");
-    
-    console.debug('[PAYMENT DEBUG] Loading checkout data:', storedData);
-    
+
     if (storedData) {
       try {
         const data = JSON.parse(storedData);
-        console.debug('[PAYMENT DEBUG] Parsed checkout data:', data);
+
         setCheckoutData(data);
         setIsDemo(data.isDemo || false);
         setReceiptEmail(data.customerEmail || '');
-        console.debug('[PAYMENT DEBUG] Demo flag set to:', data.isDemo || false);
-        
+
         if (data.isDemo || isDemoFromUrl) {
-          console.debug('[PAYMENT DEBUG] DEMO MODE DETECTED - should redirect immediately');
+
         }
       } catch (error) {
-        console.error('[PAYMENT DEBUG] Error parsing checkout data:', error);
+
         router.push("/order");
       }
     } else {

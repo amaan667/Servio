@@ -10,7 +10,6 @@ import { createClient } from '@/lib/supabase';
 import { toast } from '@/hooks/use-toast';
 import QRCode from 'qrcode';
 
-
 export default function OnboardingTablesPage() {
   const router = useRouter();
   const [loading, setLoading] = useState(true);
@@ -49,7 +48,7 @@ export default function OnboardingTablesPage() {
       generatePreview(selectedCount, venues[0].venue_id);
       setLoading(false);
     } catch (error) {
-      console.error('Auth check error:', error);
+
       setLoading(false);
     }
   };
@@ -75,7 +74,7 @@ export default function OnboardingTablesPage() {
           url: tableUrl,
         });
       } catch (error) {
-        console.error('QR generation error:', error);
+
       }
     }
 
@@ -134,7 +133,7 @@ export default function OnboardingTablesPage() {
       // Move to next step
       router.push('/onboarding/test-order');
     } catch (error: any) {
-      console.error('Table creation error:', error);
+
       toast({
         title: 'Failed to create tables',
         description: error.message || 'Please try again.',

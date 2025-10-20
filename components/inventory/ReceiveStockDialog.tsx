@@ -8,7 +8,6 @@ import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
 import type { StockLevel } from '@/types/inventory';
 
-
 interface ReceiveStockDialogProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
@@ -69,7 +68,7 @@ export function ReceiveStockDialog({ open, onOpenChange, ingredient, onSuccess }
         setNote('');
       }
     } catch (error) {
-      console.error('Error receiving stock:', error);
+
     } finally {
       setLoading(false);
     }

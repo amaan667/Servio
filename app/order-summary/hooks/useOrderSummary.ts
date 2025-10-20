@@ -31,48 +31,40 @@ export function useOrderSummary() {
 
   useEffect(() => {
     const storedData = localStorage.getItem('servio-pending-order');
-    
-    console.debug('[ORDER SUMMARY DEBUG] Loading order data:', storedData);
-    
+
     if (storedData) {
       try {
         const data = JSON.parse(storedData);
-        console.debug('[ORDER SUMMARY DEBUG] Parsed data:', data);
-        console.debug('[ORDER SUMMARY DEBUG] Is demo?', data.isDemo, data.venueId === 'demo-cafe');
+
         setOrderData(data);
       } catch (error) {
-        console.error('Error parsing stored order data:', error);
+
         router.push('/order');
       }
     } else {
-      console.debug('[ORDER SUMMARY DEBUG] No stored data, redirecting to order page');
+
       router.push('/order');
     }
     setLoading(false);
   }, [router]);
 
   const handlePayNow = async () => {
-    console.debug('[ORDER SUMMARY DEBUG] ===== handlePayNow STARTED =====');
+
     console.debug('[ORDER SUMMARY DEBUG] Timestamp:', new Date().toISOString());
     console.debug('[ORDER SUMMARY DEBUG] Full orderData:', JSON.stringify(orderData, null, 2));
     
     if (!orderData) {
-      console.error('[ORDER SUMMARY DEBUG] No orderData found!');
+
       alert('Error: No order data available. Please try placing your order again.');
       return;
     }
     
     const isDemo = orderData.isDemo || orderData.venueId === 'demo-cafe';
-    
-    console.debug('[ORDER SUMMARY DEBUG] ===== DEMO CHECK =====');
-    console.debug('[ORDER SUMMARY DEBUG] isDemo calculated:', isDemo);
-    
+
     if (isDemo) {
-      console.debug('[ORDER SUMMARY DEBUG] ===== DEMO ORDER DETECTED =====');
-      
+
       const demoOrderId = `demo-${Date.now()}`;
-      console.debug('[ORDER SUMMARY DEBUG] Generated demoOrderId:', demoOrderId);
-      
+
       setIsCreatingOrder(true);
       
       try {
@@ -99,9 +91,7 @@ export function useOrderSummary() {
         if (!response.ok) {
           throw new Error(result.error || 'Failed to create demo order');
         }
-        
-        console.debug('[ORDER SUMMARY DEBUG] Demo order created successfully:', result);
-        
+
         localStorage.removeItem('servio-pending-order');
         localStorage.setItem('servio-last-order-id', demoOrderId);
         
@@ -111,7 +101,7 @@ export function useOrderSummary() {
           router.push(`/order-summary/${demoOrderId}`);
         }, 1500);
       } catch (error) {
-        console.error('[ORDER SUMMARY DEBUG] Error creating demo order:', error);
+
         alert('Error creating order. Please try again.');
       } finally {
         setIsCreatingOrder(false);
@@ -145,9 +135,7 @@ export function useOrderSummary() {
       if (!response.ok) {
         throw new Error(result.error || 'Failed to create order');
       }
-      
-      console.debug('[ORDER SUMMARY DEBUG] Order created successfully:', result);
-      
+
       localStorage.removeItem('servio-pending-order');
       localStorage.setItem('servio-last-order-id', result.orderId);
       
@@ -157,7 +145,7 @@ export function useOrderSummary() {
         router.push(`/payment?orderId=${result.orderId}&amount=${orderData.total}`);
       }, 1500);
     } catch (error) {
-      console.error('[ORDER SUMMARY DEBUG] Error creating order:', error);
+
       alert('Error creating order. Please try again.');
     } finally {
       setIsCreatingOrder(false);

@@ -6,7 +6,6 @@ import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Textarea } from '@/components/ui/textarea';
 
-
 interface SimpleFeedbackFormProps {
   venueId: string;
   orderId?: string;
@@ -42,7 +41,7 @@ export default function SimpleFeedbackForm({ venueId, orderId, onSubmit }: Simpl
         onSubmit();
       }
     } catch (error) {
-      console.error('Error submitting feedback:', error);
+
       alert('Failed to submit feedback. Please try again.');
     } finally {
       setSubmitting(false);

@@ -46,7 +46,7 @@ export function useShiftManagement(venueId: string, staff: unknown[]) {
       setAllShifts(prev => [...prev, data.shift]);
       setEditingShiftFor(null);
     } catch (err) {
-      console.error('Error adding shift:', err);
+
     }
   };
 
@@ -64,7 +64,7 @@ export function useShiftManagement(venueId: string, staff: unknown[]) {
 
       setAllShifts(prev => prev.filter(s => s.id !== shiftId));
     } catch (err) {
-      console.error('Error deleting shift:', err);
+
     }
   };
 

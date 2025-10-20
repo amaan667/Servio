@@ -60,7 +60,7 @@ export default function AnalyticsClient({ venueId, venueName }: { venueId: strin
         variant: "default"
       });
     } catch (error) {
-      console.error('Error exporting CSV:', error);
+
       toast({
         title: "Export Failed",
         description: "Failed to export analytics data. Please try again.",

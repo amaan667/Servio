@@ -47,7 +47,7 @@ export function useDragAndDrop(menuItems: MenuItem[], setMenuItems: (items: Menu
         description: "Menu items have been reordered successfully",
       });
     } catch (error) {
-      console.error('Error reordering items:', error);
+
       toast({
         title: "Error",
         description: "Failed to save item order",

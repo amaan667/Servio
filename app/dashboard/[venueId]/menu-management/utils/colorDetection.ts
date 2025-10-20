@@ -55,13 +55,13 @@ export const detectColorsFromImage = (imageUrl: string): Promise<{primary: strin
 
         resolve({ primary, secondary });
       } catch (error) {
-        console.error('[COLOR DETECTION] Error:', error);
+
         resolve({ primary: '#8b5cf6', secondary: '#f3f4f6' });
       }
     };
 
     img.onerror = () => {
-      console.error('[COLOR DETECTION] Failed to load image');
+
       resolve({ primary: '#8b5cf6', secondary: '#f3f4f6' });
     };
 

@@ -48,10 +48,10 @@ export function useStaffManagement(venueId: string, initialStaff?: StaffRow[], i
           setStaff(j.staff || []);
           setStaffLoaded(true);
         } else {
-          console.error('[AUTH DEBUG] Failed to load staff:', j?.error);
+
         }
       } catch (e) {
-        console.error('[AUTH DEBUG] Failed to load staff:', e);
+
       }
     };
 

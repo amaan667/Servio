@@ -81,7 +81,7 @@ export function EnhancedFeedbackSystem({ venueId }: FeedbackSystemProps) {
         setQuestions(data.questions || []);
       }
     } catch (error) {
-      console.error('Error fetching questions:', error);
+
     }
   }, [venueId]);
 
@@ -148,7 +148,7 @@ export function EnhancedFeedbackSystem({ venueId }: FeedbackSystemProps) {
       calculateStats(filteredFeedback);
 
     } catch (err: unknown) {
-      console.error('Failed to fetch feedback', { error: err.message, venueId });
+
       setError(err.message);
     } finally {
       setLoading(false);
@@ -173,7 +173,6 @@ export function EnhancedFeedbackSystem({ venueId }: FeedbackSystemProps) {
     const positiveSentiment = sentimentCounts.positive || 0;
     const negativeSentiment = sentimentCounts.negative || 0;
     const neutralSentiment = sentimentCounts.neutral || 0;
-
 
     // Category analysis
     const categoryStats: Record<string, { count: number; totalRating: number }> = {};
@@ -220,7 +219,6 @@ export function EnhancedFeedbackSystem({ venueId }: FeedbackSystemProps) {
       ratingDistribution
     });
   }, []);
-
 
   const getSentimentColor = (sentiment: string) => {
     switch (sentiment) {
@@ -328,7 +326,6 @@ export function EnhancedFeedbackSystem({ venueId }: FeedbackSystemProps) {
                         </div>
                       </CardContent>
                     </Card>
-
 
                     <Card className="shadow-sm">
                       <CardContent className="p-6">

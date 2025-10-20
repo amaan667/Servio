@@ -5,7 +5,6 @@ import GlobalBottomNav from './GlobalBottomNav';
 import { createClient } from '@/lib/supabase';
 import { useEffect, useState } from 'react';
 
-
 export default function ConditionalBottomNav() {
   const pathname = usePathname();
   const [venueId, setVenueId] = useState<string | null>(null);
@@ -69,7 +68,7 @@ export default function ConditionalBottomNav() {
         table: 'orders',
         filter: `venue_id=eq.${venueIdFromPath}`
       }, () => {
-        console.debug('[BOTTOM NAV] Order update received, refreshing counts');
+
         loadCounts();
       })
       .subscribe();

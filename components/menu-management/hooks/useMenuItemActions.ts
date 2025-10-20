@@ -36,13 +36,13 @@ export function useMenuItemActions(venueId: string, onRefresh: () => void) {
       
       const result = await res.json();
       if (!res.ok || result.error) {
-        console.error("Failed to add item to Supabase", { error: result.error, venueUuid });
+
         setError(result.error || "Failed to add item.");
       } else {
-        console.info("Item added successfully");
+
       }
     } catch (error: unknown) {
-      console.error("Unexpected error adding item", { error });
+
       setError("An unexpected error occurred.");
     } finally {
       setSaving(null);
@@ -50,7 +50,6 @@ export function useMenuItemActions(venueId: string, onRefresh: () => void) {
   };
 
   const handleUpdateItem = async (itemId: string, updates: Partial<MenuItem>) => {
-    console.info("Updating item", { itemId, updates });
 
     const supabase = createClient();
     if (!supabase) return;
@@ -64,13 +63,13 @@ export function useMenuItemActions(venueId: string, onRefresh: () => void) {
         .eq("id", itemId);
 
       if (error) {
-        console.error("Failed to update item", { itemId, error: error.message, code: error.code });
+
         setError(`Failed to update item: ${error.message}`);
       } else {
-        console.info("Item updated successfully", { itemId });
+
       }
     } catch (error: unknown) {
-      console.error("Unexpected error updating item", { error });
+
       setError("An unexpected error occurred.");
     } finally {
       setSaving(null);
@@ -79,8 +78,6 @@ export function useMenuItemActions(venueId: string, onRefresh: () => void) {
 
   const handleDeleteItem = async (itemId: string) => {
     if (!window.confirm("Are you sure you want to delete this menu item?")) return;
-    
-    console.info("Deleting item", { itemId });
 
     const supabase = createClient();
     if (!supabase) return;
@@ -94,13 +91,13 @@ export function useMenuItemActions(venueId: string, onRefresh: () => void) {
         .eq("id", itemId);
 
       if (error) {
-        console.error("Failed to delete item", { itemId, error: error.message, code: error.code });
+
         setError(`Failed to delete item: ${error.message}`);
       } else {
-        console.info("Item deleted successfully", { itemId });
+
       }
     } catch (error: unknown) {
-      console.error("Unexpected error deleting item", { error });
+
       setError("An unexpected error occurred.");
     } finally {
       setSaving(null);

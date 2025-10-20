@@ -11,7 +11,6 @@ import { useToast } from '@/hooks/use-toast';
 import { createClient } from '@/lib/supabase';
 import type { FeedbackQuestion, FeedbackAnswer } from '@/types/feedback';
 
-
 interface OrderFeedbackFormProps {
   venueId: string;
   orderId?: string;
@@ -114,7 +113,7 @@ export default function OrderFeedbackForm({ venueId, orderId }: OrderFeedbackFor
         
       }
     } catch (error) {
-      console.error('[FEEDBACK] Error fetching questions:', error);
+
       // If API fails, fall back to generic questions
       setQuestions(genericQuestions);
       setTotalCount(genericQuestions.length);
@@ -131,8 +130,7 @@ export default function OrderFeedbackForm({ venueId, orderId }: OrderFeedbackFor
   // Set up real-time subscription for feedback questions
   useEffect(() => {
     const supabase = createClient();
-    
-    
+
     const channel = supabase
       .channel(`feedback-questions-${venueId}`)
       .on(
@@ -249,8 +247,7 @@ export default function OrderFeedbackForm({ venueId, orderId }: OrderFeedbackFor
         });
       }
     } catch (error) {
-      console.error('[FEEDBACK] Error submitting feedback:', error);
-      
+
       // If we have generic questions and the main API fails, still show success
       if (questions.some(q => q.id.startsWith('generic'))) {
         toast({

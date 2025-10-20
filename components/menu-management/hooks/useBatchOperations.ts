@@ -29,7 +29,7 @@ export function useBatchOperations(menuItems: MenuItem[], onRefresh: () => void)
       setBatchEditOpen(false);
       onRefresh();
     } catch (error: unknown) {
-      console.error("Failed to save batch edits:", error);
+
     }
   };
 
@@ -81,7 +81,7 @@ export function useBatchOperations(menuItems: MenuItem[], onRefresh: () => void)
       setSelectedItems([]);
       onRefresh();
     } catch (error: unknown) {
-      console.error("Failed to perform batch action:", error);
+
     }
   };
 

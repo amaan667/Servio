@@ -11,7 +11,6 @@ import { useToast } from '@/hooks/use-toast';
 import { createClient } from '@/lib/supabase';
 import type { FeedbackQuestion, FeedbackAnswer } from '@/types/feedback';
 
-
 interface UnifiedFeedbackFormProps {
   venueId: string;
   orderId?: string;
@@ -118,7 +117,7 @@ export default function UnifiedFeedbackForm({
         setQuestions(genericQuestions);
       }
     } catch (error) {
-      console.error('[FEEDBACK] Error fetching questions:', error);
+
       setQuestions(genericQuestions);
     } finally {
       setLoading(false);
@@ -224,7 +223,7 @@ export default function UnifiedFeedbackForm({
       }
 
     } catch (error) {
-      console.error('[FEEDBACK] Error submitting feedback:', error);
+
       toast({
         title: "Error",
         description: error instanceof Error ? error.message : 'Failed to submit feedback. Please try again.',

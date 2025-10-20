@@ -3,7 +3,6 @@
 import { useState } from 'react';
 import { useAuth } from '@/app/auth/AuthProvider';
 
-
 interface SignOutButtonProps {
   className?: string;
   children?: React.ReactNode;
@@ -25,7 +24,7 @@ export function SignOutButton({
       await signOut();
       
     } catch (error) {
-      console.error('[SIGN OUT BUTTON] Sign out error:', error);
+
     } finally {
       setIsLoading(false);
     }

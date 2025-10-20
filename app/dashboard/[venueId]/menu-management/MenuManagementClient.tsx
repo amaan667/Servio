@@ -128,7 +128,7 @@ export default function MenuManagementClient({ venueId, canEdit = true }: { venu
       
       await loadMenuItems();
     } catch (error: unknown) {
-      console.error('Error saving menu item:', error);
+
       toast({
         title: "Error",
         description: error.message || "Failed to save menu item",
@@ -160,7 +160,7 @@ export default function MenuManagementClient({ venueId, canEdit = true }: { venu
 
       await loadMenuItems();
     } catch (error: unknown) {
-      console.error('Error deleting menu item:', error);
+
       toast({
         title: "Error",
         description: error.message || "Failed to delete menu item",
@@ -229,7 +229,7 @@ export default function MenuManagementClient({ venueId, canEdit = true }: { venu
 
       await loadMenuItems();
     } catch (error: unknown) {
-      console.error('Error clearing menu:', error);
+
       toast({
         title: "Error",
         description: error.message || "Failed to clear menu",
@@ -524,7 +524,7 @@ export default function MenuManagementClient({ venueId, canEdit = true }: { venu
                     url: shareUrl,
                   });
                 } catch (err) {
-                  console.debug('Error sharing:', err);
+
                 }
               } else {
                 await navigator.clipboard.writeText(shareUrl);

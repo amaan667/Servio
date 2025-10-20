@@ -25,7 +25,7 @@ export function useGroupSession(venueSlug: string, tableNumber: string, isCounte
           }
         }
       } catch (error) {
-        console.error('[ORDER PAGE] Error checking group session:', error);
+
         setShowGroupSizeModal(true);
       }
     };
@@ -58,7 +58,7 @@ export function useGroupSession(venueSlug: string, tableNumber: string, isCounte
         setGroupSessionId(data.groupSessionId);
       }
     } catch (error) {
-      console.error('[ORDER PAGE] Error creating group session:', error);
+
     }
   };
 
@@ -82,7 +82,7 @@ export function useGroupSession(venueSlug: string, tableNumber: string, isCounte
         setGroupSessionId(data.groupSessionId);
       }
     } catch (error) {
-      console.error('[ORDER PAGE] Error updating group session:', error);
+
     }
   };
 

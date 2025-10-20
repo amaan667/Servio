@@ -11,7 +11,6 @@ import { useToast } from "@/hooks/use-toast";
 import { GripVertical, Plus, Edit, Trash2, Save, X, RotateCcw } from "lucide-react";
 import { DragDropContext, Droppable, Draggable, DropResult } from "@hello-pangea/dnd";
 
-
 interface CategoriesManagementProps {
   venueId: string;
   onCategoriesUpdate?: (categories: string[]) => void;
@@ -78,7 +77,7 @@ export function CategoriesManagement({ venueId, onCategoriesUpdate }: Categories
           }
         }
       } else {
-        console.error('Error loading categories:', data.error);
+
         toast({
           title: "Error",
           description: data.error || "Failed to load categories",
@@ -86,7 +85,7 @@ export function CategoriesManagement({ venueId, onCategoriesUpdate }: Categories
         });
       }
     } catch (error) {
-      console.error('Error loading categories:', error);
+
       toast({
         title: "Error",
         description: "Failed to load categories",
@@ -130,7 +129,7 @@ export function CategoriesManagement({ venueId, onCategoriesUpdate }: Categories
         });
         onCategoriesUpdate?.(categoriesToSave);
       } else {
-        console.error('Error saving categories:', data.error);
+
         toast({
           title: "Success",
           description: "Category order updated (saved locally)",
@@ -139,7 +138,7 @@ export function CategoriesManagement({ venueId, onCategoriesUpdate }: Categories
         onCategoriesUpdate?.(categoriesToSave);
       }
     } catch (error) {
-      console.error('Error saving categories:', error);
+
       // Still show success since we saved to localStorage
       toast({
         title: "Success",
@@ -195,10 +194,10 @@ export function CategoriesManagement({ venueId, onCategoriesUpdate }: Categories
       });
 
       if (!response.ok) {
-        console.error('API call failed but category was added locally');
+
       }
     } catch (error) {
-      console.error('Error adding category:', error);
+
       // Category was already added locally, so show success
       toast({
         title: "Success",
@@ -260,7 +259,7 @@ export function CategoriesManagement({ venueId, onCategoriesUpdate }: Categories
         });
       }
     } catch (error) {
-      console.error('Error renaming category:', error);
+
       toast({
         title: "Error",
         description: "Failed to rename category",
@@ -325,7 +324,7 @@ export function CategoriesManagement({ venueId, onCategoriesUpdate }: Categories
         });
       }
     } catch (error) {
-      console.error('Error deleting category:', error);
+
       toast({
         title: "Error",
         description: "Failed to delete category",
@@ -350,7 +349,6 @@ export function CategoriesManagement({ venueId, onCategoriesUpdate }: Categories
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ venueId })
       });
-
 
       if (response.ok) {
         const data = await response.json();
@@ -394,7 +392,7 @@ export function CategoriesManagement({ venueId, onCategoriesUpdate }: Categories
         }
       }
     } catch (error) {
-      console.error('Error resetting categories:', error);
+
       toast({
         title: "Error",
         description: "Failed to reset categories",

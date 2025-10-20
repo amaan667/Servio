@@ -35,7 +35,7 @@ export function useQRCodeManagement(venueId: string) {
         .order('label', { ascending: true });
 
       if (tablesError) {
-        console.error('Error loading tables:', tablesError);
+
       }
 
       const { data: countersData, error: countersError } = await supabase
@@ -45,13 +45,13 @@ export function useQRCodeManagement(venueId: string) {
         .order('name', { ascending: true });
 
       if (countersError) {
-        console.error('Error loading counters:', countersError);
+
       }
 
       setTables(tablesData || []);
       setCounters(countersData || []);
     } catch (error) {
-      console.error('Error loading tables and counters:', error);
+
     } finally {
       setLoading(false);
     }
@@ -128,7 +128,7 @@ export function useQRCodeManagement(venueId: string) {
       link.href = dataUrl;
       link.click();
     } catch (error) {
-      console.error('Error downloading QR code:', error);
+
       toast({
         title: "Download Failed",
         description: "Failed to download QR code",

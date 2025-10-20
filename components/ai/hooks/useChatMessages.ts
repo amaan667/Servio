@@ -6,19 +6,18 @@ export function useChatMessages() {
 
   const loadMessages = async (conversationId: string) => {
     try {
-      console.debug("[AI CHAT] Loading messages for conversation:", conversationId);
+
       const response = await fetch(`/api/ai-assistant/conversations/${conversationId}/messages`);
-      console.debug("[AI CHAT] Messages response status:", response.status);
-      
+
       if (response.ok) {
         const data = await response.json();
-        console.debug("[AI CHAT] Loaded messages:", data.messages);
+
         setMessages(data.messages || []);
       } else {
         throw new Error("Failed to load messages");
       }
     } catch (error: unknown) {
-      console.error("[AI CHAT] Error loading messages:", error);
+
       throw error;
     }
   };

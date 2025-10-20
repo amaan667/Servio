@@ -4,7 +4,6 @@ import React from 'react';
 import { Button } from '@/components/ui/button';
 import { clearAuthStorage } from '@/lib/supabase';
 
-
 interface ErrorBoundaryState {
   hasError: boolean;
   error?: Error;
@@ -56,7 +55,7 @@ export class ErrorBoundary extends React.Component<ErrorBoundaryProps, ErrorBoun
         window.location.reload();
       }
     } catch (err) {
-      console.error('[ERROR BOUNDARY] Error clearing auth state:', err);
+
       if (typeof window !== 'undefined') {
         window.location.reload();
       }

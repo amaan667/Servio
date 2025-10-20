@@ -20,7 +20,7 @@ export function QRCodeCanvas({ url, size }: QRCodeCanvasProps) {
         });
         setQrDataUrl(dataUrl);
       } catch (error) {
-        console.error('Error generating QR code:', error);
+
       } finally {
         setLoading(false);
       }

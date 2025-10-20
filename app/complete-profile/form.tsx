@@ -34,7 +34,6 @@ export default function CompleteProfileForm({ user }: CompleteProfileFormProps) 
     identity.provider === 'google' || identity.provider === 'oauth'
   );
 
-
   // Pre-populate form with Google data if available
   useEffect(() => {
     if (user && isOAuthUser) {
@@ -108,14 +107,13 @@ export default function CompleteProfileForm({ user }: CompleteProfileFormProps) 
           password: formData.password
         });
         if (passwordError) {
-          console.error('[COMPLETE-PROFILE] Password update error', passwordError);
+
           setError(`Failed to set password: ${passwordError.message}`);
           setLoading(false);
           return;
         }
       }
 
-      
       // Ensure we have a valid venue name
       const venueName = formData.venueName.trim() || `${user?.user_metadata?.full_name || user?.email?.split('@')[0] || 'My'}'s Business`;
       
@@ -137,7 +135,7 @@ export default function CompleteProfileForm({ user }: CompleteProfileFormProps) 
       const j = await res.json().catch(()=>({}));
       
       if (!res.ok || !j?.ok) {
-        console.error("[COMPLETE-PROFILE] Venue upsert failed:", j);
+
         throw new Error(j?.error || 'Failed to save venue');
       }
 
@@ -157,8 +155,7 @@ export default function CompleteProfileForm({ user }: CompleteProfileFormProps) 
 
       router.replace(`/dashboard/${returnedVenueId}`);
     } catch (error: any) {
-      console.error("[COMPLETE-PROFILE] Failed to complete profile:", error);
-      console.error("Failed to complete profile", { error });
+
       setError(error.message || "Failed to complete profile setup");
     } finally {
       setLoading(false);

@@ -37,9 +37,9 @@ export function useDesignSettings(venueId: string) {
 
       if (error) {
         if (error.code === 'PGRST116') {
-          console.debug('[DESIGN SETTINGS] No design settings found, using defaults');
+
         } else if (error.code === '42P01') {
-          console.error('[DESIGN SETTINGS] Table does not exist');
+
           toast({
             title: "Database Setup Required",
             description: "Please run the menu design settings migration script.",
@@ -68,7 +68,7 @@ export function useDesignSettings(venueId: string) {
         });
       }
     } catch (error) {
-      console.error('[DESIGN SETTINGS] Error:', error);
+
     }
   };
 
@@ -94,7 +94,7 @@ export function useDesignSettings(venueId: string) {
         description: "Your design settings have been saved.",
       });
     } catch (error: unknown) {
-      console.error('[SAVE DESIGN] Error:', error);
+
       toast({
         title: "Save failed",
         description: error.message || "Failed to save design settings.",

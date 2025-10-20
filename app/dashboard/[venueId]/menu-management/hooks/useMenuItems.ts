@@ -21,7 +21,7 @@ export function useMenuItems(venueId: string) {
         .order('position', { ascending: true, nullsFirst: false });
 
       if (error) {
-        console.error('[MENU LOAD] Error loading menu items:', error);
+
         toast({
           title: "Error",
           description: `Failed to load menu items: ${error.message}`,
@@ -45,7 +45,7 @@ export function useMenuItems(venueId: string) {
         }
       }
     } catch (error) {
-      console.error('[MENU LOAD] Exception:', error);
+
       toast({
         title: "Error",
         description: `Failed to load menu items: ${error instanceof Error ? error.message : 'Unknown error'}`,
