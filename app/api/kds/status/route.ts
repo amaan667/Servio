@@ -26,7 +26,7 @@ export async function GET() {
     }
 
     const tableNames = tables?.map(t => t.table_name) || [];
-    logger.debug('[KDS STATUS] Found KDS tables:', tableNames);
+    logger.debug('[KDS STATUS] Found KDS tables:', { tables: tableNames });
 
     // Check if there are unknown KDS stations
     let stationsCount = 0;
