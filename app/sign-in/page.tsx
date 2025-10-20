@@ -22,10 +22,19 @@ function SignInPageContent() {
   };
 
   useEffect(() => {
+    console.log('[SIGN-IN] Page loaded, checking session:', {
+      hasSession: !!session,
+      loading,
+      timestamp: new Date().toISOString()
+    });
+
     // Check for error and message parameters in URL
     const urlParams = new URLSearchParams(window.location.search);
     const errorParam = urlParams.get('error');
     const messageParam = urlParams.get('message');
+    const nextParam = urlParams.get('next');
+    
+    console.log('[SIGN-IN] URL params:', { errorParam, messageParam, nextParam });
     
     if (messageParam) {
       setError(messageParam);
@@ -41,7 +50,14 @@ function SignInPageContent() {
           setError('Authentication failed. Please try again.');
       }
     }
-  }, []);
+
+    // If user is already signed in, redirect to dashboard or next URL
+    if (session && !loading) {
+      console.log('[SIGN-IN] User already signed in, redirecting...');
+      const redirectTo = nextParam || '/dashboard';
+      router.push(redirectTo);
+    }
+  }, [session, loading, router]);
 
   const signInWithGoogle = async () => {
     if (isSigningIn) {
@@ -50,9 +66,11 @@ function SignInPageContent() {
     
     try {
       setIsSigningIn(true);
+      console.log('[SIGN-IN] Starting Google OAuth flow...');
 
       // Use stable redirect URL helper
       const redirectTo = getAuthRedirectUrl('/auth/callback');
+      console.log('[SIGN-IN] Redirect URL:', redirectTo);
       
       const { data, error } = await supabaseBrowser().auth.signInWithOAuth({
         provider: 'google',
