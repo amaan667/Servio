@@ -1,6 +1,5 @@
-import { errorToContext } from '@/lib/utils/error-to-context';
 import { NextRequest, NextResponse } from 'next/server';
-import { apiLogger, logger } from '@/lib/logger';
+import { logger } from '@/lib/logger';
 
 export async function POST(req: NextRequest) {
   try {

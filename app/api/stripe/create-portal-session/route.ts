@@ -65,8 +65,9 @@ export async function POST(request: NextRequest) {
       logger.debug('[STRIPE PORTAL] Checking for existing configurations...');
       const configurations = await stripe.billingPortal.configurations.list({ limit: 1 });
       
-      if (configurations.data.length > 0 && configurations.data[0].active) {
-        configurationId = configurations.data[0].id;
+      const firstConfig = configurations.data[0];
+      if (firstConfig && firstConfig.active) {
+        configurationId = firstConfig.id;
         logger.debug('[STRIPE PORTAL] Using existing configuration:', { value: configurationId });
       } else {
         // No active configuration found, create a new one
