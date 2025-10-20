@@ -125,7 +125,19 @@ export async function getSession() {
     const cookieStore = await cookies();
     const supabase = supabaseServer({
       get: (name) => cookieStore.get(name)?.value,
-      set: () => {},
+      set: (name, value, options) => {
+        try {
+          cookieStore.set(name, value, {
+            ...options,
+            sameSite: 'lax',
+            secure: process.env.NODE_ENV === 'production',
+            httpOnly: false,
+            path: '/',
+          });
+        } catch {
+          // Silent error handling for cookie context
+        }
+      },
     });
     const { data: { session }, error } = await supabase.auth.getSession();
     

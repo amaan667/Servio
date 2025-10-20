@@ -76,25 +76,19 @@ export async function middleware(req: NextRequest) {
 
     const { data: { user }, error } = await supabase.auth.getUser();
     
-    // Handle auth errors - clear invalid tokens
+    // Handle auth errors - log but don't block
     if (error) {
       console.warn('[MIDDLEWARE] Auth error:', error.message);
       
-      // If it's a refresh token error, clear the session
+      // If it's a refresh token error, just log it - let the client handle refresh
       if (error.message?.includes('refresh_token') || error.message?.includes('Invalid Refresh Token')) {
-        console.warn('[MIDDLEWARE] Clearing invalid refresh token');
-        await supabase.auth.signOut();
-        
-        // Redirect to sign-in only if this is a protected route
-        const redirect = new URL('/sign-in', req.url);
-        redirect.searchParams.set('next', encodeURIComponent(path));
-        redirect.searchParams.set('error', 'session_expired');
-        return NextResponse.redirect(redirect);
+        console.warn('[MIDDLEWARE] Refresh token error - letting client handle it');
+        // Don't redirect - let the page load and handle the refresh
       }
     }
     
-    // Only redirect to sign-in if there's no user (user genuinely not logged in)
-    if (!user) {
+    // Only redirect to sign-in if there's genuinely no user (not just an error)
+    if (!user && !error) {
       const redirect = new URL('/sign-in', req.url);
       redirect.searchParams.set('next', encodeURIComponent(path));
       return NextResponse.redirect(redirect);
