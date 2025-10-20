@@ -1,6 +1,6 @@
 import { NextResponse } from 'next/server';
 import { createServerSupabase } from '@/lib/supabase';
-import { apiLogger, logger } from '@/lib/logger';
+import { logger } from '@/lib/logger';
 
 // PATCH - Bulk update multiple tickets (e.g., bump all ready tickets for an order)
 export async function PATCH(req: Request) {
@@ -42,7 +42,7 @@ export async function PATCH(req: Request) {
     }
 
     // Build update object with timestamp
-    const updateData: unknown = { status };
+    const updateData: Record<string, unknown> = { status };
     const now = new Date().toISOString();
 
     switch (status) {
@@ -90,10 +90,10 @@ export async function PATCH(req: Request) {
         .eq('id', orderId);
 
       if (orderUpdateError) {
-        logger.error('[KDS] Error updating order status after bump:', orderUpdateError);
+        logger.error('[KDS] Error updating order status after bump:', { error: orderUpdateError.message });
         // Don't fail the request, just log the error
       } else {
-        logger.debug(`[KDS] Updated order ${orderId} status to SERVED after bump`);
+        logger.debug('[KDS] Updated order status to SERVED after bump', { orderId });
       }
     }
 
@@ -105,7 +105,7 @@ export async function PATCH(req: Request) {
   } catch (error: unknown) {
     logger.error('[KDS] Unexpected error:', { error: error instanceof Error ? error.message : 'Unknown error' });
     return NextResponse.json(
-      { ok: false, error: error.message || 'Internal server error' },
+      { ok: false, error: error instanceof Error ? error.message : 'Internal server error' },
       { status: 500 }
     );
   }
