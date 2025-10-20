@@ -1,5 +1,5 @@
 import { NextResponse } from 'next/server';
-import { refreshSession } from '@/lib/supabase';
+// refreshSession removed - use createServerSupabase instead
 import { logger } from '@/lib/logger';
 
 export async function POST() {

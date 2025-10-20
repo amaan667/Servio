@@ -5,7 +5,7 @@ import { cookies } from 'next/headers';
 import { createServerClient } from '@supabase/ssr';
 import { todayWindowForTZ } from '@/lib/time';
 import { liveOrdersWindow, earlierTodayWindow, historyWindow } from '@/lib/dates';
-import { cookieAdapter } from '@/lib/supabase';
+// cookieAdapter removed - use createServerSupabase instead
 
 type OrderRow = {
   id: string;
