@@ -1,3 +1,5 @@
+import { errorToContext } from '@/lib/utils/error-to-context';
+
 import { useEffect, useState } from 'react';
 import { logger } from '@/lib/logger';
 
@@ -59,7 +61,7 @@ export function useDailyReset(venueId: string) {
         logger.error('🔄 [DAILY RESET HOOK] Reset check failed:', result);
       }
     } catch (error) {
-      logger.error('🔄 [DAILY RESET HOOK] Error checking daily reset:', error);
+      logger.error('🔄 [DAILY RESET HOOK] Error checking daily reset:', errorToContext(error));
     } finally {
       setIsChecking(false);
     }

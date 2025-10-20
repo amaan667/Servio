@@ -1,3 +1,5 @@
+import { errorToContext } from '@/lib/utils/error-to-context';
+
 import { useState } from 'react';
 import { logger } from '@/lib/logger';
 
@@ -50,7 +52,7 @@ export function useTableManagement() {
 
       return data.table;
     } catch (err) {
-      logger.error('[TABLE MANAGEMENT HOOK] Error creating table:', err);
+      logger.error('[TABLE MANAGEMENT HOOK] Error creating table:', errorToContext(err));
       const errorMessage = err instanceof Error ? err.message : 'Failed to create table';
       setError(errorMessage);
       throw err;
@@ -85,7 +87,7 @@ export function useTableManagement() {
 
       return data.table;
     } catch (err) {
-      logger.error('[TABLE MANAGEMENT HOOK] Error updating table:', err);
+      logger.error('[TABLE MANAGEMENT HOOK] Error updating table:', errorToContext(err));
       const errorMessage = err instanceof Error ? err.message : 'Failed to update table';
       setError(errorMessage);
       throw err;
@@ -111,7 +113,7 @@ export function useTableManagement() {
 
       return data;
     } catch (err) {
-      logger.error('[TABLE MANAGEMENT HOOK] Error deleting table:', err);
+      logger.error('[TABLE MANAGEMENT HOOK] Error deleting table:', errorToContext(err));
       const errorMessage = err instanceof Error ? err.message : 'Failed to delete table';
       setError(errorMessage);
       throw err;
@@ -137,7 +139,7 @@ export function useTableManagement() {
 
       return data.table;
     } catch (err) {
-      logger.error('[TABLE MANAGEMENT HOOK] Error reissuing QR:', err);
+      logger.error('[TABLE MANAGEMENT HOOK] Error reissuing QR:', errorToContext(err));
       const errorMessage = err instanceof Error ? err.message : 'Failed to reissue QR';
       setError(errorMessage);
       throw err;

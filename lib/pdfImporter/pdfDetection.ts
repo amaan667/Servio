@@ -1,3 +1,5 @@
+import { errorToContext } from '@/lib/utils/error-to-context';
+
 // =====================================================
 // PDF DETECTION AND EXTRACTION UTILITIES
 // =====================================================
@@ -37,7 +39,7 @@ export async function detectPDFSource(pdfBuffer: Buffer): Promise<PDFSourceInfo>
     };
     
   } catch (error) {
-    logger.error('[PDF_DETECT] Detection failed:', error);
+    logger.error('[PDF_DETECT] Detection failed:', errorToContext(error));
     // Default to OCR
     return {
       type: 'vision_ocr',
@@ -67,7 +69,7 @@ async function extractNativeText(pdfBuffer: Buffer): Promise<string | null> {
     
     return null;
   } catch (error) {
-    logger.error('[PDF_DETECT] Native extraction failed:', error);
+    logger.error('[PDF_DETECT] Native extraction failed:', errorToContext(error));
     return null;
   }
 }
@@ -110,7 +112,7 @@ export async function extractTextWithBoxes(pdfBuffer: Buffer): Promise<TextBlock
     return blocks;
     
   } catch (error: any) {
-    logger.error('[PDF_EXTRACT] Text extraction failed:', error);
+    logger.error('[PDF_EXTRACT] Text extraction failed:', errorToContext(error));
     throw new Error(`Text extraction failed: ${error.message}`);
   }
 }

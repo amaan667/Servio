@@ -1,3 +1,5 @@
+import { errorToContext } from '@/lib/utils/error-to-context';
+
 // =====================================================
 // ENHANCED GOOGLE VISION OCR WITH BOUNDING BOXES
 // =====================================================
@@ -50,7 +52,7 @@ try {
   }
   
 } catch (error) {
-  logger.error('[OCR] Failed to initialize Google Cloud clients:', error);
+  logger.error('[OCR] Failed to initialize Google Cloud clients:', errorToContext(error));
   throw new Error(`Google Cloud credentials not properly configured: ${(error as any).message}`);
 }
 
@@ -124,7 +126,7 @@ export async function extractTextBlocksFromPdf(pdfBuffer: Buffer, fileName: stri
     return allBlocks;
 
   } catch (error) {
-    logger.error('[OCR] Error during OCR process:', error);
+    logger.error('[OCR] Error during OCR process:', errorToContext(error));
     throw error;
   }
 }

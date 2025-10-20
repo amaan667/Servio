@@ -1,3 +1,5 @@
+import { errorToContext } from '@/lib/utils/error-to-context';
+
 /**
  * Feature Gating System
  * 
@@ -50,7 +52,7 @@ export async function checkFeatureAccess(
       .single();
 
     if (error) {
-      logger.error('[FEATURE GATE] Error fetching venue:', error);
+      logger.error('[FEATURE GATE] Error fetching venue:', errorToContext(error));
       // Default to premium tier if error (allow all features)
       return {
         hasAccess: true,
@@ -80,7 +82,7 @@ export async function checkFeatureAccess(
         : `This feature requires ${requiredTier} tier. Your current tier is ${currentTier}.`,
     };
   } catch (error) {
-    logger.error('[FEATURE GATE] Unexpected error:', error);
+    logger.error('[FEATURE GATE] Unexpected error:', errorToContext(error));
     return {
       hasAccess: true,
       tier: 'premium',
@@ -132,7 +134,7 @@ export async function clientCheckFeatureAccess(
     const response = await fetch(`/api/features/check?venue_id=${venueId}&feature=${feature}`);
     return await response.json();
   } catch (error) {
-    logger.error('[FEATURE GATE CLIENT] Error:', error);
+    logger.error('[FEATURE GATE CLIENT] Error:', errorToContext(error));
     return {
       hasAccess: true,
       tier: 'premium',

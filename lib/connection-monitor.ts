@@ -1,3 +1,5 @@
+import { errorToContext } from '@/lib/utils/error-to-context';
+
 /**
  * Connection monitoring and offline handling utilities
  */
@@ -63,7 +65,7 @@ class ConnectionMonitor {
       });
 
     } catch (error) {
-      logger.warn('[CONNECTION] Connection check failed:', error);
+      logger.warn('[CONNECTION] Connection check failed:', errorToContext(error));
       this.updateState({
         isOnline: false,
         isSlowConnection: false,

@@ -1,3 +1,5 @@
+import { errorToContext } from '@/lib/utils/error-to-context';
+
 import { getOpenAI } from "./openai";
 import { z } from "zod";
 import { MenuPayload, MenuPayloadT } from "./menuSchema";
@@ -52,7 +54,7 @@ export async function parseMenuStrict(extractedText: string): Promise<MenuPayloa
     const validated = MenuPayload.parse(parsed);
     return validated;
   } catch (e) {
-    logger.error('[MENU PARSE] Initial parse failed, attempting repair:', e);
+    logger.error('[MENU PARSE] Initial parse failed, attempting repair:', errorToContext(e));
     // Fallback to repair flow if something still goes wrong
     return await repairMenuJson(raw);
   }

@@ -1,3 +1,5 @@
+import { errorToContext } from '@/lib/utils/error-to-context';
+
 /**
  * Unified Cache Interface
  * Single source of truth for all caching in the application

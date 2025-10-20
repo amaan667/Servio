@@ -1,3 +1,5 @@
+import { errorToContext } from '@/lib/utils/error-to-context';
+
 import { logger } from '@/lib/logger';
 // Email sending utilities for Servio
 // This is a basic implementation that can be enhanced with proper email service integration
@@ -137,7 +139,7 @@ If you didn't expect this invitation, you can safely ignore this email.
 export async function sendEmail(template: EmailTemplate): Promise<boolean> {
   try {
     // Method 1: Try Resend (if API key is available)
-    logger.debug('🔍 Checking RESEND_API_KEY:', process.env.RESEND_API_KEY ? 'Present' : 'Missing');
+    logger.debug('🔍 Checking RESEND_API_KEY', { present: !!process.env.RESEND_API_KEY });
     if (process.env.RESEND_API_KEY) {
       try {
         const { Resend } = await import('resend');
@@ -152,7 +154,7 @@ export async function sendEmail(template: EmailTemplate): Promise<boolean> {
         });
         
         if (result.data) {
-          logger.debug('✅ Email sent successfully via Resend:', result.data.id);
+          logger.debug('✅ Email sent successfully via Resend', { id: result.data.id });
           return true;
         } else {
           logger.error('❌ Resend returned no data:', result);
@@ -222,9 +224,11 @@ export async function sendEmail(template: EmailTemplate): Promise<boolean> {
         // For now, we'll simulate success and log the details
         // In a real implementation, you'd use EmailJS API
         logger.debug('📧 EMAIL TO SEND via EmailJS:');
-        logger.debug('To:', template.to);
-        logger.debug('Subject:', template.subject);
-        logger.debug('🔗 Invitation Link:', template.html.match(/href="([^"]+)"/)?.[1] || 'Not found');
+        logger.debug('Email details', { 
+          to: template.to, 
+          subject: template.subject,
+          link: template.html.match(/href="([^"]+)"/)?.[1] || 'Not found'
+        });
         
         return true; // Simulate success for development
       } catch (emailjsError) {
@@ -234,17 +238,19 @@ export async function sendEmail(template: EmailTemplate): Promise<boolean> {
 
     // Fallback: Log to console (for development/testing)
     logger.debug('📧 EMAIL TO SEND (No email service configured):');
-    logger.debug('To:', template.to);
-    logger.debug('Subject:', template.subject);
-    logger.debug('HTML Preview:', template.html.substring(0, 200) + '...');
-    logger.debug('🔗 Invitation Link:', template.html.match(/href="([^"]+)"/)?.[1] || 'Not found');
+    logger.debug('Email details', { 
+      to: template.to, 
+      subject: template.subject,
+      preview: template.html.substring(0, 200) + '...',
+      link: template.html.match(/href="([^"]+)"/)?.[1] || 'Not found'
+    });
     
     // In development, we'll return true so the invitation flow continues
     // In production, you should configure an email service
     return process.env.NODE_ENV === 'development';
     
   } catch (error) {
-    logger.error('❌ Failed to send email:', error);
+    logger.error('❌ Failed to send email:', errorToContext(error));
     return false;
   }
 }

@@ -1,3 +1,5 @@
+import { errorToContext } from '@/lib/utils/error-to-context';
+
 import { createAdminClient } from '@/lib/supabase';
 import fs from 'fs/promises';
 import path from 'path';
@@ -13,7 +15,7 @@ import { logger } from '@/lib/logger';
  * @returns Array of public URLs for the converted images
  */
 export async function convertPDFToImages(pdfBytes: ArrayBuffer, venueId: string): Promise<string[]> {
-  logger.debug('[PDF_TO_IMAGES] Starting PDF to images conversion for venue:', venueId);
+  logger.debug('[PDF_TO_IMAGES] Starting PDF to images conversion', { venueId });
   
   // Create a temporary directory for PDF processing
   const workDir = '/tmp/pdf2img';
@@ -27,7 +29,7 @@ export async function convertPDFToImages(pdfBytes: ArrayBuffer, venueId: string)
     
     // Write PDF to temp file
     await fs.writeFile(inPath, Buffer.from(pdfBytes));
-    logger.debug('[PDF_TO_IMAGES] PDF written to temp file:', inPath);
+    logger.debug('[PDF_TO_IMAGES] PDF written to temp file', { path: inPath });
     
     // Configure pdf2pic (uses GraphicsMagick/Ghostscript from Nixpacks)
     const converter = fromPath(inPath, {
@@ -48,7 +50,7 @@ export async function convertPDFToImages(pdfBytes: ArrayBuffer, venueId: string)
     const files = await fs.readdir(outDir);
     const pngFiles = files.filter(f => f.endsWith('.png')).sort();
     
-    logger.debug('[PDF_TO_IMAGES] Converted', pngFiles.length, 'pages');
+    logger.debug('[PDF_TO_IMAGES] Converted pages', { count: pngFiles.length });
     
     // Upload each image to Supabase Storage
     const supabase = await createAdminClient();
@@ -72,11 +74,11 @@ export async function convertPDFToImages(pdfBytes: ArrayBuffer, venueId: string)
           });
         
         if (uploadError) {
-          logger.error('[PDF_TO_IMAGES] Error uploading page', i + 1, ':', uploadError);
+          logger.error('[PDF_TO_IMAGES] Error uploading page', { page: i + 1, error: uploadError });
           continue;
         }
         
-        logger.debug('[PDF_TO_IMAGES] Page', i + 1, 'uploaded to storage:', uploadData.path);
+        logger.debug('[PDF_TO_IMAGES] Page uploaded to storage', { page: i + 1, path: uploadData.path });
         
         // Get public URL
         const { data: urlData } = supabase.storage
@@ -85,21 +87,21 @@ export async function convertPDFToImages(pdfBytes: ArrayBuffer, venueId: string)
         
         if (urlData?.publicUrl) {
           imageUrls.push(urlData.publicUrl);
-          logger.debug('[PDF_TO_IMAGES] Page', i + 1, 'converted successfully. URL:', urlData.publicUrl);
+          logger.debug('[PDF_TO_IMAGES] Page converted successfully', { page: i + 1, url: urlData.publicUrl });
         } else {
-          logger.error('[PDF_TO_IMAGES] Failed to get public URL for page', i + 1);
+          logger.error('[PDF_TO_IMAGES] Failed to get public URL', { page: i + 1 });
         }
         
       } catch (pageError) {
-        logger.error('[PDF_TO_IMAGES] Error processing page', i + 1, ':', pageError);
+        logger.error('[PDF_TO_IMAGES] Error processing page', { page: i + 1, error: pageError });
       }
     }
     
-    logger.debug('[PDF_TO_IMAGES] Conversion complete. Total images:', imageUrls.length);
+    logger.debug('[PDF_TO_IMAGES] Conversion complete', { totalImages: imageUrls.length });
     return imageUrls;
     
   } catch (error: any) {
-    logger.error('[PDF_TO_IMAGES] Error converting PDF to images:', error);
+    logger.error('[PDF_TO_IMAGES] Error converting PDF to images:', errorToContext(error));
     logger.error('[PDF_TO_IMAGES] Error stack:', error.stack);
     // Return empty array instead of throwing - let the calling code handle it
     return [];

@@ -39,7 +39,7 @@ export class MenuService extends BaseService {
     const cacheKey = this.getCacheKey('menu:items', venueId, JSON.stringify(options));
     
     return this.withCache(cacheKey, async () => {
-      const supabase = await createSupabaseClient('server');
+      const supabase = await createSupabaseClient();
       let query = supabase
         .from('menu_items')
         .select('*')
@@ -68,7 +68,7 @@ export class MenuService extends BaseService {
     const cacheKey = this.getCacheKey('menu:item', venueId, itemId);
     
     return this.withCache(cacheKey, async () => {
-      const supabase = await createSupabaseClient('server');
+      const supabase = await createSupabaseClient();
       const { data, error } = await supabase
         .from('menu_items')
         .select('*')
@@ -88,7 +88,7 @@ export class MenuService extends BaseService {
     venueId: string,
     itemData: Omit<MenuItem, 'id' | 'venue_id' | 'created_at' | 'updated_at'>
   ): Promise<MenuItem> {
-    const supabase = await createSupabaseClient('server');
+    const supabase = await createSupabaseClient();
     const { data, error } = await supabase
       .from('menu_items')
       .insert({
@@ -114,7 +114,7 @@ export class MenuService extends BaseService {
     venueId: string,
     updates: Partial<Omit<MenuItem, 'id' | 'venue_id' | 'created_at'>>
   ): Promise<MenuItem> {
-    const supabase = await createSupabaseClient('server');
+    const supabase = await createSupabaseClient();
     const { data, error } = await supabase
       .from('menu_items')
       .update(updates)
@@ -135,7 +135,7 @@ export class MenuService extends BaseService {
    * Delete menu item
    */
   async deleteMenuItem(itemId: string, venueId: string): Promise<void> {
-    const supabase = await createSupabaseClient('server');
+    const supabase = await createSupabaseClient();
     const { error } = await supabase
       .from('menu_items')
       .delete()
@@ -177,7 +177,7 @@ export class MenuService extends BaseService {
     venueId: string,
     updates: Array<{ id: string; price: number }>
   ): Promise<void> {
-    const supabase = await createSupabaseClient('server');
+    const supabase = await createSupabaseClient();
 
     for (const update of updates) {
       const { error } = await supabase
@@ -200,7 +200,7 @@ export class MenuService extends BaseService {
     const cacheKey = this.getCacheKey('menu:categories', venueId);
     
     return this.withCache(cacheKey, async () => {
-      const supabase = await createSupabaseClient('server');
+      const supabase = await createSupabaseClient();
       const { data, error } = await supabase
         .from('menu_categories')
         .select('*')
@@ -219,7 +219,7 @@ export class MenuService extends BaseService {
     const cacheKey = this.getCacheKey('menu:public', venueSlug);
     
     return this.withCache(cacheKey, async () => {
-      const supabase = await createSupabaseClient('server');
+      const supabase = await createSupabaseClient();
 
       // Get venue by slug
       const { data: venue } = await supabase

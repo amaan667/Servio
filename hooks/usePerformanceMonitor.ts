@@ -1,3 +1,5 @@
+import { errorToContext } from '@/lib/utils/error-to-context';
+
 import { useEffect } from 'react';
 import { logger } from '@/lib/logger';
 
@@ -46,7 +48,7 @@ export function useApiPerformanceMonitor(apiName: string) {
       } catch (error) {
         const endTime = performance.now();
         const duration = endTime - startTime;
-        logger.error(`[API ERROR] ${apiName} failed after ${duration.toFixed(2)}ms:`, error);
+        logger.error(`[API ERROR] ${apiName} failed after ${duration.toFixed(2)}ms:`, errorToContext(error));
         throw error;
       }
     };

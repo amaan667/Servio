@@ -1,3 +1,5 @@
+import { errorToContext } from '@/lib/utils/error-to-context';
+
 import { useState } from 'react';
 import { logger } from '@/lib/logger';
 
@@ -38,7 +40,7 @@ export function useTableActions() {
 
       return data;
     } catch (err) {
-      logger.error('[TABLE ACTIONS HOOK] Error executing action:', err);
+      logger.error('[TABLE ACTIONS HOOK] Error executing action:', errorToContext(err));
       const errorMessage = err instanceof Error ? err.message : 'Failed to execute action';
       setError(errorMessage);
       throw err;

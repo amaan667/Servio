@@ -1,12 +1,12 @@
-import { test, expect } from '@playwright/test';
+import { test, expect, type Page } from '@playwright/test';
 
 test.describe('Menu Upload', () => {
-  test.beforeEach(async ({ page }) => {
+  test.beforeEach(async ({ page }: { page: Page }) => {
     // Navigate to menu management page
     await page.goto('/dashboard/venue-1/menu-management');
   });
 
-  test('should upload PDF menu', async ({ page }) => {
+  test('should upload PDF menu', async ({ page }: { page: Page }) => {
     // Wait for page to load
     await page.waitForSelector('text=Menu Management', { timeout: 10000 });
 
@@ -26,7 +26,7 @@ test.describe('Menu Upload', () => {
     });
   });
 
-  test('should display menu items after upload', async ({ page }) => {
+  test('should display menu items after upload', async ({ page }: { page: Page }) => {
     // Wait for menu items to load
     await page.waitForSelector('[data-testid="menu-item"]', { timeout: 10000 });
 
@@ -37,7 +37,7 @@ test.describe('Menu Upload', () => {
     expect(count).toBeGreaterThan(0);
   });
 
-  test('should allow drag and drop reordering', async ({ page }) => {
+  test('should allow drag and drop reordering', async ({ page }: { page: Page }) => {
     // Wait for menu items
     await page.waitForSelector('[data-testid="menu-item"]', { timeout: 10000 });
 

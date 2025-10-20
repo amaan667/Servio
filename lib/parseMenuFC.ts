@@ -1,3 +1,5 @@
+import { errorToContext } from '@/lib/utils/error-to-context';
+
 import { getOpenAI } from "./openai";
 import { jsonrepair } from "jsonrepair";
 import { MenuPayload, MenuPayloadT, MenuItem, clampName, parsePriceAny } from "./menuSchema";
@@ -152,7 +154,7 @@ export async function parseMenuInChunks(ocrText: string): Promise<MenuPayloadT> 
       movedAll.push(...reassigned);
       
     } catch (e) {
-      logger.warn(`[MENU PARSE] Section "${sec.name}" failed:`, e);
+      logger.warn(`[MENU PARSE] Section "${sec.name}" failed:`, errorToContext(e));
       // Continue with other sections instead of failing completely
     }
   }
@@ -231,7 +233,7 @@ async function parseMenuInChunksFallback(ocrText: string): Promise<MenuPayloadT>
     const validated = MenuPayload.parse(parsed);
     return validated;
   } catch (e) {
-    logger.error('[MENU PARSE] Fallback parsing failed:', e);
+    logger.error('[MENU PARSE] Fallback parsing failed:', errorToContext(e));
     throw new Error("Failed to parse menu with fallback method.");
   }
 }

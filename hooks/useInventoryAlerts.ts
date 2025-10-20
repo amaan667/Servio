@@ -1,3 +1,5 @@
+import { errorToContext } from '@/lib/utils/error-to-context';
+
 import { useState, useEffect } from 'react';
 import type { LowStockAlert } from '@/types/inventory';
 import { logger } from '@/lib/logger';
@@ -18,7 +20,7 @@ export function useInventoryAlerts(venueId: string | null) {
           setAlerts(result.data);
         }
       } catch (error) {
-        logger.error('Error fetching inventory alerts:', error);
+        logger.error('Error fetching inventory alerts:', errorToContext(error));
       } finally {
         setLoading(false);
       }

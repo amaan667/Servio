@@ -1,3 +1,5 @@
+import { errorToContext } from '@/lib/utils/error-to-context';
+
 // Servio AI Assistant - LLM Service
 // Handles intent understanding, planning, and structured output generation
 
@@ -378,7 +380,7 @@ export async function planAssistantAction(
     
     throw new Error("Failed to parse AI response: no parsed or content available");
   } catch (error) {
-    logger.error(`[AI ASSISTANT] Planning error with ${selectedModel}:`, error);
+    logger.error(`[AI ASSISTANT] Planning error with ${selectedModel}:`, errorToContext(error));
     
     // If we used mini and got an error, try falling back to full model
     if (selectedModel === MODEL_MINI && !usedFallback) {

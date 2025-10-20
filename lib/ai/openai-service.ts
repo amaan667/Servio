@@ -1,3 +1,5 @@
+import { errorToContext } from '@/lib/utils/error-to-context';
+
 // Production OpenAI Integration with Responses API and Tool Calling
 // Implements proper tool correlation and error handling
 
@@ -222,7 +224,7 @@ export async function handleUserMessage({
           } as any);
 
         } catch (error: any) {
-          logger.error(`[AI] Tool execution error for ${name}:`, error);
+          logger.error(`[AI] Tool execution error for ${name}:`, errorToContext(error));
           toolResult = { error: `Tool execution failed: ${error?.message || 'Unknown error'}` };
           
           await supabase.from("ai_messages").insert({

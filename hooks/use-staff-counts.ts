@@ -1,3 +1,5 @@
+import { errorToContext } from '@/lib/utils/error-to-context';
+
 import { useState, useEffect, useCallback } from 'react';
 import { createClient } from '@/lib/supabase';
 import { logger } from '@/lib/logger';
@@ -36,7 +38,7 @@ export function useStaffCounts(venueId: string) {
       
       setData(result);
     } catch (err) {
-      logger.error('[STAFF_COUNTS] Fetch error:', err);
+      logger.error('[STAFF_COUNTS] Fetch error:', errorToContext(err));
       setError(err instanceof Error ? err.message : 'Unknown error');
     } finally {
       setIsLoading(false);

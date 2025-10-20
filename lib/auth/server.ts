@@ -1,3 +1,5 @@
+import { errorToContext } from '@/lib/utils/error-to-context';
+
 import { redirect } from 'next/navigation';
 import { getAuthenticatedUser } from '@/lib/supabase';
 import { logger } from '@/lib/logger';
@@ -10,7 +12,7 @@ export async function getAuthUser() {
   const { user, error } = await getAuthenticatedUser();
   
   if (error) {
-    logger.error('[AUTH SERVER] Error getting authenticated user:', error);
+    logger.error('[AUTH SERVER] Error getting authenticated user:', errorToContext(error));
     return null;
   }
   

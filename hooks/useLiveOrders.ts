@@ -1,3 +1,5 @@
+import { errorToContext } from '@/lib/utils/error-to-context';
+
 import { useState, useEffect, useCallback } from 'react'
 import { createClient } from '@/lib/supabase'
 

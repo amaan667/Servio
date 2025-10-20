@@ -52,7 +52,7 @@ export class OrderService extends BaseService {
     const cacheKey = this.getCacheKey('orders:list', venueId, JSON.stringify(filters));
     
     return this.withCache(cacheKey, async () => {
-      const supabase = await createSupabaseClient('server');
+      const supabase = await createSupabaseClient();
       let query = supabase
         .from('orders')
         .select(`
@@ -107,7 +107,7 @@ export class OrderService extends BaseService {
     const cacheKey = this.getCacheKey('orders:item', venueId, orderId);
     
     return this.withCache(cacheKey, async () => {
-      const supabase = await createSupabaseClient('server');
+      const supabase = await createSupabaseClient();
       const { data, error } = await supabase
         .from('orders')
         .select(`
@@ -134,7 +134,7 @@ export class OrderService extends BaseService {
     venueId: string,
     orderData: Omit<Order, 'id' | 'venue_id' | 'created_at' | 'updated_at' | 'order_status' | 'payment_status'>
   ): Promise<Order> {
-    const supabase = await createSupabaseClient('server');
+    const supabase = await createSupabaseClient();
     const { data, error } = await supabase
       .from('orders')
       .insert({
@@ -162,7 +162,7 @@ export class OrderService extends BaseService {
     venueId: string,
     status: string
   ): Promise<Order> {
-    const supabase = await createSupabaseClient('server');
+    const supabase = await createSupabaseClient();
     const { data, error } = await supabase
       .from('orders')
       .update({ order_status: status })
@@ -188,7 +188,7 @@ export class OrderService extends BaseService {
     paymentStatus: string,
     paymentMethod?: string
   ): Promise<Order> {
-    const supabase = await createSupabaseClient('server');
+    const supabase = await createSupabaseClient();
     const updates: any = { payment_status: paymentStatus };
     if (paymentMethod) {
       updates.payment_method = paymentMethod;
@@ -235,7 +235,7 @@ export class OrderService extends BaseService {
    * Bulk complete orders
    */
   async bulkCompleteOrders(orderIds: string[], venueId: string): Promise<void> {
-    const supabase = await createSupabaseClient('server');
+    const supabase = await createSupabaseClient();
     const { error } = await supabase
       .from('orders')
       .update({ order_status: 'COMPLETED' })

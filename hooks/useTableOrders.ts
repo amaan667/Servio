@@ -1,3 +1,5 @@
+import { errorToContext } from '@/lib/utils/error-to-context';
+
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { useEffect } from 'react';
 import { createClient } from '@/lib/supabase';
@@ -148,7 +150,7 @@ export function useTableOrdersRealtime(venueId: string) {
 	useEffect(() => {
 		if (!venueId) return;
 
-		logger.debug('[TABLE ORDERS] Setting up real-time subscription for venue:', venueId);
+  logger.debug('[TABLE ORDERS] Setting up real-time subscription', { venueId });
 		const supabase = createClient();
 
 		const channel = supabase
@@ -169,7 +171,7 @@ export function useTableOrdersRealtime(venueId: string) {
 				}
 			})
 			.subscribe((status: string) => {
-				logger.debug('[TABLE ORDERS] Realtime subscription status:', status);
+    logger.debug('[TABLE ORDERS] Realtime subscription status', { status });
 			});
 
 		return () => {

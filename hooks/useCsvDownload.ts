@@ -1,3 +1,5 @@
+import { errorToContext } from '@/lib/utils/error-to-context';
+
 /**
  * CSV Download Hook
  * 
@@ -61,7 +63,7 @@ export function downloadCSV({ filename, csv }: CsvDownloadOptions): void {
 
     logger.debug(`[CSV Download] Successfully downloaded: ${sanitizedFilename}`);
   } catch (error) {
-    logger.warn('[CSV Download] Failed to download CSV:', error);
+    logger.warn('[CSV Download] Failed to download CSV:', errorToContext(error));
     
     // Fallback: try to open in new window (may not work in all browsers)
     try {

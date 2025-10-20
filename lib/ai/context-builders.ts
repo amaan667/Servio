@@ -1,3 +1,5 @@
+import { errorToContext } from '@/lib/utils/error-to-context';
+
 // Servio AI Assistant - Context Builders (RAG Layer)
 // Gathers and summarizes data for LLM planning
 

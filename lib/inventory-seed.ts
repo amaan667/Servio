@@ -1,3 +1,5 @@
+import { errorToContext } from '@/lib/utils/error-to-context';
+
 /**
  * Inventory Seed Data Script
  * 
@@ -159,7 +161,7 @@ const SAMPLE_RECIPES: RecipeMapping[] = [
 export async function seedInventoryData(venueId: string) {
   const supabase = createAdminClient();
 
-  logger.debug('[INVENTORY SEED] Starting seed for venue:', venueId);
+  logger.debug('[INVENTORY SEED] Starting seed', { venueId });
 
   // Step 1: Create ingredients
   const createdIngredients: Record<string, string> = {}; // name -> id mapping
@@ -197,7 +199,7 @@ export async function seedInventoryData(venueId: string) {
         .single();
 
       if (error) {
-        logger.error(`[INVENTORY SEED] Error creating ingredient "${ingredient.name}":`, error);
+        logger.error(`[INVENTORY SEED] Error creating ingredient "${ingredient.name}":`, errorToContext(error));
         continue;
       }
 
@@ -217,7 +219,7 @@ export async function seedInventoryData(venueId: string) {
 
       logger.debug(`[INVENTORY SEED] Created ingredient: ${ingredient.name} (${data.id})`);
     } catch (error) {
-      logger.error(`[INVENTORY SEED] Unexpected error for ingredient "${ingredient.name}":`, error);
+      logger.error(`[INVENTORY SEED] Unexpected error for ingredient "${ingredient.name}":`, errorToContext(error));
     }
   }
 
@@ -268,13 +270,13 @@ export async function seedInventoryData(venueId: string) {
           .insert(recipeData);
 
         if (error) {
-          logger.error(`[INVENTORY SEED] Error creating recipe for "${recipe.menuItemName}":`, error);
+          logger.error(`[INVENTORY SEED] Error creating recipe for "${recipe.menuItemName}":`, errorToContext(error));
         } else {
           logger.debug(`[INVENTORY SEED] Created recipe for: ${menuItem.name}`);
         }
       }
     } catch (error) {
-      logger.error(`[INVENTORY SEED] Unexpected error for recipe "${recipe.menuItemName}":`, error);
+      logger.error(`[INVENTORY SEED] Unexpected error for recipe "${recipe.menuItemName}":`, errorToContext(error));
     }
   }
 

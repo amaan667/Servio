@@ -1,3 +1,5 @@
+import { errorToContext } from '@/lib/utils/error-to-context';
+
 // Session management utilities for QR rescan and order resume functionality
 
 import { logger } from '@/lib/logger';
@@ -80,7 +82,7 @@ export function getSessionData(sessionId: string): SessionData | null {
       try {
         return JSON.parse(stored);
       } catch (error) {
-        logger.error('[SESSION] Error parsing session data:', error);
+        logger.error('[SESSION] Error parsing session data:', errorToContext(error));
       }
     }
   }
@@ -123,7 +125,7 @@ export async function checkForOpenOrder(sessionId: string): Promise<any | null> 
     
     return null;
   } catch (error) {
-    logger.error('[SESSION] Error checking for open order:', error);
+    logger.error('[SESSION] Error checking for open order:', errorToContext(error));
     return null;
   }
 }

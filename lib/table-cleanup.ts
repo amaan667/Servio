@@ -1,3 +1,5 @@
+import { errorToContext } from '@/lib/utils/error-to-context';
+
 /**
  * Centralized table cleanup utilities
  * Ensures consistent table state management when orders are completed
@@ -157,7 +159,7 @@ export async function cleanupTableOnOrderCompletion(params: TableCleanupParams):
     };
 
   } catch (error) {
-    logger.error('[TABLE CLEANUP] Unexpected error during table cleanup:', error);
+    logger.error('[TABLE CLEANUP] Unexpected error during table cleanup:', errorToContext(error));
     return { 
       success: false, 
       error: error instanceof Error ? error.message : 'Unknown error during table cleanup'
@@ -201,7 +203,7 @@ export async function hasActiveOrders(params: TableCleanupParams): Promise<{
     const { count, error } = await query;
 
     if (error) {
-      logger.error('[TABLE CLEANUP] Error checking active orders:', error);
+      logger.error('[TABLE CLEANUP] Error checking active orders:', errorToContext(error));
       return { hasActive: false, count: 0, error: error.message };
     }
 
@@ -211,7 +213,7 @@ export async function hasActiveOrders(params: TableCleanupParams): Promise<{
     };
 
   } catch (error) {
-    logger.error('[TABLE CLEANUP] Unexpected error checking active orders:', error);
+    logger.error('[TABLE CLEANUP] Unexpected error checking active orders:', errorToContext(error));
     return { 
       hasActive: false, 
       count: 0, 

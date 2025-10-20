@@ -1,3 +1,5 @@
+import { errorToContext } from '@/lib/utils/error-to-context';
+
 /**
  * Performance Monitoring
  * Tracks Core Web Vitals and performance metrics
@@ -83,7 +85,7 @@ async function sendToAnalytics(metric: PerformanceMetric) {
       body: JSON.stringify(report),
     });
   } catch (error) {
-    logger.error('Failed to send performance metrics', error);
+    logger.error('Failed to send performance metrics', errorToContext(error));
   }
 }
 

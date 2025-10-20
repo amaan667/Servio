@@ -46,7 +46,7 @@ export async function verifyVenueAccess(
   userId: string
 ): Promise<VenueAccess | null> {
   try {
-    const supabase = await createSupabaseClient('server');
+    const supabase = await createSupabaseClient();
 
     // First check if user has a role in user_venue_roles
     const { data: roleData, error: roleError } = await supabase
@@ -102,7 +102,7 @@ export async function verifyVenueAccess(
  */
 export async function getAuthenticatedUser() {
   try {
-    const supabase = await createSupabaseClient('server');
+    const supabase = await createSupabaseClient();
     const { data: { user }, error } = await supabase.auth.getUser();
 
     if (error || !user) {

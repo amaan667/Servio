@@ -1,3 +1,5 @@
+import { errorToContext } from '@/lib/utils/error-to-context';
+
 import { createClient } from '@/lib/supabase'
 import { useState, useEffect, useCallback, useMemo } from 'react'
 import { logger } from '@/lib/logger';
@@ -44,7 +46,7 @@ export function useTabCounts(venueId: string, tz: string, liveWindowMins = 30) {
       
       setData(result)
     } catch (err) {
-      logger.error('[TAB_COUNTS] Fetch error:', err)
+      logger.error('[TAB_COUNTS] Fetch error:', errorToContext(err))
       setError(err instanceof Error ? err.message : 'Unknown error')
     } finally {
       setIsLoading(false)

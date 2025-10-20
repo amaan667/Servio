@@ -1,3 +1,5 @@
+import { errorToContext } from '@/lib/utils/error-to-context';
+
 "use client";
 import { createClient } from "@/lib/supabase";
 import { getAuthRedirectUrl } from "@/lib/auth";
@@ -68,7 +70,7 @@ export async function signInWithGoogle() {
     sessionStorage.setItem("sb_oauth_in_progress", "true");
     sessionStorage.setItem("sb_oauth_start_time", Date.now().toString());
   } catch (e) {
-    logger.debug('[AUTH] Session storage error:', e);
+    logger.debug('[AUTH] Session storage error:', errorToContext(e));
   }
   
   const { data, error } = await sb.auth.signInWithOAuth({

@@ -1,3 +1,5 @@
+import { errorToContext } from '@/lib/utils/error-to-context';
+
 /**
  * Job queue for background processing
  * Handles PDF conversion, image processing, and other heavy tasks

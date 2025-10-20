@@ -1,3 +1,5 @@
+import { errorToContext } from '@/lib/utils/error-to-context';
+
 import { useState, useEffect } from 'react';
 import { logger } from '@/lib/logger';
 
@@ -48,7 +50,7 @@ export function useGroupSessions(venueId: string): UseGroupSessionsReturn {
         throw new Error(data.error || 'Failed to fetch group sessions');
       }
     } catch (err) {
-      logger.error('[USE GROUP SESSIONS] Error fetching group sessions:', err);
+      logger.error('[USE GROUP SESSIONS] Error fetching group sessions:', errorToContext(err));
       setError(err instanceof Error ? err.message : 'Unknown error');
       setGroupSessions([]);
     } finally {

@@ -1,3 +1,5 @@
+import { errorToContext } from '@/lib/utils/error-to-context';
+
 import { useState, useCallback } from 'react';
 import { getTableState, getMergeScenario, type TableState } from '@/lib/table-states';
 import { logger } from '@/lib/logger';
@@ -84,7 +86,7 @@ export function useEnhancedTableMerge() {
       };
 
     } catch (error) {
-      logger.error('[ENHANCED MERGE HOOK] Unexpected error:', error);
+      logger.error('[ENHANCED MERGE HOOK] Unexpected error:', errorToContext(error));
       const errorMessage = error instanceof Error ? error.message : 'Unexpected error occurred';
       setError(errorMessage);
       return {

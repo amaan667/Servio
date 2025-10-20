@@ -1,3 +1,5 @@
+import { errorToContext } from '@/lib/utils/error-to-context';
+
 /**
  * Code Splitting Utilities
  * Provides lazy loading and code splitting helpers
@@ -63,7 +65,7 @@ export function lazyWithRetry<P extends object>(
         return await importFn();
       } catch (error) {
         lastError = error as Error;
-        logger.error(`Failed to load component (attempt ${i + 1}/${retries}):`, error);
+        logger.error(`Failed to load component (attempt ${i + 1}/${retries}):`, errorToContext(error));
         
         // Wait before retrying
         await new Promise(resolve => setTimeout(resolve, 1000 * (i + 1)));

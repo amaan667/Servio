@@ -1,3 +1,5 @@
+import { errorToContext } from '@/lib/utils/error-to-context';
+
 import { logger } from '@/lib/logger';
 /**
  * Google Maps API Loader
@@ -43,7 +45,7 @@ export function loadGoogleMapsAPI(): Promise<void> {
       return;
     }
 
-    logger.debug('Loading Google Maps API with key:', apiKey.substring(0, 10) + '...');
+    logger.debug('Loading Google Maps API', { keyPrefix: apiKey.substring(0, 10) + '...' });
 
     isLoading = true;
 

@@ -1,3 +1,5 @@
+import { errorToContext } from '@/lib/utils/error-to-context';
+
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { logger } from '@/lib/logger';
 
@@ -279,7 +281,7 @@ export function usePullToRefresh(onRefresh: () => Promise<void>) {
     try {
       await onRefresh();
     } catch (error) {
-      logger.error('Pull-to-refresh failed:', error);
+      logger.error('Pull-to-refresh failed:', errorToContext(error));
     } finally {
       setIsRefreshing(false);
     }
