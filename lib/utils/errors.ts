@@ -12,13 +12,18 @@ export interface ErrorDetails {
 /**
  * Extract error details from an unknown error
  */
+interface ErrorWithCode extends Error {
+  code?: string;
+}
+
 export function getErrorDetails(error: unknown): ErrorDetails {
   if (error instanceof Error) {
+    const err = error as ErrorWithCode;
     return {
       message: error.message,
       stack: error.stack,
       name: error.name,
-      ...(error as unknown).code && { code: (error as unknown).code },
+      ...(err.code && { code: err.code }),
     };
   }
 
