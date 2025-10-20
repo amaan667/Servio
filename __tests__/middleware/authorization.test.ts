@@ -1,3 +1,4 @@
+import type { AuthorizedContext } from '@/lib/middleware/authorization';
 /**
  * Authorization Middleware Tests
  * Tests for authentication and authorization logic
