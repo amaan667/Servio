@@ -85,7 +85,8 @@ export function supabaseAdmin() {
 }
 
 // Backward compatibility exports
-export const createClient = supabaseBrowser;
+// IMPORTANT: createClient should be the SERVER client for API routes
+export const createClient = createServerSupabase;
 export const createAdminClient = supabaseAdmin;
 
 // Server client factory with cookies (CONSOLIDATED - single source of truth)
