@@ -21,25 +21,25 @@ export default async function VenuePage({ params }: { params: Promise<{ venueId:
   
   // Debug logging
   if (!user) {
-    console.log('[DASHBOARD] No session found', { 
+    console.error('[DASHBOARD] No session found', { 
       hasSession: !!session, 
       sessionError,
       venueId 
     });
-  }
-  
-  if (!user) {
     // No session - redirect to sign in
     const { redirect } = await import('next/navigation');
     redirect('/sign-in?redirect=/dashboard/' + venueId);
   }
+  
+  // User is guaranteed to be defined here after the redirect check
+  const userId = user.id;
   
   // Check if user is the venue owner
   const { data: venue } = await supabase
     .from('venues')
     .select('*')
     .eq('venue_id', venueId)
-    .eq('owner_user_id', user.id)
+    .eq('owner_user_id', userId)
     .maybeSingle();
 
   // Check if user has a staff role for this venue

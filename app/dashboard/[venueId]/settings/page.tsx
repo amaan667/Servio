@@ -12,17 +12,17 @@ export default async function VenueSettings({ params }: { params: Promise<{ venu
   
   // Debug logging
   if (!user) {
-    console.log('[SETTINGS] No session found', { 
+    console.error('[SETTINGS] No session found', { 
       hasSession: !!session, 
       sessionError,
       venueId 
     });
-  }
-  
-  if (!user) {
     const { redirect } = await import('next/navigation');
     redirect('/sign-in?redirect=/dashboard/' + venueId + '/settings');
   }
+
+  // User is guaranteed to be defined here after the redirect check
+  const userId = user.id;
 
   // Run all queries in parallel for faster loading
   const [venueResult, userRoleResult, allVenuesResult] = await Promise.all([
@@ -30,18 +30,18 @@ export default async function VenueSettings({ params }: { params: Promise<{ venu
       .from('venues')
       .select('*')
       .eq('venue_id', venueId)
-      .eq('owner_user_id', user.id)
+      .eq('owner_user_id', userId)
       .maybeSingle(),
     supabase
       .from('user_venue_roles')
       .select('role')
-      .eq('user_id', user.id)
+      .eq('user_id', userId)
       .eq('venue_id', venueId)
       .maybeSingle(),
     supabase
       .from('venues')
       .select('*')
-      .eq('owner_user_id', user.id)
+      .eq('owner_user_id', userId)
       .order('created_at', { ascending: false })
   ]);
 
