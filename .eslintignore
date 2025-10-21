@@ -1,14 +1,40 @@
-node_modules
-.next
-lib/pdfImporter/**/*
-lib/improvedMenuParser.ts
-lib/parseMenuFC.ts
-lib/parseWithOpenAI.ts
-lib/pdf-to-images.ts
-lib/ocr.ts
-lib/menuSections.ts
-lib/sectionPost.ts
-lib/safeParse.ts
-lib/reassign.ts
-components/demo-*.tsx
+# Build outputs
+.next/
+out/
+build/
+dist/
 
+# Dependencies
+node_modules/
+
+# Testing
+coverage/
+
+# Misc
+.DS_Store
+*.pem
+.env
+.env.local
+.env.production.local
+.env.development.local
+.env.test.local
+
+# Debug
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+pnpm-debug.log*
+
+# Vercel
+.vercel
+
+# TypeScript
+*.tsbuildinfo
+next-env.d.ts
+
+# Tests
+__tests__/
+
+# Playwright
+playwright-report/
+test-results/

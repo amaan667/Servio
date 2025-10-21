@@ -7,7 +7,7 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { CheckCircle, Clock, Calendar } from "lucide-react";
 import { useAuth } from "@/app/auth/AuthProvider";
-import { createClient } from "@/lib/supabase";
+import { supabaseBrowser } from "@/lib/supabase";
 
 export default function CheckoutSuccessPage() {
   const searchParams = useSearchParams();
@@ -24,7 +24,7 @@ export default function CheckoutSuccessPage() {
         return;
       }
       
-      const supabase = createClient();
+      const supabase = supabaseBrowser();
       const { data: venues, error } = await supabase
         .from('venues')
         .select('venue_id')
@@ -210,7 +210,7 @@ export default function CheckoutSuccessPage() {
                 // Add a small delay to ensure the organization update has time to propagate
                 setTimeout(async () => {
                   if (user) {
-                    const supabase = createClient();
+                    const supabase = supabaseBrowser();
                     const { data: venues, error } = await supabase
                       .from('venues')
                       .select('venue_id')

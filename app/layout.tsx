@@ -4,7 +4,6 @@ import { Inter } from "next/font/google";
 import "./globals.css";
 import { cookies } from 'next/headers';
 import { createServerSupabase } from '@/lib/supabase';
-import { hasSupabaseAuthCookies } from '@/lib/auth/utils';
 import AuthProvider from '@/app/auth/AuthProvider';
 import Providers from "./providers";
 import ThemeToggleFloat from "@/components/ThemeToggleFloat";
@@ -106,16 +105,26 @@ export default async function RootLayout({
   // Get the actual session from the server efficiently using secure method
   let session = null;
   try {
-    const supabase = await createServerSupabase();
-    const { data: { session: serverSession }, error } = await supabase.auth.getSession();
+    const cookieStore = await cookies();
     
-    // Ignore refresh_token_not_found errors - just means no session exists
-    if (error && error.message !== 'refresh_token_not_found' && !error.message?.includes('Refresh Token')) {
-      console.error('[LAYOUT] Unexpected session error:', error);
+    // Check if auth cookies exist before attempting to get session
+    // This prevents unnecessary API calls for logged-out users
+    const hasAuthCookies = cookieStore.getAll().some(cookie => 
+      cookie.name.startsWith('sb-') && cookie.name.includes('-auth-token')
+    );
+    
+    if (hasAuthCookies) {
+      const supabase = await createServerSupabase();
+      const { data: { session: serverSession }, error } = await supabase.auth.getSession();
+      
+      // Only log unexpected errors (not refresh token errors for logged-out users)
+      if (error && !error.message?.includes('refresh_token') && !error.message?.includes('Refresh Token')) {
+        console.error('[LAYOUT] Unexpected session error:', error);
+      }
+      
+      session = serverSession;
     }
-    
-    session = serverSession;
-  } catch (error) {
+  } catch {
     // Silent error handling - session will remain null
   }
 
