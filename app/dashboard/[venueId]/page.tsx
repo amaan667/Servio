@@ -2,7 +2,7 @@ export const dynamic = 'force-dynamic';
 
 import React from 'react';
 import { createServerSupabase } from '@/lib/supabase';
-import DashboardClient from './page.client.modern';
+import DashboardClient from './page.client';
 import { todayWindowForTZ } from '@/lib/time';
 
 export default async function VenuePage({ params }: { params: Promise<{ venueId: string }> }) {
