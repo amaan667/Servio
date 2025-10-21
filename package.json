@@ -13,7 +13,12 @@
     "start": "next start -p ${PORT:-8080}",
     "typecheck": "tsc --noEmit",
     "lint": "eslint .",
-    "format": "prettier -w ."
+    "format": "prettier -w .",
+    "test": "vitest run",
+    "test:watch": "vitest",
+    "test:coverage": "vitest run --coverage",
+    "test:e2e": "playwright test",
+    "test:e2e:ui": "playwright test --ui"
   },
   "lint-staged": {
     "*.{ts,tsx}": [
