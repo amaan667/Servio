@@ -75,8 +75,10 @@ export function supabaseServer(cookies: {
     },
     auth: {
       persistSession: false, // Don't persist session on server
-      autoRefreshToken: false, // Don't auto-refresh tokens on server
+      autoRefreshToken: false, // CRITICAL: Don't auto-refresh tokens on server
       detectSessionInUrl: false, // Don't detect session in URL on server
+      storage: undefined, // No storage on server
+      storageKey: undefined, // No storage key
     },
   });
 }
@@ -149,10 +151,10 @@ export async function createServerSupabase() {
       },
     },
     auth: {
-      flowType: 'pkce', // Enable PKCE flow for better security
       persistSession: false, // Don't persist session on server
       autoRefreshToken: false, // Don't auto-refresh tokens on server
       detectSessionInUrl: false, // Don't detect session in URL on server
+      storage: undefined, // No storage on server
     },
   });
 }
