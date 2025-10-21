@@ -123,11 +123,12 @@ export function useOrderSession(orderParams: OrderParams) {
   };
 
   useEffect(() => {
-    const getUser = async () => {
-      const { data: { user } } = await supabase.auth.getSession();
+    const checkUser = async () => {
+      const { data: { session } } = await supabase.auth.getSession();
+      const user = session?.user;
       setSession(user ? { user } : null);
     };
-    getUser();
+    checkUser();
 
     const checkUnpaidOrders = async () => {
       try {
