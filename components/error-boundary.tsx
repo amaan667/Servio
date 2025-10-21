@@ -21,30 +21,14 @@ export class ErrorBoundary extends React.Component<ErrorBoundaryProps, ErrorBoun
   }
 
   static getDerivedStateFromError(error: Error): ErrorBoundaryState {
-    console.debug('[ERROR BOUNDARY] getDerivedStateFromError called', {
-      timestamp: new Date().toISOString(),
-      errorMessage: error.message,
-      errorName: error.name,
-    });
     return { hasError: true, error };
   }
 
   componentDidCatch(error: Error, errorInfo: React.ErrorInfo) {
-    console.error('[ERROR BOUNDARY] componentDidCatch - Caught error:', {
-      timestamp: new Date().toISOString(),
-      errorMessage: error.message,
-      errorName: error.name,
-      errorStack: error.stack,
-      componentStack: errorInfo.componentStack,
-    });
-
     this.setState({ error, errorInfo });
   }
 
   handleRetry = () => {
-    console.debug('[ERROR BOUNDARY] Retry button clicked', {
-      timestamp: new Date().toISOString(),
-    });
     this.setState({ hasError: false, error: undefined, errorInfo: undefined });
   };
 
@@ -54,8 +38,7 @@ export class ErrorBoundary extends React.Component<ErrorBoundaryProps, ErrorBoun
         clearAuthStorage();
         window.location.reload();
       }
-    } catch (err) {
-
+    } catch {
       if (typeof window !== 'undefined') {
         window.location.reload();
       }

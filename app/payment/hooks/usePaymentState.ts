@@ -43,9 +43,6 @@ export function usePaymentState() {
   const isDemoFromUrl = searchParams?.get('demo') === '1';
 
   useEffect(() => {
-
-    console.debug('[PAYMENT DEBUG] Search params:', Object.fromEntries(searchParams?.entries() || []));
-
     const storedData = localStorage.getItem("servio-checkout-data");
 
     if (storedData) {

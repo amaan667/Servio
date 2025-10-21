@@ -190,7 +190,6 @@ export const supabase = (() => supabaseBrowser())();
 // Clear authentication storage (client-side only)
 export function clearAuthStorage() {
   if (typeof window === 'undefined') {
-    console.warn('clearAuthStorage called on server - no-op');
     return;
   }
   

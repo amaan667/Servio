@@ -14,7 +14,7 @@ import {
   AlertTriangle,
   Loader2
 } from "lucide-react";
-import { UpgradeModal } from "@/components/UpgradeModal";
+import { UpgradeModal } from "@/components/upgrade-modal";
 
 interface BillingSectionProps {
   user: {
@@ -61,11 +61,9 @@ export default function BillingSection({ user, organization }: BillingSectionPro
 
         window.location.href = data.url;
       } else {
-
         alert('Failed to open billing portal - no URL received');
       }
-    } catch (error) {
-
+    } catch {
       alert('Failed to open billing portal. Please try again.');
     } finally {
       setLoadingPortal(false);
@@ -75,7 +73,6 @@ export default function BillingSection({ user, organization }: BillingSectionPro
   const handleSwitchToBasic = async () => {
     setLoadingPortal(true);
     try {
-
       const response = await fetch("/api/stripe/downgrade-plan", {
         method: "POST",
         headers: { "Content-Type": "application/json" },

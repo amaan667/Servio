@@ -63,13 +63,8 @@ export function useMenuData(venueId: string, refreshTrigger?: number) {
       }
 
       if (error) {
-
         setError("Failed to load menu items.");
       } else {
-        console.info("Menu fetched successfully", {
-          itemCount: data?.length || 0,
-          categories: [...new Set(data?.map((item: unknown) => item.category) || [])],
-        });
         setMenuItems(data || []);
       }
 
@@ -78,10 +73,9 @@ export function useMenuData(venueId: string, refreshTrigger?: number) {
       } else {
         setCategoryOrder(null);
       }
-    } catch (error: unknown) {
-
+    } catch {
       setError("An unexpected error occurred.");
-    } finally {
+    } finally{
       setLoading(false);
     }
   };

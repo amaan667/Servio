@@ -268,7 +268,7 @@ async function undoMenuTranslation(venueId: string, undoData: unknown, supabase:
 
     // Detect the source language by analyzing the current categories
     const detectSourceLanguage = (items: unknown[]): string => {
-      const categories = items.map((item: any) => item.category).filter(Boolean);
+      const categories = items.map((item: unknown) => (item as { category?: string }).category).filter(Boolean);
       const spanishIndicators = ['CAFÉ', 'BEBIDAS', 'TÉ', 'ESPECIALES', 'NIÑOS', 'ENSALADAS', 'POSTRES', 'ENTRADAS', 'PLATOS PRINCIPALES', 'APERITIVOS', 'MALTEADAS', 'BATIDOS', 'SÁNDWICHES', 'DESAYUNO', 'ALMUERZO', 'CENA', 'SOPA', 'SOPAS', 'MARISCOS', 'POLLO', 'CARNE DE RES', 'CERDO', 'VEGETARIANO', 'VEGANO', 'SIN GLUTEN'];
       const englishIndicators = ['STARTERS', 'APPETIZERS', 'MAIN COURSES', 'ENTREES', 'DESSERTS', 'SALADS', 'KIDS', 'CHILDREN', 'DRINKS', 'BEVERAGES', 'COFFEE', 'TEA', 'SPECIALS', 'WRAPS', 'SANDWICHES', 'MILKSHAKES', 'SHAKES', 'SMOOTHIES', 'BRUNCH', 'BREAKFAST', 'LUNCH', 'DINNER', 'SOUP', 'SOUPS', 'PASTA', 'PIZZA', 'SEAFOOD', 'CHICKEN', 'BEEF', 'PORK', 'VEGETARIAN', 'VEGAN', 'GLUTEN FREE'];
       
@@ -309,11 +309,14 @@ async function undoMenuTranslation(venueId: string, undoData: unknown, supabase:
     for (let i = 0; i < items.length; i += batchSize) {
       const batch = items.slice(i, i + batchSize);
       
-      const itemsToTranslate = batch.map((item: any) => ({
-        id: item.id,
-        name: item.name,
-        category: item.category,
-      }));
+      const itemsToTranslate = batch.map((item: unknown) => {
+        const menuItem = item as { id?: string; name?: string; category?: string };
+        return {
+          id: menuItem.id,
+          name: menuItem.name,
+          category: menuItem.category,
+        };
+      });
 
       // Generate comprehensive category mapping instructions for undo
       const categoryMappingList = Object.entries((categoryMappings as any)[detectedSourceLanguage] || {})
@@ -365,9 +368,10 @@ IMPORTANT: Every item in the input must appear in your output with a translated 
         // Validate that we got the expected number of items and all have required fields
         if (translatedArray.length === batch.length) {
           // Additional validation: check that all items have required fields
-          const validItems = translatedArray.filter((item: any) => 
-            item && item.id && item.name && item.category
-          );
+          const validItems = translatedArray.filter((item: unknown) => {
+            const menuItem = item as { id?: string; name?: string; category?: string };
+            return menuItem && menuItem.id && menuItem.name && menuItem.category;
+          });
           
           if (validItems.length === batch.length) {
             logger.debug(`[AI UNDO] Batch translation successful: ${translatedArray.length} items`);
@@ -389,7 +393,7 @@ IMPORTANT: Every item in the input must appear in your output with a translated 
 
     // Update database with reverse translations
     let updatedCount = 0;
-    const translatedIds = new Set(translatedItems.map((item: any) => item.id));
+    const translatedIds = new Set(translatedItems.map((item: unknown) => (item as { id?: string }).id));
     
     for (const translatedItem of translatedItems) {
       const item = translatedItem as any;
@@ -413,9 +417,12 @@ IMPORTANT: Every item in the input must appear in your output with a translated 
     }
 
     // Check for unknown items that weren't translated
-    const missingItems = items.filter((item: any) => !translatedIds.has(item.id));
+    const missingItems = items.filter((item: unknown) => {
+      const menuItem = item as { id?: string };
+      return !translatedIds.has(menuItem.id);
+    });
     if (missingItems.length > 0) {
-      logger.warn(`[AI UNDO] ${missingItems.length} items were not translated:`, missingItems.map((item: any) => item.name));
+      logger.warn(`[AI UNDO] ${missingItems.length} items were not translated:`, missingItems.map((item: unknown) => (item as { name?: string }).name));
     }
 
     return {

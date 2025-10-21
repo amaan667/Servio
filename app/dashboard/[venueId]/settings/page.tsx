@@ -6,10 +6,19 @@ export default async function VenueSettings({ params }: { params: Promise<{ venu
   const { venueId } = await params;
   const supabase = await createServerSupabase();
 
-  const { data: { user } } = await supabase.auth.getUser();
+  // Use getSession() instead of getUser() to avoid refresh token validation errors
+  const { data: { session } } = await supabase.auth.getSession();
+  const user = session?.user;
   
   if (!user) {
-    return <div>Please sign in to access settings</div>;
+    return (
+      <div className="min-h-screen flex items-center justify-center">
+        <div>
+          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-purple-600 mx-auto mb-4"></div>
+          <p className="text-gray-600">Loading settings...</p>
+        </div>
+      </div>
+    );
   }
 
   // Run all queries in parallel for faster loading

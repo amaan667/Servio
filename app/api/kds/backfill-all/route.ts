@@ -3,8 +3,9 @@ import { createAdminClient } from '@/lib/supabase';
 import { logger } from '@/lib/logger';
 
 interface KDSStation {
+  id: string;
   station_type: string;
-  [key: string]: any;
+  [key: string]: unknown;
 }
 
 export const runtime = 'nodejs';

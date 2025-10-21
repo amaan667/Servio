@@ -13,7 +13,7 @@ export const dynamic = 'force-dynamic';
 export async function POST(req: NextRequest) {
   try {
     let venueId, pdfFileId;
-    let requestBody: any;
+    let requestBody: unknown;
     
     // Check if request is FormData (file upload) or JSON
     const contentType = req.headers.get('content-type') || '';
@@ -214,17 +214,20 @@ async function replaceCatalog(supabase: unknown, venueId: string, fixedPayload: 
     }
 
     // Insert new items
-    const payload = fixedPayload as any;
+    const payload = fixedPayload as { items?: unknown[] };
     if (payload.items && payload.items.length > 0) {
       
-      const itemsToInsert = payload.items.map((item: any, index: number) => ({
-        venue_id: venueId,
-        name: item.name || `Item ${index + 1}`,
-        description: item.description || null,
-        price: item.price || 0,
-        category: item.category || 'UNCATEGORIZED',
-        is_available: true
-      }));
+      const itemsToInsert = payload.items.map((item: unknown, index: number) => {
+        const menuItem = item as { name?: string; description?: string; price?: number; category?: string };
+        return {
+          venue_id: venueId,
+          name: menuItem.name || `Item ${index + 1}`,
+          description: menuItem.description || null,
+          price: menuItem.price || 0,
+          category: menuItem.category || 'UNCATEGORIZED',
+          is_available: true
+        };
+      });
 
       const { data: insertedItems, error: insertError } = await (supabase as any)
         .from('menu_items')
@@ -251,7 +254,7 @@ async function replaceCatalog(supabase: unknown, venueId: string, fixedPayload: 
             storage_path: `menus/${venueId}/catalog-replace-${Date.now()}.pdf`,
             file_size: 0,
             extracted_text_length: extractedText?.length || 0,
-            category_order: [...new Set(payload.items.map((item: any) => item.category))],
+            category_order: [...new Set(payload.items.map((item: unknown) => (item as { category?: string }).category))],
             pdf_images: pdfImages,
             created_at: new Date().toISOString()
           })
@@ -269,7 +272,7 @@ async function replaceCatalog(supabase: unknown, venueId: string, fixedPayload: 
         message: 'Catalog replaced successfully',
         result: {
           items_created: insertedItems?.length || 0,
-          categories_created: [...new Set(itemsToInsert.map((item: any) => item.category))].length,
+          categories_created: [...new Set(itemsToInsert.map((item: unknown) => (item as { category?: string }).category))].length,
           extracted_text: extractedText // Include extracted text for style extraction
         }
       });

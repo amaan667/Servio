@@ -6,10 +6,11 @@ export default async function StaffPage({ params }: { params: Promise<{ venueId:
   const { venueId } = await params;
   const supabase = await createServerSupabase();
 
-  const { data: { user } } = await supabase.auth.getUser();
+  const { data: { session } } = await supabase.auth.getSession();
+  const user = session?.user;
   
   if (!user) {
-    return <div>Please sign in to access staff management</div>;
+    return <div className="min-h-screen flex items-center justify-center"><div className="animate-spin rounded-full h-12 w-12 border-b-2 border-purple-600"></div></div>;
   }
 
   // Check if user has access to this venue (owner or has role)

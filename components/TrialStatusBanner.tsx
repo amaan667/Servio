@@ -44,12 +44,10 @@ export default function TrialStatusBanner({ userRole }: TrialStatusBannerProps) 
         });
 
         if (!ensureOrgResponse.ok) {
-          console.error('Failed to ensure organization (non-critical)');
           setLoading(false);
           return;
         }
-      } catch (orgError) {
-        console.error('Organization ensure error (non-critical):', orgError);
+      } catch {
         setLoading(false);
         return;
       }
@@ -308,7 +306,7 @@ export default function TrialStatusBanner({ userRole }: TrialStatusBannerProps) 
       </div>
       
       <div className="mt-2 text-sm text-green-700">
-        You're currently on the {getTierDisplayName(trialStatus.tier)} plan with full access to all features.
+        You&apos;re currently on the {getTierDisplayName(trialStatus.tier)} plan with full access to all features.
       </div>
     </div>
   );

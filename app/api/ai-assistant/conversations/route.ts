@@ -114,14 +114,24 @@ export async function GET(request: NextRequest) {
     }
 
     // Transform the data to match frontend expectations
-    const transformedConversations = (conversations || []).map((conv: any) => ({
-      ...conv,
-      updatedAt: conv.updated_at,
-      createdAt: conv.created_at,
-      venueId: conv.venue_id,
-      userId: conv.user_id,
-      isActive: conv.is_active,
-    }));
+    const transformedConversations = (conversations || []).map((conv: unknown) => {
+      const conversation = conv as { 
+        updated_at?: string; 
+        created_at?: string; 
+        venue_id?: string; 
+        user_id?: string; 
+        is_active?: boolean;
+        [key: string]: unknown;
+      };
+      return {
+        ...conv,
+        updatedAt: conversation.updated_at,
+        createdAt: conversation.created_at,
+        venueId: conversation.venue_id,
+        userId: conversation.user_id,
+        isActive: conversation.is_active,
+      };
+    });
 
     return NextResponse.json({
       conversations: transformedConversations,

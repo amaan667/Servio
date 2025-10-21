@@ -1,96 +1,87 @@
 import { NextResponse } from "next/server";
 import Stripe from "stripe";
-import { createAdminClient } from "@/lib/supabase";
-import { stripe } from "@/lib/stripe-client";
 import { logger } from '@/lib/logger';
 
-export const runtime = 'nodejs';
+const stripe = new Stripe(process.env.STRIPE_SECRET_KEY!, { apiVersion: "2024-12-18.acacia" });
 
 export async function POST(req: Request) {
   try {
-    const supabaseAdmin = createAdminClient();
-    
-    const { 
-      orderId, 
-      total, 
-      currency = "GBP", 
-      items = [],
-      venueId,
-      tableNumber,
-      customerName,
-      customerPhone,
-      customerEmail,
-      source
-    } = await req.json();
-    
-    if (!orderId || typeof total !== "number") {
-      return NextResponse.json({ error: "orderId and total are required" }, { status: 400 });
+    const { amount, venueId, tableNumber, customerName, customerPhone, orderId, items, source, venueName, customerEmail } = await req.json();
+
+    if (!amount || amount < 0.5) {
+      return NextResponse.json(
+        { error: "Amount must be at least £0.50" },
+        { status: 400 }
+      );
     }
 
-    const base = process.env.NEXT_PUBLIC_APP_URL; // MUST match the domain customers use
-    if (!base) throw new Error("NEXT_PUBLIC_APP_URL not set");
+    // Convert to pence (Stripe uses smallest currency unit)
+    const amountInPence = Math.round(amount * 100);
 
-    // Build session parameters
-    const sessionParams: Stripe.Checkout.SessionCreateParams = {
-      mode: "payment",
+    // Build base URL
+    const host = req.headers.get('host') || 'localhost:3000';
+    const protocol = host.includes('localhost') ? 'http' : 'https';
+    const base = `${protocol}://${host}`;
+
+    // Create Stripe checkout session with automatic tax disabled
+    const session = await stripe.checkout.sessions.create({
+      payment_method_types: ["card"],
       line_items: [
         {
           price_data: {
-            currency,
-            product_data: { name: `Order #${orderId}` },
-            unit_amount: Math.round(total * 100), // Convert to minor units (pence)
+            currency: "gbp",
+            product_data: {
+              name: `Order at ${venueName || 'Restaurant'}`,
+              description: `Table: ${tableNumber || 'N/A'}`,
+            },
+            unit_amount: amountInPence,
           },
           quantity: 1,
         },
       ],
-      metadata: { 
-        orderId,
+      mode: "payment",
+      metadata: {
+        orderId: orderId || 'unknown',
         venueId: venueId || 'default-venue',
         tableNumber: tableNumber?.toString() || '1',
         customerName: customerName || 'Customer',
         customerPhone: customerPhone || '+1234567890',
         source: source || 'qr',
-        // Truncate items to stay within 500 char limit, keeping only essential info
-        items: JSON.stringify(items.map((item: any) => ({
-          id: item.id,
-          name: item.name,
-          quantity: item.quantity,
-          price: item.price
-        }))).substring(0, 200) // Limit to 200 chars to leave room for other metadata
+        items: JSON.stringify(items.map((item: unknown) => {
+          const menuItem = item as { id?: string; name?: string; price?: number; quantity?: number };
+          return {
+            id: menuItem.id,
+            name: menuItem.name,
+            quantity: menuItem.quantity,
+            price: menuItem.price,
+          };
+        }))).substring(0, 200),
       },
       success_url: `${base}/payment/success?session_id={CHECKOUT_SESSION_ID}&orderId=${orderId}`,
       cancel_url: `${base}/payment/cancel?orderId=${orderId}&venueId=${venueId || 'default-venue'}&tableNumber=${tableNumber || '1'}`,
     };
 
     // Add customer email if provided - Stripe will automatically send digital receipts
-    if (customerEmail && customerEmail.trim() !== '') {
-      sessionParams.customer_email = customerEmail.trim();
+    if (customerEmail) {
+      session.customer_email = customerEmail;
     }
 
-    const session = await stripe.checkout.sessions.create(sessionParams);
+    logger.info('[CHECKOUT] Created Stripe session:', {
+      sessionId: session.id,
+      orderId,
+      amount: amountInPence,
+      venue: venueId
+    });
 
-    // CRITICAL FIX: Store the stripe_session_id immediately on the order
-    // This prevents race condition where user reaches success page before webhook fires
-    logger.debug('[CHECKOUT DEBUG] Updating order with stripe_session_id', { sessionId: session.id });
-    const { error: updateError } = await supabaseAdmin
-      .from('orders')
-      .update({
-        stripe_session_id: session.id,
-        payment_method: 'stripe',
-        updated_at: new Date().toISOString()
-      })
-      .eq('id', orderId);
-
-    if (updateError) {
-      logger.error('[CHECKOUT DEBUG] Failed to update order with session ID', { error: updateError });
-      // Don't fail the checkout, webhook will handle it as fallback
-    } else {
-      logger.debug('[CHECKOUT DEBUG] Successfully stored stripe_session_id on order', { orderId });
-    }
-
-    return NextResponse.json({ url: session.url, sessionId: session.id }, { status: 200 });
-  } catch (e: unknown) {
-    logger.error("Stripe session error", { error: e instanceof Error ? e.message : 'Unknown error' });
-    return NextResponse.json({ error: e instanceof Error ? e.message : "Stripe error" }, { status: 500 });
+    return NextResponse.json({ id: session.id, url: session.url });
+  } catch (error: unknown) {
+    logger.error('[CHECKOUT] Error creating checkout session:', {
+      error: error instanceof Error ? error.message : 'Unknown error'
+    });
+    
+    return NextResponse.json(
+      { error: error instanceof Error ? error.message : "An error occurred" },
+      { status: 500 }
+    );
   }
 }

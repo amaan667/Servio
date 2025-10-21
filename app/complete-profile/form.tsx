@@ -38,7 +38,6 @@ export default function CompleteProfileForm({ user }: CompleteProfileFormProps) 
   useEffect(() => {
     if (user && isOAuthUser) {
       const googleName = user.user_metadata?.full_name || user.user_metadata?.name;
-      const googleEmail = user.email;
       
       if (googleName && !formData.venueName) {
         setFormData(prev => ({
@@ -142,7 +141,7 @@ export default function CompleteProfileForm({ user }: CompleteProfileFormProps) 
       const returnedVenueId = j.venue?.venue_id || venueId;
 
       // Update user metadata to mark profile as complete and save additional info
-      const { error: metadataError } = await createClient().auth.updateUser({
+      await createClient().auth.updateUser({
         data: { 
           profileComplete: true,
           venue_name: venueName,
@@ -151,7 +150,6 @@ export default function CompleteProfileForm({ user }: CompleteProfileFormProps) 
           phone: formData.phone || null
         }
       });
-      if (metadataError) console.error('[COMPLETE-PROFILE] metadata update error', metadataError);
 
       router.replace(`/dashboard/${returnedVenueId}`);
     } catch (error: unknown) {

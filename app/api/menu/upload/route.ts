@@ -60,11 +60,13 @@ export async function POST(req: Request) {
     // Ensure bucket exists
     try {
       const { data: buckets } = await supa.storage.listBuckets();
-      const has = (buckets || []).some((b: any) => b.name === 'menus');
+      const has = (buckets || []).some((b: unknown) => (b as { name?: string }).name === 'menus');
       if (!has) {
         await supa.storage.createBucket('menus', { public: false });
       }
-    } catch {}
+    } catch {
+      // Silent error handling - bucket might already exist
+    }
 
     const arrayBuf = await file.arrayBuffer();
     const hash = await sha256(arrayBuf);

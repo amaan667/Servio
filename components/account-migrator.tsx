@@ -52,10 +52,6 @@ export function AccountMigrator() {
 
   useEffect(() => {
     loadLocalAccounts();
-    console.debug("ACCOUNT_MIGRATOR: Component initialized", {
-      hasSupabase: hasSupabaseConfig,
-      timestamp: new Date().toISOString(),
-    });
   }, []);
 
   const loadLocalAccounts = () => {
@@ -82,13 +78,13 @@ export function AccountMigrator() {
 
     try {
       // Decode password from base64
-      const password = atob(account.passwordHash);
+      atob(account.passwordHash);
       addLog(`Decoded password for ${account.contactEmail}`);
 
       addLog(`⚠️ Sign up not implemented yet for ${account.contactEmail}`);
       return false;
     } catch (error: unknown) {
-      addLog(`❌ Error migrating ${account.contactEmail}: ${error.message}`);
+      addLog(`❌ Error migrating ${account.contactEmail}: ${(error as Error).message}`);
 
       return false;
     }

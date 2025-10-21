@@ -14,10 +14,21 @@ export default async function VenuePage({ params }: { params: Promise<{ venueId:
     return <div>Error: Unable to connect to database</div>;
   }
 
-  const { data: { user } } = await supabase.auth.getUser();
+  // Use getSession() instead of getUser() to avoid refresh token validation errors
+  // This reads from cookies without making an API call to Supabase auth server
+  const { data: { session } } = await supabase.auth.getSession();
+  const user = session?.user;
   
   if (!user) {
-    return <div>Please sign in to access the dashboard</div>;
+    // No session - let client handle auth, just show loading
+    return (
+      <div className="min-h-screen flex items-center justify-center">
+        <div>
+          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-purple-600 mx-auto mb-4"></div>
+          <p className="text-gray-600">Loading dashboard...</p>
+        </div>
+      </div>
+    );
   }
   
   // Check if user is the venue owner
@@ -96,13 +107,15 @@ export default async function VenuePage({ params }: { params: Promise<{ venueId:
     .gte("created_at", todayWindow.startUtcISO)
     .lt("created_at", todayWindow.endUtcISO);
 
-  const todayRevenue = (todayOrdersForRevenue ?? []).reduce((sum: number, order: any) => {
-    let amount = Number(order.total_amount) || parseFloat(order.total_amount) || 0;
+  const todayRevenue = (todayOrdersForRevenue ?? []).reduce((sum: number, order: unknown) => {
+    const orderData = order as { total_amount?: number | string; items?: unknown[] };
+    let amount = Number(orderData.total_amount) || parseFloat(String(orderData.total_amount)) || 0;
     if (!Number.isFinite(amount) || amount <= 0) {
-      if (Array.isArray(order.items)) {
-        amount = order.items.reduce((s: number, it: any) => {
-          const unit = Number(it.unit_price ?? it.price ?? 0);
-          const qty = Number(it.quantity ?? it.qty ?? 0);
+      if (Array.isArray(orderData.items)) {
+        amount = orderData.items.reduce((s: number, it: unknown) => {
+          const item = it as { unit_price?: number; price?: number; quantity?: number; qty?: number };
+          const unit = Number(item.unit_price ?? item.price ?? 0);
+          const qty = Number(item.quantity ?? item.qty ?? 0);
           return s + (Number.isFinite(unit) && Number.isFinite(qty) ? unit * qty : 0);
         }, 0);
       }
@@ -126,14 +139,11 @@ export default async function VenuePage({ params }: { params: Promise<{ venueId:
   return (
     <DashboardClient 
       venueId={venueId} 
-      userId={user.id}
       venue={finalVenue}
-      userName={user.user_metadata?.full_name || user.email?.split('@')[0] || 'User'}
       venueTz={venueTz}
       initialCounts={counts as any}
       initialStats={initialStats}
       userRole={userRole?.role || (isOwner ? 'owner' : 'staff')}
-      isOwner={isOwner}
     />
   );
 }

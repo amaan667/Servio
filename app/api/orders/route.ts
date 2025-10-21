@@ -86,7 +86,7 @@ function bad(msg: string, status = 400) {
 }
 
 // Function to create KDS tickets for an order
-async function createKDSTickets(supabase: any, order: any) {
+async function createKDSTickets(supabase: unknown, order: { id: string; venue_id: string; items?: unknown[] }) {
   try {
     logger.debug('[KDS TICKETS] Creating KDS tickets for order:', { orderId: order.id });
     
@@ -145,7 +145,7 @@ async function createKDSTickets(supabase: any, order: any) {
       throw new Error('No KDS stations available');
     }
     
-    const expoStation = existingStations.find((s: any) => s.station_type === 'expo') || existingStations[0];
+    const expoStation = existingStations.find((s: unknown) => (s as { station_type?: string }).station_type === 'expo') || existingStations[0];
     
     if (!expoStation) {
       throw new Error('No KDS station available');

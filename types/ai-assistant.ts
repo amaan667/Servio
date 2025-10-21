@@ -353,7 +353,7 @@ export interface AIAssistantContext {
 
 export interface AIToolCall {
   name: ToolName;
-  params: any; // Will be validated against schema
+  params: Record<string, unknown>; // Will be validated against schema
   preview: boolean;
 }
 
@@ -367,8 +367,8 @@ export interface AIPlanResponse {
 
 export interface AIPreviewDiff {
   toolName: ToolName;
-  before: any;
-  after: any;
+  before: unknown;
+  after: unknown;
   impact: {
     itemsAffected: number;
     categoriesAffected?: number;
@@ -381,7 +381,7 @@ export interface AIPreviewDiff {
 export interface AIExecutionResult {
   success: boolean;
   toolName: ToolName;
-  result?: any;
+  result?: unknown;
   error?: string;
   auditId: string;
 }
@@ -469,10 +469,10 @@ export interface AIActionAudit {
   userPrompt: string;
   intent: string;
   toolName: ToolName;
-  params: any;
+  params: Record<string, unknown>;
   preview: boolean;
   executed: boolean;
-  result?: any;
+  result?: unknown;
   error?: string;
   contextHash?: string;
   modelVersion: string;
@@ -489,12 +489,12 @@ export interface AIAutomation {
   triggerType: "cron" | "event" | "threshold";
   cronSchedule?: string;
   eventType?: string;
-  thresholdConfig?: any;
+  thresholdConfig?: Record<string, unknown>;
   toolName: ToolName;
-  params: any;
+  params: Record<string, unknown>;
   enabled: boolean;
   lastRunAt?: string;
-  lastResult?: any;
+  lastResult?: unknown;
   createdBy: string;
   createdAt: string;
   updatedAt: string;

@@ -73,16 +73,13 @@ export default function CheckoutSuccessPage() {
               body: JSON.stringify({ tier: tierParam })
             });
             
-            const data = await response.json();
+            await response.json();
 
             if (!response.ok && retryCount < 3) {
-              console.debug(`[CHECKOUT SUCCESS] Update failed, retrying in ${(retryCount + 1) * 2} seconds...`);
               setTimeout(() => updateOrganization(retryCount + 1), (retryCount + 1) * 2000);
             }
-          } catch (err) {
-
+          } catch {
             if (retryCount < 3) {
-              console.debug(`[CHECKOUT SUCCESS] Network error, retrying in ${(retryCount + 1) * 2} seconds...`);
               setTimeout(() => updateOrganization(retryCount + 1), (retryCount + 1) * 2000);
             }
           }
@@ -152,7 +149,7 @@ export default function CheckoutSuccessPage() {
             </div>
             <div className="space-y-2">
               <p className="text-blue-800">
-                <strong>You're now enjoying a 14-day free trial!</strong>
+                <strong>You&apos;re now enjoying a 14-day free trial!</strong>
               </p>
               <div className="flex items-center gap-2 text-blue-700">
                 <Calendar className="h-4 w-4" />
@@ -185,7 +182,7 @@ export default function CheckoutSuccessPage() {
 
           {/* What's Next */}
           <div className="bg-green-50 border border-green-200 rounded-lg p-6">
-            <h3 className="text-lg font-semibold text-green-900 mb-3">What's Next?</h3>
+            <h3 className="text-lg font-semibold text-green-900 mb-3">What&apos;s Next?</h3>
             <ul className="space-y-2 text-green-800">
               <li className="flex items-start gap-2">
                 <CheckCircle className="h-4 w-4 text-green-600 mt-0.5 flex-shrink-0" />

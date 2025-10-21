@@ -167,11 +167,16 @@ export default function LiveOrdersClient({ venueId, venueName: venueNameProp }: 
     return typeof rpc === 'number' ? rpc : 0;
   };
 
-  const renderOrderCard = (order: any, showActions: boolean = true) => {
+  const renderOrderCard = (order: unknown, showActions: boolean = true) => {
+    const orderData = order as { 
+      table_number?: string | number; 
+      customer_name?: string; 
+      [key: string]: unknown 
+    };
     const legacyOrder = {
-      ...order,
-      table_number: order.table_number,
-      customer_name: order.customer_name || '',
+      ...orderData,
+      table_number: orderData.table_number,
+      customer_name: orderData.customer_name || '',
       customer_phone: order.customer_phone || undefined,
       customer_email: order.customer_email || undefined,
     };

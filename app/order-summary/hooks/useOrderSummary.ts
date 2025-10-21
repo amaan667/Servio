@@ -49,12 +49,7 @@ export function useOrderSummary() {
   }, [router]);
 
   const handlePayNow = async () => {
-
-    console.debug('[ORDER SUMMARY DEBUG] Timestamp:', new Date().toISOString());
-    console.debug('[ORDER SUMMARY DEBUG] Full orderData:', JSON.stringify(orderData, null, 2));
-    
     if (!orderData) {
-
       alert('Error: No order data available. Please try placing your order again.');
       return;
     }
