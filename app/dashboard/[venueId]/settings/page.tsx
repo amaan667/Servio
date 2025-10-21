@@ -22,7 +22,7 @@ export default async function VenueSettings({ params }: { params: Promise<{ venu
   }
 
   // User is guaranteed to be defined here after the redirect check
-  const userId = user.id;
+  const userId = user!.id;
 
   // Run all queries in parallel for faster loading
   const [venueResult, userRoleResult, allVenuesResult] = await Promise.all([
@@ -88,7 +88,7 @@ export default async function VenueSettings({ params }: { params: Promise<{ venu
         <RoleBasedNavigation 
           venueId={venueId} 
           userRole={finalUserRole as 'owner' | 'manager' | 'staff'}
-          userName={user.user_metadata?.full_name || user.email?.split('@')[0] || 'User'}
+          userName={user!.user_metadata?.full_name || user!.email?.split('@')[0] || 'User'}
         />
         
         <div className="mb-8">

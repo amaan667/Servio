@@ -32,7 +32,7 @@ export default async function VenuePage({ params }: { params: Promise<{ venueId:
   }
   
   // User is guaranteed to be defined here after the redirect check
-  const userId = user.id;
+  const userId = user!.id;
   
   // Check if user is the venue owner
   const { data: venue } = await supabase
@@ -46,7 +46,7 @@ export default async function VenuePage({ params }: { params: Promise<{ venueId:
   const { data: userRole } = await supabase
     .from('user_venue_roles')
     .select('role')
-    .eq('user_id', user.id)
+    .eq('user_id', userId)
     .eq('venue_id', venueId)
     .maybeSingle();
 
