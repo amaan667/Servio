@@ -1,5 +1,9 @@
 /** @type {import('next').NextConfig} */
 const nextConfig = {
+  // Force fresh build - cache bust for Railway
+  generateBuildId: async () => {
+    return process.env.RAILWAY_GIT_COMMIT_SHA || `build-${Date.now()}`;
+  },
   reactStrictMode: true,
   eslint: {
     ignoreDuringBuilds: true, // Temporarily allow builds despite ESLint errors
