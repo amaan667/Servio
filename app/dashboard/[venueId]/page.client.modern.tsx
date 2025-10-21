@@ -8,7 +8,6 @@ import { useDashboardPrefetch } from '@/hooks/usePrefetch';
 import PullToRefresh from '@/components/PullToRefresh';
 import { useConnectionMonitor } from '@/lib/connection-monitor';
 import { DashboardSkeleton } from '@/components/dashboard-skeleton';
-import { useRequestCancellation } from '@/lib/request-utils';
 import RoleManagementPopup from '@/components/role-management-popup';
 import VenueSwitcherPopup from '@/components/venue-switcher-popup';
 
@@ -40,24 +39,18 @@ import { FeatureSections } from './components/FeatureSections';
 
 const DashboardClient = React.memo(function DashboardClient({ 
   venueId, 
-  userId, 
   venue: initialVenue, 
-  userName,
   venueTz,
   initialCounts,
   initialStats,
   userRole,
-  isOwner
 }: { 
   venueId: string; 
-  userId: string; 
   venue?: unknown; 
-  userName: string;
   venueTz: string;
   initialCounts?: unknown;
   initialStats?: unknown;
   userRole?: string;
-  isOwner?: boolean;
 }) {
 
   const router = useRouter();
@@ -67,19 +60,14 @@ const DashboardClient = React.memo(function DashboardClient({
   
   // Handle venue change
   const handleVenueChange = useCallback((newVenueId: string) => {
-
     router.push(`/dashboard/${newVenueId}`);
-  }, [venueId, router]);
-  
-  // Request cancellation
-  const { createRequest, cancelRequest } = useRequestCancellation();
+  }, [router]);
   
   // Enable intelligent prefetching for dashboard routes
   useDashboardPrefetch(venueId);
 
   // Custom hooks for dashboard data and realtime
-
-  const dashboardData = useDashboardData(venueId, venueTz, initialVenue, initialCounts, initialStats);
+  const dashboardData = useDashboardData(venueId, venueTz, initialVenue, initialCounts as any, initialStats as any);
 
   useDashboardRealtime({
     venueId,
@@ -94,10 +82,10 @@ const DashboardClient = React.memo(function DashboardClient({
   const analyticsData = useAnalyticsData(venueId, venueTz);
 
   const handleRefresh = useCallback(async () => {
-
     await dashboardData.refreshCounts();
-    if (dashboardData.venue?.venue_id && dashboardData.todayWindow) {
-      await dashboardData.loadStats(dashboardData.venue.venue_id, dashboardData.todayWindow);
+    const venue = dashboardData.venue as any;
+    if (venue?.venue_id && dashboardData.todayWindow) {
+      await dashboardData.loadStats(venue.venue_id, dashboardData.todayWindow);
     }
   }, [dashboardData]);
 
@@ -152,9 +140,8 @@ const DashboardClient = React.memo(function DashboardClient({
           <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4">
             <StatusBanner
               isOnline={connectionState.isOnline}
-              isOffline={connectionState.isOffline}
               trialDaysLeft={14}
-              venueName={dashboardData.venue?.name || 'Venue'}
+              venueName={(dashboardData.venue as any)?.venue_name || 'Venue'}
               userRole={userRole}
               onVenueChange={handleVenueChange}
             />
@@ -267,7 +254,7 @@ const DashboardClient = React.memo(function DashboardClient({
         </div>
 
         {/* Footer Modals */}
-        <RoleManagementPopup userId={userId} />
+        <RoleManagementPopup />
         <VenueSwitcherPopup 
           currentVenueId={venueId}
           onVenueChange={handleVenueChange}
