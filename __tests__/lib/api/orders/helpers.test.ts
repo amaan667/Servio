@@ -1,5 +1,5 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
-import { createKDSTickets, ensureTableExists, findDuplicateOrder } from '@/lib/api/orders/helpers';
+import { ensureTableExists, findDuplicateOrder } from '@/lib/api/orders/helpers';
 
 // Mock Supabase client
 const mockSupabase = {

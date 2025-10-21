@@ -80,7 +80,7 @@ export async function middleware(req: NextRequest) {
 
     // Use getSession() instead of getUser() to avoid refresh token API calls
     // This reads from cookies without making an API request to Supabase
-    const { data: { session } } = await supabase.auth.getSession();
+    await supabase.auth.getSession();
     
     // If no session on protected route, let the page handle it
     // (pages will redirect to sign-in if needed)

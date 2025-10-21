@@ -7,7 +7,7 @@ import { createClient, createAdminClient } from "@/lib/supabase";
 import { generateConversationTitle } from "@/lib/ai/openai-service";
 import { apiLogger, logger } from '@/lib/logger';
 
-export async function POST(request: NextRequest) {
+export async function POST() {
   try {
     const supabase = await createClient();
     const adminSupabase = createAdminClient();
@@ -135,7 +135,7 @@ export async function POST(request: NextRequest) {
       for (const oldConv of allOldConversations || []) {
         try {
           // Create new conversation
-          const { data: newConv, error: createError } = await adminSupabase
+          const { error: createError } = await adminSupabase
             .from("ai_chat_conversations")
             .insert({
               id: oldConv.id, // Keep same ID
@@ -241,7 +241,7 @@ export async function POST(request: NextRequest) {
   }
 }
 
-export async function GET(request: NextRequest) {
+export async function GET() {
   try {
     const adminSupabase = createAdminClient();
     

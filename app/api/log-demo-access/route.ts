@@ -74,7 +74,7 @@ export async function POST(req: Request) {
 }
 
 // Add GET endpoint to test if route is accessible
-export async function GET(req: Request) {
+export async function GET(_req: Request) {
   logger.debug('================================================================================');
   logger.debug('[DEMO ACCESS] GET request received - API route is working');
   logger.debug('================================================================================');
