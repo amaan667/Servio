@@ -129,28 +129,10 @@ export default async function RootLayout({ children }: { children: React.ReactNo
       try {
         const {
           data: { session: serverSession },
-          error,
         } = await supabase.auth.getSession();
-
-        // Only log unexpected errors (not refresh token errors for logged-out users)
-        if (
-          error &&
-          !error.message?.includes("refresh_token") &&
-          !error.message?.includes("Refresh Token")
-        ) {
-          console.error("[LAYOUT] Unexpected session error:", error);
-        }
-
         session = serverSession;
-      } catch (err) {
-        // Silently catch refresh token errors
-        const errorMessage = err instanceof Error ? err.message : String(err);
-        if (
-          !errorMessage.includes("refresh_token_not_found") &&
-          !errorMessage.includes("Invalid Refresh Token")
-        ) {
-          console.error("[LAYOUT] Unexpected getSession error:", err);
-        }
+      } catch {
+        // Silently catch refresh token errors - no logging needed
       }
     }
   } catch {

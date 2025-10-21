@@ -16,30 +16,15 @@ export default async function VenuePage({ params }: { params: Promise<{ venueId:
 
   // Safely get session with error handling for expired tokens
   let session = null;
-  let sessionError = null;
   try {
     const result = await supabase.auth.getSession();
     session = result.data.session;
-    sessionError = result.error;
-  } catch (err) {
-    // Silently handle refresh token errors
-    const errorMessage = err instanceof Error ? err.message : String(err);
-    if (
-      !errorMessage.includes("refresh_token_not_found") &&
-      !errorMessage.includes("Invalid Refresh Token")
-    ) {
-      console.error("[DASHBOARD] Unexpected session error:", err);
-    }
+  } catch {
+    // Silently handle refresh token errors - no logging needed
   }
   const user = session?.user;
 
-  // Debug logging
   if (!user) {
-    console.error("[DASHBOARD] No session found", {
-      hasSession: !!session,
-      sessionError,
-      venueId,
-    });
     // Show error message instead of redirecting
     const Link = (await import("next/link")).default;
     return (
