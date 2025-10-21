@@ -114,6 +114,11 @@ export async function createServerSupabase() {
   const { cookies } = await import('next/headers');
   const cookieStore = await cookies();
   
+  // Debug logging
+  const allCookies = cookieStore.getAll();
+  console.log('[SERVER_SUPABASE] Cookie count:', allCookies.length);
+  console.log('[SERVER_SUPABASE] Auth cookies:', allCookies.filter(c => c.name.includes('sb-')).map(c => c.name));
+  
   // Get cookie domain from environment
   const baseUrl = process.env.NEXT_PUBLIC_SITE_URL || process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:3000';
   const COOKIE_DOMAIN = new URL(baseUrl).hostname;

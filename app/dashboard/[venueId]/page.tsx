@@ -16,19 +16,22 @@ export default async function VenuePage({ params }: { params: Promise<{ venueId:
 
   // Use getSession() instead of getUser() to avoid refresh token validation errors
   // This reads from cookies without making an API call to Supabase auth server
-  const { data: { session } } = await supabase.auth.getSession();
+  const { data: { session }, error: sessionError } = await supabase.auth.getSession();
   const user = session?.user;
   
+  // Debug logging
   if (!user) {
-    // No session - let client handle auth, just show loading
-    return (
-      <div className="min-h-screen flex items-center justify-center">
-        <div>
-          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-purple-600 mx-auto mb-4"></div>
-          <p className="text-gray-600">Loading dashboard...</p>
-        </div>
-      </div>
-    );
+    console.log('[DASHBOARD] No session found', { 
+      hasSession: !!session, 
+      sessionError,
+      venueId 
+    });
+  }
+  
+  if (!user) {
+    // No session - redirect to sign in
+    const { redirect } = await import('next/navigation');
+    redirect('/sign-in?redirect=/dashboard/' + venueId);
   }
   
   // Check if user is the venue owner

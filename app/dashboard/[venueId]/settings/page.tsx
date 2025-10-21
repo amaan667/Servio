@@ -7,18 +7,21 @@ export default async function VenueSettings({ params }: { params: Promise<{ venu
   const supabase = await createServerSupabase();
 
   // Use getSession() instead of getUser() to avoid refresh token validation errors
-  const { data: { session } } = await supabase.auth.getSession();
+  const { data: { session }, error: sessionError } = await supabase.auth.getSession();
   const user = session?.user;
   
+  // Debug logging
   if (!user) {
-    return (
-      <div className="min-h-screen flex items-center justify-center">
-        <div>
-          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-purple-600 mx-auto mb-4"></div>
-          <p className="text-gray-600">Loading settings...</p>
-        </div>
-      </div>
-    );
+    console.log('[SETTINGS] No session found', { 
+      hasSession: !!session, 
+      sessionError,
+      venueId 
+    });
+  }
+  
+  if (!user) {
+    const { redirect } = await import('next/navigation');
+    redirect('/sign-in?redirect=/dashboard/' + venueId + '/settings');
   }
 
   // Run all queries in parallel for faster loading
