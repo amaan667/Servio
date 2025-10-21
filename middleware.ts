@@ -54,6 +54,8 @@ export async function middleware(req: NextRequest) {
   // For protected routes, verify authentication
   const res = NextResponse.next();
   
+  console.log('[MIDDLEWARE] Processing protected route:', path);
+  
   try {
     const supabase = createServerClient(
       process.env.NEXT_PUBLIC_SUPABASE_URL!,
@@ -62,12 +64,21 @@ export async function middleware(req: NextRequest) {
         cookies: {
           get: (name) => {
             const value = req.cookies.get(name)?.value;
+            if (name.includes('auth-token')) {
+              console.log('[MIDDLEWARE] Reading auth cookie:', { name, hasValue: !!value });
+            }
             return value;
           },
           set: (name, value, options) => {
+            if (name.includes('auth-token')) {
+              console.log('[MIDDLEWARE] Setting auth cookie:', { name });
+            }
             res.cookies.set(name, value, options);
           },
           remove: (name) => {
+            if (name.includes('auth-token')) {
+              console.log('[MIDDLEWARE] Removing auth cookie:', { name });
+            }
             res.cookies.delete(name);
           },
         },
@@ -79,7 +90,15 @@ export async function middleware(req: NextRequest) {
       }
     );
 
+    console.log('[MIDDLEWARE] Supabase client created, getting user...');
     const { data: { user }, error } = await supabase.auth.getUser();
+    
+    console.log('[MIDDLEWARE] getUser result:', {
+      hasUser: !!user,
+      userId: user?.id,
+      hasError: !!error,
+      errorCode: (error as { code?: string })?.code,
+    });
     
     // Handle auth errors - log but don't block
     if (error) {
