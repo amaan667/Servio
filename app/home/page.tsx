@@ -6,7 +6,7 @@ import { createClient } from "@/lib/supabase";
 import Link from "next/link";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { LayoutDashboard, Users, QrCode, BarChart3 } from "lucide-react";
+import { LayoutDashboard, QrCode, BarChart3 } from "lucide-react";
 
 // This component will show home page content for both authenticated and non-authenticated users
 const HomePage = React.memo(function HomePage() {
@@ -40,12 +40,11 @@ const HomePage = React.memo(function HomePage() {
           setPrimaryVenueId(venues[0].venue_id);
         }
       }
-    } catch (error) {
-      // On error, show public home page
-
-      setUser(null);
-      setPrimaryVenueId(null);
-    } finally {
+      } catch {
+        // On error, show public home page
+        setUser(null);
+        setPrimaryVenueId(null);
+      } finally {
       setLoading(false);
     }
   }, []);
@@ -74,9 +73,11 @@ const HomePage = React.memo(function HomePage() {
     return () => {
       try {
         (result as unknown)?.data?.subscription?.unsubscribe?.();
-      } catch {}
+      } catch {
+        // Silent error handling
+      }
     };
-  }, [router]);
+  }, [checkAuth, router]);
 
   if (loading) {
     return (
@@ -164,8 +165,8 @@ const HomePage = React.memo(function HomePage() {
                 </CardDescription>
               </CardHeader>
               <CardContent>
-                <Link href="/dashboard">
-                  <Button className="w-full" variant="outline">Go to Dashboard</Button>
+                <Link href={primaryVenueId ? `/dashboard/${primaryVenueId}/qr-codes` : '/'}>
+                  <Button className="w-full" variant="outline">Go to QR Codes</Button>
                 </Link>
               </CardContent>
             </Card>

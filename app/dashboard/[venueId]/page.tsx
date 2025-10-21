@@ -1,7 +1,6 @@
 export const dynamic = 'force-dynamic';
 
 import React from 'react';
-import { redirect } from 'next/navigation';
 import { createServerSupabase } from '@/lib/supabase';
 import DashboardClient from './page.client.modern';
 import { todayWindowForTZ } from '@/lib/time';
@@ -9,54 +8,17 @@ import { todayWindowForTZ } from '@/lib/time';
 export default async function VenuePage({ params }: { params: Promise<{ venueId: string }> }) {
   const { venueId } = await params;
   
-  console.log('[DASHBOARD PAGE] Starting - venueId:', venueId);
-  console.log('[DASHBOARD PAGE] Creating server Supabase client...');
-  
   const supabase = await createServerSupabase();
   
   if (!supabase) {
-    console.error('[DASHBOARD PAGE] Failed to create Supabase client');
     return <div>Error: Unable to connect to database</div>;
   }
 
-  console.log('[DASHBOARD PAGE] Supabase client created, getting user...');
-  const { data: { user }, error: userError } = await supabase.auth.getUser();
+  const { data: { user } } = await supabase.auth.getUser();
   
-  console.log('[DASHBOARD PAGE] getUser result:', {
-    hasUser: !!user,
-    userId: user?.id,
-    userError: userError?.message,
-    errorCode: (userError as { code?: string })?.code,
-  });
-  
-  // Log auth errors but don't redirect
-  if (userError) {
-    console.error('[DASHBOARD PAGE] Auth error:', {
-      message: userError.message,
-      code: (userError as { code?: string })?.code,
-      status: (userError as { status?: number })?.status,
-    });
-    
-    // If it's a refresh token error, don't show the page - redirect to sign in
-    if ((userError as { code?: string })?.code === 'refresh_token_not_found') {
-      console.log('[DASHBOARD PAGE] Refresh token not found - redirecting to sign-in');
-      redirect('/sign-in?error=session_expired');
-    }
-  }
-  
-  // Only redirect if there's genuinely no user (not an error)
-  if (!user && !userError) {
-    console.log('[DASHBOARD PAGE] No user and no error - redirecting to sign-in');
-    redirect('/sign-in');
-  }
-  
-  // If no user after checks, show message
   if (!user) {
-    console.log('[DASHBOARD PAGE] No user - showing sign-in message');
     return <div>Please sign in to access the dashboard</div>;
   }
-  
-  console.log('[DASHBOARD PAGE] User authenticated, proceeding with dashboard load');
   
   // Check if user is the venue owner
   const { data: venue } = await supabase
@@ -77,9 +39,9 @@ export default async function VenuePage({ params }: { params: Promise<{ venueId:
   const isOwner = !!venue;
   const isStaff = !!userRole;
 
-  // If user is not owner or staff, redirect
+  // If user is not owner or staff, show error
   if (!isOwner && !isStaff) {
-    redirect('/complete-profile');
+    return <div>You don&apos;t have access to this venue</div>;
   }
   
   // If user is staff but not owner, get venue details
@@ -92,13 +54,13 @@ export default async function VenuePage({ params }: { params: Promise<{ venueId:
       .single();
     
     if (!staffVenue) {
-      redirect('/complete-profile');
+      return <div>Venue not found</div>;
     }
     finalVenue = staffVenue;
   }
   
   if (!finalVenue) {
-    redirect('/complete-profile');
+    return <div>Venue not found</div>;
   }
 
   // Get dashboard counts

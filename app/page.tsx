@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState, useEffect } from "react";
+import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import { supabase } from "@/lib/supabase";
 import { Button } from "@/components/ui/button";
@@ -45,9 +45,30 @@ export default function HomePage() {
     };
   }, []);
 
-  const handleGetStarted = () => {
+  const handleGetStarted = async () => {
     if (isSignedIn) {
-      router.push("/dashboard");
+      // Get user's first venue
+      if (!supabase) {
+        router.push("/complete-profile");
+        return;
+      }
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) {
+        router.push("/sign-up");
+        return;
+      }
+      const { data: venues } = await supabase
+        .from('venues')
+        .select('venue_id')
+        .eq('owner_user_id', user.id)
+        .order('created_at', { ascending: false })
+        .limit(1);
+      
+      if (venues && venues.length > 0) {
+        router.push(`/dashboard/${venues[0].venue_id}`);
+      } else {
+        router.push("/complete-profile");
+      }
     } else {
       router.push("/sign-up");
     }

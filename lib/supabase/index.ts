@@ -66,10 +66,15 @@ export function supabaseAdmin() {
 export const createClient = supabaseBrowser;
 export const createAdminClient = supabaseAdmin;
 
-// Server client factory with cookies
+// Server client factory with cookies (CONSOLIDATED - single source of truth)
 export async function createServerSupabase() {
   const { cookies } = await import('next/headers');
   const cookieStore = await cookies();
+  
+  // Get cookie domain from environment
+  const baseUrl = process.env.NEXT_PUBLIC_SITE_URL || process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:3000';
+  const COOKIE_DOMAIN = new URL(baseUrl).hostname;
+  
   return createSSRServerClient(getSupabaseUrl(), getSupabaseAnonKey(), {
     cookies: {
       get: (name) => cookieStore.get(name)?.value,
@@ -77,6 +82,7 @@ export async function createServerSupabase() {
         try {
           cookieStore.set(name, value, {
             ...options,
+            domain: COOKIE_DOMAIN,
             sameSite: 'lax',
             secure: process.env.NODE_ENV === 'production',
             httpOnly: false,
@@ -88,13 +94,21 @@ export async function createServerSupabase() {
       },
       remove: (name, options) => {
         try {
-          cookieStore.set(name, '', { ...options, maxAge: 0 });
+          cookieStore.set(name, '', { 
+            ...options, 
+            domain: COOKIE_DOMAIN,
+            sameSite: 'lax',
+            secure: process.env.NODE_ENV === 'production',
+            path: '/',
+            maxAge: 0 
+          });
         } catch {
           // Silent error handling for cookie context
         }
       },
     },
     auth: {
+      flowType: 'pkce', // Enable PKCE flow for better security
       persistSession: false, // Don't persist session on server
       autoRefreshToken: false, // Don't auto-refresh tokens on server
       detectSessionInUrl: false, // Don't detect session in URL on server

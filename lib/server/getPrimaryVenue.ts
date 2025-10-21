@@ -1,8 +1,8 @@
 export const runtime = 'nodejs';
-import { createServerSupabaseClient } from './supabase';
+import { createServerSupabase } from '@/lib/supabase';
 
 export async function getPrimaryVenueId(): Promise<string | null> {
-  const supa = await createServerSupabaseClient();
+  const supa = await createServerSupabase();
 
   const { data: { user } } = await supa.auth.getUser();
   if (!user) return null;

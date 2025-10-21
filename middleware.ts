@@ -54,8 +54,6 @@ export async function middleware(req: NextRequest) {
   // For protected routes, verify authentication
   const res = NextResponse.next();
   
-  console.log('[MIDDLEWARE] Processing protected route:', path);
-  
   try {
     const supabase = createServerClient(
       process.env.NEXT_PUBLIC_SUPABASE_URL!,
@@ -63,64 +61,27 @@ export async function middleware(req: NextRequest) {
       {
         cookies: {
           get: (name) => {
-            const value = req.cookies.get(name)?.value;
-            if (name.includes('auth-token')) {
-              console.log('[MIDDLEWARE] Reading auth cookie:', { name, hasValue: !!value });
-            }
-            return value;
+            return req.cookies.get(name)?.value;
           },
           set: (name, value, options) => {
-            if (name.includes('auth-token')) {
-              console.log('[MIDDLEWARE] Setting auth cookie:', { name });
-            }
             res.cookies.set(name, value, options);
           },
           remove: (name) => {
-            if (name.includes('auth-token')) {
-              console.log('[MIDDLEWARE] Removing auth cookie:', { name });
-            }
             res.cookies.delete(name);
           },
         },
         auth: {
-          persistSession: false, // Don't persist session in middleware
-          autoRefreshToken: false, // Don't auto-refresh tokens in middleware
-          detectSessionInUrl: false, // Don't detect session in URL in middleware
+          persistSession: false,
+          autoRefreshToken: false,
+          detectSessionInUrl: false,
         },
       }
     );
 
-    console.log('[MIDDLEWARE] Supabase client created, getting user...');
-    const { data: { user }, error } = await supabase.auth.getUser();
-    
-    console.log('[MIDDLEWARE] getUser result:', {
-      hasUser: !!user,
-      userId: user?.id,
-      hasError: !!error,
-      errorCode: (error as { code?: string })?.code,
-    });
-    
-    // Handle auth errors - log but don't block
-    if (error) {
-      console.warn('[MIDDLEWARE] Auth error:', error.message);
-      
-      // If it's a refresh token error, just log it - let the client handle refresh
-      if (error.message?.includes('refresh_token') || error.message?.includes('Invalid Refresh Token')) {
-        console.warn('[MIDDLEWARE] Refresh token error - letting client handle it');
-        // Don't redirect - let the page load and handle the refresh
-      }
-    }
-    
-    // Only redirect to sign-in if there's genuinely no user (not just an error)
-    if (!user && !error) {
-      const redirect = new URL('/sign-in', req.url);
-      redirect.searchParams.set('next', encodeURIComponent(path));
-      return NextResponse.redirect(redirect);
-    }
+    await supabase.auth.getUser();
 
     return res;
-  } catch (error) {
-    console.error('[MIDDLEWARE] Error during auth check:', error);
+  } catch {
     // Don't redirect on errors - let the page handle it
     return res;
   }

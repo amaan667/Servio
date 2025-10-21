@@ -1,20 +1,19 @@
 import InventoryClient from './InventoryClient';
 import RoleBasedNavigation from '@/components/RoleBasedNavigation';
-import { createClient } from '@/lib/supabase';
-import { redirect } from 'next/navigation';
+import { createServerSupabase } from '@/lib/supabase';
 
 export default async function InventoryPage({ params }: { params: Promise<{ venueId: string }> }) {
   const { venueId } = await params;
-  const supabase = await createClient();
+  const supabase = await createServerSupabase();
 
-  const { data: { user }, error: userError } = await supabase.auth.getUser();
+  const { data: { user } } = await supabase.auth.getUser();
   
-  if (userError || !user) {
-    redirect('/sign-in');
+  if (!user) {
+    return <div>Please sign in to access inventory</div>;
   }
 
   // Check if user is the venue owner
-  const { data: venue, error: venueError } = await supabase
+  const { data: venue } = await supabase
     .from('venues')
     .select('venue_id, venue_name, owner_user_id')
     .eq('venue_id', venueId)
@@ -22,7 +21,7 @@ export default async function InventoryPage({ params }: { params: Promise<{ venu
     .maybeSingle();
 
   // Check if user has a staff role for this venue
-  const { data: userRole, error: roleError } = await supabase
+  const { data: userRole } = await supabase
     .from('user_venue_roles')
     .select('role')
     .eq('user_id', user.id)
@@ -32,9 +31,9 @@ export default async function InventoryPage({ params }: { params: Promise<{ venu
   const isOwner = !!venue;
   const isStaff = !!userRole;
 
-  // If user is not owner or staff, redirect
+  // If user is not owner or staff, show error
   if (!isOwner && !isStaff) {
-    redirect('/complete-profile');
+    return <div>You don&apos;t have access to this venue</div>;
   }
 
   // Get venue details for staff
@@ -47,7 +46,7 @@ export default async function InventoryPage({ params }: { params: Promise<{ venu
       .single();
     
     if (!staffVenue) {
-      redirect('/complete-profile');
+      return <div>Venue not found</div>;
     }
     finalVenue = staffVenue;
   }

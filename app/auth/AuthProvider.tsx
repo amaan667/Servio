@@ -3,7 +3,6 @@
 import { createContext, useContext, useEffect, useMemo, useState } from 'react';
 import type { Session, User } from '@supabase/supabase-js';
 import { supabaseBrowser } from '@/lib/supabase';
-import { authLogger } from '@/lib/logger';
 
 type AuthValue = {
   session: Session | null;
@@ -32,22 +31,13 @@ export default function AuthProvider({
 }) {
   const [session, setSession] = useState<Session | null>(initialSession ?? null);
   const [user, setUser] = useState<User | null>(initialSession?.user ?? null);
-  // Start with loading false if we have an initial session, true otherwise
   const [loading, setLoading] = useState(!initialSession);
 
   useEffect(() => {
-    console.debug('[AUTH DEBUG] AuthProvider useEffect starting', {
-      timestamp: new Date().toISOString(),
-      hasInitialSession: !!initialSession,
-      initialSessionUserId: initialSession?.user?.id,
-    });
-
     let supabase;
     try {
       supabase = supabaseBrowser();
-
-    } catch (error) {
-
+    } catch {
       setSession(null);
       setUser(null);
       setLoading(false);
@@ -57,20 +47,16 @@ export default function AuthProvider({
     // Get initial session quickly - only if we don't have one already
     const getInitialSession = async () => {
       if (initialSession) {
-        // We already have a session, no need to fetch
-
         setLoading(false);
         return;
       }
 
       try {
         const { data: { session: currentSession } } = await supabase.auth.getSession();
-
         setSession(currentSession);
         setUser(currentSession?.user || null);
         setLoading(false);
-      } catch (error) {
-
+      } catch {
         setSession(null);
         setUser(null);
         setLoading(false);
@@ -84,13 +70,6 @@ export default function AuthProvider({
     let subscription: unknown;
     try {
       const { data } = supabase.auth.onAuthStateChange(async (event: unknown, newSession: unknown) => {
-        console.debug('[AUTH DEBUG] Auth state changed', {
-          event,
-          hasSession: !!newSession,
-          userId: newSession?.user?.id,
-          timestamp: new Date().toISOString(),
-        });
-
         switch (event) {
           case 'SIGNED_IN':
             setSession(newSession);
@@ -119,9 +98,7 @@ export default function AuthProvider({
         }
       });
       subscription = data?.subscription;
-
-    } catch (error) {
-
+    } catch {
       setLoading(false);
     }
     
@@ -130,23 +107,17 @@ export default function AuthProvider({
         subscription.unsubscribe();
       }
     };
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []); // Empty deps is intentional - we only want to run once on mount
+  }, [initialSession]);
 
   const signOut = async () => {
     try {
       const supabase = supabaseBrowser();
-      const { error } = await supabase.auth.signOut();
-      
-      if (error) {
-
-      }
+      await supabase.auth.signOut();
       
       // Clear local state immediately
       setSession(null);
       setUser(null);
-    } catch (error) {
-
+    } catch {
       // Clear local state even if there's an error
       setSession(null);
       setUser(null);

@@ -1,16 +1,15 @@
 import VenueSettingsClient from './VenueSettingsClient';
 import RoleBasedNavigation from '@/components/RoleBasedNavigation';
-import { createClient } from '@/lib/supabase';
-import { redirect } from 'next/navigation';
+import { createServerSupabase } from '@/lib/supabase';
 
 export default async function VenueSettings({ params }: { params: Promise<{ venueId: string }> }) {
   const { venueId } = await params;
-  const supabase = await createClient();
+  const supabase = await createServerSupabase();
 
-  const { data: { user }, error: userError } = await supabase.auth.getUser();
+  const { data: { user } } = await supabase.auth.getUser();
   
-  if (userError || !user) {
-    redirect('/sign-in');
+  if (!user) {
+    return <div>Please sign in to access settings</div>;
   }
 
   // Run all queries in parallel for faster loading
@@ -43,7 +42,7 @@ export default async function VenueSettings({ params }: { params: Promise<{ venu
 
   // Only owners and managers can access settings
   if (!isOwner && !isManager) {
-    redirect('/complete-profile');
+    return <div>You don&apos;t have access to this venue</div>;
   }
 
   // Get venue details for manager
@@ -56,7 +55,7 @@ export default async function VenueSettings({ params }: { params: Promise<{ venu
       .single();
     
     if (!managerVenue) {
-      redirect('/complete-profile');
+      return <div>Venue not found</div>;
     }
     finalVenue = managerVenue;
   }
@@ -100,7 +99,7 @@ export default async function VenueSettings({ params }: { params: Promise<{ venu
         ) : (
           <div className="bg-yellow-50 border border-yellow-200 rounded-lg p-6">
             <h3 className="text-lg font-semibold text-yellow-800 mb-2">Access Restricted</h3>
-            <p className="text-yellow-700">You don't have permission to access settings. This feature is available for Owner and Manager roles only.</p>
+            <p className="text-yellow-700">You don&apos;t have permission to access settings. This feature is available for Owner and Manager roles only.</p>
           </div>
         )}
       </div>

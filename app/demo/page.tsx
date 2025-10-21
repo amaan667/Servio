@@ -4,12 +4,10 @@
 import React, { useState, useEffect } from 'react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
-import { Badge } from '@/components/ui/badge';
-import { User, Briefcase, ArrowRight, RefreshCw } from 'lucide-react';
+import { User, Briefcase, ArrowRight } from 'lucide-react';
 import Link from 'next/link';
 import dynamic from 'next/dynamic';
 import { demoMenuItems } from '@/data/demoMenuItems';
-import { createClient } from '@/lib/supabase';
 
 // Dynamically import heavy components to avoid hydration issues
 const DemoAnalytics = dynamic(() => import('@/components/demo-analytics'), {
@@ -36,8 +34,8 @@ class DemoErrorBoundary extends React.Component<
     return { hasError: true };
   }
 
-  componentDidCatch(error: Error, errorInfo: React.ErrorInfo) {
-
+  componentDidCatch() {
+    // Silent error handling
   }
 
   render() {
@@ -55,7 +53,6 @@ export default function DemoPage() {
   const [mounted, setMounted] = useState(false);
   const [isAuthenticated, setIsAuthenticated] = useState(false);
   const [hasError, setHasError] = useState(false);
-  const [primaryVenueId, setPrimaryVenueId] = useState<string | null>(null);
 
   // ALL HOOKS MUST BE CALLED BEFORE ANY CONDITIONAL RETURNS
   
@@ -70,30 +67,9 @@ export default function DemoPage() {
                               document.cookie.includes('supabase');
 
         setIsAuthenticated(hasAuthCookies);
-        
-        // If authenticated, fetch primary venue
-        if (hasAuthCookies) {
-          const supabase = createClient();
-          const { data: { user } } = await supabase.auth.getUser();
-          
-          if (user) {
-            const { data: venues } = await supabase
-              .from('venues')
-              .select('venue_id')
-              .eq('owner_user_id', user.id)
-              .order('created_at', { ascending: true })
-              .limit(1);
-            
-            if (venues && venues.length > 0) {
-              setPrimaryVenueId(venues[0].venue_id);
-            }
-          }
-        }
-      } catch (error) {
-
+      } catch {
         // If auth check fails, default to unauthenticated
         setIsAuthenticated(false);
-        setPrimaryVenueId(null);
       }
     };
     
@@ -108,15 +84,12 @@ export default function DemoPage() {
 
   // Global error handler
   useEffect(() => {
-
-    const handleError = (error: ErrorEvent) => {
-
+    const handleError = () => {
       setHasError(true);
     };
 
     window.addEventListener('error', handleError);
     return () => {
-
       window.removeEventListener('error', handleError);
     };
   }, []);
@@ -139,7 +112,7 @@ export default function DemoPage() {
           <CardHeader>
             <CardTitle className="text-center">Demo Temporarily Unavailable</CardTitle>
             <CardDescription className="text-center">
-              We're experiencing some technical difficulties with the demo.
+              We&apos;re experiencing some technical difficulties with the demo.
             </CardDescription>
           </CardHeader>
           <CardContent className="space-y-4">
@@ -236,8 +209,8 @@ function CustomerDemoView() {
         </CardHeader>
         <CardContent className="space-y-4">
           <p className="text-gray-700">
-            In the real experience, you'd scan a QR code at your table. For this demo, 
-            we'll take you straight to the menu.
+            In the real experience, you&apos;d scan a QR code at your table. For this demo, 
+            we&apos;ll take you straight to the menu.
           </p>
           <div className="flex flex-col sm:flex-row gap-4">
             <Link href="/order?venue=demo-cafe&table=1" className="flex-1">
@@ -249,7 +222,7 @@ function CustomerDemoView() {
           </div>
           
           <div className="bg-blue-50 border border-blue-200 rounded-lg p-4 mt-4">
-            <h4 className="font-semibold text-blue-900 mb-2">What you'll experience:</h4>
+            <h4 className="font-semibold text-blue-900 mb-2">What you&apos;ll experience:</h4>
             <ul className="space-y-2 text-sm text-blue-800">
               <li className="flex items-start">
                 <span className="mr-2">✅</span>
@@ -276,7 +249,7 @@ function CustomerDemoView() {
       <Card>
         <CardHeader>
           <CardTitle>Sample Menu Items</CardTitle>
-          <CardDescription>Just a taste of what you'll see</CardDescription>
+          <CardDescription>Just a taste of what you&apos;ll see</CardDescription>
         </CardHeader>
         <CardContent>
           <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
@@ -310,13 +283,13 @@ function OwnerDemoView({ isAuthenticated }: { isAuthenticated: boolean }) {
         <CardHeader>
           <CardTitle className="text-3xl">Owner Dashboard Preview</CardTitle>
           <CardDescription className="text-lg">
-            See what you'd have access to as a Servio venue owner
+            See what you&apos;d have access to as a Servio venue owner
           </CardDescription>
         </CardHeader>
         <CardContent className="space-y-4">
           <p className="text-gray-700">
             This demo showcases the powerful tools available to restaurant and café owners 
-            using Servio's platform.
+            using Servio&apos;s platform.
           </p>
           
           <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mt-6">
@@ -432,7 +405,7 @@ function OwnerDemoView({ isAuthenticated }: { isAuthenticated: boolean }) {
           <div className="flex flex-col sm:flex-row gap-4 justify-center">
             {isAuthenticated ? (
               <>
-                <Link href="/dashboard">
+                <Link href="/complete-profile">
                   <Button className="bg-white text-purple-600 hover:bg-gray-100">
                     Go to Dashboard
                   </Button>

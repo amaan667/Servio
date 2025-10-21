@@ -1,20 +1,19 @@
 import InvitationBasedStaffManagement from '@/components/staff/InvitationBasedStaffManagement';
 import RoleBasedNavigation from '@/components/RoleBasedNavigation';
-import { createClient } from '@/lib/supabase';
-import { redirect } from 'next/navigation';
+import { createServerSupabase } from '@/lib/supabase';
 
 export default async function StaffPage({ params }: { params: Promise<{ venueId: string }> }) {
   const { venueId } = await params;
-  const supabase = await createClient();
+  const supabase = await createServerSupabase();
 
-  const { data: { user }, error: userError } = await supabase.auth.getUser();
+  const { data: { user } } = await supabase.auth.getUser();
   
-  if (userError || !user) {
-    redirect('/sign-in');
+  if (!user) {
+    return <div>Please sign in to access staff management</div>;
   }
 
   // Check if user has access to this venue (owner or has role)
-  const { data: userRole, error: roleError } = await supabase
+  const { data: userRole } = await supabase
     .from('user_venue_roles')
     .select('role')
     .eq('user_id', user.id)
@@ -22,7 +21,7 @@ export default async function StaffPage({ params }: { params: Promise<{ venueId:
     .single();
 
   // Also check if user is the venue owner (for backward compatibility)
-  const { data: venue, error: venueError } = await supabase
+  const { data: venue } = await supabase
     .from('venues')
     .select('venue_id, venue_name, owner_user_id')
     .eq('venue_id', venueId)
@@ -31,8 +30,8 @@ export default async function StaffPage({ params }: { params: Promise<{ venueId:
   const isOwner = venue?.owner_user_id === user.id;
   const isStaff = !!userRole;
 
-  if (venueError || !venue || (!isOwner && !isStaff)) {
-    redirect('/complete-profile');
+  if (!venue || (!isOwner && !isStaff)) {
+    return <div>You don&apos;t have access to this venue</div>;
   }
   
   const finalUserRole = userRole?.role || (isOwner ? 'owner' : 'staff');
@@ -55,7 +54,7 @@ export default async function StaffPage({ params }: { params: Promise<{ venueId:
         ) : (
           <div className="bg-yellow-50 border border-yellow-200 rounded-lg p-6">
             <h3 className="text-lg font-semibold text-yellow-800 mb-2">Access Restricted</h3>
-            <p className="text-yellow-700">You don't have permission to manage staff. This feature is available for Owner and Manager roles only.</p>
+            <p className="text-yellow-700">You don&apos;t have permission to manage staff. This feature is available for Owner and Manager roles only.</p>
           </div>
         )}
       </div>

@@ -1,7 +1,7 @@
 'use client';
 
 import { useEffect, Suspense, useState } from 'react';
-import { useRouter, useSearchParams } from 'next/navigation';
+import { useRouter } from 'next/navigation';
 import { supabaseBrowser } from '@/lib/supabase';
 import { getAuthRedirectUrl } from '@/lib/auth';
 import { useAuth } from '@/app/auth/AuthProvider';
@@ -9,24 +9,11 @@ import SignInForm from './signin-form';
 
 function SignInPageContent() {
   const router = useRouter();
-  const sp = useSearchParams();
   const { session, loading } = useAuth();
   const [isSigningIn, setIsSigningIn] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
-  // Detect if we're on mobile
-  const isMobile = () => {
-    if (typeof window === 'undefined') return false;
-    return /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);
-  };
-
   useEffect(() => {
-    console.log('[SIGN-IN] Page loaded, checking session:', {
-      hasSession: !!session,
-      loading,
-      timestamp: new Date().toISOString()
-    });
-
     // Check for error and message parameters in URL
     const urlParams = new URLSearchParams(window.location.search);
     const errorParam = urlParams.get('error');
@@ -48,11 +35,27 @@ function SignInPageContent() {
       }
     }
 
-    // If user is already signed in, redirect to dashboard or next URL
+    // If user is already signed in, redirect to their first venue or next URL
     if (session && !loading) {
-
-      const redirectTo = nextParam || '/dashboard';
-      router.push(redirectTo);
+      const fetchVenueAndRedirect = async () => {
+        const supabase = supabaseBrowser();
+        const { data: venues } = await supabase
+          .from('venues')
+          .select('venue_id')
+          .eq('owner_user_id', session.user.id)
+          .order('created_at', { ascending: false })
+          .limit(1);
+        
+        if (nextParam) {
+          router.push(nextParam);
+        } else if (venues && venues.length > 0) {
+          router.push(`/dashboard/${venues[0].venue_id}`);
+        } else {
+          router.push('/complete-profile');
+        }
+      };
+      
+      fetchVenueAndRedirect();
     }
   }, [session, loading, router]);
 
@@ -104,8 +107,7 @@ function SignInPageContent() {
         // This ensures proper OAuth flow on all devices
         window.location.href = data.url;
       }
-    } catch (error) {
-
+    } catch {
       alert('Sign in failed. Please try again.');
       setIsSigningIn(false);
     }
