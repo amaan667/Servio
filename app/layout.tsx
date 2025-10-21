@@ -107,7 +107,13 @@ export default async function RootLayout({
   let session = null;
   try {
     const supabase = await createServerSupabase();
-    const { data: { session: serverSession } } = await supabase.auth.getSession();
+    const { data: { session: serverSession }, error } = await supabase.auth.getSession();
+    
+    // Ignore refresh_token_not_found errors - just means no session exists
+    if (error && error.message !== 'refresh_token_not_found' && !error.message?.includes('Refresh Token')) {
+      console.error('[LAYOUT] Unexpected session error:', error);
+    }
+    
     session = serverSession;
   } catch (error) {
     // Silent error handling - session will remain null
