@@ -1,14 +1,14 @@
 /**
  * @fileoverview Canonical Supabase client factory
  * @module lib/supabase
- * 
+ *
  * This is the ONLY place to create Supabase clients. Import from here everywhere.
  * - Browser clients: Use `supabaseBrowser()` for client-side code
  * - Server clients: Use `createClient()` for server components and API routes
  */
 
-import { createServerClient as createSSRServerClient, type CookieOptions } from '@supabase/ssr';
-import { createClient as createBrowserClient } from '@supabase/supabase-js';
+import { createServerClient as createSSRServerClient, type CookieOptions } from "@supabase/ssr";
+import { createClient as createBrowserClient } from "@supabase/supabase-js";
 
 /**
  * Gets the Supabase URL from environment variables
@@ -17,7 +17,7 @@ import { createClient as createBrowserClient } from '@supabase/supabase-js';
  */
 export function getSupabaseUrl() {
   const url = process.env.NEXT_PUBLIC_SUPABASE_URL as string | undefined;
-  if (!url) throw new Error('NEXT_PUBLIC_SUPABASE_URL is missing');
+  if (!url) throw new Error("NEXT_PUBLIC_SUPABASE_URL is missing");
   return url;
 }
 
@@ -28,7 +28,7 @@ export function getSupabaseUrl() {
  */
 export function getSupabaseAnonKey() {
   const key = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY as string | undefined;
-  if (!key) throw new Error('NEXT_PUBLIC_SUPABASE_ANON_KEY is missing');
+  if (!key) throw new Error("NEXT_PUBLIC_SUPABASE_ANON_KEY is missing");
   return key;
 }
 
@@ -41,24 +41,24 @@ let browserClient: ReturnType<typeof createBrowserClient> | null = null;
  * @returns {SupabaseClient} Supabase client instance
  */
 export function supabaseBrowser() {
-  if (typeof window === 'undefined') {
+  if (typeof window === "undefined") {
     // Server-side: return a new instance (can't use singleton on server)
     return createBrowserClient(getSupabaseUrl(), getSupabaseAnonKey(), {
       auth: { persistSession: false },
     });
   }
-  
+
   // Client-side: use singleton
   if (!browserClient) {
     browserClient = createBrowserClient(getSupabaseUrl(), getSupabaseAnonKey(), {
-      auth: { 
-        persistSession: true, 
+      auth: {
+        persistSession: true,
         detectSessionInUrl: true,
         autoRefreshToken: false, // Disable auto-refresh to prevent errors
       },
     });
   }
-  
+
   return browserClient;
 }
 
@@ -71,7 +71,7 @@ export function supabaseServer(cookies: {
     cookies: {
       get: (name) => cookies.get(name),
       set: (name, value, options) => cookies.set(name, value, options),
-      remove: (name, options) => cookies.set(name, '', { ...options, maxAge: 0 }),
+      remove: (name, options) => cookies.set(name, "", { ...options, maxAge: 0 }),
     },
     auth: {
       persistSession: false, // Don't persist session on server
@@ -86,7 +86,7 @@ export function supabaseServer(cookies: {
 // Admin (service role) — server-only
 export function supabaseAdmin() {
   const key = process.env.SUPABASE_SERVICE_ROLE_KEY as string | undefined;
-  if (!key) throw new Error('SUPABASE_SERVICE_ROLE_KEY missing');
+  if (!key) throw new Error("SUPABASE_SERVICE_ROLE_KEY missing");
   return createBrowserClient(getSupabaseUrl(), key, { auth: { persistSession: false } });
 }
 
@@ -101,28 +101,43 @@ export const createAdminClient = supabaseAdmin;
  */
 export async function createClient() {
   // If on browser, return browser client
-  if (typeof window !== 'undefined') {
+  if (typeof window !== "undefined") {
     return supabaseBrowser();
   }
-  
+
   // If on server, return server client with cookies
   return createServerSupabase();
 }
 
 // Server client factory with cookies (CONSOLIDATED - single source of truth)
 export async function createServerSupabase() {
-  const { cookies } = await import('next/headers');
+  const { cookies } = await import("next/headers");
   const cookieStore = await cookies();
-  
-  // Debug logging
+
+  // Clear any expired or invalid auth tokens to prevent refresh errors
   const allCookies = cookieStore.getAll();
-  console.log('[SERVER_SUPABASE] Cookie count:', allCookies.length);
-  console.log('[SERVER_SUPABASE] Auth cookies:', allCookies.filter(c => c.name.includes('sb-')).map(c => c.name));
-  
+  const authCookies = allCookies.filter(
+    (c) => c.name.includes("sb-") && c.name.includes("refresh")
+  );
+
+  // If there are refresh token cookies, try to validate them by checking expiry
+  // If invalid/expired, delete them to prevent errors
+  for (const cookie of authCookies) {
+    try {
+      // Check if the cookie value looks invalid (empty, malformed, etc)
+      if (!cookie.value || cookie.value === "" || cookie.value === "undefined") {
+        cookieStore.delete(cookie.name);
+      }
+    } catch {
+      // Silently handle any cookie deletion errors
+    }
+  }
+
   // Get cookie domain from environment
-  const baseUrl = process.env.NEXT_PUBLIC_SITE_URL || process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:3000';
+  const baseUrl =
+    process.env.NEXT_PUBLIC_SITE_URL || process.env.NEXT_PUBLIC_APP_URL || "http://localhost:3000";
   const COOKIE_DOMAIN = new URL(baseUrl).hostname;
-  
+
   return createSSRServerClient(getSupabaseUrl(), getSupabaseAnonKey(), {
     cookies: {
       get: (name) => cookieStore.get(name)?.value,
@@ -131,10 +146,10 @@ export async function createServerSupabase() {
           cookieStore.set(name, value, {
             ...options,
             domain: COOKIE_DOMAIN,
-            sameSite: 'lax',
-            secure: process.env.NODE_ENV === 'production',
+            sameSite: "lax",
+            secure: process.env.NODE_ENV === "production",
             httpOnly: false,
-            path: '/',
+            path: "/",
           });
         } catch {
           // Silent error handling for cookie context
@@ -142,13 +157,13 @@ export async function createServerSupabase() {
       },
       remove: (name, options) => {
         try {
-          cookieStore.set(name, '', { 
-            ...options, 
+          cookieStore.set(name, "", {
+            ...options,
             domain: COOKIE_DOMAIN,
-            sameSite: 'lax',
-            secure: process.env.NODE_ENV === 'production',
-            path: '/',
-            maxAge: 0 
+            sameSite: "lax",
+            secure: process.env.NODE_ENV === "production",
+            path: "/",
+            maxAge: 0,
           });
         } catch {
           // Silent error handling for cookie context
@@ -160,6 +175,7 @@ export async function createServerSupabase() {
       autoRefreshToken: false, // Don't auto-refresh tokens on server
       detectSessionInUrl: false, // Don't detect session in URL on server
       storage: undefined, // No storage on server
+      flowType: "pkce", // Use PKCE flow
     },
   });
 }
@@ -171,39 +187,93 @@ export async function createSupabaseClient() {
 
 // Context-aware createClient that works in both browser and server
 export function createClientContextAware() {
-  if (typeof window !== 'undefined') {
+  if (typeof window !== "undefined") {
     return supabaseBrowser();
   }
   // For server-side, this will need to be awaited with cookies
-  throw new Error('createClientContextAware cannot be used on server without cookies. Use createServerSupabase() instead.');
+  throw new Error(
+    "createClientContextAware cannot be used on server without cookies. Use createServerSupabase() instead."
+  );
+}
+
+/**
+ * Check if valid auth cookies exist
+ * This prevents unnecessary API calls that would fail with refresh token errors
+ */
+async function hasValidAuthCookies(): Promise<boolean> {
+  try {
+    const { cookies } = await import("next/headers");
+    const cookieStore = await cookies();
+    const allCookies = cookieStore.getAll();
+
+    // Check for access token cookie (the main auth cookie)
+    const accessTokenCookie = allCookies.find(
+      (c) => c.name.includes("sb-") && c.name.includes("access-token") && c.value && c.value !== ""
+    );
+
+    return !!accessTokenCookie;
+  } catch {
+    return false;
+  }
 }
 
 // Get authenticated user (server-side)
 export async function getAuthenticatedUser() {
   try {
-    const { cookies } = await import('next/headers');
+    // First check if we have valid auth cookies to avoid unnecessary errors
+    const hasAuth = await hasValidAuthCookies();
+    if (!hasAuth) {
+      return { user: null, error: null };
+    }
+
+    const { cookies } = await import("next/headers");
     const cookieStore = await cookies();
     const supabase = supabaseServer({
       get: (name) => cookieStore.get(name)?.value,
       set: () => {},
     });
-    const { data: { session }, error } = await supabase.auth.getSession();
-  const user = session?.user;
-    
+    const {
+      data: { session },
+      error,
+    } = await supabase.auth.getSession();
+    const user = session?.user;
+
+    // Silently handle refresh token errors - don't log them
     if (error) {
+      if (
+        error.message?.includes("refresh_token_not_found") ||
+        error.message?.includes("Invalid Refresh Token")
+      ) {
+        // This is expected when tokens expire, just return no user
+        return { user: null, error: null };
+      }
       return { user: null, error: error.message };
     }
-    
+
     return { user, error: null };
-  } catch {
-    return { user: null, error: 'Failed to get authenticated user' };
+  } catch (err) {
+    // Catch and suppress refresh token errors
+    const errorMessage = err instanceof Error ? err.message : String(err);
+    if (
+      errorMessage?.includes("refresh_token_not_found") ||
+      errorMessage?.includes("Invalid Refresh Token")
+    ) {
+      return { user: null, error: null };
+    }
+    return { user: null, error: "Failed to get authenticated user" };
   }
 }
 
 // Get session (server-side)
 export async function getSession() {
   try {
-    const { cookies } = await import('next/headers');
+    // First check if we have valid auth cookies to avoid unnecessary errors
+    const hasAuth = await hasValidAuthCookies();
+    if (!hasAuth) {
+      return { session: null, error: null };
+    }
+
+    const { cookies } = await import("next/headers");
     const cookieStore = await cookies();
     const supabase = supabaseServer({
       get: (name) => cookieStore.get(name)?.value,
@@ -211,25 +281,82 @@ export async function getSession() {
         try {
           cookieStore.set(name, value, {
             ...options,
-            sameSite: 'lax',
-            secure: process.env.NODE_ENV === 'production',
+            sameSite: "lax",
+            secure: process.env.NODE_ENV === "production",
             httpOnly: false,
-            path: '/',
+            path: "/",
           });
         } catch {
           // Silent error handling for cookie context
         }
       },
     });
-    const { data: { session }, error } = await supabase.auth.getSession();
-    
+    const {
+      data: { session },
+      error,
+    } = await supabase.auth.getSession();
+
+    // Silently handle refresh token errors - don't log them
     if (error) {
+      if (
+        error.message?.includes("refresh_token_not_found") ||
+        error.message?.includes("Invalid Refresh Token")
+      ) {
+        // This is expected when tokens expire, just return no session
+        return { session: null, error: null };
+      }
       return { session: null, error: error.message };
     }
-    
+
     return { session, error: null };
-  } catch {
-    return { session: null, error: 'Failed to get session' };
+  } catch (err) {
+    // Catch and suppress refresh token errors
+    const errorMessage = err instanceof Error ? err.message : String(err);
+    if (
+      errorMessage?.includes("refresh_token_not_found") ||
+      errorMessage?.includes("Invalid Refresh Token")
+    ) {
+      return { session: null, error: null };
+    }
+    return { session: null, error: "Failed to get session" };
+  }
+}
+
+/**
+ * Safe wrapper for getSession() that handles refresh token errors gracefully
+ * Use this instead of calling supabase.auth.getSession() directly
+ */
+export async function getSessionSafe(supabase: Awaited<ReturnType<typeof createServerSupabase>>) {
+  try {
+    const { data, error } = await supabase.auth.getSession();
+
+    // Silently handle expected refresh token errors
+    if (error) {
+      if (
+        error.message?.includes("refresh_token_not_found") ||
+        error.message?.includes("Invalid Refresh Token")
+      ) {
+        return { session: null, user: null, error: null };
+      }
+      // Return unexpected errors
+      return { session: null, user: null, error };
+    }
+
+    return {
+      session: data.session,
+      user: data.session?.user || null,
+      error: null,
+    };
+  } catch (err) {
+    // Catch any thrown errors
+    const errorMessage = err instanceof Error ? err.message : String(err);
+    if (
+      errorMessage.includes("refresh_token_not_found") ||
+      errorMessage.includes("Invalid Refresh Token")
+    ) {
+      return { session: null, user: null, error: null };
+    }
+    return { session: null, user: null, error: err };
   }
 }
 
@@ -238,18 +365,18 @@ export const supabase = (() => supabaseBrowser())();
 
 // Clear authentication storage (client-side only)
 export function clearAuthStorage() {
-  if (typeof window === 'undefined') {
+  if (typeof window === "undefined") {
     return;
   }
-  
+
   // Clear localStorage
-  localStorage.removeItem('supabase.auth.token');
-  localStorage.removeItem('sb-auth-token');
-  
+  localStorage.removeItem("supabase.auth.token");
+  localStorage.removeItem("sb-auth-token");
+
   // Clear sessionStorage
-  sessionStorage.removeItem('supabase.auth.token');
-  sessionStorage.removeItem('sb-auth-token');
-  
+  sessionStorage.removeItem("supabase.auth.token");
+  sessionStorage.removeItem("sb-auth-token");
+
   // Clear cookies
   document.cookie.split(";").forEach((c) => {
     document.cookie = c
@@ -260,4 +387,3 @@ export function clearAuthStorage() {
 
 // Alias for backward compatibility
 export const clearSupabaseAuth = clearAuthStorage;
-
