@@ -1,7 +1,7 @@
 import { errorToContext } from '@/lib/utils/error-to-context';
 
 import { useState, useEffect, useCallback } from 'react';
-import { createClient } from '@/lib/supabase';
+import { supabaseBrowser as createClient } from '@/lib/supabase';
 import { logger } from '@/lib/logger';
 
 export interface StaffCounts {

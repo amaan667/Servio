@@ -1,5 +1,5 @@
 import { useEffect, useRef } from 'react'
-import { createClient } from '@/lib/supabase'
+import { supabaseBrowser as createClient } from '@/lib/supabase'
 
 export function useTableRealtime(venueId: string, onTableChange?: () => void) {
   const supabase = createClient()

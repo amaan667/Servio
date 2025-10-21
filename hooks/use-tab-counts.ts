@@ -1,6 +1,6 @@
 import { errorToContext } from '@/lib/utils/error-to-context';
 
-import { createClient } from '@/lib/supabase'
+import { supabaseBrowser as createClient } from '@/lib/supabase'
 import { useState, useEffect, useCallback, useMemo } from 'react'
 import { logger } from '@/lib/logger';
 

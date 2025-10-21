@@ -22,7 +22,7 @@ import {
   DialogDescription,
   DialogFooter,
 } from '@/components/ui/dialog';
-import { createClient } from '@/lib/supabase';
+import { supabaseBrowser as createClient } from '@/lib/supabase';
 
 interface WaitingParty {
   id: string;

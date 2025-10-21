@@ -3,7 +3,7 @@
 import { useState } from "react";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { AlertTriangle } from "lucide-react";
-import { createClient } from "@/lib/supabase";
+import { supabaseBrowser as createClient } from "@/lib/supabase";
 import { RecipeDialog } from "@/components/inventory/RecipeDialog";
 import { MenuManagementProps, NewItem, MenuItem } from './types';
 

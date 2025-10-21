@@ -1,5 +1,5 @@
 import { useEffect, useRef } from 'react'
-import { createClient } from '@/lib/supabase'
+import { supabaseBrowser as createClient } from '@/lib/supabase'
 
 export function useCountsRealtime(venueId: string, tz: string, onOrderChange?: () => void) {
   const supabase = createClient()

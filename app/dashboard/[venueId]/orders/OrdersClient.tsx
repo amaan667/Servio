@@ -5,7 +5,7 @@ import { Card, CardContent, CardHeader } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Clock, ArrowLeft, User } from "lucide-react";
-import { createClient } from "@/lib/supabase";
+import { supabaseBrowser as createClient } from "@/lib/supabase";
 import { liveOrdersWindow } from "@/lib/dates";
 import { todayWindowForTZ } from "@/lib/time";
 import { useTabCounts } from "@/hooks/use-tab-counts";

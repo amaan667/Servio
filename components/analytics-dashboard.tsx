@@ -9,7 +9,7 @@ import {
   CardDescription,
 } from "@/components/ui/card";
 import { TrendingUp, ShoppingBag, Users, RefreshCw, Clock, Star, TrendingDown, CheckCircle } from "lucide-react";
-import { createClient } from "@/lib/supabase";
+import { supabaseBrowser as createClient } from "@/lib/supabase";
 import { ChartContainer } from "@/components/ui/chart";
 import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, BarChart, Bar, PieChart, Pie, Cell } from "recharts";
 

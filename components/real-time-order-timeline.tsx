@@ -5,7 +5,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Clock, CheckCircle, XCircle, RefreshCw, User, Hash, Loader2 } from "lucide-react";
-import { createClient } from "@/lib/supabase";
+import { supabaseBrowser as createClient } from "@/lib/supabase";
 
 interface OrderItem {
   menu_item_id: string;

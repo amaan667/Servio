@@ -1,7 +1,7 @@
 'use client';
 
 import { useEffect, useState } from 'react';
-import { createClient } from '@/lib/supabase';
+import { supabaseBrowser as createClient } from '@/lib/supabase';
 import { MenuStyle, getMenuStyleClasses } from '@/lib/menu-style-extractor';
 
 interface MenuItem {

@@ -1,5 +1,5 @@
 import { useState, useEffect, useCallback } from 'react';
-import { createClient } from '@/lib/supabase';
+import { supabaseBrowser as createClient } from '@/lib/supabase';
 import { withSupabaseRetry } from '@/lib/retry';
 import { todayWindowForTZ } from '@/lib/time';
 

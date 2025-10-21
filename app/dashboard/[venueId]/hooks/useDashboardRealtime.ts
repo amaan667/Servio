@@ -1,5 +1,5 @@
 import { useEffect } from 'react';
-import { createClient } from '@/lib/supabase';
+import { supabaseBrowser } from '@/lib/supabase';
 
 interface UseDashboardRealtimeProps {
   venueId: string;
@@ -23,7 +23,7 @@ export function useDashboardRealtime({
       return;
     }
 
-    const supabase = createClient();
+    const supabase = supabaseBrowser();
     
     const channel = supabase
       .channel('dashboard-realtime')

@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { createClient } from '@/lib/supabase';
+import { supabaseBrowser as createClient } from '@/lib/supabase';
 import { MenuItem, NewItem } from '../types';
 
 export function useMenuItemActions(venueId: string, onRefresh: () => void) {

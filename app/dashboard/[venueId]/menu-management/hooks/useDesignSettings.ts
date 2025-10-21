@@ -1,5 +1,5 @@
 import { useState, useEffect } from "react";
-import { createClient } from "@/lib/supabase";
+import { supabaseBrowser as createClient } from "@/lib/supabase";
 import { useToast } from "@/hooks/use-toast";
 import { DesignSettings } from "../types";
 

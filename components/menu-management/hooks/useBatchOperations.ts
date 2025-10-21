@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { createClient } from '@/lib/supabase';
+import { supabaseBrowser as createClient } from '@/lib/supabase';
 import { MenuItem, BatchAction } from '../types';
 
 export function useBatchOperations(menuItems: MenuItem[], onRefresh: () => void) {

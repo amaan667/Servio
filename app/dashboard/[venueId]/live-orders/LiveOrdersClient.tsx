@@ -13,7 +13,7 @@
 
 import React, { useEffect, useState, useRef } from "react";
 import { useSearchParams } from "next/navigation";
-import { createClient } from "@/lib/supabase";
+import { supabaseBrowser as createClient } from "@/lib/supabase";
 import { useTabCounts } from "@/hooks/use-tab-counts";
 import { OrderCard } from '@/components/orders/OrderCard';
 import { mapOrderToCardData } from '@/lib/orders/mapOrderToCardData';

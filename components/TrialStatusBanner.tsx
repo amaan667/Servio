@@ -3,7 +3,7 @@
 import { useEffect, useState } from "react";
 import { Badge } from "@/components/ui/badge";
 import { Clock, Calendar } from "lucide-react";
-import { createClient } from "@/lib/supabase";
+import { supabaseBrowser as createClient } from "@/lib/supabase";
 import { useAuth } from "@/app/auth/AuthProvider";
 
 interface TrialStatus {

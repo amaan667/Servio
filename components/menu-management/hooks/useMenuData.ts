@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { createClient } from '@/lib/supabase';
+import { supabaseBrowser as createClient } from '@/lib/supabase';
 import { MenuItem } from '../types';
 
 export function useMenuData(venueId: string, refreshTrigger?: number) {
