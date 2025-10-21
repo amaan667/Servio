@@ -41,11 +41,20 @@ export async function POST(request: NextRequest) {
     }
 
     // Parse CSV (simple parser - assumes no commas in quoted fields)
-    const headers = lines[0].split(',').map(h => h.trim().toLowerCase().replace(/"/g, ''));
+    const headerLine = lines[0];
+    if (!headerLine) {
+      return NextResponse.json(
+        { error: 'CSV file has no headers' },
+        { status: 400 }
+      );
+    }
+    const headers = headerLine.split(',').map(h => h.trim().toLowerCase().replace(/"/g, ''));
     const rows: CSVRow[] = [];
 
     for (let i = 1; i < lines.length; i++) {
-      const values = lines[i].split(',').map(v => v.trim().replace(/"/g, ''));
+      const lineContent = lines[i];
+      if (!lineContent) continue;
+      const values = lineContent.split(',').map(v => v.trim().replace(/"/g, ''));
       const row: Record<string, string> = {};
 
       headers.forEach((header, index) => {
@@ -58,20 +67,29 @@ export async function POST(request: NextRequest) {
         } else if (header.includes('unit')) {
           row.unit = value;
         } else if (header.includes('cost')) {
-          row.cost_per_unit = parseFloat(value) || 0;
+          row.cost_per_unit = (parseFloat(value) || 0).toString();
         } else if (header.includes('on') && header.includes('hand')) {
-          row.on_hand = parseFloat(value) || 0;
+          row.on_hand = (parseFloat(value) || 0).toString();
         } else if (header.includes('par')) {
-          row.par_level = parseFloat(value) || 0;
+          row.par_level = (parseFloat(value) || 0).toString();
         } else if (header.includes('reorder')) {
-          row.reorder_level = parseFloat(value) || 0;
+          row.reorder_level = (parseFloat(value) || 0).toString();
         } else if (header.includes('supplier')) {
           row.supplier = value;
         }
       });
 
-      if (row.name && row.unit) {
-        rows.push(row);
+      if (row.name && row.unit && row.cost_per_unit && row.on_hand && row.par_level && row.reorder_level) {
+        rows.push({
+          name: row.name,
+          unit: row.unit,
+          cost_per_unit: row.cost_per_unit,
+          on_hand: row.on_hand,
+          par_level: row.par_level,
+          reorder_level: row.reorder_level,
+          sku: row.sku,
+          supplier: row.supplier
+        } as CSVRow);
       }
     }
 
@@ -83,7 +101,8 @@ export async function POST(request: NextRequest) {
     }
 
     // Get current user
-    const { data: currentUser } = await supabase.auth.getUser();
+    const { data: { session: currentSession } } = await supabase.auth.getSession();
+    const currentUser = currentSession?.user;
 
     const imported = [];
     const errors = [];
@@ -115,7 +134,8 @@ export async function POST(request: NextRequest) {
         }
 
         // If on_hand is provided and > 0, create a receive ledger entry
-        if (row.on_hand && row.on_hand > 0) {
+        const onHandValue = typeof row.on_hand === 'string' ? parseFloat(row.on_hand) : row.on_hand;
+        if (onHandValue && onHandValue > 0) {
           // Check if we need to set initial stock or adjust
           const { data: currentStock } = await supabase
             .from('v_stock_levels')
@@ -124,7 +144,7 @@ export async function POST(request: NextRequest) {
             .single();
 
           const currentOnHand = currentStock?.on_hand || 0;
-          const delta = row.on_hand - currentOnHand;
+          const delta = onHandValue - currentOnHand;
 
           if (delta !== 0) {
             await supabase.from('stock_ledgers').insert({
@@ -134,13 +154,13 @@ export async function POST(request: NextRequest) {
               reason: 'receive',
               ref_type: 'manual',
               note: 'Imported from CSV',
-              created_by: currentUser?.user?.id,
+              created_by: currentUser?.id,
             });
           }
         }
 
         imported.push(ingredient.name);
-      } catch (err: any) {
+      } catch (err: unknown) {
         errors.push({ row: row.name, error: err instanceof Error ? err.message : 'Unknown error' });
       }
     }

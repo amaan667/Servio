@@ -102,9 +102,11 @@ export async function GET(req: Request) {
 
     const supabase = await createServerSupabase();
     
-    // Verify user has access to this venue
-    const { data: { user }, error: userError } = await supabase.auth.getUser();
-    if (userError || !user) {
+    // Verify user has access to this venue (use getSession to avoid refresh token errors)
+    const { data: { session }, error: sessionError } = await supabase.auth.getSession();
+    const user = session?.user;
+    
+    if (sessionError || !user) {
       return NextResponse.json(
         { ok: false, error: 'Unauthorized' },
         { status: 401 }
@@ -201,7 +203,7 @@ export async function PATCH(req: Request) {
     const supabase = await createServerSupabase();
     
     // Verify user has access
-    const { data: { user }, error: userError } = await supabase.auth.getUser();
+    const { data: { user }, error: userError } = await supabase.auth.getSession();
     if (userError || !user) {
       return NextResponse.json(
         { ok: false, error: 'Unauthorized' },

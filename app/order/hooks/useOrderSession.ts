@@ -124,7 +124,7 @@ export function useOrderSession(orderParams: OrderParams) {
 
   useEffect(() => {
     const getUser = async () => {
-      const { data: { user } } = await supabase.auth.getUser();
+      const { data: { user } } = await supabase.auth.getSession();
       setSession(user ? { user } : null);
     };
     getUser();

@@ -26,7 +26,7 @@ export async function getUserSafe() {
   }
 
   const supabase = await createClient()
-  const { data, error } = await supabase.auth.getUser()
+  const { data, error } = await supabase.auth.getSession()
 
   if (error?.code === 'refresh_token_not_found') {
     // Try to refresh the session manually

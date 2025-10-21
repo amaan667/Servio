@@ -20,7 +20,7 @@ export default function CompleteProfilePage() {
 
     const checkUserAndVenues = async () => {
       try {
-        const { data: { user }, error: userErr } = await createClient().auth.getUser();
+        const { data: { user }, error: userErr } = await createClient().auth.getSession();
         
         if (userErr || !user) {
           router.replace('/');

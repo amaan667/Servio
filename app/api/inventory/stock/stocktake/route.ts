@@ -51,7 +51,7 @@ export async function POST(request: NextRequest) {
     const delta = actual_count - currentStock;
 
     // Get current user
-    const { data: currentUser } = await supabase.auth.getUser();
+    const { data: currentUser } = await supabase.auth.getSession();
 
     // Create stocktake ledger entry
     const { data, error } = await supabase

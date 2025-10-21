@@ -95,7 +95,7 @@ export async function POST(request: NextRequest) {
 
     // If initial stock provided, create a receive ledger entry
     if (initial_stock && initial_stock > 0) {
-      const { data: currentUser } = await supabase.auth.getUser();
+      const { data: currentUser } = await supabase.auth.getSession();
       
       const { error: ledgerError } = await supabase
         .from('stock_ledgers')

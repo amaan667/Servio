@@ -27,7 +27,7 @@ export default function OnboardingMenuPage() {
   const checkAuth = async () => {
     try {
       const supabase = createClient();
-      const { data: { user } } = await supabase.auth.getUser();
+      const { data: { user } } = await supabase.auth.getSession();
 
       if (!user) {
         setLoading(false);

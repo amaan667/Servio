@@ -30,8 +30,9 @@ export async function GET(
 
     // Try to get user from auth, but don't fail if not available
     const {
-      data: { user },
-    } = await supabase.auth.getUser();
+      data: { session },
+    } = await supabase.auth.getSession();
+    const user = session?.user;
 
     logger.debug("[AI CHAT MESSAGES] Auth check - user:", { authenticated: !!user });
 
@@ -68,7 +69,7 @@ export async function GET(
     return NextResponse.json({
       messages: transformedMessages,
     });
-  } catch (error: any) {
+  } catch (error: unknown) {
     const errorMessage = error instanceof Error ? error.message : 'Unknown error';
     logger.error("[AI CHAT] Messages error:", { error: errorMessage });
     return NextResponse.json(
@@ -90,8 +91,9 @@ export async function POST(
 
     // Try to get user from auth, but don't fail if not available
     const {
-      data: { user },
-    } = await supabase.auth.getUser();
+      data: { session: postMessagesSession },
+    } = await supabase.auth.getSession();
+    const user = postMessagesSession?.user;
 
     logger.debug("[AI CHAT MESSAGES POST] Auth check - user:", { authenticated: !!user });
 
@@ -178,13 +180,13 @@ export async function POST(
     return NextResponse.json({
       message: transformedMessage,
     });
-  } catch (error: any) {
+  } catch (error: unknown) {
     const errorMessage = error instanceof Error ? error.message : 'Unknown error';
     logger.error("[AI CHAT] Create message error:", { error: errorMessage });
     
     if (error instanceof Error && error.name === "ZodError") {
       return NextResponse.json(
-        { error: "Invalid request data", details: (error as any).errors },
+        { error: "Invalid request data", details: (error as { errors?: unknown }).errors },
         { status: 400 }
       );
     }

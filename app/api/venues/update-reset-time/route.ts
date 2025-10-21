@@ -25,7 +25,10 @@ export async function POST(request: NextRequest) {
     const supabase = await createServerSupabase();
 
     // Check if user is authenticated and owns the venue
-    const { data: { user }, error: authError } = await supabase.auth.getUser();
+    // Use getSession() to avoid refresh token errors
+    const { data: { session }, error: authError } = await supabase.auth.getSession();
+    const user = session?.user;
+    
     if (authError || !user) {
       return NextResponse.json(
         { error: 'Unauthorized' },

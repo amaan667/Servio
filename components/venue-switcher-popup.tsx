@@ -76,7 +76,7 @@ export default function VenueSwitcherPopup({
       const supabase = createClient();
       
       // Get current user first
-      const { data: { user } } = await supabase.auth.getUser();
+      const { data: { user } } = await supabase.auth.getSession();
       if (!user) {
 
         return;
@@ -117,7 +117,7 @@ export default function VenueSwitcherPopup({
       const supabase = createClient();
       
       // Get current user
-      const { data: { user } } = await supabase.auth.getUser();
+      const { data: { user } } = await supabase.auth.getSession();
       if (!user) throw new Error('User not authenticated');
 
       // Get organization_id from current venue

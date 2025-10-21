@@ -1,259 +1,291 @@
 /**
- * Enhanced Error Tracking
- * Centralized error tracking and reporting
+ * Comprehensive Error Tracking
+ * Integrates with Sentry and provides structured error reporting
  */
 
-import { logger } from '@/lib/logger';
 import * as Sentry from '@sentry/nextjs';
+import { logger } from '@/lib/logger';
 
 export interface ErrorContext {
   userId?: string;
   venueId?: string;
-  action?: string;
-  metadata?: Record<string, unknown>;
+  organizationId?: string;
+  requestId?: string;
+  endpoint?: string;
+  userAgent?: string;
+  [key: string]: unknown;
+}
+
+export interface AppError extends Error {
+  code?: string;
+  statusCode?: number;
+  context?: ErrorContext;
+  isOperational?: boolean;
 }
 
 /**
- * Track error with context
+ * Error severity levels
+ */
+export enum ErrorSeverity {
+  LOW = 'low',
+  MEDIUM = 'medium',
+  HIGH = 'high',
+  CRITICAL = 'critical',
+}
+
+/**
+ * Track error with full context
  */
 export function trackError(
-  error: Error | unknown,
-  context?: ErrorContext
-) {
-  const errorMessage = error instanceof Error ? error.message : String(error);
-  const errorStack = error instanceof Error ? error.stack : undefined;
-
-  // Log to console
-  logger.error('Error tracked:', {
-    message: errorMessage,
-    stack: errorStack,
+  error: Error | AppError,
+  context?: ErrorContext,
+  severity: ErrorSeverity = ErrorSeverity.MEDIUM
+): void {
+  // Log to structured logger
+  logger.error('[ERROR TRACKED]', {
+    error: {
+      message: error.message,
+      name: error.name,
+      stack: error.stack,
+      code: (error as AppError).code,
+      statusCode: (error as AppError).statusCode,
+    },
     context,
+    severity,
   });
 
-  // Send to Sentry
-  if (process.env.NODE_ENV === 'production') {
-    Sentry.captureException(error, {
-      tags: {
-        component: context?.action || 'unknown',
-        venueId: context?.venueId,
-      },
-      user: context?.userId ? { id: context.userId } : undefined,
-      extra: context?.metadata,
-    });
+  // Send to Sentry with context
+  Sentry.captureException(error, {
+    level: severity,
+    tags: {
+      error_code: (error as AppError).code,
+      venue_id: context?.venueId,
+      user_id: context?.userId,
+      endpoint: context?.endpoint,
+    },
+    extra: context,
+  });
+
+  // Alert for critical errors
+  if (severity === ErrorSeverity.CRITICAL) {
+    alertCriticalError(error, context);
   }
 }
 
 /**
- * Track API errors
+ * Track handled errors (expected errors)
  */
-export function trackAPIError(
-  endpoint: string,
-  error: Error | unknown,
-  request?: Request
-) {
-  const errorMessage = error instanceof Error ? error.message : String(error);
-
-  logger.error(`[API ERROR] ${endpoint}:`, {
-    message: errorMessage,
-    url: request?.url,
-    method: request?.method,
+export function trackHandledError(
+  message: string,
+  context?: ErrorContext
+): void {
+  logger.warn('[HANDLED ERROR]', { message, context });
+  
+  Sentry.captureMessage(message, {
+    level: 'warning',
+    tags: {
+      type: 'handled',
+      venue_id: context?.venueId,
+    },
+    extra: context,
   });
-
-  if (process.env.NODE_ENV === 'production') {
-    Sentry.captureException(error, {
-      tags: {
-        type: 'api_error',
-        endpoint,
-      },
-      extra: {
-        url: request?.url,
-        method: request?.method,
-      },
-    });
-  }
 }
 
 /**
- * Track component errors
+ * Create application error with context
  */
-export function trackComponentError(
-  componentName: string,
-  error: Error | unknown,
-  props?: Record<string, unknown>
-) {
-  const errorMessage = error instanceof Error ? error.message : String(error);
-
-  logger.error(`[COMPONENT ERROR] ${componentName}:`, {
-    message: errorMessage,
-    props,
-  });
-
-  if (process.env.NODE_ENV === 'production') {
-    Sentry.captureException(error, {
-      tags: {
-        type: 'component_error',
-        component: componentName,
-      },
-      extra: {
-        props,
-      },
-    });
-  }
+export function createAppError(
+  message: string,
+  code: string,
+  statusCode = 500,
+  context?: ErrorContext
+): AppError {
+  const error = new Error(message) as AppError;
+  error.code = code;
+  error.statusCode = statusCode;
+  error.context = context;
+  error.isOperational = true; // Expected error vs programmer error
+  return error;
 }
 
 /**
- * Track database errors
+ * Alert for critical errors
  */
-export function trackDatabaseError(
-  operation: string,
-  error: Error | unknown,
-  table?: string
-) {
-  const errorMessage = error instanceof Error ? error.message : String(error);
-
-  logger.error(`[DATABASE ERROR] ${operation}:`, {
-    message: errorMessage,
-    table,
+async function alertCriticalError(error: Error, context?: ErrorContext): Promise<void> {
+  // In production, this could:
+  // - Send PagerDuty alert
+  // - Post to Slack
+  // - Send SMS to on-call engineer
+  // - Trigger incident response
+  
+  logger.error('[CRITICAL ERROR ALERT]', {
+    error: {
+      message: error.message,
+      stack: error.stack,
+    },
+    context,
+    timestamp: new Date().toISOString(),
   });
 
-  if (process.env.NODE_ENV === 'production') {
-    Sentry.captureException(error, {
-      tags: {
-        type: 'database_error',
-        operation,
-        table,
-      },
-    });
-  }
+  // Send to Sentry with critical flag
+  Sentry.captureException(error, {
+    level: 'fatal',
+    tags: { critical: 'true' },
+  });
 }
 
 /**
- * Track authentication errors
+ * Performance tracking decorator
  */
-export function trackAuthError(
+export function trackPerformance(threshold = 1000) {
+  return function (
+    target: unknown,
+    propertyKey: string,
+    descriptor: PropertyDescriptor
+  ): PropertyDescriptor {
+    const originalMethod = descriptor.value;
+
+    descriptor.value = async function (...args: unknown[]) {
+      const startTime = Date.now();
+      
+      try {
+        const result = await originalMethod.apply(this, args);
+        const duration = Date.now() - startTime;
+
+        if (duration > threshold) {
+          logger.warn('[PERFORMANCE] Slow method execution', {
+            method: propertyKey,
+            duration,
+            threshold,
+          });
+        }
+
+        return result;
+      } catch (error) {
+        const duration = Date.now() - startTime;
+        trackError(error as Error, {
+          method: propertyKey,
+          duration,
+        });
+        throw error;
+      }
+    };
+
+    return descriptor;
+  };
+}
+
+/**
+ * Track user action
+ */
+export function trackUserAction(
   action: string,
-  error: Error | unknown,
-  userId?: string
-) {
-  const errorMessage = error instanceof Error ? error.message : String(error);
-
-  logger.error(`[AUTH ERROR] ${action}:`, {
-    message: errorMessage,
+  userId: string,
+  metadata?: Record<string, unknown>
+): void {
+  logger.info('[USER ACTION]', {
+    action,
     userId,
+    metadata,
+    timestamp: new Date().toISOString(),
   });
 
-  if (process.env.NODE_ENV === 'production') {
-    Sentry.captureException(error, {
-      tags: {
-        type: 'auth_error',
-        action,
+  // Send to analytics
+  if (typeof window !== 'undefined' && window.gtag) {
+    window.gtag('event', action, metadata);
+  }
+}
+
+/**
+ * Track API endpoint performance
+ */
+export class APIPerformanceTracker {
+  private endpoint: string;
+  private startTime: number;
+  private context: ErrorContext;
+
+  constructor(endpoint: string, context?: ErrorContext) {
+    this.endpoint = endpoint;
+    this.startTime = Date.now();
+    this.context = context || {};
+  }
+
+  success(statusCode: number): void {
+    const duration = Date.now() - this.startTime;
+    
+    logger.info('[API REQUEST]', {
+      endpoint: this.endpoint,
+      statusCode,
+      duration,
+      ...this.context,
+    });
+
+    // Track in Sentry as breadcrumb
+    Sentry.addBreadcrumb({
+      category: 'api',
+      message: `${this.endpoint} - ${statusCode}`,
+      level: 'info',
+      data: {
+        duration,
+        ...this.context,
       },
-      user: userId ? { id: userId } : undefined,
+    });
+  }
+
+  error(error: Error, statusCode: number): void {
+    const duration = Date.now() - this.startTime;
+    
+    trackError(error, {
+      ...this.context,
+      endpoint: this.endpoint,
+      statusCode,
+      duration,
     });
   }
 }
 
 /**
- * Track payment errors
+ * Error boundary helper for React components
  */
-export function trackPaymentError(
-  action: string,
-  error: Error | unknown,
-  orderId?: string,
-  amount?: number
-) {
-  const errorMessage = error instanceof Error ? error.message : String(error);
+export function reportComponentError(
+  error: Error,
+  errorInfo: { componentStack: string },
+  componentName: string
+): void {
+  trackError(error, {
+    component: componentName,
+    componentStack: errorInfo.componentStack,
+  }, ErrorSeverity.HIGH);
+}
 
-  logger.error(`[PAYMENT ERROR] ${action}:`, {
-    message: errorMessage,
-    orderId,
-    amount,
+// Global error handlers
+if (typeof window !== 'undefined') {
+  // Catch unhandled promise rejections
+  window.addEventListener('unhandledrejection', (event) => {
+    trackError(
+      new Error(`Unhandled Promise Rejection: ${event.reason}`),
+      { type: 'unhandled_rejection' },
+      ErrorSeverity.HIGH
+    );
   });
 
-  if (process.env.NODE_ENV === 'production') {
-    Sentry.captureException(error, {
-      tags: {
-        type: 'payment_error',
-        action,
+  // Catch global errors
+  window.addEventListener('error', (event) => {
+    trackError(
+      event.error || new Error(event.message),
+      {
+        type: 'global_error',
+        filename: event.filename,
+        lineno: event.lineno,
+        colno: event.colno,
       },
-      extra: {
-        orderId,
-        amount,
-      },
-    });
-  }
-}
-
-/**
- * Set user context for error tracking
- */
-export function setErrorContext(context: ErrorContext) {
-  if (process.env.NODE_ENV === 'production') {
-    Sentry.setUser(context.userId ? { id: context.userId } : null);
-    Sentry.setContext('application', {
-      venueId: context.venueId,
-      action: context.action,
-      metadata: context.metadata,
-    });
-  }
-}
-
-/**
- * Clear error context
- */
-export function clearErrorContext() {
-  if (process.env.NODE_ENV === 'production') {
-    Sentry.setUser(null);
-  }
-}
-
-/**
- * Track performance issues
- */
-export function trackPerformanceIssue(
-  metric: string,
-  value: number,
-  threshold: number
-) {
-  logger.warn(`[PERFORMANCE ISSUE] ${metric}:`, {
-    value,
-    threshold,
-    delta: value - threshold,
+      ErrorSeverity.HIGH
+    );
   });
-
-  if (process.env.NODE_ENV === 'production') {
-    Sentry.captureMessage(`Performance issue: ${metric}`, {
-      level: 'warning',
-      tags: {
-        type: 'performance_issue',
-        metric,
-      },
-      extra: {
-        value,
-        threshold,
-      },
-    });
-  }
 }
 
-/**
- * Track security events
- */
-export function trackSecurityEvent(
-  event: string,
-  details: Record<string, unknown>
-) {
-  logger.warn(`[SECURITY EVENT] ${event}:`, details);
-
-  if (process.env.NODE_ENV === 'production') {
-    Sentry.captureMessage(`Security event: ${event}`, {
-      level: 'warning',
-      tags: {
-        type: 'security_event',
-        event,
-      },
-      extra: details,
-    });
+declare global {
+  interface Window {
+    gtag?: (...args: unknown[]) => void;
   }
 }
-

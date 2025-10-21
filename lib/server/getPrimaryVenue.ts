@@ -4,7 +4,7 @@ import { createServerSupabase } from '@/lib/supabase';
 export async function getPrimaryVenueId(): Promise<string | null> {
   const supa = await createServerSupabase();
 
-  const { data: { user } } = await supa.auth.getUser();
+  const { data: { user } } = await supa.auth.getSession();
   if (!user) return null;
 
   const { data } = await supa

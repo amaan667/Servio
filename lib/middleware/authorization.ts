@@ -103,7 +103,7 @@ export async function verifyVenueAccess(
 export async function getAuthenticatedUser() {
   try {
     const supabase = await createSupabaseClient();
-    const { data: { user }, error } = await supabase.auth.getUser();
+    const { data: { user }, error } = await supabase.auth.getSession();
 
     if (error || !user) {
       return { user: null, error: error?.message || 'Not authenticated' };

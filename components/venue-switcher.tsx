@@ -40,7 +40,7 @@ export function VenueSwitcher({ currentVenueId }: VenueSwitcherProps) {
       
       const {
         data: { user },
-      } = await supabase.auth.getUser();
+      } = await supabase.auth.getSession();
 
       if (!user) {
         setLoading(false);

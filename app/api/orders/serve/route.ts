@@ -17,13 +17,15 @@ export async function POST(req: Request) {
     }
 
     const supabase = await createClient();
-    const supabaseAdmin = createAdminClient();
     logger.debug('[ORDERS SERVE] Supabase client created');
 
     // Require authenticated user
-    const { data: { user }, error: userError } = await supabase.auth.getUser();
-    if (userError || !user) {
-      logger.error('[ORDERS SERVE] Auth error or missing user', { userError });
+    // Use getSession() to avoid refresh token errors - reads from cookies only
+    const { data: { session }, error: sessionError } = await supabase.auth.getSession();
+    const user = session?.user;
+    
+    if (sessionError || !user) {
+      logger.error('[ORDERS SERVE] Auth error or missing user', { sessionError });
       return NextResponse.json({ error: 'Not authenticated' }, { status: 401 });
     }
     logger.debug('[ORDERS SERVE] Authenticated user', { userId: user.id });
@@ -43,7 +45,7 @@ export async function POST(req: Request) {
       logger.error('[ORDERS SERVE] Order not found', { orderId });
       return NextResponse.json({ error: 'Order not found' }, { status: 404 });
     }
-    logger.debug('[ORDERS SERVE] Loaded order', { data: { orderId: orderData.id, extra: venueId: orderData.venue_id, order_status: orderData.order_status } });
+    logger.debug('[ORDERS SERVE] Loaded order', { data: { orderId: orderData.id, venueId: orderData.venue_id, order_status: orderData.order_status } });
 
     // Only allow serving orders that are READY (case-insensitive)
     const currentStatus = (orderData.order_status || '').toString().toUpperCase();
@@ -77,10 +79,10 @@ export async function POST(req: Request) {
     ]);
 
     if (venueError) {
-      logger.error('[ORDERS SERVE] Venue check error', { error: { venueId, context: userId: user.id, venueError } });
+      logger.error('[ORDERS SERVE] Venue check error', { error: { venueId, userId: user.id, venueError } });
     }
     if (roleError) {
-      logger.error('[ORDERS SERVE] Role check error', { error: { venueId, context: userId: user.id, roleError } });
+      logger.error('[ORDERS SERVE] Role check error', { error: { venueId, userId: user.id, roleError } });
     }
 
     const hasAccess = Boolean(venue) || Boolean(role);
@@ -88,7 +90,7 @@ export async function POST(req: Request) {
       logger.warn('[ORDERS SERVE] Forbidden: user lacks venue access (not owner or staff)', { venueId, userId: user.id });
       return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
     }
-    logger.debug('[ORDERS SERVE] Access granted via', { data: { owner: Boolean(venue), extra: role: role?.role || null } });
+    logger.debug('[ORDERS SERVE] Access granted via', { data: { owner: Boolean(venue), role: role?.role || null } });
 
     // Update the order status to SERVING (guard by venue_id for RLS)
     // Use admin client to bypass RLS for the atomic order update; we already authorized above
@@ -130,9 +132,9 @@ export async function POST(req: Request) {
       message: 'Order marked as served'
     });
 
-  } catch (error: any) {
+  } catch (error: unknown) {
     const err = error instanceof Error ? error : new Error(String(error));
-    logger.error('[ORDERS SERVE][UNCAUGHT]', { error: { error: err.message, context: stack: err.stack } });
+    logger.error('[ORDERS SERVE][UNCAUGHT]', { error: { error: err.message, stack: err.stack } });
     return NextResponse.json({ 
       error: 'Internal server error',
       details: err.message 

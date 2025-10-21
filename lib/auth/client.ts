@@ -11,7 +11,8 @@ import { logger } from '@/lib/logger';
 export async function getAuthenticatedUser() {
   try {
     const supabase = supabaseBrowser();
-    const { data: { user }, error } = await supabase.auth.getUser();
+    const { data: { session }, error } = await supabase.auth.getSession();
+  const user = session?.user;
     
     if (error) {
       logger.error('[AUTH CLIENT] Error getting authenticated user:', errorToContext(error));

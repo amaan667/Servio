@@ -13,12 +13,16 @@
     "start": "next start -p ${PORT:-8080}",
     "typecheck": "tsc --noEmit",
     "lint": "eslint .",
-    "format": "prettier -w .",
+    "lint:fix": "eslint . --fix",
+    "format": "prettier --write \"**/*.{ts,tsx,js,jsx,json,css,md}\"",
+    "format:check": "prettier --check \"**/*.{ts,tsx,js,jsx,json,css,md}\"",
     "test": "vitest run",
     "test:watch": "vitest",
     "test:coverage": "vitest run --coverage",
     "test:e2e": "playwright test",
-    "test:e2e:ui": "playwright test --ui"
+    "test:e2e:ui": "playwright test --ui",
+    "prepare": "husky install",
+    "validate": "pnpm run format:check && pnpm run lint && pnpm run typecheck && pnpm run test"
   },
   "lint-staged": {
     "*.{ts,tsx}": [
@@ -111,6 +115,8 @@
   },
   "devDependencies": {
     "@eslint/js": "^9.31.0",
+    "@playwright/test": "^1.48.0",
+    "husky": "^9.1.7",
     "@testing-library/jest-dom": "^6.9.1",
     "@testing-library/react": "^16.3.0",
     "@types/caseless": "^0.12.5",

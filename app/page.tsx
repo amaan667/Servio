@@ -22,8 +22,8 @@ export default function HomePage() {
     const checkAuth = async () => {
       try {
         if (!supabase) return;
-        const { data: { user } } = await supabase.auth.getUser();
-        setIsSignedIn(!!user);
+        const { data: { session: checkAuthSession } } = await supabase.auth.getSession();
+        setIsSignedIn(!!checkAuthSession?.user);
       } catch {
         // Silent error handling
       } finally {
@@ -52,19 +52,20 @@ export default function HomePage() {
         router.push("/complete-profile");
         return;
       }
-      const { data: { user } } = await supabase.auth.getUser();
-      if (!user) {
+      const { data: { session: checkSession } } = await supabase.auth.getSession();
+      const checkUser = checkSession?.user;
+      if (!checkUser) {
         router.push("/sign-up");
         return;
       }
       const { data: venues } = await supabase
         .from('venues')
         .select('venue_id')
-        .eq('owner_user_id', user.id)
+        .eq('owner_user_id', checkUser.id)
         .order('created_at', { ascending: false })
         .limit(1);
       
-      if (venues && venues.length > 0) {
+      if (venues && venues.length > 0 && venues[0]) {
         router.push(`/dashboard/${venues[0].venue_id}`);
       } else {
         router.push("/complete-profile");

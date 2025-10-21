@@ -160,7 +160,7 @@ export default function InvitationBasedStaffManagement({
     }
 
     // Get current user's email
-    const { data: { user } } = await supabase.auth.getUser();
+    const { data: { user } } = await supabase.auth.getSession();
     
     // Prevent inviting yourself
     if (user?.email?.toLowerCase() === inviteEmail.trim().toLowerCase()) {

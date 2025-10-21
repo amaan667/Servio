@@ -2,7 +2,7 @@
 import { createClient } from '@/lib/supabase';
 
 export async function getPrimaryVenue() {
-  const { data: { user } } = await createClient().auth.getUser();
+  const { data: { user } } = await createClient().auth.getSession();
   if (!user) return null;
 
   const { data, error } = await createClient()

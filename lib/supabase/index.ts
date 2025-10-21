@@ -161,7 +161,8 @@ export async function getAuthenticatedUser() {
       get: (name) => cookieStore.get(name)?.value,
       set: () => {},
     });
-    const { data: { user }, error } = await supabase.auth.getUser();
+    const { data: { session }, error } = await supabase.auth.getSession();
+  const user = session?.user;
     
     if (error) {
       return { user: null, error: error.message };

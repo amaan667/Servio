@@ -13,7 +13,7 @@ export async function GET(request: NextRequest) {
     // Test 1: Check authentication
     const {
       data: { user },
-    } = await supabase.auth.getUser();
+    } = await supabase.auth.getSession();
     
     logger.debug("[TEST DB] User:", user ? "authenticated" : "not authenticated");
     

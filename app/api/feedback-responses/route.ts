@@ -69,7 +69,7 @@ export async function POST(req: Request) {
     // Filter out generic questions (they start with 'generic-')
     const nonGenericQuestionIds = questionIds.filter(id => !id.startsWith('generic-'));
     
-    let questions: any[] = [];
+    let questions: Array<Record<string, unknown>> = [];
     if (nonGenericQuestionIds.length > 0) {
       const { data: dbQuestions, error: questionsError } = await serviceClient
         .from('feedback_questions')
@@ -110,8 +110,9 @@ export async function POST(req: Request) {
     // Validate answer choices for multiple choice questions
     for (const answer of answers) {
       if (answer.type === 'multiple_choice') {
-        const question = allQuestions.find(q => q.id === answer.question_id);
-        if (question && question.choices && !question.choices.includes(answer.answer_choice)) {
+        const question = allQuestions.find(q => (q as { id?: string }).id === answer.question_id) as { choices?: string[] } | undefined;
+        const choices = question?.choices || [];
+        if (question && choices.length > 0 && !choices.includes(answer.answer_choice)) {
           return NextResponse.json({ 
             error: 'Invalid choice for multiple choice question' 
           }, { status: 400 });
@@ -198,7 +199,7 @@ export async function POST(req: Request) {
       saved_count: data?.length || 0
     });
 
-  } catch (error: any) {
+  } catch (error: unknown) {
     logger.error('[FEEDBACK][R] insert exception:', { error: error instanceof Error ? error.message : 'Unknown error' });
     return NextResponse.json({ 
       error: 'Failed to submit feedback' 

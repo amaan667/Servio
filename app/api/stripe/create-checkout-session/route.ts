@@ -128,8 +128,9 @@ export async function POST(request: NextRequest) {
     // For existing users, check auth
     const supabase = await createClient();
     const {
-      data: { user },
-    } = await supabase.auth.getUser();
+      data: { session: authSession },
+    } = await supabase.auth.getSession();
+    const user = authSession?.user;
 
     if (!user) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
@@ -227,7 +228,7 @@ export async function POST(request: NextRequest) {
     
     // Always use the actual organization ID from database
     const actualOrgId = org.id;
-    logger.debug('[STRIPE DEBUG] Using organization ID:', { data: { orgId: actualOrgId, extra: userId: user.id } });
+    logger.debug('[STRIPE DEBUG] Using organization ID:', { data: { orgId: actualOrgId, userId: user.id } });
 
     logger.debug('[STRIPE DEBUG] Using organization:', {
       id: org.id,
@@ -257,7 +258,7 @@ export async function POST(request: NextRequest) {
         .update({ stripe_customer_id: customerId })
         .eq("id", actualOrgId);
       
-      logger.debug('[STRIPE DEBUG] Created Stripe customer:', { data: { customerId, extra: orgId: actualOrgId } });
+      logger.debug('[STRIPE DEBUG] Created Stripe customer:', { data: { customerId, orgId: actualOrgId } });
     } else {
       logger.debug('[STRIPE DEBUG] Using existing Stripe customer:', { value: customerId });
     }

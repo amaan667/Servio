@@ -15,7 +15,7 @@ export async function POST(request: NextRequest) {
     // Check auth
     const {
       data: { user },
-    } = await supabase.auth.getUser();
+    } = await supabase.auth.getSession();
 
     if (!user) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
@@ -54,7 +54,7 @@ export async function POST(request: NextRequest) {
     const oldCount = oldConversations?.length || 0;
     const newCount = newConversations?.length || 0;
 
-    logger.debug("[AI MIGRATION] Conversations count", { data: { old: oldCount, extra: new: newCount } });
+    logger.debug("[AI MIGRATION] Conversations count", { data: { old: oldCount, new: newCount } });
 
     // Step 3: If new conversations exist, just generate AI titles for existing ones
     if (newCount > 0) {
@@ -88,9 +88,9 @@ export async function POST(request: NextRequest) {
               });
 
             if (updateError) {
-              logger.error("[AI MIGRATION] Error updating title for conversation", { error: { convId: conv.conversation_id, context: error: updateError } });
+              logger.error("[AI MIGRATION] Error updating title for conversation", { error: { convId: conv.conversation_id, context: updateError } });
             } else {
-              logger.debug("[AI MIGRATION] Updated conversation title", { data: { convId: conv.conversation_id, extra: title: aiTitle } });
+              logger.debug("[AI MIGRATION] Updated conversation title", { data: { convId: conv.conversation_id, title: aiTitle } });
               updatedCount++;
             }
           }
@@ -150,7 +150,7 @@ export async function POST(request: NextRequest) {
             .single();
 
           if (createError) {
-            logger.error("[AI MIGRATION] Error creating conversation", { error: { convId: oldConv.id, context: error: createError } });
+            logger.error("[AI MIGRATION] Error creating conversation", { error: { convId: oldConv.id, context: createError } });
             continue;
           }
 
@@ -162,7 +162,7 @@ export async function POST(request: NextRequest) {
             .order("created_at", { ascending: true });
 
           if (messagesError) {
-            logger.error("[AI MIGRATION] Error getting messages for conversation", { error: { convId: oldConv.id, context: error: messagesError } });
+            logger.error("[AI MIGRATION] Error getting messages for conversation", { error: { convId: oldConv.id, context: messagesError } });
             continue;
           }
 
@@ -180,7 +180,7 @@ export async function POST(request: NextRequest) {
               });
 
             if (msgError) {
-              logger.error("[AI MIGRATION] Error migrating message", { error: { msgId: message.id, context: error: msgError } });
+              logger.error("[AI MIGRATION] Error migrating message", { error: { msgId: message.id, context: msgError } });
             }
           }
 
@@ -196,14 +196,14 @@ export async function POST(request: NextRequest) {
                 .update({ title: aiTitle, updated_at: new Date().toISOString() })
                 .eq("id", oldConv.id);
               
-              logger.debug("[AI MIGRATION] Generated AI title for conversation", { data: { convId: oldConv.id, extra: title: aiTitle } });
+              logger.debug("[AI MIGRATION] Generated AI title for conversation", { data: { convId: oldConv.id, title: aiTitle } });
             } catch (titleError) {
-              logger.error("[AI MIGRATION] Error generating AI title for conversation", { error: { convId: oldConv.id, context: error: titleError } });
+              logger.error("[AI MIGRATION] Error generating AI title for conversation", { error: { convId: oldConv.id, context: titleError } });
             }
           }
 
           migratedCount++;
-          logger.debug("[AI MIGRATION] Migrated conversation", { data: { convId: oldConv.id, extra: messages: messages?.length || 0 } });
+          logger.debug("[AI MIGRATION] Migrated conversation", { data: { convId: oldConv.id, messages: messages?.length || 0 } });
 
         } catch (error) {
           logger.error("[AI MIGRATION] Error migrating conversation", { error: { convId: oldConv.id, context: error } });

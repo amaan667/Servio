@@ -11,7 +11,7 @@ export async function GET(request: NextRequest) {
     const {
       data: { user },
       error: authError
-    } = await supabase.auth.getUser();
+    } = await supabase.auth.getSession();
 
     logger.debug("[TEST] Auth check:", { 
       user: user ? { id: user.id, email: user.email } : null,

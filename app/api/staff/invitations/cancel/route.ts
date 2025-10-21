@@ -14,7 +14,7 @@ export async function POST(request: NextRequest) {
     const body = await request.json();
     const { id } = body;
 
-    logger.debug('[INVITATION API] Cancel request received:', { data: { id, extra: user: user.id } });
+    logger.debug('[INVITATION API] Cancel request received:', { data: { id, user: user.id } });
 
     if (!id) {
       return NextResponse.json({ error: 'Invitation ID is required' }, { status: 400 });

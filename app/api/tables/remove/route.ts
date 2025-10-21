@@ -34,7 +34,7 @@ export async function POST(req: Request) {
 
     // Get authenticated user
     const supabase = await createClient();
-    const { data: { user }, error: authError } = await supabase.auth.getUser();
+    const { data: { user }, error: authError } = await supabase.auth.getSession();
     if (authError || !user) {
       return NextResponse.json({ 
         ok: false, 

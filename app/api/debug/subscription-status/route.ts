@@ -11,7 +11,7 @@ export async function GET() {
     // Check auth
     const {
       data: { user },
-    } = await supabase.auth.getUser();
+    } = await supabase.auth.getSession();
 
     if (!user) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
@@ -65,7 +65,7 @@ export async function GET() {
 
     // Approach 3: If no organization exists, create a real one
     if (!orgFound) {
-      logger.debug('[DEBUG] No organization found, { data: creating real organization for user:', extra: { userId: user.id } });
+      logger.debug('[DEBUG] No organization found, creating real organization for user', { extra: { userId: user.id } });
       try {
         const userName = user.user_metadata?.full_name || user.email?.split('@')[0] || 'User';
         const { data: newOrg, error: createError } = await supabase
@@ -168,7 +168,7 @@ export async function POST(request: NextRequest) {
     // Check auth
     const {
       data: { user },
-    } = await supabase.auth.getUser();
+    } = await supabase.auth.getSession();
 
     if (!user) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });

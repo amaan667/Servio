@@ -43,7 +43,7 @@ export async function POST(req: Request) {
         .eq('is_active', true);
 
       if (!existingStations || existingStations.length === 0) {
-        logger.debug('[KDS BACKFILL ALL] No stations found, { data: creating default stations for venue:', extra: { value: venueId } });
+        logger.debug('[KDS BACKFILL ALL] No stations found, creating default stations for venue', { extra: { value: venueId } });
         
         // Create default stations
         const defaultStations = [
@@ -172,7 +172,7 @@ export async function POST(req: Request) {
               .insert(ticketData);
             
             if (ticketError) {
-              logger.error('[KDS BACKFILL ALL] Failed to create ticket for item:', { error: { item, context: error: ticketError.message } });
+              logger.error('[KDS BACKFILL ALL] Failed to create ticket for item:', { error: { item, context: ticketError.message } });
               scopeErrors.push(`Failed to create ticket for order ${order.id}: ${ticketError.message}`);
               continue;
             }

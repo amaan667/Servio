@@ -13,12 +13,14 @@ export async function POST(request: NextRequest) {
     const supabase = await createClient();
     
     // Get the current user
-    const { data: { user }, error: userError } = await supabase.auth.getUser();
+    // Use getSession() to avoid refresh token errors - reads from cookies only
+    const { data: { session }, error: sessionError } = await supabase.auth.getSession();
+    const user = session?.user;
     
-    if (userError || !user) {
-      logger.error("[ORG ENSURE] Auth error:", userError);
+    if (sessionError || !user) {
+      logger.error("[ORG ENSURE] Auth error:", sessionError);
       return NextResponse.json(
-        { error: "Unauthorized", details: userError?.message },
+        { error: "Unauthorized", details: sessionError?.message },
         { status: 401 }
       );
     }
@@ -100,7 +102,7 @@ export async function POST(request: NextRequest) {
 
     if (createError) {
       logger.error("[ORG ENSURE] Error creating organization:", createError);
-      logger.error("[ORG ENSURE] Error details:", { error: JSON.stringify(createError, context: null, 2 }));
+      logger.error("[ORG ENSURE] Error details:", { error: JSON.stringify(createError, null, 2) });
       logger.error("[ORG ENSURE] User ID:", user.id);
       logger.error("[ORG ENSURE] User metadata:", user.user_metadata);
       return NextResponse.json(
@@ -143,7 +145,7 @@ export async function POST(request: NextRequest) {
         });
     }
 
-    logger.debug("[ORG ENSURE] Created new organization", { data: { orgId: newOrg.id, extra: userId: user.id } });
+    logger.debug("[ORG ENSURE] Created new organization", { data: { orgId: newOrg.id, userId: user.id } });
 
     const response = NextResponse.json({
       success: true,

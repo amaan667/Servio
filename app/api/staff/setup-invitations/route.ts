@@ -12,8 +12,11 @@ export async function POST(request: NextRequest) {
     const supabase = await createClient();
     
     // Check if user is authenticated
-    const { data: { user }, error: userError } = await supabase.auth.getUser();
-    if (userError || !user) {
+    // Use getSession() to avoid refresh token errors
+    const { data: { session }, error: sessionError } = await supabase.auth.getSession();
+    const user = session?.user;
+    
+    if (sessionError || !user) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
 

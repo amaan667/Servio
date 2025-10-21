@@ -33,7 +33,7 @@ export async function POST(request: NextRequest) {
     }
 
     // Get current user
-    const { data: currentUser } = await supabase.auth.getUser();
+    const { data: currentUser } = await supabase.auth.getSession();
 
     // Create ledger entry
     const { data, error } = await supabase

@@ -33,5 +33,5 @@ export async function safeGetUser() {
   
   const { createServerSupabase } = await import('@/lib/supabase');
   const supabase = await createServerSupabase();
-  return await supabase.auth.getUser();
+  return await supabase.auth.getSession();
 }

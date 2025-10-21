@@ -1,227 +1,242 @@
-import { errorToContext } from '@/lib/utils/error-to-context';
-
 /**
- * Performance Monitoring
- * Tracks Core Web Vitals and performance metrics
+ * Performance Monitoring & Optimization
+ * Tracks and optimizes application performance
  */
 
 import { logger } from '@/lib/logger';
 
-export interface PerformanceMetric {
+interface PerformanceMetric {
   name: string;
   value: number;
-  rating: 'good' | 'needs-improvement' | 'poor';
-  delta?: number;
-  id: string;
+  timestamp: number;
+  tags?: Record<string, string>;
 }
 
-export interface PerformanceReport {
-  timestamp: string;
-  url: string;
-  metrics: PerformanceMetric[];
-  userAgent: string;
-}
+class PerformanceMonitor {
+  private metrics: PerformanceMetric[] = [];
+  private maxMetrics = 1000;
 
-/**
- * Web Vitals thresholds
- */
-const THRESHOLDS = {
-  LCP: { good: 2500, poor: 4000 },
-  FID: { good: 100, poor: 300 },
-  CLS: { good: 0.1, poor: 0.25 },
-  FCP: { good: 1800, poor: 3000 },
-  TTFB: { good: 800, poor: 1800 },
-};
-
-/**
- * Get rating for a metric
- */
-function getRating(name: string, value: number): 'good' | 'needs-improvement' | 'poor' {
-  const threshold = THRESHOLDS[name as keyof typeof THRESHOLDS];
-  if (!threshold) return 'good';
-
-  if (value <= threshold.good) return 'good';
-  if (value <= threshold.poor) return 'needs-improvement';
-  return 'poor';
-}
-
-/**
- * Report Web Vitals
- */
-export function reportWebVitals(metric: PerformanceMetric) {
-  const { name, value, rating, delta, id } = metric;
-
-  // Log to console in development
-  if (process.env.NODE_ENV === 'development') {
-    logger.info(`[WEB VITALS] ${name}:`, {
-      value: value.toFixed(2),
-      rating,
-      delta,
+  /**
+   * Record a timing metric
+   */
+  recordTiming(name: string, duration: number, tags?: Record<string, string>): void {
+    this.metrics.push({
+      name,
+      value: duration,
+      timestamp: Date.now(),
+      tags,
     });
+
+    // Keep only recent metrics
+    if (this.metrics.length > this.maxMetrics) {
+      this.metrics = this.metrics.slice(-this.maxMetrics);
+    }
+
+    // Log slow operations
+    if (duration > 1000) {
+      logger.warn('[PERFORMANCE] Slow operation detected', {
+        operation: name,
+        duration,
+        tags,
+      });
+    }
   }
 
-  // Send to analytics in production
-  if (process.env.NODE_ENV === 'production') {
-    sendToAnalytics(metric);
+  /**
+   * Get metrics for a specific operation
+   */
+  getMetrics(name: string): PerformanceMetric[] {
+    return this.metrics.filter((m) => m.name === name);
   }
-}
 
-/**
- * Send metrics to analytics
- */
-async function sendToAnalytics(metric: PerformanceMetric) {
-  try {
-    const report: PerformanceReport = {
-      timestamp: new Date().toISOString(),
-      url: typeof window !== 'undefined' ? window.location.href : '',
-      metrics: [metric],
-      userAgent: typeof window !== 'undefined' ? navigator.userAgent : '',
+  /**
+   * Calculate percentiles for an operation
+   */
+  getPercentiles(name: string): { p50: number; p95: number; p99: number } | null {
+    const values = this.getMetrics(name).map((m) => m.value).sort((a, b) => a - b);
+    
+    if (values.length === 0) return null;
+
+    const p50Index = Math.floor(values.length * 0.5);
+    const p95Index = Math.floor(values.length * 0.95);
+    const p99Index = Math.floor(values.length * 0.99);
+
+    return {
+      p50: values[p50Index] || 0,
+      p95: values[p95Index] || 0,
+      p99: values[p99Index] || 0,
     };
+  }
 
-    // Send to your analytics endpoint
-    await fetch('/api/analytics/vitals', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify(report),
-    });
-  } catch (error) {
-    logger.error('Failed to send performance metrics', errorToContext(error));
+  /**
+   * Get summary of all operations
+   */
+  getSummary(): Record<string, { count: number; avg: number; p95: number }> {
+    const summary: Record<string, { count: number; avg: number; p95: number }> = {};
+    
+    const uniqueNames = [...new Set(this.metrics.map((m) => m.name))];
+    
+    for (const name of uniqueNames) {
+      const metrics = this.getMetrics(name);
+      const values = metrics.map((m) => m.value);
+      const avg = values.reduce((sum, val) => sum + val, 0) / values.length;
+      const percentiles = this.getPercentiles(name);
+      
+      summary[name] = {
+        count: metrics.length,
+        avg: Math.round(avg),
+        p95: percentiles?.p95 || 0,
+      };
+    }
+    
+    return summary;
+  }
+
+  /**
+   * Clear all metrics
+   */
+  clear(): void {
+    this.metrics = [];
+  }
+}
+
+// Singleton instance
+export const performanceMonitor = new PerformanceMonitor();
+
+/**
+ * Timer utility for measuring operation duration
+ */
+export class Timer {
+  private startTime: number;
+  private name: string;
+  private tags?: Record<string, string>;
+
+  constructor(name: string, tags?: Record<string, string>) {
+    this.name = name;
+    this.tags = tags;
+    this.startTime = Date.now();
+  }
+
+  /**
+   * Stop timer and record metric
+   */
+  end(): number {
+    const duration = Date.now() - this.startTime;
+    performanceMonitor.recordTiming(this.name, duration, this.tags);
+    return duration;
+  }
+
+  /**
+   * Get elapsed time without stopping
+   */
+  elapsed(): number {
+    return Date.now() - this.startTime;
   }
 }
 
 /**
- * Track API performance
+ * Decorator for timing async functions
  */
-export async function trackAPIPerformance<T>(
-  name: string,
-  fn: () => Promise<T>
-): Promise<T> {
-  const startTime = performance.now();
+export function measurePerformance(operationName: string) {
+  return function <T extends (...args: unknown[]) => Promise<unknown>>(
+    target: T
+  ): T {
+    return (async (...args: unknown[]) => {
+      const timer = new Timer(operationName);
+      try {
+        const result = await target(...args);
+        timer.end();
+        return result;
+      } catch (error) {
+        timer.end();
+        throw error;
+      }
+    }) as T;
+  };
+}
 
-  try {
-    const result = await fn();
-    const duration = performance.now() - startTime;
+/**
+ * Memoize function results (in-memory caching)
+ */
+export function memoize<T extends (...args: unknown[]) => unknown>(
+  fn: T,
+  ttl = 5 * 60 * 1000 // 5 minutes default
+): T {
+  const cache = new Map<string, { value: unknown; expires: number }>();
 
-    logger.info(`[API PERFORMANCE] ${name}:`, {
-      duration: `${duration.toFixed(2)}ms`,
-      status: 'success',
+  return ((...args: unknown[]) => {
+    const key = JSON.stringify(args);
+    const cached = cache.get(key);
+
+    if (cached && Date.now() < cached.expires) {
+      return cached.value;
+    }
+
+    const result = fn(...args);
+    cache.set(key, {
+      value: result,
+      expires: Date.now() + ttl,
     });
 
     return result;
-  } catch (error) {
-    const duration = performance.now() - startTime;
+  }) as T;
+}
 
-    logger.error(`[API PERFORMANCE] ${name}:`, {
-      duration: `${duration.toFixed(2)}ms`,
-      status: 'error',
-      error,
-    });
+/**
+ * Debounce function calls
+ */
+export function debounce<T extends (...args: unknown[]) => unknown>(
+  fn: T,
+  delay: number
+): T {
+  let timeoutId: NodeJS.Timeout;
 
-    throw error;
+  return ((...args: unknown[]) => {
+    clearTimeout(timeoutId);
+    timeoutId = setTimeout(() => fn(...args), delay);
+  }) as T;
+}
+
+/**
+ * Throttle function calls
+ */
+export function throttle<T extends (...args: unknown[]) => unknown>(
+  fn: T,
+  limit: number
+): T {
+  let inThrottle: boolean;
+
+  return ((...args: unknown[]) => {
+    if (!inThrottle) {
+      fn(...args);
+      inThrottle = true;
+      setTimeout(() => (inThrottle = false), limit);
+    }
+  }) as T;
+}
+
+/**
+ * Report performance metrics to monitoring service
+ */
+export async function reportPerformanceMetrics(): Promise<void> {
+  const summary = performanceMonitor.getSummary();
+  
+  // Log to Sentry or your monitoring service
+  logger.info('[PERFORMANCE SUMMARY]', { data: summary });
+  
+  // Check for performance degradation
+  for (const [operation, stats] of Object.entries(summary)) {
+    if (stats.p95 > 2000) {
+      logger.warn('[PERFORMANCE] Operation degraded', {
+        operation,
+        p95: stats.p95,
+        threshold: 2000,
+      });
+    }
   }
 }
 
-/**
- * Track component render performance
- */
-export function trackComponentRender(componentName: string) {
-  const startTime = performance.now();
-
-  return {
-    end: () => {
-      const duration = performance.now() - startTime;
-
-      if (duration > 16) { // > 1 frame at 60fps
-        logger.warn(`[RENDER PERFORMANCE] ${componentName}:`, {
-          duration: `${duration.toFixed(2)}ms`,
-          warning: 'Slow render detected',
-        });
-      }
-    },
-  };
+// Report metrics every 5 minutes in production
+if (typeof setInterval !== 'undefined' && process.env.NODE_ENV === 'production') {
+  setInterval(reportPerformanceMetrics, 5 * 60 * 1000);
 }
-
-/**
- * Monitor bundle size
- */
-export function monitorBundleSize() {
-  if (typeof window === 'undefined') return;
-
-  const scripts = Array.from(document.querySelectorAll('script[src]'));
-  let totalSize = 0;
-
-  scripts.forEach(script => {
-    const src = script.getAttribute('src');
-    if (src) {
-      // Estimate size from URL (rough approximation)
-      const size = src.length * 2; // Rough estimate
-      totalSize += size;
-    }
-  });
-
-  logger.info('[BUNDLE SIZE]', {
-    scripts: scripts.length,
-    estimatedSize: `${(totalSize / 1024).toFixed(2)}KB`,
-  });
-
-  return totalSize;
-}
-
-/**
- * Get performance summary
- */
-export function getPerformanceSummary(): {
-  memory?: any;
-  timing?: any;
-  navigation?: any;
-} {
-  if (typeof window === 'undefined') return {};
-
-  const performance = window.performance;
-  const memory = (performance as unknown).memory;
-  const timing = performance.timing;
-  const navigation = performance.getEntriesByType('navigation')[0] as unknown;
-
-  return {
-    memory: memory ? {
-      used: `${(memory.usedJSHeapSize / 1048576).toFixed(2)}MB`,
-      total: `${(memory.totalJSHeapSize / 1048576).toFixed(2)}MB`,
-      limit: `${(memory.jsHeapSizeLimit / 1048576).toFixed(2)}MB`,
-    } : undefined,
-    timing: timing ? {
-      dns: `${timing.domainLookupEnd - timing.domainLookupStart}ms`,
-      tcp: `${timing.connectEnd - timing.connectStart}ms`,
-      request: `${timing.responseStart - timing.requestStart}ms`,
-      response: `${timing.responseEnd - timing.responseStart}ms`,
-      dom: `${timing.domComplete - timing.domLoading}ms`,
-      load: `${timing.loadEventEnd - timing.navigationStart}ms`,
-    } : undefined,
-    navigation: navigation ? {
-      type: navigation.type,
-      redirect: `${navigation.redirectEnd - navigation.redirectStart}ms`,
-      dns: `${navigation.domainLookupEnd - navigation.domainLookupStart}ms`,
-      tcp: `${navigation.connectEnd - navigation.connectStart}ms`,
-      request: `${navigation.responseStart - navigation.requestStart}ms`,
-      response: `${navigation.responseEnd - navigation.responseStart}ms`,
-      dom: `${navigation.domComplete - navigation.domLoading}ms`,
-      load: `${navigation.loadEventEnd - navigation.loadEventStart}ms`,
-    } : undefined,
-  };
-}
-
-/**
- * Initialize performance monitoring
- */
-export function initPerformanceMonitoring() {
-  if (typeof window === 'undefined') return;
-
-  // Monitor bundle size
-  monitorBundleSize();
-
-  // Log performance summary
-  setTimeout(() => {
-    const summary = getPerformanceSummary();
-    logger.info('[PERFORMANCE SUMMARY]', summary);
-  }, 3000);
-}
-

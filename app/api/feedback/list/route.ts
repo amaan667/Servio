@@ -18,7 +18,7 @@ export async function POST(req: Request) {
     // Get user session
     const supa = await createServerSupabase();
 
-    const { data: { user } } = await supa.auth.getUser();
+    const { data: { user } } = await supa.auth.getSession();
     if (!user) {
       return NextResponse.json({ 
         ok: false, 
