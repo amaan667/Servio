@@ -1,13 +1,31 @@
-// Canonical factory — import only from here everywhere in the app.
+/**
+ * @fileoverview Canonical Supabase client factory
+ * @module lib/supabase
+ * 
+ * This is the ONLY place to create Supabase clients. Import from here everywhere.
+ * - Browser clients: Use `supabaseBrowser()` for client-side code
+ * - Server clients: Use `createClient()` for server components and API routes
+ */
+
 import { createServerClient as createSSRServerClient, type CookieOptions } from '@supabase/ssr';
 import { createClient as createBrowserClient } from '@supabase/supabase-js';
 
+/**
+ * Gets the Supabase URL from environment variables
+ * @returns {string} The Supabase project URL
+ * @throws {Error} If NEXT_PUBLIC_SUPABASE_URL is not set
+ */
 export function getSupabaseUrl() {
   const url = process.env.NEXT_PUBLIC_SUPABASE_URL as string | undefined;
   if (!url) throw new Error('NEXT_PUBLIC_SUPABASE_URL is missing');
   return url;
 }
 
+/**
+ * Gets the Supabase anonymous key from environment variables
+ * @returns {string} The Supabase anonymous API key
+ * @throws {Error} If NEXT_PUBLIC_SUPABASE_ANON_KEY is not set
+ */
 export function getSupabaseAnonKey() {
   const key = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY as string | undefined;
   if (!key) throw new Error('NEXT_PUBLIC_SUPABASE_ANON_KEY is missing');
@@ -17,7 +35,11 @@ export function getSupabaseAnonKey() {
 // Singleton browser client to prevent multiple instances
 let browserClient: ReturnType<typeof createBrowserClient> | null = null;
 
-// Browser (RSC/CSR safe) - Singleton pattern
+/**
+ * Creates or returns singleton browser Supabase client
+ * Safe for both client and server-side rendering
+ * @returns {SupabaseClient} Supabase client instance
+ */
 export function supabaseBrowser() {
   if (typeof window === 'undefined') {
     // Server-side: return a new instance (can't use singleton on server)

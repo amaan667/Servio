@@ -1,0 +1,24 @@
+name: Deploy to Production
+
+on:
+  push:
+    branches: [main]
+    tags:
+      - 'v*'
+
+jobs:
+  deploy:
+    name: Deploy to Railway
+    runs-on: ubuntu-latest
+    if: github.ref == 'refs/heads/main'
+    steps:
+      - uses: actions/checkout@v4
+      
+      - name: Deploy to Railway
+        run: echo "Railway auto-deploys from main branch"
+        
+      - name: Notify deployment
+        run: |
+          echo "✅ Deployment triggered for commit ${{ github.sha }}"
+          echo "🚀 Railway will automatically deploy this"
+
