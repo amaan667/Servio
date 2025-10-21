@@ -21,7 +21,7 @@ export async function POST(request: NextRequest) {
     }
 
     // Check if staff_invitations table already exists
-    const { data: invitationsCheck, error: invitationsError } = await supabase
+    const { error: invitationsError } = await supabase
       .from('staff_invitations')
       .select('*')
       .limit(1);

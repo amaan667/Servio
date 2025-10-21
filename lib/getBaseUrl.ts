@@ -28,7 +28,7 @@ function resolveServerBaseUrl(h?: Headers | ReturnType<typeof headers>) {
   const xfHost = getter('x-forwarded-host');
   const host = xfHost || getter('host') || 'servio-production.up.railway.app';
   const proto = (xfProto || 'https').split(',')[0];
-  let derived = `${proto}://${host}`;
+  const derived = `${proto}://${host}`;
 
   // 4. Production safety: never allow localhost in production
   if (process.env.NODE_ENV === 'production' && /localhost|127\.0\.0\.1/.test(derived)) {

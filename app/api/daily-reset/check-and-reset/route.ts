@@ -120,7 +120,7 @@ export async function POST(request: NextRequest) {
 
 
     // Perform the reset
-    let resetSummary = {
+    const resetSummary = {
       completedOrders: 0,
       canceledReservations: 0,
       resetTables: 0

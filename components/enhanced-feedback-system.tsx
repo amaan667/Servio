@@ -112,7 +112,7 @@ export function EnhancedFeedbackSystem({ venueId }: FeedbackSystemProps) {
 
       // Apply date range
       const now = new Date();
-      let startDate = new Date();
+      const startDate = new Date();
       switch (filters.dateRange) {
         case '7d':
           startDate.setDate(now.getDate() - 7);
