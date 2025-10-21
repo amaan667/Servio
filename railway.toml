@@ -1,6 +1,6 @@
 [build]
 builder = "nixpacks"
-buildCommand = "rm -rf .next && pnpm install --frozen-lockfile && NODE_NO_WARNINGS=1 pnpm run build"
+buildCommand = "pnpm install --frozen-lockfile && NODE_NO_WARNINGS=1 NEXT_BUILD_ID=$(date +%s) pnpm run build"
 
 [deploy]
 startCommand = "pnpm start"
