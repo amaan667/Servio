@@ -51,7 +51,11 @@ export function supabaseBrowser() {
   // Client-side: use singleton
   if (!browserClient) {
     browserClient = createBrowserClient(getSupabaseUrl(), getSupabaseAnonKey(), {
-      auth: { persistSession: true, detectSessionInUrl: true },
+      auth: { 
+        persistSession: true, 
+        detectSessionInUrl: true,
+        autoRefreshToken: false, // Disable auto-refresh to prevent errors
+      },
     });
   }
   
@@ -85,9 +89,23 @@ export function supabaseAdmin() {
 }
 
 // Backward compatibility exports
-// IMPORTANT: createClient should be the SERVER client for API routes
-export const createClient = createServerSupabase;
+// This will be async for server, sync for browser
 export const createAdminClient = supabaseAdmin;
+
+/**
+ * Context-aware createClient - works in both browser and server
+ * Returns browser client synchronously on client-side
+ * Returns server client async on server-side
+ */
+export async function createClient() {
+  // If on browser, return browser client
+  if (typeof window !== 'undefined') {
+    return supabaseBrowser();
+  }
+  
+  // If on server, return server client with cookies
+  return createServerSupabase();
+}
 
 // Server client factory with cookies (CONSOLIDATED - single source of truth)
 export async function createServerSupabase() {
