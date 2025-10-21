@@ -57,6 +57,24 @@ export function supabaseBrowser() {
         autoRefreshToken: false, // Disable auto-refresh to prevent errors
       },
     });
+
+    // Override getSession method for browser client too
+    const originalGetSession = browserClient.auth.getSession.bind(browserClient.auth);
+    browserClient.auth.getSession = async () => {
+      try {
+        return await originalGetSession();
+      } catch (err) {
+        // Silently catch refresh token errors
+        const errorMessage = err instanceof Error ? err.message : String(err);
+        if (
+          errorMessage.includes("refresh_token_not_found") ||
+          errorMessage.includes("Invalid Refresh Token")
+        ) {
+          return { data: { session: null }, error: null };
+        }
+        throw err; // Re-throw unexpected errors
+      }
+    };
   }
 
   return browserClient;
