@@ -24,7 +24,7 @@ export async function POST(req: Request) {
     const base = `${protocol}://${host}`;
 
     // Create Stripe checkout session with automatic tax disabled
-    const session = await stripe.checkout.sessions.create({
+    const sessionParams: Stripe.Checkout.SessionCreateParams = {
       payment_method_types: ["card"],
       line_items: [
         {
@@ -47,24 +47,28 @@ export async function POST(req: Request) {
         customerName: customerName || 'Customer',
         customerPhone: customerPhone || '+1234567890',
         source: source || 'qr',
-        items: JSON.stringify(items.map((item: unknown) => {
-          const menuItem = item as { id?: string; name?: string; price?: number; quantity?: number };
-          return {
-            id: menuItem.id,
-            name: menuItem.name,
-            quantity: menuItem.quantity,
-            price: menuItem.price,
-          };
-        }))).substring(0, 200),
+        items: JSON.stringify(
+          items.map((item: unknown) => {
+            const menuItem = item as { id?: string; name?: string; price?: number; quantity?: number };
+            return {
+              id: menuItem.id,
+              name: menuItem.name,
+              quantity: menuItem.quantity,
+              price: menuItem.price,
+            };
+          })
+        ).substring(0, 200),
       },
       success_url: `${base}/payment/success?session_id={CHECKOUT_SESSION_ID}&orderId=${orderId}`,
       cancel_url: `${base}/payment/cancel?orderId=${orderId}&venueId=${venueId || 'default-venue'}&tableNumber=${tableNumber || '1'}`,
     };
 
     // Add customer email if provided - Stripe will automatically send digital receipts
-    if (customerEmail) {
-      session.customer_email = customerEmail;
+    if (customerEmail && customerEmail.trim() !== '') {
+      sessionParams.customer_email = customerEmail.trim();
     }
+
+    const session = await stripe.checkout.sessions.create(sessionParams);
 
     logger.info('[CHECKOUT] Created Stripe session:', {
       sessionId: session.id,
