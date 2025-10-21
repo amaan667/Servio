@@ -6,7 +6,7 @@ import { logger } from '@/lib/logger';
 // POST /api/staff/invitations/cancel - Cancel an invitation
 export async function POST(request: NextRequest) {
   try {
-    const user = await getUserSafe('POST /api/staff/invitations/cancel');
+    const user = await getUserSafe();
     if (!user) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
@@ -14,7 +14,7 @@ export async function POST(request: NextRequest) {
     const body = await request.json();
     const { id } = body;
 
-    logger.debug('[INVITATION API] Cancel request received:', { id, user: user.id });
+    logger.debug('[INVITATION API] Cancel request received:', { data: { id, extra: user: user.id } });
 
     if (!id) {
       return NextResponse.json({ error: 'Invitation ID is required' }, { status: 400 });
@@ -25,7 +25,7 @@ export async function POST(request: NextRequest) {
     // Check if staff_invitations table exists
     try {
       await supabase.from('staff_invitations').select('id').limit(1);
-    } catch (tableError: unknown) {
+    } catch (tableError: any) {
       const errorMessage = tableError instanceof Error ? tableError.message : 'Unknown error';
       const errorCode = tableError && typeof tableError === 'object' && 'code' in tableError ? String(tableError.code) : undefined;
       

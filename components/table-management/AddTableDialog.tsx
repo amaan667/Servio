@@ -56,7 +56,7 @@ export function AddTableDialog({ venueId, onTableAdded }: AddTableDialogProps) {
       setSeatCount(2);
       setOpen(false);
       onTableAdded?.();
-    } catch (error: unknown) {
+    } catch (error: any) {
 
       // Handle specific constraint error
       if (error.message?.includes('CONSTRAINT_ERROR') || error.message?.includes('temporarily unavailable')) {

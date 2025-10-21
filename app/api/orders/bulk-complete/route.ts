@@ -202,7 +202,7 @@ export async function POST(req: Request) {
           }
           
         } catch (tableError) {
-          logger.error('[BULK COMPLETE] Error handling table cleanup for table:', tableId, tableError);
+          logger.error('[BULK COMPLETE] Error handling table cleanup for table:', { error: tableId, context: tableError });
         }
       }
       */

@@ -102,7 +102,7 @@ export function useStaffManagement(venueId: string, initialStaff?: StaffRow[], i
       setStaff(prev => [...prev, data.staff]);
       setName('');
       setRole('Server');
-    } catch (err: unknown) {
+    } catch (err: any) {
       setError(err.message);
     } finally {
       setAdding(false);
@@ -122,7 +122,7 @@ export function useStaffManagement(venueId: string, initialStaff?: StaffRow[], i
       }
 
       setStaff(prev => prev.map(s => s.id === staffId ? { ...s, active: !currentActive } : s));
-    } catch (err: unknown) {
+    } catch (err: any) {
       setError(err.message);
     }
   };

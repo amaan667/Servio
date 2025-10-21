@@ -6,7 +6,7 @@ import { logger } from '@/lib/logger';
 // POST /api/fix-invitation-constraint - Direct fix for invitation constraint
 export async function POST() {
   try {
-    const user = await getUserSafe('POST /api/fix-invitation-constraint');
+    const user = await getUserSafe();
     if (!user) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }

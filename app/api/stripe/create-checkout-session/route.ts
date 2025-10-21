@@ -227,7 +227,7 @@ export async function POST(request: NextRequest) {
     
     // Always use the actual organization ID from database
     const actualOrgId = org.id;
-    logger.debug('[STRIPE DEBUG] Using organization ID:', { orgId: actualOrgId, userId: user.id });
+    logger.debug('[STRIPE DEBUG] Using organization ID:', { data: { orgId: actualOrgId, extra: userId: user.id } });
 
     logger.debug('[STRIPE DEBUG] Using organization:', {
       id: org.id,
@@ -257,7 +257,7 @@ export async function POST(request: NextRequest) {
         .update({ stripe_customer_id: customerId })
         .eq("id", actualOrgId);
       
-      logger.debug('[STRIPE DEBUG] Created Stripe customer:', { customerId, orgId: actualOrgId });
+      logger.debug('[STRIPE DEBUG] Created Stripe customer:', { data: { customerId, extra: orgId: actualOrgId } });
     } else {
       logger.debug('[STRIPE DEBUG] Using existing Stripe customer:', { value: customerId });
     }
@@ -301,7 +301,7 @@ export async function POST(request: NextRequest) {
     });
 
     return NextResponse.json({ sessionId: session.id, url: session.url });
-  } catch (error: unknown) {
+  } catch (error: any) {
     const errorMessage = error instanceof Error ? error.message : 'Unknown error';
     logger.error("[STRIPE CHECKOUT] Error:", { error: errorMessage });
     return NextResponse.json(

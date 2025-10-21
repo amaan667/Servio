@@ -44,7 +44,7 @@ export default function CreateAccountPage() {
 
         setSessionData(data);
         setStatus('form');
-      } catch (err: unknown) {
+      } catch (err: any) {
 
         setError(err.message || 'Failed to fetch session details.');
         setStatus('error');
@@ -87,7 +87,7 @@ export default function CreateAccountPage() {
       setTimeout(() => {
         router.push(`/dashboard/${data.venueId}?welcome=true`);
       }, 2000);
-    } catch (err: unknown) {
+    } catch (err: any) {
 
       setError(err.message || 'Failed to create account. Please try again.');
       setLoading(false);

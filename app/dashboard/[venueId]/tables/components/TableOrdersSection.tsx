@@ -1,7 +1,7 @@
 import { TableOrderGroupCard } from '@/components/table-management/TableOrderGroupCard';
 
 interface TableOrdersSectionProps {
-  groupedTableOrders: { [key: string]: unknown[] };
+  groupedTableOrders: { [key: string]: any[] };
 }
 
 export function TableOrdersSection({ groupedTableOrders }: TableOrdersSectionProps) {

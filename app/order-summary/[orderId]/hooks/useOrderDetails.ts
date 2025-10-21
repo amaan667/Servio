@@ -58,7 +58,7 @@ export function useOrderDetails(orderId: string) {
         if (error) throw error;
 
         setOrder(data as Order);
-      } catch (err: unknown) {
+      } catch (err: any) {
 
         setError(err.message || 'Failed to load order details');
         toast({

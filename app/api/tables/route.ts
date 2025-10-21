@@ -120,7 +120,7 @@ export async function GET(req: Request) {
           });
 
         if (sessionError) {
-          logger.error('[TABLES API DEBUG] Error creating session for table:', table.id, sessionError);
+          logger.error('[TABLES API DEBUG] Error creating session for table:', { error: table.id, context: sessionError });
         } else {
         }
       }

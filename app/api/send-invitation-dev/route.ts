@@ -5,7 +5,7 @@ import { apiLogger, logger } from '@/lib/logger';
 // POST /api/send-invitation-dev - Send invitation email in development mode
 export async function POST(request: NextRequest) {
   try {
-    const user = await getUserSafe('POST /api/send-invitation-dev');
+    const user = await getUserSafe();
     if (!user) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }

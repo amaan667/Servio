@@ -13,7 +13,7 @@ import { logger } from "@/lib/logger";
 import NavigationBreadcrumb from "@/components/navigation-breadcrumb";
 
 interface CompleteProfileFormProps {
-  user: unknown;
+  user: any;
 }
 
 export default function CompleteProfileForm({ user }: CompleteProfileFormProps) {
@@ -30,7 +30,7 @@ export default function CompleteProfileForm({ user }: CompleteProfileFormProps) 
   });
 
   // Check if user signed up with OAuth (Google) and needs to set a password
-  const isOAuthUser = (user as unknown)?.identities?.some((identity: unknown) => 
+  const isOAuthUser = (user as unknown)?.identities?.some((identity: any) => 
     identity.provider === 'google' || identity.provider === 'oauth'
   );
 
@@ -152,7 +152,7 @@ export default function CompleteProfileForm({ user }: CompleteProfileFormProps) 
       });
 
       router.replace(`/dashboard/${returnedVenueId}`);
-    } catch (error: unknown) {
+    } catch (error: any) {
 
       setError(error.message || "Failed to complete profile setup");
     } finally {

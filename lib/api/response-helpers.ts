@@ -13,7 +13,7 @@ export interface ApiResponse<T = unknown> {
   ok: boolean;
   data?: T;
   error?: string;
-  details?: unknown;
+  details?: any;
 }
 
 /**
@@ -29,7 +29,7 @@ export function ok<T>(data: T, status = 200): NextResponse<ApiResponse<T>> {
 export function fail(
   error: string,
   status = 400,
-  details?: unknown
+  details?: any
 ): NextResponse<ApiResponse> {
   return NextResponse.json(
     {
@@ -46,7 +46,7 @@ export function fail(
  */
 export function validationError(
   error: string,
-  details?: unknown
+  details?: any
 ): NextResponse<ApiResponse> {
   return fail(error, 400, details);
 }
@@ -79,7 +79,7 @@ export function notFound(error = 'Not found'): NextResponse<ApiResponse> {
  */
 export function serverError(
   error = 'Internal server error',
-  details?: unknown
+  details?: any
 ): NextResponse<ApiResponse> {
   return fail(error, 500, details);
 }

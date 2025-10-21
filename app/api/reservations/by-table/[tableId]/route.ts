@@ -65,7 +65,7 @@ export async function GET(req: NextRequest, context: { params: Promise<{ tableId
       reservation: reservation || null
     });
 
-  } catch (error: unknown) {
+  } catch (error: any) {
     logger.error('[GET RESERVATION BY TABLE] Error:', { error: error instanceof Error ? error.message : 'Unknown error' });
     return NextResponse.json({ 
       ok: false, 

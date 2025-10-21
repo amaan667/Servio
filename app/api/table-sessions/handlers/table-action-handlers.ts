@@ -524,7 +524,7 @@ export async function handleMergeTable(supabase: SupabaseClient, venue_id: strin
   }
 }
 
-export async function handleUnmergeTable(supabase: unknown, table_id: string) {
+export async function handleUnmergeTable(supabase: any, table_id: string) {
   try {
     // Get the current table info to understand its state
     const { data: currentTable, error: currentTableError } = await supabase
@@ -590,7 +590,7 @@ export async function handleUnmergeTable(supabase: unknown, table_id: string) {
   }
 }
 
-export async function handleCancelReservation(supabase: unknown, table_id: string, reservation_id: string) {
+export async function handleCancelReservation(supabase: any, table_id: string, reservation_id: string) {
   try {
     // First, cancel the reservation in the reservations table (if it exists)
     const { error: reservationError } = await supabase

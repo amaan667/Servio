@@ -54,7 +54,7 @@ export async function POST(request: NextRequest) {
     const oldCount = oldConversations?.length || 0;
     const newCount = newConversations?.length || 0;
 
-    logger.debug("[AI MIGRATION] Conversations count", { old: oldCount, new: newCount });
+    logger.debug("[AI MIGRATION] Conversations count", { data: { old: oldCount, extra: new: newCount } });
 
     // Step 3: If new conversations exist, just generate AI titles for existing ones
     if (newCount > 0) {
@@ -88,14 +88,14 @@ export async function POST(request: NextRequest) {
               });
 
             if (updateError) {
-              logger.error("[AI MIGRATION] Error updating title for conversation", { convId: conv.conversation_id, error: updateError });
+              logger.error("[AI MIGRATION] Error updating title for conversation", { error: { convId: conv.conversation_id, context: error: updateError } });
             } else {
-              logger.debug("[AI MIGRATION] Updated conversation title", { convId: conv.conversation_id, title: aiTitle });
+              logger.debug("[AI MIGRATION] Updated conversation title", { data: { convId: conv.conversation_id, extra: title: aiTitle } });
               updatedCount++;
             }
           }
         } catch (error) {
-          logger.error("[AI MIGRATION] Error generating title for conversation", { convId: conv.conversation_id, error });
+          logger.error("[AI MIGRATION] Error generating title for conversation", { error: { convId: conv.conversation_id, context: error } });
         }
       }
 
@@ -150,7 +150,7 @@ export async function POST(request: NextRequest) {
             .single();
 
           if (createError) {
-            logger.error("[AI MIGRATION] Error creating conversation", { convId: oldConv.id, error: createError });
+            logger.error("[AI MIGRATION] Error creating conversation", { error: { convId: oldConv.id, context: error: createError } });
             continue;
           }
 
@@ -162,7 +162,7 @@ export async function POST(request: NextRequest) {
             .order("created_at", { ascending: true });
 
           if (messagesError) {
-            logger.error("[AI MIGRATION] Error getting messages for conversation", { convId: oldConv.id, error: messagesError });
+            logger.error("[AI MIGRATION] Error getting messages for conversation", { error: { convId: oldConv.id, context: error: messagesError } });
             continue;
           }
 
@@ -180,7 +180,7 @@ export async function POST(request: NextRequest) {
               });
 
             if (msgError) {
-              logger.error("[AI MIGRATION] Error migrating message", { msgId: message.id, error: msgError });
+              logger.error("[AI MIGRATION] Error migrating message", { error: { msgId: message.id, context: error: msgError } });
             }
           }
 
@@ -196,17 +196,17 @@ export async function POST(request: NextRequest) {
                 .update({ title: aiTitle, updated_at: new Date().toISOString() })
                 .eq("id", oldConv.id);
               
-              logger.debug("[AI MIGRATION] Generated AI title for conversation", { convId: oldConv.id, title: aiTitle });
+              logger.debug("[AI MIGRATION] Generated AI title for conversation", { data: { convId: oldConv.id, extra: title: aiTitle } });
             } catch (titleError) {
-              logger.error("[AI MIGRATION] Error generating AI title for conversation", { convId: oldConv.id, error: titleError });
+              logger.error("[AI MIGRATION] Error generating AI title for conversation", { error: { convId: oldConv.id, context: error: titleError } });
             }
           }
 
           migratedCount++;
-          logger.debug("[AI MIGRATION] Migrated conversation", { convId: oldConv.id, messages: messages?.length || 0 });
+          logger.debug("[AI MIGRATION] Migrated conversation", { data: { convId: oldConv.id, extra: messages: messages?.length || 0 } });
 
         } catch (error) {
-          logger.error("[AI MIGRATION] Error migrating conversation", { convId: oldConv.id, error });
+          logger.error("[AI MIGRATION] Error migrating conversation", { error: { convId: oldConv.id, context: error } });
         }
       }
 
@@ -232,7 +232,7 @@ export async function POST(request: NextRequest) {
       }
     });
 
-  } catch (error: unknown) {
+  } catch (error: any) {
     logger.error("[AI MIGRATION] Migration error:", { error: error instanceof Error ? error.message : 'Unknown error' });
     return NextResponse.json(
       { error: "Migration failed", details: error instanceof Error ? error.message : 'Unknown error' },
@@ -269,7 +269,7 @@ export async function GET(request: NextRequest) {
       timestamp: new Date().toISOString()
     });
 
-  } catch (error: unknown) {
+  } catch (error: any) {
     logger.error("[AI MIGRATION] Status check error:", { error: error instanceof Error ? error.message : 'Unknown error' });
     return NextResponse.json(
       { error: "Failed to check migration status", details: error instanceof Error ? error.message : 'Unknown error' },

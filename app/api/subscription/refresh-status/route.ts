@@ -120,7 +120,7 @@ export async function POST(request: NextRequest) {
         }
       });
 
-    } catch (stripeError: unknown) {
+    } catch (stripeError: any) {
       logger.error('[SUBSCRIPTION REFRESH] Stripe error:', { value: stripeError });
       
       // If subscription doesn't exist in Stripe, reset to basic
@@ -155,7 +155,7 @@ export async function POST(request: NextRequest) {
       });
     }
 
-  } catch (error: unknown) {
+  } catch (error: any) {
     logger.error("[SUBSCRIPTION REFRESH] Error:", { error: error instanceof Error ? error.message : 'Unknown error' });
     return NextResponse.json(
       { error: error.message || "Failed to refresh subscription status" },

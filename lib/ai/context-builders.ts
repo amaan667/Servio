@@ -126,7 +126,7 @@ export async function getMenuSummary(
     { sales: number; revenue: number; name: string; price: number }
   >();
 
-  orderItems?.forEach((oi: unknown) => {
+  orderItems?.forEach((oi: any) => {
     const existing = salesMap.get(oi.menu_item_id) || {
       sales: 0,
       revenue: 0,
@@ -155,7 +155,7 @@ export async function getMenuSummary(
 
   // Calculate category counts
   const categoryMap = new Map<string, { name: string; count: number }>();
-  items.forEach((item: unknown) => {
+  items.forEach((item: any) => {
     if (item.category) {
       const existing = categoryMap.get(item.category) || {
         name: item.category,
@@ -181,7 +181,7 @@ export async function getMenuSummary(
   const maxPrice = Math.max(...prices);
 
   // Create list of all items for AI to reference
-  const allItems = items.map((item: unknown) => ({
+  const allItems = items.map((item: any) => ({
     id: item.id,
     name: item.name,
     price: item.price,
@@ -317,13 +317,13 @@ export async function getOrdersSummary(
   const now = new Date();
   const overdueTickets =
     kdsTickets
-      ?.filter((ticket: unknown) => {
+      ?.filter((ticket: any) => {
         if (ticket.status !== "in_progress" || !ticket.started_at) return false;
         const startedAt = new Date(ticket.started_at);
         const minutesElapsed = (now.getTime() - startedAt.getTime()) / 1000 / 60;
         return minutesElapsed > 10;
       })
-      .map((ticket: unknown) => {
+      .map((ticket: any) => {
         const startedAt = new Date(ticket.started_at);
         const minutesOverdue =
           (now.getTime() - startedAt.getTime()) / 1000 / 60 - 10;
@@ -331,7 +331,7 @@ export async function getOrdersSummary(
           id: ticket.id,
           orderId: ticket.order_id,
           station: ticket.station_name,
-          items: ticket.items.map((i: unknown) => i.name),
+          items: ticket.items.map((i: any) => i.name),
           minutesOverdue: Math.round(minutesOverdue),
         };
       }) || [];
@@ -355,7 +355,7 @@ export async function getOrdersSummary(
     { totalTime: number; count: number }
   >();
 
-  completedTickets?.forEach((ticket: unknown) => {
+  completedTickets?.forEach((ticket: any) => {
     const startedAt = new Date(ticket.started_at);
     const completedAt = new Date(ticket.completed_at);
     const prepTime = (completedAt.getTime() - startedAt.getTime()) / 1000 / 60;
@@ -446,7 +446,7 @@ export async function getAnalyticsSummary(
 
   // Count by item
   const itemCounts = new Map<string, { name: string; count: number }>();
-  recentItems?.forEach((item: unknown) => {
+  recentItems?.forEach((item: any) => {
     const name = item.menu_items?.name || "Unknown";
     const existing = itemCounts.get(name) || { name, count: 0 };
     itemCounts.set(name, { name, count: existing.count + item.quantity });
@@ -459,7 +459,7 @@ export async function getAnalyticsSummary(
 
   // Count by category
   const categoryPerformance: Record<string, number> = {};
-  recentItems?.forEach((item: unknown) => {
+  recentItems?.forEach((item: any) => {
     const categoryName = item.menu_items?.category || "Uncategorized";
     categoryPerformance[categoryName] = (categoryPerformance[categoryName] || 0) + item.quantity;
   });
@@ -511,7 +511,7 @@ async function getCachedContext(
 async function cacheContext(
   venueId: string,
   contextType: string,
-  contextData: unknown
+  contextData: any
 ): Promise<void> {
   const supabase = await createClient();
 
@@ -535,8 +535,8 @@ async function cacheContext(
 // Get All Summaries Helper
 // ============================================================================
 
-export async function getAllSummaries(venueId: string, features: unknown) {
-  const summaries: unknown = {
+export async function getAllSummaries(venueId: string, features: any) {
+  const summaries: any = {
     menu: await getMenuSummary(venueId),
     analytics: await getAnalyticsSummary(venueId),
   };

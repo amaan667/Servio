@@ -9,7 +9,7 @@ export interface RetryOptions {
   baseDelay?: number;
   maxDelay?: number;
   backoffFactor?: number;
-  retryCondition?: (error: unknown) => boolean;
+  retryCondition?: (error: any) => boolean;
 }
 
 interface RetryableError {
@@ -23,7 +23,7 @@ export const DEFAULT_RETRY_OPTIONS: Required<RetryOptions> = {
   baseDelay: 1000, // 1 second
   maxDelay: 10000, // 10 seconds
   backoffFactor: 2,
-  retryCondition: (error: unknown) => {
+  retryCondition: (error: any) => {
     // Retry on network errors, timeouts, and 5xx server errors
     const err = error as RetryableError;
     return (
@@ -43,7 +43,7 @@ export async function withRetry<T>(
   options: RetryOptions = {}
 ): Promise<T> {
   const config = { ...DEFAULT_RETRY_OPTIONS, ...options };
-  let lastError: unknown;
+  let lastError: any;
 
   for (let attempt = 1; attempt <= config.maxAttempts; attempt++) {
     try {
@@ -97,9 +97,9 @@ export function createRetryableFetch(
 
 // Utility for Supabase operations with retry
 export async function withSupabaseRetry<T>(
-  operation: () => Promise<{ data: T | null; error: unknown }>,
+  operation: () => Promise<{ data: T | null; error: any }>,
   options: RetryOptions = {}
-): Promise<{ data: T | null; error: unknown }> {
+): Promise<{ data: T | null; error: any }> {
   try {
     return await withRetry(operation, options);
   } catch (error) {

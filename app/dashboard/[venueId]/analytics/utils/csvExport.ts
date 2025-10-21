@@ -1,12 +1,12 @@
 import { toCSV, formatDateForCSV, formatCurrencyForCSV } from '@/lib/csv';
 import { generateTimestampedFilename } from '@/hooks/useCsvDownload';
 
-export function prepareCSVData(orders: unknown[]) {
-  const csvRows: unknown[] = [];
+export function prepareCSVData(orders: any[]) {
+  const csvRows: any[] = [];
   
-  orders.forEach((order: unknown) => {
+  orders.forEach((order: any) => {
     if (order.items && Array.isArray(order.items)) {
-      order.items.forEach((item: unknown) => {
+      order.items.forEach((item: any) => {
         csvRows.push({
           date: formatDateForCSV(order.created_at),
           table: order.table_number || 'N/A',
@@ -45,7 +45,7 @@ export function getCSVColumns() {
   ];
 }
 
-export function generateCSV(csvRows: unknown[]) {
+export function generateCSV(csvRows: any[]) {
   const columns = getCSVColumns();
   return toCSV(csvRows, columns);
 }

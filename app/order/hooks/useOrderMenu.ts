@@ -49,7 +49,7 @@ export function useOrderMenu(venueSlug: string, isDemo: boolean) {
 
       const data = await response.json();
       
-      const normalized = (data.menuItems || []).map((mi: unknown) => ({ 
+      const normalized = (data.menuItems || []).map((mi: any) => ({ 
         ...mi, 
         venue_name: data.venue?.venue_name || 'Our Venue'
       }));
@@ -74,7 +74,7 @@ export function useOrderMenu(venueSlug: string, isDemo: boolean) {
       }
       
       setLoadingMenu(false);
-    } catch (err: unknown) {
+    } catch (err: any) {
       setMenuError(`Error loading menu: ${err.message}`);
       setLoadingMenu(false);
     }

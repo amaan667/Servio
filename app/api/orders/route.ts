@@ -46,7 +46,7 @@ export async function GET(req: Request) {
     }
 
     return NextResponse.json({ ok: true, orders: orders || [] });
-  } catch (e: unknown) {
+  } catch (e: any) {
     const msg = e instanceof Error ? e.message : 'Unknown server error';
     apiLogger.error('GET orders error:', { error: e });
     return NextResponse.json({ ok: false, error: msg }, { status: 500 });
@@ -86,7 +86,7 @@ function bad(msg: string, status = 400) {
 }
 
 // Function to create KDS tickets for an order
-async function createKDSTickets(supabase: unknown, order: { id: string; venue_id: string; items?: unknown[] }) {
+async function createKDSTickets(supabase: any, order: { id: string; venue_id: string; items?: any[] }) {
   try {
     logger.debug('[KDS TICKETS] Creating KDS tickets for order:', { orderId: order.id });
     
@@ -98,7 +98,7 @@ async function createKDSTickets(supabase: unknown, order: { id: string; venue_id
       .eq('is_active', true);
     
     if (!existingStations || existingStations.length === 0) {
-      logger.debug('[KDS TICKETS] No stations found, creating default stations for venue:', { venueId: order.venue_id });
+      logger.debug('[KDS TICKETS] No stations found, { data: creating default stations for venue:', extra: { venueId: order.venue_id } });
       
       // Create default stations
       const defaultStations = [
@@ -145,7 +145,7 @@ async function createKDSTickets(supabase: unknown, order: { id: string; venue_id
       throw new Error('No KDS stations available');
     }
     
-    const expoStation = existingStations.find((s: unknown) => (s as { station_type?: string }).station_type === 'expo') || existingStations[0];
+    const expoStation = existingStations.find((s: any) => (s as { station_type?: string }).station_type === 'expo') || existingStations[0];
     
     if (!expoStation) {
       throw new Error('No KDS station available');
@@ -172,12 +172,12 @@ async function createKDSTickets(supabase: unknown, order: { id: string; venue_id
         .insert(ticketData);
       
       if (ticketError) {
-        logger.error('[KDS TICKETS] Failed to create ticket for item:', { item, error: ticketError });
+        logger.error('[KDS TICKETS] Failed to create ticket for item:', { error: { item, context: error: ticketError } });
         throw ticketError;
       }
     }
     
-    logger.debug('[KDS TICKETS] Successfully created KDS tickets', { count: items.length, orderId: order.id });
+    logger.debug('[KDS TICKETS] Successfully created KDS tickets', { data: { count: items.length, extra: orderId: order.id } });
     
   } catch (error) {
     logger.error('[KDS TICKETS] Error creating KDS tickets:', { error: error instanceof Error ? error.message : 'Unknown error' });
@@ -191,7 +191,7 @@ export async function POST(req: Request) {
     logger.debug('[ORDER CREATION DEBUG] Timestamp:', new Date().toISOString());
     
     const body = (await req.json()) as Partial<OrderPayload>;
-    logger.debug('[ORDER CREATION DEBUG] Request body:', JSON.stringify(body, null, 2));
+    logger.debug('[ORDER CREATION DEBUG] Request body:', { data: JSON.stringify(body, extra: null, 2 }));
 
     
     if (!body.venue_id || typeof body.venue_id !== 'string') {
@@ -428,7 +428,7 @@ export async function POST(req: Request) {
 
     // If we found a recent duplicate, return it instead of creating a new one
     if (existingOrder) {
-      logger.debug('[ORDER API] Found duplicate order, returning existing:', existingOrder.id);
+      logger.debug('[ORDER API] Found duplicate order, { data: returning existing:', extra: existingOrder.id });
       return NextResponse.json({ 
         ok: true, 
         order: existingOrder,
@@ -443,8 +443,8 @@ export async function POST(req: Request) {
 
     // Final validation before insertion
     logger.debug('[ORDER CREATION DEBUG] ===== CREATING NEW ORDER =====');
-    logger.debug('[ORDER CREATION DEBUG] Order details:', { customer: payload.customer_name, table: payload.table_number, venueId: payload.venue_id });
-    logger.debug('[ORDER CREATION DEBUG] Payment details:', { status: payload.payment_status, method: payload.payment_method, source: payload.source, total: payload.total_amount, itemsCount: payload.items?.length || 0 });
+    logger.debug('[ORDER CREATION DEBUG] Order details:', { data: { customer: payload.customer_name, extra: table: payload.table_number, venueId: payload.venue_id } });
+    logger.debug('[ORDER CREATION DEBUG] Payment details:', { data: { status: payload.payment_status, extra: method: payload.payment_method, source: payload.source, total: payload.total_amount, itemsCount: payload.items?.length || 0 } });
     
     const { data: inserted, error: insertErr } = await supabase
       .from('orders')
@@ -575,7 +575,7 @@ export async function POST(req: Request) {
     };
     
     logger.debug('[ORDER CREATION DEBUG] ===== RETURNING RESPONSE =====');
-    logger.debug('[ORDER CREATION DEBUG] Response data:', JSON.stringify(response, null, 2));
+    logger.debug('[ORDER CREATION DEBUG] Response data:', { data: JSON.stringify(response, extra: null, 2 }));
     
     // Create KDS tickets for the order
     try {
@@ -588,7 +588,7 @@ export async function POST(req: Request) {
     // Log that real-time updates should be triggered
     
     return NextResponse.json(response);
-  } catch (e: unknown) {
+  } catch (e: any) {
     const msg = e instanceof Error ? e.message : (typeof e === 'string' ? e : 'Unknown server error');
     return bad(`Server error: ${msg}`, 500);
   }

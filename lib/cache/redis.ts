@@ -199,7 +199,7 @@ export class RedisCache {
   /**
    * Set multiple key-value pairs
    */
-  async mset(items: Array<{ key: string; value: unknown; ttl?: number }>): Promise<boolean> {
+  async mset(items: Array<{ key: string; value: any; ttl?: number }>): Promise<boolean> {
     if (!this.client || items.length === 0) {
       return false;
     }

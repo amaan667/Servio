@@ -253,7 +253,7 @@ function CallbackContent() {
               router.push(`/dashboard/${primaryVenue.venue_id}`);
               return;
             }
-          } catch (fallbackErr: unknown) {
+          } catch (fallbackErr: any) {
             addDebugLog(`[AUTH CALLBACK] Fallback authentication error: ${fallbackErr.message}`);
             setError(`Authentication failed: ${fallbackErr.message}`);
             setLoading(false);
@@ -302,7 +302,7 @@ function CallbackContent() {
           setError('Failed to create session - no session data returned');
           setLoading(false);
         }
-      } catch (err: unknown) {
+      } catch (err: any) {
         addDebugLog(`[AUTH CALLBACK] Unexpected error: ${err.message}`);
         addDebugLog(`[AUTH CALLBACK] Error details: ${JSON.stringify({
           message: err.message,

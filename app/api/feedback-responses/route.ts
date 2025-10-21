@@ -69,7 +69,7 @@ export async function POST(req: Request) {
     // Filter out generic questions (they start with 'generic-')
     const nonGenericQuestionIds = questionIds.filter(id => !id.startsWith('generic-'));
     
-    let questions: unknown[] = [];
+    let questions: any[] = [];
     if (nonGenericQuestionIds.length > 0) {
       const { data: dbQuestions, error: questionsError } = await serviceClient
         .from('feedback_questions')
@@ -198,7 +198,7 @@ export async function POST(req: Request) {
       saved_count: data?.length || 0
     });
 
-  } catch (error: unknown) {
+  } catch (error: any) {
     logger.error('[FEEDBACK][R] insert exception:', { error: error instanceof Error ? error.message : 'Unknown error' });
     return NextResponse.json({ 
       error: 'Failed to submit feedback' 

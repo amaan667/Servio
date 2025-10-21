@@ -127,7 +127,7 @@ export async function POST(request: NextRequest) {
             logger.debug(`[DOWNGRADE] Updated Stripe subscription ${subscription.id} to ${newTier} with immediate billing`);
           }
         }
-      } catch (stripeError: unknown) {
+      } catch (stripeError: any) {
         const errorMessage = stripeError instanceof Error ? stripeError.message : 'Unknown error';
         logger.error("[DOWNGRADE] Stripe update error:", { error: errorMessage });
         // Don't fail the entire operation if Stripe update fails
@@ -141,7 +141,7 @@ export async function POST(request: NextRequest) {
       newTier 
     });
 
-  } catch (error: unknown) {
+  } catch (error: any) {
     const errorMessage = error instanceof Error ? error.message : 'Unknown error';
     logger.error("[DOWNGRADE] Error:", { error: errorMessage });
     return NextResponse.json(

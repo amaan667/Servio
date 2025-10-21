@@ -6,7 +6,7 @@ import { MenuUploadCard } from "@/components/MenuUploadCard";
 
 interface MenuManagementWrapperProps {
   venueId: string;
-  session: unknown;
+  session: any;
 }
 
 export function MenuManagementWrapper({ venueId, session }: MenuManagementWrapperProps) {

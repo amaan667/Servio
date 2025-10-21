@@ -6,7 +6,7 @@ import { logger } from '@/lib/logger';
 // POST /api/migrate-database-constraint - Fix staff invitations constraint
 export async function POST() {
   try {
-    const user = await getUserSafe('POST /api/migrate-database-constraint');
+    const user = await getUserSafe();
     if (!user) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }

@@ -253,7 +253,7 @@ Return a structured plan with:
 - intent: what the user wants (clear, natural language)
 - tools: ordered array of tool calls with exact params
 - reasoning: why this plan is safe and appropriate
-- warnings: unknown caveats or considerations (null if none)`;
+- warnings: any caveats or considerations (null if none)`;
 }
 
 // ============================================================================
@@ -448,7 +448,7 @@ export async function planAssistantAction(
 
 export async function explainAction(
   toolName: ToolName,
-  params: unknown,
+  params: any,
   context: AIAssistantContext
 ): Promise<string> {
   const systemPrompt = `You are Servio Assistant. Explain the following action in simple, human terms.
@@ -484,7 +484,7 @@ User Role: ${context.userRole}`;
 
 export async function generateSuggestions(
   pageContext: "menu" | "inventory" | "kds" | "orders" | "analytics",
-  dataSummary: unknown
+  dataSummary: any
 ): Promise<string[]> {
   const systemPrompt = `Generate 3-4 actionable suggestions for a ${pageContext} dashboard.
 Return ONLY a JSON array of strings. Each suggestion should be a natural language command.

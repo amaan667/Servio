@@ -86,14 +86,14 @@ export function useLiveOrders(venueId: string) {
       }
 
       // Transform orders to include table_label
-      const transformedOrders = (data ?? []).map((order: unknown) => ({
+      const transformedOrders = (data ?? []).map((order: any) => ({
         ...order,
         table_label: (order.tables as unknown)?.label || (order.source === 'counter' ? `Counter ${order.table_number}` : `Table ${order.table_number}`)
       }))
       
       setData(transformedOrders)
       
-    } catch (err: unknown) {
+    } catch (err: any) {
       setIsError(true)
       setError(err.message || 'Failed to load orders')
     } finally {

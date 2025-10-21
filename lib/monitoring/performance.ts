@@ -171,9 +171,9 @@ export function monitorBundleSize() {
  * Get performance summary
  */
 export function getPerformanceSummary(): {
-  memory?: unknown;
-  timing?: unknown;
-  navigation?: unknown;
+  memory?: any;
+  timing?: any;
+  navigation?: any;
 } {
   if (typeof window === 'undefined') return {};
 

@@ -122,7 +122,7 @@ export async function POST(req: Request) {
       venues_processed: venues?.length || 0
     });
     
-  } catch (error: unknown) {
+  } catch (error: any) {
     logger.error('[KDS MIGRATION] Unexpected error:', { error: error instanceof Error ? error.message : 'Unknown error' });
     return NextResponse.json({ 
       ok: false, 

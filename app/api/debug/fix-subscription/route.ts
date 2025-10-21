@@ -74,7 +74,7 @@ export async function POST(request: NextRequest) {
       organization: updatedOrg
     });
 
-  } catch (error: unknown) {
+  } catch (error: any) {
     logger.error('Fix subscription error:', { error: error instanceof Error ? error.message : 'Unknown error' });
     return NextResponse.json(
       { error: "Internal server error", details: error instanceof Error ? error.message : 'Unknown error' },

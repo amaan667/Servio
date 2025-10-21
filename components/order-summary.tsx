@@ -11,7 +11,7 @@ import { createClient } from '@/lib/supabase';
 interface OrderSummaryProps {
   orderId?: string;
   sessionId?: string;
-  orderData?: unknown;
+  orderData?: any;
   isDemo?: boolean;
   onClose?: () => void;
 }
@@ -19,7 +19,7 @@ interface OrderSummaryProps {
 interface OrderTimelineItem {
   status: string;
   label: string;
-  icon: unknown;
+  icon: any;
   timestamp?: string;
   completed: boolean;
   current: boolean;
@@ -184,11 +184,11 @@ export default function OrderSummary({ orderId, sessionId, orderData, isDemo = f
           table: 'orders',
           filter: `id=eq.${order.id}`,
         },
-        (payload: unknown) => {
+        (payload: any) => {
           
           if (payload.eventType === 'UPDATE') {
             
-            setOrder((prevOrder: unknown) => {
+            setOrder((prevOrder: any) => {
               if (!prevOrder) return null;
               return { ...prevOrder, ...payload.new };
             });
@@ -328,7 +328,7 @@ export default function OrderSummary({ orderId, sessionId, orderData, isDemo = f
             </CardHeader>
             <CardContent>
               <div className="space-y-4">
-                {order.items.map((item: unknown, index: number) => (
+                {order.items.map((item: any, index: number) => (
                   <div key={index} className="flex justify-between items-start py-3 border-b border-gray-100 last:border-b-0">
                     <div className="flex-1">
                       <div className="flex items-center gap-3">

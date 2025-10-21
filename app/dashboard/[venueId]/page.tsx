@@ -107,12 +107,12 @@ export default async function VenuePage({ params }: { params: Promise<{ venueId:
     .gte("created_at", todayWindow.startUtcISO)
     .lt("created_at", todayWindow.endUtcISO);
 
-  const todayRevenue = (todayOrdersForRevenue ?? []).reduce((sum: number, order: unknown) => {
-    const orderData = order as { total_amount?: number | string; items?: unknown[] };
+  const todayRevenue = (todayOrdersForRevenue ?? []).reduce((sum: number, order: any) => {
+    const orderData = order as { total_amount?: number | string; items?: any[] };
     let amount = Number(orderData.total_amount) || parseFloat(String(orderData.total_amount)) || 0;
     if (!Number.isFinite(amount) || amount <= 0) {
       if (Array.isArray(orderData.items)) {
-        amount = orderData.items.reduce((s: number, it: unknown) => {
+        amount = orderData.items.reduce((s: number, it: any) => {
           const item = it as { unit_price?: number; price?: number; quantity?: number; qty?: number };
           const unit = Number(item.unit_price ?? item.price ?? 0);
           const qty = Number(item.quantity ?? item.qty ?? 0);

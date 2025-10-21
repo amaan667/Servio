@@ -113,7 +113,7 @@ interface Message {
   id: string;
   authorRole: 'system' | 'user' | 'assistant' | 'tool';
   text: string;
-  content: unknown;
+  content: any;
   callId?: string;
   toolName?: string;
   createdAt: string;
@@ -129,7 +129,7 @@ export async function handleUserMessage({
   conversationId: string;
   userText: string;
   userId: string;
-}): Promise<{ response: string; toolResults?: unknown[] }> {
+}): Promise<{ response: string; toolResults?: any[] }> {
   const supabase = await createClient();
 
   try {
@@ -164,7 +164,7 @@ export async function handleUserMessage({
 
     const message = response.choices[0].message;
     const toolCalls = message.tool_calls || [];
-    const toolResults: unknown[] = [];
+    const toolResults: any[] = [];
 
     // 4) Handle tool calls
     if (toolCalls.length > 0) {
@@ -178,7 +178,7 @@ export async function handleUserMessage({
         const args = functionCall.arguments;
         const parsedArgs = JSON.parse(args);
 
-        let toolResult: unknown;
+        let toolResult: any;
 
         try {
           // Execute the tool
@@ -223,7 +223,7 @@ export async function handleUserMessage({
             tool_call_id: callId
           } as unknown);
 
-        } catch (error: unknown) {
+        } catch (error: any) {
           logger.error(`[AI] Tool execution error for ${name}:`, errorToContext(error));
           toolResult = { error: `Tool execution failed: ${error?.message || 'Unknown error'}` };
           
@@ -283,7 +283,7 @@ export async function handleUserMessage({
         toolResults: []
       };
     }
-  } catch (error: unknown) {
+  } catch (error: any) {
     logger.error("[AI] OpenAI service error:", error);
     throw new Error(`AI service error: ${error?.message || 'Unknown error'}`);
   }

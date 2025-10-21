@@ -153,7 +153,7 @@ export function dataURLtoBlob(dataUrl: string): Blob {
  * @returns Promise<string> - Public URL of the uploaded image
  */
 export async function uploadImageToStorage(
-  supabase: unknown,
+  supabase: any,
   bucket: string,
   path: string,
   imageBlob: Blob

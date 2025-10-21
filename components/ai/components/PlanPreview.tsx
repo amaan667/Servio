@@ -33,7 +33,7 @@ export function PlanPreview({ plan, previews, executing, onExecute }: PlanPrevie
           <div>
             <h4 className="font-semibold mb-2">Preview Changes:</h4>
             <div className="space-y-2">
-              {previews.map((preview: unknown, idx: number) => (
+              {previews.map((preview: any, idx: number) => (
                 <div key={idx} className="p-2 bg-gray-50 dark:bg-gray-800 rounded">
                   <Badge>{preview.type || 'Change'}</Badge>
                   <p className="text-xs mt-1">{preview.description || preview.summary || 'No description'}</p>

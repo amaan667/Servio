@@ -22,7 +22,7 @@ import { formatDistanceToNow } from "date-fns";
 interface BillingClientProps {
   venueId: string;
   venueName: string;
-  organization: unknown;
+  organization: any;
   usage: {
     menuItems: number;
     tables: number;

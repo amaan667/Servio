@@ -23,7 +23,7 @@ export default function OrderFeedbackForm({ venueId, orderId }: OrderFeedbackFor
   const [loading, setLoading] = useState(true);
   const [submitting, setSubmitting] = useState(false);
   const [showForm, setShowForm] = useState(false);
-  const [answers, setAnswers] = useState<{[key: string]: unknown}>({});
+  const [answers, setAnswers] = useState<{[key: string]: any}>({});
   const { toast } = useToast();
 
   // Generic feedback questions to show if owner hasn't created unknown
@@ -141,11 +141,11 @@ export default function OrderFeedbackForm({ venueId, orderId }: OrderFeedbackFor
           table: 'feedback_questions',
           filter: `venue_id=eq.${venueId}`,
         },
-        (payload: unknown) => {
+        (payload: any) => {
           fetchQuestions();
         },
       )
-      .subscribe((status: unknown) => {
+      .subscribe((status: any) => {
       });
 
     return () => {

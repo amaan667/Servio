@@ -20,7 +20,7 @@ export interface DashboardStats {
   unpaid: number;
 }
 
-export function useDashboardData(venueId: string, venueTz: string, initialVenue: unknown, initialCounts?: DashboardCounts, initialStats?: DashboardStats) {
+export function useDashboardData(venueId: string, venueTz: string, initialVenue: any, initialCounts?: DashboardCounts, initialStats?: DashboardStats) {
 
   const [venue, setVenue] = useState<unknown>(initialVenue);
   const [loading, setLoading] = useState(!initialVenue);
@@ -39,7 +39,7 @@ export function useDashboardData(venueId: string, venueTz: string, initialVenue:
   const [todayWindow, setTodayWindow] = useState<unknown>(null);
   const [error, setError] = useState<string | null>(null);
 
-  const loadStats = useCallback(async (venueId: string, window: unknown) => {
+  const loadStats = useCallback(async (venueId: string, window: any) => {
     try {
       const supabase = createClient();
       
@@ -58,7 +58,7 @@ export function useDashboardData(venueId: string, venueTz: string, initialVenue:
         .eq('is_available', true);
 
       const revenue = orders?.reduce((sum, order) => sum + (order.total_amount || 0), 0) || 0;
-      const unpaid = orders?.filter((o: unknown) => o.order_status === 'UNPAID').length || 0;
+      const unpaid = orders?.filter((o: any) => o.order_status === 'UNPAID').length || 0;
 
       setStats({
         revenue,
@@ -118,7 +118,7 @@ export function useDashboardData(venueId: string, venueTz: string, initialVenue:
     }
   }, [venueId, venueTz]);
 
-  const updateRevenueIncrementally = useCallback((order: unknown) => {
+  const updateRevenueIncrementally = useCallback((order: any) => {
     if (order.order_status !== 'CANCELLED' && order.total_amount) {
       setStats(prev => ({
         ...prev,

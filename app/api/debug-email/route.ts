@@ -5,7 +5,7 @@ import { logger } from '@/lib/logger';
 // POST /api/debug-email - Debug email sending
 export async function POST(request: NextRequest) {
   try {
-    const user = await getUserSafe('POST /api/debug-email');
+    const user = await getUserSafe();
     if (!user) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }

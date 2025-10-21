@@ -71,7 +71,7 @@ export function TableManagementClientNew({ venueId }: TableManagementClientNewPr
 
   // Group table orders by table
   const groupedTableOrders = useMemo(() => {
-    const groups: { [key: string]: unknown[] } = {};
+    const groups: { [key: string]: any[] } = {};
     
     const uniqueOrders = state.tableOrders.filter((order, index, self) => 
       index === self.findIndex(o => o.id === order.id)

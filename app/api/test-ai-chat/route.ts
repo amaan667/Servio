@@ -1,8 +1,7 @@
-import { errorToContext } from '@/lib/utils/error-to-context';
 // Test endpoint to debug AI chat issues
 import { NextRequest, NextResponse } from "next/server";
 import { createClient } from "@/lib/supabase";
-import { apiLogger } from '@/lib/logger';
+import { logger } from '@/lib/logger';
 
 export async function GET(request: NextRequest) {
   try {
@@ -39,7 +38,7 @@ export async function GET(request: NextRequest) {
       .eq("venue_id", venueId)
       .single();
 
-    logger.debug("[TEST] Venue check:", { venue, venueError });
+    logger.debug("[TEST] Venue check:", { data: { venue, extra: venueError } });
 
     if (!venue) {
       return NextResponse.json({ 
@@ -96,7 +95,7 @@ export async function GET(request: NextRequest) {
       }
     });
 
-  } catch (error: unknown) {
+  } catch (error: any) {
     logger.error("[TEST] Error:", { error: error instanceof Error ? error.message : 'Unknown error' });
     return NextResponse.json({ 
       error: "Internal server error", 

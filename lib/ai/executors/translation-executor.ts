@@ -136,7 +136,7 @@ function detectSourceLanguage(items: Array<{ name: string; category: string }>, 
 }
 
 export async function executeMenuTranslate(
-  params: unknown,
+  params: any,
   venueId: string,
   userId: string,
   preview: boolean
@@ -228,7 +228,7 @@ OUTPUT FORMAT:
             description: i.description || "",
             category: i.category || ""
           })),
-          after: translatedArray.map((i: unknown) => ({
+          after: translatedArray.map((i: any) => ({
             name: i.name || i.originalName,
             description: i.description || "",
             category: i.category || ""
@@ -270,7 +270,7 @@ OUTPUT FORMAT:
     const openai = getOpenAI();
 
     const originalItemCount = items.length;
-    const translatedItems: unknown[] = [];
+    const translatedItems: any[] = [];
     const batchSize = 15;
     
     for (let i = 0; i < items.length; i += batchSize) {
@@ -339,7 +339,7 @@ OUTPUT FORMAT:
             const translatedArray = translated.items || [];
             
             if (translatedArray.length === batch.length) {
-              const validItems = translatedArray.filter((item: unknown) => 
+              const validItems = translatedArray.filter((item: any) => 
                 item && item.id && item.name && item.category
               );
               
@@ -390,7 +390,7 @@ OUTPUT FORMAT:
         continue;
       }
 
-      const updateData: unknown = {
+      const updateData: any = {
         name: translatedItem.name,
         updated_at: new Date().toISOString()
       };
@@ -440,7 +440,7 @@ OUTPUT FORMAT:
       },
       auditId: "",
     };
-  } catch (error: unknown) {
+  } catch (error: any) {
     logger.error("[AI ASSISTANT] Translation error:", error);
     throw new AIAssistantError(
       `Translation failed: ${error.message}`,

@@ -67,9 +67,9 @@ export default function AuthProvider({
     getInitialSession();
     
     // Handle auth state changes
-    let subscription: unknown;
+    let subscription: any;
     try {
-      const { data } = supabase.auth.onAuthStateChange(async (event: unknown, newSession: unknown) => {
+      const { data } = supabase.auth.onAuthStateChange(async (event: any, newSession: any) => {
         switch (event) {
           case 'SIGNED_IN':
             setSession(newSession);

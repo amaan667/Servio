@@ -6,7 +6,7 @@ import { logger } from '@/lib/logger';
 // POST /api/fix-owner-column - Fix the owner column name mismatch
 export async function POST() {
   try {
-    const user = await getUserSafe('POST /api/fix-owner-column');
+    const user = await getUserSafe();
     if (!user) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }

@@ -97,7 +97,7 @@ export function useAnalyticsData(venueId: string, timePeriod: TimePeriod, custom
         .eq('venue_id', venueId)
         .eq('is_available', true);
 
-      const validOrders = (orders || []).filter((order: unknown) => 
+      const validOrders = (orders || []).filter((order: any) => 
         order.order_status !== 'CANCELLED' && 
         order.total_amount > 0 &&
         order.venue_id !== 'demo-cafe' &&
@@ -105,7 +105,7 @@ export function useAnalyticsData(venueId: string, timePeriod: TimePeriod, custom
       );
 
       const totalOrders = validOrders.length;
-      const totalRevenue = validOrders.reduce((sum: number, order: unknown) => sum + (order.total_amount || 0), 0);
+      const totalRevenue = validOrders.reduce((sum: number, order: any) => sum + (order.total_amount || 0), 0);
       const averageOrderValue = totalOrders > 0 ? totalRevenue / totalOrders : 0;
       const menuItemsCount = menuItems?.length || 0;
 
@@ -139,7 +139,7 @@ export function useAnalyticsData(venueId: string, timePeriod: TimePeriod, custom
       });
 
       setFilteredOrders(validOrders);
-    } catch (err: unknown) {
+    } catch (err: any) {
       setError(err.message);
     } finally {
       setLoading(false);
@@ -159,7 +159,7 @@ export function useAnalyticsData(venueId: string, timePeriod: TimePeriod, custom
   };
 }
 
-function generateRevenueOverTime(orders: unknown[], startDate: Date, endDate: Date, timePeriod: TimePeriod) {
+function generateRevenueOverTime(orders: any[], startDate: Date, endDate: Date, timePeriod: TimePeriod) {
   const revenueOverTime = [];
   const daysDiff = Math.ceil((endDate.getTime() - startDate.getTime()) / (1000 * 60 * 60 * 24));
   
@@ -198,10 +198,10 @@ function generateRevenueOverTime(orders: unknown[], startDate: Date, endDate: Da
   
   for (const period of periods) {
     const dateStr = period.date;
-    let periodOrdersList: unknown[] = [];
+    let periodOrdersList: any[] = [];
     
     if (dateFormat === 'day') {
-      periodOrdersList = orders.filter((order: unknown) => {
+      periodOrdersList = orders.filter((order: any) => {
         const orderDate = order.created_at.split('T')[0];
         return orderDate === dateStr;
       });
@@ -210,7 +210,7 @@ function generateRevenueOverTime(orders: unknown[], startDate: Date, endDate: Da
       endOfWeek.setDate(period.dateObj.getDate() + 6);
       const weekEndStr = endOfWeek.toISOString().split('T')[0];
       
-      periodOrdersList = orders.filter((order: unknown) => {
+      periodOrdersList = orders.filter((order: any) => {
         const orderDate = order.created_at.split('T')[0];
         return orderDate >= dateStr && orderDate <= weekEndStr;
       });
@@ -219,13 +219,13 @@ function generateRevenueOverTime(orders: unknown[], startDate: Date, endDate: Da
       endOfMonth.setMonth(period.dateObj.getMonth() + 1, 0);
       const monthEndStr = endOfMonth.toISOString().split('T')[0];
       
-      periodOrdersList = orders.filter((order: unknown) => {
+      periodOrdersList = orders.filter((order: any) => {
         const orderDate = order.created_at.split('T')[0];
         return orderDate >= dateStr && orderDate <= monthEndStr;
       });
     }
     
-    const periodRevenue = periodOrdersList.reduce((sum: number, order: unknown) => sum + (order.total_amount || 0), 0);
+    const periodRevenue = periodOrdersList.reduce((sum: number, order: any) => sum + (order.total_amount || 0), 0);
     const periodOrders = periodOrdersList.length;
     
     revenueOverTime.push({
@@ -241,12 +241,12 @@ function generateRevenueOverTime(orders: unknown[], startDate: Date, endDate: Da
   return revenueOverTime;
 }
 
-function generateTopSellingItems(orders: unknown[]) {
+function generateTopSellingItems(orders: any[]) {
   const itemSales = new Map<string, { name: string; quantity: number; revenue: number }>();
   
-  orders.forEach((order: unknown) => {
+  orders.forEach((order: any) => {
     if (order.items && Array.isArray(order.items)) {
-      order.items.forEach((item: unknown) => {
+      order.items.forEach((item: any) => {
         const itemName = item.item_name || item.name || 'Unknown Item';
         const quantity = item.quantity || 0;
         const price = item.price || 0;
@@ -268,7 +268,7 @@ function generateTopSellingItems(orders: unknown[]) {
     .slice(0, 10);
 }
 
-function findPeakAndLowestDays(revenueOverTime: unknown[]) {
+function findPeakAndLowestDays(revenueOverTime: any[]) {
   let peakDay = { date: '', revenue: 0 };
   let lowestDay = { date: '', revenue: 0 };
   
@@ -286,7 +286,7 @@ function findPeakAndLowestDays(revenueOverTime: unknown[]) {
   return { peakDay, lowestDay };
 }
 
-function markCurrentPeriod(revenueOverTime: unknown[], timePeriod: TimePeriod) {
+function markCurrentPeriod(revenueOverTime: any[], timePeriod: TimePeriod) {
   const now = new Date();
   const todayStr = now.toISOString().split('T')[0];
   

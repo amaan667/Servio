@@ -40,7 +40,7 @@ export function useLogoUpload(venueId: string, designSettings: DesignSettings, s
           allowedMimeTypes: ['image/png', 'image/jpeg', 'image/jpg', 'image/gif', 'image/webp'],
           fileSizeLimit: 2097152
         });
-      } catch (bucketError: unknown) {
+      } catch (bucketError: any) {
         if (!bucketError.message?.includes('already exists')) {
 
         }
@@ -92,7 +92,7 @@ export function useLogoUpload(venueId: string, designSettings: DesignSettings, s
         description: "Your logo has been uploaded and a theme has been automatically detected.",
         duration: 5000,
       });
-    } catch (error: unknown) {
+    } catch (error: any) {
 
       toast({
         title: "Upload failed",

@@ -107,7 +107,7 @@ export async function fetchWithTimeout(
  * Creates a cancellable promise that can be aborted
  */
 export function createCancellablePromise<T>(
-  executor: (resolve: (value: T) => void, reject: (reason?: unknown) => void, signal: AbortSignal) => void,
+  executor: (resolve: (value: T) => void, reject: (reason?: any) => void, signal: AbortSignal) => void,
   timeoutMs?: number
 ): { promise: Promise<T>; abort: () => void } {
   const controller = new AbortController();
@@ -154,7 +154,7 @@ export function createCancellablePromise<T>(
 /**
  * Debounced function that cancels previous calls
  */
-export function createCancellableDebounce<T extends (...args: unknown[]) => unknown>(
+export function createCancellableDebounce<T extends (...args: any[]) => unknown>(
   func: T,
   delay: number
 ): T & { cancel: () => void } {

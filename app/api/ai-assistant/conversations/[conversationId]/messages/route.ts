@@ -68,7 +68,7 @@ export async function GET(
     return NextResponse.json({
       messages: transformedMessages,
     });
-  } catch (error: unknown) {
+  } catch (error: any) {
     const errorMessage = error instanceof Error ? error.message : 'Unknown error';
     logger.error("[AI CHAT] Messages error:", { error: errorMessage });
     return NextResponse.json(
@@ -99,7 +99,7 @@ export async function POST(
     const body = await request.json();
     const messageData = CreateMessageSchema.parse(body);
 
-    logger.debug("[AI CHAT MESSAGES POST] Creating message:", { conversationId, messageData });
+    logger.debug("[AI CHAT MESSAGES POST] Creating message:", { data: { conversationId, extra: messageData } });
 
     // Create new message using admin client (skip user verification for now)
     const { data: message, error } = await adminSupabase
@@ -178,7 +178,7 @@ export async function POST(
     return NextResponse.json({
       message: transformedMessage,
     });
-  } catch (error: unknown) {
+  } catch (error: any) {
     const errorMessage = error instanceof Error ? error.message : 'Unknown error';
     logger.error("[AI CHAT] Create message error:", { error: errorMessage });
     

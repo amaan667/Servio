@@ -89,7 +89,7 @@ export function useCounterOrderCounts(venueId: string) {
 			if (error) throw error;
 			
 			const total = data?.length || 0;
-			const byStatus = data?.reduce((acc: Record<string, number>, order: unknown) => {
+			const byStatus = data?.reduce((acc: Record<string, number>, order: any) => {
 				acc[order.order_status] = (acc[order.order_status] || 0) + 1;
 				return acc;
 			}, {} as Record<string, number>) || {};
@@ -128,7 +128,7 @@ export function useCounterOrdersRealtime(venueId: string) {
 				schema: 'public',
 				table: 'orders',
 				filter: `venue_id=eq.${venueId}`
-			}, (payload: unknown) => {
+			}, (payload: any) => {
 				// Check if this is a counter order
 				const order = payload.new || payload.old;
 				if (order?.source === 'counter') {

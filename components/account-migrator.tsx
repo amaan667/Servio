@@ -83,7 +83,7 @@ export function AccountMigrator() {
 
       addLog(`⚠️ Sign up not implemented yet for ${account.contactEmail}`);
       return false;
-    } catch (error: unknown) {
+    } catch (error: any) {
       addLog(`❌ Error migrating ${account.contactEmail}: ${(error as Error).message}`);
 
       return false;

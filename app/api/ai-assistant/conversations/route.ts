@@ -49,7 +49,7 @@ export async function GET(request: NextRequest) {
           roleName = roleRow.role;
         }
       } catch (e) {
-        logger.debug('[AI CHAT] user_venue_roles lookup failed, will fallback to ownership check', { error: e instanceof Error ? e.message : 'Unknown error' });
+        logger.debug('[AI CHAT] user_venue_roles lookup failed, { data: will fallback to ownership check', extra: { error: e instanceof Error ? e.message : 'Unknown error' } });
       }
 
       if (!roleName) {
@@ -60,7 +60,7 @@ export async function GET(request: NextRequest) {
           .eq("venue_id", venueId)
           .single();
 
-        logger.debug("[AI CHAT] Venue check - found:", { found: !!venue, owner_id: venue?.owner_id, user_id: user.id });
+        logger.debug("[AI CHAT] Venue check - found:", { data: { found: !!venue, extra: owner_id: venue?.owner_id, user_id: user.id } });
 
         if (!venue || venue.owner_id !== user.id) {
           logger.debug("[AI CHAT] Access denied - no role and user not owner");
@@ -72,7 +72,7 @@ export async function GET(request: NextRequest) {
         roleName = 'owner';
       }
 
-      logger.debug('[AI CHAT] Access granted with role:', { userId: user.id, venueId, role: roleName });
+      logger.debug('[AI CHAT] Access granted with role:', { data: { userId: user.id, extra: venueId, role: roleName } });
 
       // Get conversations for this venue using admin client
       const result = await adminSupabase
@@ -114,14 +114,14 @@ export async function GET(request: NextRequest) {
     }
 
     // Transform the data to match frontend expectations
-    const transformedConversations = (conversations || []).map((conv: unknown) => {
+    const transformedConversations = (conversations || []).map((conv: any) => {
       const conversation = conv as { 
         updated_at?: string; 
         created_at?: string; 
         venue_id?: string; 
         user_id?: string; 
         is_active?: boolean;
-        [key: string]: unknown;
+        [key: string]: any;
       };
       return {
         ...conv,
@@ -136,7 +136,7 @@ export async function GET(request: NextRequest) {
     return NextResponse.json({
       conversations: transformedConversations,
     });
-  } catch (error: unknown) {
+  } catch (error: any) {
     logger.error("[AI CHAT] Conversations error:", { error: error instanceof Error ? error.message : 'Unknown error' });
     logger.error("[AI CHAT] Error details:", {
       message: error instanceof Error ? error.message : 'Unknown error',
@@ -164,7 +164,7 @@ export async function POST(request: NextRequest) {
     const body = await request.json();
     const { venueId, title } = CreateConversationSchema.parse(body);
 
-    logger.debug("[AI CHAT CONVERSATION POST] Creating conversation:", { venueId, title });
+    logger.debug("[AI CHAT CONVERSATION POST] Creating conversation:", { data: { venueId, extra: title } });
 
     // Try to get user from auth, but don't fail if not available
     const {
@@ -205,7 +205,7 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({
       conversation: transformedConversation,
     });
-  } catch (error: unknown) {
+  } catch (error: any) {
     logger.error("[AI CHAT] Create conversation error:", { error: error instanceof Error ? error.message : 'Unknown error' });
     
     if ((error as any)?.name === "ZodError") {
@@ -294,7 +294,7 @@ export async function PATCH(request: NextRequest) {
     return NextResponse.json({
       conversation: transformedConversation,
     });
-  } catch (error: unknown) {
+  } catch (error: any) {
     logger.error("[AI CHAT] Update conversation error:", { error: error instanceof Error ? error.message : 'Unknown error' });
     return NextResponse.json(
       { error: error instanceof Error ? error.message : "Internal server error" },

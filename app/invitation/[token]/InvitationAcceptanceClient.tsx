@@ -25,7 +25,7 @@ interface Invitation {
   venue_id: string;
   email: string;
   role: string;
-  permissions: unknown;
+  permissions: any;
   expires_at: string;
   created_at: string;
   venue_name: string;
@@ -122,7 +122,7 @@ export default function InvitationAcceptanceClient({
         router.push(`/dashboard/${invitation.venue_id}`);
       }, 2000);
 
-    } catch (err: unknown) {
+    } catch (err: any) {
       setError(err.message || 'Failed to accept invitation');
     } finally {
       setLoading(false);

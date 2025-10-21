@@ -22,7 +22,7 @@ export async function GET(
     // Handle venue ID format - ensure it has 'venue-' prefix for database lookup
     const venueId = rawVenueId.startsWith('venue-') ? rawVenueId : `venue-${rawVenueId}`;
     
-    logger.debug('[MENU API] Looking up venue:', { rawVenueId, transformedVenueId: venueId });
+    logger.debug('[MENU API] Looking up venue:', { data: { rawVenueId, extra: transformedVenueId: venueId } });
 
     // Try to get from cache first
     const cacheKey = cacheKeys.menuItems(venueId);
@@ -61,7 +61,7 @@ export async function GET(
     }
 
     if (venueError || !venue) {
-      logger.error('[MENU API] Venue not found:', { rawVenueId, transformedVenueId: venueId, error: venueError });
+      logger.error('[MENU API] Venue not found:', { error: { rawVenueId, context: transformedVenueId: venueId, error: venueError } });
       return NextResponse.json(
         { error: 'Venue not found', venueId: rawVenueId, searchedAs: venueId },
         { status: 404 }

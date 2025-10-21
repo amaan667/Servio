@@ -64,7 +64,7 @@ export function RecipeDialog({ open, onOpenChange, menuItemId, menuItemName, ven
       const response = await fetch(`/api/inventory/recipes/${menuItemId}`);
       const result = await response.json();
       if (result.data) {
-        const mappedRecipe = result.data.map((item: unknown) => ({
+        const mappedRecipe = result.data.map((item: any) => ({
           ingredient_id: item.ingredient_id,
           ingredient_name: item.ingredient?.name,
           qty_per_item: item.qty_per_item,

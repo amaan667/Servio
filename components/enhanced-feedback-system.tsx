@@ -137,7 +137,7 @@ export function EnhancedFeedbackSystem({ venueId }: FeedbackSystemProps) {
 
       // Apply search filter (only filter not handled by query)
       if (searchQuery.trim()) {
-        filteredFeedback = filteredFeedback.filter((f: unknown) => 
+        filteredFeedback = filteredFeedback.filter((f: any) => 
           f.customer_name.toLowerCase().includes(searchQuery.toLowerCase()) ||
           f.comment.toLowerCase().includes(searchQuery.toLowerCase()) ||
           f.category?.toLowerCase().includes(searchQuery.toLowerCase())
@@ -147,7 +147,7 @@ export function EnhancedFeedbackSystem({ venueId }: FeedbackSystemProps) {
       setFeedback(filteredFeedback);
       calculateStats(filteredFeedback);
 
-    } catch (err: unknown) {
+    } catch (err: any) {
 
       setError(err.message);
     } finally {

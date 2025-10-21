@@ -13,7 +13,7 @@ import { AssistantCommandPalette } from "./assistant-command-palette";
 interface ContextualAssistantProps {
   venueId: string;
   page: "menu" | "inventory" | "kds" | "orders" | "analytics";
-  dataSummary?: unknown;
+  dataSummary?: any;
 }
 
 const PAGE_SUGGESTIONS: Record<string, string[]> = {

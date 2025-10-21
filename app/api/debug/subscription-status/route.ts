@@ -30,7 +30,7 @@ export async function GET() {
         .select('organization_id, organizations(*)')
         .eq('user_id', user.id);
 
-      logger.debug('[DEBUG] User venue roles query result:', { userVenueRoles, userVenueError });
+      logger.debug('[DEBUG] User venue roles query result:', { data: { userVenueRoles, extra: userVenueError } });
 
       if (!userVenueError && userVenueRoles && userVenueRoles.length > 0) {
         const userVenueRole = userVenueRoles[0];
@@ -52,7 +52,7 @@ export async function GET() {
           .eq('owner_user_id', user.id)
           .single();
         
-        logger.debug('[DEBUG] Direct organization query result:', { directOrgs, directError });
+        logger.debug('[DEBUG] Direct organization query result:', { data: { directOrgs, extra: directError } });
         
         if (!directError && directOrgs) {
           org = directOrgs;
@@ -65,7 +65,7 @@ export async function GET() {
 
     // Approach 3: If no organization exists, create a real one
     if (!orgFound) {
-      logger.debug('[DEBUG] No organization found, creating real organization for user:', { userId: user.id });
+      logger.debug('[DEBUG] No organization found, { data: creating real organization for user:', extra: { userId: user.id } });
       try {
         const userName = user.user_metadata?.full_name || user.email?.split('@')[0] || 'User';
         const { data: newOrg, error: createError } = await supabase
@@ -152,7 +152,7 @@ export async function GET() {
       }
     });
 
-  } catch (error: unknown) {
+  } catch (error: any) {
     logger.error("[DEBUG] Error:", { error: error instanceof Error ? error.message : 'Unknown error' });
     return NextResponse.json(
       { error: error instanceof Error ? error.message : "Failed to debug subscription status" },
@@ -219,7 +219,7 @@ export async function POST(request: NextRequest) {
       updated: updateData
     });
 
-  } catch (error: unknown) {
+  } catch (error: any) {
     logger.error("[DEBUG] Error:", { error: error instanceof Error ? error.message : 'Unknown error' });
     return NextResponse.json(
       { error: error instanceof Error ? error.message : "Failed to update subscription status" },

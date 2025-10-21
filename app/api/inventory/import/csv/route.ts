@@ -6,11 +6,11 @@ import { logger } from '@/lib/logger';
 interface CSVRow {
   name: string;
   sku?: string;
-  unit: IngredientUnit;
-  cost_per_unit: number;
-  on_hand: number;
-  par_level: number;
-  reorder_level: number;
+  unit: IngredientUnit | string;
+  cost_per_unit: number | string;
+  on_hand: number | string;
+  par_level: number | string;
+  reorder_level: number | string;
   supplier?: string;
 }
 
@@ -140,7 +140,7 @@ export async function POST(request: NextRequest) {
         }
 
         imported.push(ingredient.name);
-      } catch (err: unknown) {
+      } catch (err: any) {
         errors.push({ row: row.name, error: err instanceof Error ? err.message : 'Unknown error' });
       }
     }

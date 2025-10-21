@@ -5,7 +5,7 @@ import { logger } from '@/lib/logger';
 interface KDSStation {
   id: string;
   station_type: string;
-  [key: string]: unknown;
+  [key: string]: any;
 }
 
 export const runtime = 'nodejs'; // KDS backfill endpoint
@@ -32,7 +32,7 @@ export async function POST(req: Request) {
       .eq('is_active', true);
 
     if (!existingStations || existingStations.length === 0) {
-      logger.debug('[KDS BACKFILL] No stations found, creating default stations for venue:', { value: venueId });
+      logger.debug('[KDS BACKFILL] No stations found, { data: creating default stations for venue:', extra: { value: venueId } });
       
       // Create default stations
       const defaultStations = [
@@ -167,7 +167,7 @@ export async function POST(req: Request) {
             .insert(ticketData);
           
           if (ticketError) {
-            logger.error('[KDS BACKFILL] Failed to create ticket for item:', { item, error: ticketError.message });
+            logger.error('[KDS BACKFILL] Failed to create ticket for item:', { error: { item, context: error: ticketError.message } });
             errors.push(`Failed to create ticket for order ${order.id}: ${ticketError.message}`);
             continue;
           }
@@ -178,7 +178,7 @@ export async function POST(req: Request) {
         ordersProcessed++;
         logger.debug(`[KDS BACKFILL] Processed order ${order.id} with ${items.length} items`);
         
-      } catch (error: unknown) {
+      } catch (error: any) {
         logger.error(`[KDS BACKFILL] Error processing order ${order.id}:`, { error: error instanceof Error ? error.message : 'Unknown error' });
         errors.push(`Error processing order ${order.id}: ${error instanceof Error ? error.message : 'Unknown error'}`);
       }
@@ -198,7 +198,7 @@ export async function POST(req: Request) {
       errors: errors.length > 0 ? errors : undefined
     });
 
-  } catch (error: unknown) {
+  } catch (error: any) {
     logger.error('[KDS BACKFILL] Unexpected error:', { error: error instanceof Error ? error.message : 'Unknown error' });
     return NextResponse.json({ 
       ok: false, 

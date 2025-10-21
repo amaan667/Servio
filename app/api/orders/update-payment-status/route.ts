@@ -42,7 +42,7 @@ export async function POST(req: NextRequest) {
     
     return NextResponse.json({ success: true, data });
     
-  } catch (error: unknown) {
+  } catch (error: any) {
     logger.error('[UPDATE PAYMENT STATUS] Error:', { error: error instanceof Error ? error.message : 'Unknown error' });
     return NextResponse.json(
       { error: error instanceof Error ? error.message : 'Internal server error' },

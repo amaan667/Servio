@@ -8,7 +8,7 @@ import { logger } from '@/lib/logger';
 
 export async function POST() {
   try {
-    const user = await getUserSafe('POST /api/migrate-staff-invitations');
+    const user = await getUserSafe();
     if (!user) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
@@ -27,7 +27,7 @@ export async function POST() {
           staff_invitations: true
         }
       });
-    } catch (tableError: unknown) {
+    } catch (tableError: any) {
       const error = tableError as { code?: string; message?: string };
       if (error.code !== 'PGRST116' && !error.message?.includes('relation "staff_invitations" does not exist')) {
         logger.error('[STAFF MIGRATION] Unexpected error checking table:', { error: tableError instanceof Error ? tableError.message : 'Unknown error' });

@@ -63,7 +63,7 @@ export async function GET(_request: NextRequest) {
       }
     });
 
-  } catch (error: unknown) {
+  } catch (error: any) {
     logger.error('Check organization error:', { error: error instanceof Error ? error.message : 'Unknown error' });
     return NextResponse.json(
       { error: "Internal server error", details: error instanceof Error ? error.message : 'Unknown error' },

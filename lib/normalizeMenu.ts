@@ -3,7 +3,7 @@ import { MenuPayloadT } from "./menuSchema";
 const MAX_NAME = 80;
 const MAX_DESC = 240;
 
-function cleanStr(s: unknown) {
+function cleanStr(s: any) {
   return String(s ?? "")
     .replace(/\s+/g, " ")
     .trim();

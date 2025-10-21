@@ -31,7 +31,7 @@ export async function POST() {
       }
     });
     
-  } catch (error: unknown) {
+  } catch (error: any) {
     logger.error('[REFRESH API] Unexpected error:', { error: error instanceof Error ? error.message : 'Unknown error' });
     return NextResponse.json({ 
       ok: false, 

@@ -82,7 +82,7 @@ export function useFeedbackManagement(venueId: string) {
       });
 
       setFeedbackResponses([]);
-    } catch (err: unknown) {
+    } catch (err: any) {
 
       toast({
         title: "Error",

@@ -15,7 +15,7 @@ export enum LogLevel {
 export { ProductionLogger };
 
 interface LogContext {
-  [key: string]: unknown;
+  [key: string]: any;
 }
 
 // Allow flexible context types for logging

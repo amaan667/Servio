@@ -69,7 +69,7 @@ export async function POST(request: NextRequest) {
       }
     } catch (tableError) {
       // Table doesn't exist - check if user owns venue
-      logger.debug("[AI ASSISTANT] user_venue_roles table check failed, checking venue ownership:", { error: tableError instanceof Error ? tableError.message : 'Unknown error' });
+      logger.debug("[AI ASSISTANT] user_venue_roles table check failed, { data: checking venue ownership:", extra: { error: tableError instanceof Error ? tableError.message : 'Unknown error' } });
       
       const { data: venue } = await supabase
         .from("venues")
@@ -122,7 +122,7 @@ export async function POST(request: NextRequest) {
       executionTimeMs: executionTime,
       modelUsed: plan.modelUsed, // Return model info to client
     });
-  } catch (error: unknown) {
+  } catch (error: any) {
     logger.error("[AI ASSISTANT] Planning error:", { error: error instanceof Error ? error.message : 'Unknown error' });
 
     if ((error as any)?.name === "ZodError") {

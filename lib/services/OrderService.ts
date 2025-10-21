@@ -189,7 +189,7 @@ export class OrderService extends BaseService {
     paymentMethod?: string
   ): Promise<Order> {
     const supabase = await createSupabaseClient();
-    const updates: unknown = { payment_status: paymentStatus };
+    const updates: any = { payment_status: paymentStatus };
     if (paymentMethod) {
       updates.payment_method = paymentMethod;
     }

@@ -51,7 +51,7 @@ export function toCSV<T extends Record<string, unknown>>(
    * - Escapes internal quotes by doubling them
    * - Handles null/undefined as empty string
    */
-  const escape = (val: unknown): string => {
+  const escape = (val: any): string => {
     // Handle null/undefined
     if (val == null) {
       return '';
@@ -118,7 +118,7 @@ export function formatCurrencyForCSV(value: number | string | null | undefined):
  * Safely formats unknown value for CSV export
  * Handles various data types and edge cases
  */
-export function formatValueForCSV(value: unknown): string {
+export function formatValueForCSV(value: any): string {
   if (value == null) return '';
   
   if (typeof value === 'number') {

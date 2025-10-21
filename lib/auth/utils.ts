@@ -3,7 +3,7 @@
 
 const AUTH_COOKIE_PREFIXES = ['sb-', 'supabase.auth.token', 'supabase-auth-token'];
 
-export function getOriginFromHeaders(h: unknown) {
+export function getOriginFromHeaders(h: any) {
   const proto = h.get('x-forwarded-proto') ?? 'https';
   const host  = h.get('host') ?? 'servio-production.up.railway.app';
   return `${proto}://${host}`;
@@ -35,7 +35,7 @@ export function getPlatformRedirectUrl(baseUrl: string, userAgent: string): stri
 }
 
 // Handle authentication errors consistently
-export function handleAuthError(error: unknown): { message: string; code: string } {
+export function handleAuthError(error: any): { message: string; code: string } {
   const errorMessage = error?.message || 'Unknown authentication error';
   const errorCode = error?.code || 'unknown_error';
   
@@ -73,7 +73,7 @@ export function handleAuthError(error: unknown): { message: string; code: string
 }
 
 // Validate session data
-export function validateSession(session: unknown): { isValid: boolean; error?: string } {
+export function validateSession(session: any): { isValid: boolean; error?: string } {
   if (!session) {
     return { isValid: false, error: 'No session data' };
   }

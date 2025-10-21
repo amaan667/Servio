@@ -167,11 +167,11 @@ export default function LiveOrdersClient({ venueId, venueName: venueNameProp }: 
     return typeof rpc === 'number' ? rpc : 0;
   };
 
-  const renderOrderCard = (order: unknown, showActions: boolean = true) => {
+  const renderOrderCard = (order: any, showActions: boolean = true) => {
     const orderData = order as { 
       table_number?: string | number; 
       customer_name?: string; 
-      [key: string]: unknown 
+      [key: string]: any 
     };
     const legacyOrder = {
       ...orderData,
@@ -194,7 +194,7 @@ export default function LiveOrdersClient({ venueId, venueName: venueNameProp }: 
     );
   };
 
-  const renderOrdersSection = (ordersToRender: unknown[], title: string, iconColor: string) => {
+  const renderOrdersSection = (ordersToRender: any[], title: string, iconColor: string) => {
     const filteredOrders = ordersToRender.filter(order => 
       !parsedTableFilter || order.table_number?.toString() === parsedTableFilter
     );

@@ -100,7 +100,7 @@ export async function POST(request: NextRequest) {
 
     if (createError) {
       logger.error("[ORG ENSURE] Error creating organization:", createError);
-      logger.error("[ORG ENSURE] Error details:", JSON.stringify(createError, null, 2));
+      logger.error("[ORG ENSURE] Error details:", { error: JSON.stringify(createError, context: null, 2 }));
       logger.error("[ORG ENSURE] User ID:", user.id);
       logger.error("[ORG ENSURE] User metadata:", user.user_metadata);
       return NextResponse.json(
@@ -143,7 +143,7 @@ export async function POST(request: NextRequest) {
         });
     }
 
-    logger.debug("[ORG ENSURE] Created new organization", { orgId: newOrg.id, userId: user.id });
+    logger.debug("[ORG ENSURE] Created new organization", { data: { orgId: newOrg.id, extra: userId: user.id } });
 
     const response = NextResponse.json({
       success: true,
@@ -158,7 +158,7 @@ export async function POST(request: NextRequest) {
     
     return response;
 
-  } catch (error: unknown) {
+  } catch (error: any) {
     logger.error("[ORG ENSURE] Unexpected error:", { error: error instanceof Error ? error.message : 'Unknown error' });
     return NextResponse.json(
       { error: "Internal server error", details: error instanceof Error ? error.message : 'Unknown error' },

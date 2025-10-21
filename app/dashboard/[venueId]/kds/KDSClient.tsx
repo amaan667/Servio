@@ -80,7 +80,7 @@ export default function KDSClient({ venueId, venueName }: KDSClientProps) {
       } else {
         setError(data.error || 'Failed to load stations');
       }
-    } catch (err: unknown) {
+    } catch (err: any) {
 
       setError(err.message);
     }
@@ -99,7 +99,7 @@ export default function KDSClient({ venueId, venueName }: KDSClientProps) {
       } else {
         setError(data.error || 'Failed to load tickets');
       }
-    } catch (err: unknown) {
+    } catch (err: any) {
 
       setError(err.message);
     } finally {
@@ -126,7 +126,7 @@ export default function KDSClient({ venueId, venueName }: KDSClientProps) {
       } else {
 
       }
-    } catch (err: unknown) {
+    } catch (err: any) {
 
     }
   }, []);
@@ -146,7 +146,7 @@ export default function KDSClient({ venueId, venueName }: KDSClientProps) {
         // Remove bumped tickets from view
         setTickets(prev => prev.filter(t => t.order_id !== orderId));
       }
-    } catch (err: unknown) {
+    } catch (err: any) {
 
     }
   }, []);
@@ -214,7 +214,7 @@ export default function KDSClient({ venueId, venueName }: KDSClientProps) {
         schema: 'public',
         table: 'kds_tickets',
         filter: `venue_id=eq.${venueId}`
-      }, (payload: unknown) => {
+      }, (payload: any) => {
 
         if (payload.eventType === 'INSERT') {
           fetchTickets();

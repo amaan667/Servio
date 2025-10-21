@@ -5,7 +5,7 @@ import { getUserSafe } from '@/utils/getUserSafe';
 // GET /api/staff/invitations - List invitations for a venue
 export async function GET(request: NextRequest) {
   try {
-    const user = await getUserSafe('GET /api/staff/invitations');
+    const user = await getUserSafe();
     if (!user) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
@@ -75,7 +75,7 @@ export async function GET(request: NextRequest) {
 // POST /api/staff/invitations - Create a new invitation
 export async function POST(request: NextRequest) {
   try {
-    const user = await getUserSafe('POST /api/staff/invitations');
+    const user = await getUserSafe();
     if (!user) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
@@ -121,7 +121,7 @@ export async function POST(request: NextRequest) {
     // Check if staff_invitations table exists
     try {
       await supabase.from('staff_invitations').select('id').limit(1);
-    } catch (tableError: unknown) {
+    } catch (tableError: any) {
       const errorMessage = tableError instanceof Error ? tableError.message : 'Unknown error';
       const errorCode = tableError && typeof tableError === 'object' && 'code' in tableError ? String(tableError.code) : undefined;
       
@@ -368,7 +368,7 @@ export async function POST(request: NextRequest) {
 // DELETE /api/staff/invitations - Delete an invitation
 export async function DELETE(request: NextRequest) {
   try {
-    const user = await getUserSafe('DELETE /api/staff/invitations');
+    const user = await getUserSafe();
     if (!user) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }

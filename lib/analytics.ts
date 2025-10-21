@@ -3,8 +3,8 @@
 
 declare global {
   interface Window {
-    gtag?: (...args: unknown[]) => void;
-    plausible?: (...args: unknown[]) => void;
+    gtag?: (...args: any[]) => void;
+    plausible?: (...args: any[]) => void;
   }
 }
 

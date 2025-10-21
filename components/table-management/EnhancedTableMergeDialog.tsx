@@ -2,6 +2,7 @@
 
 import { useState, useEffect } from 'react';
 import { Button } from '@/components/ui/button';
+import type { TableWithState } from '@/types/table-types';
 import {
   Dialog,
   DialogContent,

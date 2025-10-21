@@ -2,7 +2,7 @@ import { OrderCard } from '@/components/orders/OrderCard';
 import { mapCounterOrderToCardData } from '@/lib/orders/mapCounterOrderToCardData';
 
 interface CounterOrdersSectionProps {
-  counterOrders: unknown[];
+  counterOrders: any[];
 }
 
 export function CounterOrdersSection({ counterOrders }: CounterOrdersSectionProps) {

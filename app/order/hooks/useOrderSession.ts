@@ -187,7 +187,7 @@ export function useOrderSession(orderParams: OrderParams) {
 
     try {
       if (supabase?.auth?.onAuthStateChange) {
-        const result = supabase.auth.onAuthStateChange((_event: unknown, session: unknown) => {
+        const result = supabase.auth.onAuthStateChange((_event: any, session: any) => {
           setSession(session);
         });
         return () => {

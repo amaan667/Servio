@@ -16,7 +16,7 @@ export async function POST(req: Request) {
   try {
     // Get the raw body first
     const text = await req.text();
-    logger.debug('[DEMO ACCESS] Raw body received:', text.substring(0, 200));
+    logger.debug('[DEMO ACCESS] Raw body received:', { data: text.substring(0, extra: 200 }));
     
     // Parse the JSON
     let body;
@@ -46,7 +46,7 @@ export async function POST(req: Request) {
     logger.debug('[DEMO ACCESS] View Mode:', viewMode || 'not set');
     logger.debug('[DEMO ACCESS] Source URL:', url || 'unknown');
     logger.debug('[DEMO ACCESS] Referrer:', referrer || 'direct');
-    logger.debug('[DEMO ACCESS] User Agent:', userAgent ? userAgent.substring(0, 100) : 'unknown');
+    logger.debug('[DEMO ACCESS] User Agent:', { data: userAgent ? userAgent.substring(0, extra: 100 }) : 'unknown');
     if (user) {
       logger.debug('[DEMO ACCESS] User ID:', user.id || 'anonymous');
       logger.debug('[DEMO ACCESS] User Email:', user.email || 'no email');

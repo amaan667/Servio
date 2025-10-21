@@ -60,7 +60,7 @@ export function useAccountDeletion(user: User) {
         title: "Account Deleted",
         description: "Your account has been permanently deleted.",
       });
-    } catch (err: unknown) {
+    } catch (err: any) {
       setError(err.message || 'Failed to delete account');
       toast({
         title: "Error",

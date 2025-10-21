@@ -15,7 +15,7 @@ function resolveServerBaseUrl(h?: Headers | ReturnType<typeof headers>) {
   }
 
   // 3. Derive from incoming request headers
-  const hdrs: unknown = h || headers();
+  const hdrs: any = h || headers();
   // Some Next types may present a promise-like; safeguard with optional chaining
   const getter = (name: string) => {
     try {
