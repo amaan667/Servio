@@ -46,7 +46,7 @@ export async function POST(request: NextRequest) {
 
     for (let i = 1; i < lines.length; i++) {
       const values = lines[i].split(',').map(v => v.trim().replace(/"/g, ''));
-      const row: any = {};
+      const row: Record<string, string> = {};
 
       headers.forEach((header, index) => {
         const value = values[index] || '';

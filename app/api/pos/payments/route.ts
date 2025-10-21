@@ -11,8 +11,7 @@ export async function POST(req: NextRequest) {
       payment_method, 
       payment_status, 
       stripe_session_id,
-      stripe_payment_intent_id,
-      amount 
+      stripe_payment_intent_id
     } = body;
 
     if (!order_id || !payment_method || !payment_status) {
@@ -55,7 +54,7 @@ export async function POST(req: NextRequest) {
     }
 
     // Update order payment status
-    const updateData: any = { 
+    const updateData: Record<string, unknown> = { 
       payment_status,
       payment_method 
     };

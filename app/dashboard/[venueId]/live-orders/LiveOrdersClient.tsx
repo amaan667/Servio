@@ -83,7 +83,7 @@ export default function LiveOrdersClient({ venueId, venueName: venueNameProp }: 
         .select('venue_name')
         .eq('venue_id', venueId)
         .single()
-        .then(({ data }: { data: any }) => setVenueName(data?.venue_name || ''));
+        .then(({ data }: { data: { venue_name?: string } | null }) => setVenueName(data?.venue_name || ''));
     }
   }, [venueId, venueNameProp]);
 
@@ -194,7 +194,7 @@ export default function LiveOrdersClient({ venueId, venueName: venueNameProp }: 
     );
   };
 
-  const renderOrdersSection = (ordersToRender: any[], title: string, iconColor: string) => {
+  const renderOrdersSection = (ordersToRender: unknown[], title: string, iconColor: string) => {
     const filteredOrders = ordersToRender.filter(order => 
       !parsedTableFilter || order.table_number?.toString() === parsedTableFilter
     );

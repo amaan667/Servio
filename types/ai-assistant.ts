@@ -567,7 +567,7 @@ export class AIAssistantError extends Error {
       | "EXECUTION_FAILED"
       | "RATE_LIMITED"
       | "TIER_RESTRICTED",
-    public details?: any
+    public details?: Record<string, unknown>
   ) {
     super(message);
     this.name = "AIAssistantError";

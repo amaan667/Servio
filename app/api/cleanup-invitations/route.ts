@@ -1,17 +1,17 @@
-import { NextRequest, NextResponse } from 'next/server';
+import { NextResponse } from 'next/server';
 import { createClient } from '@/lib/supabase';
 import { getUserSafe } from '@/utils/getUserSafe';
 import { logger } from '@/lib/logger';
 
 // POST /api/cleanup-invitations - Clean up cancelled invitations and fix constraint
-export async function POST(_request: NextRequest) {
+export async function POST() {
   try {
     const user = await getUserSafe('POST /api/cleanup-invitations');
     if (!user) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
 
-    const supabase = await createClient();
+    const supabase = createClient();
 
     logger.debug('[CLEANUP] Starting invitation cleanup...');
 

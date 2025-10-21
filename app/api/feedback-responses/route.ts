@@ -69,7 +69,7 @@ export async function POST(req: Request) {
     // Filter out generic questions (they start with 'generic-')
     const nonGenericQuestionIds = questionIds.filter(id => !id.startsWith('generic-'));
     
-    let questions: any[] = [];
+    let questions: unknown[] = [];
     if (nonGenericQuestionIds.length > 0) {
       const { data: dbQuestions, error: questionsError } = await serviceClient
         .from('feedback_questions')

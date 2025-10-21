@@ -1,0 +1,14 @@
+node_modules
+.next
+lib/pdfImporter/**/*
+lib/improvedMenuParser.ts
+lib/parseMenuFC.ts
+lib/parseWithOpenAI.ts
+lib/pdf-to-images.ts
+lib/ocr.ts
+lib/menuSections.ts
+lib/sectionPost.ts
+lib/safeParse.ts
+lib/reassign.ts
+components/demo-*.tsx
+

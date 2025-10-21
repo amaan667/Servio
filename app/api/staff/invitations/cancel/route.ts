@@ -20,7 +20,7 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: 'Invitation ID is required' }, { status: 400 });
     }
 
-    const supabase = await createClient();
+    const supabase = createClient();
 
     // Check if staff_invitations table exists
     try {

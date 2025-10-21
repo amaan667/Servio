@@ -16,7 +16,7 @@ export async function POST(req: NextRequest) {
     const supabase = await createClient();
     
     // Convert to uppercase for database consistency
-    const updateData: any = {
+    const updateData: Record<string, unknown> = {
       payment_status: paymentStatus.toUpperCase(),
       updated_at: new Date().toISOString()
     };

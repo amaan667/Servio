@@ -17,7 +17,7 @@ export async function GET(request: NextRequest) {
       return NextResponse.json({ error: 'venue_id is required' }, { status: 400 });
     }
 
-    const supabase = await createClient();
+    const supabase = createClient();
 
     // Check if user has permission to view invitations for this venue
     const { data: userRole } = await supabase
@@ -116,7 +116,7 @@ export async function POST(request: NextRequest) {
       }, { status: 400 });
     }
 
-    const supabase = await createClient();
+    const supabase = createClient();
 
     // Check if staff_invitations table exists
     try {
@@ -390,7 +390,7 @@ export async function DELETE(request: NextRequest) {
       }, { status: 400 });
     }
 
-    const supabase = await createClient();
+    const supabase = createClient();
 
     // Get invitation details to check permissions
     const { data: invitation, error: fetchError } = await supabase

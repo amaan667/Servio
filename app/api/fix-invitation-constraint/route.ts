@@ -11,7 +11,7 @@ export async function POST() {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
 
-    const supabase = await createClient();
+    const supabase = createClient();
 
     logger.debug('[CONSTRAINT FIX] Starting direct constraint fix...');
 

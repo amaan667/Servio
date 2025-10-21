@@ -1,17 +1,17 @@
-import { NextRequest, NextResponse } from 'next/server';
+import { NextResponse } from 'next/server';
 import { createClient } from '@/lib/supabase';
 import { getUserSafe } from '@/utils/getUserSafe';
-import { apiLogger, logger } from '@/lib/logger';
+import { logger } from '@/lib/logger';
 
 // POST /api/migrate-database-constraint - Fix staff invitations constraint
-export async function POST(request: NextRequest) {
+export async function POST() {
   try {
     const user = await getUserSafe('POST /api/migrate-database-constraint');
     if (!user) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
 
-    const supabase = await createClient();
+    const supabase = createClient();
 
     logger.debug('[MIGRATION] Starting staff invitations constraint fix...');
 

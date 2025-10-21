@@ -193,7 +193,7 @@ export async function PATCH(req: Request) {
     }
 
     const serviceClient = getServiceClient();
-    const updateData: any = {};
+    const updateData: Record<string, unknown> = {};
 
     if (prompt !== undefined) {
       if (prompt.length < 4 || prompt.length > 160) {

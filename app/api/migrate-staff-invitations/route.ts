@@ -1,12 +1,12 @@
 // One-time migration endpoint to create the staff_invitations table
 // This can be called once to set up the database
 
-import { NextRequest, NextResponse } from "next/server";
+import { NextResponse } from "next/server";
 import { createClient } from "@/lib/supabase";
 import { getUserSafe } from "@/utils/getUserSafe";
-import { apiLogger, logger } from '@/lib/logger';
+import { logger } from '@/lib/logger';
 
-export async function POST(request: NextRequest) {
+export async function POST() {
   try {
     const user = await getUserSafe('POST /api/migrate-staff-invitations');
     if (!user) {
@@ -15,7 +15,7 @@ export async function POST(request: NextRequest) {
 
     logger.debug('[STAFF MIGRATION] Starting staff invitation system migration...');
     
-    const supabase = await createClient();
+    const supabase = createClient();
 
     // Check if table already exists
     try {
@@ -28,7 +28,7 @@ export async function POST(request: NextRequest) {
         }
       });
     } catch (tableError: unknown) {
-      const error = tableError as any;
+      const error = tableError as { code?: string; message?: string };
       if (error.code !== 'PGRST116' && !error.message?.includes('relation "staff_invitations" does not exist')) {
         logger.error('[STAFF MIGRATION] Unexpected error checking table:', { error: tableError instanceof Error ? tableError.message : 'Unknown error' });
         return NextResponse.json({ 

@@ -30,7 +30,7 @@ export async function GET(req: Request) {
       );
       
       // Find the order by session ID
-      let order: any = null;
+      let order: Record<string, unknown> | null = null;
       const { data: initialOrder } = await supabase
         .from("orders")
         .select("id, stripe_session_id, payment_status")
