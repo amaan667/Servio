@@ -47,17 +47,7 @@ export async function POST(req: Request) {
         customerName: customerName || 'Customer',
         customerPhone: customerPhone || '+1234567890',
         source: source || 'qr',
-        items: JSON.stringify(
-          items.map((item: unknown) => {
-            const menuItem = item as { id?: string; name?: string; price?: number; quantity?: number };
-            return {
-              id: menuItem.id,
-              name: menuItem.name,
-              quantity: menuItem.quantity,
-              price: menuItem.price,
-            };
-          })
-        ).substring(0, 200),
+        items: JSON.stringify(items || []).substring(0, 200),
       },
       success_url: `${base}/payment/success?session_id={CHECKOUT_SESSION_ID}&orderId=${orderId}`,
       cancel_url: `${base}/payment/cancel?orderId=${orderId}&venueId=${venueId || 'default-venue'}&tableNumber=${tableNumber || '1'}`,
