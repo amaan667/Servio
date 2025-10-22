@@ -1,11 +1,12 @@
 "use client";
 
 import React, { useState, useEffect } from "react";
+import Link from "next/link";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Label } from "@/components/ui/label";
-import { Trash2, Printer } from "lucide-react";
+import { Trash2, Printer, QrCode } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 
 // Hooks
@@ -30,6 +31,18 @@ export default function QRCodeClient({ venueId, venueName }: { venueId: string; 
   const { toast } = useToast();
 
   const qrManagement = useQRCodeManagement(venueId);
+
+  // Show loading state while data is being fetched
+  if (qrManagement.loading) {
+    return (
+      <div className="flex items-center justify-center min-h-[400px]">
+        <div className="text-center">
+          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-green-600 mx-auto mb-4"></div>
+          <p className="text-gray-600">Loading QR code management...</p>
+        </div>
+      </div>
+    );
+  }
 
   // Auto-generate QR code if table parameter is present
   useEffect(() => {
@@ -109,6 +122,33 @@ export default function QRCodeClient({ venueId, venueName }: { venueId: string; 
         <div className="text-center">
           <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-purple-600 mx-auto"></div>
           <p className="mt-4 text-gray-600">Loading tables and counters...</p>
+        </div>
+      </div>
+    );
+  }
+
+  // Show empty state if no tables or counters
+  if (qrManagement.tables.length === 0 && qrManagement.counters.length === 0) {
+    return (
+      <div className="text-center py-12">
+        <div className="mx-auto w-24 h-24 bg-gray-100 rounded-full flex items-center justify-center mb-4">
+          <QrCode className="w-12 h-12 text-gray-400" />
+        </div>
+        <h3 className="text-lg font-semibold text-gray-900 mb-2">No Tables or Counters Found</h3>
+        <p className="text-gray-600 mb-6">
+          You need to set up tables or counters before generating QR codes.
+        </p>
+        <div className="space-x-4">
+          <Button asChild>
+            <Link href={`/dashboard/${venueId}/tables`}>
+              Set Up Tables
+            </Link>
+          </Button>
+          <Button variant="outline" asChild>
+            <Link href={`/dashboard/${venueId}/menu-management`}>
+              Manage Menu
+            </Link>
+          </Button>
         </div>
       </div>
     );

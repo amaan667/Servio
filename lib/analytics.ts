@@ -37,7 +37,7 @@ class AnalyticsService {
   /**
    * Generate AI-powered business insights
    */
-  async generateInsights(venueId: string, timeframe: string = '30d'): Promise<PredictiveInsight[]> {
+  async generateInsights(_venueId: string, _timeframe: string = '30d'): Promise<PredictiveInsight[]> {
     // TODO: Integrate with AI service (OpenAI, Anthropic, etc.)
     const mockInsights: PredictiveInsight[] = [
       {
@@ -148,7 +148,7 @@ class AnalyticsService {
   /**
    * Generate business recommendations
    */
-  async generateRecommendations(venueId: string): Promise<string[]> {
+  async generateRecommendations(_venueId: string): Promise<string[]> {
     return [
       'Implement dynamic pricing during peak hours to increase revenue by 15%',
       'Add table reservation system to improve customer experience',

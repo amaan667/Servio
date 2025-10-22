@@ -3,7 +3,7 @@
 import React from 'react';
 import Link from 'next/link';
 import { Card, CardContent } from '@/components/ui/card';
-import { Clock, ChefHat, Table, ShoppingBag, Users, Package, BarChart, MessageSquare, Settings } from 'lucide-react';
+import { Clock, ChefHat, Table, ShoppingBag, Users, Package, BarChart, MessageSquare, Settings, QrCode } from 'lucide-react';
 import { LucideIcon } from 'lucide-react';
 
 interface Feature {
@@ -85,6 +85,14 @@ export function FeatureSections({ venueId, userRole }: FeatureSectionsProps) {
           icon: Package,
           color: 'text-yellow-600',
           bgColor: 'bg-yellow-100'
+        },
+        {
+          title: 'QR Codes',
+          description: 'Generate and manage QR codes for tables',
+          href: `/dashboard/${venueId}/qr-codes`,
+          icon: QrCode,
+          color: 'text-green-600',
+          bgColor: 'bg-green-100'
         },
       ]
     },

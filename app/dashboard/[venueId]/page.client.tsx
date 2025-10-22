@@ -148,7 +148,7 @@ const DashboardClient = React.memo(function DashboardClient({
         const userId = session.user.id;
 
         // Check if user is the venue owner
-        const { data: venueData, error: venueError } = await supabase
+        const { data: venueData } = await supabase
           .from("venues")
           .select("*")
           .eq("venue_id", venueId)
@@ -156,7 +156,7 @@ const DashboardClient = React.memo(function DashboardClient({
           .maybeSingle();
 
         // Check if user has a staff role for this venue
-        const { data: roleData, error: roleError } = await supabase
+        const { data: roleData } = await supabase
           .from("user_venue_roles")
           .select("role")
           .eq("user_id", userId)
