@@ -1,31 +1,43 @@
 "use client";
 
 import React, { useState, useEffect } from "react";
-import Link from "next/link";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 import { Label } from "@/components/ui/label";
 import { Trash2, Printer, QrCode } from "lucide-react";
-import { useToast } from "@/hooks/use-toast";
 
 // Hooks
-import { useQRCodeManagement } from './hooks/useQRCodeManagement';
+import { useQRCodeManagement } from "./hooks/useQRCodeManagement";
 
 // Components
-import { QRCodeCard } from './components/QRCodeCard';
-import { QRCodeGenerator } from './components/QRCodeGenerator';
+import { QRCodeCard } from "./components/QRCodeCard";
+import { QRCodeGenerator } from "./components/QRCodeGenerator";
 
 /**
  * QR Code Client Component
  * Manages QR code generation for tables and counters
- * 
+ *
  * Refactored: Extracted hooks and components for better organization
  * Original: 795 lines → Now: ~150 lines
  */
 
-export default function QRCodeClient({ venueId, venueName }: { venueId: string; venueName: string }) {
-  const [qrCodeSize, setQrCodeSize] = useState('medium');
+export default function QRCodeClient({
+  venueId,
+  venueName,
+}: {
+  venueId: string;
+  venueName: string;
+}) {
+  const [qrCodeSize, setQrCodeSize] = useState("medium");
+  const [includeVenueInfo] = useState(true);
+  const [includeInstructions] = useState(true);
 
   const qrManagement = useQRCodeManagement(venueId);
 
@@ -45,39 +57,46 @@ export default function QRCodeClient({ venueId, venueName }: { venueId: string; 
   useEffect(() => {
     if (qrManagement.tables.length > 0) {
       const urlParams = new URLSearchParams(window.location.search);
-      const tableName = urlParams.get('table');
-      
-      if (tableName) {
+      const tableName = urlParams.get("table");
 
-        const existingQR = qrManagement.generatedQRs.find(qr => qr.name === tableName);
+      if (tableName) {
+        const existingQR = qrManagement.generatedQRs.find((qr) => qr.name === tableName);
         if (!existingQR) {
           qrManagement.generateQRForName(tableName);
         }
       }
     }
-  }, [qrManagement.tables]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [qrManagement.tables.length]);
 
   const getSizeValue = () => {
     switch (qrCodeSize) {
-      case 'small': return 200;
-      case 'medium': return 300;
-      case 'large': return 400;
-      default: return 300;
+      case "small":
+        return 200;
+      case "medium":
+        return 300;
+      case "large":
+        return 400;
+      default:
+        return 300;
     }
   };
 
   const printAllQRs = () => {
-    const printWindow = window.open('', '_blank');
+    const printWindow = window.open("", "_blank");
     if (!printWindow) return;
 
-    const qrCards = qrManagement.generatedQRs.map(qr => {
-      const qrUrl = qr.url;
-      return `
+    const qrCards = qrManagement.generatedQRs
+      .map((qr) => {
+        const qrUrl = qr.url;
+        return `
         <div style="page-break-after: always; padding: 20px; text-align: center;">
-          ${includeVenueInfo ? `<h2 style="margin-bottom: 10px;">${venueName}</h2>` : ''}
+          ${includeVenueInfo ? `<h2 style="margin-bottom: 10px;">${venueName}</h2>` : ""}
           <h3 style="margin-bottom: 20px; text-transform: capitalize;">${qr.type}: ${qr.name}</h3>
           <img src="${qrUrl}" alt="QR Code" style="width: 400px; height: 400px; border: 2px solid #000;" />
-          ${includeInstructions ? `
+          ${
+            includeInstructions
+              ? `
             <div style="margin-top: 20px; padding: 20px; background: #f5f5f5; border-radius: 8px;">
               <h4 style="margin-bottom: 10px;">How to Order:</h4>
               <ol style="text-align: left; display: inline-block;">
@@ -86,10 +105,13 @@ export default function QRCodeClient({ venueId, venueName }: { venueId: string; 
                 <li>Complete your order at checkout</li>
               </ol>
             </div>
-          ` : ''}
+          `
+              : ""
+          }
         </div>
       `;
-    }).join('');
+      })
+      .join("");
 
     printWindow.document.write(`
       <!DOCTYPE html>
@@ -134,7 +156,16 @@ export default function QRCodeClient({ venueId, venueName }: { venueId: string; 
         onTypeChange={qrManagement.setQrCodeType}
         inputName={qrManagement.inputName}
         onInputNameChange={qrManagement.setInputName}
-        onGenerate={() => qrManagement.generateQRForName(qrManagement.inputName, qrManagement.qrCodeType === 'tables' ? 'table' : qrManagement.qrCodeType === 'counters' ? 'counter' : 'custom')}
+        onGenerate={() =>
+          qrManagement.generateQRForName(
+            qrManagement.inputName,
+            qrManagement.qrCodeType === "tables"
+              ? "table"
+              : qrManagement.qrCodeType === "counters"
+                ? "counter"
+                : "custom"
+          )
+        }
         onGenerateAll={qrManagement.generateQRForAll}
         tables={qrManagement.tables}
         counters={qrManagement.counters}

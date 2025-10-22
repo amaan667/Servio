@@ -1,17 +1,115 @@
 "use client";
 
-import { useFeatureAuth } from "../hooks/useFeatureAuth";
+import { useState, useEffect } from "react";
+import { useRouter } from "next/navigation";
 import AnalyticsClient from "./AnalyticsClient";
 import RoleBasedNavigation from "@/components/RoleBasedNavigation";
-import { useRouter } from "next/navigation";
+import { supabaseBrowser } from "@/lib/supabase";
 
 export default function AnalyticsClientPage({ venueId }: { venueId: string }) {
   const router = useRouter();
-  const { user, userRole, venueName, loading, authError, hasAccess } = useFeatureAuth({
-    venueId,
-    featureName: "Analytics",
-    requiredRoles: ["owner", "manager"],
-  });
+  const [user, setUser] = useState<{
+    id: string;
+    user_metadata?: { full_name?: string };
+    email?: string;
+  } | null>(null);
+  const [userRole, setUserRole] = useState<string | null>(null);
+  const [venueName, setVenueName] = useState<string>("Your Venue");
+  const [loading, setLoading] = useState(true);
+  const [authError, setAuthError] = useState<string | null>(null);
+
+  useEffect(() => {
+    async function checkAuth() {
+      const supabase = supabaseBrowser();
+
+      try {
+        const {
+          data: { session },
+        } = await supabase.auth.getSession();
+        const currentUser = session?.user;
+
+        if (!currentUser) {
+          console.info("⚠️  [ANALYTICS CLIENT] No user found, redirecting to sign-in");
+          router.push(`/sign-in?redirect=/dashboard/${venueId}/analytics`);
+          return;
+        }
+
+        console.info("🔐 [ANALYTICS CLIENT] Auth check:", {
+          venueId,
+          userId: currentUser.id,
+          timestamp: new Date().toISOString(),
+        });
+
+        setUser(currentUser);
+
+        // Check if user is the venue owner
+        const { data: venue } = await supabase
+          .from("venues")
+          .select("venue_id, venue_name, owner_user_id")
+          .eq("venue_id", venueId)
+          .eq("owner_user_id", currentUser.id)
+          .maybeSingle();
+
+        // Check if user has a staff role for this venue
+        const { data: roleData } = await supabase
+          .from("user_venue_roles")
+          .select("role")
+          .eq("user_id", currentUser.id)
+          .eq("venue_id", venueId)
+          .maybeSingle();
+
+        const isOwner = !!venue;
+        const isStaff = !!roleData;
+
+        console.info("✅ [ANALYTICS CLIENT] Authorization check:", {
+          venueId,
+          userId: currentUser.id,
+          isOwner,
+          isStaff,
+          role: roleData?.role,
+          timestamp: new Date().toISOString(),
+        });
+
+        if (!isOwner && !isStaff) {
+          setAuthError("You don't have access to this venue");
+          setLoading(false);
+          return;
+        }
+
+        // Get venue name (from owner check or fetch separately for staff)
+        if (venue?.venue_name) {
+          setVenueName(venue.venue_name as string);
+        } else if (isStaff) {
+          const { data: staffVenue } = await supabase
+            .from("venues")
+            .select("venue_name")
+            .eq("venue_id", venueId)
+            .single();
+          if (staffVenue?.venue_name) {
+            setVenueName(staffVenue.venue_name);
+          }
+        }
+
+        const finalRole = roleData?.role || (isOwner ? "owner" : "staff");
+        setUserRole(finalRole);
+
+        console.info("🚀 [ANALYTICS CLIENT] Rendering page:", {
+          venueId,
+          userId: currentUser.id,
+          finalRole,
+          timestamp: new Date().toISOString(),
+        });
+
+        setLoading(false);
+      } catch (error) {
+        console.error("❌ [ANALYTICS CLIENT] Auth error:", error);
+        setAuthError("Failed to verify access");
+        setLoading(false);
+      }
+    }
+
+    checkAuth();
+  }, [venueId, router]);
 
   if (loading) {
     return (
@@ -58,17 +156,7 @@ export default function AnalyticsClientPage({ venueId }: { venueId: string }) {
           </p>
         </div>
 
-        {hasAccess ? (
-          <AnalyticsClient venueId={venueId} venueName={venueName || "Your Venue"} />
-        ) : (
-          <div className="bg-yellow-50 border border-yellow-200 rounded-lg p-6">
-            <h3 className="text-lg font-semibold text-yellow-800 mb-2">Access Restricted</h3>
-            <p className="text-yellow-700">
-              You don&apos;t have permission to view analytics. This feature is available for Owner
-              and Manager roles only.
-            </p>
-          </div>
-        )}
+        <AnalyticsClient venueId={venueId} venueName={venueName} />
       </div>
     </div>
   );

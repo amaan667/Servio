@@ -1,17 +1,100 @@
 "use client";
 
-import { useFeatureAuth } from "../hooks/useFeatureAuth";
+import { useState, useEffect } from "react";
+import { useRouter } from "next/navigation";
 import SimpleFeedbackClient from "./SimpleFeedbackClient";
 import RoleBasedNavigation from "@/components/RoleBasedNavigation";
-import { useRouter } from "next/navigation";
+import { supabaseBrowser } from "@/lib/supabase";
 
 export default function FeedbackClientPage({ venueId }: { venueId: string }) {
   const router = useRouter();
-  const { user, userRole, loading, authError } = useFeatureAuth({
-    venueId,
-    featureName: "Customer Feedback",
-    requiredRoles: ["owner", "manager"],
-  });
+  const [user, setUser] = useState<{
+    id: string;
+    user_metadata?: { full_name?: string };
+    email?: string;
+  } | null>(null);
+  const [userRole, setUserRole] = useState<string | null>(null);
+  const [loading, setLoading] = useState(true);
+  const [authError, setAuthError] = useState<string | null>(null);
+
+  useEffect(() => {
+    async function checkAuth() {
+      const supabase = supabaseBrowser();
+
+      try {
+        const {
+          data: { session },
+        } = await supabase.auth.getSession();
+        const currentUser = session?.user;
+
+        if (!currentUser) {
+          console.info("⚠️  [FEEDBACK CLIENT] No user found, redirecting to sign-in");
+          router.push(`/sign-in?redirect=/dashboard/${venueId}/feedback`);
+          return;
+        }
+
+        console.info("🔐 [FEEDBACK CLIENT] Auth check:", {
+          venueId,
+          userId: currentUser.id,
+          timestamp: new Date().toISOString(),
+        });
+
+        setUser(currentUser);
+
+        // Check if user is the venue owner
+        const { data: venue } = await supabase
+          .from("venues")
+          .select("venue_id, venue_name, owner_user_id")
+          .eq("venue_id", venueId)
+          .eq("owner_user_id", currentUser.id)
+          .maybeSingle();
+
+        // Check if user has a staff role for this venue
+        const { data: roleData } = await supabase
+          .from("user_venue_roles")
+          .select("role")
+          .eq("user_id", currentUser.id)
+          .eq("venue_id", venueId)
+          .maybeSingle();
+
+        const isOwner = !!venue;
+        const isStaff = !!roleData;
+
+        console.info("✅ [FEEDBACK CLIENT] Authorization check:", {
+          venueId,
+          userId: currentUser.id,
+          isOwner,
+          isStaff,
+          role: roleData?.role,
+          timestamp: new Date().toISOString(),
+        });
+
+        if (!isOwner && !isStaff) {
+          setAuthError("You don't have access to this venue");
+          setLoading(false);
+          return;
+        }
+
+        const finalRole = roleData?.role || (isOwner ? "owner" : "staff");
+        setUserRole(finalRole);
+
+        console.info("🚀 [FEEDBACK CLIENT] Rendering page:", {
+          venueId,
+          userId: currentUser.id,
+          finalRole,
+          timestamp: new Date().toISOString(),
+        });
+
+        setLoading(false);
+      } catch (error) {
+        console.error("❌ [FEEDBACK CLIENT] Auth error:", error);
+        setAuthError("Failed to verify access");
+        setLoading(false);
+      }
+    }
+
+    checkAuth();
+  }, [venueId, router]);
 
   if (loading) {
     return (
