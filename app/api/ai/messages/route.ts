@@ -39,7 +39,7 @@ export async function GET(request: NextRequest) {
       .from("ai_conversations")
       .select(`
         *,
-        venues!inner(owner_user_id)
+        venues!inner(owner_id)
       `)
       .eq("id", conversationId)
       .single();
@@ -51,7 +51,7 @@ export async function GET(request: NextRequest) {
       );
     }
 
-    if (conversation.venues.owner_user_id !== user.id) {
+    if (conversation.venues.owner_id !== user.id) {
       return NextResponse.json(
         { error: "Access denied to this conversation" },
         { status: 403 }
@@ -133,10 +133,10 @@ export async function POST(request: NextRequest) {
     if (!roleName) {
       const { data: venue } = await supabase
         .from("venues")
-        .select("owner_user_id")
+        .select("owner_id")
         .eq("venue_id", venueId)
         .single();
-      if (!venue || venue.owner_user_id !== user.id) {
+      if (!venue || venue.owner_id !== user.id) {
         return NextResponse.json(
           { error: "Access denied to this venue" },
           { status: 403 }

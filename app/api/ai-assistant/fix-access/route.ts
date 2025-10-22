@@ -51,7 +51,7 @@ export async function POST(request: NextRequest) {
     // Check if user owns this venue
     const { data: venue } = await supabase
       .from("venues")
-      .select("owner_user_id")
+      .select("owner_id")
       .eq("venue_id", venueId)
       .single();
 
@@ -63,7 +63,7 @@ export async function POST(request: NextRequest) {
     }
 
     // If user owns the venue, create owner role
-    if (venue.owner_user_id === user.id) {
+    if (venue.owner_id === user.id) {
       try {
         const { data: roleData, error: roleError } = await supabase
           .from("user_venue_roles")

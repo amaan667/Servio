@@ -39,7 +39,7 @@ export async function POST(request: NextRequest) {
     // Verify venue ownership
     const { data: venue, error: venueError } = await supabase
       .from('venues')
-      .select('venue_id, owner_user_id')
+      .select('venue_id, owner_id')
       .eq('venue_id', venueId)
       .eq('owner_user_id', user.id)
       .single();

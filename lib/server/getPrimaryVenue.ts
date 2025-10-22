@@ -10,7 +10,7 @@ export async function getPrimaryVenueId(): Promise<string | null> {
   const { data } = await supa
     .from('venues')
     .select('venue_id')
-    .eq('owner_user_id', user.id)
+    .eq('owner_id', user.id)
     .order('created_at', { ascending: true })
     .limit(1);
 

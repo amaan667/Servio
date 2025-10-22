@@ -137,22 +137,46 @@ export async function createServerSupabase() {
   const { cookies } = await import("next/headers");
   const cookieStore = await cookies();
 
-  return createSSRServerClient(getSupabaseUrl(), getSupabaseAnonKey(), {
+  const client = createSSRServerClient(getSupabaseUrl(), getSupabaseAnonKey(), {
     cookies: {
-      getAll() {
-        return cookieStore.getAll();
-      },
-      setAll(cookiesToSet) {
+      get: (name) => cookieStore.get(name)?.value,
+      set: (name, value, options) => {
         try {
-          cookiesToSet.forEach(({ name, value, options }) => {
-            cookieStore.set(name, value, options);
+          cookieStore.set(name, value, {
+            ...options,
+            sameSite: "lax",
+            secure: process.env.NODE_ENV === "production",
+            httpOnly: false,
+            path: "/",
           });
         } catch {
-          // Silent error handling for cookie context (e.g., in Server Components)
+          // Silent error handling for cookie context
+        }
+      },
+      remove: (name, options) => {
+        try {
+          cookieStore.set(name, "", {
+            ...options,
+            sameSite: "lax",
+            secure: process.env.NODE_ENV === "production",
+            path: "/",
+            maxAge: 0,
+          });
+        } catch {
+          // Silent error handling for cookie context
         }
       },
     },
+    auth: {
+      persistSession: false, // Don't persist session on server
+      autoRefreshToken: false, // Don't auto-refresh on server (browser handles this)
+      detectSessionInUrl: false, // Don't detect session in URL on server
+      storage: undefined, // No storage on server
+      flowType: "pkce", // Use PKCE flow
+    },
   });
+
+  return client;
 }
 
 // Alias for backward compatibility

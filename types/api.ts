@@ -115,7 +115,7 @@ export interface MenuCategory {
 
 export interface Venue {
   venue_id: string;
-  owner_user_id: string;
+  owner_id: string;
   name: string;
   address?: string;
   city?: string;

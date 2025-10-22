@@ -30,11 +30,11 @@ export async function GET(request: NextRequest) {
     // Verify user has access to venue
     const { data: venue } = await supabase
       .from("venues")
-      .select("owner_user_id")
+      .select("owner_id")
       .eq("venue_id", venueId)
       .single();
 
-    if (!venue || venue.owner_user_id !== user.id) {
+    if (!venue || venue.owner_id !== user.id) {
       return NextResponse.json(
         { error: "Access denied to this venue" },
         { status: 403 }
@@ -109,11 +109,11 @@ export async function POST(request: NextRequest) {
     // Verify user has access to venue
     const { data: venue } = await supabase
       .from("venues")
-      .select("owner_user_id")
+      .select("owner_id")
       .eq("venue_id", venueId)
       .single();
 
-    if (!venue || venue.owner_user_id !== user.id) {
+    if (!venue || venue.owner_id !== user.id) {
       return NextResponse.json(
         { error: "Access denied to this venue" },
         { status: 403 }
@@ -203,11 +203,11 @@ export async function PATCH(request: NextRequest) {
     // Verify venue access
     const { data: venue } = await supabase
       .from("venues")
-      .select("owner_user_id")
+      .select("owner_id")
       .eq("venue_id", conversation.venue_id)
       .single();
 
-    if (!venue || venue.owner_user_id !== user.id) {
+    if (!venue || venue.owner_id !== user.id) {
       return NextResponse.json(
         { error: "Access denied to this venue" },
         { status: 403 }

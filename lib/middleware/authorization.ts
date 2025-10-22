@@ -9,7 +9,7 @@ import { logger } from '@/lib/logger';
 
 export interface Venue {
   venue_id: string;
-  owner_user_id: string;
+  owner_id: string;
   name: string;
   address?: string;
   phone?: string;
@@ -78,7 +78,7 @@ export async function verifyVenueAccess(
       .from('venues')
       .select('*')
       .eq('venue_id', venueId)
-      .eq('owner_user_id', userId)
+      .eq('owner_id', userId)
       .maybeSingle();
 
     if (venueError || !venue) {
