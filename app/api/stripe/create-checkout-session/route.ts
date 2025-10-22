@@ -302,7 +302,7 @@ export async function POST(request: NextRequest) {
     });
 
     return NextResponse.json({ sessionId: session.id, url: session.url });
-  } catch (error: any) {
+  } catch (error) {
     const errorMessage = error instanceof Error ? error.message : 'Unknown error';
     logger.error("[STRIPE CHECKOUT] Error:", { error: errorMessage });
     return NextResponse.json(

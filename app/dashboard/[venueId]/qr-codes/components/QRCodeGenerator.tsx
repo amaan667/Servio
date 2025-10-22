@@ -12,8 +12,8 @@ interface QRCodeGeneratorProps {
   onInputNameChange: (name: string) => void;
   onGenerate: () => void;
   onGenerateAll: () => void;
-  tables: any[];
-  counters: any[];
+  tables: unknown[];
+  counters: unknown[];
 }
 
 export function QRCodeGenerator({

@@ -62,7 +62,7 @@ export const pdfWorker = typeof window === 'undefined' ? new Worker(
         images,
         imageCount: images.length,
       };
-    } catch (error: any) {
+    } catch (error) {
       logger.error('PDF processing job failed', error, {
         jobId: job.id,
         venueId,

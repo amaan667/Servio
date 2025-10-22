@@ -39,7 +39,7 @@ export async function DELETE(
 
     logger.debug("[AI CHAT] Conversation deleted successfully");
     return NextResponse.json({ success: true });
-  } catch (error: any) {
+  } catch (error) {
     logger.error("[AI CHAT] Delete conversation error:", { error: error instanceof Error ? error.message : 'Unknown error' });
     return NextResponse.json(
       { error: error instanceof Error ? error.message : "Internal server error" },

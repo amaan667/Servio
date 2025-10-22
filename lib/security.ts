@@ -79,7 +79,7 @@ class SecurityService {
   /**
    * Input sanitization
    */
-  sanitizeInput(input: any): any {
+  sanitizeInput(input: unknown): any {
     if (typeof input === 'string') {
       return input
         .replace(/<script\b[^<]*(?:(?!<\/script>)<[^<]*)*<\/script>/gi, '') // Remove script tags
@@ -93,7 +93,7 @@ class SecurityService {
     }
 
     if (typeof input === 'object' && input !== null) {
-      const sanitized: any = {};
+      const sanitized: unknown = {};
       for (const [key, value] of Object.entries(input)) {
         sanitized[key] = this.sanitizeInput(value);
       }

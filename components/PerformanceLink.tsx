@@ -9,7 +9,7 @@ interface PerformanceLinkProps {
   children: React.ReactNode;
   className?: string;
   prefetch?: boolean;
-  [key: string]: any;
+  [key: string]: unknown;
 }
 
 /**

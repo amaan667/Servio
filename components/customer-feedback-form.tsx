@@ -132,7 +132,7 @@ export function CustomerFeedbackForm({
       setIsSubmitted(true);
       onFeedbackSubmitted?.();
 
-    } catch (err: any) {
+    } catch (err) {
 
       setError(err.message || 'Failed to submit feedback. Please try again.');
     } finally {

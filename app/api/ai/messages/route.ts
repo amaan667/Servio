@@ -90,7 +90,7 @@ export async function GET(request: NextRequest) {
     return NextResponse.json({
       messages: transformedMessages,
     });
-  } catch (error: any) {
+  } catch (error) {
     logger.error("[AI CHAT] Messages error:", { error: error instanceof Error ? error.message : 'Unknown error' });
     return NextResponse.json(
       { error: error instanceof Error ? error.message : "Internal server error" },
@@ -253,7 +253,7 @@ export async function POST(request: NextRequest) {
         toolResults: aiResult.toolResults || []
       });
 
-    } catch (aiError: any) {
+    } catch (aiError: unknown) {
       logger.error("[AI CHAT] AI service error:", { error: aiError instanceof Error ? aiError.message : 'Unknown error' });
       
       const errorMessage = aiError instanceof Error ? aiError.message : "An unexpected error occurred";
@@ -309,7 +309,7 @@ export async function POST(request: NextRequest) {
               error: errorMessage
             });
     }
-  } catch (error: any) {
+  } catch (error) {
     logger.error("[AI CHAT] Create message error:", { error: error instanceof Error ? error.message : 'Unknown error' });
     
     if ((error as any)?.name === "ZodError") {

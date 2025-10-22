@@ -16,7 +16,7 @@ export function TodayAtAGlance({ ordersByHour, tableUtilization, revenueByCatego
   const COLORS = ['#5B21B6', '#22C55E', '#F59E0B', '#EF4444', '#8B5CF6', '#06B6D4'];
 
   // Custom tooltip for orders by hour
-  const CustomTooltip = ({ active, payload }: any) => {
+  const CustomTooltip = ({ active, payload }: unknown) => {
     if (active && payload && payload.length) {
       return (
         <div className="bg-white p-3 rounded-lg shadow-lg border border-gray-200">
@@ -33,7 +33,7 @@ export function TodayAtAGlance({ ordersByHour, tableUtilization, revenueByCatego
   };
 
   // Custom tooltip for revenue by category
-  const CategoryTooltip = ({ active, payload }: any) => {
+  const CategoryTooltip = ({ active, payload }: unknown) => {
     if (active && payload && payload.length) {
       return (
         <div className="bg-white p-3 rounded-lg shadow-lg border border-gray-200">

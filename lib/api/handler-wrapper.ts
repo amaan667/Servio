@@ -76,7 +76,7 @@ export function withErrorHandling<TRequest = unknown, TResponse = unknown>(
 
       // Return success response
       return ok(result);
-    } catch (error: any) {
+    } catch (error) {
       const duration = Date.now() - startTime;
 
       // Log error

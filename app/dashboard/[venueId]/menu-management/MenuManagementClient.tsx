@@ -127,7 +127,7 @@ export default function MenuManagementClient({ venueId, canEdit = true }: { venu
       setEditingItem(null);
       
       await loadMenuItems();
-    } catch (error: any) {
+    } catch (error) {
 
       toast({
         title: "Error",
@@ -159,7 +159,7 @@ export default function MenuManagementClient({ venueId, canEdit = true }: { venu
       });
 
       await loadMenuItems();
-    } catch (error: any) {
+    } catch (error) {
 
       toast({
         title: "Error",
@@ -228,7 +228,7 @@ export default function MenuManagementClient({ venueId, canEdit = true }: { venu
       });
 
       await loadMenuItems();
-    } catch (error: any) {
+    } catch (error) {
 
       toast({
         title: "Error",

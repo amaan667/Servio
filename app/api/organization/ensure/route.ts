@@ -160,7 +160,7 @@ export async function POST(request: NextRequest) {
     
     return response;
 
-  } catch (error: any) {
+  } catch (error) {
     logger.error("[ORG ENSURE] Unexpected error:", { error: error instanceof Error ? error.message : 'Unknown error' });
     return NextResponse.json(
       { error: "Internal server error", details: error instanceof Error ? error.message : 'Unknown error' },

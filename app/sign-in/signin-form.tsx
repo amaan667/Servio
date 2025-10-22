@@ -83,7 +83,7 @@ export default function SignInForm({ onGoogleSignIn, isLoading = false, error: p
         // Use full reload to hydrate header with authenticated state
         window.location.assign(`/dashboard/${venues[0].venue_id}`);
       }
-    } catch (err: any) {
+    } catch (err) {
       const msg = err?.message || 'Sign-in failed. Please try again.';
       if (/rate limit/i.test(msg)) {
         const waitMs = 30_000;

@@ -86,7 +86,7 @@ export function usePasswordManagement(user: User) {
         }, 2500);
       }
       
-    } catch (err: any) {
+    } catch (err) {
       setError(err.message || 'Failed to update password');
       toast({
         title: "Error",

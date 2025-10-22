@@ -25,7 +25,7 @@ export async function POST(request: NextRequest) {
     // Check if staff_invitations table exists
     try {
       await supabase.from('staff_invitations').select('id').limit(1);
-    } catch (tableError: any) {
+    } catch (tableError: unknown) {
       const errorMessage = tableError instanceof Error ? tableError.message : 'Unknown error';
       const errorCode = tableError && typeof tableError === 'object' && 'code' in tableError ? String(tableError.code) : undefined;
       

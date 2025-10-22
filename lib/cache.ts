@@ -14,8 +14,8 @@ interface CacheEntry<T> {
 }
 
 class CacheService {
-  private memoryCache = new Map<string, CacheEntry<any>>();
-  private redisClient: any = null;
+  private memoryCache = new Map<string, CacheEntry<unknown>>();
+  private redisClient: unknown = null;
 
   constructor() {
     // TODO: Initialize Redis client in production
@@ -149,11 +149,11 @@ export const cache = new CacheService();
 /**
  * Cache decorator for functions
  */
-export function cached(ttl: number = 3600, keyGenerator?: (...args: any[]) => string) {
-  return function (target: any, propertyName: string, descriptor: PropertyDescriptor) {
+export function cached(ttl: number = 3600, keyGenerator?: (...args: unknown[]) => string) {
+  return function (target: unknown, propertyName: string, descriptor: PropertyDescriptor) {
     const method = descriptor.value;
     
-    descriptor.value = async function (...args: any[]) {
+    descriptor.value = async function (...args: unknown[]) {
       const cacheKey = keyGenerator ? keyGenerator(...args) : `${propertyName}:${JSON.stringify(args)}`;
       
       // Try to get from cache

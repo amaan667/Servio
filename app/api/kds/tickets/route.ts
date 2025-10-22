@@ -170,7 +170,7 @@ export async function GET(req: Request) {
       ok: true,
       tickets: finalTickets || []
     });
-  } catch (error: any) {
+  } catch (error) {
     logger.error('[KDS] Unexpected error:', { error: error instanceof Error ? error.message : 'Unknown error' });
     return NextResponse.json(
       { ok: false, error: error instanceof Error ? error.message : 'Internal server error' },
@@ -282,7 +282,7 @@ export async function PATCH(req: Request) {
       ok: true,
       ticket
     });
-  } catch (error: any) {
+  } catch (error) {
     logger.error('[KDS] Unexpected error:', { error: error instanceof Error ? error.message : 'Unknown error' });
     return NextResponse.json(
       { ok: false, error: error instanceof Error ? error.message : 'Internal server error' },

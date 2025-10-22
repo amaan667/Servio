@@ -12,7 +12,7 @@ export async function PUT(req: NextRequest, context: { params: Promise<{ tableId
     const supabase = await createClient();
 
     // Update table
-    const updateData: any = {
+    const updateData: unknown = {
       label: label?.trim(),
       seat_count,
       is_active,
@@ -64,7 +64,7 @@ export async function DELETE(req: NextRequest, context: { params: Promise<{ tabl
     // Check if the table has unknown active orders
     
     let activeOrders: { id: string }[] = [];
-    let ordersError: any = null;
+    let ordersError: unknown = null;
     
     try {
       const ordersResult = await supabase
@@ -107,7 +107,7 @@ export async function DELETE(req: NextRequest, context: { params: Promise<{ tabl
     // Check if the table has unknown active reservations
     
     let activeReservations: { id: string }[] = [];
-    let reservationsError: any = null;
+    let reservationsError: unknown = null;
     
     try {
       const reservationsResult = await supabase

@@ -209,7 +209,7 @@ const OrdersClient: React.FC<OrdersClientProps> = ({ venueId, initialOrders = []
           table: 'orders',
           filter: `venue_id=eq.${venueId}`,
         },
-        (payload: any) => {
+        (payload: unknown) => {
           loadVenueAndOrders();
         }
       )

@@ -5,7 +5,7 @@ import { logger } from '@/lib/logger';
 interface KDSStation {
   id: string;
   station_type: string;
-  [key: string]: any;
+  [key: string]: unknown;
 }
 
 export const runtime = 'nodejs';
@@ -183,7 +183,7 @@ export async function POST(req: Request) {
           scopeOrdersProcessed++;
           logger.debug(`[KDS BACKFILL ALL] Processed order ${order.id} with ${items.length} items for ${scope}`);
           
-        } catch (error: any) {
+        } catch (error) {
           logger.error(`[KDS BACKFILL ALL] Error processing order ${order.id} for ${scope}:`, { error: error instanceof Error ? error.message : 'Unknown error' });
           scopeErrors.push(`Error processing order ${order.id}: ${error instanceof Error ? error.message : 'Unknown error'}`);
         }
@@ -216,7 +216,7 @@ export async function POST(req: Request) {
       results
     });
 
-  } catch (error: any) {
+  } catch (error) {
     logger.error('[KDS BACKFILL ALL] Unexpected error:', { error: error instanceof Error ? error.message : 'Unknown error' });
     return NextResponse.json({ 
       ok: false, 

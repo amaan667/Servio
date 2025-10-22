@@ -68,7 +68,7 @@ export async function executeAnalyticsGetInsights(
 
     const totalRevenue = orderItems?.reduce((sum, item) => sum + (item.price * item.quantity), 0) || 0;
     const totalQuantity = orderItems?.reduce((sum, item) => sum + item.quantity, 0) || 0;
-    const orderCount = new Set(orderItems?.map((item: any) => item.orders.id)).size;
+    const orderCount = new Set(orderItems?.map((item: Record<string, unknown>) => item.orders.id)).size;
 
     const insights = {
       itemName: params.itemName || "Unknown Item",
@@ -186,7 +186,7 @@ export async function executeAnalyticsGetStats(
 
       const totalRevenue = orderItems?.reduce((sum, item) => sum + (item.price * item.quantity), 0) || 0;
       const totalQuantity = orderItems?.reduce((sum, item) => sum + item.quantity, 0) || 0;
-      const orderCount = new Set(orderItems?.map((item: any) => item.orders.id)).size;
+      const orderCount = new Set(orderItems?.map((item: Record<string, unknown>) => item.orders.id)).size;
 
       stats = {
         itemName: params.itemName || "Unknown Item",
@@ -237,7 +237,7 @@ export async function executeAnalyticsGetStats(
             .gte("orders.created_at", timeStart);
 
           const itemSales = new Map();
-          topItems?.forEach((item: any) => {
+          topItems?.forEach((item: Record<string, unknown>) => {
             const existing = itemSales.get(item.menu_item_id) || { name: item.menu_items.name, quantity: 0, revenue: 0 };
             itemSales.set(item.menu_item_id, {
               name: existing.name,
@@ -276,7 +276,7 @@ export async function executeAnalyticsGetStats(
 }
 
 export async function executeAnalyticsCreateReport(
-  params: any,
+  params: unknown,
   venueId: string,
   userId: string,
   preview: boolean

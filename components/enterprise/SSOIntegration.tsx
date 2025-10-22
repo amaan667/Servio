@@ -18,7 +18,7 @@ interface SSOProvider {
   name: string;
   type: 'saml' | 'oauth' | 'oidc';
   enabled: boolean;
-  config: any;
+  config: unknown;
 }
 
 export const SSOIntegration: React.FC = () => {
@@ -61,7 +61,7 @@ export const SSOIntegration: React.FC = () => {
     ));
   };
 
-  const handleConfigUpdate = (providerId: string, config: any) => {
+  const handleConfigUpdate = (providerId: string, config: unknown) => {
     setProviders(prev => prev.map(p => 
       p.id === providerId ? { ...p, config: { ...p.config, ...config } } : p
     ));

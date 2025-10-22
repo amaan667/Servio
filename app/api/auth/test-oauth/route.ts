@@ -46,7 +46,7 @@ export async function GET(request: NextRequest) {
     
     return NextResponse.json(testResults);
     
-  } catch (error: any) {
+  } catch (error) {
     return NextResponse.json({ 
       error: error instanceof Error ? error.message : 'Unknown error',
       timestamp: new Date().toISOString()

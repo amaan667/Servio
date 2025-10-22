@@ -448,7 +448,7 @@ export async function planAssistantAction(
 
 export async function explainAction(
   toolName: ToolName,
-  params: any,
+  params: unknown,
   context: AIAssistantContext
 ): Promise<string> {
   const systemPrompt = `You are Servio Assistant. Explain the following action in simple, human terms.

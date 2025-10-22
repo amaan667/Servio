@@ -232,7 +232,7 @@ export async function POST() {
       }
     });
 
-  } catch (error: any) {
+  } catch (error) {
     logger.error("[AI MIGRATION] Migration error:", { error: error instanceof Error ? error.message : 'Unknown error' });
     return NextResponse.json(
       { error: "Migration failed", details: error instanceof Error ? error.message : 'Unknown error' },
@@ -269,7 +269,7 @@ export async function GET() {
       timestamp: new Date().toISOString()
     });
 
-  } catch (error: any) {
+  } catch (error) {
     logger.error("[AI MIGRATION] Status check error:", { error: error instanceof Error ? error.message : 'Unknown error' });
     return NextResponse.json(
       { error: "Failed to check migration status", details: error instanceof Error ? error.message : 'Unknown error' },

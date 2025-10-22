@@ -93,7 +93,7 @@ export function useDesignSettings(venueId: string) {
         title: "Design saved successfully",
         description: "Your design settings have been saved.",
       });
-    } catch (error: any) {
+    } catch (error) {
 
       toast({
         title: "Save failed",

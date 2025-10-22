@@ -16,7 +16,7 @@ interface AdvancedAnalyticsProps {
 }
 
 export const AdvancedAnalytics: React.FC<AdvancedAnalyticsProps> = ({ venueId }) => {
-  const [businessIntelligence, setBusinessIntelligence] = useState<any>(null);
+  const [businessIntelligence, setBusinessIntelligence] = useState<unknown>(null);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
@@ -63,7 +63,7 @@ export const AdvancedAnalytics: React.FC<AdvancedAnalyticsProps> = ({ venueId })
     <div className="space-y-6">
       {/* KPIs Section */}
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
-        {businessIntelligence.kpis.map((kpi: any, index: number) => (
+        {businessIntelligence.kpis.map((kpi: unknown, index: number) => (
           <Card key={index} className="hover:shadow-lg transition-shadow">
             <CardContent className="p-6">
               <div className="flex items-center justify-between">
@@ -98,7 +98,7 @@ export const AdvancedAnalytics: React.FC<AdvancedAnalyticsProps> = ({ venueId })
         </CardHeader>
         <CardContent>
           <div className="space-y-4">
-            {businessIntelligence.insights.map((insight: any) => (
+            {businessIntelligence.insights.map((insight: unknown) => (
               <div key={insight.id} className="border rounded-lg p-4 hover:bg-gray-50 transition-colors">
                 <div className="flex items-start justify-between">
                   <div className="flex-1">

@@ -13,13 +13,13 @@ interface RealtimeChannel {
 interface CollaborationEvent {
   type: 'cursor_move' | 'selection_change' | 'content_edit' | 'user_join' | 'user_leave';
   userId: string;
-  data: any;
+  data: unknown;
   timestamp: string;
 }
 
 class RealtimeService {
   private channels = new Map<string, RealtimeChannel>();
-  private supabase: any;
+  private supabase: unknown;
 
   constructor() {
     // TODO: Initialize Supabase client
@@ -29,7 +29,7 @@ class RealtimeService {
   /**
    * Subscribe to venue updates
    */
-  subscribeToVenue(venueId: string, callback: (data: any) => void): () => void {
+  subscribeToVenue(venueId: string, callback: (data: unknown) => void): () => void {
     const channelName = `venue:${venueId}`;
     
     if (this.channels.has(channelName)) {
@@ -72,8 +72,8 @@ class RealtimeService {
    * Subscribe to collaborative document editing
    */
   subscribeToDocument(documentId: string, userId: string): {
-    onCursorMove: (callback: (data: any) => void) => void;
-    onContentChange: (callback: (data: any) => void) => void;
+    onCursorMove: (callback: (data: unknown) => void) => void;
+    onContentChange: (callback: (data: unknown) => void) => void;
     broadcastCursor: (position: { x: number; y: number }) => void;
     broadcastContent: (content: string) => void;
     unsubscribe: () => void;
@@ -84,10 +84,10 @@ class RealtimeService {
     const callbacks = new Map<string, Function>();
 
     return {
-      onCursorMove: (callback: (data: any) => void) => {
+      onCursorMove: (callback: (data: unknown) => void) => {
         callbacks.set('cursor_move', callback);
       },
-      onContentChange: (callback: (data: any) => void) => {
+      onContentChange: (callback: (data: unknown) => void) => {
         callbacks.set('content_change', callback);
       },
       broadcastCursor: (position: { x: number; y: number }) => {
@@ -119,7 +119,7 @@ class RealtimeService {
   /**
    * Subscribe to order updates
    */
-  subscribeToOrders(venueId: string, callback: (data: any) => void): () => void {
+  subscribeToOrders(venueId: string, callback: (data: unknown) => void): () => void {
     return this.subscribeToVenue(venueId, (data) => {
       if (data.type === 'order_update') {
         callback(data);
@@ -130,7 +130,7 @@ class RealtimeService {
   /**
    * Subscribe to analytics updates
    */
-  subscribeToAnalytics(venueId: string, callback: (data: any) => void): () => void {
+  subscribeToAnalytics(venueId: string, callback: (data: unknown) => void): () => void {
     return this.subscribeToVenue(venueId, (data) => {
       if (data.type === 'analytics_update') {
         callback(data);
@@ -145,7 +145,7 @@ class RealtimeService {
     title: string;
     message: string;
     type: 'info' | 'success' | 'warning' | 'error';
-    data?: any;
+    data?: unknown;
   }): Promise<void> {
     // TODO: Implement with Supabase realtime
     console.log('Sending notification to user:', userId, notification);
@@ -156,7 +156,7 @@ class RealtimeService {
    */
   async broadcastToOrganization(organizationId: string, event: {
     type: string;
-    data: any;
+    data: unknown;
   }): Promise<void> {
     // TODO: Implement organization-wide broadcasting
     console.log('Broadcasting to organization:', organizationId, event);

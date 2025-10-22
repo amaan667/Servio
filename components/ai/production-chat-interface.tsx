@@ -22,7 +22,7 @@ interface Message {
   id: string;
   authorRole: 'system' | 'user' | 'assistant' | 'tool';
   text: string;
-  content: any;
+  content: unknown;
   callId?: string;
   toolName?: string;
   createdAt: string;

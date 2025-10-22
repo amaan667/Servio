@@ -5,7 +5,7 @@ import { logger } from '@/lib/logger';
 interface KDSStation {
   id: string;
   station_type: string;
-  [key: string]: any;
+  [key: string]: unknown;
 }
 
 export const runtime = 'nodejs'; // KDS backfill endpoint
@@ -178,7 +178,7 @@ export async function POST(req: Request) {
         ordersProcessed++;
         logger.debug(`[KDS BACKFILL] Processed order ${order.id} with ${items.length} items`);
         
-      } catch (error: any) {
+      } catch (error) {
         logger.error(`[KDS BACKFILL] Error processing order ${order.id}:`, { error: error instanceof Error ? error.message : 'Unknown error' });
         errors.push(`Error processing order ${order.id}: ${error instanceof Error ? error.message : 'Unknown error'}`);
       }
@@ -198,7 +198,7 @@ export async function POST(req: Request) {
       errors: errors.length > 0 ? errors : undefined
     });
 
-  } catch (error: any) {
+  } catch (error) {
     logger.error('[KDS BACKFILL] Unexpected error:', { error: error instanceof Error ? error.message : 'Unknown error' });
     return NextResponse.json({ 
       ok: false, 

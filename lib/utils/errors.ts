@@ -16,7 +16,7 @@ interface ErrorWithCode extends Error {
   code?: string;
 }
 
-export function getErrorDetails(error: any): ErrorDetails {
+export function getErrorDetails(error: unknown): ErrorDetails {
   if (error instanceof Error) {
     const err = error as ErrorWithCode;
     return {
@@ -50,14 +50,14 @@ export function getErrorDetails(error: any): ErrorDetails {
 /**
  * Check if error is a specific type
  */
-export function isErrorType(error: any, type: string): boolean {
+export function isErrorType(error: unknown, type: string): boolean {
   return error instanceof Error && error.name === type;
 }
 
 /**
  * Create a formatted error message
  */
-export function formatErrorMessage(error: any): string {
+export function formatErrorMessage(error: unknown): string {
   const details = getErrorDetails(error);
   return details.message;
 }
@@ -65,7 +65,7 @@ export function formatErrorMessage(error: any): string {
 /**
  * Get error message from unknown error type
  */
-export function getErrorMessage(error: any): string {
+export function getErrorMessage(error: unknown): string {
   if (error instanceof Error) {
     return error.message;
   }
@@ -81,7 +81,7 @@ export function getErrorMessage(error: any): string {
 /**
  * Convert unknown error to Error object
  */
-export function toError(error: any): Error {
+export function toError(error: unknown): Error {
   if (error instanceof Error) {
     return error;
   }

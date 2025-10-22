@@ -209,7 +209,7 @@ export async function POST(req: Request) {
 
     return NextResponse.json(result);
 
-  } catch (error: any) {
+  } catch (error) {
     logger.error('[TABLE REMOVAL] Unexpected error:', { error: error instanceof Error ? error.message : 'Unknown error' });
     return NextResponse.json({ 
       ok: false, 

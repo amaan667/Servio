@@ -178,7 +178,7 @@ export async function POST(request: NextRequest) {
       result: result as AIExecutionResult,
       executionTimeMs: executionTime,
     });
-  } catch (error: any) {
+  } catch (error) {
     logger.error("[AI ASSISTANT] Execution error:", { error: error instanceof Error ? error.message : 'Unknown error' });
 
     if ((error as any)?.name === "ZodError") {

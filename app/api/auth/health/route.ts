@@ -28,7 +28,7 @@ export async function GET() {
       } else {
         sessionStatus = 'none';
       }
-    } catch (err: any) {
+    } catch (err) {
       sessionStatus = 'exception';
       sessionError = err instanceof Error ? err.message : 'Unknown error';
     }
@@ -55,7 +55,7 @@ export async function GET() {
         appUrl: process.env.NEXT_PUBLIC_APP_URL
       }
     });
-  } catch (error: any) {
+  } catch (error) {
     return NextResponse.json({
       status: 'error',
       timestamp: new Date().toISOString(),

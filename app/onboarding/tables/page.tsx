@@ -132,7 +132,7 @@ export default function OnboardingTablesPage() {
 
       // Move to next step
       router.push('/onboarding/test-order');
-    } catch (error: any) {
+    } catch (error) {
 
       toast({
         title: 'Failed to create tables',

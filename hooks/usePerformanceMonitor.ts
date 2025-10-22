@@ -28,7 +28,7 @@ export function usePerformanceMonitor(componentName: string) {
  * Hook for measuring API call performance
  */
 export function useApiPerformanceMonitor(apiName: string) {
-  const measureApiCall = <T extends (...args: any[]) => Promise<unknown>>(fn: T) => {
+  const measureApiCall = <T extends (...args: unknown[]) => Promise<unknown>>(fn: T) => {
     return async (...args: Parameters<T>) => {
       if (process.env.NODE_ENV !== 'development') {
         return fn(...args);

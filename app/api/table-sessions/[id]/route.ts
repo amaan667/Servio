@@ -11,7 +11,7 @@ export async function PUT(req: NextRequest, context: { params: Promise<{ id: str
     const supabase = await createClient();
 
     // Update table session
-    const updateData: any = {
+    const updateData: unknown = {
       status,
       updated_at: new Date().toISOString(),
     };

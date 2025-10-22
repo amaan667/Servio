@@ -4,13 +4,13 @@
  */
 
 export interface LogContext {
-  [key: string]: any;
+  [key: string]: unknown;
 }
 
 /**
  * Convert error to log context
  */
-export function errorToContext(error: any): LogContext {
+export function errorToContext(error: unknown): LogContext {
   if (error instanceof Error) {
     return {
       message: error.message,
@@ -33,7 +33,7 @@ export function errorToContext(error: any): LogContext {
 /**
  * Convert unknown value to log context
  */
-export function toContext(value: any): LogContext {
+export function toContext(value: unknown): LogContext {
   if (typeof value === 'string') {
     return { message: value };
   }

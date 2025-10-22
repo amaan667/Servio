@@ -11,7 +11,7 @@ interface MenuItem {
   price: number;
   category: string;
   is_available: boolean;
-  [key: string]: any; // Allow additional properties
+  [key: string]: unknown; // Allow additional properties
 }
 
 interface MenuPreviewProps {

@@ -30,7 +30,7 @@ export async function getServerUser(): Promise<User | null> {
  * Safely get the current session on the server
  * Returns null if no valid session exists (never throws)
  *
- * @returns Promise<{ user: User | null, session: any }>
+ * @returns Promise<{ user: User | null, session: unknown }>
  */
 export async function getServerSession(): Promise<{ user: User | null; session: unknown }> {
   try {

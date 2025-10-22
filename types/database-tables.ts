@@ -184,17 +184,17 @@ export interface TableSession {
 export interface SupabaseClient {
   from: (table: string) => {
     select: (columns?: string) => any;
-    insert: (data: any) => any;
-    update: (data: any) => any;
+    insert: (data: unknown) => any;
+    update: (data: unknown) => any;
     delete: () => any;
-    upsert: (data: any) => any;
+    upsert: (data: unknown) => any;
   };
   auth: {
-    getUser: () => Promise<{ data: { user: any }; error: any }>;
-    getSession: () => Promise<{ data: { session: any }; error: any }>;
+    getUser: () => Promise<{ data: { user: unknown }; error: unknown }>;
+    getSession: () => Promise<{ data: { session: unknown }; error: unknown }>;
   };
-  storage: any;
-  rpc: (fn: string, params?: any) => any;
+  storage: unknown;
+  rpc: (fn: string, params?: unknown) => any;
   channel: (name: string) => any;
 }
 

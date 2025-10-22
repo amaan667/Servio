@@ -138,7 +138,7 @@ export async function GET(req: Request) {
 
   const { data: activeTables } = await activeTablesQuery;
 
-  const activeTablesToday = new Set(activeTables?.map((o: any) => (o as { table_number?: string }).table_number) || []).size;
+  const activeTablesToday = new Set(activeTables?.map((o: Record<string, unknown>) => (o as { table_number?: string }).table_number) || []).size;
 
   const response = {
     ok: true,

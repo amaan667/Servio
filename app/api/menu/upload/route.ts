@@ -60,7 +60,7 @@ export async function POST(req: Request) {
     // Ensure bucket exists
     try {
       const { data: buckets } = await supa.storage.listBuckets();
-      const has = (buckets || []).some((b: any) => (b as { name?: string }).name === 'menus');
+      const has = (buckets || []).some((b: unknown) => (b as { name?: string }).name === 'menus');
       if (!has) {
         await supa.storage.createBucket('menus', { public: false });
       }
@@ -115,7 +115,7 @@ export async function POST(req: Request) {
     }
 
     return NextResponse.json({ ok: true, upload_id: uploadId, sha256: hash, path });
-  } catch (e: any) {
+  } catch (e) {
     logger.error('[MENU_UPLOAD] fatal', { error: e });
     return NextResponse.json({ ok: false, error: e instanceof Error ? e.message : 'upload failed' }, { status: 500 });
   }

@@ -11,12 +11,12 @@ import { logger } from '@/lib/logger';
 interface MenuItem {
   id: string;
   position?: number;
-  [key: string]: any;
+  [key: string]: unknown;
 }
 
 export function useDragAndDrop<T extends MenuItem>(
   items: T[],
-  onReorder: (items: T[]) => Promise<{ success: boolean; error?: any }>
+  onReorder: (items: T[]) => Promise<{ success: boolean; error?: unknown }>
 ) {
   const [draggedItem, setDraggedItem] = useState<T | null>(null);
   const [draggedOverItem, setDraggedOverItem] = useState<T | null>(null);
@@ -75,7 +75,7 @@ export function useDragAndDrop<T extends MenuItem>(
     }
   }, [items, onReorder]);
 
-  const handleDragUpdate = useCallback((update: any) => {
+  const handleDragUpdate = useCallback((update: unknown) => {
     // Optional: Handle drag updates for visual feedback
     if (update.draggableId) {
       const item = items.find(i => i.id === update.draggableId);

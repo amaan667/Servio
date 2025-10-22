@@ -408,7 +408,7 @@ export default function SimpleFeedbackClient({ venueId }: SimpleFeedbackClientPr
                   <Label htmlFor="type">Question Type</Label>
                   <Select
                     value={formData.type}
-                    onValueChange={(value: any) => setFormData({ ...formData, type: value })}
+                    onValueChange={(value: unknown) => setFormData({ ...formData, type: value })}
                   >
                     <SelectTrigger>
                       <SelectValue />

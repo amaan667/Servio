@@ -54,7 +54,7 @@ import {
  */
 export async function executeTool(
   toolName: ToolName,
-  params: any,
+  params: unknown,
   venueId: string,
   userId: string,
   preview: boolean

@@ -2,7 +2,7 @@ import { useState, useEffect } from 'react';
 import { buildIsoFromLocal, addDaysISO } from '@/lib/time';
 import { LegacyShift } from './useStaffManagement';
 
-export function useShiftManagement(venueId: string, staff: any[]) {
+export function useShiftManagement(venueId: string, staff: unknown[]) {
   const [allShifts, setAllShifts] = useState<LegacyShift[]>([]);
   const [shiftsLoaded, setShiftsLoaded] = useState(false);
   const [editingShiftFor, setEditingShiftFor] = useState<string | null>(null);

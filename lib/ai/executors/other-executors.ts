@@ -3,7 +3,7 @@ import { AIPreviewDiff, AIExecutionResult, AIAssistantError } from "@/types/ai-a
 import { NavigationGoToPageParams } from "@/types/ai-assistant";
 
 export async function executeDiscountsCreate(
-  params: any,
+  params: unknown,
   venueId: string,
   userId: string,
   preview: boolean
@@ -52,7 +52,7 @@ export async function executeDiscountsCreate(
 }
 
 export async function executeKDSGetOverdue(
-  params: any,
+  params: unknown,
   venueId: string,
   userId: string,
   preview: boolean
@@ -87,7 +87,7 @@ export async function executeKDSGetOverdue(
 }
 
 export async function executeKDSSuggestOptimization(
-  params: any,
+  params: unknown,
   venueId: string,
   userId: string,
   preview: boolean

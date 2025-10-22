@@ -50,7 +50,7 @@ export async function updateOrderStatus(
   }
 }
 
-async function clearTableSession(orderData: any, venueId: string, orderId: string) {
+async function clearTableSession(orderData: unknown, venueId: string, orderId: string) {
   try {
     const supabase = createClient();
     
@@ -63,9 +63,9 @@ async function clearTableSession(orderData: any, venueId: string, orderId: strin
 
     let filteredActiveOrders = activeOrders || [];
     if (orderData.table_id) {
-      filteredActiveOrders = (activeOrders || []).filter((o: any) => o.table_id === orderData.table_id);
+      filteredActiveOrders = (activeOrders || []).filter((o: Record<string, unknown>) => o.table_id === orderData.table_id);
     } else if (orderData.table_number) {
-      filteredActiveOrders = (activeOrders || []).filter((o: any) => o.table_number === orderData.table_number);
+      filteredActiveOrders = (activeOrders || []).filter((o: Record<string, unknown>) => o.table_number === orderData.table_number);
     }
 
     if (!filteredActiveOrders || filteredActiveOrders.length === 0) {

@@ -25,7 +25,7 @@ interface Table {
 
 interface MergeResult {
   success: boolean;
-  data?: any;
+  data?: unknown;
   error?: string;
   scenario?: string;
   description?: string;

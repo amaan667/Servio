@@ -12,8 +12,8 @@ export async function POST() {
       {
         cookies: {
           get(name: string) { return undefined; },
-          set(name: string, value: string, options: any) { },
-          remove(name: string, options: any) { },
+          set(name: string, value: string, options: unknown) { },
+          remove(name: string, options: unknown) { },
         },
       }
     );

@@ -8,7 +8,7 @@ export function withErrorHandling<T>(handler: Handler<T>) {
     try {
       const data = await handler(req);
       return NextResponse.json({ ok: true, data });
-    } catch (e: any) {
+    } catch (e) {
       const message = getErrorMessage(e);
       return NextResponse.json({ ok: false, error: message }, { status: 400 });
     }

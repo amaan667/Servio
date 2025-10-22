@@ -14,7 +14,7 @@ interface CacheOptions {
 }
 
 class Cache {
-  private memoryCache: Map<string, { value: any; expires: number }> = new Map();
+  private memoryCache: Map<string, { value: unknown; expires: number }> = new Map();
   private useRedis: boolean = false;
 
   constructor() {

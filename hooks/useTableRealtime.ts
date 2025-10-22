@@ -20,7 +20,7 @@ export function useTableRealtime(venueId: string, onTableChange?: () => void) {
         schema: 'public',
         table: 'table_sessions',
         filter: `venue_id=eq.${venueId}`,
-      }, (payload: any) => {
+      }, (payload: unknown) => {
         if (onTableChangeRef.current) {
           onTableChangeRef.current()
         }
@@ -30,7 +30,7 @@ export function useTableRealtime(venueId: string, onTableChange?: () => void) {
         schema: 'public',
         table: 'tables',
         filter: `venue_id=eq.${venueId}`,
-      }, (payload: any) => {
+      }, (payload: unknown) => {
         if (onTableChangeRef.current) {
           onTableChangeRef.current()
         }
@@ -40,12 +40,12 @@ export function useTableRealtime(venueId: string, onTableChange?: () => void) {
         schema: 'public',
         table: 'reservations',
         filter: `venue_id=eq.${venueId}`,
-      }, (payload: any) => {
+      }, (payload: unknown) => {
         if (onTableChangeRef.current) {
           onTableChangeRef.current()
         }
       })
-      .subscribe((status: any) => {
+      .subscribe((status: unknown) => {
       })
 
     return () => { 

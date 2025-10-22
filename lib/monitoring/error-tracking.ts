@@ -7,7 +7,7 @@ interface ErrorContext {
   user_id?: string;
   venue_id?: string;
   route?: string;
-  [key: string]: any;
+  [key: string]: unknown;
 }
 
 export function trackError(error: Error, context?: ErrorContext) {

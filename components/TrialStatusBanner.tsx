@@ -69,7 +69,7 @@ export default function TrialStatusBanner({ userRole }: TrialStatusBannerProps) 
     }
   };
 
-  const processTrialStatus = (org: any) => {
+  const processTrialStatus = (org: unknown) => {
     const subscriptionStatus = org.subscription_status || 'basic';
     const isTrialing = subscriptionStatus === 'trialing';
     const tier = org.subscription_tier || 'basic';

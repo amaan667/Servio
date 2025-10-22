@@ -16,13 +16,13 @@ export interface Venue {
   email?: string;
   created_at: string;
   updated_at: string;
-  [key: string]: any;
+  [key: string]: unknown;
 }
 
 export interface User {
   id: string;
   email?: string;
-  [key: string]: any;
+  [key: string]: unknown;
 }
 
 export interface VenueAccess {

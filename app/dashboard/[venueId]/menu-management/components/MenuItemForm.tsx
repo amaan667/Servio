@@ -16,7 +16,7 @@ interface MenuItemFormProps {
     category: string;
     available: boolean;
   };
-  setFormData: (data: any) => void;
+  setFormData: (data: unknown) => void;
   editingItem: MenuItem | null;
   onSubmit: (e: React.FormEvent) => void;
   onCancel: () => void;

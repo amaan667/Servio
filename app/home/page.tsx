@@ -60,7 +60,7 @@ const HomePage = React.memo(function HomePage() {
 
     // Listen for auth state changes
     const supabase = createClient();
-    const result = supabase?.auth?.onAuthStateChange?.((event: any, session: any) => {
+    const result = supabase?.auth?.onAuthStateChange?.((event: unknown, session: unknown) => {
       if (session?.user) {
         setUser(session.user);
       } else {

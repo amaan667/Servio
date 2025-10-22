@@ -80,7 +80,7 @@ export function withRateLimit(
  * Apply rate limiting to a route handler
  */
 export function rateLimit(tier: RateLimitTier = 'standard') {
-  return function <T extends (...args: any[]) => Promise<NextResponse>>(
+  return function <T extends (...args: unknown[]) => Promise<NextResponse>>(
     target: T
   ): T {
     return (async (...args: Parameters<T>) => {

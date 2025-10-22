@@ -148,7 +148,7 @@ export async function POST(req: NextRequest) {
       reservations: updatedReservations
     });
 
-  } catch (error: any) {
+  } catch (error) {
     logger.error('[CHECK COMPLETION] Error:', { error: error instanceof Error ? error.message : 'Unknown error' });
     return NextResponse.json({ 
       ok: false, 

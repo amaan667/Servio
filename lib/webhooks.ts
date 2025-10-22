@@ -20,7 +20,7 @@ interface WebhookEvent {
   id: string;
   webhook_id: string;
   event_type: string;
-  payload: any;
+  payload: unknown;
   status: 'pending' | 'delivered' | 'failed';
   attempts: number;
   last_attempt: string;
@@ -30,7 +30,7 @@ interface WebhookEvent {
 interface WebhookDelivery {
   webhook_id: string;
   event_type: string;
-  payload: any;
+  payload: unknown;
   signature: string;
   timestamp: string;
 }
@@ -68,7 +68,7 @@ class WebhookService {
   /**
    * Send webhook event
    */
-  async sendWebhook(organizationId: string, eventType: string, payload: any): Promise<void> {
+  async sendWebhook(organizationId: string, eventType: string, payload: unknown): Promise<void> {
     const webhooks = Array.from(this.webhooks.values())
       .filter(w => w.organization_id === organizationId && w.is_active && w.events.includes(eventType));
 
@@ -80,7 +80,7 @@ class WebhookService {
   /**
    * Deliver webhook to endpoint
    */
-  private async deliverWebhook(webhook: Webhook, eventType: string, payload: any): Promise<void> {
+  private async deliverWebhook(webhook: Webhook, eventType: string, payload: unknown): Promise<void> {
     const delivery: WebhookDelivery = {
       webhook_id: webhook.id,
       event_type: eventType,
@@ -115,7 +115,7 @@ class WebhookService {
   /**
    * Generate webhook signature
    */
-  private generateSignature(payload: any, secret: string): string {
+  private generateSignature(payload: unknown, secret: string): string {
     const crypto = require('crypto');
     const hmac = crypto.createHmac('sha256', secret);
     hmac.update(JSON.stringify(payload));
@@ -133,7 +133,7 @@ class WebhookService {
   /**
    * Log webhook failure
    */
-  private async logWebhookFailure(webhookId: string, error: any): Promise<void> {
+  private async logWebhookFailure(webhookId: string, error: unknown): Promise<void> {
     const event: WebhookEvent = {
       id: `event_${Date.now()}`,
       webhook_id: webhookId,

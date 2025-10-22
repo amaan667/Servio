@@ -8,7 +8,7 @@ type OrderRow = {
   venue_id: string;
   table_number: number | null;
   customer_name: string | null;
-  items: any[];                    // jsonb[]
+  items: unknown[];                    // jsonb[]
   total_amount: number;
   created_at: string;              // timestamptz
   order_status: 'pending' | 'preparing' | 'served' | 'delivered' | 'cancelled';
@@ -102,7 +102,7 @@ export async function GET(req: Request) {
       meta: { scope, zone, count: transformedOrders?.length ?? 0 },
       orders: (transformedOrders || []) as OrderRow[],
     });
-  } catch (e: any) {
+  } catch (e) {
     return NextResponse.json({ ok: false, error: e instanceof Error ? e.message : 'Unknown error' }, { status: 500 });
   }
 }

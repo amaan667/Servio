@@ -8,10 +8,10 @@ export interface AnalyticsInsightsParams {
     start: string;
     end: string;
   };
-  insights?: any;
-  orders?: any;
-  topItems?: any[];
-  revenueByDay?: any[];
+  insights?: unknown;
+  orders?: unknown;
+  topItems?: unknown[];
+  revenueByDay?: unknown[];
 }
 
 export interface AnalyticsExportParams {
@@ -21,7 +21,7 @@ export interface AnalyticsExportParams {
   startDate?: string;
   endDate?: string;
   fileName?: string;
-  data?: any;
+  data?: unknown;
 }
 
 export interface TranslationParams {

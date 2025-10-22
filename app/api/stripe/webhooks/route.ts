@@ -64,7 +64,7 @@ export async function POST(request: NextRequest) {
     }
 
     return NextResponse.json({ received: true });
-  } catch (error: any) {
+  } catch (error) {
     const errorMessage = error instanceof Error ? error.message : 'Unknown error';
     apiLogger.error("[STRIPE WEBHOOK] Error:", { error: errorMessage });
     return NextResponse.json(
