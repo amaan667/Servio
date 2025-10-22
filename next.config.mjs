@@ -14,6 +14,7 @@ const nextConfig = {
   // Performance optimizations
   experimental: {
     optimizePackageImports: ['lucide-react', 'recharts', '@radix-ui/react-icons'],
+    instrumentationHook: true, // Enable instrumentation.ts for global error handling
   },
   // Migrate deprecated experimental.turbo to turbopack
   turbopack: {

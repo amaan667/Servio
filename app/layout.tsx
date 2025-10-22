@@ -1,3 +1,7 @@
+// Initialize error suppression FIRST, before any other imports
+import { initErrorSuppression } from "@/lib/error-suppression";
+initErrorSuppression();
+
 import type { Metadata } from "next";
 // Railway deployment trigger - premium gates removed
 import { Inter } from "next/font/google";
@@ -173,4 +177,4 @@ export default async function RootLayout({ children }: { children: React.ReactNo
     </html>
   );
 }
-// Deployment trigger Thu Oct  9 15:53:11 BST 2025
+// Deployment trigger - PROPER FIX: Re-enabled autoRefreshToken - Wed Oct 22 2025
