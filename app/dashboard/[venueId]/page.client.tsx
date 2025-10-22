@@ -4,30 +4,30 @@ import React, { useEffect, useMemo, useCallback, Suspense, useState } from "reac
 import { useRouter } from "next/navigation";
 import { Clock, TrendingUp, ShoppingBag, Table } from "lucide-react";
 import Link from "next/link";
-import { useDashboardPrefetch } from '@/hooks/usePrefetch';
-import PullToRefresh from '@/components/PullToRefresh';
-import { useConnectionMonitor } from '@/lib/connection-monitor';
-import { DashboardSkeleton } from '@/components/dashboard-skeleton';
-import RoleManagementPopup from '@/components/role-management-popup';
-import VenueSwitcherPopup from '@/components/venue-switcher-popup';
-import { supabaseBrowser } from '@/lib/supabase';
+import { useDashboardPrefetch } from "@/hooks/usePrefetch";
+import PullToRefresh from "@/components/PullToRefresh";
+import { useConnectionMonitor } from "@/lib/connection-monitor";
+import { DashboardSkeleton } from "@/components/dashboard-skeleton";
+import RoleManagementPopup from "@/components/role-management-popup";
+import VenueSwitcherPopup from "@/components/venue-switcher-popup";
+import { supabaseBrowser } from "@/lib/supabase";
 
 // Hooks
-import { useDashboardData } from './hooks/useDashboardData';
-import { useDashboardRealtime } from './hooks/useDashboardRealtime';
-import { useAnalyticsData } from './hooks/useAnalyticsData';
+import { useDashboardData } from "./hooks/useDashboardData";
+import { useDashboardRealtime } from "./hooks/useDashboardRealtime";
+import { useAnalyticsData } from "./hooks/useAnalyticsData";
 
 // New Modern Components
-import { StatusBanner } from './components/StatusBanner';
-import { QuickActionsToolbar } from './components/QuickActionsToolbar';
-import { EnhancedStatCard } from './components/EnhancedStatCard';
-import { AIInsights } from './components/AIInsights';
-import { TodayAtAGlance } from './components/TodayAtAGlance';
-import { FeatureSections } from './components/FeatureSections';
+import { StatusBanner } from "./components/StatusBanner";
+import { QuickActionsToolbar } from "./components/QuickActionsToolbar";
+import { EnhancedStatCard } from "./components/EnhancedStatCard";
+import { AIInsights } from "./components/AIInsights";
+import { TodayAtAGlance } from "./components/TodayAtAGlance";
+import { FeatureSections } from "./components/FeatureSections";
 
 /**
  * Modern Venue Dashboard Client Component
- * 
+ *
  * Features:
  * - Compact status banner (connection + trial + venue/role)
  * - Horizontal quick actions toolbar
@@ -38,22 +38,17 @@ import { FeatureSections } from './components/FeatureSections';
  * - Optimized mobile responsive layout
  */
 
-const DashboardClient = React.memo(function DashboardClient({ 
-  venueId
-}: { 
-  venueId: string; 
-}) {
-
+const DashboardClient = React.memo(function DashboardClient({ venueId }: { venueId: string }) {
   const router = useRouter();
-  const [user, setUser] = useState<any>(null);
-  const [venue, setVenue] = useState<any>(null);
+  const [user, setUser] = useState<{ id: string } | null>(null);
+  const [venue, setVenue] = useState<Record<string, unknown> | null>(null);
   const [userRole, setUserRole] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
   const [authError, setAuthError] = useState<string | null>(null);
 
   // Monitor connection status (must be at top before any returns)
   const connectionState = useConnectionMonitor();
-  
+
   // Enable intelligent prefetching for dashboard routes
   useDashboardPrefetch(venueId);
 
@@ -67,20 +62,23 @@ const DashboardClient = React.memo(function DashboardClient({
     refreshCounts: dashboardData.refreshCounts,
     loadStats: dashboardData.loadStats,
     updateRevenueIncrementally: dashboardData.updateRevenueIncrementally,
-    venue: dashboardData.venue
+    venue: dashboardData.venue,
   });
 
   // Fetch live analytics data for charts
   const analyticsData = useAnalyticsData(venueId, venueTz);
 
   // Handle venue change
-  const handleVenueChange = useCallback((newVenueId: string) => {
-    router.push(`/dashboard/${newVenueId}`);
-  }, [router]);
+  const handleVenueChange = useCallback(
+    (newVenueId: string) => {
+      router.push(`/dashboard/${newVenueId}`);
+    },
+    [router]
+  );
 
   const handleRefresh = useCallback(async () => {
     await dashboardData.refreshCounts();
-    const venue = dashboardData.venue as any;
+    const venue = dashboardData.venue as { venue_id: string } | null;
     if (venue?.venue_id && dashboardData.todayWindow) {
       await dashboardData.loadStats(venue.venue_id, dashboardData.todayWindow);
     }
@@ -89,11 +87,11 @@ const DashboardClient = React.memo(function DashboardClient({
   // Auto-refresh when returning from checkout success
   useEffect(() => {
     const urlParams = new URLSearchParams(window.location.search);
-    if (urlParams.get('upgrade') === 'success') {
+    if (urlParams.get("upgrade") === "success") {
       setTimeout(() => {
         handleRefresh();
         const url = new URL(window.location.href);
-        url.searchParams.delete('upgrade');
+        url.searchParams.delete("upgrade");
         window.history.replaceState({}, document.title, url.toString());
       }, 1000);
     }
@@ -113,7 +111,9 @@ const DashboardClient = React.memo(function DashboardClient({
 
   const tableUtilization = useMemo(() => {
     if (!dashboardData.counts.tables_set_up) return 0;
-    return Math.round((dashboardData.counts.tables_in_use / dashboardData.counts.tables_set_up) * 100);
+    return Math.round(
+      (dashboardData.counts.tables_in_use / dashboardData.counts.tables_set_up) * 100
+    );
   }, [dashboardData.counts]);
 
   const revenueByCategory = useMemo(() => {
@@ -128,10 +128,13 @@ const DashboardClient = React.memo(function DashboardClient({
     async function checkAuth() {
       try {
         const supabase = supabaseBrowser();
-        
+
         // Get current user
-        const { data: { session }, error: sessionError } = await supabase.auth.getSession();
-        
+        const {
+          data: { session },
+          error: sessionError,
+        } = await supabase.auth.getSession();
+
         if (sessionError) {
           console.error("[Dashboard] Session error:", sessionError);
           setAuthError("Authentication error");
@@ -177,6 +180,7 @@ const DashboardClient = React.memo(function DashboardClient({
         // Set venue data
         if (venueData) {
           setVenue(venueData);
+          dashboardData.setVenue(venueData);
           setUserRole("owner");
         } else if (isStaff) {
           // Get venue details for staff
@@ -185,9 +189,10 @@ const DashboardClient = React.memo(function DashboardClient({
             .select("*")
             .eq("venue_id", venueId)
             .single();
-          
+
           if (staffVenue) {
             setVenue(staffVenue);
+            dashboardData.setVenue(staffVenue);
             setUserRole(roleData?.role || "staff");
           }
         }
@@ -201,6 +206,7 @@ const DashboardClient = React.memo(function DashboardClient({
     }
 
     checkAuth();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [venueId]);
 
   // Show loading state
@@ -214,7 +220,9 @@ const DashboardClient = React.memo(function DashboardClient({
       <div className="flex items-center justify-center min-h-screen">
         <div className="text-center">
           <p className="text-lg mb-4">Please sign in to access this venue</p>
-          <a href="/sign-in" className="text-blue-600 underline">Go to Sign In</a>
+          <a href="/sign-in" className="text-blue-600 underline">
+            Go to Sign In
+          </a>
         </div>
       </div>
     );
@@ -254,7 +262,9 @@ const DashboardClient = React.memo(function DashboardClient({
             <StatusBanner
               isOnline={connectionState.isOnline}
               trialDaysLeft={14}
-              venueName={(dashboardData.venue as any)?.venue_name || 'Venue'}
+              venueName={
+                (dashboardData.venue as { venue_name?: string } | null)?.venue_name || "Venue"
+              }
               userRole={userRole}
               onVenueChange={handleVenueChange}
             />
@@ -290,15 +300,21 @@ const DashboardClient = React.memo(function DashboardClient({
                 icon={Clock}
                 iconColor="text-blue-600"
                 iconBgColor="bg-blue-100"
-                trend={analyticsData.data?.yesterdayComparison ? {
-                  value: dashboardData.counts.today_orders_count - analyticsData.data.yesterdayComparison.orders,
-                  label: 'vs yesterday'
-                } : undefined}
+                trend={
+                  analyticsData.data?.yesterdayComparison
+                    ? {
+                        value:
+                          dashboardData.counts.today_orders_count -
+                          analyticsData.data.yesterdayComparison.orders,
+                        label: "vs yesterday",
+                      }
+                    : undefined
+                }
                 tooltip="View all orders placed today"
               />
             </Link>
 
-            {(userRole === 'owner' || userRole === 'manager') && (
+            {(userRole === "owner" || userRole === "manager") && (
               <Link href={`/dashboard/${venueId}/analytics`}>
                 <EnhancedStatCard
                   title="Revenue"
@@ -306,10 +322,16 @@ const DashboardClient = React.memo(function DashboardClient({
                   icon={TrendingUp}
                   iconColor="text-green-600"
                   iconBgColor="bg-green-100"
-                  trend={analyticsData.data?.yesterdayComparison ? {
-                    value: dashboardData.stats.revenue - analyticsData.data.yesterdayComparison.revenue,
-                    label: 'vs yesterday'
-                  } : undefined}
+                  trend={
+                    analyticsData.data?.yesterdayComparison
+                      ? {
+                          value:
+                            dashboardData.stats.revenue -
+                            analyticsData.data.yesterdayComparison.revenue,
+                          label: "vs yesterday",
+                        }
+                      : undefined
+                  }
                   tooltip="View detailed revenue analytics"
                 />
               </Link>
@@ -322,7 +344,7 @@ const DashboardClient = React.memo(function DashboardClient({
                 icon={Table}
                 iconColor="text-purple-600"
                 iconBgColor="bg-purple-100"
-                trend={{ value: 0, label: 'all active' }}
+                trend={{ value: 0, label: "all active" }}
                 tooltip="Manage table setup and reservations"
               />
             </Link>
@@ -334,7 +356,7 @@ const DashboardClient = React.memo(function DashboardClient({
                 icon={ShoppingBag}
                 iconColor="text-orange-600"
                 iconBgColor="bg-orange-100"
-                trend={{ value: 5, label: 'available' }}
+                trend={{ value: 5, label: "available" }}
                 tooltip="Edit your menu items"
               />
             </Link>
@@ -346,7 +368,7 @@ const DashboardClient = React.memo(function DashboardClient({
             stats={{
               revenue: dashboardData.stats.revenue,
               menuItems: dashboardData.stats.menuItems,
-              todayOrdersCount: dashboardData.counts.today_orders_count
+              todayOrdersCount: dashboardData.counts.today_orders_count,
             }}
             topSellingItems={analyticsData.data?.topSellingItems}
             yesterdayComparison={analyticsData.data?.yesterdayComparison}
@@ -368,14 +390,10 @@ const DashboardClient = React.memo(function DashboardClient({
 
         {/* Footer Modals */}
         <RoleManagementPopup />
-        <VenueSwitcherPopup 
-          currentVenueId={venueId}
-          onVenueChange={handleVenueChange}
-        />
+        <VenueSwitcherPopup currentVenueId={venueId} onVenueChange={handleVenueChange} />
       </div>
     </PullToRefresh>
   );
 });
 
 export default DashboardClient;
-

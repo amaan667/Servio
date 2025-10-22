@@ -1,7 +1,7 @@
-import { useState, useEffect, useCallback } from 'react';
-import { supabaseBrowser as createClient } from '@/lib/supabase';
-import { withSupabaseRetry } from '@/lib/retry';
-import { todayWindowForTZ } from '@/lib/time';
+import { useState, useEffect, useCallback } from "react";
+import { supabaseBrowser as createClient } from "@/lib/supabase";
+import { withSupabaseRetry } from "@/lib/retry";
+import { todayWindowForTZ } from "@/lib/time";
 
 export interface DashboardCounts {
   live_count: number;
@@ -20,85 +20,98 @@ export interface DashboardStats {
   unpaid: number;
 }
 
-export function useDashboardData(venueId: string, venueTz: string, initialVenue: any, initialCounts?: DashboardCounts, initialStats?: DashboardStats) {
-
+export function useDashboardData(
+  venueId: string,
+  venueTz: string,
+  initialVenue: unknown,
+  initialCounts?: DashboardCounts,
+  initialStats?: DashboardStats
+) {
   const [venue, setVenue] = useState<unknown>(initialVenue);
   const [loading, setLoading] = useState(!initialVenue);
-  const [counts, setCounts] = useState<DashboardCounts>(initialCounts || {
-    live_count: 0,
-    earlier_today_count: 0,
-    history_count: 0,
-    today_orders_count: 0,
-    active_tables_count: 0,
-    tables_set_up: 0,
-    tables_in_use: 0,
-    tables_reserved_now: 0
-  });
-  const [stats, setStats] = useState<DashboardStats>(initialStats || { revenue: 0, menuItems: 0, unpaid: 0 });
+  const [counts, setCounts] = useState<DashboardCounts>(
+    initialCounts || {
+      live_count: 0,
+      earlier_today_count: 0,
+      history_count: 0,
+      today_orders_count: 0,
+      active_tables_count: 0,
+      tables_set_up: 0,
+      tables_in_use: 0,
+      tables_reserved_now: 0,
+    }
+  );
+  const [stats, setStats] = useState<DashboardStats>(
+    initialStats || { revenue: 0, menuItems: 0, unpaid: 0 }
+  );
   const [statsLoaded, setStatsLoaded] = useState(false);
   const [todayWindow, setTodayWindow] = useState<unknown>(null);
   const [error, setError] = useState<string | null>(null);
 
-  const loadStats = useCallback(async (venueId: string, window: any) => {
-    try {
-      const supabase = createClient();
-      
-      const { data: orders } = await supabase
-        .from('orders')
-        .select('total_amount, order_status')
-        .eq('venue_id', venueId)
-        .gte('created_at', window.startUtcISO)
-        .lt('created_at', window.endUtcISO)
-        .neq('order_status', 'CANCELLED');
+  const loadStats = useCallback(
+    async (venueId: string, window: { startUtcISO: string; endUtcISO: string }) => {
+      try {
+        const supabase = createClient();
 
-      const { data: menuItems } = await supabase
-        .from('menu_items')
-        .select('id')
-        .eq('venue_id', venueId)
-        .eq('is_available', true);
+        const { data: orders } = await supabase
+          .from("orders")
+          .select("total_amount, order_status")
+          .eq("venue_id", venueId)
+          .gte("created_at", window.startUtcISO)
+          .lt("created_at", window.endUtcISO)
+          .neq("order_status", "CANCELLED");
 
-      const revenue = orders?.reduce((sum, order) => sum + (order.total_amount || 0), 0) || 0;
-      const unpaid = orders?.filter((o: any) => o.order_status === 'UNPAID').length || 0;
+        const { data: menuItems } = await supabase
+          .from("menu_items")
+          .select("id")
+          .eq("venue_id", venueId)
+          .eq("is_available", true);
 
-      setStats({
-        revenue,
-        menuItems: menuItems?.length || 0,
-        unpaid
-      });
-      setStatsLoaded(true);
-    } catch (err) {
+        const revenue = orders?.reduce((sum, order) => sum + (order.total_amount || 0), 0) || 0;
+        const unpaid = orders?.filter((o) => o.order_status === "UNPAID").length || 0;
 
-    }
-  }, []);
+        setStats({
+          revenue,
+          menuItems: menuItems?.length || 0,
+          unpaid,
+        });
+        setStatsLoaded(true);
+      } catch (err) {
+        console.error("Failed to load stats:", err);
+      }
+    },
+    []
+  );
 
   const refreshCounts = useCallback(async () => {
     try {
       setError(null);
       const supabase = createClient();
-      
-      const { data: newCounts, error } = await withSupabaseRetry(
-        () => supabase.rpc('dashboard_counts', { 
-          p_venue_id: venueId, 
-          p_tz: venueTz, 
-          p_live_window_mins: 30 
-        }).single()
-      );
-      
-      if (error) {
 
-        setError('Failed to refresh dashboard data');
+      const { data: newCounts, error } = await withSupabaseRetry(() =>
+        supabase
+          .rpc("dashboard_counts", {
+            p_venue_id: venueId,
+            p_tz: venueTz,
+            p_live_window_mins: 30,
+          })
+          .single()
+      );
+
+      if (error) {
+        setError("Failed to refresh dashboard data");
         return;
       }
 
-      const { data: tableCounters } = await withSupabaseRetry(
-        () => supabase.rpc('api_table_counters', {
-          p_venue_id: venueId
+      const { data: tableCounters } = await withSupabaseRetry(() =>
+        supabase.rpc("api_table_counters", {
+          p_venue_id: venueId,
         })
       );
 
-      if (newCounts && typeof newCounts === 'object') {
+      if (newCounts && typeof newCounts === "object") {
         const counts = newCounts as DashboardCounts;
-        
+
         if (tableCounters && Array.isArray(tableCounters) && tableCounters.length > 0) {
           const tableCounter = tableCounters[0] as unknown;
           setCounts({
@@ -106,55 +119,55 @@ export function useDashboardData(venueId: string, venueTz: string, initialVenue:
             tables_set_up: tableCounter.tables_set_up || 0,
             tables_in_use: tableCounter.tables_in_use || 0,
             tables_reserved_now: tableCounter.tables_reserved_now || 0,
-            active_tables_count: tableCounter.active_tables_count || 0
+            active_tables_count: tableCounter.active_tables_count || 0,
           });
         } else {
           setCounts(counts);
         }
       }
     } catch (err) {
-
-      setError('Failed to refresh dashboard data');
+      console.error("Failed to refresh dashboard data:", err);
+      setError("Failed to refresh dashboard data");
     }
   }, [venueId, venueTz]);
 
-  const updateRevenueIncrementally = useCallback((order: any) => {
-    if (order.order_status !== 'CANCELLED' && order.total_amount) {
-      setStats(prev => ({
-        ...prev,
-        revenue: prev.revenue + order.total_amount
-      }));
-    }
-  }, []);
+  const updateRevenueIncrementally = useCallback(
+    (order: { order_status: string; total_amount?: number }) => {
+      if (order.order_status !== "CANCELLED" && order.total_amount) {
+        setStats((prev) => ({
+          ...prev,
+          revenue: prev.revenue + order.total_amount,
+        }));
+      }
+    },
+    []
+  );
 
   useEffect(() => {
-
     const loadVenueAndStats = async () => {
       try {
-        if (venue && !loading) {
-
+        if (venue) {
           const window = todayWindowForTZ(venueTz);
-
           setTodayWindow(window);
-          
+
           if (!statsLoaded) {
-
-            await loadStats(venue.venue_id, window);
+            await loadStats((venue as { venue_id: string }).venue_id, window);
           }
-        } else {
 
+          setLoading(false);
+        } else {
+          // If no venue yet, keep loading state as is
+          // It will be updated when venue becomes available
         }
       } catch (err) {
-
-        setError('Failed to load dashboard data');
-      } finally {
-
+        console.error("Failed to load dashboard data:", err);
+        setError("Failed to load dashboard data");
         setLoading(false);
       }
     };
 
     loadVenueAndStats();
-  }, [venue, loading, venueTz, statsLoaded, loadStats]);
+  }, [venue, venueTz, statsLoaded, loadStats]);
 
   return {
     venue,
@@ -170,7 +183,6 @@ export function useDashboardData(venueId: string, venueTz: string, initialVenue:
     setError,
     refreshCounts,
     loadStats,
-    updateRevenueIncrementally
+    updateRevenueIncrementally,
   };
 }
-
