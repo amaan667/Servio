@@ -23,6 +23,22 @@ export async function middleware(req: NextRequest) {
   const url = new URL(req.url);
   const path = url.pathname;
 
+  // Handle MIME types for static assets
+  if (path.startsWith("/_next/static/")) {
+    const response = NextResponse.next();
+    
+    // Set correct MIME types based on file extension
+    if (path.endsWith('.css')) {
+      response.headers.set('Content-Type', 'text/css; charset=utf-8');
+    } else if (path.endsWith('.js')) {
+      response.headers.set('Content-Type', 'application/javascript; charset=utf-8');
+    } else if (path.endsWith('.woff2')) {
+      response.headers.set('Content-Type', 'font/woff2');
+    }
+    
+    return response;
+  }
+
   // Allow public assets and auth routes
   if (
     path.startsWith("/_next") ||
