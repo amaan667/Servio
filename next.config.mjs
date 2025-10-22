@@ -2,8 +2,8 @@
 const nextConfig = {
   // Force fresh build - cache bust for Railway
   generateBuildId: async () => {
-    // Force new build ID to clear CSS/JS cache after auth fixes
-    return `auth-fix-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`;
+    // Force new build ID to clear CSS/JS cache after MIME type fixes
+    return `mime-fix-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`;
   },
   reactStrictMode: true,
   eslint: {
@@ -70,7 +70,7 @@ const nextConfig = {
         ],
       },
       {
-        source: '/_next/static/:path*',
+        source: '/_next/static/css/:path*',
         headers: [
           {
             key: 'Cache-Control',
@@ -79,6 +79,28 @@ const nextConfig = {
           {
             key: 'Content-Type',
             value: 'text/css; charset=utf-8',
+          },
+        ],
+      },
+      {
+        source: '/_next/static/chunks/:path*',
+        headers: [
+          {
+            key: 'Cache-Control',
+            value: 'public, max-age=31536000, immutable',
+          },
+          {
+            key: 'Content-Type',
+            value: 'application/javascript; charset=utf-8',
+          },
+        ],
+      },
+      {
+        source: '/_next/static/:path*',
+        headers: [
+          {
+            key: 'Cache-Control',
+            value: 'public, max-age=31536000, immutable',
           },
         ],
       },
