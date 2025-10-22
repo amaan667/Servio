@@ -15,7 +15,7 @@ export async function POST() {
 
     logger.debug('[STAFF MIGRATION] Starting staff invitation system migration...');
     
-    const supabase = createClient();
+    const supabase = await createClient();
 
     // Check if table already exists
     try {

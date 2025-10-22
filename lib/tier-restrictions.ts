@@ -162,6 +162,7 @@ export async function requireFeature(
 // Get tier limits for a user
 export async function getTierLimits(userId: string): Promise<TierLimits> {
   const tier = await getUserTier(userId);
-  return TIER_LIMITS[tier];
+  const limits = TIER_LIMITS[tier as keyof typeof TIER_LIMITS];
+  return limits || TIER_LIMITS.basic;
 }
 

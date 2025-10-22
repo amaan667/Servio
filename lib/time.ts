@@ -10,10 +10,6 @@ export function to24h(hour12: number, minute: number, ampm: AmPm): { hour: numbe
 
 export function buildIsoFromLocal(dateYYYYMMDD: string, hour24: number, minute: number): string {
   // Build ISO string that represents the local time without timezone conversion
-  const yyyy = dateYYYYMMDD;
-  const hh = String(hour24).padStart(2, '0');
-  const mm = String(minute).padStart(2, '0');
-  
   // Create a date object and manually set the time to avoid timezone issues
   const date = new Date(dateYYYYMMDD);
   date.setHours(hour24, minute, 0, 0);

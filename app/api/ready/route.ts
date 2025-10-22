@@ -11,7 +11,7 @@ export async function GET() {
   // Check Supabase connectivity
   try {
     const supabaseStart = Date.now();
-    const supabase = createClient();
+    const supabase = await createClient();
     const { error } = await supabase.from('organizations').select('id').limit(1);
     const supabaseTime = Date.now() - supabaseStart;
     

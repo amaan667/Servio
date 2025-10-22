@@ -1,7 +1,7 @@
 // AI Assistant Migration Endpoint
 // Creates the required database tables for AI chat functionality
 
-import { NextRequest, NextResponse } from "next/server";
+import { NextResponse } from "next/server";
 import { createClient } from "@/lib/supabase";
 import { logger } from '@/lib/logger';
 

@@ -134,11 +134,12 @@ class WebhookService {
    * Log webhook failure
    */
   private async logWebhookFailure(webhookId: string, error: unknown): Promise<void> {
+    const errorMessage = error instanceof Error ? error.message : String(error);
     const event: WebhookEvent = {
       id: `event_${Date.now()}`,
       webhook_id: webhookId,
       event_type: 'webhook_failure',
-      payload: { error: error.message },
+      payload: { error: errorMessage },
       status: 'failed',
       attempts: 1,
       last_attempt: new Date().toISOString(),
