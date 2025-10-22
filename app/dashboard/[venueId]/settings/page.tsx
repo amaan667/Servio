@@ -1,8 +1,12 @@
-import SettingsPageClient from "./settings-client";
+import SettingsClientPage from "./page.client";
 
-export default async function VenueSettings({ params }: { params: Promise<{ venueId: string }> }) {
+export default async function SettingsPage({ params }: { params: Promise<{ venueId: string }> }) {
   const { venueId } = await params;
 
-  // Render fully client-side to handle auth and data loading
-  return <SettingsPageClient venueId={venueId} />;
+  console.info("📍 [SETTINGS PAGE] Page accessed:", {
+    venueId,
+    timestamp: new Date().toISOString(),
+  });
+
+  return <SettingsClientPage venueId={venueId} />;
 }

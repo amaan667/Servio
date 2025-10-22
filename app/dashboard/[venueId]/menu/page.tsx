@@ -1,8 +1,12 @@
-import { redirect } from 'next/navigation';
+import MenuClientPage from "./page.client";
 
 export default async function MenuPage({ params }: { params: Promise<{ venueId: string }> }) {
   const { venueId } = await params;
-  
-  // Redirect to menu-management since that's where the actual menu functionality is
-  redirect(`/dashboard/${venueId}/menu-management`);
+
+  console.info("📍 [MENU PAGE] Page accessed:", {
+    venueId,
+    timestamp: new Date().toISOString(),
+  });
+
+  return <MenuClientPage venueId={venueId} />;
 }
