@@ -90,60 +90,20 @@ export function supabaseServer(cookies: {
   get: (name: string) => string | undefined;
   set: (name: string, value: string, opts: CookieOptions) => void;
 }) {
-  const client = createSSRServerClient(getSupabaseUrl(), getSupabaseAnonKey(), {
+  return createSSRServerClient(getSupabaseUrl(), getSupabaseAnonKey(), {
     cookies: {
       get: (name) => cookies.get(name),
       set: (name, value, options) => cookies.set(name, value, options),
       remove: (name, options) => cookies.set(name, "", { ...options, maxAge: 0 }),
     },
     auth: {
-      persistSession: false, // Don't persist session on server
-      autoRefreshToken: false, // CRITICAL: Don't auto-refresh tokens on server
-      detectSessionInUrl: false, // Don't detect session in URL on server
-      storage: undefined, // No storage on server
-      storageKey: undefined, // No storage key
+      persistSession: false,
+      autoRefreshToken: false,
+      detectSessionInUrl: false,
+      storage: undefined,
+      storageKey: undefined,
     },
   });
-
-  // Override getSession method to handle refresh token errors gracefully
-  const originalGetSession = client.auth.getSession.bind(client.auth);
-  client.auth.getSession = async () => {
-    try {
-      return await originalGetSession();
-    } catch (err) {
-      const errorMessage = err instanceof Error ? err.message : String(err);
-      if (
-        errorMessage.includes("refresh_token_not_found") ||
-        errorMessage.includes("Invalid Refresh Token") ||
-        errorMessage.includes("refresh_token")
-      ) {
-        return { data: { session: null }, error: null };
-      }
-      throw err;
-    }
-  };
-
-  // Also override getUser to prevent refresh token errors
-  const originalGetUser = client.auth.getUser.bind(client.auth);
-  client.auth.getUser = async (jwt?: string) => {
-    try {
-      return await originalGetUser(jwt);
-    } catch (err) {
-      const errorMessage = err instanceof Error ? err.message : String(err);
-      if (
-        errorMessage.includes("refresh_token_not_found") ||
-        errorMessage.includes("Invalid Refresh Token") ||
-        errorMessage.includes("refresh_token")
-      ) {
-        return { data: { user: null }, error: null } as unknown as Awaited<
-          ReturnType<typeof originalGetUser>
-        >;
-      }
-      throw err;
-    }
-  };
-
-  return client;
 }
 
 // Admin (service role) — server-only
@@ -172,73 +132,10 @@ export async function createClient() {
   return createServerSupabase();
 }
 
-/**
- * Checks if a JWT token is expired or invalid
- */
-function isJWTExpiredOrInvalid(token: string | undefined): boolean {
-  if (!token || token === "" || token === "undefined" || token === "null") {
-    return true;
-  }
-
-  try {
-    // JWT tokens have 3 parts separated by dots
-    const parts = token.split(".");
-    if (parts.length !== 3 || !parts[1]) {
-      return true;
-    }
-
-    // Decode the payload (second part) - handle both browser and Node.js
-    let payload;
-    if (typeof window !== "undefined") {
-      payload = JSON.parse(atob(parts[1]));
-    } else {
-      payload = JSON.parse(Buffer.from(parts[1], "base64").toString("utf-8"));
-    }
-    const exp = payload.exp;
-
-    // Check if token is expired (exp is in seconds, Date.now() is in milliseconds)
-    if (exp && exp * 1000 < Date.now()) {
-      return true;
-    }
-
-    return false;
-  } catch {
-    return true;
-  }
-}
-
 // Server client factory with cookies (CONSOLIDATED - single source of truth)
 export async function createServerSupabase() {
   const { cookies } = await import("next/headers");
   const cookieStore = await cookies();
-
-  // Get all cookies and identify auth-related ones
-  const allCookies = cookieStore.getAll();
-  const authCookies = allCookies.filter(
-    (c) =>
-      c.name.includes("sb-") &&
-      (c.name.includes("access-token") || c.name.includes("refresh-token"))
-  );
-
-  // Find the access token cookie to check if it's expired
-  const accessTokenCookie = authCookies.find((c) => c.name.includes("access-token"));
-
-  // Proactively clean up expired/invalid tokens to prevent errors
-  if (accessTokenCookie && isJWTExpiredOrInvalid(accessTokenCookie.value)) {
-    // Token is expired or invalid - clear all auth cookies
-    for (const cookie of authCookies) {
-      try {
-        cookieStore.delete(cookie.name);
-      } catch {
-        // Silently handle any cookie deletion errors
-      }
-    }
-  }
-
-  // Get cookie domain from environment
-  const baseUrl =
-    process.env.NEXT_PUBLIC_SITE_URL || process.env.NEXT_PUBLIC_APP_URL || "http://localhost:3000";
-  const COOKIE_DOMAIN = new URL(baseUrl).hostname;
 
   const client = createSSRServerClient(getSupabaseUrl(), getSupabaseAnonKey(), {
     cookies: {
@@ -247,7 +144,6 @@ export async function createServerSupabase() {
         try {
           cookieStore.set(name, value, {
             ...options,
-            domain: COOKIE_DOMAIN,
             sameSite: "lax",
             secure: process.env.NODE_ENV === "production",
             httpOnly: false,
@@ -261,7 +157,6 @@ export async function createServerSupabase() {
         try {
           cookieStore.set(name, "", {
             ...options,
-            domain: COOKIE_DOMAIN,
             sameSite: "lax",
             secure: process.env.NODE_ENV === "production",
             path: "/",
@@ -274,52 +169,12 @@ export async function createServerSupabase() {
     },
     auth: {
       persistSession: false, // Don't persist session on server
-      autoRefreshToken: false, // CRITICAL: Don't auto-refresh tokens on server
+      autoRefreshToken: false, // Don't auto-refresh on server (browser handles this)
       detectSessionInUrl: false, // Don't detect session in URL on server
       storage: undefined, // No storage on server
       flowType: "pkce", // Use PKCE flow
     },
   });
-
-  // Override getSession method to handle refresh token errors gracefully
-  const originalGetSession = client.auth.getSession.bind(client.auth);
-  client.auth.getSession = async () => {
-    try {
-      return await originalGetSession();
-    } catch (err) {
-      // Silently catch refresh token errors
-      const errorMessage = err instanceof Error ? err.message : String(err);
-      if (
-        errorMessage.includes("refresh_token_not_found") ||
-        errorMessage.includes("Invalid Refresh Token") ||
-        errorMessage.includes("refresh_token")
-      ) {
-        // Completely suppress these expected errors
-        return { data: { session: null }, error: null };
-      }
-      throw err; // Re-throw unexpected errors
-    }
-  };
-
-  // Also override getUser to prevent refresh token errors
-  const originalGetUser = client.auth.getUser.bind(client.auth);
-  client.auth.getUser = async (jwt?: string) => {
-    try {
-      return await originalGetUser(jwt);
-    } catch (err) {
-      const errorMessage = err instanceof Error ? err.message : String(err);
-      if (
-        errorMessage.includes("refresh_token_not_found") ||
-        errorMessage.includes("Invalid Refresh Token") ||
-        errorMessage.includes("refresh_token")
-      ) {
-        return { data: { user: null }, error: null } as unknown as Awaited<
-          ReturnType<typeof originalGetUser>
-        >;
-      }
-      throw err;
-    }
-  };
 
   return client;
 }

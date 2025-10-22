@@ -25,25 +25,8 @@ export default async function VenuePage({ params }: { params: Promise<{ venueId:
   const user = session?.user;
 
   if (!user) {
-    // Show error message instead of redirecting
-    const Link = (await import("next/link")).default;
-    return (
-      <div className="min-h-screen flex items-center justify-center bg-background">
-        <div className="max-w-md w-full p-6 bg-card rounded-lg shadow-lg">
-          <h2 className="text-2xl font-bold text-destructive mb-4">Session Error</h2>
-          <p className="text-muted-foreground mb-4">
-            Unable to verify your session. This may be due to an expired or invalid authentication
-            token.
-          </p>
-          <Link
-            href="/"
-            className="block w-full bg-primary text-primary-foreground py-2 px-4 rounded-md hover:bg-primary/90 transition text-center"
-          >
-            Go to Home
-          </Link>
-        </div>
-      </div>
-    );
+    const { redirect } = await import("next/navigation");
+    redirect("/sign-in");
   }
 
   // User is guaranteed to be defined here after the check
