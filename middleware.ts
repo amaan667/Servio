@@ -23,21 +23,16 @@ export async function middleware(req: NextRequest) {
   const url = new URL(req.url);
   const path = url.pathname;
 
-  // Skip middleware for static assets - let Next.js handle them
+  // Skip ALL static assets and let Next.js + headers() handle them
   if (
     path.startsWith("/_next/") ||
-    path.startsWith("/favicon.ico") ||
-    path.startsWith("/robots.txt") ||
-    path.startsWith("/manifest.json") ||
+    path.startsWith("/favicon") ||
+    path.startsWith("/robots") ||
+    path.startsWith("/manifest") ||
     path.startsWith("/sw.js") ||
     path.startsWith("/images/") ||
     path.startsWith("/assets/") ||
-    path.endsWith(".css") ||
-    path.endsWith(".js") ||
-    path.endsWith(".ico") ||
-    path.endsWith(".png") ||
-    path.endsWith(".jpg") ||
-    path.endsWith(".svg")
+    path.startsWith("/public/")
   ) {
     return NextResponse.next();
   }
