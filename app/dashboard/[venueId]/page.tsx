@@ -24,12 +24,15 @@ export default async function VenuePage({ params }: { params: Promise<{ venueId:
   }
   const user = session?.user;
 
+  // If no user, return early with empty data - don't redirect
   if (!user) {
-    const { redirect } = await import("next/navigation");
-    redirect("/sign-in");
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-background">
+        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary"></div>
+      </div>
+    );
   }
 
-  // User is guaranteed to be defined here after the check
   const userId = user.id;
 
   // Check if user is the venue owner

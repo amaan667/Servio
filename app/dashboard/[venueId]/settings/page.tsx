@@ -16,12 +16,15 @@ export default async function VenueSettings({ params }: { params: Promise<{ venu
   }
   const user = session?.user;
 
+  // If no user, return early with loading state - don't redirect
   if (!user) {
-    const { redirect } = await import("next/navigation");
-    redirect("/sign-in");
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-background">
+        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary"></div>
+      </div>
+    );
   }
 
-  // User is guaranteed to be defined here after the check
   const userId = user.id;
 
   // Run all queries in parallel for faster loading
