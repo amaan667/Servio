@@ -2,7 +2,8 @@
 const nextConfig = {
   // Force fresh build - cache bust for Railway
   generateBuildId: async () => {
-    return process.env.RAILWAY_GIT_COMMIT_SHA || process.env.NEXT_BUILD_ID || `build-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`;
+    // Force new build ID to clear CSS/JS cache after auth fixes
+    return `auth-fix-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`;
   },
   reactStrictMode: true,
   eslint: {

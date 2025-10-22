@@ -6,7 +6,7 @@ export default async function VenueSettings({ params }: { params: Promise<{ venu
   const { venueId } = await params;
   const supabase = await createServerSupabase();
 
-  // Try to get session but don't block rendering if it fails
+  // Try to get session but render page regardless
   let session = null;
   let user = null;
   try {
@@ -14,16 +14,17 @@ export default async function VenueSettings({ params }: { params: Promise<{ venu
     session = result.data.session;
     user = session?.user || null;
   } catch {
-    // Silently handle refresh token errors
+    // Silently handle refresh token errors - still render
   }
 
-  // If no user, return a client component that handles auth loading
-  if (!user) {
-    const DashboardAuthLoader = (await import("../dashboard-auth-loader")).default;
-    return <DashboardAuthLoader />;
-  }
+  // If no user, render empty state - don't block
+  const userId = user?.id || "";
 
-  const userId = user.id;
+  // If no userId, render client component to handle auth
+  if (!userId) {
+    const VenueSettingsClient = (await import("./VenueSettingsClient")).default;
+    return <VenueSettingsClient venueId={venueId} initialVenueData={null} allVenues={[]} />;
+  }
 
   // Run all queries in parallel for faster loading
   const [venueResult, userRoleResult, allVenuesResult] = await Promise.all([

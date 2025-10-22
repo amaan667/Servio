@@ -174,4 +174,4 @@ export default async function RootLayout({ children }: { children: React.ReactNo
     </html>
   );
 }
-// Deployment trigger - PROPER FIX: Re-enabled autoRefreshToken - Wed Oct 22 2025
+// Deployment trigger - Auth fix + cache bust - Wed Oct 22 2025 v2

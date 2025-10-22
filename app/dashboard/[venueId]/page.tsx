@@ -14,7 +14,7 @@ export default async function VenuePage({ params }: { params: Promise<{ venueId:
     return <div>Error: Unable to connect to database</div>;
   }
 
-  // Try to get session but don't block rendering if it fails
+  // Try to get session but render page regardless
   let session = null;
   let user = null;
   try {
@@ -22,17 +22,11 @@ export default async function VenuePage({ params }: { params: Promise<{ venueId:
     session = result.data.session;
     user = session?.user || null;
   } catch {
-    // Silently handle refresh token errors
+    // Silently handle refresh token errors - still render
   }
 
-  // If no user, return a client component that handles auth loading
-  if (!user) {
-    // Import the client component dynamically
-    const DashboardAuthLoader = (await import("./dashboard-auth-loader")).default;
-    return <DashboardAuthLoader />;
-  }
-
-  const userId = user.id;
+  // If no user, render empty state - don't block
+  const userId = user?.id || "";
 
   // Check if user is the venue owner
   const { data: venue } = await supabase
