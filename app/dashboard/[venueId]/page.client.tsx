@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useEffect, useMemo, useCallback, Suspense } from "react";
+import React, { useEffect, useMemo, useCallback, Suspense, useState } from "react";
 import { useRouter } from "next/navigation";
 import { Clock, TrendingUp, ShoppingBag, Table } from "lucide-react";
 import Link from "next/link";
@@ -10,6 +10,7 @@ import { useConnectionMonitor } from '@/lib/connection-monitor';
 import { DashboardSkeleton } from '@/components/dashboard-skeleton';
 import RoleManagementPopup from '@/components/role-management-popup';
 import VenueSwitcherPopup from '@/components/venue-switcher-popup';
+import { supabaseBrowser } from '@/lib/supabase';
 
 // Hooks
 import { useDashboardData } from './hooks/useDashboardData';
@@ -38,22 +39,143 @@ import { FeatureSections } from './components/FeatureSections';
  */
 
 const DashboardClient = React.memo(function DashboardClient({ 
-  venueId, 
-  venue: initialVenue, 
-  venueTz,
-  initialCounts,
-  initialStats,
-  userRole,
+  venueId
 }: { 
   venueId: string; 
-  venue?: any; 
-  venueTz: string;
-  initialCounts?: any;
-  initialStats?: any;
-  userRole?: string;
 }) {
 
   const router = useRouter();
+  const [user, setUser] = useState<any>(null);
+  const [venue, setVenue] = useState<any>(null);
+  const [userRole, setUserRole] = useState<string | null>(null);
+  const [loading, setLoading] = useState(true);
+  const [authError, setAuthError] = useState<string | null>(null);
+
+  // Check authentication and venue access
+  useEffect(() => {
+    async function checkAuth() {
+      try {
+        const supabase = supabaseBrowser();
+        
+        // Get current user
+        const { data: { session }, error: sessionError } = await supabase.auth.getSession();
+        
+        if (sessionError) {
+          console.error("[Dashboard] Session error:", sessionError);
+          setAuthError("Authentication error");
+          setLoading(false);
+          return;
+        }
+
+        if (!session?.user) {
+          console.log("[Dashboard] No user session found");
+          setLoading(false);
+          return;
+        }
+
+        setUser(session.user);
+        const userId = session.user.id;
+
+        // Check if user is the venue owner
+        const { data: venueData, error: venueError } = await supabase
+          .from("venues")
+          .select("*")
+          .eq("venue_id", venueId)
+          .eq("owner_user_id", userId)
+          .maybeSingle();
+
+        // Check if user has a staff role for this venue
+        const { data: roleData, error: roleError } = await supabase
+          .from("user_venue_roles")
+          .select("role")
+          .eq("user_id", userId)
+          .eq("venue_id", venueId)
+          .maybeSingle();
+
+        const isOwner = !!venueData;
+        const isStaff = !!roleData;
+
+        console.log("[Dashboard] Auth check:", {
+          userId,
+          venueId,
+          isOwner,
+          isStaff,
+          venueError: venueError?.message,
+          roleError: roleError?.message
+        });
+
+        if (!isOwner && !isStaff) {
+          setAuthError("You don't have access to this venue");
+          setLoading(false);
+          return;
+        }
+
+        // Set venue data
+        if (venueData) {
+          setVenue(venueData);
+          setUserRole("owner");
+        } else if (isStaff) {
+          // Get venue details for staff
+          const { data: staffVenue } = await supabase
+            .from("venues")
+            .select("*")
+            .eq("venue_id", venueId)
+            .single();
+          
+          if (staffVenue) {
+            setVenue(staffVenue);
+            setUserRole(roleData?.role || "staff");
+          }
+        }
+
+        setLoading(false);
+      } catch (error) {
+        console.error("[Dashboard] Auth check error:", error);
+        setAuthError("Authentication failed");
+        setLoading(false);
+      }
+    }
+
+    checkAuth();
+  }, [venueId]);
+
+  // Show loading state
+  if (loading) {
+    return <DashboardSkeleton />;
+  }
+
+  // Show auth error
+  if (!user) {
+    return (
+      <div className="flex items-center justify-center min-h-screen">
+        <div className="text-center">
+          <p className="text-lg mb-4">Please sign in to access this venue</p>
+          <a href="/sign-in" className="text-blue-600 underline">Go to Sign In</a>
+        </div>
+      </div>
+    );
+  }
+
+  // Show access denied
+  if (authError) {
+    return (
+      <div className="flex items-center justify-center min-h-screen">
+        <div className="text-center max-w-md">
+          <h2 className="text-xl font-semibold mb-2">Access Denied</h2>
+          <p className="mb-4">{authError}</p>
+          <div className="text-xs text-gray-500 bg-gray-100 p-4 rounded">
+            <p>User ID: {user.id}</p>
+            <p>Venue ID: {venueId}</p>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
+  // Show venue not found
+  if (!venue) {
+    return <div>Venue not found</div>;
+  }
   
   // Monitor connection status
   const connectionState = useConnectionMonitor();
@@ -67,7 +189,8 @@ const DashboardClient = React.memo(function DashboardClient({
   useDashboardPrefetch(venueId);
 
   // Custom hooks for dashboard data and realtime
-  const dashboardData = useDashboardData(venueId, venueTz, initialVenue, initialCounts as any, initialStats as any);
+  const venueTz = "Europe/London"; // Default timezone
+  const dashboardData = useDashboardData(venueId, venueTz, venue, undefined, undefined);
 
   useDashboardRealtime({
     venueId,
@@ -128,7 +251,6 @@ const DashboardClient = React.memo(function DashboardClient({
   }, [analyticsData.data?.revenueByCategory]);
 
   if (dashboardData.loading) {
-
     return <DashboardSkeleton />;
   }
 
