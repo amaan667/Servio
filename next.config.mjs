@@ -155,4 +155,4 @@ const nextConfig = {
 };
 
 export default nextConfig;
-/* Deployment trigger - Thu Oct  9 15:52:04 BST 2025 */
+/* Deployment trigger - Fix MIME type and routing issues - ${new Date().toISOString()} */

@@ -1,23 +1,27 @@
 "use client";
 
-import React from 'react';
-import Link from 'next/link';
-import { LucideIcon, Plus, Clock, ShoppingBag, QrCode, BarChart, Settings, Users, Package, ChefHat } from 'lucide-react';
-import { Button } from '@/components/ui/button';
-import { cn } from '@/lib/utils';
+import React from "react";
+import Link from "next/link";
 import {
-  Tooltip,
-  TooltipContent,
-  TooltipProvider,
-  TooltipTrigger,
-} from "@/components/ui/tooltip";
+  LucideIcon,
+  Plus,
+  Clock,
+  ShoppingBag,
+  QrCode,
+  BarChart,
+  Settings,
+  ChefHat,
+} from "lucide-react";
+import { Button } from "@/components/ui/button";
+import { cn } from "@/lib/utils";
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 
 interface QuickAction {
   label: string;
   href: string;
   icon: LucideIcon;
   description: string;
-  variant?: 'default' | 'outline' | 'ghost';
+  variant?: "default" | "outline" | "ghost";
   color?: string;
 }
 
@@ -28,66 +32,64 @@ interface QuickActionsToolbarProps {
 
 export function QuickActionsToolbar({ venueId, userRole }: QuickActionsToolbarProps) {
   const actions: QuickAction[] = [
-    { 
-      label: 'New Order', 
-      href: `/dashboard/${venueId}/live-orders`, 
-      icon: Plus, 
-      description: 'Create order',
-      variant: 'default',
-      color: 'bg-blue-600 hover:bg-blue-700'
+    {
+      label: "New Order",
+      href: `/dashboard/${venueId}/live-orders`,
+      icon: Plus,
+      description: "Create order",
+      variant: "default",
+      color: "bg-blue-600 hover:bg-blue-700",
     },
-    { 
-      label: 'Live Orders', 
-      href: `/dashboard/${venueId}/live-orders`, 
-      icon: Clock, 
-      description: 'View orders',
-      color: 'bg-purple-600 hover:bg-purple-700'
+    {
+      label: "Live Orders",
+      href: `/dashboard/${venueId}/live-orders`,
+      icon: Clock,
+      description: "View orders",
+      color: "bg-purple-600 hover:bg-purple-700",
     },
-    { 
-      label: 'Menu', 
-      href: `/dashboard/${venueId}/menu-management`, 
-      icon: ShoppingBag, 
-      description: 'Edit menu',
-      color: 'bg-orange-600 hover:bg-orange-700'
+    {
+      label: "Menu",
+      href: `/dashboard/${venueId}/menu-management`,
+      icon: ShoppingBag,
+      description: "Edit menu",
+      color: "bg-orange-600 hover:bg-orange-700",
     },
-    { 
-      label: 'QR Codes', 
-      href: `/dashboard/${venueId}/qr-codes`, 
-      icon: QrCode, 
-      description: 'Generate QR',
-      color: 'bg-green-600 hover:bg-green-700'
+    {
+      label: "QR Codes",
+      href: `/dashboard/${venueId}/qr-codes`,
+      icon: QrCode,
+      description: "Generate QR",
+      color: "bg-green-600 hover:bg-green-700",
     },
   ];
 
-  if (userRole === 'owner' || userRole === 'manager') {
+  if (userRole === "owner" || userRole === "manager") {
     actions.push(
-      { 
-        label: 'Analytics', 
-        href: `/dashboard/${venueId}/analytics`, 
-        icon: BarChart, 
-        description: 'View insights',
-        color: 'bg-indigo-600 hover:bg-indigo-700'
+      {
+        label: "Analytics",
+        href: `/dashboard/${venueId}/analytics`,
+        icon: BarChart,
+        description: "View insights",
+        color: "bg-indigo-600 hover:bg-indigo-700",
       },
-      { 
-        label: 'Settings', 
-        href: `/dashboard/${venueId}/settings`, 
-        icon: Settings, 
-        description: 'Configure',
-        color: 'bg-gray-600 hover:bg-gray-700'
+      {
+        label: "Settings",
+        href: `/dashboard/${venueId}/settings`,
+        icon: Settings,
+        description: "Configure",
+        color: "bg-gray-600 hover:bg-gray-700",
       }
     );
   }
 
-  if (userRole === 'owner' || userRole === 'manager' || userRole === 'kitchen') {
-    actions.push(
-      { 
-        label: 'Kitchen', 
-        href: `/dashboard/${venueId}/kitchen-display`, 
-        icon: ChefHat, 
-        description: 'Kitchen display',
-        color: 'bg-red-600 hover:bg-red-700'
-      }
-    );
+  if (userRole === "owner" || userRole === "manager" || userRole === "kitchen") {
+    actions.push({
+      label: "Kitchen",
+      href: `/dashboard/${venueId}/kds`,
+      icon: ChefHat,
+      description: "Kitchen display",
+      color: "bg-red-600 hover:bg-red-700",
+    });
   }
 
   return (
@@ -100,11 +102,11 @@ export function QuickActionsToolbar({ venueId, userRole }: QuickActionsToolbarPr
                 <TooltipTrigger asChild>
                   <Link href={action.href} className="flex-shrink-0">
                     <Button
-                      variant={action.variant || 'outline'}
+                      variant={action.variant || "outline"}
                       size="sm"
                       className={cn(
-                        'gap-2 transition-all duration-200 hover:scale-105',
-                        action.color || ''
+                        "gap-2 transition-all duration-200 hover:scale-105",
+                        action.color || ""
                       )}
                     >
                       <action.icon className="h-4 w-4" />
@@ -123,4 +125,3 @@ export function QuickActionsToolbar({ venueId, userRole }: QuickActionsToolbarPr
     </TooltipProvider>
   );
 }
-
