@@ -23,11 +23,11 @@ export async function POST(req: Request) {
     // Check if venue exists and user owns it
     const { data: existingVenue } = await admin
       .from('venues')
-      .select('id, owner_user_id')
+      .select('id, owner_id')
       .eq('venue_id', venueId)
       .maybeSingle();
 
-    if (existingVenue && existingVenue.owner_user_id !== user.id) {
+    if (existingVenue && existingVenue.owner_id !== user.id) {
       return NextResponse.json({ ok: false, error: 'Forbidden' }, { status: 403 });
     }
 
@@ -38,7 +38,7 @@ export async function POST(req: Request) {
       address: address || null,
       phone: phone || null,
       email: email || null,
-      owner_user_id: user.id,
+      owner_id: user.id,
       updated_at: new Date().toISOString()
     };
 

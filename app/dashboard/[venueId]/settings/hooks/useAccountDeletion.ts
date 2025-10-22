@@ -24,7 +24,7 @@ export function useAccountDeletion(user: User) {
       const { error: venueError } = await createClient()
         .from('venues')
         .delete()
-        .eq('owner_user_id', user.id);
+        .eq('owner_id', user.id);
 
       if (venueError) {
 

@@ -23,9 +23,9 @@ export default async function LiveOrdersPage({ params }: { params: Promise<{ ven
   // Check if user is the venue owner
   const { data: venue } = await supabase
     .from("venues")
-    .select("venue_id, venue_name, owner_user_id")
+    .select("venue_id, venue_name, owner_id")
     .eq("venue_id", venueId)
-    .eq("owner_user_id", user.id)
+    .eq("owner_id", user.id)
     .maybeSingle();
 
   // Check if user has a staff role for this venue
