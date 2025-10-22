@@ -36,7 +36,7 @@ export async function GET(req: Request) {
     .from('venues')
     .select('venue_id')
     .eq('venue_id', venueId)
-    .eq('owner_user_id', user.id)
+    .eq('owner_id', user.id)
     .maybeSingle();
 
   if (!venue) {

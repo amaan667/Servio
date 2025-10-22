@@ -61,7 +61,7 @@ export default function HomePage() {
       const { data: venues } = await supabase
         .from('venues')
         .select('venue_id')
-        .eq('owner_user_id', checkUser.id)
+        .eq('owner_id', checkUser.id)
         .order('created_at', { ascending: false })
         .limit(1);
       

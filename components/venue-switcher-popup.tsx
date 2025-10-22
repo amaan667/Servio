@@ -86,7 +86,7 @@ export default function VenueSwitcherPopup({
       const { data, error } = await supabase
         .from('venues')
         .select('*')
-        .eq('owner_user_id', user.id)
+        .eq('owner_id', user.id)
         .order('is_primary', { ascending: false })
         .order('created_at', { ascending: true });
 
@@ -139,7 +139,7 @@ export default function VenueSwitcherPopup({
           phone: formData.phone.trim() || null,
           description: formData.description.trim() || null,
           organization_id: currentVenue?.organization_id,
-          owner_user_id: user.id,
+          owner_id: user.id,
           is_primary: false
         })
         .select()

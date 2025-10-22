@@ -35,7 +35,7 @@ export async function POST() {
 
     // Try to rename the column
     const { error: renameError } = await supabase.rpc('exec_sql', {
-      sql: 'ALTER TABLE venues RENAME COLUMN owner_id TO owner_user_id;'
+      sql: 'ALTER TABLE venues RENAME COLUMN owner_id TO owner_id;'
     });
 
     if (renameError) {
@@ -49,7 +49,7 @@ export async function POST() {
     // Update indexes
     const { error: indexError } = await supabase.rpc('exec_sql', {
       sql: `DROP INDEX IF EXISTS idx_venues_owner;
-            CREATE INDEX IF NOT EXISTS idx_venues_owner_user ON venues(owner_user_id);`
+            CREATE INDEX IF NOT EXISTS idx_venues_owner_user ON venues(owner_id);`
     });
 
     if (indexError) {

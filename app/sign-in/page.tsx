@@ -42,7 +42,7 @@ function SignInPageContent() {
         const { data: venues } = await supabase
           .from('venues')
           .select('venue_id')
-          .eq('owner_user_id', session.user.id)
+          .eq('owner_id', session.user.id)
           .order('created_at', { ascending: false })
           .limit(1);
         

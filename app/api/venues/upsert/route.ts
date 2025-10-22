@@ -33,7 +33,7 @@ export async function POST(req: Request) {
 
     const venueData = {
       venue_id: venueId,
-      name,
+      venue_name: name,
       business_type: business_type.toLowerCase(),
       address: address || null,
       phone: phone || null,

@@ -3,7 +3,7 @@
 export interface Venue {
   venue_id: string;
   venue_name: string;
-  owner_user_id: string;
+  owner_id: string;
   timezone?: string;
   address?: string;
   phone?: string;

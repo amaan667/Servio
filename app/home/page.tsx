@@ -32,7 +32,7 @@ const HomePage = React.memo(function HomePage() {
         const { data: venues } = await supabase
           .from('venues')
           .select('venue_id')
-          .eq('owner_user_id', user.id)
+          .eq('owner_id', user.id)
           .order('created_at', { ascending: true })
           .limit(1);
         

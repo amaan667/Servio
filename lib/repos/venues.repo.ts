@@ -31,7 +31,7 @@ export class VenuesRepo {
     return supabase
       .from('venues')
       .select('*')
-      .eq('owner_user_id', ownerId)
+      .eq('owner_id', ownerId)
       .order('created_at', { ascending: true });
   }
 
@@ -80,7 +80,7 @@ export class VenuesRepo {
       .from('venues')
       .select('venue_id')
       .eq('venue_id', venueId)
-      .eq('owner_user_id', userId)
+      .eq('owner_id', userId)
       .maybeSingle();
     
     return !!data;
