@@ -25,8 +25,12 @@ export default async function VenuePage({ params }: { params: Promise<{ venueId:
     // Silently handle refresh token errors - still render
   }
 
-  // If no user, render empty state - don't block
-  const userId = user?.id || "";
+  // If no user, redirect to sign in
+  if (!user) {
+    return <div>Please sign in to access this venue</div>;
+  }
+
+  const userId = user.id;
 
   // Check if user is the venue owner
   const { data: venue } = await supabase

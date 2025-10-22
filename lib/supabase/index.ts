@@ -17,7 +17,10 @@ import { createClient as createBrowserClient } from "@supabase/supabase-js";
  */
 export function getSupabaseUrl() {
   const url = process.env.NEXT_PUBLIC_SUPABASE_URL as string | undefined;
-  if (!url) throw new Error("NEXT_PUBLIC_SUPABASE_URL is missing");
+  if (!url) {
+    console.error("CRITICAL: NEXT_PUBLIC_SUPABASE_URL environment variable is not set!");
+    throw new Error("NEXT_PUBLIC_SUPABASE_URL is missing. Please set this environment variable in your deployment.");
+  }
   return url;
 }
 
@@ -28,7 +31,10 @@ export function getSupabaseUrl() {
  */
 export function getSupabaseAnonKey() {
   const key = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY as string | undefined;
-  if (!key) throw new Error("NEXT_PUBLIC_SUPABASE_ANON_KEY is missing");
+  if (!key) {
+    console.error("CRITICAL: NEXT_PUBLIC_SUPABASE_ANON_KEY environment variable is not set!");
+    throw new Error("NEXT_PUBLIC_SUPABASE_ANON_KEY is missing. Please set this environment variable in your deployment.");
+  }
   return key;
 }
 
