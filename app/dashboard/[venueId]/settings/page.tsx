@@ -6,23 +6,21 @@ export default async function VenueSettings({ params }: { params: Promise<{ venu
   const { venueId } = await params;
   const supabase = await createServerSupabase();
 
-  // Safely get session with error handling for expired tokens
+  // Try to get session but don't block rendering if it fails
   let session = null;
+  let user = null;
   try {
     const result = await supabase.auth.getSession();
     session = result.data.session;
+    user = session?.user || null;
   } catch {
-    // Silently handle refresh token errors - no logging needed
+    // Silently handle refresh token errors
   }
-  const user = session?.user;
 
-  // If no user, return early with loading state - don't redirect
+  // If no user, return a client component that handles auth loading
   if (!user) {
-    return (
-      <div className="min-h-screen flex items-center justify-center bg-background">
-        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary"></div>
-      </div>
-    );
+    const DashboardAuthLoader = (await import("../dashboard-auth-loader")).default;
+    return <DashboardAuthLoader />;
   }
 
   const userId = user.id;

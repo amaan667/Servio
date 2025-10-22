@@ -52,13 +52,6 @@ export const metadata: Metadata = {
   creator: "Servio",
   publisher: "Servio",
   manifest: "/manifest.json",
-  themeColor: "#7c3aed",
-  viewport: {
-    width: "device-width",
-    initialScale: 1,
-    maximumScale: 5,
-    userScalable: true,
-  },
   appleWebApp: {
     capable: true,
     statusBarStyle: "default",
@@ -109,7 +102,14 @@ export const metadata: Metadata = {
   },
 };
 
-// Viewport is now defined in metadata above
+// Viewport configuration (moved out of metadata for Next.js 15+)
+export const viewport = {
+  width: "device-width",
+  initialScale: 1,
+  maximumScale: 5,
+  userScalable: true,
+  themeColor: "#7c3aed",
+};
 
 // Force dynamic rendering to prevent static generation errors with cookies
 export const dynamic = "force-dynamic";
@@ -147,9 +147,6 @@ export default async function RootLayout({ children }: { children: React.ReactNo
     <html lang="en" suppressHydrationWarning>
       <head>
         {/* DNS Prefetch & Preconnect for faster third-party connections */}
-        <link rel="dns-prefetch" href="https://fonts.googleapis.com" />
-        <link rel="preconnect" href="https://fonts.googleapis.com" crossOrigin="anonymous" />
-        <link rel="preconnect" href="https://fonts.gstatic.com" crossOrigin="anonymous" />
         <link rel="dns-prefetch" href="https://www.googletagmanager.com" />
         <link rel="preconnect" href="https://www.googletagmanager.com" crossOrigin="anonymous" />
         {/* Supabase preconnect */}
