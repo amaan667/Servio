@@ -17,23 +17,34 @@ export default async function VenuePage({ params }: { params: Promise<{ venueId:
   // Try to get session but render page regardless
   let session = null;
   let user = null;
+  let authError = null;
   try {
     const result = await supabase.auth.getSession();
     session = result.data.session;
     user = session?.user || null;
-  } catch {
-    // Silently handle refresh token errors - still render
+    authError = result.error;
+  } catch (err) {
+    authError = err;
+    console.error("[Dashboard] Error getting session:", err);
   }
 
   // If no user, redirect to sign in
   if (!user) {
-    return <div>Please sign in to access this venue</div>;
+    console.log("[Dashboard] No user found, session:", session, "error:", authError);
+    return (
+      <div className="flex items-center justify-center min-h-screen">
+        <div className="text-center">
+          <p className="text-lg mb-4">Please sign in to access this venue</p>
+          <a href="/sign-in" className="text-blue-600 underline">Go to Sign In</a>
+        </div>
+      </div>
+    );
   }
 
   const userId = user.id;
 
   // Check if user is the venue owner
-  const { data: venue } = await supabase
+  const { data: venue, error: venueError } = await supabase
     .from("venues")
     .select("*")
     .eq("venue_id", venueId)
@@ -41,7 +52,7 @@ export default async function VenuePage({ params }: { params: Promise<{ venueId:
     .maybeSingle();
 
   // Check if user has a staff role for this venue
-  const { data: userRole } = await supabase
+  const { data: userRole, error: roleError } = await supabase
     .from("user_venue_roles")
     .select("role")
     .eq("user_id", userId)
@@ -51,9 +62,32 @@ export default async function VenuePage({ params }: { params: Promise<{ venueId:
   const isOwner = !!venue;
   const isStaff = !!userRole;
 
+  // Debug logging
+  console.log("[Dashboard] Auth check:", {
+    userId,
+    venueId,
+    isOwner,
+    isStaff,
+    venueError: venueError?.message,
+    roleError: roleError?.message
+  });
+
   // If user is not owner or staff, show error
   if (!isOwner && !isStaff) {
-    return <div>You don&apos;t have access to this venue</div>;
+    return (
+      <div className="flex items-center justify-center min-h-screen">
+        <div className="text-center max-w-md">
+          <h2 className="text-xl font-semibold mb-2">Access Denied</h2>
+          <p className="mb-4">You don&apos;t have access to this venue</p>
+          <div className="text-xs text-gray-500 bg-gray-100 p-4 rounded">
+            <p>User ID: {userId}</p>
+            <p>Venue ID: {venueId}</p>
+            <p>Owner Check: {venueError ? venueError.message : "No match"}</p>
+            <p>Staff Check: {roleError ? roleError.message : "No match"}</p>
+          </div>
+        </div>
+      </div>
+    );
   }
 
   // If user is staff but not owner, get venue details
