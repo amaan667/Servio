@@ -2,19 +2,13 @@
 const nextConfig = {
   // Force fresh build - cache bust for Railway
   generateBuildId: async () => {
-    // Force new build ID to clear CSS/JS cache after Railway MIME type fixes
-    return `railway-mime-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`;
+    // Force new build ID to clear CSS/JS cache after fixing React hooks and config
+    return `build-fix-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`;
   },
   // Railway-specific configuration
-  output: 'standalone',
+  // Note: standalone mode temporarily disabled due to Next.js 15 build issue with 500.html
+  // output: 'standalone',
   trailingSlash: false,
-  // Disable static optimization to prevent MIME type issues
-  experimental: {
-    optimizePackageImports: ['lucide-react', 'recharts', '@radix-ui/react-icons'],
-    instrumentationHook: true,
-    // Disable static optimization
-    staticGenerationRetryCount: 0,
-  },
   reactStrictMode: true,
   eslint: {
     ignoreDuringBuilds: true, // Temporarily allow builds despite ESLint errors
@@ -25,16 +19,6 @@ const nextConfig = {
   // Performance optimizations
   experimental: {
     optimizePackageImports: ['lucide-react', 'recharts', '@radix-ui/react-icons'],
-    instrumentationHook: true, // Enable instrumentation.ts for global error handling
-  },
-  // Migrate deprecated experimental.turbo to turbopack
-  turbopack: {
-    rules: {
-      '*.svg': {
-        loaders: ['@svgr/webpack'],
-        as: '*.js',
-      },
-    },
   },
   compiler: {
     // Remove console.logs in production but keep errors and warnings

@@ -172,6 +172,30 @@ export function cached(ttl: number = 3600, keyGenerator?: (...args: any[]) => st
 }
 
 /**
+ * Cache key patterns
+ */
+export const cacheKeys = {
+  venue: (venueId: string) => `venue:${venueId}`,
+  menu: (venueId: string) => `menu:${venueId}`,
+  categories: 'categories',
+  user: (userId: string) => `user:${userId}`,
+  dashboard: (venueId: string) => `dashboard:${venueId}`,
+  analytics: (venueId: string) => `analytics:${venueId}`,
+  orders: (venueId: string) => `orders:${venueId}`
+};
+
+/**
+ * Cache TTL configurations (in seconds)
+ */
+export const cacheTTL = {
+  short: 60,        // 1 minute
+  medium: 300,      // 5 minutes
+  long: 3600,       // 1 hour
+  day: 86400,       // 24 hours
+  week: 604800      // 7 days
+};
+
+/**
  * Cache invalidation helpers
  */
 export const cacheInvalidation = {

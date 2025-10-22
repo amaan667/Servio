@@ -51,6 +51,78 @@ const DashboardClient = React.memo(function DashboardClient({
   const [loading, setLoading] = useState(true);
   const [authError, setAuthError] = useState<string | null>(null);
 
+  // Monitor connection status (must be at top before any returns)
+  const connectionState = useConnectionMonitor();
+  
+  // Enable intelligent prefetching for dashboard routes
+  useDashboardPrefetch(venueId);
+
+  // Custom hooks for dashboard data and realtime (call before any returns)
+  const venueTz = "Europe/London"; // Default timezone
+  const dashboardData = useDashboardData(venueId, venueTz, venue, undefined, undefined);
+
+  useDashboardRealtime({
+    venueId,
+    todayWindow: dashboardData.todayWindow,
+    refreshCounts: dashboardData.refreshCounts,
+    loadStats: dashboardData.loadStats,
+    updateRevenueIncrementally: dashboardData.updateRevenueIncrementally,
+    venue: dashboardData.venue
+  });
+
+  // Fetch live analytics data for charts
+  const analyticsData = useAnalyticsData(venueId, venueTz);
+
+  // Handle venue change
+  const handleVenueChange = useCallback((newVenueId: string) => {
+    router.push(`/dashboard/${newVenueId}`);
+  }, [router]);
+
+  const handleRefresh = useCallback(async () => {
+    await dashboardData.refreshCounts();
+    const venue = dashboardData.venue as any;
+    if (venue?.venue_id && dashboardData.todayWindow) {
+      await dashboardData.loadStats(venue.venue_id, dashboardData.todayWindow);
+    }
+  }, [dashboardData]);
+
+  // Auto-refresh when returning from checkout success
+  useEffect(() => {
+    const urlParams = new URLSearchParams(window.location.search);
+    if (urlParams.get('upgrade') === 'success') {
+      setTimeout(() => {
+        handleRefresh();
+        const url = new URL(window.location.href);
+        url.searchParams.delete('upgrade');
+        window.history.replaceState({}, document.title, url.toString());
+      }, 1000);
+    }
+  }, [handleRefresh]);
+
+  // Use live analytics data or fallback to empty data
+  const ordersByHour = useMemo(() => {
+    if (analyticsData.data?.ordersByHour && analyticsData.data.ordersByHour.length > 0) {
+      return analyticsData.data.ordersByHour;
+    }
+    // Fallback: return empty data for all hours
+    return Array.from({ length: 24 }, (_, i) => ({
+      hour: `${i}:00`,
+      orders: 0,
+    }));
+  }, [analyticsData.data?.ordersByHour]);
+
+  const tableUtilization = useMemo(() => {
+    if (!dashboardData.counts.tables_set_up) return 0;
+    return Math.round((dashboardData.counts.tables_in_use / dashboardData.counts.tables_set_up) * 100);
+  }, [dashboardData.counts]);
+
+  const revenueByCategory = useMemo(() => {
+    if (analyticsData.data?.revenueByCategory && analyticsData.data.revenueByCategory.length > 0) {
+      return analyticsData.data.revenueByCategory;
+    }
+    return [];
+  }, [analyticsData.data?.revenueByCategory]);
+
   // Check authentication and venue access
   useEffect(() => {
     async function checkAuth() {
@@ -68,7 +140,6 @@ const DashboardClient = React.memo(function DashboardClient({
         }
 
         if (!session?.user) {
-          console.log("[Dashboard] No user session found");
           setLoading(false);
           return;
         }
@@ -95,14 +166,7 @@ const DashboardClient = React.memo(function DashboardClient({
         const isOwner = !!venueData;
         const isStaff = !!roleData;
 
-        console.log("[Dashboard] Auth check:", {
-          userId,
-          venueId,
-          isOwner,
-          isStaff,
-          venueError: venueError?.message,
-          roleError: roleError?.message
-        });
+        // Auth check completed
 
         if (!isOwner && !isStaff) {
           setAuthError("You don't have access to this venue");
@@ -176,79 +240,6 @@ const DashboardClient = React.memo(function DashboardClient({
   if (!venue) {
     return <div>Venue not found</div>;
   }
-  
-  // Monitor connection status
-  const connectionState = useConnectionMonitor();
-  
-  // Handle venue change
-  const handleVenueChange = useCallback((newVenueId: string) => {
-    router.push(`/dashboard/${newVenueId}`);
-  }, [router]);
-  
-  // Enable intelligent prefetching for dashboard routes
-  useDashboardPrefetch(venueId);
-
-  // Custom hooks for dashboard data and realtime
-  const venueTz = "Europe/London"; // Default timezone
-  const dashboardData = useDashboardData(venueId, venueTz, venue, undefined, undefined);
-
-  useDashboardRealtime({
-    venueId,
-    todayWindow: dashboardData.todayWindow,
-    refreshCounts: dashboardData.refreshCounts,
-    loadStats: dashboardData.loadStats,
-    updateRevenueIncrementally: dashboardData.updateRevenueIncrementally,
-    venue: dashboardData.venue
-  });
-
-  // Fetch live analytics data for charts
-  const analyticsData = useAnalyticsData(venueId, venueTz);
-
-  const handleRefresh = useCallback(async () => {
-    await dashboardData.refreshCounts();
-    const venue = dashboardData.venue as any;
-    if (venue?.venue_id && dashboardData.todayWindow) {
-      await dashboardData.loadStats(venue.venue_id, dashboardData.todayWindow);
-    }
-  }, [dashboardData]);
-
-  // Auto-refresh when returning from checkout success
-  useEffect(() => {
-    const urlParams = new URLSearchParams(window.location.search);
-    if (urlParams.get('upgrade') === 'success') {
-
-      setTimeout(() => {
-        handleRefresh();
-        const url = new URL(window.location.href);
-        url.searchParams.delete('upgrade');
-        window.history.replaceState({}, document.title, url.toString());
-      }, 1000);
-    }
-  }, [handleRefresh]);
-
-  // Use live analytics data or fallback to empty data
-  const ordersByHour = useMemo(() => {
-    if (analyticsData.data?.ordersByHour && analyticsData.data.ordersByHour.length > 0) {
-      return analyticsData.data.ordersByHour;
-    }
-    // Fallback: return empty data for all hours
-    return Array.from({ length: 24 }, (_, i) => ({
-      hour: `${i}:00`,
-      orders: 0,
-    }));
-  }, [analyticsData.data?.ordersByHour]);
-
-  const tableUtilization = useMemo(() => {
-    if (!dashboardData.counts.tables_set_up) return 0;
-    return Math.round((dashboardData.counts.tables_in_use / dashboardData.counts.tables_set_up) * 100);
-  }, [dashboardData.counts]);
-
-  const revenueByCategory = useMemo(() => {
-    if (analyticsData.data?.revenueByCategory && analyticsData.data.revenueByCategory.length > 0) {
-      return analyticsData.data.revenueByCategory;
-    }
-    return [];
-  }, [analyticsData.data?.revenueByCategory]);
 
   if (dashboardData.loading) {
     return <DashboardSkeleton />;

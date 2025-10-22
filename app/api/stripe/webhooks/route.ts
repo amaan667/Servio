@@ -296,7 +296,7 @@ async function handleSubscriptionUpdated(subscription: Stripe.Subscription) {
   }
 
   // Verify the organization exists
-  const { data: org, error: orgCheckError } = await supabase
+  let { data: org, error: orgCheckError } = await supabase
     .from("organizations")
     .select("id, subscription_tier, owner_user_id")
     .eq("id", organizationId)
