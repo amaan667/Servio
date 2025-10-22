@@ -250,7 +250,7 @@ export async function POST(req: Request) {
           venue_id: body.venue_id,
           name: 'Demo Restaurant',
           business_type: 'restaurant',
-          owner_id: null, // No owner for demo venue
+          owner_user_id: null, // No owner for demo venue
           created_at: new Date().toISOString(),
           updated_at: new Date().toISOString()
         })

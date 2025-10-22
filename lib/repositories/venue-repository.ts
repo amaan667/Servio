@@ -16,7 +16,7 @@ export interface Venue {
   email?: string;
   website?: string;
   logo_url?: string;
-  owner_id: string;
+  owner_user_id: string;
   organization_id?: string;
   settings?: Record<string, unknown>;
   created_at: string;
@@ -35,7 +35,7 @@ export class VenueRepository extends BaseRepository<Venue> {
    */
   async findByOwner(userId: string): Promise<Venue[]> {
     return this.findAll({
-      owner_id: userId,
+      owner_user_id: userId,
     } as Partial<Venue>, {
       orderBy: { column: 'created_at', ascending: true },
     });

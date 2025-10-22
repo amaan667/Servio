@@ -70,7 +70,7 @@ export default function SignInForm({ onGoogleSignIn, isLoading = false, error: p
         const { data: venues, error: venueError } = await sb
           .from('venues')
           .select('venue_id')
-          .eq('owner_id', data.user.id)
+          .eq('owner_user_id', data.user.id)
           .order('created_at', { ascending: true })
           .limit(1);
         

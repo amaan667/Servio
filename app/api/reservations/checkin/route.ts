@@ -43,7 +43,7 @@ export async function POST(req: NextRequest) {
       .from('venues')
       .select('venue_id')
       .eq('venue_id', reservation.venue_id)
-      .eq('owner_id', user.id)
+      .eq('owner_user_id', user.id)
       .maybeSingle();
 
     if (!venue) {

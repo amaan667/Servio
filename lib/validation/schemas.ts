@@ -241,7 +241,7 @@ export const VenueSchema = z.object({
 });
 
 export const CreateVenueSchema = VenueSchema.extend({
-  owner_id: UUIDSchema,
+  owner_user_id: UUIDSchema,
   organization_id: UUIDSchema.optional(),
 });
 

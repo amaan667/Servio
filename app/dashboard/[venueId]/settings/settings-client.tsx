@@ -41,7 +41,7 @@ export default function SettingsPageClient({ venueId }: { venueId: string }) {
             .from("venues")
             .select("*")
             .eq("venue_id", venueId)
-            .eq("owner_id", user.id)
+            .eq("owner_user_id", user.id)
             .maybeSingle(),
           supabase
             .from("user_venue_roles")
@@ -52,7 +52,7 @@ export default function SettingsPageClient({ venueId }: { venueId: string }) {
           supabase
             .from("venues")
             .select("*")
-            .eq("owner_id", user.id)
+            .eq("owner_user_id", user.id)
             .order("created_at", { ascending: false }),
           supabase
             .from("venues")

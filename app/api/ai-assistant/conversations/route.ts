@@ -57,13 +57,13 @@ export async function GET(request: NextRequest) {
         // Fallback to owner check
         const { data: venue } = await adminSupabase
           .from("venues")
-          .select("owner_id")
+          .select("owner_user_id")
           .eq("venue_id", venueId)
           .single();
 
-        logger.debug("[AI CHAT] Venue check - found:", { data: { found: !!venue }, extra: { owner_id: venue?.owner_id, user_id: user.id } });
+        logger.debug("[AI CHAT] Venue check - found:", { data: { found: !!venue }, extra: { owner_user_id: venue?.owner_user_id, user_id: user.id } });
 
-        if (!venue || venue.owner_id !== user.id) {
+        if (!venue || venue.owner_user_id !== user.id) {
           logger.debug("[AI CHAT] Access denied - no role and user not owner");
           return NextResponse.json(
             { error: "Access denied to this venue" },

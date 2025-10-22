@@ -92,7 +92,7 @@ export async function POST(request: NextRequest) {
       .insert({
         name: `${venueName} Organization`,
         slug: orgSlug,
-        owner_id: userId,
+        owner_user_id: userId,
         subscription_tier: tier,
         subscription_status: "trialing",
         stripe_customer_id: customer.id,
@@ -118,7 +118,7 @@ export async function POST(request: NextRequest) {
         name: venueName,
         business_type: venueType,
         service_type: serviceType,
-        owner_id: userId,
+        owner_user_id: userId,
         organization_id: org.id,
       })
       .select()

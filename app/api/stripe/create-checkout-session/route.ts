@@ -139,18 +139,18 @@ export async function POST(request: NextRequest) {
     // ALWAYS get or create a real organization - NO MOCK IDs
     let org = null;
     
-    // First priority: Try to find by owner_id (most reliable)
+    // First priority: Try to find by owner_user_id (most reliable)
     const { data: orgByOwner, error: ownerError } = await supabase
       .from("organizations")
       .select("*")
-      .eq("owner_id", user.id)
+      .eq("owner_user_id", user.id)
       .maybeSingle();
     
     if (orgByOwner) {
       org = orgByOwner;
-      logger.debug('[STRIPE DEBUG] Found existing organization by owner_id:', org.id);
+      logger.debug('[STRIPE DEBUG] Found existing organization by owner_user_id:', org.id);
     } else if (ownerError) {
-      logger.debug('[STRIPE DEBUG] Error querying organization by owner_id:', { value: ownerError });
+      logger.debug('[STRIPE DEBUG] Error querying organization by owner_user_id:', { value: ownerError });
     }
     
     // Second priority: If organizationId provided and valid, verify it matches user
@@ -161,7 +161,7 @@ export async function POST(request: NextRequest) {
         .eq("id", organizationId)
         .maybeSingle();
       
-      if (orgById && orgById.owner_id === user.id) {
+      if (orgById && orgById.owner_user_id === user.id) {
         org = orgById;
         logger.debug('[STRIPE DEBUG] Found organization by provided ID:', { id: org.id });
       } else if (orgById) {
@@ -181,7 +181,7 @@ export async function POST(request: NextRequest) {
         .insert({
           name: `${userName}'s Organization`,
           slug: `org-${user.id.slice(0, 8)}-${Date.now()}`,
-          owner_id: user.id,
+          owner_user_id: user.id,
           subscription_tier: "basic",
           subscription_status: "trialing",
           is_grandfathered: false,
@@ -207,7 +207,7 @@ export async function POST(request: NextRequest) {
       const { error: venueUpdateError } = await supabase
         .from("venues")
         .update({ organization_id: org.id })
-        .eq("owner_id", user.id)
+        .eq("owner_user_id", user.id)
         .is("organization_id", null);
       
       if (venueUpdateError) {
@@ -232,7 +232,7 @@ export async function POST(request: NextRequest) {
 
     logger.debug('[STRIPE DEBUG] Using organization:', {
       id: org.id,
-      owner_id: org.owner_id,
+      owner_user_id: org.owner_user_id,
       subscription_tier: org.subscription_tier,
       is_grandfathered: org.is_grandfathered,
       stripe_customer_id: org.stripe_customer_id

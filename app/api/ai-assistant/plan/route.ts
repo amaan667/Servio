@@ -56,11 +56,11 @@ export async function POST(request: NextRequest) {
         // If no role found, check if user owns the venue
         const { data: venue } = await supabase
           .from("venues")
-          .select("owner_id")
+          .select("owner_user_id")
           .eq("venue_id", venueId)
           .single();
 
-        if (!venue || venue.owner_id !== user.id) {
+        if (!venue || venue.owner_user_id !== user.id) {
           return NextResponse.json(
             { error: "Access denied to this venue" },
             { status: 403 }
@@ -74,11 +74,11 @@ export async function POST(request: NextRequest) {
       
       const { data: venue } = await supabase
         .from("venues")
-        .select("owner_id")
+        .select("owner_user_id")
         .eq("venue_id", venueId)
         .single();
 
-      if (!venue || venue.owner_id !== user.id) {
+      if (!venue || venue.owner_user_id !== user.id) {
         return NextResponse.json(
           { error: "Access denied to this venue" },
           { status: 403 }

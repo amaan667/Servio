@@ -34,7 +34,7 @@ export async function GET(request: NextRequest) {
     // Test venue access
     const { data: venue, error: venueError } = await supabase
       .from("venues")
-      .select("venue_id, venue_name, owner_id")
+      .select("venue_id, venue_name, owner_user_id")
       .eq("venue_id", venueId)
       .single();
 
@@ -47,10 +47,10 @@ export async function GET(request: NextRequest) {
       }, { status: 404 });
     }
 
-    if (venue.owner_id !== user.id) {
+    if (venue.owner_user_id !== user.id) {
       return NextResponse.json({ 
         error: "User is not venue owner",
-        venueOwnerId: venue.owner_id,
+        venueOwnerId: venue.owner_user_id,
         userId: user.id 
       }, { status: 403 });
     }
@@ -82,7 +82,7 @@ export async function GET(request: NextRequest) {
     return NextResponse.json({
       success: true,
       user: { id: user.id, email: user.email },
-      venue: { id: venue.venue_id, name: venue.venue_name, owner_id: venue.owner_id },
+      venue: { id: venue.venue_id, name: venue.venue_name, owner_user_id: venue.owner_user_id },
       conversations: {
         count: conversations?.length || 0,
         data: conversations || [],

@@ -38,7 +38,7 @@ export default function OnboardingMenuPage() {
       const { data: venues } = await supabase
         .from('venues')
         .select('venue_id')
-        .eq('owner_id', user.id)
+        .eq('owner_user_id', user.id)
         .limit(1);
 
       if (!venues || venues.length === 0) {

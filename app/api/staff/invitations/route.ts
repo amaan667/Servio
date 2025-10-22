@@ -35,11 +35,11 @@ export async function GET(request: NextRequest) {
       // Check if user is the venue owner
       const { data: venue } = await supabase
         .from('venues')
-        .select('owner_id')
+        .select('owner_user_id')
         .eq('venue_id', venueId)
         .single();
       
-      if (venue && venue.owner_id === user.id) {
+      if (venue && venue.owner_user_id === user.id) {
         hasPermission = true;
       }
     }
@@ -167,11 +167,11 @@ export async function POST(request: NextRequest) {
       // Check if user is the venue owner
       const { data: venue } = await supabase
         .from('venues')
-        .select('owner_id')
+        .select('owner_user_id')
         .eq('venue_id', venue_id)
         .single();
       
-      if (venue && venue.owner_id === user.id) {
+      if (venue && venue.owner_user_id === user.id) {
         hasPermission = true;
       }
     }
@@ -215,7 +215,7 @@ export async function POST(request: NextRequest) {
     // Check if this is the owner's email address
     const { data: venueOwner, error: venueOwnerError } = await supabase
       .from('venues')
-      .select('owner_id')
+      .select('owner_user_id')
       .eq('venue_id', venue_id)
       .single();
 
@@ -224,11 +224,11 @@ export async function POST(request: NextRequest) {
     }
 
     // Get the owner's email to compare
-    if (venueOwner?.owner_id) {
+    if (venueOwner?.owner_user_id) {
       const { data: ownerUser, error: ownerUserError } = await supabase
         .from('auth.users')
         .select('email')
-        .eq('id', venueOwner.owner_id)
+        .eq('id', venueOwner.owner_user_id)
         .single();
 
       if (!ownerUserError && ownerUser?.email?.toLowerCase() === email.toLowerCase()) {
@@ -418,11 +418,11 @@ export async function DELETE(request: NextRequest) {
       // Check if user is the venue owner
       const { data: venue } = await supabase
         .from('venues')
-        .select('owner_id')
+        .select('owner_user_id')
         .eq('venue_id', invitation.venue_id)
         .single();
       
-      if (venue && venue.owner_id === user.id) {
+      if (venue && venue.owner_user_id === user.id) {
         hasPermission = true;
       }
     }

@@ -39,7 +39,7 @@ export async function POST(request: NextRequest) {
       .from("organizations")
       .select("*")
       .eq("id", organizationId)
-      .eq("owner_id", user.id)
+      .eq("owner_user_id", user.id)
       .single();
 
     if (!org) {

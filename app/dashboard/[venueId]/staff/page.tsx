@@ -31,11 +31,11 @@ export default async function StaffPage({ params }: { params: Promise<{ venueId:
   // Also check if user is the venue owner (for backward compatibility)
   const { data: venue } = await supabase
     .from("venues")
-    .select("venue_id, venue_name, owner_id")
+    .select("venue_id, venue_name, owner_user_id")
     .eq("venue_id", venueId)
     .single();
 
-  const isOwner = venue?.owner_id === user.id;
+  const isOwner = venue?.owner_user_id === user.id;
   const isStaff = !!userRole;
 
   if (!venue || (!isOwner && !isStaff)) {

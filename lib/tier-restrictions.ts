@@ -88,7 +88,7 @@ export async function getUserTier(userId: string): Promise<string> {
   const { data: org } = await supabase
     .from("organizations")
     .select("subscription_tier, subscription_status, is_grandfathered")
-    .eq("owner_id", userId)
+    .eq("owner_user_id", userId)
     .single();
 
   // Grandfathered accounts always get full access

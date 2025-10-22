@@ -70,11 +70,11 @@ export async function POST(request: NextRequest) {
       // Check if user is the venue owner
       const { data: venue } = await supabase
         .from('venues')
-        .select('owner_id')
+        .select('owner_user_id')
         .eq('venue_id', invitation.venue_id)
         .single();
       
-      if (venue && venue.owner_id === user.id) {
+      if (venue && venue.owner_user_id === user.id) {
         hasPermission = true;
       }
     }

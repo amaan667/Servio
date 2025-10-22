@@ -100,19 +100,19 @@ async function handleCheckoutCompleted(session: Stripe.Checkout.Session) {
   // Verify the organization exists
   const { data: existingOrg, error: orgCheckError } = await supabase
     .from("organizations")
-    .select("id, subscription_tier, subscription_status, owner_id")
+    .select("id, subscription_tier, subscription_status, owner_user_id")
     .eq("id", organizationId)
     .maybeSingle();
 
   if (orgCheckError) {
     apiLogger.error("[STRIPE WEBHOOK] ❌ Error checking organization:", orgCheckError);
-    // If we have a user_id, try to find org by owner_id as fallback
+    // If we have a user_id, try to find org by owner_user_id as fallback
     if (userId) {
       apiLogger.debug("[STRIPE WEBHOOK] 🔄 Attempting fallback lookup by user_id:", userId);
       const { data: orgByOwner, error: ownerError } = await supabase
         .from("organizations")
-        .select("id, subscription_tier, subscription_status, owner_id")
-        .eq("owner_id", userId)
+        .select("id, subscription_tier, subscription_status, owner_user_id")
+        .eq("owner_user_id", userId)
         .maybeSingle();
       
       if (ownerError || !orgByOwner) {
@@ -131,13 +131,13 @@ async function handleCheckoutCompleted(session: Stripe.Checkout.Session) {
 
   if (!existingOrg) {
     apiLogger.error("[STRIPE WEBHOOK] ❌ Organization not found:", organizationId);
-    // If we have a user_id, try to find org by owner_id as fallback
+    // If we have a user_id, try to find org by owner_user_id as fallback
     if (userId) {
       apiLogger.debug("[STRIPE WEBHOOK] 🔄 Attempting fallback lookup by user_id:", userId);
       const { data: orgByOwner, error: ownerError } = await supabase
         .from("organizations")
-        .select("id, subscription_tier, subscription_status, owner_id")
-        .eq("owner_id", userId)
+        .select("id, subscription_tier, subscription_status, owner_user_id")
+        .eq("owner_user_id", userId)
         .maybeSingle();
       
       if (ownerError || !orgByOwner) {
@@ -298,7 +298,7 @@ async function handleSubscriptionUpdated(subscription: Stripe.Subscription) {
   // Verify the organization exists
   const { data: org, error: orgCheckError } = await supabase
     .from("organizations")
-    .select("id, subscription_tier, owner_id")
+    .select("id, subscription_tier, owner_user_id")
     .eq("id", organizationId)
     .maybeSingle();
 
@@ -309,8 +309,8 @@ async function handleSubscriptionUpdated(subscription: Stripe.Subscription) {
       apiLogger.debug("[STRIPE WEBHOOK] 🔄 Attempting fallback lookup by user_id:", userId);
       const { data: orgByOwner, error: ownerError } = await supabase
         .from("organizations")
-        .select("id, subscription_tier, owner_id")
-        .eq("owner_id", userId)
+        .select("id, subscription_tier, owner_user_id")
+        .eq("owner_user_id", userId)
         .maybeSingle();
       
       if (ownerError || !orgByOwner) {

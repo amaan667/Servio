@@ -48,7 +48,7 @@ export default async function VenuePage({ params }: { params: Promise<{ venueId:
     .from("venues")
     .select("*")
     .eq("venue_id", venueId)
-    .eq("owner_id", userId)
+    .eq("owner_user_id", userId)
     .maybeSingle();
 
   // Check if user has a staff role for this venue

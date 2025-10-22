@@ -117,7 +117,7 @@ function CallbackContent() {
           const { data: venues, error: venueError } = await supabaseBrowser()
             .from('venues')
             .select('venue_id')
-            .eq('owner_id', existingSession.user.id)
+            .eq('owner_user_id', existingSession.user.id)
             .order('created_at', { ascending: true })
             .limit(1);
           
@@ -232,7 +232,7 @@ function CallbackContent() {
               const { data: venues, error: venueError } = await supabaseBrowser()
                 .from('venues')
                 .select('venue_id')
-                .eq('owner_id', retryData.session.user.id)
+                .eq('owner_user_id', retryData.session.user.id)
                 .order('created_at', { ascending: true })
                 .limit(1);
               
@@ -277,7 +277,7 @@ function CallbackContent() {
           const { data: venues, error: venueError } = await supabaseBrowser()
             .from('venues')
             .select('venue_id')
-            .eq('owner_id', data.session.user.id)
+            .eq('owner_user_id', data.session.user.id)
             .order('created_at', { ascending: true })
             .limit(1);
           

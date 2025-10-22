@@ -209,7 +209,7 @@ CREATE POLICY "Users can view their own context cache" ON ai_context_cache
     EXISTS (
       SELECT 1 FROM venues v 
       WHERE v.venue_id = ai_context_cache.venue_id 
-      AND v.owner_id = auth.uid()
+      AND v.owner_user_id = auth.uid()
     )
   );
 
@@ -218,7 +218,7 @@ CREATE POLICY "Users can create context cache for their venues" ON ai_context_ca
     EXISTS (
       SELECT 1 FROM venues v 
       WHERE v.venue_id = ai_context_cache.venue_id 
-      AND v.owner_id = auth.uid()
+      AND v.owner_user_id = auth.uid()
     )
   );
 
