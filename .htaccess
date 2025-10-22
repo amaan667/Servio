@@ -1,0 +1,12 @@
+# Force correct MIME types for static assets
+<FilesMatch "\.(js|mjs)$">
+    Header set Content-Type "application/javascript; charset=utf-8"
+</FilesMatch>
+
+<FilesMatch "\.css$">
+    Header set Content-Type "text/css; charset=utf-8"
+</FilesMatch>
+
+<FilesMatch "\.(woff|woff2|eot|ttf|otf)$">
+    Header set Content-Type "font/woff2"
+</FilesMatch>

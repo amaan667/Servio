@@ -2,8 +2,18 @@
 const nextConfig = {
   // Force fresh build - cache bust for Railway
   generateBuildId: async () => {
-    // Force new build ID to clear CSS/JS cache after removing MIME type headers
-    return `no-mime-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`;
+    // Force new build ID to clear CSS/JS cache after Railway MIME type fixes
+    return `railway-mime-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`;
+  },
+  // Railway-specific configuration
+  output: 'standalone',
+  trailingSlash: false,
+  // Disable static optimization to prevent MIME type issues
+  experimental: {
+    optimizePackageImports: ['lucide-react', 'recharts', '@radix-ui/react-icons'],
+    instrumentationHook: true,
+    // Disable static optimization
+    staticGenerationRetryCount: 0,
   },
   reactStrictMode: true,
   eslint: {
@@ -66,6 +76,32 @@ const nextConfig = {
           {
             key: 'Cache-Control',
             value: 'public, max-age=31536000, immutable',
+          },
+        ],
+      },
+      {
+        source: '/_next/static/chunks/:path*',
+        headers: [
+          {
+            key: 'Cache-Control',
+            value: 'public, max-age=31536000, immutable',
+          },
+          {
+            key: 'Content-Type',
+            value: 'application/javascript; charset=utf-8',
+          },
+        ],
+      },
+      {
+        source: '/_next/static/css/:path*',
+        headers: [
+          {
+            key: 'Cache-Control',
+            value: 'public, max-age=31536000, immutable',
+          },
+          {
+            key: 'Content-Type',
+            value: 'text/css; charset=utf-8',
           },
         ],
       },
