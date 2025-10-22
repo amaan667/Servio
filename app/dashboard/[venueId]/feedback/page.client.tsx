@@ -1,13 +1,13 @@
 "use client";
 
 import { useFeatureAuth } from "../hooks/useFeatureAuth";
-import FeedbackClient from "./FeedbackClient";
+import SimpleFeedbackClient from "./SimpleFeedbackClient";
 import RoleBasedNavigation from "@/components/RoleBasedNavigation";
 import { useRouter } from "next/navigation";
 
 export default function FeedbackClientPage({ venueId }: { venueId: string }) {
   const router = useRouter();
-  const { user, userRole, venueName, loading, authError } = useFeatureAuth({
+  const { user, userRole, loading, authError } = useFeatureAuth({
     venueId,
     featureName: "Customer Feedback",
     requiredRoles: ["owner", "manager"],
@@ -56,7 +56,7 @@ export default function FeedbackClientPage({ venueId }: { venueId: string }) {
           <p className="text-lg text-foreground mt-2">View and manage customer feedback</p>
         </div>
 
-        <FeedbackClient venueId={venueId} venueName={venueName || "Your Venue"} />
+        <SimpleFeedbackClient venueId={venueId} />
       </div>
     </div>
   );

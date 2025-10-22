@@ -1,13 +1,13 @@
 "use client";
 
 import { useFeatureAuth } from "../hooks/useFeatureAuth";
-import POSClient from "./POSClient";
+import { POSDashboardClient } from "./pos-dashboard-client";
 import RoleBasedNavigation from "@/components/RoleBasedNavigation";
 import { useRouter } from "next/navigation";
 
 export default function PosClientPage({ venueId }: { venueId: string }) {
   const router = useRouter();
-  const { user, userRole, venueName, loading, authError } = useFeatureAuth({
+  const { user, userRole, loading, authError } = useFeatureAuth({
     venueId,
     featureName: "Point of Sale",
   });
@@ -55,7 +55,7 @@ export default function PosClientPage({ venueId }: { venueId: string }) {
           <p className="text-lg text-foreground mt-2">Process orders and payments</p>
         </div>
 
-        <POSClient venueId={venueId} venueName={venueName || "Your Venue"} />
+        <POSDashboardClient venueId={venueId} />
       </div>
     </div>
   );

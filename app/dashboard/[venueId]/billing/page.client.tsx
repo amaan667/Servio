@@ -1,13 +1,13 @@
 "use client";
 
 import { useFeatureAuth } from "../hooks/useFeatureAuth";
-import BillingClient from "./BillingClient";
+import BillingClient from "./billing-client";
 import RoleBasedNavigation from "@/components/RoleBasedNavigation";
 import { useRouter } from "next/navigation";
 
 export default function BillingClientPage({ venueId }: { venueId: string }) {
   const router = useRouter();
-  const { user, userRole, venueName, loading, authError } = useFeatureAuth({
+  const { user, userRole, loading, authError } = useFeatureAuth({
     venueId,
     featureName: "Billing & Subscription",
     requiredRoles: ["owner"],
@@ -58,7 +58,7 @@ export default function BillingClientPage({ venueId }: { venueId: string }) {
           <p className="text-lg text-foreground mt-2">Manage your subscription and billing</p>
         </div>
 
-        <BillingClient venueId={venueId} venueName={venueName || "Your Venue"} />
+        <BillingClient venueId={venueId} />
       </div>
     </div>
   );

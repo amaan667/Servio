@@ -1,13 +1,13 @@
 "use client";
 
 import { useFeatureAuth } from "../hooks/useFeatureAuth";
-import AIChatClient from "./AIChatClient";
 import RoleBasedNavigation from "@/components/RoleBasedNavigation";
 import { useRouter } from "next/navigation";
+import { MessageSquare } from "lucide-react";
 
 export default function AichatClientPage({ venueId }: { venueId: string }) {
   const router = useRouter();
-  const { user, userRole, venueName, loading, authError } = useFeatureAuth({
+  const { user, userRole, loading, authError } = useFeatureAuth({
     venueId,
     featureName: "AI Assistant",
   });
@@ -55,7 +55,17 @@ export default function AichatClientPage({ venueId }: { venueId: string }) {
           <p className="text-lg text-foreground mt-2">Chat with your AI business assistant</p>
         </div>
 
-        <AIChatClient venueId={venueId} venueName={venueName || "Your Venue"} />
+        {/* Coming Soon Placeholder */}
+        <div className="flex flex-col items-center justify-center min-h-[400px] bg-gradient-to-br from-purple-50 to-blue-50 dark:from-purple-950/20 dark:to-blue-950/20 rounded-lg border-2 border-dashed border-purple-200 dark:border-purple-800">
+          <MessageSquare className="w-16 h-16 text-purple-600 dark:text-purple-400 mb-4" />
+          <h2 className="text-2xl font-bold text-gray-900 dark:text-gray-100 mb-2">
+            AI Assistant Coming Soon!
+          </h2>
+          <p className="text-gray-600 dark:text-gray-400 text-center max-w-md">
+            We&apos;re building an intelligent AI assistant to help you manage your business more
+            efficiently. Stay tuned!
+          </p>
+        </div>
       </div>
     </div>
   );

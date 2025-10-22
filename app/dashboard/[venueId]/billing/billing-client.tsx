@@ -1,34 +1,26 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Progress } from "@/components/ui/progress";
-import { 
-  CreditCard, 
-  Sparkles, 
-  TrendingUp, 
-  Users, 
-  UtensilsCrossed, 
+import {
+  CreditCard,
+  Sparkles,
+  TrendingUp,
+  Users,
+  UtensilsCrossed,
   Building2,
   Crown,
   ExternalLink,
-  CheckCircle
+  CheckCircle,
 } from "lucide-react";
 import { UpgradeModal } from "@/components/upgrade-modal";
 import { formatDistanceToNow } from "date-fns";
 
 interface BillingClientProps {
   venueId: string;
-  venueName: string;
-  organization: unknown;
-  usage: {
-    menuItems: number;
-    tables: number;
-    staff: number;
-    venues: number;
-  };
 }
 
 const TIER_INFO = {
@@ -69,14 +61,53 @@ const TIER_LIMITS = {
   grandfathered: { menuItems: -1, tables: -1, staff: -1, venues: -1 },
 };
 
-export default function BillingClient({
-  venueId,
-  venueName,
-  organization,
-  usage,
-}: BillingClientProps) {
+export default function BillingClient({ venueId }: BillingClientProps) {
   const [showUpgradeModal, setShowUpgradeModal] = useState(false);
   const [loadingPortal, setLoadingPortal] = useState(false);
+  const [loading, setLoading] = useState(true);
+  const [organization, setOrganization] = useState<{
+    id?: string;
+    subscription_tier?: string;
+    is_grandfathered?: boolean;
+    stripe_customer_id?: string;
+    stripe_subscription_id?: string;
+    subscription_status?: string;
+    trial_ends_at?: string;
+  } | null>(null);
+  const [usage, setUsage] = useState({
+    menuItems: 0,
+    tables: 0,
+    staff: 0,
+    venues: 0,
+  });
+
+  useEffect(() => {
+    const fetchBillingData = async () => {
+      try {
+        // Fetch organization and usage data
+        const [orgRes, usageRes] = await Promise.all([
+          fetch(`/api/venues/${venueId}/organization`),
+          fetch(`/api/venues/${venueId}/usage`),
+        ]);
+
+        if (orgRes.ok) {
+          const orgData = await orgRes.json();
+          setOrganization(orgData.organization || orgData);
+        }
+
+        if (usageRes.ok) {
+          const usageData = await usageRes.json();
+          setUsage(usageData.usage || usageData);
+        }
+      } catch (err) {
+        console.error("Failed to fetch billing data:", err);
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchBillingData();
+  }, [venueId]);
 
   const tier = organization?.subscription_tier || "basic";
   const isGrandfathered = organization?.is_grandfathered || false;
@@ -84,10 +115,17 @@ export default function BillingClient({
   const tierInfo = TIER_INFO[tier as keyof typeof TIER_INFO] || TIER_INFO.basic;
   const TierIcon = tierInfo.icon;
 
+  if (loading) {
+    return (
+      <div className="flex items-center justify-center py-12">
+        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary"></div>
+      </div>
+    );
+  }
+
   const handleManageBilling = async () => {
     setLoadingPortal(true);
     try {
-
       const response = await fetch("/api/stripe/create-portal-session", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
@@ -97,21 +135,17 @@ export default function BillingClient({
       const data = await response.json();
 
       if (data.error) {
-
         alert(`Failed to open billing portal: ${data.error}`);
         return;
       }
 
       if (data.url) {
-
         window.location.href = data.url;
       } else {
-
-        alert('Failed to open billing portal - no URL received');
+        alert("Failed to open billing portal - no URL received");
       }
-    } catch (error) {
-
-      alert('Failed to open billing portal. Please try again.');
+    } catch {
+      alert("Failed to open billing portal. Please try again.");
     } finally {
       setLoadingPortal(false);
     }
@@ -160,13 +194,9 @@ export default function BillingClient({
                   Upgrade Plan
                 </Button>
               )}
-              
+
               {!isGrandfathered && organization?.stripe_customer_id && (
-                <Button
-                  variant="outline"
-                  onClick={handleManageBilling}
-                  disabled={loadingPortal}
-                >
+                <Button variant="outline" onClick={handleManageBilling} disabled={loadingPortal}>
                   <CreditCard className="mr-2 h-4 w-4" />
                   Manage Billing
                 </Button>
@@ -185,8 +215,9 @@ export default function BillingClient({
                     Thank you for being an early Servio user!
                   </p>
                   <p className="text-sm text-yellow-800 dark:text-yellow-200 mt-1">
-                    Your account has been grandfathered with unlimited access to all features at no charge.
-                    This includes AI Assistant, multi-venue support, and all premium capabilities.
+                    Your account has been grandfathered with unlimited access to all features at no
+                    charge. This includes AI Assistant, multi-venue support, and all premium
+                    capabilities.
                   </p>
                 </div>
               </div>
@@ -200,9 +231,7 @@ export default function BillingClient({
         <Card>
           <CardHeader>
             <CardTitle>Usage & Limits</CardTitle>
-            <CardDescription>
-              Track your usage against your plan limits
-            </CardDescription>
+            <CardDescription>Track your usage against your plan limits</CardDescription>
           </CardHeader>
           <CardContent className="space-y-6">
             {/* Menu Items */}
@@ -212,7 +241,9 @@ export default function BillingClient({
                   <UtensilsCrossed className="h-4 w-4 text-muted-foreground" />
                   <span className="font-medium">Menu Items</span>
                 </div>
-                <span className={`text-sm font-semibold ${getUsageColor(getUsagePercent(usage.menuItems, limits.menuItems))}`}>
+                <span
+                  className={`text-sm font-semibold ${getUsageColor(getUsagePercent(usage.menuItems, limits.menuItems))}`}
+                >
                   {usage.menuItems} {limits.menuItems === -1 ? "" : `/ ${limits.menuItems}`}
                 </span>
               </div>
@@ -228,7 +259,9 @@ export default function BillingClient({
                   <Building2 className="h-4 w-4 text-muted-foreground" />
                   <span className="font-medium">Tables</span>
                 </div>
-                <span className={`text-sm font-semibold ${getUsageColor(getUsagePercent(usage.tables, limits.tables))}`}>
+                <span
+                  className={`text-sm font-semibold ${getUsageColor(getUsagePercent(usage.tables, limits.tables))}`}
+                >
                   {usage.tables} {limits.tables === -1 ? "" : `/ ${limits.tables}`}
                 </span>
               </div>
@@ -244,7 +277,9 @@ export default function BillingClient({
                   <Users className="h-4 w-4 text-muted-foreground" />
                   <span className="font-medium">Staff Members</span>
                 </div>
-                <span className={`text-sm font-semibold ${getUsageColor(getUsagePercent(usage.staff, limits.staff))}`}>
+                <span
+                  className={`text-sm font-semibold ${getUsageColor(getUsagePercent(usage.staff, limits.staff))}`}
+                >
                   {usage.staff} {limits.staff === -1 ? "" : `/ ${limits.staff}`}
                 </span>
               </div>
@@ -260,7 +295,9 @@ export default function BillingClient({
                   <Building2 className="h-4 w-4 text-muted-foreground" />
                   <span className="font-medium">Venues</span>
                 </div>
-                <span className={`text-sm font-semibold ${getUsageColor(getUsagePercent(usage.venues, limits.venues))}`}>
+                <span
+                  className={`text-sm font-semibold ${getUsageColor(getUsagePercent(usage.venues, limits.venues))}`}
+                >
                   {usage.venues} {limits.venues === -1 ? "" : `/ ${limits.venues}`}
                 </span>
               </div>
@@ -274,7 +311,8 @@ export default function BillingClient({
               getUsagePercent(usage.tables, limits.tables) > 80) && (
               <div className="bg-yellow-50 dark:bg-yellow-900/20 border border-yellow-200 rounded-lg p-4 mt-4">
                 <p className="text-sm text-yellow-800 dark:text-yellow-200">
-                  ⚠️ You're approaching your plan limits. Consider upgrading to avoid interruptions.
+                  ⚠️ You&apos;re approaching your plan limits. Consider upgrading to avoid
+                  interruptions.
                 </p>
                 <Button
                   size="sm"
@@ -301,11 +339,13 @@ export default function BillingClient({
             <div className="grid grid-cols-2 gap-4">
               <div>
                 <p className="text-sm text-muted-foreground">Status</p>
-                <Badge variant={organization.subscription_status === "active" ? "default" : "secondary"}>
+                <Badge
+                  variant={organization.subscription_status === "active" ? "default" : "secondary"}
+                >
                   {organization.subscription_status}
                 </Badge>
               </div>
-              
+
               {organization.trial_ends_at && (
                 <div>
                   <p className="text-sm text-muted-foreground">Trial Ends</p>
@@ -333,17 +373,11 @@ export default function BillingClient({
       <Card>
         <CardHeader>
           <CardTitle>Feature Access</CardTitle>
-          <CardDescription>
-            Features available on your {tierInfo.name} plan
-          </CardDescription>
+          <CardDescription>Features available on your {tierInfo.name} plan</CardDescription>
         </CardHeader>
         <CardContent>
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-            <FeatureItem
-              name="QR Ordering"
-              enabled={true}
-              tier="all"
-            />
+            <FeatureItem name="QR Ordering" enabled={true} tier="all" />
             <FeatureItem
               name="Kitchen Display System"
               enabled={tier === "standard" || tier === "premium" || isGrandfathered}
@@ -384,15 +418,7 @@ export default function BillingClient({
   );
 }
 
-function FeatureItem({
-  name,
-  enabled,
-  tier,
-}: {
-  name: string;
-  enabled: boolean;
-  tier: string;
-}) {
+function FeatureItem({ name, enabled, tier }: { name: string; enabled: boolean; tier: string }) {
   return (
     <div className="flex items-center justify-between p-3 bg-muted/50 rounded-lg">
       <span className="text-sm font-medium">{name}</span>
@@ -409,4 +435,3 @@ function FeatureItem({
     </div>
   );
 }
-
