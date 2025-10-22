@@ -56,6 +56,16 @@ export const metadata: Metadata = {
     capable: true,
     statusBarStyle: "default",
     title: "Servio",
+    startupImage: [
+      {
+        url: "/placeholder-logo.png",
+        media: "(prefers-color-scheme: light)",
+      },
+    ],
+  },
+  applicationName: "Servio",
+  other: {
+    "mobile-web-app-capable": "yes",
   },
   formatDetection: {
     telephone: false,
@@ -96,9 +106,12 @@ export const metadata: Metadata = {
     },
   },
   icons: {
-    icon: "/favicon.ico",
-    shortcut: "/favicon.ico",
-    apple: "/images/icon-192.png",
+    icon: [
+      { url: "/placeholder-logo.png", sizes: "any", type: "image/png" },
+      { url: "/assets/servio-logo-updated.png", sizes: "any", type: "image/png" },
+    ],
+    shortcut: "/placeholder-logo.png",
+    apple: "/placeholder-logo.png",
   },
 };
 
