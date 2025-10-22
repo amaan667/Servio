@@ -203,7 +203,8 @@ export async function PATCH(req: Request) {
     const supabase = await createServerSupabase();
     
     // Verify user has access
-    const { data: { user }, error: userError } = await supabase.auth.getSession();
+    const { data: { session }, error: userError } = await supabase.auth.getSession();
+    const user = session?.user;
     if (userError || !user) {
       return NextResponse.json(
         { ok: false, error: 'Unauthorized' },

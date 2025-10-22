@@ -19,8 +19,9 @@ export async function GET(request: NextRequest) {
     
     // Check auth
     const {
-      data: { user },
+      data: { session },
     } = await supabase.auth.getSession();
+    const user = session?.user;
 
     if (!user) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
@@ -105,8 +106,9 @@ export async function POST(request: NextRequest) {
     
     // Check auth
     const {
-      data: { user },
+      data: { session },
     } = await supabase.auth.getSession();
+    const user = session?.user;
 
     if (!user) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });

@@ -18,7 +18,8 @@ export async function GET(req: Request) {
     const supabase = await createServerSupabase();
     
     // Verify user has access to this venue
-    const { data: { user }, error: userError } = await supabase.auth.getSession();
+    const { data: { session }, error: userError } = await supabase.auth.getSession();
+    const user = session?.user;
     if (userError || !user) {
       return NextResponse.json(
         { ok: false, error: 'Unauthorized' },
@@ -95,7 +96,8 @@ export async function POST(req: Request) {
     const supabase = await createServerSupabase();
     
     // Verify user has access to this venue
-    const { data: { user }, error: userError } = await supabase.auth.getSession();
+    const { data: { session }, error: userError } = await supabase.auth.getSession();
+    const user = session?.user;
     if (userError || !user) {
       return NextResponse.json(
         { ok: false, error: 'Unauthorized' },
