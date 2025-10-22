@@ -1,16 +1,10 @@
-'use client';
+"use client";
 
-import React, { useState, useEffect, useCallback, useRef } from 'react';
-import { useRouter, usePathname } from 'next/navigation';
-import {
-  Home,
-  Clock,
-  ShoppingBag,
-  QrCode,
-  LayoutDashboard
-} from 'lucide-react';
-import { useIsMobile } from '@/hooks/use-mobile';
-import { supabaseBrowser as createClient } from '@/lib/supabase';
+import React, { useState, useEffect, useCallback, useRef } from "react";
+import { useRouter, usePathname } from "next/navigation";
+import { Home, Clock, ShoppingBag, QrCode, LayoutDashboard } from "lucide-react";
+import { useIsMobile } from "@/hooks/use-mobile";
+import { supabaseBrowser as createClient } from "@/lib/supabase";
 
 interface GlobalBottomNavProps {
   venueId?: string;
@@ -38,9 +32,9 @@ export default function GlobalBottomNav({ venueId, counts = {} }: GlobalBottomNa
   const isMountedRef = useRef(true);
 
   // Determine if we're on dashboard pages
-  const isOnDashboard = pathname?.startsWith('/dashboard');
-  const isOnHomePage = pathname === '/';
-  const isOnQRPage = pathname?.includes('/qr-codes');
+  const isOnDashboard = pathname?.startsWith("/dashboard");
+  const isOnHomePage = pathname === "/";
+  const isOnQRPage = pathname?.includes("/qr-codes");
   const shouldShowNav = isOnDashboard || isOnQRPage;
 
   // Check if we're on the dashboard root page (not a feature page)
@@ -50,7 +44,7 @@ export default function GlobalBottomNav({ venueId, counts = {} }: GlobalBottomNa
   // Extract venueId from pathname if not provided
   const currentVenueId = venueId || pathname?.match(/\/dashboard\/([^/]+)/)?.[1];
 
-  const showDashboardForHome = (isOnFeaturePage || isOnQRPage);
+  const showDashboardForHome = isOnFeaturePage || isOnQRPage;
 
   // Cleanup function
   useEffect(() => {
@@ -89,8 +83,8 @@ export default function GlobalBottomNav({ venueId, counts = {} }: GlobalBottomNa
       }
     };
 
-    window.addEventListener('scroll', handleScroll, { passive: true });
-    return () => window.removeEventListener('scroll', handleScroll);
+    window.addEventListener("scroll", handleScroll, { passive: true });
+    return () => window.removeEventListener("scroll", handleScroll);
   }, [isMobile, shouldShowNav]);
 
   // Update live orders count in real-time
@@ -102,14 +96,15 @@ export default function GlobalBottomNav({ venueId, counts = {} }: GlobalBottomNa
 
     const channel = supabase
       .channel(`live-orders-count-${venueId}`)
-      .on('postgres_changes',
-        { 
-          event: '*', 
-          schema: 'public', 
-          table: 'orders',
-          filter: `venue_id=eq.${venueId}`
-        }, 
-        async (payload: unknown) => {
+      .on(
+        "postgres_changes",
+        {
+          event: "*",
+          schema: "public",
+          table: "orders",
+          filter: `venue_id=eq.${venueId}`,
+        },
+        async () => {
           if (!isSubscribed || !isMountedRef.current) return;
 
           // Debounce the updates to prevent rapid state changes
@@ -118,19 +113,26 @@ export default function GlobalBottomNav({ venueId, counts = {} }: GlobalBottomNa
 
             try {
               const { data, error } = await supabase
-                .rpc('dashboard_counts', {
+                .rpc("dashboard_counts", {
                   p_venue_id: venueId,
-                  p_tz: 'Europe/London',
-                  p_live_window_mins: 30
+                  p_tz: "Europe/London",
+                  p_live_window_mins: 30,
                 })
                 .single();
 
               if (!isSubscribed || !isMountedRef.current) return;
 
-              if (!error && data) {
-                setLiveOrdersCount(data.live_count || 0);
+              if (
+                !error &&
+                data &&
+                typeof data === "object" &&
+                data !== null &&
+                "live_count" in data
+              ) {
+                const liveCount = (data as { live_count?: number }).live_count;
+                setLiveOrdersCount(liveCount || 0);
               }
-            } catch (error) {
+            } catch {
               // Silent error handling
             }
           }, 100);
@@ -146,54 +148,69 @@ export default function GlobalBottomNav({ venueId, counts = {} }: GlobalBottomNa
 
   const navItems: NavItem[] = [
     {
-      id: 'home',
-      label: showDashboardForHome ? 'Dashboard' : 'Home',
-      href: showDashboardForHome ? (currentVenueId ? `/dashboard/${currentVenueId}` : '/') : '/',
+      id: "home",
+      label: showDashboardForHome ? "Dashboard" : "Home",
+      href: showDashboardForHome ? (currentVenueId ? `/dashboard/${currentVenueId}` : "/") : "/",
       icon: showDashboardForHome ? LayoutDashboard : Home,
-      isActive: isOnHomePage || (isOnDashboard && pathname === `/dashboard/${currentVenueId}`)
+      isActive: isOnHomePage || (isOnDashboard && pathname === `/dashboard/${currentVenueId}`),
     },
     {
-      id: 'live-orders',
-      label: 'Live Orders',
-      href: currentVenueId ? `/dashboard/${currentVenueId}/live-orders` : '/',
+      id: "live-orders",
+      label: "Live Orders",
+      href: currentVenueId ? `/dashboard/${currentVenueId}/live-orders` : "/",
       icon: Clock,
-      isActive: pathname === `/dashboard/${currentVenueId}/live-orders`
+      isActive: pathname === `/dashboard/${currentVenueId}/live-orders`,
     },
     {
-      id: 'menu',
-      label: 'Menu',
-      href: currentVenueId ? `/dashboard/${currentVenueId}/menu-management` : '/',
+      id: "menu",
+      label: "Menu",
+      href: currentVenueId ? `/dashboard/${currentVenueId}/menu-management` : "/",
       icon: ShoppingBag,
-      isActive: pathname === `/dashboard/${currentVenueId}/menu-management`
+      isActive: pathname === `/dashboard/${currentVenueId}/menu-management`,
     },
     {
-      id: 'qr-codes',
-      label: 'QR Codes',
-      href: currentVenueId ? `/dashboard/${currentVenueId}/qr-codes` : '/',
+      id: "qr-codes",
+      label: "QR Codes",
+      href: currentVenueId ? `/dashboard/${currentVenueId}/qr-codes` : "/",
       icon: QrCode,
-      isActive: pathname === `/dashboard/${currentVenueId}/qr-codes`
-    }
+      isActive: pathname === `/dashboard/${currentVenueId}/qr-codes`,
+    },
   ];
 
-  const handleNavigation = useCallback((href: string) => {
-    router.push(href);
-  }, [router]);
+  const handleNavigation = useCallback(
+    (href: string, itemId: string, itemLabel: string) => {
+      console.info("🔷 [BOTTOM NAV] Navigation clicked:", {
+        itemId,
+        itemLabel,
+        href,
+        currentPath: pathname,
+        venueId: currentVenueId,
+        timestamp: new Date().toISOString(),
+        userAgent: navigator.userAgent,
+      });
+      router.push(href);
+    },
+    [router, pathname, currentVenueId]
+  );
 
-  const activeItem = navItems.find(item => item.isActive);
+  const activeItem = navItems.find((item) => item.isActive);
 
   if (!isMobile || !shouldShowNav) return null;
 
   return (
     <>
       {/* Bottom Navigation Bar */}
-      <div className={`fixed bottom-0 left-0 right-0 z-50 bg-white border-t border-gray-200 shadow-lg transition-transform duration-300 mobile-nav ${
-        isVisible ? 'translate-y-0' : 'translate-y-full'
-      }`} style={{ paddingBottom: 'env(safe-area-inset-bottom)' }}>
+      <div
+        className={`fixed bottom-0 left-0 right-0 z-50 bg-white border-t border-gray-200 shadow-lg transition-transform duration-300 mobile-nav ${
+          isVisible ? "translate-y-0" : "translate-y-full"
+        }`}
+        style={{ paddingBottom: "env(safe-area-inset-bottom)" }}
+      >
         <div className="grid grid-cols-4 h-20 gap-1 px-3 pb-2 pt-2 items-stretch">
           {navItems.map((item) => (
             <button
               key={item.id}
-              onClick={() => handleNavigation(item.href)}
+              onClick={() => handleNavigation(item.href, item.id, item.label)}
               className={`flex flex-col items-center justify-center p-1.5 relative transition-all duration-200 rounded-lg bg-white border border-servio-purple shadow-sm hover:shadow-md active:scale-95 h-full`}
             >
               <div className="relative mb-0.5 flex flex-col items-center justify-center">
@@ -204,7 +221,7 @@ export default function GlobalBottomNav({ venueId, counts = {} }: GlobalBottomNa
                   leading-tight text-[10px] w-full flex items-center justify-center
                   whitespace-nowrap overflow-hidden`}
               >
-                {item.id === 'live-orders' ? `Live (${liveOrdersCount})` : item.label}
+                {item.id === "live-orders" ? `Live (${liveOrdersCount})` : item.label}
               </span>
             </button>
           ))}
@@ -213,15 +230,15 @@ export default function GlobalBottomNav({ venueId, counts = {} }: GlobalBottomNa
 
       {/* Page Indicator for Active Section */}
       {activeItem && (
-        <div className={`fixed top-6 left-1/2 transform -translate-x-1/2 z-40 transition-transform duration-300 ${
-          isVisible ? 'translate-y-0' : '-translate-y-full'
-        }`}>
+        <div
+          className={`fixed top-6 left-1/2 transform -translate-x-1/2 z-40 transition-transform duration-300 ${
+            isVisible ? "translate-y-0" : "-translate-y-full"
+          }`}
+        >
           <div className="bg-white border-2 border-servio-purple rounded-full px-4 py-3 shadow-lg">
             <div className="flex items-center space-x-2">
               <activeItem.icon className="h-5 w-5 text-servio-purple" />
-              <span className="text-sm font-bold text-servio-purple">
-                {activeItem.label}
-              </span>
+              <span className="text-sm font-bold text-servio-purple">{activeItem.label}</span>
             </div>
           </div>
         </div>

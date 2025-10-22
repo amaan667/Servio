@@ -8,6 +8,11 @@ export default async function MenuManagementPage({
   params: Promise<{ venueId: string }>;
 }) {
   const { venueId } = await params;
+  console.info("📍 [MENU MANAGEMENT PAGE] Page accessed:", {
+    venueId,
+    timestamp: new Date().toISOString(),
+  });
+
   const supabase = await createServerSupabase();
 
   // Safely get user without throwing errors
@@ -16,7 +21,16 @@ export default async function MenuManagementPage({
   } = await supabase.auth.getSession();
   const user = session?.user;
 
+  console.info("🔐 [MENU MANAGEMENT PAGE] Auth check:", {
+    venueId,
+    hasSession: !!session,
+    hasUser: !!user,
+    userId: user?.id || "none",
+    timestamp: new Date().toISOString(),
+  });
+
   if (!user) {
+    console.info("⚠️  [MENU MANAGEMENT PAGE] No user found, showing loading spinner");
     return (
       <div className="min-h-screen flex items-center justify-center bg-background">
         <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary"></div>
@@ -43,8 +57,18 @@ export default async function MenuManagementPage({
   const isOwner = !!venue;
   const isStaff = !!userRole;
 
+  console.info("✅ [MENU MANAGEMENT PAGE] Authorization check:", {
+    venueId,
+    userId: user.id,
+    isOwner,
+    isStaff,
+    role: userRole?.role,
+    timestamp: new Date().toISOString(),
+  });
+
   // If user is not owner or staff, show error
   if (!isOwner && !isStaff) {
+    console.info("❌ [MENU MANAGEMENT PAGE] Access denied - user not authorized for venue");
     return <div>You don&apos;t have access to this venue</div>;
   }
 
@@ -63,6 +87,14 @@ export default async function MenuManagementPage({
 
   const finalUserRole = userRole?.role || (isOwner ? "owner" : "staff");
   const canEditMenu = finalUserRole === "owner" || finalUserRole === "manager";
+
+  console.info("🚀 [MENU MANAGEMENT PAGE] Rendering page:", {
+    venueId,
+    userId: user.id,
+    finalUserRole,
+    canEditMenu,
+    timestamp: new Date().toISOString(),
+  });
 
   return (
     <div className="min-h-screen bg-background">

@@ -38,6 +38,18 @@ interface FeatureSectionsProps {
 }
 
 export function FeatureSections({ venueId, userRole }: FeatureSectionsProps) {
+  const handleFeatureClick = (feature: Feature, section: string) => {
+    console.info("🎯 [FEATURE CARD] Feature clicked:", {
+      featureTitle: feature.title,
+      featureHref: feature.href,
+      sectionTitle: section,
+      venueId,
+      userRole,
+      timestamp: new Date().toISOString(),
+      userAgent: typeof navigator !== "undefined" ? navigator.userAgent : "server",
+    });
+  };
+
   const sections: FeatureSection[] = [
     {
       title: "Operations",
@@ -154,7 +166,11 @@ export function FeatureSections({ venueId, userRole }: FeatureSectionsProps) {
 
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
             {section.features.map((feature) => (
-              <Link key={feature.href} href={feature.href}>
+              <Link
+                key={feature.href}
+                href={feature.href}
+                onClick={() => handleFeatureClick(feature, section.title)}
+              >
                 <Card className="group hover:shadow-xl transition-all duration-300 hover:-translate-y-1 border-2 hover:border-gray-300">
                   <CardContent className="p-6">
                     <div

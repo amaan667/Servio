@@ -4,6 +4,11 @@ import { createServerSupabase } from "@/lib/supabase";
 
 export default async function KDSPage({ params }: { params: Promise<{ venueId: string }> }) {
   const { venueId } = await params;
+  console.info("📍 [KDS PAGE] Page accessed:", {
+    venueId,
+    timestamp: new Date().toISOString(),
+  });
+
   const supabase = await createServerSupabase();
 
   // Safely get user without throwing errors
@@ -12,7 +17,16 @@ export default async function KDSPage({ params }: { params: Promise<{ venueId: s
   } = await supabase.auth.getSession();
   const user = session?.user;
 
+  console.info("🔐 [KDS PAGE] Auth check:", {
+    venueId,
+    hasSession: !!session,
+    hasUser: !!user,
+    userId: user?.id || "none",
+    timestamp: new Date().toISOString(),
+  });
+
   if (!user) {
+    console.info("⚠️  [KDS PAGE] No user found, showing loading spinner");
     return (
       <div className="min-h-screen flex items-center justify-center bg-background">
         <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary"></div>
@@ -39,8 +53,18 @@ export default async function KDSPage({ params }: { params: Promise<{ venueId: s
   const isOwner = !!venue;
   const isStaff = !!userRole;
 
+  console.info("✅ [KDS PAGE] Authorization check:", {
+    venueId,
+    userId: user.id,
+    isOwner,
+    isStaff,
+    role: userRole?.role,
+    timestamp: new Date().toISOString(),
+  });
+
   // If user is not owner or staff, show error
   if (!isOwner && !isStaff) {
+    console.info("❌ [KDS PAGE] Access denied - user not authorized for venue");
     return <div>You don&apos;t have access to this venue</div>;
   }
 
@@ -60,6 +84,14 @@ export default async function KDSPage({ params }: { params: Promise<{ venueId: s
   const finalUserRole = userRole?.role || (isOwner ? "owner" : "staff");
   const canViewKDS =
     finalUserRole === "owner" || finalUserRole === "manager" || finalUserRole === "kitchen";
+
+  console.info("🚀 [KDS PAGE] Rendering page:", {
+    venueId,
+    userId: user.id,
+    finalUserRole,
+    canViewKDS,
+    timestamp: new Date().toISOString(),
+  });
 
   return (
     <div className="min-h-screen bg-background">
