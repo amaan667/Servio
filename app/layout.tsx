@@ -80,9 +80,9 @@ export const metadata: Metadata = {
       "All-in-one platform for restaurants, cafes, food trucks, and stalls. QR ordering, POS, payments, and kitchen management.",
     images: [
       {
-        url: "/images/og-image.png",
-        width: 1200,
-        height: 630,
+        url: "/placeholder-logo.png",
+        width: 512,
+        height: 512,
         alt: "Servio - QR Code Ordering Platform",
       },
     ],
@@ -91,7 +91,7 @@ export const metadata: Metadata = {
     card: "summary_large_image",
     title: "Servio - Complete POS & QR Ordering for Food Businesses",
     description: "All-in-one platform for restaurants, cafes, food trucks, and stalls",
-    images: ["/images/og-image.png"],
+    images: ["/placeholder-logo.png"],
     creator: "@servio_app",
   },
   robots: {

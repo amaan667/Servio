@@ -1,6 +1,7 @@
 import LiveOrdersClient from "./LiveOrdersClient";
 import RoleBasedNavigation from "@/components/RoleBasedNavigation";
 import { createServerSupabase } from "@/lib/supabase";
+import { redirect } from "next/navigation";
 
 export default async function LiveOrdersPage({ params }: { params: Promise<{ venueId: string }> }) {
   const { venueId } = await params;
@@ -26,12 +27,8 @@ export default async function LiveOrdersPage({ params }: { params: Promise<{ ven
   });
 
   if (!user) {
-    console.info("⚠️  [LIVE ORDERS PAGE] No user found, showing loading spinner");
-    return (
-      <div className="min-h-screen flex items-center justify-center bg-background">
-        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary"></div>
-      </div>
-    );
+    console.info("⚠️  [LIVE ORDERS PAGE] No user found, redirecting to sign-in");
+    redirect(`/sign-in?redirect=/dashboard/${venueId}/live-orders`);
   }
 
   // Check if user is the venue owner

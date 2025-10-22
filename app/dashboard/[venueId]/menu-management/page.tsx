@@ -1,6 +1,7 @@
 import MenuManagementClient from "./MenuManagementClient";
 import RoleBasedNavigation from "@/components/RoleBasedNavigation";
 import { createServerSupabase } from "@/lib/supabase";
+import { redirect } from "next/navigation";
 
 export default async function MenuManagementPage({
   params,
@@ -30,12 +31,8 @@ export default async function MenuManagementPage({
   });
 
   if (!user) {
-    console.info("⚠️  [MENU MANAGEMENT PAGE] No user found, showing loading spinner");
-    return (
-      <div className="min-h-screen flex items-center justify-center bg-background">
-        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary"></div>
-      </div>
-    );
+    console.info("⚠️  [MENU MANAGEMENT PAGE] No user found, redirecting to sign-in");
+    redirect(`/sign-in?redirect=/dashboard/${venueId}/menu-management`);
   }
 
   // Check if user is the venue owner
