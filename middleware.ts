@@ -23,43 +23,32 @@ export async function middleware(req: NextRequest) {
   const url = new URL(req.url);
   const path = url.pathname;
 
-  // Handle MIME types for static assets
-  if (path.startsWith("/_next/static/")) {
-    const response = NextResponse.next();
-    
-    // Set correct MIME types based on file extension
-    if (path.endsWith('.css')) {
-      response.headers.set('Content-Type', 'text/css; charset=utf-8');
-    } else if (path.endsWith('.js')) {
-      response.headers.set('Content-Type', 'application/javascript; charset=utf-8');
-    } else if (path.endsWith('.woff2')) {
-      response.headers.set('Content-Type', 'font/woff2');
-    }
-    
-    return response;
-  }
-
-  // Allow public assets and auth routes
+  // Skip middleware for static assets - let Next.js handle them
   if (
-    path.startsWith("/_next") ||
+    path.startsWith("/_next/") ||
     path.startsWith("/favicon.ico") ||
     path.startsWith("/robots.txt") ||
     path.startsWith("/manifest.json") ||
     path.startsWith("/sw.js") ||
-    path.startsWith("/images") ||
-    path.startsWith("/assets")
+    path.startsWith("/images/") ||
+    path.startsWith("/assets/") ||
+    path.endsWith(".css") ||
+    path.endsWith(".js") ||
+    path.endsWith(".ico") ||
+    path.endsWith(".png") ||
+    path.endsWith(".jpg") ||
+    path.endsWith(".svg")
   ) {
     return NextResponse.next();
   }
 
   // Allow public routes
-  const isPublicRoute = PUBLIC_ROUTES.some((route) => path.startsWith(route));
+  const isPublicRoute = PUBLIC_ROUTES.some((route) => path === route || path.startsWith(route + "/"));
   if (isPublicRoute) {
     return NextResponse.next();
   }
 
   // For all other routes, just let them through
-  // Supabase's autoRefreshToken will handle token refresh
   // Individual pages will check auth and redirect if needed
   return NextResponse.next();
 }

@@ -13,7 +13,7 @@ export function useQRCodeManagement(venueId: string) {
   const [counters, setCounters] = useState<unknown[]>([]);
   const [loading, setLoading] = useState(true);
   const [generatedQRs, setGeneratedQRs] = useState<GeneratedQR[]>([]);
-  const [qrCodeType, setQrCodeType] = useState<'tables' | 'counters'>('tables');
+  const [qrCodeType, setQrCodeType] = useState<'tables' | 'counters' | 'custom'>('custom');
   const [inputName, setInputName] = useState('');
   const { toast } = useToast();
 
@@ -61,7 +61,12 @@ export function useQRCodeManagement(venueId: string) {
       setTables(tablesData || []);
       setCounters(countersData || []);
     } catch (error) {
-
+      console.error('Error loading tables and counters:', error);
+      toast({
+        title: "Error",
+        description: "Failed to load data",
+        variant: "destructive",
+      });
     } finally {
       setLoading(false);
     }

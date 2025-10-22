@@ -3,22 +3,26 @@ name: Deploy to Production
 on:
   push:
     branches: [main]
-    tags:
-      - 'v*'
+  workflow_dispatch:
 
 jobs:
   deploy:
     name: Deploy to Railway
     runs-on: ubuntu-latest
-    if: github.ref == 'refs/heads/main'
+    environment: production
+    
     steps:
-      - uses: actions/checkout@v4
+      - name: Checkout code
+        uses: actions/checkout@v4
+      
+      - name: Install Railway CLI
+        run: npm install -g @railway/cli
       
       - name: Deploy to Railway
-        run: echo "Railway auto-deploys from main branch"
-        
+        run: railway up --service servio-production
+        env:
+          RAILWAY_TOKEN: ${{ secrets.RAILWAY_TOKEN }}
+      
       - name: Notify deployment
-        run: |
-          echo "✅ Deployment triggered for commit ${{ github.sha }}"
-          echo "🚀 Railway will automatically deploy this"
-
+        if: success()
+        run: echo "Deployment successful to Railway"

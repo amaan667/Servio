@@ -6,8 +6,8 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { QrCode, Plus } from "lucide-react";
 
 interface QRCodeGeneratorProps {
-  qrCodeType: 'tables' | 'counters';
-  onTypeChange: (type: 'tables' | 'counters') => void;
+  qrCodeType: 'tables' | 'counters' | 'custom';
+  onTypeChange: (type: 'tables' | 'counters' | 'custom') => void;
   inputName: string;
   onInputNameChange: (name: string) => void;
   onGenerate: () => void;
@@ -46,25 +46,38 @@ export function QRCodeGenerator({
             <SelectContent>
               <SelectItem value="tables">Tables</SelectItem>
               <SelectItem value="counters">Counters</SelectItem>
+              <SelectItem value="custom">Custom</SelectItem>
             </SelectContent>
           </Select>
         </div>
 
-        <div>
-          <Label>Select {qrCodeType === 'tables' ? 'Table' : 'Counter'}</Label>
-          <Select value={inputName} onValueChange={onInputNameChange}>
-            <SelectTrigger className="rounded-lg mt-1">
-              <SelectValue placeholder={`Select a ${qrCodeType === 'tables' ? 'table' : 'counter'}`} />
-            </SelectTrigger>
-            <SelectContent>
-              {items.map((item) => (
-                <SelectItem key={item.id} value={qrCodeType === 'tables' ? item.label : item.name}>
-                  {qrCodeType === 'tables' ? item.label : item.name}
-                </SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
-        </div>
+        {qrCodeType === 'custom' ? (
+          <div>
+            <Label>Custom Name</Label>
+            <Input
+              value={inputName}
+              onChange={(e) => onInputNameChange(e.target.value)}
+              placeholder="Enter any name for your QR code"
+              className="rounded-lg mt-1"
+            />
+          </div>
+        ) : (
+          <div>
+            <Label>Select {qrCodeType === 'tables' ? 'Table' : 'Counter'}</Label>
+            <Select value={inputName} onValueChange={onInputNameChange}>
+              <SelectTrigger className="rounded-lg mt-1">
+                <SelectValue placeholder={`Select a ${qrCodeType === 'tables' ? 'table' : 'counter'}`} />
+              </SelectTrigger>
+              <SelectContent>
+                {items.map((item) => (
+                  <SelectItem key={item.id} value={qrCodeType === 'tables' ? item.label : item.name}>
+                    {qrCodeType === 'tables' ? item.label : item.name}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          </div>
+        )}
 
         <div className="flex gap-2">
           <Button
@@ -75,14 +88,25 @@ export function QRCodeGenerator({
             <Plus className="h-4 w-4 mr-2" />
             Generate QR Code
           </Button>
-          <Button
-            variant="outline"
-            onClick={onGenerateAll}
-            disabled={items.length === 0}
-          >
-            Generate All
-          </Button>
+          {qrCodeType !== 'custom' && (
+            <Button
+              variant="outline"
+              onClick={onGenerateAll}
+              disabled={items.length === 0}
+            >
+              Generate All
+            </Button>
+          )}
         </div>
+
+        {qrCodeType === 'custom' && (
+          <div className="pt-4 border-t bg-blue-50 p-4 rounded-lg">
+            <p className="text-sm text-blue-800">
+              <strong>Custom QR Codes:</strong> Generate QR codes for any name you want. 
+              Perfect for special events, promotions, or custom locations.
+            </p>
+          </div>
+        )}
       </CardContent>
     </Card>
   );

@@ -26,9 +26,6 @@ import { QRCodeGenerator } from './components/QRCodeGenerator';
 
 export default function QRCodeClient({ venueId, venueName }: { venueId: string; venueName: string }) {
   const [qrCodeSize, setQrCodeSize] = useState('medium');
-  const [includeInstructions, setIncludeInstructions] = useState(true);
-  const [includeVenueInfo, setIncludeVenueInfo] = useState(true);
-  const { toast } = useToast();
 
   const qrManagement = useQRCodeManagement(venueId);
 
@@ -127,32 +124,7 @@ export default function QRCodeClient({ venueId, venueName }: { venueId: string; 
     );
   }
 
-  // Show empty state if no tables or counters
-  if (qrManagement.tables.length === 0 && qrManagement.counters.length === 0) {
-    return (
-      <div className="text-center py-12">
-        <div className="mx-auto w-24 h-24 bg-gray-100 rounded-full flex items-center justify-center mb-4">
-          <QrCode className="w-12 h-12 text-gray-400" />
-        </div>
-        <h3 className="text-lg font-semibold text-gray-900 mb-2">No Tables or Counters Found</h3>
-        <p className="text-gray-600 mb-6">
-          You need to set up tables or counters before generating QR codes.
-        </p>
-        <div className="space-x-4">
-          <Button asChild>
-            <Link href={`/dashboard/${venueId}/tables`}>
-              Set Up Tables
-            </Link>
-          </Button>
-          <Button variant="outline" asChild>
-            <Link href={`/dashboard/${venueId}/menu-management`}>
-              Manage Menu
-            </Link>
-          </Button>
-        </div>
-      </div>
-    );
-  }
+  // Always show QR code generator - users can create QR codes for any name
 
   return (
     <div className="space-y-6 pb-32 md:pb-8">
@@ -162,7 +134,7 @@ export default function QRCodeClient({ venueId, venueName }: { venueId: string; 
         onTypeChange={qrManagement.setQrCodeType}
         inputName={qrManagement.inputName}
         onInputNameChange={qrManagement.setInputName}
-        onGenerate={() => qrManagement.generateQRForName(qrManagement.inputName, qrManagement.qrCodeType === 'tables' ? 'table' : 'counter')}
+        onGenerate={() => qrManagement.generateQRForName(qrManagement.inputName, qrManagement.qrCodeType === 'tables' ? 'table' : qrManagement.qrCodeType === 'counters' ? 'counter' : 'custom')}
         onGenerateAll={qrManagement.generateQRForAll}
         tables={qrManagement.tables}
         counters={qrManagement.counters}

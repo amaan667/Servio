@@ -11,10 +11,10 @@ const nextConfig = {
   trailingSlash: false,
   reactStrictMode: true,
   eslint: {
-    ignoreDuringBuilds: true, // Temporarily allow builds despite ESLint errors
+    ignoreDuringBuilds: false, // Enforce linting during builds
   },
   typescript: {
-    ignoreBuildErrors: true, // Temporarily allow builds despite TypeScript errors
+    ignoreBuildErrors: false, // Enforce type checking during builds
   },
   // Performance optimizations
   experimental: {
