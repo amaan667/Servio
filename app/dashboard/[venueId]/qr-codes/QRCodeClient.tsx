@@ -1,6 +1,7 @@
 "use client";
 
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
+import { useSearchParams } from "next/navigation";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -31,6 +32,7 @@ export default function QRCodeClient({
   venueId: string;
   venueName: string;
 }) {
+  const searchParams = useSearchParams();
   const [qrType, setQrType] = useState<"table" | "counter">("table");
   const [singleName, setSingleName] = useState("");
   const [bulkCount, setBulkCount] = useState("10");
@@ -38,6 +40,19 @@ export default function QRCodeClient({
   const [showBulkDialog, setShowBulkDialog] = useState(false);
 
   const qrManagement = useQRCodeManagement(venueId);
+
+  // Handle URL parameter for pre-selected table
+  useEffect(() => {
+    const tableParam = searchParams.get("table");
+    if (tableParam) {
+      setSingleName(decodeURIComponent(tableParam));
+      setQrType("table");
+      // Auto-generate QR code for the pre-selected table
+      setTimeout(() => {
+        qrManagement.generateQRForName(decodeURIComponent(tableParam), "table");
+      }, 100);
+    }
+  }, [searchParams, qrManagement]);
 
   // Generate single QR code
   const handleGenerateSingle = () => {

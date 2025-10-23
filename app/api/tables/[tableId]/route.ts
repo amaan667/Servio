@@ -1,7 +1,6 @@
-import { errorToContext } from '@/lib/utils/error-to-context';
-import { NextRequest, NextResponse } from 'next/server';
-import { createClient } from '@/lib/supabase';
-import { logger } from '@/lib/logger';
+import { NextRequest, NextResponse } from "next/server";
+import { authenticateRequest } from "@/lib/api-auth";
+import { logger } from "@/lib/logger";
 
 export async function PUT(req: NextRequest, context: { params: Promise<{ tableId: string }> }) {
   try {
@@ -9,7 +8,13 @@ export async function PUT(req: NextRequest, context: { params: Promise<{ tableId
     const body = await req.json();
     const { label, seat_count, is_active, qr_version } = body;
 
-    const supabase = await createClient();
+    // Authenticate using Authorization header
+    const auth = await authenticateRequest(req);
+    if (!auth.success || !auth.supabase) {
+      return NextResponse.json({ error: auth.error || "Unauthorized" }, { status: 401 });
+    }
+
+    const { supabase } = auth;
 
     // Update table
     const updateData: unknown = {
@@ -24,21 +29,25 @@ export async function PUT(req: NextRequest, context: { params: Promise<{ tableId
     }
 
     const { data: table, error } = await supabase
-      .from('tables')
+      .from("tables")
       .update(updateData)
-      .eq('id', tableId)
+      .eq("id", tableId)
       .select()
       .single();
 
     if (error) {
-      logger.error('[TABLES API] Error updating table:', { error: error instanceof Error ? error.message : 'Unknown error' });
-      return NextResponse.json({ error: 'Failed to update table' }, { status: 500 });
+      logger.error("[TABLES API] Error updating table:", {
+        error: error instanceof Error ? error.message : "Unknown error",
+      });
+      return NextResponse.json({ error: "Failed to update table" }, { status: 500 });
     }
 
     return NextResponse.json({ table });
   } catch (error) {
-    logger.error('[TABLES API] Unexpected error:', { error: error instanceof Error ? error.message : 'Unknown error' });
-    return NextResponse.json({ error: 'Internal server error' }, { status: 500 });
+    logger.error("[TABLES API] Unexpected error:", {
+      error: error instanceof Error ? error.message : "Unknown error",
+    });
+    return NextResponse.json({ error: "Internal server error" }, { status: 500 });
   }
 }
 
@@ -46,89 +55,105 @@ export async function DELETE(req: NextRequest, context: { params: Promise<{ tabl
   try {
     const { tableId } = await context.params;
 
-    const supabase = await createClient();
+    // Authenticate using Authorization header
+    const auth = await authenticateRequest(req);
+    if (!auth.success || !auth.supabase) {
+      return NextResponse.json({ error: auth.error || "Unauthorized" }, { status: 401 });
+    }
+
+    const { supabase } = auth;
 
     // First check if table exists
     const { data: existingTable, error: checkError } = await supabase
-      .from('tables')
-      .select('id, label, venue_id')
-      .eq('id', tableId)
+      .from("tables")
+      .select("id, label, venue_id")
+      .eq("id", tableId)
       .single();
 
     if (checkError) {
-      logger.error('[TABLES API] Error checking table existence:', { value: checkError });
-      return NextResponse.json({ error: 'Table not found' }, { status: 404 });
+      logger.error("[TABLES API] Error checking table existence:", { value: checkError });
+      return NextResponse.json({ error: "Table not found" }, { status: 404 });
     }
 
     // Check if the table has unknown active orders
-    
+
     let activeOrders: { id: string }[] = [];
     let ordersError: unknown = null;
-    
+
     try {
       const ordersResult = await supabase
-        .from('orders')
-        .select('id')
-        .eq('table_id', tableId)
-        .eq('venue_id', existingTable.venue_id)
-        .in('order_status', ['PLACED', 'ACCEPTED', 'IN_PREP', 'READY', 'SERVING']);
-      
+        .from("orders")
+        .select("id")
+        .eq("table_id", tableId)
+        .eq("venue_id", existingTable.venue_id)
+        .in("order_status", ["PLACED", "ACCEPTED", "IN_PREP", "READY", "SERVING"]);
+
       activeOrders = ordersResult.data || [];
       ordersError = ordersResult.error;
-      
     } catch (error) {
-      logger.error('[TABLES API] Exception during active orders check:', { error: error instanceof Error ? error.message : 'Unknown error' });
+      logger.error("[TABLES API] Exception during active orders check:", {
+        error: error instanceof Error ? error.message : "Unknown error",
+      });
       ordersError = error;
     }
 
     if (ordersError) {
-      logger.error('[TABLES API] Error checking active orders:', { value: ordersError });
-      
+      logger.error("[TABLES API] Error checking active orders:", { value: ordersError });
+
       // Instead of failing completely, we'll log the error and continue with a warning
-      logger.warn('[TABLES API] Proceeding with table removal despite orders check failure - this may be due to database connectivity issues');
-      
+      logger.warn(
+        "[TABLES API] Proceeding with table removal despite orders check failure - this may be due to database connectivity issues"
+      );
+
       // Try a simpler fallback query
       try {
         const fallbackResult = await supabase
-          .from('orders')
-          .select('id')
-          .eq('table_id', tableId)
+          .from("orders")
+          .select("id")
+          .eq("table_id", tableId)
           .limit(1);
-        
+
         if (fallbackResult.data && fallbackResult.data.length > 0) {
-          logger.warn('[TABLES API] Fallback query found orders for this table - proceeding with caution');
+          logger.warn(
+            "[TABLES API] Fallback query found orders for this table - proceeding with caution"
+          );
         }
       } catch (fallbackError) {
-        logger.error('[TABLES API] Fallback query also failed:', { value: fallbackError });
+        logger.error("[TABLES API] Fallback query also failed:", { value: fallbackError });
       }
     }
 
     // Check if the table has unknown active reservations
-    
+
     let activeReservations: { id: string }[] = [];
     let reservationsError: unknown = null;
-    
+
     try {
       const reservationsResult = await supabase
-        .from('reservations')
-        .select('id')
-        .eq('table_id', tableId)
-        .eq('venue_id', existingTable.venue_id)
-        .eq('status', 'BOOKED');
-      
+        .from("reservations")
+        .select("id")
+        .eq("table_id", tableId)
+        .eq("venue_id", existingTable.venue_id)
+        .eq("status", "BOOKED");
+
       activeReservations = reservationsResult.data || [];
       reservationsError = reservationsResult.error;
-      
     } catch (error) {
-      logger.error('[TABLES API] Exception during active reservations check:', { error: error instanceof Error ? error.message : 'Unknown error' });
+      logger.error("[TABLES API] Exception during active reservations check:", {
+        error: error instanceof Error ? error.message : "Unknown error",
+      });
       reservationsError = error;
     }
 
     if (reservationsError) {
-      logger.error('[TABLES API] Error checking active reservations:', { value: reservationsError });
-      
+      logger.error("[TABLES API] Error checking active reservations:", {
+        value: reservationsError,
+      });
+
       // Instead of failing completely, we'll log the error and continue with a warning
-      logger.warn('[TABLES API] Proceeding with table removal despite reservations check failure - this may be due to database connectivity issues');
+      logger.warn(
+        "[TABLES API] Proceeding with table removal despite reservations check failure - this may be due to database connectivity issues"
+      );
     }
 
     // If there are active orders or reservations, prevent deletion
@@ -136,9 +161,9 @@ export async function DELETE(req: NextRequest, context: { params: Promise<{ tabl
     // Only prevent deletion if we successfully checked and found active orders/reservations
     if (!ordersError && activeOrders && activeOrders.length > 0) {
       return NextResponse.json(
-        { 
-          error: 'Cannot remove table with active orders. Please close all orders first.',
-          hasActiveOrders: true
+        {
+          error: "Cannot remove table with active orders. Please close all orders first.",
+          hasActiveOrders: true,
         },
         { status: 400 }
       );
@@ -146,9 +171,10 @@ export async function DELETE(req: NextRequest, context: { params: Promise<{ tabl
 
     if (!reservationsError && activeReservations && activeReservations.length > 0) {
       return NextResponse.json(
-        { 
-          error: 'Cannot remove table with active reservations. Please cancel all reservations first.',
-          hasActiveReservations: true
+        {
+          error:
+            "Cannot remove table with active reservations. Please cancel all reservations first.",
+          hasActiveReservations: true,
         },
         { status: 400 }
       );
@@ -156,35 +182,39 @@ export async function DELETE(req: NextRequest, context: { params: Promise<{ tabl
 
     // If both checks failed, we'll proceed with a warning
     if (ordersError && reservationsError) {
-      logger.warn('[TABLES API] Both orders and reservations checks failed - proceeding with table removal but logging the issue');
+      logger.warn(
+        "[TABLES API] Both orders and reservations checks failed - proceeding with table removal but logging the issue"
+      );
     }
 
     // Clear table_id references in orders to avoid foreign key constraint issues
     const { error: clearTableRefsError } = await supabase
-      .from('orders')
+      .from("orders")
       .update({ table_id: null })
-      .eq('table_id', tableId)
-      .eq('venue_id', existingTable.venue_id);
+      .eq("table_id", tableId)
+      .eq("venue_id", existingTable.venue_id);
 
     if (clearTableRefsError) {
-      logger.error('[TABLES API] Error clearing table references in orders:', { value: clearTableRefsError });
+      logger.error("[TABLES API] Error clearing table references in orders:", {
+        value: clearTableRefsError,
+      });
       // Continue with deletion anyway - this might be due to RLS or other issues
-      logger.warn('[TABLES API] Proceeding with table deletion despite table reference clear failure');
-    } else {
+      logger.warn(
+        "[TABLES API] Proceeding with table deletion despite table reference clear failure"
+      );
     }
 
     // Delete table sessions first (if they exist)
     const { error: deleteSessionsError } = await supabase
-      .from('table_sessions')
+      .from("table_sessions")
       .delete()
-      .eq('table_id', tableId)
-      .eq('venue_id', existingTable.venue_id);
+      .eq("table_id", tableId)
+      .eq("venue_id", existingTable.venue_id);
 
     if (deleteSessionsError) {
-      logger.error('[TABLES API] Error deleting table sessions:', { value: deleteSessionsError });
+      logger.error("[TABLES API] Error deleting table sessions:", { value: deleteSessionsError });
       // Continue with table deletion anyway
-      logger.warn('[TABLES API] Proceeding with table deletion despite session deletion failure');
-    } else {
+      logger.warn("[TABLES API] Proceeding with table deletion despite session deletion failure");
     }
 
     // Note: table_runtime_state is a view that aggregates data from table_sessions and tables
@@ -192,39 +222,46 @@ export async function DELETE(req: NextRequest, context: { params: Promise<{ tabl
 
     // Delete group sessions for this table
     const { error: deleteGroupSessionError } = await supabase
-      .from('table_group_sessions')
+      .from("table_group_sessions")
       .delete()
-      .eq('table_number', existingTable.label) // Use table label/number to match group sessions
-      .eq('venue_id', existingTable.venue_id);
+      .eq("table_number", existingTable.label) // Use table label/number to match group sessions
+      .eq("venue_id", existingTable.venue_id);
 
     if (deleteGroupSessionError) {
-      logger.error('[TABLES API] Error deleting group sessions:', { value: deleteGroupSessionError });
+      logger.error("[TABLES API] Error deleting group sessions:", {
+        value: deleteGroupSessionError,
+      });
       // Continue with table deletion anyway
-      logger.warn('[TABLES API] Proceeding with table deletion despite group session deletion failure');
-    } else {
+      logger.warn(
+        "[TABLES API] Proceeding with table deletion despite group session deletion failure"
+      );
     }
 
     // Finally, delete the table itself
     const { error } = await supabase
-      .from('tables')
+      .from("tables")
       .delete()
-      .eq('id', tableId)
-      .eq('venue_id', existingTable.venue_id);
+      .eq("id", tableId)
+      .eq("venue_id", existingTable.venue_id);
 
     if (error) {
-      logger.error('[TABLES API] Error deleting table:', { error: error instanceof Error ? error.message : 'Unknown error' });
-      logger.error('[TABLES API] Error details:', {
+      logger.error("[TABLES API] Error deleting table:", {
+        error: error instanceof Error ? error.message : "Unknown error",
+      });
+      logger.error("[TABLES API] Error details:", {
         message: error.message,
         details: error.details,
         hint: error.hint,
-        code: error.code
+        code: error.code,
       });
-      return NextResponse.json({ error: 'Failed to delete table' }, { status: 500 });
+      return NextResponse.json({ error: "Failed to delete table" }, { status: 500 });
     }
 
     return NextResponse.json({ success: true, deletedTable: existingTable });
   } catch (error) {
-    logger.error('[TABLES API] Unexpected error:', { error: error instanceof Error ? error.message : 'Unknown error' });
-    return NextResponse.json({ error: 'Internal server error' }, { status: 500 });
+    logger.error("[TABLES API] Unexpected error:", {
+      error: error instanceof Error ? error.message : "Unknown error",
+    });
+    return NextResponse.json({ error: "Internal server error" }, { status: 500 });
   }
 }

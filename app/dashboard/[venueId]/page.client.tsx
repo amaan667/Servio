@@ -240,12 +240,7 @@ const DashboardClient = React.memo(function DashboardClient({ venueId }: { venue
     );
   }
 
-  // Show venue not found
-  if (!venue) {
-    return <div>Venue not found</div>;
-  }
-
-  // No loading spinner - render immediately with empty states
+  // No loading spinner - render immediately with empty states (even if venue not loaded yet)
 
   return (
     <PullToRefresh onRefresh={handleRefresh}>
