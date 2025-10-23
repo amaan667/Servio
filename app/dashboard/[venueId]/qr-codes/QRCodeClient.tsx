@@ -55,6 +55,8 @@ export default function QRCodeClient({
 
   // Auto-generate QR code if table parameter is present
   useEffect(() => {
+    if (typeof window === "undefined") return;
+
     if (qrManagement.tables.length > 0) {
       const urlParams = new URLSearchParams(window.location.search);
       const tableName = urlParams.get("table");
