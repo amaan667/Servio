@@ -11,6 +11,7 @@ import { DashboardSkeleton } from "@/components/dashboard-skeleton";
 import RoleManagementPopup from "@/components/role-management-popup";
 import VenueSwitcherPopup from "@/components/venue-switcher-popup";
 import { supabaseBrowser } from "@/lib/supabase";
+import TrialStatusBanner from "@/components/TrialStatusBanner";
 
 // Hooks
 import { useDashboardData } from "./hooks/useDashboardData";
@@ -256,6 +257,9 @@ const DashboardClient = React.memo(function DashboardClient({ venueId }: { venue
   return (
     <PullToRefresh onRefresh={handleRefresh}>
       <div className="min-h-screen bg-gray-50/50">
+        {/* Trial Status Banner - Only for owners */}
+        <TrialStatusBanner userRole={userRole} />
+
         {/* Compact Status Banner */}
         <div className="bg-white border-b">
           <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4">

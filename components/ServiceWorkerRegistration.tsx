@@ -1,9 +1,8 @@
-'use client';
+"use client";
 
-import { useEffect, useState } from 'react';
-import { Button } from '@/components/ui/button';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { RefreshCw, Wifi, WifiOff } from 'lucide-react';
+import { useEffect, useState } from "react";
+import { Card, CardContent } from "@/components/ui/card";
+import { RefreshCw, WifiOff } from "lucide-react";
 
 interface ServiceWorkerRegistrationProps {
   children: React.ReactNode;
@@ -11,9 +10,9 @@ interface ServiceWorkerRegistrationProps {
 
 export default function ServiceWorkerRegistration({ children }: ServiceWorkerRegistrationProps) {
   const [isOnline, setIsOnline] = useState(true);
-  const [swRegistration, setSwRegistration] = useState<ServiceWorkerRegistration | null>(null);
+  // const [swRegistration] = useState<ServiceWorkerRegistration | null>(null);
   // Update banner removed – we no longer surface a UI prompt for updates
-  const [updateAvailable] = useState(false);
+  // const [updateAvailable] = useState(false);
   const [isInstalling, setIsInstalling] = useState(false);
 
   useEffect(() => {
@@ -21,23 +20,24 @@ export default function ServiceWorkerRegistration({ children }: ServiceWorkerReg
     const handleOnline = () => setIsOnline(true);
     const handleOffline = () => setIsOnline(false);
 
-    window.addEventListener('online', handleOnline);
-    window.addEventListener('offline', handleOffline);
+    window.addEventListener("online", handleOnline);
+    window.addEventListener("offline", handleOffline);
     setIsOnline(navigator.onLine);
 
     // Register service worker
-    if ('serviceWorker' in navigator) {
-      navigator.serviceWorker.register('/sw.js')
+    if ("serviceWorker" in navigator) {
+      navigator.serviceWorker
+        .register("/sw.js")
         .then((registration) => {
           setSwRegistration(registration);
 
           // Previously: show update banner when updatefound. Now we silently allow the
           // new SW to install/activate without surfacing UI to the user.
-          registration.addEventListener('updatefound', () => {
+          registration.addEventListener("updatefound", () => {
             const installing = registration.installing;
             if (installing) {
-              installing.addEventListener('statechange', () => {
-                if (installing.state === 'installed') {
+              installing.addEventListener("statechange", () => {
+                if (installing.state === "installed") {
                   setIsInstalling(false);
                 }
               });
@@ -53,37 +53,37 @@ export default function ServiceWorkerRegistration({ children }: ServiceWorkerReg
     }
 
     // Listen for messages from service worker
-    if ('serviceWorker' in navigator) {
-      navigator.serviceWorker.addEventListener('message', (event) => {
-        
-        if (event.data && event.data.type === 'SKIP_WAITING') {
+    if ("serviceWorker" in navigator) {
+      navigator.serviceWorker.addEventListener("message", (event) => {
+        if (event.data && event.data.type === "SKIP_WAITING") {
           window.location.reload();
         }
       });
     }
 
     return () => {
-      window.removeEventListener('online', handleOnline);
-      window.removeEventListener('offline', handleOffline);
+      window.removeEventListener("online", handleOnline);
+      window.removeEventListener("offline", handleOffline);
     };
   }, []);
 
-  const handleUpdate = () => {};
-
+  // const handleUpdate = () => {};
 
   return (
     <>
       {children}
-      
-      {/* Offline Indicator */}
-      {!isOnline && (
-        <div className="fixed top-0 left-0 right-0 z-50 bg-orange-500 text-white p-2 text-center text-sm">
-          <div className="flex items-center justify-center space-x-2">
-            <WifiOff className="h-4 w-4" />
-            <span>You're offline. Some features may be limited.</span>
+
+      {/* Offline Indicator - Only show on dashboard pages */}
+      {!isOnline &&
+        typeof window !== "undefined" &&
+        window.location.pathname.startsWith("/dashboard") && (
+          <div className="fixed top-0 left-0 right-0 z-50 bg-orange-500 text-white p-2 text-center text-sm">
+            <div className="flex items-center justify-center space-x-2">
+              <WifiOff className="h-4 w-4" />
+              <span>You&apos;re offline. Some features may be limited.</span>
+            </div>
           </div>
-        </div>
-      )}
+        )}
 
       {/* Update banner intentionally removed */}
 
@@ -100,8 +100,6 @@ export default function ServiceWorkerRegistration({ children }: ServiceWorkerReg
           </Card>
         </div>
       )}
-
     </>
   );
 }
-

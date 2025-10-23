@@ -6,12 +6,42 @@ import { supabase } from "@/lib/supabase";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { Check, X } from "lucide-react";
+import { Check, X, ChevronDown, ChevronUp } from "lucide-react";
 import { HeroSection } from "./components/HeroSection";
 import { FeaturesSection } from "./components/FeaturesSection";
 import { TestimonialsSection } from "./components/TestimonialsSection";
 import { CTASection } from "./components/CTASection";
 import { Footer } from "./components/Footer";
+
+// FAQ Item Component
+function FAQItem({ question, answer }: { question: string; answer: string }) {
+  const [isOpen, setIsOpen] = useState(false);
+
+  return (
+    <div className="border-2 border-purple-200 rounded-lg overflow-hidden transition-all duration-300 hover:border-purple-300 hover:shadow-lg">
+      <button
+        onClick={() => setIsOpen(!isOpen)}
+        className="w-full px-6 py-4 text-left bg-gradient-to-r from-purple-50 to-purple-100 hover:from-purple-100 hover:to-purple-200 transition-all duration-300 flex items-center justify-between group"
+      >
+        <h3 className="text-lg font-semibold text-gray-900 group-hover:text-purple-700 transition-colors">
+          {question}
+        </h3>
+        <div className="ml-4 flex-shrink-0">
+          {isOpen ? (
+            <ChevronUp className="h-5 w-5 text-purple-600" />
+          ) : (
+            <ChevronDown className="h-5 w-5 text-purple-600" />
+          )}
+        </div>
+      </button>
+      {isOpen && (
+        <div className="px-6 py-4 bg-white border-t border-purple-200">
+          <p className="text-gray-700 leading-relaxed">{answer}</p>
+        </div>
+      )}
+    </div>
+  );
+}
 
 export default function HomePage() {
   const router = useRouter();
@@ -96,47 +126,58 @@ export default function HomePage() {
 
   const pricingPlans = [
     {
-      name: "Free",
-      price: "£0",
-      period: "forever",
-      description: "Perfect for testing Servio",
-      features: ["Up to 10 menu items", "Basic QR ordering", "Order management", "Email support"],
-      notIncluded: ["Advanced analytics", "Custom branding", "Priority support"],
-      cta: "Get Started",
-      popular: false,
-    },
-    {
-      name: "Starter",
-      price: "£29",
+      name: "Basic",
+      price: "£99",
       period: "per month",
-      description: "For small cafes and food trucks",
+      description: "Perfect for small cafes and food trucks",
       features: [
-        "Unlimited menu items",
-        "QR ordering",
+        "Up to 50 menu items",
+        "QR code ordering",
         "Order management",
         "Payment processing",
         "Basic analytics",
         "Email support",
       ],
-      notIncluded: ["Custom branding", "Priority support"],
+      notIncluded: ["Custom branding", "Advanced analytics", "Priority support"],
       cta: "Start Free Trial",
-      popular: true,
+      popular: false,
     },
     {
-      name: "Professional",
-      price: "£79",
+      name: "Standard",
+      price: "£249",
       period: "per month",
-      description: "For established restaurants",
+      description: "For growing restaurants and cafes",
       features: [
-        "Everything in Starter",
-        "Custom branding",
+        "Unlimited menu items",
+        "QR code ordering",
+        "Order management",
+        "Payment processing",
         "Advanced analytics",
         "Inventory management",
         "Staff management",
         "Priority support",
       ],
-      notIncluded: [],
+      notIncluded: ["Custom branding", "White-label options"],
       cta: "Start Free Trial",
+      popular: true,
+    },
+    {
+      name: "Premium",
+      price: "£449+",
+      period: "per month",
+      description: "For established restaurants and chains",
+      features: [
+        "Everything in Standard",
+        "Custom branding",
+        "White-label options",
+        "Multi-location support",
+        "Advanced reporting",
+        "Dedicated account manager",
+        "Custom integrations",
+        "24/7 phone support",
+      ],
+      notIncluded: [],
+      cta: "Contact Sales",
       popular: false,
     },
   ];
@@ -255,16 +296,9 @@ export default function HomePage() {
             <p className="text-xl text-gray-800">Everything you need to know about Servio</p>
           </div>
 
-          <div className="space-y-6">
+          <div className="space-y-4">
             {faqs.map((faq, index) => (
-              <Card key={index} className="border-0 shadow-md">
-                <CardHeader>
-                  <CardTitle className="text-lg">{faq.question}</CardTitle>
-                </CardHeader>
-                <CardContent>
-                  <p className="text-gray-800">{faq.answer}</p>
-                </CardContent>
-              </Card>
+              <FAQItem key={index} question={faq.question} answer={faq.answer} />
             ))}
           </div>
         </div>
