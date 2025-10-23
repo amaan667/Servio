@@ -75,13 +75,15 @@ export default function LiveOrdersClientPage({ venueId }: { venueId: string }) {
           return;
         }
 
-        const finalRole = roleData?.role || (isOwner ? "owner" : "staff");
+        const finalRole = isOwner ? "owner" : roleData?.role || "staff";
         setUserRole(finalRole);
 
         console.info("🚀 [LIVE ORDERS CLIENT] Rendering page:", {
           venueId,
           userId: currentUser.id,
           finalRole,
+          isOwner,
+          isStaff,
           timestamp: new Date().toISOString(),
         });
 

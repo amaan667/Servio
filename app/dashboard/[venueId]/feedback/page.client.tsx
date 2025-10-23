@@ -75,15 +75,25 @@ export default function FeedbackClientPage({ venueId }: { venueId: string }) {
           return;
         }
 
-        const finalRole = roleData?.role || (isOwner ? "owner" : "staff");
+        const finalRole = isOwner ? "owner" : roleData?.role || "staff";
         setUserRole(finalRole);
+
+        // Check role-based access - owners and managers can access feedback
+        const hasAccess = isOwner || finalRole === "manager";
 
         console.info("🚀 [FEEDBACK CLIENT] Rendering page:", {
           venueId,
           userId: currentUser.id,
           finalRole,
+          hasAccess,
           timestamp: new Date().toISOString(),
         });
+
+        if (!hasAccess) {
+          setAuthError("This feature requires Owner or Manager role");
+          setLoading(false);
+          return;
+        }
 
         setLoading(false);
       } catch (error) {

@@ -90,13 +90,15 @@ export default function QRCodeClientPage({ venueId }: { venueId: string }) {
           }
         }
 
-        const finalRole = roleData?.role || (isOwner ? "owner" : "staff");
+        const finalRole = isOwner ? "owner" : roleData?.role || "staff";
         setUserRole(finalRole);
 
         console.info("🚀 [QR CODES CLIENT] Rendering page:", {
           venueId,
           userId: currentUser.id,
           finalRole,
+          isOwner,
+          isStaff,
           timestamp: new Date().toISOString(),
         });
 
