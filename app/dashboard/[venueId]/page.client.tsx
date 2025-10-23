@@ -10,7 +10,7 @@ import { useConnectionMonitor } from "@/lib/connection-monitor";
 import { DashboardSkeleton } from "@/components/dashboard-skeleton";
 import RoleManagementPopup from "@/components/role-management-popup";
 import VenueSwitcherPopup from "@/components/venue-switcher-popup";
-import { supabaseBrowser } from "@/lib/supabase";
+import { supabaseBrowser, migrateSessionToCookies } from "@/lib/supabase";
 import TrialStatusBanner from "@/components/TrialStatusBanner";
 
 // Hooks
@@ -48,6 +48,11 @@ const DashboardClient = React.memo(function DashboardClient({ venueId }: { venue
 
   // Monitor connection status (must be at top before any returns)
   useConnectionMonitor();
+
+  // Check for localStorage-only sessions and prompt migration
+  useEffect(() => {
+    migrateSessionToCookies();
+  }, []);
 
   // Enable intelligent prefetching for dashboard routes
   useDashboardPrefetch(venueId);

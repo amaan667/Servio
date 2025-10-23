@@ -204,6 +204,9 @@ export function createClientContextAware() {
   );
 }
 
+// Export cookie migration helper
+export { migrateSessionToCookies } from "./cookie-migration";
+
 /**
  * Check if valid auth cookies exist
  * This prevents unnecessary API calls that would fail with refresh token errors
