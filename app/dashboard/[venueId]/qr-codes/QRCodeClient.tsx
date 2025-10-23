@@ -222,16 +222,24 @@ export default function QRCodeClient({
           </div>
 
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-            {qrManagement.generatedQRs.map((qr, index) => (
-              <QRCodeCard
-                key={index}
-                qr={qr}
-                size={getSizeValue()}
-                onCopy={qrManagement.copyQRUrl}
-                onDownload={qrManagement.downloadQR}
-                onRemove={qrManagement.removeQR}
-              />
-            ))}
+            {qrManagement.generatedQRs.map((qr, index) => {
+              // Ensure qr is a valid object with required properties
+              if (!qr || typeof qr !== "object" || !qr.name || !qr.url || !qr.type) {
+                console.warn("Invalid QR data:", qr);
+                return null;
+              }
+
+              return (
+                <QRCodeCard
+                  key={`${String(qr.name)}-${String(qr.type)}-${index}`}
+                  qr={qr}
+                  size={getSizeValue()}
+                  onCopy={qrManagement.copyQRUrl}
+                  onDownload={qrManagement.downloadQR}
+                  onRemove={qrManagement.removeQR}
+                />
+              );
+            })}
           </div>
         </>
       )}

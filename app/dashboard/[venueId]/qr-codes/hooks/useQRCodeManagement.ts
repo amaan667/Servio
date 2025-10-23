@@ -20,6 +20,8 @@ interface CounterItem {
   id?: string;
   counter_id?: string;
   name?: string;
+  label?: string;
+  counter_name?: string;
 }
 
 export function useQRCodeManagement(venueId: string) {
@@ -58,20 +60,23 @@ export function useQRCodeManagement(venueId: string) {
         });
       }
 
-      const { data: countersData, error: countersError } = await supabase
-        .from("counters")
-        .select("*")
-        .eq("venue_id", venueId)
-        .order("name", { ascending: true });
+      // Try to load counters - they might not exist or have different schema
+      let countersData: CounterItem[] = [];
+      try {
+        const result = await supabase.from("counters").select("*").eq("venue_id", venueId);
 
-      if (countersError) {
-        console.error("Error loading counters:", countersError.message || "Counters query failed");
-        // Counters table might not exist or have RLS issues - fail gracefully
-        // Don't show toast to avoid clutter
+        if (!result.error) {
+          countersData = result.data || [];
+        } else {
+          console.error("Counters not available:", result.error.message);
+        }
+      } catch {
+        // Silently fail - counters are optional
+        console.error("Counters table not accessible");
       }
 
       setTables(tablesData || []);
-      setCounters(countersError ? [] : countersData || []);
+      setCounters(countersData);
     } catch (error) {
       const errorMessage = error instanceof Error ? error.message : "Unknown error";
       console.error("Error loading tables and counters:", errorMessage);
@@ -112,9 +117,15 @@ export function useQRCodeManagement(venueId: string) {
     const items = qrCodeType === "tables" ? tables : counters;
 
     items.forEach((item: TableItem | CounterItem) => {
-      const name = qrCodeType === "tables" ? ("label" in item ? item.label : item.name) : item.name;
-      if (name) {
-        generateQRForName(String(name), qrCodeType === "tables" ? "table" : "counter");
+      let name = "";
+      if (qrCodeType === "tables") {
+        name = String(item.label || item.table_number || item.name || "");
+      } else {
+        name = String(item.counter_name || item.label || item.name || "");
+      }
+
+      if (name && name !== "undefined" && name !== "null" && name.trim() !== "") {
+        generateQRForName(name, qrCodeType === "tables" ? "table" : "counter");
       }
     });
 

@@ -17,8 +17,11 @@ interface TableItem {
 }
 
 interface CounterItem {
-  id: string;
-  name: string;
+  id?: string;
+  counter_id?: string;
+  name?: string;
+  label?: string;
+  counter_name?: string;
 }
 
 interface QRCodeGeneratorProps {
@@ -88,16 +91,23 @@ export function QRCodeGenerator({
               </SelectTrigger>
               <SelectContent>
                 {items.map((item: TableItem | CounterItem) => {
-                  const key = String(item.id || Math.random());
-                  const displayValue =
-                    qrCodeType === "tables"
-                      ? "label" in item
-                        ? String(item.label || "")
-                        : String(item.name || "")
-                      : String(item.name || "");
+                  const key = String(item.id || item.counter_id || item.table_id || Math.random());
+
+                  // Get display value - handle both table and counter naming variations
+                  let displayValue = "";
+                  if (qrCodeType === "tables") {
+                    displayValue = String(item.label || item.table_number || item.name || "");
+                  } else {
+                    displayValue = String(item.counter_name || item.label || item.name || "");
+                  }
 
                   // Skip items without a valid display value
-                  if (!displayValue || displayValue === "undefined" || displayValue === "null") {
+                  if (
+                    !displayValue ||
+                    displayValue === "undefined" ||
+                    displayValue === "null" ||
+                    displayValue.trim() === ""
+                  ) {
                     return null;
                   }
 
