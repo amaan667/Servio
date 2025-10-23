@@ -34,7 +34,7 @@ export function useQRCodeManagement(venueId: string) {
   const { toast } = useToast();
 
   useEffect(() => {
-    if (venueId) {
+    if (typeof window !== "undefined" && venueId) {
       loadTablesAndCounters();
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps

@@ -2,7 +2,7 @@
 
 import React from "react";
 import Link from "next/link";
-import { LucideIcon, Clock, ShoppingBag, QrCode, BarChart, Settings, ChefHat } from "lucide-react";
+import { LucideIcon, Clock, ShoppingBag, QrCode, BarChart, ChefHat } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
@@ -47,22 +47,13 @@ export function QuickActionsToolbar({ venueId, userRole }: QuickActionsToolbarPr
   ];
 
   if (userRole === "owner" || userRole === "manager") {
-    actions.push(
-      {
-        label: "Analytics",
-        href: `/dashboard/${venueId}/analytics`,
-        icon: BarChart,
-        description: "View insights",
-        color: "bg-indigo-600 hover:bg-indigo-700",
-      },
-      {
-        label: "Settings",
-        href: `/dashboard/${venueId}/settings`,
-        icon: Settings,
-        description: "Configure",
-        color: "bg-gray-600 hover:bg-gray-700",
-      }
-    );
+    actions.push({
+      label: "Analytics",
+      href: `/dashboard/${venueId}/analytics`,
+      icon: BarChart,
+      description: "View insights",
+      color: "bg-indigo-600 hover:bg-indigo-700",
+    });
   }
 
   if (userRole === "owner" || userRole === "manager" || userRole === "kitchen") {
