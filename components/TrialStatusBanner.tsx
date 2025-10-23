@@ -48,15 +48,33 @@ export default function TrialStatusBanner({ userRole }: TrialStatusBannerProps) 
         .maybeSingle();
 
       if (orgError) {
-        console.error("[TRIAL BANNER] Organization query error:", orgError);
-        // Don't show banner if we can't get organization data
-        setTrialStatus(null);
+        console.error("[TRIAL BANNER] Organization query error:", {
+          error: orgError,
+          message: orgError.message,
+          code: orgError.code,
+          details: orgError.details,
+        });
+        // Show a default trial status if query fails (better than nothing)
+        const userCreatedAt = new Date(user.created_at);
+        const trialEndsAt = new Date(userCreatedAt.getTime() + 14 * 24 * 60 * 60 * 1000);
+        const daysRemaining = Math.max(
+          0,
+          Math.floor((trialEndsAt.getTime() - Date.now()) / (1000 * 60 * 60 * 24))
+        );
+
+        setTrialStatus({
+          isTrialing: true,
+          subscriptionStatus: "trialing",
+          tier: "basic",
+          trialEndsAt: trialEndsAt.toISOString(),
+          daysRemaining,
+        });
         setLoading(false);
         return;
       }
 
       if (organization) {
-        console.info("[TRIAL BANNER] Organization data:", {
+        console.info("[TRIAL BANNER] ✅ Organization data loaded successfully:", {
           id: organization.id,
           subscription_status: organization.subscription_status,
           subscription_tier: organization.subscription_tier,
@@ -70,14 +88,40 @@ export default function TrialStatusBanner({ userRole }: TrialStatusBannerProps) 
           trial_ends_at: organization.trial_ends_at,
         });
       } else {
-        console.warn("[TRIAL BANNER] No organization found for user");
-        // Don't show banner if no organization exists
-        setTrialStatus(null);
+        console.warn("[TRIAL BANNER] No organization found, creating default trial status");
+        // Show default trial status based on user creation date
+        const userCreatedAt = new Date(user.created_at);
+        const trialEndsAt = new Date(userCreatedAt.getTime() + 14 * 24 * 60 * 60 * 1000);
+        const daysRemaining = Math.max(
+          0,
+          Math.floor((trialEndsAt.getTime() - Date.now()) / (1000 * 60 * 60 * 24))
+        );
+
+        setTrialStatus({
+          isTrialing: true,
+          subscriptionStatus: "trialing",
+          tier: "basic",
+          trialEndsAt: trialEndsAt.toISOString(),
+          daysRemaining,
+        });
       }
     } catch (error) {
       console.error("[TRIAL BANNER] Fetch error:", error);
-      // Don't show banner if we can't fetch organization data
-      setTrialStatus(null);
+      // Show default trial status as fallback
+      const userCreatedAt = new Date(user.created_at);
+      const trialEndsAt = new Date(userCreatedAt.getTime() + 14 * 24 * 60 * 60 * 1000);
+      const daysRemaining = Math.max(
+        0,
+        Math.floor((trialEndsAt.getTime() - Date.now()) / (1000 * 60 * 60 * 24))
+      );
+
+      setTrialStatus({
+        isTrialing: true,
+        subscriptionStatus: "trialing",
+        tier: "basic",
+        trialEndsAt: trialEndsAt.toISOString(),
+        daysRemaining,
+      });
     } finally {
       setLoading(false);
     }
