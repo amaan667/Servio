@@ -1,12 +1,10 @@
+"use client";
+
+import { use } from "react";
 import QRCodeClientPage from "./page.client";
 
-export default async function QRCodePage({ params }: { params: Promise<{ venueId: string }> }) {
-  const { venueId } = await params;
-
-  console.info("📍 [QR CODES PAGE] Page accessed:", {
-    venueId,
-    timestamp: new Date().toISOString(),
-  });
+export default function QRCodePage({ params }: { params: Promise<{ venueId: string }> }) {
+  const { venueId } = use(params);
 
   // Render fully client-side to handle auth and data loading properly
   return <QRCodeClientPage venueId={venueId} />;
