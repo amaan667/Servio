@@ -62,8 +62,34 @@ export function supabaseBrowser() {
       auth: {
         persistSession: true,
         detectSessionInUrl: true,
-        autoRefreshToken: true, // Enable auto-refresh - this is the proper way!
+        autoRefreshToken: true,
         storage: typeof window !== "undefined" ? window.localStorage : undefined,
+        storageKey: `sb-${getSupabaseUrl().split("//")[1].split(".")[0]}-auth-token`,
+        flowType: "pkce", // Use PKCE flow for better security
+      },
+      cookies: {
+        // Ensure cookies are also set for server-side access
+        get(name) {
+          if (typeof document === "undefined") return undefined;
+          const value = `; ${document.cookie}`;
+          const parts = value.split(`; ${name}=`);
+          if (parts.length === 2) return parts.pop()?.split(";").shift();
+          return undefined;
+        },
+        set(name, value, options) {
+          if (typeof document === "undefined") return;
+          let cookie = `${name}=${value}`;
+          if (options?.maxAge) cookie += `; max-age=${options.maxAge}`;
+          if (options?.path) cookie += `; path=${options.path}`;
+          if (options?.domain) cookie += `; domain=${options.domain}`;
+          if (options?.sameSite) cookie += `; samesite=${options.sameSite}`;
+          if (options?.secure) cookie += "; secure";
+          document.cookie = cookie;
+        },
+        remove(name, options) {
+          if (typeof document === "undefined") return;
+          this.set(name, "", { ...options, maxAge: 0 });
+        },
       },
     });
 

@@ -5,14 +5,14 @@ import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/com
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Alert, AlertDescription } from "@/components/ui/alert";
-import { 
-  CreditCard, 
-  ExternalLink, 
+import {
+  CreditCard,
+  ExternalLink,
   Crown,
   Sparkles,
   CheckCircle,
   AlertTriangle,
-  Loader2
+  Loader2,
 } from "lucide-react";
 import { UpgradeModal } from "@/components/upgrade-modal";
 
@@ -23,23 +23,24 @@ interface BillingSectionProps {
   };
   organization?: {
     id: string;
-    subscription_tier?: string;    stripe_customer_id?: string;
+    subscription_tier?: string;
+    stripe_customer_id?: string;
     subscription_status?: string;
     trial_ends_at?: string;
   };
 }
 
-export default function BillingSection({ user, organization }: BillingSectionProps) {
+export default function BillingSection({ organization }: BillingSectionProps) {
   const [showUpgradeModal, setShowUpgradeModal] = useState(false);
   const [loadingPortal, setLoadingPortal] = useState(false);
 
   const tier = organization?.subscription_tier || "basic";
   const hasStripeCustomer = !!organization?.stripe_customer_id;
+  const isGrandfathered = false; // Grandfathered accounts removed
 
   const handleManageBilling = async () => {
     setLoadingPortal(true);
     try {
-
       const response = await fetch("/api/stripe/create-portal-session", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
@@ -49,19 +50,17 @@ export default function BillingSection({ user, organization }: BillingSectionPro
       const data = await response.json();
 
       if (data.error) {
-
         alert(`Failed to open billing portal: ${data.error}`);
         return;
       }
 
       if (data.url) {
-
         window.location.href = data.url;
       } else {
-        alert('Failed to open billing portal - no URL received');
+        alert("Failed to open billing portal - no URL received");
       }
     } catch {
-      alert('Failed to open billing portal. Please try again.');
+      alert("Failed to open billing portal. Please try again.");
     } finally {
       setLoadingPortal(false);
     }
@@ -73,28 +72,28 @@ export default function BillingSection({ user, organization }: BillingSectionPro
       const response = await fetch("/api/stripe/downgrade-plan", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ 
-          organizationId: organization?.id, 
-          newTier: "basic" 
+        body: JSON.stringify({
+          organizationId: organization?.id,
+          newTier: "basic",
         }),
       });
 
       const data = await response.json();
 
       if (data.error) {
-
         alert(`Failed to switch to basic plan: ${data.error}`);
         return;
       }
 
       if (data.success) {
-        alert("Successfully switched to Basic plan! The change has been applied immediately and will be reflected in your billing portal.");
+        alert(
+          "Successfully switched to Basic plan! The change has been applied immediately and will be reflected in your billing portal."
+        );
         // Refresh the page to show updated plan
         window.location.reload();
       }
-    } catch (error) {
-
-      alert('Failed to switch to basic plan. Please try again.');
+    } catch {
+      alert("Failed to switch to basic plan. Please try again.");
     } finally {
       setLoadingPortal(false);
     }
@@ -108,10 +107,10 @@ export default function BillingSection({ user, organization }: BillingSectionPro
         color: "text-yellow-600",
         bgColor: "bg-yellow-50",
         borderColor: "border-yellow-200",
-        description: "Legacy account with unlimited access"
+        description: "Legacy account with unlimited access",
       };
     }
-    
+
     switch (tier) {
       case "standard":
         return {
@@ -120,7 +119,7 @@ export default function BillingSection({ user, organization }: BillingSectionPro
           color: "text-blue-600",
           bgColor: "bg-blue-50",
           borderColor: "border-blue-200",
-          description: "Most popular plan with advanced features"
+          description: "Most popular plan with advanced features",
         };
       case "premium":
         return {
@@ -129,7 +128,7 @@ export default function BillingSection({ user, organization }: BillingSectionPro
           color: "text-purple-600",
           bgColor: "bg-purple-50",
           borderColor: "border-purple-200",
-          description: "Enterprise plan with all features"
+          description: "Enterprise plan with all features",
         };
       default:
         return {
@@ -138,7 +137,7 @@ export default function BillingSection({ user, organization }: BillingSectionPro
           color: "text-gray-600",
           bgColor: "bg-gray-50",
           borderColor: "border-gray-200",
-          description: "Essential features for small businesses"
+          description: "Essential features for small businesses",
         };
     }
   };
@@ -161,10 +160,10 @@ export default function BillingSection({ user, organization }: BillingSectionPro
                 <CardDescription>{tierInfo.description}</CardDescription>
               </div>
             </div>
-            
+
             <div className="flex gap-2">
               {!isGrandfathered && tier !== "premium" && (
-                <Button 
+                <Button
                   onClick={() => setShowUpgradeModal(true)}
                   className="bg-gradient-to-r from-purple-600 to-pink-600 hover:from-purple-700 hover:to-pink-700"
                 >
@@ -173,7 +172,7 @@ export default function BillingSection({ user, organization }: BillingSectionPro
                 </Button>
               )}
               {!isGrandfathered && tier === "standard" && (
-                <Button 
+                <Button
                   variant="outline"
                   onClick={handleSwitchToBasic}
                   disabled={loadingPortal}
@@ -192,7 +191,6 @@ export default function BillingSection({ user, organization }: BillingSectionPro
             </div>
           </div>
         </CardHeader>
-
       </Card>
 
       {/* Billing Management */}
@@ -212,8 +210,10 @@ export default function BillingSection({ user, organization }: BillingSectionPro
               {organization?.subscription_status && (
                 <div className="flex items-center justify-between">
                   <span className="text-sm font-medium">Subscription Status</span>
-                  <Badge 
-                    variant={organization.subscription_status === "active" ? "default" : "secondary"}
+                  <Badge
+                    variant={
+                      organization.subscription_status === "active" ? "default" : "secondary"
+                    }
                     className={organization.subscription_status === "active" ? "bg-green-600" : ""}
                   >
                     {organization.subscription_status}
@@ -265,9 +265,7 @@ export default function BillingSection({ user, organization }: BillingSectionPro
               <AlertTriangle className="h-5 w-5 text-yellow-600" />
               Billing Account
             </CardTitle>
-            <CardDescription>
-              Set up billing to manage your subscription
-            </CardDescription>
+            <CardDescription>Set up billing to manage your subscription</CardDescription>
           </CardHeader>
           <CardContent>
             <Alert className="bg-yellow-50 border-yellow-200">
@@ -284,17 +282,11 @@ export default function BillingSection({ user, organization }: BillingSectionPro
       <Card>
         <CardHeader>
           <CardTitle>Plan Features</CardTitle>
-          <CardDescription>
-            Features available on your {tierInfo.name} plan
-          </CardDescription>
+          <CardDescription>Features available on your {tierInfo.name} plan</CardDescription>
         </CardHeader>
         <CardContent>
           <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
-            <FeatureItem
-              name="QR Ordering"
-              enabled={true}
-              tier="all"
-            />
+            <FeatureItem name="QR Ordering" enabled={true} tier="all" />
             <FeatureItem
               name="Kitchen Display System"
               enabled={tier === "standard" || tier === "premium" || isGrandfathered}
@@ -335,15 +327,7 @@ export default function BillingSection({ user, organization }: BillingSectionPro
   );
 }
 
-function FeatureItem({
-  name,
-  enabled,
-  tier,
-}: {
-  name: string;
-  enabled: boolean;
-  tier: string;
-}) {
+function FeatureItem({ name, enabled, tier }: { name: string; enabled: boolean; tier: string }) {
   return (
     <div className="flex items-center justify-between p-3 bg-gray-50 rounded-lg">
       <span className="text-sm font-medium">{name}</span>

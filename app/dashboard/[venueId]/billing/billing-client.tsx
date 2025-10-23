@@ -51,7 +51,7 @@ const TIER_LIMITS = {
   basic: { menuItems: 50, tables: 10, staff: 3, venues: 1 },
   standard: { menuItems: 200, tables: 20, staff: 10, venues: 1 },
   premium: { menuItems: -1, tables: -1, staff: -1, venues: -1 },
-  };
+};
 
 export default function BillingClient({ venueId }: BillingClientProps) {
   const [showUpgradeModal, setShowUpgradeModal] = useState(false);
@@ -59,7 +59,8 @@ export default function BillingClient({ venueId }: BillingClientProps) {
   const [loading, setLoading] = useState(true);
   const [organization, setOrganization] = useState<{
     id?: string;
-    subscription_tier?: string;    stripe_customer_id?: string;
+    subscription_tier?: string;
+    stripe_customer_id?: string;
     stripe_subscription_id?: string;
     subscription_status?: string;
     trial_ends_at?: string;
@@ -70,6 +71,9 @@ export default function BillingClient({ venueId }: BillingClientProps) {
     staff: 0,
     venues: 0,
   });
+
+  const tier = (organization?.subscription_tier as keyof typeof TIER_INFO) || "basic";
+  const isGrandfathered = false; // Grandfathered accounts removed
 
   useEffect(() => {
     const fetchBillingData = async () => {
@@ -99,7 +103,6 @@ export default function BillingClient({ venueId }: BillingClientProps) {
     fetchBillingData();
   }, [venueId]);
 
-  const tier = organization?.subscription_tier || "basic";
   const limits = TIER_LIMITS[tier as keyof typeof TIER_LIMITS] || TIER_LIMITS.basic;
   const tierInfo = TIER_INFO[tier as keyof typeof TIER_INFO] || TIER_INFO.basic;
   const TierIcon = tierInfo.icon;
@@ -193,11 +196,10 @@ export default function BillingClient({ venueId }: BillingClientProps) {
             </div>
           </div>
         </CardHeader>
-
       </Card>
 
       {/* Usage Statistics */}
-      {(
+      {
         <Card>
           <CardHeader>
             <CardTitle>Usage & Limits</CardTitle>
@@ -296,7 +298,7 @@ export default function BillingClient({ venueId }: BillingClientProps) {
             )}
           </CardContent>
         </Card>
-      )}
+      }
 
       {/* Subscription Details */}
       {!isGrandfathered && organization?.stripe_subscription_id && (
