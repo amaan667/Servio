@@ -2,18 +2,34 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 import { QrCode, Plus } from "lucide-react";
 
+interface TableItem {
+  id: string;
+  label: string;
+}
+
+interface CounterItem {
+  id: string;
+  name: string;
+}
+
 interface QRCodeGeneratorProps {
-  qrCodeType: 'tables' | 'counters' | 'custom';
-  onTypeChange: (type: 'tables' | 'counters' | 'custom') => void;
+  qrCodeType: "tables" | "counters" | "custom";
+  onTypeChange: (type: "tables" | "counters" | "custom") => void;
   inputName: string;
   onInputNameChange: (name: string) => void;
   onGenerate: () => void;
   onGenerateAll: () => void;
-  tables: unknown[];
-  counters: unknown[];
+  tables: TableItem[];
+  counters: CounterItem[];
 }
 
 export function QRCodeGenerator({
@@ -24,9 +40,9 @@ export function QRCodeGenerator({
   onGenerate,
   onGenerateAll,
   tables,
-  counters
+  counters,
 }: QRCodeGeneratorProps) {
-  const items = qrCodeType === 'tables' ? tables : counters;
+  const items = qrCodeType === "tables" ? tables : counters;
 
   return (
     <Card className="shadow-lg rounded-xl border-gray-200">
@@ -51,7 +67,7 @@ export function QRCodeGenerator({
           </Select>
         </div>
 
-        {qrCodeType === 'custom' ? (
+        {qrCodeType === "custom" ? (
           <div>
             <Label>Custom Name</Label>
             <Input
@@ -63,17 +79,28 @@ export function QRCodeGenerator({
           </div>
         ) : (
           <div>
-            <Label>Select {qrCodeType === 'tables' ? 'Table' : 'Counter'}</Label>
+            <Label>Select {qrCodeType === "tables" ? "Table" : "Counter"}</Label>
             <Select value={inputName} onValueChange={onInputNameChange}>
               <SelectTrigger className="rounded-lg mt-1">
-                <SelectValue placeholder={`Select a ${qrCodeType === 'tables' ? 'table' : 'counter'}`} />
+                <SelectValue
+                  placeholder={`Select a ${qrCodeType === "tables" ? "table" : "counter"}`}
+                />
               </SelectTrigger>
               <SelectContent>
-                {items.map((item) => (
-                  <SelectItem key={item.id} value={qrCodeType === 'tables' ? item.label : item.name}>
-                    {qrCodeType === 'tables' ? item.label : item.name}
-                  </SelectItem>
-                ))}
+                {items.map((item: TableItem | CounterItem) => {
+                  const key = item.id || String(Math.random());
+                  const displayValue =
+                    qrCodeType === "tables"
+                      ? "label" in item
+                        ? item.label
+                        : item.name
+                      : item.name;
+                  return (
+                    <SelectItem key={key} value={String(displayValue)}>
+                      {String(displayValue)}
+                    </SelectItem>
+                  );
+                })}
               </SelectContent>
             </Select>
           </div>
@@ -88,22 +115,18 @@ export function QRCodeGenerator({
             <Plus className="h-4 w-4 mr-2" />
             Generate QR Code
           </Button>
-          {qrCodeType !== 'custom' && (
-            <Button
-              variant="outline"
-              onClick={onGenerateAll}
-              disabled={items.length === 0}
-            >
+          {qrCodeType !== "custom" && (
+            <Button variant="outline" onClick={onGenerateAll} disabled={items.length === 0}>
               Generate All
             </Button>
           )}
         </div>
 
-        {qrCodeType === 'custom' && (
+        {qrCodeType === "custom" && (
           <div className="pt-4 border-t bg-blue-50 p-4 rounded-lg">
             <p className="text-sm text-blue-800">
-              <strong>Custom QR Codes:</strong> Generate QR codes for any name you want. 
-              Perfect for special events, promotions, or custom locations.
+              <strong>Custom QR Codes:</strong> Generate QR codes for any name you want. Perfect for
+              special events, promotions, or custom locations.
             </p>
           </div>
         )}
@@ -111,4 +134,3 @@ export function QRCodeGenerator({
     </Card>
   );
 }
-
