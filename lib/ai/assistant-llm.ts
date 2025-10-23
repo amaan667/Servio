@@ -1,4 +1,4 @@
-import { errorToContext } from '@/lib/utils/error-to-context';
+import { errorToContext } from "@/lib/utils/error-to-context";
 
 // Servio AI Assistant - LLM Service
 // Handles intent understanding, planning, and structured output generation
@@ -6,7 +6,7 @@ import { errorToContext } from '@/lib/utils/error-to-context';
 import OpenAI from "openai";
 import { zodResponseFormat } from "openai/helpers/zod";
 import { z } from "zod";
-import { aiLogger as logger } from '@/lib/logger';
+import { aiLogger as logger } from "@/lib/logger";
 import {
   AIAssistantContext,
   AIPlanResponse,
@@ -81,15 +81,24 @@ function selectModel(userPrompt: string, firstToolName?: ToolName): string {
 
   // Heuristic: Check prompt for complexity indicators
   const promptLower = userPrompt.toLowerCase();
-  
+
   // Complex: Multi-step, conditional, comparative operations
   const complexIndicators = [
-    "if", "but", "except", "compare", "analyze", 
-    "calculate", "optimize", "suggest", "recommend",
-    "except for", "as long as", "unless"
+    "if",
+    "but",
+    "except",
+    "compare",
+    "analyze",
+    "calculate",
+    "optimize",
+    "suggest",
+    "recommend",
+    "except for",
+    "as long as",
+    "unless",
   ];
-  
-  if (complexIndicators.some(indicator => promptLower.includes(indicator))) {
+
+  if (complexIndicators.some((indicator) => promptLower.includes(indicator))) {
     logger.debug(`[AI ASSISTANT] Using GPT-4o (full) - detected complex prompt`);
     return MODEL_FULL;
   }
@@ -173,12 +182,10 @@ ${Object.entries(DEFAULT_GUARDRAILS)
     const constraints = [];
     if (rules.maxPriceChangePercent)
       constraints.push(`max price change ±${rules.maxPriceChangePercent}%`);
-    if (rules.maxDiscountPercent)
-      constraints.push(`max discount ${rules.maxDiscountPercent}%`);
+    if (rules.maxDiscountPercent) constraints.push(`max discount ${rules.maxDiscountPercent}%`);
     if (rules.maxBulkOperationSize)
       constraints.push(`max ${rules.maxBulkOperationSize} items per call`);
-    if (rules.requiresManagerApproval)
-      constraints.push("requires manager approval");
+    if (rules.requiresManagerApproval) constraints.push("requires manager approval");
     return constraints.length > 0 ? `- ${tool}: ${constraints.join(", ")}` : "";
   })
   .filter(Boolean)
@@ -271,39 +278,49 @@ function canAnswerDirectly(
   }
 ): { canAnswer: boolean; answer?: string } {
   const prompt = userPrompt.toLowerCase().trim();
-  
+
   // Category count questions
-  if (prompt.includes('how many categories') || prompt.includes('number of categories')) {
+  if (prompt.includes("how many categories") || prompt.includes("number of categories")) {
     if (dataSummaries.menu?.categories) {
       const count = dataSummaries.menu.categories.length;
-      return { 
-        canAnswer: true, 
-        answer: `You have ${count} menu categories: ${dataSummaries.menu.categories.map(c => c.name).join(', ')}` 
+      return {
+        canAnswer: true,
+        answer: `You have ${count} menu categories: ${dataSummaries.menu.categories.map((c) => c.name).join(", ")}`,
       };
     }
   }
-  
+
   // Total menu items count
-  if (prompt.includes('how many menu items') || prompt.includes('total menu items') || prompt.includes('how many items')) {
+  if (
+    prompt.includes("how many menu items") ||
+    prompt.includes("total menu items") ||
+    prompt.includes("how many items")
+  ) {
     if (dataSummaries.menu?.totalItems !== undefined) {
-      return { 
-        canAnswer: true, 
-        answer: `You have ${dataSummaries.menu.totalItems} menu items total` 
+      return {
+        canAnswer: true,
+        answer: `You have ${dataSummaries.menu.totalItems} menu items total`,
       };
     }
   }
-  
+
   // Categories list
-  if (prompt.includes('what categories') || prompt.includes('list categories') || prompt.includes('categories')) {
+  if (
+    prompt.includes("what categories") ||
+    prompt.includes("list categories") ||
+    prompt.includes("categories")
+  ) {
     if (dataSummaries.menu?.categories && dataSummaries.menu.categories.length > 0) {
-      const categoriesList = dataSummaries.menu.categories.map(c => `- ${c.name} (${c.itemCount} items)`).join('\n');
-      return { 
-        canAnswer: true, 
-        answer: `Your menu categories:\n${categoriesList}` 
+      const categoriesList = dataSummaries.menu.categories
+        .map((c) => `- ${c.name} (${c.itemCount} items)`)
+        .join("\n");
+      return {
+        canAnswer: true,
+        answer: `Your menu categories:\n${categoriesList}`,
       };
     }
   }
-  
+
   return { canAnswer: false };
 }
 
@@ -325,7 +342,7 @@ export async function planAssistantAction(
       tools: [],
       reasoning: "This question can be answered directly from the available data summaries.",
       warnings: null,
-      directAnswer: directAnswer.answer
+      directAnswer: directAnswer.answer,
     };
   }
 
@@ -349,10 +366,10 @@ export async function planAssistantAction(
 
     // Get the message from completion
     const message = completion.choices[0].message;
-    
+
     // Try to get parsed response (available when using zodResponseFormat)
     const parsed = (message as unknown).parsed;
-    
+
     if (parsed) {
       // Response was successfully parsed and validated by zodResponseFormat
       return {
@@ -363,7 +380,7 @@ export async function planAssistantAction(
         modelUsed: selectedModel,
       };
     }
-    
+
     // Fallback: manually parse and validate content
     const content = message.content;
     if (content) {
@@ -377,17 +394,17 @@ export async function planAssistantAction(
         modelUsed: selectedModel,
       };
     }
-    
+
     throw new Error("Failed to parse AI response: no parsed or content available");
   } catch (error) {
     logger.error(`[AI ASSISTANT] Planning error with ${selectedModel}:`, errorToContext(error));
-    
+
     // If we used mini and got an error, try falling back to full model
     if (selectedModel === MODEL_MINI && !usedFallback) {
       logger.debug("[AI ASSISTANT] Falling back to GPT-4o (full) after mini failure");
       usedFallback = true;
       selectedModel = MODEL_FULL;
-      
+
       try {
         const completion = await getOpenAI().chat.completions.create({
           model: selectedModel,
@@ -401,7 +418,7 @@ export async function planAssistantAction(
 
         const message = completion.choices[0].message;
         const parsed = (message as unknown).parsed;
-        
+
         if (parsed) {
           return {
             intent: parsed.intent,
@@ -411,7 +428,7 @@ export async function planAssistantAction(
             modelUsed: `${selectedModel} (fallback)`,
           };
         }
-        
+
         const content = message.content;
         if (content) {
           const parsedContent = JSON.parse(content);
@@ -428,12 +445,15 @@ export async function planAssistantAction(
         logger.error("[AI ASSISTANT] Fallback to GPT-4o also failed:", fallbackError);
         // Re-throw the fallback error
         if (fallbackError instanceof z.ZodError) {
-          logger.error("[AI ASSISTANT] Zod validation errors:", JSON.stringify(fallbackError.errors, null, 2));
+          logger.error(
+            "[AI ASSISTANT] Zod validation errors:",
+            JSON.stringify(fallbackError.errors, null, 2)
+          );
         }
         throw fallbackError;
       }
     }
-    
+
     // If original error wasn't from mini, or fallback also failed
     if (error instanceof z.ZodError) {
       logger.error("[AI ASSISTANT] Zod validation errors:", JSON.stringify(error.errors, null, 2));
@@ -484,7 +504,7 @@ User Role: ${context.userRole}`;
 
 export async function generateSuggestions(
   pageContext: "menu" | "inventory" | "kds" | "orders" | "analytics",
-  dataSummary: any
+  dataSummary: Record<string, unknown>
 ): Promise<string[]> {
   const systemPrompt = `Generate 3-4 actionable suggestions for a ${pageContext} dashboard.
 Return ONLY a JSON array of strings. Each suggestion should be a natural language command.
@@ -541,12 +561,8 @@ export function calculateCost(
     outputCostPer1k = 0.01;
   }
 
-  return (
-    (inputTokens / 1000) * inputCostPer1k +
-    (outputTokens / 1000) * outputCostPer1k
-  );
+  return (inputTokens / 1000) * inputCostPer1k + (outputTokens / 1000) * outputCostPer1k;
 }
 
 // Export model constants for use in other modules
 export { MODEL_MINI, MODEL_FULL };
-

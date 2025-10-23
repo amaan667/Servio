@@ -3,8 +3,8 @@
  * Provides consistent response formatting across all API routes
  */
 
-import { NextResponse } from 'next/server';
-import { ZodError } from 'zod';
+import { NextResponse } from "next/server";
+import { ZodError } from "zod";
 
 /**
  * Standard API response wrapper
@@ -29,7 +29,7 @@ export function ok<T>(data: T, status = 200): NextResponse<ApiResponse<T>> {
 export function fail(
   error: string,
   status = 400,
-  details?: any
+  details?: Record<string, unknown> | string | unknown[]
 ): NextResponse<ApiResponse> {
   return NextResponse.json(
     {
@@ -46,7 +46,7 @@ export function fail(
  */
 export function validationError(
   error: string,
-  details?: any
+  details?: Record<string, unknown> | string | unknown[]
 ): NextResponse<ApiResponse> {
   return fail(error, 400, details);
 }
@@ -54,23 +54,21 @@ export function validationError(
 /**
  * Create an unauthorized response
  */
-export function unauthorized(
-  error = 'Unauthorized'
-): NextResponse<ApiResponse> {
+export function unauthorized(error = "Unauthorized"): NextResponse<ApiResponse> {
   return fail(error, 401);
 }
 
 /**
  * Create a forbidden response
  */
-export function forbidden(error = 'Forbidden'): NextResponse<ApiResponse> {
+export function forbidden(error = "Forbidden"): NextResponse<ApiResponse> {
   return fail(error, 403);
 }
 
 /**
  * Create a not found response
  */
-export function notFound(error = 'Not found'): NextResponse<ApiResponse> {
+export function notFound(error = "Not found"): NextResponse<ApiResponse> {
   return fail(error, 404);
 }
 
@@ -78,8 +76,8 @@ export function notFound(error = 'Not found'): NextResponse<ApiResponse> {
  * Create a server error response
  */
 export function serverError(
-  error = 'Internal server error',
-  details?: any
+  error = "Internal server error",
+  details?: Record<string, unknown> | string | unknown[]
 ): NextResponse<ApiResponse> {
   return fail(error, 500, details);
 }
@@ -87,9 +85,7 @@ export function serverError(
 /**
  * Create a rate limit response
  */
-export function rateLimited(
-  error = 'Rate limit exceeded'
-): NextResponse<ApiResponse> {
+export function rateLimited(error = "Rate limit exceeded"): NextResponse<ApiResponse> {
   return fail(error, 429);
 }
 
@@ -98,11 +94,11 @@ export function rateLimited(
  */
 export function handleZodError(error: ZodError): NextResponse<ApiResponse> {
   const details = error.errors.map((err) => ({
-    path: err.path.join('.'),
+    path: err.path.join("."),
     message: err.message,
   }));
 
-  return validationError('Validation failed', details);
+  return validationError("Validation failed", details);
 }
 
 /**
@@ -122,4 +118,3 @@ export function isErrorResponse(
 ): response is ApiResponse & { ok: false; error: string } {
   return response.ok === false && response.error !== undefined;
 }
-

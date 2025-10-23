@@ -1,10 +1,8 @@
-import { errorToContext } from '@/lib/utils/error-to-context';
-
 // Servio AI Assistant - Context Builders (RAG Layer)
 // Gathers and summarizes data for LLM planning
 
 import { createClient } from "@/lib/supabase";
-import { aiLogger } from '@/lib/logger';
+import { aiLogger } from "@/lib/logger";
 import {
   MenuSummary,
   InventorySummary,
@@ -73,10 +71,7 @@ export async function getAssistantContext(
 // Menu Summary Builder
 // ============================================================================
 
-export async function getMenuSummary(
-  venueId: string,
-  useCache = true
-): Promise<MenuSummary> {
+export async function getMenuSummary(venueId: string, useCache = true): Promise<MenuSummary> {
   const supabase = await createClient();
 
   // Check cache first
@@ -249,15 +244,10 @@ export async function getInventorySummary(
     }));
 
   // Find out of stock items
-  const outOfStock = ingredients
-    .filter((i) => i.on_hand <= 0)
-    .map((i) => i.name);
+  const outOfStock = ingredients.filter((i) => i.on_hand <= 0).map((i) => i.name);
 
   // Calculate total inventory value
-  const totalValue = ingredients.reduce(
-    (sum, i) => sum + i.on_hand * i.cost_per_unit,
-    0
-  );
+  const totalValue = ingredients.reduce((sum, i) => sum + i.on_hand * i.cost_per_unit, 0);
 
   const summary: InventorySummary = {
     totalIngredients: ingredients.length,
@@ -276,10 +266,7 @@ export async function getInventorySummary(
 // Orders Summary Builder
 // ============================================================================
 
-export async function getOrdersSummary(
-  venueId: string,
-  useCache = true
-): Promise<OrdersSummary> {
+export async function getOrdersSummary(venueId: string, useCache = true): Promise<OrdersSummary> {
   const supabase = await createClient();
 
   // Check cache
@@ -325,8 +312,7 @@ export async function getOrdersSummary(
       })
       .map((ticket: unknown) => {
         const startedAt = new Date(ticket.started_at);
-        const minutesOverdue =
-          (now.getTime() - startedAt.getTime()) / 1000 / 60 - 10;
+        const minutesOverdue = (now.getTime() - startedAt.getTime()) / 1000 / 60 - 10;
         return {
           id: ticket.id,
           orderId: ticket.order_id,
@@ -350,10 +336,7 @@ export async function getOrdersSummary(
     .not("completed_at", "is", null);
 
   // Group by station and calculate avg wait time
-  const stationStats = new Map<
-    string,
-    { totalTime: number; count: number }
-  >();
+  const stationStats = new Map<string, { totalTime: number; count: number }>();
 
   completedTickets?.forEach((ticket: unknown) => {
     const startedAt = new Date(ticket.started_at);
@@ -380,16 +363,9 @@ export async function getOrdersSummary(
     .slice(0, 5);
 
   // Calculate overall avg prep time
-  const totalPrepTime = Array.from(stationStats.values()).reduce(
-    (sum, s) => sum + s.totalTime,
-    0
-  );
-  const totalTickets = Array.from(stationStats.values()).reduce(
-    (sum, s) => sum + s.count,
-    0
-  );
-  const avgPrepTime =
-    totalTickets > 0 ? Number((totalPrepTime / totalTickets).toFixed(1)) : 0;
+  const totalPrepTime = Array.from(stationStats.values()).reduce((sum, s) => sum + s.totalTime, 0);
+  const totalTickets = Array.from(stationStats.values()).reduce((sum, s) => sum + s.count, 0);
+  const avgPrepTime = totalTickets > 0 ? Number((totalPrepTime / totalTickets).toFixed(1)) : 0;
 
   const summary: OrdersSummary = {
     liveOrders: liveOrders?.length || 0,
@@ -485,10 +461,7 @@ export async function getAnalyticsSummary(
 // Cache Helpers
 // ============================================================================
 
-async function getCachedContext(
-  venueId: string,
-  contextType: string
-): Promise<unknown | null> {
+async function getCachedContext(venueId: string, contextType: string): Promise<unknown | null> {
   const supabase = await createClient();
 
   const { data } = await supabase
@@ -511,24 +484,22 @@ async function getCachedContext(
 async function cacheContext(
   venueId: string,
   contextType: string,
-  contextData: any
+  contextData: Record<string, unknown>
 ): Promise<void> {
   const supabase = await createClient();
 
   const expiresAt = new Date();
   expiresAt.setSeconds(expiresAt.getSeconds() + CACHE_TTL);
 
-  await supabase
-    .from("ai_context_cache")
-    .upsert(
-      {
-        venue_id: venueId,
-        context_type: contextType,
-        context_data: contextData,
-        expires_at: expiresAt.toISOString(),
-      },
-      { onConflict: "venue_id,context_type" }
-    );
+  await supabase.from("ai_context_cache").upsert(
+    {
+      venue_id: venueId,
+      context_type: contextType,
+      context_data: contextData,
+      expires_at: expiresAt.toISOString(),
+    },
+    { onConflict: "venue_id,context_type" }
+  );
 }
 
 // ============================================================================
@@ -551,4 +522,3 @@ export async function getAllSummaries(venueId: string, features: unknown) {
 
   return summaries;
 }
-

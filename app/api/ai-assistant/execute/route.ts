@@ -5,7 +5,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { createClient } from "@/lib/supabase";
 import { executeTool } from "@/lib/ai/tool-executors";
 import { z } from "zod";
-import { logger } from '@/lib/logger';
+import { logger } from "@/lib/logger";
 import {
   ToolName,
   TOOL_SCHEMAS,
@@ -38,12 +38,11 @@ export async function POST(request: NextRequest) {
 
     // Parse request
     const body = await request.json();
-    const { venueId, toolName, params, preview } =
-      ExecuteRequestSchema.parse(body);
+    const { venueId, toolName, params, preview } = ExecuteRequestSchema.parse(body);
 
     // Verify user has access to venue
     let userRole = "owner"; // Default to owner for backward compatibility
-    
+
     try {
       const { data: roleData, error: roleError } = await supabase
         .from("user_venue_roles")
@@ -63,17 +62,16 @@ export async function POST(request: NextRequest) {
           .single();
 
         if (!venue || venue.owner_user_id !== user.id) {
-          return NextResponse.json(
-            { error: "Access denied to this venue" },
-            { status: 403 }
-          );
+          return NextResponse.json({ error: "Access denied to this venue" }, { status: 403 });
         }
         // User owns venue, allow access
       }
     } catch (tableError) {
       // Table doesn't exist - check if user owns venue
-      logger.debug("[AI ASSISTANT] user_venue_roles table check failed, checking venue ownership", { extra: { error: tableError instanceof Error ? tableError.message : 'Unknown error' } });
-      
+      logger.debug("[AI ASSISTANT] user_venue_roles table check failed, checking venue ownership", {
+        extra: { error: tableError instanceof Error ? tableError.message : "Unknown error" },
+      });
+
       const { data: venue } = await supabase
         .from("venues")
         .select("owner_user_id")
@@ -81,10 +79,7 @@ export async function POST(request: NextRequest) {
         .single();
 
       if (!venue || venue.owner_user_id !== user.id) {
-        return NextResponse.json(
-          { error: "Access denied to this venue" },
-          { status: 403 }
-        );
+        return NextResponse.json({ error: "Access denied to this venue" }, { status: 403 });
       }
       // User owns venue, allow access
     }
@@ -101,10 +96,7 @@ export async function POST(request: NextRequest) {
     // Validate params against schema
     const schema = TOOL_SCHEMAS[toolName as ToolName];
     if (!schema) {
-      return NextResponse.json(
-        { error: `Unknown tool: ${toolName}` },
-        { status: 400 }
-      );
+      return NextResponse.json({ error: `Unknown tool: ${toolName}` }, { status: 400 });
     }
 
     const validatedParams = schema.parse(params);
@@ -179,17 +171,20 @@ export async function POST(request: NextRequest) {
       executionTimeMs: executionTime,
     });
   } catch (error) {
-    logger.error("[AI ASSISTANT] Execution error:", { error: error instanceof Error ? error.message : 'Unknown error' });
+    logger.error("[AI ASSISTANT] Execution error:", {
+      error: error instanceof Error ? error.message : "Unknown error",
+    });
 
-    if ((error as any)?.name === "ZodError") {
+    // Handle Zod validation errors
+    if (error && typeof error === "object" && "name" in error && error.name === "ZodError") {
       return NextResponse.json(
-        { error: "Invalid parameters", details: (error as any)?.errors },
+        { error: "Invalid parameters", details: "errors" in error ? error.errors : [] },
         { status: 400 }
       );
     }
 
-    if ((error as any)?.code) {
-      // AIAssistantError
+    // Handle custom AIAssistantError
+    if (error && typeof error === "object" && "code" in error && error.code) {
       const statusMap: Record<string, number> = {
         UNAUTHORIZED: 403,
         INVALID_PARAMS: 400,
@@ -199,9 +194,18 @@ export async function POST(request: NextRequest) {
         TIER_RESTRICTED: 403,
       };
 
+      const errorCode =
+        typeof error === "object" && error && "code" in error ? String(error.code) : "UNKNOWN";
+      const errorMessage =
+        typeof error === "object" && error && "message" in error
+          ? String(error.message)
+          : "Execution failed";
+      const errorDetails =
+        typeof error === "object" && error && "details" in error ? error.details : undefined;
+
       return NextResponse.json(
-        { error: (error as any)?.message, code: (error as any)?.code, details: (error as any)?.details },
-        { status: statusMap[(error as any)?.code] || 500 }
+        { error: errorMessage, code: errorCode, details: errorDetails },
+        { status: statusMap[errorCode] || 500 }
       );
     }
 
@@ -211,4 +215,3 @@ export async function POST(request: NextRequest) {
     );
   }
 }
-

@@ -7,28 +7,25 @@ export async function POST(req: NextRequest) {
 
     // Save menu items to Supabase using service role key
     if (body.items && Array.isArray(body.items) && body.venue_id) {
-          const supabase = await createClient();
+      const supabase = await createClient();
       // Attach venue_id to each item if not present
       const itemsToInsert = body.items.map((item: Record<string, unknown>) => ({
-        ...(item as any),
+        ...item,
         venue_id: body.venue_id,
-        is_available: (item as any).available !== false, // default to true
+        is_available: (item.available as boolean | undefined) !== false, // default to true
       }));
-              const { error } = await supabase.from("menu_items").insert(itemsToInsert);
+      const { error } = await supabase.from("menu_items").insert(itemsToInsert);
       if (error) {
         return NextResponse.json({ error: error.message }, { status: 400 });
       }
       return NextResponse.json({ success: true });
     }
 
-    return NextResponse.json(
-      { error: "Missing items or venue_id" },
-      { status: 400 },
-    );
+    return NextResponse.json({ error: "Missing items or venue_id" }, { status: 400 });
   } catch (err) {
     return NextResponse.json(
       { error: err instanceof Error ? err.message : "Failed to save menu." },
-      { status: 500 },
+      { status: 500 }
     );
   }
 }
