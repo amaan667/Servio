@@ -11,13 +11,28 @@ import { useRouter, usePathname } from "next/navigation";
 
 export default function GlobalNav() {
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
-  const [primaryVenueId, setPrimaryVenueId] = useState<string | null>(null);
-  const [userRole, setUserRole] = useState<string | null>(null);
-  // Use our central auth context instead of local state
   const { session, loading, signOut } = useAuth();
   const router = useRouter();
   const pathname = usePathname();
   const supabase = createClient();
+
+  // Initialize with cached data SYNCHRONOUSLY for instant render
+  const getCachedData = () => {
+    if (typeof window === "undefined" || !session?.user?.id) {
+      return { primaryVenueId: null, userRole: null };
+    }
+    const cachedRole = sessionStorage.getItem(`user_role_${session.user.id}`);
+    const cachedVenueId = sessionStorage.getItem(`venue_id_${session.user.id}`);
+    return {
+      primaryVenueId: cachedVenueId,
+      userRole: cachedRole,
+    };
+  };
+
+  const [primaryVenueId, setPrimaryVenueId] = useState<string | null>(
+    getCachedData().primaryVenueId
+  );
+  const [userRole, setUserRole] = useState<string | null>(getCachedData().userRole);
 
   // Prefer NOT flashing the unauthenticated header. Treat the user as
   // potentially authenticated while loading and only show public actions
@@ -61,25 +76,20 @@ export default function GlobalNav() {
   const venueId = pathname?.match(/\/dashboard\/([^/]+)/)?.[1];
 
   // Fetch primary venue and user role when user is signed in
-  // Initialize with cached data immediately for instant render
   useEffect(() => {
     const fetchUserData = async () => {
       if (isAuthenticated && session?.user?.id) {
         try {
-          // Check cache first and set immediately
+          // Check if we already have cached data (set in useState initialization)
           const cachedRole = sessionStorage.getItem(`user_role_${session.user.id}`);
           const cachedVenueId = sessionStorage.getItem(`venue_id_${session.user.id}`);
 
           if (cachedRole && cachedVenueId) {
-            setUserRole(cachedRole);
-            setPrimaryVenueId(cachedVenueId);
-            return; // Use cached data, no need to fetch
+            // Already set in useState, no need to fetch
+            return;
           }
 
-          // If no cache, assume owner temporarily for instant render, then update
-          setUserRole("owner");
-
-          // Fetch both in parallel for faster loading
+          // No cache - fetch role data
           const [venueResult, staffResult] = await Promise.all([
             supabase
               .from("venues")
@@ -108,9 +118,8 @@ export default function GlobalNav() {
             sessionStorage.setItem(`user_role_${session.user.id}`, staffResult.data.role);
             sessionStorage.setItem(`venue_id_${session.user.id}`, staffResult.data.venue_id);
           }
-        } catch {
-          // On error, default to owner to show all options
-          setUserRole("owner");
+        } catch (error) {
+          console.error("Error fetching user data:", error);
         }
       } else {
         setPrimaryVenueId(null);
