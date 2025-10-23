@@ -63,11 +63,19 @@ export default function TrialStatusBanner({ userRole }: TrialStatusBannerProps) 
       const { organization } = await ensureOrgResponse.json();
 
       if (organization) {
+        console.info("[TRIAL BANNER] Organization data:", {
+          subscription_status: organization.subscription_status,
+          subscription_tier: organization.subscription_tier,
+          trial_ends_at: organization.trial_ends_at,
+        });
+
         processTrialStatus({
           subscription_status: organization.subscription_status,
           subscription_tier: organization.subscription_tier,
           trial_ends_at: organization.trial_ends_at,
         });
+      } else {
+        console.info("[TRIAL BANNER] No organization data received");
       }
     } catch {
       // Silent error handling
@@ -81,6 +89,12 @@ export default function TrialStatusBanner({ userRole }: TrialStatusBannerProps) 
     const tier = org.subscription_tier || "basic";
     const trialEndsAt = org.trial_ends_at;
 
+    console.info("[TRIAL BANNER] Processing trial status:", {
+      subscriptionStatus,
+      tier,
+      trialEndsAt,
+    });
+
     // Check if trial has expired
     let isTrialing = false;
     let daysRemaining = null;
@@ -89,6 +103,12 @@ export default function TrialStatusBanner({ userRole }: TrialStatusBannerProps) 
       const endDate = new Date(trialEndsAt);
       const now = new Date();
 
+      console.info("[TRIAL BANNER] Date calculation:", {
+        trialEndsAt,
+        endDate: endDate.toISOString(),
+        now: now.toISOString(),
+      });
+
       // Set both dates to start of day for accurate day counting
       const endDateStart = new Date(endDate.getFullYear(), endDate.getMonth(), endDate.getDate());
       const nowStart = new Date(now.getFullYear(), now.getMonth(), now.getDate());
@@ -96,9 +116,24 @@ export default function TrialStatusBanner({ userRole }: TrialStatusBannerProps) 
       const diffTime = endDateStart.getTime() - nowStart.getTime();
       daysRemaining = Math.floor(diffTime / (1000 * 60 * 60 * 24));
 
+      console.info("[TRIAL BANNER] Days calculation:", {
+        endDateStart: endDateStart.toISOString(),
+        nowStart: nowStart.toISOString(),
+        diffTime,
+        daysRemaining,
+      });
+
       // Trial is active if we have days remaining and status is trialing
       isTrialing = subscriptionStatus === "trialing" && daysRemaining > 0;
     }
+
+    console.info("[TRIAL BANNER] Final status:", {
+      isTrialing,
+      subscriptionStatus,
+      tier,
+      trialEndsAt,
+      daysRemaining,
+    });
 
     setTrialStatus({
       isTrialing,

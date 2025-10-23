@@ -46,33 +46,34 @@ class ConnectionMonitor {
 
   private async checkConnectionQuality() {
     try {
+      // First check if we're online using navigator.onLine
+      if (!navigator.onLine) {
+        this.updateState({
+          isOnline: false,
+          isSlowConnection: false,
+          lastChecked: new Date(),
+        });
+        return;
+      }
+
       const startTime = Date.now();
 
       // Try to fetch a small resource to test connection quality
       const response = await fetch("/api/auth/health", {
         method: "GET",
         cache: "no-cache",
-        signal: AbortSignal.timeout(5000), // 5 second timeout
+        signal: AbortSignal.timeout(3000), // 3 second timeout
       });
 
       const responseTime = Date.now() - startTime;
-      const isSlowConnection = responseTime > 3000; // Consider slow if > 3 seconds
+      const isSlowConnection = responseTime > 2000; // Consider slow if > 2 seconds
 
-      // Only update if we get a successful response
-      if (response.ok) {
-        this.updateState({
-          isOnline: true,
-          isSlowConnection,
-          lastChecked: new Date(),
-        });
-      } else {
-        // If API fails, check navigator.onLine as fallback
-        this.updateState({
-          isOnline: navigator.onLine,
-          isSlowConnection: false,
-          lastChecked: new Date(),
-        });
-      }
+      // Update state based on response
+      this.updateState({
+        isOnline: response.ok,
+        isSlowConnection,
+        lastChecked: new Date(),
+      });
     } catch (error) {
       logger.warn("[CONNECTION] Connection check failed:", errorToContext(error));
       // Fallback to navigator.onLine
