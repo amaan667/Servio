@@ -70,13 +70,31 @@ export async function POST() {
       );
     }
 
-    // Check if user already has an organization (by owner_user_id)
+    // Check if user already has an organization (by created_by or owner_user_id)
     logger.debug("[ORG ENSURE] Checking for existing organization for user:", user.id);
-    const { data: existingOrg, error: orgCheckError } = await adminClient
+
+    // First try owner_user_id (if column exists)
+    let { data: existingOrg, error: orgCheckError } = await adminClient
       .from("organizations")
-      .select("id, subscription_tier, subscription_status, trial_ends_at, owner_user_id")
+      .select(
+        "id, subscription_tier, subscription_status, trial_ends_at, created_by, owner_user_id"
+      )
       .eq("owner_user_id", user.id)
       .maybeSingle();
+
+    // If not found, try created_by (actual database column)
+    if (!existingOrg && !orgCheckError) {
+      const result = await adminClient
+        .from("organizations")
+        .select(
+          "id, subscription_tier, subscription_status, trial_ends_at, created_by, owner_user_id"
+        )
+        .eq("created_by", user.id)
+        .maybeSingle();
+
+      existingOrg = result.data;
+      orgCheckError = result.error;
+    }
 
     if (orgCheckError) {
       logger.error("[ORG ENSURE] Error checking existing org:", orgCheckError);
@@ -112,14 +130,19 @@ export async function POST() {
     const { data: newOrg, error: createError } = await adminClient
       .from("organizations")
       .insert({
-        owner_user_id: user.id, // Set owner_user_id for proper organization ownership
+        name: `${user.email?.split("@")[0] || "User"}'s Organization`,
+        slug: `org-${user.id.slice(0, 8)}-${Date.now()}`,
+        created_by: user.id, // Required column
+        owner_user_id: user.id, // Also set for compatibility
         subscription_tier: "basic",
         subscription_status: "trialing",
         trial_ends_at: trialEndsAt.toISOString(),
         created_at: new Date().toISOString(),
         updated_at: new Date().toISOString(),
       })
-      .select("id, subscription_tier, subscription_status, trial_ends_at, owner_user_id")
+      .select(
+        "id, subscription_tier, subscription_status, trial_ends_at, created_by, owner_user_id"
+      )
       .single();
 
     if (createError) {

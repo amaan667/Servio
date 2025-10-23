@@ -126,12 +126,20 @@ export interface FeedbackResponse {
 
 export interface Organization {
   id: string;
-  owner_user_id: string;
+  name: string;
+  slug: string;
+  created_by: string; // The actual column name in database (user who created org)
+  owner_user_id?: string; // Added column for compatibility
   stripe_customer_id?: string | null;
   stripe_subscription_id?: string | null;
   subscription_tier?: string;
   subscription_status?: string;
   trial_ends_at?: string | null;
+  billing_email?: string;
+  is_grandfathered?: boolean;
+  subscription_plan?: string;
+  subscription_current_period_start?: string;
+  subscription_current_period_end?: string;
   created_at?: string;
   updated_at?: string;
 }
