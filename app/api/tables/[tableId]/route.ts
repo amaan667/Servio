@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
-import { authenticateRequest } from "@/lib/api-auth";
+import { authenticateRequest, verifyVenueAccess } from "@/lib/api-auth";
+import { createAdminClient } from "@/lib/supabase";
 import { logger } from "@/lib/logger";
 
 export async function PUT(req: NextRequest, context: { params: Promise<{ tableId: string }> }) {
@@ -57,11 +58,11 @@ export async function DELETE(req: NextRequest, context: { params: Promise<{ tabl
 
     // Authenticate using Authorization header
     const auth = await authenticateRequest(req);
-    if (!auth.success || !auth.supabase) {
+    if (!auth.success || !auth.supabase || !auth.user) {
       return NextResponse.json({ error: auth.error || "Unauthorized" }, { status: 401 });
     }
 
-    const { supabase } = auth;
+    const { supabase, user } = auth;
 
     // First check if table exists
     const { data: existingTable, error: checkError } = await supabase
@@ -73,6 +74,15 @@ export async function DELETE(req: NextRequest, context: { params: Promise<{ tabl
     if (checkError) {
       logger.error("[TABLES API] Error checking table existence:", { value: checkError });
       return NextResponse.json({ error: "Table not found" }, { status: 404 });
+    }
+
+    // Verify venue ownership
+    const access = await verifyVenueAccess(supabase, user.id, existingTable.venue_id);
+    if (!access.hasAccess) {
+      return NextResponse.json(
+        { error: "Forbidden - you don't have access to this venue" },
+        { status: 403 }
+      );
     }
 
     // Check if the table has unknown active orders
@@ -237,8 +247,9 @@ export async function DELETE(req: NextRequest, context: { params: Promise<{ tabl
       );
     }
 
-    // Finally, delete the table itself
-    const { error } = await supabase
+    // Finally, delete the table itself using admin client to bypass RLS
+    const adminSupabase = createAdminClient();
+    const { error } = await adminSupabase
       .from("tables")
       .delete()
       .eq("id", tableId)
