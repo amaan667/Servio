@@ -1,67 +1,82 @@
-export const runtime = 'nodejs';
+export const runtime = "nodejs";
 
-import { NextResponse } from 'next/server';
-import { createServerSupabase } from '@/lib/supabase';
+import { NextResponse } from "next/server";
+import { authenticateRequest, verifyVenueAccess } from "@/lib/api-auth";
 
 type OrderRow = {
   id: string;
   venue_id: string;
   table_number: number | null;
   customer_name: string | null;
-  items: unknown[];                    // jsonb[]
+  items: unknown[]; // jsonb[]
   total_amount: number;
-  created_at: string;              // timestamptz
-  order_status: 'pending' | 'preparing' | 'served' | 'delivered' | 'cancelled';
-  payment_status: 'paid' | 'unpaid' | null;
+  created_at: string; // timestamptz
+  order_status: "pending" | "preparing" | "served" | "delivered" | "cancelled";
+  payment_status: "paid" | "unpaid" | null;
 };
 
 export async function GET(req: Request) {
   try {
     const url = new URL(req.url);
-    const venueId = url.searchParams.get('venueId');
+    const venueId = url.searchParams.get("venueId");
     // scope: 'live' (last 30 minutes) | 'earlier' (today but more than 30 min ago) | 'history' (yesterday and earlier)
-    const scope = (url.searchParams.get('scope') || 'live') as 'live' | 'earlier' | 'history';
+    const scope = (url.searchParams.get("scope") || "live") as "live" | "earlier" | "history";
 
     if (!venueId) {
-      return NextResponse.json({ ok: false, error: 'venueId required' }, { status: 400 });
+      return NextResponse.json({ ok: false, error: "venueId required" }, { status: 400 });
     }
 
-    // SSR supabase client (uses user cookies for RLS)
-    const supabase = await createServerSupabase();
+    // Authenticate using Authorization header
+    const auth = await authenticateRequest(req);
+    if (!auth.success || !auth.user || !auth.supabase) {
+      return NextResponse.json({ ok: false, error: auth.error }, { status: 401 });
+    }
+
+    const { user, supabase } = auth;
+
+    // Verify venue access
+    const access = await verifyVenueAccess(supabase, user.id, venueId);
+    if (!access.hasAccess) {
+      return NextResponse.json({ ok: false, error: "Access denied" }, { status: 403 });
+    }
 
     // Use default timezone since venues table doesn't have timezone column
-    const zone = 'Europe/London';
+    const zone = "Europe/London";
 
     // base query: always sort by created_at DESC  ✅ (Requirement #2)
     let q = supabase
-      .from('orders')
-      .select(`
+      .from("orders")
+      .select(
+        `
         id, venue_id, table_number, table_id, customer_name, items, total_amount, created_at, order_status, payment_status, source,
         tables!left (
           id,
           label,
           area
         )
-      `)
-      .eq('venue_id', venueId)
-      .in('payment_status', ['PAID', 'UNPAID']) // Show both paid and unpaid orders
-      .order('created_at', { ascending: false });
+      `
+      )
+      .eq("venue_id", venueId)
+      .in("payment_status", ["PAID", "UNPAID"]) // Show both paid and unpaid orders
+      .order("created_at", { ascending: false });
 
-    if (scope === 'live') {
+    if (scope === "live") {
       // Live orders: last 30 minutes only
       const thirtyMinutesAgo = new Date(Date.now() - 30 * 60 * 1000);
-      q = q.gte('created_at', thirtyMinutesAgo.toISOString());
-    } else if (scope === 'earlier') {
+      q = q.gte("created_at", thirtyMinutesAgo.toISOString());
+    } else if (scope === "earlier") {
       // Earlier today: orders from today but more than 30 minutes ago
       const todayStart = new Date();
       todayStart.setHours(0, 0, 0, 0);
       const thirtyMinutesAgo = new Date(Date.now() - 30 * 60 * 1000);
-      q = q.gte('created_at', todayStart.toISOString()).lt('created_at', thirtyMinutesAgo.toISOString());
-    } else if (scope === 'history') {
+      q = q
+        .gte("created_at", todayStart.toISOString())
+        .lt("created_at", thirtyMinutesAgo.toISOString());
+    } else if (scope === "history") {
       // History: orders from yesterday and earlier
       const todayStart = new Date();
       todayStart.setHours(0, 0, 0, 0);
-      q = q.lt('created_at', todayStart.toISOString()).limit(500);
+      q = q.lt("created_at", todayStart.toISOString()).limit(500);
     }
 
     const { data, error } = await q;
@@ -70,10 +85,15 @@ export async function GET(req: Request) {
     }
 
     // Transform orders to include table_label
-    const transformedOrders = data?.map(order => ({
-      ...order,
-      table_label: (order.tables as any)?.label || (order.source === 'counter' ? `Counter ${order.table_number}` : `Table ${order.table_number}`)
-    })) || [];
+    const transformedOrders =
+      data?.map((order) => ({
+        ...order,
+        table_label:
+          (order.tables as { label?: string } | null)?.label ||
+          (order.source === "counter"
+            ? `Counter ${order.table_number}`
+            : `Table ${order.table_number}`),
+      })) || [];
 
     // Detailed logging for Railway deployment monitoring (disabled for performance)
     // if (data && data.length > 0) {
@@ -87,14 +107,14 @@ export async function GET(req: Request) {
     //     else acc['>24hrs'] = (acc['>24hrs'] || 0) + 1;
     //     return acc;
     //   }, {} as Record<string, number>);
-    //   
-    //   
+    //
+    //
     //   // Status distribution
     //   const statusDistribution = data.reduce((acc, order) => {
     //     acc[order.order_status] = (acc[order.order_status] || 0) + 1;
     //     return acc;
     //   }, {} as Record<string, number>);
-    //   
+    //
     // }
 
     return NextResponse.json({
@@ -103,6 +123,9 @@ export async function GET(req: Request) {
       orders: (transformedOrders || []) as OrderRow[],
     });
   } catch (e) {
-    return NextResponse.json({ ok: false, error: e instanceof Error ? e.message : 'Unknown error' }, { status: 500 });
+    return NextResponse.json(
+      { ok: false, error: e instanceof Error ? e.message : "Unknown error" },
+      { status: 500 }
+    );
   }
 }
