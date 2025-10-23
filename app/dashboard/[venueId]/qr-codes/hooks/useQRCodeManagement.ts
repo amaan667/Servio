@@ -102,13 +102,15 @@ export function useQRCodeManagement(venueId: string) {
     setGeneratedQRs((prev) => {
       const exists = prev.find((qr) => qr.name === name && qr.type === type);
       if (exists) {
-        toast({
-          title: "QR Code Already Generated",
-          description: `A QR code for ${name} already exists.`,
-        });
+        // Silently ignore duplicates
         return prev;
       }
       return [...prev, newQR];
+    });
+
+    toast({
+      title: "QR Code Generated",
+      description: `Created QR code for ${name}`,
     });
   };
 

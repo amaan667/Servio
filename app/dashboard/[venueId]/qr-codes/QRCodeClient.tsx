@@ -1,8 +1,11 @@
 "use client";
 
-import React, { useState, useEffect } from "react";
+import React, { useState } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { Copy, Download, Printer, Trash2, QrCode, Grid3x3, FileJson } from "lucide-react";
 import {
   Select,
   SelectContent,
@@ -10,23 +13,16 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { Label } from "@/components/ui/label";
-import { Trash2, Printer, QrCode } from "lucide-react";
-
-// Hooks
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogHeader,
+  DialogTitle,
+  DialogTrigger,
+} from "@/components/ui/dialog";
 import { useQRCodeManagement } from "./hooks/useQRCodeManagement";
-
-// Components
-import { QRCodeCard } from "./components/QRCodeCard";
-import { QRCodeGenerator } from "./components/QRCodeGenerator";
-
-/**
- * QR Code Client Component
- * Manages QR code generation for tables and counters
- *
- * Refactored: Extracted hooks and components for better organization
- * Original: 795 lines → Now: ~150 lines
- */
+import { QRCodeCanvas } from "./components/QRCodeCanvas";
 
 export default function QRCodeClient({
   venueId,
@@ -35,75 +31,89 @@ export default function QRCodeClient({
   venueId: string;
   venueName: string;
 }) {
-  const [qrCodeSize, setQrCodeSize] = useState("medium");
-  const [includeVenueInfo] = useState(true);
-  const [includeInstructions] = useState(true);
+  const [qrType, setQrType] = useState<"table" | "counter">("table");
+  const [singleName, setSingleName] = useState("");
+  const [bulkCount, setBulkCount] = useState("10");
+  const [bulkPrefix, setBulkPrefix] = useState("");
+  const [showBulkDialog, setShowBulkDialog] = useState(false);
 
   const qrManagement = useQRCodeManagement(venueId);
 
-  // No loading spinner - render content immediately with empty state
-
-  // Auto-generate QR code if table parameter is present
-  useEffect(() => {
-    if (typeof window === "undefined") return;
-
-    if (qrManagement.tables.length > 0) {
-      const urlParams = new URLSearchParams(window.location.search);
-      const tableName = urlParams.get("table");
-
-      if (tableName) {
-        const existingQR = qrManagement.generatedQRs.find((qr) => qr.name === tableName);
-        if (!existingQR) {
-          qrManagement.generateQRForName(tableName);
-        }
-      }
-    }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [qrManagement.tables.length]);
-
-  const getSizeValue = () => {
-    switch (qrCodeSize) {
-      case "small":
-        return 200;
-      case "medium":
-        return 300;
-      case "large":
-        return 400;
-      default:
-        return 300;
-    }
+  // Generate single QR code
+  const handleGenerateSingle = () => {
+    if (!singleName.trim()) return;
+    qrManagement.generateQRForName(singleName.trim(), qrType);
+    setSingleName("");
   };
 
-  const printAllQRs = () => {
+  // Generate multiple QR codes
+  const handleGenerateBulk = () => {
+    const count = parseInt(bulkCount) || 0;
+    if (count < 1 || count > 100) {
+      alert("Please enter a number between 1 and 100");
+      return;
+    }
+
+    const prefix = bulkPrefix.trim() || (qrType === "table" ? "Table" : "Counter");
+
+    for (let i = 1; i <= count; i++) {
+      qrManagement.generateQRForName(`${prefix} ${i}`, qrType);
+    }
+
+    setShowBulkDialog(false);
+    setBulkCount("10");
+    setBulkPrefix("");
+  };
+
+  // Copy all URLs as JSON
+  const copyAllAsJSON = () => {
+    const urls = qrManagement.generatedQRs.map((qr) => ({
+      name: qr.name,
+      type: qr.type,
+      url: qr.url,
+    }));
+    navigator.clipboard.writeText(JSON.stringify(urls, null, 2));
+    alert("All URLs copied as JSON!");
+  };
+
+  // Download all as PDF (4 per page)
+  const downloadAllAsPDF = async () => {
     const printWindow = window.open("", "_blank");
     if (!printWindow) return;
 
-    const qrCards = qrManagement.generatedQRs
-      .map((qr) => {
-        const qrUrl = qr.url;
-        return `
-        <div style="page-break-after: always; padding: 20px; text-align: center;">
-          ${includeVenueInfo ? `<h2 style="margin-bottom: 10px;">${venueName}</h2>` : ""}
-          <h3 style="margin-bottom: 20px; text-transform: capitalize;">${qr.type}: ${qr.name}</h3>
-          <img src="${qrUrl}" alt="QR Code" style="width: 400px; height: 400px; border: 2px solid #000;" />
-          ${
-            includeInstructions
-              ? `
-            <div style="margin-top: 20px; padding: 20px; background: #f5f5f5; border-radius: 8px;">
-              <h4 style="margin-bottom: 10px;">How to Order:</h4>
-              <ol style="text-align: left; display: inline-block;">
-                <li>Scan the QR code with your phone camera</li>
-                <li>Browse the menu and add items to your cart</li>
-                <li>Complete your order at checkout</li>
-              </ol>
+    const qrCodes = qrManagement.generatedQRs;
+    const pages: string[] = [];
+
+    // Group QR codes into pages of 4
+    for (let i = 0; i < qrCodes.length; i += 4) {
+      const pageQRs = qrCodes.slice(i, i + 4);
+      const qrCards = await Promise.all(
+        pageQRs.map(async (qr) => {
+          const QRCode = await import("qrcode");
+          const dataUrl = await QRCode.toDataURL(qr.url, {
+            width: 300,
+            margin: 2,
+          });
+
+          return `
+            <div style="width: 48%; display: inline-block; padding: 15px; text-align: center; vertical-align: top; margin: 1%;">
+              <h3 style="margin-bottom: 10px; font-size: 16px; font-weight: bold;">${qr.name}</h3>
+              <img src="${dataUrl}" alt="${qr.name}" style="width: 100%; max-width: 250px; border: 2px solid #000;" />
+              <p style="margin-top: 8px; font-size: 12px; color: #666;">${venueName}</p>
             </div>
-          `
-              : ""
-          }
+          `;
+        })
+      );
+
+      pages.push(`
+        <div style="page-break-after: always; padding: 20px;">
+          <h2 style="text-align: center; margin-bottom: 20px;">${venueName} - QR Codes (Page ${Math.floor(i / 4) + 1})</h2>
+          <div style="display: flex; flex-wrap: wrap; justify-content: center;">
+            ${qrCards.join("")}
+          </div>
         </div>
-      `;
-      })
-      .join("");
+      `);
+    }
 
     printWindow.document.write(`
       <!DOCTYPE html>
@@ -111,76 +121,117 @@ export default function QRCodeClient({
         <head>
           <title>QR Codes - ${venueName}</title>
           <style>
+            @page { size: A4; margin: 0.5cm; }
+            body { margin: 0; font-family: Arial, sans-serif; }
             @media print {
-              body { margin: 0; }
               .page-break { page-break-after: always; }
             }
           </style>
         </head>
         <body>
-          ${qrCards}
+          ${pages.join("")}
         </body>
       </html>
     `);
     printWindow.document.close();
     printWindow.focus();
-    printWindow.print();
+
+    // Trigger print dialog (user can save as PDF)
+    setTimeout(() => printWindow.print(), 250);
   };
 
-  if (qrManagement.loading) {
-    return (
-      <div className="flex items-center justify-center py-12">
-        <div className="text-center">
-          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-purple-600 mx-auto"></div>
-          <p className="mt-4 text-gray-600">Loading tables and counters...</p>
-        </div>
-      </div>
-    );
-  }
-
-  // Always show QR code generator - users can create QR codes for any name
+  // Print all (4 per page)
+  const printAll = downloadAllAsPDF; // Same function, just opens print dialog
 
   return (
     <div className="space-y-6 pb-32 md:pb-8">
-      {/* Generator */}
-      <QRCodeGenerator
-        qrCodeType={qrManagement.qrCodeType}
-        onTypeChange={qrManagement.setQrCodeType}
-        inputName={qrManagement.inputName}
-        onInputNameChange={qrManagement.setInputName}
-        onGenerate={() =>
-          qrManagement.generateQRForName(
-            qrManagement.inputName,
-            qrManagement.qrCodeType === "tables"
-              ? "table"
-              : qrManagement.qrCodeType === "counters"
-                ? "counter"
-                : "custom"
-          )
-        }
-        onGenerateAll={qrManagement.generateQRForAll}
-        tables={qrManagement.tables}
-        counters={qrManagement.counters}
-      />
-
-      {/* Display Options */}
+      {/* Generator Card */}
       <Card className="shadow-lg rounded-xl border-gray-200">
         <CardHeader>
-          <CardTitle>Display Options</CardTitle>
+          <CardTitle>Generate QR Codes</CardTitle>
         </CardHeader>
         <CardContent className="space-y-4">
+          {/* QR Code Type */}
           <div>
-            <Label>QR Code Size</Label>
-            <Select value={qrCodeSize} onValueChange={setQrCodeSize}>
+            <Label>QR Code Type</Label>
+            <Select value={qrType} onValueChange={(v) => setQrType(v as "table" | "counter")}>
               <SelectTrigger className="rounded-lg mt-1">
                 <SelectValue />
               </SelectTrigger>
               <SelectContent>
-                <SelectItem value="small">Small (200x200)</SelectItem>
-                <SelectItem value="medium">Medium (300x300)</SelectItem>
-                <SelectItem value="large">Large (400x400)</SelectItem>
+                <SelectItem value="table">Tables</SelectItem>
+                <SelectItem value="counter">Counters</SelectItem>
               </SelectContent>
             </Select>
+          </div>
+
+          {/* Single QR Code Generation */}
+          <div>
+            <Label>Enter {qrType === "table" ? "Table" : "Counter"} Name</Label>
+            <div className="flex gap-2 mt-1">
+              <Input
+                placeholder={`e.g., ${qrType === "table" ? "Table 1" : "Counter 1"}`}
+                value={singleName}
+                onChange={(e) => setSingleName(e.target.value)}
+                onKeyDown={(e) => e.key === "Enter" && handleGenerateSingle()}
+                className="rounded-lg"
+              />
+              <Button onClick={handleGenerateSingle} disabled={!singleName.trim()}>
+                <QrCode className="h-4 w-4 mr-2" />
+                Generate
+              </Button>
+            </div>
+          </div>
+
+          {/* Bulk Generation */}
+          <div className="pt-2 border-t">
+            <Dialog open={showBulkDialog} onOpenChange={setShowBulkDialog}>
+              <DialogTrigger asChild>
+                <Button variant="outline" className="w-full">
+                  <Grid3x3 className="h-4 w-4 mr-2" />
+                  Generate Multiple
+                </Button>
+              </DialogTrigger>
+              <DialogContent>
+                <DialogHeader>
+                  <DialogTitle>Generate Multiple QR Codes</DialogTitle>
+                  <DialogDescription>
+                    Generate QR codes for multiple {qrType === "table" ? "tables" : "counters"} at
+                    once
+                  </DialogDescription>
+                </DialogHeader>
+                <div className="space-y-4 pt-4">
+                  <div>
+                    <Label>Number of QR Codes</Label>
+                    <Input
+                      type="number"
+                      min="1"
+                      max="100"
+                      value={bulkCount}
+                      onChange={(e) => setBulkCount(e.target.value)}
+                      placeholder="e.g., 10"
+                      className="rounded-lg mt-1"
+                    />
+                  </div>
+                  <div>
+                    <Label>Prefix (optional)</Label>
+                    <Input
+                      placeholder={qrType === "table" ? "Table" : "Counter"}
+                      value={bulkPrefix}
+                      onChange={(e) => setBulkPrefix(e.target.value)}
+                      className="rounded-lg mt-1"
+                    />
+                    <p className="text-xs text-gray-500 mt-1">
+                      Will generate: {bulkPrefix || (qrType === "table" ? "Table" : "Counter")} 1,{" "}
+                      {bulkPrefix || (qrType === "table" ? "Table" : "Counter")} 2, ...
+                    </p>
+                  </div>
+                  <Button onClick={handleGenerateBulk} className="w-full">
+                    Generate {bulkCount} QR Codes
+                  </Button>
+                </div>
+              </DialogContent>
+            </Dialog>
           </div>
         </CardContent>
       </Card>
@@ -188,23 +239,27 @@ export default function QRCodeClient({
       {/* Generated QR Codes */}
       {qrManagement.generatedQRs.length > 0 && (
         <>
-          <div className="flex items-center justify-between">
+          <div className="flex items-center justify-between flex-wrap gap-3">
             <h2 className="text-xl font-semibold text-gray-900">
               Generated QR Codes ({qrManagement.generatedQRs.length})
             </h2>
-            <div className="flex gap-2">
-              <Button
-                variant="outline"
-                onClick={printAllQRs}
-                disabled={qrManagement.generatedQRs.length === 0}
-              >
+            <div className="flex gap-2 flex-wrap">
+              <Button variant="outline" size="sm" onClick={copyAllAsJSON}>
+                <FileJson className="h-4 w-4 mr-2" />
+                Copy All URLs (JSON)
+              </Button>
+              <Button variant="outline" size="sm" onClick={downloadAllAsPDF}>
+                <Download className="h-4 w-4 mr-2" />
+                Download All (PDF)
+              </Button>
+              <Button variant="outline" size="sm" onClick={printAll}>
                 <Printer className="h-4 w-4 mr-2" />
                 Print All
               </Button>
               <Button
                 variant="outline"
+                size="sm"
                 onClick={qrManagement.clearAllQRs}
-                disabled={qrManagement.generatedQRs.length === 0}
                 className="text-red-600 hover:text-red-700"
               >
                 <Trash2 className="h-4 w-4 mr-2" />
@@ -214,24 +269,50 @@ export default function QRCodeClient({
           </div>
 
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-            {qrManagement.generatedQRs.map((qr, index) => {
-              // Ensure qr is a valid object with required properties
-              if (!qr || typeof qr !== "object" || !qr.name || !qr.url || !qr.type) {
-                console.warn("Invalid QR data:", qr);
-                return null;
-              }
+            {qrManagement.generatedQRs.map((qr, index) => (
+              <Card key={`${qr.name}-${qr.type}-${index}`} className="shadow-lg rounded-xl">
+                <CardHeader>
+                  <CardTitle className="text-lg">{qr.name}</CardTitle>
+                </CardHeader>
+                <CardContent className="space-y-4">
+                  {/* QR Code Canvas */}
+                  <div className="flex justify-center bg-white p-4 rounded-lg border-2 border-gray-200">
+                    <QRCodeCanvas value={qr.url} size={300} />
+                  </div>
 
-              return (
-                <QRCodeCard
-                  key={`${String(qr.name)}-${String(qr.type)}-${index}`}
-                  qr={qr}
-                  size={getSizeValue()}
-                  onCopy={qrManagement.copyQRUrl}
-                  onDownload={qrManagement.downloadQR}
-                  onRemove={qrManagement.removeQR}
-                />
-              );
-            })}
+                  {/* Actions */}
+                  <div className="grid grid-cols-3 gap-2">
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      onClick={() => qrManagement.copyQRUrl(qr.url)}
+                      className="w-full"
+                    >
+                      <Copy className="h-4 w-4 mr-1" />
+                      Copy URL
+                    </Button>
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      onClick={() => qrManagement.downloadQR(qr)}
+                      className="w-full"
+                    >
+                      <Download className="h-4 w-4 mr-1" />
+                      Download
+                    </Button>
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      onClick={() => qrManagement.removeQR(qr.name, qr.type)}
+                      className="w-full text-red-600 hover:text-red-700"
+                    >
+                      <Trash2 className="h-4 w-4 mr-1" />
+                      Remove
+                    </Button>
+                  </div>
+                </CardContent>
+              </Card>
+            ))}
           </div>
         </>
       )}
@@ -245,7 +326,8 @@ export default function QRCodeClient({
             </div>
             <h3 className="text-xl font-semibold text-gray-900 mb-2">No QR Codes Generated</h3>
             <p className="text-gray-600">
-              Use the generator above to create QR codes for your tables or counters
+              Enter a {qrType === "table" ? "table" : "counter"} name above and click Generate to
+              create a QR code
             </p>
           </CardContent>
         </Card>
