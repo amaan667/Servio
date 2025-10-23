@@ -109,10 +109,7 @@ export default function StaffClient({
             venueId={venueId}
             staff={staffManagement.staff || []}
             shifts={shiftManagement.allShifts || []}
-            onShiftAdded={shiftManagement.addShift}
-            onShiftDeleted={shiftManagement.deleteShift}
-            editingShiftFor={shiftManagement.editingShiftFor}
-            onEditShift={shiftManagement.setEditingShiftFor}
+            onShiftAdded={() => window.location.reload()}
           />
         </TabsContent>
       </Tabs>
