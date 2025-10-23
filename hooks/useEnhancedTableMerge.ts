@@ -1,8 +1,8 @@
-import { errorToContext } from '@/lib/utils/error-to-context';
+import { errorToContext } from "@/lib/utils/error-to-context";
 
-import { useState, useCallback } from 'react';
-import { getTableState, getMergeScenario, type TableState } from '@/lib/table-states';
-import { logger } from '@/lib/logger';
+import { useState, useCallback } from "react";
+import { getTableState, getMergeScenario } from "@/lib/table-states";
+import { logger } from "@/lib/logger";
 
 interface Table {
   id: string;
@@ -35,68 +35,64 @@ export function useEnhancedTableMerge() {
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
-  const performMerge = useCallback(async (
-    sourceTableId: string,
-    targetTableId: string,
-    venueId: string,
-    confirmed: boolean = false
-  ): Promise<MergeResult> => {
-    try {
-      setIsLoading(true);
-      setError(null);
+  const performMerge = useCallback(
+    async (
+      sourceTableId: string,
+      targetTableId: string,
+      venueId: string,
+      confirmed: boolean = false
+    ): Promise<MergeResult> => {
+      try {
+        setIsLoading(true);
+        setError(null);
 
-      logger.debug('[ENHANCED_TABLE_MERGE] Performing merge:', {
-        sourceTableId,
-        targetTableId,
-        venueId,
-        confirmed
-      });
+        logger.debug("[ENHANCED_TABLE_MERGE] Performing merge:", {
+          sourceTableId,
+          targetTableId,
+          venueId,
+          confirmed,
+        });
 
-      const response = await fetch('/api/table-sessions/enhanced-merge', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        credentials: 'include',
-        body: JSON.stringify({
+        const { apiClient } = await import("@/lib/api-client");
+        const response = await apiClient.post("/api/table-sessions/enhanced-merge", {
           source_table_id: sourceTableId,
           target_table_id: targetTableId,
           venue_id: venueId,
-          confirmed
-        })
-      });
+          confirmed,
+        });
 
-      const result = await response.json();
+        const result = await response.json();
 
-      if (!response.ok) {
-        logger.error('[ENHANCED MERGE HOOK] Merge failed:', result);
+        if (!response.ok) {
+          logger.error("[ENHANCED MERGE HOOK] Merge failed:", result);
+          return {
+            success: false,
+            error: result.error || "Merge failed",
+            scenario: result.scenario,
+            description: result.description,
+          };
+        }
+
+        return {
+          success: true,
+          data: result.data,
+          scenario: result.scenario,
+          description: result.description,
+        };
+      } catch (error) {
+        logger.error("[ENHANCED MERGE HOOK] Unexpected error:", errorToContext(error));
+        const errorMessage = error instanceof Error ? error.message : "Unexpected error occurred";
+        setError(errorMessage);
         return {
           success: false,
-          error: result.error || 'Merge failed',
-          scenario: result.scenario,
-          description: result.description
+          error: errorMessage,
         };
+      } finally {
+        setIsLoading(false);
       }
-
-      return {
-        success: true,
-        data: result.data,
-        scenario: result.scenario,
-        description: result.description
-      };
-
-    } catch (error) {
-      logger.error('[ENHANCED MERGE HOOK] Unexpected error:', errorToContext(error));
-      const errorMessage = error instanceof Error ? error.message : 'Unexpected error occurred';
-      setError(errorMessage);
-      return {
-        success: false,
-        error: errorMessage
-      };
-    } finally {
-      setIsLoading(false);
-    }
-  }, []);
+    },
+    []
+  );
 
   const validateMerge = useCallback((sourceTable: Table, targetTable: Table) => {
     const sourceState = getTableState(sourceTable);
@@ -110,7 +106,7 @@ export function useEnhancedTableMerge() {
       description: mergeScenario.description,
       scenario: mergeScenario.type,
       sourceState: sourceState.state,
-      targetState: targetState.state
+      targetState: targetState.state,
     };
   }, []);
 
@@ -124,6 +120,6 @@ export function useEnhancedTableMerge() {
     getTableStateInfo,
     isLoading,
     error,
-    clearError: () => setError(null)
+    clearError: () => setError(null),
   };
 }
