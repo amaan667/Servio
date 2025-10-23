@@ -3,7 +3,7 @@
 import { useState, useEffect } from "react";
 import { useAuth } from "@/app/auth/AuthProvider";
 import { supabaseBrowser } from "@/lib/supabase";
-import AIChatClient from "./AIChatClient";
+// AI Chat functionality will be implemented in the future
 import RoleBasedNavigation from "@/components/RoleBasedNavigation";
 
 export default function AIChatClientPage({ venueId }: { venueId: string }) {
@@ -72,7 +72,10 @@ export default function AIChatClientPage({ venueId }: { venueId: string }) {
           </p>
         </div>
 
-        <AIChatClient venueId={venueId} />
+        <div className="text-center py-12">
+          <h2 className="text-2xl font-bold text-gray-900 mb-4">AI Assistant</h2>
+          <p className="text-gray-600">AI Chat functionality coming soon!</p>
+        </div>
       </div>
     </div>
   );

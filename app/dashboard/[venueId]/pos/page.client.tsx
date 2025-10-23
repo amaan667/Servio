@@ -3,7 +3,7 @@
 import { useState, useEffect } from "react";
 import { useAuth } from "@/app/auth/AuthProvider";
 import { supabaseBrowser } from "@/lib/supabase";
-import POSClient from "./POSClient";
+import POSClient from "./pos-dashboard-client";
 import RoleBasedNavigation from "@/components/RoleBasedNavigation";
 
 export default function POSClientPage({ venueId }: { venueId: string }) {

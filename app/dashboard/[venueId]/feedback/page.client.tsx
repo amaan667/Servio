@@ -3,7 +3,7 @@
 import { useState, useEffect } from "react";
 import { useAuth } from "@/app/auth/AuthProvider";
 import { supabaseBrowser } from "@/lib/supabase";
-import FeedbackClient from "./FeedbackClient";
+import FeedbackClient from "./QuestionsClient";
 import RoleBasedNavigation from "@/components/RoleBasedNavigation";
 
 export default function FeedbackClientPage({ venueId }: { venueId: string }) {

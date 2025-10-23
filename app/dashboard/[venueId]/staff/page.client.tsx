@@ -3,7 +3,7 @@
 import { useState, useEffect } from "react";
 import { useAuth } from "@/app/auth/AuthProvider";
 import { supabaseBrowser } from "@/lib/supabase";
-import StaffManagementClient from "./StaffManagementClient";
+import StaffManagementClient from "./staff-client";
 import RoleBasedNavigation from "@/components/RoleBasedNavigation";
 
 export default function StaffClientPage({ venueId }: { venueId: string }) {
