@@ -201,11 +201,22 @@ export function TableCardNew({
       setIsLoading(true);
       setRemoveError(null);
 
+      // Close modal immediately for instant feedback
+      setShowRemoveDialog(false);
+      setForceRemove(false);
+
+      // Trigger parent refresh BEFORE API call (optimistic update)
+      onActionComplete?.();
+
+      // Then make the actual API call
       const response = await apiClient.delete(`/api/tables/${table.id}`);
 
       const responseData = await response.json();
 
       if (!response.ok) {
+        // If it fails, refresh again to restore the table
+        onActionComplete?.();
+
         // Handle specific error cases with more user-friendly messages
         if (responseData.error?.includes("active orders")) {
           throw new Error("Cannot remove table with active orders. Please close all orders first.");
@@ -219,16 +230,6 @@ export function TableCardNew({
           throw new Error(responseData.error || "Failed to remove table");
         }
       }
-
-      // Close modal first
-      setShowRemoveDialog(false);
-      setForceRemove(false);
-
-      // Small delay to ensure database propagates changes
-      await new Promise((resolve) => setTimeout(resolve, 100));
-
-      // Then trigger parent refresh
-      onActionComplete?.();
     } catch (error) {
       setRemoveError(error instanceof Error ? error.message : "Failed to remove table");
     } finally {
