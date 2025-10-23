@@ -88,16 +88,22 @@ export function QRCodeGenerator({
               </SelectTrigger>
               <SelectContent>
                 {items.map((item: TableItem | CounterItem) => {
-                  const key = item.id || String(Math.random());
+                  const key = String(item.id || Math.random());
                   const displayValue =
                     qrCodeType === "tables"
                       ? "label" in item
-                        ? item.label
-                        : item.name
-                      : item.name;
+                        ? String(item.label || "")
+                        : String(item.name || "")
+                      : String(item.name || "");
+
+                  // Skip items without a valid display value
+                  if (!displayValue || displayValue === "undefined" || displayValue === "null") {
+                    return null;
+                  }
+
                   return (
-                    <SelectItem key={key} value={String(displayValue)}>
-                      {String(displayValue)}
+                    <SelectItem key={key} value={displayValue}>
+                      {displayValue}
                     </SelectItem>
                   );
                 })}

@@ -53,7 +53,7 @@ export function useQRCodeManagement(venueId: string) {
         console.error("Error loading tables:", tablesError);
         toast({
           title: "Error",
-          description: "Failed to load tables",
+          description: `Failed to load tables: ${tablesError.message || "Unknown error"}`,
           variant: "destructive",
         });
       }
@@ -65,16 +65,18 @@ export function useQRCodeManagement(venueId: string) {
         .order("name", { ascending: true });
 
       if (countersError) {
-        console.error("Error loading counters:", countersError);
+        console.error("Error loading counters:", countersError.message, countersError);
+        // Counters table might not exist or have RLS issues - fail gracefully
         toast({
-          title: "Error",
-          description: "Failed to load counters",
-          variant: "destructive",
+          title: "Note",
+          description:
+            "Counters not available. You can still generate QR codes for tables and custom names.",
+          variant: "default",
         });
       }
 
       setTables(tablesData || []);
-      setCounters(countersData || []);
+      setCounters(countersError ? [] : countersData || []);
     } catch (error) {
       console.error("Error loading tables and counters:", error);
       toast({

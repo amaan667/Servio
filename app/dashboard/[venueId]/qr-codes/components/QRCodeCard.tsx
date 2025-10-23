@@ -9,45 +9,40 @@ interface QRCodeCardProps {
   size: number;
   onCopy: (url: string) => void;
   onDownload: (qr: GeneratedQR) => void;
-  onRemove: (name: string, type: 'table' | 'counter') => void;
+  onRemove: (name: string, type: "table" | "counter") => void;
 }
 
 export function QRCodeCard({ qr, size, onCopy, onDownload, onRemove }: QRCodeCardProps) {
+  // Ensure all values are strings to prevent React error #310
+  const displayType = String(qr.type || "item");
+  const displayName = String(qr.name || "Unknown");
+  const displayUrl = String(qr.url || "");
+
   return (
     <Card className="shadow-lg rounded-xl border-gray-200">
       <CardHeader>
         <CardTitle className="text-lg font-semibold text-gray-900 capitalize">
-          {qr.type}: {qr.name}
+          {displayType}: {displayName}
         </CardTitle>
       </CardHeader>
       <CardContent className="space-y-4">
         <div className="flex justify-center">
-          <QRCodeCanvas url={qr.url} size={size} />
+          <QRCodeCanvas url={displayUrl} size={size} />
         </div>
-        
+
         <div className="flex gap-2">
-          <Button
-            variant="outline"
-            size="sm"
-            onClick={() => onCopy(qr.url)}
-            className="flex-1"
-          >
+          <Button variant="outline" size="sm" onClick={() => onCopy(displayUrl)} className="flex-1">
             <Copy className="h-4 w-4 mr-2" />
             Copy URL
           </Button>
-          <Button
-            variant="outline"
-            size="sm"
-            onClick={() => onDownload(qr)}
-            className="flex-1"
-          >
+          <Button variant="outline" size="sm" onClick={() => onDownload(qr)} className="flex-1">
             <Download className="h-4 w-4 mr-2" />
             Download
           </Button>
           <Button
             variant="outline"
             size="sm"
-            onClick={() => onRemove(qr.name, qr.type)}
+            onClick={() => onRemove(displayName, qr.type)}
             className="text-red-600 hover:text-red-700"
           >
             <Trash2 className="h-4 w-4" />
@@ -57,4 +52,3 @@ export function QRCodeCard({ qr, size, onCopy, onDownload, onRemove }: QRCodeCar
     </Card>
   );
 }
-
