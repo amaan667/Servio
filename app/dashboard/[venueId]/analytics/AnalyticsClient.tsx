@@ -69,32 +69,7 @@ export default function AnalyticsClient({ venueId, venueName }: { venueId: strin
     }
   }, [filteredOrders, downloadCSV, toast]);
 
-  if (loading) {
-    return (
-      <div className="flex items-center justify-center py-8">
-        <div className="text-center">
-          <p className="mt-2 text-foreground">Loading analytics...</p>
-        </div>
-      </div>
-    );
-  }
-
-  if (error) {
-    return (
-      <div className="flex items-center justify-center py-8">
-        <div className="text-center">
-          <div className="text-red-500 mb-4">
-            <BarChart className="h-12 w-12 mx-auto" />
-          </div>
-          <h2 className="text-xl font-semibold text-gray-900 mb-2">Error Loading Analytics</h2>
-          <p className="text-gray-900 mb-4">{error}</p>
-          <Button onClick={refetch} variant="outline">
-            Retry
-          </Button>
-        </div>
-      </div>
-    );
-  }
+  // Removed loading check - render immediately with empty state
 
   return (
     <div className="space-y-6">

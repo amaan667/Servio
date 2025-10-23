@@ -208,8 +208,8 @@ const OrdersClient: React.FC<OrdersClientProps> = ({ venueId, initialOrders = []
           schema: 'public',
           table: 'orders',
           filter: `venue_id=eq.${venueId}`,
-        },
-        (payload: unknown) => {
+      },
+      () => {
           loadVenueAndOrders();
         }
       )
@@ -220,9 +220,7 @@ const OrdersClient: React.FC<OrdersClientProps> = ({ venueId, initialOrders = []
     };
   }, [venueId, loadVenueAndOrders]);
 
-  if (loading) {
-    return <div className="text-center py-8 text-gray-900">Loading orders...</div>;
-  }
+  // Removed loading check - render immediately with empty state
 
   // Function to refresh orders - can be called from OrderCard
   const refreshOrders = () => {

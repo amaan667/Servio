@@ -110,18 +110,9 @@ export default function SettingsPageClient({ venueId }: { venueId: string }) {
     loadData();
   }, [venueId, router]);
 
-  if (loading) {
-    return (
-      <div className="min-h-screen flex items-center justify-center bg-background">
-        <div className="text-center">
-          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary mx-auto mb-4"></div>
-          <p className="text-sm text-muted-foreground">Loading settings...</p>
-        </div>
-      </div>
-    );
-  }
+  // Removed loading check - render immediately with empty state
 
-  if (!data || !data.user) {
+  if (!loading && (!data || !data.user)) {
     return (
       <div className="min-h-screen flex items-center justify-center bg-background">
         <div className="max-w-md w-full p-6 text-center">

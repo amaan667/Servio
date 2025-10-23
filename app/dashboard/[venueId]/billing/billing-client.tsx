@@ -56,7 +56,7 @@ const TIER_LIMITS = {
 export default function BillingClient({ venueId }: BillingClientProps) {
   const [showUpgradeModal, setShowUpgradeModal] = useState(false);
   const [loadingPortal, setLoadingPortal] = useState(false);
-  const [loading, setLoading] = useState(true);
+  // Removed loading state
   const [organization, setOrganization] = useState<{
     id?: string;
     subscription_tier?: string;
@@ -107,13 +107,7 @@ export default function BillingClient({ venueId }: BillingClientProps) {
   const tierInfo = TIER_INFO[tier as keyof typeof TIER_INFO] || TIER_INFO.basic;
   const TierIcon = tierInfo.icon;
 
-  if (loading) {
-    return (
-      <div className="flex items-center justify-center py-12">
-        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary"></div>
-      </div>
-    );
-  }
+  // Removed loading check - render immediately with empty state
 
   const handleManageBilling = async () => {
     setLoadingPortal(true);
