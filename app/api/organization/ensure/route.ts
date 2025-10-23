@@ -138,13 +138,6 @@ export async function POST() {
       );
     }
 
-    // Update unknown venues to link to this organization (using admin client)
-    await adminClient
-      .from("venues")
-      .update({ organization_id: newOrg.id })
-      .eq("owner_user_id", user.id)
-      .is("organization_id", null);
-
     // Create user_venue_roles entries (using admin client)
     const { data: userVenues } = await adminClient
       .from("venues")
@@ -155,9 +148,7 @@ export async function POST() {
       const venueRoles = userVenues.map((venue) => ({
         user_id: user.id,
         venue_id: venue.venue_id,
-        organization_id: newOrg.id,
         role: "owner",
-        permissions: { all: true },
       }));
 
       await adminClient.from("user_venue_roles").upsert(venueRoles, {
