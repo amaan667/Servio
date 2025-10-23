@@ -105,7 +105,12 @@ export default function GlobalNav() {
               .single(),
           ]);
 
-          if (!venueResult.error && venueResult.data?.length) {
+          if (
+            !venueResult.error &&
+            Array.isArray(venueResult.data) &&
+            venueResult.data.length > 0 &&
+            venueResult.data[0]?.venue_id
+          ) {
             setPrimaryVenueId(venueResult.data[0].venue_id);
             setUserRole("owner");
             // Cache the data

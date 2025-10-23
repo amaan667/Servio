@@ -3,9 +3,9 @@
 import { useState } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Users } from "lucide-react";
+import { Users, Calendar } from "lucide-react";
+import StaffMembersList from "@/components/staff/StaffMembersList";
 import SimpleStaffGrid from "@/components/staff/SimpleStaffGrid";
-import EnhancedShiftSchedule from "@/components/staff/EnhancedShiftSchedule";
 
 // Hooks
 import { useStaffManagement, type StaffRow } from "./hooks/useStaffManagement";
@@ -30,8 +30,13 @@ export default function StaffClient({
 }) {
   const [activeTab, setActiveTab] = useState("staff");
 
-  const staffManagement = useStaffManagement(venueId, initialStaff, initialCounts);
-  const shiftManagement = useShiftManagement(venueId, staffManagement.staff || []);
+  const staffManagement = useStaffManagement(
+    venueId,
+    initialStaff,
+    initialCounts as import("./hooks/useStaffManagement").StaffCounts | undefined
+  );
+
+  const shiftManagement = useShiftManagement(venueId, staffManagement.staff ?? []);
 
   return (
     <div className="space-y-6 pb-32 md:pb-8">
@@ -87,13 +92,13 @@ export default function StaffClient({
             Staff Members
           </TabsTrigger>
           <TabsTrigger value="shifts">
-            <Users className="h-4 w-4 mr-2" />
+            <Calendar className="h-4 w-4 mr-2" />
             Shift Schedule
           </TabsTrigger>
         </TabsList>
 
         <TabsContent value="staff" className="mt-6">
-          <SimpleStaffGrid
+          <StaffMembersList
             venueId={venueId}
             staff={staffManagement.staff || []}
             onStaffAdded={() => {
@@ -105,12 +110,7 @@ export default function StaffClient({
         </TabsContent>
 
         <TabsContent value="shifts" className="mt-6">
-          <EnhancedShiftSchedule
-            venueId={venueId}
-            staff={staffManagement.staff || []}
-            shifts={shiftManagement.allShifts || []}
-            onShiftAdded={() => window.location.reload()}
-          />
+          <SimpleStaffGrid />
         </TabsContent>
       </Tabs>
     </div>
