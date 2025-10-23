@@ -20,8 +20,18 @@ export async function GET(req: Request) {
       error: userError,
     } = await supabase.auth.getSession();
     const user = session?.user;
+
+    console.info("[KDS STATIONS GET] Session check:", {
+      hasSession: !!session,
+      hasUser: !!user,
+      userId: user?.id,
+      sessionError: userError?.message,
+      venueId,
+    });
+
     if (userError || !user) {
-      return NextResponse.json({ ok: false, error: "Unauthorized" }, { status: 401 });
+      console.error("[KDS STATIONS GET] ❌ No session found - returning 401");
+      return NextResponse.json({ ok: false, error: "Unauthorized - No session" }, { status: 401 });
     }
 
     // Verify user owns or has staff access to this venue
