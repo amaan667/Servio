@@ -110,7 +110,7 @@ export default function StaffClient({
         </TabsContent>
 
         <TabsContent value="shifts" className="mt-6">
-          <SimpleStaffGrid />
+          <SimpleStaffGrid staff={staffManagement.staff || []} venueId={venueId} />
         </TabsContent>
       </Tabs>
     </div>
