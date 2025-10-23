@@ -1,13 +1,19 @@
-import { TableCardNew } from '@/components/table-management/TableCardNew';
+import { TableCardNew } from "@/components/table-management/TableCardNew";
 
 interface TableGridSectionProps {
   tables: unknown[];
   searchQuery: string;
+  venueId: string;
   onTableActionComplete: () => void;
 }
 
-export function TableGridSection({ tables, searchQuery, onTableActionComplete }: TableGridSectionProps) {
-  const filteredTables = tables.filter(table => {
+export function TableGridSection({
+  tables,
+  searchQuery,
+  venueId,
+  onTableActionComplete,
+}: TableGridSectionProps) {
+  const filteredTables = tables.filter((table) => {
     if (!searchQuery) return true;
     const query = searchQuery.toLowerCase();
     return (
@@ -25,12 +31,13 @@ export function TableGridSection({ tables, searchQuery, onTableActionComplete }:
           {filteredTables.length} of {tables.length} tables
         </p>
       </div>
-      
+
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
         {filteredTables.map((table) => (
           <TableCardNew
             key={table.id}
             table={table}
+            venueId={venueId}
             onTableActionComplete={onTableActionComplete}
           />
         ))}
@@ -38,4 +45,3 @@ export function TableGridSection({ tables, searchQuery, onTableActionComplete }:
     </section>
   );
 }
-
