@@ -220,9 +220,15 @@ export function TableCardNew({
         }
       }
 
-      onActionComplete?.();
+      // Close modal first
       setShowRemoveDialog(false);
       setForceRemove(false);
+
+      // Small delay to ensure database propagates changes
+      await new Promise((resolve) => setTimeout(resolve, 100));
+
+      // Then trigger parent refresh
+      onActionComplete?.();
     } catch (error) {
       setRemoveError(error instanceof Error ? error.message : "Failed to remove table");
     } finally {
