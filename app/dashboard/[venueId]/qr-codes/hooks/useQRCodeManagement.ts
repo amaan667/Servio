@@ -42,17 +42,25 @@ export function useQRCodeManagement(venueId: string) {
 
   const loadTablesAndCounters = async () => {
     try {
+      console.info("[QR MANAGEMENT] 📤 Loading tables and counters:", { venueId });
       setLoading(true);
       const supabase = createClient();
 
+      console.info("[QR MANAGEMENT] 🔍 Querying tables...");
       const { data: tablesData, error: tablesError } = await supabase
         .from("tables")
         .select("*")
         .eq("venue_id", venueId)
         .order("label", { ascending: true });
 
+      console.info("[QR MANAGEMENT] 📥 Tables query result:", {
+        success: !tablesError,
+        count: tablesData?.length || 0,
+        error: tablesError?.message,
+      });
+
       if (tablesError) {
-        console.error("Error loading tables:", tablesError.message || "Unknown error");
+        console.error("[QR MANAGEMENT] ❌ Error loading tables:", tablesError);
         toast({
           title: "Error",
           description: `Failed to load tables: ${tablesError.message || "Unknown error"}`,
@@ -75,17 +83,22 @@ export function useQRCodeManagement(venueId: string) {
         console.error("Counters table not accessible");
       }
 
+      console.info("[QR MANAGEMENT] ✅ Data loaded successfully:", {
+        tables: tablesData?.length || 0,
+        counters: countersData.length,
+      });
+
       setTables(tablesData || []);
       setCounters(countersData);
     } catch (error) {
-      const errorMessage = error instanceof Error ? error.message : "Unknown error";
-      console.error("Error loading tables and counters:", errorMessage);
+      console.error("[QR MANAGEMENT] ❌ Fatal error loading data:", error);
       toast({
         title: "Error",
-        description: "Failed to load data",
+        description: `Failed to load data: ${error instanceof Error ? error.message : "Unknown error"}`,
         variant: "destructive",
       });
     } finally {
+      console.info("[QR MANAGEMENT] 🏁 Loading complete");
       setLoading(false);
     }
   };

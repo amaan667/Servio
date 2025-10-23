@@ -7,12 +7,24 @@ import { usePageAuth } from "../hooks/usePageAuth";
 
 export default function QRCodeClientPage({ venueId }: { venueId: string }) {
   const router = useRouter();
+
+  console.info("[QR CODES PAGE] 🎯 Component mounted:", { venueId });
+
   const { user, userRole, venueName, loading, authError } = usePageAuth({
     venueId,
     pageName: "QR Codes",
   });
 
+  console.info("[QR CODES PAGE] 📊 Auth state:", {
+    loading,
+    hasUser: !!user,
+    userRole,
+    venueName,
+    authError,
+  });
+
   if (loading) {
+    console.info("[QR CODES PAGE] ⏳ Still loading auth...");
     return (
       <div className="min-h-screen flex items-center justify-center bg-background">
         <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary"></div>
@@ -21,6 +33,7 @@ export default function QRCodeClientPage({ venueId }: { venueId: string }) {
   }
 
   if (authError) {
+    console.error("[QR CODES PAGE] ❌ Auth error:", authError);
     return (
       <div className="min-h-screen flex items-center justify-center bg-background p-4">
         <div className="text-center">
