@@ -4,14 +4,16 @@ export interface Venue {
   venue_id: string;
   venue_name: string;
   owner_user_id: string;
+  organization_id?: string; // Links to parent organization for billing
   timezone?: string;
   address?: string;
   phone?: string;
   email?: string;
   created_at?: string;
   updated_at?: string;
-  subscription_tier?: string;
-  trial_ends_at?: string;
+  // Deprecated: subscription fields moved to organizations table
+  subscription_tier?: string; // TODO: Remove in future - use organization.subscription_tier
+  trial_ends_at?: string; // TODO: Remove in future - use organization.trial_ends_at
 }
 
 export interface Order {
@@ -95,7 +97,7 @@ export interface KDSTicket {
   special_instructions?: string | null;
   table_number?: string | null;
   table_label?: string;
-  status: 'new' | 'in_progress' | 'completed' | 'cancelled';
+  status: "new" | "in_progress" | "completed" | "cancelled";
   created_at?: string;
   completed_at?: string | null;
 }
@@ -103,7 +105,7 @@ export interface KDSTicket {
 export interface FeedbackQuestion {
   id: string;
   venue_id: string;
-  type: 'stars' | 'multiple_choice' | 'text';
+  type: "stars" | "multiple_choice" | "text";
   prompt: string;
   choices?: string[];
   is_active?: boolean;
@@ -115,7 +117,7 @@ export interface FeedbackResponse {
   venue_id: string;
   order_id?: string | null;
   question_id: string;
-  type: 'stars' | 'multiple_choice' | 'text';
+  type: "stars" | "multiple_choice" | "text";
   answer_stars?: number;
   answer_choice?: string;
   answer_text?: string;
@@ -138,7 +140,7 @@ export interface UserVenueRole {
   id?: string;
   user_id: string;
   venue_id: string;
-  role: 'owner' | 'manager' | 'staff';
+  role: "owner" | "manager" | "staff";
   created_at?: string;
 }
 
@@ -147,7 +149,7 @@ export interface StaffInvitation {
   venue_id: string;
   email: string;
   role: string;
-  status: 'pending' | 'accepted' | 'cancelled';
+  status: "pending" | "accepted" | "cancelled";
   invited_by: string;
   created_at?: string;
   expires_at?: string;
@@ -183,18 +185,17 @@ export interface TableSession {
 // Supabase client type
 export interface SupabaseClient {
   from: (table: string) => {
-    select: (columns?: string) => any;
-    insert: (data: unknown) => any;
-    update: (data: unknown) => any;
-    delete: () => any;
-    upsert: (data: unknown) => any;
+    select: (columns?: string) => unknown;
+    insert: (data: unknown) => unknown;
+    update: (data: unknown) => unknown;
+    delete: () => unknown;
+    upsert: (data: unknown) => unknown;
   };
   auth: {
     getUser: () => Promise<{ data: { user: unknown }; error: unknown }>;
     getSession: () => Promise<{ data: { session: unknown }; error: unknown }>;
   };
   storage: unknown;
-  rpc: (fn: string, params?: unknown) => any;
-  channel: (name: string) => any;
+  rpc: (fn: string, params?: unknown) => unknown;
+  channel: (name: string) => unknown;
 }
-

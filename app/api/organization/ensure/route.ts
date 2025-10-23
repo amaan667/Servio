@@ -138,6 +138,17 @@ export async function POST() {
       );
     }
 
+    // Link all user's venues to this organization
+    const { error: venueLinkError } = await adminClient
+      .from("venues")
+      .update({ organization_id: newOrg.id })
+      .eq("owner_user_id", user.id)
+      .or(`organization_id.is.null,organization_id.neq.${newOrg.id}`);
+
+    if (venueLinkError) {
+      logger.warn("[ORG ENSURE] Could not link venues to organization:", venueLinkError);
+    }
+
     // Create user_venue_roles entries (using admin client)
     const { data: userVenues } = await adminClient
       .from("venues")
