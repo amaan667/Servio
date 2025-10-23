@@ -15,7 +15,6 @@ export async function POST(req: NextRequest) {
       confirmed = false
     } = body;
 
-
     if (!source_table_id || !target_table_id || !venue_id) {
       return NextResponse.json({ 
         error: 'source_table_id, target_table_id, and venue_id are required' 
@@ -77,7 +76,6 @@ export async function POST(req: NextRequest) {
     const sourceState = getTableState(sourceTable);
     const targetState = getTableState(targetTable);
     const mergeScenario = getMergeScenario(sourceTable, targetTable);
-
 
     // Validate merge scenario
     if (!mergeScenario.allowed) {

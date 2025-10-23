@@ -27,7 +27,6 @@ export async function POST(req: Request) {
       comment: trimmedComment
     };
 
-
     const { error } = await admin
       .from('order_feedback')
       .insert(feedbackData);

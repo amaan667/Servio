@@ -19,4 +19,3 @@ export function isMenuLike(text: string): boolean {
 
 export default isMenuLike;
 
-

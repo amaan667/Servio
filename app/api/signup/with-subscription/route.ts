@@ -86,19 +86,14 @@ export async function POST(request: NextRequest) {
       });
     }
 
-    // Create organization (not grandfathered - regular subscription required)
-    const { data: org, error: orgError } = await supabase
+        const { data: org, error: orgError } = await supabase
       .from("organizations")
       .insert({
-        name: `${venueName} Organization`,
-        slug: orgSlug,
         owner_user_id: userId,
         subscription_tier: tier,
         subscription_status: "trialing",
         stripe_customer_id: customer.id,
-        is_grandfathered: false, // New accounts are NOT grandfathered
         trial_ends_at: new Date(Date.now() + 14 * 24 * 60 * 60 * 1000).toISOString(),
-        billing_email: email,
       })
       .select()
       .single();

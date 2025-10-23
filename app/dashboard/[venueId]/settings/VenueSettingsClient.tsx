@@ -27,9 +27,7 @@ interface VenueSettingsClientProps {
   isOwner?: boolean;
   organization?: {
     id: string;
-    subscription_tier?: string;
-    is_grandfathered?: boolean;
-    stripe_customer_id?: string;
+    subscription_tier?: string;    stripe_customer_id?: string;
     subscription_status?: string;
     trial_ends_at?: string;
   };

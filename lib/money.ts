@@ -9,4 +9,3 @@ export function toInt(n: unknown): number | null {
   return Number.isFinite(v) ? v : null;
 }
 
-

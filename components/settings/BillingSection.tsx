@@ -23,9 +23,7 @@ interface BillingSectionProps {
   };
   organization?: {
     id: string;
-    subscription_tier?: string;
-    is_grandfathered?: boolean;
-    stripe_customer_id?: string;
+    subscription_tier?: string;    stripe_customer_id?: string;
     subscription_status?: string;
     trial_ends_at?: string;
   };
@@ -36,7 +34,6 @@ export default function BillingSection({ user, organization }: BillingSectionPro
   const [loadingPortal, setLoadingPortal] = useState(false);
 
   const tier = organization?.subscription_tier || "basic";
-  const isGrandfathered = organization?.is_grandfathered || false;
   const hasStripeCustomer = !!organization?.stripe_customer_id;
 
   const handleManageBilling = async () => {
@@ -196,21 +193,10 @@ export default function BillingSection({ user, organization }: BillingSectionPro
           </div>
         </CardHeader>
 
-        {isGrandfathered && (
-          <CardContent>
-            <Alert className="bg-yellow-50 border-yellow-200">
-              <Crown className="h-4 w-4 text-yellow-600" />
-              <AlertDescription className="text-yellow-800">
-                <strong>Thank you for being an early Servio user!</strong> Your account has been grandfathered 
-                with unlimited access to all features at no charge.
-              </AlertDescription>
-            </Alert>
-          </CardContent>
-        )}
       </Card>
 
       {/* Billing Management */}
-      {!isGrandfathered && hasStripeCustomer && (
+      {hasStripeCustomer && (
         <Card>
           <CardHeader>
             <CardTitle className="flex items-center gap-2">

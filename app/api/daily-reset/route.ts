@@ -30,7 +30,6 @@ export async function POST(request: NextRequest) {
       );
     }
 
-
     // Step 1: Complete all active orders (mark as COMPLETED)
     const { data: activeOrders, error: activeOrdersError } = await supabase
       .from('orders')
@@ -45,7 +44,6 @@ export async function POST(request: NextRequest) {
         { status: 500 }
       );
     }
-
 
     if (activeOrders && activeOrders.length > 0) {
       const { error: completeOrdersError } = await supabase
@@ -82,7 +80,6 @@ export async function POST(request: NextRequest) {
       );
     }
 
-
     if (activeReservations && activeReservations.length > 0) {
       const { error: cancelReservationsError } = await supabase
         .from('reservations')
@@ -116,7 +113,6 @@ export async function POST(request: NextRequest) {
         { status: 500 }
       );
     }
-
 
     if (tables && tables.length > 0) {
       // Delete all table sessions first (if they exist)
@@ -175,7 +171,6 @@ export async function POST(request: NextRequest) {
       }
 
     }
-
 
     return NextResponse.json({
       success: true,

@@ -37,14 +37,6 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    // Grandfathered accounts don't need billing portal
-    if (org.is_grandfathered) {
-      return NextResponse.json(
-        { error: "Grandfathered accounts don't have billing management" },
-        { status: 400 }
-      );
-    }
-
     if (!org.stripe_customer_id) {
       return NextResponse.json(
         { error: "No billing account found" },

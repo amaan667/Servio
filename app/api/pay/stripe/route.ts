@@ -31,7 +31,6 @@ export async function POST(req: Request) {
       }
     );
 
-
     // In a real implementation, you would:
     // 1. Verify the payment intent with Stripe
     // 2. Confirm the payment was successful
@@ -66,7 +65,6 @@ export async function POST(req: Request) {
         error: 'Failed to process payment' 
       }, { status: 500 });
     }
-
 
     return NextResponse.json({
       success: true,

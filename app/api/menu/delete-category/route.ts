@@ -14,7 +14,6 @@ export async function POST(request: NextRequest) {
       }, { status: 400 });
     }
 
-
     const supabase = await createAdminClient();
 
     // First, check if this category has menu items
@@ -85,7 +84,6 @@ export async function POST(request: NextRequest) {
         logger.warn(`[CATEGORIES DELETE] Warning processing ${table}:`, { table, error });
       }
     }
-
 
     return NextResponse.json({ 
       ok: true, 

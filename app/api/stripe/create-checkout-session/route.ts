@@ -184,15 +184,10 @@ export async function POST(request: NextRequest) {
       const { data: newOrg, error: createError } = await supabase
         .from("organizations")
         .insert({
-          name: `${userName}'s Organization`,
-          slug: `org-${user.id.slice(0, 8)}-${Date.now()}`,
           owner_user_id: user.id,
           subscription_tier: "basic",
           subscription_status: "trialing",
-          is_grandfathered: false,
           trial_ends_at: new Date(Date.now() + 14 * 24 * 60 * 60 * 1000).toISOString(),
-          created_at: new Date().toISOString(),
-          updated_at: new Date().toISOString(),
         })
         .select("*")
         .single();
@@ -243,7 +238,6 @@ export async function POST(request: NextRequest) {
       id: org.id,
       owner_user_id: org.owner_user_id,
       subscription_tier: org.subscription_tier,
-      is_grandfathered: org.is_grandfathered,
       stripe_customer_id: org.stripe_customer_id,
     });
 

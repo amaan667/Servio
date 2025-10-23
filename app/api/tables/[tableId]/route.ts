@@ -60,7 +60,6 @@ export async function DELETE(req: NextRequest, context: { params: Promise<{ tabl
       return NextResponse.json({ error: 'Table not found' }, { status: 404 });
     }
 
-
     // Check if the table has unknown active orders
     
     let activeOrders: { id: string }[] = [];

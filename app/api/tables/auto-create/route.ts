@@ -30,7 +30,6 @@ export async function POST(req: Request) {
       }
     );
 
-
     // Check if table already exists first
     const { data: existingTable } = await supabase
       .from('tables')
@@ -66,7 +65,6 @@ export async function POST(req: Request) {
       }
       table = newTable;
     }
-
 
     // Check if session already exists for this table
     const { data: existingSession } = await supabase

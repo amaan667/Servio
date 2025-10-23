@@ -64,7 +64,7 @@ export default function SettingsPageClient({ venueId }: { venueId: string }) {
                 return supabase
                   .from("organizations")
                   .select(
-                    "id, subscription_tier, is_grandfathered, stripe_customer_id, subscription_status, trial_ends_at"
+                    "id, subscription_tier, stripe_customer_id, subscription_status, trial_ends_at"
                   )
                   .eq("id", result.data.organization_id)
                   .single();

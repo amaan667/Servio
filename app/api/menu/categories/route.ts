@@ -38,7 +38,6 @@ export async function GET(request: NextRequest) {
       .limit(1)
       .maybeSingle();
 
-
     if (uploadError) {
       logger.error('[CATEGORIES API] Error fetching category order:', { value: uploadError });
       return NextResponse.json(

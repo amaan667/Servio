@@ -15,4 +15,3 @@ export function withErrorHandling<T>(handler: Handler<T>) {
   };
 }
 
-

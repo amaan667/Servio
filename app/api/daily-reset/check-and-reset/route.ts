@@ -118,7 +118,6 @@ export async function POST(request: NextRequest) {
       });
     }
 
-
     // Perform the reset
     const resetSummary = {
       completedOrders: 0,
@@ -140,7 +139,6 @@ export async function POST(request: NextRequest) {
         { status: 500 }
       );
     }
-
 
     if (activeOrders && activeOrders.length > 0) {
       const { error: completeOrdersError } = await supabase
@@ -178,7 +176,6 @@ export async function POST(request: NextRequest) {
       );
     }
 
-
     if (activeReservations && activeReservations.length > 0) {
       const { error: cancelReservationsError } = await supabase
         .from('reservations')
@@ -213,7 +210,6 @@ export async function POST(request: NextRequest) {
         { status: 500 }
       );
     }
-
 
     if (tables && tables.length > 0) {
       // Step 3a: Clear table references from all orders to avoid foreign key constraint
@@ -287,7 +283,6 @@ export async function POST(request: NextRequest) {
       // Don't fail the operation for this
       logger.warn('🔄 [DAILY RESET CHECK] Continuing despite log error');
     }
-
 
     return NextResponse.json({
       success: true,

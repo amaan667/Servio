@@ -67,7 +67,6 @@ export async function POST(request: NextRequest) {
       }
     }
 
-
     return NextResponse.json({ 
       success: true, 
       message: `Category updated from "${oldCategory}" to "${newCategory}"`,

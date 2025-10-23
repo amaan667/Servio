@@ -50,14 +50,6 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    // Grandfathered accounts can't be downgraded
-    if (org.is_grandfathered) {
-      return NextResponse.json(
-        { error: "Grandfathered accounts cannot be downgraded" },
-        { status: 400 }
-      );
-    }
-
     // If already on the requested tier, no action needed
     if (org.subscription_tier === newTier) {
       return NextResponse.json({ 

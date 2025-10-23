@@ -7,7 +7,6 @@ import type { LegacyOrder } from '@/types/orders';
 import type { CounterOrder } from '@/hooks/useCounterOrders';
 import { logger } from '@/lib/logger';
 
-
 // Test 1: Table order (has table_id and is_configured: true)
 const tableOrder: LegacyOrder = {
   id: '123e4567-e89b-12d3-a456-426614174000',

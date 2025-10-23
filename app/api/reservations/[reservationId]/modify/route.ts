@@ -84,7 +84,6 @@ export async function PUT(req: NextRequest, context: { params: Promise<{ reserva
       }, { status: 500 });
     }
 
-
     return NextResponse.json({
       ok: true,
       reservation: updatedReservation

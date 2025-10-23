@@ -52,7 +52,6 @@ export async function POST(req: NextRequest) {
       );
     }
 
-
     // Store cart data for later retrieval
     const cartData = {
       cartId,
@@ -97,7 +96,6 @@ export async function POST(req: NextRequest) {
         idempotencyKey: `pi_${cartId}`,
       }
     );
-
 
     return NextResponse.json({
       clientSecret: paymentIntent.client_secret,

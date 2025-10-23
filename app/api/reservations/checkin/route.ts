@@ -89,7 +89,6 @@ export async function POST(req: NextRequest) {
       // Don't fail the request, just log the error
     }
 
-
     return NextResponse.json({
       ok: true,
       reservation: updatedReservation

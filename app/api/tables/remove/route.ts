@@ -61,7 +61,6 @@ export async function POST(req: Request) {
     // Use admin client for database operations
     const adminSupabase = createAdminClient();
 
-
     // Step 1: Update active orders to COMPLETED status
     const { data: updatedOrders, error: updateError } = await adminSupabase
       .from('orders')
@@ -206,7 +205,6 @@ export async function POST(req: Request) {
         remainingActiveOrders: remainingOrders?.length || 0
       }
     };
-
 
     return NextResponse.json(result);
 

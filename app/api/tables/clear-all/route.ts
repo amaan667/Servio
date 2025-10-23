@@ -10,7 +10,6 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ ok: false, error: 'venue_id is required' }, { status: 400 });
     }
 
-
     const supabase = await createAdminClient();
 
     // Step 1: Delete all table sessions for this venue
@@ -27,7 +26,6 @@ export async function POST(request: NextRequest) {
       }, { status: 500 });
     }
 
-
     // Step 2: Delete all tables for this venue
     const { error: tablesError } = await supabase
       .from('tables')
@@ -42,10 +40,8 @@ export async function POST(request: NextRequest) {
       }, { status: 500 });
     }
 
-
     // Step 3: Table runtime state is a view and will update automatically
     // when we delete the base tables and sessions above
-
 
     return NextResponse.json({ 
       ok: true, 

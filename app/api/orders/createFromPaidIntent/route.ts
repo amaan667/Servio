@@ -26,7 +26,6 @@ export async function POST(req: NextRequest) {
       );
     }
 
-
     // Handle demo mode
     if (paymentIntentId.startsWith('demo-')) {
       return await createDemoOrder(cartId);
@@ -34,7 +33,6 @@ export async function POST(req: NextRequest) {
 
     // Retrieve payment intent from Stripe
     const paymentIntent = await stripe.paymentIntents.retrieve(paymentIntentId);
-
 
     // Verify payment succeeded
     if (paymentIntent.status !== 'succeeded') {
@@ -112,7 +110,6 @@ export async function POST(req: NextRequest) {
       updated_at: new Date().toISOString(),
     };
 
-
     // Create order in database
     const { data: order, error: orderError } = await supabase
       .from('orders')
@@ -130,7 +127,6 @@ export async function POST(req: NextRequest) {
         { status: 500 }
       );
     }
-
 
     // Publish realtime event for live orders
     try {
@@ -236,7 +232,6 @@ async function createDemoOrder(cartId: string) {
         { status: 500 }
       );
     }
-
 
     // Publish realtime event for live orders
     try {

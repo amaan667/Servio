@@ -79,4 +79,3 @@ export async function DELETE(_req: Request, context: { params: Promise<{ id: str
   return NextResponse.json({ ok: true });
 }
 
-

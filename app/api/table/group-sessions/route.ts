@@ -14,7 +14,6 @@ export async function GET(request: NextRequest) {
       }, { status: 400 });
     }
 
-
     const supabase = await createAdminClient();
 
     try {
@@ -40,7 +39,6 @@ export async function GET(request: NextRequest) {
           error: `Failed to fetch group sessions: ${error.message}` 
         }, { status: 500 });
       }
-
 
       return NextResponse.json({ 
         ok: true, 

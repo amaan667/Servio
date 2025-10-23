@@ -47,7 +47,6 @@ export async function POST(request: NextRequest) {
       );
     }
 
-
     // Check if there are unknown recent orders (within last 2 hours) - if so, warn user
     const twoHoursAgo = new Date(Date.now() - 2 * 60 * 60 * 1000).toISOString();
     const { error: recentOrdersError } = await supabase
@@ -76,7 +75,6 @@ export async function POST(request: NextRequest) {
         { status: 500 }
       );
     }
-
 
     if (activeOrders && activeOrders.length > 0) {
       const { error: completeOrdersError } = await supabase
@@ -113,7 +111,6 @@ export async function POST(request: NextRequest) {
       );
     }
 
-
     if (activeReservations && activeReservations.length > 0) {
       const { error: cancelReservationsError } = await supabase
         .from('reservations')
@@ -147,7 +144,6 @@ export async function POST(request: NextRequest) {
         { status: 500 }
       );
     }
-
 
     if (tables && tables.length > 0) {
       // Delete all table sessions first (if they exist)
@@ -211,7 +207,6 @@ export async function POST(request: NextRequest) {
       // Don't fail the operation for this
       logger.warn('🔄 [MANUAL DAILY RESET] Continuing despite log error');
     }
-
 
     return NextResponse.json({
       success: true,

@@ -15,7 +15,6 @@ export async function GET(request: NextRequest) {
       }, { status: 400 });
     }
 
-
     const supabase = await createAdminClient();
 
     try {
@@ -88,7 +87,6 @@ export async function POST(request: NextRequest) {
       }, { status: 400 });
     }
 
-
     const supabase = await createAdminClient();
 
     try {
@@ -144,7 +142,6 @@ export async function POST(request: NextRequest) {
         }, { status: 500 });
       }
 
-
       // Update table seat count to match new total group size
       await supabase
         .from('tables')
@@ -185,7 +182,6 @@ export async function POST(request: NextRequest) {
           error: `Failed to create group session: ${createError.message}` 
         }, { status: 500 });
       }
-
 
       // Update table seat count to match group size (if table exists)
       await supabase

@@ -20,32 +20,18 @@ export async function POST(request: NextRequest) {
     const body = await request.json();
     const { action, resource, currentCount, venueId } = body;
 
-    // Get organization
+    // Get venue to verify access
     const { data: venue } = await supabase
       .from("venues")
-      .select("organization_id, organizations(subscription_tier, is_grandfathered)")
+      .select("venue_id, owner_user_id")
       .eq("venue_id", venueId)
       .single();
 
-    if (!venue?.organizations) {
+    if (!venue) {
       return NextResponse.json(
-        { error: "Organization not found" },
+        { error: "Venue not found" },
         { status: 404 }
       );
-    }
-
-    // Handle organizations as single object (foreign key relation)
-    const organization = Array.isArray(venue.organizations) 
-      ? venue.organizations[0] 
-      : venue.organizations;
-
-    // Grandfathered accounts always allowed
-    if (organization?.is_grandfathered) {
-      return NextResponse.json({
-        allowed: true,
-        tier: "grandfathered",
-        reason: "Grandfathered account - unlimited access",
-      });
     }
 
     // Check based on action type
@@ -91,13 +77,20 @@ export async function POST(request: NextRequest) {
       });
     }
 
-    // Get all limits
+    // Get all limits and current tier
     const limits = await getTierLimits(user.id);
+    
+    // Get user's organization to return tier info
+    const { data: org } = await supabase
+      .from("organizations")
+      .select("subscription_tier")
+      .eq("owner_user_id", user.id)
+      .maybeSingle();
 
     return NextResponse.json({
       allowed: true,
       limits,
-      tier: organization?.subscription_tier,
+      tier: org?.subscription_tier || "basic",
     });
   } catch (error) {
     logger.error("[TIER CHECK] Error:", { error: error instanceof Error ? error.message : 'Unknown error' });

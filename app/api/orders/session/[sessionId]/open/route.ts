@@ -32,7 +32,6 @@ export async function GET(
       }
     );
 
-
     // Since session_id column doesn't exist in database yet, we'll use localStorage approach
     // For now, return null to indicate no session-based order found
     // This will be handled client-side using localStorage

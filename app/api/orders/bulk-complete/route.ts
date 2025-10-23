@@ -74,7 +74,6 @@ export async function POST(req: Request) {
       return NextResponse.json({ error: 'Failed to update orders' }, { status: 500 });
     }
 
-
     // Handle table cleanup for completed orders
     if (updatedOrders && updatedOrders.length > 0) {
       // Get all unique table identifiers from completed orders

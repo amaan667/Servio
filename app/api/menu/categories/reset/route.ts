@@ -13,7 +13,6 @@ export async function POST(request: NextRequest) {
       }, { status: 400 });
     }
 
-
     const supabase = await createAdminClient();
 
     // Get the most recent menu upload to get the original category order
@@ -78,7 +77,6 @@ export async function POST(request: NextRequest) {
       }
     });
 
-
     // Delete menu items that belong to manually added categories
     if (manuallyAddedCategories.length > 0) {
       const { error: deleteError } = await supabase
@@ -118,7 +116,6 @@ export async function POST(request: NextRequest) {
       // Don't fail the entire operation for this
       logger.warn('[CATEGORIES RESET] Continuing despite category order update error');
     }
-
 
     return NextResponse.json({ 
       ok: true, 

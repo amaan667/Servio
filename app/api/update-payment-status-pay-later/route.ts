@@ -34,7 +34,6 @@ export async function POST() {
       }, { status: 500 });
     }
 
-
     // Step 2: Update the dashboard_counts function to include PAY_LATER status
     
     const createFunctionSQL = `

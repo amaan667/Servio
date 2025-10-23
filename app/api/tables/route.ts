@@ -163,7 +163,6 @@ export async function POST(req: Request) {
     const body = await req.json();
     const { venue_id, label, seat_count, area } = body;
 
-
     if (!venue_id || !label) {
       return NextResponse.json({ ok: false, error: 'venue_id and label are required' }, { status: 400 });
     }

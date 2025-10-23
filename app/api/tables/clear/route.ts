@@ -10,7 +10,6 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ ok: false, error: 'venue_id is required' }, { status: 400 });
     }
 
-
     const supabase = await createAdminClient();
 
     // Clear table runtime state - reset all tables to FREE status
@@ -44,7 +43,6 @@ export async function POST(request: NextRequest) {
         error: `Failed to clear table runtime state: ${runtimeStateError.message}` 
       }, { status: 500 });
     }
-
 
     return NextResponse.json({ 
       ok: true, 

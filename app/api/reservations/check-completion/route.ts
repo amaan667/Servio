@@ -140,7 +140,6 @@ export async function POST(req: NextRequest) {
         });
     }
 
-
     return NextResponse.json({
       ok: true,
       message: `Completed ${updatedReservations?.length || 0} reservations`,

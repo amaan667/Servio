@@ -281,7 +281,6 @@ export default function MobileNav({ venueId, venueName, counts = {} }: MobileNav
         </div>
       </div>
 
-
       {/* Page Indicator for Active Section */}
       {activeItem && (
         <div className={`fixed top-4 left-1/2 transform -translate-x-1/2 z-30 transition-transform duration-300 ${

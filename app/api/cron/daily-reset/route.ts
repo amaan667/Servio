@@ -69,7 +69,6 @@ export async function POST(request: NextRequest) {
       });
     }
 
-
     const resetResults = [];
 
     for (const venue of venuesToReset) {
@@ -170,7 +169,6 @@ export async function POST(request: NextRequest) {
           deletedTables: venueTables?.length || 0
         });
 
-
       } catch (error) {
         logger.error(`🕛 [CRON DAILY RESET] Error resetting venue ${venue.venue_name}:`, { error: error instanceof Error ? error.message : 'Unknown error' });
         resetResults.push({
@@ -184,7 +182,6 @@ export async function POST(request: NextRequest) {
 
     const successfulResets = resetResults.filter(r => r.reset).length;
     const totalVenues = venuesToReset.length;
-
 
     return NextResponse.json({
       success: true,

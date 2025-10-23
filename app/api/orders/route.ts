@@ -564,7 +564,6 @@ export async function POST(req: Request) {
       createdOrder = inserted[0];
     }
 
-
     const response = { 
       ok: true, 
       order: createdOrder,
@@ -595,5 +594,4 @@ export async function POST(req: Request) {
     return bad(`Server error: ${msg}`, 500);
   }
 }
-
 

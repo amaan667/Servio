@@ -10,7 +10,6 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ ok: false, error: 'venue_id is required' }, { status: 400 });
     }
 
-
     const supabase = await createAdminClient();
 
     // Use the comprehensive catalog clear function
@@ -46,7 +45,6 @@ export async function POST(request: NextRequest) {
       totalDeleted += deletedCount;
       
     }
-
 
     return NextResponse.json({
       ok: true,

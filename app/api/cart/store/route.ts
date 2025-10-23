@@ -42,7 +42,6 @@ export async function POST(req: NextRequest) {
       );
     }
 
-
     // Store cart data in a temporary table or use a simple approach
     // For now, we'll use a simple JSON storage approach
     const cartData = {

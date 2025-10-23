@@ -31,7 +31,6 @@ export async function POST(req: Request) {
       }
     );
 
-
     // Update order payment status to paid with demo method
     const { data: order, error: updateError } = await supabase
       .from('orders')
@@ -51,7 +50,6 @@ export async function POST(req: Request) {
         error: 'Failed to process payment' 
       }, { status: 500 });
     }
-
 
     return NextResponse.json({
       success: true,

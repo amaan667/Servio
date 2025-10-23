@@ -53,8 +53,6 @@ export async function POST(request: NextRequest) {
         subscription: {
           tier: org.subscription_tier || 'basic',
           status: org.subscription_status || 'basic',
-          trial_ends_at: org.trial_ends_at,
-          is_grandfathered: org.is_grandfathered
         }
       });
     }
@@ -116,8 +114,6 @@ export async function POST(request: NextRequest) {
         subscription: {
           tier: updateData.subscription_tier,
           status: updateData.subscription_status,
-          trial_ends_at: updateData.trial_ends_at,
-          is_grandfathered: org.is_grandfathered
         }
       });
 
@@ -149,8 +145,6 @@ export async function POST(request: NextRequest) {
         subscription: {
           tier: 'basic',
           status: 'basic',
-          trial_ends_at: null,
-          is_grandfathered: org.is_grandfathered
         },
         reset: true
       });

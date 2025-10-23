@@ -22,7 +22,6 @@ export const APP_URL = (() => {
          'https://servio-production.up.railway.app';
 })();
 
-
 export const getAuthRedirectUrl = (path: string = '/auth/callback') => {
   const url = `${APP_URL}${path}`;
   return url;

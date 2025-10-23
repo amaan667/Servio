@@ -12,7 +12,6 @@ export async function GET(req: Request) {
     const sessionId = searchParams.get("sessionId")!;
     if (!orderId || !sessionId) return NextResponse.json({ error: "Missing params" }, { status: 400 });
 
-
     const session = await stripe.checkout.sessions.retrieve(sessionId);
     const paid = session.payment_status === "paid";
 

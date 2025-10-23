@@ -49,4 +49,3 @@ export function todayWindowForTZ(tz?: string) {
 
 // liveOrdersWindow function removed - use lib/dates.ts instead
 
-

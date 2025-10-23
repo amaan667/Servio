@@ -43,7 +43,6 @@ export default function NavigationBreadcrumb({
   // [NAV] Determine dashboard link - route to dashboard if we have a venueId
   const dashboardLink = venueId ? `/dashboard/${venueId}` : '/';
 
-
   const getPageTitle = () => {
     if (pathname.includes("/dashboard")) {
       if (pathname.includes("/live-orders")) return "Live Orders";

@@ -79,7 +79,6 @@ export async function POST(req: Request) {
       return NextResponse.json({ ok: true, message: 'No duplicates found', duplicates_removed: 0 });
     }
 
-
     // Check for active orders and reservations before removing duplicates
     const { data: activeOrders, error: ordersError } = await supabase
       .from('orders')

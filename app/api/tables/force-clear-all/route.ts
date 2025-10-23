@@ -10,7 +10,6 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ ok: false, error: 'venue_id is required' }, { status: 400 });
     }
 
-
     const supabase = await createAdminClient();
 
     // Step 1: Force clear ALL table references from orders (including completed ones)
@@ -26,7 +25,6 @@ export async function POST(request: NextRequest) {
         error: `Failed to clear table references: ${clearAllRefsError.message}` 
       }, { status: 500 });
     }
-
 
     // Step 2: Delete all table sessions
     const { error: sessionsError } = await supabase
@@ -54,7 +52,6 @@ export async function POST(request: NextRequest) {
       }, { status: 500 });
     }
 
-
     // Step 4: Clear table runtime state
     const { error: runtimeError } = await supabase
       .from('table_runtime_state')
@@ -78,7 +75,6 @@ export async function POST(request: NextRequest) {
       // Continue anyway
     } else {
     }
-
 
     return NextResponse.json({ 
       ok: true, 
