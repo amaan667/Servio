@@ -259,6 +259,7 @@ export async function POST(req: Request) {
         label: label,
         seat_count: seat_count || 2,
         area: area || null,
+        is_active: true, // Explicitly set as active for counting
       })
       .select()
       .single();

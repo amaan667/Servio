@@ -150,6 +150,9 @@ export function useDashboardData(
           const window = todayWindowForTZ(venueTz);
           setTodayWindow(window);
 
+          // Refresh counts on initial load
+          await refreshCounts();
+
           if (!statsLoaded) {
             await loadStats((venue as { venue_id: string }).venue_id, window);
           }
@@ -167,7 +170,7 @@ export function useDashboardData(
     };
 
     loadVenueAndStats();
-  }, [venue, venueTz, statsLoaded, loadStats]);
+  }, [venue, venueTz, statsLoaded, loadStats, refreshCounts]);
 
   return {
     venue,
