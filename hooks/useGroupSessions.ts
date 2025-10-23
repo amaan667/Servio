@@ -1,7 +1,7 @@
-import { errorToContext } from '@/lib/utils/error-to-context';
+import { errorToContext } from "@/lib/utils/error-to-context";
 
-import { useState, useEffect } from 'react';
-import { logger } from '@/lib/logger';
+import { useState, useEffect } from "react";
+import { logger } from "@/lib/logger";
 
 export interface GroupSession {
   id: string;
@@ -36,22 +36,23 @@ export function useGroupSessions(venueId: string): UseGroupSessionsReturn {
       setLoading(true);
       setError(null);
 
-      const response = await fetch(`/api/table/group-sessions?venueId=${venueId}`);
-      
+      const { apiClient } = await import("@/lib/api-client");
+      const response = await apiClient.get("/api/table/group-sessions", { params: { venueId } });
+
       if (!response.ok) {
         throw new Error(`Failed to fetch group sessions: ${response.statusText}`);
       }
 
       const data = await response.json();
-      
+
       if (data.ok) {
         setGroupSessions(data.groupSessions || []);
       } else {
-        throw new Error(data.error || 'Failed to fetch group sessions');
+        throw new Error(data.error || "Failed to fetch group sessions");
       }
     } catch (err) {
-      logger.error('[USE GROUP SESSIONS] Error fetching group sessions:', errorToContext(err));
-      setError(err instanceof Error ? err.message : 'Unknown error');
+      logger.error("[USE GROUP SESSIONS] Error fetching group sessions:", errorToContext(err));
+      setError(err instanceof Error ? err.message : "Unknown error");
       setGroupSessions([]);
     } finally {
       setLoading(false);
@@ -60,6 +61,7 @@ export function useGroupSessions(venueId: string): UseGroupSessionsReturn {
 
   useEffect(() => {
     fetchGroupSessions();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [venueId]);
 
   // Auto-refresh every 30 seconds - but only if there are active group sessions
@@ -67,15 +69,16 @@ export function useGroupSessions(venueId: string): UseGroupSessionsReturn {
     if (groupSessions.length === 0) {
       return; // Don't set up interval if no group sessions
     }
-    
+
     const interval = setInterval(fetchGroupSessions, 120000);
     return () => clearInterval(interval);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [venueId, groupSessions.length]);
 
   return {
     groupSessions,
     loading,
     error,
-    refetch: fetchGroupSessions
+    refetch: fetchGroupSessions,
   };
 }

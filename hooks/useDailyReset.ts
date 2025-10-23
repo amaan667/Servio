@@ -1,7 +1,7 @@
-import { errorToContext } from '@/lib/utils/error-to-context';
+import { errorToContext } from "@/lib/utils/error-to-context";
 
-import { useEffect, useState } from 'react';
-import { logger } from '@/lib/logger';
+import { useEffect, useState } from "react";
+import { logger } from "@/lib/logger";
 
 interface DailyResetResult {
   success: boolean;
@@ -29,20 +29,14 @@ export function useDailyReset(venueId: string) {
     try {
       setIsChecking(true);
 
-      const response = await fetch('/api/daily-reset/check-and-reset', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        credentials: 'include', // Include cookies for authentication
-        body: JSON.stringify({ venueId }),
-      });
+      const { apiClient } = await import("@/lib/api-client");
+      const response = await apiClient.post("/api/daily-reset/check-and-reset", { venueId });
 
       const result = await response.json();
 
       if (response.ok) {
         setResetResult(result);
-        
+
         if (result.resetDate) {
           setLastResetDate(result.resetDate);
         }
@@ -50,18 +44,17 @@ export function useDailyReset(venueId: string) {
         // If a reset was performed, show a notification
         if (result.success && !result.alreadyReset && result.summary) {
           const { completedOrders, canceledReservations, deletedTables } = result.summary;
-          
+
           if (completedOrders > 0 || canceledReservations > 0 || deletedTables > 0) {
-            
             // You could show a toast notification here
             // toast.success(`Daily reset completed: ${completedOrders} orders completed, ${deletedTables} tables deleted`);
           }
         }
       } else {
-        logger.error('🔄 [DAILY RESET HOOK] Reset check failed:', result);
+        logger.error("🔄 [DAILY RESET HOOK] Reset check failed:", result);
       }
     } catch (error) {
-      logger.error('🔄 [DAILY RESET HOOK] Error checking daily reset:', errorToContext(error));
+      logger.error("🔄 [DAILY RESET HOOK] Error checking daily reset:", errorToContext(error));
     } finally {
       setIsChecking(false);
     }
@@ -72,12 +65,13 @@ export function useDailyReset(venueId: string) {
     if (venueId) {
       checkAndReset();
     }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [venueId]);
 
   return {
     isChecking,
     lastResetDate,
     resetResult,
-    checkAndReset
+    checkAndReset,
   };
 }
