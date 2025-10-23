@@ -8,7 +8,7 @@ import SimpleStaffGrid from "@/components/staff/SimpleStaffGrid";
 import EnhancedShiftSchedule from "@/components/staff/EnhancedShiftSchedule";
 
 // Hooks
-import { useStaffManagement } from "./hooks/useStaffManagement";
+import { useStaffManagement, type StaffRow } from "./hooks/useStaffManagement";
 import { useShiftManagement } from "./hooks/useShiftManagement";
 
 /**
@@ -25,13 +25,13 @@ export default function StaffClient({
   initialCounts,
 }: {
   venueId: string;
-  initialStaff?: unknown[];
+  initialStaff?: StaffRow[];
   initialCounts?: unknown;
 }) {
   const [activeTab, setActiveTab] = useState("staff");
 
   const staffManagement = useStaffManagement(venueId, initialStaff, initialCounts);
-  const shiftManagement = useShiftManagement(venueId, staffManagement.staff);
+  const shiftManagement = useShiftManagement(venueId, staffManagement.staff || []);
 
   return (
     <div className="space-y-6 pb-32 md:pb-8">
