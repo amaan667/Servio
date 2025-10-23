@@ -118,10 +118,9 @@ export default function BillingClient({ venueId }: BillingClientProps) {
   const handleManageBilling = async () => {
     setLoadingPortal(true);
     try {
-      const response = await fetch("/api/stripe/create-portal-session", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ organizationId: organization?.id }),
+      const { apiClient } = await import("@/lib/api-client");
+      const response = await apiClient.post("/api/stripe/create-portal-session", {
+        organizationId: organization?.id,
       });
 
       const data = await response.json();

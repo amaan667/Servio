@@ -1,7 +1,7 @@
-import { errorToContext } from '@/lib/utils/error-to-context';
+import { errorToContext } from "@/lib/utils/error-to-context";
 
-import { useState } from 'react';
-import { logger } from '@/lib/logger';
+import { useState } from "react";
+import { logger } from "@/lib/logger";
 
 export interface CreateTableParams {
   venue_id: string;
@@ -27,33 +27,27 @@ export function useTableManagement() {
       setLoading(true);
       setError(null);
 
-      const response = await fetch('/api/tables', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify(params),
-      });
-
+      const { apiClient } = await import("@/lib/api-client");
+      const response = await apiClient.post("/api/tables", params);
       const data = await response.json();
 
       if (!response.ok) {
-        const errorMessage = data.error || 'Failed to create table';
-        const errorDetails = data.details || '';
-        const errorCode = data.code || '';
-        
+        const errorMessage = data.error || "Failed to create table";
+        const errorDetails = data.details || "";
+        const errorCode = data.code || "";
+
         // Create a more detailed error object
         const error = new Error(errorMessage);
         (error as unknown).details = errorDetails;
         (error as unknown).code = errorCode;
-        
+
         throw error;
       }
 
       return data.table;
     } catch (err) {
-      logger.error('[TABLE MANAGEMENT HOOK] Error creating table:', errorToContext(err));
-      const errorMessage = err instanceof Error ? err.message : 'Failed to create table';
+      logger.error("[TABLE MANAGEMENT HOOK] Error creating table:", errorToContext(err));
+      const errorMessage = err instanceof Error ? err.message : "Failed to create table";
       setError(errorMessage);
       throw err;
     } finally {
@@ -66,29 +60,24 @@ export function useTableManagement() {
       setLoading(true);
       setError(null);
 
-      const response = await fetch(`/api/tables/${params.id}`, {
-        method: 'PUT',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
-          label: params.label,
-          seat_count: params.seat_count,
-          is_active: params.is_active,
-          qr_version: params.qr_version,
-        }),
+      const { apiClient } = await import("@/lib/api-client");
+      const response = await apiClient.put(`/api/tables/${params.id}`, {
+        label: params.label,
+        seat_count: params.seat_count,
+        is_active: params.is_active,
+        qr_version: params.qr_version,
       });
 
       const data = await response.json();
 
       if (!response.ok) {
-        throw new Error(data.error || 'Failed to update table');
+        throw new Error(data.error || "Failed to update table");
       }
 
       return data.table;
     } catch (err) {
-      logger.error('[TABLE MANAGEMENT HOOK] Error updating table:', errorToContext(err));
-      const errorMessage = err instanceof Error ? err.message : 'Failed to update table';
+      logger.error("[TABLE MANAGEMENT HOOK] Error updating table:", errorToContext(err));
+      const errorMessage = err instanceof Error ? err.message : "Failed to update table";
       setError(errorMessage);
       throw err;
     } finally {
@@ -101,20 +90,19 @@ export function useTableManagement() {
       setLoading(true);
       setError(null);
 
-      const response = await fetch(`/api/tables/${tableId}`, {
-        method: 'DELETE',
-      });
+      const { apiClient } = await import("@/lib/api-client");
+      const response = await apiClient.delete(`/api/tables/${tableId}`);
 
       const data = await response.json();
 
       if (!response.ok) {
-        throw new Error(data.error || 'Failed to delete table');
+        throw new Error(data.error || "Failed to delete table");
       }
 
       return data;
     } catch (err) {
-      logger.error('[TABLE MANAGEMENT HOOK] Error deleting table:', errorToContext(err));
-      const errorMessage = err instanceof Error ? err.message : 'Failed to delete table';
+      logger.error("[TABLE MANAGEMENT HOOK] Error deleting table:", errorToContext(err));
+      const errorMessage = err instanceof Error ? err.message : "Failed to delete table";
       setError(errorMessage);
       throw err;
     } finally {
@@ -127,20 +115,19 @@ export function useTableManagement() {
       setLoading(true);
       setError(null);
 
-      const response = await fetch(`/api/tables/${tableId}/reissue-qr`, {
-        method: 'POST',
-      });
+      const { apiClient } = await import("@/lib/api-client");
+      const response = await apiClient.post(`/api/tables/${tableId}/reissue-qr`, {});
 
       const data = await response.json();
 
       if (!response.ok) {
-        throw new Error(data.error || 'Failed to reissue QR');
+        throw new Error(data.error || "Failed to reissue QR");
       }
 
       return data.table;
     } catch (err) {
-      logger.error('[TABLE MANAGEMENT HOOK] Error reissuing QR:', errorToContext(err));
-      const errorMessage = err instanceof Error ? err.message : 'Failed to reissue QR';
+      logger.error("[TABLE MANAGEMENT HOOK] Error reissuing QR:", errorToContext(err));
+      const errorMessage = err instanceof Error ? err.message : "Failed to reissue QR";
       setError(errorMessage);
       throw err;
     } finally {

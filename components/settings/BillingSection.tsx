@@ -41,10 +41,9 @@ export default function BillingSection({ organization }: BillingSectionProps) {
   const handleManageBilling = async () => {
     setLoadingPortal(true);
     try {
-      const response = await fetch("/api/stripe/create-portal-session", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ organizationId: organization?.id }),
+      const { apiClient } = await import("@/lib/api-client");
+      const response = await apiClient.post("/api/stripe/create-portal-session", {
+        organizationId: organization?.id,
       });
 
       const data = await response.json();
@@ -69,13 +68,10 @@ export default function BillingSection({ organization }: BillingSectionProps) {
   const handleSwitchToBasic = async () => {
     setLoadingPortal(true);
     try {
-      const response = await fetch("/api/stripe/downgrade-plan", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          organizationId: organization?.id,
-          newTier: "basic",
-        }),
+      const { apiClient } = await import("@/lib/api-client");
+      const response = await apiClient.post("/api/stripe/downgrade-plan", {
+        organizationId: organization?.id,
+        newTier: "basic",
       });
 
       const data = await response.json();
