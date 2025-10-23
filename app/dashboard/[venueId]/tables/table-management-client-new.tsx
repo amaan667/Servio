@@ -57,9 +57,13 @@ export function TableManagementClientNew({ venueId }: TableManagementClientNewPr
     state.setShowResetModal(true);
   };
 
-  const handleResetComplete = () => {
-    state.setShowResetModal(false);
+  const handleResetConfirm = async () => {
+    await state.checkAndReset();
     state.refetchTables();
+  };
+
+  const handleResetClose = () => {
+    state.setShowResetModal(false);
   };
 
   const handleTableActionComplete = () => {
@@ -157,16 +161,15 @@ export function TableManagementClientNew({ venueId }: TableManagementClientNewPr
       <ReservationsPanel
         venueId={venueId}
         reservations={state.reservations}
-        tables={state.tables}
         onReservationAction={handleTableActionComplete}
       />
 
       {/* Daily Reset Modal */}
       <DailyResetModal
-        open={state.showResetModal}
-        onOpenChange={state.setShowResetModal}
-        onResetComplete={handleResetComplete}
-        venueId={venueId}
+        isOpen={state.showResetModal}
+        onClose={handleResetClose}
+        onConfirm={handleResetConfirm}
+        isResetting={state.isResetting}
       />
 
       {/* Mobile Navigation */}

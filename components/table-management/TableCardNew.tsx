@@ -24,7 +24,7 @@ import {
 } from "@/components/ui/dropdown-menu";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 import { StatusPill } from "./StatusPill";
-import { useCloseTable, TableGridItem } from "@/hooks/useTableReservations";
+import { useCloseTable, TableGridItem, useDeleteTable } from "@/hooks/useTableReservations";
 import { useTableActions } from "@/hooks/useTableActions";
 import { GroupSession } from "@/hooks/useGroupSessions";
 import { supabaseBrowser as createClient } from "@/lib/supabase";
@@ -67,6 +67,7 @@ export function TableCardNew({
   const [mergedTableId, setMergedTableId] = useState<string | null>(null);
   const closeTable = useCloseTable();
   const { occupyTable, unmergeTable } = useTableActions();
+  const deleteTable = useDeleteTable(venueId);
   // Get group size for this table using passed groupSessions prop
   // const getTableGroupSize = () => {
   //   // Extract table number from label (e.g., "Table 5" -> 5)
@@ -195,46 +196,22 @@ export function TableCardNew({
   };
 
   const handleRemoveTable = async () => {
-    try {
-      const { apiClient } = await import("@/lib/api-client");
+    // Close modal immediately for instant feedback
+    setShowRemoveDialog(false);
+    setForceRemove(false);
+    setRemoveError(null);
 
-      setIsLoading(true);
-      setRemoveError(null);
-
-      // Close modal immediately for instant feedback
-      setShowRemoveDialog(false);
-      setForceRemove(false);
-
-      // Trigger parent refresh BEFORE API call (optimistic update)
-      onActionComplete?.();
-
-      // Then make the actual API call
-      const response = await apiClient.delete(`/api/tables/${table.id}`);
-
-      const responseData = await response.json();
-
-      if (!response.ok) {
-        // If it fails, refresh again to restore the table
+    // Use the mutation hook - table will disappear INSTANTLY
+    deleteTable.mutate(table.id, {
+      onSuccess: () => {
+        // Call parent callback if provided
         onActionComplete?.();
-
-        // Handle specific error cases with more user-friendly messages
-        if (responseData.error?.includes("active orders")) {
-          throw new Error("Cannot remove table with active orders. Please close all orders first.");
-        } else if (responseData.error?.includes("active reservations")) {
-          throw new Error(
-            "Cannot remove table with active reservations. Please cancel all reservations first."
-          );
-        } else if (responseData.error?.includes("Table not found")) {
-          throw new Error("Table not found. It may have already been removed.");
-        } else {
-          throw new Error(responseData.error || "Failed to remove table");
-        }
-      }
-    } catch (error) {
-      setRemoveError(error instanceof Error ? error.message : "Failed to remove table");
-    } finally {
-      setIsLoading(false);
-    }
+      },
+      onError: (error) => {
+        // Error is already handled by the hook's toast
+        setRemoveError(error instanceof Error ? error.message : "Failed to remove table");
+      },
+    });
   };
 
   const getContextualActions = () => {
