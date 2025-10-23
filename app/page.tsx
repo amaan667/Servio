@@ -18,24 +18,24 @@ function FAQItem({ question, answer }: { question: string; answer: string }) {
   const [isOpen, setIsOpen] = useState(false);
 
   return (
-    <div className="border-2 border-purple-200 rounded-lg overflow-hidden transition-all duration-300 hover:border-purple-300 hover:shadow-lg">
+    <div className="border-2 border-purple-600 rounded-lg overflow-hidden transition-all duration-300 hover:border-purple-700 hover:shadow-lg">
       <button
         onClick={() => setIsOpen(!isOpen)}
-        className="w-full px-6 py-4 text-left bg-gradient-to-r from-purple-50 to-purple-100 hover:from-purple-100 hover:to-purple-200 transition-all duration-300 flex items-center justify-between group"
+        className="w-full px-6 py-4 text-left bg-gradient-to-r from-purple-600 to-purple-700 hover:from-purple-700 hover:to-purple-800 transition-all duration-300 flex items-center justify-between group"
       >
-        <h3 className="text-lg font-semibold text-gray-900 group-hover:text-purple-700 transition-colors">
+        <h3 className="text-lg font-semibold text-white group-hover:text-purple-100 transition-colors">
           {question}
         </h3>
         <div className="ml-4 flex-shrink-0">
           {isOpen ? (
-            <ChevronUp className="h-5 w-5 text-purple-600" />
+            <ChevronUp className="h-5 w-5 text-white" />
           ) : (
-            <ChevronDown className="h-5 w-5 text-purple-600" />
+            <ChevronDown className="h-5 w-5 text-white" />
           )}
         </div>
       </button>
       {isOpen && (
-        <div className="px-6 py-4 bg-white border-t border-purple-200">
+        <div className="px-6 py-4 bg-white">
           <p className="text-gray-700 leading-relaxed">{answer}</p>
         </div>
       )}
