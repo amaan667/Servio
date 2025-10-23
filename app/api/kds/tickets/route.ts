@@ -1,7 +1,9 @@
 import { NextResponse } from "next/server";
-import { createServerSupabase } from "@/lib/supabase";
-import { createAdminClient } from "@/lib/supabase";
+import { createAdminClient, createServerSupabase } from "@/lib/supabase";
 import { logger } from "@/lib/logger";
+
+// TODO: Remaining GET and PATCH methods still use createServerSupabase (cookies)
+// Need to update to use: import { authenticateRequest, verifyVenueAccess } from "@/lib/api-auth";
 
 // Function to automatically backfill missing KDS tickets for orders
 async function autoBackfillMissingTickets(venueId: string) {
