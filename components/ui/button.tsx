@@ -5,20 +5,23 @@ import { cva, type VariantProps } from "class-variance-authority";
 import { cn } from "@/lib/utils";
 
 const buttonVariants = cva(
-  "inline-flex items-center justify-center gap-2 whitespace-nowrap rounded-xl text-sm font-semibold ring-offset-background transition-all duration-200 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-70 [&_svg]:pointer-events-none [&_svg]:size-4 [&_svg]:shrink-0 touch-manipulation",
+  "inline-flex items-center justify-center gap-2 whitespace-nowrap rounded-xl text-sm font-semibold ring-offset-background transition-colors duration-150 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-70 [&_svg]:pointer-events-none [&_svg]:size-4 [&_svg]:shrink-0 touch-manipulation active:scale-95 will-change-transform",
   {
     variants: {
       variant: {
-        default: "bg-white text-servio-purple hover:bg-gray-50 hover:text-servio-purple-dark shadow-md hover:shadow-lg border-2 border-servio-purple font-semibold dark:bg-white dark:text-servio-purple dark:hover:bg-gray-50",
+        default:
+          "bg-white text-servio-purple hover:bg-gray-50 hover:text-servio-purple-dark shadow-sm hover:shadow-md border-2 border-servio-purple font-semibold dark:bg-white dark:text-servio-purple dark:hover:bg-gray-50",
         destructive:
           "bg-red-600 text-white hover:bg-red-700 shadow-sm hover:shadow-md border-2 border-red-600 font-semibold [&_svg]:text-white",
         outline:
-          "bg-white text-servio-purple hover:bg-gray-50 hover:text-servio-purple-dark shadow-md hover:shadow-lg border-2 border-servio-purple font-semibold dark:bg-white dark:text-servio-purple dark:hover:bg-gray-50",
+          "bg-white text-servio-purple hover:bg-gray-50 hover:text-servio-purple-dark shadow-sm hover:shadow-md border-2 border-servio-purple font-semibold dark:bg-white dark:text-servio-purple dark:hover:bg-gray-50",
         secondary:
-          "bg-white text-servio-purple hover:bg-gray-50 hover:text-servio-purple-dark shadow-md hover:shadow-lg border-2 border-servio-purple font-semibold dark:bg-white dark:text-servio-purple dark:hover:bg-gray-50",
-        ghost: "bg-white text-servio-purple hover:bg-gray-50 hover:text-servio-purple-dark shadow-md hover:shadow-lg border-2 border-servio-purple font-semibold dark:bg-white dark:text-servio-purple dark:hover:bg-gray-50",
+          "bg-white text-servio-purple hover:bg-gray-50 hover:text-servio-purple-dark shadow-sm hover:shadow-md border-2 border-servio-purple font-semibold dark:bg-white dark:text-servio-purple dark:hover:bg-gray-50",
+        ghost:
+          "bg-white text-servio-purple hover:bg-gray-50 hover:text-servio-purple-dark shadow-sm hover:shadow-md border-2 border-servio-purple font-semibold dark:bg-white dark:text-servio-purple dark:hover:bg-gray-50",
         link: "text-servio-purple underline-offset-4 hover:underline font-semibold",
-        servio: "bg-white text-servio-purple hover:bg-gray-50 hover:text-servio-purple-dark shadow-md hover:shadow-lg border-2 border-servio-purple font-semibold dark:bg-white dark:text-servio-purple dark:hover:bg-gray-50",
+        servio:
+          "bg-white text-servio-purple hover:bg-gray-50 hover:text-servio-purple-dark shadow-sm hover:shadow-md border-2 border-servio-purple font-semibold dark:bg-white dark:text-servio-purple dark:hover:bg-gray-50",
       },
       size: {
         default: "h-10 px-4 py-2 min-h-[44px] min-w-[44px]",
@@ -34,7 +37,7 @@ const buttonVariants = cva(
       variant: "servio",
       size: "default",
     },
-  },
+  }
 );
 
 export interface ButtonProps
@@ -47,13 +50,9 @@ const Button = React.forwardRef<HTMLButtonElement, ButtonProps>(
   ({ className, variant, size, asChild = false, ...props }, ref) => {
     const Comp = asChild ? Slot : "button";
     return (
-      <Comp
-        className={cn(buttonVariants({ variant, size, className }))}
-        ref={ref}
-        {...props}
-      />
+      <Comp className={cn(buttonVariants({ variant, size, className }))} ref={ref} {...props} />
     );
-  },
+  }
 );
 Button.displayName = "Button";
 
