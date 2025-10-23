@@ -1,22 +1,89 @@
-import { NextRequest, NextResponse } from 'next/server';
-import { logger } from '@/lib/logger';
+import { NextRequest, NextResponse } from "next/server";
+import { logger } from "@/lib/logger";
 
-export async function POST(req: NextRequest) {
+interface ErrorData {
+  error?: {
+    name: string;
+    message: string;
+    stack?: string;
+  };
+  message?: {
+    text: string;
+    level: string;
+  };
+  context: {
+    userId?: string;
+    venueId?: string;
+    userRole?: string;
+    url: string;
+    timestamp: number;
+    userAgent: string;
+    sessionId: string;
+    customData?: Record<string, unknown>;
+  };
+}
+
+export async function POST(request: NextRequest) {
   try {
-    const errorData = await req.json();
-    
-    // Log client-side errors for monitoring
-    logger.error('[CLIENT_ERROR]', {
-      message: errorData.message,
-      url: errorData.url,
-      stack: errorData.stack?.substring(0, 500), // Limit stack trace length
-      context: errorData.context,
-    });
-    
+    const data: ErrorData = await request.json();
+
+    // Log error/message
+    if (data.error) {
+      logger.error("[ERROR TRACKING] Error captured:", {
+        name: data.error.name,
+        message: data.error.message,
+        stack: data.error.stack,
+        url: data.context.url,
+        userId: data.context.userId,
+        venueId: data.context.venueId,
+        userRole: data.context.userRole,
+        sessionId: data.context.sessionId,
+        timestamp: new Date(data.context.timestamp).toISOString(),
+      });
+    } else if (data.message) {
+      logger.info(`[ERROR TRACKING] ${data.message.level.toUpperCase()}: ${data.message.text}`, {
+        url: data.context.url,
+        userId: data.context.userId,
+        venueId: data.context.venueId,
+        userRole: data.context.userRole,
+        sessionId: data.context.sessionId,
+        timestamp: new Date(data.context.timestamp).toISOString(),
+      });
+    }
+
+    // Store in database or send to external service
+    // For now, we'll just log it
+    // In production, you might want to store this in a database
+    // or send it to a service like Sentry, LogRocket, etc.
+
+    // Example: Store in Supabase
+    // const supabase = createServerSupabase();
+    // await supabase.from('error_logs').insert({
+    //   error_name: data.error?.name,
+    //   error_message: data.error?.message,
+    //   error_stack: data.error?.stack,
+    //   message_text: data.message?.text,
+    //   message_level: data.message?.level,
+    //   url: data.context.url,
+    //   user_id: data.context.userId,
+    //   venue_id: data.context.venueId,
+    //   user_role: data.context.userRole,
+    //   session_id: data.context.sessionId,
+    //   user_agent: data.context.userAgent,
+    //   custom_data: data.context.customData,
+    //   created_at: new Date().toISOString(),
+    // });
+
     return NextResponse.json({ success: true });
-  } catch {
-    // Silent error handling - don't break client if error logging fails
-    return NextResponse.json({ success: false }, { status: 500 });
+  } catch (error) {
+    logger.error("[ERROR TRACKING] Failed to process error:", error);
+    return NextResponse.json({ error: "Failed to process error" }, { status: 500 });
   }
 }
 
+export async function GET() {
+  return NextResponse.json({
+    message: "Error tracking endpoint",
+    status: "active",
+  });
+}

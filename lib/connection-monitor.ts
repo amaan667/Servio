@@ -1,11 +1,11 @@
-import { errorToContext } from '@/lib/utils/error-to-context';
+import { errorToContext } from "@/lib/utils/error-to-context";
 
 /**
  * Connection monitoring and offline handling utilities
  */
 
-import React from 'react';
-import { logger } from '@/lib/logger';
+import React from "react";
+import { logger } from "@/lib/logger";
 
 export interface ConnectionState {
   isOnline: boolean;
@@ -18,41 +18,41 @@ class ConnectionMonitor {
   private state: ConnectionState = {
     isOnline: navigator.onLine,
     isSlowConnection: false,
-    lastChecked: new Date()
+    lastChecked: new Date(),
   };
   private checkInterval: NodeJS.Timeout | null = null;
 
   constructor() {
-    if (typeof window === 'undefined') return;
-    
+    if (typeof window === "undefined") return;
+
     this.setupEventListeners();
     this.startPeriodicCheck();
   }
 
   private setupEventListeners() {
-    window.addEventListener('online', () => this.handleOnline());
-    window.addEventListener('offline', () => this.handleOffline());
+    window.addEventListener("online", () => this.handleOnline());
+    window.addEventListener("offline", () => this.handleOffline());
   }
 
   private async handleOnline() {
-    logger.debug('[CONNECTION] Network is back online');
+    logger.debug("[CONNECTION] Network is back online");
     await this.checkConnectionQuality();
   }
 
   private handleOffline() {
-    logger.warn('[CONNECTION] Network is offline');
+    logger.warn("[CONNECTION] Network is offline");
     this.updateState({ isOnline: false, isSlowConnection: false });
   }
 
   private async checkConnectionQuality() {
     try {
       const startTime = Date.now();
-      
+
       // Try to fetch a small resource to test connection quality
-      const response = await fetch('/api/auth/health', {
-        method: 'HEAD',
-        cache: 'no-cache',
-        signal: AbortSignal.timeout(5000) // 5 second timeout
+      const response = await fetch("/api/auth/health", {
+        method: "GET",
+        cache: "no-cache",
+        signal: AbortSignal.timeout(5000), // 5 second timeout
       });
 
       const responseTime = Date.now() - startTime;
@@ -61,22 +61,21 @@ class ConnectionMonitor {
       this.updateState({
         isOnline: response.ok,
         isSlowConnection,
-        lastChecked: new Date()
+        lastChecked: new Date(),
       });
-
     } catch (error) {
-      logger.warn('[CONNECTION] Connection check failed:', errorToContext(error));
+      logger.warn("[CONNECTION] Connection check failed:", errorToContext(error));
       this.updateState({
         isOnline: false,
         isSlowConnection: false,
-        lastChecked: new Date()
+        lastChecked: new Date(),
       });
     }
   }
 
   private updateState(newState: Partial<ConnectionState>) {
     this.state = { ...this.state, ...newState };
-    this.listeners.forEach(listener => listener(this.state));
+    this.listeners.forEach((listener) => listener(this.state));
   }
 
   private startPeriodicCheck() {
@@ -88,7 +87,7 @@ class ConnectionMonitor {
 
   public subscribe(listener: (state: ConnectionState) => void): () => void {
     this.listeners.add(listener);
-    
+
     // Immediately call with current state
     listener(this.state);
 
@@ -119,7 +118,7 @@ class ConnectionMonitor {
 let connectionMonitor: ConnectionMonitor | null = null;
 
 export function getConnectionMonitor(): ConnectionMonitor {
-  if (!connectionMonitor && typeof window !== 'undefined') {
+  if (!connectionMonitor && typeof window !== "undefined") {
     connectionMonitor = new ConnectionMonitor();
   }
   return connectionMonitor!;
@@ -128,7 +127,7 @@ export function getConnectionMonitor(): ConnectionMonitor {
 // React hook for connection monitoring
 export function useConnectionMonitor() {
   const [state, setState] = React.useState<ConnectionState>(() => {
-    if (typeof window === 'undefined') {
+    if (typeof window === "undefined") {
       return { isOnline: true, isSlowConnection: false, lastChecked: new Date() };
     }
     return getConnectionMonitor().getState();

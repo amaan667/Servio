@@ -21,6 +21,10 @@
     "test:coverage": "vitest run --coverage",
     "test:e2e": "playwright test",
     "test:e2e:ui": "playwright test --ui",
+    "test:integration": "vitest run --config vitest.integration.config.ts",
+    "storybook": "storybook dev -p 6006",
+    "build-storybook": "storybook build",
+    "docs:api": "swagger-jsdoc -d swagger.config.js -o api-docs.json",
     "prepare": "husky install",
     "validate": "pnpm run format:check && pnpm run lint && pnpm run typecheck && pnpm run test"
   },
@@ -117,7 +121,16 @@
     "uuid": "^11.1.0",
     "vaul": "^0.9.6",
     "web-vitals": "^5.1.0",
-    "zod": "^3.25.76"
+    "zod": "^3.25.76",
+    "@sentry/nextjs": "^8.0.0",
+    "@storybook/addon-essentials": "^8.0.0",
+    "@storybook/addon-interactions": "^8.0.0",
+    "@storybook/addon-links": "^8.0.0",
+    "@storybook/addon-onboarding": "^8.0.0",
+    "@storybook/addon-themes": "^8.0.0",
+    "@storybook/nextjs": "^8.0.0",
+    "@storybook/react": "^8.0.0",
+    "@storybook/test": "^8.0.0"
   },
   "devDependencies": {
     "@eslint/js": "^9.31.0",
