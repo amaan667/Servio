@@ -7,19 +7,13 @@ import { usePageAuth } from "../hooks/usePageAuth";
 
 export default function FeedbackClientPage({ venueId }: { venueId: string }) {
   const router = useRouter();
-  const { user, userRole, loading, authError, hasAccess } = usePageAuth({
+  const { user, userRole, authError, hasAccess } = usePageAuth({
     venueId,
     pageName: "Feedback",
     requiredRoles: ["owner", "manager"],
   });
 
-  if (loading) {
-    return (
-      <div className="min-h-screen flex items-center justify-center bg-background">
-        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary"></div>
-      </div>
-    );
-  }
+  // No loading spinner - render immediately
 
   if (authError) {
     return (

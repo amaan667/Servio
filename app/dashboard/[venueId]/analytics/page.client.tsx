@@ -7,19 +7,13 @@ import { usePageAuth } from "../hooks/usePageAuth";
 
 export default function AnalyticsClientPage({ venueId }: { venueId: string }) {
   const router = useRouter();
-  const { user, userRole, venueName, loading, authError, hasAccess } = usePageAuth({
+  const { user, userRole, venueName, authError, hasAccess } = usePageAuth({
     venueId,
     pageName: "Analytics",
     requiredRoles: ["owner", "manager"],
   });
 
-  if (loading) {
-    return (
-      <div className="min-h-screen flex items-center justify-center bg-background">
-        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary"></div>
-      </div>
-    );
-  }
+  // No loading spinner - render immediately
 
   if (authError) {
     return (

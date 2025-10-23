@@ -7,7 +7,6 @@ import Link from "next/link";
 import { useDashboardPrefetch } from "@/hooks/usePrefetch";
 import PullToRefresh from "@/components/PullToRefresh";
 import { useConnectionMonitor } from "@/lib/connection-monitor";
-import { DashboardSkeleton } from "@/components/dashboard-skeleton";
 import RoleManagementPopup from "@/components/role-management-popup";
 import VenueSwitcherPopup from "@/components/venue-switcher-popup";
 import { supabaseBrowser } from "@/lib/supabase";
@@ -210,12 +209,9 @@ const DashboardClient = React.memo(function DashboardClient({ venueId }: { venue
   }, [venueId]);
 
   // Show loading state
-  if (loading) {
-    return <DashboardSkeleton />;
-  }
-
+  // No loading spinner - render immediately
   // Show auth error
-  if (!user) {
+  if (!user && !loading) {
     return (
       <div className="flex items-center justify-center min-h-screen">
         <div className="text-center">
@@ -249,9 +245,7 @@ const DashboardClient = React.memo(function DashboardClient({ venueId }: { venue
     return <div>Venue not found</div>;
   }
 
-  if (dashboardData.loading) {
-    return <DashboardSkeleton />;
-  }
+  // No loading spinner - render immediately with empty states
 
   return (
     <PullToRefresh onRefresh={handleRefresh}>

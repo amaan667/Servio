@@ -1,24 +1,18 @@
 "use client";
 
 import { useFeatureAuth } from "../hooks/useFeatureAuth";
-import TableManagementClientNew from "./table-management-client-new";
+import { TableManagementClientNew } from "./table-management-client-new";
 import RoleBasedNavigation from "@/components/RoleBasedNavigation";
 import { useRouter } from "next/navigation";
 
 export default function TablesClientPage({ venueId }: { venueId: string }) {
   const router = useRouter();
-  const { user, userRole, venueName, loading, authError } = useFeatureAuth({
+  const { user, userRole, venueName, authError } = useFeatureAuth({
     venueId,
     featureName: "Table Management",
   });
 
-  if (loading) {
-    return (
-      <div className="min-h-screen flex items-center justify-center bg-background">
-        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary"></div>
-      </div>
-    );
-  }
+  // No loading spinner - render immediately
 
   if (authError) {
     return (

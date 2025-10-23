@@ -35,33 +35,13 @@ export default function QRCodeClient({
   venueId: string;
   venueName: string;
 }) {
-  console.info("[QR CODE CLIENT] 🎯 Component mounted:", { venueId, venueName });
-
   const [qrCodeSize, setQrCodeSize] = useState("medium");
   const [includeVenueInfo] = useState(true);
   const [includeInstructions] = useState(true);
 
   const qrManagement = useQRCodeManagement(venueId);
 
-  console.info("[QR CODE CLIENT] 📊 Management state:", {
-    loading: qrManagement.loading,
-    tablesCount: qrManagement.tables.length,
-    countersCount: qrManagement.counters.length,
-    generatedQRsCount: qrManagement.generatedQRs.length,
-  });
-
-  // Show loading state while data is being fetched
-  if (qrManagement.loading) {
-    console.info("[QR CODE CLIENT] ⏳ Still loading data...");
-    return (
-      <div className="flex items-center justify-center min-h-[400px]">
-        <div className="text-center">
-          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-green-600 mx-auto mb-4"></div>
-          <p className="text-gray-600">Loading QR code management...</p>
-        </div>
-      </div>
-    );
-  }
+  // No loading spinner - render content immediately with empty state
 
   // Auto-generate QR code if table parameter is present
   useEffect(() => {

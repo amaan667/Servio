@@ -7,31 +7,12 @@ import { usePageAuth } from "../hooks/usePageAuth";
 
 export default function QRCodeClientPage({ venueId }: { venueId: string }) {
   const router = useRouter();
-
-  console.info("[QR CODES PAGE] 🎯 Component mounted:", { venueId });
-
-  const { user, userRole, venueName, loading, authError } = usePageAuth({
+  const { user, userRole, venueName, authError } = usePageAuth({
     venueId,
     pageName: "QR Codes",
   });
 
-  console.info("[QR CODES PAGE] 📊 Auth state:", {
-    loading,
-    hasUser: !!user,
-    userRole,
-    venueName,
-    authError,
-  });
-
-  if (loading) {
-    console.info("[QR CODES PAGE] ⏳ Still loading auth...");
-    return (
-      <div className="min-h-screen flex items-center justify-center bg-background">
-        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary"></div>
-      </div>
-    );
-  }
-
+  // No loading spinner - render immediately
   if (authError) {
     console.error("[QR CODES PAGE] ❌ Auth error:", authError);
     return (
@@ -50,18 +31,17 @@ export default function QRCodeClientPage({ venueId }: { venueId: string }) {
     );
   }
 
-  if (!user || !userRole) {
-    return null;
-  }
-
+  // Render immediately even if user is not loaded yet
   return (
     <div className="min-h-screen bg-background">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 pb-24 md:pb-8">
-        <RoleBasedNavigation
-          venueId={venueId}
-          userRole={userRole as unknown}
-          userName={user.user_metadata?.full_name || user.email?.split("@")[0] || "User"}
-        />
+        {user && userRole && (
+          <RoleBasedNavigation
+            venueId={venueId}
+            userRole={userRole as unknown}
+            userName={user.user_metadata?.full_name || user.email?.split("@")[0] || "User"}
+          />
+        )}
 
         <div className="mb-8 mt-4">
           <h1 className="text-3xl font-bold tracking-tight text-foreground">QR Code Generator</h1>
@@ -70,7 +50,11 @@ export default function QRCodeClientPage({ venueId }: { venueId: string }) {
           </p>
         </div>
 
-        <QRCodeClient venueId={venueId} venueName={venueName} />
+        {user && venueName ? (
+          <QRCodeClient venueId={venueId} venueName={venueName} />
+        ) : (
+          <div className="text-center py-12 text-gray-500">Loading...</div>
+        )}
       </div>
     </div>
   );

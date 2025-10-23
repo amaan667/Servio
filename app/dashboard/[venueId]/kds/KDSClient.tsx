@@ -5,16 +5,7 @@ import { supabaseBrowser as createClient } from "@/lib/supabase";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import {
-  Clock,
-  CheckCircle2,
-  ChefHat,
-  PlayCircle,
-  XCircle,
-  RefreshCw,
-  Timer,
-  ArrowRight,
-} from "lucide-react";
+import { Clock, CheckCircle2, ChefHat, PlayCircle, XCircle, Timer, ArrowRight } from "lucide-react";
 import { cn } from "@/lib/utils";
 
 interface KDSStation {
@@ -60,10 +51,10 @@ interface KDSClientProps {
 export default function KDSClient({ venueId }: KDSClientProps) {
   const [stations, setStations] = useState<KDSStation[]>([]);
   const [tickets, setTickets] = useState<KDSTicket[]>([]);
-  const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [selectedStation, setSelectedStation] = useState<string | null>(null);
   const [autoRefresh, setAutoRefresh] = useState(true);
+  const [refreshInterval, setRefreshInterval] = useState(5); // seconds
 
   // Fetch stations
   const fetchStations = useCallback(async () => {
@@ -226,32 +217,22 @@ export default function KDSClient({ venueId }: KDSClientProps) {
     };
   }, [venueId, fetchTickets]);
 
-  // Auto-refresh every 30 seconds
+  // Auto-refresh with configurable interval
   useEffect(() => {
     if (!autoRefresh) return;
 
     const interval = setInterval(() => {
       fetchTickets();
-    }, 30000);
+    }, refreshInterval * 1000);
 
     return () => clearInterval(interval);
-  }, [autoRefresh, fetchTickets]);
+  }, [autoRefresh, refreshInterval, fetchTickets]);
 
-  if (loading) {
-    return (
-      <div className="flex items-center justify-center h-64">
-        <RefreshCw className="h-8 w-8 animate-spin text-gray-400" />
-      </div>
-    );
-  }
-
+  // No loading spinner - show content immediately with empty state
   if (error) {
     return (
       <div className="p-4 bg-red-50 border border-red-200 rounded-lg">
         <p className="text-red-800">Error: {error}</p>
-        <Button onClick={fetchTickets} className="mt-2">
-          Retry
-        </Button>
       </div>
     );
   }
@@ -263,20 +244,36 @@ export default function KDSClient({ venueId }: KDSClientProps) {
 
   return (
     <div className="space-y-6">
-      {/* Controls */}
-      <div className="flex items-center justify-end gap-3">
-        <Button variant="outline" size="sm" onClick={fetchTickets}>
-          <RefreshCw className="h-4 w-4 mr-2" />
-          Refresh
-        </Button>
-        <Button
-          variant={autoRefresh ? "default" : "outline"}
-          size="sm"
-          onClick={() => setAutoRefresh(!autoRefresh)}
-        >
-          <Timer className="h-4 w-4 mr-2" />
-          {autoRefresh ? "Auto-refresh ON" : "Auto-refresh OFF"}
-        </Button>
+      {/* Auto-Refresh Controls */}
+      <div className="flex items-center justify-end gap-3 flex-wrap">
+        <div className="flex items-center gap-2">
+          <span className="text-sm text-gray-600">Auto-refresh:</span>
+          <Button
+            variant={autoRefresh ? "default" : "outline"}
+            size="sm"
+            onClick={() => setAutoRefresh(!autoRefresh)}
+          >
+            <Timer className="h-4 w-4 mr-2" />
+            {autoRefresh ? "ON" : "OFF"}
+          </Button>
+        </div>
+        {autoRefresh && (
+          <div className="flex items-center gap-2">
+            <span className="text-sm text-gray-600">Every:</span>
+            <select
+              value={refreshInterval}
+              onChange={(e) => setRefreshInterval(Number(e.target.value))}
+              className="text-sm border rounded-md px-2 py-1 bg-white"
+            >
+              <option value={3}>3s</option>
+              <option value={5}>5s</option>
+              <option value={10}>10s</option>
+              <option value={15}>15s</option>
+              <option value={30}>30s</option>
+              <option value={60}>1m</option>
+            </select>
+          </div>
+        )}
       </div>
 
       {/* Stats */}
