@@ -8,12 +8,6 @@ const meta: Meta<typeof Card> = {
   component: Card,
   parameters: {
     layout: "centered",
-    docs: {
-      description: {
-        component:
-          "A flexible card component for displaying content in a contained format. Built with Radix UI primitives and styled with Tailwind CSS.",
-      },
-    },
   },
   tags: ["autodocs"],
 };
@@ -23,13 +17,13 @@ type Story = StoryObj<typeof meta>;
 
 export const Default: Story = {
   render: () => (
-    <Card>
+    <Card className="w-[350px]">
       <CardHeader>
         <CardTitle>Card Title</CardTitle>
         <CardDescription>Card description goes here</CardDescription>
       </CardHeader>
       <CardContent>
-        <p>Card content goes here</p>
+        <p>Card content goes here. This is where you would put the main content of your card.</p>
       </CardContent>
     </Card>
   ),
@@ -37,16 +31,17 @@ export const Default: Story = {
 
 export const WithFooter: Story = {
   render: () => (
-    <Card>
+    <Card className="w-[350px]">
       <CardHeader>
         <CardTitle>Card with Footer</CardTitle>
         <CardDescription>This card includes a footer section</CardDescription>
       </CardHeader>
       <CardContent>
-        <p>Card content goes here</p>
+        <p>Main content of the card.</p>
       </CardContent>
-      <CardFooter>
-        <Button>Action</Button>
+      <CardFooter className="flex justify-between">
+        <Button variant="outline">Cancel</Button>
+        <Button>Save</Button>
       </CardFooter>
     </Card>
   ),
@@ -54,10 +49,10 @@ export const WithFooter: Story = {
 
 export const StatsCard: Story = {
   render: () => (
-    <Card>
+    <Card className="w-[300px]">
       <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
         <CardTitle className="text-sm font-medium">Total Revenue</CardTitle>
-        <Badge variant="outline">+20.1%</Badge>
+        <Badge variant="secondary">+20.1%</Badge>
       </CardHeader>
       <CardContent>
         <div className="text-2xl font-bold">$45,231.89</div>
@@ -69,12 +64,12 @@ export const StatsCard: Story = {
 
 export const OrderCard: Story = {
   render: () => (
-    <Card>
+    <Card className="w-[400px]">
       <CardHeader>
-        <CardTitle className="flex items-center justify-between">
-          Order #1234
-          <Badge variant="secondary">Preparing</Badge>
-        </CardTitle>
+        <div className="flex items-center justify-between">
+          <CardTitle>Order #12345</CardTitle>
+          <Badge variant="outline">Pending</Badge>
+        </div>
         <CardDescription>Table 5 • 2:30 PM</CardDescription>
       </CardHeader>
       <CardContent>
@@ -84,20 +79,20 @@ export const OrderCard: Story = {
             <span>$12.99</span>
           </div>
           <div className="flex justify-between">
-            <span>Coca Cola</span>
-            <span>$2.50</span>
+            <span>Fries</span>
+            <span>$4.99</span>
           </div>
-          <div className="border-t pt-2 flex justify-between font-semibold">
+          <div className="flex justify-between font-bold">
             <span>Total</span>
-            <span>$15.49</span>
+            <span>$17.98</span>
           </div>
         </div>
       </CardContent>
       <CardFooter className="flex gap-2">
-        <Button variant="outline" size="sm">
+        <Button variant="outline" className="flex-1">
           View Details
         </Button>
-        <Button size="sm">Mark Ready</Button>
+        <Button className="flex-1">Accept Order</Button>
       </CardFooter>
     </Card>
   ),
@@ -105,79 +100,79 @@ export const OrderCard: Story = {
 
 export const MenuItemCard: Story = {
   render: () => (
-    <Card>
+    <Card className="w-[300px]">
       <CardHeader>
-        <CardTitle>Chicken Burger</CardTitle>
-        <CardDescription>Grilled chicken with lettuce, tomato, and mayo</CardDescription>
+        <CardTitle>Chicken Caesar Salad</CardTitle>
+        <CardDescription>Fresh romaine, grilled chicken, parmesan</CardDescription>
       </CardHeader>
       <CardContent>
         <div className="flex items-center justify-between">
           <span className="text-2xl font-bold">$14.99</span>
-          <Badge variant="outline">Available</Badge>
+          <Badge variant="secondary">Available</Badge>
         </div>
       </CardContent>
-      <CardFooter className="flex gap-2">
-        <Button variant="outline" size="sm">
-          Edit
-        </Button>
-        <Button variant="destructive" size="sm">
-          Remove
-        </Button>
+      <CardFooter>
+        <Button className="w-full">Add to Order</Button>
       </CardFooter>
     </Card>
   ),
 };
 
-export const LoadingCard: Story = {
+export const AnalyticsCard: Story = {
   render: () => (
-    <Card>
+    <Card className="w-[350px]">
       <CardHeader>
-        <div className="h-4 bg-gray-200 rounded animate-pulse"></div>
-        <div className="h-3 bg-gray-200 rounded animate-pulse w-2/3"></div>
+        <CardTitle>Today&apos;s Performance</CardTitle>
+        <CardDescription>Real-time metrics for your venue</CardDescription>
       </CardHeader>
       <CardContent>
-        <div className="space-y-2">
-          <div className="h-3 bg-gray-200 rounded animate-pulse"></div>
-          <div className="h-3 bg-gray-200 rounded animate-pulse w-4/5"></div>
+        <div className="grid grid-cols-2 gap-4">
+          <div className="text-center">
+            <div className="text-2xl font-bold">24</div>
+            <div className="text-sm text-muted-foreground">Orders</div>
+          </div>
+          <div className="text-center">
+            <div className="text-2xl font-bold">$1,234</div>
+            <div className="text-sm text-muted-foreground">Revenue</div>
+          </div>
         </div>
       </CardContent>
     </Card>
   ),
 };
 
-export const ResponsiveGrid: Story = {
+export const MultipleCards: Story = {
   render: () => (
     <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
       <Card>
         <CardHeader>
-          <CardTitle>Card 1</CardTitle>
-          <CardDescription>Description 1</CardDescription>
+          <CardTitle>Total Orders</CardTitle>
         </CardHeader>
         <CardContent>
-          <p>Content 1</p>
+          <div className="text-2xl font-bold">156</div>
+          <p className="text-xs text-muted-foreground">+12% from last week</p>
         </CardContent>
       </Card>
+
       <Card>
         <CardHeader>
-          <CardTitle>Card 2</CardTitle>
-          <CardDescription>Description 2</CardDescription>
+          <CardTitle>Average Order Value</CardTitle>
         </CardHeader>
         <CardContent>
-          <p>Content 2</p>
+          <div className="text-2xl font-bold">$23.45</div>
+          <p className="text-xs text-muted-foreground">+5% from last week</p>
         </CardContent>
       </Card>
+
       <Card>
         <CardHeader>
-          <CardTitle>Card 3</CardTitle>
-          <CardDescription>Description 3</CardDescription>
+          <CardTitle>Customer Satisfaction</CardTitle>
         </CardHeader>
         <CardContent>
-          <p>Content 3</p>
+          <div className="text-2xl font-bold">4.8/5</div>
+          <p className="text-xs text-muted-foreground">Based on 89 reviews</p>
         </CardContent>
       </Card>
     </div>
   ),
-  parameters: {
-    layout: "padded",
-  },
 };

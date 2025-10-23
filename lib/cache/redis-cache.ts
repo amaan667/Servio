@@ -1,276 +1,278 @@
-/**
- * @fileoverview Redis caching layer for performance optimization
- * @module lib/cache/redis-cache
- */
+import { Redis } from "ioredis";
+import { logger } from "@/lib/logger";
 
-import Redis from 'ioredis';
-import { logger } from '@/lib/logger';
-
-// Redis client singleton
-let redisClient: Redis | null = null;
-
-/**
- * Get or create Redis client
- */
-function getRedisClient(): Redis | null {
-  if (typeof window !== 'undefined') {
-    // Redis is not available in browser
-    return null;
-  }
-
-  if (!process.env.REDIS_URL) {
-    logger.debug('[REDIS] Redis URL not configured, using memory cache fallback');
-    return null;
-  }
-
-  if (!redisClient) {
-    try {
-      redisClient = new Redis(process.env.REDIS_URL, {
-        maxRetriesPerRequest: 3,
-        enableReadyCheck: true,
-        lazyConnect: true,
-      });
-
-      redisClient.on('error', (error) => {
-        logger.error('[REDIS] Connection error', { error });
-      });
-
-      redisClient.on('connect', () => {
-        logger.debug('[REDIS] Connected successfully');
-      });
-
-      // Connect lazily
-      redisClient.connect().catch((error) => {
-        logger.error('[REDIS] Failed to connect', { error });
-        redisClient = null;
-      });
-    } catch (error) {
-      logger.error('[REDIS] Failed to initialize', { error });
-      return null;
-    }
-  }
-
-  return redisClient;
+interface CacheOptions {
+  ttl?: number; // Time to live in seconds
+  tags?: string[]; // Cache tags for invalidation
 }
 
-/**
- * Redis cache manager
- */
-export class RedisCache {
-  private redis: Redis | null;
+class RedisCache {
+  private redis: Redis | null = null;
+  private isConnected = false;
 
   constructor() {
-    this.redis = getRedisClient();
+    this.initializeRedis();
+  }
+
+  private async initializeRedis() {
+    try {
+      if (process.env.REDIS_URL) {
+        this.redis = new Redis(process.env.REDIS_URL, {
+          retryDelayOnFailover: 100,
+          maxRetriesPerRequest: 3,
+          lazyConnect: true,
+        });
+
+        this.redis.on("connect", () => {
+          this.isConnected = true;
+          logger.info("[REDIS] Connected to Redis cache");
+        });
+
+        this.redis.on("error", (error) => {
+          this.isConnected = false;
+          logger.warn("[REDIS] Cache connection error:", error);
+        });
+
+        await this.redis.connect();
+      } else {
+        logger.info("[REDIS] Redis URL not provided, using in-memory cache fallback");
+      }
+    } catch (error) {
+      logger.warn("[REDIS] Failed to initialize Redis cache:", error);
+    }
   }
 
   /**
    * Get value from cache
    */
   async get<T>(key: string): Promise<T | null> {
-    if (!this.redis) return null;
+    if (!this.redis || !this.isConnected) {
+      return null;
+    }
 
     try {
       const value = await this.redis.get(key);
-      if (!value) return null;
-
-      return JSON.parse(value) as T;
+      if (value) {
+        return JSON.parse(value);
+      }
+      return null;
     } catch (error) {
-      logger.error('[REDIS] Failed to get key', { error, key });
+      logger.warn("[REDIS] Cache get error:", error);
       return null;
     }
   }
 
   /**
-   * Set value in cache with TTL
+   * Set value in cache
    */
-  async set(key: string, value: unknown, ttl: number = 300): Promise<boolean> {
-    if (!this.redis) return false;
+  async set(key: string, value: unknown, options: CacheOptions = {}): Promise<boolean> {
+    if (!this.redis || !this.isConnected) {
+      return false;
+    }
 
     try {
       const serialized = JSON.stringify(value);
-      await this.redis.setex(key, ttl, serialized);
+      const ttl = options.ttl || 3600; // Default 1 hour
+
+      if (options.tags && options.tags.length > 0) {
+        // Store with tags for invalidation
+        const pipeline = this.redis.pipeline();
+        pipeline.setex(key, ttl, serialized);
+
+        // Add to tag sets
+        options.tags.forEach((tag) => {
+          pipeline.sadd(`tag:${tag}`, key);
+          pipeline.expire(`tag:${tag}`, ttl);
+        });
+
+        await pipeline.exec();
+      } else {
+        await this.redis.setex(key, ttl, serialized);
+      }
+
       return true;
     } catch (error) {
-      logger.error('[REDIS] Failed to set key', { error, key });
+      logger.warn("[REDIS] Cache set error:", error);
       return false;
     }
   }
 
   /**
-   * Delete key from cache
+   * Delete value from cache
    */
   async delete(key: string): Promise<boolean> {
-    if (!this.redis) return false;
+    if (!this.redis || !this.isConnected) {
+      return false;
+    }
 
     try {
       await this.redis.del(key);
       return true;
     } catch (error) {
-      logger.error('[REDIS] Failed to delete key', { error, key });
+      logger.warn("[REDIS] Cache delete error:", error);
       return false;
     }
   }
 
   /**
-   * Delete multiple keys matching pattern
+   * Invalidate cache by tags
    */
-  async deletePattern(pattern: string): Promise<number> {
-    if (!this.redis) return 0;
-
-    try {
-      const keys = await this.redis.keys(pattern);
-      if (keys.length === 0) return 0;
-
-      await this.redis.del(...keys);
-      return keys.length;
-    } catch (error) {
-      logger.error('[REDIS] Failed to delete pattern', { error, pattern });
-      return 0;
-    }
-  }
-
-  /**
-   * Check if key exists
-   */
-  async exists(key: string): Promise<boolean> {
-    if (!this.redis) return false;
-
-    try {
-      const result = await this.redis.exists(key);
-      return result === 1;
-    } catch (error) {
-      logger.error('[REDIS] Failed to check key existence', { error, key });
+  async invalidateByTags(tags: string[]): Promise<boolean> {
+    if (!this.redis || !this.isConnected) {
       return false;
     }
-  }
-
-  /**
-   * Increment counter
-   */
-  async increment(key: string, by: number = 1): Promise<number | null> {
-    if (!this.redis) return null;
-
-    try {
-      return await this.redis.incrby(key, by);
-    } catch (error) {
-      logger.error('[REDIS] Failed to increment key', { error, key });
-      return null;
-    }
-  }
-
-  /**
-   * Get or set with function (cache-aside pattern)
-   */
-  async getOrSet<T>(
-    key: string,
-    fetchFunction: () => Promise<T>,
-    ttl: number = 300
-  ): Promise<T> {
-    // Try to get from cache
-    const cached = await this.get<T>(key);
-    if (cached !== null) {
-      return cached;
-    }
-
-    // Fetch fresh data
-    const fresh = await fetchFunction();
-
-    // Store in cache (fire and forget)
-    this.set(key, fresh, ttl).catch((error) => {
-      logger.error('[REDIS] Failed to cache result', { error, key });
-    });
-
-    return fresh;
-  }
-
-  /**
-   * Batch get multiple keys
-   */
-  async mget<T>(keys: string[]): Promise<(T | null)[]> {
-    if (!this.redis || keys.length === 0) return keys.map(() => null);
-
-    try {
-      const values = await this.redis.mget(...keys);
-      return values.map((value) => {
-        if (!value) return null;
-        try {
-          return JSON.parse(value) as T;
-        } catch {
-          return null;
-        }
-      });
-    } catch (error) {
-      logger.error('[REDIS] Failed to mget keys', { error, keys });
-      return keys.map(() => null);
-    }
-  }
-
-  /**
-   * Batch set multiple keys
-   */
-  async mset(items: Array<{ key: string; value: unknown; ttl?: number }>): Promise<boolean> {
-    if (!this.redis || items.length === 0) return false;
 
     try {
       const pipeline = this.redis.pipeline();
 
-      for (const item of items) {
-        const serialized = JSON.stringify(item.value);
-        if (item.ttl) {
-          pipeline.setex(item.key, item.ttl, serialized);
-        } else {
-          pipeline.set(item.key, serialized);
+      for (const tag of tags) {
+        const keys = await this.redis.smembers(`tag:${tag}`);
+        if (keys.length > 0) {
+          pipeline.del(...keys);
+          pipeline.del(`tag:${tag}`);
         }
       }
 
       await pipeline.exec();
       return true;
     } catch (error) {
-      logger.error('[REDIS] Failed to mset keys', { error });
+      logger.warn("[REDIS] Cache invalidation error:", error);
       return false;
     }
   }
 
   /**
-   * Close Redis connection
+   * Clear all cache
    */
-  async close(): Promise<void> {
-    if (this.redis) {
-      await this.redis.quit();
-      redisClient = null;
-      this.redis = null;
+  async clear(): Promise<boolean> {
+    if (!this.redis || !this.isConnected) {
+      return false;
     }
+
+    try {
+      await this.redis.flushdb();
+      return true;
+    } catch (error) {
+      logger.warn("[REDIS] Cache clear error:", error);
+      return false;
+    }
+  }
+
+  /**
+   * Get cache statistics
+   */
+  async getStats(): Promise<{
+    connected: boolean;
+    memory: string;
+    keys: number;
+    hits: number;
+    misses: number;
+  }> {
+    if (!this.redis || !this.isConnected) {
+      return {
+        connected: false,
+        memory: "0B",
+        keys: 0,
+        hits: 0,
+        misses: 0,
+      };
+    }
+
+    try {
+      const info = await this.redis.info("memory");
+      const keys = await this.redis.dbsize();
+
+      return {
+        connected: true,
+        memory: this.parseMemoryInfo(info),
+        keys,
+        hits: 0, // Would need to track these separately
+        misses: 0,
+      };
+    } catch (error) {
+      logger.warn("[REDIS] Cache stats error:", error);
+      return {
+        connected: false,
+        memory: "0B",
+        keys: 0,
+        hits: 0,
+        misses: 0,
+      };
+    }
+  }
+
+  private parseMemoryInfo(info: string): string {
+    const match = info.match(/used_memory_human:([^\r\n]+)/);
+    return match ? match[1].trim() : "0B";
   }
 }
 
-// Export singleton instance
+// Singleton instance
 export const redisCache = new RedisCache();
 
 /**
- * Cache key generators
+ * Cache decorator for functions
  */
-export const CacheKeys = {
-  // Venue caches
-  venue: (venueId: string) => `venue:${venueId}`,
-  venueMenu: (venueId: string) => `venue:${venueId}:menu`,
-  venueTables: (venueId: string) => `venue:${venueId}:tables`,
-  venueOrders: (venueId: string, status?: string) =>
-    status ? `venue:${venueId}:orders:${status}` : `venue:${venueId}:orders`,
+export function cached(ttl: number = 3600, tags: string[] = []) {
+  return function (target: unknown, propertyName: string, descriptor: PropertyDescriptor) {
+    const method = descriptor.value;
 
-  // User caches
-  user: (userId: string) => `user:${userId}`,
-  userVenues: (userId: string) => `user:${userId}:venues`,
-  userSession: (userId: string) => `user:${userId}:session`,
+    descriptor.value = async function (...args: unknown[]) {
+      const cacheKey = `${target.constructor.name}:${propertyName}:${JSON.stringify(args)}`;
 
-  // Order caches
-  order: (orderId: string) => `order:${orderId}`,
-  ordersByTable: (venueId: string, tableId: string) => `venue:${venueId}:table:${tableId}:orders`,
+      // Try to get from cache
+      const cached = await redisCache.get(cacheKey);
+      if (cached !== null) {
+        return cached;
+      }
 
-  // Analytics caches
-  analytics: (venueId: string, metric: string, period: string) =>
-    `analytics:${venueId}:${metric}:${period}`,
+      // Execute method and cache result
+      const result = await method.apply(this, args);
+      await redisCache.set(cacheKey, result, { ttl, tags });
 
-  // Rate limiting
-  rateLimit: (clientId: string, route: string) => `ratelimit:${clientId}:${route}`,
+      return result;
+    };
+  };
+}
+
+/**
+ * Cache utility functions
+ */
+export const cacheUtils = {
+  /**
+   * Generate cache key for venue data
+   */
+  venueKey: (venueId: string, dataType: string) => `venue:${venueId}:${dataType}`,
+
+  /**
+   * Generate cache key for user data
+   */
+  userKey: (userId: string, dataType: string) => `user:${userId}:${dataType}`,
+
+  /**
+   * Generate cache key for orders
+   */
+  ordersKey: (venueId: string, filters: Record<string, unknown> = {}) =>
+    `orders:${venueId}:${JSON.stringify(filters)}`,
+
+  /**
+   * Generate cache key for menu items
+   */
+  menuKey: (venueId: string) => `menu:${venueId}`,
+
+  /**
+   * Generate cache key for tables
+   */
+  tablesKey: (venueId: string) => `tables:${venueId}`,
+
+  /**
+   * Cache tags for invalidation
+   */
+  tags: {
+    venue: (venueId: string) => `venue:${venueId}`,
+    user: (userId: string) => `user:${userId}`,
+    orders: (venueId: string) => `orders:${venueId}`,
+    menu: (venueId: string) => `menu:${venueId}`,
+    tables: (venueId: string) => `tables:${venueId}`,
+  },
 };
-

@@ -4,52 +4,36 @@ import { useRouter } from "next/navigation";
 import { useAuth } from "@/app/auth/AuthProvider";
 import SignInPage from "@/app/sign-in/page";
 
-// Mock Next.js router
+// Mock dependencies
 vi.mock("next/navigation", () => ({
   useRouter: vi.fn(),
-  usePathname: vi.fn(),
 }));
 
-// Mock auth provider
 vi.mock("@/app/auth/AuthProvider", () => ({
   useAuth: vi.fn(),
 }));
 
-// Mock Supabase
-vi.mock("@/lib/supabase", () => ({
-  supabase: {
-    auth: {
-      signInWithPassword: vi.fn(),
-      signUp: vi.fn(),
-      signOut: vi.fn(),
-      getSession: vi.fn(),
-      onAuthStateChange: vi.fn(),
-    },
-  },
-}));
+const mockPush = vi.fn();
+const mockSignIn = vi.fn();
 
-describe("Authentication Flow Integration", () => {
-  const mockPush = vi.fn();
-  const mockSignIn = vi.fn();
-  const mockSignUp = vi.fn();
+beforeEach(() => {
+  vi.clearAllMocks();
 
-  beforeEach(() => {
-    vi.clearAllMocks();
-
-    (useRouter as unknown as { mockReturnValue: (value: unknown) => void }).mockReturnValue({
-      push: mockPush,
-      replace: vi.fn(),
-    });
-
-    (useAuth as unknown as { mockReturnValue: (value: unknown) => void }).mockReturnValue({
-      signIn: mockSignIn,
-      signUp: mockSignUp,
-      signOut: vi.fn(),
-      user: null,
-      loading: false,
-    });
+  (useRouter as unknown as { mockReturnValue: (value: unknown) => void }).mockReturnValue({
+    push: mockPush,
+    replace: vi.fn(),
   });
 
+  (useAuth as unknown as { mockReturnValue: (value: unknown) => void }).mockReturnValue({
+    signIn: mockSignIn,
+    signUp: vi.fn(),
+    signOut: vi.fn(),
+    user: null,
+    loading: false,
+  });
+});
+
+describe("Authentication Flow Integration", () => {
   it("should render sign-in form with all required fields", () => {
     render(<SignInPage />);
 
@@ -77,6 +61,7 @@ describe("Authentication Flow Integration", () => {
         email: "test@example.com",
         password: "password123",
       });
+      expect(mockPush).toHaveBeenCalledWith("/dashboard");
     });
   });
 
