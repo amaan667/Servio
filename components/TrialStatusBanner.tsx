@@ -36,20 +36,16 @@ export default function TrialStatusBanner({ userRole }: TrialStatusBannerProps) 
     try {
       console.info("[TRIAL BANNER] Fetching organization data for user:", user.id);
 
-      // Use API endpoint to get organization data (bypasses RLS issues)
-      const response = await fetch("/api/organization/ensure", {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        credentials: "include",
-      });
+      // Use client-side Supabase to query organizations directly (RLS allows this)
+      const { supabaseBrowser } = await import("@/lib/supabase");
+      const supabase = supabaseBrowser();
 
-      if (!response.ok) {
-        throw new Error(`API returned ${response.status}: ${response.statusText}`);
-      }
-
-      const { organization, error: orgError } = await response.json();
+      // Query using created_by (actual database column)
+      const { data: organization, error: orgError } = await supabase
+        .from("organizations")
+        .select("id, subscription_tier, subscription_status, trial_ends_at, created_by")
+        .eq("created_by", user.id)
+        .maybeSingle();
 
       if (orgError) {
         console.error("[TRIAL BANNER] Organization query error:", {
