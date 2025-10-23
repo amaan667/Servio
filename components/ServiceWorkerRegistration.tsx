@@ -1,8 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { Card, CardContent } from "@/components/ui/card";
-import { RefreshCw, WifiOff } from "lucide-react";
+import { WifiOff } from "lucide-react";
 
 interface ServiceWorkerRegistrationProps {
   children: React.ReactNode;
@@ -10,10 +9,6 @@ interface ServiceWorkerRegistrationProps {
 
 export default function ServiceWorkerRegistration({ children }: ServiceWorkerRegistrationProps) {
   const [isOnline, setIsOnline] = useState(true);
-  // const [swRegistration] = useState<ServiceWorkerRegistration | null>(null);
-  // Update banner removed – we no longer surface a UI prompt for updates
-  // const [updateAvailable] = useState(false);
-  const [isInstalling, setIsInstalling] = useState(false);
 
   useEffect(() => {
     // Initialize online status - default to true to avoid false offline warnings
@@ -57,12 +52,13 @@ export default function ServiceWorkerRegistration({ children }: ServiceWorkerReg
         .then((registration) => {
           // Previously: show update banner when updatefound. Now we silently allow the
           // new SW to install/activate without surfacing UI to the user.
+          // Silently handle updates in background
           registration.addEventListener("updatefound", () => {
             const installing = registration.installing;
             if (installing) {
               installing.addEventListener("statechange", () => {
-                if (installing.state === "installed") {
-                  setIsInstalling(false);
+                if (installing.state === "installed" && navigator.serviceWorker.controller) {
+                  // New service worker installed, will activate on next page load
                 }
               });
             }
@@ -109,21 +105,7 @@ export default function ServiceWorkerRegistration({ children }: ServiceWorkerReg
           </div>
         )}
 
-      {/* Update banner intentionally removed */}
-
-      {/* Installing Indicator */}
-      {isInstalling && (
-        <div className="fixed bottom-4 right-4 z-50">
-          <Card className="bg-white shadow-lg border border-gray-200">
-            <CardContent className="p-3">
-              <div className="flex items-center space-x-3">
-                <RefreshCw className="h-5 w-5 text-blue-600 animate-spin" />
-                <span className="text-sm font-medium text-gray-700">Installing update...</span>
-              </div>
-            </CardContent>
-          </Card>
-        </div>
-      )}
+      {/* All update UI removed - updates happen silently in background */}
     </>
   );
 }

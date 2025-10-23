@@ -1,32 +1,27 @@
-'use client';
+"use client";
 
-import { useMemo } from 'react';
-import { Input } from '@/components/ui/input';
-import { Button } from '@/components/ui/button';
-import { 
-  Search, 
-  AlertCircle,
-  Loader2,
-  CheckCircle2
-} from 'lucide-react';
-import { AddTableDialog } from '@/components/table-management/AddTableDialog';
-import { ReservationsPanel } from '@/components/table-management/ReservationsPanel';
-import { DailyResetModal } from '@/components/daily-reset/DailyResetModal';
-import { toast } from '@/hooks/use-toast';
-import MobileNav from '@/components/MobileNav';
+import { useMemo } from "react";
+import { Input } from "@/components/ui/input";
+import { Button } from "@/components/ui/button";
+import { Search, AlertCircle, CheckCircle2 } from "lucide-react";
+import { AddTableDialog } from "@/components/table-management/AddTableDialog";
+import { ReservationsPanel } from "@/components/table-management/ReservationsPanel";
+import { DailyResetModal } from "@/components/daily-reset/DailyResetModal";
+import { toast } from "@/hooks/use-toast";
+import MobileNav from "@/components/MobileNav";
 
 // Hooks
-import { useTableManagementState } from './hooks/useTableManagementState';
+import { useTableManagementState } from "./hooks/useTableManagementState";
 
 // Components
-import { CounterOrdersSection } from './components/CounterOrdersSection';
-import { TableOrdersSection } from './components/TableOrdersSection';
-import { TableGridSection } from './components/TableGridSection';
+import { CounterOrdersSection } from "./components/CounterOrdersSection";
+import { TableOrdersSection } from "./components/TableOrdersSection";
+import { TableGridSection } from "./components/TableGridSection";
 
 /**
  * Table Management Client Component
  * Manages tables, reservations, and orders
- * 
+ *
  * Refactored: Extracted hooks and components for better organization
  * Original: 747 lines → Now: ~200 lines
  */
@@ -40,15 +35,17 @@ export function TableManagementClientNew({ venueId }: TableManagementClientNewPr
 
   const handleManualReset = () => {
     const hasActiveOrders = state.counterOrders.length > 0 || state.tableOrders.length > 0;
-    const hasActiveTables = state.tables.some(table => table.session_status === 'OCCUPIED');
-    const hasActiveReservations = state.reservations.some(reservation => 
-      reservation.status === 'BOOKED' || reservation.status === 'CHECKED_IN'
+    const hasActiveTables = state.tables.some((table) => table.session_status === "OCCUPIED");
+    const hasActiveReservations = state.reservations.some(
+      (reservation) => reservation.status === "BOOKED" || reservation.status === "CHECKED_IN"
     );
-    const hasIncompleteOrders = state.counterOrders.some(order => order.order_status !== 'COMPLETED') ||
-                               state.tableOrders.some(order => order.order_status !== 'COMPLETED');
-    
-    const hasAnythingToReset = hasActiveOrders || hasActiveTables || hasActiveReservations || hasIncompleteOrders;
-    
+    const hasIncompleteOrders =
+      state.counterOrders.some((order) => order.order_status !== "COMPLETED") ||
+      state.tableOrders.some((order) => order.order_status !== "COMPLETED");
+
+    const hasAnythingToReset =
+      hasActiveOrders || hasActiveTables || hasActiveReservations || hasIncompleteOrders;
+
     if (!hasAnythingToReset) {
       toast({
         title: "Nothing to Reset",
@@ -56,7 +53,7 @@ export function TableManagementClientNew({ venueId }: TableManagementClientNewPr
       });
       return;
     }
-    
+
     state.setShowResetModal(true);
   };
 
@@ -72,25 +69,23 @@ export function TableManagementClientNew({ venueId }: TableManagementClientNewPr
   // Group table orders by table
   const groupedTableOrders = useMemo(() => {
     const groups: { [key: string]: unknown[] } = {};
-    
-    const uniqueOrders = state.tableOrders.filter((order, index, self) => 
-      index === self.findIndex(o => o.id === order.id)
+
+    const uniqueOrders = state.tableOrders.filter(
+      (order, index, self) => index === self.findIndex((o) => o.id === order.id)
     );
-    
-    uniqueOrders.forEach(order => {
+
+    uniqueOrders.forEach((order) => {
       const tableKey = order.table_label || `Table ${order.table_number}`;
       if (!groups[tableKey]) {
         groups[tableKey] = [];
       }
       groups[tableKey].push(order);
     });
-    
+
     return groups;
   }, [state.tableOrders]);
 
   const error = state.tablesError;
-  
-  const isLoading = state.tablesLoading || state.countersLoading || state.reservationsLoading;
 
   if (error) {
     return (
@@ -108,19 +103,6 @@ export function TableManagementClientNew({ venueId }: TableManagementClientNewPr
     );
   }
 
-  if (isLoading) {
-    return (
-      <div className="mx-auto max-w-7xl p-4 md:p-6">
-        <div className="flex items-center justify-center py-12">
-          <div className="text-center">
-            <Loader2 className="h-8 w-8 text-purple-600 mx-auto mb-4 animate-spin" />
-            <p className="text-gray-900">Loading table management...</p>
-          </div>
-        </div>
-      </div>
-    );
-  }
-
   return (
     <div className="mx-auto max-w-7xl p-4 md:p-6">
       {/* Header */}
@@ -129,7 +111,7 @@ export function TableManagementClientNew({ venueId }: TableManagementClientNewPr
           <div className="flex items-center gap-3 flex-wrap">
             <h1 className="text-2xl font-semibold">Table Management</h1>
           </div>
-          
+
           <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-2 sm:ml-auto w-full sm:w-auto">
             <div className="relative">
               <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-gray-700" />
@@ -142,19 +124,15 @@ export function TableManagementClientNew({ venueId }: TableManagementClientNewPr
             </div>
             <div className="flex items-center gap-2">
               <AddTableDialog venueId={venueId} onTableAdded={handleTableActionComplete} />
-              <Button 
-                variant="outline" 
+              <Button
+                variant="outline"
                 size="sm"
                 onClick={handleManualReset}
                 disabled={state.isResetting}
                 className="text-red-600 border-red-200 hover:bg-red-50 flex-shrink-0"
               >
-                {state.isResetting ? (
-                  <Loader2 className="h-4 w-4 mr-2 animate-spin" />
-                ) : (
-                  <CheckCircle2 className="h-4 w-4 mr-2" />
-                )}
-                {state.isResetting ? 'Resetting...' : 'Reset'}
+                <CheckCircle2 className="h-4 w-4 mr-2" />
+                {state.isResetting ? "Resetting..." : "Reset"}
               </Button>
             </div>
           </div>
@@ -191,13 +169,13 @@ export function TableManagementClientNew({ venueId }: TableManagementClientNewPr
       />
 
       {/* Mobile Navigation */}
-      <MobileNav 
+      <MobileNav
         venueId={venueId}
         venueName=""
         counts={{
           live_orders: 0,
           total_orders: 0,
-          notifications: 0
+          notifications: 0,
         }}
       />
     </div>
