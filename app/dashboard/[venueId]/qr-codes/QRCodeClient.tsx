@@ -45,14 +45,16 @@ export default function QRCodeClient({
   useEffect(() => {
     const tableParam = searchParams.get("table");
     if (tableParam) {
-      setSingleName(decodeURIComponent(tableParam));
+      const tableName = decodeURIComponent(tableParam);
+      setSingleName(tableName);
       setQrType("table");
       // Auto-generate QR code for the pre-selected table
       setTimeout(() => {
-        qrManagement.generateQRForName(decodeURIComponent(tableParam), "table");
+        qrManagement.generateQRForName(tableName, "table");
       }, 100);
     }
-  }, [searchParams, qrManagement]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [searchParams]);
 
   // Generate single QR code
   const handleGenerateSingle = () => {
@@ -292,7 +294,7 @@ export default function QRCodeClient({
                 <CardContent className="space-y-4">
                   {/* QR Code Canvas */}
                   <div className="flex justify-center bg-white p-4 rounded-lg border-2 border-gray-200">
-                    <QRCodeCanvas value={qr.url} size={300} />
+                    <QRCodeCanvas url={qr.url} size={300} />
                   </div>
 
                   {/* Actions */}
