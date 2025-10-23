@@ -50,7 +50,7 @@ export function useQRCodeManagement(venueId: string) {
         .order("label", { ascending: true });
 
       if (tablesError) {
-        console.error("Error loading tables:", tablesError);
+        console.error("Error loading tables:", tablesError.message || "Unknown error");
         toast({
           title: "Error",
           description: `Failed to load tables: ${tablesError.message || "Unknown error"}`,
@@ -65,20 +65,16 @@ export function useQRCodeManagement(venueId: string) {
         .order("name", { ascending: true });
 
       if (countersError) {
-        console.error("Error loading counters:", countersError.message, countersError);
+        console.error("Error loading counters:", countersError.message || "Counters query failed");
         // Counters table might not exist or have RLS issues - fail gracefully
-        toast({
-          title: "Note",
-          description:
-            "Counters not available. You can still generate QR codes for tables and custom names.",
-          variant: "default",
-        });
+        // Don't show toast to avoid clutter
       }
 
       setTables(tablesData || []);
       setCounters(countersError ? [] : countersData || []);
     } catch (error) {
-      console.error("Error loading tables and counters:", error);
+      const errorMessage = error instanceof Error ? error.message : "Unknown error";
+      console.error("Error loading tables and counters:", errorMessage);
       toast({
         title: "Error",
         description: "Failed to load data",
