@@ -1,9 +1,8 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useState, useCallback } from "react";
 import { Badge } from "@/components/ui/badge";
 import { Clock, Calendar } from "lucide-react";
-import { supabaseBrowser as createClient } from "@/lib/supabase";
 import { useAuth } from "@/app/auth/AuthProvider";
 
 interface TrialStatus {
@@ -24,11 +23,11 @@ export default function TrialStatusBanner({ userRole }: TrialStatusBannerProps) 
   const [loading, setLoading] = useState(true);
 
   // Only show trial status banner for owners
-  if (userRole && userRole !== 'owner') {
+  if (userRole && userRole !== "owner") {
     return null;
   }
 
-  const fetchTrialStatus = async () => {
+  const fetchTrialStatus = useCallback(async () => {
     if (!user) {
       setLoading(false);
       return;
@@ -38,56 +37,64 @@ export default function TrialStatusBanner({ userRole }: TrialStatusBannerProps) 
       // Use the organization ensure endpoint to get accurate organization data (non-blocking)
       let ensureOrgResponse;
       try {
-        ensureOrgResponse = await fetch('/api/organization/ensure', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' }
+        ensureOrgResponse = await fetch("/api/organization/ensure", {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+            "Cache-Control": "no-cache",
+          },
+          credentials: "include", // Ensure cookies are sent
         });
 
         if (!ensureOrgResponse.ok) {
+          // If 401, user might not be fully authenticated yet, try again later
+          if (ensureOrgResponse.status === 401) {
+            setTimeout(() => fetchTrialStatus(), 2000); // Retry in 2 seconds
+            return;
+          }
           setLoading(false);
           return;
         }
       } catch {
-        setLoading(false);
+        setTimeout(() => fetchTrialStatus(), 2000); // Retry in 2 seconds
         return;
       }
 
       const { organization } = await ensureOrgResponse.json();
-      
+
       if (organization) {
         processTrialStatus({
           subscription_status: organization.subscription_status,
           subscription_tier: organization.subscription_tier,
-          trial_ends_at: organization.trial_ends_at
+          trial_ends_at: organization.trial_ends_at,
         });
       }
-
-    } catch (error) {
-
+    } catch {
+      // Silent error handling
     } finally {
       setLoading(false);
     }
-  };
+  }, [user]);
 
   const processTrialStatus = (org: unknown) => {
-    const subscriptionStatus = org.subscription_status || 'basic';
-    const isTrialing = subscriptionStatus === 'trialing';
-    const tier = org.subscription_tier || 'basic';
+    const subscriptionStatus = org.subscription_status || "basic";
+    const isTrialing = subscriptionStatus === "trialing";
+    const tier = org.subscription_tier || "basic";
     const trialEndsAt = org.trial_ends_at;
-    
+
     let daysRemaining = null;
     if (isTrialing && trialEndsAt) {
       const endDate = new Date(trialEndsAt);
       const now = new Date();
-      
+
       // Set both dates to start of day for accurate day counting
       const endDateStart = new Date(endDate.getFullYear(), endDate.getMonth(), endDate.getDate());
       const nowStart = new Date(now.getFullYear(), now.getMonth(), now.getDate());
-      
+
       const diffTime = endDateStart.getTime() - nowStart.getTime();
       // Use Math.floor to get exact days remaining (not rounded up)
       daysRemaining = Math.floor(diffTime / (1000 * 60 * 60 * 24));
-      
+
       // Ensure we don't show negative days
       daysRemaining = Math.max(0, daysRemaining);
     }
@@ -97,20 +104,18 @@ export default function TrialStatusBanner({ userRole }: TrialStatusBannerProps) 
       subscriptionStatus,
       tier,
       trialEndsAt,
-      daysRemaining
+      daysRemaining,
     });
   };
 
   useEffect(() => {
     if (user) {
-
       fetchTrialStatus();
     } else {
-
       setTrialStatus(null);
       setLoading(false);
     }
-  }, [user]);
+  }, [user, fetchTrialStatus]);
 
   // Daily refresh to update countdown
   useEffect(() => {
@@ -121,56 +126,56 @@ export default function TrialStatusBanner({ userRole }: TrialStatusBannerProps) 
     const tomorrow = new Date(now);
     tomorrow.setDate(tomorrow.getDate() + 1);
     tomorrow.setHours(0, 0, 0, 0);
-    
+
     const msUntilMidnight = tomorrow.getTime() - now.getTime();
-    
+
     // Set timeout to refresh at midnight
     const timeoutId = setTimeout(() => {
-
       fetchTrialStatus();
-      
-      // Set up recurring daily refresh
-      const dailyInterval = setInterval(() => {
 
-        fetchTrialStatus();
-      }, 24 * 60 * 60 * 1000); // 24 hours
-      
+      // Set up recurring daily refresh
+      const dailyInterval = setInterval(
+        () => {
+          fetchTrialStatus();
+        },
+        24 * 60 * 60 * 1000
+      ); // 24 hours
+
       // Clean up interval on unmount
       return () => clearInterval(dailyInterval);
     }, msUntilMidnight);
 
     return () => clearTimeout(timeoutId);
-  }, [user, trialStatus?.isTrialing]);
+  }, [user, trialStatus?.isTrialing, fetchTrialStatus]);
 
   // Hourly refresh to catch unknown edge cases
   useEffect(() => {
     if (!user || !trialStatus?.isTrialing) return;
 
-    const hourlyInterval = setInterval(() => {
-
-      fetchTrialStatus();
-    }, 60 * 60 * 1000); // 1 hour
+    const hourlyInterval = setInterval(
+      () => {
+        fetchTrialStatus();
+      },
+      60 * 60 * 1000
+    ); // 1 hour
 
     return () => clearInterval(hourlyInterval);
-  }, [user, trialStatus?.isTrialing]);
+  }, [user, trialStatus?.isTrialing, fetchTrialStatus]);
 
   // Auto-refresh when returning from checkout success
   useEffect(() => {
     const urlParams = new URLSearchParams(window.location.search);
-    if (urlParams.get('upgrade') === 'success') {
-
+    if (urlParams.get("upgrade") === "success") {
       // Refresh trial status after successful upgrade with retry logic
       const refreshWithRetry = async (attempt = 0) => {
-
         try {
           // Directly fetch organization data
-          const ensureOrgResponse = await fetch('/api/organization/ensure', {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' }
+          const ensureOrgResponse = await fetch("/api/organization/ensure", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
           });
 
           if (!ensureOrgResponse.ok) {
-
             if (attempt < 3) {
               setTimeout(() => refreshWithRetry(attempt + 1), (attempt + 1) * 2000);
             }
@@ -184,60 +189,65 @@ export default function TrialStatusBanner({ userRole }: TrialStatusBannerProps) 
             processTrialStatus({
               subscription_status: organization.subscription_status,
               subscription_tier: organization.subscription_tier,
-              trial_ends_at: organization.trial_ends_at
+              trial_ends_at: organization.trial_ends_at,
             });
-
           } else if (attempt < 3) {
             // If no organization data, retry
             setTimeout(() => refreshWithRetry(attempt + 1), (attempt + 1) * 2000);
           }
-        } catch (error) {
-
+        } catch {
           if (attempt < 3) {
             setTimeout(() => refreshWithRetry(attempt + 1), (attempt + 1) * 2000);
           }
         }
       };
-      
+
       // Start immediate refresh
       refreshWithRetry();
-      
+
       // Remove query params after a short delay
       setTimeout(() => {
         const url = new URL(window.location.href);
-        url.searchParams.delete('upgrade');
+        url.searchParams.delete("upgrade");
         window.history.replaceState({}, document.title, url.toString());
-
       }, 3000);
     }
   }, []);
 
   // Only show for trialing or active subscriptions (hide for canceled, past_due, etc.)
-  if (loading || !trialStatus || (!trialStatus.isTrialing && trialStatus.subscriptionStatus !== 'active')) {
+  if (
+    loading ||
+    !trialStatus ||
+    (!trialStatus.isTrialing && trialStatus.subscriptionStatus !== "active")
+  ) {
     return null;
   }
 
   const getTierDisplayName = (tier: string) => {
     switch (tier) {
-      case "basic": return "Basic";
-      case "standard": return "Standard";
-      case "premium": return "Premium";
-      default: return tier.charAt(0).toUpperCase() + tier.slice(1);
+      case "basic":
+        return "Basic";
+      case "standard":
+        return "Standard";
+      case "premium":
+        return "Premium";
+      default:
+        return tier.charAt(0).toUpperCase() + tier.slice(1);
     }
   };
 
   const getTrialEndDate = (trialEndsAt: string) => {
-    return new Date(trialEndsAt).toLocaleDateString('en-GB', {
-      day: 'numeric',
-      month: 'short',
-      year: 'numeric'
+    return new Date(trialEndsAt).toLocaleDateString("en-GB", {
+      day: "numeric",
+      month: "short",
+      year: "numeric",
     });
   };
 
   const getDaysRemainingColor = (days: number) => {
-    if (days <= 3) return 'bg-red-500 text-white';
-    if (days <= 7) return 'bg-orange-500 text-white';
-    return 'bg-blue-500 text-white';
+    if (days <= 3) return "bg-red-500 text-white";
+    if (days <= 7) return "bg-orange-500 text-white";
+    return "bg-blue-500 text-white";
   };
 
   // Render trial status banner
@@ -252,15 +262,14 @@ export default function TrialStatusBanner({ userRole }: TrialStatusBannerProps) 
                 {getTierDisplayName(trialStatus.tier)} Plan - Free Trial Active
               </span>
             </div>
-            
+
             {trialStatus.daysRemaining !== null && (
               <Badge className={`${getDaysRemainingColor(trialStatus.daysRemaining)} font-medium`}>
-                {trialStatus.daysRemaining === 0 
-                  ? "Last day of trial" 
-                  : trialStatus.daysRemaining === 1 
+                {trialStatus.daysRemaining === 0
+                  ? "Last day of trial"
+                  : trialStatus.daysRemaining === 1
                     ? "1 day remaining"
-                    : `${trialStatus.daysRemaining} days remaining`
-                }
+                    : `${trialStatus.daysRemaining} days remaining`}
               </Badge>
             )}
           </div>
@@ -268,15 +277,14 @@ export default function TrialStatusBanner({ userRole }: TrialStatusBannerProps) 
           {trialStatus.trialEndsAt && (
             <div className="flex items-center gap-2 text-blue-700">
               <Calendar className="h-4 w-4" />
-              <span className="text-sm">
-                Trial ends {getTrialEndDate(trialStatus.trialEndsAt)}
-              </span>
+              <span className="text-sm">Trial ends {getTrialEndDate(trialStatus.trialEndsAt)}</span>
             </div>
           )}
         </div>
-        
+
         <div className="mt-2 text-sm text-blue-700">
-          Enjoy full access to all {getTierDisplayName(trialStatus.tier)} features during your trial period.
+          Enjoy full access to all {getTierDisplayName(trialStatus.tier)} features during your trial
+          period.
           {trialStatus.daysRemaining !== null && trialStatus.daysRemaining <= 7 && (
             <span className="font-medium ml-1">
               Consider upgrading to continue without interruption.
@@ -298,15 +306,14 @@ export default function TrialStatusBanner({ userRole }: TrialStatusBannerProps) 
               {getTierDisplayName(trialStatus.tier)} Plan
             </span>
           </div>
-          
-          <Badge className="bg-green-500 text-white font-medium">
-            Active
-          </Badge>
+
+          <Badge className="bg-green-500 text-white font-medium">Active</Badge>
         </div>
       </div>
-      
+
       <div className="mt-2 text-sm text-green-700">
-        You&apos;re currently on the {getTierDisplayName(trialStatus.tier)} plan with full access to all features.
+        You&apos;re currently on the {getTierDisplayName(trialStatus.tier)} plan with full access to
+        all features.
       </div>
     </div>
   );

@@ -1,11 +1,12 @@
 "use client";
 
+import { Suspense } from "react";
 import { useRouter } from "next/navigation";
 import QRCodeClient from "./QRCodeClient";
 import RoleBasedNavigation from "@/components/RoleBasedNavigation";
 import { usePageAuth } from "../hooks/usePageAuth";
 
-export default function QRCodeClientPage({ venueId }: { venueId: string }) {
+function QRCodePageContent({ venueId }: { venueId: string }) {
   const router = useRouter();
   const { user, userRole, venueName, loading, authError } = usePageAuth({
     venueId,
@@ -60,5 +61,19 @@ export default function QRCodeClientPage({ venueId }: { venueId: string }) {
         <QRCodeClient venueId={venueId} venueName={venueName} />
       </div>
     </div>
+  );
+}
+
+export default function QRCodeClientPage({ venueId }: { venueId: string }) {
+  return (
+    <Suspense
+      fallback={
+        <div className="min-h-screen flex items-center justify-center bg-background">
+          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary"></div>
+        </div>
+      }
+    >
+      <QRCodePageContent venueId={venueId} />
+    </Suspense>
   );
 }

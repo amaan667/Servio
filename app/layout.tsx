@@ -25,6 +25,8 @@ const inter = Inter({
   fallback: ["system-ui", "arial"],
   adjustFontFallback: true,
   variable: "--font-inter",
+  // Reduce font variants to improve loading
+  weight: ["400", "500", "600", "700"],
 });
 
 export const metadata: Metadata = {
