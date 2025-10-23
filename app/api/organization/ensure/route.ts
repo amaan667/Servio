@@ -65,14 +65,12 @@ export async function POST() {
       );
     }
 
-    // Check if user already has an organization (by created_by OR owner_user_id)
+    // Check if user already has an organization (by owner_user_id)
     logger.debug("[ORG ENSURE] Checking for existing organization for user:", user.id);
     const { data: existingOrg, error: orgCheckError } = await adminClient
       .from("organizations")
-      .select(
-        "id, subscription_tier, subscription_status, is_grandfathered, trial_ends_at, created_by, owner_user_id"
-      )
-      .or(`created_by.eq.${user.id},owner_user_id.eq.${user.id}`)
+      .select("id, subscription_tier, subscription_status, trial_ends_at, owner_user_id")
+      .eq("owner_user_id", user.id)
       .maybeSingle();
 
     if (orgCheckError) {
@@ -101,9 +99,6 @@ export async function POST() {
 
     logger.debug("[ORG ENSURE] No existing organization, creating new one");
 
-    // Get user's name for organization name
-    const userName = user.user_metadata?.full_name || user.email?.split("@")[0] || "User";
-
     // Create organization for the user using admin client to bypass RLS
     // Use the user's actual creation date as trial start date for accurate trial calculation
     const userCreatedAt = new Date(user.created_at);
@@ -112,18 +107,14 @@ export async function POST() {
     const { data: newOrg, error: createError } = await adminClient
       .from("organizations")
       .insert({
-        name: `${userName}'s Organization`,
-        slug: `org-${user.id.slice(0, 8)}-${Date.now()}`,
-        created_by: user.id,
         owner_user_id: user.id, // Set owner_user_id for proper organization ownership
         subscription_tier: "basic",
         subscription_status: "trialing",
-        is_grandfathered: false,
         trial_ends_at: trialEndsAt.toISOString(),
         created_at: new Date().toISOString(),
         updated_at: new Date().toISOString(),
       })
-      .select("id, subscription_tier, subscription_status, is_grandfathered, trial_ends_at")
+      .select("id, subscription_tier, subscription_status, trial_ends_at, owner_user_id")
       .single();
 
     if (createError) {

@@ -87,14 +87,9 @@ export async function getUserTier(userId: string): Promise<string> {
   // Get user's organization and tier
   const { data: org } = await supabase
     .from("organizations")
-    .select("subscription_tier, subscription_status, is_grandfathered")
+    .select("subscription_tier, subscription_status")
     .eq("owner_user_id", userId)
     .single();
-
-  // Grandfathered accounts always get full access
-  if (org?.is_grandfathered) {
-    return "grandfathered";
-  }
 
   // If subscription is not active, downgrade to basic (but require payment for new users)
   if (!org || org.subscription_status !== "active") {
@@ -151,7 +146,7 @@ export async function requireFeature(
   feature: keyof TierLimits["features"]
 ): Promise<void> {
   const access = await checkFeatureAccess(userId, feature);
-  
+
   if (!access.allowed) {
     throw new Error(
       `This feature requires ${access.requiredTier} tier. Current tier: ${access.currentTier}`
@@ -165,4 +160,3 @@ export async function getTierLimits(userId: string): Promise<TierLimits> {
   const limits = TIER_LIMITS[tier as keyof typeof TIER_LIMITS];
   return limits || TIER_LIMITS.basic;
 }
-

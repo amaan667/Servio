@@ -1,5 +1,4 @@
 // Middleware helpers for enforcing tier limits in API routes
-import { createClient } from "@/lib/supabase";
 import { NextResponse } from "next/server";
 import { checkLimit, checkFeatureAccess } from "./tier-restrictions";
 
@@ -19,28 +18,8 @@ export async function enforceResourceLimit(
   resourceType: "maxMenuItems" | "maxTables" | "maxStaff" | "maxVenues",
   currentCount: number
 ): Promise<TierCheckResult> {
-  const supabase = await createClient();
-
-  // Check if grandfathered
-  const { data: venue } = await supabase
-    .from("venues")
-    .select("organizations(is_grandfathered)")
-    .eq("venue_id", venueId)
-    .single();
-
-  // Handle organizations as single object (foreign key relation)
-  const organization = venue?.organizations && (Array.isArray(venue.organizations) ? venue.organizations[0] : venue.organizations);
-
-  if (organization?.is_grandfathered) {
-    return { allowed: true, tier: "grandfathered" };
-  }
-
   // Check limit
-  const { allowed, limit, currentTier } = await checkLimit(
-    userId,
-    resourceType,
-    currentCount
-  );
+  const { allowed, limit, currentTier } = await checkLimit(userId, resourceType, currentCount);
 
   if (!allowed) {
     const resourceName = resourceType.replace("max", "").toLowerCase();
@@ -72,27 +51,8 @@ export async function enforceFeatureAccess(
   venueId: string,
   feature: "kds" | "inventory" | "analytics" | "aiAssistant" | "multiVenue"
 ): Promise<TierCheckResult> {
-  const supabase = await createClient();
-
-  // Check if grandfathered
-  const { data: venue } = await supabase
-    .from("venues")
-    .select("organizations(is_grandfathered)")
-    .eq("venue_id", venueId)
-    .single();
-
-  // Handle organizations as single object (foreign key relation)
-  const organization = venue?.organizations && (Array.isArray(venue.organizations) ? venue.organizations[0] : venue.organizations);
-
-  if (organization?.is_grandfathered) {
-    return { allowed: true, tier: "grandfathered" };
-  }
-
   // Check feature access
-  const { allowed, currentTier, requiredTier } = await checkFeatureAccess(
-    userId,
-    feature
-  );
+  const { allowed, currentTier, requiredTier } = await checkFeatureAccess(userId, feature);
 
   if (!allowed) {
     return {
@@ -127,8 +87,9 @@ export async function getVenueOrganization(venueId: string) {
     .single();
 
   // Handle organizations as single object (foreign key relation)
-  const organization = venue?.organizations && (Array.isArray(venue.organizations) ? venue.organizations[0] : venue.organizations);
+  const organization =
+    venue?.organizations &&
+    (Array.isArray(venue.organizations) ? venue.organizations[0] : venue.organizations);
 
   return organization || null;
 }
-
