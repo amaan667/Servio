@@ -2,16 +2,7 @@
 
 import React from "react";
 import Link from "next/link";
-import {
-  LucideIcon,
-  Plus,
-  Clock,
-  ShoppingBag,
-  QrCode,
-  BarChart,
-  Settings,
-  ChefHat,
-} from "lucide-react";
+import { LucideIcon, Clock, ShoppingBag, QrCode, BarChart, Settings, ChefHat } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
@@ -32,14 +23,6 @@ interface QuickActionsToolbarProps {
 
 export function QuickActionsToolbar({ venueId, userRole }: QuickActionsToolbarProps) {
   const actions: QuickAction[] = [
-    {
-      label: "New Order",
-      href: `/dashboard/${venueId}/live-orders`,
-      icon: Plus,
-      description: "Create order",
-      variant: "default",
-      color: "bg-blue-600 hover:bg-blue-700",
-    },
     {
       label: "Live Orders",
       href: `/dashboard/${venueId}/live-orders`,

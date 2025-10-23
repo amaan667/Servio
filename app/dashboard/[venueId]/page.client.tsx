@@ -19,7 +19,6 @@ import { useDashboardRealtime } from "./hooks/useDashboardRealtime";
 import { useAnalyticsData } from "./hooks/useAnalyticsData";
 
 // New Modern Components
-import { StatusBanner } from "./components/StatusBanner";
 import { QuickActionsToolbar } from "./components/QuickActionsToolbar";
 import { EnhancedStatCard } from "./components/EnhancedStatCard";
 import { AIInsights } from "./components/AIInsights";
@@ -48,7 +47,7 @@ const DashboardClient = React.memo(function DashboardClient({ venueId }: { venue
   const [authError, setAuthError] = useState<string | null>(null);
 
   // Monitor connection status (must be at top before any returns)
-  const connectionState = useConnectionMonitor();
+  useConnectionMonitor();
 
   // Enable intelligent prefetching for dashboard routes
   useDashboardPrefetch(venueId);
@@ -259,21 +258,6 @@ const DashboardClient = React.memo(function DashboardClient({ venueId }: { venue
       <div className="min-h-screen bg-gray-50/50">
         {/* Trial Status Banner - Only for owners */}
         <TrialStatusBanner userRole={userRole} />
-
-        {/* Compact Status Banner */}
-        <div className="bg-white border-b">
-          <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4">
-            <StatusBanner
-              isOnline={connectionState.isOnline}
-              trialDaysLeft={14}
-              venueName={
-                (dashboardData.venue as { venue_name?: string } | null)?.venue_name || "Venue"
-              }
-              userRole={userRole}
-              onVenueChange={handleVenueChange}
-            />
-          </div>
-        </div>
 
         {/* Quick Actions Toolbar */}
         <QuickActionsToolbar venueId={venueId} userRole={userRole} />
