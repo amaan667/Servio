@@ -41,28 +41,11 @@ export default function TrialStatusBanner({ userRole }: TrialStatusBannerProps) 
       console.info("[TRIAL BANNER] Fetching organization data for user:", user.id);
 
       // Get user's organization directly from client
-      // First try as owner
-      let { data: organization, error: orgError } = await supabase
+      const { data: organization, error: orgError } = await supabase
         .from("organizations")
-        .select(
-          "id, subscription_tier, subscription_status, is_grandfathered, trial_ends_at, created_by, owner_user_id"
-        )
+        .select("id, subscription_tier, subscription_status, trial_ends_at")
         .eq("owner_user_id", user.id)
         .maybeSingle();
-
-      // If not found as owner, try as creator
-      if (!organization && !orgError) {
-        const result = await supabase
-          .from("organizations")
-          .select(
-            "id, subscription_tier, subscription_status, is_grandfathered, trial_ends_at, created_by, owner_user_id"
-          )
-          .eq("created_by", user.id)
-          .maybeSingle();
-
-        organization = result.data;
-        orgError = result.error;
-      }
 
       if (orgError) {
         console.error("[TRIAL BANNER] Organization query error:", orgError);
@@ -74,10 +57,10 @@ export default function TrialStatusBanner({ userRole }: TrialStatusBannerProps) 
 
       if (organization) {
         console.info("[TRIAL BANNER] Organization data:", {
+          id: organization.id,
           subscription_status: organization.subscription_status,
           subscription_tier: organization.subscription_tier,
           trial_ends_at: organization.trial_ends_at,
-          created_at: organization.created_at,
         });
 
         // Organization exists - use its actual trial_ends_at from database
