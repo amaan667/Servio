@@ -245,9 +245,11 @@ export default function TrialStatusBanner({ userRole }: TrialStatusBannerProps) 
   };
 
   const getDaysRemainingColor = (days: number) => {
+    if (days <= 0) return "bg-red-600 text-white";
     if (days <= 3) return "bg-red-500 text-white";
     if (days <= 7) return "bg-orange-500 text-white";
-    return "bg-blue-500 text-white";
+    if (days <= 14) return "bg-yellow-500 text-white";
+    return "bg-green-500 text-white";
   };
 
   // Render trial status banner
@@ -264,13 +266,24 @@ export default function TrialStatusBanner({ userRole }: TrialStatusBannerProps) 
             </div>
 
             {trialStatus.daysRemaining !== null && (
-              <Badge className={`${getDaysRemainingColor(trialStatus.daysRemaining)} font-medium`}>
-                {trialStatus.daysRemaining === 0
-                  ? "Last day of trial"
-                  : trialStatus.daysRemaining === 1
-                    ? "1 day remaining"
-                    : `${trialStatus.daysRemaining} days remaining`}
-              </Badge>
+              <div className="flex items-center gap-2">
+                <Badge
+                  className={`${getDaysRemainingColor(trialStatus.daysRemaining)} font-bold text-sm px-3 py-1`}
+                >
+                  {trialStatus.daysRemaining === 0
+                    ? "⚠️ Trial Expired"
+                    : trialStatus.daysRemaining === 1
+                      ? "🔥 1 Day Left"
+                      : trialStatus.daysRemaining <= 3
+                        ? `⚠️ ${trialStatus.daysRemaining} Days Left`
+                        : trialStatus.daysRemaining <= 7
+                          ? `⏰ ${trialStatus.daysRemaining} Days Left`
+                          : `✅ ${trialStatus.daysRemaining} Days Left`}
+                </Badge>
+                {trialStatus.daysRemaining <= 7 && (
+                  <span className="text-sm text-orange-600 font-medium">Upgrade to continue</span>
+                )}
+              </div>
             )}
           </div>
 

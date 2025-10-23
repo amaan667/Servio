@@ -1,26 +1,35 @@
-import { errorToContext } from '@/lib/utils/error-to-context';
 // API endpoint to ensure a user has a real organization
-import { NextRequest, NextResponse } from "next/server";
+import { NextResponse } from "next/server";
 import { createClient, createAdminClient } from "@/lib/supabase";
-import { apiLogger, logger } from '@/lib/logger';
+import { logger } from "@/lib/logger";
 
 // Disable caching to always get fresh data
-export const dynamic = 'force-dynamic';
+export const dynamic = "force-dynamic";
 export const revalidate = 0;
 
-export async function POST(request: NextRequest) {
+export async function POST() {
   try {
     const supabase = await createClient();
-    
-    // Get the current user
-    // Use getSession() to avoid refresh token errors - reads from cookies only
-    const { data: { session }, error: sessionError } = await supabase.auth.getSession();
+
+    // Get the current user with better error handling
+    const {
+      data: { session },
+      error: sessionError,
+    } = await supabase.auth.getSession();
     const user = session?.user;
-    
-    if (sessionError || !user) {
-      logger.error("[ORG ENSURE] Auth error:", sessionError);
+
+    if (sessionError) {
+      logger.error("[ORG ENSURE] Session error:", sessionError);
       return NextResponse.json(
-        { error: "Unauthorized", details: sessionError?.message },
+        { error: "Session error", details: sessionError.message },
+        { status: 401 }
+      );
+    }
+
+    if (!user) {
+      logger.error("[ORG ENSURE] No user found in session");
+      return NextResponse.json(
+        { error: "No user found", details: "User not authenticated" },
         { status: 401 }
       );
     }
@@ -39,7 +48,7 @@ export async function POST(request: NextRequest) {
         { status: 500 }
       );
     }
-    
+
     // Verify SERVICE_ROLE_KEY is set
     if (!process.env.SUPABASE_SERVICE_ROLE_KEY) {
       logger.error("[ORG ENSURE] SUPABASE_SERVICE_ROLE_KEY is not set!");
@@ -67,22 +76,25 @@ export async function POST(request: NextRequest) {
       const response = NextResponse.json({
         success: true,
         organization: existingOrg,
-        created: false
+        created: false,
       });
-      
+
       // Add cache control headers to ensure fresh data
-      response.headers.set('Cache-Control', 'no-store, no-cache, must-revalidate, proxy-revalidate');
-      response.headers.set('Pragma', 'no-cache');
-      response.headers.set('Expires', '0');
-      
+      response.headers.set(
+        "Cache-Control",
+        "no-store, no-cache, must-revalidate, proxy-revalidate"
+      );
+      response.headers.set("Pragma", "no-cache");
+      response.headers.set("Expires", "0");
+
       return response;
     }
 
     logger.debug("[ORG ENSURE] No existing organization, creating new one");
 
     // Get user's name for organization name
-    const userName = user.user_metadata?.full_name || user.email?.split('@')[0] || 'User';
-    
+    const userName = user.user_metadata?.full_name || user.email?.split("@")[0] || "User";
+
     // Create organization for the user using admin client to bypass RLS
     const { data: newOrg, error: createError } = await adminClient
       .from("organizations")
@@ -95,7 +107,7 @@ export async function POST(request: NextRequest) {
         is_grandfathered: false,
         trial_ends_at: new Date(Date.now() + 14 * 24 * 60 * 60 * 1000).toISOString(),
         created_at: new Date().toISOString(),
-        updated_at: new Date().toISOString()
+        updated_at: new Date().toISOString(),
       })
       .select("id, subscription_tier, subscription_status, is_grandfathered, trial_ends_at")
       .single();
@@ -106,11 +118,11 @@ export async function POST(request: NextRequest) {
       logger.error("[ORG ENSURE] User ID:", user.id);
       logger.error("[ORG ENSURE] User metadata:", user.user_metadata);
       return NextResponse.json(
-        { 
-          error: "Failed to create organization", 
+        {
+          error: "Failed to create organization",
           details: createError.message,
           code: createError.code,
-          hint: createError.hint
+          hint: createError.hint,
         },
         { status: 500 }
       );
@@ -130,42 +142,45 @@ export async function POST(request: NextRequest) {
       .eq("owner_user_id", user.id);
 
     if (userVenues && userVenues.length > 0) {
-      const venueRoles = userVenues.map(venue => ({
+      const venueRoles = userVenues.map((venue) => ({
         user_id: user.id,
         venue_id: venue.venue_id,
         organization_id: newOrg.id,
         role: "owner",
-        permissions: { all: true }
+        permissions: { all: true },
       }));
 
-      await adminClient
-        .from("user_venue_roles")
-        .upsert(venueRoles, {
-          onConflict: "user_id,venue_id"
-        });
+      await adminClient.from("user_venue_roles").upsert(venueRoles, {
+        onConflict: "user_id,venue_id",
+      });
     }
 
-    logger.debug("[ORG ENSURE] Created new organization", { data: { orgId: newOrg.id, userId: user.id } });
+    logger.debug("[ORG ENSURE] Created new organization", {
+      data: { orgId: newOrg.id, userId: user.id },
+    });
 
     const response = NextResponse.json({
       success: true,
       organization: newOrg,
-      created: true
+      created: true,
     });
-    
-    // Add cache control headers to ensure fresh data
-    response.headers.set('Cache-Control', 'no-store, no-cache, must-revalidate, proxy-revalidate');
-    response.headers.set('Pragma', 'no-cache');
-    response.headers.set('Expires', '0');
-    
-    return response;
 
+    // Add cache control headers to ensure fresh data
+    response.headers.set("Cache-Control", "no-store, no-cache, must-revalidate, proxy-revalidate");
+    response.headers.set("Pragma", "no-cache");
+    response.headers.set("Expires", "0");
+
+    return response;
   } catch (error) {
-    logger.error("[ORG ENSURE] Unexpected error:", { error: error instanceof Error ? error.message : 'Unknown error' });
+    logger.error("[ORG ENSURE] Unexpected error:", {
+      error: error instanceof Error ? error.message : "Unknown error",
+    });
     return NextResponse.json(
-      { error: "Internal server error", details: error instanceof Error ? error.message : 'Unknown error' },
+      {
+        error: "Internal server error",
+        details: error instanceof Error ? error.message : "Unknown error",
+      },
       { status: 500 }
     );
   }
 }
-

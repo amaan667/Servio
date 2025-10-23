@@ -58,15 +58,26 @@ class ConnectionMonitor {
       const responseTime = Date.now() - startTime;
       const isSlowConnection = responseTime > 3000; // Consider slow if > 3 seconds
 
-      this.updateState({
-        isOnline: response.ok,
-        isSlowConnection,
-        lastChecked: new Date(),
-      });
+      // Only update if we get a successful response
+      if (response.ok) {
+        this.updateState({
+          isOnline: true,
+          isSlowConnection,
+          lastChecked: new Date(),
+        });
+      } else {
+        // If API fails, check navigator.onLine as fallback
+        this.updateState({
+          isOnline: navigator.onLine,
+          isSlowConnection: false,
+          lastChecked: new Date(),
+        });
+      }
     } catch (error) {
       logger.warn("[CONNECTION] Connection check failed:", errorToContext(error));
+      // Fallback to navigator.onLine
       this.updateState({
-        isOnline: false,
+        isOnline: navigator.onLine,
         isSlowConnection: false,
         lastChecked: new Date(),
       });
