@@ -111,34 +111,18 @@ export async function POST(req: Request) {
       );
     }
 
-    const supabase = await createServerSupabase();
-
-    // Verify user has access to this venue
-    const {
-      data: { session },
-      error: userError,
-    } = await supabase.auth.getSession();
-    const user = session?.user;
-    if (userError || !user) {
-      return NextResponse.json({ ok: false, error: "Unauthorized" }, { status: 401 });
+    // Authenticate using Authorization header
+    const auth = await authenticateRequest(req);
+    if (!auth.success || !auth.user || !auth.supabase) {
+      console.error("[KDS STATIONS POST] ❌ Authentication failed:", auth.error);
+      return NextResponse.json({ ok: false, error: auth.error }, { status: 401 });
     }
 
-    // Verify user owns or has staff access to this venue
-    const { data: venueAccess } = await supabase
-      .from("venues")
-      .select("venue_id")
-      .eq("venue_id", venueId)
-      .eq("owner_user_id", user.id)
-      .maybeSingle();
+    const { user, supabase } = auth;
 
-    const { data: staffAccess } = await supabase
-      .from("user_venue_roles")
-      .select("role")
-      .eq("venue_id", venueId)
-      .eq("user_id", user.id)
-      .maybeSingle();
-
-    if (!venueAccess && !staffAccess) {
+    // Verify venue access
+    const access = await verifyVenueAccess(supabase, user.id, venueId);
+    if (!access.hasAccess) {
       logger.warn("[KDS] User does not have access to venue:", { userId: user.id, venueId });
       return NextResponse.json(
         { ok: false, error: "Access denied to this venue" },
