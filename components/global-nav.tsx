@@ -8,7 +8,6 @@ import { supabaseBrowser as createClient } from "@/lib/supabase";
 import { Menu, X, Settings, Home, LayoutDashboard, LogOut } from "lucide-react";
 import { useAuth } from "@/app/auth/AuthProvider";
 import { useRouter, usePathname } from "next/navigation";
-import SignInButton from "@/app/components/SignInButton";
 
 export default function GlobalNav() {
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
@@ -27,18 +26,19 @@ export default function GlobalNav() {
   const isLoadingAuth = !!loading;
 
   // Determine if we're on an authenticated route that supports dark mode
-  const isAuthenticatedRoute = pathname?.startsWith('/dashboard') || 
-                               pathname?.startsWith('/settings') ||
-                               pathname?.startsWith('/complete-profile') ||
-                               pathname?.startsWith('/sign-in') ||
-                               pathname?.startsWith('/sign-up');
+  const isAuthenticatedRoute =
+    pathname?.startsWith("/dashboard") ||
+    pathname?.startsWith("/settings") ||
+    pathname?.startsWith("/complete-profile") ||
+    pathname?.startsWith("/sign-in") ||
+    pathname?.startsWith("/sign-up");
 
   // If we're on an authenticated route, suppress public-only actions even if
   // the auth state is still loading to avoid the "Sign In" flash.
   const shouldHidePublicActions = isAuthenticatedRoute || isLoadingAuth;
 
   // Use theme-aware colors for authenticated routes, light mode colors for public pages
-  const navClasses = isAuthenticatedRoute 
+  const navClasses = isAuthenticatedRoute
     ? "bg-background border-b border-border shadow-sm sticky top-0 z-50"
     : "bg-white border-b border-gray-200 shadow-sm sticky top-0 z-50";
 
@@ -46,63 +46,60 @@ export default function GlobalNav() {
     ? "text-foreground hover:text-primary hover:bg-accent"
     : "text-foreground/80 hover:text-foreground hover:bg-accent";
 
-  const borderClasses = isAuthenticatedRoute
-    ? "border-border"
-    : "border-gray-200";
-
-  const primaryButtonClasses = isAuthenticatedRoute
-    ? "bg-white text-servio-purple border-2 border-servio-purple hover:bg-gray-50 hover:text-servio-purple-dark"
-    : "bg-white text-servio-purple border-2 border-servio-purple hover:bg-gray-50 hover:text-servio-purple-dark";
+  const borderClasses = isAuthenticatedRoute ? "border-border" : "border-gray-200";
 
   // Determine if we're on dashboard pages
-  const isOnDashboard = pathname?.startsWith('/dashboard');
-  const isOnHomePage = pathname === '/';
-  const isOnSettings = pathname?.includes('/settings');
-  const isOnQRPage = pathname?.includes('/qr-codes');
-  
+  const isOnDashboard = pathname?.startsWith("/dashboard");
+  const isOnSettings = pathname?.includes("/settings");
+  const isOnQRPage = pathname?.includes("/qr-codes");
+
   // Check if we're on the dashboard root page (not a feature page)
   const isDashboardRoot = pathname?.match(/^\/dashboard\/(?:[^/]+)\/?$/);
   const isOnFeaturePage = isOnDashboard && !isDashboardRoot;
-  
+
   // Extract venueId from pathname for venue-specific navigation
   const venueId = pathname?.match(/\/dashboard\/([^/]+)/)?.[1];
 
   // Fetch primary venue and user role when user is signed in
+  // Initialize with cached data immediately for instant render
   useEffect(() => {
     const fetchUserData = async () => {
       if (isAuthenticated && session?.user?.id) {
         try {
-          // Check cache first
+          // Check cache first and set immediately
           const cachedRole = sessionStorage.getItem(`user_role_${session.user.id}`);
           const cachedVenueId = sessionStorage.getItem(`venue_id_${session.user.id}`);
-          
+
           if (cachedRole && cachedVenueId) {
             setUserRole(cachedRole);
             setPrimaryVenueId(cachedVenueId);
-            return; // Use cached data immediately
+            return; // Use cached data, no need to fetch
           }
-          
+
+          // If no cache, assume owner temporarily for instant render, then update
+          setUserRole("owner");
+
           // Fetch both in parallel for faster loading
           const [venueResult, staffResult] = await Promise.all([
             supabase
-              .from('venues')
-              .select('venue_id')
-              .eq('owner_user_id', session.user.id)
-              .order('created_at', { ascending: true })
+              .from("venues")
+              .select("venue_id")
+              .eq("owner_user_id", session.user.id)
+              .order("created_at", { ascending: true })
               .limit(1),
             supabase
-              .from('user_venue_roles')
-              .select('role, venue_id')
-              .eq('user_id', session.user.id)
+              .from("user_venue_roles")
+              .select("role, venue_id")
+              .eq("user_id", session.user.id)
               .limit(1)
-              .single()
+              .single(),
           ]);
 
           if (!venueResult.error && venueResult.data?.length) {
             setPrimaryVenueId(venueResult.data[0].venue_id);
-            setUserRole('owner');
+            setUserRole("owner");
             // Cache the data
-            sessionStorage.setItem(`user_role_${session.user.id}`, 'owner');
+            sessionStorage.setItem(`user_role_${session.user.id}`, "owner");
             sessionStorage.setItem(`venue_id_${session.user.id}`, venueResult.data[0].venue_id);
           } else if (!staffResult.error && staffResult.data) {
             setPrimaryVenueId(staffResult.data.venue_id);
@@ -111,8 +108,9 @@ export default function GlobalNav() {
             sessionStorage.setItem(`user_role_${session.user.id}`, staffResult.data.role);
             sessionStorage.setItem(`venue_id_${session.user.id}`, staffResult.data.venue_id);
           }
-        } catch (err) {
-
+        } catch {
+          // On error, default to owner to show all options
+          setUserRole("owner");
         }
       } else {
         setPrimaryVenueId(null);
@@ -121,7 +119,7 @@ export default function GlobalNav() {
     };
 
     fetchUserData();
-  }, [isAuthenticated, session?.user?.id]);
+  }, [isAuthenticated, session?.user?.id, supabase]);
 
   // Always render navigation immediately - don't wait for auth loading
   // The navigation will show appropriate content based on auth state
@@ -132,7 +130,18 @@ export default function GlobalNav() {
         <div className="flex justify-between items-center h-20 sm:h-24 md:h-28">
           {/* Logo - Top-left on desktop, centered on mobile */}
           <div className="flex-shrink-0 md:-ml-2 sm:-ml-1 flex justify-center md:justify-start w-full md:w-auto">
-            <Link href={isAuthenticated ? (venueId ? `/dashboard/${venueId}` : (primaryVenueId ? `/dashboard/${primaryVenueId}` : "/")) : "/"} className="flex items-center group">
+            <Link
+              href={
+                isAuthenticated
+                  ? venueId
+                    ? `/dashboard/${venueId}`
+                    : primaryVenueId
+                      ? `/dashboard/${primaryVenueId}`
+                      : "/"
+                  : "/"
+              }
+              className="flex items-center group"
+            >
               <Image
                 src="/assets/servio-logo-updated.png"
                 alt="Servio"
@@ -159,9 +168,13 @@ export default function GlobalNav() {
                       <Home className="mr-3 h-5 w-5" />
                       Home
                     </Link>
-                    {userRole && (userRole === 'owner' || userRole === 'manager') && (
+                    {userRole && (userRole === "owner" || userRole === "manager") && (
                       <Link
-                        href={(venueId || primaryVenueId) ? `/dashboard/${venueId || primaryVenueId}/settings` : '/'}
+                        href={
+                          venueId || primaryVenueId
+                            ? `/dashboard/${venueId || primaryVenueId}/settings`
+                            : "/"
+                        }
                         className="flex items-center px-4 py-3 text-base font-medium text-foreground hover:text-primary hover:bg-accent rounded-md transition-all duration-200"
                       >
                         <Settings className="mr-3 h-5 w-5" />
@@ -173,7 +186,7 @@ export default function GlobalNav() {
                       variant="destructive"
                       onClick={async () => {
                         await signOut();
-                        router.replace('/');
+                        router.replace("/");
                       }}
                       className="flex items-center px-4 py-3 text-base font-medium bg-red-600 text-white hover:bg-red-700 rounded-md transition-all duration-200"
                     >
@@ -181,19 +194,25 @@ export default function GlobalNav() {
                       Sign Out
                     </Button>
                   </>
-                ) : (isOnFeaturePage || isOnQRPage) ? (
+                ) : isOnFeaturePage || isOnQRPage ? (
                   // On feature pages (Live Orders, Menu, etc.) and QR pages: Dashboard, Settings (owners only), Sign Out
                   <>
                     <Link
-                      href={(venueId || primaryVenueId) ? `/dashboard/${venueId || primaryVenueId}` : '/'}
+                      href={
+                        venueId || primaryVenueId ? `/dashboard/${venueId || primaryVenueId}` : "/"
+                      }
                       className="flex items-center px-4 py-3 text-base font-medium text-foreground hover:text-primary hover:bg-accent rounded-md transition-all duration-200"
                     >
                       <LayoutDashboard className="mr-3 h-5 w-5" />
                       Dashboard
                     </Link>
-                    {userRole && (userRole === 'owner' || userRole === 'manager') && (
+                    {userRole && (userRole === "owner" || userRole === "manager") && (
                       <Link
-                        href={(venueId || primaryVenueId) ? `/dashboard/${venueId || primaryVenueId}/settings` : '/'}
+                        href={
+                          venueId || primaryVenueId
+                            ? `/dashboard/${venueId || primaryVenueId}/settings`
+                            : "/"
+                        }
                         className="flex items-center px-4 py-3 text-base font-medium text-foreground hover:text-primary hover:bg-accent rounded-md transition-all duration-200"
                       >
                         <Settings className="mr-3 h-5 w-5" />
@@ -205,7 +224,7 @@ export default function GlobalNav() {
                       variant="destructive"
                       onClick={async () => {
                         await signOut();
-                        router.replace('/');
+                        router.replace("/");
                       }}
                       className="flex items-center px-4 py-3 text-base font-medium bg-red-600 text-white hover:bg-red-700 rounded-md transition-all duration-200"
                     >
@@ -217,7 +236,9 @@ export default function GlobalNav() {
                   // On settings pages: Dashboard, Home, Sign Out
                   <>
                     <Link
-                      href={(venueId || primaryVenueId) ? `/dashboard/${venueId || primaryVenueId}` : '/'}
+                      href={
+                        venueId || primaryVenueId ? `/dashboard/${venueId || primaryVenueId}` : "/"
+                      }
                       className="flex items-center px-4 py-3 text-base font-medium text-foreground hover:text-primary hover:bg-accent rounded-md transition-all duration-200"
                     >
                       <LayoutDashboard className="mr-3 h-5 w-5" />
@@ -235,7 +256,7 @@ export default function GlobalNav() {
                       variant="destructive"
                       onClick={async () => {
                         await signOut();
-                        router.replace('/');
+                        router.replace("/");
                       }}
                       className="flex items-center px-4 py-3 text-base font-medium bg-red-600 text-white hover:bg-red-700 rounded-md transition-all duration-200"
                     >
@@ -247,15 +268,21 @@ export default function GlobalNav() {
                   // On home page only: Dashboard, Settings (owners only), Sign Out
                   <>
                     <Link
-                      href={(venueId || primaryVenueId) ? `/dashboard/${venueId || primaryVenueId}` : '/'}
+                      href={
+                        venueId || primaryVenueId ? `/dashboard/${venueId || primaryVenueId}` : "/"
+                      }
                       className="flex items-center px-4 py-3 text-base font-medium text-foreground hover:text-primary hover:bg-accent rounded-md transition-all duration-200"
                     >
                       <LayoutDashboard className="mr-3 h-5 w-5" />
                       Dashboard
                     </Link>
-                    {userRole && (userRole === 'owner' || userRole === 'manager') && (
+                    {userRole && (userRole === "owner" || userRole === "manager") && (
                       <Link
-                        href={(venueId || primaryVenueId) ? `/dashboard/${venueId || primaryVenueId}/settings` : '/'}
+                        href={
+                          venueId || primaryVenueId
+                            ? `/dashboard/${venueId || primaryVenueId}/settings`
+                            : "/"
+                        }
                         className="flex items-center px-4 py-3 text-base font-medium text-foreground hover:text-primary hover:bg-accent rounded-md transition-all duration-200"
                       >
                         <Settings className="mr-3 h-5 w-5" />
@@ -267,7 +294,7 @@ export default function GlobalNav() {
                       variant="destructive"
                       onClick={async () => {
                         await signOut();
-                        router.replace('/');
+                        router.replace("/");
                       }}
                       className="flex items-center px-4 py-3 text-base font-medium bg-red-600 text-white hover:bg-red-700 rounded-md transition-all duration-200"
                     >
@@ -299,11 +326,7 @@ export default function GlobalNav() {
                   Pricing
                 </Link>
                 <div className={`w-px h-8 mx-2 ${borderClasses}`}></div>
-                <Button
-                  onClick={() => router.push('/sign-in')}
-                  variant="servio"
-                  size="lg"
-                >
+                <Button onClick={() => router.push("/sign-in")} variant="servio" size="lg">
                   Sign In
                 </Button>
               </div>
@@ -344,9 +367,13 @@ export default function GlobalNav() {
                       <Home className="mr-3 h-5 w-5 flex-shrink-0 text-gray-900" />
                       <span>Home</span>
                     </Link>
-                    {userRole && (userRole === 'owner' || userRole === 'manager') && (
+                    {userRole && (userRole === "owner" || userRole === "manager") && (
                       <Link
-                        href={(venueId || primaryVenueId) ? `/dashboard/${venueId || primaryVenueId}/settings` : '/'}
+                        href={
+                          venueId || primaryVenueId
+                            ? `/dashboard/${venueId || primaryVenueId}/settings`
+                            : "/"
+                        }
                         className="flex items-center px-4 py-3 text-base font-semibold text-gray-900 hover:text-servio-purple hover:bg-servio-purple/5 rounded-xl transition-all duration-200 min-h-[48px]"
                         onClick={() => setMobileMenuOpen(false)}
                       >
@@ -355,19 +382,25 @@ export default function GlobalNav() {
                       </Link>
                     )}
                   </>
-                ) : (isOnFeaturePage || isOnQRPage) ? (
+                ) : isOnFeaturePage || isOnQRPage ? (
                   <>
                     <Link
-                      href={(venueId || primaryVenueId) ? `/dashboard/${venueId || primaryVenueId}` : '/'}
+                      href={
+                        venueId || primaryVenueId ? `/dashboard/${venueId || primaryVenueId}` : "/"
+                      }
                       className="flex items-center px-4 py-3 text-base font-semibold text-gray-900 hover:text-servio-purple hover:bg-servio-purple/5 rounded-xl transition-all duration-200 min-h-[48px]"
                       onClick={() => setMobileMenuOpen(false)}
                     >
                       <LayoutDashboard className="mr-3 h-5 w-5 flex-shrink-0 text-gray-900" />
                       <span>Dashboard</span>
                     </Link>
-                    {userRole && (userRole === 'owner' || userRole === 'manager') && (
+                    {userRole && (userRole === "owner" || userRole === "manager") && (
                       <Link
-                        href={(venueId || primaryVenueId) ? `/dashboard/${venueId || primaryVenueId}/settings` : '/'}
+                        href={
+                          venueId || primaryVenueId
+                            ? `/dashboard/${venueId || primaryVenueId}/settings`
+                            : "/"
+                        }
                         className="flex items-center px-4 py-3 text-base font-semibold text-gray-900 hover:text-servio-purple hover:bg-servio-purple/5 rounded-xl transition-all duration-200 min-h-[48px]"
                         onClick={() => setMobileMenuOpen(false)}
                       >
@@ -379,7 +412,9 @@ export default function GlobalNav() {
                 ) : isOnSettings ? (
                   <>
                     <Link
-                      href={(venueId || primaryVenueId) ? `/dashboard/${venueId || primaryVenueId}` : '/'}
+                      href={
+                        venueId || primaryVenueId ? `/dashboard/${venueId || primaryVenueId}` : "/"
+                      }
                       className="flex items-center px-4 py-3 text-base font-semibold text-gray-900 hover:text-servio-purple hover:bg-servio-purple/5 rounded-xl transition-all duration-200 min-h-[48px]"
                       onClick={() => setMobileMenuOpen(false)}
                     >
@@ -398,16 +433,22 @@ export default function GlobalNav() {
                 ) : (
                   <>
                     <Link
-                      href={(venueId || primaryVenueId) ? `/dashboard/${venueId || primaryVenueId}` : '/'}
+                      href={
+                        venueId || primaryVenueId ? `/dashboard/${venueId || primaryVenueId}` : "/"
+                      }
                       className="flex items-center px-4 py-3 text-base font-semibold text-gray-900 hover:text-servio-purple hover:bg-servio-purple/5 rounded-xl transition-all duration-200 min-h-[48px]"
                       onClick={() => setMobileMenuOpen(false)}
                     >
                       <LayoutDashboard className="mr-3 h-5 w-5 flex-shrink-0 text-gray-900" />
                       <span>Dashboard</span>
                     </Link>
-                    {userRole && (userRole === 'owner' || userRole === 'manager') && (
+                    {userRole && (userRole === "owner" || userRole === "manager") && (
                       <Link
-                        href={(venueId || primaryVenueId) ? `/dashboard/${venueId || primaryVenueId}/settings` : '/'}
+                        href={
+                          venueId || primaryVenueId
+                            ? `/dashboard/${venueId || primaryVenueId}/settings`
+                            : "/"
+                        }
                         className="flex items-center px-4 py-3 text-base font-semibold text-gray-900 hover:text-servio-purple hover:bg-servio-purple/5 rounded-xl transition-all duration-200 min-h-[48px]"
                         onClick={() => setMobileMenuOpen(false)}
                       >
@@ -420,7 +461,7 @@ export default function GlobalNav() {
                       onClick={async () => {
                         await signOut();
                         setMobileMenuOpen(false);
-                        router.replace('/');
+                        router.replace("/");
                       }}
                       className="flex items-center w-full px-4 py-3 text-base font-semibold bg-red-600 hover:bg-red-700 text-white rounded-xl transition-all duration-200 min-h-[48px] justify-start"
                     >
@@ -458,7 +499,7 @@ export default function GlobalNav() {
                 <button
                   onClick={() => {
                     setMobileMenuOpen(false);
-                    router.push('/sign-in');
+                    router.push("/sign-in");
                   }}
                   className="w-full px-4 py-3 text-base font-semibold text-white bg-servio-purple hover:bg-servio-purple-dark rounded-xl transition-all duration-200 min-h-[48px] flex items-center justify-center"
                 >
@@ -471,4 +512,4 @@ export default function GlobalNav() {
       )}
     </nav>
   );
-} 
+}
