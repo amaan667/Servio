@@ -18,15 +18,20 @@ export async function POST() {
     } = await supabase.auth.getSession();
     const user = session?.user;
 
-    logger.debug("[ORG ENSURE] Session check:", {
+    logger.info("[ORG ENSURE] Session check:", {
       hasSession: !!session,
       hasUser: !!user,
       userId: user?.id,
       sessionError: sessionError?.message,
+      sessionErrorDetails: sessionError,
     });
 
     if (sessionError) {
-      logger.error("[ORG ENSURE] Session error:", sessionError);
+      logger.error("[ORG ENSURE] Session error:", {
+        error: sessionError,
+        message: sessionError.message,
+        status: sessionError.status,
+      });
       return NextResponse.json(
         { error: "Session error", details: sessionError.message },
         { status: 401 }
@@ -34,9 +39,9 @@ export async function POST() {
     }
 
     if (!user) {
-      logger.error("[ORG ENSURE] No user found in session");
+      logger.error("[ORG ENSURE] No user found in session - user needs to sign in");
       return NextResponse.json(
-        { error: "No user found", details: "User not authenticated" },
+        { error: "No user found", details: "User not authenticated. Please sign in again." },
         { status: 401 }
       );
     }
