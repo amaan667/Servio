@@ -8,16 +8,29 @@ export async function GET(req: Request) {
     const { searchParams } = new URL(req.url);
     const venueId = searchParams.get("venueId");
 
+    console.info("[KDS STATIONS] 📥 Request received:", {
+      venueId,
+      hasAuthHeader: !!req.headers.get("authorization"),
+      authHeader: req.headers.get("authorization")?.substring(0, 20) + "...",
+    });
+
     if (!venueId) {
+      console.error("[KDS STATIONS] ❌ No venueId provided");
       return NextResponse.json({ ok: false, error: "venueId is required" }, { status: 400 });
     }
 
     // Authenticate request
     const auth = await authenticateRequest(req);
     if (!auth.success || !auth.user || !auth.supabase) {
-      console.error("[KDS STATIONS GET] ❌ Authentication failed:", auth.error);
+      console.error("[KDS STATIONS] ❌ Authentication failed:", {
+        error: auth.error,
+        hasUser: !!auth.user,
+        hasSupabase: !!auth.supabase,
+      });
       return NextResponse.json({ ok: false, error: auth.error }, { status: 401 });
     }
+
+    console.info("[KDS STATIONS] ✅ Authenticated:", { userId: auth.user.id });
 
     const { user, supabase } = auth;
 
