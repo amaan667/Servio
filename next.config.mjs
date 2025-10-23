@@ -3,7 +3,7 @@ const nextConfig = {
   // Force fresh build - cache bust for Railway
   generateBuildId: async () => {
     // Force new build ID to clear CSS/JS cache after fixing React hooks and config
-    return `build-fix-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`;
+    return `mime-fix-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`;
   },
   // Railway-specific configuration
   // Note: standalone mode temporarily disabled due to Next.js 15 build issue with 500.html
@@ -44,6 +44,10 @@ const nextConfig = {
             key: 'Cache-Control',
             value: 'public, max-age=31536000, immutable',
           },
+          {
+            key: 'X-Content-Type-Options',
+            value: 'nosniff',
+          },
         ],
       },
       {
@@ -56,6 +60,27 @@ const nextConfig = {
           {
             key: 'Cache-Control',
             value: 'public, max-age=31536000, immutable',
+          },
+          {
+            key: 'X-Content-Type-Options',
+            value: 'nosniff',
+          },
+        ],
+      },
+      {
+        source: '/_next/static/media/:path*',
+        headers: [
+          {
+            key: 'Content-Type',
+            value: 'font/woff2',
+          },
+          {
+            key: 'Cache-Control',
+            value: 'public, max-age=31536000, immutable',
+          },
+          {
+            key: 'X-Content-Type-Options',
+            value: 'nosniff',
           },
         ],
       },
@@ -146,4 +171,4 @@ const nextConfig = {
 };
 
 export default nextConfig;
-/* Deployment trigger - Fix MIME type and routing issues - ${new Date().toISOString()} */
+/* MIME type fix - CSS/JS headers updated - ${new Date().toISOString()} */
