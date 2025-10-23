@@ -1,5 +1,5 @@
 // API endpoint to ensure a user has a real organization
-import { NextResponse } from "next/server";
+import { NextRequest, NextResponse } from "next/server";
 import { createClient, createAdminClient } from "@/lib/supabase";
 import { logger } from "@/lib/logger";
 
@@ -7,9 +7,9 @@ import { logger } from "@/lib/logger";
 export const dynamic = "force-dynamic";
 export const revalidate = 0;
 
-export async function POST() {
+export async function POST(request: NextRequest) {
   try {
-    const supabase = await createClient();
+    const supabase = await createClient(request);
 
     // Get the current user with better error handling
     const {

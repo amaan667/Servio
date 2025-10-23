@@ -49,13 +49,22 @@ export default function TrialStatusBanner({ userRole }: TrialStatusBannerProps) 
         if (!ensureOrgResponse.ok) {
           // If 401, user might not be fully authenticated yet, try again later
           if (ensureOrgResponse.status === 401) {
+            console.info(
+              "[TRIAL BANNER] 401 error - user not authenticated, retrying in 2 seconds"
+            );
             setTimeout(() => fetchTrialStatus(), 2000); // Retry in 2 seconds
             return;
           }
+          console.warn(
+            "[TRIAL BANNER] API error:",
+            ensureOrgResponse.status,
+            ensureOrgResponse.statusText
+          );
           setLoading(false);
           return;
         }
-      } catch {
+      } catch (error) {
+        console.warn("[TRIAL BANNER] Network error, retrying in 2 seconds:", error);
         setTimeout(() => fetchTrialStatus(), 2000); // Retry in 2 seconds
         return;
       }
@@ -77,8 +86,16 @@ export default function TrialStatusBanner({ userRole }: TrialStatusBannerProps) 
       } else {
         console.info("[TRIAL BANNER] No organization data received");
       }
-    } catch {
-      // Silent error handling
+    } catch (error) {
+      console.warn("[TRIAL BANNER] Fetch error:", error);
+      // Set a fallback trial status if API keeps failing
+      setTrialStatus({
+        isTrialing: true,
+        subscriptionStatus: "trialing",
+        tier: "basic",
+        trialEndsAt: new Date(Date.now() + 14 * 24 * 60 * 60 * 1000).toISOString(),
+        daysRemaining: 14,
+      });
     } finally {
       setLoading(false);
     }
