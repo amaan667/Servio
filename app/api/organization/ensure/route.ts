@@ -1,15 +1,15 @@
 // API endpoint to ensure a user has a real organization
-import { NextRequest, NextResponse } from "next/server";
-import { createClient, createAdminClient } from "@/lib/supabase";
+import { NextResponse } from "next/server";
+import { createServerSupabase, createAdminClient } from "@/lib/supabase";
 import { logger } from "@/lib/logger";
 
 // Disable caching to always get fresh data
 export const dynamic = "force-dynamic";
 export const revalidate = 0;
 
-export async function POST(request: NextRequest) {
+export async function POST() {
   try {
-    const supabase = await createClient(request);
+    const supabase = await createServerSupabase();
 
     // Get the current user with better error handling
     const {
@@ -17,6 +17,13 @@ export async function POST(request: NextRequest) {
       error: sessionError,
     } = await supabase.auth.getSession();
     const user = session?.user;
+
+    logger.debug("[ORG ENSURE] Session check:", {
+      hasSession: !!session,
+      hasUser: !!user,
+      userId: user?.id,
+      sessionError: sessionError?.message,
+    });
 
     if (sessionError) {
       logger.error("[ORG ENSURE] Session error:", sessionError);

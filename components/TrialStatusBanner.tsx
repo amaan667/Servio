@@ -34,42 +34,34 @@ export default function TrialStatusBanner({ userRole }: TrialStatusBannerProps) 
     }
 
     try {
-      // Use the organization ensure endpoint to get accurate organization data (non-blocking)
-      let ensureOrgResponse;
-      try {
-        ensureOrgResponse = await fetch("/api/organization/ensure", {
-          method: "POST",
-          headers: {
-            "Content-Type": "application/json",
-            "Cache-Control": "no-cache",
-          },
-          credentials: "include", // Ensure cookies are sent
-        });
+      // Use client-side Supabase to get organization data directly
+      const { supabaseBrowser } = await import("@/lib/supabase");
+      const supabase = supabaseBrowser();
 
-        if (!ensureOrgResponse.ok) {
-          // If 401, user might not be fully authenticated yet, try again later
-          if (ensureOrgResponse.status === 401) {
-            console.info(
-              "[TRIAL BANNER] 401 error - user not authenticated, retrying in 2 seconds"
-            );
-            setTimeout(() => fetchTrialStatus(), 2000); // Retry in 2 seconds
-            return;
-          }
-          console.warn(
-            "[TRIAL BANNER] API error:",
-            ensureOrgResponse.status,
-            ensureOrgResponse.statusText
-          );
-          setLoading(false);
-          return;
-        }
-      } catch (error) {
-        console.warn("[TRIAL BANNER] Network error, retrying in 2 seconds:", error);
-        setTimeout(() => fetchTrialStatus(), 2000); // Retry in 2 seconds
+      console.info("[TRIAL BANNER] Fetching organization data for user:", user.id);
+
+      // Get user's organization directly from client
+      const { data: organization, error: orgError } = await supabase
+        .from("organizations")
+        .select(
+          "id, subscription_tier, subscription_status, is_grandfathered, trial_ends_at, created_by, owner_user_id"
+        )
+        .or(`created_by.eq.${user.id},owner_user_id.eq.${user.id}`)
+        .maybeSingle();
+
+      if (orgError) {
+        console.warn("[TRIAL BANNER] Organization query error:", orgError);
+        // Set fallback trial status
+        setTrialStatus({
+          isTrialing: true,
+          subscriptionStatus: "trialing",
+          tier: "basic",
+          trialEndsAt: new Date(Date.now() + 14 * 24 * 60 * 60 * 1000).toISOString(),
+          daysRemaining: 14,
+        });
+        setLoading(false);
         return;
       }
-
-      const { organization } = await ensureOrgResponse.json();
 
       if (organization) {
         console.info("[TRIAL BANNER] Organization data:", {
@@ -84,11 +76,25 @@ export default function TrialStatusBanner({ userRole }: TrialStatusBannerProps) 
           trial_ends_at: organization.trial_ends_at,
         });
       } else {
-        console.info("[TRIAL BANNER] No organization data received");
+        console.info("[TRIAL BANNER] No organization found, using fallback trial status");
+        // Use fallback trial status based on user creation date
+        const userCreatedAt = new Date(user.created_at);
+        const trialEndsAt = new Date(userCreatedAt.getTime() + 14 * 24 * 60 * 60 * 1000);
+
+        setTrialStatus({
+          isTrialing: true,
+          subscriptionStatus: "trialing",
+          tier: "basic",
+          trialEndsAt: trialEndsAt.toISOString(),
+          daysRemaining: Math.max(
+            0,
+            Math.floor((trialEndsAt.getTime() - Date.now()) / (1000 * 60 * 60 * 24))
+          ),
+        });
       }
     } catch (error) {
       console.warn("[TRIAL BANNER] Fetch error:", error);
-      // Set a fallback trial status if API keeps failing
+      // Set a fallback trial status if everything fails
       setTrialStatus({
         isTrialing: true,
         subscriptionStatus: "trialing",
