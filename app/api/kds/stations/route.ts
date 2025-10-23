@@ -1,80 +1,101 @@
-import { NextResponse } from 'next/server';
-import { createServerSupabase } from '@/lib/supabase';
-import { logger } from '@/lib/logger';
+import { NextResponse } from "next/server";
+import { createServerSupabase } from "@/lib/supabase";
+import { logger } from "@/lib/logger";
 
 // GET - Fetch all KDS stations for a venue
 export async function GET(req: Request) {
   try {
     const { searchParams } = new URL(req.url);
-    const venueId = searchParams.get('venueId');
+    const venueId = searchParams.get("venueId");
 
     if (!venueId) {
-      return NextResponse.json(
-        { ok: false, error: 'venueId is required' },
-        { status: 400 }
-      );
+      return NextResponse.json({ ok: false, error: "venueId is required" }, { status: 400 });
     }
 
     const supabase = await createServerSupabase();
-    
+
     // Verify user has access to this venue
-    const { data: { session }, error: userError } = await supabase.auth.getSession();
+    const {
+      data: { session },
+      error: userError,
+    } = await supabase.auth.getSession();
     const user = session?.user;
     if (userError || !user) {
+      return NextResponse.json({ ok: false, error: "Unauthorized" }, { status: 401 });
+    }
+
+    // Verify user owns or has staff access to this venue
+    const { data: venueAccess } = await supabase
+      .from("venues")
+      .select("venue_id")
+      .eq("venue_id", venueId)
+      .eq("owner_user_id", user.id)
+      .maybeSingle();
+
+    const { data: staffAccess } = await supabase
+      .from("user_venue_roles")
+      .select("role")
+      .eq("venue_id", venueId)
+      .eq("user_id", user.id)
+      .maybeSingle();
+
+    if (!venueAccess && !staffAccess) {
+      logger.warn("[KDS] User does not have access to venue:", { userId: user.id, venueId });
       return NextResponse.json(
-        { ok: false, error: 'Unauthorized' },
-        { status: 401 }
+        { ok: false, error: "Access denied to this venue" },
+        { status: 403 }
       );
     }
 
     // Get stations for this venue
     const { data: stations, error } = await supabase
-      .from('kds_stations')
-      .select('*')
-      .eq('venue_id', venueId)
-      .eq('is_active', true)
-      .order('display_order', { ascending: true });
+      .from("kds_stations")
+      .select("*")
+      .eq("venue_id", venueId)
+      .eq("is_active", true)
+      .order("display_order", { ascending: true });
 
     if (error) {
-      logger.error('[KDS] Error fetching stations:', { error: error instanceof Error ? error.message : 'Unknown error' });
-      return NextResponse.json(
-        { ok: false, error: error.message },
-        { status: 500 }
-      );
+      logger.error("[KDS] Error fetching stations:", {
+        error: error instanceof Error ? error.message : "Unknown error",
+      });
+      return NextResponse.json({ ok: false, error: error.message }, { status: 500 });
     }
 
     // If no stations exist, create default ones
     if (!stations || stations.length === 0) {
-      const { error: setupError } = await supabase.rpc('setup_default_kds_stations', {
-        p_venue_id: venueId
+      const { error: setupError } = await supabase.rpc("setup_default_kds_stations", {
+        p_venue_id: venueId,
       });
 
       if (setupError) {
-        logger.error('[KDS] Error setting up default stations:', { error: setupError.message });
+        logger.error("[KDS] Error setting up default stations:", { error: setupError.message });
       }
 
       // Fetch again after setup
       const { data: newStations } = await supabase
-        .from('kds_stations')
-        .select('*')
-        .eq('venue_id', venueId)
-        .eq('is_active', true)
-        .order('display_order', { ascending: true });
+        .from("kds_stations")
+        .select("*")
+        .eq("venue_id", venueId)
+        .eq("is_active", true)
+        .order("display_order", { ascending: true });
 
       return NextResponse.json({
         ok: true,
-        stations: newStations || []
+        stations: newStations || [],
       });
     }
 
     return NextResponse.json({
       ok: true,
-      stations
+      stations,
     });
   } catch (error) {
-    logger.error('[KDS] Unexpected error:', { error: error instanceof Error ? error.message : 'Unknown error' });
+    logger.error("[KDS] Unexpected error:", {
+      error: error instanceof Error ? error.message : "Unknown error",
+    });
     return NextResponse.json(
-      { ok: false, error: error instanceof Error ? error.message : 'Internal server error' },
+      { ok: false, error: error instanceof Error ? error.message : "Internal server error" },
       { status: 500 }
     );
   }
@@ -88,54 +109,77 @@ export async function POST(req: Request) {
 
     if (!venueId || !stationName) {
       return NextResponse.json(
-        { ok: false, error: 'venueId and stationName are required' },
+        { ok: false, error: "venueId and stationName are required" },
         { status: 400 }
       );
     }
 
     const supabase = await createServerSupabase();
-    
+
     // Verify user has access to this venue
-    const { data: { session }, error: userError } = await supabase.auth.getSession();
+    const {
+      data: { session },
+      error: userError,
+    } = await supabase.auth.getSession();
     const user = session?.user;
     if (userError || !user) {
+      return NextResponse.json({ ok: false, error: "Unauthorized" }, { status: 401 });
+    }
+
+    // Verify user owns or has staff access to this venue
+    const { data: venueAccess } = await supabase
+      .from("venues")
+      .select("venue_id")
+      .eq("venue_id", venueId)
+      .eq("owner_user_id", user.id)
+      .maybeSingle();
+
+    const { data: staffAccess } = await supabase
+      .from("user_venue_roles")
+      .select("role")
+      .eq("venue_id", venueId)
+      .eq("user_id", user.id)
+      .maybeSingle();
+
+    if (!venueAccess && !staffAccess) {
+      logger.warn("[KDS] User does not have access to venue:", { userId: user.id, venueId });
       return NextResponse.json(
-        { ok: false, error: 'Unauthorized' },
-        { status: 401 }
+        { ok: false, error: "Access denied to this venue" },
+        { status: 403 }
       );
     }
 
     const { data: station, error } = await supabase
-      .from('kds_stations')
+      .from("kds_stations")
       .insert({
         venue_id: venueId,
         station_name: stationName,
-        station_type: stationType || 'general',
+        station_type: stationType || "general",
         display_order: displayOrder || 0,
-        color_code: colorCode || '#3b82f6',
-        is_active: true
+        color_code: colorCode || "#3b82f6",
+        is_active: true,
       })
       .select()
       .single();
 
     if (error) {
-      logger.error('[KDS] Error creating station:', { error: error instanceof Error ? error.message : 'Unknown error' });
-      return NextResponse.json(
-        { ok: false, error: error.message },
-        { status: 500 }
-      );
+      logger.error("[KDS] Error creating station:", {
+        error: error instanceof Error ? error.message : "Unknown error",
+      });
+      return NextResponse.json({ ok: false, error: error.message }, { status: 500 });
     }
 
     return NextResponse.json({
       ok: true,
-      station
+      station,
     });
   } catch (error) {
-    logger.error('[KDS] Unexpected error:', { error: error instanceof Error ? error.message : 'Unknown error' });
+    logger.error("[KDS] Unexpected error:", {
+      error: error instanceof Error ? error.message : "Unknown error",
+    });
     return NextResponse.json(
-      { ok: false, error: error instanceof Error ? error.message : 'Internal server error' },
+      { ok: false, error: error instanceof Error ? error.message : "Internal server error" },
       { status: 500 }
     );
   }
 }
-
