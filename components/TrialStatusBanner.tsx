@@ -78,12 +78,14 @@ export default function TrialStatusBanner({ userRole }: TrialStatusBannerProps) 
 
   const processTrialStatus = (org: unknown) => {
     const subscriptionStatus = org.subscription_status || "basic";
-    const isTrialing = subscriptionStatus === "trialing";
     const tier = org.subscription_tier || "basic";
     const trialEndsAt = org.trial_ends_at;
 
+    // Check if trial has expired
+    let isTrialing = false;
     let daysRemaining = null;
-    if (isTrialing && trialEndsAt) {
+
+    if (trialEndsAt) {
       const endDate = new Date(trialEndsAt);
       const now = new Date();
 
@@ -92,11 +94,10 @@ export default function TrialStatusBanner({ userRole }: TrialStatusBannerProps) 
       const nowStart = new Date(now.getFullYear(), now.getMonth(), now.getDate());
 
       const diffTime = endDateStart.getTime() - nowStart.getTime();
-      // Use Math.floor to get exact days remaining (not rounded up)
       daysRemaining = Math.floor(diffTime / (1000 * 60 * 60 * 24));
 
-      // Ensure we don't show negative days
-      daysRemaining = Math.max(0, daysRemaining);
+      // Trial is active if we have days remaining and status is trialing
+      isTrialing = subscriptionStatus === "trialing" && daysRemaining > 0;
     }
 
     setTrialStatus({
@@ -214,11 +215,16 @@ export default function TrialStatusBanner({ userRole }: TrialStatusBannerProps) 
     }
   }, []);
 
-  // Only show for trialing or active subscriptions (hide for canceled, past_due, etc.)
+  // Show banner for trialing, active subscriptions, or expired trials
+  if (loading || !trialStatus) {
+    return null;
+  }
+
+  // Don't show for canceled, past_due, etc. unless it's a trialing status
   if (
-    loading ||
-    !trialStatus ||
-    (!trialStatus.isTrialing && trialStatus.subscriptionStatus !== "active")
+    !trialStatus.isTrialing &&
+    trialStatus.subscriptionStatus !== "active" &&
+    trialStatus.subscriptionStatus !== "trialing"
   ) {
     return null;
   }
@@ -308,25 +314,44 @@ export default function TrialStatusBanner({ userRole }: TrialStatusBannerProps) 
     );
   }
 
-  // Render active subscription banner
+  // Render plan status banner (active subscription or expired trial)
+  const isActiveSubscription = trialStatus.subscriptionStatus === "active";
+
   return (
-    <div className="bg-gradient-to-r from-green-50 to-emerald-50 border border-green-200 rounded-lg p-4 mb-6">
+    <div
+      className={`bg-gradient-to-r ${isActiveSubscription ? "from-green-50 to-emerald-50 border-green-200" : "from-red-50 to-orange-50 border-red-200"} border rounded-lg p-4 mb-6`}
+    >
       <div className="flex items-center justify-between">
         <div className="flex items-center gap-3">
           <div className="flex items-center gap-2">
-            <Calendar className="h-5 w-5 text-green-600" />
-            <span className="font-semibold text-green-900">
+            {isActiveSubscription ? (
+              <div className="h-5 w-5 bg-green-600 rounded-full flex items-center justify-center">
+                <span className="text-white text-xs font-bold">✓</span>
+              </div>
+            ) : (
+              <div className="h-5 w-5 bg-red-600 rounded-full flex items-center justify-center">
+                <span className="text-white text-xs font-bold">⚠</span>
+              </div>
+            )}
+            <span
+              className={`font-semibold ${isActiveSubscription ? "text-green-900" : "text-red-900"}`}
+            >
               {getTierDisplayName(trialStatus.tier)} Plan
             </span>
           </div>
 
-          <Badge className="bg-green-500 text-white font-medium">Active</Badge>
+          <Badge
+            className={`${isActiveSubscription ? "bg-green-500" : "bg-red-500"} text-white font-medium`}
+          >
+            {isActiveSubscription ? "Active" : "Trial Expired"}
+          </Badge>
         </div>
       </div>
 
-      <div className="mt-2 text-sm text-green-700">
-        You&apos;re currently on the {getTierDisplayName(trialStatus.tier)} plan with full access to
-        all features.
+      <div className={`mt-2 text-sm ${isActiveSubscription ? "text-green-700" : "text-red-700"}`}>
+        {isActiveSubscription
+          ? `You're currently on the ${getTierDisplayName(trialStatus.tier)} plan with full access to all features.`
+          : `Your ${getTierDisplayName(trialStatus.tier)} trial has expired. Upgrade to continue using all features.`}
       </div>
     </div>
   );

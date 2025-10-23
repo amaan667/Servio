@@ -58,12 +58,14 @@ export async function POST() {
       );
     }
 
-    // Check if user already has an organization
+    // Check if user already has an organization (by created_by OR owner_user_id)
     logger.debug("[ORG ENSURE] Checking for existing organization for user:", user.id);
     const { data: existingOrg, error: orgCheckError } = await adminClient
       .from("organizations")
-      .select("id, subscription_tier, subscription_status, is_grandfathered, trial_ends_at")
-      .eq("created_by", user.id)
+      .select(
+        "id, subscription_tier, subscription_status, is_grandfathered, trial_ends_at, created_by, owner_user_id"
+      )
+      .or(`created_by.eq.${user.id},owner_user_id.eq.${user.id}`)
       .maybeSingle();
 
     if (orgCheckError) {
@@ -102,6 +104,7 @@ export async function POST() {
         name: `${userName}'s Organization`,
         slug: `org-${user.id.slice(0, 8)}-${Date.now()}`,
         created_by: user.id,
+        owner_user_id: user.id, // Set owner_user_id for proper organization ownership
         subscription_tier: "basic",
         subscription_status: "trialing",
         is_grandfathered: false,
