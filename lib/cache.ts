@@ -18,7 +18,7 @@ class CacheService {
   private redisClient: unknown = null;
 
   constructor() {
-    // TODO: Initialize Redis client in production
+    // Future: Initialize Redis client for production caching
     // this.redisClient = new Redis(process.env.REDIS_URL);
   }
 
@@ -48,7 +48,7 @@ class CacheService {
 
       return null;
     } catch (error) {
-      console.error('[CACHE] Error getting key:', key, error);
+      console.error("[CACHE] Error getting key:", key, error);
       return null;
     }
   }
@@ -59,7 +59,7 @@ class CacheService {
   async set<T>(key: string, value: T, config: CacheConfig = {}): Promise<void> {
     try {
       const ttl = config.ttl || 3600; // Default 1 hour
-      const expires = Date.now() + (ttl * 1000);
+      const expires = Date.now() + ttl * 1000;
 
       // Try Redis first (if available)
       if (this.redisClient) {
@@ -70,7 +70,7 @@ class CacheService {
       // Fallback to memory cache
       this.memoryCache.set(key, { value, expires });
     } catch (error) {
-      console.error('[CACHE] Error setting key:', key, error);
+      console.error("[CACHE] Error setting key:", key, error);
     }
   }
 
@@ -85,7 +85,7 @@ class CacheService {
         this.memoryCache.delete(key);
       }
     } catch (error) {
-      console.error('[CACHE] Error deleting key:', key, error);
+      console.error("[CACHE] Error deleting key:", key, error);
     }
   }
 
@@ -101,7 +101,7 @@ class CacheService {
         }
       } else {
         // Memory cache pattern matching
-        const regex = new RegExp(pattern.replace(/\*/g, '.*'));
+        const regex = new RegExp(pattern.replace(/\*/g, ".*"));
         for (const key of this.memoryCache.keys()) {
           if (regex.test(key)) {
             this.memoryCache.delete(key);
@@ -109,7 +109,7 @@ class CacheService {
         }
       }
     } catch (error) {
-      console.error('[CACHE] Error invalidating pattern:', pattern, error);
+      console.error("[CACHE] Error invalidating pattern:", pattern, error);
     }
   }
 
@@ -124,7 +124,7 @@ class CacheService {
         this.memoryCache.clear();
       }
     } catch (error) {
-      console.error('[CACHE] Error clearing cache:', error);
+      console.error("[CACHE] Error clearing cache:", error);
     }
   }
 
@@ -133,13 +133,13 @@ class CacheService {
    */
   getStats(): { size: number; keys: string[] } {
     if (this.redisClient) {
-      // TODO: Implement Redis stats
+      // Future: Implement Redis stats monitoring
       return { size: 0, keys: [] };
     }
 
     return {
       size: this.memoryCache.size,
-      keys: Array.from(this.memoryCache.keys())
+      keys: Array.from(this.memoryCache.keys()),
     };
   }
 }
@@ -152,20 +152,22 @@ export const cache = new CacheService();
 export function cached(ttl: number = 3600, keyGenerator?: (...args: unknown[]) => string) {
   return function (target: unknown, propertyName: string, descriptor: PropertyDescriptor) {
     const method = descriptor.value;
-    
+
     descriptor.value = async function (...args: unknown[]) {
-      const cacheKey = keyGenerator ? keyGenerator(...args) : `${propertyName}:${JSON.stringify(args)}`;
-      
+      const cacheKey = keyGenerator
+        ? keyGenerator(...args)
+        : `${propertyName}:${JSON.stringify(args)}`;
+
       // Try to get from cache
       const cached = await cache.get(cacheKey);
       if (cached !== null) {
         return cached;
       }
-      
+
       // Execute method and cache result
       const result = await method.apply(this, args);
       await cache.set(cacheKey, result, { ttl });
-      
+
       return result;
     };
   };
@@ -177,22 +179,22 @@ export function cached(ttl: number = 3600, keyGenerator?: (...args: unknown[]) =
 export const cacheKeys = {
   venue: (venueId: string) => `venue:${venueId}`,
   menu: (venueId: string) => `menu:${venueId}`,
-  categories: 'categories',
+  categories: "categories",
   user: (userId: string) => `user:${userId}`,
   dashboard: (venueId: string) => `dashboard:${venueId}`,
   analytics: (venueId: string) => `analytics:${venueId}`,
-  orders: (venueId: string) => `orders:${venueId}`
+  orders: (venueId: string) => `orders:${venueId}`,
 };
 
 /**
  * Cache TTL configurations (in seconds)
  */
 export const cacheTTL = {
-  short: 60,        // 1 minute
-  medium: 300,      // 5 minutes
-  long: 3600,       // 1 hour
-  day: 86400,       // 24 hours
-  week: 604800      // 7 days
+  short: 60, // 1 minute
+  medium: 300, // 5 minutes
+  long: 3600, // 1 hour
+  day: 86400, // 24 hours
+  week: 604800, // 7 days
 };
 
 /**
@@ -203,5 +205,5 @@ export const cacheInvalidation = {
   user: (userId: string) => cache.invalidatePattern(`user:${userId}:*`),
   dashboard: (venueId: string) => cache.invalidatePattern(`dashboard:${venueId}:*`),
   analytics: (venueId: string) => cache.invalidatePattern(`analytics:${venueId}:*`),
-  orders: (venueId: string) => cache.invalidatePattern(`orders:${venueId}:*`)
+  orders: (venueId: string) => cache.invalidatePattern(`orders:${venueId}:*`),
 };

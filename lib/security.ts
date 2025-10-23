@@ -159,7 +159,7 @@ class SecurityService {
 
     console.info("[AUDIT]", auditEntry);
 
-    // TODO: Store in database
+    // Future: Store audit logs in database for compliance tracking
     // await supabase.from('audit_logs').insert(auditEntry);
   }
 
@@ -253,8 +253,7 @@ export function validateInputMiddleware(request: NextRequest) {
   const contentType = request.headers.get("content-type");
 
   if (contentType?.includes("application/json")) {
-    // TODO: Implement JSON body validation
-    // This would parse the body and validate against schemas
+    // Future: Implement JSON body validation with Zod schemas
   }
 
   return null;

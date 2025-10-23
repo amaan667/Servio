@@ -38,7 +38,7 @@ class AnalyticsService {
    * Generate AI-powered business insights
    */
   async generateInsights(): Promise<PredictiveInsight[]> {
-    // TODO: Integrate with AI service (OpenAI, Anthropic, etc.)
+    // Mock insights - integrate with AI service in production
     const mockInsights: PredictiveInsight[] = [
       {
         id: "revenue-optimization",
@@ -86,7 +86,7 @@ class AnalyticsService {
     orders: number[];
     customers: number[];
   }> {
-    // TODO: Implement ML-based forecasting
+    // Placeholder forecasts - implement ML-based forecasting in production
     const forecasts = {
       revenue: Array.from({ length: days }, (_, i) => Math.random() * 1000 + 500 + i * 10),
       orders: Array.from({ length: days }, (_, i) => Math.floor(Math.random() * 50 + 20 + i * 0.5)),
@@ -102,7 +102,7 @@ class AnalyticsService {
    * Calculate advanced KPIs
    */
   async calculateKPIs(venueId: string, period: string): Promise<AnalyticsMetric[]> {
-    // TODO: Implement real KPI calculations
+    // Mock KPIs - implement real calculations with venue data in production
     const kpis: AnalyticsMetric[] = [
       {
         name: "Revenue",
