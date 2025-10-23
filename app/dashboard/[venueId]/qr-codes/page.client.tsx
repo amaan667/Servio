@@ -1,37 +1,70 @@
 "use client";
 
-import { useRouter } from "next/navigation";
+import { useState, useEffect } from "react";
+import { useAuth } from "@/app/auth/AuthProvider";
+import { supabaseBrowser } from "@/lib/supabase";
 import QRCodeClient from "./QRCodeClient";
 import RoleBasedNavigation from "@/components/RoleBasedNavigation";
-import { usePageAuth } from "../hooks/usePageAuth";
 
 export default function QRCodeClientPage({ venueId }: { venueId: string }) {
-  const router = useRouter();
-  const { user, userRole, venueName, authError } = usePageAuth({
-    venueId,
-    pageName: "QR Codes",
-  });
+  const { user } = useAuth();
+  const [venueName, setVenueName] = useState<string>("My Venue");
+  const [userRole, setUserRole] = useState<string | null>(null);
 
-  // No loading spinner - render immediately
-  if (authError) {
-    console.error("[QR CODES PAGE] ❌ Auth error:", authError);
-    return (
-      <div className="min-h-screen flex items-center justify-center bg-background p-4">
-        <div className="text-center">
-          <h1 className="text-2xl font-bold mb-2">Access Denied</h1>
-          <p className="text-muted-foreground mb-4">{authError}</p>
-          <button
-            onClick={() => router.push("/dashboard")}
-            className="px-4 py-2 bg-primary text-primary-foreground rounded-md"
-          >
-            Go to Dashboard
-          </button>
-        </div>
-      </div>
-    );
-  }
+  useEffect(() => {
+    const fetchVenueData = async () => {
+      if (!user?.id) return;
 
-  // Render immediately even if user is not loaded yet
+      const supabase = supabaseBrowser();
+
+      // Fetch venue name
+      const { data: venueData } = await supabase
+        .from("venues")
+        .select("venue_name")
+        .eq("venue_id", venueId)
+        .single();
+
+      if (venueData) {
+        setVenueName(venueData.venue_name);
+      }
+
+      // Fetch user role
+      const cachedRole = sessionStorage.getItem(`user_role_${user.id}`);
+      if (cachedRole) {
+        setUserRole(cachedRole);
+      } else {
+        // Check if owner
+        const { data: ownerVenue } = await supabase
+          .from("venues")
+          .select("venue_id")
+          .eq("owner_user_id", user.id)
+          .eq("venue_id", venueId)
+          .single();
+
+        if (ownerVenue) {
+          setUserRole("owner");
+          sessionStorage.setItem(`user_role_${user.id}`, "owner");
+        } else {
+          // Check staff role
+          const { data: staffRole } = await supabase
+            .from("user_venue_roles")
+            .select("role")
+            .eq("user_id", user.id)
+            .eq("venue_id", venueId)
+            .single();
+
+          if (staffRole) {
+            setUserRole(staffRole.role);
+            sessionStorage.setItem(`user_role_${user.id}`, staffRole.role);
+          }
+        }
+      }
+    };
+
+    fetchVenueData();
+  }, [user, venueId]);
+
+  // Render immediately - no auth checks, no loading spinners
   return (
     <div className="min-h-screen bg-background">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 pb-24 md:pb-8">
@@ -50,11 +83,7 @@ export default function QRCodeClientPage({ venueId }: { venueId: string }) {
           </p>
         </div>
 
-        {user && venueName ? (
-          <QRCodeClient venueId={venueId} venueName={venueName} />
-        ) : (
-          <div className="text-center py-12 text-gray-500">Loading...</div>
-        )}
+        <QRCodeClient venueId={venueId} venueName={venueName} />
       </div>
     </div>
   );
