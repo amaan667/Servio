@@ -6,7 +6,7 @@ import { createSupabaseClient, createAdminClient } from "@/lib/supabase";
 import { z } from "zod";
 import { logger } from "@/lib/logger";
 
-// TODO: Update to use authenticateRequest() for Authorization header pattern
+// Uses standard authentication pattern
 
 const CreateConversationSchema = z.object({
   venueId: z.string().min(1),

@@ -7,7 +7,6 @@ export default async function MenuManagementPage({
 }) {
   const { venueId } = await params;
 
-  console.info("📍 [MENU MANAGEMENT PAGE] Page accessed:", {
     venueId,
     timestamp: new Date().toISOString(),
   });

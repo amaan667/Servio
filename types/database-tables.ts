@@ -12,8 +12,8 @@ export interface Venue {
   created_at?: string;
   updated_at?: string;
   // Deprecated: subscription fields moved to organizations table
-  subscription_tier?: string; // TODO: Remove in future - use organization.subscription_tier
-  trial_ends_at?: string; // TODO: Remove in future - use organization.trial_ends_at
+  subscription_tier?: string; // Legacy field - prefer organization.subscription_tier
+  trial_ends_at?: string; // Legacy field - prefer organization.trial_ends_at
 }
 
 export interface Order {

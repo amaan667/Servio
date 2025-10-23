@@ -3,7 +3,6 @@ import { redirect } from "next/navigation";
 export default async function MenuPage({ params }: { params: Promise<{ venueId: string }> }) {
   const { venueId } = await params;
 
-  console.info("📍 [MENU PAGE] Redirecting to menu-management:", {
     venueId,
     timestamp: new Date().toISOString(),
   });

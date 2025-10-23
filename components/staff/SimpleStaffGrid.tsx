@@ -33,7 +33,7 @@ interface SimpleStaffGridProps {
 type CalendarView = "today" | "week" | "month";
 
 const SimpleStaffGrid: React.FC<SimpleStaffGridProps> = () => {
-  const shifts: LegacyShift[] = useMemo(() => [], []); // TODO: Load shifts from API
+  const shifts: LegacyShift[] = useMemo(() => [], []); // Shifts not implemented yet
   const [currentDate, setCurrentDate] = useState(new Date());
   const [currentMonth, setCurrentMonth] = useState(new Date());
   const [calendarView, setCalendarView] = useState<CalendarView>("today");
