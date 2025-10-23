@@ -98,6 +98,10 @@ export async function POST() {
     const userName = user.user_metadata?.full_name || user.email?.split("@")[0] || "User";
 
     // Create organization for the user using admin client to bypass RLS
+    // Use the user's actual creation date as trial start date for accurate trial calculation
+    const userCreatedAt = new Date(user.created_at);
+    const trialEndsAt = new Date(userCreatedAt.getTime() + 14 * 24 * 60 * 60 * 1000);
+
     const { data: newOrg, error: createError } = await adminClient
       .from("organizations")
       .insert({
@@ -108,7 +112,7 @@ export async function POST() {
         subscription_tier: "basic",
         subscription_status: "trialing",
         is_grandfathered: false,
-        trial_ends_at: new Date(Date.now() + 14 * 24 * 60 * 60 * 1000).toISOString(),
+        trial_ends_at: trialEndsAt.toISOString(),
         created_at: new Date().toISOString(),
         updated_at: new Date().toISOString(),
       })
