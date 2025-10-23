@@ -37,7 +37,7 @@
     ]
   },
   "dependencies": {
-    "@google-cloud/storage": "^7.7.0",
+    "@google-cloud/storage": "^7.17.2",
     "@google-cloud/vision": "^4.0.2",
     "@hello-pangea/dnd": "^18.0.1",
     "@next/swc-darwin-arm64": "14.2.16",
