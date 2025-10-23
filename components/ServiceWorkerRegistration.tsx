@@ -16,21 +16,45 @@ export default function ServiceWorkerRegistration({ children }: ServiceWorkerReg
   const [isInstalling, setIsInstalling] = useState(false);
 
   useEffect(() => {
+    // Initialize online status - default to true to avoid false offline warnings
+    setIsOnline(true);
+
     // Check online status
-    const handleOnline = () => setIsOnline(true);
-    const handleOffline = () => setIsOnline(false);
+    const handleOnline = () => {
+      console.info("[SERVICE WORKER] Network online");
+      setIsOnline(true);
+    };
+    const handleOffline = () => {
+      console.warn("[SERVICE WORKER] Network offline");
+      setIsOnline(false);
+    };
 
     window.addEventListener("online", handleOnline);
     window.addEventListener("offline", handleOffline);
-    setIsOnline(navigator.onLine);
+
+    // Double check with a real network request
+    const checkConnectivity = async () => {
+      try {
+        const response = await fetch("/api/auth/health", {
+          method: "GET",
+          cache: "no-cache",
+          signal: AbortSignal.timeout(3000),
+        });
+        setIsOnline(response.ok);
+      } catch {
+        // Only set offline if navigator.onLine also says offline
+        setIsOnline(navigator.onLine);
+      }
+    };
+
+    // Check connectivity on mount
+    checkConnectivity();
 
     // Register service worker
     if ("serviceWorker" in navigator) {
       navigator.serviceWorker
         .register("/sw.js")
         .then((registration) => {
-          setSwRegistration(registration);
-
           // Previously: show update banner when updatefound. Now we silently allow the
           // new SW to install/activate without surfacing UI to the user.
           registration.addEventListener("updatefound", () => {

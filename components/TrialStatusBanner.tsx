@@ -65,15 +65,9 @@ export default function TrialStatusBanner({ userRole }: TrialStatusBannerProps) 
       }
 
       if (orgError) {
-        console.warn("[TRIAL BANNER] Organization query error:", orgError);
-        // Set fallback trial status
-        setTrialStatus({
-          isTrialing: true,
-          subscriptionStatus: "trialing",
-          tier: "basic",
-          trialEndsAt: new Date(Date.now() + 14 * 24 * 60 * 60 * 1000).toISOString(),
-          daysRemaining: 14,
-        });
+        console.error("[TRIAL BANNER] Organization query error:", orgError);
+        // Don't show banner if we can't get organization data
+        setTrialStatus(null);
         setLoading(false);
         return;
       }
@@ -83,40 +77,24 @@ export default function TrialStatusBanner({ userRole }: TrialStatusBannerProps) 
           subscription_status: organization.subscription_status,
           subscription_tier: organization.subscription_tier,
           trial_ends_at: organization.trial_ends_at,
+          created_at: organization.created_at,
         });
 
+        // Organization exists - use its actual trial_ends_at from database
         processTrialStatus({
           subscription_status: organization.subscription_status,
           subscription_tier: organization.subscription_tier,
           trial_ends_at: organization.trial_ends_at,
         });
       } else {
-        console.info("[TRIAL BANNER] No organization found, using fallback trial status");
-        // Use fallback trial status based on user creation date
-        const userCreatedAt = new Date(user.created_at);
-        const trialEndsAt = new Date(userCreatedAt.getTime() + 14 * 24 * 60 * 60 * 1000);
-
-        setTrialStatus({
-          isTrialing: true,
-          subscriptionStatus: "trialing",
-          tier: "basic",
-          trialEndsAt: trialEndsAt.toISOString(),
-          daysRemaining: Math.max(
-            0,
-            Math.floor((trialEndsAt.getTime() - Date.now()) / (1000 * 60 * 60 * 24))
-          ),
-        });
+        console.warn("[TRIAL BANNER] No organization found for user");
+        // Don't show banner if no organization exists
+        setTrialStatus(null);
       }
     } catch (error) {
-      console.warn("[TRIAL BANNER] Fetch error:", error);
-      // Set a fallback trial status if everything fails
-      setTrialStatus({
-        isTrialing: true,
-        subscriptionStatus: "trialing",
-        tier: "basic",
-        trialEndsAt: new Date(Date.now() + 14 * 24 * 60 * 60 * 1000).toISOString(),
-        daysRemaining: 14,
-      });
+      console.error("[TRIAL BANNER] Fetch error:", error);
+      // Don't show banner if we can't fetch organization data
+      setTrialStatus(null);
     } finally {
       setLoading(false);
     }
