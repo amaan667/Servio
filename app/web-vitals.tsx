@@ -1,19 +1,30 @@
-'use client';
+"use client";
 
-import { useEffect } from 'react';
-import { onCLS, onINP, onFCP, onLCP, onTTFB, Metric } from 'web-vitals';
+import { useEffect } from "react";
+import { onCLS, onINP, onFCP, onLCP, onTTFB, Metric } from "web-vitals";
 
 export function WebVitals() {
   useEffect(() => {
     const reportMetric = (metric: Metric) => {
-      // Send to analytics endpoint
-      fetch('/api/analytics/vitals', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(metric),
-      }).catch(() => {
-        // Silently fail if analytics endpoint is down
-      });
+      // Send to analytics endpoint with keepalive to prevent socket errors
+      // Use sendBeacon if available, fallback to fetch with keepalive
+      const data = JSON.stringify(metric);
+
+      if (navigator.sendBeacon) {
+        // sendBeacon is more reliable for analytics
+        const blob = new Blob([data], { type: "application/json" });
+        navigator.sendBeacon("/api/analytics/vitals", blob);
+      } else {
+        // Fallback to fetch with keepalive flag
+        fetch("/api/analytics/vitals", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: data,
+          keepalive: true, // Prevents ERR_SOCKET_NOT_CONNECTED
+        }).catch(() => {
+          // Silently fail if analytics endpoint is down
+        });
+      }
     };
 
     onCLS(reportMetric);

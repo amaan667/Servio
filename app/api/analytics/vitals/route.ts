@@ -1,16 +1,28 @@
-import { NextRequest, NextResponse } from 'next/server';
+import { NextRequest, NextResponse } from "next/server";
 
-export const runtime = 'edge';
+// Switch to nodejs runtime - edge runtime causes socket errors on Railway
+export const runtime = "nodejs";
+
+// Make this endpoint super fast and non-blocking
+export const dynamic = "force-dynamic";
+export const revalidate = 0;
 
 export async function POST(req: NextRequest) {
   try {
-    await req.json();
-    
-    // Store web vitals for monitoring
-    // In production, send to analytics service (e.g., Vercel Analytics, Google Analytics)
-    
-    return NextResponse.json({ ok: true });
-  } catch {
-    return NextResponse.json({ ok: false, error: 'Failed to log vitals' }, { status: 500 });
+    // Parse the vitals data
+    const vitals = await req.json();
+
+    // In production, you could send to analytics service
+    // For now, just log to console in development
+    if (process.env.NODE_ENV === "development") {
+      console.info("[WEB VITALS]", vitals);
+    }
+
+    // Return success immediately - don't block
+    return NextResponse.json({ ok: true }, { status: 200 });
+  } catch (error) {
+    // Even if it fails, return 200 so the client doesn't retry
+    console.error("[WEB VITALS] Error:", error);
+    return NextResponse.json({ ok: true }, { status: 200 });
   }
 }
