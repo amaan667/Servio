@@ -57,11 +57,12 @@ export default function StaffClientPage({ venueId }: { venueId: string }) {
   return (
     <div className="min-h-screen bg-background">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 pb-24 md:pb-8">
-        {user && userRole && (
+        {/* Always render navigation if we have a venueId */}
+        {venueId && (
           <RoleBasedNavigation
             venueId={venueId}
-            userRole={userRole as unknown}
-            userName={user.user_metadata?.full_name || user.email?.split("@")[0] || "User"}
+            userRole={(userRole || "staff") as unknown}
+            userName={user?.user_metadata?.full_name || user?.email?.split("@")[0] || "User"}
           />
         )}
 

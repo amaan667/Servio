@@ -1,38 +1,34 @@
-'use client';
+"use client";
 
-import { useState } from 'react';
-import { Button } from '@/components/ui/button';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { Input } from '@/components/ui/input';
-import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { Users } from 'lucide-react';
-import SimpleStaffGrid from '@/components/staff/SimpleStaffGrid';
-import EnhancedShiftSchedule from '@/components/staff/EnhancedShiftSchedule';
+import { useState } from "react";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { Users } from "lucide-react";
+import SimpleStaffGrid from "@/components/staff/SimpleStaffGrid";
+import EnhancedShiftSchedule from "@/components/staff/EnhancedShiftSchedule";
 
 // Hooks
-import { useStaffManagement } from './hooks/useStaffManagement';
-import { useShiftManagement } from './hooks/useShiftManagement';
+import { useStaffManagement } from "./hooks/useStaffManagement";
+import { useShiftManagement } from "./hooks/useShiftManagement";
 
 /**
  * Staff Client Component
  * Manages staff members and their shifts
- * 
+ *
  * Refactored: Extracted hooks for better organization
  * Original: 725 lines → Now: ~150 lines
  */
 
 export default function StaffClient({
   venueId,
-  venueName,
   initialStaff,
   initialCounts,
 }: {
   venueId: string;
-  venueName?: string;
   initialStaff?: unknown[];
   initialCounts?: unknown;
 }) {
-  const [activeTab, setActiveTab] = useState('staff');
+  const [activeTab, setActiveTab] = useState("staff");
 
   const staffManagement = useStaffManagement(venueId, initialStaff, initialCounts);
   const shiftManagement = useShiftManagement(venueId, staffManagement.staff);
@@ -54,7 +50,9 @@ export default function StaffClient({
             <CardTitle className="text-sm font-medium text-gray-600">Total Staff</CardTitle>
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold text-gray-900">{staffManagement.staff.length}</div>
+            <div className="text-2xl font-bold text-gray-900">
+              {staffManagement.staff?.length || 0}
+            </div>
           </CardContent>
         </Card>
 
@@ -64,7 +62,7 @@ export default function StaffClient({
           </CardHeader>
           <CardContent>
             <div className="text-2xl font-bold text-green-600">
-              {staffManagement.staff.filter(s => s.active).length}
+              {staffManagement.staff?.filter((s) => s.active).length || 0}
             </div>
           </CardContent>
         </Card>
@@ -74,7 +72,9 @@ export default function StaffClient({
             <CardTitle className="text-sm font-medium text-gray-600">Total Shifts</CardTitle>
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold text-purple-600">{shiftManagement.allShifts.length}</div>
+            <div className="text-2xl font-bold text-purple-600">
+              {shiftManagement.allShifts?.length || 0}
+            </div>
           </CardContent>
         </Card>
       </div>
@@ -95,7 +95,7 @@ export default function StaffClient({
         <TabsContent value="staff" className="mt-6">
           <SimpleStaffGrid
             venueId={venueId}
-            staff={staffManagement.staff}
+            staff={staffManagement.staff || []}
             onStaffAdded={() => {
               // Refetch staff data
               window.location.reload();
@@ -107,8 +107,8 @@ export default function StaffClient({
         <TabsContent value="shifts" className="mt-6">
           <EnhancedShiftSchedule
             venueId={venueId}
-            staff={staffManagement.staff}
-            shifts={shiftManagement.allShifts}
+            staff={staffManagement.staff || []}
+            shifts={shiftManagement.allShifts || []}
             onShiftAdded={shiftManagement.addShift}
             onShiftDeleted={shiftManagement.deleteShift}
             editingShiftFor={shiftManagement.editingShiftFor}
