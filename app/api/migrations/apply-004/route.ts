@@ -20,7 +20,7 @@ export async function POST() {
     console.info(`[MIGRATION 004] Executing ${statements.length} SQL statements...`);
 
     for (let i = 0; i < statements.length; i++) {
-      const statement = statements[i];
+      const statement = statements[i] ?? "";
       if (statement.length < 10) continue; // Skip very short statements
 
       console.info(`[MIGRATION 004] Executing statement ${i + 1}/${statements.length}`);

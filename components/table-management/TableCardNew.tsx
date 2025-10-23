@@ -1,44 +1,35 @@
-'use client';
+"use client";
 
-import { useState, useEffect } from 'react';
-import { useRouter } from 'next/navigation';
-import { Card, CardContent } from '@/components/ui/card';
-import { Button } from '@/components/ui/button';
-import { Badge } from '@/components/ui/badge';
-import { 
-  MoreHorizontal, 
-  Users, 
-  Clock, 
-  CheckCircle2, 
-  UserCheck, 
+import { useState, useEffect } from "react";
+import { useRouter } from "next/navigation";
+import { Card, CardContent } from "@/components/ui/card";
+import { Button } from "@/components/ui/button";
+import { Badge } from "@/components/ui/badge";
+import {
+  MoreHorizontal,
+  Users,
+  Clock,
   Receipt,
   Calendar,
   ArrowRight,
-  Play,
-  Pause,
   Square,
   QrCode,
-  X
-} from 'lucide-react';
+  X,
+} from "lucide-react";
 import {
   DropdownMenu,
   DropdownMenuContent,
   DropdownMenuItem,
   DropdownMenuTrigger,
-} from '@/components/ui/dropdown-menu';
-import {
-  Tooltip,
-  TooltipContent,
-  TooltipProvider,
-  TooltipTrigger,
-} from '@/components/ui/tooltip';
-import { StatusPill } from './StatusPill';
-import { useCloseTable, TableGridItem } from '@/hooks/useTableReservations';
-import { useTableActions } from '@/hooks/useTableActions';
-import { GroupSession } from '@/hooks/useGroupSessions';
-import { supabaseBrowser as createClient } from '@/lib/supabase';
-import { TableSelectionDialog } from './TableSelectionDialog';
-import { ReservationDialog } from './ReservationDialog';
+} from "@/components/ui/dropdown-menu";
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
+import { StatusPill } from "./StatusPill";
+import { useCloseTable, TableGridItem } from "@/hooks/useTableReservations";
+import { useTableActions } from "@/hooks/useTableActions";
+import { GroupSession } from "@/hooks/useGroupSessions";
+import { supabaseBrowser as createClient } from "@/lib/supabase";
+import { TableSelectionDialog } from "./TableSelectionDialog";
+import { ReservationDialog } from "./ReservationDialog";
 
 import {
   Dialog,
@@ -47,7 +38,7 @@ import {
   DialogFooter,
   DialogHeader,
   DialogTitle,
-} from '@/components/ui/dialog';
+} from "@/components/ui/dialog";
 
 interface TableCardNewProps {
   table: TableGridItem;
@@ -57,7 +48,12 @@ interface TableCardNewProps {
   groupSessions?: GroupSession[];
 }
 
-export function TableCardNew({ table, venueId, onActionComplete, availableTables = [], groupSessions = [] }: TableCardNewProps) {
+export function TableCardNew({
+  table,
+  venueId,
+  onActionComplete,
+  availableTables = [],
+}: TableCardNewProps) {
   const router = useRouter();
   const [isLoading, setIsLoading] = useState(false);
   const [showMoveDialog, setShowMoveDialog] = useState(false);
@@ -72,51 +68,52 @@ export function TableCardNew({ table, venueId, onActionComplete, availableTables
   const closeTable = useCloseTable();
   const { occupyTable, unmergeTable } = useTableActions();
   // Get group size for this table using passed groupSessions prop
-  const getTableGroupSize = () => {
-    // Extract table number from label (e.g., "Table 5" -> 5)
-    const tableNumber = parseInt(table.label.replace(/\D/g, '')) || null;
-    if (!tableNumber) return null;
-    
-    const session = groupSessions.find(gs => gs.table_number === tableNumber);
-    return session ? session.total_group_size : null;
-  };
+  // const getTableGroupSize = () => {
+  //   // Extract table number from label (e.g., "Table 5" -> 5)
+  //   const tableNumber = parseInt(table.label.replace(/\D/g, '')) || null;
+  //   if (!tableNumber) return null;
+  //
+  //   const session = groupSessions.find(gs => gs.table_number === tableNumber);
+  //   return session ? session.total_group_size : null;
+  // };
 
-  const tableGroupSize = getTableGroupSize();
+  // const tableGroupSize = getTableGroupSize();
 
   // Check if this table is merged (either has other tables merged into it OR is itself a merged result)
   useEffect(() => {
     const checkIfMerged = async () => {
       try {
         const supabase = createClient();
-        
+
         // First check if this table has other tables merged into it (primary table)
         const { data: mergedIntoThis, error: error1 } = await supabase
-          .from('tables')
-          .select('id')
-          .eq('venue_id', venueId)
-          .eq('merged_with_table_id', table.id)
-          .eq('is_active', true);
-        
+          .from("tables")
+          .select("id")
+          .eq("venue_id", venueId)
+          .eq("merged_with_table_id", table.id)
+          .eq("is_active", true);
+
         // Also check if this table is itself merged into another table (secondary table)
         const { data: thisMergedInto, error: error2 } = await supabase
-          .from('tables')
-          .select('id, merged_with_table_id')
-          .eq('venue_id', venueId)
-          .eq('id', table.id)
-          .eq('is_active', true)
+          .from("tables")
+          .select("id, merged_with_table_id")
+          .eq("venue_id", venueId)
+          .eq("id", table.id)
+          .eq("is_active", true)
           .single();
-        
+
         // Check if the label indicates a merged table (fallback for display purposes)
-        const isLabelMerged = table.label && (table.label.includes('+') || table.label.includes('merged with'));
-        
+        const isLabelMerged =
+          table.label && (table.label.includes("+") || table.label.includes("merged with"));
+
         if (!error1 && !error2) {
           // This table is merged if:
           // 1. It has other tables merged into it (primary table), OR
-          // 2. It is merged into another table (secondary table), OR  
+          // 2. It is merged into another table (secondary table), OR
           // 3. Its label indicates it's a merged result
           const hasTablesMergedIntoThis = mergedIntoThis && mergedIntoThis.length > 0;
           const isThisMergedIntoAnother = thisMergedInto && thisMergedInto.merged_with_table_id;
-          
+
           if (hasTablesMergedIntoThis || isThisMergedIntoAnother || isLabelMerged) {
             setIsMerged(true);
             // For unmerge, we need the secondary table ID
@@ -133,7 +130,6 @@ export function TableCardNew({ table, venueId, onActionComplete, availableTables
             setMergedTableId(null);
           }
         } else {
-
           // Fallback to label-based detection
           if (isLabelMerged) {
             setIsMerged(true);
@@ -143,10 +139,10 @@ export function TableCardNew({ table, venueId, onActionComplete, availableTables
             setMergedTableId(null);
           }
         }
-      } catch (err) {
-
+      } catch {
         // Fallback to label-based detection
-        const isLabelMerged = table.label && (table.label.includes('+') || table.label.includes('merged with'));
+        const isLabelMerged =
+          table.label && (table.label.includes("+") || table.label.includes("merged with"));
         if (isLabelMerged) {
           setIsMerged(true);
           setMergedTableId(table.id);
@@ -165,8 +161,8 @@ export function TableCardNew({ table, venueId, onActionComplete, availableTables
       setIsLoading(true);
       await occupyTable(table.id, venueId);
       onActionComplete?.();
-    } catch (error) {
-
+    } catch {
+      // Error handled by occupyTable function
     } finally {
       setIsLoading(false);
     }
@@ -177,8 +173,8 @@ export function TableCardNew({ table, venueId, onActionComplete, availableTables
       setIsLoading(true);
       await closeTable.mutateAsync({ tableId: table.id, venueId: venueId });
       onActionComplete?.();
-    } catch (error) {
-
+    } catch {
+      // Error handled by closeTable mutation
     } finally {
       setIsLoading(false);
     }
@@ -186,13 +182,13 @@ export function TableCardNew({ table, venueId, onActionComplete, availableTables
 
   const handleUnmergeTable = async () => {
     if (!mergedTableId) return;
-    
+
     try {
       setIsLoading(true);
       await unmergeTable(mergedTableId, venueId);
       onActionComplete?.();
-    } catch (error) {
-
+    } catch {
+      // Error handled by unmergeTable function
     } finally {
       setIsLoading(false);
     }
@@ -200,30 +196,27 @@ export function TableCardNew({ table, venueId, onActionComplete, availableTables
 
   const handleRemoveTable = async () => {
     try {
-      
+      const { apiClient } = await import("@/lib/api-client");
+
       setIsLoading(true);
       setRemoveError(null);
-      
-      const response = await fetch(`/api/tables/${table.id}`, {
-        method: 'DELETE',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        credentials: 'include', // Include cookies for authentication
-      });
+
+      const response = await apiClient.delete(`/api/tables/${table.id}`);
 
       const responseData = await response.json();
 
       if (!response.ok) {
         // Handle specific error cases with more user-friendly messages
-        if (responseData.error?.includes('active orders')) {
-          throw new Error('Cannot remove table with active orders. Please close all orders first.');
-        } else if (responseData.error?.includes('active reservations')) {
-          throw new Error('Cannot remove table with active reservations. Please cancel all reservations first.');
-        } else if (responseData.error?.includes('Table not found')) {
-          throw new Error('Table not found. It may have already been removed.');
+        if (responseData.error?.includes("active orders")) {
+          throw new Error("Cannot remove table with active orders. Please close all orders first.");
+        } else if (responseData.error?.includes("active reservations")) {
+          throw new Error(
+            "Cannot remove table with active reservations. Please cancel all reservations first."
+          );
+        } else if (responseData.error?.includes("Table not found")) {
+          throw new Error("Table not found. It may have already been removed.");
         } else {
-          throw new Error(responseData.error || 'Failed to remove table');
+          throw new Error(responseData.error || "Failed to remove table");
         }
       }
 
@@ -231,8 +224,7 @@ export function TableCardNew({ table, venueId, onActionComplete, availableTables
       setShowRemoveDialog(false);
       setForceRemove(false);
     } catch (error) {
-
-      setRemoveError(error instanceof Error ? error.message : 'Failed to remove table');
+      setRemoveError(error instanceof Error ? error.message : "Failed to remove table");
     } finally {
       setIsLoading(false);
     }
@@ -241,7 +233,7 @@ export function TableCardNew({ table, venueId, onActionComplete, availableTables
   const getContextualActions = () => {
     const actions = [];
 
-    if (table.session_status === 'FREE') {
+    if (table.session_status === "FREE") {
       actions.push(
         <DropdownMenuItem key="occupy" onClick={handleOccupyTable} disabled={isLoading}>
           <Users className="h-4 w-4 mr-2" />
@@ -256,53 +248,55 @@ export function TableCardNew({ table, venueId, onActionComplete, availableTables
       );
     }
 
-    if (table.session_status === 'OCCUPIED') {
+    if (table.session_status === "OCCUPIED") {
       if (table.order_id) {
         actions.push(
-          <DropdownMenuItem 
-            key="view-order" 
+          <DropdownMenuItem
+            key="view-order"
             onClick={async () => {
               // Use the same logic as the black "View Orders" button
               // Determine which tab to navigate to based on order age
               const tableLabel = table.label;
-              
+
               // If we have an order_id, we need to check when that specific order was created
               if (table.order_id) {
                 try {
                   const supabase = createClient();
                   const { data: orderData, error } = await supabase
-                    .from('orders')
-                    .select('created_at')
-                    .eq('id', table.order_id)
+                    .from("orders")
+                    .select("created_at")
+                    .eq("id", table.order_id)
                     .single();
-                  
+
                   if (orderData && !error) {
                     const now = new Date();
-                    const thirtyMinutesAgo = new Date(now.getTime() - (30 * 60 * 1000));
+                    const thirtyMinutesAgo = new Date(now.getTime() - 30 * 60 * 1000);
                     const startOfToday = new Date(now.getFullYear(), now.getMonth(), now.getDate());
                     const orderCreatedAt = new Date(orderData.created_at);
-                    
-                    let targetTab = 'live'; // fallback
-                    
+
+                    let targetTab = "live"; // fallback
+
                     if (orderCreatedAt > thirtyMinutesAgo) {
                       // Recent order (within 30 minutes) - go to live tab
-                      targetTab = 'live';
+                      targetTab = "live";
                     } else if (orderCreatedAt >= startOfToday) {
                       // Today's order (but not recent) - go to all tab
-                      targetTab = 'all';
+                      targetTab = "all";
                     } else {
                       // Historical order - go to history tab
-                      targetTab = 'history';
+                      targetTab = "history";
                     }
-                    
-                    router.push(`/dashboard/${venueId}/live-orders?table=${tableLabel}&tab=${targetTab}`);
+
+                    router.push(
+                      `/dashboard/${venueId}/live-orders?table=${tableLabel}&tab=${targetTab}`
+                    );
                     return;
                   }
-                } catch (error) {
-
+                } catch {
+                  // Failed to fetch order, use fallback
                 }
               }
-              
+
               // Fallback: if we can't determine the order age, go to live tab
               router.push(`/dashboard/${venueId}/live-orders?table=${tableLabel}&tab=live`);
             }}
@@ -320,7 +314,7 @@ export function TableCardNew({ table, venueId, onActionComplete, availableTables
       );
     }
 
-    if (table.session_status === 'RESERVED') {
+    if (table.session_status === "RESERVED") {
       actions.push(
         <DropdownMenuItem key="modify-reservation" onClick={() => setShowReservationDialog(true)}>
           <Calendar className="h-4 w-4 mr-2" />
@@ -343,9 +337,9 @@ export function TableCardNew({ table, venueId, onActionComplete, availableTables
   };
 
   const formatTime = (dateString: string) => {
-    return new Date(dateString).toLocaleTimeString([], { 
-      hour: '2-digit', 
-      minute: '2-digit' 
+    return new Date(dateString).toLocaleTimeString([], {
+      hour: "2-digit",
+      minute: "2-digit",
     });
   };
 
@@ -353,7 +347,7 @@ export function TableCardNew({ table, venueId, onActionComplete, availableTables
     const now = new Date();
     const past = new Date(dateString);
     const diffMins = Math.floor((now.getTime() - past.getTime()) / (1000 * 60));
-    
+
     if (diffMins < 60) {
       return `${diffMins}m`;
     } else {
@@ -369,7 +363,7 @@ export function TableCardNew({ table, venueId, onActionComplete, availableTables
   };
 
   return (
-    <Card 
+    <Card
       className="group hover:shadow-md transition-shadow duration-200 relative"
       onMouseEnter={() => setShowHoverRemove(true)}
       onMouseLeave={() => setShowHoverRemove(false)}
@@ -383,10 +377,12 @@ export function TableCardNew({ table, venueId, onActionComplete, availableTables
               {table.seat_count} seats
             </Badge>
           </div>
-          
+
           <div className="flex items-center gap-1">
             {/* Remove Table Button - appears on hover */}
-            <div className={`transition-opacity duration-200 ${showHoverRemove ? 'opacity-100' : 'opacity-0'}`}>
+            <div
+              className={`transition-opacity duration-200 ${showHoverRemove ? "opacity-100" : "opacity-0"}`}
+            >
               <TooltipProvider>
                 <Tooltip>
                   <TooltipTrigger asChild>
@@ -423,7 +419,7 @@ export function TableCardNew({ table, venueId, onActionComplete, availableTables
                 </TooltipContent>
               </Tooltip>
             </TooltipProvider>
-            
+
             <DropdownMenu>
               <DropdownMenuTrigger asChild>
                 <Button variant="ghost" size="sm" className="h-8 w-8 p-0">
@@ -451,13 +447,13 @@ export function TableCardNew({ table, venueId, onActionComplete, availableTables
           <div className="flex items-center gap-2">
             <StatusPill status={table.session_status as unknown} />
           </div>
-          
+
           {table.order_id && (
             <div className="text-sm text-gray-900 space-y-1">
               <div className="flex items-center gap-2">
                 <span className="font-medium">Order #{table.order_id.slice(-6)}</span>
               </div>
-              
+
               {table.total_amount && (
                 <div className="flex items-center gap-2">
                   <span>£{(table.total_amount / 100).toFixed(2)}</span>
@@ -468,7 +464,7 @@ export function TableCardNew({ table, venueId, onActionComplete, availableTables
                   )}
                 </div>
               )}
-              
+
               {table.opened_at && (
                 <div className="flex items-center gap-1 text-xs text-gray-900">
                   <Clock className="h-3 w-3" />
@@ -478,36 +474,38 @@ export function TableCardNew({ table, venueId, onActionComplete, availableTables
               )}
             </div>
           )}
-          
-          {!table.order_id && table.session_status === 'FREE' && (
-            <div className="text-sm text-gray-900">
-              Available for seating
-            </div>
+
+          {!table.order_id && table.session_status === "FREE" && (
+            <div className="text-sm text-gray-900">Available for seating</div>
           )}
-          
-          {table.session_status === 'RESERVED' && (
+
+          {table.session_status === "RESERVED" && (
             <div className="text-sm text-gray-900">
-              {table.reservation_status === 'RESERVED_NOW' ? 'Reserved - Check in available' : 'Reserved for later'}
+              {table.reservation_status === "RESERVED_NOW"
+                ? "Reserved - Check in available"
+                : "Reserved for later"}
             </div>
           )}
         </div>
 
         {/* Reserved Badge - only show if table is FREE but has a reservation (edge case) */}
-        {table.session_status === 'FREE' && (table.reservation_status === 'RESERVED_NOW' || table.reservation_status === 'RESERVED_LATER') && (
-          <div className="absolute bottom-3 right-3">
-            <Badge 
-              variant="outline" 
-              className={`text-xs ${
-                table.reservation_status === 'RESERVED_NOW' 
-                  ? 'bg-red-50 text-red-700 border-red-200' 
-                  : 'bg-blue-50 text-blue-700 border-blue-200'
-              }`}
-            >
-              <Calendar className="h-3 w-3 mr-1" />
-              {table.reservation_status === 'RESERVED_NOW' ? 'Reserved Now' : 'Reserved Later'}
-            </Badge>
-          </div>
-        )}
+        {table.session_status === "FREE" &&
+          (table.reservation_status === "RESERVED_NOW" ||
+            table.reservation_status === "RESERVED_LATER") && (
+            <div className="absolute bottom-3 right-3">
+              <Badge
+                variant="outline"
+                className={`text-xs ${
+                  table.reservation_status === "RESERVED_NOW"
+                    ? "bg-red-50 text-red-700 border-red-200"
+                    : "bg-blue-50 text-blue-700 border-blue-200"
+                }`}
+              >
+                <Calendar className="h-3 w-3 mr-1" />
+                {table.reservation_status === "RESERVED_NOW" ? "Reserved Now" : "Reserved Later"}
+              </Badge>
+            </div>
+          )}
       </CardContent>
 
       {/* Table Selection Dialogs */}
@@ -522,11 +520,11 @@ export function TableCardNew({ table, venueId, onActionComplete, availableTables
           order_id: table.order_id || undefined,
           total_amount: table.total_amount || undefined,
           order_status: table.order_status || undefined,
-          opened_at: table.opened_at || undefined
+          opened_at: table.opened_at || undefined,
         }}
         action="move"
         venueId={venueId}
-        availableTables={availableTables.map(t => ({
+        availableTables={availableTables.map((t) => ({
           id: t.id,
           label: t.label,
           seat_count: t.seat_count,
@@ -534,11 +532,11 @@ export function TableCardNew({ table, venueId, onActionComplete, availableTables
           order_id: t.order_id || undefined,
           total_amount: t.total_amount || undefined,
           order_status: t.order_status || undefined,
-          opened_at: t.opened_at || undefined
+          opened_at: t.opened_at || undefined,
         }))}
         onActionComplete={onActionComplete}
       />
-      
+
       <TableSelectionDialog
         isOpen={showMergeDialog}
         onClose={() => setShowMergeDialog(false)}
@@ -550,11 +548,11 @@ export function TableCardNew({ table, venueId, onActionComplete, availableTables
           order_id: table.order_id || undefined,
           total_amount: table.total_amount || undefined,
           order_status: table.order_status || undefined,
-          opened_at: table.opened_at || undefined
+          opened_at: table.opened_at || undefined,
         }}
         action="merge"
         venueId={venueId}
-        availableTables={availableTables.map(t => ({
+        availableTables={availableTables.map((t) => ({
           id: t.id,
           label: t.label,
           seat_count: t.seat_count,
@@ -562,11 +560,11 @@ export function TableCardNew({ table, venueId, onActionComplete, availableTables
           order_id: t.order_id || undefined,
           total_amount: t.total_amount || undefined,
           order_status: t.order_status || undefined,
-          opened_at: t.opened_at || undefined
+          opened_at: t.opened_at || undefined,
         }))}
         onActionComplete={onActionComplete}
       />
-      
+
       <ReservationDialog
         isOpen={showReservationDialog}
         onClose={() => setShowReservationDialog(false)}
@@ -577,25 +575,24 @@ export function TableCardNew({ table, venueId, onActionComplete, availableTables
         tableStatus={table.session_status}
         onReservationComplete={onActionComplete}
       />
-      
+
       {/* Remove Table Confirmation Dialog */}
       <Dialog open={showRemoveDialog} onOpenChange={setShowRemoveDialog}>
         <DialogContent>
           <DialogHeader>
             <DialogTitle>Remove Table</DialogTitle>
             <DialogDescription>
-              Are you sure you want to remove "{table.label}"? This action cannot be undone.
-              {table.session_status === 'OCCUPIED' && (
+              Are you sure you want to remove &quot;{table.label}&quot;? This action cannot be
+              undone.
+              {table.session_status === "OCCUPIED" && (
                 <span className="block mt-2 text-amber-600 font-medium">
                   ⚠️ This table is currently occupied. Removing it may affect active orders.
                 </span>
               )}
               {removeError && (
-                <span className="block mt-2 text-red-600 font-medium">
-                  ❌ {removeError}
-                </span>
+                <span className="block mt-2 text-red-600 font-medium">❌ {removeError}</span>
               )}
-              {removeError && removeError.includes('active orders') && (
+              {removeError && removeError.includes("active orders") && (
                 <div className="mt-3 p-3 bg-orange-50 border border-orange-200 rounded-md">
                   <label className="flex items-center gap-2 text-sm">
                     <input
@@ -624,12 +621,8 @@ export function TableCardNew({ table, venueId, onActionComplete, availableTables
             >
               Cancel
             </Button>
-            <Button
-              variant="destructive"
-              onClick={() => handleRemoveTable()}
-              disabled={isLoading}
-            >
-              {isLoading ? 'Removing...' : 'Remove Table'}
+            <Button variant="destructive" onClick={() => handleRemoveTable()} disabled={isLoading}>
+              {isLoading ? "Removing..." : "Remove Table"}
             </Button>
           </DialogFooter>
         </DialogContent>
