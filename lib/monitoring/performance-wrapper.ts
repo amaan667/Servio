@@ -121,7 +121,7 @@ export const performanceMonitor = new PerformanceMonitor();
  * Decorator for measuring function performance
  */
 export function measurePerformance(operationName: string) {
-  return function (target: unknown, propertyName: string, descriptor: PropertyDescriptor) {
+  return function (_target: unknown, _propertyName: string, descriptor: PropertyDescriptor) {
     const originalMethod = descriptor.value;
 
     descriptor.value = async function (...args: unknown[]) {
