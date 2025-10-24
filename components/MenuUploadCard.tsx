@@ -24,17 +24,16 @@ export function MenuUploadCard({ venueId, onSuccess }: MenuUploadCardProps) {
   const [isDragOver, setIsDragOver] = useState(false);
   const [hasExistingUpload, setHasExistingUpload] = useState(false);
   const [menuUrl, setMenuUrl] = useState(''); // Add URL input for hybrid import
-  const [lastProcessedUrl, setLastProcessedUrl] = useState(''); // Track last processed URL to prevent loops
   const fileInputRef = useRef<HTMLInputElement>(null);
   const { toast } = useToast();
   const supabase = createClient();
   
-  // Check if venue has unknown existing menu uploads
+  // Check if venue has existing menu items (not uploads)
   useEffect(() => {
-    const checkExistingUploads = async () => {
+    const checkExistingItems = async () => {
       try {
         const { data, error } = await supabase
-          .from('menu_uploads')
+          .from('menu_items')
           .select('id')
           .eq('venue_id', venueId)
           .limit(1)
@@ -44,37 +43,13 @@ export function MenuUploadCard({ venueId, onSuccess }: MenuUploadCardProps) {
           setHasExistingUpload(true);
         }
       } catch {
-        // No existing uploads
+        // No existing items
         setHasExistingUpload(false);
       }
     };
     
-    checkExistingUploads();
+    checkExistingItems();
   }, [venueId, supabase]);
-
-  // Auto-process when URL is entered and PDF exists
-  useEffect(() => {
-    // Only auto-process if:
-    // 1. URL is entered and valid
-    // 2. Existing PDF exists
-    // 3. Not already processing
-    // 4. Haven't already processed this URL
-    if (
-      menuUrl && 
-      menuUrl.trim() && 
-      menuUrl.startsWith('http') && 
-      hasExistingUpload && 
-      !isProcessing &&
-      menuUrl !== lastProcessedUrl
-    ) {
-      // Debounce to avoid processing on every keystroke
-      const timer = setTimeout(async () => {
-        await processExistingPdfWithUrl();
-      }, 1500); // Wait 1.5 seconds after user stops typing
-
-      return () => clearTimeout(timer);
-    }
-  }, [menuUrl, hasExistingUpload]);
 
   // Save extracted style to database
   const saveExtractedStyle = async (extractedText: string) => {
@@ -259,6 +234,76 @@ export function MenuUploadCard({ venueId, onSuccess }: MenuUploadCardProps) {
     }
   };
 
+  const handleProcessWithUrl = async () => {
+    if (!menuUrl || !menuUrl.trim()) {
+      toast({
+        title: 'No URL provided',
+        description: 'Please enter a menu URL first',
+        variant: 'destructive'
+      });
+      return;
+    }
+
+    setIsProcessing(true);
+    console.log('[MENU UPLOAD] Re-processing with URL:', menuUrl);
+
+    try {
+      // Get existing PDF images from database
+      const { data: uploadData } = await supabase
+        .from('menu_uploads')
+        .select('pdf_images, pdf_images_cc, id')
+        .eq('venue_id', venueId)
+        .order('created_at', { ascending: false })
+        .limit(1)
+        .single();
+
+      if (!uploadData || (!uploadData.pdf_images && !uploadData.pdf_images_cc)) {
+        throw new Error('No existing PDF found. Please upload a PDF first.');
+      }
+
+      const pdfImages = uploadData.pdf_images || uploadData.pdf_images_cc;
+      console.log('[MENU UPLOAD] Found existing PDF images:', pdfImages.length, 'pages');
+
+      // Process with existing images and new URL
+      const response = await fetch('/api/catalog/reprocess-with-url', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          venue_id: venueId,
+          menu_url: menuUrl.trim(),
+          pdf_images: pdfImages,
+          replace_mode: isReplacing
+        })
+      });
+
+      if (!response.ok) {
+        const errorText = await response.text();
+        throw new Error(`Processing failed: ${response.status} - ${errorText}`);
+      }
+
+      const result = await response.json();
+
+      if (result.ok) {
+        toast({
+          title: 'Menu processed successfully',
+          description: `Combined PDF and URL: ${result.result.items_created} items`
+        });
+        
+        await new Promise(resolve => setTimeout(resolve, 500));
+        onSuccess?.();
+      }
+    } catch (error) {
+      console.error('[MENU UPLOAD] Error:', error);
+      toast({
+        title: 'Processing failed',
+        description: error instanceof Error ? error.message : 'Unknown error',
+        variant: 'destructive'
+      });
+    } finally {
+      setIsProcessing(false);
+    }
+  };
+
   const handleDragOver = (event: React.DragEvent) => {
     event.preventDefault();
     setIsDragOver(true);
@@ -279,110 +324,6 @@ export function MenuUploadCard({ venueId, onSuccess }: MenuUploadCardProps) {
     }
   };
 
-  const handleButtonClick = async () => {
-    // If we have both a URL and existing PDF, process with existing PDF
-    if (menuUrl && menuUrl.trim() && hasExistingUpload) {
-      await processExistingPdfWithUrl();
-    } else {
-      // Otherwise, open file picker
-      fileInputRef.current?.click();
-    }
-  };
-
-  const processExistingPdfWithUrl = async () => {
-    setIsProcessing(true);
-    console.log('[MENU UPLOAD] Starting auto-process with URL:', menuUrl);
-
-    try {
-      // Get the existing PDF from menu_uploads
-      console.log('[MENU UPLOAD] Fetching existing PDF for venue:', venueId);
-      const { data: uploadData } = await supabase
-        .from('menu_uploads')
-        .select('filename')
-        .eq('venue_id', venueId)
-        .order('created_at', { ascending: false })
-        .limit(1)
-        .single();
-
-      if (!uploadData?.filename) {
-        throw new Error('No existing PDF found. Please upload a PDF first.');
-      }
-
-      console.log('[MENU UPLOAD] Found PDF:', uploadData.filename);
-
-      // Download the PDF from storage
-      console.log('[MENU UPLOAD] Downloading PDF from storage...');
-      const { data: pdfBlob, error: downloadError } = await supabase
-        .storage
-        .from('menus')
-        .download(uploadData.filename);
-
-      if (downloadError || !pdfBlob) {
-        console.error('[MENU UPLOAD] Download error:', downloadError);
-        throw new Error('Failed to retrieve existing PDF');
-      }
-
-      console.log('[MENU UPLOAD] PDF downloaded, size:', pdfBlob.size);
-
-      // Convert blob to file
-      const pdfFile = new File([pdfBlob], 'menu.pdf', { type: 'application/pdf' });
-
-      // Re-process with URL
-      const formData = new FormData();
-      formData.append('file', pdfFile);
-      formData.append('venue_id', venueId);
-      formData.append('menu_url', menuUrl.trim());
-
-      console.log('[MENU UPLOAD] Sending to /api/catalog/replace...');
-      const response = await fetch('/api/catalog/replace', {
-        method: 'POST',
-        body: formData
-      });
-
-      console.log('[MENU UPLOAD] Response status:', response.status);
-
-      if (!response.ok) {
-        const errorText = await response.text();
-        console.error('[MENU UPLOAD] Error response:', errorText);
-        throw new Error(`Processing failed: ${response.status} - ${errorText}`);
-      }
-
-      const result = await response.json();
-      console.log('[MENU UPLOAD] Result:', result);
-
-      if (result.ok) {
-        // Mark this URL as processed
-        setLastProcessedUrl(menuUrl);
-        console.log('[MENU UPLOAD] Success! Marked URL as processed.');
-        console.log('[MENU UPLOAD] Items created:', result.result.items_created);
-        console.log('[MENU UPLOAD] Hotspots created:', result.result.hotspots_created);
-        
-        toast({
-          title: 'Menu processed successfully',
-          description: `Combined PDF and URL data: ${result.result.items_created} items, ${result.result.categories_created} categories`
-        });
-        
-        // Small delay to ensure database consistency before refreshing
-        console.log('[MENU UPLOAD] Waiting 500ms for database consistency...');
-        await new Promise(resolve => setTimeout(resolve, 500));
-        console.log('[MENU UPLOAD] Calling onSuccess to refresh menu...');
-        onSuccess?.();
-        console.log('[MENU UPLOAD] onSuccess called');
-      } else {
-        throw new Error(`Processing failed: ${result.error}`);
-      }
-    } catch (error) {
-      console.error('[MENU UPLOAD] Processing error:', error);
-      toast({
-        title: 'Processing failed',
-        description: error instanceof Error ? error.message : 'Unknown error',
-        variant: 'destructive'
-      });
-    } finally {
-      setIsProcessing(false);
-      console.log('[MENU UPLOAD] Processing complete, isProcessing set to false');
-    }
-  };
 
   const handleClearCatalog = async () => {
     if (!confirm('Are you sure you want to clear the entire catalog? This action cannot be undone.')) {
@@ -452,12 +393,21 @@ export function MenuUploadCard({ venueId, onSuccess }: MenuUploadCardProps) {
             onChange={(e) => setMenuUrl(e.target.value)}
             disabled={isProcessing}
           />
-          <p className="text-xs text-muted-foreground">
-            {hasExistingUpload && menuUrl && menuUrl.trim() 
-              ? '✨ Auto-processing with your existing PDF...'
-              : '💡 Add your menu URL, then upload your PDF below. Both will be combined for best results.'
-            }
-          </p>
+          <div className="flex items-center gap-2">
+            <p className="text-xs text-muted-foreground flex-1">
+              💡 Upload PDF first, then add URL to enhance with web data
+            </p>
+            {hasExistingUpload && menuUrl && menuUrl.trim() && (
+              <Button
+                onClick={handleProcessWithUrl}
+                disabled={isProcessing}
+                size="sm"
+                variant="outline"
+              >
+                {isProcessing ? 'Processing...' : 'Combine with URL'}
+              </Button>
+            )}
+          </div>
         </div>
 
         {/* Replace vs Append Toggle - Only show if there's an existing upload */}
@@ -499,17 +449,11 @@ export function MenuUploadCard({ venueId, onSuccess }: MenuUploadCardProps) {
             )}
             <Button
               variant="outline"
-              onClick={handleButtonClick}
+              onClick={() => fileInputRef.current?.click()}
               disabled={isProcessing}
             >
               <FileText className="h-4 w-4 mr-2" />
-              {isProcessing 
-                ? 'Processing...' 
-                : (menuUrl && hasExistingUpload 
-                  ? 'Process with URL' 
-                  : (menuUrl ? 'Upload PDF & Process' : 'Choose PDF')
-                )
-              }
+              {isProcessing ? 'Processing...' : 'Choose PDF'}
             </Button>
             <input
               ref={fileInputRef}
