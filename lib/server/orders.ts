@@ -36,7 +36,7 @@ export function todayBounds(tz: string) {
 export async function fetchLiveOrders(venueId: string, tz: string = 'Europe/London') {
   const supabase = await createClient()
   const { startUtc, endUtc } = todayBounds(tz)
-  const ACTIVE = ['PLACED','IN_PREP','READY','SERVING']
+  const ACTIVE = ['PLACED','ACCEPTED','IN_PREP','READY','SERVING']
   
   return supabase.from('orders_with_totals')
     .select('*')
@@ -51,7 +51,7 @@ export async function fetchLiveOrders(venueId: string, tz: string = 'Europe/Lond
 export async function fetchEarlierToday(venueId: string, tz: string = 'Europe/London') {
   const supabase = await createClient()
   const { startUtc, endUtc } = todayBounds(tz)
-  const TERMINAL_TODAY = ['SERVED','CANCELLED','REFUNDED','EXPIRED']
+  const TERMINAL_TODAY = ['COMPLETED','SERVED','CANCELLED','REFUNDED','EXPIRED']
   
   return supabase.from('orders_with_totals')
     .select('*')
