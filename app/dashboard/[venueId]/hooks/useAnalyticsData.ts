@@ -132,6 +132,19 @@ export function useAnalyticsData(venueId: string, venueTz: string) {
           revenue: yesterdayRevenue,
         },
       });
+
+      // Cache the analytics data
+      if (typeof window !== 'undefined') {
+        sessionStorage.setItem(`analytics_data_${venueId}`, JSON.stringify({
+          ordersByHour,
+          revenueByCategory,
+          topSellingItems,
+          yesterdayComparison: {
+            orders: yesterdayOrdersCount,
+            revenue: yesterdayRevenue,
+          },
+        }));
+      }
     } catch (err) {
 
       setError(err instanceof Error ? err.message : 'Failed to fetch analytics');

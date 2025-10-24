@@ -112,19 +112,24 @@ export function useStaffManagement(venueId: string, initialStaff?: StaffRow[], i
 
   const toggleStaffActive = async (staffId: string, currentActive: boolean) => {
     try {
+      const newActiveState = !currentActive;
+      
       const res = await fetch('/api/staff/toggle', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ venue_id: venueId, staff_id: staffId, active: !currentActive }),
+        body: JSON.stringify({ id: staffId, active: newActiveState }),
       });
 
       if (!res.ok) {
-        throw new Error('Failed to toggle staff status');
+        const data = await res.json().catch(() => ({}));
+        throw new Error(data.error || 'Failed to toggle staff status');
       }
 
-      setStaff(prev => prev.map(s => s.id === staffId ? { ...s, active: !currentActive } : s));
+      // Update local state immediately
+      setStaff(prev => prev.map(s => s.id === staffId ? { ...s, active: newActiveState } : s));
     } catch (err) {
-      setError(err.message);
+      setError(err instanceof Error ? err.message : 'Failed to toggle staff status');
+      console.error('Toggle staff error:', err);
     }
   };
 
