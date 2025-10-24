@@ -107,7 +107,8 @@ export async function POST(req: NextRequest) {
       
       // Get item data from Vision
       const extractedItems = await extractMenuFromImage(pdfImages[pageIndex]);
-      pdfExtractedItems.push(...extractedItems.map((item: any) => ({ ...item, page: pageIndex })));
+      // Don't add 'page' to items - track it separately
+      pdfExtractedItems.push(...extractedItems);
       
       // Get positions from Vision (now with bounding boxes)
       const positions = await extractMenuItemPositions(pdfImages[pageIndex]);
@@ -192,10 +193,12 @@ export async function POST(req: NextRequest) {
             calculateSimilarity(pdfItem.name, pos.name) > 0.7
           );
 
+          // Remove 'page' field if it exists - not in database schema
+          const { page, ...itemWithoutPage } = pdfItem;
           menuItems.push({
             id: itemId,
             venue_id: venueId,
-            ...pdfItem,
+            ...itemWithoutPage,
             is_available: true,
             created_at: new Date().toISOString(),
           });
@@ -231,7 +234,11 @@ export async function POST(req: NextRequest) {
         menuItems.push({
           id: itemId,
           venue_id: venueId,
-          ...item,
+          name: item.name,
+          description: item.description || '',
+          price: item.price,
+          category: item.category,
+          image_url: item.image_url || null,
           is_available: true,
           created_at: new Date().toISOString(),
         });
@@ -266,7 +273,11 @@ export async function POST(req: NextRequest) {
         menuItems.push({
           id: itemId,
           venue_id: venueId,
-          ...item,
+          name: item.name,
+          description: item.description || '',
+          price: item.price,
+          category: item.category,
+          image_url: item.image_url || null,
           is_available: true,
           created_at: new Date().toISOString(),
         });
