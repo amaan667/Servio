@@ -1,6 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { createAdminClient } from '@/lib/supabase';
-import OpenAI from 'openai';
+import { extractMenuItemPositions } from '@/lib/gptVisionMenuParser';
 
 export const runtime = 'nodejs';
 export const maxDuration = 300; // 5 minutes for vision processing
@@ -64,11 +63,7 @@ export async function POST(req: NextRequest) {
 
     console.log('✅ [HYBRID IMPORT] Scraped items:', scrapedItems.length);
 
-    // Step 2: Use GPT-4 Vision to analyze PDF and find item positions
-    const openai = new OpenAI({
-      apiKey: process.env.OPENAI_API_KEY,
-    });
-
+    // Step 2: Use existing GPT-4 Vision parser to analyze PDF and find item positions
     const pdfPositions: PDFItemPosition[] = [];
 
     for (let pageIndex = 0; pageIndex < pdfImages.length; pageIndex++) {
@@ -77,65 +72,19 @@ export async function POST(req: NextRequest) {
       console.log(`👁️ [VISION] Analyzing page ${pageIndex + 1}...`);
 
       try {
-        const response = await openai.chat.completions.create({
-          model: 'gpt-4o',
-          messages: [
-            {
-              role: 'user',
-              content: [
-                {
-                  type: 'text',
-                  text: `Analyze this menu page and extract the position of each menu item. 
-                  
-For each item, provide:
-1. Item name (exact text)
-2. X coordinate (0-100, where 0 is left edge, 100 is right edge)
-3. Y coordinate (0-100, where 0 is top, 100 is bottom)
-4. Confidence (0-1)
-
-Return as JSON array:
-[
-  {"name": "Item Name", "x": 25, "y": 30, "confidence": 0.95},
-  ...
-]
-
-IMPORTANT: 
-- Measure X,Y from the CENTER of where the item text appears
-- Be precise - these coordinates will be used for clickable buttons
-- If you see the item name in both English and another language, use the English name
-- Only include actual menu items with prices, not headers/titles`,
-                },
-                {
-                  type: 'image_url',
-                  image_url: {
-                    url: imageUrl,
-                    detail: 'high',
-                  },
-                },
-              ],
-            },
-          ],
-          max_tokens: 4000,
+        // Use existing Vision parser from lib
+        const positions = await extractMenuItemPositions(imageUrl);
+        
+        positions.forEach((pos: { name: string; x: number; y: number; confidence: number }) => {
+          pdfPositions.push({
+            name: pos.name,
+            page: pageIndex,
+            x: pos.x,
+            y: pos.y,
+            confidence: pos.confidence || 0.8,
+          });
         });
-
-        const content = response.choices[0]?.message?.content;
-        if (content) {
-          // Extract JSON from response
-          const jsonMatch = content.match(/\[[\s\S]*\]/);
-          if (jsonMatch) {
-            const positions = JSON.parse(jsonMatch[0]);
-            positions.forEach((pos: { name: string; x: number; y: number; confidence: number }) => {
-              pdfPositions.push({
-                name: pos.name,
-                page: pageIndex,
-                x: pos.x,
-                y: pos.y,
-                confidence: pos.confidence || 0.8,
-              });
-            });
-            console.log(`  ✅ [VISION] Found ${positions.length} items on page ${pageIndex + 1}`);
-          }
-        }
+        console.log(`  ✅ [VISION] Found ${positions.length} items on page ${pageIndex + 1}`);
       } catch (error) {
         console.error(`❌ [VISION] Error analyzing page ${pageIndex + 1}:`, error);
       }
