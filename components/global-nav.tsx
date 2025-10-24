@@ -182,7 +182,7 @@ export default function GlobalNav() {
                       <Home className="mr-3 h-5 w-5" />
                       Home
                     </Link>
-                    {userRole && (userRole === "owner" || userRole === "manager") && (
+                    {(!userRole || userRole === "owner" || userRole === "manager") && (
                       <Link
                         href={
                           venueId || primaryVenueId
@@ -220,7 +220,7 @@ export default function GlobalNav() {
                       <LayoutDashboard className="mr-3 h-5 w-5" />
                       Dashboard
                     </Link>
-                    {userRole && (userRole === "owner" || userRole === "manager") && (
+                    {(!userRole || userRole === "owner" || userRole === "manager") && (
                       <Link
                         href={
                           venueId || primaryVenueId
@@ -290,7 +290,7 @@ export default function GlobalNav() {
                       <LayoutDashboard className="mr-3 h-5 w-5" />
                       Dashboard
                     </Link>
-                    {userRole && (userRole === "owner" || userRole === "manager") && (
+                    {(!userRole || userRole === "owner" || userRole === "manager") && (
                       <Link
                         href={
                           venueId || primaryVenueId
@@ -381,7 +381,7 @@ export default function GlobalNav() {
                       <Home className="mr-3 h-5 w-5 flex-shrink-0 text-gray-900" />
                       <span>Home</span>
                     </Link>
-                    {userRole && (userRole === "owner" || userRole === "manager") && (
+                    {(!userRole || userRole === "owner" || userRole === "manager") && (
                       <Link
                         href={
                           venueId || primaryVenueId
@@ -408,7 +408,7 @@ export default function GlobalNav() {
                       <LayoutDashboard className="mr-3 h-5 w-5 flex-shrink-0 text-gray-900" />
                       <span>Dashboard</span>
                     </Link>
-                    {userRole && (userRole === "owner" || userRole === "manager") && (
+                    {(!userRole || userRole === "owner" || userRole === "manager") && (
                       <Link
                         href={
                           venueId || primaryVenueId
@@ -456,7 +456,7 @@ export default function GlobalNav() {
                       <LayoutDashboard className="mr-3 h-5 w-5 flex-shrink-0 text-gray-900" />
                       <span>Dashboard</span>
                     </Link>
-                    {userRole && (userRole === "owner" || userRole === "manager") && (
+                    {(!userRole || userRole === "owner" || userRole === "manager") && (
                       <Link
                         href={
                           venueId || primaryVenueId

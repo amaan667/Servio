@@ -39,10 +39,10 @@ export function HeroSection({
               POS & QR Ordering Made Simple
             </h1>
             <p className="mt-5 !text-white text-[clamp(1rem,2.2vw,1.25rem)] leading-relaxed max-w-[50ch]" style={{textShadow: '0 2px 20px rgba(0,0,0,0.8), 0 4px 40px rgba(0,0,0,0.5), 0 0 30px rgba(255,255,255,0.2)'}}>
-              Run your entire venue from unknown device — no hardware required. Accept orders, manage payments, display tickets in the kitchen, and track inventory — all in one simple platform.
+              Run your entire venue from any device — no hardware required. Accept orders, manage payments, display tickets in the kitchen, and track inventory — all in one simple platform.
             </p>
             <div className="mt-8 flex items-center gap-4 flex-wrap">
-              {!authLoading && !isSignedIn && (
+              {!isSignedIn && (
                 <Button
                   size="lg"
                   onClick={onGetStarted}
@@ -53,7 +53,7 @@ export function HeroSection({
                   <ArrowRight className="ml-2 h-5 w-5" />
                 </Button>
               )}
-              {!authLoading && !isSignedIn && (
+              {!isSignedIn && (
                 <Button
                   size="lg"
                   onClick={onSignIn}
@@ -63,7 +63,7 @@ export function HeroSection({
                   Sign In
                 </Button>
               )}
-              {!authLoading && isSignedIn && (
+              {isSignedIn && (
                 <Button
                   size="lg"
                   onClick={onGetStarted}

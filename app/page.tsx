@@ -43,7 +43,16 @@ function FAQItem({ question, answer }: { question: string; answer: string }) {
 
 export default function HomePage() {
   const router = useRouter();
-  const [isSignedIn, setIsSignedIn] = useState(false);
+  
+  // Initialize with cached session state to prevent flicker
+  const getInitialAuthState = () => {
+    if (typeof window === 'undefined') return false;
+    // Check for any auth indicators in localStorage/sessionStorage
+    const hasSession = document.cookie.includes('sb-') || sessionStorage.getItem('supabase.auth.token');
+    return !!hasSession;
+  };
+  
+  const [isSignedIn, setIsSignedIn] = useState(getInitialAuthState);
 
   useEffect(() => {
     const checkAuth = async () => {
@@ -52,7 +61,11 @@ export default function HomePage() {
         const {
           data: { session: checkAuthSession },
         } = await supabase.auth.getSession();
-        setIsSignedIn(!!checkAuthSession?.user);
+        const signedIn = !!checkAuthSession?.user;
+        // Only update if different to prevent unnecessary re-renders
+        if (signedIn !== isSignedIn) {
+          setIsSignedIn(signedIn);
+        }
       } catch {
         // Silent error handling
       }
@@ -80,7 +93,7 @@ export default function HomePage() {
     return () => {
       subscription.unsubscribe();
     };
-  }, []);
+  }, [isSignedIn]);
 
   const handleGetStarted = async () => {
     if (isSignedIn) {
@@ -189,7 +202,7 @@ export default function HomePage() {
     {
       question: "Do I need special hardware or equipment?",
       answer:
-        "No! Servio works on unknown device with a web browser. You can manage orders from a tablet, smartphone, or computer. Your customers just need a smartphone to scan the QR code.",
+        "No! Servio works on any device with a web browser. You can manage orders from a tablet, smartphone, or computer. Your customers just need a smartphone to scan the QR code.",
     },
     {
       question: "How do customers pay for their orders?",
