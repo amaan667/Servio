@@ -305,14 +305,14 @@ export function MenuUploadCard({ venueId, onSuccess }: MenuUploadCardProps) {
           <Upload className="h-5 w-5" />
           Upload Menu
         </CardTitle>
-                    <CardDescription className="text-gray-900">Upload your PDF menu + URL for AI-powered positioning (URL = cheaper, better results)</CardDescription>
+                    <CardDescription className="text-gray-900">Upload your PDF menu. Optionally add your menu URL for enhanced data extraction.</CardDescription>
       </CardHeader>
       <CardContent className="space-y-4">
         
         {/* Optional: Menu URL for Enhanced Matching */}
         <div className="space-y-2">
           <Label htmlFor="menu-url-upload" className="flex items-center gap-2">
-            Menu Website URL <Badge variant="outline" className="text-xs">Optional - Premium</Badge>
+            Menu Website URL <Badge variant="outline" className="text-xs">Optional</Badge>
           </Label>
           <Input
             id="menu-url-upload"
@@ -322,9 +322,9 @@ export function MenuUploadCard({ venueId, onSuccess }: MenuUploadCardProps) {
             onChange={(e) => setMenuUrl(e.target.value)}
             disabled={isProcessing}
           />
-                      <p className="text-xs text-muted-foreground">
-                        💡 URL saves cost: extracts data free, Vision only positions buttons
-                      </p>
+          <p className="text-xs text-muted-foreground">
+            💡 Combines data from both PDF and URL for best results
+          </p>
         </div>
 
         {/* Replace vs Append Toggle - Only show if there's an existing upload */}

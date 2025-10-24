@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { createAdminClient } from '@/lib/supabase';
-import { extractMenuItemPositions } from '@/lib/gptVisionMenuParser';
+import { extractMenuFromImage, extractMenuItemPositions } from '@/lib/gptVisionMenuParser';
 import { scrapeMenuFromUrl } from '@/lib/menu-scraper';
 import { convertPDFToImages } from '@/lib/pdf-to-images';
 import { v4 as uuidv4 } from 'uuid';
@@ -10,8 +10,8 @@ export const runtime = 'nodejs';
 export const maxDuration = 300; // 5 minutes for processing
 
 /**
- * Smart Menu Import: PDF + Optional URL
- * Uses GPT-4o Vision efficiently - only for positions when URL provided
+ * Unified Menu Import: PDF + Optional URL
+ * Combines data from both sources for best results
  */
 export async function POST(req: NextRequest) {
   try {
@@ -27,9 +27,9 @@ export async function POST(req: NextRequest) {
       );
     }
 
-    logger.info('[SMART IMPORT] Starting...');
-    logger.info('[SMART IMPORT] Venue:', { venueId });
-    logger.info('[SMART IMPORT] Mode:', { mode: menuUrl ? 'HYBRID (URL+PDF)' : 'PDF ONLY' });
+    logger.info('[MENU IMPORT] Starting...');
+    logger.info('[MENU IMPORT] Venue:', { venueId });
+    logger.info('[MENU IMPORT] Has URL:', { hasUrl: !!menuUrl });
 
     const supabase = createAdminClient();
 
@@ -37,7 +37,7 @@ export async function POST(req: NextRequest) {
     const pdfBuffer = Buffer.from(await file.arrayBuffer());
     const pdfImages = await convertPDFToImages(pdfBuffer);
     
-    logger.info('[SMART IMPORT] Converted to images:', { count: pdfImages.length });
+    logger.info('[MENU IMPORT] Converted to images:', { count: pdfImages.length });
 
     // Step 2: Store PDF and images in database
     const { error: uploadError } = await supabase
@@ -56,36 +56,130 @@ export async function POST(req: NextRequest) {
       throw new Error(`Failed to save upload: ${uploadError.message}`);
     }
 
-    let menuItems = [];
-    let hotspots = [];
+    // Step 3: Extract data from all available sources
+    const urlItems: Array<any> = [];
+    const pdfExtractedItems: Array<any> = [];
+    const pdfPositions: Array<{ name: string; x: number; y: number; page: number; confidence: number }> = [];
 
-    // Step 3: Decide processing strategy (COST OPTIMIZATION)
+    // Extract from URL if provided
     if (menuUrl && menuUrl.trim()) {
-      // HYBRID MODE: URL for data (FREE), Vision for positions only (CHEAP)
-      logger.info('[SMART IMPORT] HYBRID mode - URL + Vision positioning');
-      
-      // Scrape URL for item data (FREE)
+      logger.info('[MENU IMPORT] Extracting from URL...');
       const scrapeResult = await scrapeMenuFromUrl(menuUrl);
-      logger.info('[SMART IMPORT] Scraped items', { count: scrapeResult.items.length });
+      urlItems.push(...scrapeResult.items);
+      logger.info('[MENU IMPORT] URL items:', { count: urlItems.length });
+    }
 
-      // Vision AI for positions ONLY (not full extraction)
-      const pdfPositions: Array<{ name: string; x: number; y: number; page: number; confidence: number }> = [];
-      for (let pageIndex = 0; pageIndex < pdfImages.length; pageIndex++) {
-        const positions = await extractMenuItemPositions(pdfImages[pageIndex]);
-        positions.forEach((pos: { name: string; x: number; y: number; confidence: number }) => {
-          pdfPositions.push({ ...pos, page: pageIndex });
-        });
-        logger.info(`[VISION] Page ${pageIndex + 1}: ${positions.length} positions`);
-      }
+    // Extract from PDF using Vision AI
+    logger.info('[MENU IMPORT] Extracting from PDF with Vision AI...');
+    for (let pageIndex = 0; pageIndex < pdfImages.length; pageIndex++) {
+      // Get item data from Vision
+      const extractedItems = await extractMenuFromImage(pdfImages[pageIndex]);
+      pdfExtractedItems.push(...extractedItems.map((item: any) => ({ ...item, page: pageIndex })));
+      
+      // Get positions from Vision
+      const positions = await extractMenuItemPositions(pdfImages[pageIndex]);
+      positions.forEach((pos: { name: string; x: number; y: number; confidence: number }) => {
+        pdfPositions.push({ ...pos, page: pageIndex });
+      });
+      
+      logger.info(`[MENU IMPORT] Page ${pageIndex + 1}: ${extractedItems.length} items, ${positions.length} positions`);
+    }
 
-      // Match and create items + hotspots
-      for (const item of scrapeResult.items) {
+    logger.info('[MENU IMPORT] PDF items:', { count: pdfExtractedItems.length });
+    logger.info('[MENU IMPORT] PDF positions:', { count: pdfPositions.length });
+
+    // Step 4: Combine data intelligently
+    const menuItems = [];
+    const hotspots = [];
+    const combinedItems = new Map();
+
+    // If we have both URL and PDF data, merge them
+    if (urlItems.length > 0 && pdfExtractedItems.length > 0) {
+      logger.info('[MENU IMPORT] Combining URL and PDF data...');
+      
+      // Start with URL items (better data quality)
+      for (const urlItem of urlItems) {
         const itemId = uuidv4();
         
-        // Find matching position
-        const matchedPos = pdfPositions.find(pos => 
-          calculateSimilarity(item.name, pos.name) > 0.7
+        // Find matching PDF item for additional data
+        const pdfMatch = pdfExtractedItems.find(pdfItem => 
+          calculateSimilarity(urlItem.name, pdfItem.name) > 0.7
         );
+        
+        // Find matching position
+        const posMatch = pdfPositions.find(pos => 
+          calculateSimilarity(urlItem.name, pos.name) > 0.7
+        );
+
+        // Combine data: URL provides images/descriptions, PDF provides fallbacks
+        menuItems.push({
+          id: itemId,
+          venue_id: venueId,
+          name: urlItem.name,
+          description: urlItem.description || pdfMatch?.description || '',
+          price: urlItem.price || pdfMatch?.price || 0,
+          category: urlItem.category || pdfMatch?.category || 'Menu Items',
+          image_url: urlItem.image_url || null,
+          is_available: true,
+          created_at: new Date().toISOString(),
+        });
+
+        if (posMatch) {
+          hotspots.push({
+            id: uuidv4(),
+            venue_id: venueId,
+            menu_item_id: itemId,
+            page_index: posMatch.page,
+            x_percent: posMatch.x,
+            y_percent: posMatch.y,
+            width_percent: 15,
+            height_percent: 8,
+            created_at: new Date().toISOString(),
+          });
+        }
+        
+        combinedItems.set(urlItem.name.toLowerCase(), true);
+      }
+
+      // Add PDF items that weren't matched
+      for (const pdfItem of pdfExtractedItems) {
+        if (!combinedItems.has(pdfItem.name.toLowerCase())) {
+          const itemId = uuidv4();
+          
+          const posMatch = pdfPositions.find(pos => 
+            calculateSimilarity(pdfItem.name, pos.name) > 0.7
+          );
+
+          menuItems.push({
+            id: itemId,
+            venue_id: venueId,
+            ...pdfItem,
+            is_available: true,
+            created_at: new Date().toISOString(),
+          });
+
+          if (posMatch) {
+            hotspots.push({
+              id: uuidv4(),
+              venue_id: venueId,
+              menu_item_id: itemId,
+              page_index: posMatch.page,
+              x_percent: posMatch.x,
+              y_percent: posMatch.y,
+              width_percent: 15,
+              height_percent: 8,
+              created_at: new Date().toISOString(),
+            });
+          }
+        }
+      }
+      
+    } else if (urlItems.length > 0) {
+      // URL only: use positions from Vision
+      logger.info('[MENU IMPORT] Using URL data with PDF positions...');
+      for (const item of urlItems) {
+        const itemId = uuidv4();
+        const posMatch = pdfPositions.find(pos => calculateSimilarity(item.name, pos.name) > 0.7);
 
         menuItems.push({
           id: itemId,
@@ -95,32 +189,50 @@ export async function POST(req: NextRequest) {
           created_at: new Date().toISOString(),
         });
 
-        if (matchedPos) {
+        if (posMatch) {
           hotspots.push({
             id: uuidv4(),
             venue_id: venueId,
             menu_item_id: itemId,
-            page_index: matchedPos.page,
-            x_percent: matchedPos.x,
-            y_percent: matchedPos.y,
+            page_index: posMatch.page,
+            x_percent: posMatch.x,
+            y_percent: posMatch.y,
             width_percent: 15,
             height_percent: 8,
             created_at: new Date().toISOString(),
           });
         }
       }
-
-      logger.info('[SMART IMPORT] Matched hotspots', { count: hotspots.length });
       
     } else {
-      // PDF ONLY MODE: Vision for full extraction (MORE EXPENSIVE)
-      logger.warn('[SMART IMPORT] No URL provided - PDF-only mode not yet implemented');
-      logger.info('[SMART IMPORT] Tip: Add menu URL to save costs!');
-      
-      // For now, create basic menu items without Vision (to save costs)
-      // User should really provide URL for best results
-      menuItems = [];
-      hotspots = [];
+      // PDF only: use extracted items with positions
+      logger.info('[MENU IMPORT] Using PDF data only...');
+      for (const item of pdfExtractedItems) {
+        const itemId = uuidv4();
+        const posMatch = pdfPositions.find(pos => calculateSimilarity(item.name, pos.name) > 0.7);
+
+        menuItems.push({
+          id: itemId,
+          venue_id: venueId,
+          ...item,
+          is_available: true,
+          created_at: new Date().toISOString(),
+        });
+
+        if (posMatch) {
+          hotspots.push({
+            id: uuidv4(),
+            venue_id: venueId,
+            menu_item_id: itemId,
+            page_index: posMatch.page,
+            x_percent: posMatch.x,
+            y_percent: posMatch.y,
+            width_percent: 15,
+            height_percent: 8,
+            created_at: new Date().toISOString(),
+          });
+        }
+      }
     }
 
     // Step 4: Clear existing catalog
@@ -136,9 +248,14 @@ export async function POST(req: NextRequest) {
       await supabase.from('menu_hotspots').insert(hotspots);
     }
 
-    logger.info('[SMART IMPORT] Complete', { 
+    logger.info('[MENU IMPORT] Complete', { 
       items: menuItems.length, 
-      hotspots: hotspots.length 
+      hotspots: hotspots.length,
+      sources: {
+        url: urlItems.length,
+        pdf: pdfExtractedItems.length,
+        combined: menuItems.length
+      }
     });
 
     return NextResponse.json({
@@ -152,7 +269,7 @@ export async function POST(req: NextRequest) {
 
   } catch (err) {
     const errorMessage = err instanceof Error ? err.message : 'Processing failed';
-    logger.error('[SMART IMPORT] Error:', { error: errorMessage });
+    logger.error('[MENU IMPORT] Error:', { error: errorMessage });
     return NextResponse.json(
       { ok: false, error: errorMessage },
       { status: 500 }

@@ -3,9 +3,22 @@ import { getOpenAI } from "./openai";
 import fs from "fs";
 import { logger } from '@/lib/logger';
 
-export async function extractMenuFromImage(imagePath: string) {
+export async function extractMenuFromImage(imagePathOrDataUrl: string) {
   const openai = getOpenAI();
-  const imageBytes = fs.readFileSync(imagePath).toString("base64");
+  
+  // Handle both file paths and data URLs
+  let imageUrl: string;
+  if (imagePathOrDataUrl.startsWith('data:')) {
+    // Already a data URL
+    imageUrl = imagePathOrDataUrl;
+  } else if (imagePathOrDataUrl.startsWith('http')) {
+    // HTTP URL
+    imageUrl = imagePathOrDataUrl;
+  } else {
+    // File path - read and convert to base64
+    const imageBytes = fs.readFileSync(imagePathOrDataUrl).toString("base64");
+    imageUrl = `data:image/png;base64,${imageBytes}`;
+  }
 
   const prompt = `
 You are an expert at reading venue menus. 
@@ -38,18 +51,25 @@ Rules:
           {
             type: "image_url",
             image_url: {
-              url: `data:image/png;base64,${imageBytes}`,
+              url: imageUrl,
+              detail: 'high',
             },
           },
         ],
       },
     ],
+    max_tokens: 4000,
     temperature: 0.2,
   });
 
   const text = response.choices[0]?.message?.content;
   try {
-    const json = JSON.parse(text!);
+    // Extract JSON from response (might be wrapped in markdown)
+    const jsonMatch = text?.match(/\[[\s\S]*\]/);
+    if (!jsonMatch) {
+      throw new Error('No JSON array found in response');
+    }
+    const json = JSON.parse(jsonMatch[0]);
     return json;
   } catch (err) {
     logger.error("Failed to parse JSON:", text);
