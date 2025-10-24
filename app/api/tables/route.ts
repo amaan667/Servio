@@ -7,7 +7,7 @@ import { logger } from "@/lib/logger";
 export const runtime = "nodejs";
 
 // GET /api/tables?venueId=xxx - Get table runtime state for a venue
-export async function GET(_req: Request) {
+export async function GET(req: Request) {
   try {
     const { searchParams } = new URL(req.url);
     const venueId = searchParams.get("venue_id") || searchParams.get("venueId");
@@ -162,7 +162,7 @@ export async function GET(_req: Request) {
 }
 
 // POST /api/tables - Create a new table
-export async function POST(_req: Request) {
+export async function POST(req: Request) {
   try {
     const body = await req.json();
     const { venue_id, label, seat_count, area } = body;

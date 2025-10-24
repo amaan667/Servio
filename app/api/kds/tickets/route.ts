@@ -88,7 +88,7 @@ async function autoBackfillMissingTickets(venueId: string) {
 }
 
 // GET - Fetch KDS tickets for a venue or station
-export async function GET(_req: Request) {
+export async function GET(req: Request) {
   try {
     const { searchParams } = new URL(req.url);
     const venueId = searchParams.get("venueId");

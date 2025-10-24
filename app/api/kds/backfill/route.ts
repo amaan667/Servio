@@ -10,7 +10,7 @@ interface KDSStation {
 
 export const runtime = 'nodejs'; // KDS backfill endpoint
 
-export async function POST(_req: Request) {
+export async function POST(req: Request) {
   try {
     const supabaseAdmin = createAdminClient();
     logger.debug('[KDS BACKFILL] Starting KDS backfill for existing orders...');

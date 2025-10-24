@@ -89,7 +89,7 @@ export async function GET(request: NextRequest) {
         'Content-Disposition': `attachment; filename="movements-${venue_id}-${new Date().toISOString().split('T')[0]}.csv"`,
       },
     });
-  } catch (_error) {
+  } catch (error) {
     logger.error('[INVENTORY EXPORT] Unexpected error:', { error: error instanceof Error ? error.message : 'Unknown error' });
     return NextResponse.json(
       { error: 'Internal server error' },

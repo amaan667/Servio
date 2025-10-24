@@ -70,7 +70,7 @@ export async function PATCH(_req: Request, context: { params: Promise<{ id: stri
   return NextResponse.json({ ok: true, order: data });
 }
 
-export async function DELETE(_req: Request, context: { params: Promise<{ id: string }> }) {
+export async function DELETE(req: Request, context: { params: Promise<{ id: string }> }) {
   const { id } = await context.params;
   if (!id) return NextResponse.json({ ok: false, error: 'id required' }, { status: 400 });
   const supa = await admin();

@@ -2,7 +2,7 @@ import { NextResponse } from 'next/server';
 import { createClient } from '@/lib/supabase';
 import { logger } from '@/lib/logger';
 
-export async function POST(_req: Request) {
+export async function POST(req: Request) {
   try {
     
     const { orderId } = await req.json();

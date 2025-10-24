@@ -5,7 +5,7 @@ import { logger } from '@/lib/logger';
 export const runtime = 'nodejs';
 export const dynamic = 'force-dynamic';
 
-export async function GET(_req: Request) {
+export async function GET(req: Request) {
   try {
     const supabaseAdmin = createAdminClient();
     const { searchParams } = new URL(req.url);

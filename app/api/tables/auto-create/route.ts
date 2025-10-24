@@ -5,7 +5,7 @@ import { logger } from '@/lib/logger';
 
 export const runtime = 'nodejs';
 
-export async function POST(_req: Request) {
+export async function POST(req: Request) {
   try {
     const body = await req.json();
     const { venue_id, table_number, table_label, seat_count = 4, area = null } = body;

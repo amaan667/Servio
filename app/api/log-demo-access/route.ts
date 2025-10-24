@@ -4,7 +4,7 @@ import { logger } from '@/lib/logger';
 export const runtime = 'nodejs';
 export const dynamic = 'force-dynamic';
 
-export async function POST(_req: Request) {
+export async function POST(req: Request) {
   // Log immediately when endpoint is hit
   logger.debug('================================================================================');
   logger.debug('[DEMO ACCESS] API ENDPOINT HIT - Starting to process request');
@@ -73,7 +73,7 @@ export async function POST(_req: Request) {
 }
 
 // Add GET endpoint to test if route is accessible
-export async function GET(_req: Request) {
+export async function GET(req: Request) {
   logger.debug('================================================================================');
   logger.debug('[DEMO ACCESS] GET request received - API route is working');
   logger.debug('================================================================================');

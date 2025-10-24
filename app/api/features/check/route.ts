@@ -27,7 +27,7 @@ export async function GET(request: NextRequest) {
     const access = await checkFeatureAccess(venueId, requiredTier);
 
     return NextResponse.json(access);
-  } catch (_error) {
+  } catch (error) {
     logger.error('[FEATURE CHECK API] Error:', { error: error instanceof Error ? error.message : 'Unknown error' });
     return NextResponse.json(
       { error: 'Internal server error' },

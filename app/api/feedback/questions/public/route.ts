@@ -3,7 +3,7 @@ import { createAdminClient } from '@/lib/supabase';
 import { logger } from '@/lib/logger';
 
 // GET - List active questions for venue (public endpoint for customers)
-export async function GET(_req: Request) {
+export async function GET(req: Request) {
   try {
     const { searchParams } = new URL(req.url);
     const venueId = searchParams.get('venueId');
@@ -34,7 +34,7 @@ export async function GET(_req: Request) {
       count: questions?.length || 0
     });
 
-  } catch (_error) {
+  } catch (error) {
     logger.error('[FEEDBACK:PUBLIC] Exception:', { error: error instanceof Error ? error.message : 'Unknown error' });
     return NextResponse.json({ error: 'Internal server error' }, { status: 500 });
   }

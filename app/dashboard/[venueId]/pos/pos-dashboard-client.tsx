@@ -22,7 +22,7 @@ interface POSDashboardClientProps {
   venueId: string;
 }
 
-export function POSDashboardClient({ venueId }: POSDashboardClientProps) {
+export default function POSDashboardClient({ venueId }: POSDashboardClientProps) {
   const [activeTab, setActiveTab] = useState('tables');
 
   return (

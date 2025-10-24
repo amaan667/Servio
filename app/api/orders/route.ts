@@ -6,7 +6,7 @@ import { apiLogger, logger } from '@/lib/logger';
 export const runtime = 'nodejs';
 
 // GET handler for orders
-export async function GET(_req: Request) {
+export async function GET(req: Request) {
   try {
     const { searchParams } = new URL(req.url);
     const venueId = searchParams.get('venueId');
@@ -185,7 +185,7 @@ async function createKDSTickets(supabase: Awaited<ReturnType<typeof createSupaba
   }
 }
 
-export async function POST(_req: Request) {
+export async function POST(req: Request) {
   try {
     logger.debug('[ORDER CREATION DEBUG] ===== ORDER CREATION STARTED =====');
     logger.debug('[ORDER CREATION DEBUG] Timestamp:', new Date().toISOString());

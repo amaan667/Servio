@@ -4,10 +4,8 @@ import { useState, useEffect } from "react";
 import { useSearchParams } from "next/navigation";
 import { logger } from "@/lib/logger";
 import { Alert, AlertDescription } from "@/components/ui/alert";
-import { Loader2, Image as ImageIcon, List } from "lucide-react";
+import { Loader2 } from "lucide-react";
 import { EnhancedPDFMenuDisplay } from "@/components/EnhancedPDFMenuDisplay";
-import { StyledMenuDisplay } from "@/components/StyledMenuDisplay";
-import { Button } from "@/components/ui/button";
 
 // Hooks
 import { useOrderCart } from './hooks/useOrderCart';
@@ -150,7 +148,6 @@ export default function CustomerOrderPage() {
   const [showMobileCart, setShowMobileCart] = useState(false);
   const [subscriptionTier, setSubscriptionTier] = useState<'basic' | 'standard' | 'premium'>('basic');
   const [loadingTier, setLoadingTier] = useState(true);
-  const [menuView, setMenuView] = useState<'pdf' | 'list'>('pdf'); // For premium users
 
   const handleSubmitOrder = () => {
     submitOrder({
@@ -189,32 +186,6 @@ export default function CustomerOrderPage() {
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 lg:gap-8">
           {/* Menu Section */}
           <div className="lg:col-span-2">
-            {/* View Toggle for Premium Users */}
-            {subscriptionTier === 'premium' && !loadingTier && !loadingMenu && !menuError && (
-              <div className="mb-4 flex justify-end">
-                <div className="inline-flex rounded-lg border border-gray-300 bg-white p-1">
-                  <Button
-                    variant={menuView === 'pdf' ? 'default' : 'ghost'}
-                    size="sm"
-                    onClick={() => setMenuView('pdf')}
-                    className="rounded-md"
-                  >
-                    <ImageIcon className="h-4 w-4 mr-2" />
-                    PDF View
-                  </Button>
-                  <Button
-                    variant={menuView === 'list' ? 'default' : 'ghost'}
-                    size="sm"
-                    onClick={() => setMenuView('list')}
-                    className="rounded-md"
-                  >
-                    <List className="h-4 w-4 mr-2" />
-                    List View
-                  </Button>
-                </div>
-              </div>
-            )}
-
             {menuError ? (
               <Alert variant="destructive">
                 <AlertDescription>{menuError}</AlertDescription>
@@ -223,7 +194,7 @@ export default function CustomerOrderPage() {
               <div className="flex justify-center items-center h-64">
                 <Loader2 className="h-8 w-8 animate-spin text-purple-600" />
               </div>
-            ) : subscriptionTier === 'premium' && menuView === 'pdf' ? (
+            ) : (
               <EnhancedPDFMenuDisplay
                 venueId={venueSlug}
                 menuItems={menuItems}
@@ -233,16 +204,6 @@ export default function CustomerOrderPage() {
                 onRemoveFromCart={(itemId) => removeFromCart(itemId)}
                 onUpdateQuantity={(itemId, quantity) => updateQuantity(itemId, quantity)}
                 isOrdering={true}
-              />
-            ) : (
-              <StyledMenuDisplay
-                venueId={venueSlug}
-                menuItems={menuItems}
-                categoryOrder={categoryOrder}
-                onAddToCart={(item) => addToCart(item)}
-                cart={cart}
-                onRemoveFromCart={(itemId) => removeFromCart(itemId)}
-                onUpdateQuantity={(itemId, quantity) => updateQuantity(itemId, quantity)}
               />
             )}
           </div>

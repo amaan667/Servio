@@ -4,7 +4,7 @@ import { logger } from '@/lib/logger';
 
 const stripe = new Stripe(process.env.STRIPE_SECRET_KEY!, { apiVersion: "2025-08-27.basil" });
 
-export async function POST(_req: Request) {
+export async function POST(req: Request) {
   try {
     const { amount, venueId, tableNumber, customerName, customerPhone, orderId, items, source, venueName, customerEmail } = await req.json();
 

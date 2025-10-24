@@ -84,7 +84,7 @@ export async function GET(_request: NextRequest) {
       conversationsFound: user ? "tested" : "skipped (no user)"
     });
     
-  } catch (_error) {
+  } catch (error) {
     logger.error("[TEST DB] Unexpected error:", { error: error instanceof Error ? error.message : 'Unknown error' });
     return NextResponse.json({
       success: false,

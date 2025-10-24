@@ -10,7 +10,7 @@ interface KDSStation {
 
 export const runtime = 'nodejs';
 
-export async function POST(_req: Request) {
+export async function POST(req: Request) {
   try {
     const supabaseAdmin = createAdminClient();
     

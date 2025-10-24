@@ -9,7 +9,7 @@ function getServiceClient() {
 }
 
 // GET - List questions for venue
-export async function GET(_req: Request) {
+export async function GET(req: Request) {
   try {
     const { searchParams } = new URL(req.url);
     const venueId = searchParams.get('venueId');
@@ -68,7 +68,7 @@ export async function GET(_req: Request) {
 }
 
 // POST - Create new question
-export async function POST(_req: Request) {
+export async function POST(req: Request) {
   try {
     const { venue_id, prompt, type, choices, is_active = true } = await req.json();
 
@@ -252,7 +252,7 @@ export async function PATCH(_req: Request) {
 }
 
 // DELETE - Delete question
-export async function DELETE(_req: Request) {
+export async function DELETE(req: Request) {
   try {
     const { id, venue_id } = await req.json();
 

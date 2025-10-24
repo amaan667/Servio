@@ -3,7 +3,7 @@ import { createClient } from '@/lib/supabase';
 import { cleanupTableOnOrderCompletion } from '@/lib/table-cleanup';
 import { apiLogger as logger } from '@/lib/logger';
 
-export async function POST(_req: Request) {
+export async function POST(req: Request) {
   try {
     const { orderId, status } = await req.json();
     

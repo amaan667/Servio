@@ -6,7 +6,7 @@ import { logger } from '@/lib/logger';
 export const runtime = 'nodejs';
 
 // GET /api/reservations?venueId=xxx - Get reservations for a venue
-export async function GET(_req: Request) {
+export async function GET(req: Request) {
   try {
     const { searchParams } = new URL(req.url);
     const venueId = searchParams.get('venueId');
@@ -79,7 +79,7 @@ export async function GET(_req: Request) {
 }
 
 // POST /api/reservations - Create a new reservation
-export async function POST(_req: Request) {
+export async function POST(req: Request) {
   try {
     const body = await req.json();
     const { 

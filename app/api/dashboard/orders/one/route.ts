@@ -15,7 +15,7 @@ type OrderRow = {
   payment_status: "paid" | "unpaid" | null;
 };
 
-export async function GET(_req: Request) {
+export async function GET(req: Request) {
   try {
     const url = new URL(req.url);
     const venueId = url.searchParams.get("venueId");

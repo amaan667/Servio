@@ -6,7 +6,7 @@ import { logger } from '@/lib/logger';
 export const runtime = 'nodejs';
 
 // POST /api/tables/cleanup-duplicates - Remove duplicate tables
-export async function POST(_req: Request) {
+export async function POST(req: Request) {
   try {
     const { venue_id } = await req.json();
 

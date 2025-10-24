@@ -59,7 +59,7 @@ export function EnhancedPDFMenuDisplay({
   const [hotspots, setHotspots] = useState<Hotspot[]>([]);
   const [selectedItem, setSelectedItem] = useState<MenuItem | null>(null);
   const [isModalOpen, setIsModalOpen] = useState(false);
-  const [viewMode, setViewMode] = useState<'pdf' | 'list'>('pdf');
+  const [viewMode, setViewMode] = useState<'pdf' | 'list'>('pdf'); // PDF view with auto-generated hotspots
   const [searchQuery, setSearchQuery] = useState('');
   const [zoomLevel, setZoomLevel] = useState(1);
   const [imagePosition, setImagePosition] = useState({ x: 0, y: 0 });
@@ -110,26 +110,40 @@ export function EnhancedPDFMenuDisplay({
     fetchPDFImages();
   }, [venueId]);
 
+  // Fetch or auto-generate hotspots
   useEffect(() => {
-    const fetchHotspots = async () => {
+    const fetchOrGenerateHotspots = async () => {
       try {
         const supabase = createClient();
-        const { data, error } = await supabase
+        
+        // First, try to fetch existing hotspots
+        const { data: existingHotspots, error } = await supabase
           .from('menu_hotspots')
           .select('*')
           .eq('venue_id', venueId)
           .eq('is_active', true);
 
-        if (!error && data) {
-          setHotspots(data);
+        if (!error && existingHotspots && existingHotspots.length > 0) {
+          setHotspots(existingHotspots);
+        } else {
+          // Auto-generate hotspots if none exist and we have PDF images
+          if (pdfImages.length > 0 && menuItems.length > 0) {
+            const generatedHotspots = await generateHotspotsFromMenu(menuItems, pdfImages.length);
+            setHotspots(generatedHotspots);
+            
+            // Save to database
+            await saveHotspotsToDatabase(venueId, generatedHotspots, supabase);
+          }
         }
-      } catch (_error) {
-      // Error silently handled
-    }
+      } catch (error) {
+        console.error('Error with hotspots:', error);
+      }
     };
 
-    fetchHotspots();
-  }, [venueId]);
+    if (pdfImages.length > 0) {
+      fetchOrGenerateHotspots();
+    }
+  }, [venueId, pdfImages, menuItems]);
 
   // Check if cart has items to show sticky cart
   useEffect(() => {
@@ -320,14 +334,16 @@ export function EnhancedPDFMenuDisplay({
       {/* View Mode Toggle */}
       <div className="flex items-center justify-between mb-4">
         <div className="flex items-center space-x-2">
-          <Button
-            variant={viewMode === 'pdf' ? 'default' : 'outline'}
-            size="sm"
-            onClick={() => setViewMode('pdf')}
-          >
-            <Grid className="h-4 w-4 mr-2" />
-            Image View
-          </Button>
+          {pdfImages.length > 0 && (
+            <Button
+              variant={viewMode === 'pdf' ? 'default' : 'outline'}
+              size="sm"
+              onClick={() => setViewMode('pdf')}
+            >
+              <Grid className="h-4 w-4 mr-2" />
+              Visual Menu
+            </Button>
+          )}
           <Button
             variant={viewMode === 'list' ? 'default' : 'outline'}
             size="sm"
@@ -354,131 +370,130 @@ export function EnhancedPDFMenuDisplay({
         )}
       </div>
 
-      {/* PDF Image View */}
-      {viewMode === 'pdf' && (
-        <div
-          ref={containerRef}
-          className="relative overflow-hidden rounded-lg border border-gray-200 bg-gray-50"
-          onWheel={handleWheel}
-          onMouseMove={handleMouseMove}
-          onMouseUp={handleMouseUp}
-          onMouseLeave={handleMouseUp}
-          onTouchStart={handleTouchStart}
-          onTouchMove={handleTouchMove}
-          onTouchEnd={handleTouchEnd}
-        >
-          {pdfImages.map((imageUrl, index) => {
-            const pageHotspots = hotspots.filter(h => h.page_index === index);
-            
-            return (
-              <div
-                key={index}
-                className="relative"
-                style={{
-                  transform: `scale(${zoomLevel}) translate(${imagePosition.x / zoomLevel}px, ${imagePosition.y / zoomLevel}px)`,
-                  transformOrigin: 'center center',
-                  transition: isDragging ? 'none' : 'transform 0.1s ease-out'
-                }}
-              >
-                <img
-                  src={imageUrl}
-                  alt={`Menu Page ${index + 1}`}
-                  className="w-full h-auto"
-                  draggable={false}
-                  onMouseDown={handleMouseDown}
-                />
+      {/* PDF Image View with Interactive Hotspots */}
+      {viewMode === 'pdf' && pdfImages.length > 0 && (
+        <div className="space-y-4">
+          <div
+            ref={containerRef}
+            className="relative overflow-hidden rounded-lg border border-gray-200 bg-gray-50"
+            onWheel={handleWheel}
+            onMouseMove={handleMouseMove}
+            onMouseUp={handleMouseUp}
+            onMouseLeave={handleMouseUp}
+            onTouchStart={handleTouchStart}
+            onTouchMove={handleTouchMove}
+            onTouchEnd={handleTouchEnd}
+          >
+            {pdfImages.map((imageUrl, index) => {
+              const pageHotspots = hotspots.filter(h => h.page_index === index);
+              
+              return (
+                <div
+                  key={index}
+                  className="relative mb-4"
+                  style={{
+                    transform: `scale(${zoomLevel}) translate(${imagePosition.x / zoomLevel}px, ${imagePosition.y / zoomLevel}px)`,
+                    transformOrigin: 'center center',
+                    transition: isDragging ? 'none' : 'transform 0.1s ease-out'
+                  }}
+                >
+                  <img
+                    src={imageUrl}
+                    alt={`Menu Page ${index + 1}`}
+                    className="w-full h-auto"
+                    draggable={false}
+                    onMouseDown={handleMouseDown}
+                  />
 
-                {/* Interactive Hotspots */}
-                {isOrdering && pageHotspots.map((hotspot) => {
-                  const item = menuItems.find(i => i.id === hotspot.menu_item_id);
-                  if (!item) return null;
+                  {/* Interactive Hotspots */}
+                  {isOrdering && pageHotspots.map((hotspot) => {
+                    const item = menuItems.find(i => i.id === hotspot.menu_item_id);
+                    if (!item) return null;
 
-                  const cartItem = cart.find(c => c.id === item.id);
-                  const quantity = cartItem?.quantity || 0;
+                    const cartItem = cart.find(c => c.id === item.id);
+                    const quantity = cartItem?.quantity || 0;
 
-                  return (
-                    <div
-                      key={hotspot.id}
-                      className="absolute cursor-pointer transition-all duration-200 hover:scale-110"
-                      style={{
-                        left: `${hotspot.x_percent}%`,
-                        top: `${hotspot.y_percent}%`,
-                        transform: 'translate(-50%, -50%)',
-                        width: hotspot.width_percent ? `${hotspot.width_percent}%` : 'auto',
-                        height: hotspot.height_percent ? `${hotspot.height_percent}%` : 'auto',
-                      }}
-                      onClick={() => handleHotspotClick(hotspot)}
-                    >
-                      {quantity === 0 ? (
-                        <Button
-                          size="sm"
-                          className="bg-primary/90 hover:bg-primary text-white shadow-lg"
-                        >
-                          <Plus className="h-3.5 w-3.5 mr-1" />
-                          {item.name}
-                        </Button>
-                      ) : (
-                        <div className="bg-white rounded-md shadow-lg border-2 border-primary p-1.5 flex items-center gap-1.5">
+                    return (
+                      <div
+                        key={hotspot.id}
+                        className="absolute cursor-pointer transition-all duration-200 hover:scale-105"
+                        style={{
+                          left: `${hotspot.x_percent}%`,
+                          top: `${hotspot.y_percent}%`,
+                          transform: 'translate(-50%, -50%)',
+                        }}
+                        onClick={() => handleHotspotClick(hotspot)}
+                      >
+                        {quantity === 0 ? (
                           <Button
-                            onClick={(e) => {
-                              e.stopPropagation();
-                              onUpdateQuantity(item.id, quantity - 1);
-                            }}
-                            variant="outline"
                             size="sm"
-                            className="h-7 w-7 p-0"
-                          >
-                            <Minus className="h-3 w-3" />
-                          </Button>
-                          <span className="text-xs font-bold text-primary min-w-[20px] text-center">
-                            {quantity}
-                          </span>
-                          <Button
-                            onClick={(e) => {
-                              e.stopPropagation();
-                              onUpdateQuantity(item.id, quantity + 1);
-                            }}
-                            size="sm"
-                            className="h-7 w-7 p-0 bg-primary hover:bg-primary/90"
+                            className="bg-primary/90 hover:bg-primary text-white shadow-lg text-xs px-2 py-1 h-7"
                           >
                             <Plus className="h-3 w-3" />
                           </Button>
-                        </div>
-                      )}
-                    </div>
-                  );
-                })}
-              </div>
-            );
-          })}
+                        ) : (
+                          <div className="bg-white rounded-md shadow-lg border-2 border-primary p-1 flex items-center gap-1">
+                            <Button
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                onUpdateQuantity(item.id, quantity - 1);
+                              }}
+                              variant="outline"
+                              size="sm"
+                              className="h-6 w-6 p-0"
+                            >
+                              <Minus className="h-3 w-3" />
+                            </Button>
+                            <span className="text-xs font-bold text-primary min-w-[16px] text-center">
+                              {quantity}
+                            </span>
+                            <Button
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                onUpdateQuantity(item.id, quantity + 1);
+                              }}
+                              size="sm"
+                              className="h-6 w-6 p-0 bg-primary hover:bg-primary/90"
+                            >
+                              <Plus className="h-3 w-3" />
+                            </Button>
+                          </div>
+                        )}
+                      </div>
+                    );
+                  })}
+                </div>
+              );
+            })}
 
-          {/* Zoom Controls */}
-          {zoomLevel > 1 && (
-            <div className="absolute top-4 right-4 flex items-center space-x-2 bg-white rounded-lg shadow-lg p-2">
-              <Button
-                variant="outline"
-                size="sm"
-                onClick={() => setZoomLevel(prev => Math.max(prev - 0.2, 1))}
-              >
-                <ZoomOut className="h-4 w-4" />
-              </Button>
-              <span className="text-sm font-medium">{Math.round(zoomLevel * 100)}%</span>
-              <Button
-                variant="outline"
-                size="sm"
-                onClick={() => setZoomLevel(prev => Math.min(prev + 0.2, 3))}
-              >
-                <ZoomIn className="h-4 w-4" />
-              </Button>
-              <Button
-                variant="outline"
-                size="sm"
-                onClick={resetZoom}
-              >
-                Reset
-              </Button>
-            </div>
-          )}
+            {/* Zoom Controls */}
+            {zoomLevel > 1 && (
+              <div className="absolute top-4 right-4 flex items-center space-x-2 bg-white rounded-lg shadow-lg p-2">
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={() => setZoomLevel(prev => Math.max(prev - 0.2, 1))}
+                >
+                  <ZoomOut className="h-4 w-4" />
+                </Button>
+                <span className="text-sm font-medium">{Math.round(zoomLevel * 100)}%</span>
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={() => setZoomLevel(prev => Math.min(prev + 0.2, 3))}
+                >
+                  <ZoomIn className="h-4 w-4" />
+                </Button>
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={resetZoom}
+                >
+                  Reset
+                </Button>
+              </div>
+            )}
+          </div>
         </div>
       )}
 
@@ -586,5 +601,69 @@ export function EnhancedPDFMenuDisplay({
       />
     </div>
   );
+}
+
+// Helper function to auto-generate hotspots from menu items
+async function generateHotspotsFromMenu(menuItems: MenuItem[], pageCount: number): Promise<Hotspot[]> {
+  const hotspots: Hotspot[] = [];
+  const itemsPerPage = Math.ceil(menuItems.length / pageCount);
+  
+  menuItems.forEach((item, index) => {
+    const pageIndex = Math.floor(index / itemsPerPage);
+    const positionOnPage = index % itemsPerPage;
+    const totalOnPage = Math.min(itemsPerPage, menuItems.length - (pageIndex * itemsPerPage));
+    
+    // Calculate position - distribute items evenly across the page
+    // Assuming menu items are listed vertically down the page
+    const x_percent = 85; // Right side for + buttons
+    const y_percent = 15 + (positionOnPage / totalOnPage) * 70; // Spread from 15% to 85% of page
+    
+    hotspots.push({
+      id: `auto-${item.id}`,
+      menu_item_id: item.id,
+      page_index: pageIndex,
+      x_percent,
+      y_percent,
+      width_percent: 10,
+      height_percent: 5,
+    });
+  });
+  
+  return hotspots;
+}
+
+// Helper function to save hotspots to database
+async function saveHotspotsToDatabase(
+  venueId: string,
+  hotspots: Hotspot[],
+  supabase: ReturnType<typeof createClient>
+) {
+  try {
+    // Delete existing hotspots for this venue
+    await supabase
+      .from('menu_hotspots')
+      .delete()
+      .eq('venue_id', venueId);
+    
+    // Insert new hotspots
+    const hotspotsToInsert = hotspots.map(h => ({
+      venue_id: venueId,
+      menu_item_id: h.menu_item_id,
+      page_index: h.page_index,
+      x_percent: h.x_percent,
+      y_percent: h.y_percent,
+      width_percent: h.width_percent,
+      height_percent: h.height_percent,
+      is_active: true,
+    }));
+    
+    await supabase
+      .from('menu_hotspots')
+      .insert(hotspotsToInsert);
+      
+    console.log('✅ Hotspots saved to database');
+  } catch (error) {
+    console.error('Error saving hotspots:', error);
+  }
 }
 

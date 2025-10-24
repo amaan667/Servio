@@ -3,7 +3,7 @@ import { createAdminClient } from '@/lib/supabase';
 
 export const runtime = 'nodejs';
 
-export async function GET(_req: Request) {
+export async function GET(req: Request) {
   const { searchParams } = new URL(req.url);
   const venue_id = searchParams.get('venue_id');
 
