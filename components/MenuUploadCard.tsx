@@ -22,6 +22,7 @@ export function MenuUploadCard({ venueId, onSuccess }: MenuUploadCardProps) {
   const [isClearing, setIsClearing] = useState(false);
   const [isDragOver, setIsDragOver] = useState(false);
   const [hasExistingUpload, setHasExistingUpload] = useState(false);
+  const [menuUrl, setMenuUrl] = useState(''); // Add URL input for hybrid import
   const fileInputRef = useRef<HTMLInputElement>(null);
   const { toast } = useToast();
   const supabase = createClient();
