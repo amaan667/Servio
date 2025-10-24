@@ -127,18 +127,30 @@ export function useOrderSubmission() {
         source: orderType === 'counter' ? 'counter' : 'qr',
       };
 
+      console.log('[ORDER SUBMIT] Creating order...', orderData);
+      
       const response = await fetch('/api/orders', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(orderData),
       });
 
+      console.log('[ORDER SUBMIT] Response status:', response.status);
+
       if (!response.ok) {
-        const errorData = await response.json();
-        throw new Error(errorData.error || `Failed to create order (${response.status})`);
+        let errorMessage = `Failed to create order (${response.status})`;
+        try {
+          const errorData = await response.json();
+          errorMessage = errorData.error || errorMessage;
+        } catch {
+          errorMessage = await response.text() || errorMessage;
+        }
+        console.error('[ORDER SUBMIT] Error:', errorMessage);
+        throw new Error(errorMessage);
       }
 
       const orderResult = await response.json();
+      console.log('[ORDER SUBMIT] Order created:', orderResult);
       
       const checkoutData = {
         venueId: venueSlug,

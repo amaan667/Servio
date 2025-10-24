@@ -139,6 +139,11 @@ const DashboardClient = React.memo(function DashboardClient({ venueId }: { venue
   // Check authentication and venue access
   useEffect(() => {
     async function checkAuth() {
+      // Skip auth check if we already have cached data
+      if (user && venue) {
+        return;
+      }
+      
       try {
         const supabase = supabaseBrowser();
 
@@ -230,18 +235,11 @@ const DashboardClient = React.memo(function DashboardClient({ venueId }: { venue
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [venueId]);
 
-  // Show auth error (no loading states)
-  if (!user && !loading) {
-    return (
-      <div className="flex items-center justify-center min-h-screen">
-        <div className="text-center">
-          <p className="text-lg mb-4">Please sign in to access this venue</p>
-          <a href="/sign-in" className="text-blue-600 underline">
-            Go to Sign In
-          </a>
-        </div>
-      </div>
-    );
+  // Show auth error only if definitely not authenticated (no cached data)
+  if (!user && !loading && !getCachedUser()) {
+    // Redirect without showing message
+    router.push("/sign-in");
+    return null;
   }
 
   // Show access denied
