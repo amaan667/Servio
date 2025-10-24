@@ -105,7 +105,13 @@ export function EnhancedPDFMenuDisplay({
 
         // Try pdf_images first, then fallback to pdf_images_cc
         const images = uploadData?.pdf_images || uploadData?.pdf_images_cc;
-        console.log('[PDF MENU] Found images:', images?.length || 0);
+        console.log('[PDF MENU] pdf_images:', uploadData?.pdf_images?.length || 0);
+        console.log('[PDF MENU] pdf_images_cc:', uploadData?.pdf_images_cc?.length || 0);
+        console.log('[PDF MENU] Selected images array:', images?.length || 0);
+        
+        if (images && images.length > 0) {
+          console.log('[PDF MENU] First image preview:', images[0]?.substring(0, 100));
+        }
 
         if (uploadData && images && images.length > 0) {
           console.log('[PDF MENU] ✅ PDF images loaded, enabling PDF view');

@@ -126,9 +126,13 @@ export default function SettingsPageClient({ venueId }: { venueId: string }) {
     loadData();
   }, [venueId, router]);
 
-  // Removed loading check - render immediately with empty state
+  // Don't show "sign in" if we have cached data or still loading
+  if (!data) {
+    // Show nothing while data loads (will be fast with cache)
+    return null;
+  }
 
-  if (!loading && (!data || !data.user)) {
+  if (!data.user) {
     return (
       <div className="min-h-screen flex items-center justify-center bg-background">
         <div className="max-w-md w-full p-6 text-center">
@@ -145,7 +149,7 @@ export default function SettingsPageClient({ venueId }: { venueId: string }) {
     );
   }
 
-  if (!data || !data.venue) {
+  if (!data.venue) {
     return (
       <div className="min-h-screen flex items-center justify-center bg-background">
         <div>You don&apos;t have access to this venue</div>
