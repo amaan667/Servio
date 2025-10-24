@@ -254,6 +254,83 @@ export function MenuUploadCard({ venueId, onSuccess }: MenuUploadCardProps) {
     }
   };
 
+  const handleReprocessWithUrl = async () => {
+    if (!menuUrl || !menuUrl.trim()) {
+      toast({
+        title: 'No URL provided',
+        description: 'Please enter a menu URL first',
+        variant: 'destructive'
+      });
+      return;
+    }
+
+    setIsProcessing(true);
+
+    try {
+      // Get the existing PDF from menu_uploads
+      const { data: uploadData } = await supabase
+        .from('menu_uploads')
+        .select('filename')
+        .eq('venue_id', venueId)
+        .order('created_at', { ascending: false })
+        .limit(1)
+        .single();
+
+      if (!uploadData?.filename) {
+        throw new Error('No existing PDF found. Please upload a PDF first.');
+      }
+
+      // Download the PDF from storage
+      const { data: pdfBlob, error: downloadError } = await supabase
+        .storage
+        .from('menus')
+        .download(uploadData.filename);
+
+      if (downloadError || !pdfBlob) {
+        throw new Error('Failed to retrieve existing PDF');
+      }
+
+      // Convert blob to file
+      const pdfFile = new File([pdfBlob], 'menu.pdf', { type: 'application/pdf' });
+
+      // Re-process with URL
+      const formData = new FormData();
+      formData.append('file', pdfFile);
+      formData.append('venue_id', venueId);
+      formData.append('menu_url', menuUrl.trim());
+
+      const response = await fetch('/api/catalog/replace', {
+        method: 'POST',
+        body: formData
+      });
+
+      if (!response.ok) {
+        const errorText = await response.text();
+        throw new Error(`Re-processing failed: ${response.status} - ${errorText}`);
+      }
+
+      const result = await response.json();
+
+      if (result.ok) {
+        toast({
+          title: 'Menu re-processed successfully',
+          description: `Combined PDF and URL data: ${result.result.items_created} items, ${result.result.categories_created} categories`
+        });
+        onSuccess?.();
+      } else {
+        throw new Error(`Re-processing failed: ${result.error}`);
+      }
+    } catch (error) {
+      toast({
+        title: 'Re-processing failed',
+        description: error instanceof Error ? error.message : 'Unknown error',
+        variant: 'destructive'
+      });
+    } finally {
+      setIsProcessing(false);
+    }
+  };
+
   const handleClearCatalog = async () => {
     if (!confirm('Are you sure you want to clear the entire catalog? This action cannot be undone.')) {
       return;
@@ -290,7 +367,7 @@ export function MenuUploadCard({ venueId, onSuccess }: MenuUploadCardProps) {
     } catch (error) {
       toast({
         title: 'Clear catalog failed',
-        description: error.message,
+        description: error instanceof Error ? error.message : 'Unknown error',
         variant: 'destructive'
       });
     } finally {
@@ -314,16 +391,31 @@ export function MenuUploadCard({ venueId, onSuccess }: MenuUploadCardProps) {
           <Label htmlFor="menu-url-upload">
             Menu Website URL
           </Label>
-          <Input
-            id="menu-url-upload"
-            type="url"
-            placeholder="https://yourmenu.co.uk/menu"
-            value={menuUrl}
-            onChange={(e) => setMenuUrl(e.target.value)}
-            disabled={isProcessing}
-          />
+          <div className="flex gap-2">
+            <Input
+              id="menu-url-upload"
+              type="url"
+              placeholder="https://yourmenu.co.uk/menu"
+              value={menuUrl}
+              onChange={(e) => setMenuUrl(e.target.value)}
+              disabled={isProcessing}
+              className="flex-1"
+            />
+            {hasExistingUpload && menuUrl && menuUrl.trim() && (
+              <Button
+                onClick={handleReprocessWithUrl}
+                disabled={isProcessing}
+                variant="secondary"
+              >
+                {isProcessing ? 'Processing...' : 'Re-process'}
+              </Button>
+            )}
+          </div>
           <p className="text-xs text-muted-foreground">
-            💡 Add your menu URL, then upload your PDF below. Both will be combined for best results.
+            {hasExistingUpload && menuUrl && menuUrl.trim() 
+              ? '💡 Click "Re-process" to combine your existing PDF with this URL'
+              : '💡 Add your menu URL, then upload your PDF below. Both will be combined for best results.'
+            }
           </p>
         </div>
 
