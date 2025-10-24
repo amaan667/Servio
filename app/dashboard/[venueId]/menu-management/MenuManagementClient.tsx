@@ -192,11 +192,30 @@ export default function MenuManagementClient({ venueId, canEdit = true }: { venu
   };
 
   const getCategories = () => {
-    const categories = Array.from(new Set(menuItems.map(item => item.category)));
-    if (categoryOrder) {
-      return categoryOrder.filter(cat => categories.includes(cat));
+    const uniqueCategories = Array.from(new Set(menuItems.map(item => item.category)));
+    
+    // Always use categoryOrder from database if available
+    if (categoryOrder && categoryOrder.length > 0) {
+      // Use PDF order, add any new categories at the end
+      const ordered = categoryOrder.filter(cat => uniqueCategories.includes(cat));
+      const newCategories = uniqueCategories.filter(cat => !categoryOrder.includes(cat));
+      return [...ordered, ...newCategories];
     }
-    return categories.sort();
+    
+    // Fallback: extract order from item positions
+    const categoriesInOrder: string[] = [];
+    const seen = new Set<string>();
+    
+    menuItems
+      .sort((a, b) => (a.position || 0) - (b.position || 0))
+      .forEach(item => {
+        if (item.category && !seen.has(item.category)) {
+          categoriesInOrder.push(item.category);
+          seen.add(item.category);
+        }
+      });
+    
+    return categoriesInOrder;
   };
 
   const getItemsByCategory = (category: string) => {
