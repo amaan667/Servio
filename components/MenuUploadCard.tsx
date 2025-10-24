@@ -131,21 +131,21 @@ export function MenuUploadCard({ venueId, onSuccess }: MenuUploadCardProps) {
     try {
       
       if (fileExtension === '.pdf') {
-        if (isReplacing) {
-          // Use new catalog replace endpoint
-          const formData = new FormData();
-          formData.append('file', file);
-          formData.append('venue_id', venueId);
-          
-          // Add menu URL if provided (for hybrid import)
-          if (menuUrl && menuUrl.trim()) {
-            formData.append('menu_url', menuUrl.trim());
-          }
+        // Use catalog replace endpoint
+        const formData = new FormData();
+        formData.append('file', file);
+        formData.append('venue_id', venueId);
+        formData.append('replace_mode', String(isReplacing)); // Send replace/append mode
+        
+        // Add menu URL if provided (for hybrid import)
+        if (menuUrl && menuUrl.trim()) {
+          formData.append('menu_url', menuUrl.trim());
+        }
 
-          const response = await fetch('/api/catalog/replace', {
-            method: 'POST',
-            body: formData
-          });
+        const response = await fetch('/api/catalog/replace', {
+          method: 'POST',
+          body: formData
+        });
           
           if (!response.ok) {
             const errorText = await response.text();
@@ -156,8 +156,8 @@ export function MenuUploadCard({ venueId, onSuccess }: MenuUploadCardProps) {
           
           if (result.ok) {
             toast({
-              title: 'Catalog replaced successfully',
-              description: `${result.result.items_created} items, ${result.result.categories_created} categories created`
+              title: isReplacing ? 'Menu replaced successfully' : 'Menu items added successfully',
+              description: `${result.result.items_created} items, ${result.result.categories_created} categories`
             });
             
             // Save extracted style to database if available
@@ -410,6 +410,23 @@ export function MenuUploadCard({ venueId, onSuccess }: MenuUploadCardProps) {
           </div>
         </div>
 
+        {/* Replace vs Append Toggle - Only shows AFTER first upload */}
+        {hasExistingUpload && (
+          <div className="flex items-center space-x-2 p-3 bg-muted rounded-md">
+            <Switch
+              id="replace-mode"
+              checked={isReplacing}
+              onCheckedChange={setIsReplacing}
+              disabled={isProcessing}
+            />
+            <Label htmlFor="replace-mode" className="text-sm font-medium cursor-pointer">
+              {isReplacing ? '🔄 Replace entire menu' : '➕ Append to existing menu'}
+            </Label>
+            <p className="text-xs text-muted-foreground ml-auto">
+              {isReplacing ? 'Deletes old items, uses new menu' : 'Keeps old items, adds new ones'}
+            </p>
+          </div>
+        )}
 
         <div className="space-y-2">
           <Label>Upload PDF Menu</Label>

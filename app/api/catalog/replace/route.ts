@@ -25,10 +25,12 @@ export async function POST(req: NextRequest) {
     const file = formData.get('file') as File;
     const venueId = formData.get('venue_id') as string;
     const menuUrl = formData.get('menu_url') as string | null;
+    const replaceMode = formData.get('replace_mode') !== 'false'; // Default to true
 
     console.log(`📋 [CATALOG REPLACE ${requestId}] Venue ID:`, venueId);
     console.log(`📋 [CATALOG REPLACE ${requestId}] File:`, file?.name, `(${file?.size} bytes)`);
     console.log(`📋 [CATALOG REPLACE ${requestId}] Menu URL:`, menuUrl || 'None');
+    console.log(`📋 [CATALOG REPLACE ${requestId}] Mode:`, replaceMode ? 'REPLACE' : 'APPEND');
 
     if (!file || !venueId) {
       console.error(`❌ [CATALOG REPLACE ${requestId}] Missing required fields`);
@@ -313,22 +315,26 @@ export async function POST(req: NextRequest) {
       }
     }
 
-    // Step 4: Clear existing catalog
-    console.log(`🗑️ [CATALOG REPLACE ${requestId}] Deleting old menu items...`);
-    const { error: deleteItemsError } = await supabase.from('menu_items').delete().eq('venue_id', venueId);
-    if (deleteItemsError) {
-      console.error(`❌ [CATALOG REPLACE ${requestId}] Failed to delete items:`, deleteItemsError);
-      throw new Error(`Failed to delete old items: ${deleteItemsError.message}`);
-    }
-    console.log(`✅ [CATALOG REPLACE ${requestId}] Old items deleted`);
+    // Step 4: Clear existing catalog (if replace mode)
+    if (replaceMode) {
+      console.log(`🗑️ [CATALOG REPLACE ${requestId}] REPLACE MODE - Deleting old menu items...`);
+      const { error: deleteItemsError } = await supabase.from('menu_items').delete().eq('venue_id', venueId);
+      if (deleteItemsError) {
+        console.error(`❌ [CATALOG REPLACE ${requestId}] Failed to delete items:`, deleteItemsError);
+        throw new Error(`Failed to delete old items: ${deleteItemsError.message}`);
+      }
+      console.log(`✅ [CATALOG REPLACE ${requestId}] Old items deleted`);
 
-    console.log(`🗑️ [CATALOG REPLACE ${requestId}] Deleting old hotspots...`);
-    const { error: deleteHotspotsError } = await supabase.from('menu_hotspots').delete().eq('venue_id', venueId);
-    if (deleteHotspotsError) {
-      console.error(`❌ [CATALOG REPLACE ${requestId}] Failed to delete hotspots:`, deleteHotspotsError);
-      throw new Error(`Failed to delete old hotspots: ${deleteHotspotsError.message}`);
+      console.log(`🗑️ [CATALOG REPLACE ${requestId}] Deleting old hotspots...`);
+      const { error: deleteHotspotsError } = await supabase.from('menu_hotspots').delete().eq('venue_id', venueId);
+      if (deleteHotspotsError) {
+        console.error(`❌ [CATALOG REPLACE ${requestId}] Failed to delete hotspots:`, deleteHotspotsError);
+        throw new Error(`Failed to delete old hotspots: ${deleteHotspotsError.message}`);
+      }
+      console.log(`✅ [CATALOG REPLACE ${requestId}] Old hotspots deleted`);
+    } else {
+      console.log(`➕ [CATALOG REPLACE ${requestId}] APPEND MODE - Keeping existing items`);
     }
-    console.log(`✅ [CATALOG REPLACE ${requestId}] Old hotspots deleted`);
 
     // Step 5: Extract and preserve category order
     const categoryOrder: string[] = [];
