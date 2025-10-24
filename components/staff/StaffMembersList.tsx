@@ -15,6 +15,7 @@ import {
 import { Badge } from "@/components/ui/badge";
 import { Switch } from "@/components/ui/switch";
 import { UserPlus, Calendar, Users } from "lucide-react";
+import { AddShiftModal } from "./AddShiftModal";
 
 type StaffMember = {
   id: string;
@@ -41,6 +42,8 @@ const StaffMembersList: React.FC<StaffMembersListProps> = ({
   const [role, setRole] = useState("Server");
   const [adding, setAdding] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [shiftModalOpen, setShiftModalOpen] = useState(false);
+  const [selectedStaffForShift, setSelectedStaffForShift] = useState<{ id: string; name: string } | null>(null);
 
   const handleAddStaff = async () => {
     if (!name.trim()) {
@@ -171,8 +174,8 @@ const StaffMembersList: React.FC<StaffMembersListProps> = ({
                       variant="outline"
                       size="sm"
                       onClick={() => {
-                        // TODO: Open add shift modal
-                        console.log('Add shift for:', member.name);
+                        setSelectedStaffForShift({ id: member.id, name: member.name });
+                        setShiftModalOpen(true);
                       }}
                     >
                       <Calendar className="h-4 w-4 mr-1" />
@@ -185,6 +188,20 @@ const StaffMembersList: React.FC<StaffMembersListProps> = ({
           )}
         </CardContent>
       </Card>
+
+      {/* Add Shift Modal */}
+      <AddShiftModal
+        isOpen={shiftModalOpen}
+        onClose={() => {
+          setShiftModalOpen(false);
+          setSelectedStaffForShift(null);
+        }}
+        staffMember={selectedStaffForShift}
+        venueId={venueId}
+        onShiftAdded={() => {
+          if (onStaffAdded) onStaffAdded();
+        }}
+      />
     </div>
   );
 };
