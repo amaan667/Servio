@@ -8,12 +8,6 @@ import { logger } from '@/lib/logger';
 export const runtime = 'nodejs';
 export const maxDuration = 300; // 5 minutes for processing
 
-// Dynamic import to avoid canvas build issues
-async function convertPDFToImages(pdfBuffer: Buffer): Promise<string[]> {
-  const { convertPDFToImages: convert } = await import('@/lib/pdf-to-images');
-  return convert(pdfBuffer);
-}
-
 /**
  * Unified Menu Import: PDF + Optional URL
  * Combines data from both sources for best results
@@ -50,13 +44,21 @@ export async function POST(req: NextRequest) {
 
     const supabase = createAdminClient();
 
-    // Step 1: Convert PDF to images
+    // Step 1: Convert PDF to images (fully dynamic to avoid canvas issues)
     console.log(`📄 [CATALOG REPLACE ${requestId}] Converting PDF to images...`);
     const pdfBuffer = Buffer.from(await file.arrayBuffer());
-    const pdfImages = await convertPDFToImages(pdfBuffer);
     
-    console.log(`✅ [CATALOG REPLACE ${requestId}] PDF converted: ${pdfImages.length} pages`);
-    logger.info(`[MENU IMPORT ${requestId}] Converted to images:`, { count: pdfImages.length });
+    let pdfImages: string[] = [];
+    try {
+      // Completely dynamic import - even the function call
+      const pdfModule = await import('@/lib/pdf-to-images');
+      pdfImages = await pdfModule.convertPDFToImages(pdfBuffer);
+      console.log(`✅ [CATALOG REPLACE ${requestId}] PDF converted: ${pdfImages.length} pages`);
+      logger.info(`[MENU IMPORT ${requestId}] Converted to images:`, { count: pdfImages.length });
+    } catch (conversionError) {
+      console.error(`❌ [CATALOG REPLACE ${requestId}] PDF conversion failed:`, conversionError);
+      throw new Error('PDF to image conversion failed - canvas library issue');
+    }
 
     // Step 2: Store PDF and images in database
     const { error: uploadError } = await supabase
