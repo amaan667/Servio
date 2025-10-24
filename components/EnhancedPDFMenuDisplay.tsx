@@ -66,13 +66,26 @@ export function EnhancedPDFMenuDisplay({
     return cached === 'true';
   };
 
-  const [pdfImages, setPdfImages] = useState<string[]>([]);
-  const [loading, setLoading] = useState(true);
-  const [hotspots, setHotspots] = useState<Hotspot[]>([]);
+  // Cache PDF images for instant load
+  const getCachedPdfImages = () => {
+    if (typeof window === 'undefined') return [];
+    const cached = sessionStorage.getItem(`pdf_images_${venueId}`);
+    return cached ? JSON.parse(cached) : [];
+  };
+
+  const getCachedHotspots = () => {
+    if (typeof window === 'undefined') return [];
+    const cached = sessionStorage.getItem(`hotspots_${venueId}`);
+    return cached ? JSON.parse(cached) : [];
+  };
+
+  const [pdfImages, setPdfImages] = useState<string[]>(getCachedPdfImages());
+  const [loading, setLoading] = useState(false);
+  const [hotspots, setHotspots] = useState<Hotspot[]>(getCachedHotspots());
   const [selectedItem, setSelectedItem] = useState<MenuItem | null>(null);
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [viewMode, setViewMode] = useState<'pdf' | 'list'>('pdf'); // PDF view with auto-generated hotspots
-  const [hasPdfImages, setHasPdfImages] = useState(hasPdfImagesInCache());
+  const [hasPdfImages, setHasPdfImages] = useState(hasPdfImagesInCache() || getCachedPdfImages().length > 0);
   const [searchQuery, setSearchQuery] = useState('');
   const [zoomLevel, setZoomLevel] = useState(1);
   const [imagePosition, setImagePosition] = useState({ x: 0, y: 0 });
@@ -117,9 +130,10 @@ export function EnhancedPDFMenuDisplay({
           console.log('[PDF MENU] ✅ PDF images loaded, enabling PDF view');
           setPdfImages(images);
           setHasPdfImages(true);
-          // Cache the fact that PDF images exist
+          // Cache PDF images for instant load next time
           if (typeof window !== 'undefined') {
             sessionStorage.setItem(`has_pdf_images_${venueId}`, 'true');
+            sessionStorage.setItem(`pdf_images_${venueId}`, JSON.stringify(images));
           }
         } else {
           console.log('[PDF MENU] ⚠️ No PDF images found, defaulting to list view');
@@ -127,6 +141,7 @@ export function EnhancedPDFMenuDisplay({
           setHasPdfImages(false);
           if (typeof window !== 'undefined') {
             sessionStorage.setItem(`has_pdf_images_${venueId}`, 'false');
+            sessionStorage.removeItem(`pdf_images_${venueId}`);
           }
         }
       } catch (error) {
@@ -164,6 +179,11 @@ export function EnhancedPDFMenuDisplay({
           }
           
           setHotspots(existingHotspots);
+          
+          // Cache hotspots for instant load
+          if (typeof window !== 'undefined') {
+            sessionStorage.setItem(`hotspots_${venueId}`, JSON.stringify(existingHotspots));
+          }
         } else {
           // Auto-generate hotspots if none exist and we have PDF images
           if (pdfImages.length > 0 && menuItems.length > 0) {
@@ -173,6 +193,11 @@ export function EnhancedPDFMenuDisplay({
             
             // Save to database
             await saveHotspotsToDatabase(venueId, generatedHotspots, supabase);
+            
+            // Cache generated hotspots
+            if (typeof window !== 'undefined') {
+              sessionStorage.setItem(`hotspots_${venueId}`, JSON.stringify(generatedHotspots));
+            }
           }
         }
       } catch (error) {
@@ -461,7 +486,7 @@ export function EnhancedPDFMenuDisplay({
                   />
 
                   {/* Smart Overlay Cards - Professional bounding box system */}
-                  {isOrdering && pageHotspots.map((hotspot) => {
+                  {pageHotspots.map((hotspot) => {
                     const item = menuItems.find(i => i.id === hotspot.menu_item_id);
                     if (!item) return null;
 
