@@ -343,6 +343,7 @@ export function MenuUploadCard({ venueId, onSuccess }: MenuUploadCardProps) {
         )}
 
         <div className="space-y-2">
+          <Label>Upload PDF Menu</Label>
           {/* Drag and Drop Area */}
           <div
             className={`border-2 border-dashed rounded-lg p-6 text-center transition-colors ${
@@ -356,15 +357,20 @@ export function MenuUploadCard({ venueId, onSuccess }: MenuUploadCardProps) {
           >
             <FileText className="h-8 w-8 mx-auto mb-2 text-gray-900" />
             <p className="text-sm text-gray-900 mb-2">
-              Drag and drop your menu file here, or
+              Drag and drop your menu PDF here, or
             </p>
+            {menuUrl && (
+              <p className="text-xs text-muted-foreground mb-2">
+                Will combine with URL data for best results
+              </p>
+            )}
             <Button
               variant="outline"
               onClick={() => fileInputRef.current?.click()}
               disabled={isProcessing}
             >
               <FileText className="h-4 w-4 mr-2" />
-              {isProcessing ? 'Processing...' : 'Choose File'}
+              {isProcessing ? 'Processing...' : (menuUrl ? 'Upload PDF & Process' : 'Choose PDF')}
             </Button>
             <input
               ref={fileInputRef}
