@@ -410,20 +410,6 @@ export function MenuUploadCard({ venueId, onSuccess }: MenuUploadCardProps) {
           </div>
         </div>
 
-        {/* Replace vs Append Toggle - Only show if there's an existing upload */}
-        {hasExistingUpload && (
-          <div className="flex items-center space-x-2">
-            <Switch
-              id="replace-mode"
-              checked={isReplacing}
-              onCheckedChange={setIsReplacing}
-              disabled={isProcessing}
-            />
-            <Label htmlFor="replace-mode" className="text-sm font-medium text-gray-900">
-              {isReplacing ? 'Replace Catalog' : 'Append to Catalog'}
-            </Label>
-          </div>
-        )}
 
         <div className="space-y-2">
           <Label>Upload PDF Menu</Label>
