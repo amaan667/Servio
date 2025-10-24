@@ -11,6 +11,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from 
 import { supabaseBrowser as createClient } from "@/lib/supabase";
 import { Plus, Edit, Trash2, ShoppingBag, Trash, ChevronDown, ChevronRight, Save, Eye, Settings, Upload, Grid, GripVertical, Palette } from "lucide-react";
 import { MenuUploadCard } from "@/components/MenuUploadCard";
+import { MenuUrlImportCard } from "@/components/MenuUrlImportCard";
 import { CategoriesManagement } from "@/components/CategoriesManagement";
 import { MenuPreview } from "@/components/MenuPreview";
 import { EnhancedPDFMenuDisplay } from "@/components/EnhancedPDFMenuDisplay";
@@ -286,6 +287,9 @@ export default function MenuManagementClient({ venueId, canEdit = true }: { venu
               <MenuUploadCard venueId={venueId} onSuccess={() => loadMenuItems()} />
             </CardContent>
           </Card>
+
+          {/* Menu URL Import */}
+          <MenuUrlImportCard venueId={venueId} onSuccess={() => loadMenuItems()} />
 
           {menuItems.length > 0 && (
             <Card>
