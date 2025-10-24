@@ -129,6 +129,7 @@ export async function POST(req: NextRequest) {
     const menuItems = [];
     const hotspots = [];
     const combinedItems = new Map();
+    let itemPosition = 0; // Track insertion order for proper sorting
 
     // If we have both URL and PDF data, merge them
     if (urlItems.length > 0 && pdfExtractedItems.length > 0) {
@@ -159,6 +160,7 @@ export async function POST(req: NextRequest) {
           category: urlItem.category || pdfMatch?.category || 'Menu Items',
           image_url: urlItem.image_url || null,
           is_available: true,
+          position: itemPosition++,
           created_at: new Date().toISOString(),
         });
 
@@ -194,13 +196,16 @@ export async function POST(req: NextRequest) {
             calculateSimilarity(pdfItem.name, pos.name) > 0.7
           );
 
-          // Remove 'page' field if it exists - not in database schema
-          const { page, ...itemWithoutPage } = pdfItem;
           menuItems.push({
             id: itemId,
             venue_id: venueId,
-            ...itemWithoutPage,
+            name: pdfItem.name,
+            description: pdfItem.description || '',
+            price: pdfItem.price,
+            category: pdfItem.category,
+            image_url: pdfItem.image_url || null,
             is_available: true,
+            position: itemPosition++,
             created_at: new Date().toISOString(),
           });
 
@@ -241,6 +246,7 @@ export async function POST(req: NextRequest) {
           category: item.category,
           image_url: item.image_url || null,
           is_available: true,
+          position: itemPosition++,
           created_at: new Date().toISOString(),
         });
 
@@ -281,6 +287,7 @@ export async function POST(req: NextRequest) {
           category: item.category,
           image_url: item.image_url || null,
           is_available: true,
+          position: itemPosition++,
           created_at: new Date().toISOString(),
         });
 
@@ -323,7 +330,29 @@ export async function POST(req: NextRequest) {
     }
     console.log(`✅ [CATALOG REPLACE ${requestId}] Old hotspots deleted`);
 
-    // Step 5: Insert new items and hotspots
+    // Step 5: Extract and preserve category order
+    const categoryOrder: string[] = [];
+    const seenCategories = new Set<string>();
+    
+    // Preserve order from Vision AI extraction (matches PDF order)
+    for (const item of pdfExtractedItems) {
+      if (item.category && !seenCategories.has(item.category)) {
+        categoryOrder.push(item.category);
+        seenCategories.add(item.category);
+      }
+    }
+    
+    // Add URL categories if any new ones
+    for (const item of urlItems) {
+      if (item.category && !seenCategories.has(item.category)) {
+        categoryOrder.push(item.category);
+        seenCategories.add(item.category);
+      }
+    }
+    
+    console.log(`📋 [CATALOG REPLACE ${requestId}] Category order:`, categoryOrder);
+
+    // Step 6: Insert new items and hotspots
     if (menuItems.length > 0) {
       console.log(`💾 [CATALOG REPLACE ${requestId}] Inserting ${menuItems.length} new items...`);
       const { error: insertItemsError, data: insertedItems } = await supabase.from('menu_items').insert(menuItems).select();
@@ -342,6 +371,18 @@ export async function POST(req: NextRequest) {
         throw new Error(`Failed to insert hotspots: ${insertHotspotsError.message}`);
       }
       console.log(`✅ [CATALOG REPLACE ${requestId}] Inserted ${insertedHotspots?.length || 0} hotspots`);
+    }
+
+    // Step 7: Save category order to menu_uploads
+    if (categoryOrder.length > 0) {
+      console.log(`💾 [CATALOG REPLACE ${requestId}] Saving category order...`);
+      await supabase
+        .from('menu_uploads')
+        .update({ category_order: categoryOrder })
+        .eq('venue_id', venueId)
+        .order('created_at', { ascending: false })
+        .limit(1);
+      console.log(`✅ [CATALOG REPLACE ${requestId}] Category order saved:`, categoryOrder);
     }
 
     const duration = Date.now() - startTime;
