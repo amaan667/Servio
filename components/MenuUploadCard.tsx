@@ -24,6 +24,7 @@ export function MenuUploadCard({ venueId, onSuccess }: MenuUploadCardProps) {
   const [isDragOver, setIsDragOver] = useState(false);
   const [hasExistingUpload, setHasExistingUpload] = useState(false);
   const [menuUrl, setMenuUrl] = useState(''); // Add URL input for hybrid import
+  const [lastProcessedUrl, setLastProcessedUrl] = useState(''); // Track last processed URL to prevent loops
   const fileInputRef = useRef<HTMLInputElement>(null);
   const { toast } = useToast();
   const supabase = createClient();
@@ -57,15 +58,23 @@ export function MenuUploadCard({ venueId, onSuccess }: MenuUploadCardProps) {
     // 1. URL is entered and valid
     // 2. Existing PDF exists
     // 3. Not already processing
-    if (menuUrl && menuUrl.trim() && menuUrl.startsWith('http') && hasExistingUpload && !isProcessing) {
+    // 4. Haven't already processed this URL
+    if (
+      menuUrl && 
+      menuUrl.trim() && 
+      menuUrl.startsWith('http') && 
+      hasExistingUpload && 
+      !isProcessing &&
+      menuUrl !== lastProcessedUrl
+    ) {
       // Debounce to avoid processing on every keystroke
       const timer = setTimeout(async () => {
         await processExistingPdfWithUrl();
-      }, 1000); // Wait 1 second after user stops typing
+      }, 1500); // Wait 1.5 seconds after user stops typing
 
       return () => clearTimeout(timer);
     }
-  }, [menuUrl, hasExistingUpload, isProcessing]);
+  }, [menuUrl, hasExistingUpload]);
 
   // Save extracted style to database
   const saveExtractedStyle = async (extractedText: string) => {
@@ -282,9 +291,11 @@ export function MenuUploadCard({ venueId, onSuccess }: MenuUploadCardProps) {
 
   const processExistingPdfWithUrl = async () => {
     setIsProcessing(true);
+    console.log('[MENU UPLOAD] Starting auto-process with URL:', menuUrl);
 
     try {
       // Get the existing PDF from menu_uploads
+      console.log('[MENU UPLOAD] Fetching existing PDF for venue:', venueId);
       const { data: uploadData } = await supabase
         .from('menu_uploads')
         .select('filename')
@@ -297,15 +308,21 @@ export function MenuUploadCard({ venueId, onSuccess }: MenuUploadCardProps) {
         throw new Error('No existing PDF found. Please upload a PDF first.');
       }
 
+      console.log('[MENU UPLOAD] Found PDF:', uploadData.filename);
+
       // Download the PDF from storage
+      console.log('[MENU UPLOAD] Downloading PDF from storage...');
       const { data: pdfBlob, error: downloadError } = await supabase
         .storage
         .from('menus')
         .download(uploadData.filename);
 
       if (downloadError || !pdfBlob) {
+        console.error('[MENU UPLOAD] Download error:', downloadError);
         throw new Error('Failed to retrieve existing PDF');
       }
+
+      console.log('[MENU UPLOAD] PDF downloaded, size:', pdfBlob.size);
 
       // Convert blob to file
       const pdfFile = new File([pdfBlob], 'menu.pdf', { type: 'application/pdf' });
@@ -316,19 +333,28 @@ export function MenuUploadCard({ venueId, onSuccess }: MenuUploadCardProps) {
       formData.append('venue_id', venueId);
       formData.append('menu_url', menuUrl.trim());
 
+      console.log('[MENU UPLOAD] Sending to /api/catalog/replace...');
       const response = await fetch('/api/catalog/replace', {
         method: 'POST',
         body: formData
       });
 
+      console.log('[MENU UPLOAD] Response status:', response.status);
+
       if (!response.ok) {
         const errorText = await response.text();
+        console.error('[MENU UPLOAD] Error response:', errorText);
         throw new Error(`Processing failed: ${response.status} - ${errorText}`);
       }
 
       const result = await response.json();
+      console.log('[MENU UPLOAD] Result:', result);
 
       if (result.ok) {
+        // Mark this URL as processed
+        setLastProcessedUrl(menuUrl);
+        console.log('[MENU UPLOAD] Success! Marked URL as processed.');
+        
         toast({
           title: 'Menu processed successfully',
           description: `Combined PDF and URL data: ${result.result.items_created} items, ${result.result.categories_created} categories`
@@ -338,6 +364,7 @@ export function MenuUploadCard({ venueId, onSuccess }: MenuUploadCardProps) {
         throw new Error(`Processing failed: ${result.error}`);
       }
     } catch (error) {
+      console.error('[MENU UPLOAD] Processing error:', error);
       toast({
         title: 'Processing failed',
         description: error instanceof Error ? error.message : 'Unknown error',
@@ -345,6 +372,7 @@ export function MenuUploadCard({ venueId, onSuccess }: MenuUploadCardProps) {
       });
     } finally {
       setIsProcessing(false);
+      console.log('[MENU UPLOAD] Processing complete, isProcessing set to false');
     }
   };
 

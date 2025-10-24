@@ -19,30 +19,44 @@ async function convertPDFToImages(pdfBuffer: Buffer): Promise<string[]> {
  * Combines data from both sources for best results
  */
 export async function POST(req: NextRequest) {
+  const startTime = Date.now();
+  const requestId = Math.random().toString(36).substring(7);
+  
   try {
+    console.log(`🚀 [CATALOG REPLACE ${requestId}] ========================================`);
+    console.log(`🚀 [CATALOG REPLACE ${requestId}] New request started`);
+    console.log(`🚀 [CATALOG REPLACE ${requestId}] Timestamp:`, new Date().toISOString());
+    
     const formData = await req.formData();
     const file = formData.get('file') as File;
     const venueId = formData.get('venue_id') as string;
     const menuUrl = formData.get('menu_url') as string | null;
 
+    console.log(`📋 [CATALOG REPLACE ${requestId}] Venue ID:`, venueId);
+    console.log(`📋 [CATALOG REPLACE ${requestId}] File:`, file?.name, `(${file?.size} bytes)`);
+    console.log(`📋 [CATALOG REPLACE ${requestId}] Menu URL:`, menuUrl || 'None');
+
     if (!file || !venueId) {
+      console.error(`❌ [CATALOG REPLACE ${requestId}] Missing required fields`);
       return NextResponse.json(
         { ok: false, error: 'file and venue_id required' },
         { status: 400 }
       );
     }
 
-    logger.info('[MENU IMPORT] Starting...');
-    logger.info('[MENU IMPORT] Venue:', { venueId });
-    logger.info('[MENU IMPORT] Has URL:', { hasUrl: !!menuUrl });
+    logger.info(`[MENU IMPORT ${requestId}] Starting...`);
+    logger.info(`[MENU IMPORT ${requestId}] Venue:`, { venueId });
+    logger.info(`[MENU IMPORT ${requestId}] Has URL:`, { hasUrl: !!menuUrl });
 
     const supabase = createAdminClient();
 
     // Step 1: Convert PDF to images
+    console.log(`📄 [CATALOG REPLACE ${requestId}] Converting PDF to images...`);
     const pdfBuffer = Buffer.from(await file.arrayBuffer());
     const pdfImages = await convertPDFToImages(pdfBuffer);
     
-    logger.info('[MENU IMPORT] Converted to images:', { count: pdfImages.length });
+    console.log(`✅ [CATALOG REPLACE ${requestId}] PDF converted: ${pdfImages.length} pages`);
+    logger.info(`[MENU IMPORT ${requestId}] Converted to images:`, { count: pdfImages.length });
 
     // Step 2: Store PDF and images in database
     const { error: uploadError } = await supabase
