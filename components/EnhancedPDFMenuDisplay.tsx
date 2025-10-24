@@ -59,12 +59,20 @@ export function EnhancedPDFMenuDisplay({
   onUpdateQuantity,
   isOrdering = false
 }: EnhancedPDFMenuDisplayProps) {
+  // Check cache for PDF images existence to prevent flicker
+  const hasPdfImagesInCache = () => {
+    if (typeof window === 'undefined') return false;
+    const cached = sessionStorage.getItem(`has_pdf_images_${venueId}`);
+    return cached === 'true';
+  };
+
   const [pdfImages, setPdfImages] = useState<string[]>([]);
   const [loading, setLoading] = useState(true);
   const [hotspots, setHotspots] = useState<Hotspot[]>([]);
   const [selectedItem, setSelectedItem] = useState<MenuItem | null>(null);
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [viewMode, setViewMode] = useState<'pdf' | 'list'>('pdf'); // PDF view with auto-generated hotspots
+  const [hasPdfImages, setHasPdfImages] = useState(hasPdfImagesInCache());
   const [searchQuery, setSearchQuery] = useState('');
   const [zoomLevel, setZoomLevel] = useState(1);
   const [imagePosition, setImagePosition] = useState({ x: 0, y: 0 });
@@ -102,9 +110,18 @@ export function EnhancedPDFMenuDisplay({
         if (uploadData && images && images.length > 0) {
           console.log('[PDF MENU] ✅ PDF images loaded, enabling PDF view');
           setPdfImages(images);
+          setHasPdfImages(true);
+          // Cache the fact that PDF images exist
+          if (typeof window !== 'undefined') {
+            sessionStorage.setItem(`has_pdf_images_${venueId}`, 'true');
+          }
         } else {
           console.log('[PDF MENU] ⚠️ No PDF images found, defaulting to list view');
           setViewMode('list');
+          setHasPdfImages(false);
+          if (typeof window !== 'undefined') {
+            sessionStorage.setItem(`has_pdf_images_${venueId}`, 'false');
+          }
         }
       } catch (error) {
         console.error('[PDF MENU] ❌ Error fetching PDF images:', error);
@@ -351,7 +368,7 @@ export function EnhancedPDFMenuDisplay({
       {/* View Mode Toggle */}
       <div className="flex items-center justify-between mb-4">
         <div className="flex items-center space-x-2">
-          {pdfImages.length > 0 && (
+          {hasPdfImages && (
             <Button
               variant={viewMode === 'pdf' ? 'default' : 'outline'}
               size="sm"
