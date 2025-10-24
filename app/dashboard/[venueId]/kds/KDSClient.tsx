@@ -49,11 +49,23 @@ interface KDSClientProps {
 }
 
 export default function KDSClient({ venueId }: KDSClientProps) {
-  const [stations, setStations] = useState<KDSStation[]>([]);
+  // Cache KDS stations to prevent flicker
+  const getCachedStations = () => {
+    if (typeof window === 'undefined') return [];
+    const cached = sessionStorage.getItem(`kds_stations_${venueId}`);
+    return cached ? JSON.parse(cached) : [];
+  };
+
+  const getCachedSelectedStation = () => {
+    if (typeof window === 'undefined') return null;
+    return sessionStorage.getItem(`kds_selected_station_${venueId}`);
+  };
+
+  const [stations, setStations] = useState<KDSStation[]>(getCachedStations());
   const [tickets, setTickets] = useState<KDSTicket[]>([]);
   const [loading, setLoading] = useState(false); // Start with false to prevent flicker
   const [error, setError] = useState<string | null>(null);
-  const [selectedStation, setSelectedStation] = useState<string | null>(null);
+  const [selectedStation, setSelectedStation] = useState<string | null>(getCachedSelectedStation());
   const [autoRefresh, setAutoRefresh] = useState(true);
   const [refreshInterval, setRefreshInterval] = useState(5); // seconds
 
@@ -65,10 +77,19 @@ export default function KDSClient({ venueId }: KDSClientProps) {
       const data = await response.json();
 
       if (data.ok) {
-        setStations(data.stations || []);
+        const fetchedStations = data.stations || [];
+        setStations(fetchedStations);
+        // Cache stations to prevent flicker
+        if (typeof window !== 'undefined') {
+          sessionStorage.setItem(`kds_stations_${venueId}`, JSON.stringify(fetchedStations));
+        }
         // Auto-select first station if none selected
-        if (!selectedStation && data.stations?.length > 0) {
-          setSelectedStation(data.stations[0].id);
+        if (!selectedStation && fetchedStations.length > 0) {
+          const firstStationId = fetchedStations[0].id;
+          setSelectedStation(firstStationId);
+          if (typeof window !== 'undefined') {
+            sessionStorage.setItem(`kds_selected_station_${venueId}`, firstStationId);
+          }
         }
       } else {
         setError(data.error || "Failed to load stations");

@@ -13,7 +13,8 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { Badge } from "@/components/ui/badge";
-import { UserPlus, UserMinus, Users } from "lucide-react";
+import { Switch } from "@/components/ui/switch";
+import { UserPlus, Calendar, Users } from "lucide-react";
 
 type StaffMember = {
   id: string;
@@ -156,18 +157,27 @@ const StaffMembersList: React.FC<StaffMembersListProps> = ({
                       {member.active ? "Active" : "Inactive"}
                     </Badge>
                   </div>
-                  <div className="flex gap-2 mt-3">
-                    {onStaffToggle && (
-                      <Button
-                        variant="outline"
-                        size="sm"
-                        onClick={() => onStaffToggle(member.id, member.active)}
-                        className="flex-1"
-                      >
-                        <UserMinus className="h-4 w-4 mr-1" />
-                        {member.active ? "Deactivate" : "Activate"}
-                      </Button>
-                    )}
+                  <div className="flex items-center justify-between mt-3 pt-3 border-t">
+                    <div className="flex items-center gap-2">
+                      <span className="text-sm text-gray-600">Active</span>
+                      {onStaffToggle && (
+                        <Switch
+                          checked={member.active}
+                          onCheckedChange={() => onStaffToggle(member.id, member.active)}
+                        />
+                      )}
+                    </div>
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      onClick={() => {
+                        // TODO: Open add shift modal
+                        console.log('Add shift for:', member.name);
+                      }}
+                    >
+                      <Calendar className="h-4 w-4 mr-1" />
+                      Add Shift
+                    </Button>
                   </div>
                 </div>
               ))}

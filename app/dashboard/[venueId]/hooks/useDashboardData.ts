@@ -27,10 +27,23 @@ export function useDashboardData(
   initialCounts?: DashboardCounts,
   initialStats?: DashboardStats
 ) {
+  // Cache dashboard data to prevent flicker when navigating back
+  const getCachedCounts = () => {
+    if (typeof window === 'undefined') return null;
+    const cached = sessionStorage.getItem(`dashboard_counts_${venueId}`);
+    return cached ? JSON.parse(cached) : null;
+  };
+
+  const getCachedStats = () => {
+    if (typeof window === 'undefined') return null;
+    const cached = sessionStorage.getItem(`dashboard_stats_${venueId}`);
+    return cached ? JSON.parse(cached) : null;
+  };
+
   const [venue, setVenue] = useState<unknown>(initialVenue);
   const [loading, setLoading] = useState(false); // Start with false to prevent flicker
   const [counts, setCounts] = useState<DashboardCounts>(
-    initialCounts || {
+    initialCounts || getCachedCounts() || {
       live_count: 0,
       earlier_today_count: 0,
       history_count: 0,
@@ -42,7 +55,7 @@ export function useDashboardData(
     }
   );
   const [stats, setStats] = useState<DashboardStats>(
-    initialStats || { revenue: 0, menuItems: 0, unpaid: 0 }
+    initialStats || getCachedStats() || { revenue: 0, menuItems: 0, unpaid: 0 }
   );
   const [statsLoaded, setStatsLoaded] = useState(false);
   const [todayWindow, setTodayWindow] = useState<unknown>(null);
@@ -70,12 +83,17 @@ export function useDashboardData(
         const revenue = orders?.reduce((sum, order) => sum + (order.total_amount || 0), 0) || 0;
         const unpaid = orders?.filter((o) => o.order_status === "UNPAID").length || 0;
 
-        setStats({
+        const newStats = {
           revenue,
           menuItems: menuItems?.length || 0,
           unpaid,
-        });
+        };
+        setStats(newStats);
         setStatsLoaded(true);
+        // Cache the stats to prevent flicker
+        if (typeof window !== 'undefined') {
+          sessionStorage.setItem(`dashboard_stats_${venueId}`, JSON.stringify(newStats));
+        }
       } catch (err) {
         console.error("Failed to load stats:", err);
       }
@@ -112,17 +130,20 @@ export function useDashboardData(
       if (newCounts && typeof newCounts === "object") {
         const counts = newCounts as DashboardCounts;
 
-        if (tableCounters && Array.isArray(tableCounters) && tableCounters.length > 0) {
-          const tableCounter = tableCounters[0] as unknown;
-          setCounts({
-            ...counts,
-            tables_set_up: tableCounter.tables_set_up || 0,
-            tables_in_use: tableCounter.tables_in_use || 0,
-            tables_reserved_now: tableCounter.tables_reserved_now || 0,
-            active_tables_count: tableCounter.active_tables_count || 0,
-          });
-        } else {
-          setCounts(counts);
+        const finalCounts = tableCounters && Array.isArray(tableCounters) && tableCounters.length > 0
+          ? {
+              ...counts,
+              tables_set_up: tableCounters[0].tables_set_up || 0,
+              tables_in_use: tableCounters[0].tables_in_use || 0,
+              tables_reserved_now: tableCounters[0].tables_reserved_now || 0,
+              active_tables_count: tableCounters[0].active_tables_count || 0,
+            }
+          : counts;
+
+        setCounts(finalCounts);
+        // Cache the counts to prevent flicker
+        if (typeof window !== 'undefined') {
+          sessionStorage.setItem(`dashboard_counts_${venueId}`, JSON.stringify(finalCounts));
         }
       }
     } catch (err) {
