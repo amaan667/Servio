@@ -20,8 +20,16 @@ interface TrialStatusBannerProps {
 
 export default function TrialStatusBanner({ userRole }: TrialStatusBannerProps) {
   const { user } = useAuth();
-  const [trialStatus, setTrialStatus] = useState<TrialStatus | null>(null);
-  const [loading, setLoading] = useState(true);
+  
+  // Cache trial status to prevent flicker
+  const getCachedTrialStatus = () => {
+    if (typeof window === 'undefined' || !user?.id) return null;
+    const cached = sessionStorage.getItem(`trial_status_${user.id}`);
+    return cached ? JSON.parse(cached) : null;
+  };
+  
+  const [trialStatus, setTrialStatus] = useState<TrialStatus | null>(getCachedTrialStatus());
+  const [loading, setLoading] = useState(false);
 
   // Only show trial status banner for owners
   if (userRole && userRole !== "owner") {
@@ -63,13 +71,17 @@ export default function TrialStatusBanner({ userRole }: TrialStatusBannerProps) 
           Math.floor((trialEndsAt.getTime() - Date.now()) / (1000 * 60 * 60 * 24))
         );
 
-        setTrialStatus({
+        const defaultStatus = {
           isTrialing: true,
           subscriptionStatus: "trialing",
           tier: "basic",
           trialEndsAt: trialEndsAt.toISOString(),
           daysRemaining,
-        });
+        };
+        setTrialStatus(defaultStatus);
+        if (typeof window !== 'undefined') {
+          sessionStorage.setItem(`trial_status_${user.id}`, JSON.stringify(defaultStatus));
+        }
         setLoading(false);
         return;
       }
@@ -98,13 +110,17 @@ export default function TrialStatusBanner({ userRole }: TrialStatusBannerProps) 
           Math.floor((trialEndsAt.getTime() - Date.now()) / (1000 * 60 * 60 * 24))
         );
 
-        setTrialStatus({
+        const status = {
           isTrialing: true,
           subscriptionStatus: "trialing",
           tier: "basic",
           trialEndsAt: trialEndsAt.toISOString(),
           daysRemaining,
-        });
+        };
+        setTrialStatus(status);
+        if (typeof window !== 'undefined') {
+          sessionStorage.setItem(`trial_status_${user.id}`, JSON.stringify(status));
+        }
       }
     } catch (error) {
       console.error("[TRIAL BANNER] Fetch error:", error);
@@ -116,13 +132,17 @@ export default function TrialStatusBanner({ userRole }: TrialStatusBannerProps) 
         Math.floor((trialEndsAt.getTime() - Date.now()) / (1000 * 60 * 60 * 24))
       );
 
-      setTrialStatus({
+      const status = {
         isTrialing: true,
         subscriptionStatus: "trialing",
         tier: "basic",
         trialEndsAt: trialEndsAt.toISOString(),
         daysRemaining,
-      });
+      };
+      setTrialStatus(status);
+      if (typeof window !== 'undefined') {
+        sessionStorage.setItem(`trial_status_${user.id}`, JSON.stringify(status));
+      }
     } finally {
       setLoading(false);
     }
@@ -159,14 +179,17 @@ export default function TrialStatusBanner({ userRole }: TrialStatusBannerProps) 
     }
 
     // Final trial status calculated
-
-    setTrialStatus({
+    const status = {
       isTrialing,
       subscriptionStatus,
       tier,
       trialEndsAt,
       daysRemaining,
-    });
+    };
+    setTrialStatus(status);
+    if (typeof window !== 'undefined' && user?.id) {
+      sessionStorage.setItem(`trial_status_${user.id}`, JSON.stringify(status));
+    }
   };
 
   useEffect(() => {
