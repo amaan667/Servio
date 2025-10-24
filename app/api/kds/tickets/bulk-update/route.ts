@@ -70,17 +70,15 @@ export async function PATCH(_req: Request) {
       return NextResponse.json({ ok: false, error: error.message }, { status: 500 });
     }
 
-    // If bumping tickets, also update the main order status to SERVED and close table session
+    // If bumping tickets, update the main order status to READY (not SERVED - that comes later)
     if (status === "bumped" && orderId) {
-      const { data: updatedOrder, error: orderUpdateError } = await supabase
+      const { error: orderUpdateError } = await supabase
         .from("orders")
         .update({
-          order_status: "SERVED",
+          order_status: "READY",
           updated_at: now,
         })
-        .eq("id", orderId)
-        .select('venue_id, table_id, table_number')
-        .single();
+        .eq("id", orderId);
 
       if (orderUpdateError) {
         logger.error("[KDS] Error updating order status after bump:", {
@@ -88,28 +86,7 @@ export async function PATCH(_req: Request) {
         });
         // Don't fail the request, just log the error
       } else {
-        logger.debug("[KDS] Updated order status to SERVED after bump", { orderId });
-        
-        // Close table session and free the table
-        if (updatedOrder?.table_id) {
-          try {
-            const { cleanupTableOnOrderCompletion } = await import('@/lib/table-cleanup');
-            const cleanupResult = await cleanupTableOnOrderCompletion({
-              venueId: updatedOrder.venue_id,
-              tableId: updatedOrder.table_id,
-              tableNumber: updatedOrder.table_number,
-              orderId: orderId
-            });
-            
-            if (!cleanupResult.success) {
-              logger.error('[KDS] Table cleanup failed after bump:', cleanupResult.error);
-            } else {
-              logger.info('[KDS] Table closed successfully after order served');
-            }
-          } catch (cleanupError) {
-            logger.error('[KDS] Error during table cleanup:', cleanupError);
-          }
-        }
+        logger.debug("[KDS] Updated order status to READY after bump - staff can now mark as SERVED", { orderId });
       }
     }
 

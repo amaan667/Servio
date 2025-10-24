@@ -129,13 +129,18 @@ export function useOrderSubmission() {
 
       console.log('[ORDER SUBMIT] Creating order...', orderData);
       
-      const response = await fetch('/api/orders', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(orderData),
-      });
-
-      console.log('[ORDER SUBMIT] Response status:', response.status);
+      let response;
+      try {
+        response = await fetch('/api/orders', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(orderData),
+        });
+        console.log('[ORDER SUBMIT] Response status:', response.status);
+      } catch (fetchError) {
+        console.error('[ORDER SUBMIT] Network error:', fetchError);
+        throw new Error('Network error - please check your connection and try again');
+      }
 
       if (!response.ok) {
         let errorMessage = `Failed to create order (${response.status})`;
