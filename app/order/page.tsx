@@ -163,6 +163,16 @@ export default function CustomerOrderPage() {
   }, [loadingMenu, menuItems.length, menuError, venueName, venueSlug]);
 
   const handleSubmitOrder = () => {
+    console.log('🎯 [ORDER PAGE] ========================================');
+    console.log('🎯 [ORDER PAGE] handleSubmitOrder CALLED');
+    console.log('🎯 [ORDER PAGE] Cart items:', cart.length);
+    console.log('🎯 [ORDER PAGE] Customer info:', customerInfo);
+    console.log('🎯 [ORDER PAGE] Venue slug:', venueSlug);
+    console.log('🎯 [ORDER PAGE] Table number:', tableNumber);
+    console.log('🎯 [ORDER PAGE] Order type:', orderType);
+    console.log('🎯 [ORDER PAGE] Is submitting:', isSubmitting);
+    console.log('🎯 [ORDER PAGE] ========================================');
+    
     submitOrder({
       cart,
       customerInfo,
