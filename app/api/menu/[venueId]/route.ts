@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { createAdminClient } from '@/lib/supabase';
-import { cache, cacheKeys, cacheTTL } from '@/lib/cache';
+import { cache, cacheKeys, cacheTTL } from '@/lib/cache/index';
 import { logger } from '@/lib/logger';
 
 export async function GET(
