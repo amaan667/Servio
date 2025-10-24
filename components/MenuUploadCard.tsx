@@ -254,16 +254,17 @@ export function MenuUploadCard({ venueId, onSuccess }: MenuUploadCardProps) {
     }
   };
 
-  const handleReprocessWithUrl = async () => {
-    if (!menuUrl || !menuUrl.trim()) {
-      toast({
-        title: 'No URL provided',
-        description: 'Please enter a menu URL first',
-        variant: 'destructive'
-      });
-      return;
+  const handleButtonClick = async () => {
+    // If we have both a URL and existing PDF, process with existing PDF
+    if (menuUrl && menuUrl.trim() && hasExistingUpload) {
+      await processExistingPdfWithUrl();
+    } else {
+      // Otherwise, open file picker
+      fileInputRef.current?.click();
     }
+  };
 
+  const processExistingPdfWithUrl = async () => {
     setIsProcessing(true);
 
     try {
@@ -306,23 +307,23 @@ export function MenuUploadCard({ venueId, onSuccess }: MenuUploadCardProps) {
 
       if (!response.ok) {
         const errorText = await response.text();
-        throw new Error(`Re-processing failed: ${response.status} - ${errorText}`);
+        throw new Error(`Processing failed: ${response.status} - ${errorText}`);
       }
 
       const result = await response.json();
 
       if (result.ok) {
         toast({
-          title: 'Menu re-processed successfully',
+          title: 'Menu processed successfully',
           description: `Combined PDF and URL data: ${result.result.items_created} items, ${result.result.categories_created} categories`
         });
         onSuccess?.();
       } else {
-        throw new Error(`Re-processing failed: ${result.error}`);
+        throw new Error(`Processing failed: ${result.error}`);
       }
     } catch (error) {
       toast({
-        title: 'Re-processing failed',
+        title: 'Processing failed',
         description: error instanceof Error ? error.message : 'Unknown error',
         variant: 'destructive'
       });
@@ -391,29 +392,17 @@ export function MenuUploadCard({ venueId, onSuccess }: MenuUploadCardProps) {
           <Label htmlFor="menu-url-upload">
             Menu Website URL
           </Label>
-          <div className="flex gap-2">
-            <Input
-              id="menu-url-upload"
-              type="url"
-              placeholder="https://yourmenu.co.uk/menu"
-              value={menuUrl}
-              onChange={(e) => setMenuUrl(e.target.value)}
-              disabled={isProcessing}
-              className="flex-1"
-            />
-            {hasExistingUpload && menuUrl && menuUrl.trim() && (
-              <Button
-                onClick={handleReprocessWithUrl}
-                disabled={isProcessing}
-                variant="secondary"
-              >
-                {isProcessing ? 'Processing...' : 'Re-process'}
-              </Button>
-            )}
-          </div>
+          <Input
+            id="menu-url-upload"
+            type="url"
+            placeholder="https://yourmenu.co.uk/menu"
+            value={menuUrl}
+            onChange={(e) => setMenuUrl(e.target.value)}
+            disabled={isProcessing}
+          />
           <p className="text-xs text-muted-foreground">
             {hasExistingUpload && menuUrl && menuUrl.trim() 
-              ? '💡 Click "Re-process" to combine your existing PDF with this URL'
+              ? '💡 Click "Process" below to combine your existing PDF with this URL'
               : '💡 Add your menu URL, then upload your PDF below. Both will be combined for best results.'
             }
           </p>
@@ -458,11 +447,17 @@ export function MenuUploadCard({ venueId, onSuccess }: MenuUploadCardProps) {
             )}
             <Button
               variant="outline"
-              onClick={() => fileInputRef.current?.click()}
+              onClick={handleButtonClick}
               disabled={isProcessing}
             >
               <FileText className="h-4 w-4 mr-2" />
-              {isProcessing ? 'Processing...' : (menuUrl ? 'Upload PDF & Process' : 'Choose PDF')}
+              {isProcessing 
+                ? 'Processing...' 
+                : (menuUrl && hasExistingUpload 
+                  ? 'Process with URL' 
+                  : (menuUrl ? 'Upload PDF & Process' : 'Choose PDF')
+                )
+              }
             </Button>
             <input
               ref={fileInputRef}
