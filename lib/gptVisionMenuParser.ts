@@ -64,16 +64,31 @@ Rules:
 
   const text = response.choices[0]?.message?.content;
   try {
+    if (!text) {
+      throw new Error('No response from Vision AI');
+    }
+    
+    logger.info('[VISION] Item extraction response length:', text.length);
+    
     // Extract JSON from response (might be wrapped in markdown)
-    const jsonMatch = text?.match(/\[[\s\S]*\]/);
+    const jsonMatch = text.match(/\[[\s\S]*\]/);
     if (!jsonMatch) {
-      throw new Error('No JSON array found in response');
+      logger.error("[VISION] No JSON array found in item extraction response:", text);
+      return [];
     }
     const json = JSON.parse(jsonMatch[0]);
+    
+    if (!Array.isArray(json)) {
+      logger.error('[VISION] Parsed data is not an array:', json);
+      return [];
+    }
+    
+    logger.info('[VISION] Extracted items:', json.length);
     return json;
   } catch (err) {
-    logger.error("Failed to parse JSON:", text);
-    throw new Error("Invalid JSON response from GPT Vision");
+    logger.error("Failed to parse item extraction JSON:", text);
+    logger.error("Parse error details:", err);
+    return [];
   }
 }
 
@@ -142,29 +157,48 @@ CRITICAL RULES:
 
   const text = response.choices[0]?.message?.content;
   try {
-    // Extract JSON from response (might be wrapped in markdown)
-    const jsonMatch = text?.match(/\[[\s\S]*\]/);
-    if (!jsonMatch) {
-      throw new Error('No JSON array found in response');
+    if (!text) {
+      throw new Error('No response from Vision AI');
     }
+    
+    logger.info('[VISION] Raw response length:', text.length);
+    logger.info('[VISION] First 200 chars:', text.substring(0, 200));
+    
+    // Extract JSON from response (might be wrapped in markdown or have explanation text)
+    const jsonMatch = text.match(/\[[\s\S]*\]/);
+    if (!jsonMatch) {
+      logger.error('[VISION] No JSON array found in response:', text);
+      // Return empty array instead of crashing
+      return [];
+    }
+    
     const positions = JSON.parse(jsonMatch[0]);
+    
+    if (!Array.isArray(positions)) {
+      logger.error('[VISION] Parsed data is not an array:', positions);
+      return [];
+    }
+    
+    logger.info('[VISION] Parsed positions:', positions.length);
     
     // Convert bounding box format to include both center point (for backward compatibility)
     // and full bounding box for overlay cards
     return positions.map((pos: any) => ({
-      name: pos.name,
+      name: pos.name || 'Unknown Item',
       // Keep legacy x,y as center point for backward compatibility
-      x: pos.x1 && pos.x2 ? (pos.x1 + pos.x2) / 2 : pos.x || 50,
-      y: pos.y1 && pos.y2 ? (pos.y1 + pos.y2) / 2 : pos.y || 50,
+      x: pos.x1 !== undefined && pos.x2 !== undefined ? (pos.x1 + pos.x2) / 2 : pos.x || 50,
+      y: pos.y1 !== undefined && pos.y2 !== undefined ? (pos.y1 + pos.y2) / 2 : pos.y || 50,
       // Add bounding box coordinates
-      x1: pos.x1 || pos.x - 5,
-      y1: pos.y1 || pos.y - 3,
-      x2: pos.x2 || pos.x + 5,
-      y2: pos.y2 || pos.y + 3,
+      x1: pos.x1 !== undefined ? pos.x1 : (pos.x || 50) - 5,
+      y1: pos.y1 !== undefined ? pos.y1 : (pos.y || 50) - 3,
+      x2: pos.x2 !== undefined ? pos.x2 : (pos.x || 50) + 5,
+      y2: pos.y2 !== undefined ? pos.y2 : (pos.y || 50) + 3,
       confidence: pos.confidence || 0.8,
     }));
   } catch (err) {
     logger.error("Failed to parse menu positions JSON:", text);
-    throw new Error("Invalid JSON response from GPT Vision for positions");
+    logger.error("Parse error details:", err);
+    // Return empty array instead of crashing - menu will still work without hotspots
+    return [];
   }
 }

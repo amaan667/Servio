@@ -8,7 +8,15 @@ import RoleBasedNavigation from "@/components/RoleBasedNavigation";
 
 export default function SettingsPageClient({ venueId }: { venueId: string }) {
   const router = useRouter();
-  const [loading, setLoading] = useState(true);
+  
+  // Check cache to prevent flicker
+  const getCachedData = () => {
+    if (typeof window === 'undefined') return null;
+    const cached = sessionStorage.getItem(`settings_data_${venueId}`);
+    return cached ? JSON.parse(cached) : null;
+  };
+  
+  const [loading, setLoading] = useState(false);
   const [data, setData] = useState<{
     user: { id: string; email?: string; user_metadata?: Record<string, unknown> };
     venue: Record<string, unknown>;
@@ -17,7 +25,7 @@ export default function SettingsPageClient({ venueId }: { venueId: string }) {
     isOwner: boolean;
     isManager: boolean;
     userRole: string;
-  } | null>(null);
+  } | null>(getCachedData());
 
   useEffect(() => {
     const loadData = async () => {
@@ -91,7 +99,7 @@ export default function SettingsPageClient({ venueId }: { venueId: string }) {
           finalVenue = managerVenue;
         }
 
-        setData({
+        const settingsData = {
           user,
           venue: finalVenue,
           venues: allVenues,
@@ -99,7 +107,15 @@ export default function SettingsPageClient({ venueId }: { venueId: string }) {
           isOwner,
           isManager,
           userRole: userRole?.role || (isOwner ? "owner" : "staff"),
-        });
+        };
+        
+        setData(settingsData);
+        
+        // Cache settings data to prevent flicker
+        if (typeof window !== 'undefined') {
+          sessionStorage.setItem(`settings_data_${venueId}`, JSON.stringify(settingsData));
+        }
+        
         setLoading(false);
       } catch (error) {
         console.error("Error loading settings:", error);
@@ -129,7 +145,7 @@ export default function SettingsPageClient({ venueId }: { venueId: string }) {
     );
   }
 
-  if (!data.venue) {
+  if (!data || !data.venue) {
     return (
       <div className="min-h-screen flex items-center justify-center bg-background">
         <div>You don&apos;t have access to this venue</div>
@@ -137,7 +153,7 @@ export default function SettingsPageClient({ venueId }: { venueId: string }) {
     );
   }
 
-  const canAccessSettings = data.userRole === "owner" || data.userRole === "manager";
+  const canAccessSettings = data?.userRole === "owner" || data?.userRole === "manager";
 
   return (
     <div className="min-h-screen bg-background">
