@@ -53,23 +53,19 @@ export function MenuUploadCard({ venueId, onSuccess }: MenuUploadCardProps) {
 
   // Auto-process when URL is entered and PDF exists
   useEffect(() => {
-    const autoProcess = async () => {
-      // Only auto-process if:
-      // 1. URL is entered and valid
-      // 2. Existing PDF exists
-      // 3. Not already processing
-      if (menuUrl && menuUrl.trim() && menuUrl.startsWith('http') && hasExistingUpload && !isProcessing) {
-        // Debounce to avoid processing on every keystroke
-        const timer = setTimeout(async () => {
-          await processExistingPdfWithUrl();
-        }, 1000); // Wait 1 second after user stops typing
+    // Only auto-process if:
+    // 1. URL is entered and valid
+    // 2. Existing PDF exists
+    // 3. Not already processing
+    if (menuUrl && menuUrl.trim() && menuUrl.startsWith('http') && hasExistingUpload && !isProcessing) {
+      // Debounce to avoid processing on every keystroke
+      const timer = setTimeout(async () => {
+        await processExistingPdfWithUrl();
+      }, 1000); // Wait 1 second after user stops typing
 
-        return () => clearTimeout(timer);
-      }
-    };
-
-    autoProcess();
-  }, [menuUrl, hasExistingUpload]);
+      return () => clearTimeout(timer);
+    }
+  }, [menuUrl, hasExistingUpload, isProcessing]);
 
   // Save extracted style to database
   const saveExtractedStyle = async (extractedText: string) => {
