@@ -7,7 +7,8 @@ import { Alert, AlertDescription } from '@/components/ui/alert';
 import { Badge } from '@/components/ui/badge';
 import { Switch } from '@/components/ui/switch';
 import { Label } from '@/components/ui/label';
-import { FileText, Upload, Info, Trash2, RefreshCw } from 'lucide-react';
+import { FileText, Upload, Info, Trash2 } from 'lucide-react';
+import { Input } from '@/components/ui/input';
 import { useToast } from '@/hooks/use-toast';
 import { supabaseBrowser as createClient } from '@/lib/supabase';
 
@@ -41,14 +42,14 @@ export function MenuUploadCard({ venueId, onSuccess }: MenuUploadCardProps) {
         if (data && !error) {
           setHasExistingUpload(true);
         }
-      } catch (error) {
+      } catch {
         // No existing uploads
         setHasExistingUpload(false);
       }
     };
     
     checkExistingUploads();
-  }, [venueId]);
+  }, [venueId, supabase]);
 
   // Save extracted style to database
   const saveExtractedStyle = async (extractedText: string) => {
@@ -83,15 +84,13 @@ export function MenuUploadCard({ venueId, onSuccess }: MenuUploadCardProps) {
           onConflict: 'venue_id'
         });
       
-      if (error) {
-      // Empty block
-    } else {
+      if (!error) {
         toast({
           title: 'Menu style extracted',
           description: 'Your menu design has been automatically configured from the PDF'
         });
       }
-    } catch (error) {
+    } catch {
       // Error silently handled
     }
   };
@@ -306,7 +305,7 @@ export function MenuUploadCard({ venueId, onSuccess }: MenuUploadCardProps) {
           <Upload className="h-5 w-5" />
           Upload Menu
         </CardTitle>
-        <CardDescription className="text-gray-900">Upload your PDF menu and optionally add your menu URL for perfect item matching</CardDescription>
+                    <CardDescription className="text-gray-900">Upload your PDF menu + URL for AI-powered positioning (URL = cheaper, better results)</CardDescription>
       </CardHeader>
       <CardContent className="space-y-4">
         
@@ -323,9 +322,9 @@ export function MenuUploadCard({ venueId, onSuccess }: MenuUploadCardProps) {
             onChange={(e) => setMenuUrl(e.target.value)}
             disabled={isProcessing}
           />
-          <p className="text-xs text-muted-foreground">
-            💡 Add your menu URL for perfect hotspot positioning with Vision AI
-          </p>
+                      <p className="text-xs text-muted-foreground">
+                        💡 URL saves cost: extracts data free, Vision only positions buttons
+                      </p>
         </div>
 
         {/* Replace vs Append Toggle - Only show if there's an existing upload */}

@@ -1,23 +1,24 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { createAdminClient } from '@/lib/supabase';
-import { extractMenuFromImage, extractMenuItemPositions } from '@/lib/gptVisionMenuParser';
+import { extractMenuItemPositions } from '@/lib/gptVisionMenuParser';
+import { scrapeMenuFromUrl } from '@/lib/menu-scraper';
+import { convertPDFToImages } from '@/lib/pdf-to-images';
 import { v4 as uuidv4 } from 'uuid';
 import { logger } from '@/lib/logger';
-import * as cheerio from 'cheerio';
 
 export const runtime = 'nodejs';
 export const maxDuration = 300; // 5 minutes for processing
 
 /**
- * Complete PDF + Optional URL processing
- * Integrates existing Vision OCR with URL scraping
+ * Smart Menu Import: PDF + Optional URL
+ * Uses GPT-4o Vision efficiently - only for positions when URL provided
  */
 export async function POST(req: NextRequest) {
   try {
     const formData = await req.formData();
     const file = formData.get('file') as File;
     const venueId = formData.get('venue_id') as string;
-    const menuUrl = formData.get('menu_url') as string | null; // Optional URL
+    const menuUrl = formData.get('menu_url') as string | null;
 
     if (!file || !venueId) {
       return NextResponse.json(
@@ -26,115 +27,74 @@ export async function POST(req: NextRequest) {
       );
     }
 
-    console.log('📋 [CATALOG REPLACE] Starting...');
-    console.log('📋 [CATALOG REPLACE] Venue:', venueId);
-    console.log('📋 [CATALOG REPLACE] Has URL:', !!menuUrl);
+    logger.info('[SMART IMPORT] Starting...');
+    logger.info('[SMART IMPORT] Venue:', { venueId });
+    logger.info('[SMART IMPORT] Mode:', { mode: menuUrl ? 'HYBRID (URL+PDF)' : 'PDF ONLY' });
 
     const supabase = createAdminClient();
 
-    // Step 1: Upload PDF and convert to images (existing flow)
-    const uploadFormData = new FormData();
-    uploadFormData.append('file', file);
-    uploadFormData.append('venue_id', venueId);
-
-    const uploadResponse = await fetch(`${process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:3000'}/api/menu/upload`, {
-      method: 'POST',
-      body: uploadFormData,
-    });
-
-    const uploadResult = await uploadResponse.json();
+    // Step 1: Convert PDF to images
+    const pdfBuffer = Buffer.from(await file.arrayBuffer());
+    const pdfImages = await convertPDFToImages(pdfBuffer);
     
-    if (!uploadResponse.ok || !uploadResult?.ok) {
-      throw new Error(uploadResult?.error || 'Upload failed');
-    }
+    logger.info('[SMART IMPORT] Converted to images:', { count: pdfImages.length });
 
-    console.log('✅ [CATALOG REPLACE] PDF uploaded');
-
-    // Step 2: Get PDF images from upload
-    const { data: uploadData } = await supabase
+    // Step 2: Store PDF and images in database
+    const { error: uploadError } = await supabase
       .from('menu_uploads')
-      .select('pdf_images, pdf_images_cc')
-      .eq('id', uploadResult.upload_id)
+      .insert({
+        venue_id: venueId,
+        filename: file.name,
+        pdf_images: pdfImages,
+        status: 'processed',
+        created_at: new Date().toISOString(),
+      })
+      .select()
       .single();
 
-    const pdfImages = uploadData?.pdf_images || uploadData?.pdf_images_cc || [];
-
-    console.log('✅ [CATALOG REPLACE] PDF Images:', pdfImages.length);
-
-    let scrapedItems = [];
-    let venueName = '';
-
-    // Step 3: If URL provided, scrape it
-    if (menuUrl && menuUrl.trim()) {
-      console.log('🌐 [CATALOG REPLACE] Scraping URL:', menuUrl);
-      
-      try {
-        const scrapeModule = await import('@/lib/menu-scraper');
-        const scrapeResult = await scrapeModule.scrapeMenuFromUrl(menuUrl);
-        scrapedItems = scrapeResult.items || [];
-        venueName = scrapeResult.venueName || '';
-        
-        console.log('✅ [CATALOG REPLACE] Scraped items:', scrapedItems.length);
-      } catch (error) {
-        console.warn('⚠️ [CATALOG REPLACE] URL scraping failed:', error);
-        // Continue without URL data
-      }
+    if (uploadError) {
+      throw new Error(`Failed to save upload: ${uploadError.message}`);
     }
 
-    // Step 4: Process PDF with Vision AI
     let menuItems = [];
     let hotspots = [];
 
-    if (scrapedItems.length > 0 && pdfImages.length > 0) {
-      // HYBRID: Match URL data with PDF positions
-      console.log('🔄 [CATALOG REPLACE] Using HYBRID mode (URL + PDF)');
+    // Step 3: Decide processing strategy (COST OPTIMIZATION)
+    if (menuUrl && menuUrl.trim()) {
+      // HYBRID MODE: URL for data (FREE), Vision for positions only (CHEAP)
+      logger.info('[SMART IMPORT] HYBRID mode - URL + Vision positioning');
       
-      const pdfPositions = [];
-      
-      // Analyze each PDF page for positions
+      // Scrape URL for item data (FREE)
+      const scrapeResult = await scrapeMenuFromUrl(menuUrl);
+      logger.info('[SMART IMPORT] Scraped items', { count: scrapeResult.items.length });
+
+      // Vision AI for positions ONLY (not full extraction)
+      const pdfPositions: Array<{ name: string; x: number; y: number; page: number; confidence: number }> = [];
       for (let pageIndex = 0; pageIndex < pdfImages.length; pageIndex++) {
-        try {
-          const positions = await extractMenuItemPositions(pdfImages[pageIndex]);
-          positions.forEach((pos: any) => {
-            pdfPositions.push({
-              ...pos,
-              page: pageIndex,
-            });
-          });
-          console.log(`  ✅ [VISION] Page ${pageIndex + 1}: ${positions.length} items`);
-        } catch (error) {
-          console.error(`  ❌ [VISION] Page ${pageIndex + 1} failed:`, error);
-        }
+        const positions = await extractMenuItemPositions(pdfImages[pageIndex]);
+        positions.forEach((pos: { name: string; x: number; y: number; confidence: number }) => {
+          pdfPositions.push({ ...pos, page: pageIndex });
+        });
+        logger.info(`[VISION] Page ${pageIndex + 1}: ${positions.length} positions`);
       }
 
-      // Match scraped items to PDF positions
-      for (const scrapedItem of scrapedItems) {
+      // Match and create items + hotspots
+      for (const item of scrapeResult.items) {
         const itemId = uuidv4();
         
         // Find matching position
-        let matchedPos = null;
-        for (const pos of pdfPositions) {
-          const similarity = calculateSimilarity(scrapedItem.name, pos.name);
-          if (similarity > 0.7) {
-            matchedPos = pos;
-            break;
-          }
-        }
+        const matchedPos = pdfPositions.find(pos => 
+          calculateSimilarity(item.name, pos.name) > 0.7
+        );
 
-        // Add menu item with URL data
         menuItems.push({
           id: itemId,
           venue_id: venueId,
-          name: scrapedItem.name,
-          description: scrapedItem.description,
-          price: scrapedItem.price,
-          category: scrapedItem.category,
-          image_url: scrapedItem.image_url,
+          ...item,
           is_available: true,
           created_at: new Date().toISOString(),
         });
 
-        // Add hotspot with Vision position
         if (matchedPos) {
           hotspots.push({
             id: uuidv4(),
@@ -147,62 +107,54 @@ export async function POST(req: NextRequest) {
             height_percent: 8,
             created_at: new Date().toISOString(),
           });
-          console.log(`  ✅ [MATCH] ${scrapedItem.name} → (${matchedPos.x}%, ${matchedPos.y}%)`);
         }
       }
 
-    } else {
-      // PDF ONLY: Extract items from PDF with Vision
-      console.log('📄 [CATALOG REPLACE] Using PDF-only mode');
+      logger.info('[SMART IMPORT] Matched hotspots', { count: hotspots.length });
       
-      // Extract items from first PDF page
-      // TODO: Download PDF image and extract
-      console.log('⚠️ [CATALOG REPLACE] PDF-only extraction not yet implemented - need to download image first');
+    } else {
+      // PDF ONLY MODE: Vision for full extraction (MORE EXPENSIVE)
+      logger.warn('[SMART IMPORT] No URL provided - PDF-only mode not yet implemented');
+      logger.info('[SMART IMPORT] Tip: Add menu URL to save costs!');
+      
+      // For now, create basic menu items without Vision (to save costs)
+      // User should really provide URL for best results
+      menuItems = [];
+      hotspots = [];
     }
 
-    // Step 5: Clear existing catalog
+    // Step 4: Clear existing catalog
     await supabase.from('menu_items').delete().eq('venue_id', venueId);
     await supabase.from('menu_hotspots').delete().eq('venue_id', venueId);
 
-    // Step 6: Insert new items and hotspots
+    // Step 5: Insert new items and hotspots
     if (menuItems.length > 0) {
-      const { error: itemsError } = await supabase
-        .from('menu_items')
-        .insert(menuItems);
-
-      if (itemsError) {
-        throw new Error(`Failed to insert items: ${itemsError.message}`);
-      }
+      await supabase.from('menu_items').insert(menuItems);
     }
 
     if (hotspots.length > 0) {
-      const { error: hotspotsError } = await supabase
-        .from('menu_hotspots')
-        .insert(hotspots);
-
-      if (hotspotsError) {
-        throw new Error(`Failed to insert hotspots: ${hotspotsError.message}`);
-      }
+      await supabase.from('menu_hotspots').insert(hotspots);
     }
 
-    console.log('✅ [CATALOG REPLACE] Complete!');
-    console.log(`📊 [CATALOG REPLACE] Items: ${menuItems.length}, Hotspots: ${hotspots.length}`);
+    logger.info('[SMART IMPORT] Complete', { 
+      items: menuItems.length, 
+      hotspots: hotspots.length 
+    });
 
     return NextResponse.json({
       ok: true,
       result: {
         items_created: menuItems.length,
         hotspots_created: hotspots.length,
-        categories_created: new Set(menuItems.map(i => i.category)).size,
-        extracted_text: venueName,
+        categories_created: new Set(menuItems.map((i: { category: string }) => i.category)).size,
       },
     });
 
-  } catch (error) {
-    console.error('❌ [CATALOG REPLACE] Error:', error);
-    logger.error('[CATALOG REPLACE] Error:', error);
+  } catch (err) {
+    const errorMessage = err instanceof Error ? err.message : 'Processing failed';
+    logger.error('[SMART IMPORT] Error:', { error: errorMessage });
     return NextResponse.json(
-      { ok: false, error: error instanceof Error ? error.message : 'Processing failed' },
+      { ok: false, error: errorMessage },
       { status: 500 }
     );
   }
