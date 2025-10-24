@@ -1,8 +1,7 @@
-import { errorToContext } from '@/lib/utils/error-to-context';
 import { NextRequest, NextResponse } from 'next/server';
 import { createClient } from '@/lib/supabase';
 import { cache, cacheKeys, cacheTTL } from '@/lib/cache';
-import { apiLogger, logger } from '@/lib/logger';
+import { logger } from '@/lib/logger';
 
 export async function GET(request: NextRequest) {
   try {

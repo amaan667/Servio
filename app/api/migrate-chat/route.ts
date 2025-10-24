@@ -1,12 +1,11 @@
-import { errorToContext } from '@/lib/utils/error-to-context';
 // API endpoint to apply the AI Chat schema migration
 // This can be called to set up the chat tables
 
 import { NextRequest, NextResponse } from "next/server";
 import { createClient } from "@/lib/supabase";
-import { apiLogger, logger } from '@/lib/logger';
+import { logger } from '@/lib/logger';
 
-export async function POST(request: NextRequest) {
+export async function POST(_request: NextRequest) {
   try {
     logger.debug("[MIGRATION] Starting AI Chat schema migration...");
     
@@ -76,7 +75,7 @@ export async function POST(request: NextRequest) {
   }
 }
 
-export async function GET(request: NextRequest) {
+export async function GET(_request: NextRequest) {
   try {
     const supabase = await createClient();
     

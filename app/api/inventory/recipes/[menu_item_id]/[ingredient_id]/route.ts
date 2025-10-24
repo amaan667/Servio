@@ -5,7 +5,7 @@ import { logger } from '@/lib/logger';
 // DELETE /api/inventory/recipes/[menu_item_id]/[ingredient_id]
 // Remove a single ingredient from a recipe
 export async function DELETE(
-  request: NextRequest,
+  _request: NextRequest,
   { params }: { params: Promise<{ menu_item_id: string; ingredient_id: string }> }
 ) {
   try {

@@ -198,15 +198,15 @@ export default function KDSClient({ venueId }: KDSClientProps) {
           table: "kds_tickets",
           filter: `venue_id=eq.${venueId}`,
         },
-        (payload: unknown) => {
+        (payload: { eventType: string; new?: Record<string, unknown>; old?: Record<string, unknown> }) => {
           if (payload.eventType === "INSERT") {
             fetchTickets();
           } else if (payload.eventType === "UPDATE") {
             setTickets((prev) =>
-              prev.map((t) => (t.id === payload.new.id ? { ...t, ...payload.new } : t))
+              prev.map((t) => (t.id === payload.new?.id ? { ...t, ...payload.new } : t))
             );
           } else if (payload.eventType === "DELETE") {
-            setTickets((prev) => prev.filter((t) => t.id !== payload.old.id));
+            setTickets((prev) => prev.filter((t) => t.id !== payload.old?.id));
           }
         }
       )

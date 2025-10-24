@@ -162,8 +162,10 @@ export function AnalyticsDashboard({ venueId }: AnalyticsDashboardProps) {
 
       filteredOrders.forEach(order => {
         const orderHour = new Date(order.created_at).getHours();
-        hourlyStats[orderHour].value += 1;
-        hourlyStats[orderHour].orders += 1;
+        if (hourlyStats[orderHour]) {
+          hourlyStats[orderHour].value += 1;
+          hourlyStats[orderHour].orders += 1;
+        }
         
         let amount = order.total_amount;
         if (!amount || amount <= 0) {
@@ -186,13 +188,19 @@ export function AnalyticsDashboard({ venueId }: AnalyticsDashboardProps) {
           if (!itemStats[item.item_name]) {
             itemStats[item.item_name] = { quantity: 0, revenue: 0 };
           }
-          itemStats[item.item_name].quantity += item.quantity;
-          itemStats[item.item_name].revenue += item.quantity * item.price;
+          const itemStat = itemStats[item.item_name];
+          if (itemStat) {
+            itemStat.quantity += item.quantity;
+            itemStat.revenue += item.quantity * item.price;
+          }
 
           const cat = itemIdToCategory.get(item.menu_item_id) || 'Other';
           if (!categoryStats[cat]) categoryStats[cat] = { quantity: 0, revenue: 0 };
-          categoryStats[cat].quantity += item.quantity;
-          categoryStats[cat].revenue += item.quantity * item.price;
+          const catStat = categoryStats[cat];
+          if (catStat) {
+            catStat.quantity += item.quantity;
+            catStat.revenue += item.quantity * item.price;
+          }
         });
       });
 
@@ -303,10 +311,10 @@ export function AnalyticsDashboard({ venueId }: AnalyticsDashboardProps) {
           table: 'orders',
           filter: `venue_id=eq.${venueId}`
         }, 
-        (payload: unknown) => {
+        (payload: { eventType: string; new?: Record<string, unknown>; old?: Record<string, unknown> }) => {
           
           // Check if the order is within the current time range
-          const orderCreatedAt = (payload.new as unknown)?.created_at || (payload.old as unknown)?.created_at;
+          const orderCreatedAt = payload.new?.created_at || payload.old?.created_at;
           if (!orderCreatedAt) return;
           
           const now = new Date();

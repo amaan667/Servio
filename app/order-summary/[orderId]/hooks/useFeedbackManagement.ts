@@ -27,7 +27,7 @@ export function useFeedbackManagement(venueId: string) {
   useEffect(() => {
     const fetchFeedbackQuestions = async () => {
       try {
-        const supabase = createClient();
+        const supabase = await createClient();
         
         const { data, error } = await supabase
           .from('feedback_questions')
@@ -62,7 +62,7 @@ export function useFeedbackManagement(venueId: string) {
     setSubmittingFeedback(true);
 
     try {
-      const supabase = createClient();
+      const supabase = await createClient();
       
       const { error } = await supabase
         .from('feedback_responses')

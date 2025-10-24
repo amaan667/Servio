@@ -10,13 +10,19 @@ import { createClient } from '@/lib/supabase';
 import { toast } from '@/hooks/use-toast';
 import QRCode from 'qrcode';
 
+interface PreviewTable {
+  number: number;
+  qrCode: string;
+  url: string;
+}
+
 export default function OnboardingTablesPage() {
   const router = useRouter();
   const [loading, setLoading] = useState(true);
   const [creating, setCreating] = useState(false);
   const [venueId, setVenueId] = useState<string | null>(null);
   const [selectedCount, setSelectedCount] = useState(5);
-  const [previewTables, setPreviewTables] = useState<unknown[]>([]);
+  const [previewTables, setPreviewTables] = useState<PreviewTable[]>([]);
 
   useEffect(() => {
     checkAuth();
@@ -24,7 +30,7 @@ export default function OnboardingTablesPage() {
 
   const checkAuth = async () => {
     try {
-      const supabase = createClient();
+      const supabase = await createClient();
       const { data: { user } } = await supabase.auth.getSession();
 
       if (!user) {
@@ -44,8 +50,8 @@ export default function OnboardingTablesPage() {
         return;
       }
 
-      setVenueId(venues[0].venue_id);
-      generatePreview(selectedCount, venues[0].venue_id);
+      setVenueId(venues[0]?.venue_id);
+      generatePreview(selectedCount, venues[0]?.venue_id);
       setLoading(false);
     } catch (error) {
 
@@ -94,7 +100,7 @@ export default function OnboardingTablesPage() {
     setCreating(true);
 
     try {
-      const supabase = createClient();
+      const supabase = await createClient();
 
       // Create tables
       const tablesToInsert = Array.from({ length: selectedCount }, (_, i) => ({

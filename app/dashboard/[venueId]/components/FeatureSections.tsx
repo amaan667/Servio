@@ -39,15 +39,7 @@ interface FeatureSectionsProps {
 
 export function FeatureSections({ venueId, userRole }: FeatureSectionsProps) {
   const handleFeatureClick = (feature: Feature, section: string) => {
-    console.info("🎯 [FEATURE CARD] Feature clicked:", {
-      featureTitle: feature.title,
-      featureHref: feature.href,
-      sectionTitle: section,
-      venueId,
-      userRole,
-      timestamp: new Date().toISOString(),
-      userAgent: typeof navigator !== "undefined" ? navigator.userAgent : "server",
-    });
+    // Feature click tracking removed - add analytics if needed
   };
 
   const sections: FeatureSection[] = [

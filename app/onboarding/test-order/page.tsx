@@ -24,7 +24,7 @@ export default function OnboardingTestOrderPage() {
 
   const checkAuth = async () => {
     try {
-      const supabase = createClient();
+      const supabase = await createClient();
       const { data: { user } } = await supabase.auth.getSession();
 
       if (!user) {
@@ -44,7 +44,7 @@ export default function OnboardingTestOrderPage() {
         return;
       }
 
-      setVenueId(venues[0].venue_id);
+      setVenueId(venues[0]?.venue_id);
       setLoading(false);
     } catch (error) {
 

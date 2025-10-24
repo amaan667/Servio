@@ -30,7 +30,7 @@ class RedisCache {
 
         this.redis.on("error", (error) => {
           this.isConnected = false;
-          logger.warn("[REDIS] Cache connection error:", error);
+          logger.warn("[REDIS] Cache connection error:", error as Record<string, unknown>);
         });
 
         await this.redis.connect();
@@ -38,7 +38,7 @@ class RedisCache {
         logger.info("[REDIS] Redis URL not provided, using in-memory cache fallback");
       }
     } catch (error) {
-      logger.warn("[REDIS] Failed to initialize Redis cache:", error);
+      logger.warn("[REDIS] Failed to initialize Redis cache:", error as Record<string, unknown>);
     }
   }
 
@@ -57,7 +57,7 @@ class RedisCache {
       }
       return null;
     } catch (error) {
-      logger.warn("[REDIS] Cache get error:", error);
+      logger.warn("[REDIS] Cache get error:", error as Record<string, unknown>);
       return null;
     }
   }
@@ -92,7 +92,7 @@ class RedisCache {
 
       return true;
     } catch (error) {
-      logger.warn("[REDIS] Cache set error:", error);
+      logger.warn("[REDIS] Cache set error:", error as Record<string, unknown>);
       return false;
     }
   }
@@ -109,7 +109,7 @@ class RedisCache {
       await this.redis.del(key);
       return true;
     } catch (error) {
-      logger.warn("[REDIS] Cache delete error:", error);
+      logger.warn("[REDIS] Cache delete error:", error as Record<string, unknown>);
       return false;
     }
   }
@@ -136,7 +136,7 @@ class RedisCache {
       await pipeline.exec();
       return true;
     } catch (error) {
-      logger.warn("[REDIS] Cache invalidation error:", error);
+      logger.warn("[REDIS] Cache invalidation error:", error as Record<string, unknown>);
       return false;
     }
   }
@@ -153,7 +153,7 @@ class RedisCache {
       await this.redis.flushdb();
       return true;
     } catch (error) {
-      logger.warn("[REDIS] Cache clear error:", error);
+      logger.warn("[REDIS] Cache clear error:", error as Record<string, unknown>);
       return false;
     }
   }
@@ -190,7 +190,7 @@ class RedisCache {
         misses: 0,
       };
     } catch (error) {
-      logger.warn("[REDIS] Cache stats error:", error);
+      logger.warn("[REDIS] Cache stats error:", error as Record<string, unknown>);
       return {
         connected: false,
         memory: "0B",

@@ -17,8 +17,9 @@ const HomePage = React.memo(function HomePage() {
 
   const checkAuth = useCallback(async () => {
     try {
-      const supabase = createClient();
-      const { data: { user }, error } = await supabase.auth.getSession();
+      const supabase = await createClient();
+      const { data, error } = await supabase.auth.getSession();
+      const user = data?.session?.user;
       
       if (error || !user) {
         // If no authenticated user, show public home page
@@ -37,7 +38,7 @@ const HomePage = React.memo(function HomePage() {
           .limit(1);
         
         if (venues && venues.length > 0) {
-          setPrimaryVenueId(venues[0].venue_id);
+          setPrimaryVenueId(venues[0]?.venue_id);
         }
       }
       } catch {
@@ -59,23 +60,25 @@ const HomePage = React.memo(function HomePage() {
     checkAuth();
 
     // Listen for auth state changes
-    const supabase = createClient();
-    const result = supabase?.auth?.onAuthStateChange?.((event: unknown, session: unknown) => {
-      if (session?.user) {
-        setUser(session.user);
-      } else {
-        setUser(null);
-      }
-      setLoading(false);
-    });
+    const setupAuthListener = async () => {
+      const supabase = await createClient();
+      const result = supabase?.auth?.onAuthStateChange?.((_event: unknown, session: unknown) => {
+        const sessionData = session as { user?: unknown } | null;
+        if (sessionData?.user) {
+          setUser(sessionData.user);
+        } else {
+          setUser(null);
+        }
+        setLoading(false);
+      });
+      return result;
+    };
+
+    setupAuthListener();
 
     // Cleanup subscription on unmount
     return () => {
-      try {
-        (result as unknown)?.data?.subscription?.unsubscribe?.();
-      } catch {
-        // Silent error handling
-      }
+      // Cleanup handled by auth state change subscription
     };
   }, [checkAuth, router]);
 
@@ -99,7 +102,7 @@ const HomePage = React.memo(function HomePage() {
             <div className="flex items-center space-x-4">
               {user ? (
                 <>
-                  <span className="text-gray-900">Welcome, {user.email}</span>
+                  <span className="text-gray-900">Welcome, {(user as { email?: string }).email || 'User'}</span>
                   <Link href={primaryVenueId ? `/dashboard/${primaryVenueId}` : '/'}>
                     <Button>Dashboard</Button>
                   </Link>

@@ -1,4 +1,3 @@
-import { errorToContext } from '@/lib/utils/error-to-context';
 import { NextRequest, NextResponse } from 'next/server';
 import Stripe from 'stripe';
 import { ENV } from '@/lib/env';

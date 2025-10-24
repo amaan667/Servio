@@ -10,7 +10,7 @@ import {
 export async function executeOrdersMarkServed(
   params: OrdersMarkServedParams,
   venueId: string,
-  userId: string,
+  _userId: string,
   preview: boolean
 ): Promise<AIPreviewDiff | AIExecutionResult> {
   const supabase = await createClient();
@@ -71,7 +71,7 @@ export async function executeOrdersMarkServed(
 export async function executeOrdersComplete(
   params: OrdersCompleteParams,
   venueId: string,
-  userId: string,
+  _userId: string,
   preview: boolean
 ): Promise<AIPreviewDiff | AIExecutionResult> {
   const supabase = await createClient();

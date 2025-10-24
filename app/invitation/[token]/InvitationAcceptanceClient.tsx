@@ -105,7 +105,7 @@ export default function InvitationAcceptanceClient({
       }
 
       // Sign the user in after account creation
-      const supabase = createClient();
+      const supabase = await createClient();
       const { error: signInError } = await supabase.auth.signInWithPassword({
         email: invitation.email,
         password,

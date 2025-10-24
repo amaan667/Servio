@@ -57,20 +57,11 @@ export function usePageAuth({
         const currentUser = session?.user;
 
         if (!currentUser) {
-          console.info(
-            `⚠️  [${pageName.toUpperCase()} CLIENT] No user found, redirecting to sign-in`
-          );
           const redirect =
             redirectPath || `/dashboard/${venueId}/${pageName.toLowerCase().replace(/\s+/g, "-")}`;
           router.push(`/sign-in?redirect=${redirect}`);
           return;
         }
-
-        console.info(`🔐 [${pageName.toUpperCase()} CLIENT] Auth check:`, {
-          venueId,
-          userId: currentUser.id,
-          timestamp: new Date().toISOString(),
-        });
 
         setUser(currentUser);
 
@@ -92,15 +83,6 @@ export function usePageAuth({
 
         const isOwner = !!venue;
         const isStaff = !!roleData;
-
-        console.info(`✅ [${pageName.toUpperCase()} CLIENT] Authorization check:`, {
-          venueId,
-          userId: currentUser.id,
-          isOwner,
-          isStaff,
-          role: roleData?.role,
-          timestamp: new Date().toISOString(),
-        });
 
         if (!isOwner && !isStaff) {
           setAuthError("You don't have access to this venue");
@@ -139,16 +121,6 @@ export function usePageAuth({
         } else {
           setHasAccess(true);
         }
-
-        console.info(`🚀 [${pageName.toUpperCase()} CLIENT] Rendering page:`, {
-          venueId,
-          userId: currentUser.id,
-          finalRole,
-          isOwner,
-          isStaff,
-          hasAccess: !requiredRoles || isOwner || requiredRoles.includes(finalRole),
-          timestamp: new Date().toISOString(),
-        });
 
         setLoading(false);
       } catch (error) {

@@ -1,8 +1,7 @@
-import { errorToContext } from '@/lib/utils/error-to-context';
 import { NextResponse } from 'next/server';
 import { createClient, getAuthenticatedUser } from '@/lib/supabase';
 import { cleanupTableOnOrderCompletion } from '@/lib/table-cleanup';
-import { apiLogger, logger } from '@/lib/logger';
+import { logger } from '@/lib/logger';
 
 export const runtime = 'nodejs';
 

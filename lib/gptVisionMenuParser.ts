@@ -1,4 +1,3 @@
-import { errorToContext } from '@/lib/utils/error-to-context';
 
 import { getOpenAI } from "./openai";
 import fs from "fs";

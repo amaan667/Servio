@@ -1,4 +1,3 @@
-import { errorToContext } from '@/lib/utils/error-to-context';
 
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { useEffect } from 'react';
@@ -128,7 +127,7 @@ export function useCounterOrdersRealtime(venueId: string) {
 				schema: 'public',
 				table: 'orders',
 				filter: `venue_id=eq.${venueId}`
-			}, (payload: unknown) => {
+			}, (payload: { eventType: string; new?: Record<string, unknown>; old?: Record<string, unknown> }) => {
 				// Check if this is a counter order
 				const order = payload.new || payload.old;
 				if (order?.source === 'counter') {

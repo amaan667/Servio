@@ -58,8 +58,10 @@ export function useAnalyticsData(venueId: string, venueTz: string) {
       }
 
       (todayOrders || []).forEach((order: Record<string, unknown>) => {
-        const hour = new Date(order.created_at).getHours();
-        hourlyOrders[hour]++;
+        const hour = new Date(order.created_at as string).getHours();
+        if (hourlyOrders[hour] !== undefined) {
+          hourlyOrders[hour]++;
+        }
       });
 
       const ordersByHour = Object.entries(hourlyOrders).map(([hour, orders]) => ({

@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { getUserSafe } from '@/utils/getUserSafe';
-import { apiLogger, logger } from '@/lib/logger';
+import { logger } from '@/lib/logger';
 
 // POST /api/send-invitation-dev - Send invitation email in development mode
 export async function POST(request: NextRequest) {

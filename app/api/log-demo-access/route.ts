@@ -1,6 +1,5 @@
-import { errorToContext } from '@/lib/utils/error-to-context';
 import { NextResponse } from 'next/server';
-import { apiLogger, logger } from '@/lib/logger';
+import { logger } from '@/lib/logger';
 
 export const runtime = 'nodejs';
 export const dynamic = 'force-dynamic';

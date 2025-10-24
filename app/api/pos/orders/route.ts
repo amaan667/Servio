@@ -1,9 +1,8 @@
-import { errorToContext } from '@/lib/utils/error-to-context';
 import { NextRequest, NextResponse } from 'next/server';
 import { createClient } from '@/lib/supabase';
 import { getAuthenticatedUser } from '@/lib/supabase';
 import { cache } from '@/lib/cache';
-import { apiLogger, logger } from '@/lib/logger';
+import { logger } from '@/lib/logger';
 
 export async function GET(req: NextRequest) {
   try {

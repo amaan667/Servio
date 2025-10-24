@@ -3,9 +3,9 @@
 
 import { NextRequest, NextResponse } from "next/server";
 import { createClient } from "@/lib/supabase";
-import { apiLogger, logger } from '@/lib/logger';
+import { logger } from '@/lib/logger';
 
-export async function POST(request: NextRequest) {
+export async function POST(_request: NextRequest) {
   try {
     logger.debug("[STAFF INVITATION SETUP] Starting staff invitation system setup...");
     

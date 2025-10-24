@@ -273,7 +273,7 @@ export class PerformanceMonitor {
         }),
       });
     } catch (error) {
-      logger.warn("[PERFORMANCE] Failed to send metric to analytics:", error);
+      logger.warn("[PERFORMANCE] Failed to send metric to analytics:", error as Record<string, unknown>);
     }
   }
 

@@ -5,7 +5,7 @@ import type { AnalyticsInsightsParams } from "@/types/ai-params";
 export async function executeAnalyticsGetInsights(
   params: AnalyticsInsightsParams,
   venueId: string,
-  userId: string,
+  _userId: string,
   preview: boolean
 ): Promise<AIPreviewDiff | AIExecutionResult> {
   const supabase = await createClient();
@@ -116,7 +116,7 @@ export async function executeAnalyticsGetInsights(
 export async function executeAnalyticsExport(
   params: AnalyticsExportParams,
   venueId: string,
-  userId: string,
+  _userId: string,
   preview: boolean
 ): Promise<AIPreviewDiff | AIExecutionResult> {
   if (preview) {
@@ -142,7 +142,7 @@ export async function executeAnalyticsExport(
 export async function executeAnalyticsGetStats(
   params: AnalyticsInsightsParams,
   venueId: string,
-  userId: string,
+  _userId: string,
   preview: boolean
 ): Promise<AIPreviewDiff | AIExecutionResult> {
   const supabase = await createClient();
@@ -278,9 +278,11 @@ export async function executeAnalyticsGetStats(
 export async function executeAnalyticsCreateReport(
   params: unknown,
   venueId: string,
-  userId: string,
+  _userId: string,
   preview: boolean
 ): Promise<AIPreviewDiff | AIExecutionResult> {
+  const typedParams = params as { name: string; metrics: unknown[]; timeRange: string; format: string };
+  
   if (preview) {
     return {
       toolName: "analytics.create_report",
@@ -289,19 +291,19 @@ export async function executeAnalyticsCreateReport(
       impact: {
         itemsAffected: 0,
         estimatedRevenue: 0,
-        description: `Will create report "${params.name}" with ${params.metrics.length} metrics in ${params.format} format`,
+        description: `Will create report "${typedParams.name}" with ${typedParams.metrics.length} metrics in ${typedParams.format} format`,
       },
     };
   }
 
   const report = {
-    name: params.name,
-    metrics: params.metrics,
-    timeRange: params.timeRange,
-    format: params.format,
+    name: typedParams.name,
+    metrics: typedParams.metrics,
+    timeRange: typedParams.timeRange,
+    format: typedParams.format,
     createdAt: new Date().toISOString(),
     venueId,
-    createdBy: userId,
+    createdBy: _userId,
   };
 
   return {

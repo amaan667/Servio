@@ -4,7 +4,7 @@ import { logger } from '@/lib/logger';
 
 export const runtime = 'nodejs';
 
-export async function GET(req: NextRequest, context: { params: Promise<{ tableId: string }> }) {
+export async function GET(_req: NextRequest, context: { params: Promise<{ tableId: string }> }) {
   try {
     const { tableId } = await context.params;
 

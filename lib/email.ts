@@ -1,5 +1,3 @@
-import { errorToContext } from '@/lib/utils/error-to-context';
-
 import { logger } from '@/lib/logger';
 // Email sending utilities for Servio
 // This is a basic implementation that can be enhanced with proper email service integration
@@ -160,8 +158,8 @@ export async function sendEmail(template: EmailTemplate): Promise<boolean> {
           logger.error('❌ Resend returned no data:', result);
         }
       } catch (resendError) {
-        logger.error('❌ Resend failed with error:', resendError);
-        logger.warn('⚠️ Resend failed, trying fallback:', resendError);
+        logger.error('❌ Resend failed with error:', resendError as Record<string, unknown>);
+        logger.warn('⚠️ Resend failed, trying fallback:', resendError as Record<string, unknown>);
       }
     }
 
@@ -182,7 +180,7 @@ export async function sendEmail(template: EmailTemplate): Promise<boolean> {
         logger.debug('✅ Email sent successfully via SendGrid');
         return true;
       } catch (sendgridError) {
-        logger.warn('⚠️ SendGrid failed, trying fallback:', sendgridError);
+        logger.warn('⚠️ SendGrid failed, trying fallback:', sendgridError as Record<string, unknown>);
       }
     }
 
@@ -212,7 +210,7 @@ export async function sendEmail(template: EmailTemplate): Promise<boolean> {
         logger.debug('✅ Email sent successfully via SMTP');
         return true;
       } catch (smtpError) {
-        logger.warn('⚠️ SMTP failed, using console fallback:', smtpError);
+        logger.warn('⚠️ SMTP failed, using console fallback:', smtpError as Record<string, unknown>);
       }
     }
 
@@ -232,7 +230,7 @@ export async function sendEmail(template: EmailTemplate): Promise<boolean> {
         
         return true; // Simulate success for development
       } catch (emailjsError) {
-        logger.warn('⚠️ EmailJS failed:', emailjsError);
+        logger.warn('⚠️ EmailJS failed:', emailjsError as Record<string, unknown>);
       }
     }
 
@@ -250,7 +248,7 @@ export async function sendEmail(template: EmailTemplate): Promise<boolean> {
     return process.env.NODE_ENV === 'development';
     
   } catch (error) {
-    logger.error('❌ Failed to send email:', errorToContext(error));
+    logger.error('❌ Failed to send email:', error as Record<string, unknown>);
     return false;
   }
 }

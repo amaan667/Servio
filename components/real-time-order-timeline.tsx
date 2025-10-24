@@ -124,7 +124,7 @@ export function RealTimeOrderTimeline({ orderId, venueId, className }: RealTimeO
           table: 'orders',
           filter: `id=eq.${orderId}`,
         },
-        (payload: unknown) => {
+        (payload: { eventType: string; new?: Record<string, unknown>; old?: Record<string, unknown> }) => {
 
           if (payload.eventType === 'UPDATE') {
             

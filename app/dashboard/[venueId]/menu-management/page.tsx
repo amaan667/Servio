@@ -7,10 +7,6 @@ export default async function MenuManagementPage({
 }) {
   const { venueId } = await params;
 
-    venueId,
-    timestamp: new Date().toISOString(),
-  });
-
   // Render fully client-side to handle auth and data loading properly
   return <MenuManagementClientPage venueId={venueId} />;
 }

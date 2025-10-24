@@ -6,7 +6,7 @@ import { logger } from '@/lib/logger';
 export const runtime = 'nodejs';
 
 export async function GET(
-  req: Request,
+  _req: Request,
   { params }: { params: Promise<{ sessionId: string }> }
 ) {
   try {

@@ -1,10 +1,9 @@
-import { errorToContext } from '@/lib/utils/error-to-context';
 // Test endpoint to verify database connection and table existence
 import { NextRequest, NextResponse } from "next/server";
 import { createClient } from "@/lib/supabase";
-import { apiLogger, logger } from '@/lib/logger';
+import { logger } from '@/lib/logger';
 
-export async function GET(request: NextRequest) {
+export async function GET(_request: NextRequest) {
   try {
     const supabase = await createClient();
     

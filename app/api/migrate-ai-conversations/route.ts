@@ -1,11 +1,10 @@
-import { errorToContext } from '@/lib/utils/error-to-context';
 // API endpoint to migrate AI conversations from old to new system
 // and generate AI-powered titles for existing conversations
 
 import { NextRequest, NextResponse } from "next/server";
 import { createClient, createAdminClient } from "@/lib/supabase";
 import { generateConversationTitle } from "@/lib/ai/openai-service";
-import { apiLogger, logger } from '@/lib/logger';
+import { logger } from '@/lib/logger';
 
 export async function POST() {
   try {

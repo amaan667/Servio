@@ -12,7 +12,7 @@ interface RecipeItem {
 
 // GET /api/inventory/recipes/[menu_item_id]
 export async function GET(
-  request: NextRequest,
+  _request: NextRequest,
   { params }: { params: Promise<{ menu_item_id: string }> }
 ) {
   try {
@@ -124,7 +124,7 @@ export async function POST(
 // DELETE /api/inventory/recipes/[menu_item_id]
 // Delete entire recipe for menu item
 export async function DELETE(
-  request: NextRequest,
+  _request: NextRequest,
   { params }: { params: Promise<{ menu_item_id: string }> }
 ) {
   try {

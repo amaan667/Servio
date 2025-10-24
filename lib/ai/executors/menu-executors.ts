@@ -15,7 +15,7 @@ import {
 export async function executeMenuUpdatePrices(
   params: MenuUpdatePricesParams,
   venueId: string,
-  userId: string,
+  _userId: string,
   preview: boolean
 ): Promise<AIPreviewDiff | AIExecutionResult> {
   const supabase = await createClient();
@@ -156,7 +156,7 @@ export async function executeMenuUpdatePrices(
 export async function executeMenuToggleAvailability(
   params: MenuToggleAvailabilityParams,
   venueId: string,
-  userId: string,
+  _userId: string,
   preview: boolean
 ): Promise<AIPreviewDiff | AIExecutionResult> {
   const supabase = await createClient();
@@ -203,7 +203,7 @@ export async function executeMenuToggleAvailability(
 export async function executeMenuCreateItem(
   params: MenuCreateItemParams,
   venueId: string,
-  userId: string,
+  _userId: string,
   preview: boolean
 ): Promise<AIPreviewDiff | AIExecutionResult> {
   const supabase = await createClient();
@@ -259,7 +259,7 @@ export async function executeMenuCreateItem(
 export async function executeMenuDeleteItem(
   params: MenuDeleteItemParams,
   venueId: string,
-  userId: string,
+  _userId: string,
   preview: boolean
 ): Promise<AIPreviewDiff | AIExecutionResult> {
   const supabase = await createClient();

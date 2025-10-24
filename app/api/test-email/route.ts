@@ -1,7 +1,7 @@
 // Test endpoint to verify email sending is working
 import { NextRequest, NextResponse } from 'next/server';
 import { sendEmail } from '@/lib/email';
-import { apiLogger, logger } from '@/lib/logger';
+import { logger } from '@/lib/logger';
 
 export async function POST(request: NextRequest) {
   try {

@@ -81,7 +81,7 @@ export default function SignInForm({ onGoogleSignIn, isLoading = false, error: p
         }
         
         // Use full reload to hydrate header with authenticated state
-        window.location.assign(`/dashboard/${venues[0].venue_id}`);
+        window.location.assign(`/dashboard/${venues[0]?.venue_id}`);
       }
     } catch (err) {
       const msg = err?.message || 'Sign-in failed. Please try again.';

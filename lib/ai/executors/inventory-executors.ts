@@ -9,7 +9,7 @@ import {
 export async function executeInventoryAdjustStock(
   params: InventoryAdjustStockParams,
   venueId: string,
-  userId: string,
+  _userId: string,
   preview: boolean
 ): Promise<AIPreviewDiff | AIExecutionResult> {
   const supabase = await createClient();
@@ -93,9 +93,10 @@ export async function executeInventoryAdjustStock(
 export async function executeInventorySetParLevels(
   params: unknown,
   venueId: string,
-  userId: string,
+  _userId: string,
   preview: boolean
 ): Promise<AIPreviewDiff | AIExecutionResult> {
+  const typedParams = params as { strategy: string; bufferPercentage: number };
   const supabase = await createClient();
 
   const { data: ingredients } = await supabase
@@ -109,8 +110,8 @@ export async function executeInventorySetParLevels(
 
   const updates = ingredients.map(ing => {
     let parLevel = ing.on_hand;
-    if (params.strategy === "last_7_days" || params.strategy === "last_30_days") {
-      parLevel = Math.ceil(ing.on_hand * (1 + params.bufferPercentage / 100));
+    if (typedParams.strategy === "last_7_days" || typedParams.strategy === "last_30_days") {
+      parLevel = Math.ceil(ing.on_hand * (1 + typedParams.bufferPercentage / 100));
     }
     return { id: ing.ingredient_id, name: ing.name, currentPar: 0, newPar: parLevel };
   });
@@ -122,7 +123,7 @@ export async function executeInventorySetParLevels(
       after: updates.map(u => ({ id: u.id, name: u.name, parLevel: u.newPar })),
       impact: {
         itemsAffected: updates.length,
-        description: `Par levels will be set based on ${params.strategy} with ${params.bufferPercentage}% buffer`,
+        description: `Par levels will be set based on ${typedParams.strategy} with ${typedParams.bufferPercentage}% buffer`,
       },
     };
   }
@@ -145,12 +146,13 @@ export async function executeInventorySetParLevels(
 export async function executeInventoryGeneratePurchaseOrder(
   params: unknown,
   venueId: string,
-  userId: string,
+  _userId: string,
   preview: boolean
 ): Promise<AIPreviewDiff | AIExecutionResult> {
+  const typedParams = params as { threshold: string; format: string };
   const supabase = await createClient();
 
-  const thresholdField = params.threshold === "par_level" ? "par_level" : "reorder_level";
+  const thresholdField = typedParams.threshold === "par_level" ? "par_level" : "reorder_level";
   
   const { data: lowStock } = await supabase
     .from("v_stock_levels")
@@ -190,7 +192,7 @@ export async function executeInventoryGeneratePurchaseOrder(
   return {
     success: true,
     toolName: "inventory.generate_purchase_order",
-    result: { format: params.format, items: poItems },
+    result: { format: typedParams.format, items: poItems },
     auditId: "",
   };
 }

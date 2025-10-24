@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { supabase } from '@/lib/supabase';
+import { retrySupabaseQuery } from '@/lib/supabase-retry';
 import { CustomerInfo, OrderParams } from '../types';
 
 export function useOrderSession(orderParams: OrderParams) {
@@ -45,14 +46,17 @@ export function useOrderSession(orderParams: OrderParams) {
         if (storedOrderData) {
           const orderData = JSON.parse(storedOrderData);
           
-          const { data: orderInDb } = await supabase
-            .from('orders')
-            .select('*')
-            .eq('id', orderData.orderId)
-            .eq('venue_id', orderParams.venueSlug)
-            .in('order_status', ['PLACED', 'ACCEPTED', 'IN_PREP', 'READY', 'OUT_FOR_DELIVERY', 'SERVING'])
-            .in('payment_status', ['UNPAID', 'PAY_LATER', 'IN_PROGRESS'])
-            .single();
+          const { data: orderInDb } = await retrySupabaseQuery(
+            () => supabase
+              .from('orders')
+              .select('*')
+              .eq('id', orderData.orderId)
+              .eq('venue_id', orderParams.venueSlug)
+              .in('order_status', ['PLACED', 'ACCEPTED', 'IN_PREP', 'READY', 'OUT_FOR_DELIVERY', 'SERVING'])
+              .in('payment_status', ['UNPAID', 'PAY_LATER', 'IN_PROGRESS'])
+              .single(),
+            { maxRetries: 3, delayMs: 500 }
+          );
 
           if (orderInDb) {
             const checkoutData = {
@@ -84,14 +88,17 @@ export function useOrderSession(orderParams: OrderParams) {
         if (storedOrderData) {
           const orderData = JSON.parse(storedOrderData);
           
-          const { data: sessionOrderInDb } = await supabase
-            .from('orders')
-            .select('*')
-            .eq('id', orderData.orderId)
-            .eq('venue_id', orderParams.venueSlug)
-            .in('order_status', ['PLACED', 'ACCEPTED', 'IN_PREP', 'READY', 'OUT_FOR_DELIVERY', 'SERVING'])
-            .in('payment_status', ['UNPAID', 'PAY_LATER', 'IN_PROGRESS'])
-            .single();
+          const { data: sessionOrderInDb } = await retrySupabaseQuery(
+            () => supabase
+              .from('orders')
+              .select('*')
+              .eq('id', orderData.orderId)
+              .eq('venue_id', orderParams.venueSlug)
+              .in('order_status', ['PLACED', 'ACCEPTED', 'IN_PREP', 'READY', 'OUT_FOR_DELIVERY', 'SERVING'])
+              .in('payment_status', ['UNPAID', 'PAY_LATER', 'IN_PROGRESS'])
+              .single(),
+            { maxRetries: 3, delayMs: 500 }
+          );
 
           if (sessionOrderInDb) {
             const checkoutData = {
@@ -132,13 +139,16 @@ export function useOrderSession(orderParams: OrderParams) {
 
     const checkUnpaidOrders = async () => {
       try {
-        const { data: activeOrders } = await supabase
-          .from('orders')
-          .select('*')
-          .eq('venue_id', orderParams.venueSlug)
-          .eq('table_number', orderParams.tableNumber)
-          .in('order_status', ['PLACED', 'ACCEPTED', 'IN_PREP', 'READY', 'OUT_FOR_DELIVERY', 'SERVING'])
-          .in('payment_status', ['UNPAID', 'PAY_LATER', 'IN_PROGRESS']);
+        const { data: activeOrders } = await retrySupabaseQuery(
+          () => supabase
+            .from('orders')
+            .select('*')
+            .eq('venue_id', orderParams.venueSlug)
+            .eq('table_number', orderParams.tableNumber)
+            .in('order_status', ['PLACED', 'ACCEPTED', 'IN_PREP', 'READY', 'OUT_FOR_DELIVERY', 'SERVING'])
+            .in('payment_status', ['UNPAID', 'PAY_LATER', 'IN_PROGRESS']),
+          { maxRetries: 3, delayMs: 500 }
+        );
 
         if (activeOrders && activeOrders.length > 0) {
           const tableSessionKey = `servio-session-${orderParams.tableNumber}`;

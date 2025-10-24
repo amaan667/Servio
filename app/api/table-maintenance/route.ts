@@ -2,7 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { createAdminClient, getAuthenticatedUser } from '@/lib/supabase';
 import { logger } from '@/lib/logger';
 
-export async function POST(req: NextRequest) {
+export async function POST(_req: NextRequest) {
   try {
     
     // Check authentication
@@ -34,7 +34,7 @@ export async function POST(req: NextRequest) {
   }
 }
 
-export async function GET(req: NextRequest) {
+export async function GET(_req: NextRequest) {
   try {
     
     // Check authentication

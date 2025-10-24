@@ -38,7 +38,7 @@ function CallbackContent() {
       addDebugLog('[AUTH CALLBACK] Clearing auth state...');
       await clearSupabaseAuth();
       addDebugLog('[AUTH CALLBACK] Auth state cleared successfully');
-    } catch (err) {
+    } catch (err: unknown) {
       addDebugLog(`[AUTH CALLBACK] Error clearing auth state: ${err}`);
     }
   };
@@ -254,8 +254,9 @@ function CallbackContent() {
               return;
             }
           } catch (fallbackErr: unknown) {
-            addDebugLog(`[AUTH CALLBACK] Fallback authentication error: ${fallbackErr.message}`);
-            setError(`Authentication failed: ${fallbackErr.message}`);
+            const fallbackError = fallbackErr as Error;
+            addDebugLog(`[AUTH CALLBACK] Fallback authentication error: ${fallbackError.message}`);
+            setError(`Authentication failed: ${fallbackError.message}`);
             setLoading(false);
             return;
           }
@@ -302,23 +303,24 @@ function CallbackContent() {
           setError('Failed to create session - no session data returned');
           setLoading(false);
         }
-      } catch (err) {
-        addDebugLog(`[AUTH CALLBACK] Unexpected error: ${err.message}`);
+      } catch (err: unknown) {
+        const error = err as Error;
+        addDebugLog(`[AUTH CALLBACK] Unexpected error: ${error.message}`);
         addDebugLog(`[AUTH CALLBACK] Error details: ${JSON.stringify({
-          message: err.message,
-          name: err.name,
-          stack: err.stack
+          message: error.message,
+          name: error.name,
+          stack: error.stack
         })}`);
         
         // Handle timeout errors
-        if (err.message?.includes('timeout')) {
+        if (error.message?.includes('timeout')) {
           addDebugLog('[AUTH CALLBACK] Timeout error detected');
           setError('Authentication timed out. Please try signing in again.');
           setLoading(false);
           return;
         }
         
-        setError(err.message || 'An unexpected error occurred during authentication');
+        setError(error.message || 'An unexpected error occurred during authentication');
         setLoading(false);
       }
     };

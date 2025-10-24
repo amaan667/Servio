@@ -442,7 +442,7 @@ export async function planAssistantAction(
           };
         }
       } catch (fallbackError) {
-        logger.error("[AI ASSISTANT] Fallback to GPT-4o also failed:", fallbackError);
+        logger.error("[AI ASSISTANT] Fallback to GPT-4o also failed:", fallbackError as Record<string, unknown>);
         // Re-throw the fallback error
         if (fallbackError instanceof z.ZodError) {
           logger.error(
@@ -493,7 +493,7 @@ User Role: ${context.userRole}`;
 
     return completion.choices[0].message.content || "Action explanation unavailable.";
   } catch (error) {
-    logger.error("[AI ASSISTANT] Explanation error:", error);
+    logger.error("[AI ASSISTANT] Explanation error:", error as Record<string, unknown>);
     return "Unable to generate explanation.";
   }
 }
@@ -528,7 +528,7 @@ Focus on common tasks, optimizations, or insights based on the data.`;
     const response = JSON.parse(completion.choices[0].message.content || "{}");
     return response.suggestions || [];
   } catch (error) {
-    logger.error("[AI ASSISTANT] Suggestion generation error:", error);
+    logger.error("[AI ASSISTANT] Suggestion generation error:", error as Record<string, unknown>);
     return [];
   }
 }

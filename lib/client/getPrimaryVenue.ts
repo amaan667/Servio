@@ -2,10 +2,11 @@
 import { createClient } from '@/lib/supabase';
 
 export async function getPrimaryVenue() {
-  const { data: { user } } = await createClient().auth.getSession();
+  const supabase = await createClient();
+  const { data: { user } } = await supabase.auth.getSession();
   if (!user) return null;
 
-  const { data, error } = await createClient()
+  const { data, error } = await supabase
     .from('venues')
     .select('venue_id')
     .eq('owner_user_id', user.id)

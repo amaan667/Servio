@@ -1,4 +1,3 @@
-import { errorToContext } from '@/lib/utils/error-to-context';
 
 /**
  * Job queue for background processing

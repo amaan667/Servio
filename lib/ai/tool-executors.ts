@@ -62,64 +62,64 @@ export async function executeTool(
   switch (toolName) {
     // Menu tools
     case "menu.update_prices":
-      return executeMenuUpdatePrices(params, venueId, userId, preview);
+      return executeMenuUpdatePrices(params as Parameters<typeof executeMenuUpdatePrices>[0], venueId, userId, preview);
     
     case "menu.toggle_availability":
-      return executeMenuToggleAvailability(params, venueId, userId, preview);
+      return executeMenuToggleAvailability(params as Parameters<typeof executeMenuToggleAvailability>[0], venueId, userId, preview);
     
     case "menu.create_item":
-      return executeMenuCreateItem(params, venueId, userId, preview);
+      return executeMenuCreateItem(params as Parameters<typeof executeMenuCreateItem>[0], venueId, userId, preview);
     
     case "menu.delete_item":
-      return executeMenuDeleteItem(params, venueId, userId, preview);
+      return executeMenuDeleteItem(params as Parameters<typeof executeMenuDeleteItem>[0], venueId, userId, preview);
     
     case "menu.translate":
       return executeMenuTranslate(params, venueId, userId, preview);
     
     // Inventory tools
     case "inventory.adjust_stock":
-      return executeInventoryAdjustStock(params, venueId, userId, preview);
+      return executeInventoryAdjustStock(params as Parameters<typeof executeInventoryAdjustStock>[0], venueId, userId, preview);
     
     case "inventory.set_par_levels":
-      return executeInventorySetParLevels(params, venueId, userId, preview);
+      return executeInventorySetParLevels(params as Parameters<typeof executeInventorySetParLevels>[0], venueId, userId, preview);
     
     case "inventory.generate_purchase_order":
-      return executeInventoryGeneratePurchaseOrder(params, venueId, userId, preview);
+      return executeInventoryGeneratePurchaseOrder(params as Parameters<typeof executeInventoryGeneratePurchaseOrder>[0], venueId, userId, preview);
     
     // Order tools
     case "orders.mark_served":
-      return executeOrdersMarkServed(params, venueId, userId, preview);
+      return executeOrdersMarkServed(params as Parameters<typeof executeOrdersMarkServed>[0], venueId, userId, preview);
     
     case "orders.complete":
-      return executeOrdersComplete(params, venueId, userId, preview);
+      return executeOrdersComplete(params as Parameters<typeof executeOrdersComplete>[0], venueId, userId, preview);
     
     // Analytics tools
     case "analytics.get_insights":
-      return executeAnalyticsGetInsights(params, venueId, userId, preview);
+      return executeAnalyticsGetInsights(params as Parameters<typeof executeAnalyticsGetInsights>[0], venueId, userId, preview);
     
     case "analytics.get_stats":
-      return executeAnalyticsGetStats(params, venueId, userId, preview);
+      return executeAnalyticsGetStats(params as Parameters<typeof executeAnalyticsGetStats>[0], venueId, userId, preview);
     
     case "analytics.export":
-      return executeAnalyticsExport(params, venueId, userId, preview);
+      return executeAnalyticsExport(params as Parameters<typeof executeAnalyticsExport>[0], venueId, userId, preview);
     
     case "analytics.create_report":
-      return executeAnalyticsCreateReport(params, venueId, userId, preview);
+      return executeAnalyticsCreateReport(params as Parameters<typeof executeAnalyticsCreateReport>[0], venueId, userId, preview);
     
     // Discount tools
     case "discounts.create":
-      return executeDiscountsCreate(params, venueId, userId, preview);
+      return executeDiscountsCreate(params as Parameters<typeof executeDiscountsCreate>[0], venueId, userId, preview);
     
     // KDS tools
     case "kds.get_overdue":
-      return executeKDSGetOverdue(params, venueId, userId, preview);
+      return executeKDSGetOverdue(params as Parameters<typeof executeKDSGetOverdue>[0], venueId, userId, preview);
     
     case "kds.suggest_optimization":
-      return executeKDSSuggestOptimization(params, venueId, userId, preview);
+      return executeKDSSuggestOptimization(params as Parameters<typeof executeKDSSuggestOptimization>[0], venueId, userId, preview);
     
     // Navigation tools
     case "navigation.go_to_page":
-      return executeNavigationGoToPage(params, venueId, userId, preview);
+      return executeNavigationGoToPage(params as Parameters<typeof executeNavigationGoToPage>[0], venueId, userId, preview);
     
     default:
       throw new AIAssistantError(

@@ -66,8 +66,10 @@ export function EnhancedPDFMenuDisplay({
   const [isDragging, setIsDragging] = useState(false);
   const [dragStart, setDragStart] = useState({ x: 0, y: 0 });
   const [showStickyCart, setShowStickyCart] = useState(false);
+  const [selectedCategory, setSelectedCategory] = useState<string | null>(null);
   const imageRefs = useRef<(HTMLDivElement | null)[]>([]);
   const containerRef = useRef<HTMLDivElement>(null);
+  const categoryRefs = useRef<Record<string, HTMLDivElement | null>>({});
 
   useEffect(() => {
     const fetchPDFImages = async () => {
@@ -144,15 +146,40 @@ export function EnhancedPDFMenuDisplay({
   };
 
   const handleAddToCart = (item: MenuItem) => {
-    onAddToCart(item);
-    setIsModalOpen(false);
+    const existingItem = cart.find(c => c.id === item.id);
+    if (!existingItem) {
+      onAddToCart(item);
+      onUpdateQuantity(item.id, 1);
+    } else {
+      onUpdateQuantity(item.id, existingItem.quantity + 1);
+    }
   };
 
   const handleUpdateQuantity = (itemId: string, quantity: number) => {
-    onUpdateQuantity(itemId, quantity);
+    if (quantity === 0) {
+      onRemoveFromCart(itemId);
+    } else {
+      const existingItem = cart.find(c => c.id === itemId);
+      if (existingItem) {
+        onUpdateQuantity(itemId, quantity);
+      } else {
+        const item = menuItems.find(i => i.id === itemId);
+        if (item) {
+          onAddToCart(item);
+          onUpdateQuantity(itemId, quantity);
+        }
+      }
+    }
   };
 
-  // Pinch zoom handlers
+  const scrollToCategory = (category: string) => {
+    setSelectedCategory(category);
+    const element = categoryRefs.current[category];
+    if (element) {
+      element.scrollIntoView({ behavior: 'smooth', block: 'start' });
+    }
+  };
+
   const handleWheel = (e: React.WheelEvent) => {
     if (e.ctrlKey || e.metaKey) {
       e.preventDefault();
@@ -258,6 +285,38 @@ export function EnhancedPDFMenuDisplay({
 
   return (
     <div className="relative">
+      {/* Horizontal Scrollable Categories */}
+      {categories.length > 0 && viewMode === 'list' && (
+        <div className="mb-6 sticky top-0 z-10 bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60 border-b">
+          <div className="overflow-x-auto scrollbar-hide py-3">
+            <div className="flex space-x-2 px-4">
+              <Button
+                variant={selectedCategory === null ? 'default' : 'outline'}
+                size="sm"
+                onClick={() => {
+                  setSelectedCategory(null);
+                  window.scrollTo({ top: 0, behavior: 'smooth' });
+                }}
+                className="whitespace-nowrap"
+              >
+                All
+              </Button>
+              {categories.map((category) => (
+                <Button
+                  key={category}
+                  variant={selectedCategory === category ? 'default' : 'outline'}
+                  size="sm"
+                  onClick={() => scrollToCategory(category)}
+                  className="whitespace-nowrap"
+                >
+                  {category}
+                </Button>
+              ))}
+            </div>
+          </div>
+        </div>
+      )}
+
       {/* View Mode Toggle */}
       <div className="flex items-center justify-between mb-4">
         <div className="flex items-center space-x-2">
@@ -431,7 +490,11 @@ export function EnhancedPDFMenuDisplay({
             if (items.length === 0) return null;
 
             return (
-              <div key={category} className="space-y-4">
+              <div 
+                key={category} 
+                className="space-y-4" 
+                ref={(el) => { categoryRefs.current[category] = el; }}
+              >
                 <h2 className="text-2xl font-bold text-foreground border-b-2 border-primary pb-2">
                   {category}
                 </h2>

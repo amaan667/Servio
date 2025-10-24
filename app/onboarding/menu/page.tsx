@@ -26,7 +26,7 @@ export default function OnboardingMenuPage() {
 
   const checkAuth = async () => {
     try {
-      const supabase = createClient();
+      const supabase = await createClient();
       const { data: { user } } = await supabase.auth.getSession();
 
       if (!user) {
@@ -46,7 +46,7 @@ export default function OnboardingMenuPage() {
         return;
       }
 
-      setVenueId(venues[0].venue_id);
+      setVenueId(venues[0]?.venue_id);
       setLoading(false);
     } catch (error) {
 
@@ -116,7 +116,7 @@ export default function OnboardingMenuPage() {
     setUploading(true);
 
     try {
-      const supabase = createClient();
+      const supabase = await createClient();
 
       // Insert items
       const itemsToInsert = validItems.map(item => ({

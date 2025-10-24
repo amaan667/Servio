@@ -41,7 +41,7 @@ export function useMenuItems(venueId: string) {
           .limit(1);
 
         if (uploadData && uploadData.length > 0) {
-          setCategoryOrder(uploadData[0].category_order);
+          setCategoryOrder(uploadData[0]?.category_order);
         }
       }
     } catch (error) {

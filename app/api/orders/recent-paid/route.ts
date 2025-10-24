@@ -1,11 +1,11 @@
 import { NextResponse } from 'next/server';
 import { createAdminClient } from '@/lib/supabase';
-import { apiLogger, logger } from '@/lib/logger';
+import { logger } from '@/lib/logger';
 
 export const runtime = 'nodejs';
 export const dynamic = 'force-dynamic';
 
-export async function GET(req: Request) {
+export async function GET(_req: Request) {
   try {
     const supabaseAdmin = createAdminClient();
     logger.debug('[RECENT PAID] Fetching most recent paid order...');

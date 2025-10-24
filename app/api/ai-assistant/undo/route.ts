@@ -302,7 +302,7 @@ async function undoMenuTranslation(venueId: string, undoData: unknown, supabase:
     const detectSourceLanguage = (items: Record<string, unknown>[]): string => {
       const categories = items
         .map((item) => (item as { category?: string }).category)
-        .filter(Boolean);
+        .filter((category): category is string => Boolean(category));
       const spanishIndicators = [
         "CAFÉ",
         "BEBIDAS",
@@ -497,7 +497,7 @@ IMPORTANT: Every item in the input must appear in your output with a translated 
     // Update database with reverse translations
     let updatedCount = 0;
     const translatedIds = new Set(
-      translatedItems.map((item: Record<string, unknown>) => (item as { id?: string }).id)
+      (translatedItems as Record<string, unknown>[]).map((item) => (item as { id?: string }).id)
     );
 
     for (const translatedItem of translatedItems) {
@@ -661,6 +661,10 @@ async function undoMenuItemDeletion(venueId: string, undoData: unknown, supabase
     const typedUndoData = undoData as UndoDataDeletion;
     const deletedItem = typedUndoData.result?.deletedItem;
 
+    if (!deletedItem) {
+      return { success: false, error: "No deleted item data found in undo data" };
+    }
+
     const { error } = await supabase
       .from("menu_items")
       .insert({
@@ -694,7 +698,7 @@ async function undoMenuItemDeletion(venueId: string, undoData: unknown, supabase
 }
 
 async function undoInventoryAdjustment(
-  venueId: string,
+  _venueId: string,
   undoData: unknown,
   supabase: SupabaseClient
 ) {

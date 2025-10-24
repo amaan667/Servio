@@ -83,7 +83,7 @@ export function EnhancedTableMergeDialog({
   const [selectedTableId, setSelectedTableId] = useState<string>('');
   const [isLoading, setIsLoading] = useState(false);
   const [showAllTables, setShowAllTables] = useState(false);
-  const [mergeableTables, setMergeableTables] = useState<unknown[]>([]);
+  const [mergeableTables, setMergeableTables] = useState<Table[]>([]);
 
   // Update mergeable tables when dialog opens or settings change
   useEffect(() => {

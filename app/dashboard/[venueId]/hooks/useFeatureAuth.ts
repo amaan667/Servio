@@ -53,21 +53,12 @@ export function useFeatureAuth({
         const currentUser = session?.user;
 
         if (!currentUser) {
-          console.info(
-            `⚠️  [${featureName.toUpperCase()} CLIENT] No user found, redirecting to sign-in`
-          );
           const redirect =
             redirectPath ||
             `/dashboard/${venueId}/${featureName.toLowerCase().replace(/\s+/g, "-")}`;
           router.push(`/sign-in?redirect=${redirect}`);
           return;
         }
-
-        console.info(`🔐 [${featureName.toUpperCase()} CLIENT] Auth check:`, {
-          venueId,
-          userId: currentUser.id,
-          timestamp: new Date().toISOString(),
-        });
 
         setUser(currentUser);
 
@@ -89,15 +80,6 @@ export function useFeatureAuth({
 
         const isOwner = !!venue;
         const isStaff = !!roleData;
-
-        console.info(`✅ [${featureName.toUpperCase()} CLIENT] Authorization check:`, {
-          venueId,
-          userId: currentUser.id,
-          isOwner,
-          isStaff,
-          role: roleData?.role,
-          timestamp: new Date().toISOString(),
-        });
 
         if (!isOwner && !isStaff) {
           setAuthError("You don't have access to this venue");
@@ -132,14 +114,6 @@ export function useFeatureAuth({
         } else {
           setHasAccess(true);
         }
-
-        console.info(`🚀 [${featureName.toUpperCase()} CLIENT] Auth complete:`, {
-          venueId,
-          userId: currentUser.id,
-          finalRole,
-          hasAccess: requiredRoles ? requiredRoles.includes(finalRole) : true,
-          timestamp: new Date().toISOString(),
-        });
 
         setLoading(false);
       } catch (error) {

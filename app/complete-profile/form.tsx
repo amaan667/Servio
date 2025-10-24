@@ -102,7 +102,8 @@ export default function CompleteProfileForm({ user }: CompleteProfileFormProps) 
 
       // Set password for OAuth users (now required)
       if (isOAuthUser) {
-        const { error: passwordError } = await createClient().auth.updateUser({
+        const supabase = await createClient();
+        const { error: passwordError } = await supabase.auth.updateUser({
           password: formData.password
         });
         if (passwordError) {
@@ -141,7 +142,8 @@ export default function CompleteProfileForm({ user }: CompleteProfileFormProps) 
       const returnedVenueId = j.venue?.venue_id || venueId;
 
       // Update user metadata to mark profile as complete and save additional info
-      await createClient().auth.updateUser({
+      const supabase2 = await createClient();
+      await supabase2.auth.updateUser({
         data: { 
           profileComplete: true,
           venue_name: venueName,

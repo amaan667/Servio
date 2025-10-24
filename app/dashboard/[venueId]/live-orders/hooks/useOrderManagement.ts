@@ -99,7 +99,7 @@ export function useOrderManagement(venueId: string) {
           table: 'orders',
           filter: `venue_id=eq.${venueId}`
         }, 
-        (payload: unknown) => {
+        (payload: { eventType: string; new?: Record<string, unknown>; old?: Record<string, unknown> }) => {
           const newOrder = payload.new as Order;
           const oldOrder = payload.old as Order;
           

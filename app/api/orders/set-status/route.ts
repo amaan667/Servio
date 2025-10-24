@@ -1,4 +1,3 @@
-import { errorToContext } from '@/lib/utils/error-to-context';
 import { NextResponse } from 'next/server';
 import { createClient } from '@/lib/supabase';
 import { cleanupTableOnOrderCompletion } from '@/lib/table-cleanup';

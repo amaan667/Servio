@@ -1,7 +1,8 @@
 import { TableCardNew } from "@/components/table-management/TableCardNew";
+import { TableRuntimeState } from "@/types/table-management";
 
 interface TableGridSectionProps {
-  tables: unknown[];
+  tables: TableRuntimeState[];
   searchQuery: string;
   venueId: string;
   onTableActionComplete: () => void;

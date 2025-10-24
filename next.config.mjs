@@ -11,10 +11,12 @@ const nextConfig = {
   trailingSlash: false,
   reactStrictMode: true,
   eslint: {
-    ignoreDuringBuilds: true, // Temporarily allow builds - fixing remaining type errors
+    ignoreDuringBuilds: false, // ESLint runs during build
   },
   typescript: {
-    ignoreBuildErrors: true, // Temporarily allow builds - 90% any types fixed, addressing edge cases
+    // TODO: Remove this once all 1647 TS errors are fixed
+    // Run `npm run typecheck` separately for TS validation
+    ignoreBuildErrors: true,
   },
   // Performance optimizations
   experimental: {

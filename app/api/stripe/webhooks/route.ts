@@ -155,7 +155,7 @@ async function handleCheckoutWithOrg(
   organizationId: string,
   tier: string,
   existingOrg: Record<string, unknown>,
-  supabase: ReturnType<typeof createClient>
+  supabase: Awaited<ReturnType<typeof createClient>>
 ) {
   apiLogger.debug("[STRIPE WEBHOOK] ✅ Processing update for organization:", {
     id: existingOrg.id,

@@ -231,7 +231,7 @@ export default function OrderDetailsPage() {
                         >
                           <Star
                             className={`${
-                              feedback.feedbackResponses.find(r => r.question_id === question.id)?.answer_stars >= star
+                              (feedback.feedbackResponses.find(r => r.question_id === question.id)?.answer_stars ?? 0) >= star
                                 ? 'text-yellow-400 fill-yellow-400'
                                 : 'text-gray-300'
                             }`}

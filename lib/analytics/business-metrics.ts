@@ -89,7 +89,7 @@ export class BusinessMetricsService {
         ...staffMetrics,
       };
     } catch (error) {
-      logger.error("[BUSINESS METRICS] Error fetching venue metrics:", error);
+      logger.error("[BUSINESS METRICS] Error fetching venue metrics:", error as Record<string, unknown>);
       throw error;
     }
   }
@@ -489,7 +489,7 @@ export class BusinessMetricsService {
         todayOrders,
       };
     } catch (error) {
-      logger.error("[BUSINESS METRICS] Error fetching real-time metrics:", error);
+      logger.error("[BUSINESS METRICS] Error fetching real-time metrics:", error as Record<string, unknown>);
       throw error;
     }
   }

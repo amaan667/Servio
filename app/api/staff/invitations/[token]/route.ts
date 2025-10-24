@@ -3,7 +3,7 @@ import { createClient, createAdminClient } from '@/lib/supabase';
 
 // GET /api/staff/invitations/[token] - Get invitation details by token
 export async function GET(
-  request: NextRequest,
+  _request: NextRequest,
   { params }: { params: Promise<{ token: string }> }
 ) {
   try {

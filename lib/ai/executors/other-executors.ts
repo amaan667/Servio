@@ -8,6 +8,14 @@ export async function executeDiscountsCreate(
   userId: string,
   preview: boolean
 ): Promise<AIPreviewDiff | AIExecutionResult> {
+  const typedParams = params as { 
+    name: string; 
+    scope: string; 
+    amountPct: number; 
+    startsAt: string; 
+    endsAt?: string;
+    scopeId?: string;
+  };
   const supabase = await createClient();
 
   if (preview) {
@@ -15,15 +23,15 @@ export async function executeDiscountsCreate(
       toolName: "discounts.create",
       before: [],
       after: [{
-        name: params.name,
-        scope: params.scope,
-        discount: `${params.amountPct}%`,
-        startsAt: params.startsAt,
-        endsAt: params.endsAt || "No end date",
+        name: typedParams.name,
+        scope: typedParams.scope,
+        discount: `${typedParams.amountPct}%`,
+        startsAt: typedParams.startsAt,
+        endsAt: typedParams.endsAt || "No end date",
       }],
       impact: {
         itemsAffected: 1,
-        description: `Discount "${params.name}" (${params.amountPct}% off) will be created`,
+        description: `Discount "${typedParams.name}" (${typedParams.amountPct}% off) will be created`,
       },
     };
   }
@@ -32,12 +40,12 @@ export async function executeDiscountsCreate(
     .from("discounts")
     .insert({
       venue_id: venueId,
-      name: params.name,
-      scope: params.scope,
-      scope_id: params.scopeId,
-      amount_pct: params.amountPct,
-      starts_at: params.startsAt,
-      ends_at: params.endsAt,
+      name: typedParams.name,
+      scope: typedParams.scope,
+      scope_id: typedParams.scopeId,
+      amount_pct: typedParams.amountPct,
+      starts_at: typedParams.startsAt,
+      ends_at: typedParams.endsAt,
       created_by: userId,
     });
 
@@ -46,7 +54,7 @@ export async function executeDiscountsCreate(
   return {
     success: true,
     toolName: "discounts.create",
-    result: { discountName: params.name },
+    result: { discountName: typedParams.name },
     auditId: "",
   };
 }
@@ -54,9 +62,10 @@ export async function executeDiscountsCreate(
 export async function executeKDSGetOverdue(
   params: unknown,
   venueId: string,
-  userId: string,
+  _userId: string,
   preview: boolean
 ): Promise<AIPreviewDiff | AIExecutionResult> {
+  const typedParams = params as { station?: string; thresholdMinutes: number };
   const supabase = await createClient();
 
   const query = supabase
@@ -65,8 +74,8 @@ export async function executeKDSGetOverdue(
     .eq("venue_id", venueId)
     .eq("status", "in_progress");
 
-  if (params.station) {
-    query.eq("station_id", params.station);
+  if (typedParams.station) {
+    query.eq("station_id", typedParams.station);
   }
 
   const { data: tickets } = await query;
@@ -75,7 +84,7 @@ export async function executeKDSGetOverdue(
   const overdueTickets = tickets?.filter(ticket => {
     if (!ticket.started_at) return false;
     const elapsed = (now.getTime() - new Date(ticket.started_at).getTime()) / 1000 / 60;
-    return elapsed > params.thresholdMinutes;
+    return elapsed > typedParams.thresholdMinutes;
   }) || [];
 
   return {

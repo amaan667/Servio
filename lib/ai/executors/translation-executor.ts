@@ -1,4 +1,3 @@
-import { errorToContext } from '@/lib/utils/error-to-context';
 
 import { createClient } from "@/lib/supabase";
 import { aiLogger as logger } from '@/lib/logger';
@@ -138,9 +137,10 @@ function detectSourceLanguage(items: Array<{ name: string; category: string }>, 
 export async function executeMenuTranslate(
   params: unknown,
   venueId: string,
-  userId: string,
+  _userId: string,
   preview: boolean
 ): Promise<AIPreviewDiff | AIExecutionResult> {
+  const typedParams = params as { targetLanguage: string; includeDescriptions?: boolean };
   const supabase = await createClient();
 
   const { data: items } = await supabase
@@ -153,11 +153,11 @@ export async function executeMenuTranslate(
     throw new AIAssistantError("No menu items found", "INVALID_PARAMS");
   }
 
-  logger.debug(`[AI ASSISTANT] Starting translation of ${items.length} items to ${params.targetLanguage}`);
+  logger.debug(`[AI ASSISTANT] Starting translation of ${items.length} items to ${typedParams.targetLanguage}`);
 
-  const targetLangName = LANGUAGE_NAMES[params.targetLanguage] || params.targetLanguage;
+  const targetLangName = LANGUAGE_NAMES[typedParams.targetLanguage] || typedParams.targetLanguage;
   const uniqueCategories = Array.from(new Set(items.map(item => item.category).filter(Boolean)));
-  const detectedSourceLanguage = detectSourceLanguage(items, params.targetLanguage);
+  const detectedSourceLanguage = detectSourceLanguage(items, typedParams.targetLanguage);
   
   if (preview) {
     try {
@@ -170,10 +170,10 @@ export async function executeMenuTranslate(
         id: item.id,
         name: item.name,
         category: item.category,
-        ...(params.includeDescriptions && item.description ? { description: item.description } : {})
+        ...(typedParams.includeDescriptions && item.description ? { description: item.description } : {})
       }));
 
-      const mappingKey = `${detectedSourceLanguage}-${params.targetLanguage}`;
+      const mappingKey = `${detectedSourceLanguage}-${typedParams.targetLanguage}`;
       const categoryMappingList = Object.entries(CATEGORY_MAPPINGS[mappingKey] || {})
         .map(([from, to]) => `   - "${from}" → "${to}"`)
         .join('\n');
@@ -236,12 +236,12 @@ OUTPUT FORMAT:
           impact: {
             itemsAffected: items.length,
             categoriesAffected: uniqueCategories.length,
-            description: `Menu will be translated to ${targetLangName}. This will update ${items.length} items and ${uniqueCategories.length} categories${params.includeDescriptions ? " (including descriptions)" : ""}.`,
+            description: `Menu will be translated to ${targetLangName}. This will update ${items.length} items and ${uniqueCategories.length} categories${typedParams.includeDescriptions ? " (including descriptions)" : ""}.`,
           },
         };
       }
     } catch (error) {
-      logger.error("[AI ASSISTANT] Preview translation failed:", error);
+      logger.error("[AI ASSISTANT] Preview translation failed:", error as Record<string, unknown>);
     }
 
     return {
@@ -259,7 +259,7 @@ OUTPUT FORMAT:
       impact: {
         itemsAffected: items.length,
         categoriesAffected: uniqueCategories.length,
-        description: `Menu will be translated to ${targetLangName}. This will update ${items.length} items and ${uniqueCategories.length} categories${params.includeDescriptions ? " (including descriptions)" : ""}.`,
+        description: `Menu will be translated to ${targetLangName}. This will update ${items.length} items and ${uniqueCategories.length} categories${typedParams.includeDescriptions ? " (including descriptions)" : ""}.`,
       },
     };
   }
@@ -281,10 +281,10 @@ OUTPUT FORMAT:
         id: item.id,
         name: item.name,
         category: item.category,
-        ...(params.includeDescriptions && item.description ? { description: item.description } : {})
+        ...(typedParams.includeDescriptions && item.description ? { description: item.description } : {})
       }));
 
-      const mappingKey = `${detectedSourceLanguage}-${params.targetLanguage}`;
+      const mappingKey = `${detectedSourceLanguage}-${typedParams.targetLanguage}`;
       const categoryMappingList = Object.entries(CATEGORY_MAPPINGS[mappingKey] || {})
         .map(([from, to]) => `   - "${from}" → "${to}"`)
         .join('\n');
@@ -399,7 +399,7 @@ OUTPUT FORMAT:
         updateData.category = translatedItem.category;
       }
       
-      if (params.includeDescriptions && translatedItem.description) {
+      if (typedParams.includeDescriptions && translatedItem.description) {
         updateData.description = translatedItem.description;
       }
 
@@ -433,15 +433,15 @@ OUTPUT FORMAT:
         itemsTranslated: updatedCount,
         itemsFailed: failedCount,
         categoriesTranslated: uniqueCategories.length,
-        targetLanguage: params.targetLanguage,
-        includeDescriptions: params.includeDescriptions,
+        targetLanguage: typedParams.targetLanguage,
+        includeDescriptions: typedParams.includeDescriptions,
         originalItemCount,
         finalItemCount: translatedItems.length
       },
       auditId: "",
     };
   } catch (error) {
-    logger.error("[AI ASSISTANT] Translation error:", error);
+    logger.error("[AI ASSISTANT] Translation error:", error as Record<string, unknown>);
     throw new AIAssistantError(
       `Translation failed: ${error.message}`,
       "EXECUTION_FAILED",

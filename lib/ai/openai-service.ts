@@ -1,4 +1,3 @@
-import { errorToContext } from '@/lib/utils/error-to-context';
 
 // Production OpenAI Integration with Responses API and Tool Calling
 // Implements proper tool correlation and error handling
@@ -224,7 +223,7 @@ export async function handleUserMessage({
           } as unknown);
 
         } catch (error) {
-          logger.error(`[AI] Tool execution error for ${name}:`, errorToContext(error));
+          logger.error(`[AI] Tool execution error for ${name}:`, error as Record<string, unknown>);
           toolResult = { error: `Tool execution failed: ${error?.message || 'Unknown error'}` };
           
           await supabase.from("ai_messages").insert({
@@ -284,7 +283,7 @@ export async function handleUserMessage({
       };
     }
   } catch (error) {
-    logger.error("[AI] OpenAI service error:", error);
+    logger.error("[AI] OpenAI service error:", error as Record<string, unknown>);
     throw new Error(`AI service error: ${error?.message || 'Unknown error'}`);
   }
 }
@@ -386,7 +385,7 @@ export async function generateConversationTitle(firstUserMessage: string): Promi
     const title = response.choices[0].message.content?.trim() || "New Chat";
     return title.substring(0, 60); // Limit length
   } catch (error) {
-    logger.error("[AI] Title generation error:", error);
+    logger.error("[AI] Title generation error:", error as Record<string, unknown>);
     return firstUserMessage.substring(0, 60);
   }
 }

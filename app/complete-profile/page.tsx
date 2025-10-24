@@ -20,7 +20,8 @@ export default function CompleteProfilePage() {
 
     const checkUserAndVenues = async () => {
       try {
-        const { data: { user }, error: userErr } = await createClient().auth.getSession();
+        const supabase = await createClient();
+        const { data: { user }, error: userErr } = await supabase.auth.getSession();
         
         if (userErr || !user) {
           router.replace('/');
@@ -35,22 +36,24 @@ export default function CompleteProfilePage() {
         // Only show complete profile form for new Google OAuth users
         if (!isOAuthUser) {
           // For email sign-up users, redirect to their primary venue dashboard
-          const { data: venues } = await createClient()
+          const supabase2 = await createClient();
+          const { data: venues } = await supabase2
             .from('venues')
             .select('venue_id')
             .eq('owner_user_id', user.id)
             .order('created_at', { ascending: true })
             .limit(1);
           
-          if (venues && venues.length > 0) {
-            router.replace(`/dashboard/${venues[0].venue_id}`);
+        if (venues && venues.length > 0) {
+          router.replace(`/dashboard/${venues[0]?.venue_id}`);
           } else {
             router.replace('/');
           }
           return;
         }
 
-        const { data: venue, error: venueErr } = await createClient()
+        const supabase3 = await createClient();
+        const { data: venue, error: venueErr } = await supabase3
           .from('venues')
           .select('venue_id')
           .eq('owner_user_id', user.id)

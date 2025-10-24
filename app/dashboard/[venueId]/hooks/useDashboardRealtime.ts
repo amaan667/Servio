@@ -1,6 +1,12 @@
 import { useEffect } from 'react';
 import { supabaseBrowser } from '@/lib/supabase';
 
+interface RealtimePayload {
+  eventType: 'INSERT' | 'UPDATE' | 'DELETE';
+  new?: Record<string, unknown>;
+  old?: Record<string, unknown>;
+}
+
 interface UseDashboardRealtimeProps {
   venueId: string;
   todayWindow: unknown;
@@ -34,9 +40,9 @@ export function useDashboardRealtime({
           table: 'orders',
           filter: `venue_id=eq.${venueId}`
         }, 
-        async (payload: unknown) => {
+        async (payload: RealtimePayload) => {
 
-          const orderCreatedAt = (payload.new as unknown)?.created_at || (payload.old as unknown)?.created_at;
+          const orderCreatedAt = payload.new?.created_at || payload.old?.created_at;
           if (!orderCreatedAt) {
             return;
           }
@@ -64,7 +70,7 @@ export function useDashboardRealtime({
           table: 'tables',
           filter: `venue_id=eq.${venueId}`
         },
-        async (payload: unknown) => {
+        async (payload: RealtimePayload) => {
 
           await refreshCounts();
         }
@@ -76,7 +82,7 @@ export function useDashboardRealtime({
           table: 'table_sessions',
           filter: `venue_id=eq.${venueId}`
         },
-        async (payload: unknown) => {
+        async (payload: RealtimePayload) => {
 
           await refreshCounts();
         }

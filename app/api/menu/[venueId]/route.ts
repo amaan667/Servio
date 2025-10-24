@@ -4,7 +4,7 @@ import { cache, cacheKeys, cacheTTL } from '@/lib/cache';
 import { logger } from '@/lib/logger';
 
 export async function GET(
-  request: NextRequest,
+  _request: NextRequest,
   context: { params: Promise<{ venueId: string }> }
 ) {
   try {

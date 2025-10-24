@@ -184,7 +184,7 @@ export default function OrderSummary({ orderId, sessionId, orderData, isDemo = f
           table: 'orders',
           filter: `id=eq.${order.id}`,
         },
-        (payload: unknown) => {
+        (payload: { eventType: string; new?: Record<string, unknown>; old?: Record<string, unknown> }) => {
           
           if (payload.eventType === 'UPDATE') {
             
