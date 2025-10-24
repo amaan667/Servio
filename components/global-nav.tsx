@@ -11,7 +11,7 @@ import { useRouter, usePathname } from "next/navigation";
 
 export default function GlobalNav() {
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
-  const { session, loading, signOut } = useAuth();
+  const { session, signOut } = useAuth(); // Don't use loading state
   const router = useRouter();
   const pathname = usePathname();
   const supabase = createClient();
@@ -38,7 +38,7 @@ export default function GlobalNav() {
   // potentially authenticated while loading and only show public actions
   // when we definitively know there is no session.
   const isAuthenticated = !!session?.user && !!session?.access_token;
-  const isLoadingAuth = !!loading;
+  const isLoadingAuth = false; // Never show loading state - render immediately with best guess
 
   // Determine if we're on an authenticated route that supports dark mode
   const isAuthenticatedRoute =
@@ -138,6 +138,7 @@ export default function GlobalNav() {
   // Always render navigation immediately - don't wait for auth loading
   // The navigation will show appropriate content based on auth state
 
+  // Render nav instantly - no waiting for auth
   return (
     <nav className={navClasses}>
       <div className="w-full px-2 sm:px-4 lg:px-6">

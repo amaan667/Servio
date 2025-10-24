@@ -31,7 +31,7 @@ export default function AuthProvider({
 }) {
   const [session, setSession] = useState<Session | null>(initialSession ?? null);
   const [user, setUser] = useState<User | null>(initialSession?.user ?? null);
-  const [loading, setLoading] = useState(!initialSession);
+  const [loading, setLoading] = useState(false); // Always start with false to prevent flicker
 
   useEffect(() => {
     let supabase;
