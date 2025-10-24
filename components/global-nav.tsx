@@ -19,13 +19,22 @@ export default function GlobalNav() {
   // Check for initial auth state SYNCHRONOUSLY before first render
   const getInitialAuthState = () => {
     if (typeof window === "undefined") return false;
-    // Check for auth cookies or session storage
-    const hasAuthCookie = document.cookie.includes('sb-') && document.cookie.includes('-auth-token');
-    const hasSessionStorage = sessionStorage.getItem('supabase.auth.token') !== null;
-    return hasAuthCookie || hasSessionStorage;
+    // Check for auth cookies or session storage - more comprehensive
+    const cookies = document.cookie.split(';');
+    const hasAuthCookie = cookies.some(cookie => 
+      cookie.trim().startsWith('sb-') && cookie.includes('auth-token')
+    );
+    
+    // Check multiple possible session storage keys
+    const hasSessionAuth = 
+      sessionStorage.getItem('supabase.auth.token') !== null ||
+      localStorage.getItem('supabase.auth.token') !== null ||
+      Object.keys(localStorage).some(key => key.includes('supabase'));
+    
+    return hasAuthCookie || hasSessionAuth;
   };
 
-  // Initialize with synced auth state to prevent flicker
+  // Initialize with synced auth state to prevent flicker - memoize to never change
   const [initiallyAuthenticated] = useState(getInitialAuthState);
 
   // Initialize with cached data SYNCHRONOUSLY for instant render

@@ -67,7 +67,7 @@ export default function StaffClient({
           </CardHeader>
           <CardContent>
             <div className="text-2xl font-bold text-green-600">
-              {staffManagement.staff?.filter((s) => s.active).length || 0}
+              {staffManagement.staff?.filter((s) => s.active !== false).length || 0}
             </div>
           </CardContent>
         </Card>

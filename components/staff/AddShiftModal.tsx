@@ -35,15 +35,18 @@ export function AddShiftModal({ isOpen, onClose, staffMember, venueId, onShiftAd
     setError(null);
 
     try {
+      // Combine date and time into proper timestamp format
+      const startTimestamp = `${date}T${startTime}:00`;
+      const endTimestamp = `${date}T${endTime}:00`;
+
       const res = await fetch("/api/staff/shifts/add", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           venue_id: venueId,
           staff_id: staffMember.id,
-          date,
-          start_time: startTime,
-          end_time: endTime,
+          start_time: startTimestamp,
+          end_time: endTimestamp,
         }),
       });
 

@@ -18,8 +18,15 @@ interface AnalyticsData {
 const COLORS = ['#5B21B6', '#22C55E', '#F59E0B', '#EF4444', '#8B5CF6', '#06B6D4'];
 
 export function useAnalyticsData(venueId: string, venueTz: string) {
-  const [data, setData] = useState<AnalyticsData | null>(null);
-  const [loading, setLoading] = useState(true);
+  // Cache analytics data to prevent flicker
+  const getCachedAnalytics = () => {
+    if (typeof window === 'undefined') return null;
+    const cached = sessionStorage.getItem(`analytics_data_${venueId}`);
+    return cached ? JSON.parse(cached) : null;
+  };
+
+  const [data, setData] = useState<AnalyticsData | null>(getCachedAnalytics());
+  const [loading, setLoading] = useState(false); // Start with false
   const [error, setError] = useState<string | null>(null);
 
   const fetchAnalytics = useCallback(async () => {

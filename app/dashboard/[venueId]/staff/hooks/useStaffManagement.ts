@@ -26,6 +26,7 @@ export interface StaffCounts {
 }
 
 export function useStaffManagement(venueId: string, initialStaff?: StaffRow[], initialCounts?: StaffCounts) {
+  // Use initialStaff directly, no empty array fallback to prevent flicker
   const [staff, setStaff] = useState<StaffRow[]>(initialStaff || []);
   const [name, setName] = useState('');
   const [role, setRole] = useState('Server');
