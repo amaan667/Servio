@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState, useMemo } from "react";
+import React, { useState, useMemo, useEffect } from "react";
 import { ChevronLeft, ChevronRight } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -32,11 +32,32 @@ interface SimpleStaffGridProps {
 
 type CalendarView = "today" | "week" | "month";
 
-const SimpleStaffGrid: React.FC<SimpleStaffGridProps> = () => {
-  const shifts: LegacyShift[] = useMemo(() => [], []); // Shifts not implemented yet
+const SimpleStaffGrid: React.FC<SimpleStaffGridProps> = ({ venueId }) => {
+  const [shifts, setShifts] = useState<LegacyShift[]>([]);
   const [currentDate, setCurrentDate] = useState(new Date());
   const [currentMonth, setCurrentMonth] = useState(new Date());
   const [calendarView, setCalendarView] = useState<CalendarView>("today");
+  
+  // Fetch shifts on mount
+  useEffect(() => {
+    const fetchShifts = async () => {
+      try {
+        const res = await fetch(`/api/staff/shifts/list?venue_id=${encodeURIComponent(venueId)}`);
+        const data = await res.json();
+        if (data.ok && data.shifts) {
+          setShifts(data.shifts);
+        }
+      } catch (error) {
+        console.error('Failed to fetch shifts:', error);
+      }
+    };
+    
+    fetchShifts();
+    
+    // Refresh shifts every 30 seconds
+    const interval = setInterval(fetchShifts, 30000);
+    return () => clearInterval(interval);
+  }, [venueId]);
 
   // Filter shifts based on current view
   const visibleShifts = useMemo(() => {

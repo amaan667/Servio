@@ -60,11 +60,13 @@ export function AddShiftModal({ isOpen, onClose, staffMember, venueId, onShiftAd
       setDate("");
       setStartTime("09:00");
       setEndTime("17:00");
-      onClose();
       
       if (onShiftAdded) {
         onShiftAdded();
       }
+      
+      // Close modal after callback
+      onClose();
     } catch (err) {
       setError(err instanceof Error ? err.message : "Failed to add shift");
     } finally {

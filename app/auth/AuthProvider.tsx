@@ -29,8 +29,27 @@ export default function AuthProvider({
   initialSession: Session | null;
   children: React.ReactNode;
 }) {
-  const [session, setSession] = useState<Session | null>(initialSession ?? null);
-  const [user, setUser] = useState<User | null>(initialSession?.user ?? null);
+  // Get initial session from server OR from stored auth
+  const getInitialSession = () => {
+    if (initialSession) return initialSession;
+    
+    // Check for stored session to prevent flicker
+    if (typeof window !== 'undefined') {
+      try {
+        const stored = localStorage.getItem('sb-auth-session');
+        if (stored) {
+          const parsed = JSON.parse(stored);
+          return parsed;
+        }
+      } catch {
+        // Ignore parse errors
+      }
+    }
+    return null;
+  };
+
+  const [session, setSession] = useState<Session | null>(getInitialSession());
+  const [user, setUser] = useState<User | null>(getInitialSession()?.user ?? null);
   const [loading, setLoading] = useState(false); // Always start with false to prevent flicker
 
   useEffect(() => {
@@ -74,16 +93,28 @@ export default function AuthProvider({
           case 'SIGNED_IN':
             setSession(newSession);
             setUser(newSession?.user ?? null);
+            // Store session to prevent flicker on reload
+            if (typeof window !== 'undefined' && newSession) {
+              localStorage.setItem('sb-auth-session', JSON.stringify(newSession));
+            }
             setLoading(false);
             break;
           case 'SIGNED_OUT':
             setSession(null);
             setUser(null);
+            // Clear stored session
+            if (typeof window !== 'undefined') {
+              localStorage.removeItem('sb-auth-session');
+            }
             setLoading(false);
             break;
           case 'TOKEN_REFRESHED':
             setSession(newSession);
             setUser(newSession?.user ?? null);
+            // Update stored session
+            if (typeof window !== 'undefined' && newSession) {
+              localStorage.setItem('sb-auth-session', JSON.stringify(newSession));
+            }
             break;
           case 'USER_UPDATED':
             setSession(newSession);

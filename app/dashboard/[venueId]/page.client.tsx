@@ -39,8 +39,22 @@ import { FeatureSections } from "./components/FeatureSections";
 
 const DashboardClient = React.memo(function DashboardClient({ venueId }: { venueId: string }) {
   const router = useRouter();
-  const [user, setUser] = useState<{ id: string } | null>(null);
-  const [venue, setVenue] = useState<Record<string, unknown> | null>(null);
+  
+  // Get cached user/venue data to prevent flicker
+  const getCachedUser = () => {
+    if (typeof window === 'undefined') return null;
+    const cached = sessionStorage.getItem(`dashboard_user_${venueId}`);
+    return cached ? JSON.parse(cached) : null;
+  };
+
+  const getCachedVenue = () => {
+    if (typeof window === 'undefined') return null;
+    const cached = sessionStorage.getItem(`dashboard_venue_${venueId}`);
+    return cached ? JSON.parse(cached) : null;
+  };
+
+  const [user, setUser] = useState<{ id: string } | null>(getCachedUser());
+  const [venue, setVenue] = useState<Record<string, unknown> | null>(getCachedVenue());
   const [userRole, setUserRole] = useState<string | null>(null);
   const [loading, setLoading] = useState(false); // Start with false to prevent flicker
   const [authError, setAuthError] = useState<string | null>(null);

@@ -101,9 +101,13 @@ export default function StaffClient({
           <StaffMembersList
             venueId={venueId}
             staff={staffManagement.staff || []}
-            onStaffAdded={() => {
-              // Refetch staff data
-              window.location.reload();
+            onStaffAdded={async () => {
+              // Refetch staff data without reload
+              const res = await fetch(`/api/staff/check?venue_id=${encodeURIComponent(venueId)}`);
+              const data = await res.json();
+              if (data.ok && data.staff) {
+                staffManagement.setStaff(data.staff);
+              }
             }}
             onStaffToggle={staffManagement.toggleStaffActive}
           />
