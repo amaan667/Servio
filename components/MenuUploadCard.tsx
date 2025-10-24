@@ -309,21 +309,21 @@ export function MenuUploadCard({ venueId, onSuccess }: MenuUploadCardProps) {
       </CardHeader>
       <CardContent className="space-y-4">
         
-        {/* Optional: Menu URL for Enhanced Matching */}
+        {/* Menu URL for Enhanced Matching */}
         <div className="space-y-2">
-          <Label htmlFor="menu-url-upload" className="flex items-center gap-2">
-            Menu Website URL <Badge variant="outline" className="text-xs">Optional</Badge>
+          <Label htmlFor="menu-url-upload">
+            Menu Website URL
           </Label>
           <Input
             id="menu-url-upload"
             type="url"
-            placeholder="https://yourmenu.co.uk/menu (optional)"
+            placeholder="https://yourmenu.co.uk/menu"
             value={menuUrl}
             onChange={(e) => setMenuUrl(e.target.value)}
             disabled={isProcessing}
           />
           <p className="text-xs text-muted-foreground">
-            💡 Combines data from both PDF and URL for best results
+            💡 Add your menu URL, then upload your PDF below. Both will be combined for best results.
           </p>
         </div>
 
