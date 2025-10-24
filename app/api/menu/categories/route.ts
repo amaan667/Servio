@@ -84,7 +84,7 @@ export async function GET(request: NextRequest) {
     
     return NextResponse.json(response);
 
-  } catch (_error) {
+  } catch (error) {
     logger.error('[CATEGORIES API] Unexpected error:', { error: error instanceof Error ? error.message : 'Unknown error' });
     return NextResponse.json(
       { error: 'Internal server error' },
@@ -166,7 +166,7 @@ export async function PUT(request: NextRequest) {
       categories 
     });
 
-  } catch (_error) {
+  } catch (error) {
     logger.error('[CATEGORIES API] Unexpected error:', { error: error instanceof Error ? error.message : 'Unknown error' });
     return NextResponse.json(
       { error: 'Internal server error' },
@@ -245,7 +245,7 @@ export async function POST(request: NextRequest) {
       categories: newCategories
     });
 
-  } catch (_error) {
+  } catch (error) {
     logger.error('[CATEGORIES API] Unexpected error:', { error: error instanceof Error ? error.message : 'Unknown error' });
     return NextResponse.json(
       { error: 'Internal server error' },

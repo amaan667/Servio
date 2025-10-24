@@ -41,8 +41,15 @@ export function useOrderMenu(venueSlug: string, isDemo: boolean) {
       const response = await fetch(apiUrl);
       
       if (!response.ok) {
-        const errorData = await response.json();
-        setMenuError(`Error loading menu: ${errorData.error || 'Failed to load menu'}`);
+        let errorMessage = 'Failed to load menu';
+        try {
+          const errorData = await response.json();
+          errorMessage = errorData.error || errorMessage;
+        } catch (parseError) {
+          // If JSON parsing fails, use status text
+          errorMessage = response.statusText || errorMessage;
+        }
+        setMenuError(`Error loading menu: ${errorMessage}`);
         setLoadingMenu(false);
         return;
       }

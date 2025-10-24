@@ -79,7 +79,7 @@ export async function POST(request: NextRequest) {
             logger.warn(`[CATEGORIES DELETE] Warning deleting from ${table}:`, { table, error });
           }
         }
-      } catch (_error) {
+      } catch (error) {
         logger.warn(`[CATEGORIES DELETE] Warning processing ${table}:`, { table, error });
       }
     }
@@ -91,7 +91,7 @@ export async function POST(request: NextRequest) {
       deletedItems: itemsToDelete.map(item => item.name)
     });
 
-  } catch (_error) {
+  } catch (error) {
     logger.error('[CATEGORIES DELETE] Error in delete category API:', { error: error instanceof Error ? error.message : 'Unknown error' });
     return NextResponse.json({ 
       ok: false, 
