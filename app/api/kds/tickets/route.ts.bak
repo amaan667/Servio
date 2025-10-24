@@ -185,7 +185,7 @@ export async function GET(req: Request) {
       ok: true,
       tickets: finalTickets || [],
     });
-  } catch (error) {
+  } catch (_error) {
     logger.error("[KDS] Unexpected error:", {
       error: error instanceof Error ? error.message : "Unknown error",
     });
@@ -301,7 +301,7 @@ export async function PATCH(req: Request) {
       ok: true,
       ticket,
     });
-  } catch (error) {
+  } catch (_error) {
     logger.error("[KDS] Unexpected error:", {
       error: error instanceof Error ? error.message : "Unknown error",
     });

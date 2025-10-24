@@ -51,6 +51,7 @@ interface KDSClientProps {
 export default function KDSClient({ venueId }: KDSClientProps) {
   const [stations, setStations] = useState<KDSStation[]>([]);
   const [tickets, setTickets] = useState<KDSTicket[]>([]);
+  const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [selectedStation, setSelectedStation] = useState<string | null>(null);
   const [autoRefresh, setAutoRefresh] = useState(true);
@@ -98,7 +99,7 @@ export default function KDSClient({ venueId }: KDSClientProps) {
         console.error("[KDS CLIENT] ❌ Failed to load tickets:", data.error);
         setError(data.error || "Failed to load tickets");
       }
-    } catch (_error) {
+    } catch (error) {
       console.error("[KDS CLIENT] ❌ Fetch tickets error:", error);
       setError("Failed to load tickets");
     } finally {
