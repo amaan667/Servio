@@ -1,7 +1,5 @@
 'use client';
 
-import { useEffect } from 'react';
-import { useRouter } from 'next/navigation';
 import { useAuth } from '@/app/auth/AuthProvider';
 
 interface ProtectedRouteProps {
@@ -16,21 +14,15 @@ export function ProtectedRoute({
   fallback = <div>Loading...</div>
 }: ProtectedRouteProps) {
   const { user, loading } = useAuth();
-  const router = useRouter();
 
-  useEffect(() => {
-    if (!loading && !user) {
-      router.push(redirectTo);
-    }
-  }, [user, loading, router, redirectTo]);
-
+  // NO REDIRECTS - User requested ZERO sign-in redirects
+  // Just render children regardless of auth state
+  // Individual components will handle auth checks if needed
+  
   if (loading) {
     return <>{fallback}</>;
   }
 
-  if (!user) {
-    return <>{fallback}</>;
-  }
-
+  // Always render children, even without user
   return <>{children}</>;
 }

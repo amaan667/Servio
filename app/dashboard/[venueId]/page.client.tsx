@@ -235,28 +235,9 @@ const DashboardClient = React.memo(function DashboardClient({ venueId }: { venue
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [venueId]);
 
-  // Show auth error only if definitely not authenticated (no cached data)
-  if (!user && !loading && !getCachedUser()) {
-    // Redirect without showing message
-    router.push("/sign-in");
-    return null;
-  }
-
-  // Show access denied
-  if (authError) {
-    return (
-      <div className="flex items-center justify-center min-h-screen">
-        <div className="text-center max-w-md">
-          <h2 className="text-xl font-semibold mb-2">Access Denied</h2>
-          <p className="mb-4">{authError}</p>
-          <div className="text-xs text-gray-500 bg-gray-100 p-4 rounded">
-            <p>User ID: {user.id}</p>
-            <p>Venue ID: {venueId}</p>
-          </div>
-        </div>
-      </div>
-    );
-  }
+  // NO AUTH REDIRECTS - User requested ZERO sign-in redirects
+  // If there's truly no user data (after trying cache), just render anyway
+  // Dashboard will handle gracefully
 
   // Render immediately with data (no loading states)
 

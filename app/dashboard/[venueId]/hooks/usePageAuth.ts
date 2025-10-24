@@ -57,9 +57,8 @@ export function usePageAuth({
         const currentUser = session?.user;
 
         if (!currentUser) {
-          const redirect =
-            redirectPath || `/dashboard/${venueId}/${pageName.toLowerCase().replace(/\s+/g, "-")}`;
-          router.push(`/sign-in?redirect=${redirect}`);
+          // NO REDIRECTS - User requested ZERO sign-in redirects
+          setLoading(false);
           return;
         }
 

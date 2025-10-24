@@ -53,10 +53,8 @@ export function useFeatureAuth({
         const currentUser = session?.user;
 
         if (!currentUser) {
-          const redirect =
-            redirectPath ||
-            `/dashboard/${venueId}/${featureName.toLowerCase().replace(/\s+/g, "-")}`;
-          router.push(`/sign-in?redirect=${redirect}`);
+          // NO REDIRECTS - User requested ZERO sign-in redirects
+          setLoading(false);
           return;
         }
 
