@@ -100,50 +100,38 @@ export async function extractMenuItemPositions(imageUrl: string) {
   const openai = getOpenAI();
 
   const prompt = `
-Analyze this menu page and extract a SEPARATE bounding box for EACH individual menu item.
+You are analyzing a restaurant menu to place "Add to Cart" buttons.
 
-CRITICAL: This menu may have MULTIPLE COLUMNS (left and right). You MUST detect items in ALL columns.
+TASK: For EACH menu item, identify where to place a small button (not a full overlay).
 
-For EACH INDIVIDUAL item that has a name AND price, provide:
-1. Item name (exact text, English if bilingual)
-2. Bounding box coordinates as percentages (0-100):
-   - x1: left edge of THIS SPECIFIC ITEM
-   - y1: top edge of THIS SPECIFIC ITEM
-   - x2: right edge of THIS SPECIFIC ITEM (where its price ends)
-   - y2: bottom edge of THIS SPECIFIC ITEM
-3. Confidence score (0-1)
+IMPORTANT LAYOUT DETECTION:
+- If menu has 2 columns: left items span x: 0-50%, right items span x: 50-100%
+- If menu has 1 column: items span x: 0-100%
+- DO NOT create boxes that span more than one column (max width 45%)
 
-Return as JSON array:
-[
-  {
-    "name": "Labneh",
-    "x1": 5,
-    "y1": 15,
-    "x2": 45,
-    "y2": 18,
-    "confidence": 0.95
-  },
-  {
-    "name": "Chicken Burger",
-    "x1": 55,
-    "y1": 15,
-    "x2": 95,
-    "y2": 18,
-    "confidence": 0.95
-  },
-  ...
-]
+For each menu item with a price, return:
+{
+  "name": "Item Name",
+  "x1": 5,    // Left edge of item in its column
+  "y1": 20,   // Top of item text
+  "x2": 45,   // Right edge (price end) in its column  
+  "y2": 25,   // Bottom of item
+  "confidence": 0.95
+}
 
-CRITICAL RULES:
-- EACH item gets its OWN bounding box
-- Left column items: x1 ~5-10, x2 ~45-48
-- Right column items: x1 ~52-55, x2 ~95-98
-- DO NOT create one large box covering multiple items
-- Include ALL items from ALL columns
-- Bounding box should be tight around JUST that item (name + description + price)
-- y1 and y2 should tightly wrap just that one item (height typically 3-5%)
-- Do NOT include section headers or category titles
-- Be very precise - these create clickable areas
+EXAMPLES for 2-column menu:
+Left column: "Labneh £8.00" → x1: 5, x2: 48, width: 43%
+Right column: "Burger £12.00" → x1: 52, x2: 95, width: 43%
+
+RULES:
+1. EACH item = ONE box (not multiple items in one box!)
+2. Width should be ~40-45% max (one column width)
+3. Height should be ~3-8% (just that item's text height)
+4. If box width > 50%, you're doing it WRONG
+5. Include items from ALL columns
+6. Skip section headers (STARTERS, MAINS, etc.)
+
+Return ONLY the JSON array, no explanation.
 `;
 
   const response = await openai.chat.completions.create({
