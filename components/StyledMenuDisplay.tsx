@@ -88,9 +88,10 @@ export function StyledMenuDisplay({
   }
 
   if (!menuStyle) {
-    // Fallback to default styling
+    // Use new vertical menu display as default
+    const { VerticalMenuDisplay } = require('./VerticalMenuDisplay');
     return (
-      <DefaultMenuDisplay
+      <VerticalMenuDisplay
         menuItems={menuItems}
         categoryOrder={categoryOrder}
         onAddToCart={onAddToCart}
