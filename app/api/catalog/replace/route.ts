@@ -2,12 +2,17 @@ import { NextRequest, NextResponse } from 'next/server';
 import { createAdminClient } from '@/lib/supabase';
 import { extractMenuFromImage, extractMenuItemPositions } from '@/lib/gptVisionMenuParser';
 import { scrapeMenuFromUrl } from '@/lib/menu-scraper';
-import { convertPDFToImages } from '@/lib/pdf-to-images';
 import { v4 as uuidv4 } from 'uuid';
 import { logger } from '@/lib/logger';
 
 export const runtime = 'nodejs';
 export const maxDuration = 300; // 5 minutes for processing
+
+// Dynamic import to avoid canvas build issues
+async function convertPDFToImages(pdfBuffer: Buffer): Promise<string[]> {
+  const { convertPDFToImages: convert } = await import('@/lib/pdf-to-images');
+  return convert(pdfBuffer);
+}
 
 /**
  * Unified Menu Import: PDF + Optional URL
