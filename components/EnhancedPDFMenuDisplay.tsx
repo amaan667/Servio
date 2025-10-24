@@ -133,10 +133,9 @@ export function EnhancedPDFMenuDisplay({
           const hasBoundingBoxes = existingHotspots.some(h => h.x1_percent !== undefined);
           console.log('[PDF MENU] Loaded hotspots:', existingHotspots.length);
           console.log('[PDF MENU] Has bounding boxes:', hasBoundingBoxes);
-          console.log('[PDF MENU] Sample hotspot:', existingHotspots[0]);
           
           if (!hasBoundingBoxes) {
-            console.warn('[PDF MENU] ⚠️ Old hotspot format detected! Re-upload PDF for new overlay cards.');
+            console.log('[PDF MENU] ℹ️ Old format hotspots - will render as smart overlay cards');
           }
           
           setHotspots(existingHotspots);
@@ -436,11 +435,11 @@ export function EnhancedPDFMenuDisplay({
                                           hotspot.y2_percent !== undefined;
 
                     if (useBoundingBox) {
-                      // Modern overlay card system
+                      // Modern overlay card system with bounding boxes
                       return (
                         <div
                           key={hotspot.id}
-                          className="absolute group transition-all duration-200"
+                          className="absolute group transition-all duration-200 cursor-pointer"
                           style={{
                             left: `${hotspot.x1_percent}%`,
                             top: `${hotspot.y1_percent}%`,
@@ -503,53 +502,75 @@ export function EnhancedPDFMenuDisplay({
                         </div>
                       );
                     } else {
-                      // Fallback to old point-based system for backward compatibility
+                      // Fallback: Create smart overlay even with old format
+                      // Use estimated bounding box based on typical menu layouts
+                      const estimatedWidth = 85; // Most items span ~85% of width
+                      const estimatedHeight = 6; // Typical item height
+                      const estimatedX1 = Math.max(5, hotspot.x_percent - 40); // Start from left edge
+                      const estimatedY1 = Math.max(0, hotspot.y_percent - 3);
+                      
                       return (
                         <div
                           key={hotspot.id}
-                          className="absolute cursor-pointer transition-all duration-200 hover:scale-105"
+                          className="absolute group transition-all duration-200 cursor-pointer"
                           style={{
-                            left: `${hotspot.x_percent}%`,
-                            top: `${hotspot.y_percent}%`,
-                            transform: 'translate(-50%, -50%)',
+                            left: `${estimatedX1}%`,
+                            top: `${estimatedY1}%`,
+                            width: `${estimatedWidth}%`,
+                            height: `${estimatedHeight}%`,
                           }}
                           onClick={() => handleHotspotClick(hotspot)}
                         >
-                          {quantity === 0 ? (
-                            <Button
-                              size="sm"
-                              className="bg-primary/90 hover:bg-primary text-white shadow-lg text-xs px-2 py-1 h-7"
-                            >
-                              <Plus className="h-3 w-3" />
-                            </Button>
-                          ) : (
-                            <div className="bg-white rounded-md shadow-lg border-2 border-primary p-1 flex items-center gap-1">
+                          {/* Overlay card - same design as bounding box version */}
+                          <div 
+                            className="absolute inset-0 bg-gradient-to-r from-black/5 via-black/0 to-black/10 opacity-0 group-hover:opacity-100 transition-opacity duration-200 rounded-md border-l-2 border-primary/0 group-hover:border-primary/50"
+                            style={{
+                              backdropFilter: 'blur(2px)',
+                            }}
+                          />
+                          
+                          <div 
+                            className="absolute right-2 top-1/2 -translate-y-1/2 z-10"
+                            onClick={(e) => e.stopPropagation()}
+                          >
+                            {quantity === 0 ? (
                               <Button
-                                onClick={(e) => {
-                                  e.stopPropagation();
-                                  onUpdateQuantity(item.id, quantity - 1);
-                                }}
-                                variant="outline"
                                 size="sm"
-                                className="h-6 w-6 p-0"
+                                onClick={() => onAddToCart(item)}
+                                className="bg-primary hover:bg-primary/90 text-white shadow-xl text-xs px-3 py-1.5 h-8 opacity-90 group-hover:opacity-100 transition-opacity"
                               >
-                                <Minus className="h-3 w-3" />
+                                <Plus className="h-4 w-4 mr-1" />
+                                Add
                               </Button>
-                              <span className="text-xs font-bold text-primary min-w-[16px] text-center">
-                                {quantity}
-                              </span>
-                              <Button
-                                onClick={(e) => {
-                                  e.stopPropagation();
-                                  onUpdateQuantity(item.id, quantity + 1);
-                                }}
-                                size="sm"
-                                className="h-6 w-6 p-0 bg-primary hover:bg-primary/90"
-                              >
-                                <Plus className="h-3 w-3" />
-                              </Button>
-                            </div>
-                          )}
+                            ) : (
+                              <div className="bg-white rounded-lg shadow-xl border-2 border-primary p-1.5 flex items-center gap-2">
+                                <Button
+                                  onClick={(e) => {
+                                    e.stopPropagation();
+                                    onUpdateQuantity(item.id, quantity - 1);
+                                  }}
+                                  variant="outline"
+                                  size="sm"
+                                  className="h-7 w-7 p-0 border-primary/30 hover:bg-primary/10"
+                                >
+                                  <Minus className="h-3.5 w-3.5 text-primary" />
+                                </Button>
+                                <span className="text-sm font-bold text-primary min-w-[20px] text-center">
+                                  {quantity}
+                                </span>
+                                <Button
+                                  onClick={(e) => {
+                                    e.stopPropagation();
+                                    onUpdateQuantity(item.id, quantity + 1);
+                                  }}
+                                  size="sm"
+                                  className="h-7 w-7 p-0 bg-primary hover:bg-primary/90"
+                                >
+                                  <Plus className="h-3.5 w-3.5" />
+                                </Button>
+                              </div>
+                            )}
+                          </div>
                         </div>
                       );
                     }
