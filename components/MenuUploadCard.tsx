@@ -404,7 +404,7 @@ export function MenuUploadCard({ venueId, onSuccess }: MenuUploadCardProps) {
                 size="sm"
                 variant="outline"
               >
-                {isProcessing ? 'Processing...' : 'Combine with URL'}
+                {isProcessing ? 'Processing...' : 'Process'}
               </Button>
             )}
           </div>

@@ -18,8 +18,9 @@ export interface ScrapeResult {
 /**
  * Scrape menu using Puppeteer for JavaScript-rendered sites
  */
-async function scrapeWithPuppeteer(url: string): Promise<string> {
+async function scrapeWithPuppeteer(url: string): Promise<string | null> {
   try {
+    logger.info('[SCRAPER] Attempting Puppeteer for:', { url });
     const puppeteer = await import('puppeteer-core');
     const chromium = await import('@sparticuz/chromium');
 
@@ -37,15 +38,18 @@ async function scrapeWithPuppeteer(url: string): Promise<string> {
     const html = await page.content();
     await browser.close();
     
+    logger.info('[SCRAPER] Puppeteer success, HTML length:', html.length);
     return html;
   } catch (error) {
-    logger.error('[SCRAPER] Puppeteer error:', error);
-    throw new Error('Failed to render JavaScript content');
+    logger.warn('[SCRAPER] Puppeteer failed:', error);
+    return null; // Return null instead of throwing
   }
 }
 
 export async function scrapeMenuFromUrl(url: string): Promise<ScrapeResult> {
   let html: string;
+
+  logger.info('[SCRAPER] Starting scrape for:', { url });
 
   // Try static HTML first
   try {
@@ -58,13 +62,25 @@ export async function scrapeMenuFromUrl(url: string): Promise<ScrapeResult> {
     if (!response.ok) throw new Error(`HTTP ${response.status}`);
 
     html = await response.text();
+    logger.info('[SCRAPER] Static fetch success, length:', html.length);
 
-    // Check if JavaScript-rendered
+    // Check if JavaScript-rendered (minimal content)
     if (html.includes('Loading...') || html.length < 5000) {
-      html = await scrapeWithPuppeteer(url);
+      logger.info('[SCRAPER] Detected JS-rendered site, trying Puppeteer...');
+      const puppeteerHtml = await scrapeWithPuppeteer(url);
+      if (puppeteerHtml) {
+        html = puppeteerHtml;
+      } else {
+        logger.warn('[SCRAPER] Puppeteer failed, using static HTML anyway');
+      }
     }
   } catch (error) {
-    html = await scrapeWithPuppeteer(url);
+    logger.warn('[SCRAPER] Static fetch failed, trying Puppeteer...', error);
+    const puppeteerHtml = await scrapeWithPuppeteer(url);
+    if (!puppeteerHtml) {
+      throw new Error('Failed to fetch menu from URL - both static and Puppeteer failed');
+    }
+    html = puppeteerHtml;
   }
 
   const $ = cheerio.load(html);
