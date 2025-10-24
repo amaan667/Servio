@@ -34,17 +34,33 @@ export default function CustomerOrderPage() {
   const orderLocation = isCounterOrder ? counterNumber : tableNumber;
   const orderType = isCounterOrder ? "counter" : "table";
 
-  // Log QR code scan for Railway deployment logs
+  // Log QR code scan to Railway server logs
   useEffect(() => {
-    logger.info('🔍 [QR SCAN] Order page accessed', {
+    const logData = {
       venueSlug,
       tableNumber,
       counterNumber,
       orderType,
       isDemo,
       url: typeof window !== 'undefined' ? window.location.href : 'unknown',
+      userAgent: typeof window !== 'undefined' ? navigator.userAgent : 'unknown',
       timestamp: new Date().toISOString()
+    };
+
+    // Log to server (will appear in Railway logs)
+    fetch('/api/log-qr-scan', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(logData)
+    }).catch((err) => {
+      // Fallback to client log if server fails
+      logger.error('Failed to log QR scan to server', {
+        error: err instanceof Error ? err.message : String(err)
+      });
     });
+
+    // Also log client-side for development
+    logger.info('🔍 [QR SCAN - CLIENT] Order page accessed', logData);
   }, [venueSlug, tableNumber, counterNumber, orderType, isDemo]);
 
   const orderParams = {

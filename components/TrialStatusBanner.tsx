@@ -394,6 +394,7 @@ export default function TrialStatusBanner({ userRole }: TrialStatusBannerProps) 
 
   // Render plan status banner (active subscription or expired trial)
   const isActiveSubscription = trialStatus.subscriptionStatus === "active";
+  const isPaid = isActiveSubscription && !trialStatus.isTrialing;
 
   return (
     <div
@@ -421,14 +422,16 @@ export default function TrialStatusBanner({ userRole }: TrialStatusBannerProps) 
           <Badge
             className={`${isActiveSubscription ? "bg-green-500" : "bg-red-500"} text-white font-medium`}
           >
-            {isActiveSubscription ? "Active" : "Trial Expired"}
+            {isPaid ? "Active - Paid" : isActiveSubscription ? "Active" : "Trial Expired"}
           </Badge>
         </div>
       </div>
 
       <div className={`mt-2 text-sm ${isActiveSubscription ? "text-green-700" : "text-red-700"}`}>
-        {isActiveSubscription
-          ? `You're currently on the ${getTierDisplayName(trialStatus.tier)} plan with full access to all features.`
+        {isPaid
+          ? `Your ${getTierDisplayName(trialStatus.tier)} plan is active. Stripe is handling your billing automatically.`
+          : isActiveSubscription
+          ? `Your ${getTierDisplayName(trialStatus.tier)} subscription is active`
           : `Your ${getTierDisplayName(trialStatus.tier)} trial has expired. Upgrade to continue using all features.`}
       </div>
     </div>

@@ -58,7 +58,7 @@ export function useOrderSession(orderParams: OrderParams) {
             venueId: orderParams.venueSlug
           });
 
-          const { data: orderInDb } = await retrySupabaseQuery(
+          const { data: orderInDb, error: orderError } = await retrySupabaseQuery(
             () => supabase
               .from('orders')
               .select('*')
@@ -67,12 +67,20 @@ export function useOrderSession(orderParams: OrderParams) {
               .in('order_status', ['PLACED', 'ACCEPTED', 'IN_PREP', 'READY', 'OUT_FOR_DELIVERY', 'SERVING'])
               .in('payment_status', ['UNPAID', 'PAY_LATER', 'IN_PROGRESS'])
               .single(),
-            { maxRetries: 3, delayMs: 500 }
+            { maxRetries: 5, delayMs: 500, logContext: 'Check Existing Order' }
           );
+
+          if (orderError) {
+            logger.error('❌ [ORDER SESSION] Failed to query order after retries', {
+              orderId: orderData.orderId,
+              error: orderError instanceof Error ? orderError.message : String(orderError)
+            });
+          }
 
           logger.info('📊 [ORDER SESSION] DB query result', {
             found: !!orderInDb,
-            orderId: orderData.orderId
+            orderId: orderData.orderId,
+            hadError: !!orderError
           });
 
           if (orderInDb) {
@@ -108,7 +116,7 @@ export function useOrderSession(orderParams: OrderParams) {
         if (storedOrderData) {
           const orderData = JSON.parse(storedOrderData);
           
-          const { data: sessionOrderInDb } = await retrySupabaseQuery(
+          const { data: sessionOrderInDb, error: sessionOrderError } = await retrySupabaseQuery(
             () => supabase
               .from('orders')
               .select('*')
@@ -117,8 +125,15 @@ export function useOrderSession(orderParams: OrderParams) {
               .in('order_status', ['PLACED', 'ACCEPTED', 'IN_PREP', 'READY', 'OUT_FOR_DELIVERY', 'SERVING'])
               .in('payment_status', ['UNPAID', 'PAY_LATER', 'IN_PROGRESS'])
               .single(),
-            { maxRetries: 3, delayMs: 500 }
+            { maxRetries: 5, delayMs: 500, logContext: 'Check Session Order' }
           );
+
+          if (sessionOrderError) {
+            logger.error('❌ [ORDER SESSION] Failed to query session order', {
+              orderId: orderData.orderId,
+              error: sessionOrderError instanceof Error ? sessionOrderError.message : String(sessionOrderError)
+            });
+          }
 
           if (sessionOrderInDb) {
             const checkoutData = {
@@ -159,16 +174,33 @@ export function useOrderSession(orderParams: OrderParams) {
 
     const checkUnpaidOrders = async () => {
       try {
-        const { data: activeOrders } = await retrySupabaseQuery(
-          () => supabase
-            .from('orders')
-            .select('*')
-            .eq('venue_id', orderParams.venueSlug)
-            .eq('table_number', orderParams.tableNumber)
-            .in('order_status', ['PLACED', 'ACCEPTED', 'IN_PREP', 'READY', 'OUT_FOR_DELIVERY', 'SERVING'])
-            .in('payment_status', ['UNPAID', 'PAY_LATER', 'IN_PROGRESS']),
-          { maxRetries: 3, delayMs: 500 }
+        logger.info('🔍 [ORDER SESSION] Checking for active unpaid orders via API', {
+          venueSlug: orderParams.venueSlug,
+          tableNumber: orderParams.tableNumber
+        });
+
+        // Use API endpoint instead of direct Supabase query
+        // This uses service role and bypasses RLS (customers don't need auth)
+        const response = await fetch(
+          `/api/orders/check-active?venueId=${encodeURIComponent(orderParams.venueSlug)}&tableNumber=${encodeURIComponent(orderParams.tableNumber)}`
         );
+
+        if (!response.ok) {
+          logger.error('❌ [ORDER SESSION] API request failed', {
+            status: response.status,
+            statusText: response.statusText
+          });
+          return;
+        }
+
+        const result = await response.json();
+        const activeOrders = result.ok ? result.orders : null;
+
+        logger.info('✅ [ORDER SESSION] Active orders check complete', {
+          count: activeOrders?.length || 0,
+          venueSlug: orderParams.venueSlug,
+          tableNumber: orderParams.tableNumber
+        });
 
         if (activeOrders && activeOrders.length > 0) {
           const tableSessionKey = `servio-session-${orderParams.tableNumber}`;
