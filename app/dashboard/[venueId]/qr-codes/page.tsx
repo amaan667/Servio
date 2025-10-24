@@ -2,11 +2,7 @@ import dynamic from "next/dynamic";
 
 const QRCodeClientPage = dynamic(() => import("./page.client"), {
   ssr: false,
-  loading: () => (
-    <div className="min-h-screen flex items-center justify-center bg-background">
-      <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary"></div>
-    </div>
-  ),
+  loading: () => null, // No loading spinner - render immediately
 });
 
 export default async function QRCodePage({ params }: { params: Promise<{ venueId: string }> }) {

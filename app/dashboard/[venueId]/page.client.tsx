@@ -42,7 +42,7 @@ const DashboardClient = React.memo(function DashboardClient({ venueId }: { venue
   const [user, setUser] = useState<{ id: string } | null>(null);
   const [venue, setVenue] = useState<Record<string, unknown> | null>(null);
   const [userRole, setUserRole] = useState<string | null>(null);
-  const [loading, setLoading] = useState(true);
+  const [loading, setLoading] = useState(false); // Start with false to prevent flicker
   const [authError, setAuthError] = useState<string | null>(null);
 
   // Monitor connection status (must be at top before any returns)
@@ -208,9 +208,7 @@ const DashboardClient = React.memo(function DashboardClient({ venueId }: { venue
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [venueId]);
 
-  // Show loading state
-  // No loading spinner - render immediately
-  // Show auth error
+  // Show auth error (no loading states)
   if (!user && !loading) {
     return (
       <div className="flex items-center justify-center min-h-screen">
@@ -240,7 +238,7 @@ const DashboardClient = React.memo(function DashboardClient({ venueId }: { venue
     );
   }
 
-  // No loading spinner - render immediately with empty states (even if venue not loaded yet)
+  // Render immediately with data (no loading states)
 
   return (
     <PullToRefresh onRefresh={handleRefresh}>
@@ -352,14 +350,12 @@ const DashboardClient = React.memo(function DashboardClient({ venueId }: { venue
           />
 
           {/* Today at a Glance */}
-          <Suspense fallback={<div className="h-[300px] bg-white rounded-lg animate-pulse" />}>
-            <TodayAtAGlance
-              ordersByHour={ordersByHour}
-              tableUtilization={tableUtilization}
-              revenueByCategory={revenueByCategory}
-              loading={analyticsData.loading}
-            />
-          </Suspense>
+          <TodayAtAGlance
+            ordersByHour={ordersByHour}
+            tableUtilization={tableUtilization}
+            revenueByCategory={revenueByCategory}
+            loading={false}
+          />
 
           {/* Feature Sections */}
           <FeatureSections venueId={venueId} userRole={userRole} />

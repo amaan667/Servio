@@ -7,7 +7,6 @@ interface QRCodeCanvasProps {
 
 export function QRCodeCanvas({ url, size }: QRCodeCanvasProps) {
   const [qrDataUrl, setQrDataUrl] = useState<string>("");
-  const [loading, setLoading] = useState(true);
 
   useEffect(() => {
     if (typeof window === "undefined") return;
@@ -23,18 +22,20 @@ export function QRCodeCanvas({ url, size }: QRCodeCanvasProps) {
         setQrDataUrl(dataUrl);
       } catch (error) {
         console.error("[QR Code] Generation error:", error);
-      } finally {
-        setLoading(false);
       }
     };
 
     generateQR();
   }, [url, size]);
 
-  if (loading) {
+  // Show placeholder immediately - no loading spinner
+  if (!qrDataUrl) {
     return (
-      <div className="flex items-center justify-center" style={{ width: size, height: size }}>
-        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-purple-600"></div>
+      <div 
+        className="flex items-center justify-center bg-gray-100 border-2 border-dashed border-gray-300 rounded-lg" 
+        style={{ width: size, height: size }}
+      >
+        <div className="text-gray-500 text-sm">QR Code</div>
       </div>
     );
   }

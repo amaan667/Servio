@@ -28,7 +28,7 @@ export function useDashboardData(
   initialStats?: DashboardStats
 ) {
   const [venue, setVenue] = useState<unknown>(initialVenue);
-  const [loading, setLoading] = useState(!initialVenue);
+  const [loading, setLoading] = useState(false); // Start with false to prevent flicker
   const [counts, setCounts] = useState<DashboardCounts>(
     initialCounts || {
       live_count: 0,

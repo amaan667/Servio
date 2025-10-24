@@ -12,8 +12,11 @@ interface TodayAtAGlanceProps {
   loading?: boolean;
 }
 
-export function TodayAtAGlance({ ordersByHour, tableUtilization, revenueByCategory, loading }: TodayAtAGlanceProps) {
+export function TodayAtAGlance({ ordersByHour, tableUtilization, revenueByCategory, loading = false }: TodayAtAGlanceProps) {
   const COLORS = ['#5B21B6', '#22C55E', '#F59E0B', '#EF4444', '#8B5CF6', '#06B6D4'];
+  
+  // Never show loading state - render immediately with data
+  const isLoading = false;
 
   // Custom tooltip for orders by hour
   const CustomTooltip = ({ active, payload }: unknown) => {

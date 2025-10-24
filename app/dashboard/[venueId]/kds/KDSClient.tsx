@@ -51,7 +51,7 @@ interface KDSClientProps {
 export default function KDSClient({ venueId }: KDSClientProps) {
   const [stations, setStations] = useState<KDSStation[]>([]);
   const [tickets, setTickets] = useState<KDSTicket[]>([]);
-  const [loading, setLoading] = useState(true);
+  const [loading, setLoading] = useState(false); // Start with false to prevent flicker
   const [error, setError] = useState<string | null>(null);
   const [selectedStation, setSelectedStation] = useState<string | null>(null);
   const [autoRefresh, setAutoRefresh] = useState(true);
