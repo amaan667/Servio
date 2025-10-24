@@ -137,6 +137,11 @@ export function MenuUploadCard({ venueId, onSuccess }: MenuUploadCardProps) {
           const formData = new FormData();
           formData.append('file', file);
           formData.append('venue_id', venueId);
+          
+          // Add menu URL if provided (for hybrid import)
+          if (menuUrl && menuUrl.trim()) {
+            formData.append('menu_url', menuUrl.trim());
+          }
 
           const response = await fetch('/api/catalog/replace', {
             method: 'POST',
