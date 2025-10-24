@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { supabase } from '@/lib/supabase';
 import { retrySupabaseQuery } from '@/lib/supabase-retry';
+import { logger } from '@/lib/logger';
 import { CustomerInfo, OrderParams } from '../types';
 
 export function useOrderSession(orderParams: OrderParams) {
@@ -19,6 +20,12 @@ export function useOrderSession(orderParams: OrderParams) {
   };
 
   useEffect(() => {
+    logger.info('📱 [ORDER SESSION] Session check initialized', {
+      venueSlug: orderParams.venueSlug,
+      tableNumber: orderParams.tableNumber,
+      orderType: orderParams.orderType
+    });
+
     // Log order access
     fetch('/api/log-order-access', {
       method: 'POST',
@@ -46,6 +53,11 @@ export function useOrderSession(orderParams: OrderParams) {
         if (storedOrderData) {
           const orderData = JSON.parse(storedOrderData);
           
+          logger.info('🔍 [ORDER SESSION] Checking existing order in DB', {
+            orderId: orderData.orderId,
+            venueId: orderParams.venueSlug
+          });
+
           const { data: orderInDb } = await retrySupabaseQuery(
             () => supabase
               .from('orders')
@@ -58,7 +70,15 @@ export function useOrderSession(orderParams: OrderParams) {
             { maxRetries: 3, delayMs: 500 }
           );
 
+          logger.info('📊 [ORDER SESSION] DB query result', {
+            found: !!orderInDb,
+            orderId: orderData.orderId
+          });
+
           if (orderInDb) {
+            logger.info('✅ [ORDER SESSION] Redirecting to payment', {
+              orderId: orderData.orderId
+            });
             const checkoutData = {
               venueId: orderData.venueId,
               venueName: 'Restaurant',

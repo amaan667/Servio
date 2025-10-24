@@ -1,7 +1,8 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useSearchParams } from "next/navigation";
+import { logger } from "@/lib/logger";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { Loader2 } from "lucide-react";
 import { EnhancedPDFMenuDisplay } from "@/components/EnhancedPDFMenuDisplay";
@@ -32,6 +33,19 @@ export default function CustomerOrderPage() {
   const isCounterOrder = !!counterNumber;
   const orderLocation = isCounterOrder ? counterNumber : tableNumber;
   const orderType = isCounterOrder ? "counter" : "table";
+
+  // Log QR code scan for Railway deployment logs
+  useEffect(() => {
+    logger.info('🔍 [QR SCAN] Order page accessed', {
+      venueSlug,
+      tableNumber,
+      counterNumber,
+      orderType,
+      isDemo,
+      url: typeof window !== 'undefined' ? window.location.href : 'unknown',
+      timestamp: new Date().toISOString()
+    });
+  }, [venueSlug, tableNumber, counterNumber, orderType, isDemo]);
 
   const orderParams = {
     venueSlug,
