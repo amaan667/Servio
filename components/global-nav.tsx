@@ -16,16 +16,30 @@ export default function GlobalNav() {
   const pathname = usePathname();
   const supabase = createClient();
 
+  // Get initial auth state SYNCHRONOUSLY to prevent flicker
+  const getInitialAuthState = () => {
+    if (typeof window === "undefined") return false;
+    // Check for Supabase auth cookies or session storage
+    const hasSession = document.cookie.includes('sb-') || sessionStorage.getItem('supabase.auth.token');
+    return !!hasSession;
+  };
+
+  // Start with synchronously detected auth state to prevent flicker
+  const [isAuthenticatedState, setIsAuthenticatedState] = useState(getInitialAuthState);
+
   // Initialize with cached data SYNCHRONOUSLY for instant render
   const getCachedData = () => {
-    if (typeof window === "undefined" || !session?.user?.id) {
+    if (typeof window === "undefined") {
       return { primaryVenueId: null, userRole: null };
     }
-    const cachedRole = sessionStorage.getItem(`user_role_${session.user.id}`);
-    const cachedVenueId = sessionStorage.getItem(`venue_id_${session.user.id}`);
+    // Try to get from ANY user's cache if we detected auth
+    const allKeys = Object.keys(sessionStorage);
+    const roleKey = allKeys.find(k => k.startsWith('user_role_'));
+    const venueKey = allKeys.find(k => k.startsWith('venue_id_'));
+    
     return {
-      primaryVenueId: cachedVenueId,
-      userRole: cachedRole,
+      primaryVenueId: venueKey ? sessionStorage.getItem(venueKey) : null,
+      userRole: roleKey ? sessionStorage.getItem(roleKey) : null,
     };
   };
 
@@ -34,10 +48,13 @@ export default function GlobalNav() {
   );
   const [userRole, setUserRole] = useState<string | null>(getCachedData().userRole);
 
-  // Prefer NOT flashing the unauthenticated header. Treat the user as
-  // potentially authenticated while loading and only show public actions
-  // when we definitively know there is no session.
-  const isAuthenticated = !!session?.user && !!session?.access_token;
+  // Update authenticated state when session changes
+  useEffect(() => {
+    setIsAuthenticatedState(!!session?.user && !!session?.access_token);
+  }, [session]);
+
+  // Use the state version for rendering (prevents flicker)
+  const isAuthenticated = isAuthenticatedState || (!!session?.user && !!session?.access_token);
   const isLoadingAuth = false; // Never show loading state - render immediately with best guess
 
   // Determine if we're on an authenticated route that supports dark mode
