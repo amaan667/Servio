@@ -18,6 +18,10 @@ export function useOrderSubmission() {
   const [isSubmitting, setIsSubmitting] = useState(false);
 
   const submitOrder = async (params: OrderSubmissionParams) => {
+    console.log('🚀 [ORDER SUBMIT] ========================================');
+    console.log('🚀 [ORDER SUBMIT] submitOrder function STARTED');
+    console.log('🚀 [ORDER SUBMIT] Timestamp:', new Date().toISOString());
+    
     const {
       cart,
       customerInfo,
@@ -31,28 +35,47 @@ export function useOrderSubmission() {
       isDemoFallback,
     } = params;
 
+    console.log('🚀 [ORDER SUBMIT] Params destructured');
+    console.log('🚀 [ORDER SUBMIT] Cart length:', cart.length);
+    console.log('🚀 [ORDER SUBMIT] Customer name:', customerInfo.name);
+    console.log('🚀 [ORDER SUBMIT] Customer phone:', customerInfo.phone);
+    console.log('🚀 [ORDER SUBMIT] Venue slug:', venueSlug);
+
     // Validate order data
+    console.log('🚀 [ORDER SUBMIT] Starting validation...');
+    
     if (!customerInfo.name.trim()) {
+      console.error('❌ [ORDER SUBMIT] Validation failed: No customer name');
       alert("Please enter your name before placing the order.");
       return;
     }
+    console.log('✅ [ORDER SUBMIT] Name validation passed');
     
     if (!customerInfo.phone.trim()) {
+      console.error('❌ [ORDER SUBMIT] Validation failed: No customer phone');
       alert("Please enter your phone number before placing the order.");
       return;
     }
+    console.log('✅ [ORDER SUBMIT] Phone validation passed');
     
     if (cart.length === 0) {
+      console.error('❌ [ORDER SUBMIT] Validation failed: Empty cart');
       alert("Your cart is empty. Please add items before placing the order.");
       return;
     }
+    console.log('✅ [ORDER SUBMIT] Cart validation passed');
     
     if (!venueSlug) {
+      console.error('❌ [ORDER SUBMIT] Validation failed: No venue slug');
       alert("Invalid venue. Please check your QR code and try again.");
       return;
     }
+    console.log('✅ [ORDER SUBMIT] Venue validation passed');
+    console.log('🚀 [ORDER SUBMIT] All validations passed!');
 
+    console.log('🚀 [ORDER SUBMIT] Setting isSubmitting to true...');
     setIsSubmitting(true);
+    console.log('🚀 [ORDER SUBMIT] isSubmitting set to true');
     
     try {
       const safeTable = isCounterOrder ? (parseInt(counterNumber) || 1) : (parseInt(tableNumber) || 1);
@@ -183,7 +206,9 @@ export function useOrderSubmission() {
         isDemo: isDemo,
       };
 
+      console.log('💾 [ORDER SUBMIT] Saving checkout data to localStorage...');
       localStorage.setItem('servio-checkout-data', JSON.stringify(checkoutData));
+      console.log('✅ [ORDER SUBMIT] Checkout data saved');
       
       const orderDataForSession = {
         venueId: venueSlug,
@@ -205,18 +230,37 @@ export function useOrderSubmission() {
         paymentStatus: 'unpaid'
       };
       
+      console.log('💾 [ORDER SUBMIT] Saving order session data...');
       localStorage.setItem(`servio-order-${sessionId}`, JSON.stringify(orderDataForSession));
+      console.log('✅ [ORDER SUBMIT] Order session data saved');
       
+      console.log('🔄 [ORDER SUBMIT] Setting isSubmitting to false...');
       setIsSubmitting(false);
+      console.log('✅ [ORDER SUBMIT] isSubmitting set to false');
       
+      console.log('🌐 [ORDER SUBMIT] Checking if window is defined...');
       if (typeof window !== 'undefined') {
+        console.log('✅ [ORDER SUBMIT] Window is defined');
+        console.log('🚀 [ORDER SUBMIT] REDIRECTING TO /payment...');
+        console.log('🚀 [ORDER SUBMIT] Current URL:', window.location.href);
         window.location.href = '/payment';
+        console.log('✅ [ORDER SUBMIT] Redirect initiated');
+      } else {
+        console.error('❌ [ORDER SUBMIT] Window is undefined - cannot redirect!');
       }
     } catch (error) {
+      console.error('❌❌❌ [ORDER SUBMIT] CAUGHT ERROR ❌❌❌');
+      console.error('❌ [ORDER SUBMIT] Error type:', typeof error);
+      console.error('❌ [ORDER SUBMIT] Error instanceof Error:', error instanceof Error);
+      console.error('❌ [ORDER SUBMIT] Error object:', error);
+      console.error('❌ [ORDER SUBMIT] Error message:', error instanceof Error ? error.message : String(error));
+      console.error('❌ [ORDER SUBMIT] Error stack:', error instanceof Error ? error.stack : 'No stack');
 
       let errorMessage = "Failed to place order. Please try again.";
       
       if (error instanceof Error) {
+        console.log('🔍 [ORDER SUBMIT] Processing error message:', error.message);
+        
         if (error.message.includes('venue_id is required')) {
           errorMessage = "Invalid venue. Please check your QR code and try again.";
         } else if (error.message.includes('customer_name is required')) {
@@ -236,8 +280,12 @@ export function useOrderSubmission() {
         }
       }
       
+      console.error('❌ [ORDER SUBMIT] Final error message:', errorMessage);
+      console.error('❌ [ORDER SUBMIT] Showing alert to user...');
       alert(errorMessage);
+      console.error('❌ [ORDER SUBMIT] Setting isSubmitting to false...');
       setIsSubmitting(false);
+      console.error('❌❌❌ [ORDER SUBMIT] ERROR HANDLING COMPLETE ❌❌❌');
     }
   };
 
