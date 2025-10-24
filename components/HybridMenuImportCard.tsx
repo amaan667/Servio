@@ -8,7 +8,7 @@ import { Label } from '@/components/ui/label';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import { Badge } from '@/components/ui/badge';
 import { Progress } from '@/components/ui/progress';
-import { Link2, FileText, Wand2, Upload, CheckCircle2, AlertCircle } from 'lucide-react';
+import { Link2, FileText, Wand2, Upload, CheckCircle2, AlertCircle, Info } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 
 interface HybridMenuImportCardProps {

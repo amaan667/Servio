@@ -9,7 +9,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { ToggleSwitch } from "@/components/ui/toggle-switch";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { supabaseBrowser as createClient } from "@/lib/supabase";
-import { Plus, Edit, Trash2, ShoppingBag, Trash, ChevronDown, ChevronRight, Save, Eye, Settings, Upload, Grid, GripVertical, Palette } from "lucide-react";
+import { Plus, Edit, Trash2, ShoppingBag, Trash, ChevronDown, ChevronRight, Save, Eye, Settings, Upload, Grid, GripVertical, Palette, Info } from "lucide-react";
 import { MenuUploadCard } from "@/components/MenuUploadCard";
 import { MenuUrlImportCard } from "@/components/MenuUrlImportCard";
 import { HybridMenuImportCard } from "@/components/HybridMenuImportCard";
