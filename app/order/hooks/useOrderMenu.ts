@@ -65,7 +65,7 @@ export function useOrderMenu(venueSlug: string, isDemo: boolean) {
             setCategoryOrder(categoryOrderData.categories);
           }
         }
-      } catch (error) {
+      } catch (_error) {
         setCategoryOrder(null);
       }
       
@@ -75,7 +75,7 @@ export function useOrderMenu(venueSlug: string, isDemo: boolean) {
       
       setLoadingMenu(false);
     } catch (err) {
-      setMenuError(`Error loading menu: ${err.message}`);
+      setMenuError(`Error loading menu: ${err instanceof Error ? err.message : 'Unknown error'}`);
       setLoadingMenu(false);
     }
   }, [venueSlug, isDemo]);

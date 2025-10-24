@@ -5,7 +5,7 @@ import { logger } from '@/lib/logger';
 
 export const runtime = 'nodejs';
 
-export async function POST(req: Request) {
+export async function POST(_req: Request) {
   try {
     const { venueId, name, business_type, address, phone, email } = await req.json();
 
@@ -71,7 +71,7 @@ export async function POST(req: Request) {
       if (error) throw error;
       return NextResponse.json({ ok: true, venue: data });
     }
-  } catch (error) {
+  } catch (_error) {
     logger.error('[VENUES UPSERT] Error:', { error: error instanceof Error ? error.message : 'Unknown error' });
     return NextResponse.json({ ok: false, error: error.message }, { status: 500 });
   }

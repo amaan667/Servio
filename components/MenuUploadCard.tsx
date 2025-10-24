@@ -40,7 +40,7 @@ export function MenuUploadCard({ venueId, onSuccess }: MenuUploadCardProps) {
         if (data && !error) {
           setHasExistingUpload(true);
         }
-      } catch (error) {
+      } catch (_error) {
         // No existing uploads
         setHasExistingUpload(false);
       }
@@ -83,15 +83,15 @@ export function MenuUploadCard({ venueId, onSuccess }: MenuUploadCardProps) {
         });
       
       if (error) {
-
-      } else {
+      // Empty block
+    } else {
         toast({
           title: 'Menu style extracted',
           description: 'Your menu design has been automatically configured from the PDF'
         });
       }
-    } catch (error) {
-
+    } catch (_error) {
+      // Error silently handled
     }
   };
 
@@ -208,7 +208,7 @@ export function MenuUploadCard({ venueId, onSuccess }: MenuUploadCardProps) {
       onSuccess?.();
     }
       
-    } catch (error) {
+    } catch (_error) {
       toast({
         title: 'Upload failed',
         description: error.message,
@@ -282,7 +282,7 @@ export function MenuUploadCard({ venueId, onSuccess }: MenuUploadCardProps) {
       } else {
         throw new Error(`Clear catalog failed: ${result.error}`);
       }
-    } catch (error) {
+    } catch (_error) {
       toast({
         title: 'Clear catalog failed',
         description: error.message,

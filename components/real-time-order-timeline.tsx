@@ -100,7 +100,7 @@ export function RealTimeOrderTimeline({ orderId, venueId, className }: RealTimeO
 
       setOrder(data);
       setLastUpdate(new Date());
-    } catch (err) {
+    } catch (_err) {
 
       setError('Failed to load order details');
     } finally {
@@ -145,9 +145,10 @@ export function RealTimeOrderTimeline({ orderId, venueId, className }: RealTimeO
       .subscribe((status: unknown) => {
         
         if (status === 'SUBSCRIBED') {
-        } else if (status === 'CHANNEL_ERROR') {
-
-        }
+      // Empty block
+    } else if (status === 'CHANNEL_ERROR') {
+      // Empty block
+    }
       });
 
     return () => {

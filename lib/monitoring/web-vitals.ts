@@ -88,7 +88,7 @@ export function initWebVitals() {
     onTTFB(sendToAnalytics); // Time to First Byte
 
     logger.debug('[WEB_VITALS] Tracking initialized');
-  } catch (error) {
+  } catch (_error) {
     logger.error('[WEB_VITALS] Failed to initialize', { error });
   }
 }
@@ -108,7 +108,7 @@ export class PerformanceTracker {
     try {
       this.marks.set(name, performance.now());
       performance.mark(name);
-    } catch (error) {
+    } catch (_error) {
       logger.error('[PERFORMANCE] Failed to mark', { error, name });
     }
   }
@@ -149,7 +149,7 @@ export class PerformanceTracker {
       }
 
       return measure.duration;
-    } catch (error) {
+    } catch (_error) {
       logger.error('[PERFORMANCE] Failed to measure', { error, name });
       return null;
     }
@@ -260,7 +260,7 @@ export class PerformanceTracker {
       });
 
       observer.observe({ entryTypes: ['longtask'] });
-    } catch (error) {
+    } catch (_error) {
       // Long task API not supported
     }
   }

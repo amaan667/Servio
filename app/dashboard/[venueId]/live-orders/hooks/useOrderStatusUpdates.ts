@@ -90,8 +90,8 @@ async function clearTableSession(orderData: unknown, venueId: string, orderId: s
 
       await sessionQuery;
     }
-  } catch (error) {
-
-  }
+  } catch (_error) {
+      // Error silently handled
+    }
 }
 

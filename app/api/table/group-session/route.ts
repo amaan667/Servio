@@ -67,7 +67,7 @@ export async function GET(request: NextRequest) {
       });
     }
 
-  } catch (error) {
+  } catch (_error) {
     logger.error('[GROUP SESSION] Error in GET group session API:', { error: error instanceof Error ? error.message : 'Unknown error' });
     return NextResponse.json({ 
       ok: false, 
@@ -212,7 +212,7 @@ export async function POST(request: NextRequest) {
       });
     }
 
-  } catch (error) {
+  } catch (_error) {
     logger.error('[GROUP SESSION] Error in POST group session API:', { error: error instanceof Error ? error.message : 'Unknown error' });
     return NextResponse.json({ 
       ok: false, 

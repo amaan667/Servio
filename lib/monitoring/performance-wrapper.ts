@@ -31,7 +31,7 @@ class PerformanceMonitor {
     try {
       result = await fn();
       return result;
-    } catch (error) {
+    } catch (_error) {
       success = false;
       throw error;
     } finally {

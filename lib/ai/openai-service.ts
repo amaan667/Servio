@@ -222,7 +222,7 @@ export async function handleUserMessage({
             tool_call_id: callId
           } as unknown);
 
-        } catch (error) {
+        } catch (_error) {
           logger.error(`[AI] Tool execution error for ${name}:`, error as Record<string, unknown>);
           toolResult = { error: `Tool execution failed: ${error?.message || 'Unknown error'}` };
           
@@ -282,7 +282,7 @@ export async function handleUserMessage({
         toolResults: []
       };
     }
-  } catch (error) {
+  } catch (_error) {
     logger.error("[AI] OpenAI service error:", error as Record<string, unknown>);
     throw new Error(`AI service error: ${error?.message || 'Unknown error'}`);
   }
@@ -384,7 +384,7 @@ export async function generateConversationTitle(firstUserMessage: string): Promi
 
     const title = response.choices[0].message.content?.trim() || "New Chat";
     return title.substring(0, 60); // Limit length
-  } catch (error) {
+  } catch (_error) {
     logger.error("[AI] Title generation error:", error as Record<string, unknown>);
     return firstUserMessage.substring(0, 60);
   }

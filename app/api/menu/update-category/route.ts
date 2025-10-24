@@ -73,7 +73,7 @@ export async function POST(request: NextRequest) {
       updatedItems: updatedItems?.length || 0
     });
 
-  } catch (error) {
+  } catch (_error) {
     logger.error('[UPDATE CATEGORY] Unexpected error:', { error: error instanceof Error ? error.message : 'Unknown error' });
     return NextResponse.json(
       { error: 'Internal server error' },

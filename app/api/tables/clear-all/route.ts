@@ -48,7 +48,7 @@ export async function POST(request: NextRequest) {
       message: 'All tables and sessions cleared successfully' 
     });
 
-  } catch (error) {
+  } catch (_error) {
     logger.error('[AUTH DEBUG] Error in clear all tables API:', { error: error instanceof Error ? error.message : 'Unknown error' });
     return NextResponse.json({ 
       ok: false, 

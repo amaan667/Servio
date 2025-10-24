@@ -169,7 +169,7 @@ export async function POST(request: NextRequest) {
           deletedTables: venueTables?.length || 0
         });
 
-      } catch (error) {
+      } catch (_error) {
         logger.error(`🕛 [CRON DAILY RESET] Error resetting venue ${venue.venue_name}:`, { error: error instanceof Error ? error.message : 'Unknown error' });
         resetResults.push({
           venueId: venue.venue_id,
@@ -190,7 +190,7 @@ export async function POST(request: NextRequest) {
       resetResults
     });
 
-  } catch (error) {
+  } catch (_error) {
     logger.error('🕛 [CRON DAILY RESET] Error in automatic daily reset:', { error: error instanceof Error ? error.message : 'Unknown error' });
     return NextResponse.json(
       { error: 'Internal server error' },

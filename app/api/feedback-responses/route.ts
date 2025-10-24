@@ -9,7 +9,7 @@ function getServiceClient() {
 }
 
 // POST - Submit feedback responses
-export async function POST(req: Request) {
+export async function POST(_req: Request) {
   try {
     const { venue_id, order_id, answers } = await req.json();
 

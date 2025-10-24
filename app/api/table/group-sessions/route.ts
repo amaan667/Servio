@@ -54,7 +54,7 @@ export async function GET(request: NextRequest) {
       });
     }
 
-  } catch (error) {
+  } catch (_error) {
     logger.error('[GROUP SESSIONS] Error in GET group sessions API:', { error: error instanceof Error ? error.message : 'Unknown error' });
     return NextResponse.json({ 
       ok: false, 

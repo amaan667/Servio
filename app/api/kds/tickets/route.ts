@@ -79,7 +79,7 @@ async function autoBackfillMissingTickets(venueId: string) {
     logger.debug(
       `[KDS AUTO-BACKFILL] Auto-backfill completed for ${ordersWithoutTickets.length} orders`
     );
-  } catch (error) {
+  } catch (_error) {
     logger.error("[KDS AUTO-BACKFILL] Error during auto-backfill:", {
       error: error instanceof Error ? error.message : "Unknown error",
     });
@@ -88,14 +88,14 @@ async function autoBackfillMissingTickets(venueId: string) {
 }
 
 // GET - Fetch KDS tickets for a venue or station
-export async function GET(req: Request) {
+export async function GET(_req: Request) {
   try {
     const { searchParams } = new URL(req.url);
     const venueId = searchParams.get("venueId");
     const stationId = searchParams.get("stationId");
     const status = searchParams.get("status"); // Optional filter
 
-    console.info("[KDS TICKETS] 📥 GET Request:", {
+    logger.debug("[KDS TICKETS] GET Request:", {
       venueId,
       stationId,
       status,
@@ -185,7 +185,7 @@ export async function GET(req: Request) {
       ok: true,
       tickets: finalTickets || [],
     });
-  } catch (error) {
+  } catch (_error) {
     logger.error("[KDS] Unexpected error:", {
       error: error instanceof Error ? error.message : "Unknown error",
     });
@@ -197,7 +197,7 @@ export async function GET(req: Request) {
 }
 
 // PATCH - Update ticket status
-export async function PATCH(req: Request) {
+export async function PATCH(_req: Request) {
   try {
     const body = await req.json();
     const { ticketId, status } = body;
@@ -301,7 +301,7 @@ export async function PATCH(req: Request) {
       ok: true,
       ticket,
     });
-  } catch (error) {
+  } catch (_error) {
     logger.error("[KDS] Unexpected error:", {
       error: error instanceof Error ? error.message : "Unknown error",
     });

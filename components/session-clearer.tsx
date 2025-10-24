@@ -13,9 +13,9 @@ export default function SessionClearer() {
             'Content-Type': 'application/json',
           },
         });
-      } catch (error) {
-
-      }
+      } catch (_error) {
+      // Error silently handled
+    }
     }
     clearSession()
   }, [])

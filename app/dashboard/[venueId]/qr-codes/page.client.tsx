@@ -65,7 +65,7 @@ export default function QRCodeClientPage({ venueId }: { venueId: string }) {
   }, [user, venueId]);
 
   // Debug: Log venueId to ensure it's present
-  console.info("[QR Codes Page] venueId:", venueId, "user:", user?.id, "userRole:", userRole);
+  // QR codes page loaded
 
   // Render immediately - no auth checks, no loading spinners
   return (

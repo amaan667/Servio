@@ -159,8 +159,8 @@ export function useOrderSession(orderParams: OrderParams) {
           }
         }
       }
-    } catch (error) {
-
+    } catch (_error) {
+      // Error silently handled
     }
   };
 
@@ -227,9 +227,9 @@ export function useOrderSession(orderParams: OrderParams) {
                 name: session.customerName,
                 phone: session.customerPhone
               });
-            } catch (error) {
-
-            }
+            } catch (_error) {
+      // Error silently handled
+    }
           }
         } else {
           const tableSessionKey = `servio-session-${orderParams.tableNumber}`;
@@ -241,9 +241,9 @@ export function useOrderSession(orderParams: OrderParams) {
             localStorage.removeItem(sessionSessionKey);
           }
         }
-      } catch (error) {
-
-      }
+      } catch (_error) {
+      // Error silently handled
+    }
     };
 
     checkUnpaidOrders();
@@ -259,7 +259,7 @@ export function useOrderSession(orderParams: OrderParams) {
           } catch {}
         };
       }
-    } catch (err) {
+    } catch (_err) {
       // Auth state change setup failed
     }
     return () => {};

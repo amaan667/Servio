@@ -7,7 +7,7 @@ export const runtime = 'nodejs';
 
 // POST /api/reservations/[reservationId]/assign - Assign reservation to table
 export async function POST(
-  req: Request,
+  _req: Request,
   context: { params: Promise<{ reservationId: string }> }
 ) {
   try {
@@ -68,7 +68,7 @@ export async function POST(
       message: 'Reservation assigned successfully'
     });
 
-  } catch (error) {
+  } catch (_error) {
     logger.error('[RESERVATIONS ASSIGN] Unexpected error:', { error: error instanceof Error ? error.message : 'Unknown error' });
     return NextResponse.json({ ok: false, error: 'Internal server error' }, { status: 500 });
   }

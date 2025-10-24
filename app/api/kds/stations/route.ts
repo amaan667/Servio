@@ -3,12 +3,12 @@ import { authenticateRequest, verifyVenueAccess } from "@/lib/api-auth";
 import { logger } from "@/lib/logger";
 
 // GET - Fetch all KDS stations for a venue
-export async function GET(req: Request) {
+export async function GET(_req: Request) {
   try {
     const { searchParams } = new URL(req.url);
     const venueId = searchParams.get("venueId");
 
-    console.info("[KDS STATIONS] 📥 Request received:", {
+    logger.debug("[KDS STATIONS] Request received:", {
       venueId,
       hasAuthHeader: !!req.headers.get("authorization"),
       authHeader: req.headers.get("authorization")?.substring(0, 20) + "...",
@@ -30,7 +30,7 @@ export async function GET(req: Request) {
       return NextResponse.json({ ok: false, error: auth.error }, { status: 401 });
     }
 
-    console.info("[KDS STATIONS] ✅ Authenticated:", { userId: auth.user.id });
+    logger.debug("[KDS STATIONS] Authenticated:", { userId: auth.user.id });
 
     const { user, supabase } = auth;
 
@@ -87,7 +87,7 @@ export async function GET(req: Request) {
       ok: true,
       stations,
     });
-  } catch (error) {
+  } catch (_error) {
     logger.error("[KDS] Unexpected error:", {
       error: error instanceof Error ? error.message : "Unknown error",
     });
@@ -99,7 +99,7 @@ export async function GET(req: Request) {
 }
 
 // POST - Create a new KDS station
-export async function POST(req: Request) {
+export async function POST(_req: Request) {
   try {
     const body = await req.json();
     const { venueId, stationName, stationType, displayOrder, colorCode } = body;
@@ -154,7 +154,7 @@ export async function POST(req: Request) {
       ok: true,
       station,
     });
-  } catch (error) {
+  } catch (_error) {
     logger.error("[KDS] Unexpected error:", {
       error: error instanceof Error ? error.message : "Unknown error",
     });

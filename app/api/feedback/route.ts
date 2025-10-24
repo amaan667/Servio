@@ -4,7 +4,7 @@ import { logger } from '@/lib/logger';
 
 export const runtime = 'nodejs';
 
-export async function POST(req: Request) {
+export async function POST(_req: Request) {
   try {
     const { order_id, rating, comment } = await req.json();
     const admin = await createClient();

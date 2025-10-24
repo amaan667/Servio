@@ -86,7 +86,7 @@ class RequestBatcher {
               item.reject(new Error(`No result for ${item.id}`));
             }
           });
-        } catch (error) {
+        } catch (_error) {
           // Reject all promises in batch
           batch.forEach(item => item.reject(error));
         }

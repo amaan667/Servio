@@ -73,9 +73,9 @@ export function StyledMenuDisplay({
           };
           setMenuStyle(style);
         }
-      } catch (error) {
-
-      } finally {
+      } catch (_error) {
+      // Error silently handled
+    } finally {
         setLoading(false);
       }
     };

@@ -41,7 +41,7 @@ export default function ClearSessionPage() {
         });
 
         setStatus("cleared");
-      } catch (error) {
+      } catch (_error) {
         console.error("Error clearing session:", error);
         setStatus("error");
       }

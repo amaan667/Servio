@@ -51,7 +51,7 @@ Rules:
   try {
     const json = JSON.parse(text!);
     return json;
-  } catch (err) {
+  } catch (_err) {
     logger.error("Failed to parse JSON:", text);
     throw new Error("Invalid JSON response from GPT Vision");
   }

@@ -54,9 +54,9 @@ export function usePaymentState() {
         setReceiptEmail(data.customerEmail || '');
 
         if (data.isDemo || isDemoFromUrl) {
-
-        }
-      } catch (error) {
+      // Empty block
+    }
+      } catch (_error) {
 
         router.push("/order");
       }

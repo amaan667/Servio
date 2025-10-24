@@ -53,7 +53,7 @@ export default function OnboardingTablesPage() {
       setVenueId(venues[0]?.venue_id);
       generatePreview(selectedCount, venues[0]?.venue_id);
       setLoading(false);
-    } catch (error) {
+    } catch (_error) {
 
       setLoading(false);
     }
@@ -79,9 +79,9 @@ export default function OnboardingTablesPage() {
           qrCode: qrDataUrl,
           url: tableUrl,
         });
-      } catch (error) {
-
-      }
+      } catch (_error) {
+      // Error silently handled
+    }
     }
 
     setPreviewTables(tables);
@@ -138,7 +138,7 @@ export default function OnboardingTablesPage() {
 
       // Move to next step
       router.push('/onboarding/test-order');
-    } catch (error) {
+    } catch (_error) {
 
       toast({
         title: 'Failed to create tables',

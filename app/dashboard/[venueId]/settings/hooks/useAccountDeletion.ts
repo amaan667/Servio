@@ -27,8 +27,8 @@ export function useAccountDeletion(user: User) {
         .eq('owner_user_id', user.id);
 
       if (venueError) {
-
-      }
+      // Empty block
+    }
 
       const { error } = await createClient().auth.admin.deleteUser(user.id);
 
@@ -43,16 +43,16 @@ export function useAccountDeletion(user: User) {
             'Content-Type': 'application/json',
           },
         });
-      } catch (error) {
-
-      }
+      } catch (_error) {
+      // Error silently handled
+    }
       
       try {
         const { clearAuthStorage } = await import('@/lib/supabase');
         clearAuthStorage();
-      } catch (error) {
-
-      }
+      } catch (_error) {
+      // Error silently handled
+    }
       
       router.push('/');
       
@@ -60,7 +60,7 @@ export function useAccountDeletion(user: User) {
         title: "Account Deleted",
         description: "Your account has been permanently deleted.",
       });
-    } catch (err) {
+    } catch (_err) {
       setError(err.message || 'Failed to delete account');
       toast({
         title: "Error",

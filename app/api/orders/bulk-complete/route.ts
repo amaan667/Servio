@@ -5,7 +5,7 @@ import { logger } from '@/lib/logger';
 
 export const runtime = 'nodejs';
 
-export async function POST(req: Request) {
+export async function POST(_req: Request) {
   try {
     
     const { venueId, orderIds } = await req.json();
@@ -212,7 +212,7 @@ export async function POST(req: Request) {
       message: `Successfully completed ${updatedOrders?.length || 0} orders and cleaned up tables`
     });
 
-  } catch (error) {
+  } catch (_error) {
     logger.error('[BULK COMPLETE] Unexpected error:', { error: error instanceof Error ? error.message : 'Unknown error' });
     return NextResponse.json({ error: 'Internal server error' }, { status: 500 });
   }

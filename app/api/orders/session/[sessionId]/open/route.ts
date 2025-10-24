@@ -42,7 +42,7 @@ export async function GET(
       data: null
     });
 
-  } catch (error) {
+  } catch (_error) {
     logger.error('[ORDERS SESSION] Error:', { error: error instanceof Error ? error.message : 'Unknown error' });
     return NextResponse.json({ 
       success: false, 

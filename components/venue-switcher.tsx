@@ -53,12 +53,12 @@ export function VenueSwitcher({ currentVenueId }: VenueSwitcherProps) {
       });
 
       if (error) {
-
-      } else {
+      // Empty block
+    } else {
         setVenues(data || []);
       }
-    } catch (error) {
-
+    } catch (_error) {
+      // Error silently handled
     } finally {
       setLoading(false);
     }

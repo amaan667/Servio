@@ -56,8 +56,8 @@ export function UnassignedReservationsPanel({
           break;
       }
       onActionComplete();
-    } catch (error) {
-
+    } catch (_error) {
+      // Error silently handled
     } finally {
       setIsLoading(null);
     }

@@ -109,8 +109,8 @@ export function EnhancedTableMergeDialog({
       await onMergeConfirm(sourceTable.id, selectedTableId, selectedTable.requiresConfirmation);
       onActionComplete?.();
       onClose();
-    } catch (error) {
-
+    } catch (_error) {
+      // Error silently handled
     } finally {
       setIsLoading(false);
     }

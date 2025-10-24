@@ -40,7 +40,7 @@ export async function GET(
     }
 
     return NextResponse.json({ invitation });
-  } catch (error) {
+  } catch (_error) {
     return NextResponse.json({ error: 'Internal server error' }, { status: 500 });
   }
 }
@@ -158,6 +158,7 @@ export async function POST(
       .single();
 
     if (updateError) {
+      // Empty block
     }
 
     return NextResponse.json({ 
@@ -165,7 +166,7 @@ export async function POST(
       message: 'Invitation accepted successfully',
       invitation: updatedInvitation
     });
-  } catch (error) {
+  } catch (_error) {
     return NextResponse.json({ error: 'Internal server error' }, { status: 500 });
   }
 }

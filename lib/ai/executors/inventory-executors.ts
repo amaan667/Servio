@@ -91,7 +91,7 @@ export async function executeInventoryAdjustStock(
 }
 
 export async function executeInventorySetParLevels(
-  params: unknown,
+  _params: unknown,
   venueId: string,
   _userId: string,
   preview: boolean
@@ -144,7 +144,7 @@ export async function executeInventorySetParLevels(
 }
 
 export async function executeInventoryGeneratePurchaseOrder(
-  params: unknown,
+  _params: unknown,
   venueId: string,
   _userId: string,
   preview: boolean

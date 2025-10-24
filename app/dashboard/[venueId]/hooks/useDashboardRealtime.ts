@@ -94,7 +94,7 @@ export function useDashboardRealtime({
           table: 'menu_items',
           filter: `venue_id=eq.${venueId}`
         },
-        async (payload: unknown) => {
+        async (_payload: unknown) => {
 
           try {
             const { data: menuItems } = await supabase
@@ -105,20 +105,20 @@ export function useDashboardRealtime({
             
             // Update menu items count in parent component
             // This will be handled by the parent component
-          } catch (error) {
-
-          }
+          } catch (_error) {
+      // Error silently handled
+    }
         }
       )
       .subscribe((status: string) => {
 
         if (status === 'SUBSCRIBED') {
-
-        } else if (status === 'CHANNEL_ERROR') {
-
-        } else if (status === 'TIMED_OUT') {
-
-        }
+      // Empty block
+    } else if (status === 'CHANNEL_ERROR') {
+      // Empty block
+    } else if (status === 'TIMED_OUT') {
+      // Empty block
+    }
       });
 
     const handleOrderCreated = (event: CustomEvent) => {

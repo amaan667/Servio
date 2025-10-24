@@ -101,7 +101,7 @@ export default function SettingsPageClient({ venueId }: { venueId: string }) {
           userRole: userRole?.role || (isOwner ? "owner" : "staff"),
         });
         setLoading(false);
-      } catch (error) {
+      } catch (_error) {
         console.error("Error loading settings:", error);
         setLoading(false);
       }

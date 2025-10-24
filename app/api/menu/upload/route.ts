@@ -16,7 +16,7 @@ async function sha256(buffer: ArrayBuffer): Promise<string> {
   return bytes.map((b) => b.toString(16).padStart(2, '0')).join('');
 }
 
-export async function POST(req: Request) {
+export async function POST(_req: Request) {
   const supa = admin();
   try {
     const form = await req.formData();

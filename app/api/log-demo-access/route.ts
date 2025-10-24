@@ -4,7 +4,7 @@ import { logger } from '@/lib/logger';
 export const runtime = 'nodejs';
 export const dynamic = 'force-dynamic';
 
-export async function POST(req: Request) {
+export async function POST(_req: Request) {
   // Log immediately when endpoint is hit
   logger.debug('================================================================================');
   logger.debug('[DEMO ACCESS] API ENDPOINT HIT - Starting to process request');
@@ -60,7 +60,7 @@ export async function POST(req: Request) {
       timestamp: new Date().toISOString()
     });
 
-  } catch (error) {
+  } catch (_error) {
     logger.debug('================================================================================');
     logger.error('[DEMO ACCESS ERROR] Failed to process request');
     logger.error('[DEMO ACCESS ERROR]', { error: error instanceof Error ? error.message : 'Unknown error' });

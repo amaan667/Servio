@@ -132,7 +132,7 @@ export default function InvitationBasedStaffManagement({
       if (shiftsResponse.ok) {
         setAllShifts(shiftsData.shifts || []);
       }
-    } catch (err) {
+    } catch (_err) {
 
       setError('Failed to load staff data');
     } finally {
@@ -149,7 +149,7 @@ export default function InvitationBasedStaffManagement({
         setAllShifts(shifts);
       }
     } catch (e) {
-
+      // Error silently handled
     }
   }, [venueId]);
 
@@ -218,7 +218,7 @@ export default function InvitationBasedStaffManagement({
       // Switch to invitations tab and reload data
       setActiveTab('invitations');
       loadData(); // Reload to show new invitation
-    } catch (err) {
+    } catch (_err) {
       setError(err.message || 'Failed to send invitation');
     } finally {
       setInviteLoading(false);
@@ -257,7 +257,7 @@ export default function InvitationBasedStaffManagement({
 
       // Also reload data to ensure consistency
       loadData();
-    } catch (err) {
+    } catch (_err) {
       toast({
         title: 'Error',
         description: err.message || 'Failed to remove invitation',
@@ -333,8 +333,8 @@ export default function InvitationBasedStaffManagement({
           setShifts(j.shifts || []);
         }
       } catch (e) {
-
-      }
+      // Error silently handled
+    }
     }, [row.id, venueId]);
 
     useEffect(() => { load(); }, [load]);

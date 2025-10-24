@@ -56,8 +56,8 @@ export function usePasswordManagement(user: User) {
         });
         
         if (metadataError) {
-
-        }
+      // Empty block
+    }
       }
 
       const successMessage = shouldShowSetPassword 
@@ -86,7 +86,7 @@ export function usePasswordManagement(user: User) {
         }, 2500);
       }
       
-    } catch (err) {
+    } catch (_err) {
       setError(err.message || 'Failed to update password');
       toast({
         title: "Error",

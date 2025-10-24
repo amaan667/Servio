@@ -91,12 +91,12 @@ export function UpgradeModal({
         if (stripe) {
           const { error } = await stripe.redirectToCheckout({ sessionId });
           if (error) {
-
-          }
+      // Empty block
+    }
         }
       }
-    } catch (error) {
-
+    } catch (_error) {
+      // Error silently handled
     } finally {
       setLoading(null);
     }

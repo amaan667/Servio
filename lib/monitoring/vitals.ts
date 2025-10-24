@@ -37,7 +37,7 @@ function sendToAnalytics(metric: Metric) {
 export function reportWebVitals(metric: Metric) {
   // Log to console in development
   if (process.env.NODE_ENV === 'development') {
-    console.log(metric);
+    logger.debug("[VITALS]", metric);
   }
   
   // Send to analytics in production

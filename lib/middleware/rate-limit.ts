@@ -29,7 +29,7 @@ function getRedisClient(): Redis | null {
     });
 
     return redisClient;
-  } catch (error) {
+  } catch (_error) {
     logger.error('[RATE LIMIT] Failed to create client:', { error });
     return null;
   }
@@ -104,7 +104,7 @@ export async function checkRateLimit(
     }
 
     return { allowed, remaining, resetAt };
-  } catch (error) {
+  } catch (_error) {
     logger.error('[RATE LIMIT ERROR]', { identifier, error });
     // On error, allow the request
     return {

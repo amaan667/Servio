@@ -45,9 +45,9 @@ export default function PaymentSuccessPage() {
           
           // Clean up after loading
           localStorage.removeItem("demo-order-data");
-        } catch (error) {
-
-        }
+        } catch (_error) {
+      // Error silently handled
+    }
       } else {
         // Fallback: try to reconstruct order from URL parameters
         if (customerNameParam && totalParam && venueNameParam) {

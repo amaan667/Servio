@@ -70,8 +70,8 @@ export function WaitingList({ venueId, availableTables, onPartySeated }: Waiting
 
       if (error) throw error;
       setWaitingParties(data || []);
-    } catch (error) {
-
+    } catch (_error) {
+      // Error silently handled
     } finally {
       setLoading(false);
     }
@@ -95,8 +95,8 @@ export function WaitingList({ venueId, availableTables, onPartySeated }: Waiting
       setWaitingParties(prev => [...prev, data]);
       setNewParty({ customer_name: '', customer_phone: '', party_size: 2 });
       setShowAddDialog(false);
-    } catch (error) {
-
+    } catch (_error) {
+      // Error silently handled
     }
   };
 
@@ -117,8 +117,8 @@ export function WaitingList({ venueId, availableTables, onPartySeated }: Waiting
         setWaitingParties(prev => prev.filter(p => p.id !== waitingId));
         onPartySeated?.();
       }
-    } catch (error) {
-
+    } catch (_error) {
+      // Error silently handled
     } finally {
       setSeatingParty(null);
     }
@@ -134,8 +134,8 @@ export function WaitingList({ venueId, availableTables, onPartySeated }: Waiting
       if (error) throw error;
 
       setWaitingParties(prev => prev.filter(p => p.id !== waitingId));
-    } catch (error) {
-
+    } catch (_error) {
+      // Error silently handled
     }
   };
 

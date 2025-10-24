@@ -20,7 +20,7 @@ interface WebhookEvent {
   id: string;
   webhook_id: string;
   event_type: string;
-  payload: unknown;
+  _payload: unknown;
   status: 'pending' | 'delivered' | 'failed';
   attempts: number;
   last_attempt: string;
@@ -30,7 +30,7 @@ interface WebhookEvent {
 interface WebhookDelivery {
   webhook_id: string;
   event_type: string;
-  payload: unknown;
+  _payload: unknown;
   signature: string;
   timestamp: string;
 }
@@ -68,7 +68,7 @@ class WebhookService {
   /**
    * Send webhook event
    */
-  async sendWebhook(organizationId: string, eventType: string, payload: unknown): Promise<void> {
+  async sendWebhook(organizationId: string, eventType: string, _payload: unknown): Promise<void> {
     const webhooks = Array.from(this.webhooks.values())
       .filter(w => w.organization_id === organizationId && w.is_active && w.events.includes(eventType));
 
@@ -80,7 +80,7 @@ class WebhookService {
   /**
    * Deliver webhook to endpoint
    */
-  private async deliverWebhook(webhook: Webhook, eventType: string, payload: unknown): Promise<void> {
+  private async deliverWebhook(webhook: Webhook, eventType: string, _payload: unknown): Promise<void> {
     const delivery: WebhookDelivery = {
       webhook_id: webhook.id,
       event_type: eventType,
@@ -102,11 +102,11 @@ class WebhookService {
       });
 
       if (response.ok) {
-        console.log(`Webhook delivered successfully: ${webhook.name}`);
+        logger.info(`Webhook delivered successfully: ${webhook.name}`);
       } else {
         throw new Error(`Webhook delivery failed: ${response.status}`);
       }
-    } catch (error) {
+    } catch (_error) {
       console.error(`Webhook delivery failed: ${webhook.name}`, error);
       await this.logWebhookFailure(webhook.id, error);
     }
@@ -115,7 +115,7 @@ class WebhookService {
   /**
    * Generate webhook signature
    */
-  private generateSignature(payload: unknown, secret: string): string {
+  private generateSignature(_payload: unknown, secret: string): string {
     const crypto = require('crypto');
     const hmac = crypto.createHmac('sha256', secret);
     hmac.update(JSON.stringify(payload));
@@ -173,7 +173,7 @@ class WebhookService {
     try {
       await this.deliverWebhook(webhook, event.event_type, event.payload);
       event.status = 'delivered';
-    } catch (error) {
+    } catch (_error) {
       event.status = 'failed';
       await this.logWebhookFailure(webhook.id, error);
     }
@@ -195,7 +195,7 @@ class WebhookService {
     try {
       await this.deliverWebhook(webhook, 'test', testPayload);
       return true;
-    } catch (error) {
+    } catch (_error) {
       return false;
     }
   }

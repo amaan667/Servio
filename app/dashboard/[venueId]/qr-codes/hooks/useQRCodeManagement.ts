@@ -77,7 +77,7 @@ export function useQRCodeManagement(venueId: string) {
 
       setTables(tablesData || []);
       setCounters(countersData);
-    } catch (error) {
+    } catch (_error) {
       console.error("[QR MANAGEMENT] Error loading data:", error);
       toast({
         title: "Error",

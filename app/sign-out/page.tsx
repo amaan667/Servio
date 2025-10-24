@@ -19,15 +19,17 @@ export default function SignOutPage() {
         });
         
         if (!response.ok) {
-        } else {
+      // Empty block
+    } else {
         }
         
         // Clear client storage
         try {
           const { clearAuthStorage } = await import('@/lib/supabase');
           clearAuthStorage();
-        } catch (error) {
-        }
+        } catch (_error) {
+      // Error silently handled
+    }
         
         // Use auth provider's signOut method
         await signOut();
@@ -35,7 +37,7 @@ export default function SignOutPage() {
         // Redirect to home page
         router.replace('/');
         
-      } catch (error) {
+      } catch (_error) {
 
         router.replace('/');
       }

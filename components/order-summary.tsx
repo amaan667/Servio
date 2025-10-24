@@ -156,7 +156,7 @@ export default function OrderSummary({ orderId, sessionId, orderData, isDemo = f
             throw new Error(`Failed to fetch order: ${errorData.error || 'Unknown error'}`);
           }
         }
-      } catch (error) {
+      } catch (_error) {
 
         setError('Failed to load order details');
       } finally {

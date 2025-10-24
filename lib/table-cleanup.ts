@@ -158,7 +158,7 @@ export async function cleanupTableOnOrderCompletion(params: TableCleanupParams):
       }
     };
 
-  } catch (error) {
+  } catch (_error) {
     logger.error('[TABLE CLEANUP] Unexpected error during table cleanup:', errorToContext(error));
     return { 
       success: false, 
@@ -212,7 +212,7 @@ export async function hasActiveOrders(params: TableCleanupParams): Promise<{
       count: count || 0
     };
 
-  } catch (error) {
+  } catch (_error) {
     logger.error('[TABLE CLEANUP] Unexpected error checking active orders:', errorToContext(error));
     return { 
       hasActive: false, 

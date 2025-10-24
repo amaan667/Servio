@@ -45,8 +45,8 @@ export function useShiftManagement(venueId: string, staff: unknown[]) {
       const data = await res.json();
       setAllShifts(prev => [...prev, data.shift]);
       setEditingShiftFor(null);
-    } catch (err) {
-
+    } catch (_err) {
+      // Error silently handled
     }
   };
 
@@ -63,8 +63,8 @@ export function useShiftManagement(venueId: string, staff: unknown[]) {
       }
 
       setAllShifts(prev => prev.filter(s => s.id !== shiftId));
-    } catch (err) {
-
+    } catch (_err) {
+      // Error silently handled
     }
   };
 

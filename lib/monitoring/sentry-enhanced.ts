@@ -120,7 +120,7 @@ export class EnhancedErrorTracker {
       const result = await handler();
       transaction.setStatus('ok');
       return result;
-    } catch (error) {
+    } catch (_error) {
       transaction.setStatus('internal_error');
       this.captureException(error as Error, {
         tags: {
@@ -153,7 +153,7 @@ export class EnhancedErrorTracker {
       const result = await handler();
       span?.setStatus('ok');
       return result;
-    } catch (error) {
+    } catch (_error) {
       span?.setStatus('internal_error');
       throw error;
     } finally {
@@ -199,7 +199,7 @@ export function TrackErrors(target: unknown, propertyKey: string, descriptor: Pr
   descriptor.value = async function (...args: unknown[]) {
     try {
       return await originalMethod.apply(this, args);
-    } catch (error) {
+    } catch (_error) {
       EnhancedErrorTracker.captureException(error as Error, {
         tags: {
           method: propertyKey,

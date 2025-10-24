@@ -86,8 +86,8 @@ export function EnhancedPDFMenuDisplay({
           .single();
 
         if (uploadData) {
-
-        }
+      // Empty block
+    }
 
         // Try pdf_images first, then fallback to pdf_images_cc
         const images = uploadData?.pdf_images || uploadData?.pdf_images_cc;
@@ -99,7 +99,7 @@ export function EnhancedPDFMenuDisplay({
 
           setViewMode('list');
         }
-      } catch (error) {
+      } catch (_error) {
 
         setViewMode('list');
       } finally {
@@ -123,9 +123,9 @@ export function EnhancedPDFMenuDisplay({
         if (!error && data) {
           setHotspots(data);
         }
-      } catch (error) {
-
-      }
+      } catch (_error) {
+      // Error silently handled
+    }
     };
 
     fetchHotspots();

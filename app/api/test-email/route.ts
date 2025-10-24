@@ -42,7 +42,7 @@ export async function POST(request: NextRequest) {
       timestamp: new Date().toISOString()
     });
 
-  } catch (error) {
+  } catch (_error) {
     logger.error('❌ Test email error:', { error: error instanceof Error ? error.message : 'Unknown error' });
     return NextResponse.json({ 
       error: 'Failed to send test email',

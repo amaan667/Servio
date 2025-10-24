@@ -39,8 +39,8 @@ export function ReservationsPanel({ venueId, reservations, onActionComplete }: R
       setIsLoading(reservationId);
       await checkInReservation.mutateAsync({ reservationId, tableId });
       onActionComplete?.();
-    } catch (error) {
-
+    } catch (_error) {
+      // Error silently handled
     } finally {
       setIsLoading(null);
     }
@@ -51,8 +51,8 @@ export function ReservationsPanel({ venueId, reservations, onActionComplete }: R
       setIsLoading(reservationId);
       await cancelReservation.mutateAsync({ reservationId });
       onActionComplete?.();
-    } catch (error) {
-
+    } catch (_error) {
+      // Error silently handled
     } finally {
       setIsLoading(null);
     }

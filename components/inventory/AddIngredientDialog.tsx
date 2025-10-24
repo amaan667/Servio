@@ -65,8 +65,8 @@ export function AddIngredientDialog({ open, onOpenChange, venueId, onSuccess }: 
           initial_stock: '',
         });
       }
-    } catch (error) {
-
+    } catch (_error) {
+      // Error silently handled
     } finally {
       setLoading(false);
     }

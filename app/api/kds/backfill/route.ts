@@ -10,7 +10,7 @@ interface KDSStation {
 
 export const runtime = 'nodejs'; // KDS backfill endpoint
 
-export async function POST(req: Request) {
+export async function POST(_req: Request) {
   try {
     const supabaseAdmin = createAdminClient();
     logger.debug('[KDS BACKFILL] Starting KDS backfill for existing orders...');
@@ -178,7 +178,7 @@ export async function POST(req: Request) {
         ordersProcessed++;
         logger.debug(`[KDS BACKFILL] Processed order ${order.id} with ${items.length} items`);
         
-      } catch (error) {
+      } catch (_error) {
         logger.error(`[KDS BACKFILL] Error processing order ${order.id}:`, { error: error instanceof Error ? error.message : 'Unknown error' });
         errors.push(`Error processing order ${order.id}: ${error instanceof Error ? error.message : 'Unknown error'}`);
       }
@@ -198,7 +198,7 @@ export async function POST(req: Request) {
       errors: errors.length > 0 ? errors : undefined
     });
 
-  } catch (error) {
+  } catch (_error) {
     logger.error('[KDS BACKFILL] Unexpected error:', { error: error instanceof Error ? error.message : 'Unknown error' });
     return NextResponse.json({ 
       ok: false, 

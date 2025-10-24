@@ -78,7 +78,7 @@ export default function OrderTrackingPage() {
 
       setOrder(data.order);
       setLastUpdate(new Date());
-    } catch (err) {
+    } catch (_err) {
 
       setError('Failed to load order details');
     } finally {
@@ -122,9 +122,10 @@ export default function OrderTrackingPage() {
       .subscribe((status: unknown) => {
         
         if (status === 'SUBSCRIBED') {
-        } else if (status === 'CHANNEL_ERROR') {
-
-        }
+      // Empty block
+    } else if (status === 'CHANNEL_ERROR') {
+      // Empty block
+    }
       });
 
     return () => {

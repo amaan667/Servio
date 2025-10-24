@@ -263,7 +263,7 @@ export async function executeAnalyticsGetStats(
           };
       }
     }
-  } catch (error) {
+  } catch (_error) {
     throw new AIAssistantError("Failed to get analytics data", "EXECUTION_FAILED", error);
   }
 
@@ -276,7 +276,7 @@ export async function executeAnalyticsGetStats(
 }
 
 export async function executeAnalyticsCreateReport(
-  params: unknown,
+  _params: unknown,
   venueId: string,
   _userId: string,
   preview: boolean

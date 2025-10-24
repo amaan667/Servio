@@ -62,7 +62,7 @@ export async function POST(_request: NextRequest) {
       }
     });
     
-  } catch (error) {
+  } catch (_error) {
     logger.error("[MIGRATION] Error:", { error: error instanceof Error ? error.message : 'Unknown error' });
     return NextResponse.json(
       { 
@@ -106,7 +106,7 @@ export async function GET(_request: NextRequest) {
       }
     });
     
-  } catch (error) {
+  } catch (_error) {
     logger.error("[MIGRATION] Error:", { error: error instanceof Error ? error.message : 'Unknown error' });
     return NextResponse.json(
       { 

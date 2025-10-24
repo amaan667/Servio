@@ -63,8 +63,8 @@ export function OrderCard({
       
       const label = order.table_label || 'Table Order';
       if (!order.table_label) {
-
-      }
+      // Empty block
+    }
       return {
         icon: <MapPin className="h-4 w-4" />,
         label,
@@ -101,8 +101,8 @@ export function OrderCard({
 
       if (!response.ok) throw new Error('Failed to delete order');
       onActionComplete?.();
-    } catch (error) {
-
+    } catch (_error) {
+      // Error silently handled
     } finally {
       setIsProcessing(false);
     }
@@ -127,8 +127,8 @@ export function OrderCard({
 
       if (!response.ok) throw new Error('Failed to process payment');
       onActionComplete?.();
-    } catch (error) {
-
+    } catch (_error) {
+      // Error silently handled
     } finally {
       setIsProcessing(false);
     }
@@ -177,8 +177,8 @@ export function OrderCard({
       }
       
       await onActionComplete?.();
-    } catch (error) {
-
+    } catch (_error) {
+      // Error silently handled
     } finally {
       setIsProcessing(false);
     }

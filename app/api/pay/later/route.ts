@@ -5,7 +5,7 @@ import { logger } from '@/lib/logger';
 
 export const runtime = 'nodejs';
 
-export async function POST(req: Request) {
+export async function POST(_req: Request) {
   try {
     const body = await req.json();
     const { order_id, sessionId } = body;
@@ -79,7 +79,7 @@ export async function POST(req: Request) {
       }
     });
 
-  } catch (error) {
+  } catch (_error) {
     logger.error('[PAY LATER] Error:', { error: error instanceof Error ? error.message : 'Unknown error' });
     return NextResponse.json({ 
       success: false, 

@@ -6,7 +6,7 @@ import { apiLogger, logger } from '@/lib/logger';
 export const runtime = 'nodejs';
 
 // GET handler for orders
-export async function GET(req: Request) {
+export async function GET(_req: Request) {
   try {
     const { searchParams } = new URL(req.url);
     const venueId = searchParams.get('venueId');
@@ -179,13 +179,13 @@ async function createKDSTickets(supabase: Awaited<ReturnType<typeof createSupaba
     
     logger.debug('[KDS TICKETS] Successfully created KDS tickets', { data: { count: items.length, orderId: order.id } });
     
-  } catch (error) {
+  } catch (_error) {
     logger.error('[KDS TICKETS] Error creating KDS tickets:', { error: error instanceof Error ? error.message : 'Unknown error' });
     throw error;
   }
 }
 
-export async function POST(req: Request) {
+export async function POST(_req: Request) {
   try {
     logger.debug('[ORDER CREATION DEBUG] ===== ORDER CREATION STARTED =====');
     logger.debug('[ORDER CREATION DEBUG] Timestamp:', new Date().toISOString());

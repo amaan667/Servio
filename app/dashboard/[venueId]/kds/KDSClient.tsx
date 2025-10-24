@@ -98,7 +98,7 @@ export default function KDSClient({ venueId }: KDSClientProps) {
         console.error("[KDS CLIENT] ❌ Failed to load tickets:", data.error);
         setError(data.error || "Failed to load tickets");
       }
-    } catch (error) {
+    } catch (_error) {
       console.error("[KDS CLIENT] ❌ Fetch tickets error:", error);
       setError("Failed to load tickets");
     } finally {

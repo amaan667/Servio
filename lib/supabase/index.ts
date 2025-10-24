@@ -98,7 +98,7 @@ export function supabaseBrowser() {
     browserClient.auth.getSession = async () => {
       try {
         return await originalGetSession();
-      } catch (err) {
+      } catch (_err) {
         // Only catch truly invalid tokens (user signed out elsewhere, token revoked, etc)
         const errorMessage = err instanceof Error ? err.message : String(err);
         if (
@@ -259,7 +259,7 @@ export async function getAuthenticatedUser() {
     }
 
     return { user, error: null };
-  } catch (err) {
+  } catch (_err) {
     // Catch and suppress refresh token errors
     const errorMessage = err instanceof Error ? err.message : String(err);
     if (
@@ -317,7 +317,7 @@ export async function getSession() {
     }
 
     return { session, error: null };
-  } catch (err) {
+  } catch (_err) {
     // Catch and suppress refresh token errors
     const errorMessage = err instanceof Error ? err.message : String(err);
     if (
@@ -355,7 +355,7 @@ export async function getSessionSafe(supabase: Awaited<ReturnType<typeof createS
       user: data.session?.user || null,
       error: null,
     };
-  } catch (err) {
+  } catch (_err) {
     // Catch any thrown errors
     const errorMessage = err instanceof Error ? err.message : String(err);
     if (

@@ -41,7 +41,7 @@ export async function GET(
       categories: categories || null
     });
 
-  } catch (error) {
+  } catch (_error) {
     logger.error('[CATEGORY ORDER API] Unexpected error:', { error: error instanceof Error ? error.message : 'Unknown error' });
     return NextResponse.json({ error: 'Internal server error' }, { status: 500 });
   }

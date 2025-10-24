@@ -66,7 +66,7 @@ const StaffMembersList: React.FC<StaffMembersListProps> = ({
       setName("");
       setRole("Server");
       if (onStaffAdded) onStaffAdded();
-    } catch (err) {
+    } catch (_err) {
       setError(err instanceof Error ? err.message : "Failed to add staff member");
     } finally {
       setAdding(false);

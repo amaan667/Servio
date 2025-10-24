@@ -54,7 +54,7 @@ export const detectColorsFromImage = (imageUrl: string): Promise<{primary: strin
         const secondary = sortedColors[1] || '#f3f4f6';
 
         resolve({ primary, secondary });
-      } catch (error) {
+      } catch (_error) {
 
         resolve({ primary: '#8b5cf6', secondary: '#f3f4f6' });
       }

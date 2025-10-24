@@ -46,7 +46,7 @@ export async function POST() {
             .delete()
             .eq('venue_id', 'test');
         }
-      } catch (error) {
+      } catch (_error) {
         logger.debug('Test record cleanup failed:', { error: getErrorMessage(error) });
       }
     }
@@ -183,7 +183,7 @@ export async function POST() {
       }
     });
     
-  } catch (error) {
+  } catch (_error) {
     logger.error('❌ Emergency fix failed:', { error: error instanceof Error ? error.message : 'Unknown error' });
     return NextResponse.json({
       success: false,

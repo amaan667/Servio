@@ -16,7 +16,7 @@ export default function ServiceWorkerRegistration({ children }: ServiceWorkerReg
 
     // Check online status
     const handleOnline = () => {
-      console.info("[SERVICE WORKER] Network online");
+      // Network online
       setIsOnline(true);
     };
     const handleOffline = () => {

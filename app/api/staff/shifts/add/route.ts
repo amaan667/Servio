@@ -3,7 +3,7 @@ import { createAdminClient } from '@/lib/supabase';
 
 export const runtime = 'nodejs';
 
-export async function POST(req: Request) {
+export async function POST(_req: Request) {
   const { venue_id, staff_id, start_time, end_time, area } = await req.json().catch(()=>({}));
   if (!venue_id || !staff_id || !start_time || !end_time) return NextResponse.json({ error:'Missing fields' }, { status:400 });
       const admin = createAdminClient();

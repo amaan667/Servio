@@ -15,12 +15,12 @@ export async function POST(req: NextRequest) {
     // In production, you could send to analytics service
     // For now, just log to console in development
     if (process.env.NODE_ENV === "development") {
-      console.info("[WEB VITALS]", vitals);
+      logger.info("[WEB VITALS]", vitals);
     }
 
     // Return success immediately - don't block
     return NextResponse.json({ ok: true }, { status: 200 });
-  } catch (error) {
+  } catch (_error) {
     // Even if it fails, return 200 so the client doesn't retry
     console.error("[WEB VITALS] Error:", error);
     return NextResponse.json({ ok: true }, { status: 200 });

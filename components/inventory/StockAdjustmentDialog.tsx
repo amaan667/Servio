@@ -45,8 +45,8 @@ export function StockAdjustmentDialog({ open, onOpenChange, ingredient, onSucces
         setDelta('');
         setNote('');
       }
-    } catch (error) {
-
+    } catch (_error) {
+      // Error silently handled
     } finally {
       setLoading(false);
     }

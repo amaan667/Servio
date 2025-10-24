@@ -125,7 +125,7 @@ export function useAnalyticsData(venueId: string, venueTz: string) {
           revenue: yesterdayRevenue,
         },
       });
-    } catch (err) {
+    } catch (_err) {
 
       setError(err instanceof Error ? err.message : 'Failed to fetch analytics');
     } finally {

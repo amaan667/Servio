@@ -109,6 +109,7 @@ export function mapOrderToCardData(legacyOrder: LegacyOrder, currency: string = 
     
     // Additional debug for table number processing
     if (order.table_number) {
+      // Empty block
     } else {
     }
     

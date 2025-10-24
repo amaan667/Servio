@@ -112,7 +112,7 @@ export default function OrderFeedbackForm({ venueId, orderId }: OrderFeedbackFor
         }
         
       }
-    } catch (error) {
+    } catch (_error) {
 
       // If API fails, fall back to generic questions
       setQuestions(genericQuestions);
@@ -141,7 +141,7 @@ export default function OrderFeedbackForm({ venueId, orderId }: OrderFeedbackFor
           table: 'feedback_questions',
           filter: `venue_id=eq.${venueId}`,
         },
-        (payload: unknown) => {
+        (_payload: unknown) => {
           fetchQuestions();
         },
       )
@@ -246,7 +246,7 @@ export default function OrderFeedbackForm({ venueId, orderId }: OrderFeedbackFor
           variant: "destructive"
         });
       }
-    } catch (error) {
+    } catch (_error) {
 
       // If we have generic questions and the main API fails, still show success
       if (questions.some(q => q.id.startsWith('generic'))) {

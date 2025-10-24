@@ -3,7 +3,7 @@ import { authenticateRequest } from "@/lib/api-auth";
 import { logger } from "@/lib/logger";
 
 // PATCH - Bulk update multiple tickets (e.g., bump all ready tickets for an order)
-export async function PATCH(req: Request) {
+export async function PATCH(_req: Request) {
   try {
     const body = await req.json();
     const { orderId, stationId, status } = body;
@@ -95,7 +95,7 @@ export async function PATCH(req: Request) {
       updated: tickets?.length || 0,
       tickets,
     });
-  } catch (error) {
+  } catch (_error) {
     logger.error("[KDS] Unexpected error:", {
       error: error instanceof Error ? error.message : "Unknown error",
     });

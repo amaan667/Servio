@@ -100,7 +100,7 @@ export async function GET(
     
     return NextResponse.json(response);
 
-  } catch (error) {
+  } catch (_error) {
     logger.error('[MENU API] Unexpected error:', { error: error instanceof Error ? error.message : 'Unknown error' });
     return NextResponse.json(
       { error: 'Internal server error' },

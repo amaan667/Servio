@@ -69,7 +69,7 @@ export default function SimpleFeedbackClient({ venueId }: SimpleFeedbackClientPr
           variant: "destructive"
         });
       }
-    } catch (error) {
+    } catch (_error) {
       toast({
         title: "Error",
         description: "Couldn't load questions",
@@ -132,7 +132,7 @@ export default function SimpleFeedbackClient({ venueId }: SimpleFeedbackClientPr
           variant: "destructive"
         });
       }
-    } catch (error) {
+    } catch (_error) {
       toast({
         title: "Error",
         description: "Failed to save question",
@@ -177,7 +177,7 @@ export default function SimpleFeedbackClient({ venueId }: SimpleFeedbackClientPr
           variant: "destructive"
         });
       }
-    } catch (error) {
+    } catch (_error) {
       toast({
         title: "Error",
         description: "Failed to delete question",
@@ -213,7 +213,7 @@ export default function SimpleFeedbackClient({ venueId }: SimpleFeedbackClientPr
           variant: "destructive"
         });
       }
-    } catch (error) {
+    } catch (_error) {
       toast({
         title: "Error",
         description: "Failed to update question",

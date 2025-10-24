@@ -177,7 +177,7 @@ export async function POST(req: NextRequest) {
       }))
     });
 
-  } catch (error) {
+  } catch (_error) {
     logger.error('[AUTO COMPLETE] Error:', { error: error instanceof Error ? error.message : 'Unknown error' });
     return NextResponse.json({ 
       ok: false, 

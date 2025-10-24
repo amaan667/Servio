@@ -40,7 +40,7 @@ export default function SimpleFeedbackForm({ venueId, orderId, onSubmit }: Simpl
       if (onSubmit) {
         onSubmit();
       }
-    } catch (error) {
+    } catch (_error) {
 
       alert('Failed to submit feedback. Please try again.');
     } finally {

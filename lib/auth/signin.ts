@@ -32,7 +32,7 @@ export async function signInWithGoogle() {
     // Clear OAuth progress flags from previous attempts
     sessionStorage.removeItem("sb_oauth_retry");
     sessionStorage.removeItem("sb_oauth_in_progress");
-  } catch (error) {
+  } catch (_error) {
     // Silent error handling
   }
 

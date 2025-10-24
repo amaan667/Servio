@@ -2,7 +2,7 @@ import { NextResponse } from 'next/server';
 import { createClient } from '@/lib/supabase';
 import { logger } from '@/lib/logger';
 
-export async function POST(req: Request) {
+export async function POST(_req: Request) {
   try {
     
     const { orderId } = await req.json();
@@ -70,7 +70,7 @@ export async function POST(req: Request) {
       payment_status: 'PAID',
       updated_at: new Date().toISOString()
     });
-  } catch (error) {
+  } catch (_error) {
     logger.error('[MARK PAID] Error marking order as paid:', { error: error instanceof Error ? error.message : 'Unknown error' });
     return NextResponse.json({ error: error instanceof Error ? error.message : 'Unknown error' }, { status: 500 });
   }

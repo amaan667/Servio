@@ -52,7 +52,7 @@ export async function GET(request: NextRequest) {
         total: count || 0,
       },
     });
-  } catch (error) {
+  } catch (_error) {
     logger.error('[INVENTORY API] Unexpected error:', { error: error instanceof Error ? error.message : 'Unknown error' });
     return NextResponse.json(
       { error: 'Internal server error' },

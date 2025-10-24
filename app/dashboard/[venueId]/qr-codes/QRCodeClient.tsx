@@ -263,15 +263,15 @@ export default function QRCodeClient({
             <div className="flex gap-2 flex-wrap">
               <Button variant="outline" size="sm" onClick={copyAllAsJSON}>
                 <FileJson className="h-4 w-4 mr-2" />
-                Copy All URLs (JSON)
+                Copy {qrManagement.generatedQRs.length > 1 ? "All " : ""}URLs (JSON)
               </Button>
               <Button variant="outline" size="sm" onClick={downloadAllAsPDF}>
                 <Download className="h-4 w-4 mr-2" />
-                Download All (PDF)
+                Download{qrManagement.generatedQRs.length > 1 ? " All" : ""} (PDF)
               </Button>
               <Button variant="outline" size="sm" onClick={printAll}>
                 <Printer className="h-4 w-4 mr-2" />
-                Print All
+                Print{qrManagement.generatedQRs.length > 1 ? " All" : ""}
               </Button>
               <Button
                 variant="outline"
@@ -280,7 +280,7 @@ export default function QRCodeClient({
                 className="text-red-600 hover:text-red-700"
               >
                 <Trash2 className="h-4 w-4 mr-2" />
-                Clear All
+                Clear{qrManagement.generatedQRs.length > 1 ? " All" : ""}
               </Button>
             </div>
           </div>

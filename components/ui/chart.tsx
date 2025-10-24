@@ -319,7 +319,7 @@ ChartLegendContent.displayName = "ChartLegend";
 // Helper to extract item config from a payload.
 function getPayloadConfigFromPayload(
   config: ChartConfig,
-  payload: unknown,
+  _payload: unknown,
   key: string,
 ) {
   if (typeof payload !== "object" || payload === null) {

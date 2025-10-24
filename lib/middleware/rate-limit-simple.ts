@@ -49,7 +49,7 @@ export function rateLimit(key: Key, now = Date.now()): RateLimitResult {
 /**
  * Get rate limit key from request
  */
-export function getRateLimitKey(req: Request, endpoint: string): string {
+export function getRateLimitKey(_req: Request, endpoint: string): string {
   const ip = req.headers.get('x-forwarded-for') ?? 
              req.headers.get('x-real-ip') ?? 
              'unknown';

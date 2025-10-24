@@ -24,7 +24,7 @@ export function useGroupSession(venueSlug: string, tableNumber: string, isCounte
             setShowGroupSizeModal(true);
           }
         }
-      } catch (error) {
+      } catch (_error) {
 
         setShowGroupSizeModal(true);
       }
@@ -57,8 +57,8 @@ export function useGroupSession(venueSlug: string, tableNumber: string, isCounte
         const data = await response.json();
         setGroupSessionId(data.groupSessionId);
       }
-    } catch (error) {
-
+    } catch (_error) {
+      // Error silently handled
     }
   };
 
@@ -81,8 +81,8 @@ export function useGroupSession(venueSlug: string, tableNumber: string, isCounte
         const data = await response.json();
         setGroupSessionId(data.groupSessionId);
       }
-    } catch (error) {
-
+    } catch (_error) {
+      // Error silently handled
     }
   };
 

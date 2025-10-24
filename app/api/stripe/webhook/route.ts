@@ -8,7 +8,7 @@ export const runtime = 'nodejs';            // ensure Node runtime (not Edge)
 export const dynamic = 'force-dynamic';
 export const revalidate = 0;
 
-export async function POST(req: Request) {
+export async function POST(_req: Request) {
   const supabaseAdmin = createAdminClient();
   
   apiLogger.debug('[STRIPE WEBHOOK DEBUG] ===== WEBHOOK RECEIVED =====');
@@ -35,7 +35,7 @@ export async function POST(req: Request) {
     apiLogger.debug('[STRIPE WEBHOOK DEBUG] Event constructed successfully');
     apiLogger.debug('[STRIPE WEBHOOK DEBUG] Event type:', event.type);
     apiLogger.debug('[STRIPE WEBHOOK DEBUG] Event ID:', event.id);
-  } catch (err) {
+  } catch (_err) {
     const errorMessage = err instanceof Error ? err.message : 'Unknown error';
     apiLogger.error('[STRIPE WEBHOOK DEBUG] Webhook construction error:', errorMessage);
     return new NextResponse(`Webhook Error: ${errorMessage}`, { status: 400 });

@@ -161,7 +161,7 @@ export function trackPerformance(threshold = 1000) {
         }
 
         return result;
-      } catch (error) {
+      } catch (_error) {
         const duration = Date.now() - startTime;
         trackError(error as Error, {
           method: propertyKey,

@@ -51,8 +51,8 @@ export function useStaffManagement(venueId: string, initialStaff?: StaffRow[], i
 
         }
       } catch (e) {
-
-      }
+      // Error silently handled
+    }
     };
 
     if (!staffLoaded) {
@@ -102,7 +102,7 @@ export function useStaffManagement(venueId: string, initialStaff?: StaffRow[], i
       setStaff(prev => [...prev, data.staff]);
       setName('');
       setRole('Server');
-    } catch (err) {
+    } catch (_err) {
       setError(err.message);
     } finally {
       setAdding(false);
@@ -122,7 +122,7 @@ export function useStaffManagement(venueId: string, initialStaff?: StaffRow[], i
       }
 
       setStaff(prev => prev.map(s => s.id === staffId ? { ...s, active: !currentActive } : s));
-    } catch (err) {
+    } catch (_err) {
       setError(err.message);
     }
   };

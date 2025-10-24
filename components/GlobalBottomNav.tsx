@@ -179,7 +179,7 @@ export default function GlobalBottomNav({ venueId, counts = {} }: GlobalBottomNa
 
   const handleNavigation = useCallback(
     (href: string, itemId: string, itemLabel: string) => {
-      console.info("🔷 [BOTTOM NAV] Navigation clicked:", {
+      logger.debug("[BOTTOM NAV] Navigation clicked:", {
         itemId,
         itemLabel,
         href,

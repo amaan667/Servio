@@ -94,7 +94,7 @@ export async function POST() {
               updatedCount++;
             }
           }
-        } catch (error) {
+        } catch (_error) {
           logger.error("[AI MIGRATION] Error generating title for conversation", { error: { convId: conv.conversation_id, context: error } });
         }
       }
@@ -205,7 +205,7 @@ export async function POST() {
           migratedCount++;
           logger.debug("[AI MIGRATION] Migrated conversation", { data: { convId: oldConv.id, messages: messages?.length || 0 } });
 
-        } catch (error) {
+        } catch (_error) {
           logger.error("[AI MIGRATION] Error migrating conversation", { error: { convId: oldConv.id, context: error } });
         }
       }
@@ -232,7 +232,7 @@ export async function POST() {
       }
     });
 
-  } catch (error) {
+  } catch (_error) {
     logger.error("[AI MIGRATION] Migration error:", { error: error instanceof Error ? error.message : 'Unknown error' });
     return NextResponse.json(
       { error: "Migration failed", details: error instanceof Error ? error.message : 'Unknown error' },
@@ -269,7 +269,7 @@ export async function GET() {
       timestamp: new Date().toISOString()
     });
 
-  } catch (error) {
+  } catch (_error) {
     logger.error("[AI MIGRATION] Status check error:", { error: error instanceof Error ? error.message : 'Unknown error' });
     return NextResponse.json(
       { error: "Failed to check migration status", details: error instanceof Error ? error.message : 'Unknown error' },

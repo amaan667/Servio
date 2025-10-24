@@ -29,7 +29,7 @@ export function useBatchOperations(menuItems: MenuItem[], onRefresh: () => void)
       setBatchEditOpen(false);
       onRefresh();
     } catch (error: unknown) {
-
+      // Error silently handled
     }
   };
 
@@ -81,7 +81,7 @@ export function useBatchOperations(menuItems: MenuItem[], onRefresh: () => void)
       setSelectedItems([]);
       onRefresh();
     } catch (error: unknown) {
-
+      // Error silently handled
     }
   };
 

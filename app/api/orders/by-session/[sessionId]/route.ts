@@ -78,7 +78,7 @@ export async function GET(
       order: transformedOrder
     });
 
-  } catch (error) {
+  } catch (_error) {
     logger.error('[ORDER SESSION LOOKUP DEBUG] Unexpected error:', { error: error instanceof Error ? error.message : 'Unknown error' });
     return NextResponse.json({ 
       ok: false, 

@@ -127,14 +127,14 @@ export const PaginationSchema = z.object({
  * Validate and sanitize request body
  */
 export async function validateRequest<T>(
-  request: Request,
+  _request: Request,
   schema: z.ZodSchema<T>
 ): Promise<{ success: true; data: T } | { success: false; error: string; details?: unknown }> {
   try {
     const body = await request.json();
     const validated = schema.parse(body);
     return { success: true, data: validated };
-  } catch (error) {
+  } catch (_error) {
     if (error instanceof z.ZodError) {
       return {
         success: false,

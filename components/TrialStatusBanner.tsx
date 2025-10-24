@@ -4,6 +4,7 @@ import { useEffect, useState, useCallback } from "react";
 import { Badge } from "@/components/ui/badge";
 import { Clock, Calendar } from "lucide-react";
 import { useAuth } from "@/app/auth/AuthProvider";
+import { logger } from "@/lib/logger";
 
 interface TrialStatus {
   isTrialing: boolean;
@@ -34,7 +35,7 @@ export default function TrialStatusBanner({ userRole }: TrialStatusBannerProps) 
     }
 
     try {
-      console.info("[TRIAL BANNER] Fetching organization data for user:", user.id);
+      // Fetching organization data
 
       // Use client-side Supabase to query organizations directly (RLS allows this)
       const { supabaseBrowser } = await import("@/lib/supabase");
@@ -74,7 +75,7 @@ export default function TrialStatusBanner({ userRole }: TrialStatusBannerProps) 
       }
 
       if (organization) {
-        console.info("[TRIAL BANNER] ✅ Organization data loaded successfully:", {
+        logger.debug("[TRIAL BANNER] Organization data loaded:", {
           id: organization.id,
           subscription_status: organization.subscription_status,
           subscription_tier: organization.subscription_tier,
@@ -105,7 +106,7 @@ export default function TrialStatusBanner({ userRole }: TrialStatusBannerProps) 
           daysRemaining,
         });
       }
-    } catch (error) {
+    } catch (_error) {
       console.error("[TRIAL BANNER] Fetch error:", error);
       // Show default trial status as fallback
       const userCreatedAt = new Date(user.created_at);
@@ -132,11 +133,7 @@ export default function TrialStatusBanner({ userRole }: TrialStatusBannerProps) 
     const tier = org.subscription_tier || "basic";
     const trialEndsAt = org.trial_ends_at;
 
-    console.info("[TRIAL BANNER] Processing trial status:", {
-      subscriptionStatus,
-      tier,
-      trialEndsAt,
-    });
+    // Processing trial status
 
     // Check if trial has expired
     let isTrialing = false;
@@ -146,11 +143,7 @@ export default function TrialStatusBanner({ userRole }: TrialStatusBannerProps) 
       const endDate = new Date(trialEndsAt);
       const now = new Date();
 
-      console.info("[TRIAL BANNER] Date calculation:", {
-        trialEndsAt,
-        endDate: endDate.toISOString(),
-        now: now.toISOString(),
-      });
+      // Date calculation
 
       // Set both dates to start of day for accurate day counting
       const endDateStart = new Date(endDate.getFullYear(), endDate.getMonth(), endDate.getDate());
@@ -159,24 +152,13 @@ export default function TrialStatusBanner({ userRole }: TrialStatusBannerProps) 
       const diffTime = endDateStart.getTime() - nowStart.getTime();
       daysRemaining = Math.floor(diffTime / (1000 * 60 * 60 * 24));
 
-      console.info("[TRIAL BANNER] Days calculation:", {
-        endDateStart: endDateStart.toISOString(),
-        nowStart: nowStart.toISOString(),
-        diffTime,
-        daysRemaining,
-      });
+      // Days calculation
 
       // Trial is active if we have days remaining and status is trialing
       isTrialing = subscriptionStatus === "trialing" && daysRemaining > 0;
     }
 
-    console.info("[TRIAL BANNER] Final status:", {
-      isTrialing,
-      subscriptionStatus,
-      tier,
-      trialEndsAt,
-      daysRemaining,
-    });
+    // Final trial status calculated
 
     setTrialStatus({
       isTrialing,
@@ -298,11 +280,10 @@ export default function TrialStatusBanner({ userRole }: TrialStatusBannerProps) 
     return null;
   }
 
-  // Don't show for canceled, past_due, etc. unless it's a trialing status
+  // Don't show for canceled, past_due, etc. unless it's a trialing status or active plan
   if (
     !trialStatus.isTrialing &&
-    trialStatus.subscriptionStatus !== "active" &&
-    trialStatus.subscriptionStatus !== "trialing"
+    !["active", "trialing", "basic", "standard", "premium"].includes(trialStatus.subscriptionStatus)
   ) {
     return null;
   }
@@ -393,7 +374,8 @@ export default function TrialStatusBanner({ userRole }: TrialStatusBannerProps) 
   }
 
   // Render plan status banner (active subscription or expired trial)
-  const isActiveSubscription = trialStatus.subscriptionStatus === "active";
+  // Treat "basic", "standard", "premium", and "active" as active subscriptions
+  const isActiveSubscription = ["active", "basic", "standard", "premium"].includes(trialStatus.subscriptionStatus);
   const isPaid = isActiveSubscription && !trialStatus.isTrialing;
 
   return (

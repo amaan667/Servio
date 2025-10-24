@@ -95,7 +95,7 @@ export function useMenuData(venueId: string, refreshTrigger?: number) {
           table: "menu_items",
           filter: `venue_id=eq.${venueUuid}`,
         },
-        (payload: unknown) => {
+        (_payload: unknown) => {
 
           fetchMenu();
         },
