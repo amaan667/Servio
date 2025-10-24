@@ -12,6 +12,7 @@ import { supabaseBrowser as createClient } from "@/lib/supabase";
 import { Plus, Edit, Trash2, ShoppingBag, Trash, ChevronDown, ChevronRight, Save, Eye, Settings, Upload, Grid, GripVertical, Palette } from "lucide-react";
 import { MenuUploadCard } from "@/components/MenuUploadCard";
 import { MenuUrlImportCard } from "@/components/MenuUrlImportCard";
+import { HybridMenuImportCard } from "@/components/HybridMenuImportCard";
 import { CategoriesManagement } from "@/components/CategoriesManagement";
 import { MenuPreview } from "@/components/MenuPreview";
 import { EnhancedPDFMenuDisplay } from "@/components/EnhancedPDFMenuDisplay";
@@ -290,6 +291,9 @@ export default function MenuManagementClient({ venueId, canEdit = true }: { venu
 
           {/* Menu URL Import */}
           <MenuUrlImportCard venueId={venueId} onSuccess={() => loadMenuItems()} />
+
+          {/* Hybrid Import - URL + PDF with AI */}
+          <HybridMenuImportCard venueId={venueId} onSuccess={() => loadMenuItems()} />
 
           {menuItems.length > 0 && (
             <Card>
