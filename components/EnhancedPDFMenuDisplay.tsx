@@ -81,6 +81,8 @@ export function EnhancedPDFMenuDisplay({
       try {
         const supabase = createClient();
 
+        console.log('[PDF MENU] Fetching PDF images for venue:', venueId);
+        
         // Fetch the most recent PDF upload for this venue
         const { data: uploadData, error } = await supabase
           .from('menu_uploads')
@@ -90,22 +92,22 @@ export function EnhancedPDFMenuDisplay({
           .limit(1)
           .single();
 
-        if (uploadData) {
-      // Empty block
-    }
+        console.log('[PDF MENU] Upload data:', uploadData);
+        console.log('[PDF MENU] Error:', error);
 
         // Try pdf_images first, then fallback to pdf_images_cc
         const images = uploadData?.pdf_images || uploadData?.pdf_images_cc;
+        console.log('[PDF MENU] Found images:', images?.length || 0);
 
         if (uploadData && images && images.length > 0) {
-
+          console.log('[PDF MENU] ✅ PDF images loaded, enabling PDF view');
           setPdfImages(images);
         } else {
-
+          console.log('[PDF MENU] ⚠️ No PDF images found, defaulting to list view');
           setViewMode('list');
         }
       } catch (error) {
-
+        console.error('[PDF MENU] ❌ Error fetching PDF images:', error);
         setViewMode('list');
       } finally {
         setLoading(false);
