@@ -200,7 +200,7 @@ export function MenuUrlImportCard({ venueId, onSuccess }: MenuUrlImportCardProps
           <Alert>
             <Info className="h-4 w-4" />
             <AlertDescription>
-              Enter your menu website URL (e.g., https://nurcafe.co.uk/menu) and we'll automatically 
+              Enter your menu website URL (e.g., https://yourrestaurant.co.uk/menu) and we'll automatically 
               extract items, prices, descriptions, and images.
             </AlertDescription>
           </Alert>
@@ -211,7 +211,7 @@ export function MenuUrlImportCard({ venueId, onSuccess }: MenuUrlImportCardProps
               <Input
                 id="menu-url"
                 type="url"
-                placeholder="https://yourrestaurant.com/menu"
+                placeholder="https://yourrestaurant.co.uk/menu"
                 value={menuUrl}
                 onChange={(e) => setMenuUrl(e.target.value)}
                 disabled={isImporting}

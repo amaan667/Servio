@@ -210,7 +210,7 @@ export function HybridMenuImportCard({ venueId, onSuccess }: HybridMenuImportCar
             <Input
               id="hybrid-url"
               type="url"
-              placeholder="https://nurcafe.co.uk/menu"
+              placeholder="https://yourmenu.co.uk/menu"
               value={menuUrl}
               onChange={(e) => setMenuUrl(e.target.value)}
               disabled={isProcessing}
