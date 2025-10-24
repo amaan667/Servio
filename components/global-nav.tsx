@@ -16,30 +16,34 @@ export default function GlobalNav() {
   const pathname = usePathname();
   const supabase = createClient();
 
-  // Get initial auth state SYNCHRONOUSLY to prevent flicker
+  // Check for initial auth state SYNCHRONOUSLY before first render
   const getInitialAuthState = () => {
     if (typeof window === "undefined") return false;
-    // Check for Supabase auth cookies or session storage
-    const hasSession = document.cookie.includes('sb-') || sessionStorage.getItem('supabase.auth.token');
-    return !!hasSession;
+    // Check for auth cookies or session storage
+    const hasAuthCookie = document.cookie.includes('sb-') && document.cookie.includes('-auth-token');
+    const hasSessionStorage = sessionStorage.getItem('supabase.auth.token') !== null;
+    return hasAuthCookie || hasSessionStorage;
   };
 
-  // Start with synchronously detected auth state to prevent flicker
-  const [isAuthenticatedState, setIsAuthenticatedState] = useState(getInitialAuthState);
+  // Initialize with synced auth state to prevent flicker
+  const [initiallyAuthenticated] = useState(getInitialAuthState);
 
   // Initialize with cached data SYNCHRONOUSLY for instant render
   const getCachedData = () => {
     if (typeof window === "undefined") {
       return { primaryVenueId: null, userRole: null };
     }
-    // Try to get from ANY user's cache if we detected auth
-    const allKeys = Object.keys(sessionStorage);
-    const roleKey = allKeys.find(k => k.startsWith('user_role_'));
-    const venueKey = allKeys.find(k => k.startsWith('venue_id_'));
+    // Try to get cached data from any existing session
+    const keys = Object.keys(sessionStorage);
+    const roleKey = keys.find(k => k.startsWith('user_role_'));
+    const venueKey = keys.find(k => k.startsWith('venue_id_'));
+    
+    const cachedRole = roleKey ? sessionStorage.getItem(roleKey) : null;
+    const cachedVenueId = venueKey ? sessionStorage.getItem(venueKey) : null;
     
     return {
-      primaryVenueId: venueKey ? sessionStorage.getItem(venueKey) : null,
-      userRole: roleKey ? sessionStorage.getItem(roleKey) : null,
+      primaryVenueId: cachedVenueId,
+      userRole: cachedRole,
     };
   };
 
@@ -48,13 +52,9 @@ export default function GlobalNav() {
   );
   const [userRole, setUserRole] = useState<string | null>(getCachedData().userRole);
 
-  // Update authenticated state when session changes
-  useEffect(() => {
-    setIsAuthenticatedState(!!session?.user && !!session?.access_token);
-  }, [session]);
-
-  // Use the state version for rendering (prevents flicker)
-  const isAuthenticated = isAuthenticatedState || (!!session?.user && !!session?.access_token);
+  // Use initial auth state if session not loaded yet, otherwise use actual session
+  // This prevents the flash of unauthenticated state
+  const isAuthenticated = session?.user ? !!session.access_token : initiallyAuthenticated;
   const isLoadingAuth = false; // Never show loading state - render immediately with best guess
 
   // Determine if we're on an authenticated route that supports dark mode

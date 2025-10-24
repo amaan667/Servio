@@ -34,7 +34,7 @@ export function useStaffManagement(venueId: string, initialStaff?: StaffRow[], i
   const [allShifts, setAllShifts] = useState<LegacyShift[]>([]);
   const [staffLoaded, setStaffLoaded] = useState(!!initialStaff && initialStaff.length > 0);
   const [shiftsLoaded, setShiftsLoaded] = useState(false);
-  const [loading, setLoading] = useState(!initialStaff || initialStaff.length === 0);
+  const [loading, setLoading] = useState(false); // Start with false to prevent flicker
 
   // Load staff data on component mount
   useEffect(() => {
