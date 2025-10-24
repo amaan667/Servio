@@ -54,7 +54,8 @@ export default function GlobalNav() {
 
   // Use initial auth state if session not loaded yet, otherwise use actual session
   // This prevents the flash of unauthenticated state
-  const isAuthenticated = session?.user ? !!session.access_token : initiallyAuthenticated;
+  // CRITICAL: If we detected auth cookies on mount, ALWAYS treat as authenticated until proven otherwise
+  const isAuthenticated = initiallyAuthenticated || (session?.user && !!session.access_token);
   const isLoadingAuth = false; // Never show loading state - render immediately with best guess
 
   // Determine if we're on an authenticated route that supports dark mode
@@ -65,9 +66,9 @@ export default function GlobalNav() {
     pathname?.startsWith("/sign-in") ||
     pathname?.startsWith("/sign-up");
 
-  // If we're on an authenticated route, suppress public-only actions even if
-  // the auth state is still loading to avoid the "Sign In" flash.
-  const shouldHidePublicActions = isAuthenticatedRoute || isLoadingAuth;
+  // If we're on an authenticated route OR we detected auth on mount, suppress public-only actions
+  // to avoid the "Sign In" flash.
+  const shouldHidePublicActions = isAuthenticatedRoute || initiallyAuthenticated || isAuthenticated;
 
   // Use theme-aware colors for authenticated routes, light mode colors for public pages
   const navClasses = isAuthenticatedRoute
