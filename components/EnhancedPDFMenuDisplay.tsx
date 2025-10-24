@@ -488,12 +488,9 @@ export function EnhancedPDFMenuDisplay({
                           }}
                           onClick={() => handleHotspotClick(hotspot)}
                         >
-                          {/* Overlay card - subtle on hover, clean design */}
+                          {/* Overlay card - extremely subtle, only visible on hover */}
                           <div 
-                            className="absolute inset-0 bg-gradient-to-r from-black/5 via-black/0 to-black/10 opacity-0 group-hover:opacity-100 transition-opacity duration-200 rounded-md border-l-2 border-primary/0 group-hover:border-primary/50"
-                            style={{
-                              backdropFilter: 'blur(2px)',
-                            }}
+                            className="absolute inset-0 bg-gradient-to-r from-primary/5 via-transparent to-primary/5 opacity-0 group-hover:opacity-100 transition-opacity duration-200 rounded-md border border-primary/0 group-hover:border-primary/30"
                           />
                           
                           {/* Button positioned on right side, vertically centered */}
@@ -561,12 +558,9 @@ export function EnhancedPDFMenuDisplay({
                           }}
                           onClick={() => handleHotspotClick(hotspot)}
                         >
-                          {/* Overlay card - same design as bounding box version */}
+                          {/* Overlay card - extremely subtle, only visible on hover */}
                           <div 
-                            className="absolute inset-0 bg-gradient-to-r from-black/5 via-black/0 to-black/10 opacity-0 group-hover:opacity-100 transition-opacity duration-200 rounded-md border-l-2 border-primary/0 group-hover:border-primary/50"
-                            style={{
-                              backdropFilter: 'blur(2px)',
-                            }}
+                            className="absolute inset-0 bg-gradient-to-r from-primary/5 via-transparent to-primary/5 opacity-0 group-hover:opacity-100 transition-opacity duration-200 rounded-md border border-primary/0 group-hover:border-primary/30"
                           />
                           
                           <div 

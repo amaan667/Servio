@@ -100,38 +100,50 @@ export async function extractMenuItemPositions(imageUrl: string) {
   const openai = getOpenAI();
 
   const prompt = `
-Analyze this menu page and extract the bounding box for each menu item.
+Analyze this menu page and extract a SEPARATE bounding box for EACH individual menu item.
 
-For each item that has a name AND price, provide:
-1. Item name (exact text from menu)
+CRITICAL: This menu may have MULTIPLE COLUMNS (left and right). You MUST detect items in ALL columns.
+
+For EACH INDIVIDUAL item that has a name AND price, provide:
+1. Item name (exact text, English if bilingual)
 2. Bounding box coordinates as percentages (0-100):
-   - x1: left edge of the item
-   - y1: top edge of the item
-   - x2: right edge of the item (where price ends)
-   - y2: bottom edge of the item
+   - x1: left edge of THIS SPECIFIC ITEM
+   - y1: top edge of THIS SPECIFIC ITEM
+   - x2: right edge of THIS SPECIFIC ITEM (where its price ends)
+   - y2: bottom edge of THIS SPECIFIC ITEM
 3. Confidence score (0-1)
 
 Return as JSON array:
 [
   {
-    "name": "Item Name",
-    "x1": 10,
-    "y1": 25,
-    "x2": 90,
-    "y2": 32,
+    "name": "Labneh",
+    "x1": 5,
+    "y1": 15,
+    "x2": 45,
+    "y2": 18,
+    "confidence": 0.95
+  },
+  {
+    "name": "Chicken Burger",
+    "x1": 55,
+    "y1": 15,
+    "x2": 95,
+    "y2": 18,
     "confidence": 0.95
   },
   ...
 ]
 
 CRITICAL RULES:
-- Include ONLY actual menu items with prices (not section headers, not "ADD ONS" titles)
-- Bounding box should encompass the entire item: name + description + price
-- For multi-column layouts, x1 should be the actual left edge of that column
-- y1 and y2 should tightly wrap the item (no large gaps)
-- If bilingual, use the English name
-- Be very precise with the boundaries
-- Confidence should reflect how certain you are about the item boundaries
+- EACH item gets its OWN bounding box
+- Left column items: x1 ~5-10, x2 ~45-48
+- Right column items: x1 ~52-55, x2 ~95-98
+- DO NOT create one large box covering multiple items
+- Include ALL items from ALL columns
+- Bounding box should be tight around JUST that item (name + description + price)
+- y1 and y2 should tightly wrap just that one item (height typically 3-5%)
+- Do NOT include section headers or category titles
+- Be very precise - these create clickable areas
 `;
 
   const response = await openai.chat.completions.create({
