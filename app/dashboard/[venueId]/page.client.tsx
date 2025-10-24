@@ -53,9 +53,15 @@ const DashboardClient = React.memo(function DashboardClient({ venueId }: { venue
     return cached ? JSON.parse(cached) : null;
   };
 
+  // Get cached role to prevent flicker
+  const getCachedRole = () => {
+    if (typeof window === 'undefined') return null;
+    return sessionStorage.getItem(`user_role_${venueId}`);
+  };
+
   const [user, setUser] = useState<{ id: string } | null>(getCachedUser());
   const [venue, setVenue] = useState<Record<string, unknown> | null>(getCachedVenue());
-  const [userRole, setUserRole] = useState<string | null>(null);
+  const [userRole, setUserRole] = useState<string | null>(getCachedRole()); // Initialize with cached role
   const [loading, setLoading] = useState(false); // Start with false to prevent flicker
   const [authError, setAuthError] = useState<string | null>(null);
 
@@ -208,6 +214,10 @@ const DashboardClient = React.memo(function DashboardClient({ venueId }: { venue
             sessionStorage.setItem(`dashboard_venue_${venueId}`, JSON.stringify(venueData));
           }
           setUserRole("owner");
+          // Cache role to prevent flicker
+          if (typeof window !== 'undefined') {
+            sessionStorage.setItem(`user_role_${venueId}`, "owner");
+          }
         } else if (isStaff) {
           // Get venue details for staff
           const { data: staffVenue } = await supabase
@@ -219,7 +229,12 @@ const DashboardClient = React.memo(function DashboardClient({ venueId }: { venue
           if (staffVenue) {
             setVenue(staffVenue);
             dashboardData.setVenue(staffVenue);
-            setUserRole(roleData?.role || "staff");
+            const role = roleData?.role || "staff";
+            setUserRole(role);
+            // Cache role to prevent flicker
+            if (typeof window !== 'undefined') {
+              sessionStorage.setItem(`user_role_${venueId}`, role);
+            }
           }
         }
 
