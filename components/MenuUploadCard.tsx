@@ -354,12 +354,20 @@ export function MenuUploadCard({ venueId, onSuccess }: MenuUploadCardProps) {
         // Mark this URL as processed
         setLastProcessedUrl(menuUrl);
         console.log('[MENU UPLOAD] Success! Marked URL as processed.');
+        console.log('[MENU UPLOAD] Items created:', result.result.items_created);
+        console.log('[MENU UPLOAD] Hotspots created:', result.result.hotspots_created);
         
         toast({
           title: 'Menu processed successfully',
           description: `Combined PDF and URL data: ${result.result.items_created} items, ${result.result.categories_created} categories`
         });
+        
+        // Small delay to ensure database consistency before refreshing
+        console.log('[MENU UPLOAD] Waiting 500ms for database consistency...');
+        await new Promise(resolve => setTimeout(resolve, 500));
+        console.log('[MENU UPLOAD] Calling onSuccess to refresh menu...');
         onSuccess?.();
+        console.log('[MENU UPLOAD] onSuccess called');
       } else {
         throw new Error(`Processing failed: ${result.error}`);
       }

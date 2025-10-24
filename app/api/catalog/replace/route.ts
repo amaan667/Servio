@@ -285,16 +285,41 @@ export async function POST(req: NextRequest) {
     }
 
     // Step 4: Clear existing catalog
-    await supabase.from('menu_items').delete().eq('venue_id', venueId);
-    await supabase.from('menu_hotspots').delete().eq('venue_id', venueId);
+    console.log(`🗑️ [CATALOG REPLACE ${requestId}] Deleting old menu items...`);
+    const { error: deleteItemsError } = await supabase.from('menu_items').delete().eq('venue_id', venueId);
+    if (deleteItemsError) {
+      console.error(`❌ [CATALOG REPLACE ${requestId}] Failed to delete items:`, deleteItemsError);
+      throw new Error(`Failed to delete old items: ${deleteItemsError.message}`);
+    }
+    console.log(`✅ [CATALOG REPLACE ${requestId}] Old items deleted`);
+
+    console.log(`🗑️ [CATALOG REPLACE ${requestId}] Deleting old hotspots...`);
+    const { error: deleteHotspotsError } = await supabase.from('menu_hotspots').delete().eq('venue_id', venueId);
+    if (deleteHotspotsError) {
+      console.error(`❌ [CATALOG REPLACE ${requestId}] Failed to delete hotspots:`, deleteHotspotsError);
+      throw new Error(`Failed to delete old hotspots: ${deleteHotspotsError.message}`);
+    }
+    console.log(`✅ [CATALOG REPLACE ${requestId}] Old hotspots deleted`);
 
     // Step 5: Insert new items and hotspots
     if (menuItems.length > 0) {
-      await supabase.from('menu_items').insert(menuItems);
+      console.log(`💾 [CATALOG REPLACE ${requestId}] Inserting ${menuItems.length} new items...`);
+      const { error: insertItemsError, data: insertedItems } = await supabase.from('menu_items').insert(menuItems).select();
+      if (insertItemsError) {
+        console.error(`❌ [CATALOG REPLACE ${requestId}] Failed to insert items:`, insertItemsError);
+        throw new Error(`Failed to insert items: ${insertItemsError.message}`);
+      }
+      console.log(`✅ [CATALOG REPLACE ${requestId}] Inserted ${insertedItems?.length || 0} items`);
     }
 
     if (hotspots.length > 0) {
-      await supabase.from('menu_hotspots').insert(hotspots);
+      console.log(`💾 [CATALOG REPLACE ${requestId}] Inserting ${hotspots.length} hotspots...`);
+      const { error: insertHotspotsError, data: insertedHotspots } = await supabase.from('menu_hotspots').insert(hotspots).select();
+      if (insertHotspotsError) {
+        console.error(`❌ [CATALOG REPLACE ${requestId}] Failed to insert hotspots:`, insertHotspotsError);
+        throw new Error(`Failed to insert hotspots: ${insertHotspotsError.message}`);
+      }
+      console.log(`✅ [CATALOG REPLACE ${requestId}] Inserted ${insertedHotspots?.length || 0} hotspots`);
     }
 
     const duration = Date.now() - startTime;
