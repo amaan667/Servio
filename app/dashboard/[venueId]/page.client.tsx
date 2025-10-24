@@ -161,6 +161,10 @@ const DashboardClient = React.memo(function DashboardClient({ venueId }: { venue
         }
 
         setUser(session.user);
+        // Cache user data
+        if (typeof window !== 'undefined') {
+          sessionStorage.setItem(`dashboard_user_${venueId}`, JSON.stringify(session.user));
+        }
         const userId = session.user.id;
 
         // Check if user is the venue owner
@@ -194,6 +198,10 @@ const DashboardClient = React.memo(function DashboardClient({ venueId }: { venue
         if (venueData) {
           setVenue(venueData);
           dashboardData.setVenue(venueData);
+          // Cache venue data
+          if (typeof window !== 'undefined') {
+            sessionStorage.setItem(`dashboard_venue_${venueId}`, JSON.stringify(venueData));
+          }
           setUserRole("owner");
         } else if (isStaff) {
           // Get venue details for staff
