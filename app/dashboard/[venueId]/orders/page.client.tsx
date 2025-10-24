@@ -8,7 +8,14 @@ import RoleBasedNavigation from "@/components/RoleBasedNavigation";
 
 export default function OrdersClientPage({ venueId }: { venueId: string }) {
   const { user } = useAuth();
-  const [userRole, setUserRole] = useState<string | null>(null);
+  
+  // Cache user role to prevent flicker
+  const getCachedRole = () => {
+    if (typeof window === 'undefined' || !user?.id) return null;
+    return sessionStorage.getItem(`user_role_${user.id}_${venueId}`);
+  };
+  
+  const [userRole, setUserRole] = useState<string | null>(getCachedRole());
 
   useEffect(() => {
     const fetchUserRole = async () => {
@@ -33,7 +40,7 @@ export default function OrdersClientPage({ venueId }: { venueId: string }) {
 
       if (ownerVenue) {
         setUserRole("owner");
-        sessionStorage.setItem(`user_role_${user.id}`, "owner");
+        sessionStorage.setItem(`user_role_${user.id}_${venueId}`, "owner");
       } else {
         // Check staff role
         const { data: staffRole } = await supabase
@@ -45,7 +52,7 @@ export default function OrdersClientPage({ venueId }: { venueId: string }) {
 
         if (staffRole) {
           setUserRole(staffRole.role);
-          sessionStorage.setItem(`user_role_${user.id}`, staffRole.role);
+          sessionStorage.setItem(`user_role_${user.id}_${venueId}`, staffRole.role);
         }
       }
     };
