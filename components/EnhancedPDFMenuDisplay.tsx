@@ -365,19 +365,24 @@ export function EnhancedPDFMenuDisplay({
         </div>
       )}
 
-      {/* View Mode Toggle */}
+      {/* View Mode Toggle - Always show both buttons */}
       <div className="flex items-center justify-between mb-4">
         <div className="flex items-center space-x-2">
-          {hasPdfImages && (
-            <Button
-              variant={viewMode === 'pdf' ? 'default' : 'outline'}
-              size="sm"
-              onClick={() => setViewMode('pdf')}
-            >
-              <Grid className="h-4 w-4 mr-2" />
-              Visual Menu
-            </Button>
-          )}
+          <Button
+            variant={viewMode === 'pdf' ? 'default' : 'outline'}
+            size="sm"
+            onClick={() => {
+              if (pdfImages.length > 0 || hasPdfImages) {
+                setViewMode('pdf');
+              } else {
+                console.warn('[PDF MENU] No PDF images available yet');
+              }
+            }}
+            disabled={!hasPdfImages && pdfImages.length === 0}
+          >
+            <Grid className="h-4 w-4 mr-2" />
+            Visual Menu
+          </Button>
           <Button
             variant={viewMode === 'list' ? 'default' : 'outline'}
             size="sm"
