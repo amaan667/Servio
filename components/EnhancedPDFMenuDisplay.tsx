@@ -409,6 +409,16 @@ export function EnhancedPDFMenuDisplay({
         )}
       </div>
 
+      {/* PDF View Loading State */}
+      {viewMode === 'pdf' && pdfImages.length === 0 && (
+        <div className="flex items-center justify-center py-20">
+          <div className="text-center">
+            <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary mx-auto mb-4"></div>
+            <p className="text-muted-foreground">Loading visual menu...</p>
+          </div>
+        </div>
+      )}
+
       {/* PDF Image View with Interactive Hotspots */}
       {viewMode === 'pdf' && pdfImages.length > 0 && (
         <div className="space-y-4">
