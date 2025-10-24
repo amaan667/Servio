@@ -133,7 +133,7 @@ export default function GlobalNav() {
             // Cache the data
             sessionStorage.setItem(`user_role_${session.user.id}`, "owner");
             sessionStorage.setItem(`venue_id_${session.user.id}`, venueResult.data[0].venue_id);
-          } else if (!staffResult.error && staffResult.data) {
+          } else if (!staffResult.error && staffResult.data?.venue_id && staffResult.data?.role) {
             setPrimaryVenueId(staffResult.data.venue_id);
             setUserRole(staffResult.data.role);
             // Cache the data
@@ -143,14 +143,15 @@ export default function GlobalNav() {
         } catch (error) {
           console.error("Error fetching user data:", error);
         }
-      } else {
+      } else if (!initiallyAuthenticated) {
+        // Only clear if we're definitely not authenticated
         setPrimaryVenueId(null);
         setUserRole(null);
       }
     };
 
     fetchUserData();
-  }, [isAuthenticated, session?.user?.id, supabase]);
+  }, [session?.user?.id, supabase, initiallyAuthenticated]);
 
   // Always render navigation immediately - don't wait for auth loading
   // The navigation will show appropriate content based on auth state
