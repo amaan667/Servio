@@ -51,6 +51,26 @@ export function MenuUploadCard({ venueId, onSuccess }: MenuUploadCardProps) {
     checkExistingUploads();
   }, [venueId, supabase]);
 
+  // Auto-process when URL is entered and PDF exists
+  useEffect(() => {
+    const autoProcess = async () => {
+      // Only auto-process if:
+      // 1. URL is entered and valid
+      // 2. Existing PDF exists
+      // 3. Not already processing
+      if (menuUrl && menuUrl.trim() && menuUrl.startsWith('http') && hasExistingUpload && !isProcessing) {
+        // Debounce to avoid processing on every keystroke
+        const timer = setTimeout(async () => {
+          await processExistingPdfWithUrl();
+        }, 1000); // Wait 1 second after user stops typing
+
+        return () => clearTimeout(timer);
+      }
+    };
+
+    autoProcess();
+  }, [menuUrl, hasExistingUpload]);
+
   // Save extracted style to database
   const saveExtractedStyle = async (extractedText: string) => {
     try {
@@ -402,7 +422,7 @@ export function MenuUploadCard({ venueId, onSuccess }: MenuUploadCardProps) {
           />
           <p className="text-xs text-muted-foreground">
             {hasExistingUpload && menuUrl && menuUrl.trim() 
-              ? '💡 Click "Process" below to combine your existing PDF with this URL'
+              ? '✨ Auto-processing with your existing PDF...'
               : '💡 Add your menu URL, then upload your PDF below. Both will be combined for best results.'
             }
           </p>
