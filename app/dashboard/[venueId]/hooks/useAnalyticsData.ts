@@ -103,12 +103,13 @@ export function useAnalyticsData(venueId: string, venueTz: string) {
       (todayOrders || []).forEach((order: Record<string, unknown>) => {
         if (Array.isArray(order.items)) {
           order.items.forEach((item: Record<string, unknown>) => {
-            const name = item.name || 'Unknown';
-            const price = parseFloat(item.unit_price || item.price || 0);
+            // Try item_name first (from orders API), then name, never "Unknown"
+            const name = (item.item_name as string) || (item.name as string) || 'Menu Item';
+            const price = parseFloat((item.unit_price as string) || (item.price as string) || '0');
             if (!itemCounts[name]) {
               itemCounts[name] = { name, price, count: 0 };
             }
-            itemCounts[name].count += parseInt(item.quantity || item.qty || 1);
+            itemCounts[name].count += parseInt((item.quantity as string) || (item.qty as string) || '1');
           });
         }
       });

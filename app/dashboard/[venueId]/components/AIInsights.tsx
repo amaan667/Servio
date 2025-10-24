@@ -34,7 +34,11 @@ export function AIInsights({ venueId, stats, topSellingItems, yesterdayCompariso
   const insights: Insight[] = [];
 
   // Generate insights based on data
-  if (stats.todayOrdersCount === 0) {
+  // Only show "No Orders Yet" if BOTH order count is 0 AND revenue is 0 (double check)
+  // AND there are no top selling items (triple check)
+  const hasRealOrders = stats.revenue > 0 || (topSellingItems && topSellingItems.length > 0);
+  
+  if (stats.todayOrdersCount === 0 && !hasRealOrders) {
     insights.push({
       type: 'warning',
       title: 'No Orders Yet Today',
