@@ -132,7 +132,7 @@ export default function InvitationBasedStaffManagement({
       if (shiftsResponse.ok) {
         setAllShifts(shiftsData.shifts || []);
       }
-    } catch (_err) {
+    } catch (err) {
 
       setError('Failed to load staff data');
     } finally {
@@ -218,7 +218,7 @@ export default function InvitationBasedStaffManagement({
       // Switch to invitations tab and reload data
       setActiveTab('invitations');
       loadData(); // Reload to show new invitation
-    } catch (_err) {
+    } catch (err) {
       setError(err.message || 'Failed to send invitation');
     } finally {
       setInviteLoading(false);
@@ -257,7 +257,7 @@ export default function InvitationBasedStaffManagement({
 
       // Also reload data to ensure consistency
       loadData();
-    } catch (_err) {
+    } catch (err) {
       toast({
         title: 'Error',
         description: err.message || 'Failed to remove invitation',

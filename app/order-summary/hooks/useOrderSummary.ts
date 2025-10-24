@@ -37,7 +37,7 @@ export function useOrderSummary() {
         const data = JSON.parse(storedData);
 
         setOrderData(data);
-      } catch (_error) {
+      } catch (error) {
 
         router.push('/order');
       }
@@ -95,7 +95,7 @@ export function useOrderSummary() {
         setTimeout(() => {
           router.push(`/order-summary/${demoOrderId}`);
         }, 1500);
-      } catch (_error) {
+      } catch (error) {
 
         alert('Error creating order. Please try again.');
       } finally {
@@ -139,7 +139,7 @@ export function useOrderSummary() {
       setTimeout(() => {
         router.push(`/payment?orderId=${result.orderId}&amount=${orderData.total}`);
       }, 1500);
-    } catch (_error) {
+    } catch (error) {
 
       alert('Error creating order. Please try again.');
     } finally {

@@ -46,7 +46,7 @@ export default function SignUpPage() {
       if (data.url) {
         window.location.href = data.url;
       }
-    } catch (_error) {
+    } catch (error) {
 
       alert('Sign up failed. Please try again.');
       setIsSigningUp(false);

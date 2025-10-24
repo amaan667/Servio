@@ -44,7 +44,7 @@ export function useTableActions() {
       }
 
       return data;
-    } catch (_err) {
+    } catch (err) {
       logger.error("[TABLE ACTIONS HOOK] Error executing action:", errorToContext(err));
       const errorMessage = err instanceof Error ? err.message : "Failed to execute action";
       setError(errorMessage);

@@ -87,7 +87,7 @@ export async function POST(req: Request) {
       ok: true,
       feedback: transformedFeedback,
     });
-  } catch (_error) {
+  } catch (error) {
     logger.error("[AUTH DEBUG] Error in feedback list:", {
       error: error instanceof Error ? error.message : "Unknown error",
     });

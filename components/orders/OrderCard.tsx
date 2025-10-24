@@ -101,7 +101,7 @@ export function OrderCard({
 
       if (!response.ok) throw new Error('Failed to delete order');
       onActionComplete?.();
-    } catch (_error) {
+    } catch (error) {
       // Error silently handled
     } finally {
       setIsProcessing(false);
@@ -127,7 +127,7 @@ export function OrderCard({
 
       if (!response.ok) throw new Error('Failed to process payment');
       onActionComplete?.();
-    } catch (_error) {
+    } catch (error) {
       // Error silently handled
     } finally {
       setIsProcessing(false);
@@ -177,7 +177,7 @@ export function OrderCard({
       }
       
       await onActionComplete?.();
-    } catch (_error) {
+    } catch (error) {
       // Error silently handled
     } finally {
       setIsProcessing(false);

@@ -129,7 +129,7 @@ export async function POST(req: NextRequest) {
       reservation: reservation
     });
 
-  } catch (_error) {
+  } catch (error) {
     logger.error('[CREATE RESERVATION] Error:', { error: error instanceof Error ? error.message : 'Unknown error' });
     return NextResponse.json({ 
       ok: false, 

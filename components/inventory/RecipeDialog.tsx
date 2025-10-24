@@ -54,7 +54,7 @@ export function RecipeDialog({ open, onOpenChange, menuItemId, menuItemName, ven
       if (result.data) {
         setIngredients(result.data);
       }
-    } catch (_error) {
+    } catch (error) {
       // Error silently handled
     }
   };
@@ -73,7 +73,7 @@ export function RecipeDialog({ open, onOpenChange, menuItemId, menuItemName, ven
         }));
         setRecipe(mappedRecipe);
       }
-    } catch (_error) {
+    } catch (error) {
       // Error silently handled
     }
   };
@@ -121,7 +121,7 @@ export function RecipeDialog({ open, onOpenChange, menuItemId, menuItemName, ven
       if (response.ok) {
         onOpenChange(false);
       }
-    } catch (_error) {
+    } catch (error) {
       // Error silently handled
     } finally {
       setLoading(false);

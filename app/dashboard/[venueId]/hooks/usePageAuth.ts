@@ -123,7 +123,7 @@ export function usePageAuth({
         }
 
         setLoading(false);
-      } catch (_error) {
+      } catch (error) {
         console.error(`❌ [${pageName.toUpperCase()} CLIENT] Auth error:`, error);
         setAuthError("Failed to verify access");
         setLoading(false);

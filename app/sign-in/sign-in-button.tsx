@@ -8,7 +8,7 @@ export default function SignInButton() {
   const onGoogle = async () => {
     try {
       router.push('/sign-in');
-    } catch (_error) {
+    } catch (error) {
       // Error silently handled
     }
   };

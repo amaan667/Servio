@@ -46,7 +46,7 @@ export function useDragAndDrop(menuItems: MenuItem[], setMenuItems: (items: Menu
         title: "Items reordered",
         description: "Menu items have been reordered successfully",
       });
-    } catch (_error) {
+    } catch (error) {
 
       toast({
         title: "Error",

@@ -76,7 +76,7 @@ export function useDashboardData(
           unpaid,
         });
         setStatsLoaded(true);
-      } catch (_err) {
+      } catch (err) {
         console.error("Failed to load stats:", err);
       }
     },
@@ -125,7 +125,7 @@ export function useDashboardData(
           setCounts(counts);
         }
       }
-    } catch (_err) {
+    } catch (err) {
       console.error("Failed to refresh dashboard data:", err);
       setError("Failed to refresh dashboard data");
     }
@@ -162,7 +162,7 @@ export function useDashboardData(
           // If no venue yet, keep loading state as is
           // It will be updated when venue becomes available
         }
-      } catch (_err) {
+      } catch (err) {
         console.error("Failed to load dashboard data:", err);
         setError("Failed to load dashboard data");
         setLoading(false);

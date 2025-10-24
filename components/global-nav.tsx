@@ -123,7 +123,7 @@ export default function GlobalNav() {
             sessionStorage.setItem(`user_role_${session.user.id}`, staffResult.data.role);
             sessionStorage.setItem(`venue_id_${session.user.id}`, staffResult.data.venue_id);
           }
-        } catch (_error) {
+        } catch (error) {
           console.error("Error fetching user data:", error);
         }
       } else {

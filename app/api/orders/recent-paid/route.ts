@@ -72,7 +72,7 @@ export async function GET(_req: Request) {
       order: transformedOrder 
     });
 
-  } catch (_error) {
+  } catch (error) {
     logger.error('[RECENT PAID] Error:', { error: error instanceof Error ? error.message : 'Unknown error' });
     return NextResponse.json({ 
       error: 'Internal server error',

@@ -78,7 +78,7 @@ export default function OrderTrackingPage() {
 
       setOrder(data.order);
       setLastUpdate(new Date());
-    } catch (_err) {
+    } catch (err) {
 
       setError('Failed to load order details');
     } finally {

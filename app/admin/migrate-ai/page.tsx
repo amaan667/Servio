@@ -40,7 +40,7 @@ export default function MigrateAIPage() {
       } else {
         setError(data.error || "Failed to check migration status");
       }
-    } catch (_error) {
+    } catch (error) {
       const errorMessage = error instanceof Error ? error.message : String(error);
       setError("Failed to check migration status: " + errorMessage);
     } finally {
@@ -66,7 +66,7 @@ export default function MigrateAIPage() {
       } else {
         setError(data.error || "Migration failed");
       }
-    } catch (_error) {
+    } catch (error) {
       const errorMessage = error instanceof Error ? error.message : String(error);
       setError("Migration failed: " + errorMessage);
     } finally {

@@ -102,7 +102,7 @@ export async function POST(req: NextRequest) {
       paymentIntentId: paymentIntent.id,
     });
 
-  } catch (_error) {
+  } catch (error) {
     logger.error('[PAYMENT INTENT] Error:', { error: error instanceof Error ? error.message : 'Unknown error' });
     
     if (error instanceof Stripe.errors.StripeError) {

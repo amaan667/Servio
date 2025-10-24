@@ -56,7 +56,7 @@ export async function POST(req: NextRequest) {
       success: true,
       data: result,
     });
-  } catch (_error) {
+  } catch (error) {
     logger.error("[AUTH DEBUG] Table reset API error:", {
       error: error instanceof Error ? error.message : "Unknown error",
     });
@@ -100,7 +100,7 @@ export async function GET(req: NextRequest) {
       success: true,
       data: data || [],
     });
-  } catch (_error) {
+  } catch (error) {
     logger.error("[AUTH DEBUG] Reset logs API error:", {
       error: error instanceof Error ? error.message : "Unknown error",
     });

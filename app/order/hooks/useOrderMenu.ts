@@ -72,7 +72,7 @@ export function useOrderMenu(venueSlug: string, isDemo: boolean) {
             setCategoryOrder(categoryOrderData.categories);
           }
         }
-      } catch (_error) {
+      } catch (error) {
         setCategoryOrder(null);
       }
       

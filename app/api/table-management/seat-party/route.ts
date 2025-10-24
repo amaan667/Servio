@@ -33,7 +33,7 @@ export async function POST(req: NextRequest) {
 
     return NextResponse.json(data);
 
-  } catch (_error) {
+  } catch (error) {
     logger.error('[SEAT PARTY API] Unexpected error:', { error: error instanceof Error ? error.message : 'Unknown error' });
     return NextResponse.json(
       { success: false, error: 'Internal server error' },

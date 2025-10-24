@@ -68,7 +68,7 @@ export function useQueryCache<T>(
 
       cacheRef.current.set(key, newCacheEntry);
       setData(result);
-    } catch (_err) {
+    } catch (err) {
       setError(err instanceof Error ? err : new Error('Unknown error'));
       // Return stale data if available
       if (cacheEntry) {

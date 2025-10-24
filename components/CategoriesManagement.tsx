@@ -84,7 +84,7 @@ export function CategoriesManagement({ venueId, onCategoriesUpdate }: Categories
           variant: "destructive",
         });
       }
-    } catch (_error) {
+    } catch (error) {
 
       toast({
         title: "Error",
@@ -137,7 +137,7 @@ export function CategoriesManagement({ venueId, onCategoriesUpdate }: Categories
         // Still update the parent component since we saved to localStorage
         onCategoriesUpdate?.(categoriesToSave);
       }
-    } catch (_error) {
+    } catch (error) {
 
       // Still show success since we saved to localStorage
       toast({
@@ -196,7 +196,7 @@ export function CategoriesManagement({ venueId, onCategoriesUpdate }: Categories
       if (!response.ok) {
       // Empty block
     }
-    } catch (_error) {
+    } catch (error) {
 
       // Category was already added locally, so show success
       toast({
@@ -258,7 +258,7 @@ export function CategoriesManagement({ venueId, onCategoriesUpdate }: Categories
           variant: "destructive",
         });
       }
-    } catch (_error) {
+    } catch (error) {
 
       toast({
         title: "Error",
@@ -323,7 +323,7 @@ export function CategoriesManagement({ venueId, onCategoriesUpdate }: Categories
           variant: "destructive",
         });
       }
-    } catch (_error) {
+    } catch (error) {
 
       toast({
         title: "Error",
@@ -391,7 +391,7 @@ export function CategoriesManagement({ venueId, onCategoriesUpdate }: Categories
           });
         }
       }
-    } catch (_error) {
+    } catch (error) {
 
       toast({
         title: "Error",

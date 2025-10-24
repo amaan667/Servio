@@ -56,7 +56,7 @@ export function usePaymentState() {
         if (data.isDemo || isDemoFromUrl) {
       // Empty block
     }
-      } catch (_error) {
+      } catch (error) {
 
         router.push("/order");
       }

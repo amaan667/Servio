@@ -173,7 +173,7 @@ export function validateData<T>(
   try {
     const validated = schema.parse(data);
     return { success: true, data: validated };
-  } catch (_error) {
+  } catch (error) {
     if (error instanceof z.ZodError) {
       return { success: false, errors: error };
     }

@@ -87,7 +87,7 @@ export function useTablesData(venueId: string) {
       }
 
       setTables(data.tables || []);
-    } catch (_err) {
+    } catch (err) {
       logger.error('[TABLES HOOK] Error fetching tables:', {
         error: err,
         message: err instanceof Error ? err.message : 'Unknown error',

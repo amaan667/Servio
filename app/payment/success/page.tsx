@@ -45,7 +45,7 @@ export default function PaymentSuccessPage() {
           
           // Clean up after loading
           localStorage.removeItem("demo-order-data");
-        } catch (_error) {
+        } catch (error) {
       // Error silently handled
     }
       } else {

@@ -197,7 +197,7 @@ const DashboardClient = React.memo(function DashboardClient({ venueId }: { venue
         }
 
         setLoading(false);
-      } catch (_error) {
+      } catch (error) {
         console.error("[Dashboard] Auth check error:", error);
         setAuthError("Authentication failed");
         setLoading(false);

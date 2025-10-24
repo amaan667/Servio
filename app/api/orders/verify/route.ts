@@ -92,7 +92,7 @@ export async function GET(req: Request) {
       updated: true 
     });
 
-  } catch (_error) {
+  } catch (error) {
     logger.error('[VERIFY] Error:', { error: error instanceof Error ? error.message : 'Unknown error' });
     return NextResponse.json({ 
       error: 'Internal server error',

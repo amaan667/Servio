@@ -215,7 +215,7 @@ class ErrorTracker {
       }
 
       captureMessage(message, level as "info" | "warning" | "error");
-    } catch (_error) {
+    } catch (error) {
       console.warn("Failed to send message to Sentry:", error);
     }
   }
@@ -236,7 +236,7 @@ class ErrorTracker {
           context,
         }),
       });
-    } catch (_error) {
+    } catch (error) {
       console.warn("Failed to send error to custom endpoint:", error);
     }
   }
@@ -256,7 +256,7 @@ class ErrorTracker {
           context,
         }),
       });
-    } catch (_error) {
+    } catch (error) {
       console.warn("Failed to send message to custom endpoint:", error);
     }
   }

@@ -117,7 +117,7 @@ export class PerformanceMonitor {
         const end = performance.now();
         this.recordMetric("apiResponseTime", end - start);
         return response;
-      } catch (_error) {
+      } catch (error) {
         const end = performance.now();
         this.recordMetric("apiResponseTime", end - start);
         throw error;
@@ -272,7 +272,7 @@ export class PerformanceMonitor {
           userAgent: navigator.userAgent,
         }),
       });
-    } catch (_error) {
+    } catch (error) {
       logger.warn("[PERFORMANCE] Failed to send metric to analytics:", error as Record<string, unknown>);
     }
   }

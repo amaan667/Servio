@@ -179,7 +179,7 @@ async function createKDSTickets(supabase: Awaited<ReturnType<typeof createSupaba
     
     logger.debug('[KDS TICKETS] Successfully created KDS tickets', { data: { count: items.length, orderId: order.id } });
     
-  } catch (_error) {
+  } catch (error) {
     logger.error('[KDS TICKETS] Error creating KDS tickets:', { error: error instanceof Error ? error.message : 'Unknown error' });
     throw error;
   }

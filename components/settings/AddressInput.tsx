@@ -71,7 +71,7 @@ export function AddressInput({ value, onChange, onCoordinatesChange }: AddressIn
           onCoordinatesChange(parseFloat(lat), parseFloat(lon));
         }
       }
-    } catch (_error) {
+    } catch (error) {
       // Error silently handled
     } finally {
       setIsLoadingMap(false);

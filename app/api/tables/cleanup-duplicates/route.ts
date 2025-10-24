@@ -141,7 +141,7 @@ export async function POST(req: Request) {
       duplicates_removed: safeToRemove.length
     });
 
-  } catch (_error) {
+  } catch (error) {
     logger.error('[CLEANUP DUPLICATES] Unexpected error:', { error: error instanceof Error ? error.message : 'Unknown error' });
     return NextResponse.json({ ok: false, error: 'Internal server error' }, { status: 500 });
   }

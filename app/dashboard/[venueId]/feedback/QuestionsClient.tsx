@@ -80,7 +80,7 @@ export default function QuestionsClient({ venueId, venueName, mode = 'full' }: Q
           variant: "destructive"
         });
       }
-    } catch (_error) {
+    } catch (error) {
 
       toast({
         title: "Error",
@@ -156,7 +156,7 @@ export default function QuestionsClient({ venueId, venueName, mode = 'full' }: Q
           variant: "destructive"
         });
       }
-    } catch (_error) {
+    } catch (error) {
 
       toast({
         title: "Error",
@@ -215,7 +215,7 @@ export default function QuestionsClient({ venueId, venueName, mode = 'full' }: Q
           variant: "destructive"
         });
       }
-    } catch (_error) {
+    } catch (error) {
       toast({
         title: "Error",
         description: "Couldn't update question",
@@ -245,7 +245,7 @@ export default function QuestionsClient({ venueId, venueName, mode = 'full' }: Q
           variant: "destructive"
         });
       }
-    } catch (_error) {
+    } catch (error) {
       toast({
         title: "Error",
         description: "Couldn't update question",
@@ -288,7 +288,7 @@ export default function QuestionsClient({ venueId, venueName, mode = 'full' }: Q
           variant: "destructive"
         });
       }
-    } catch (_error) {
+    } catch (error) {
       toast({
         title: "Error",
         description: "Couldn't delete question",
@@ -327,7 +327,7 @@ export default function QuestionsClient({ venueId, venueName, mode = 'full' }: Q
           variant: "destructive"
         });
       }
-    } catch (_error) {
+    } catch (error) {
       toast({
         title: "Error",
         description: "Couldn't reorder questions",

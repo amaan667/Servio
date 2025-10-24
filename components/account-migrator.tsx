@@ -60,7 +60,7 @@ export function AccountMigrator() {
       const accounts = stored ? JSON.parse(stored) : [];
       setLocalAccounts(accounts);
 
-    } catch (_error) {
+    } catch (error) {
 
       setLocalAccounts([]);
     }
@@ -83,7 +83,7 @@ export function AccountMigrator() {
 
       addLog(`⚠️ Sign up not implemented yet for ${account.contactEmail}`);
       return false;
-    } catch (_error) {
+    } catch (error) {
       addLog(`❌ Error migrating ${account.contactEmail}: ${(error as Error).message}`);
 
       return false;
@@ -177,7 +177,7 @@ export function AccountMigrator() {
         } else {
           addLog("❌ Invalid file format");
         }
-      } catch (_error) {
+      } catch (error) {
         addLog("❌ Failed to import accounts");
 
       }

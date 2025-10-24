@@ -72,7 +72,7 @@ export default function CompleteProfilePage() {
         setUser(user);
         setShowForm(true);
         setLoading(false);
-      } catch (_error) {
+      } catch (error) {
         router.replace('/');
       }
     };

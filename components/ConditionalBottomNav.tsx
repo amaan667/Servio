@@ -51,7 +51,7 @@ export default function ConditionalBottomNav() {
             notifications: 0
           });
         }
-      } catch (_error) {
+      } catch (error) {
         // Silent error handling
       }
     };

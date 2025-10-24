@@ -76,7 +76,7 @@ export async function POST() {
       constraints: constraints || 'Could not verify constraints'
     });
 
-  } catch (_error) {
+  } catch (error) {
     logger.error('[MIGRATION] Unexpected error:', { error: error instanceof Error ? error.message : 'Unknown error' });
     return NextResponse.json({ error: 'Internal server error' }, { status: 500 });
   }

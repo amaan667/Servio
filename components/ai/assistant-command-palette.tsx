@@ -179,7 +179,7 @@ export function AssistantCommandPalette({
             }
             
             return json;
-          } catch (_error) {
+          } catch (error) {
 
             throw error;
           }
@@ -188,7 +188,7 @@ export function AssistantCommandPalette({
         const previewResults = await Promise.all(previewPromises);
         setPreviews(previewResults.map((r) => r.preview).filter(Boolean));
       }
-    } catch (_err) {
+    } catch (err) {
 
       setError(err.message || "Failed to plan action");
     } finally {
@@ -257,7 +257,7 @@ export function AssistantCommandPalette({
         }, 3000);
       }
       // For analytics, keep modal open so user can see results
-    } catch (_err) {
+    } catch (err) {
 
       setError(err.message || "Failed to execute action");
     } finally {

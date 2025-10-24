@@ -149,7 +149,7 @@ export async function POST(request: NextRequest) {
       });
     }
 
-  } catch (_error) {
+  } catch (error) {
     logger.error("[SUBSCRIPTION REFRESH] Error:", { error: error instanceof Error ? error.message : 'Unknown error' });
     return NextResponse.json(
       { error: error.message || "Failed to refresh subscription status" },

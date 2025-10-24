@@ -13,7 +13,7 @@ export default function SessionClearer() {
             'Content-Type': 'application/json',
           },
         });
-      } catch (_error) {
+      } catch (error) {
       // Error silently handled
     }
     }

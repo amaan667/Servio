@@ -60,7 +60,7 @@ export async function POST(req: Request) {
       timestamp: new Date().toISOString()
     });
 
-  } catch (_error) {
+  } catch (error) {
     logger.debug('================================================================================');
     logger.error('[DEMO ACCESS ERROR] Failed to process request');
     logger.error('[DEMO ACCESS ERROR]', { error: error instanceof Error ? error.message : 'Unknown error' });

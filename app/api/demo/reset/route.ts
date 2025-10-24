@@ -43,7 +43,7 @@ export async function POST() {
       message: 'Demo data reset successfully',
       timestamp: new Date().toISOString(),
     });
-  } catch (_error) {
+  } catch (error) {
     logger.error('[DEMO RESET] Error:', { error: error instanceof Error ? error.message : 'Unknown error' });
     return NextResponse.json(
       { 

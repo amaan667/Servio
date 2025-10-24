@@ -79,7 +79,7 @@ export function useEnhancedTableMerge() {
           scenario: result.scenario,
           description: result.description,
         };
-      } catch (_error) {
+      } catch (error) {
         logger.error("[ENHANCED MERGE HOOK] Unexpected error:", errorToContext(error));
         const errorMessage = error instanceof Error ? error.message : "Unexpected error occurred";
         setError(errorMessage);

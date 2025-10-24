@@ -105,7 +105,7 @@ export function useDashboardRealtime({
             
             // Update menu items count in parent component
             // This will be handled by the parent component
-          } catch (_error) {
+          } catch (error) {
       // Error silently handled
     }
         }

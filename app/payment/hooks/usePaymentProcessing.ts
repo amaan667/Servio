@@ -139,7 +139,7 @@ export function usePaymentProcessing() {
 
         localStorage.removeItem('servio-checkout-data');
       }
-    } catch (_err) {
+    } catch (err) {
 
       setError(err.message || 'Payment failed. Please try again.');
       toast({

@@ -99,7 +99,7 @@ export function EnhancedPDFMenuDisplay({
 
           setViewMode('list');
         }
-      } catch (_error) {
+      } catch (error) {
 
         setViewMode('list');
       } finally {

@@ -121,7 +121,7 @@ export function LiveOrdersPOS({ venueId }: LiveOrdersPOSProps) {
         const data = await response.json();
         setOrders(data.orders || []);
       }
-    } catch (_error) {
+    } catch (error) {
       // Error silently handled
     } finally {
       setLoading(false);
@@ -142,7 +142,7 @@ export function LiveOrdersPOS({ venueId }: LiveOrdersPOSProps) {
       if (response.ok) {
         fetchOrders();
       }
-    } catch (_error) {
+    } catch (error) {
       // Error silently handled
     }
   };
@@ -162,7 +162,7 @@ export function LiveOrdersPOS({ venueId }: LiveOrdersPOSProps) {
       if (response.ok) {
         fetchOrders();
       }
-    } catch (_error) {
+    } catch (error) {
       // Error silently handled
     }
   };

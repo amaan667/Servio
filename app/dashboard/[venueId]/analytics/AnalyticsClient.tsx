@@ -59,7 +59,7 @@ export default function AnalyticsClient({ venueId, venueName }: { venueId: strin
         description: `Analytics data exported successfully (${csvRows.length} rows).`,
         variant: "default"
       });
-    } catch (_error) {
+    } catch (error) {
 
       toast({
         title: "Export Failed",

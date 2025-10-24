@@ -48,7 +48,7 @@ export default function OnboardingMenuPage() {
 
       setVenueId(venues[0]?.venue_id);
       setLoading(false);
-    } catch (_error) {
+    } catch (error) {
 
       setLoading(false);
     }
@@ -87,7 +87,7 @@ export default function OnboardingMenuPage() {
 
       // Move to next step
       router.push('/onboarding/tables');
-    } catch (_error) {
+    } catch (error) {
 
       toast({
         title: 'Upload failed',
@@ -146,7 +146,7 @@ export default function OnboardingMenuPage() {
 
       // Move to next step
       router.push('/onboarding/tables');
-    } catch (_error) {
+    } catch (error) {
 
       toast({
         title: 'Failed to create items',

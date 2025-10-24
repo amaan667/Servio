@@ -106,7 +106,7 @@ export async function GET(req: Request) {
       order: transformedOrder 
     });
 
-  } catch (_error) {
+  } catch (error) {
     logger.error('[ORDER BY SESSION] Error:', { error: error instanceof Error ? error.message : 'Unknown error' });
     return NextResponse.json({ 
       error: 'Internal server error' 

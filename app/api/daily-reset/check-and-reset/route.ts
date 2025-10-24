@@ -298,7 +298,7 @@ export async function POST(request: NextRequest) {
       }
     });
 
-  } catch (_error) {
+  } catch (error) {
     logger.error('🔄 [DAILY RESET CHECK] Error in daily reset check:', { error: error instanceof Error ? error.message : 'Unknown error' });
     return NextResponse.json(
       { error: 'Internal server error' },

@@ -135,7 +135,7 @@ CREATE POLICY "Service role full access to invitations" ON staff_invitations
       ]
     });
 
-  } catch (_error) {
+  } catch (error) {
     logger.error('[STAFF MIGRATION] Error:', { error: error instanceof Error ? error.message : 'Unknown error' });
     return NextResponse.json({
       success: false,

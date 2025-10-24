@@ -195,7 +195,7 @@ export function useOrderSubmission() {
       if (typeof window !== 'undefined') {
         window.location.href = '/payment';
       }
-    } catch (_error) {
+    } catch (error) {
 
       let errorMessage = "Failed to place order. Please try again.";
       

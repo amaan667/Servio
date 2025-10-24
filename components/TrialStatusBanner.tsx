@@ -106,7 +106,7 @@ export default function TrialStatusBanner({ userRole }: TrialStatusBannerProps) 
           daysRemaining,
         });
       }
-    } catch (_error) {
+    } catch (error) {
       console.error("[TRIAL BANNER] Fetch error:", error);
       // Show default trial status as fallback
       const userCreatedAt = new Date(user.created_at);

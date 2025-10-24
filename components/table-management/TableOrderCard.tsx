@@ -86,7 +86,7 @@ export function TableOrderCard({ order, venueId, onActionComplete }: TableOrderC
       }
 
       onActionComplete?.();
-    } catch (_error) {
+    } catch (error) {
       // Error silently handled
     } finally {
       setIsRemoving(false);
@@ -148,7 +148,7 @@ export function TableOrderCard({ order, venueId, onActionComplete }: TableOrderC
       }
 
       onActionComplete?.();
-    } catch (_error) {
+    } catch (error) {
       // Error silently handled
     } finally {
       setIsProcessingPayment(false);
@@ -175,7 +175,7 @@ export function TableOrderCard({ order, venueId, onActionComplete }: TableOrderC
       }
 
       onActionComplete?.();
-    } catch (_error) {
+    } catch (error) {
       // Error silently handled
     } finally {
       setIsProcessingPayment(false);

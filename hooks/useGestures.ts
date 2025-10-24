@@ -280,7 +280,7 @@ export function usePullToRefresh(onRefresh: () => Promise<void>) {
     setIsRefreshing(true);
     try {
       await onRefresh();
-    } catch (_error) {
+    } catch (error) {
       logger.error('Pull-to-refresh failed:', errorToContext(error));
     } finally {
       setIsRefreshing(false);

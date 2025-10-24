@@ -63,7 +63,7 @@ export async function GET(request: NextRequest) {
         sessions: sessionsError?.message || null,
       }
     });
-  } catch (_error) {
+  } catch (error) {
     apiLogger.error('[DEMO RESET CRON] Error:', { error: error instanceof Error ? error.message : 'Unknown error' });
     return NextResponse.json(
       { 

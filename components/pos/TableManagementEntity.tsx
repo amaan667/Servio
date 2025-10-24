@@ -107,7 +107,7 @@ export function TableManagementEntity({ venueId }: TableManagementEntityProps) {
         const countersData = await countersResponse.json();
         setCounters(countersData.counters || []);
       }
-    } catch (_error) {
+    } catch (error) {
       // Error silently handled
     } finally {
       setLoading(false);
@@ -136,7 +136,7 @@ export function TableManagementEntity({ venueId }: TableManagementEntityProps) {
         setSelectedTable(null);
         fetchEntities();
       }
-    } catch (_error) {
+    } catch (error) {
       // Error silently handled
     }
   };
@@ -156,7 +156,7 @@ export function TableManagementEntity({ venueId }: TableManagementEntityProps) {
       if (response.ok) {
         fetchEntities();
       }
-    } catch (_error) {
+    } catch (error) {
       // Error silently handled
     }
   };

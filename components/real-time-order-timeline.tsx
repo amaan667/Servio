@@ -100,7 +100,7 @@ export function RealTimeOrderTimeline({ orderId, venueId, className }: RealTimeO
 
       setOrder(data);
       setLastUpdate(new Date());
-    } catch (_err) {
+    } catch (err) {
 
       setError('Failed to load order details');
     } finally {

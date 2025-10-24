@@ -27,7 +27,7 @@ export default function SignOutPage() {
         try {
           const { clearAuthStorage } = await import('@/lib/supabase');
           clearAuthStorage();
-        } catch (_error) {
+        } catch (error) {
       // Error silently handled
     }
         
@@ -37,7 +37,7 @@ export default function SignOutPage() {
         // Redirect to home page
         router.replace('/');
         
-      } catch (_error) {
+      } catch (error) {
 
         router.replace('/');
       }

@@ -77,7 +77,7 @@ export async function POST(req: Request) {
       }
     });
 
-  } catch (_error) {
+  } catch (error) {
     logger.error('[PAY TILL] Error:', { error: error instanceof Error ? error.message : 'Unknown error' });
     return NextResponse.json({ 
       success: false, 

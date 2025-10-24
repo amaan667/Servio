@@ -147,7 +147,7 @@ export function measurePerformance(operationName: string) {
         const result = await target(...args);
         timer.end();
         return result;
-      } catch (_error) {
+      } catch (error) {
         timer.end();
         throw error;
       }

@@ -46,7 +46,7 @@ export default function OnboardingTestOrderPage() {
 
       setVenueId(venues[0]?.venue_id);
       setLoading(false);
-    } catch (_error) {
+    } catch (error) {
 
       setLoading(false);
     }

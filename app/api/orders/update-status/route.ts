@@ -93,7 +93,7 @@ export async function POST(req: Request) {
     }
 
     return NextResponse.json({ ok: true, order: data?.[0] });
-  } catch (_error) {
+  } catch (error) {
     logger.error('[UPDATE STATUS] Unexpected error:', { error: error instanceof Error ? error.message : 'Unknown error' });
     return NextResponse.json({ ok: false, error: 'Internal server error' }, { status: 500 });
   }

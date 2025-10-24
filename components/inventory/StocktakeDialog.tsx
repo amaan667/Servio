@@ -44,7 +44,7 @@ export function StocktakeDialog({ open, onOpenChange, ingredient, onSuccess }: S
         setActualCount('');
         setNote('');
       }
-    } catch (_error) {
+    } catch (error) {
       // Error silently handled
     } finally {
       setLoading(false);

@@ -83,7 +83,7 @@ class ConnectionMonitor {
           lastChecked: new Date(),
         });
       }
-    } catch (_error) {
+    } catch (error) {
       logger.warn("[CONNECTION] Connection check failed:", errorToContext(error));
       // Fallback to navigator.onLine
       this.updateState({

@@ -22,7 +22,7 @@ export async function POST() {
     response.cookies.set('supabase-auth-token', '', cookieOptions);
     
     return response;
-  } catch (_error) {
+  } catch (error) {
     logger.error('[AUTH] Sign-out error:', { error: error instanceof Error ? error.message : 'Unknown error' });
     return NextResponse.json({ ok: true }); // Always return success to avoid client errors
   }

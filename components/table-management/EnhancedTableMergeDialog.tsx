@@ -109,7 +109,7 @@ export function EnhancedTableMergeDialog({
       await onMergeConfirm(sourceTable.id, selectedTableId, selectedTable.requiresConfirmation);
       onActionComplete?.();
       onClose();
-    } catch (_error) {
+    } catch (error) {
       // Error silently handled
     } finally {
       setIsLoading(false);

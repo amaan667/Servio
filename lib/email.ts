@@ -247,7 +247,7 @@ export async function sendEmail(template: EmailTemplate): Promise<boolean> {
     // In production, you should configure an email service
     return process.env.NODE_ENV === 'development';
     
-  } catch (_error) {
+  } catch (error) {
     logger.error('❌ Failed to send email:', error as Record<string, unknown>);
     return false;
   }

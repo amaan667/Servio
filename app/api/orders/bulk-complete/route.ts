@@ -212,7 +212,7 @@ export async function POST(req: Request) {
       message: `Successfully completed ${updatedOrders?.length || 0} orders and cleaned up tables`
     });
 
-  } catch (_error) {
+  } catch (error) {
     logger.error('[BULK COMPLETE] Unexpected error:', { error: error instanceof Error ? error.message : 'Unknown error' });
     return NextResponse.json({ error: 'Internal server error' }, { status: 500 });
   }

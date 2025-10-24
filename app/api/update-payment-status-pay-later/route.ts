@@ -175,7 +175,7 @@ export async function POST() {
       testResult
     });
 
-  } catch (_error) {
+  } catch (error) {
     logger.error('Error:', { error: error instanceof Error ? error.message : 'Unknown error' });
     return NextResponse.json({ 
       success: false, 

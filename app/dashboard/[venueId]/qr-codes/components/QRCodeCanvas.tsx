@@ -21,7 +21,7 @@ export function QRCodeCanvas({ url, size }: QRCodeCanvasProps) {
           color: { dark: "#000000", light: "#ffffff" },
         });
         setQrDataUrl(dataUrl);
-      } catch (_error) {
+      } catch (error) {
         console.error("[QR Code] Generation error:", error);
       } finally {
         setLoading(false);

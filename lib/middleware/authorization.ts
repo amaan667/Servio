@@ -91,7 +91,7 @@ export async function verifyVenueAccess(
       user: { id: userId },
       role: 'owner',
     };
-  } catch (_error) {
+  } catch (error) {
     logger.error('Error verifying venue access', { venueId, userId, error });
     return null;
   }
@@ -110,7 +110,7 @@ export async function getAuthenticatedUser() {
     }
 
     return { user, error: null };
-  } catch (_error) {
+  } catch (error) {
     logger.error('Error getting authenticated user', { error });
     return { user: null, error: 'Authentication failed' };
   }
@@ -167,7 +167,7 @@ export function withAuthorization(
         role: access.role,
         venueId,
       });
-    } catch (_error) {
+    } catch (error) {
       logger.error('Authorization middleware error', { error });
       return NextResponse.json(
         { error: 'Internal Server Error', message: 'Authorization failed' },
@@ -214,7 +214,7 @@ export function withOptionalAuth(
         role: access.role,
         venueId,
       });
-    } catch (_error) {
+    } catch (error) {
       logger.error('Optional auth middleware error', { error });
       return await handler(req, null);
     }

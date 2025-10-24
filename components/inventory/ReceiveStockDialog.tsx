@@ -67,7 +67,7 @@ export function ReceiveStockDialog({ open, onOpenChange, ingredient, onSuccess }
         setSupplier('');
         setNote('');
       }
-    } catch (_error) {
+    } catch (error) {
       // Error silently handled
     } finally {
       setLoading(false);

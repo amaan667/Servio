@@ -49,7 +49,7 @@ export async function POST(request: NextRequest) {
       message: 'Table runtime state cleared successfully' 
     });
 
-  } catch (_error) {
+  } catch (error) {
     logger.error('[AUTH DEBUG] Error in clear tables API:', { error: error instanceof Error ? error.message : 'Unknown error' });
     return NextResponse.json({ 
       ok: false, 

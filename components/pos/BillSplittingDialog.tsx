@@ -169,7 +169,7 @@ export function BillSplittingDialog({
         onSplitComplete();
         onClose();
       }
-    } catch (_error) {
+    } catch (error) {
       // Error silently handled
     } finally {
       setLoading(false);
