@@ -95,7 +95,7 @@ export async function PATCH(_req: Request) {
       updated: tickets?.length || 0,
       tickets,
     });
-  } catch (_error) {
+  } catch (error) {
     logger.error("[KDS] Unexpected error:", {
       error: error instanceof Error ? error.message : "Unknown error",
     });
