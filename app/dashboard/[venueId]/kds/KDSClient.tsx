@@ -157,8 +157,12 @@ export default function KDSClient({ venueId }: KDSClientProps) {
       const data = await response.json();
 
       if (data.ok) {
-        // Remove bumped tickets from view
-        setTickets((prev) => prev.filter((t) => t.order_id !== orderId));
+        // Keep bumped tickets but mark them as bumped (will be sorted to bottom)
+        setTickets((prev) => prev.map((t) => 
+          t.order_id === orderId 
+            ? { ...t, ticket_status: "bumped" as const }
+            : t
+        ));
       }
     } catch {
       // Silently fail
@@ -259,10 +263,21 @@ export default function KDSClient({ venueId }: KDSClientProps) {
     );
   }
 
-  const activeTickets = tickets.filter((t) => t.status !== "bumped");
+  // Sort tickets: non-bumped first (by created_at), then bumped at bottom
+  const sortedTickets = [...tickets].sort((a, b) => {
+    // Bumped tickets always go to bottom
+    if (a.ticket_status === "bumped" && b.ticket_status !== "bumped") return 1;
+    if (a.ticket_status !== "bumped" && b.ticket_status === "bumped") return -1;
+    
+    // For non-bumped tickets, sort by created_at (oldest first for priority)
+    return new Date(a.created_at).getTime() - new Date(b.created_at).getTime();
+  });
+
+  const activeTickets = sortedTickets.filter((t) => t.ticket_status !== "bumped");
   const newTickets = activeTickets.filter((t) => t.status === "new");
   const inProgressTickets = activeTickets.filter((t) => t.status === "in_progress");
   const readyTickets = activeTickets.filter((t) => t.status === "ready");
+  const bumpedTickets = sortedTickets.filter((t) => t.ticket_status === "bumped");
 
   return (
     <div className="space-y-6">
