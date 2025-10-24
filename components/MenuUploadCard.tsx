@@ -301,9 +301,28 @@ export function MenuUploadCard({ venueId, onSuccess }: MenuUploadCardProps) {
           <Upload className="h-5 w-5" />
           Upload Menu
         </CardTitle>
-        <CardDescription className="text-gray-900">Upload and parse PDF menus using advanced OCR and AI processing.</CardDescription>
+        <CardDescription className="text-gray-900">Upload your PDF menu and optionally add your menu URL for perfect item matching</CardDescription>
       </CardHeader>
       <CardContent className="space-y-4">
+        
+        {/* Optional: Menu URL for Enhanced Matching */}
+        <div className="space-y-2">
+          <Label htmlFor="menu-url-upload" className="flex items-center gap-2">
+            Menu Website URL <Badge variant="outline" className="text-xs">Optional - Premium</Badge>
+          </Label>
+          <Input
+            id="menu-url-upload"
+            type="url"
+            placeholder="https://yourmenu.co.uk/menu (optional)"
+            value={menuUrl}
+            onChange={(e) => setMenuUrl(e.target.value)}
+            disabled={isProcessing}
+          />
+          <p className="text-xs text-muted-foreground">
+            💡 Add your menu URL for perfect hotspot positioning with Vision AI
+          </p>
+        </div>
+
         {/* Replace vs Append Toggle - Only show if there's an existing upload */}
         {hasExistingUpload && (
           <div className="flex items-center space-x-2">
