@@ -186,29 +186,61 @@ async function createKDSTickets(supabase: Awaited<ReturnType<typeof createSupaba
 }
 
 export async function POST(req: Request) {
+  const requestId = Math.random().toString(36).substring(7);
+  const startTime = Date.now();
+  
+  console.log(`🎯 [ORDERS API ${requestId}] ========================================`);
+  console.log(`🎯 [ORDERS API ${requestId}] NEW ORDER SUBMISSION`);
+  console.log(`🎯 [ORDERS API ${requestId}] Timestamp:`, new Date().toISOString());
+  
   try {
     logger.debug('[ORDER CREATION DEBUG] ===== ORDER CREATION STARTED =====');
     logger.debug('[ORDER CREATION DEBUG] Timestamp:', new Date().toISOString());
     
+    console.log(`📥 [ORDERS API ${requestId}] Parsing request body...`);
     const body = (await req.json()) as Partial<OrderPayload>;
+    console.log(`✅ [ORDERS API ${requestId}] Body parsed successfully`);
+    console.log(`📋 [ORDERS API ${requestId}] Customer:`, body.customer_name);
+    console.log(`📋 [ORDERS API ${requestId}] Phone:`, body.customer_phone);
+    console.log(`📋 [ORDERS API ${requestId}] Venue:`, body.venue_id);
+    console.log(`📋 [ORDERS API ${requestId}] Table:`, body.table_number);
+    console.log(`📋 [ORDERS API ${requestId}] Items:`, body.items?.length);
+    console.log(`📋 [ORDERS API ${requestId}] Total:`, body.total_amount);
+    
     logger.debug('[ORDER CREATION DEBUG] Request body:', { data: JSON.stringify(body, null, 2) });
 
+    console.log(`🔍 [ORDERS API ${requestId}] Starting validation...`);
     
     if (!body.venue_id || typeof body.venue_id !== 'string') {
+      console.error(`❌ [ORDERS API ${requestId}] Validation failed: venue_id required`);
       return bad('venue_id is required');
     }
+    console.log(`✅ [ORDERS API ${requestId}] Venue ID valid`);
+    
     if (!body.customer_name || !body.customer_name.trim()) {
+      console.error(`❌ [ORDERS API ${requestId}] Validation failed: customer_name required`);
       return bad('customer_name is required');
     }
+    console.log(`✅ [ORDERS API ${requestId}] Customer name valid`);
+    
     if (!body.customer_phone || !body.customer_phone.trim()) {
+      console.error(`❌ [ORDERS API ${requestId}] Validation failed: customer_phone required`);
       return bad('customer_phone is required');
     }
+    console.log(`✅ [ORDERS API ${requestId}] Customer phone valid`);
+    
     if (!Array.isArray(body.items) || body.items.length === 0) {
+      console.error(`❌ [ORDERS API ${requestId}] Validation failed: items array empty`);
       return bad('items must be a non-empty array');
     }
+    console.log(`✅ [ORDERS API ${requestId}] Items valid (${body.items.length} items)`);
+    
     if (typeof body.total_amount !== 'number' || isNaN(body.total_amount)) {
+      console.error(`❌ [ORDERS API ${requestId}] Validation failed: invalid total_amount`);
       return bad('total_amount must be a number');
     }
+    console.log(`✅ [ORDERS API ${requestId}] Total amount valid: ${body.total_amount}`);
+    console.log(`✅ [ORDERS API ${requestId}] All validations passed!`);
     
 
     const tn = body.table_number;
@@ -446,17 +478,27 @@ export async function POST(req: Request) {
     logger.debug('[ORDER CREATION DEBUG] Order details:', { data: { customer: payload.customer_name, table: payload.table_number, venueId: payload.venue_id } });
     logger.debug('[ORDER CREATION DEBUG] Payment details:', { data: { status: payload.payment_status, method: payload.payment_method, source: payload.source, total: payload.total_amount, itemsCount: payload.items?.length || 0 } });
     
+    console.log(`💾 [ORDERS API ${requestId}] Inserting order into database...`);
     const { data: inserted, error: insertErr } = await supabase
       .from('orders')
       .insert(payload)
       .select('*');
     
+    console.log(`📊 [ORDERS API ${requestId}] Insert result:`);
+    console.log(`📊 [ORDERS API ${requestId}] - Success:`, !insertErr);
+    console.log(`📊 [ORDERS API ${requestId}] - Inserted data:`, inserted);
+    console.log(`📊 [ORDERS API ${requestId}] - Insert error:`, insertErr);
 
     logger.debug('[ORDER CREATION DEBUG] Insert result:');
     logger.debug('[ORDER CREATION DEBUG] - Inserted data:', { value: inserted });
     logger.debug('[ORDER CREATION DEBUG] - Insert error:', { value: insertErr });
 
     if (insertErr) {
+      console.error(`❌ [ORDERS API ${requestId}] Database insert FAILED`);
+      console.error(`❌ [ORDERS API ${requestId}] Error code:`, insertErr.code);
+      console.error(`❌ [ORDERS API ${requestId}] Error message:`, insertErr.message);
+      console.error(`❌ [ORDERS API ${requestId}] Error details:`, insertErr);
+      
       logger.error('[ORDER CREATION DEBUG] ===== INSERT FAILED =====');
       logger.error('[ORDER CREATION DEBUG] Error details:', { value: insertErr });
       
@@ -472,11 +514,14 @@ export async function POST(req: Request) {
       
       return bad(`Insert failed: ${errorMessage}`, 400);
     }
+    console.log(`✅ [ORDERS API ${requestId}] Database insert successful!`);
 
     if (!inserted || inserted.length === 0) {
+      console.error(`❌ [ORDERS API ${requestId}] No data returned from insert`);
       logger.error('[ORDER CREATION DEBUG] ===== NO DATA INSERTED =====');
       return bad('Order creation failed - no data returned', 500);
     }
+    console.log(`✅ [ORDERS API ${requestId}] Order created - ID:`, inserted[0].id);
 
     logger.debug('[ORDER CREATION DEBUG] ===== ORDER CREATED SUCCESSFULLY =====');
     logger.debug('[ORDER CREATION DEBUG] Order ID:', inserted[0].id);
@@ -578,18 +623,37 @@ export async function POST(req: Request) {
     logger.debug('[ORDER CREATION DEBUG] Response data:', { data: JSON.stringify(response, null, 2) });
     
     // Create KDS tickets for the order
+    console.log(`🍳 [ORDERS API ${requestId}] Creating KDS tickets...`);
     try {
       await createKDSTickets(supabase, inserted[0]);
+      console.log(`✅ [ORDERS API ${requestId}] KDS tickets created successfully`);
     } catch (kdsError) {
+      console.warn(`⚠️ [ORDERS API ${requestId}] KDS ticket creation failed (non-critical):`, kdsError);
       logger.warn('[ORDER CREATION DEBUG] KDS ticket creation failed (non-critical):', { value: kdsError });
       // Don't fail the order creation if KDS tickets fail
     }
     
-    // Log that real-time updates should be triggered
+    const duration = Date.now() - startTime;
+    console.log(`✅✅✅ [ORDERS API ${requestId}] ORDER CREATED SUCCESSFULLY ✅✅✅`);
+    console.log(`✅ [ORDERS API ${requestId}] Order ID:`, inserted[0].id);
+    console.log(`✅ [ORDERS API ${requestId}] Duration:`, duration, 'ms');
+    console.log(`✅ [ORDERS API ${requestId}] Returning response...`);
+    console.log(`✅ [ORDERS API ${requestId}] Response:`, response);
+    console.log(`✅ [ORDERS API ${requestId}] ========================================`);
     
     return NextResponse.json(response);
   } catch (e: unknown) {
     const error = e as Error;
+    const duration = Date.now() - startTime;
+    
+    console.error(`❌❌❌ [ORDERS API ${requestId}] UNEXPECTED ERROR ❌❌❌`);
+    console.error(`❌ [ORDERS API ${requestId}] Error type:`, typeof error);
+    console.error(`❌ [ORDERS API ${requestId}] Error:`, error);
+    console.error(`❌ [ORDERS API ${requestId}] Message:`, error instanceof Error ? error.message : String(error));
+    console.error(`❌ [ORDERS API ${requestId}] Stack:`, error instanceof Error ? error.stack : 'No stack');
+    console.error(`❌ [ORDERS API ${requestId}] Duration:`, duration, 'ms');
+    console.error(`❌ [ORDERS API ${requestId}] ========================================`);
+    
     const msg = error instanceof Error ? error.message : (typeof error === 'string' ? error : 'Unknown server error');
     return bad(`Server error: ${msg}`, 500);
   }

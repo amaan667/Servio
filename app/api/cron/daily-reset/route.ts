@@ -109,9 +109,11 @@ export async function POST(request: NextRequest) {
         }
 
         // Perform the reset
+        console.log(`🕛 [DAILY RESET] Resetting venue: ${venue.venue_name} (${venue.venue_id})`);
 
-        // Complete all active orders
+        // Complete all active orders (moves them to history)
         if (activeOrders && activeOrders.length > 0) {
+          console.log(`🕛 [DAILY RESET] Completing ${activeOrders.length} active orders...`);
           await supabase
             .from('orders')
             .update({ 
@@ -120,10 +122,12 @@ export async function POST(request: NextRequest) {
             })
             .eq('venue_id', venue.venue_id)
             .in('order_status', ['PLACED', 'ACCEPTED', 'IN_PREP', 'READY', 'SERVING']);
+          console.log(`✅ [DAILY RESET] ${activeOrders.length} orders marked as COMPLETED`);
         }
 
         // Cancel all active reservations
         if (activeReservations && activeReservations.length > 0) {
+          console.log(`🕛 [DAILY RESET] Cancelling ${activeReservations.length} reservations...`);
           await supabase
             .from('reservations')
             .update({ 
@@ -132,34 +136,63 @@ export async function POST(request: NextRequest) {
             })
             .eq('venue_id', venue.venue_id)
             .eq('status', 'BOOKED');
+          console.log(`✅ [DAILY RESET] ${activeReservations.length} reservations cancelled`);
         }
 
-        // Delete all tables for complete reset
+        // Get all tables before deletion
+        console.log(`🕛 [DAILY RESET] Fetching all tables...`);
         const { data: venueTables } = await supabase
           .from('tables')
-          .select('id')
+          .select('id, label')
           .eq('venue_id', venue.venue_id);
 
         if (venueTables && venueTables.length > 0) {
+          console.log(`🕛 [DAILY RESET] Found ${venueTables.length} tables to delete`);
+          
           // Delete all table sessions first
-          await supabase
+          console.log(`🕛 [DAILY RESET] Deleting table sessions...`);
+          const { error: sessionDeleteError } = await supabase
             .from('table_sessions')
             .delete()
             .eq('venue_id', venue.venue_id);
+            
+          if (sessionDeleteError) {
+            console.error(`❌ [DAILY RESET] Error deleting sessions:`, sessionDeleteError);
+          } else {
+            console.log(`✅ [DAILY RESET] Table sessions deleted`);
+          }
 
           // Delete all tables
-          await supabase
+          console.log(`🕛 [DAILY RESET] Deleting tables...`);
+          const { error: tableDeleteError } = await supabase
             .from('tables')
             .delete()
             .eq('venue_id', venue.venue_id);
+            
+          if (tableDeleteError) {
+            console.error(`❌ [DAILY RESET] Error deleting tables:`, tableDeleteError);
+          } else {
+            console.log(`✅ [DAILY RESET] ${venueTables.length} tables deleted`);
+          }
+        } else {
+          console.log(`ℹ️ [DAILY RESET] No tables to delete`);
         }
 
         // Clear table runtime state
-        await supabase
+        console.log(`🕛 [DAILY RESET] Clearing table runtime state...`);
+        const { error: runtimeDeleteError } = await supabase
           .from('table_runtime_state')
           .delete()
           .eq('venue_id', venue.venue_id);
+          
+        if (runtimeDeleteError) {
+          console.error(`❌ [DAILY RESET] Error clearing runtime state:`, runtimeDeleteError);
+        } else {
+          console.log(`✅ [DAILY RESET] Table runtime state cleared`);
+        }
 
+        console.log(`✅✅✅ [DAILY RESET] Reset complete for ${venue.venue_name} ✅✅✅`);
+        
         resetResults.push({
           venueId: venue.venue_id,
           venueName: venue.venue_name,
@@ -182,6 +215,11 @@ export async function POST(request: NextRequest) {
 
     const successfulResets = resetResults.filter(r => r.reset).length;
     const totalVenues = venuesToReset.length;
+
+    console.log(`🕛✅ [DAILY RESET] ========================================`);
+    console.log(`🕛✅ [DAILY RESET] Daily reset completed for ${successfulResets}/${totalVenues} venues`);
+    console.log(`🕛✅ [DAILY RESET] Results:`, resetResults);
+    console.log(`🕛✅ [DAILY RESET] ========================================`);
 
     return NextResponse.json({
       success: true,
