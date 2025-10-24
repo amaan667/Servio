@@ -169,10 +169,8 @@ export function MenuUploadCard({ venueId, onSuccess }: MenuUploadCardProps) {
           } else {
             throw new Error(`Catalog replacement failed: ${result.error}`);
           }
-      }
-      
-    } else {
-      // Unified processing for all file types (PDFs, images, text)
+      } else {
+        // Unified processing for all file types (PDFs, images, text)
       // Step 1: Upload file to storage
       const formData = new FormData();
       formData.append('file', file);
@@ -205,13 +203,13 @@ export function MenuUploadCard({ venueId, onSuccess }: MenuUploadCardProps) {
       const itemCount = (processResult.items || []).length;
       const hotspotCount = processResult.hotspots_created || 0;
       
-      toast({ 
-        title: 'Menu imported successfully', 
-        description: `${itemCount} items extracted${hotspotCount > 0 ? `, ${hotspotCount} hotspots created` : ''}` 
-      });
-      
-      onSuccess?.();
-    }
+        toast({ 
+          title: 'Menu imported successfully', 
+          description: `${itemCount} items extracted${hotspotCount > 0 ? `, ${hotspotCount} hotspots created` : ''}` 
+        });
+        
+        onSuccess?.();
+      }
       
     } catch (error) {
       toast({
