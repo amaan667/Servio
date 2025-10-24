@@ -101,9 +101,9 @@ export async function POST(req: NextRequest) {
       const extractedItems = await extractMenuFromImage(pdfImages[pageIndex]);
       pdfExtractedItems.push(...extractedItems.map((item: any) => ({ ...item, page: pageIndex })));
       
-      // Get positions from Vision
+      // Get positions from Vision (now with bounding boxes)
       const positions = await extractMenuItemPositions(pdfImages[pageIndex]);
-      positions.forEach((pos: { name: string; x: number; y: number; confidence: number }) => {
+      positions.forEach((pos: { name: string; x: number; y: number; x1: number; y1: number; x2: number; y2: number; confidence: number }) => {
         pdfPositions.push({ ...pos, page: pageIndex });
       });
       
@@ -161,8 +161,13 @@ export async function POST(req: NextRequest) {
             page_index: posMatch.page,
             x_percent: posMatch.x,
             y_percent: posMatch.y,
-            width_percent: 15,
-            height_percent: 8,
+            width_percent: posMatch.x2 - posMatch.x1,
+            height_percent: posMatch.y2 - posMatch.y1,
+            // Store bounding box for overlay cards
+            x1_percent: posMatch.x1,
+            y1_percent: posMatch.y1,
+            x2_percent: posMatch.x2,
+            y2_percent: posMatch.y2,
             created_at: new Date().toISOString(),
           });
         }
@@ -195,8 +200,13 @@ export async function POST(req: NextRequest) {
               page_index: posMatch.page,
               x_percent: posMatch.x,
               y_percent: posMatch.y,
-              width_percent: 15,
-              height_percent: 8,
+              width_percent: posMatch.x2 - posMatch.x1,
+              height_percent: posMatch.y2 - posMatch.y1,
+              // Store bounding box for overlay cards
+              x1_percent: posMatch.x1,
+              y1_percent: posMatch.y1,
+              x2_percent: posMatch.x2,
+              y2_percent: posMatch.y2,
               created_at: new Date().toISOString(),
             });
           }
@@ -226,8 +236,13 @@ export async function POST(req: NextRequest) {
             page_index: posMatch.page,
             x_percent: posMatch.x,
             y_percent: posMatch.y,
-            width_percent: 15,
-            height_percent: 8,
+            width_percent: posMatch.x2 - posMatch.x1,
+            height_percent: posMatch.y2 - posMatch.y1,
+            // Store bounding box for overlay cards
+            x1_percent: posMatch.x1,
+            y1_percent: posMatch.y1,
+            x2_percent: posMatch.x2,
+            y2_percent: posMatch.y2,
             created_at: new Date().toISOString(),
           });
         }
@@ -256,8 +271,13 @@ export async function POST(req: NextRequest) {
             page_index: posMatch.page,
             x_percent: posMatch.x,
             y_percent: posMatch.y,
-            width_percent: 15,
-            height_percent: 8,
+            width_percent: posMatch.x2 - posMatch.x1,
+            height_percent: posMatch.y2 - posMatch.y1,
+            // Store bounding box for overlay cards
+            x1_percent: posMatch.x1,
+            y1_percent: posMatch.y1,
+            x2_percent: posMatch.x2,
+            y2_percent: posMatch.y2,
             created_at: new Date().toISOString(),
           });
         }

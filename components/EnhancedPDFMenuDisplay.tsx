@@ -42,6 +42,11 @@ interface Hotspot {
   y_percent: number;
   width_percent?: number;
   height_percent?: number;
+  // Bounding box coordinates for overlay cards
+  x1_percent?: number;
+  y1_percent?: number;
+  x2_percent?: number;
+  y2_percent?: number;
 }
 
 export function EnhancedPDFMenuDisplay({
@@ -405,7 +410,7 @@ export function EnhancedPDFMenuDisplay({
                     onMouseDown={handleMouseDown}
                   />
 
-                  {/* Interactive Hotspots */}
+                  {/* Smart Overlay Cards - Professional bounding box system */}
                   {isOrdering && pageHotspots.map((hotspot) => {
                     const item = menuItems.find(i => i.id === hotspot.menu_item_id);
                     if (!item) return null;
@@ -413,54 +418,130 @@ export function EnhancedPDFMenuDisplay({
                     const cartItem = cart.find(c => c.id === item.id);
                     const quantity = cartItem?.quantity || 0;
 
-                    return (
-                      <div
-                        key={hotspot.id}
-                        className="absolute cursor-pointer transition-all duration-200 hover:scale-105"
-                        style={{
-                          left: `${hotspot.x_percent}%`,
-                          top: `${hotspot.y_percent}%`,
-                          transform: 'translate(-50%, -50%)',
-                        }}
-                        onClick={() => handleHotspotClick(hotspot)}
-                      >
-                        {quantity === 0 ? (
-                          <Button
-                            size="sm"
-                            className="bg-primary/90 hover:bg-primary text-white shadow-lg text-xs px-2 py-1 h-7"
+                    // Use bounding box if available, otherwise fallback to center point
+                    const useBoundingBox = hotspot.x1_percent !== undefined && 
+                                          hotspot.y1_percent !== undefined && 
+                                          hotspot.x2_percent !== undefined && 
+                                          hotspot.y2_percent !== undefined;
+
+                    if (useBoundingBox) {
+                      // Modern overlay card system
+                      return (
+                        <div
+                          key={hotspot.id}
+                          className="absolute group transition-all duration-200"
+                          style={{
+                            left: `${hotspot.x1_percent}%`,
+                            top: `${hotspot.y1_percent}%`,
+                            width: `${hotspot.x2_percent! - hotspot.x1_percent!}%`,
+                            height: `${hotspot.y2_percent! - hotspot.y1_percent!}%`,
+                          }}
+                          onClick={() => handleHotspotClick(hotspot)}
+                        >
+                          {/* Overlay card - subtle on hover, clean design */}
+                          <div 
+                            className="absolute inset-0 bg-gradient-to-r from-black/5 via-black/0 to-black/10 opacity-0 group-hover:opacity-100 transition-opacity duration-200 rounded-md border-l-2 border-primary/0 group-hover:border-primary/50"
+                            style={{
+                              backdropFilter: 'blur(2px)',
+                            }}
+                          />
+                          
+                          {/* Button positioned on right side, vertically centered */}
+                          <div 
+                            className="absolute right-2 top-1/2 -translate-y-1/2 z-10"
+                            onClick={(e) => e.stopPropagation()}
                           >
-                            <Plus className="h-3 w-3" />
-                          </Button>
-                        ) : (
-                          <div className="bg-white rounded-md shadow-lg border-2 border-primary p-1 flex items-center gap-1">
+                            {quantity === 0 ? (
+                              <Button
+                                size="sm"
+                                onClick={() => onAddToCart(item)}
+                                className="bg-primary hover:bg-primary/90 text-white shadow-xl text-xs px-3 py-1.5 h-8 opacity-90 group-hover:opacity-100 transition-opacity"
+                              >
+                                <Plus className="h-4 w-4 mr-1" />
+                                Add
+                              </Button>
+                            ) : (
+                              <div className="bg-white rounded-lg shadow-xl border-2 border-primary p-1.5 flex items-center gap-2">
+                                <Button
+                                  onClick={(e) => {
+                                    e.stopPropagation();
+                                    onUpdateQuantity(item.id, quantity - 1);
+                                  }}
+                                  variant="outline"
+                                  size="sm"
+                                  className="h-7 w-7 p-0 border-primary/30 hover:bg-primary/10"
+                                >
+                                  <Minus className="h-3.5 w-3.5 text-primary" />
+                                </Button>
+                                <span className="text-sm font-bold text-primary min-w-[20px] text-center">
+                                  {quantity}
+                                </span>
+                                <Button
+                                  onClick={(e) => {
+                                    e.stopPropagation();
+                                    onUpdateQuantity(item.id, quantity + 1);
+                                  }}
+                                  size="sm"
+                                  className="h-7 w-7 p-0 bg-primary hover:bg-primary/90"
+                                >
+                                  <Plus className="h-3.5 w-3.5" />
+                                </Button>
+                              </div>
+                            )}
+                          </div>
+                        </div>
+                      );
+                    } else {
+                      // Fallback to old point-based system for backward compatibility
+                      return (
+                        <div
+                          key={hotspot.id}
+                          className="absolute cursor-pointer transition-all duration-200 hover:scale-105"
+                          style={{
+                            left: `${hotspot.x_percent}%`,
+                            top: `${hotspot.y_percent}%`,
+                            transform: 'translate(-50%, -50%)',
+                          }}
+                          onClick={() => handleHotspotClick(hotspot)}
+                        >
+                          {quantity === 0 ? (
                             <Button
-                              onClick={(e) => {
-                                e.stopPropagation();
-                                onUpdateQuantity(item.id, quantity - 1);
-                              }}
-                              variant="outline"
                               size="sm"
-                              className="h-6 w-6 p-0"
-                            >
-                              <Minus className="h-3 w-3" />
-                            </Button>
-                            <span className="text-xs font-bold text-primary min-w-[16px] text-center">
-                              {quantity}
-                            </span>
-                            <Button
-                              onClick={(e) => {
-                                e.stopPropagation();
-                                onUpdateQuantity(item.id, quantity + 1);
-                              }}
-                              size="sm"
-                              className="h-6 w-6 p-0 bg-primary hover:bg-primary/90"
+                              className="bg-primary/90 hover:bg-primary text-white shadow-lg text-xs px-2 py-1 h-7"
                             >
                               <Plus className="h-3 w-3" />
                             </Button>
-                          </div>
-                        )}
-                      </div>
-                    );
+                          ) : (
+                            <div className="bg-white rounded-md shadow-lg border-2 border-primary p-1 flex items-center gap-1">
+                              <Button
+                                onClick={(e) => {
+                                  e.stopPropagation();
+                                  onUpdateQuantity(item.id, quantity - 1);
+                                }}
+                                variant="outline"
+                                size="sm"
+                                className="h-6 w-6 p-0"
+                              >
+                                <Minus className="h-3 w-3" />
+                              </Button>
+                              <span className="text-xs font-bold text-primary min-w-[16px] text-center">
+                                {quantity}
+                              </span>
+                              <Button
+                                onClick={(e) => {
+                                  e.stopPropagation();
+                                  onUpdateQuantity(item.id, quantity + 1);
+                                }}
+                                size="sm"
+                                className="h-6 w-6 p-0 bg-primary hover:bg-primary/90"
+                              >
+                                <Plus className="h-3 w-3" />
+                              </Button>
+                            </div>
+                          )}
+                        </div>
+                      );
+                    }
                   })}
                 </div>
               );

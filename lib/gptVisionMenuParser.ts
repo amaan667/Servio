@@ -78,35 +78,45 @@ Rules:
 }
 
 /**
- * Extract menu item positions from PDF image for hotspot creation
- * Used by hybrid import to create perfectly positioned add-to-cart buttons
+ * Extract menu item bounding boxes from PDF image for overlay cards
+ * Returns full rectangles for each item, not just center points
  */
 export async function extractMenuItemPositions(imageUrl: string) {
   const openai = getOpenAI();
 
   const prompt = `
-Analyze this menu page and extract the exact position of each menu item.
+Analyze this menu page and extract the bounding box for each menu item.
 
-For each item, provide:
+For each item that has a name AND price, provide:
 1. Item name (exact text from menu)
-2. X coordinate (0-100, where 0 is left edge, 100 is right edge)
-3. Y coordinate (0-100, where 0 is top, 100 is bottom)
-4. Confidence score (0-1)
+2. Bounding box coordinates as percentages (0-100):
+   - x1: left edge of the item
+   - y1: top edge of the item
+   - x2: right edge of the item (where price ends)
+   - y2: bottom edge of the item
+3. Confidence score (0-1)
 
 Return as JSON array:
 [
-  {"name": "Item Name", "x": 25, "y": 30, "confidence": 0.95},
+  {
+    "name": "Item Name",
+    "x1": 10,
+    "y1": 25,
+    "x2": 90,
+    "y2": 32,
+    "confidence": 0.95
+  },
   ...
 ]
 
-IMPORTANT:
-- Measure X,Y from where you would place an "add to cart" button for that item
-- For items in left column, X should be around 20-40
-- For items in right column, X should be around 60-80
-- Y should be the vertical position of the item text
-- Be precise - these coordinates will be used for clickable buttons
+CRITICAL RULES:
+- Include ONLY actual menu items with prices (not section headers, not "ADD ONS" titles)
+- Bounding box should encompass the entire item: name + description + price
+- For multi-column layouts, x1 should be the actual left edge of that column
+- y1 and y2 should tightly wrap the item (no large gaps)
 - If bilingual, use the English name
-- Only include actual menu items with prices, not headers/titles
+- Be very precise with the boundaries
+- Confidence should reflect how certain you are about the item boundaries
 `;
 
   const response = await openai.chat.completions.create({
@@ -137,8 +147,22 @@ IMPORTANT:
     if (!jsonMatch) {
       throw new Error('No JSON array found in response');
     }
-    const json = JSON.parse(jsonMatch[0]);
-    return json;
+    const positions = JSON.parse(jsonMatch[0]);
+    
+    // Convert bounding box format to include both center point (for backward compatibility)
+    // and full bounding box for overlay cards
+    return positions.map((pos: any) => ({
+      name: pos.name,
+      // Keep legacy x,y as center point for backward compatibility
+      x: pos.x1 && pos.x2 ? (pos.x1 + pos.x2) / 2 : pos.x || 50,
+      y: pos.y1 && pos.y2 ? (pos.y1 + pos.y2) / 2 : pos.y || 50,
+      // Add bounding box coordinates
+      x1: pos.x1 || pos.x - 5,
+      y1: pos.y1 || pos.y - 3,
+      x2: pos.x2 || pos.x + 5,
+      y2: pos.y2 || pos.y + 3,
+      confidence: pos.confidence || 0.8,
+    }));
   } catch (err) {
     logger.error("Failed to parse menu positions JSON:", text);
     throw new Error("Invalid JSON response from GPT Vision for positions");
