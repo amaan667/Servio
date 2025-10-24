@@ -305,7 +305,7 @@ export function MenuUploadCard({ venueId, onSuccess }: MenuUploadCardProps) {
           <Upload className="h-5 w-5" />
           Upload Menu
         </CardTitle>
-                    <CardDescription className="text-gray-900">Upload your PDF menu. Optionally add your menu URL for enhanced data extraction.</CardDescription>
+                    <CardDescription className="text-gray-900">Add your menu URL (if available), then upload your PDF. Both sources will be combined using AI for perfect menu extraction.</CardDescription>
       </CardHeader>
       <CardContent className="space-y-4">
         
