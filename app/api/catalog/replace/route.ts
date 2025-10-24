@@ -44,20 +44,20 @@ export async function POST(req: NextRequest) {
 
     const supabase = createAdminClient();
 
-    // Step 1: Convert PDF to images (fully dynamic to avoid canvas issues)
+    // Step 1: Convert PDF to images (serverless-friendly)
     console.log(`📄 [CATALOG REPLACE ${requestId}] Converting PDF to images...`);
     const pdfBuffer = Buffer.from(await file.arrayBuffer());
     
     let pdfImages: string[] = [];
     try {
-      // Completely dynamic import - even the function call
-      const pdfModule = await import('@/lib/pdf-to-images');
-      pdfImages = await pdfModule.convertPDFToImages(pdfBuffer);
+      const { convertPDFToImages } = await import('@/lib/pdf-to-images-serverless');
+      pdfImages = await convertPDFToImages(pdfBuffer);
       console.log(`✅ [CATALOG REPLACE ${requestId}] PDF converted: ${pdfImages.length} pages`);
       logger.info(`[MENU IMPORT ${requestId}] Converted to images:`, { count: pdfImages.length });
     } catch (conversionError) {
       console.error(`❌ [CATALOG REPLACE ${requestId}] PDF conversion failed:`, conversionError);
-      throw new Error('PDF to image conversion failed - canvas library issue');
+      logger.error(`[MENU IMPORT ${requestId}] Conversion error:`, conversionError);
+      throw new Error('PDF to image conversion failed - please check Railway logs');
     }
 
     // Step 2: Store PDF and images in database
