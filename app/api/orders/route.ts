@@ -189,13 +189,15 @@ export async function POST(req: Request) {
   const requestId = Math.random().toString(36).substring(7);
   const startTime = Date.now();
   
+  // Use both console.log AND logger to ensure visibility in Railway
   console.log(`🎯 [ORDERS API ${requestId}] ========================================`);
   console.log(`🎯 [ORDERS API ${requestId}] NEW ORDER SUBMISSION`);
   console.log(`🎯 [ORDERS API ${requestId}] Timestamp:`, new Date().toISOString());
   
+  logger.info(`🎯 [ORDERS API ${requestId}] NEW ORDER SUBMISSION at ${new Date().toISOString()}`);
+  
   try {
-    logger.debug('[ORDER CREATION DEBUG] ===== ORDER CREATION STARTED =====');
-    logger.debug('[ORDER CREATION DEBUG] Timestamp:', new Date().toISOString());
+    logger.info('[ORDER CREATION] ===== ORDER CREATION STARTED =====');
     
     console.log(`📥 [ORDERS API ${requestId}] Parsing request body...`);
     const body = (await req.json()) as Partial<OrderPayload>;
@@ -207,7 +209,13 @@ export async function POST(req: Request) {
     console.log(`📋 [ORDERS API ${requestId}] Items:`, body.items?.length);
     console.log(`📋 [ORDERS API ${requestId}] Total:`, body.total_amount);
     
-    logger.debug('[ORDER CREATION DEBUG] Request body:', { data: JSON.stringify(body, null, 2) });
+    logger.info('[ORDER CREATION] Request body received', { 
+      customer: body.customer_name,
+      venue: body.venue_id,
+      table: body.table_number,
+      items: body.items?.length,
+      total: body.total_amount
+    });
 
     console.log(`🔍 [ORDERS API ${requestId}] Starting validation...`);
     
@@ -241,6 +249,13 @@ export async function POST(req: Request) {
     }
     console.log(`✅ [ORDERS API ${requestId}] Total amount valid: ${body.total_amount}`);
     console.log(`✅ [ORDERS API ${requestId}] All validations passed!`);
+    
+    logger.info('[ORDER CREATION] ✅ All validations passed', {
+      customer: body.customer_name,
+      venue: body.venue_id,
+      items: body.items?.length,
+      total: body.total_amount
+    });
     
 
     const tn = body.table_number;
@@ -515,13 +530,15 @@ export async function POST(req: Request) {
       return bad(`Insert failed: ${errorMessage}`, 400);
     }
     console.log(`✅ [ORDERS API ${requestId}] Database insert successful!`);
+    logger.info('[ORDER CREATION] ✅ Database insert successful');
 
     if (!inserted || inserted.length === 0) {
       console.error(`❌ [ORDERS API ${requestId}] No data returned from insert`);
-      logger.error('[ORDER CREATION DEBUG] ===== NO DATA INSERTED =====');
+      logger.error('[ORDER CREATION] ❌ No data returned from insert');
       return bad('Order creation failed - no data returned', 500);
     }
     console.log(`✅ [ORDERS API ${requestId}] Order created - ID:`, inserted[0].id);
+    logger.info('[ORDER CREATION] ✅ Order created successfully', { orderId: inserted[0].id });
 
     logger.debug('[ORDER CREATION DEBUG] ===== ORDER CREATED SUCCESSFULLY =====');
     logger.debug('[ORDER CREATION DEBUG] Order ID:', inserted[0].id);
@@ -641,6 +658,16 @@ export async function POST(req: Request) {
     console.log(`✅ [ORDERS API ${requestId}] Response:`, response);
     console.log(`✅ [ORDERS API ${requestId}] ========================================`);
     
+    logger.info('✅✅✅ ORDER CREATED SUCCESSFULLY ✅✅✅', {
+      orderId: inserted[0].id,
+      customer: inserted[0].customer_name,
+      venue: inserted[0].venue_id,
+      table: inserted[0].table_number,
+      total: inserted[0].total_amount,
+      duration: `${duration}ms`,
+      requestId
+    });
+    
     return NextResponse.json(response);
   } catch (e: unknown) {
     const error = e as Error;
@@ -653,6 +680,13 @@ export async function POST(req: Request) {
     console.error(`❌ [ORDERS API ${requestId}] Stack:`, error instanceof Error ? error.stack : 'No stack');
     console.error(`❌ [ORDERS API ${requestId}] Duration:`, duration, 'ms');
     console.error(`❌ [ORDERS API ${requestId}] ========================================`);
+    
+    logger.error('❌❌❌ ORDER CREATION FAILED ❌❌❌', {
+      error: error instanceof Error ? error.message : String(error),
+      stack: error instanceof Error ? error.stack : 'No stack',
+      duration: `${duration}ms`,
+      requestId
+    });
     
     const msg = error instanceof Error ? error.message : (typeof error === 'string' ? error : 'Unknown server error');
     return bad(`Server error: ${msg}`, 500);
