@@ -42,6 +42,11 @@ interface Hotspot {
   y_percent: number;
   width_percent?: number;
   height_percent?: number;
+  // Bounding box coordinates
+  x1_percent?: number;
+  y1_percent?: number;
+  x2_percent?: number;
+  y2_percent?: number;
 }
 
 export function EnhancedPDFMenuDisplay({
@@ -463,24 +468,24 @@ export function EnhancedPDFMenuDisplay({
                     const cartItem = cart.find(c => c.id === item.id);
                     const quantity = cartItem?.quantity || 0;
 
-                    // Use width/height from hotspot or fallback
-                    const hasValidDimensions = hotspot.width_percent && hotspot.height_percent && 
-                                              hotspot.width_percent < 60; // Reasonable width check
+                    // Prefer bounding box coordinates if available
+                    const hasBoundingBox = hotspot.x1_percent !== undefined && 
+                                          hotspot.y1_percent !== undefined && 
+                                          hotspot.x2_percent !== undefined && 
+                                          hotspot.y2_percent !== undefined &&
+                                          (hotspot.x2_percent - hotspot.x1_percent) < 60; // Sanity check
 
-                    if (hasValidDimensions) {
-                      // Overlay card system with width/height
-                      const left = hotspot.x_percent - (hotspot.width_percent! / 2);
-                      const top = hotspot.y_percent - (hotspot.height_percent! / 2);
-                      
+                    if (hasBoundingBox) {
+                      // Use precise bounding box coordinates
                       return (
                         <div
                           key={hotspot.id}
                           className="absolute group transition-all duration-200 cursor-pointer"
                           style={{
-                            left: `${left}%`,
-                            top: `${top}%`,
-                            width: `${hotspot.width_percent}%`,
-                            height: `${hotspot.height_percent}%`,
+                            left: `${hotspot.x1_percent}%`,
+                            top: `${hotspot.y1_percent}%`,
+                            width: `${hotspot.x2_percent! - hotspot.x1_percent!}%`,
+                            height: `${hotspot.y2_percent! - hotspot.y1_percent!}%`,
                           }}
                           onClick={() => handleHotspotClick(hotspot)}
                         >

@@ -172,6 +172,11 @@ export async function POST(req: NextRequest) {
             y_percent: posMatch.y,
             width_percent: posMatch.x2 - posMatch.x1,
             height_percent: posMatch.y2 - posMatch.y1,
+            // Bounding box coordinates (new columns)
+            x1_percent: posMatch.x1,
+            y1_percent: posMatch.y1,
+            x2_percent: posMatch.x2,
+            y2_percent: posMatch.y2,
             is_active: true,
             created_at: new Date().toISOString(),
           });
@@ -249,6 +254,11 @@ export async function POST(req: NextRequest) {
             y_percent: posMatch.y,
             width_percent: posMatch.x2 - posMatch.x1,
             height_percent: posMatch.y2 - posMatch.y1,
+            // Bounding box coordinates (new columns)
+            x1_percent: posMatch.x1,
+            y1_percent: posMatch.y1,
+            x2_percent: posMatch.x2,
+            y2_percent: posMatch.y2,
             is_active: true,
             created_at: new Date().toISOString(),
           });
@@ -284,6 +294,11 @@ export async function POST(req: NextRequest) {
             y_percent: posMatch.y,
             width_percent: posMatch.x2 - posMatch.x1,
             height_percent: posMatch.y2 - posMatch.y1,
+            // Bounding box coordinates (new columns)
+            x1_percent: posMatch.x1,
+            y1_percent: posMatch.y1,
+            x2_percent: posMatch.x2,
+            y2_percent: posMatch.y2,
             is_active: true,
             created_at: new Date().toISOString(),
           });
