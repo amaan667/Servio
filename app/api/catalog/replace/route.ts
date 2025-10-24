@@ -76,21 +76,27 @@ export async function POST(req: NextRequest) {
     }
 
     // Step 3: Extract data from all available sources
+    console.log(`🔍 [CATALOG REPLACE ${requestId}] Starting extraction phase...`);
     const urlItems: Array<any> = [];
     const pdfExtractedItems: Array<any> = [];
     const pdfPositions: Array<{ name: string; x: number; y: number; page: number; confidence: number }> = [];
 
     // Extract from URL if provided
     if (menuUrl && menuUrl.trim()) {
-      logger.info('[MENU IMPORT] Extracting from URL...');
+      console.log(`🌐 [CATALOG REPLACE ${requestId}] Extracting from URL:`, menuUrl);
+      logger.info(`[MENU IMPORT ${requestId}] Extracting from URL...`);
       const scrapeResult = await scrapeMenuFromUrl(menuUrl);
       urlItems.push(...scrapeResult.items);
-      logger.info('[MENU IMPORT] URL items:', { count: urlItems.length });
+      console.log(`✅ [CATALOG REPLACE ${requestId}] URL extracted: ${urlItems.length} items`);
+      logger.info(`[MENU IMPORT ${requestId}] URL items:`, { count: urlItems.length });
     }
 
     // Extract from PDF using Vision AI
-    logger.info('[MENU IMPORT] Extracting from PDF with Vision AI...');
+    console.log(`👁️ [CATALOG REPLACE ${requestId}] Extracting from PDF with Vision AI...`);
+    logger.info(`[MENU IMPORT ${requestId}] Extracting from PDF with Vision AI...`);
     for (let pageIndex = 0; pageIndex < pdfImages.length; pageIndex++) {
+      console.log(`👁️ [CATALOG REPLACE ${requestId}] Processing page ${pageIndex + 1}/${pdfImages.length}...`);
+      
       // Get item data from Vision
       const extractedItems = await extractMenuFromImage(pdfImages[pageIndex]);
       pdfExtractedItems.push(...extractedItems.map((item: any) => ({ ...item, page: pageIndex })));
@@ -101,20 +107,24 @@ export async function POST(req: NextRequest) {
         pdfPositions.push({ ...pos, page: pageIndex });
       });
       
-      logger.info(`[MENU IMPORT] Page ${pageIndex + 1}: ${extractedItems.length} items, ${positions.length} positions`);
+      console.log(`✅ [CATALOG REPLACE ${requestId}] Page ${pageIndex + 1}: ${extractedItems.length} items, ${positions.length} positions`);
+      logger.info(`[MENU IMPORT ${requestId}] Page ${pageIndex + 1}: ${extractedItems.length} items, ${positions.length} positions`);
     }
 
-    logger.info('[MENU IMPORT] PDF items:', { count: pdfExtractedItems.length });
-    logger.info('[MENU IMPORT] PDF positions:', { count: pdfPositions.length });
+    console.log(`📊 [CATALOG REPLACE ${requestId}] Extraction complete - PDF items: ${pdfExtractedItems.length}, positions: ${pdfPositions.length}`);
+    logger.info(`[MENU IMPORT ${requestId}] PDF items:`, { count: pdfExtractedItems.length });
+    logger.info(`[MENU IMPORT ${requestId}] PDF positions:`, { count: pdfPositions.length });
 
     // Step 4: Combine data intelligently
+    console.log(`🔄 [CATALOG REPLACE ${requestId}] Starting data combination...`);
     const menuItems = [];
     const hotspots = [];
     const combinedItems = new Map();
 
     // If we have both URL and PDF data, merge them
     if (urlItems.length > 0 && pdfExtractedItems.length > 0) {
-      logger.info('[MENU IMPORT] Combining URL and PDF data...');
+      console.log(`🔄 [CATALOG REPLACE ${requestId}] HYBRID MODE: Combining URL and PDF data...`);
+      logger.info(`[MENU IMPORT ${requestId}] Combining URL and PDF data...`);
       
       // Start with URL items (better data quality)
       for (const urlItem of urlItems) {
@@ -267,9 +277,16 @@ export async function POST(req: NextRequest) {
       await supabase.from('menu_hotspots').insert(hotspots);
     }
 
-    logger.info('[MENU IMPORT] Complete', { 
+    const duration = Date.now() - startTime;
+    console.log(`✅ [CATALOG REPLACE ${requestId}] ========================================`);
+    console.log(`✅ [CATALOG REPLACE ${requestId}] SUCCESS! Completed in ${duration}ms`);
+    console.log(`✅ [CATALOG REPLACE ${requestId}] Items: ${menuItems.length}, Hotspots: ${hotspots.length}`);
+    console.log(`✅ [CATALOG REPLACE ${requestId}] Sources - URL: ${urlItems.length}, PDF: ${pdfExtractedItems.length}`);
+    
+    logger.info(`[MENU IMPORT ${requestId}] Complete`, { 
       items: menuItems.length, 
       hotspots: hotspots.length,
+      duration,
       sources: {
         url: urlItems.length,
         pdf: pdfExtractedItems.length,
@@ -287,8 +304,14 @@ export async function POST(req: NextRequest) {
     });
 
   } catch (err) {
+    const duration = Date.now() - startTime;
     const errorMessage = err instanceof Error ? err.message : 'Processing failed';
-    logger.error('[MENU IMPORT] Error:', { error: errorMessage });
+    console.error(`❌ [CATALOG REPLACE ${requestId}] ========================================`);
+    console.error(`❌ [CATALOG REPLACE ${requestId}] FAILED after ${duration}ms`);
+    console.error(`❌ [CATALOG REPLACE ${requestId}] Error:`, errorMessage);
+    console.error(`❌ [CATALOG REPLACE ${requestId}] Stack:`, err instanceof Error ? err.stack : 'No stack');
+    
+    logger.error(`[MENU IMPORT ${requestId}] Error:`, { error: errorMessage, duration });
     return NextResponse.json(
       { ok: false, error: errorMessage },
       { status: 500 }
