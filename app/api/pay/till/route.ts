@@ -10,7 +10,13 @@ export async function POST(req: Request) {
     const body = await req.json();
     const { order_id } = body;
 
+    logger.info('💳 [PAY TILL] Payment at till requested', {
+      orderId: order_id,
+      timestamp: new Date().toISOString()
+    });
+
     if (!order_id) {
+      logger.error('❌ [PAY TILL] Missing order ID');
       return NextResponse.json({ 
         success: false, 
         error: 'Order ID is required' 
@@ -43,15 +49,26 @@ export async function POST(req: Request) {
       .single();
 
     if (updateError || !order) {
-      logger.error('[PAY TILL] Failed to update order:', { value: updateError });
+      logger.error('❌ [PAY TILL] Failed to update order', {
+        orderId: order_id,
+        error: updateError?.message
+      });
       return NextResponse.json({ 
         success: false, 
         error: 'Failed to process order' 
       }, { status: 500 });
     }
 
+    logger.info('✅ [PAY TILL] Order marked for till payment successfully', {
+      orderId: order.id,
+      tableNumber: order.table_number,
+      total: order.total_amount,
+      orderNumber: order.order_number
+    });
+
     return NextResponse.json({
       success: true,
+      order_number: order.order_number,
       data: {
         order_id: order.id,
         payment_status: 'TILL',

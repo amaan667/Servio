@@ -65,52 +65,76 @@ export function usePaymentProcessing() {
         // Redirect to Stripe checkout
         window.location.href = result.url;
       } else if (action === 'till') {
-        // Till payment
-        const response = await fetch('/api/orders/update-payment-status', {
+        // Till payment - marks order as confirmed, sends to table management
+        const response = await fetch('/api/pay/till', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({
-            orderId: checkoutData.orderId,
-            paymentStatus: 'PAID',
-            paymentMethod: 'till'
+            order_id: checkoutData.orderId,
+            venueId: checkoutData.venueId,
+            tableNumber: checkoutData.tableNumber,
+            customerName: checkoutData.customerName,
+            customerPhone: checkoutData.customerPhone,
           }),
         });
 
         if (!response.ok) {
-          throw new Error('Failed to update payment status');
+          throw new Error('Failed to confirm order for till payment');
         }
 
-        setOrderNumber(checkoutData.orderNumber || checkoutData.orderId);
+        const result = await response.json();
+        setOrderNumber(result.order_number || checkoutData.orderNumber || checkoutData.orderId);
         setPaymentComplete(true);
         
         toast({
-          title: "Payment Recorded!",
-          description: "Payment will be processed at the till",
+          title: "Order Confirmed!",
+          description: "Order sent to kitchen. Pay at the till when ready.",
         });
 
         localStorage.removeItem('servio-checkout-data');
+        localStorage.removeItem('servio-current-session');
       } else if (action === 'later') {
-        // Pay later
-        const response = await fetch('/api/orders/update-payment-status', {
+        // Pay later - keeps payment_status as PAY_LATER
+        // When QR scanned again, it will redirect to payment page
+        const response = await fetch('/api/pay/later', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({
-            orderId: checkoutData.orderId,
-            paymentStatus: 'UNPAID',
-            paymentMethod: 'later'
+            order_id: checkoutData.orderId,
+            venueId: checkoutData.venueId,
+            tableNumber: checkoutData.tableNumber,
+            customerName: checkoutData.customerName,
+            customerPhone: checkoutData.customerPhone,
+            sessionId: checkoutData.sessionId || `session_${Date.now()}`
           }),
         });
 
         if (!response.ok) {
-          throw new Error('Failed to update order');
+          throw new Error('Failed to confirm order');
         }
 
-        setOrderNumber(checkoutData.orderNumber || checkoutData.orderId);
+        const result = await response.json();
+        setOrderNumber(result.order_number || checkoutData.orderNumber || checkoutData.orderId);
+        
+        // Store session for re-scanning
+        const sessionId = checkoutData.sessionId || `session_${Date.now()}`;
+        localStorage.setItem('servio-current-session', sessionId);
+        localStorage.setItem(`servio-order-${sessionId}`, JSON.stringify({
+          orderId: checkoutData.orderId,
+          venueId: checkoutData.venueId,
+          tableNumber: checkoutData.tableNumber,
+          customerName: checkoutData.customerName,
+          customerPhone: checkoutData.customerPhone,
+          cart: checkoutData.cart,
+          total: checkoutData.total,
+          orderNumber: result.order_number
+        }));
+        
         setPaymentComplete(true);
         
         toast({
-          title: "Order Placed!",
-          description: "You can pay later",
+          title: "Order Confirmed!",
+          description: "Order sent to kitchen. You can pay later or scan the QR code again to pay online.",
         });
 
         localStorage.removeItem('servio-checkout-data');
