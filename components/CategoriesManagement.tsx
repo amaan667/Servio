@@ -33,59 +33,59 @@ export function CategoriesManagement({ venueId, onCategoriesUpdate }: Categories
 
   const loadCategories = async () => {
     try {
-      // First try to load from localStorage
-      const storedOrder = localStorage.getItem(`category-order-${venueId}`);
-      if (storedOrder) {
-        const parsedOrder = JSON.parse(storedOrder);
-        setCategories(parsedOrder);
-      }
-
-      // Load original categories from PDF upload
-      const response = await fetch(`/api/menu/categories?venueId=${venueId}`);
-      const data = await response.json();
+      setLoading(true);
       
-      if (response.ok) {
-        // Set original categories from PDF upload
-        if (data.originalCategories && data.originalCategories.length > 0) {
-          setOriginalCategories(data.originalCategories);
-        }
-        
-        // If no stored order, use the original categories or current categories
-        if (!storedOrder) {
-          if (data.originalCategories && data.originalCategories.length > 0) {
-            setCategories(data.originalCategories);
-            localStorage.setItem(`category-order-${venueId}`, JSON.stringify(data.originalCategories));
-          } else if (data.categories && data.categories.length > 0) {
-            setCategories(data.categories);
-            localStorage.setItem(`category-order-${venueId}`, JSON.stringify(data.categories));
-          }
-        } else if (data.categories && data.categories.length > 0) {
-          // If we have stored order but API returned different categories, update stored order
-          const storedCategories = JSON.parse(storedOrder);
-          const apiCategories = data.categories;
-          
-          // Check if stored categories match API categories
-          const storedSet = new Set(storedCategories);
-          const apiSet = new Set(apiCategories);
-          const isEqual = storedCategories.length === apiCategories.length && 
-                         storedCategories.every((cat: string) => apiSet.has(cat));
-          
-          if (!isEqual) {
-            // Update with API categories if they're different
-            setCategories(apiCategories);
-            localStorage.setItem(`category-order-${venueId}`, JSON.stringify(apiCategories));
-          }
-        }
-      } else {
+      // Load categories directly from menu_items (grouped by category)
+      const { supabaseBrowser } = await import('@/lib/supabase');
+      const supabase = supabaseBrowser();
+      
+      // Get all menu items to extract categories
+      const { data: items } = await supabase
+        .from('menu_items')
+        .select('category')
+        .eq('venue_id', venueId)
+        .order('position', { ascending: true });
 
-        toast({
-          title: "Error",
-          description: data.error || "Failed to load categories",
-          variant: "destructive",
-        });
+      if (!items || items.length === 0) {
+        setCategories([]);
+        setOriginalCategories([]);
+        setLoading(false);
+        return;
       }
-    } catch (error) {
 
+      // Extract unique categories in order they appear
+      const uniqueCategories: string[] = [];
+      const seen = new Set<string>();
+      
+      for (const item of items) {
+        if (item.category && !seen.has(item.category)) {
+          uniqueCategories.push(item.category);
+          seen.add(item.category);
+        }
+      }
+
+      // Try to get category_order from menu_uploads (PDF order)
+      const { data: uploadData } = await supabase
+        .from('menu_uploads')
+        .select('category_order')
+        .eq('venue_id', venueId)
+        .order('created_at', { ascending: false })
+        .limit(1)
+        .single();
+
+      const pdfCategoryOrder = uploadData?.category_order || [];
+
+      // Use PDF order if available, otherwise use extraction order
+      const finalCategories = pdfCategoryOrder.length > 0 ? pdfCategoryOrder : uniqueCategories;
+      
+      setCategories(finalCategories);
+      setOriginalCategories(finalCategories);
+      
+      // Cache for fast load
+      localStorage.setItem(`category-order-${venueId}`, JSON.stringify(finalCategories));
+
+    } catch (error) {
+      console.error('[CATEGORIES] Load error:', error);
       toast({
         title: "Error",
         description: "Failed to load categories",
