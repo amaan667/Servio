@@ -470,10 +470,7 @@ export function MenuUploadCard({ venueId, onSuccess }: MenuUploadCardProps) {
         <Alert>
           <Info className="h-4 w-4" />
           <AlertDescription className="text-gray-900">
-            <div className="space-y-2">
-              <p>PDF processing uses GPT-4o Vision AI for intelligent menu extraction and position detection.</p>
-              <p>For best results, ensure your PDF has clear, readable text and good contrast.</p>
-            </div>
+            <p>For best results, ensure your PDF has clear, readable text and good contrast.</p>
           </AlertDescription>
         </Alert>
 

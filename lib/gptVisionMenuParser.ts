@@ -194,20 +194,31 @@ Return ONLY the JSON array, no explanation.
       }
     });
     
-    // Convert bounding box format to include both center point (for backward compatibility)
-    // and full bounding box for overlay cards
-    return positions.map((pos: any) => ({
-      name: pos.name || 'Unknown Item',
-      // Keep legacy x,y as center point for backward compatibility
-      x: pos.x1 !== undefined && pos.x2 !== undefined ? (pos.x1 + pos.x2) / 2 : pos.x || 50,
-      y: pos.y1 !== undefined && pos.y2 !== undefined ? (pos.y1 + pos.y2) / 2 : pos.y || 50,
-      // Add bounding box coordinates
-      x1: pos.x1 !== undefined ? pos.x1 : (pos.x || 50) - 5,
-      y1: pos.y1 !== undefined ? pos.y1 : (pos.y || 50) - 3,
-      x2: pos.x2 !== undefined ? pos.x2 : (pos.x || 50) + 5,
-      y2: pos.y2 !== undefined ? pos.y2 : (pos.y || 50) + 3,
-      confidence: pos.confidence || 0.8,
-    }));
+    // Convert and validate bounding box coordinates
+    return positions.map((pos: any) => {
+      // Clamp values to valid range (0-100)
+      const clamp = (val: number) => Math.max(0, Math.min(100, val));
+      
+      const x1 = clamp(pos.x1 !== undefined ? pos.x1 : (pos.x || 50) - 5);
+      const y1 = clamp(pos.y1 !== undefined ? pos.y1 : (pos.y || 50) - 3);
+      const x2 = clamp(pos.x2 !== undefined ? pos.x2 : (pos.x || 50) + 5);
+      const y2 = clamp(pos.y2 !== undefined ? pos.y2 : (pos.y || 50) + 3);
+      
+      // Ensure x2 > x1 and y2 > y1
+      const finalX2 = Math.max(x2, x1 + 1);
+      const finalY2 = Math.max(y2, y1 + 1);
+      
+      return {
+        name: pos.name || 'Unknown Item',
+        x: clamp((x1 + finalX2) / 2),
+        y: clamp((y1 + finalY2) / 2),
+        x1,
+        y1,
+        x2: finalX2,
+        y2: finalY2,
+        confidence: pos.confidence || 0.8,
+      };
+    });
   } catch (err) {
     logger.error("Failed to parse menu positions JSON:", text);
     logger.error("Parse error details:", err);
