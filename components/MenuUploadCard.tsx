@@ -466,6 +466,43 @@ export function MenuUploadCard({ venueId, onSuccess }: MenuUploadCardProps) {
 
           <div className="flex items-center gap-2">
             <Button
+              variant="secondary"
+              onClick={async () => {
+                setIsProcessing(true);
+                try {
+                  const res = await fetch('/api/catalog/regenerate-hotspots', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ venue_id: venueId })
+                  });
+                  const result = await res.json();
+                  if (result.ok) {
+                    toast({
+                      title: 'Hotspots upgraded!',
+                      description: `${result.result.hotspots_created} overlay cards created`
+                    });
+                    onSuccess?.();
+                  } else {
+                    throw new Error(result.error);
+                  }
+                } catch (error) {
+                  toast({
+                    title: 'Failed to regenerate',
+                    description: error instanceof Error ? error.message : 'Unknown error',
+                    variant: 'destructive'
+                  });
+                } finally {
+                  setIsProcessing(false);
+                }
+              }}
+              disabled={isProcessing || !hasExistingUpload}
+              size="sm"
+            >
+              <Upload className="h-4 w-4 mr-2" />
+              {isProcessing ? 'Upgrading...' : 'Upgrade to Overlay Cards'}
+            </Button>
+            
+            <Button
               variant="destructive"
               onClick={handleClearCatalog}
               disabled={isClearing || isProcessing}

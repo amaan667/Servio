@@ -129,10 +129,21 @@ export function EnhancedPDFMenuDisplay({
           .eq('is_active', true);
 
         if (!error && existingHotspots && existingHotspots.length > 0) {
+          // Check if hotspots have new bounding box format
+          const hasBoundingBoxes = existingHotspots.some(h => h.x1_percent !== undefined);
+          console.log('[PDF MENU] Loaded hotspots:', existingHotspots.length);
+          console.log('[PDF MENU] Has bounding boxes:', hasBoundingBoxes);
+          console.log('[PDF MENU] Sample hotspot:', existingHotspots[0]);
+          
+          if (!hasBoundingBoxes) {
+            console.warn('[PDF MENU] ⚠️ Old hotspot format detected! Re-upload PDF for new overlay cards.');
+          }
+          
           setHotspots(existingHotspots);
         } else {
           // Auto-generate hotspots if none exist and we have PDF images
           if (pdfImages.length > 0 && menuItems.length > 0) {
+            console.log('[PDF MENU] No hotspots found, auto-generating...');
             const generatedHotspots = await generateHotspotsFromMenu(menuItems, pdfImages.length);
             setHotspots(generatedHotspots);
             
