@@ -11,7 +11,6 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from 
 import { supabaseBrowser as createClient } from "@/lib/supabase";
 import { Plus, Edit, Trash2, ShoppingBag, Trash, ChevronDown, ChevronRight, Save, Eye, Settings, Upload, Grid, GripVertical, Palette, Info } from "lucide-react";
 import { MenuUploadCard } from "@/components/MenuUploadCard";
-import { MenuUrlImportCard } from "@/components/MenuUrlImportCard";
 import { HybridMenuImportCard } from "@/components/HybridMenuImportCard";
 import { CategoriesManagement } from "@/components/CategoriesManagement";
 import { MenuPreview } from "@/components/MenuPreview";
@@ -281,7 +280,7 @@ export default function MenuManagementClient({ venueId, canEdit = true }: { venu
             <CardHeader>
               <CardTitle className="flex items-center space-x-2">
                 <Upload className="h-5 w-5" />
-                <span>Upload Menu</span>
+                <span>Upload Menu PDF</span>
               </CardTitle>
             </CardHeader>
             <CardContent>
@@ -289,10 +288,7 @@ export default function MenuManagementClient({ venueId, canEdit = true }: { venu
             </CardContent>
           </Card>
 
-          {/* Menu URL Import */}
-          <MenuUrlImportCard venueId={venueId} onSuccess={() => loadMenuItems()} />
-
-          {/* Hybrid Import - URL + PDF with AI */}
+          {/* Smart Import - Handles URL, PDF, or Both */}
           <HybridMenuImportCard venueId={venueId} onSuccess={() => loadMenuItems()} />
 
           {menuItems.length > 0 && (

@@ -47,7 +47,7 @@ export function HybridMenuImportCard({ venueId, onSuccess }: HybridMenuImportCar
       new URL(menuUrl);
       setProgress(10);
 
-      // Step 2: Check for existing PDF
+      // Step 2: Check for existing PDF (optional)
       setCurrentStep('Checking for PDF menu...');
       const supabase = await import('@/lib/supabase').then(m => m.supabaseBrowser());
       
@@ -60,16 +60,7 @@ export function HybridMenuImportCard({ venueId, onSuccess }: HybridMenuImportCar
         .single();
 
       const pdfImages = uploadData?.pdf_images || uploadData?.pdf_images_cc;
-
-      if (!pdfImages || pdfImages.length === 0) {
-        toast({
-          title: 'PDF Required',
-          description: 'Please upload a PDF menu first, then use hybrid import to add perfect hotspots',
-          variant: 'destructive',
-        });
-        setIsProcessing(false);
-        return;
-      }
+      const hasPDF = pdfImages && pdfImages.length > 0;
 
       setProgress(20);
 
@@ -77,58 +68,110 @@ export function HybridMenuImportCard({ venueId, onSuccess }: HybridMenuImportCar
       setCurrentStep(`Scraping menu from ${new URL(menuUrl).hostname}...`);
       setProgress(30);
 
-      // Step 4: Analyze PDF with Vision AI
-      setCurrentStep('Analyzing PDF with AI to find item positions...');
-      setProgress(50);
+      if (hasPDF) {
+        // Step 4: Analyze PDF with Vision AI (if PDF exists)
+        setCurrentStep('Analyzing PDF with AI to find item positions...');
+        setProgress(50);
 
-      const hybridResponse = await fetch('/api/menu/hybrid-import', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          url: menuUrl,
-          venueId,
-          pdfImages,
-        }),
-      });
+        const hybridResponse = await fetch('/api/menu/hybrid-import', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            url: menuUrl,
+            venueId,
+            pdfImages,
+          }),
+        });
 
-      if (!hybridResponse.ok) {
-        const error = await hybridResponse.json();
-        throw new Error(error.error || 'Hybrid import failed');
+        if (!hybridResponse.ok) {
+          const error = await hybridResponse.json();
+          throw new Error(error.error || 'Import failed');
+        }
+
+        const data = await hybridResponse.json();
+        setProgress(80);
+
+        // Step 5: Import matched items with positions
+        setCurrentStep('Importing items and creating hotspots...');
+        
+        const importResponse = await fetch('/api/menu/import-with-hotspots', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            venueId,
+            matchedItems: data.matchedItems,
+            unmatchedItems: data.unmatchedItems,
+          }),
+        });
+
+        if (!importResponse.ok) {
+          throw new Error('Failed to import items');
+        }
+
+        setProgress(100);
+        setCurrentStep('Complete!');
+
+        setResult({
+          matched: data.matchedItems.length,
+          unmatched: data.unmatchedItems.length,
+          matchRate: data.matchRate,
+        });
+
+        toast({
+          title: 'Smart Import Successful! 🎉',
+          description: `Imported ${data.matchedItems.length} items with perfect hotspot positions`,
+        });
+      } else {
+        // No PDF - just import items from URL
+        setCurrentStep('Importing menu items...');
+        setProgress(60);
+
+        const urlImportResponse = await fetch('/api/menu/import-from-url', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ url: menuUrl, venueId }),
+        });
+
+        if (!urlImportResponse.ok) {
+          const error = await urlImportResponse.json();
+          throw new Error(error.error || 'Import failed');
+        }
+
+        const urlData = await urlImportResponse.json();
+        setProgress(80);
+
+        // Import items without hotspots
+        setCurrentStep('Importing items to database...');
+        
+        const confirmResponse = await fetch('/api/menu/confirm-import', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            venueId,
+            items: urlData.menuData.items,
+            categories: urlData.menuData.categories,
+            venueName: urlData.menuData.venueName,
+          }),
+        });
+
+        if (!confirmResponse.ok) {
+          throw new Error('Failed to import items');
+        }
+
+        setProgress(100);
+        setCurrentStep('Complete!');
+
+        setResult({
+          matched: urlData.menuData.items.length,
+          unmatched: 0,
+          matchRate: '100%',
+        });
+
+        toast({
+          title: 'Menu Imported Successfully! 🎉',
+          description: `Imported ${urlData.menuData.items.length} items from your website`,
+        });
       }
-
-      const data = await hybridResponse.json();
-      setProgress(80);
-
-      // Step 5: Import matched items with positions
-      setCurrentStep('Importing items and creating hotspots...');
-      
-      const importResponse = await fetch('/api/menu/import-with-hotspots', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          venueId,
-          matchedItems: data.matchedItems,
-          unmatchedItems: data.unmatchedItems,
-        }),
-      });
-
-      if (!importResponse.ok) {
-        throw new Error('Failed to import items');
-      }
-
-      setProgress(100);
-      setCurrentStep('Complete!');
-
-      setResult({
-        matched: data.matchedItems.length,
-        unmatched: data.unmatchedItems.length,
-        matchRate: data.matchRate,
-      });
-
-      toast({
-        title: 'Hybrid Import Successful! 🎉',
-        description: `Imported ${data.matchedItems.length} items with perfect hotspot positions`,
-      });
 
       if (onSuccess) {
         onSuccess();
@@ -148,30 +191,18 @@ export function HybridMenuImportCard({ venueId, onSuccess }: HybridMenuImportCar
   };
 
   return (
-    <Card className="border-purple-200 bg-gradient-to-br from-purple-50 to-white">
+      <Card className="border-purple-200 bg-gradient-to-br from-purple-50 to-white">
       <CardHeader>
         <CardTitle className="flex items-center space-x-2">
           <Wand2 className="h-5 w-5 text-purple-600" />
-          <span>AI-Powered Hybrid Import</span>
+          <span>Smart Menu Import</span>
           <Badge variant="secondary" className="ml-2 bg-purple-600 text-white">Premium</Badge>
         </CardTitle>
         <CardDescription>
-          Combine your menu URL + PDF for perfect hotspot positioning using AI
+          Import your menu from an existing website - works with or without PDF
         </CardDescription>
       </CardHeader>
       <CardContent className="space-y-4">
-        <Alert className="border-purple-200 bg-purple-50">
-          <Wand2 className="h-4 w-4 text-purple-600" />
-          <AlertDescription className="text-sm">
-            <strong>How it works:</strong>
-            <ol className="mt-2 space-y-1 list-decimal list-inside">
-              <li>Scrape your menu URL for item data (names, prices, descriptions)</li>
-              <li>Analyze your PDF with GPT-4 Vision to find item positions</li>
-              <li>Intelligently match items to positions</li>
-              <li>Create perfectly placed add-to-cart buttons</li>
-            </ol>
-          </AlertDescription>
-        </Alert>
 
         <div className="space-y-2">
           <Label htmlFor="hybrid-url">Menu Website URL</Label>
@@ -231,26 +262,13 @@ export function HybridMenuImportCard({ venueId, onSuccess }: HybridMenuImportCar
         )}
 
         <div className="bg-purple-50 border border-purple-200 rounded-lg p-4">
-          <h4 className="text-sm font-semibold text-purple-900 mb-2 flex items-center gap-2">
-            <FileText className="h-4 w-4" />
-            Requirements:
-          </h4>
+          <h4 className="text-sm font-semibold text-purple-900 mb-2">What you get:</h4>
           <ul className="text-sm text-purple-800 space-y-1">
-            <li>• PDF menu must be uploaded first</li>
-            <li>• Menu URL must be publicly accessible</li>
-            <li>• GPT-4 Vision API key configured</li>
-            <li>• Works best with clear, well-structured menus</li>
-          </ul>
-        </div>
-
-        <div className="text-xs text-muted-foreground">
-          <p className="font-medium mb-1">What you get:</p>
-          <ul className="space-y-1">
-            <li>✓ Beautiful PDF visual menu</li>
-            <li>✓ Perfect add-to-cart button positions</li>
-            <li>✓ All item data from your website</li>
-            <li>✓ Images preserved from URL</li>
-            <li>✓ Both PDF and List views available</li>
+            <li>✓ All item data from your website (names, prices, descriptions)</li>
+            <li>✓ Images automatically downloaded and preserved</li>
+            <li>✓ Categories organized from your menu</li>
+            <li>✓ Perfect add-to-cart button positions (if PDF uploaded)</li>
+            <li>✓ Both PDF and List views available (if PDF uploaded)</li>
           </ul>
         </div>
       </CardContent>
