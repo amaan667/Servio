@@ -267,8 +267,9 @@ const DashboardClient = React.memo(function DashboardClient({ venueId }: { venue
             </div>
           )}
 
-          {/* Enhanced KPI Cards */}
+          {/* Enhanced KPI Cards - Fixed Position Grid */}
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 sm:gap-6">
+            {/* Position 1: Today's Orders - Always visible */}
             <Link href={`/dashboard/${venueId}/live-orders?since=today`}>
               <EnhancedStatCard
                 title="Today's Orders"
@@ -290,7 +291,8 @@ const DashboardClient = React.memo(function DashboardClient({ venueId }: { venue
               />
             </Link>
 
-            {(userRole === "owner" || userRole === "manager") && (
+            {/* Position 2: Revenue - Always rendered to maintain grid position */}
+            {(userRole === "owner" || userRole === "manager") ? (
               <Link href={`/dashboard/${venueId}/analytics`}>
                 <EnhancedStatCard
                   title="Revenue"
@@ -311,8 +313,19 @@ const DashboardClient = React.memo(function DashboardClient({ venueId }: { venue
                   tooltip="View detailed revenue analytics"
                 />
               </Link>
+            ) : (
+              <div className="invisible" aria-hidden="true">
+                <EnhancedStatCard
+                  title="Revenue"
+                  value="£0.00"
+                  icon={TrendingUp}
+                  iconColor="text-green-600"
+                  iconBgColor="bg-green-100"
+                />
+              </div>
             )}
 
+            {/* Position 3: Tables Set Up - Always visible */}
             <Link href={`/dashboard/${venueId}/tables`}>
               <EnhancedStatCard
                 title="Tables Set Up"
@@ -325,6 +338,7 @@ const DashboardClient = React.memo(function DashboardClient({ venueId }: { venue
               />
             </Link>
 
+            {/* Position 4: Menu Items - Always visible */}
             <Link href={`/dashboard/${venueId}/menu-management`}>
               <EnhancedStatCard
                 title="Menu Items"
