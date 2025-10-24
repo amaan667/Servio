@@ -149,6 +149,19 @@ export default function CustomerOrderPage() {
   const [subscriptionTier, setSubscriptionTier] = useState<'basic' | 'standard' | 'premium'>('basic');
   const [loadingTier, setLoadingTier] = useState(true);
 
+  // Log menu loading for debugging
+  useEffect(() => {
+    if (!loadingMenu) {
+      console.log('📋 [ORDER PAGE] Menu loaded:', {
+        itemCount: menuItems.length,
+        hasError: !!menuError,
+        error: menuError,
+        venueName,
+        venueSlug
+      });
+    }
+  }, [loadingMenu, menuItems.length, menuError, venueName, venueSlug]);
+
   const handleSubmitOrder = () => {
     submitOrder({
       cart,
