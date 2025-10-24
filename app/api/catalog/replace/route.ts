@@ -85,10 +85,16 @@ export async function POST(req: NextRequest) {
     if (menuUrl && menuUrl.trim()) {
       console.log(`🌐 [CATALOG REPLACE ${requestId}] Extracting from URL:`, menuUrl);
       logger.info(`[MENU IMPORT ${requestId}] Extracting from URL...`);
-      const scrapeResult = await scrapeMenuFromUrl(menuUrl);
-      urlItems.push(...scrapeResult.items);
-      console.log(`✅ [CATALOG REPLACE ${requestId}] URL extracted: ${urlItems.length} items`);
-      logger.info(`[MENU IMPORT ${requestId}] URL items:`, { count: urlItems.length });
+      try {
+        const scrapeResult = await scrapeMenuFromUrl(menuUrl);
+        urlItems.push(...scrapeResult.items);
+        console.log(`✅ [CATALOG REPLACE ${requestId}] URL extracted: ${urlItems.length} items`);
+        logger.info(`[MENU IMPORT ${requestId}] URL items:`, { count: urlItems.length });
+      } catch (error) {
+        console.warn(`⚠️ [CATALOG REPLACE ${requestId}] URL scraping failed:`, error instanceof Error ? error.message : String(error));
+        logger.warn(`[MENU IMPORT ${requestId}] URL scraping failed, using PDF-only`);
+        // Continue with PDF-only extraction
+      }
     }
 
     // Extract from PDF using Vision AI

@@ -21,19 +21,35 @@ export interface ScrapeResult {
 async function scrapeWithPuppeteer(url: string): Promise<string | null> {
   try {
     logger.info('[SCRAPER] Attempting Puppeteer for:', { url });
+    
+    // Check if Puppeteer is available in this environment
     const puppeteer = await import('puppeteer-core');
     const chromium = await import('@sparticuz/chromium');
 
+    logger.info('[SCRAPER] Launching browser...');
     const browser = await puppeteer.default.launch({
-      args: chromium.default.args,
+      args: [
+        ...chromium.default.args,
+        '--disable-gpu',
+        '--no-sandbox',
+        '--disable-setuid-sandbox',
+        '--disable-dev-shm-usage',
+      ],
       defaultViewport: chromium.default.defaultViewport,
       executablePath: await chromium.default.executablePath(),
-      headless: chromium.default.headless,
+      headless: true,
     });
 
     const page = await browser.newPage();
-    await page.goto(url, { waitUntil: 'networkidle2', timeout: 30000 });
-    await page.waitForTimeout(3000);
+    
+    logger.info('[SCRAPER] Navigating to URL...');
+    await page.goto(url, { 
+      waitUntil: 'domcontentloaded', // Less strict, faster
+      timeout: 15000 // Shorter timeout
+    });
+    
+    // Wait for content to load
+    await page.waitForTimeout(2000);
     
     const html = await page.content();
     await browser.close();
@@ -42,7 +58,8 @@ async function scrapeWithPuppeteer(url: string): Promise<string | null> {
     return html;
   } catch (error) {
     logger.warn('[SCRAPER] Puppeteer failed:', error);
-    return null; // Return null instead of throwing
+    logger.warn('[SCRAPER] This is expected in some environments - falling back to PDF-only extraction');
+    return null;
   }
 }
 

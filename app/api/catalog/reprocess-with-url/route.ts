@@ -39,9 +39,16 @@ export async function POST(req: NextRequest) {
 
     // Step 1: Scrape URL for item data
     console.log(`🌐 [REPROCESS ${requestId}] Scraping URL...`);
-    const scrapeResult = await scrapeMenuFromUrl(menuUrl);
-    const urlItems = scrapeResult.items;
-    console.log(`✅ [REPROCESS ${requestId}] Scraped ${urlItems.length} items from URL`);
+    let urlItems = [];
+    try {
+      const scrapeResult = await scrapeMenuFromUrl(menuUrl);
+      urlItems = scrapeResult.items;
+      console.log(`✅ [REPROCESS ${requestId}] Scraped ${urlItems.length} items from URL`);
+    } catch (error) {
+      console.warn(`⚠️ [REPROCESS ${requestId}] URL scraping failed, using PDF-only:`, error instanceof Error ? error.message : String(error));
+      logger.warn(`[REPROCESS ${requestId}] URL scraping failed, falling back to PDF-only`);
+      // Continue with PDF-only extraction
+    }
 
     // Step 2: Extract positions from existing PDF images
     console.log(`👁️ [REPROCESS ${requestId}] Extracting positions from PDF...`);
