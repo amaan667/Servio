@@ -1,7 +1,6 @@
 import { useRouter } from 'next/navigation';
 import { toast } from '@/hooks/use-toast';
 import { PaymentAction } from './usePaymentState';
-import { logger } from '@/lib/logger';
 
 export function usePaymentProcessing() {
   const router = useRouter();
@@ -99,7 +98,7 @@ export function usePaymentProcessing() {
       } else if (action === 'stripe') {
         // Stripe payment - save checkout data and redirect to Stripe
         console.info('[PAYMENT] Stripe selected - order will be created on payment success');
-        logger.info('💳 Stripe selected - redirecting to Stripe (order creation deferred)');
+        console.info('💳 Stripe selected - redirecting to Stripe (order creation deferred)');
         
         // Mark this as pending order creation for order summary page
         const pendingData = {
