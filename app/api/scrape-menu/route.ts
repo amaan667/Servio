@@ -177,103 +177,18 @@ async function scrapeWithPlaywright(url: string, waitForNetworkIdle: boolean = f
       );
     }
 
-    // Strategy 2: Aggressive wait for menu content (give React time to render)
-    console.info(`🎯 Strategy 2: Waiting for menu content to fully render...`);
+    // Strategy 2: FAST extraction - no waiting!
+    console.info(`🎯 Strategy 2: Fast content extraction...`);
 
-    // First, dismiss any cookie popups
+    // Quick cookie dismissal (don't wait)
     await page
-      .click(
-        'button:has-text("Accept"), button:has-text("Agree"), [class*="accept"], [class*="cookie"]',
-        {
-          timeout: 2000,
-        }
-      )
-      .catch(() => console.info(`✅ No cookie popup`));
+      .click('button:has-text("Accept"), button:has-text("Agree")', { timeout: 1000 })
+      .catch(() => {});
 
-    // Wait longer for React/Next.js to fully hydrate and render menu
-    console.info(`⏳ Giving React 5 seconds to fully render menu content...`);
-    await page.waitForTimeout(5000);
+    // Single scroll to trigger lazy content (no waiting)
+    await page.evaluate(() => window.scrollTo(0, document.body.scrollHeight));
 
-    // Now look for menu items with VERY broad selectors
-    const menuAppeared = await page
-      .waitForSelector(
-        // Try multiple possible structures
-        '[class*="menu"], [class*="Menu"], [class*="item"], [class*="Item"], ' +
-          '[class*="product"], [class*="Product"], [class*="card"], [class*="Card"], ' +
-          'img[alt*="menu"], img[alt*="food"], img[src*="food"], h3, h4, h2',
-        { timeout: 10000 }
-      )
-      .then(async () => {
-        console.info(`✅ Content elements detected!`);
-
-        // Do one scroll to bottom to trigger any remaining lazy content
-        console.info(`📜 Single scroll to trigger remaining content...`);
-        await page.evaluate(() => window.scrollTo(0, document.body.scrollHeight));
-        await page.waitForTimeout(4000); // Wait 4s for content to load
-
-        return true;
-      })
-      .catch(() => {
-        console.warn(`⚠️ No standard menu elements found, will extract raw content`);
-        return false;
-      });
-
-    // Strategy 3: Analyze page structure to find menu content
-    if (!menuAppeared && !embeddedData) {
-      console.info(`🔍 Strategy 3: Analyzing page structure...`);
-
-      const pageAnalysis = await page.evaluate(() => {
-        // Find all elements with menu-related content
-        const allDivs = document.querySelectorAll("div, section, ul, li");
-        const menuLikeElements: string[] = [];
-
-        allDivs.forEach((el) => {
-          const className = el.className?.toString() || "";
-          const id = el.id || "";
-          const text = el.textContent || "";
-
-          // Look for elements that might contain menu items
-          if (
-            className.toLowerCase().includes("item") ||
-            className.toLowerCase().includes("card") ||
-            className.toLowerCase().includes("product") ||
-            text.includes("£") ||
-            text.includes("$")
-          ) {
-            const preview = text.substring(0, 50).replace(/\s+/g, " ");
-            if (preview.length > 10 && !menuLikeElements.includes(preview)) {
-              menuLikeElements.push(`${className || id || "div"}: ${preview}`);
-            }
-          }
-        });
-
-        return {
-          title: document.title,
-          bodyLength: document.body.innerText.length,
-          bodyText: document.body.innerText.substring(0, 1000),
-          hasMain: !!document.querySelector("main"),
-          hasArticle: !!document.querySelector("article"),
-          menuLikeElements: menuLikeElements.slice(0, 10),
-          uniqueClasses: Array.from(
-            new Set(
-              Array.from(document.querySelectorAll("*"))
-                .map((el) => el.className?.toString())
-                .filter((c) => c && c.length > 0 && c.length < 50)
-            )
-          ).slice(0, 20),
-        };
-      });
-
-      console.warn(`⚠️ Page Analysis:`);
-      console.warn(`  Title: ${pageAnalysis.title}`);
-      console.warn(`  Body length: ${pageAnalysis.bodyLength} chars`);
-      console.warn(`  Body preview:`, pageAnalysis.bodyText.substring(0, 200));
-      console.warn(`  Menu-like elements found: ${pageAnalysis.menuLikeElements.length}`);
-      pageAnalysis.menuLikeElements.forEach((el, i) => {
-        console.warn(`    ${i + 1}. ${el}`);
-      });
-      console.warn(`  Common classes:`, pageAnalysis.uniqueClasses.slice(0, 10).join(", "));
-    }
+    console.info(`✅ Ready to extract content`);
 
     // Get HTML
     console.info(`📄 Extracting HTML...`);
