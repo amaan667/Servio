@@ -56,6 +56,10 @@ export async function DELETE(req: NextRequest, context: { params: Promise<{ tabl
   try {
     const { tableId } = await context.params;
 
+    // Check if force=true is passed as query parameter
+    const url = new URL(req.url);
+    const forceRemove = url.searchParams.get("force") === "true";
+
     // Authenticate using Authorization header
     const auth = await authenticateRequest(req);
     if (!auth.success || !auth.supabase || !auth.user) {
@@ -166,28 +170,80 @@ export async function DELETE(req: NextRequest, context: { params: Promise<{ tabl
       );
     }
 
-    // If there are active orders or reservations, prevent deletion
+    // If there are active orders or reservations, handle based on forceRemove flag
 
-    // Only prevent deletion if we successfully checked and found active orders/reservations
-    if (!ordersError && activeOrders && activeOrders.length > 0) {
-      return NextResponse.json(
-        {
-          error: "Cannot remove table with active orders. Please close all orders first.",
-          hasActiveOrders: true,
-        },
-        { status: 400 }
+    if (forceRemove) {
+      // FORCE REMOVE: Complete all active orders and cancel reservations
+      logger.info(
+        "[TABLES API] Force remove enabled - completing active orders and canceling reservations"
       );
-    }
 
-    if (!reservationsError && activeReservations && activeReservations.length > 0) {
-      return NextResponse.json(
-        {
-          error:
-            "Cannot remove table with active reservations. Please cancel all reservations first.",
-          hasActiveReservations: true,
-        },
-        { status: 400 }
-      );
+      if (!ordersError && activeOrders && activeOrders.length > 0) {
+        logger.info(`[TABLES API] Force completing ${activeOrders.length} active orders`);
+        const { error: completeOrdersError } = await supabase
+          .from("orders")
+          .update({
+            order_status: "COMPLETED",
+            updated_at: new Date().toISOString(),
+          })
+          .eq("table_id", tableId)
+          .eq("venue_id", existingTable.venue_id)
+          .in("order_status", ["PLACED", "ACCEPTED", "IN_PREP", "READY", "SERVING"]);
+
+        if (completeOrdersError) {
+          logger.error("[TABLES API] Error force completing orders:", {
+            value: completeOrdersError,
+          });
+        } else {
+          logger.info("[TABLES API] Successfully force completed active orders");
+        }
+      }
+
+      if (!reservationsError && activeReservations && activeReservations.length > 0) {
+        logger.info(
+          `[TABLES API] Force canceling ${activeReservations.length} active reservations`
+        );
+        const { error: cancelReservationsError } = await supabase
+          .from("reservations")
+          .update({
+            status: "CANCELLED",
+            updated_at: new Date().toISOString(),
+          })
+          .eq("table_id", tableId)
+          .eq("venue_id", existingTable.venue_id)
+          .eq("status", "BOOKED");
+
+        if (cancelReservationsError) {
+          logger.error("[TABLES API] Error force canceling reservations:", {
+            value: cancelReservationsError,
+          });
+        } else {
+          logger.info("[TABLES API] Successfully force canceled active reservations");
+        }
+      }
+    } else {
+      // NORMAL REMOVE: Prevent deletion if there are active orders/reservations
+      // Only prevent deletion if we successfully checked and found active orders/reservations
+      if (!ordersError && activeOrders && activeOrders.length > 0) {
+        return NextResponse.json(
+          {
+            error: "Cannot remove table with active orders. Please close all orders first.",
+            hasActiveOrders: true,
+          },
+          { status: 400 }
+        );
+      }
+
+      if (!reservationsError && activeReservations && activeReservations.length > 0) {
+        return NextResponse.json(
+          {
+            error:
+              "Cannot remove table with active reservations. Please cancel all reservations first.",
+            hasActiveReservations: true,
+          },
+          { status: 400 }
+        );
+      }
     }
 
     // If both checks failed, we'll proceed with a warning

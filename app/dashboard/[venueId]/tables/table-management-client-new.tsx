@@ -58,7 +58,7 @@ export function TableManagementClientNew({ venueId }: TableManagementClientNewPr
   };
 
   const handleResetConfirm = async () => {
-    await state.checkAndReset();
+    await state.checkAndReset(true); // Pass force=true for manual reset button
     state.refetchTables();
   };
 
@@ -68,6 +68,13 @@ export function TableManagementClientNew({ venueId }: TableManagementClientNewPr
 
   const handleTableActionComplete = () => {
     state.refetchTables();
+  };
+
+  const handleAddReservation = () => {
+    toast({
+      title: "Make a Reservation",
+      description: "Click on any free table below and select 'Make Reservation' to book it.",
+    });
   };
 
   // Group table orders by table
@@ -159,9 +166,9 @@ export function TableManagementClientNew({ venueId }: TableManagementClientNewPr
 
       {/* Reservations Panel */}
       <ReservationsPanel
-        venueId={venueId}
         reservations={state.reservations}
-        onReservationAction={handleTableActionComplete}
+        onActionComplete={handleTableActionComplete}
+        onAddReservation={handleAddReservation}
       />
 
       {/* Daily Reset Modal */}

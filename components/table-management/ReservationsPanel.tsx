@@ -1,35 +1,34 @@
-'use client';
+"use client";
 
-import { useState } from 'react';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { Button } from '@/components/ui/button';
-import { Badge } from '@/components/ui/badge';
-import { 
-  Calendar, 
-  Clock, 
-  Users, 
-  Phone, 
-  CheckCircle2, 
-  X,
-  UserCheck,
-  Timer
-} from 'lucide-react';
+import { useState } from "react";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Button } from "@/components/ui/button";
+import { Badge } from "@/components/ui/badge";
+import { Calendar, Clock, Users, Phone, X, UserCheck, Timer, Plus } from "lucide-react";
 import {
   DropdownMenu,
   DropdownMenuContent,
   DropdownMenuItem,
   DropdownMenuTrigger,
-} from '@/components/ui/dropdown-menu';
-import { MoreHorizontal, ArrowRight } from 'lucide-react';
-import { useCheckInReservation, useCancelReservation, Reservation } from '@/hooks/useTableReservations';
+} from "@/components/ui/dropdown-menu";
+import { MoreHorizontal, ArrowRight } from "lucide-react";
+import {
+  useCheckInReservation,
+  useCancelReservation,
+  Reservation,
+} from "@/hooks/useTableReservations";
 
 interface ReservationsPanelProps {
-  venueId: string;
   reservations: Reservation[];
   onActionComplete?: () => void;
+  onAddReservation?: () => void;
 }
 
-export function ReservationsPanel({ venueId, reservations, onActionComplete }: ReservationsPanelProps) {
+export function ReservationsPanel({
+  reservations,
+  onActionComplete,
+  onAddReservation,
+}: ReservationsPanelProps) {
   const [isLoading, setIsLoading] = useState<string | null>(null);
   const checkInReservation = useCheckInReservation();
   const cancelReservation = useCancelReservation();
@@ -39,7 +38,7 @@ export function ReservationsPanel({ venueId, reservations, onActionComplete }: R
       setIsLoading(reservationId);
       await checkInReservation.mutateAsync({ reservationId, tableId });
       onActionComplete?.();
-    } catch (error) {
+    } catch {
       // Error silently handled
     } finally {
       setIsLoading(null);
@@ -51,7 +50,7 @@ export function ReservationsPanel({ venueId, reservations, onActionComplete }: R
       setIsLoading(reservationId);
       await cancelReservation.mutateAsync({ reservationId });
       onActionComplete?.();
-    } catch (error) {
+    } catch {
       // Error silently handled
     } finally {
       setIsLoading(null);
@@ -59,16 +58,16 @@ export function ReservationsPanel({ venueId, reservations, onActionComplete }: R
   };
 
   const formatTime = (dateString: string) => {
-    return new Date(dateString).toLocaleTimeString([], { 
-      hour: '2-digit', 
-      minute: '2-digit' 
+    return new Date(dateString).toLocaleTimeString([], {
+      hour: "2-digit",
+      minute: "2-digit",
     });
   };
 
   const formatDate = (dateString: string) => {
-    return new Date(dateString).toLocaleDateString([], { 
-      month: 'short', 
-      day: 'numeric' 
+    return new Date(dateString).toLocaleDateString([], {
+      month: "short",
+      day: "numeric",
     });
   };
 
@@ -77,14 +76,14 @@ export function ReservationsPanel({ venueId, reservations, onActionComplete }: R
     const end = new Date(endAt);
     const diffMs = end.getTime() - start.getTime();
     const diffMins = Math.round(diffMs / (1000 * 60));
-    
+
     if (diffMins < 60) {
       return `${diffMins} minutes`;
     } else {
       const hours = Math.floor(diffMins / 60);
       const mins = diffMins % 60;
       if (mins === 0) {
-        return `${hours} hour${hours > 1 ? 's' : ''}`;
+        return `${hours} hour${hours > 1 ? "s" : ""}`;
       } else {
         return `${hours}h ${mins}m`;
       }
@@ -93,29 +92,29 @@ export function ReservationsPanel({ venueId, reservations, onActionComplete }: R
 
   const getStatusColor = (status: string) => {
     switch (status) {
-      case 'BOOKED':
-        return 'bg-blue-100 text-blue-800 border-blue-200';
-      case 'CHECKED_IN':
-        return 'bg-green-100 text-green-800 border-green-200';
-      case 'COMPLETED':
-        return 'bg-emerald-100 text-emerald-800 border-emerald-200';
-      case 'CANCELLED':
-        return 'bg-gray-100 text-gray-800 border-gray-200';
-      case 'NO_SHOW':
-        return 'bg-red-100 text-red-800 border-red-200';
+      case "BOOKED":
+        return "bg-blue-100 text-blue-800 border-blue-200";
+      case "CHECKED_IN":
+        return "bg-green-100 text-green-800 border-green-200";
+      case "COMPLETED":
+        return "bg-emerald-100 text-emerald-800 border-emerald-200";
+      case "CANCELLED":
+        return "bg-gray-100 text-gray-800 border-gray-200";
+      case "NO_SHOW":
+        return "bg-red-100 text-red-800 border-red-200";
       default:
-        return 'bg-gray-100 text-gray-800 border-gray-200';
+        return "bg-gray-100 text-gray-800 border-gray-200";
     }
   };
 
-  const activeReservations = reservations.filter(r => {
+  const activeReservations = reservations.filter((r) => {
     // Show reservations that are BOOKED or CHECKED_IN and haven't expired
-    if (!['BOOKED', 'CHECKED_IN'].includes(r.status)) return false;
-    
+    if (!["BOOKED", "CHECKED_IN"].includes(r.status)) return false;
+
     // Check if the reservation has expired
     const now = new Date();
     const endTime = new Date(r.end_at);
-    
+
     return endTime > now;
   });
 
@@ -123,10 +122,23 @@ export function ReservationsPanel({ venueId, reservations, onActionComplete }: R
     return (
       <Card>
         <CardHeader>
-          <CardTitle className="flex items-center gap-2">
-            <Calendar className="h-5 w-5" />
-            Reservations
-          </CardTitle>
+          <div className="flex items-center justify-between">
+            <CardTitle className="flex items-center gap-2">
+              <Calendar className="h-5 w-5" />
+              Reservations
+            </CardTitle>
+            {onAddReservation && (
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={onAddReservation}
+                className="flex items-center gap-1"
+              >
+                <Plus className="h-4 w-4" />
+                Add Reservation
+              </Button>
+            )}
+          </div>
         </CardHeader>
         <CardContent>
           <div className="text-center py-8">
@@ -141,10 +153,23 @@ export function ReservationsPanel({ venueId, reservations, onActionComplete }: R
   return (
     <Card>
       <CardHeader>
-        <CardTitle className="flex items-center gap-2">
-          <Calendar className="h-5 w-5" />
-          Reservations ({activeReservations.length})
-        </CardTitle>
+        <div className="flex items-center justify-between">
+          <CardTitle className="flex items-center gap-2">
+            <Calendar className="h-5 w-5" />
+            Reservations ({activeReservations.length})
+          </CardTitle>
+          {onAddReservation && (
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={onAddReservation}
+              className="flex items-center gap-1"
+            >
+              <Plus className="h-4 w-4" />
+              Add Reservation
+            </Button>
+          )}
+        </div>
       </CardHeader>
       <CardContent className="space-y-3">
         {activeReservations.map((reservation) => (
@@ -155,13 +180,13 @@ export function ReservationsPanel({ venueId, reservations, onActionComplete }: R
             <div className="flex-1">
               <div className="flex items-center gap-2 mb-1">
                 <span className="font-medium">
-                  {reservation.customer_name || 'Unnamed Reservation'}
+                  {reservation.customer_name || "Unnamed Reservation"}
                 </span>
                 <Badge variant="outline" className={getStatusColor(reservation.status)}>
                   {reservation.status}
                 </Badge>
               </div>
-              
+
               <div className="flex items-center gap-4 text-sm text-gray-900">
                 <div className="flex items-center gap-1">
                   <Clock className="h-3 w-3" />
@@ -185,9 +210,10 @@ export function ReservationsPanel({ venueId, reservations, onActionComplete }: R
                   <div className="flex items-center gap-1">
                     <Calendar className="h-3 w-3" />
                     {(() => {
-                      const tableLabel = (reservation as unknown).table?.label || reservation.table_id;
+                      const tableLabel =
+                        (reservation as unknown).table?.label || reservation.table_id;
                       // If the label already starts with "table", don't add "Table" prefix
-                      if (tableLabel.toLowerCase().startsWith('table')) {
+                      if (tableLabel.toLowerCase().startsWith("table")) {
                         return tableLabel;
                       }
                       return `Table ${tableLabel}`;
@@ -198,7 +224,7 @@ export function ReservationsPanel({ venueId, reservations, onActionComplete }: R
             </div>
 
             <div className="flex items-center gap-2">
-              {reservation.table_id && reservation.status === 'BOOKED' && (
+              {reservation.table_id && reservation.status === "BOOKED" && (
                 <Button
                   size="sm"
                   onClick={() => handleCheckIn(reservation.id, reservation.table_id!)}
@@ -209,7 +235,7 @@ export function ReservationsPanel({ venueId, reservations, onActionComplete }: R
                   Check In
                 </Button>
               )}
-              
+
               <DropdownMenu>
                 <DropdownMenuTrigger asChild>
                   <Button variant="ghost" size="sm" className="h-8 w-8 p-0">
@@ -221,7 +247,7 @@ export function ReservationsPanel({ venueId, reservations, onActionComplete }: R
                     <ArrowRight className="h-4 w-4 mr-2" />
                     Move to Table
                   </DropdownMenuItem>
-                  <DropdownMenuItem 
+                  <DropdownMenuItem
                     onClick={() => handleCancel(reservation.id)}
                     disabled={isLoading === reservation.id}
                     className="text-red-600"

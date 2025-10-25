@@ -23,14 +23,14 @@ export function useDailyReset(venueId: string) {
   const [lastResetDate, setLastResetDate] = useState<string | null>(null);
   const [resetResult, setResetResult] = useState<DailyResetResult | null>(null);
 
-  const checkAndReset = async () => {
+  const checkAndReset = async (force = false) => {
     if (!venueId || isChecking) return;
 
     try {
       setIsChecking(true);
 
       const { apiClient } = await import("@/lib/api-client");
-      const response = await apiClient.post("/api/daily-reset/check-and-reset", { venueId });
+      const response = await apiClient.post("/api/daily-reset/check-and-reset", { venueId, force });
 
       const result = await response.json();
 

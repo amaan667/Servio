@@ -545,9 +545,10 @@ export function useDeleteTable(venueId: string) {
   const queryClient = useQueryClient();
 
   return useMutation({
-    mutationFn: async (tableId: string) => {
+    mutationFn: async ({ tableId, force = false }: { tableId: string; force?: boolean }) => {
       const { apiClient } = await import("@/lib/api-client");
-      const response = await apiClient.delete(`/api/tables/${tableId}`);
+      const url = force ? `/api/tables/${tableId}?force=true` : `/api/tables/${tableId}`;
+      const response = await apiClient.delete(url);
 
       if (!response.ok) {
         const errorData = await response.json();
@@ -557,7 +558,7 @@ export function useDeleteTable(venueId: string) {
       return await response.json();
     },
     // Optimistic update - remove table INSTANTLY from UI
-    onMutate: async (tableId) => {
+    onMutate: async ({ tableId }) => {
       // Cancel any outgoing refetches
       await queryClient.cancelQueries({ queryKey: ["tables", "grid", venueId] });
 

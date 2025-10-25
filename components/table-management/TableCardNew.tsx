@@ -197,21 +197,27 @@ export function TableCardNew({
 
   const handleRemoveTable = async () => {
     // Close modal immediately for instant feedback
+    const shouldForceRemove = forceRemove;
     setShowRemoveDialog(false);
     setForceRemove(false);
     setRemoveError(null);
 
     // Use the mutation hook - table will disappear INSTANTLY
-    deleteTable.mutate(table.id, {
-      onSuccess: () => {
-        // Call parent callback if provided
-        onActionComplete?.();
-      },
-      onError: (error) => {
-        // Error is already handled by the hook's toast
-        setRemoveError(error instanceof Error ? error.message : "Failed to remove table");
-      },
-    });
+    deleteTable.mutate(
+      { tableId: table.id, force: shouldForceRemove },
+      {
+        onSuccess: () => {
+          // Call parent callback if provided
+          onActionComplete?.();
+        },
+        onError: (error) => {
+          // Error is already handled by the hook's toast
+          setRemoveError(error instanceof Error ? error.message : "Failed to remove table");
+          // Reopen the dialog to show the error
+          setShowRemoveDialog(true);
+        },
+      }
+    );
   };
 
   const getContextualActions = () => {
