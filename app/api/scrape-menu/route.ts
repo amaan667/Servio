@@ -27,6 +27,16 @@ async function getBrowser() {
 
       console.info(`🌐 Launching Playwright Chromium...`);
 
+      // Check if Chromium is installed
+      const browserPaths = [
+        process.env.PLAYWRIGHT_CHROMIUM_EXECUTABLE_PATH,
+        "/root/.cache/ms-playwright/chromium-*/chrome-linux/chrome",
+        "/usr/bin/chromium",
+        "/usr/bin/chromium-browser",
+      ].filter(Boolean);
+
+      console.info(`🔍 Looking for Chromium in:`, browserPaths);
+
       browserInstance = await playwright.chromium.launch({
         headless: true,
         args: [
@@ -34,7 +44,11 @@ async function getBrowser() {
           "--disable-setuid-sandbox",
           "--disable-dev-shm-usage",
           "--disable-gpu",
+          "--disable-software-rasterizer",
+          "--single-process", // Important for Railway
+          "--no-zygote",
         ],
+        timeout: 30000, // 30s timeout for launch
       });
 
       console.info("✅ Browser launched successfully");
@@ -44,9 +58,14 @@ async function getBrowser() {
         message: launchError instanceof Error ? launchError.message : String(launchError),
         stack: launchError instanceof Error ? launchError.stack : undefined,
       });
+
+      // Don't crash - throw error to be caught by API handler
       throw new Error(
-        `Failed to launch Playwright browser: ${launchError instanceof Error ? launchError.message : "Unknown error"}. ` +
-          `Make sure Playwright is installed: npx playwright install chromium`
+        `Playwright browser failed to launch. This usually means:\n` +
+          `1. Chromium is not installed (run: npx playwright install chromium)\n` +
+          `2. Missing system dependencies\n` +
+          `3. Insufficient memory/resources\n\n` +
+          `Error: ${launchError instanceof Error ? launchError.message : "Unknown error"}`
       );
     }
   }

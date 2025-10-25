@@ -29,5 +29,14 @@ aptPkgs = [
 [phases.install]
 cmds = [
   "pnpm install --frozen-lockfile",
-  "npx playwright install chromium"
+  "npx playwright install --with-deps chromium"
+]
+
+[phases.build]
+# Verify Playwright installation
+cmds = [
+  "echo '📦 Verifying Playwright installation...'",
+  "npx playwright --version || echo '⚠️ Playwright not found'",
+  "ls -la /root/.cache/ms-playwright/ || echo '⚠️ Playwright cache not found'",
+  "pnpm run build"
 ]
