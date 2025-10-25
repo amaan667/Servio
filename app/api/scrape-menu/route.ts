@@ -177,44 +177,45 @@ async function scrapeWithPlaywright(url: string, waitForNetworkIdle: boolean = f
       );
     }
 
-    // Strategy 2: Wait for specific menu elements (targeted, not blind)
-    console.info(`🎯 Strategy 2: Waiting for menu items to appear...`);
+    // Strategy 2: Aggressive wait for menu content (give React time to render)
+    console.info(`🎯 Strategy 2: Waiting for menu content to fully render...`);
+
+    // First, dismiss any cookie popups
+    await page
+      .click(
+        'button:has-text("Accept"), button:has-text("Agree"), [class*="accept"], [class*="cookie"]',
+        {
+          timeout: 2000,
+        }
+      )
+      .catch(() => console.info(`✅ No cookie popup`));
+
+    // Wait longer for React/Next.js to fully hydrate and render menu
+    console.info(`⏳ Giving React 5 seconds to fully render menu content...`);
+    await page.waitForTimeout(5000);
+
+    // Now look for menu items with VERY broad selectors
     const menuAppeared = await page
       .waitForSelector(
-        '[class*="menu-item"], [class*="MenuItem"], [data-testid*="menu"], [class*="product-card"]',
-        { timeout: 8000 }
+        // Try multiple possible structures
+        '[class*="menu"], [class*="Menu"], [class*="item"], [class*="Item"], ' +
+          '[class*="product"], [class*="Product"], [class*="card"], [class*="Card"], ' +
+          'img[alt*="menu"], img[alt*="food"], img[src*="food"], h3, h4, h2',
+        { timeout: 10000 }
       )
-      .then(() => {
-        console.info(`✅ Menu items detected - content is loaded!`);
+      .then(async () => {
+        console.info(`✅ Content elements detected!`);
+
+        // Do one scroll to bottom to trigger any remaining lazy content
+        console.info(`📜 Single scroll to trigger remaining content...`);
+        await page.evaluate(() => window.scrollTo(0, document.body.scrollHeight));
+        await page.waitForTimeout(4000); // Wait 4s for content to load
+
         return true;
       })
-      .catch(async () => {
-        console.warn(`⚠️ Menu items not visible yet, trying cookie dismissal + minimal scroll...`);
-
-        // Dismiss cookie popup if it's blocking
-        await page
-          .click('button:has-text("Accept"), button:has-text("Agree"), [class*="accept"]', {
-            timeout: 2000,
-          })
-          .catch(() => {});
-
-        await page.waitForTimeout(1000);
-
-        // Single strategic scroll to bottom (triggers most lazy-load)
-        await page.evaluate(() => window.scrollTo(0, document.body.scrollHeight));
-        await page.waitForTimeout(3000); // Wait for lazy content
-
-        // Check again
-        return await page
-          .waitForSelector('[class*="menu-item"], [class*="MenuItem"]', { timeout: 3000 })
-          .then(() => {
-            console.info(`✅ Menu items appeared after scroll`);
-            return true;
-          })
-          .catch(() => {
-            console.warn(`⚠️ Still no menu items, will extract whatever is available`);
-            return false;
-          });
+      .catch(() => {
+        console.warn(`⚠️ No standard menu elements found, will extract raw content`);
+        return false;
       });
 
     // Strategy 3: Analyze page structure to find menu content
