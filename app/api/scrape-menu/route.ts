@@ -44,17 +44,24 @@ export async function POST(req: NextRequest) {
     // Step 2: Parse HTML with Cheerio
     const $ = cheerio.load(html);
     
+    // Log the page title for debugging
+    const pageTitle = $('title').text();
+    console.info(`📄 [SCRAPE MENU ${requestId}] Page title: ${pageTitle}`);
+    
     // Remove script and style tags
-    $('script, style, nav, header, footer').remove();
+    $('script, style, nav, header, footer, iframe').remove();
     
     // Get clean text content
     const bodyText = $('body').text();
     const cleanText = bodyText.replace(/\s+/g, ' ').trim();
     
+    console.info(`📝 [SCRAPE MENU ${requestId}] Extracted text length: ${cleanText.length} chars`);
+    console.info(`📝 [SCRAPE MENU ${requestId}] Text preview: ${cleanText.substring(0, 200)}...`);
+    
     // Extract image URLs
     const imageUrls: string[] = [];
     $('img').each((_, img) => {
-      let src = $(img).attr('src') || $(img).attr('data-src');
+      let src = $(img).attr('src') || $(img).attr('data-src') || $(img).attr('data-lazy-src');
       if (src) {
         // Convert relative to absolute
         if (!src.startsWith('http')) {

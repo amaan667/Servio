@@ -78,10 +78,25 @@ export async function POST(req: NextRequest) {
 
     const urlItems = urlMenuData.items || [];
 
+    console.info(`📊 [HYBRID MERGE ${requestId}] URL scraping result:`, {
+      found: urlItems.length,
+      sample: urlItems.slice(0, 3)
+    });
+
     if (urlItems.length === 0) {
+      console.error(`❌ [HYBRID MERGE ${requestId}] No items extracted from URL`);
+      console.error(`❌ [HYBRID MERGE ${requestId}] This could mean:`);
+      console.error(`   - The URL doesn't have a menu`);
+      console.error(`   - The website structure is complex`);
+      console.error(`   - The URL requires JavaScript to load content`);
+      
       return NextResponse.json({
         ok: false,
-        error: 'No items found at URL. Please check the menu URL.'
+        error: `No items found at URL. The website might require JavaScript or have an unusual structure. Try a direct menu page URL.`,
+        debug: {
+          urlChecked: menuUrl,
+          suggestion: 'Try the direct menu page URL (e.g., /menu or /food)'
+        }
       }, { status: 400 });
     }
 
