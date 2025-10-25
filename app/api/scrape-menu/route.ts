@@ -110,11 +110,11 @@ Alternative: Manually update menu items in Menu Management.`
       }
 
       try {
-        // Use NEW Browserless.io REST API endpoint
-        // Docs: https://docs.browserless.io/rest-apis/content
-        const browserlessUrl = `https://production-sfo.browserless.io/content?token=${process.env.BROWSERLESS_API_KEY}`;
+        // Use Browserless /scrape endpoint (simpler, more reliable)
+        // Docs: https://docs.browserless.io/rest-apis/scrape
+        const browserlessUrl = `https://production-sfo.browserless.io/scrape?token=${process.env.BROWSERLESS_API_KEY}`;
         
-        console.info(`📡 [SCRAPE MENU ${requestId}] Requesting Browserless.io...`);
+        console.info(`📡 [SCRAPE MENU ${requestId}] Requesting Browserless.io /scrape endpoint...`);
         const browserlessResponse = await fetch(browserlessUrl, {
           method: 'POST',
           headers: { 
@@ -123,9 +123,12 @@ Alternative: Manually update menu items in Menu Management.`
           },
           body: JSON.stringify({
             url: url,
+            elements: [{
+              selector: "body"
+            }],
             gotoOptions: {
-              waitUntil: 'networkidle0',
-              timeout: 30000
+              waitUntil: 'domcontentloaded', // Faster than networkidle
+              timeout: 60000 // Increase timeout to 60 seconds
             }
           })
         });
@@ -139,7 +142,21 @@ Alternative: Manually update menu items in Menu Management.`
         }
 
         const browserlessData = await browserlessResponse.json();
-        finalHtml = browserlessData.data || browserlessData;
+        
+        console.info(`📦 [SCRAPE MENU ${requestId}] Browserless response:`, {
+          hasData: !!browserlessData.data,
+          hasElements: !!browserlessData.data?.[0],
+          type: typeof browserlessData
+        });
+        
+        // Extract HTML from Browserless scrape response
+        const scrapedElement = browserlessData.data?.[0];
+        if (!scrapedElement || !scrapedElement.results?.[0]?.html) {
+          console.error(`❌ [SCRAPE MENU ${requestId}] No HTML in Browserless response`);
+          throw new Error('Browserless returned no HTML content');
+        }
+        
+        finalHtml = scrapedElement.results[0].html;
         
         console.info(`✅ [SCRAPE MENU ${requestId}] Got rendered HTML from Browserless (${finalHtml.length} chars)`);
         
