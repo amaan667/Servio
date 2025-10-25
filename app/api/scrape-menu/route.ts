@@ -110,26 +110,32 @@ Alternative: Manually update menu items in Menu Management.`
       }
 
       try {
-        // Use Browserless.io to render JavaScript
-        const browserlessUrl = `https://chrome.browserless.io/content?token=${process.env.BROWSERLESS_API_KEY}`;
+        // Use NEW Browserless.io REST API endpoint
+        const browserlessUrl = `https://production-sfo.browserless.io/content?token=${process.env.BROWSERLESS_API_KEY}`;
         
-        console.info(`📡 [SCRAPE MENU ${requestId}] Requesting Browserless.io...`);
+        console.info(`📡 [SCRAPE MENU ${requestId}] Requesting Browserless.io (new endpoint)...`);
         const browserlessResponse = await fetch(browserlessUrl, {
           method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
+          headers: { 
+            'Content-Type': 'application/json',
+            'Cache-Control': 'no-cache'
+          },
           body: JSON.stringify({
             url: url,
             waitFor: 5000, // Wait 5 seconds for JS to load
             gotoOptions: {
-              waitUntil: 'networkidle2'
+              waitUntil: 'networkidle2',
+              timeout: 30000
             }
           })
         });
 
+        console.info(`📡 [SCRAPE MENU ${requestId}] Browserless response status: ${browserlessResponse.status}`);
+
         if (!browserlessResponse.ok) {
           const errorText = await browserlessResponse.text();
           console.error(`❌ [SCRAPE MENU ${requestId}] Browserless failed:`, errorText);
-          throw new Error(`Browserless request failed: ${browserlessResponse.status}`);
+          throw new Error(`Browserless request failed: ${browserlessResponse.status} - ${errorText}`);
         }
 
         const browserlessData = await browserlessResponse.json();
