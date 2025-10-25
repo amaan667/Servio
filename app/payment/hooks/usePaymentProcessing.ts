@@ -44,26 +44,36 @@ export function usePaymentProcessing() {
         // Clear checkout data
         localStorage.removeItem('servio-checkout-data');
       } else if (action === 'stripe') {
-        // Stripe payment
-        const response = await fetch('/api/stripe/create-checkout-session', {
+        // Stripe payment - for customer orders, we don't need tier validation
+        console.info('[PAYMENT] Processing Stripe payment for customer order');
+        
+        const response = await fetch('/api/pay/stripe', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({
             orderId: checkoutData.orderId,
             amount: checkoutData.total,
-            customerEmail: checkoutData.customerEmail,
-            venueName: checkoutData.venueName
+            customerEmail: checkoutData.customerEmail || 'customer@email.com',
+            customerName: checkoutData.customerName,
+            venueName: checkoutData.venueName || 'Restaurant'
           }),
         });
 
         const result = await response.json();
 
         if (!response.ok) {
+          console.error('[PAYMENT] Stripe checkout failed:', result);
           throw new Error(result.error || 'Failed to create checkout session');
         }
 
+        console.info('[PAYMENT] Stripe checkout session created:', result);
+        
         // Redirect to Stripe checkout
-        window.location.href = result.url;
+        if (result.url) {
+          window.location.href = result.url;
+        } else {
+          throw new Error('No Stripe checkout URL returned');
+        }
       } else if (action === 'till') {
         // Till payment - marks order as confirmed, sends to table management
         const response = await fetch('/api/pay/till', {
