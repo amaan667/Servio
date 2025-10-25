@@ -89,11 +89,25 @@ export async function POST(req: Request) {
 
   // If this is a customer order (not subscription) and no orderId, create the order
   if (orderType === "customer_order" && !originalOrderId) {
+    console.info("\n" + "=".repeat(80));
+    console.info("💳 [STRIPE WEBHOOK] CUSTOMER ORDER PAYMENT DETECTED");
+    console.info("=".repeat(80));
+    console.info("🎯 Session ID:", session.id);
+    console.info("💰 Amount:", session.amount_total, session.currency);
+    console.info("👤 Customer:", session.customer_details?.email, session.customer_details?.name);
+    console.info("=".repeat(80));
+
     apiLogger.debug("[WEBHOOK] Customer order payment - creating order from metadata");
 
     try {
       const checkoutDataJson = session.metadata?.checkoutDataJson;
+      console.info("📦 [WEBHOOK] Checking for checkout data in metadata...");
+      console.info("📦 [WEBHOOK] Has checkoutDataJson:", !!checkoutDataJson);
+
       if (!checkoutDataJson) {
+        console.error("❌ [WEBHOOK] NO CHECKOUT DATA IN METADATA!");
+        console.error("❌ [WEBHOOK] Metadata keys:", Object.keys(session.metadata || {}));
+        console.error("❌ [WEBHOOK] Metadata values:", session.metadata);
         apiLogger.error("[WEBHOOK] No checkout data in metadata");
         return NextResponse.json(
           { ok: false, error: "No checkout data in session metadata" },
@@ -101,7 +115,29 @@ export async function POST(req: Request) {
         );
       }
 
+      console.info("✅ [WEBHOOK] Found checkoutDataJson, length:", checkoutDataJson.length);
+      console.info("📄 [WEBHOOK] Raw JSON preview:", checkoutDataJson.substring(0, 200) + "...");
+
       const checkoutData = JSON.parse(checkoutDataJson);
+      console.info("✅ [WEBHOOK] Parsed checkout data successfully!");
+      console.info("📋 [WEBHOOK] Venue ID:", checkoutData.venueId);
+      console.info("📋 [WEBHOOK] Customer:", checkoutData.customerName);
+      console.info("📋 [WEBHOOK] Phone:", checkoutData.customerPhone);
+      console.info("📋 [WEBHOOK] Table:", checkoutData.tableNumber);
+      console.info("📋 [WEBHOOK] Cart items:", checkoutData.cart?.length);
+      console.info("📋 [WEBHOOK] Total:", checkoutData.total);
+
+      if (checkoutData.cart && checkoutData.cart.length > 0) {
+        console.info("🛒 [WEBHOOK] Cart items breakdown:");
+        checkoutData.cart.forEach(
+          (item: { name: string; quantity: number; price: number; id?: string }, idx: number) => {
+            console.info(
+              `  ${idx + 1}. ${item.name} x${item.quantity} @ £${item.price} (ID: ${item.id || "N/A"})`
+            );
+          }
+        );
+      }
+
       apiLogger.debug("[WEBHOOK] Parsed checkout data:", {
         venueId: checkoutData.venueId,
         customerName: checkoutData.customerName,
@@ -148,6 +184,18 @@ export async function POST(req: Request) {
         stripe_payment_intent_id: String(session.payment_intent ?? ""),
       };
 
+      console.info("💾 [WEBHOOK] Creating order in database...");
+      console.info("📋 [WEBHOOK] Order payload:", {
+        venue_id: orderPayload.venue_id,
+        customer_name: orderPayload.customer_name,
+        customer_phone: orderPayload.customer_phone,
+        table_number: orderPayload.table_number,
+        items_count: orderPayload.items.length,
+        total_amount: orderPayload.total_amount,
+        order_status: orderPayload.order_status,
+        payment_status: orderPayload.payment_status,
+      });
+
       apiLogger.debug("[WEBHOOK] Creating order with payload:", orderPayload);
 
       const { data: createdOrder, error: createError } = await supabaseAdmin
@@ -156,10 +204,37 @@ export async function POST(req: Request) {
         .select("*")
         .single();
 
+      console.info("📊 [WEBHOOK] Database insert result:");
+      console.info("📊 [WEBHOOK] - Success:", !createError);
+      console.info("📊 [WEBHOOK] - Error:", createError);
+      console.info("📊 [WEBHOOK] - Order ID:", createdOrder?.id);
+
       if (createError) {
+        console.error("\n" + "=".repeat(80));
+        console.error("❌ [WEBHOOK] ORDER CREATION FAILED!");
+        console.error("=".repeat(80));
+        console.error("❌ Error code:", createError.code);
+        console.error("❌ Error message:", createError.message);
+        console.error("❌ Error details:", createError);
+        console.error("=".repeat(80) + "\n");
+
         apiLogger.error("[WEBHOOK] Failed to create order:", createError);
         return NextResponse.json({ ok: false, error: createError.message }, { status: 500 });
       }
+
+      console.info("\n" + "=".repeat(80));
+      console.info("✅ [WEBHOOK] ORDER CREATED SUCCESSFULLY!");
+      console.info("=".repeat(80));
+      console.info("🆔 Order ID:", createdOrder.id);
+      console.info("📊 Order Status:", createdOrder.order_status);
+      console.info("💳 Payment Status:", createdOrder.payment_status);
+      console.info("👤 Customer:", createdOrder.customer_name);
+      console.info("🏪 Venue ID:", createdOrder.venue_id);
+      console.info("🪑 Table:", createdOrder.table_number);
+      console.info("🛒 Items:", createdOrder.items?.length);
+      console.info("💰 Total:", createdOrder.total_amount);
+      console.info("🔗 Stripe Session:", createdOrder.stripe_session_id);
+      console.info("=".repeat(80) + "\n");
 
       apiLogger.debug("[WEBHOOK] Order created successfully:", {
         orderId: createdOrder.id,
@@ -169,6 +244,17 @@ export async function POST(req: Request) {
 
       return NextResponse.json({ ok: true, orderId: createdOrder.id, created: true });
     } catch (parseError) {
+      console.error("\n" + "=".repeat(80));
+      console.error("❌ [WEBHOOK] ERROR PARSING CHECKOUT DATA!");
+      console.error("=".repeat(80));
+      console.error("❌ Error:", parseError);
+      console.error(
+        "❌ Error message:",
+        parseError instanceof Error ? parseError.message : String(parseError)
+      );
+      console.error("❌ Error stack:", parseError instanceof Error ? parseError.stack : "No stack");
+      console.error("=".repeat(80) + "\n");
+
       apiLogger.error("[WEBHOOK] Error parsing checkout data:", parseError);
       return NextResponse.json(
         { ok: false, error: "Invalid checkout data in metadata" },
