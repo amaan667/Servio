@@ -1,82 +1,63 @@
-'use client';
+"use client";
 
-import { useState } from 'react';
-import { Card, CardContent } from '@/components/ui/card';
-import { Button } from '@/components/ui/button';
-import { Badge } from '@/components/ui/badge';
-import { 
-  Clock, 
-  User, 
-  Hash,
-  MapPin,
-  QrCode,
-  Receipt,
-  CreditCard,
-  CheckCircle,
-  X,
-  Split,
-  Play,
-} from 'lucide-react';
-import {
-  Tooltip,
-  TooltipContent,
-  TooltipProvider,
-  TooltipTrigger,
-} from '@/components/ui/tooltip';
+import { useState } from "react";
+import { Card, CardContent } from "@/components/ui/card";
+import { Button } from "@/components/ui/button";
+import { Badge } from "@/components/ui/badge";
+import { Clock, User, Hash, MapPin, CreditCard, CheckCircle, X, Split } from "lucide-react";
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 
-import { OrderForCard } from '@/types/orders';
-import { deriveEntityKind, shouldShowUnpaidChip } from '@/lib/orders/entity-types';
-import { OrderStatusChip, PaymentStatusChip } from '@/components/ui/chips';
-import { formatCurrency, formatOrderTime } from '@/lib/orders/mapOrderToCardData';
-import { supabaseBrowser as createClient } from '@/lib/supabase';
+import { OrderForCard } from "@/types/orders";
+import { deriveEntityKind, shouldShowUnpaidChip } from "@/lib/orders/entity-types";
+import { OrderStatusChip, PaymentStatusChip } from "@/components/ui/chips";
+import { formatCurrency, formatOrderTime } from "@/lib/orders/mapOrderToCardData";
+import { supabaseBrowser as createClient } from "@/lib/supabase";
 
 interface OrderCardProps {
   order: OrderForCard;
-  variant?: 'table' | 'counter' | 'auto';
+  variant?: "table" | "counter" | "auto";
   venueId?: string;
   showActions?: boolean;
   onActionComplete?: () => void;
   className?: string;
 }
 
-export function OrderCard({ 
-  order, 
-  variant = 'auto', 
+export function OrderCard({
+  order,
+  variant = "auto",
   venueId,
   showActions = true,
   onActionComplete,
-  className = ''
+  className = "",
 }: OrderCardProps) {
   const [showHoverRemove, setShowHoverRemove] = useState(false);
   const [isProcessing, setIsProcessing] = useState(false);
 
   // Determine variant automatically if not specified
-  const finalVariant = variant === 'auto' 
-    ? (deriveEntityKind(order) === 'table' ? 'table' : 'counter')
-    : variant;
+  const finalVariant =
+    variant === "auto" ? (deriveEntityKind(order) === "table" ? "table" : "counter") : variant;
 
-  const isTableVariant = finalVariant === 'table';
+  const isTableVariant = finalVariant === "table";
 
   // Get appropriate label and icon
   const getEntityDisplay = () => {
     if (isTableVariant) {
-      
-      const label = order.table_label || 'Table Order';
+      const label = order.table_label || "Table Order";
       if (!order.table_label) {
-      // Empty block
-    }
+        // Empty block
+      }
       return {
         icon: <MapPin className="h-4 w-4" />,
         label,
-        badgeColor: 'bg-blue-50 text-blue-700 border-blue-200',
-        type: 'Table Order',
+        badgeColor: "bg-blue-50 text-blue-700 border-blue-200",
+        type: "Table Order",
       };
     } else {
       return {
         icon: <Hash className="h-4 w-4" />,
-        label: order.counter_label || 'Counter A',
-        badgeColor: 'bg-orange-50 text-orange-700 border-orange-200',
-        type: 'Counter Order',
+        label: order.counter_label || "Counter A",
+        badgeColor: "bg-orange-50 text-orange-700 border-orange-200",
+        type: "Counter Order",
       };
     }
   };
@@ -86,48 +67,48 @@ export function OrderCard({
   // Handle order actions
   const handleRemoveOrder = async () => {
     if (!venueId) return;
-    
+
     try {
       setIsProcessing(true);
-      const response = await fetch('/api/orders/delete', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        credentials: 'include',
+      const response = await fetch("/api/orders/delete", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        credentials: "include",
         body: JSON.stringify({
           orderId: order.id,
           venue_id: venueId,
         }),
       });
 
-      if (!response.ok) throw new Error('Failed to delete order');
+      if (!response.ok) throw new Error("Failed to delete order");
       onActionComplete?.();
-    } catch (error) {
+    } catch {
       // Error silently handled
     } finally {
       setIsProcessing(false);
     }
   };
 
-  const handlePayment = async (paymentMethod: 'till' | 'card') => {
+  const handlePayment = async (paymentMethod: "till" | "card") => {
     if (!venueId) return;
-    
+
     try {
       setIsProcessing(true);
-      const response = await fetch('/api/orders/payment', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        credentials: 'include',
+      const response = await fetch("/api/orders/payment", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        credentials: "include",
         body: JSON.stringify({
           orderId: order.id,
           venue_id: venueId,
           payment_method: paymentMethod,
-          payment_status: 'PAID'
+          payment_status: "PAID",
         }),
       });
 
-      if (!response.ok) throw new Error('Failed to process payment');
+      if (!response.ok) throw new Error("Failed to process payment");
       onActionComplete?.();
-    } catch (error) {
+    } catch {
       // Error silently handled
     } finally {
       setIsProcessing(false);
@@ -137,47 +118,53 @@ export function OrderCard({
   const handleStatusUpdate = async (nextStatusRaw: string) => {
     if (!venueId) return;
 
-    const nextStatus = (nextStatusRaw || '').toUpperCase();
-    const currentStatus = (order.order_status || '').toUpperCase();
-    
+    const nextStatus = (nextStatusRaw || "").toUpperCase();
+
     try {
       setIsProcessing(true);
-      
-      if (nextStatus === 'SERVED' || nextStatus === 'SERVING') {
-        // Use server endpoint for serving to ensure related side-effects
 
-        const response = await fetch('/api/orders/serve', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
+      if (nextStatus === "SERVED" || nextStatus === "SERVING") {
+        // Use server endpoint for serving to ensure related side-effects
+        const response = await fetch("/api/orders/serve", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
           body: JSON.stringify({ orderId: order.id }),
         });
         if (!response.ok) {
-          const errorText = await response.text();
-
-          throw new Error('Failed to mark order as served');
+          await response.text();
+          throw new Error("Failed to mark order as served");
         }
-        const json = await response.json().catch(() => null);
-
+        await response.json().catch(() => null);
+      } else if (nextStatus === "COMPLETED") {
+        // Use server endpoint for completing to clear tables
+        const response = await fetch("/api/orders/complete", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ orderId: order.id }),
+        });
+        if (!response.ok) {
+          await response.text();
+          throw new Error("Failed to mark order as completed");
+        }
+        await response.json().catch(() => null);
       } else {
         // Directly update status via Supabase for other transitions
         const supabase = createClient();
         const { error } = await supabase
-          .from('orders')
-          .update({ 
+          .from("orders")
+          .update({
             order_status: nextStatus,
             updated_at: new Date().toISOString(),
           })
-          .eq('id', order.id)
-          .eq('venue_id', venueId);
+          .eq("id", order.id)
+          .eq("venue_id", venueId);
         if (error) {
-
-          throw new Error('Failed to update order status');
+          throw new Error("Failed to update order status");
         }
-
       }
-      
+
       await onActionComplete?.();
-    } catch (error) {
+    } catch {
       // Error silently handled
     } finally {
       setIsProcessing(false);
@@ -188,8 +175,8 @@ export function OrderCard({
   const renderActions = () => {
     if (!showActions || !venueId) return null;
 
-    const isPaid = order.payment.status === 'paid';
-    const isCompleted = (order.order_status || '').toUpperCase() === 'COMPLETED';
+    const isPaid = order.payment.status === "paid";
+    const isCompleted = (order.order_status || "").toUpperCase() === "COMPLETED";
     const showUnpaid = shouldShowUnpaidChip(order);
 
     if (showUnpaid && !isPaid) {
@@ -198,13 +185,14 @@ export function OrderCard({
         <div className="mt-4 pt-4 border-t border-slate-200">
           <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3">
             <div className="text-sm text-slate-600">
-              <span className="font-medium">Payment Required:</span> {formatCurrency(order.total_amount, order.currency)}
+              <span className="font-medium">Payment Required:</span>{" "}
+              {formatCurrency(order.total_amount, order.currency)}
             </div>
             <div className="flex gap-2 flex-wrap">
               <Button
                 size="sm"
                 variant="outline"
-                onClick={() => handlePayment('till')}
+                onClick={() => handlePayment("till")}
                 disabled={isProcessing}
                 className="text-green-600 border-green-200 hover:bg-green-50"
               >
@@ -213,7 +201,7 @@ export function OrderCard({
               </Button>
               <Button
                 size="sm"
-                onClick={() => handlePayment('card')}
+                onClick={() => handlePayment("card")}
                 disabled={isProcessing}
                 className="bg-blue-600 hover:bg-blue-700"
               >
@@ -224,7 +212,9 @@ export function OrderCard({
                 <Button
                   size="sm"
                   variant="outline"
-                  onClick={() => {/* Bill splitting feature coming soon */}}
+                  onClick={() => {
+                    /* Bill splitting feature coming soon */
+                  }}
                   disabled={isProcessing}
                   className="text-purple-600 border-purple-200 hover:bg-purple-50"
                 >
@@ -242,11 +232,11 @@ export function OrderCard({
     // IN_PREP: Show "Preparing" message (not clickable - waiting for KDS)
     // READY: Show "Mark Served" button
     // SERVING: Show "Complete" button
-    const orderStatus = (order.order_status || '').toUpperCase();
-    
+    const orderStatus = (order.order_status || "").toUpperCase();
+
     if (!isCompleted) {
       // If order is IN_PREP, show preparing message (not clickable)
-      if (orderStatus === 'IN_PREP') {
+      if (orderStatus === "IN_PREP") {
         return (
           <div className="mt-4 pt-4 border-t border-slate-200">
             <div className="flex items-center justify-center gap-2 p-3 bg-blue-50 rounded-lg">
@@ -256,38 +246,47 @@ export function OrderCard({
           </div>
         );
       }
-      
+
       // For READY and SERVING, show action buttons
       const getNextStatus = () => {
         switch (orderStatus) {
-          case 'READY': return 'SERVING';
-          case 'SERVING': return 'COMPLETED';
-          default: return 'COMPLETED';
+          case "READY":
+            return "SERVING";
+          case "SERVING":
+            return "COMPLETED";
+          default:
+            return "COMPLETED";
         }
       };
 
       const getStatusLabel = () => {
         switch (orderStatus) {
-          case 'READY': return 'Mark Served';
-          case 'SERVING': return 'Complete';
-          default: return 'Complete';
+          case "READY":
+            return "Mark Served";
+          case "SERVING":
+            return "Mark Completed";
+          default:
+            return "Mark Completed";
         }
       };
 
       const getStatusIcon = () => {
         switch (orderStatus) {
-          case 'READY': return <CheckCircle className="h-4 w-4 mr-1" />;
-          case 'SERVING': return <CheckCircle className="h-4 w-4 mr-1" />;
-          default: return <CheckCircle className="h-4 w-4 mr-1" />;
+          case "READY":
+            return <CheckCircle className="h-4 w-4 mr-1" />;
+          case "SERVING":
+            return <CheckCircle className="h-4 w-4 mr-1" />;
+          default:
+            return <CheckCircle className="h-4 w-4 mr-1" />;
         }
       };
 
       const getStatusMessage = () => {
         switch (orderStatus) {
-          case 'READY':
+          case "READY":
             return "Kitchen Ready - Mark as Served";
-          case 'SERVING':
-            return "Served - Complete Order";
+          case "SERVING":
+            return "Served - Mark as Completed";
           default:
             return "Order Management - Update Status";
         }
@@ -296,7 +295,7 @@ export function OrderCard({
       return (
         <div className="mt-4 pt-4 border-t border-slate-200">
           <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3">
-            <div className={`text-sm ${isPaid ? 'text-blue-600' : 'text-orange-600'}`}>
+            <div className={`text-sm ${isPaid ? "text-blue-600" : "text-orange-600"}`}>
               <span className="font-medium">{getStatusMessage()}</span>
             </div>
             <Button
@@ -317,7 +316,7 @@ export function OrderCard({
   };
 
   return (
-    <Card 
+    <Card
       className={`rounded-xl border border-slate-200 bg-white shadow-sm hover:shadow-md transition-shadow ${className}`}
       onMouseEnter={() => setShowHoverRemove(true)}
       onMouseLeave={() => setShowHoverRemove(false)}
@@ -344,22 +343,14 @@ export function OrderCard({
                 <span className="ml-2 font-medium">{label}</span>
                 <span className="ml-2 text-xs opacity-75">({type})</span>
               </Badge>
-              
+
               {/* Status Chips */}
               <div className="flex items-center gap-2">
                 <OrderStatusChip status={order.order_status} />
-                {shouldShowUnpaidChip(order) && (
-                  <PaymentStatusChip status="unpaid" />
-                )}
-                {order.payment.status === 'paid' && (
-                  <PaymentStatusChip status="paid" />
-                )}
-                {order.payment.status === 'failed' && (
-                  <PaymentStatusChip status="failed" />
-                )}
-                {order.payment.status === 'refunded' && (
-                  <PaymentStatusChip status="refunded" />
-                )}
+                {shouldShowUnpaidChip(order) && <PaymentStatusChip status="unpaid" />}
+                {order.payment.status === "paid" && <PaymentStatusChip status="paid" />}
+                {order.payment.status === "failed" && <PaymentStatusChip status="failed" />}
+                {order.payment.status === "refunded" && <PaymentStatusChip status="refunded" />}
               </div>
             </div>
           </div>
@@ -371,10 +362,12 @@ export function OrderCard({
                 {formatCurrency(order.total_amount, order.currency)}
               </div>
             </div>
-            
+
             {/* Remove Button - On Hover */}
             {showActions && venueId && (
-              <div className={`transition-opacity duration-200 ${showHoverRemove ? 'opacity-100' : 'opacity-0'}`}>
+              <div
+                className={`transition-opacity duration-200 ${showHoverRemove ? "opacity-100" : "opacity-0"}`}
+              >
                 <TooltipProvider>
                   <Tooltip>
                     <TooltipTrigger asChild>
@@ -429,6 +422,6 @@ export function OrderCard({
 }
 
 // Convenience wrapper that automatically determines variant
-export function AutoOrderCard(props: Omit<OrderCardProps, 'variant'>) {
+export function AutoOrderCard(props: Omit<OrderCardProps, "variant">) {
   return <OrderCard {...props} variant="auto" />;
 }
