@@ -72,6 +72,8 @@ export async function PATCH(_req: Request) {
 
     // If bumping tickets, update the main order status to READY (not SERVED - that comes later)
     if (status === "bumped" && orderId) {
+      console.info(`🎯 [KDS BUMP] All tickets bumped for order ${orderId} - updating order to READY`);
+      
       const { error: orderUpdateError } = await supabase
         .from("orders")
         .update({
@@ -81,12 +83,22 @@ export async function PATCH(_req: Request) {
         .eq("id", orderId);
 
       if (orderUpdateError) {
+        console.error(`❌ [KDS BUMP] Failed to update order ${orderId} to READY:`, orderUpdateError.message);
         logger.error("[KDS] Error updating order status after bump:", {
           error: orderUpdateError.message,
         });
-        // Don't fail the request, just log the error
       } else {
-        logger.debug("[KDS] Updated order status to READY after bump - staff can now mark as SERVED", { orderId });
+        console.info(`✅ [KDS BUMP] Order ${orderId} → READY (shows in Live Orders as 'Mark Served')`);
+        logger.info("[KDS] Order status updated to READY after bump - staff can now mark as SERVED", { orderId });
+      }
+      
+      // Clean up table session after bumping
+      try {
+        const { cleanupTableOnOrderCompletion } = await import("@/lib/table-cleanup");
+        await cleanupTableOnOrderCompletion(orderId, "READY");
+        console.info(`✅ [KDS BUMP] Table cleanup initiated for order ${orderId}`);
+      } catch (cleanupError) {
+        console.warn(`⚠️ [KDS BUMP] Table cleanup failed for order ${orderId}:`, cleanupError);
       }
     }
 

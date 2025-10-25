@@ -336,21 +336,44 @@ export async function PATCH(req: Request) {
       return NextResponse.json({ ok: false, error: error.message }, { status: 500 });
     }
 
-    // If bumping a ticket, also update the main order status to SERVED
-    if (status === "bumped" && ticket?.order_id) {
-      const { error: orderUpdateError } = await supabase
-        .from("orders")
-        .update({
-          order_status: "SERVED",
-          updated_at: now,
-        })
-        .eq("id", ticket.order_id);
+    // Update main order status based on ticket status
+    if (ticket?.order_id) {
+      let newOrderStatus: string | null = null;
+      
+      switch (status) {
+        case "in_progress":
+          // When kitchen starts preparing ANY item, order is IN_PREP
+          newOrderStatus = "IN_PREP";
+          console.info(`🔥 [KDS] Ticket ${ticketId} → in_progress, updating order ${ticket.order_id} → IN_PREP`);
+          break;
+        case "ready":
+          // Don't update to READY yet - only when ALL tickets are ready (bump does this)
+          console.info(`✅ [KDS] Ticket ${ticketId} → ready (order status unchanged until bump)`);
+          break;
+        case "bumped":
+          // This case is handled by bulk-update route
+          break;
+      }
+      
+      if (newOrderStatus) {
+        const { error: orderUpdateError } = await supabase
+          .from("orders")
+          .update({
+            order_status: newOrderStatus,
+            updated_at: now,
+          })
+          .eq("id", ticket.order_id);
 
-      if (orderUpdateError) {
-        logger.error("[KDS] Error updating order status after bump:", { value: orderUpdateError });
-        // Don't fail the request, just log the error
-      } else {
-        logger.debug(`[KDS] Updated order ${ticket.order_id} status to SERVED after bump`);
+        if (orderUpdateError) {
+          logger.error("[KDS] Error updating order status:", { 
+            ticketId,
+            orderId: ticket.order_id,
+            newStatus: newOrderStatus,
+            error: orderUpdateError.message
+          });
+        } else {
+          console.info(`✅ [KDS] Order ${ticket.order_id} status updated to ${newOrderStatus}`);
+        }
       }
     }
 

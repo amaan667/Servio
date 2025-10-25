@@ -64,18 +64,32 @@ export default function PaymentSuccessPage() {
               headers: { 'Content-Type': 'application/json' },
               body: JSON.stringify(orderData),
             })
-              .then(response => response.json())
-              .then(result => {
+              .then(async response => {
+                const result = await response.json();
+                console.info('📦 [STRIPE SUCCESS] Create order response:', {
+                  ok: response.ok,
+                  status: response.status,
+                  hasOrder: !!result.order,
+                  orderId: result.order?.id,
+                  error: result.error
+                });
+                
                 if (result.ok && result.order?.id) {
                   console.info('✅ [STRIPE SUCCESS] Order created after successful payment:', result.order.id);
                   localStorage.removeItem('servio-checkout-data');
                   
                   // Redirect to unified order summary page
                   window.location.href = `/order-summary?orderId=${result.order.id}`;
+                } else {
+                  console.error('❌ [STRIPE SUCCESS] Order creation failed:', result.error);
+                  // Still redirect to order summary with session ID so user sees something
+                  window.location.href = `/order-summary?session_id=${sessionId}`;
                 }
               })
               .catch(error => {
-                console.error('❌ [STRIPE SUCCESS] Failed to create order:', error);
+                console.error('❌ [STRIPE SUCCESS] Network error creating order:', error);
+                // Redirect anyway - maybe order was created but response failed
+                window.location.href = `/order-summary?session_id=${sessionId}`;
               });
           }
         } catch (parseError) {
