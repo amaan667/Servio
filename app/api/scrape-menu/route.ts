@@ -393,9 +393,49 @@ Return ONLY valid JSON:
       if (menuItems.length === 0) {
         console.warn(`⚠️ [SCRAPE MENU ${requestId}] GPT-4 returned ZERO items!`);
         console.warn(`Full AI response:`, aiContent);
-        console.warn(`Text sent to AI (first 500 chars):`, truncatedText.substring(0, 500));
+        console.warn(`Text sent to AI (first 1000 chars):`, truncatedText.substring(0, 1000));
       } else {
-        console.info(`📋 [SCRAPE MENU ${requestId}] First item sample:`, menuItems[0]);
+        console.info(`\n${"=".repeat(80)}`);
+        console.info(`📋 EXTRACTED MENU ITEMS - DETAILED BREAKDOWN:`);
+        console.info(`${"=".repeat(80)}`);
+
+        // Log first 10 items in detail
+        const itemsToShow = Math.min(10, menuItems.length);
+        for (let i = 0; i < itemsToShow; i++) {
+          const item = menuItems[i];
+          console.info(`\n[Item ${i + 1}/${menuItems.length}]`);
+          console.info(`  📛 Name: "${item.name || "N/A"}"`);
+          console.info(`  💰 Price: £${item.price || "N/A"}`);
+          console.info(
+            `  📝 Description: ${item.description ? `"${item.description.substring(0, 80)}${item.description.length > 80 ? "..." : ""}"` : "N/A"}`
+          );
+          console.info(`  🏷️  Category: "${item.category || "N/A"}"`);
+          console.info(
+            `  🖼️  Image: ${item.image ? "YES" : "NO"}${item.image ? ` - ${item.image.substring(0, 50)}...` : ""}`
+          );
+        }
+
+        if (menuItems.length > 10) {
+          console.info(`\n... and ${menuItems.length - 10} more items (not shown)`);
+        }
+
+        console.info(`\n${"=".repeat(80)}`);
+        console.info(`📊 EXTRACTION STATISTICS:`);
+        console.info(`${"=".repeat(80)}`);
+        console.info(`  📋 Total items extracted: ${menuItems.length}`);
+        console.info(`  💰 Items with prices: ${menuItems.filter((i) => i.price > 0).length}`);
+        console.info(
+          `  📝 Items with descriptions: ${menuItems.filter((i) => i.description && i.description.length > 10).length}`
+        );
+        console.info(`  🖼️  Items with images: ${menuItems.filter((i) => i.image).length}`);
+        console.info(`  🏷️  Unique categories: ${new Set(menuItems.map((i) => i.category)).size}`);
+        console.info(
+          `  📏 Avg description length: ${Math.round(menuItems.reduce((sum, i) => sum + (i.description?.length || 0), 0) / menuItems.length)} chars`
+        );
+
+        const categories = Array.from(new Set(menuItems.map((i) => i.category)));
+        console.info(`  📚 Categories found: ${categories.join(", ")}`);
+        console.info(`${"=".repeat(80)}\n`);
       }
     } catch (parseError) {
       console.error(`❌ [SCRAPE MENU ${requestId}] Failed to parse AI response:`, parseError);
