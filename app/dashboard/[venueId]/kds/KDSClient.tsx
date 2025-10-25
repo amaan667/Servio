@@ -46,9 +46,11 @@ interface KDSTicket {
 interface KDSClientProps {
   venueId: string;
   venueName?: string;
+  initialTickets?: unknown;
+  initialStations?: unknown;
 }
 
-export default function KDSClient({ venueId }: KDSClientProps) {
+export default function KDSClient({ venueId, initialTickets, initialStations }: KDSClientProps) {
   // Cache KDS stations to prevent flicker
   const getCachedStations = () => {
     if (typeof window === 'undefined') return [];
@@ -61,8 +63,19 @@ export default function KDSClient({ venueId }: KDSClientProps) {
     return sessionStorage.getItem(`kds_selected_station_${venueId}`);
   };
 
-  const [stations, setStations] = useState<KDSStation[]>(getCachedStations());
-  const [tickets, setTickets] = useState<KDSTicket[]>([]);
+  const getCachedTickets = () => {
+    if (typeof window === 'undefined') return [];
+    const cached = sessionStorage.getItem(`kds_tickets_${venueId}`);
+    return cached ? JSON.parse(cached) : [];
+  };
+
+  // Use server-provided data, then cached, then empty array
+  const [stations, setStations] = useState<KDSStation[]>(
+    (initialStations as KDSStation[]) || getCachedStations() || []
+  );
+  const [tickets, setTickets] = useState<KDSTicket[]>(
+    (initialTickets as KDSTicket[]) || getCachedTickets() || []
+  );
   const [loading, setLoading] = useState(false); // Start with false to prevent flicker
   const [error, setError] = useState<string | null>(null);
   const [selectedStation, setSelectedStation] = useState<string | null>(getCachedSelectedStation());
@@ -116,6 +129,10 @@ export default function KDSClient({ venueId }: KDSClientProps) {
 
       if (data.ok) {
         setTickets(data.tickets || []);
+        // Cache tickets
+        if (typeof window !== 'undefined') {
+          sessionStorage.setItem(`kds_tickets_${venueId}`, JSON.stringify(data.tickets || []));
+        }
       } else {
         console.error("[KDS CLIENT] ❌ Failed to load tickets:", data.error);
         setError(data.error || "Failed to load tickets");
