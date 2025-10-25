@@ -44,7 +44,7 @@ export function usePaymentProcessing() {
           })),
           total_amount: checkoutData.total,
           notes: checkoutData.notes || '',
-          order_status: 'PLACED',
+          order_status: 'IN_PREP', // Start as IN_PREP so it shows in Live Orders immediately as "Preparing"
           payment_status: 'UNPAID',
           payment_mode: action === 'till' ? 'pay_at_till' : (action === 'later' ? 'pay_later' : 'online'),
           payment_method: action === 'demo' ? 'demo' : (action === 'till' ? 'till' : null),

@@ -317,7 +317,7 @@ export default function KDSClient({ venueId }: KDSClientProps) {
       <div className="grid grid-cols-1 md:grid-cols-4 gap-4 px-2">
         <Card>
           <CardHeader className="pb-3">
-            <CardTitle className="text-sm font-medium text-gray-500">New Orders</CardTitle>
+            <CardTitle className="text-sm font-medium text-gray-500">Preparing</CardTitle>
           </CardHeader>
           <CardContent>
             <div className="text-3xl font-bold text-blue-600">{newTickets.length}</div>
@@ -325,15 +325,7 @@ export default function KDSClient({ venueId }: KDSClientProps) {
         </Card>
         <Card>
           <CardHeader className="pb-3">
-            <CardTitle className="text-sm font-medium text-gray-500">In Progress</CardTitle>
-          </CardHeader>
-          <CardContent>
-            <div className="text-3xl font-bold text-yellow-600">{inProgressTickets.length}</div>
-          </CardContent>
-        </Card>
-        <Card>
-          <CardHeader className="pb-3">
-            <CardTitle className="text-sm font-medium text-gray-500">Ready</CardTitle>
+            <CardTitle className="text-sm font-medium text-gray-500">Ready to Serve</CardTitle>
           </CardHeader>
           <CardContent>
             <div className="text-3xl font-bold text-green-600">{readyTickets.length}</div>
@@ -375,13 +367,13 @@ export default function KDSClient({ venueId }: KDSClientProps) {
         ))}
       </div>
 
-      {/* Tickets Grid - Kanban Style */}
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-6 px-2">
-        {/* New Column */}
+      {/* Tickets Grid - Kanban Style (2 columns: Preparing + Ready) */}
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-6 px-2">
+        {/* Preparing Column (no action needed - automatically in prep) */}
         <div className="space-y-3">
           <div className="flex items-center justify-between bg-blue-50 p-3 rounded-lg">
-            <h3 className="font-semibold text-blue-800">New ({newTickets.length})</h3>
-            <Clock className="h-5 w-5 text-blue-600" />
+            <h3 className="font-semibold text-blue-800">Preparing ({newTickets.length})</h3>
+            <ChefHat className="h-5 w-5 text-blue-600" />
           </div>
           <div className="space-y-3">
             {newTickets.map((ticket) => (
@@ -419,98 +411,26 @@ export default function KDSClient({ venueId }: KDSClientProps) {
                       {getTimeElapsed(ticket.created_at)}
                     </div>
 
-                    {/* Actions */}
+                    {/* Mark as Ready when done preparing */}
                     <Button
-                      onClick={() => updateTicketStatus(ticket.id, "in_progress")}
-                      className="w-full"
+                      onClick={() => updateTicketStatus(ticket.id, "ready")}
+                      className="w-full bg-green-600 hover:bg-green-700"
                       size="sm"
                     >
-                      <PlayCircle className="h-4 w-4 mr-2" />
-                      Start Prep
+                      <CheckCircle2 className="h-4 w-4 mr-2" />
+                      Mark Ready
                     </Button>
                   </div>
                 </CardContent>
               </Card>
             ))}
             {newTickets.length === 0 && (
-              <div className="text-center text-gray-400 py-8">No new tickets</div>
+              <div className="text-center text-gray-400 py-8">No items preparing</div>
             )}
           </div>
         </div>
 
-        {/* In Progress Column */}
-        <div className="space-y-3">
-          <div className="flex items-center justify-between bg-yellow-50 p-3 rounded-lg">
-            <h3 className="font-semibold text-yellow-800">
-              In Progress ({inProgressTickets.length})
-            </h3>
-            <ChefHat className="h-5 w-5 text-yellow-600" />
-          </div>
-          <div className="space-y-3">
-            {inProgressTickets.map((ticket) => (
-              <Card
-                key={ticket.id}
-                className={cn(
-                  "transition-all hover:shadow-lg cursor-pointer",
-                  getPriorityIndicator(ticket.created_at)
-                )}
-              >
-                <CardContent className="p-4">
-                  <div className="space-y-3">
-                    {/* Header */}
-                    <div className="flex items-start justify-between">
-                      <div>
-                        <div className="font-semibold text-lg">{ticket.item_name}</div>
-                        <div className="text-sm text-gray-500">
-                          {ticket.table_label || `Table ${ticket.table_number}`}
-                        </div>
-                      </div>
-                      <Badge className="text-lg font-bold">{ticket.quantity}x</Badge>
-                    </div>
-
-                    {/* Special Instructions */}
-                    {ticket.special_instructions && (
-                      <div className="bg-yellow-50 border border-yellow-200 p-2 rounded text-sm">
-                        <p className="font-medium text-yellow-800">Special Instructions:</p>
-                        <p className="text-yellow-700">{ticket.special_instructions}</p>
-                      </div>
-                    )}
-
-                    {/* Time */}
-                    <div className="flex items-center text-sm text-gray-500">
-                      <Clock className="h-4 w-4 mr-1" />
-                      {getTimeElapsed(ticket.created_at)}
-                    </div>
-
-                    {/* Actions */}
-                    <div className="flex gap-2">
-                      <Button
-                        onClick={() => updateTicketStatus(ticket.id, "new")}
-                        variant="outline"
-                        className="flex-1"
-                        size="sm"
-                      >
-                        <XCircle className="h-4 w-4 mr-2" />
-                        Reset
-                      </Button>
-                      <Button
-                        onClick={() => updateTicketStatus(ticket.id, "ready")}
-                        className="flex-1 bg-green-600 hover:bg-green-700"
-                        size="sm"
-                      >
-                        <CheckCircle2 className="h-4 w-4 mr-2" />
-                        Ready
-                      </Button>
-                    </div>
-                  </div>
-                </CardContent>
-              </Card>
-            ))}
-            {inProgressTickets.length === 0 && (
-              <div className="text-center text-gray-400 py-8">No tickets in progress</div>
-            )}
-          </div>
-        </div>
+        {/* Not Used - removed this column since orders go straight to preparing */}
 
         {/* Ready Column */}
         <div className="space-y-3">

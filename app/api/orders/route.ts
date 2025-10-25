@@ -449,7 +449,7 @@ export async function POST(req: Request) {
       items: safeItems,
       total_amount: finalTotal,
       notes: body.notes ?? null,
-      order_status: body.order_status || 'PLACED', // Use provided status or default to 'PLACED'
+      order_status: body.order_status || 'IN_PREP', // Default to IN_PREP so it shows in Live Orders immediately
       payment_status: body.payment_status || 'UNPAID', // Use provided status or default to 'UNPAID'
       payment_mode: body.payment_mode || 'online', // New field for payment mode
       payment_method: body.payment_method || null,

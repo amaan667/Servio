@@ -50,7 +50,7 @@ export default function PaymentSuccessPage() {
               })),
               total_amount: checkoutData.total,
               notes: checkoutData.notes || '',
-              order_status: 'PLACED',
+              order_status: 'IN_PREP', // Start as IN_PREP so it shows in Live Orders immediately as "Preparing"
               payment_status: 'PAID',
               payment_mode: 'online',
               payment_method: 'stripe',
@@ -132,7 +132,7 @@ export default function PaymentSuccessPage() {
             venue_id: 'demo-cafe',
             venue_name: venueNameParam || 'Demo Café',
             table_number: 1,
-            order_status: 'PLACED',
+            order_status: 'IN_PREP', // Start as IN_PREP so demo orders also show in Live Orders
             payment_status: 'PAID',
             payment_method: paymentMethod || 'demo',
             customer_name: customerNameParam || 'Demo Customer',
