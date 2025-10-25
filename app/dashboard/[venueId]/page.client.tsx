@@ -5,12 +5,15 @@ import { useRouter } from "next/navigation";
 import { Clock, TrendingUp, ShoppingBag, Table } from "lucide-react";
 import Link from "next/link";
 import { useDashboardPrefetch } from "@/hooks/usePrefetch";
-import PullToRefresh from "@/components/PullToRefresh";
+import dynamic from "next/dynamic";
 import { useConnectionMonitor } from "@/lib/connection-monitor";
 import RoleManagementPopup from "@/components/role-management-popup";
 import VenueSwitcherPopup from "@/components/venue-switcher-popup";
 import { supabaseBrowser } from "@/lib/supabase";
 import TrialStatusBanner from "@/components/TrialStatusBanner";
+
+// Dynamically import PullToRefresh to avoid SSR issues
+const PullToRefresh = dynamic(() => import("@/components/PullToRefresh"), { ssr: false });
 
 // Hooks
 import { useDashboardData } from "./hooks/useDashboardData";
