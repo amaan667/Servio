@@ -21,7 +21,7 @@ WHERE
     SELECT 1 
     FROM orders o
     WHERE o.venue_id = ts.venue_id
-    AND (o.table_id = ts.table_id OR o.table_number = ts.table_number)
+    AND o.table_id = ts.table_id
     AND o.order_status IN ('IN_PREP', 'READY', 'SERVING', 'SERVED')
     AND o.id != ts.order_id
   );
