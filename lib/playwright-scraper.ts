@@ -11,8 +11,11 @@ let browser: Browser | null = null;
 // Initialize browser once and reuse (much faster)
 async function getBrowser(): Promise<Browser> {
   if (!browser) {
+    const executablePath = process.env.PLAYWRIGHT_CHROMIUM_EXECUTABLE_PATH || undefined;
+
     browser = await chromium.launch({
       headless: true,
+      executablePath, // Use system Chromium on Railway
       args: [
         "--no-sandbox",
         "--disable-setuid-sandbox",
