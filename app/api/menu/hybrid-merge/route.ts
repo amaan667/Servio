@@ -51,28 +51,50 @@ export async function POST(req: NextRequest) {
 
     console.info(`✅ [HYBRID MERGE ${requestId}] Found ${existingItems.length} PDF items`);
 
-    // Step 2: Scrape menu from URL using Puppeteer
+    // Step 2: Scrape menu from URL
     console.info(`🌐 [HYBRID MERGE ${requestId}] Scraping menu from URL...`);
     
     let urlMenuData;
     try {
-      const scrapeResponse = await fetch(`${process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:3000'}/api/scrape-menu`, {
+      // Use absolute URL for Railway deployment
+      const baseUrl = process.env.NEXT_PUBLIC_APP_URL || process.env.RAILWAY_PUBLIC_DOMAIN 
+        ? `https://${process.env.RAILWAY_PUBLIC_DOMAIN}` 
+        : 'https://servio-production.up.railway.app';
+      
+      const scrapeUrl = `${baseUrl}/api/scrape-menu`;
+      console.info(`📡 [HYBRID MERGE ${requestId}] Calling scrape API: ${scrapeUrl}`);
+      
+      const scrapeResponse = await fetch(scrapeUrl, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ url: menuUrl })
       });
 
+      console.info(`📡 [HYBRID MERGE ${requestId}] Scrape response status: ${scrapeResponse.status}`);
+
       if (!scrapeResponse.ok) {
-        throw new Error('Failed to scrape menu from URL');
+        const errorData = await scrapeResponse.json().catch(() => ({ error: 'Unknown error' }));
+        console.error(`❌ [HYBRID MERGE ${requestId}] Scrape API failed:`, errorData);
+        throw new Error(errorData.error || `Scrape API returned ${scrapeResponse.status}`);
       }
 
       urlMenuData = await scrapeResponse.json();
       console.info(`✅ [HYBRID MERGE ${requestId}] Scraped ${urlMenuData.items?.length || 0} items from URL`);
+      
+      if (!urlMenuData.ok) {
+        console.error(`❌ [HYBRID MERGE ${requestId}] Scrape returned not ok:`, urlMenuData);
+        throw new Error(urlMenuData.error || 'Scraping returned error status');
+      }
     } catch (scrapeError) {
       console.error(`❌ [HYBRID MERGE ${requestId}] Scraping failed:`, scrapeError);
+      console.error(`❌ [HYBRID MERGE ${requestId}] Error details:`, {
+        message: scrapeError instanceof Error ? scrapeError.message : String(scrapeError),
+        stack: scrapeError instanceof Error ? scrapeError.stack : undefined
+      });
+      
       return NextResponse.json({
         ok: false,
-        error: 'Failed to scrape menu from URL. Please check the URL is valid and accessible.'
+        error: `Failed to scrape menu from URL: ${scrapeError instanceof Error ? scrapeError.message : 'Unknown error'}. Check Railway logs for details.`
       }, { status: 500 });
     }
 
