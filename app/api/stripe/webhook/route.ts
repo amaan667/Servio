@@ -1,48 +1,53 @@
-import Stripe from 'stripe';
-import { NextResponse } from 'next/server';
-import { createAdminClient } from '@/lib/supabase';
-import { stripe } from '@/lib/stripe-client';
-import { apiLogger } from '@/lib/logger';
+import Stripe from "stripe";
+import { NextResponse } from "next/server";
+import { createAdminClient } from "@/lib/supabase";
+import { stripe } from "@/lib/stripe-client";
+import { apiLogger } from "@/lib/logger";
 
-export const runtime = 'nodejs';            // ensure Node runtime (not Edge)
-export const dynamic = 'force-dynamic';
+export const runtime = "nodejs"; // ensure Node runtime (not Edge)
+export const dynamic = "force-dynamic";
 export const revalidate = 0;
 
 export async function POST(req: Request) {
   const supabaseAdmin = createAdminClient();
-  
-  apiLogger.debug('[STRIPE WEBHOOK DEBUG] ===== WEBHOOK RECEIVED =====');
-  apiLogger.debug('[STRIPE WEBHOOK DEBUG] Timestamp:', new Date().toISOString());
-  apiLogger.debug('[STRIPE WEBHOOK DEBUG] Request headers:', Object.fromEntries(req.headers.entries()));
-  
-  const sig = req.headers.get('stripe-signature');
+
+  apiLogger.debug("[STRIPE WEBHOOK DEBUG] ===== WEBHOOK RECEIVED =====");
+  apiLogger.debug("[STRIPE WEBHOOK DEBUG] Timestamp:", new Date().toISOString());
+  apiLogger.debug(
+    "[STRIPE WEBHOOK DEBUG] Request headers:",
+    Object.fromEntries(req.headers.entries())
+  );
+
+  const sig = req.headers.get("stripe-signature");
   if (!sig) {
-    apiLogger.error('[STRIPE WEBHOOK DEBUG] Missing stripe-signature header');
-    return new NextResponse('Missing stripe-signature', { status: 400 });
+    apiLogger.error("[STRIPE WEBHOOK DEBUG] Missing stripe-signature header");
+    return new NextResponse("Missing stripe-signature", { status: 400 });
   }
 
-  apiLogger.debug('[STRIPE WEBHOOK DEBUG] Stripe signature found:', sig.substring(0, 20) + '...');
+  apiLogger.debug("[STRIPE WEBHOOK DEBUG] Stripe signature found:", sig.substring(0, 20) + "...");
 
   // IMPORTANT: read raw text for Stripe verification
   const raw = await req.text();
-  apiLogger.debug('[STRIPE WEBHOOK DEBUG] Raw payload length:', { length: raw.length });
-  apiLogger.debug('[STRIPE WEBHOOK DEBUG] Raw payload preview:', { preview: raw.substring(0, 200) });
+  apiLogger.debug("[STRIPE WEBHOOK DEBUG] Raw payload length:", { length: raw.length });
+  apiLogger.debug("[STRIPE WEBHOOK DEBUG] Raw payload preview:", {
+    preview: raw.substring(0, 200),
+  });
 
   let event: Stripe.Event;
   try {
-    apiLogger.debug('[STRIPE WEBHOOK DEBUG] Constructing Stripe event...');
+    apiLogger.debug("[STRIPE WEBHOOK DEBUG] Constructing Stripe event...");
     event = stripe.webhooks.constructEvent(raw, sig, process.env.STRIPE_WEBHOOK_SECRET!);
-    apiLogger.debug('[STRIPE WEBHOOK DEBUG] Event constructed successfully');
-    apiLogger.debug('[STRIPE WEBHOOK DEBUG] Event type:', event.type);
-    apiLogger.debug('[STRIPE WEBHOOK DEBUG] Event ID:', event.id);
+    apiLogger.debug("[STRIPE WEBHOOK DEBUG] Event constructed successfully");
+    apiLogger.debug("[STRIPE WEBHOOK DEBUG] Event type:", event.type);
+    apiLogger.debug("[STRIPE WEBHOOK DEBUG] Event ID:", event.id);
   } catch (err) {
-    const errorMessage = err instanceof Error ? err.message : 'Unknown error';
-    apiLogger.error('[STRIPE WEBHOOK DEBUG] Webhook construction error:', errorMessage);
+    const errorMessage = err instanceof Error ? err.message : "Unknown error";
+    apiLogger.error("[STRIPE WEBHOOK DEBUG] Webhook construction error:", errorMessage);
     return new NextResponse(`Webhook Error: ${errorMessage}`, { status: 400 });
   }
 
-  if (event.type !== 'checkout.session.completed') {
-    apiLogger.debug('[STRIPE WEBHOOK DEBUG] Ignoring event type:', event.type);
+  if (event.type !== "checkout.session.completed") {
+    apiLogger.debug("[STRIPE WEBHOOK DEBUG] Ignoring event type:", event.type);
     return NextResponse.json({ ok: true, ignored: true });
   }
 
@@ -50,142 +55,257 @@ export async function POST(req: Request) {
 
   // Get the original order ID from metadata
   const originalOrderId = session.metadata?.orderId;
-  
-  apiLogger.debug('[STRIPE WEBHOOK DEBUG] ===== SESSION PROCESSING =====');
-  apiLogger.debug('[STRIPE WEBHOOK DEBUG] Processing checkout session:', { sessionId: session.id });
-  apiLogger.debug('[STRIPE WEBHOOK DEBUG] Session metadata:', { metadata: JSON.stringify(session.metadata, null, 2) });
-  apiLogger.debug('[STRIPE WEBHOOK DEBUG] Original order ID from metadata:', { value: originalOrderId });
-  apiLogger.debug('[STRIPE WEBHOOK DEBUG] Session payment status:', { status: session.payment_status });
-  apiLogger.debug('[STRIPE WEBHOOK DEBUG] Session customer details:', { customer: session.customer_details });
-  apiLogger.debug('[STRIPE WEBHOOK DEBUG] Session amount total:', { amount: session.amount_total });
-  apiLogger.debug('[STRIPE WEBHOOK DEBUG] Session currency:', { currency: session.currency });
-  
-  if (!originalOrderId) {
-    apiLogger.error('[WEBHOOK] No orderId in session metadata');
-    return NextResponse.json({ ok: false, error: 'No orderId in session metadata' }, { status: 400 });
-  }
+  const orderType = session.metadata?.orderType;
 
-  // Check if we already processed this session
+  apiLogger.debug("[STRIPE WEBHOOK DEBUG] ===== SESSION PROCESSING =====");
+  apiLogger.debug("[STRIPE WEBHOOK DEBUG] Processing checkout session:", { sessionId: session.id });
+  apiLogger.debug("[STRIPE WEBHOOK DEBUG] Session metadata:", {
+    metadata: JSON.stringify(session.metadata, null, 2),
+  });
+  apiLogger.debug("[STRIPE WEBHOOK DEBUG] Original order ID from metadata:", {
+    value: originalOrderId,
+  });
+  apiLogger.debug("[STRIPE WEBHOOK DEBUG] Order type:", { value: orderType });
+  apiLogger.debug("[STRIPE WEBHOOK DEBUG] Session payment status:", {
+    status: session.payment_status,
+  });
+  apiLogger.debug("[STRIPE WEBHOOK DEBUG] Session customer details:", {
+    customer: session.customer_details,
+  });
+  apiLogger.debug("[STRIPE WEBHOOK DEBUG] Session amount total:", { amount: session.amount_total });
+  apiLogger.debug("[STRIPE WEBHOOK DEBUG] Session currency:", { currency: session.currency });
+
+  // Check if we already processed this session (idempotency)
   const { data: existing } = await supabaseAdmin
-    .from('orders')
-    .select('id, stripe_session_id, payment_status')
-    .eq('stripe_session_id', session.id)
+    .from("orders")
+    .select("id, stripe_session_id, payment_status")
+    .eq("stripe_session_id", session.id)
     .maybeSingle();
+
   if (existing) {
-    apiLogger.debug('[WEBHOOK] Session already processed for order:', existing.id);
-    return NextResponse.json({ ok: true, already: true });
+    apiLogger.debug("[WEBHOOK] Session already processed for order:", existing.id);
+    return NextResponse.json({ ok: true, already: true, orderId: existing.id });
   }
 
-  // Verify the original order exists
-  apiLogger.debug('[STRIPE WEBHOOK DEBUG] ===== ORDER LOOKUP =====');
-  apiLogger.debug('[STRIPE WEBHOOK DEBUG] Looking for order with ID:', { value: originalOrderId });
-  
+  // If this is a customer order (not subscription) and no orderId, create the order
+  if (orderType === "customer_order" && !originalOrderId) {
+    apiLogger.debug("[WEBHOOK] Customer order payment - creating order from metadata");
+
+    try {
+      const checkoutDataJson = session.metadata?.checkoutDataJson;
+      if (!checkoutDataJson) {
+        apiLogger.error("[WEBHOOK] No checkout data in metadata");
+        return NextResponse.json(
+          { ok: false, error: "No checkout data in session metadata" },
+          { status: 400 }
+        );
+      }
+
+      const checkoutData = JSON.parse(checkoutDataJson);
+      apiLogger.debug("[WEBHOOK] Parsed checkout data:", {
+        venueId: checkoutData.venueId,
+        customerName: checkoutData.customerName,
+        customerPhone: checkoutData.customerPhone,
+        tableNumber: checkoutData.tableNumber,
+        cartLength: checkoutData.cart?.length,
+        total: checkoutData.total,
+      });
+
+      // Create order in database
+      const orderPayload = {
+        venue_id: checkoutData.venueId,
+        table_number: checkoutData.tableNumber,
+        table_id: null,
+        counter_number: checkoutData.counterNumber || null,
+        order_type: checkoutData.orderType || "table",
+        order_location: checkoutData.orderLocation || checkoutData.tableNumber?.toString() || "1",
+        customer_name: checkoutData.customerName,
+        customer_phone: checkoutData.customerPhone,
+        items: checkoutData.cart.map(
+          (item: {
+            id?: string;
+            quantity: number;
+            price: number;
+            name: string;
+            specialInstructions?: string;
+          }) => ({
+            menu_item_id: item.id || "unknown",
+            quantity: item.quantity,
+            price: item.price,
+            item_name: item.name,
+            specialInstructions: item.specialInstructions || null,
+          })
+        ),
+        total_amount: checkoutData.total,
+        notes: checkoutData.notes || "",
+        order_status: "IN_PREP",
+        payment_status: "PAID",
+        payment_mode: "online",
+        payment_method: "stripe",
+        session_id: checkoutData.sessionId,
+        source: checkoutData.source || "qr",
+        stripe_session_id: session.id,
+        stripe_payment_intent_id: String(session.payment_intent ?? ""),
+      };
+
+      apiLogger.debug("[WEBHOOK] Creating order with payload:", orderPayload);
+
+      const { data: createdOrder, error: createError } = await supabaseAdmin
+        .from("orders")
+        .insert(orderPayload)
+        .select("*")
+        .single();
+
+      if (createError) {
+        apiLogger.error("[WEBHOOK] Failed to create order:", createError);
+        return NextResponse.json({ ok: false, error: createError.message }, { status: 500 });
+      }
+
+      apiLogger.debug("[WEBHOOK] Order created successfully:", {
+        orderId: createdOrder.id,
+        orderStatus: createdOrder.order_status,
+        paymentStatus: createdOrder.payment_status,
+      });
+
+      return NextResponse.json({ ok: true, orderId: createdOrder.id, created: true });
+    } catch (parseError) {
+      apiLogger.error("[WEBHOOK] Error parsing checkout data:", parseError);
+      return NextResponse.json(
+        { ok: false, error: "Invalid checkout data in metadata" },
+        { status: 400 }
+      );
+    }
+  }
+
+  if (!originalOrderId) {
+    apiLogger.error("[WEBHOOK] No orderId in session metadata (non-customer order)");
+    return NextResponse.json(
+      { ok: false, error: "No orderId in session metadata" },
+      { status: 400 }
+    );
+  }
+
+  // Verify the original order exists (for subscription/upgrade payments)
+  apiLogger.debug("[STRIPE WEBHOOK DEBUG] ===== ORDER LOOKUP =====");
+  apiLogger.debug("[STRIPE WEBHOOK DEBUG] Looking for order with ID:", { value: originalOrderId });
+
   const { data: originalOrder, error: fetchError } = await supabaseAdmin
-    .from('orders')
-    .select('id, payment_status, customer_name, table_number, created_at, venue_id, order_status')
-    .eq('id', originalOrderId)
+    .from("orders")
+    .select("id, payment_status, customer_name, table_number, created_at, venue_id, order_status")
+    .eq("id", originalOrderId)
     .single();
 
-  apiLogger.debug('[STRIPE WEBHOOK DEBUG] Order lookup result:', { found: !!originalOrder });
-  apiLogger.debug('[STRIPE WEBHOOK DEBUG] - Fetch error:', { error: fetchError });
-  apiLogger.debug('[STRIPE WEBHOOK DEBUG] - Order data:', { order: originalOrder });
+  apiLogger.debug("[STRIPE WEBHOOK DEBUG] Order lookup result:", { found: !!originalOrder });
+  apiLogger.debug("[STRIPE WEBHOOK DEBUG] - Fetch error:", { error: fetchError });
+  apiLogger.debug("[STRIPE WEBHOOK DEBUG] - Order data:", { order: originalOrder });
 
   if (fetchError || !originalOrder) {
-    apiLogger.error('[STRIPE WEBHOOK DEBUG] ===== ORDER NOT FOUND =====');
-    apiLogger.error('[STRIPE WEBHOOK DEBUG] Original order not found:', { value: originalOrderId });
-    apiLogger.error('[STRIPE WEBHOOK DEBUG] Fetch error details:', { value: fetchError });
-    
+    apiLogger.error("[STRIPE WEBHOOK DEBUG] ===== ORDER NOT FOUND =====");
+    apiLogger.error("[STRIPE WEBHOOK DEBUG] Original order not found:", { value: originalOrderId });
+    apiLogger.error("[STRIPE WEBHOOK DEBUG] Fetch error details:", { value: fetchError });
+
     // Fallback: Look for recent orders that might match this session
-    apiLogger.debug('[WEBHOOK] Trying to find order by recent timestamp...');
+    apiLogger.debug("[WEBHOOK] Trying to find order by recent timestamp...");
     const recentTime = new Date(Date.now() - 10 * 60 * 1000).toISOString(); // Last 10 minutes
     const { data: recentOrders } = await supabaseAdmin
-      .from('orders')
-      .select('id, payment_status, customer_name, table_number, created_at')
-      .eq('payment_status', 'UNPAID')
-      .gte('created_at', recentTime)
-      .order('created_at', { ascending: false })
+      .from("orders")
+      .select("id, payment_status, customer_name, table_number, created_at")
+      .eq("payment_status", "UNPAID")
+      .gte("created_at", recentTime)
+      .order("created_at", { ascending: false })
       .limit(5);
-    
+
     if (recentOrders && recentOrders.length > 0) {
-      apiLogger.debug('[WEBHOOK] Found recent unpaid orders:', recentOrders.map(o => o.id));
+      apiLogger.debug(
+        "[WEBHOOK] Found recent unpaid orders:",
+        recentOrders.map((o) => o.id)
+      );
       // Use the most recent unpaid order
       const fallbackOrder = recentOrders[0];
-      
+
       if (!fallbackOrder) {
-        return NextResponse.json({ ok: false, error: 'No fallback order available' }, { status: 404 });
+        return NextResponse.json(
+          { ok: false, error: "No fallback order available" },
+          { status: 404 }
+        );
       }
-      
-      apiLogger.debug('[WEBHOOK] Using fallback order:', fallbackOrder.id);
-      
+
+      apiLogger.debug("[WEBHOOK] Using fallback order:", fallbackOrder.id);
+
       // Update the fallback order
       const { error: updateErr } = await supabaseAdmin
-        .from('orders')
+        .from("orders")
         .update({
-          payment_status: 'PAID',
-          payment_method: 'stripe',
+          payment_status: "PAID",
+          payment_method: "stripe",
           stripe_session_id: session.id,
-          stripe_payment_intent_id: String(session.payment_intent ?? ''),
-          notes: `Stripe payment completed - Session: ${session.id} (fallback)`
+          stripe_payment_intent_id: String(session.payment_intent ?? ""),
+          notes: `Stripe payment completed - Session: ${session.id} (fallback)`,
         })
-        .eq('id', fallbackOrder.id);
+        .eq("id", fallbackOrder.id);
 
       if (updateErr) {
-        apiLogger.error('[WEBHOOK] Fallback order update failed:', { value: updateErr });
+        apiLogger.error("[WEBHOOK] Fallback order update failed:", { value: updateErr });
         return NextResponse.json({ ok: false, error: updateErr.message }, { status: 500 });
       }
 
-      apiLogger.debug('[WEBHOOK] Successfully updated fallback order', fallbackOrder.id);
+      apiLogger.debug("[WEBHOOK] Successfully updated fallback order", fallbackOrder.id);
       return NextResponse.json({ ok: true, orderId: fallbackOrder.id, fallback: true });
     }
-    
-    return NextResponse.json({ ok: false, error: 'Original order not found and no fallback available' }, { status: 404 });
+
+    return NextResponse.json(
+      { ok: false, error: "Original order not found and no fallback available" },
+      { status: 404 }
+    );
   }
 
-  apiLogger.debug('[STRIPE WEBHOOK DEBUG] ===== ORDER FOUND - PROCEEDING WITH UPDATE =====');
-  apiLogger.debug('[STRIPE WEBHOOK DEBUG] Found original order:', {
+  apiLogger.debug("[STRIPE WEBHOOK DEBUG] ===== ORDER FOUND - PROCEEDING WITH UPDATE =====");
+  apiLogger.debug("[STRIPE WEBHOOK DEBUG] Found original order:", {
     id: originalOrder.id,
     customer: originalOrder.customer_name,
     table: originalOrder.table_number,
     venue_id: originalOrder.venue_id,
     order_status: originalOrder.order_status,
     current_payment_status: originalOrder.payment_status,
-    created_at: originalOrder.created_at
+    created_at: originalOrder.created_at,
   });
 
   // Update the existing order with payment information
-  apiLogger.debug('[STRIPE WEBHOOK DEBUG] ===== UPDATING ORDER =====');
-  apiLogger.debug('[STRIPE WEBHOOK DEBUG] Update payload:', {
-    payment_status: 'PAID',
-    payment_method: 'stripe',
+  apiLogger.debug("[STRIPE WEBHOOK DEBUG] ===== UPDATING ORDER =====");
+  apiLogger.debug("[STRIPE WEBHOOK DEBUG] Update payload:", {
+    payment_status: "PAID",
+    payment_method: "stripe",
     stripe_session_id: session.id,
-    stripe_payment_intent_id: String(session.payment_intent ?? ''),
-    notes: `Stripe payment completed - Session: ${session.id}`
+    stripe_payment_intent_id: String(session.payment_intent ?? ""),
+    notes: `Stripe payment completed - Session: ${session.id}`,
   });
-  
-  const { error: updateErr } = await supabaseAdmin
-    .from('orders')
-    .update({
-      payment_status: 'PAID',
-      payment_method: 'stripe',
-      stripe_session_id: session.id,
-      stripe_payment_intent_id: String(session.payment_intent ?? ''),
-      notes: `Stripe payment completed - Session: ${session.id}`
-    })
-    .eq('id', originalOrderId);
 
-  apiLogger.debug('[STRIPE WEBHOOK DEBUG] Update result:', { successful: !updateErr });
-  apiLogger.debug('[STRIPE WEBHOOK DEBUG] - Update error:', { error: updateErr });
+  const { error: updateErr } = await supabaseAdmin
+    .from("orders")
+    .update({
+      payment_status: "PAID",
+      payment_method: "stripe",
+      stripe_session_id: session.id,
+      stripe_payment_intent_id: String(session.payment_intent ?? ""),
+      notes: `Stripe payment completed - Session: ${session.id}`,
+    })
+    .eq("id", originalOrderId);
+
+  apiLogger.debug("[STRIPE WEBHOOK DEBUG] Update result:", { successful: !updateErr });
+  apiLogger.debug("[STRIPE WEBHOOK DEBUG] - Update error:", { error: updateErr });
 
   if (updateErr) {
-    apiLogger.error('[STRIPE WEBHOOK DEBUG] ===== UPDATE FAILED =====');
-    apiLogger.error('[STRIPE WEBHOOK DEBUG] Order update failed:', { value: updateErr });
-    apiLogger.error('[STRIPE WEBHOOK DEBUG] Error details:', JSON.stringify(updateErr, null, 2));
+    apiLogger.error("[STRIPE WEBHOOK DEBUG] ===== UPDATE FAILED =====");
+    apiLogger.error("[STRIPE WEBHOOK DEBUG] Order update failed:", { value: updateErr });
+    apiLogger.error("[STRIPE WEBHOOK DEBUG] Error details:", JSON.stringify(updateErr, null, 2));
     return NextResponse.json({ ok: false, error: updateErr.message }, { status: 500 });
   }
 
-  apiLogger.debug('[STRIPE WEBHOOK DEBUG] ===== UPDATE SUCCESSFUL =====');
-  apiLogger.debug('[STRIPE WEBHOOK DEBUG] Successfully updated order with payment status PAID', { orderId: originalOrderId });
-  apiLogger.debug('[STRIPE WEBHOOK DEBUG] Final response', { ok: true, orderId: originalOrderId });
+  apiLogger.debug("[STRIPE WEBHOOK DEBUG] ===== UPDATE SUCCESSFUL =====");
+  apiLogger.debug("[STRIPE WEBHOOK DEBUG] Successfully updated order with payment status PAID", {
+    orderId: originalOrderId,
+  });
+  apiLogger.debug("[STRIPE WEBHOOK DEBUG] Final response", { ok: true, orderId: originalOrderId });
 
   return NextResponse.json({ ok: true, orderId: originalOrderId });
 }
