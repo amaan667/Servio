@@ -1,7 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { logger } from "@/lib/logger";
 import OpenAI from "openai";
-import { smartScrape } from "@/lib/playwright-scraper";
 
 const openai = new OpenAI({ apiKey: process.env.OPENAI_API_KEY });
 
@@ -27,6 +26,8 @@ export async function POST(req: NextRequest) {
     // Use Playwright smart scraping (tries fast first, falls back to networkidle)
     console.info(`🚀 [SCRAPE MENU ${requestId}] Using Playwright with smart retry...`);
 
+    // Dynamic import to avoid bundling playwright-core in the client
+    const { smartScrape } = await import("@/lib/playwright-scraper");
     const { text: finalText, images: imageUrls } = await smartScrape(url);
 
     if (!finalText || finalText.length < 50) {

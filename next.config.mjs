@@ -144,6 +144,12 @@ const nextConfig = {
   },
   // Bundle optimization
   webpack: (config, { dev, isServer }) => {
+    // Exclude playwright-core from client-side bundles (server-only)
+    if (!isServer) {
+      config.externals = config.externals || [];
+      config.externals.push('playwright-core');
+    }
+    
     if (!dev && !isServer) {
       config.optimization.splitChunks = {
         chunks: 'all',
