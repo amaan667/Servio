@@ -79,8 +79,63 @@ export async function POST(req: NextRequest) {
 
     console.info(`📷 [SCRAPE MENU ${requestId}] Found ${imageUrls.length} images`);
 
-    // Step 3: Use GPT-4 to extract menu items
-    console.info(`🤖 [SCRAPE MENU ${requestId}] Using AI to extract menu items...`);
+    // Step 3: Check if this is a JavaScript-rendered site
+    const isJSRendered = cleanText.includes('Loading...') || 
+                        cleanText.includes('__NEXT_DATA__') ||
+                        cleanText.includes('__nuxt') ||
+                        html.includes('react') ||
+                        cleanText.length < 500;
+
+    if (isJSRendered) {
+      console.warn(`⚠️ [SCRAPE MENU ${requestId}] JavaScript-rendered site detected, using fallback method`);
+      
+      // For JS-rendered sites, try to extract from Next.js data or use screenshot API
+      // Option 1: Look for embedded JSON data
+      const scriptTags = $('script[type="application/json"], script[id*="__NEXT"]').html();
+      if (scriptTags) {
+        console.info(`📦 [SCRAPE MENU ${requestId}] Found embedded data, attempting to parse...`);
+        try {
+          const jsonData = JSON.parse(scriptTags);
+          // Try to find menu data in the JSON
+          console.info(`📦 [SCRAPE MENU ${requestId}] Embedded data:`, JSON.stringify(jsonData).substring(0, 500));
+        } catch {
+          // Can't parse embedded data
+        }
+      }
+      
+      // Option 2: Use screenshot API for JS-rendered pages
+      console.info(`📸 [SCRAPE MENU ${requestId}] Using screenshot API for JS-rendered page...`);
+      
+      try {
+        // Use screenshot service (e.g., ScreenshotOne, ApiFlash, or self-hosted)
+        const screenshotUrl = `https://api.screenshotone.com/take?url=${encodeURIComponent(url)}&access_key=${process.env.SCREENSHOT_API_KEY || 'demo'}&full_page=true&format=png`;
+        
+        // For now, return a helpful error message
+        return NextResponse.json({
+          ok: false,
+          error: `This website (${url}) uses JavaScript to load its menu content. The current text-based scraper cannot access the menu. 
+          
+Recommendations:
+1. Try using the website's API if available
+2. Check if they have a static menu PDF you can download
+3. Use a different menu page URL if available
+4. Contact the restaurant for menu data export
+
+For now, please manually update prices and images in the Menu Management section.`,
+          debug: {
+            pageTitle,
+            textLength: cleanText.length,
+            isJavaScriptSite: true,
+            suggestion: 'This site requires a browser to render. Consider manually updating items.'
+          }
+        }, { status: 400 });
+      } catch (screenshotError) {
+        console.error(`❌ [SCRAPE MENU ${requestId}] Screenshot fallback failed:`, screenshotError);
+      }
+    }
+
+    // Step 4: Use GPT-4 to extract menu items from static HTML
+    console.info(`🤖 [SCRAPE MENU ${requestId}] Using AI to extract menu items from static HTML...`);
     
     const truncatedText = cleanText.length > 30000 ? cleanText.substring(0, 30000) + '...' : cleanText;
 
