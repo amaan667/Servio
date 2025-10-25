@@ -8,7 +8,7 @@ export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
 export const revalidate = 0;
 
-// Use the SAME webhook secret as subscriptions webhook
+// Use the same webhook secret as subscriptions
 const webhookSecret = process.env.STRIPE_WEBHOOK_SECRET!;
 
 /**
