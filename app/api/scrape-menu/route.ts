@@ -130,18 +130,50 @@ async function scrapeWithPlaywright(url: string, waitForNetworkIdle: boolean = f
     console.info(`✅ Page loaded`);
 
     // Wait for JS to settle
-    console.info(`⏳ Waiting ${waitForNetworkIdle ? 2 : 1}s for JS to settle...`);
-    await page.waitForTimeout(waitForNetworkIdle ? 2000 : 1000);
+    console.info(`⏳ Waiting ${waitForNetworkIdle ? 3 : 1}s for JS to settle...`);
+    await page.waitForTimeout(waitForNetworkIdle ? 3000 : 1000);
 
-    // Try to wait for common menu selectors
-    console.info(`🔍 Looking for menu selectors...`);
+    // Try to dismiss cookie/consent popups (common blocker)
+    console.info(`🍪 Attempting to dismiss cookie popups...`);
     await page
-      .waitForSelector('main, [class*="menu"], [class*="item"], [role="main"]', {
-        timeout: 5000,
+      .click('button:has-text("Accept"), button:has-text("Agree"), button:has-text("OK")', {
+        timeout: 2000,
       })
       .catch(() => {
-        console.info(`⚠️ Menu selectors not found, continuing anyway`);
+        console.info(`✅ No cookie popup found or already dismissed`);
       });
+    
+    // Wait a bit after dismissing popup
+    await page.waitForTimeout(1000);
+
+    // Scroll down to trigger lazy-loaded content
+    console.info(`📜 Scrolling page to trigger lazy loading...`);
+    await page.evaluate(() => {
+      window.scrollTo(0, document.body.scrollHeight / 2);
+    });
+    await page.waitForTimeout(2000);
+    
+    await page.evaluate(() => {
+      window.scrollTo(0, document.body.scrollHeight);
+    });
+    await page.waitForTimeout(2000);
+
+    // Try to wait for common menu selectors
+    console.info(`🔍 Looking for menu content selectors...`);
+    const menuFound = await page
+      .waitForSelector(
+        'main, article, [class*="menu"], [class*="item"], [class*="product"], [class*="dish"], [role="main"]',
+        { timeout: 5000 }
+      )
+      .then(() => true)
+      .catch(() => {
+        console.warn(`⚠️ Menu selectors not found, continuing anyway`);
+        return false;
+      });
+    
+    if (menuFound) {
+      console.info(`✅ Menu content selector found`);
+    }
 
     // Get HTML
     console.info(`📄 Extracting HTML...`);
@@ -156,6 +188,8 @@ async function scrapeWithPlaywright(url: string, waitForNetworkIdle: boolean = f
       return clone.innerText;
     });
     console.info(`✅ Text extracted: ${text.length} chars`);
+    console.info(`📄 Text preview (first 500 chars):`, text.substring(0, 500));
+    console.info(`📄 Text preview (chars 1000-1500):`, text.substring(1000, 1500));
 
     // Extract images
     console.info(`🖼️  Extracting images...`);
