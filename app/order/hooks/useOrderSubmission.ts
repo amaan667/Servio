@@ -118,72 +118,17 @@ export function useOrderSubmission() {
       }
 
       // For real orders
+      // DON'T create order yet - just save to localStorage and go to payment
       const sessionId = `session_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
       localStorage.setItem('servio-current-session', sessionId);
-      
-      const orderData = {
-        venue_id: venueSlug,
-        table_number: safeTable,
-        table_id: null,
-        counter_number: counterNumber,
-        order_type: orderType,
-        order_location: orderLocation,
-        customer_name: customerInfo.name.trim(),
-        customer_phone: customerInfo.phone.trim(),
-        items: cart.map((item) => ({
-          menu_item_id: item.id && item.id.startsWith('demo-') ? 'demo-item' : item.id || 'unknown',
-          quantity: item.quantity,
-          price: item.price,
-          item_name: item.name,
-          specialInstructions: item.specialInstructions || null,
-        })),
-        total_amount: cart.reduce((total, item) => total + item.price * item.quantity, 0),
-        notes: cart
-          .filter((item) => item.specialInstructions)
-          .map((item) => `${item.name}: ${item.specialInstructions}`)
-          .join("; "),
-        order_status: 'PLACED',
-        payment_status: 'UNPAID',
-        payment_mode: paymentMode,
-        payment_method: paymentMode === 'pay_at_till' ? 'till' : null,
-        session_id: sessionId,
-        source: orderType === 'counter' ? 'counter' : 'qr',
-      };
-
-      console.log('[ORDER SUBMIT] Creating order...', orderData);
-      
-      let response;
-      try {
-        response = await fetch('/api/orders', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify(orderData),
-        });
-        console.log('[ORDER SUBMIT] Response status:', response.status);
-      } catch (fetchError) {
-        console.error('[ORDER SUBMIT] Network error:', fetchError);
-        throw new Error('Network error - please check your connection and try again');
-      }
-
-      if (!response.ok) {
-        let errorMessage = `Failed to create order (${response.status})`;
-        try {
-          const errorData = await response.json();
-          errorMessage = errorData.error || errorMessage;
-        } catch {
-          errorMessage = await response.text() || errorMessage;
-        }
-        console.error('[ORDER SUBMIT] Error:', errorMessage);
-        throw new Error(errorMessage);
-      }
-
-      const orderResult = await response.json();
-      console.log('[ORDER SUBMIT] Order created:', orderResult);
       
       const checkoutData = {
         venueId: venueSlug,
         venueName: 'Restaurant',
         tableNumber: parseInt(orderLocation) || 1,
+        counterNumber: counterNumber,
+        orderType: orderType,
+        orderLocation: orderLocation,
         customerName: customerInfo.name.trim(),
         customerPhone: customerInfo.phone.trim(),
         cart: cart.map((item) => ({
@@ -199,45 +144,18 @@ export function useOrderSubmission() {
           .filter((item) => item.specialInstructions)
           .map((item) => `${item.name}: ${item.specialInstructions}`)
           .join("; "),
-        orderId: orderResult.order?.id,
-        orderNumber: orderResult.order?.order_number,
         sessionId: sessionId,
-        orderType: orderType,
         isDemo: isDemo,
+        paymentMode: paymentMode,
+        source: orderType === 'counter' ? 'counter' : 'qr',
       };
 
-      console.log('💾 [ORDER SUBMIT] Saving checkout data to localStorage...');
+      console.log('💾 [ORDER SUBMIT] Saving checkout data to localStorage (NO ORDER CREATED YET)...');
       localStorage.setItem('servio-checkout-data', JSON.stringify(checkoutData));
-      console.log('✅ [ORDER SUBMIT] Checkout data saved');
+      console.log('✅ [ORDER SUBMIT] Checkout data saved - redirecting to payment selection...');
       
-      const orderDataForSession = {
-        venueId: venueSlug,
-        tableNumber: parseInt(orderLocation) || 1,
-        customerName: customerInfo.name.trim(),
-        customerPhone: customerInfo.phone.trim(),
-        cart: cart.map((item) => ({
-          id: item.id && item.id.startsWith('demo-') ? null : item.id,
-          name: item.name,
-          price: item.price,
-          quantity: item.quantity,
-          specialInstructions: item.specialInstructions || null,
-          image: (item as unknown).image || null,
-        })),
-        total: cart.reduce((total, item) => total + item.price * item.quantity, 0),
-        orderId: orderResult.order?.id,
-        orderNumber: orderResult.order?.order_number,
-        sessionId: sessionId,
-        paymentStatus: 'unpaid'
-      };
-      
-      console.log('💾 [ORDER SUBMIT] Saving order session data...');
-      localStorage.setItem(`servio-order-${sessionId}`, JSON.stringify(orderDataForSession));
-      console.log('✅ [ORDER SUBMIT] Order session data saved');
-      
-      console.log('✅ [ORDER SUBMIT] Order creation complete - redirecting instantly...');
-      
-      // Instant redirect to payment page
-      // ECONNRESET errors in Railway are expected/acceptable since order is already created
+      // Instant redirect to payment method selection page
+      // Order will be created AFTER payment method is selected
       window.location.href = '/payment';
     } catch (error) {
       console.error('❌❌❌ [ORDER SUBMIT] CAUGHT ERROR ❌❌❌');
