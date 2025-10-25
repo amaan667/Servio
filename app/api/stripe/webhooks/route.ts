@@ -65,6 +65,14 @@ export async function POST(request: NextRequest) {
 }
 
 async function handleCheckoutCompleted(session: Stripe.Checkout.Session) {
+  console.info("\n" + "=".repeat(80));
+  console.info("💳 [STRIPE WEBHOOK] CHECKOUT COMPLETED");
+  console.info("=".repeat(80));
+  console.info("🎯 Session ID:", session.id);
+  console.info("💰 Amount:", session.amount_total, session.currency);
+  console.info("📦 Metadata:", session.metadata);
+  console.info("=".repeat(80) + "\n");
+
   apiLogger.debug("[STRIPE WEBHOOK] ===== CHECKOUT COMPLETED =====");
   apiLogger.debug("[STRIPE WEBHOOK] handleCheckoutCompleted called with session:", {
     id: session.id,
@@ -74,8 +82,16 @@ async function handleCheckoutCompleted(session: Stripe.Checkout.Session) {
     mode: session.mode,
   });
 
-  const supabase = await createClient();
+  // CHECK 1: Is this a CUSTOMER ORDER payment?
+  const orderType = session.metadata?.orderType;
+  if (orderType === "customer_order") {
+    console.info("🛒 [STRIPE WEBHOOK] Detected CUSTOMER ORDER payment");
+    await handleCustomerOrderPayment(session);
+    return;
+  }
 
+  // CHECK 2: Is this a SUBSCRIPTION payment?
+  const supabase = await createClient();
   const organizationId = session.metadata?.organization_id;
   const tier = session.metadata?.tier;
   const userId = session.metadata?.user_id;
@@ -83,6 +99,7 @@ async function handleCheckoutCompleted(session: Stripe.Checkout.Session) {
   apiLogger.debug("[STRIPE WEBHOOK] Extracted data:", { organizationId, tier, userId });
 
   if (!organizationId || !tier) {
+    console.warn("⚠️  [STRIPE WEBHOOK] Not a subscription payment (no org/tier metadata)");
     apiLogger.error(
       "[STRIPE WEBHOOK] ❌ Missing required metadata in checkout session:",
       session.metadata
@@ -483,4 +500,131 @@ async function handlePaymentFailed(invoice: Stripe.Invoice) {
     .eq("id", organizationId);
 
   apiLogger.debug(`[STRIPE] Payment failed for org: ${organizationId}`);
+}
+
+/**
+ * Handle customer order payment (QR code orders)
+ */
+async function handleCustomerOrderPayment(session: Stripe.Checkout.Session) {
+  console.info("💳 [CUSTOMER ORDER WEBHOOK] Processing customer order payment...");
+
+  try {
+    const { createAdminClient } = await import("@/lib/supabase");
+    const supabaseAdmin = createAdminClient();
+
+    // Check if already processed (idempotency)
+    const { data: existing } = await supabaseAdmin
+      .from("orders")
+      .select("id, stripe_session_id, payment_status")
+      .eq("stripe_session_id", session.id)
+      .maybeSingle();
+
+    if (existing) {
+      console.info("✅ [CUSTOMER ORDER WEBHOOK] Session already processed:", existing.id);
+      return;
+    }
+
+    // Get checkout data from metadata
+    const checkoutDataJson = session.metadata?.checkoutDataJson;
+    console.info("📦 [CUSTOMER ORDER WEBHOOK] Has checkoutDataJson:", !!checkoutDataJson);
+
+    if (!checkoutDataJson) {
+      console.error("❌ [CUSTOMER ORDER WEBHOOK] No checkout data in metadata!");
+      console.error("❌ Metadata:", session.metadata);
+      return;
+    }
+
+    const checkoutData = JSON.parse(checkoutDataJson);
+    console.info("✅ [CUSTOMER ORDER WEBHOOK] Parsed checkout data:");
+    console.info("  📋 Venue:", checkoutData.venueId);
+    console.info("  👤 Customer:", checkoutData.customerName);
+    console.info("  📞 Phone:", checkoutData.customerPhone);
+    console.info("  🪑 Table:", checkoutData.tableNumber);
+    console.info("  🛒 Items:", checkoutData.cart?.length);
+    console.info("  💰 Total:", checkoutData.total);
+
+    if (checkoutData.cart && checkoutData.cart.length > 0) {
+      console.info("🛒 [CUSTOMER ORDER WEBHOOK] Cart items:");
+      checkoutData.cart.forEach(
+        (item: { name: string; quantity: number; price: number; id?: string }, idx: number) => {
+          console.info(`    ${idx + 1}. ${item.name} x${item.quantity} @ £${item.price}`);
+        }
+      );
+    }
+
+    // Create order in database
+    const orderPayload = {
+      venue_id: checkoutData.venueId,
+      table_number: checkoutData.tableNumber,
+      table_id: null,
+      counter_number: checkoutData.counterNumber || null,
+      order_type: checkoutData.orderType || "table",
+      order_location: checkoutData.orderLocation || checkoutData.tableNumber?.toString() || "1",
+      customer_name: checkoutData.customerName,
+      customer_phone: checkoutData.customerPhone,
+      items: checkoutData.cart.map(
+        (item: {
+          id?: string;
+          quantity: number;
+          price: number;
+          name: string;
+          specialInstructions?: string;
+        }) => ({
+          menu_item_id: item.id || "unknown",
+          quantity: item.quantity,
+          price: item.price,
+          item_name: item.name,
+          specialInstructions: item.specialInstructions || null,
+        })
+      ),
+      total_amount: checkoutData.total,
+      notes: checkoutData.notes || "",
+      order_status: "IN_PREP",
+      payment_status: "PAID",
+      payment_mode: "online",
+      payment_method: "stripe",
+      session_id: checkoutData.sessionId,
+      source: checkoutData.source || "qr",
+      stripe_session_id: session.id,
+      stripe_payment_intent_id: String(session.payment_intent ?? ""),
+    };
+
+    console.info("💾 [CUSTOMER ORDER WEBHOOK] Creating order...");
+    const { data: createdOrder, error: createError } = await supabaseAdmin
+      .from("orders")
+      .insert(orderPayload)
+      .select("*")
+      .single();
+
+    if (createError) {
+      console.error("\n" + "=".repeat(80));
+      console.error("❌ [CUSTOMER ORDER WEBHOOK] ORDER CREATION FAILED!");
+      console.error("=".repeat(80));
+      console.error("❌ Error code:", createError.code);
+      console.error("❌ Error message:", createError.message);
+      console.error("❌ Error details:", createError);
+      console.error("=".repeat(80) + "\n");
+      return;
+    }
+
+    console.info("\n" + "=".repeat(80));
+    console.info("✅ [CUSTOMER ORDER WEBHOOK] ORDER CREATED SUCCESSFULLY!");
+    console.info("=".repeat(80));
+    console.info("🆔 Order ID:", createdOrder.id);
+    console.info("📊 Order Status:", createdOrder.order_status);
+    console.info("💳 Payment Status:", createdOrder.payment_status);
+    console.info("👤 Customer:", createdOrder.customer_name);
+    console.info("🏪 Venue ID:", createdOrder.venue_id);
+    console.info("🪑 Table:", createdOrder.table_number);
+    console.info("🛒 Items:", createdOrder.items?.length);
+    console.info("💰 Total:", createdOrder.total_amount);
+    console.info("=".repeat(80) + "\n");
+  } catch (error) {
+    console.error("\n" + "=".repeat(80));
+    console.error("❌ [CUSTOMER ORDER WEBHOOK] UNEXPECTED ERROR!");
+    console.error("=".repeat(80));
+    console.error("❌ Error:", error);
+    console.error("❌ Message:", error instanceof Error ? error.message : String(error));
+    console.error("=".repeat(80) + "\n");
+  }
 }
