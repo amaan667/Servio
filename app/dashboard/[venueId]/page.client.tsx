@@ -369,7 +369,6 @@ const DashboardClient = React.memo(function DashboardClient({ venueId }: { venue
               </Link>
             </div>
           </div>
-          </div>
 
           {/* AI Insights */}
           <AIInsights
