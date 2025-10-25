@@ -148,53 +148,84 @@ async function scrapeWithPlaywright(url: string, waitForNetworkIdle: boolean = f
     });
     console.info(`✅ Page loaded`);
 
-    // Wait for JS to settle
-    console.info(`⏳ Waiting ${waitForNetworkIdle ? 3 : 1}s for JS to settle...`);
-    await page.waitForTimeout(waitForNetworkIdle ? 3000 : 1000);
+    // SMART STRATEGY: Multi-approach content loading
+    console.info(`🧠 Using smart content loading strategies...`);
 
-    // Try to dismiss cookie/consent popups (common blocker)
-    console.info(`🍪 Attempting to dismiss cookie popups...`);
-    await page
-      .click('button:has-text("Accept"), button:has-text("Agree"), button:has-text("OK")', {
-        timeout: 2000,
-      })
-      .catch(() => {
-        console.info(`✅ No cookie popup found or already dismissed`);
-      });
+    // Strategy 1: Check for Next.js embedded data (instant - no waiting!)
+    console.info(`📦 Strategy 1: Checking for __NEXT_DATA__ or embedded JSON...`);
+    const embeddedData = await page.evaluate(() => {
+      // Check Next.js data
+      const nextScript = document.getElementById("__NEXT_DATA__");
+      if (nextScript?.textContent) {
+        return { type: "NEXT_DATA", data: nextScript.textContent };
+      }
 
-    // Wait a bit after dismissing popup
-    await page.waitForTimeout(1000);
+      // Check for any JSON data in script tags
+      const scripts = Array.from(document.querySelectorAll('script[type="application/json"]'));
+      for (const script of scripts) {
+        if (script.textContent && script.textContent.includes("menu")) {
+          return { type: "JSON_SCRIPT", data: script.textContent };
+        }
+      }
 
-    // Aggressive scrolling to trigger ALL lazy-loaded content
-    console.info(`📜 Scrolling page to trigger lazy loading...`);
+      return null;
+    });
 
-    // Scroll incrementally (better for lazy loading)
-    for (let i = 0; i <= 5; i++) {
-      await page.evaluate((step) => {
-        const scrollHeight = document.body.scrollHeight;
-        window.scrollTo(0, (scrollHeight / 5) * step);
-      }, i);
-      await page.waitForTimeout(1500); // Wait for each section to load
-      console.info(`  📜 Scrolled to ${i * 20}% of page`);
+    if (embeddedData) {
+      console.info(
+        `✅ Found embedded data (${embeddedData.type}): ${embeddedData.data.length} chars`
+      );
     }
 
-    console.info(`✅ Scrolling complete - all lazy-loaded sections should be visible`);
-
-    // Try to wait for common menu selectors
-    console.info(`🔍 Looking for menu content selectors...`);
-    const menuFound = await page
+    // Strategy 2: Wait for specific menu elements (targeted, not blind)
+    console.info(`🎯 Strategy 2: Waiting for menu items to appear...`);
+    const menuAppeared = await page
       .waitForSelector(
-        'main, article, [class*="menu"], [class*="item"], [class*="product"], [class*="dish"], [role="main"]',
-        { timeout: 5000 }
+        '[class*="menu-item"], [class*="MenuItem"], [data-testid*="menu"], [class*="product-card"]',
+        { timeout: 8000 }
       )
-      .then(() => true)
-      .catch(() => {
-        console.warn(`⚠️ Menu selectors not found, continuing anyway`);
-        return false;
+      .then(() => {
+        console.info(`✅ Menu items detected - content is loaded!`);
+        return true;
+      })
+      .catch(async () => {
+        console.warn(`⚠️ Menu items not visible yet, trying cookie dismissal + minimal scroll...`);
+
+        // Dismiss cookie popup if it's blocking
+        await page
+          .click('button:has-text("Accept"), button:has-text("Agree"), [class*="accept"]', {
+            timeout: 2000,
+          })
+          .catch(() => {});
+
+        await page.waitForTimeout(1000);
+
+        // Single strategic scroll to bottom (triggers most lazy-load)
+        await page.evaluate(() => window.scrollTo(0, document.body.scrollHeight));
+        await page.waitForTimeout(3000); // Wait for lazy content
+
+        // Check again
+        return await page
+          .waitForSelector('[class*="menu-item"], [class*="MenuItem"]', { timeout: 3000 })
+          .then(() => {
+            console.info(`✅ Menu items appeared after scroll`);
+            return true;
+          })
+          .catch(() => {
+            console.warn(`⚠️ Still no menu items, will extract whatever is available`);
+            return false;
+          });
       });
 
-    if (menuFound) {
-      console.info(`✅ Menu content selector found`);
+    // Strategy 3: If still nothing, check page title/content
+    if (!menuAppeared && !embeddedData) {
+      const pageInfo = await page.evaluate(() => ({
+        title: document.title,
+        bodyLength: document.body.innerText.length,
+        hasMain: !!document.querySelector("main"),
+        hasArticle: !!document.querySelector("article"),
+      }));
+      console.warn(`⚠️ Page info:`, pageInfo);
     }
 
     // Get HTML
