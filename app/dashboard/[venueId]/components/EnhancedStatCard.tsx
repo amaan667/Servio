@@ -16,6 +16,7 @@ interface EnhancedStatCardProps {
   icon: LucideIcon;
   iconColor: string;
   iconBgColor: string;
+  isCurrency?: boolean;
   trend?: {
     value: number;
     label: string;
@@ -31,12 +32,18 @@ export function EnhancedStatCard({
   icon: Icon,
   iconColor,
   iconBgColor,
+  isCurrency = false,
   trend,
   tooltip,
   onClick,
   href
 }: EnhancedStatCardProps) {
   const [isHovered, setIsHovered] = useState(false);
+  
+  // Format value for display
+  const displayValue = isCurrency && typeof value === 'number' 
+    ? `£${value.toFixed(2)}` 
+    : value;
 
   const content = (
     <Card 
@@ -74,7 +81,7 @@ export function EnhancedStatCard({
 
         <div className="space-y-1">
           <p className="text-sm font-medium text-gray-600">{title}</p>
-          <p className="text-3xl font-bold text-gray-900">{value}</p>
+          <p className="text-3xl font-bold text-gray-900">{displayValue}</p>
           {trend && (
             <p className="text-xs text-gray-500">{trend.label}</p>
           )}
