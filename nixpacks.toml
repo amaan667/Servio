@@ -1,9 +1,9 @@
 # Railway/Nixpacks configuration for Playwright
-# Install system dependencies for Chromium
+# Install system dependencies for Chromium (Ubuntu 24.04 Noble)
 
 [phases.setup]
 aptPkgs = [
-  "chromium",
+  "chromium-browser",
   "libnss3",
   "libatk-bridge2.0-0",
   "libcups2",
@@ -16,8 +16,9 @@ aptPkgs = [
   "libgbm1",
   "libpango-1.0-0",
   "libcairo2",
-  "libasound2",
-  "libatspi2.0-0"
+  "libasound2t64",
+  "libatspi2.0-0",
+  "fonts-liberation"
 ]
 
 [phases.install]
@@ -26,4 +27,4 @@ cmds = ["pnpm install --frozen-lockfile"]
 [variables]
 # Point Playwright to system Chromium
 PLAYWRIGHT_SKIP_BROWSER_DOWNLOAD = "1"
-PLAYWRIGHT_CHROMIUM_EXECUTABLE_PATH = "/usr/bin/chromium"
+PLAYWRIGHT_CHROMIUM_EXECUTABLE_PATH = "/usr/bin/chromium-browser"

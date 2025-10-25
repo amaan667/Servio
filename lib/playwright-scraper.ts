@@ -11,7 +11,12 @@ let browser: Browser | null = null;
 // Initialize browser once and reuse (much faster)
 async function getBrowser(): Promise<Browser> {
   if (!browser) {
-    const executablePath = process.env.PLAYWRIGHT_CHROMIUM_EXECUTABLE_PATH || undefined;
+    // Use system Chromium on Railway, or Playwright's downloaded browser locally
+    const executablePath = process.env.PLAYWRIGHT_CHROMIUM_EXECUTABLE_PATH;
+
+    console.info(
+      `🌐 Launching browser${executablePath ? ` from ${executablePath}` : " (auto-detect)"}`
+    );
 
     browser = await chromium.launch({
       headless: true,
@@ -21,8 +26,11 @@ async function getBrowser(): Promise<Browser> {
         "--disable-setuid-sandbox",
         "--disable-dev-shm-usage",
         "--disable-gpu",
+        "--disable-software-rasterizer",
       ],
     });
+
+    console.info("✅ Browser launched successfully");
   }
   return browser;
 }
