@@ -234,17 +234,20 @@ export function useOrderSubmission() {
       localStorage.setItem(`servio-order-${sessionId}`, JSON.stringify(orderDataForSession));
       console.log('✅ [ORDER SUBMIT] Order session data saved');
       
-      console.log('🔄 [ORDER SUBMIT] Setting isSubmitting to false...');
-      setIsSubmitting(false);
-      console.log('✅ [ORDER SUBMIT] isSubmitting set to false');
+      console.log('✅ [ORDER SUBMIT] Order creation complete - preparing redirect...');
       
-      console.log('🌐 [ORDER SUBMIT] Checking if window is defined...');
+      // IMPORTANT: Set isSubmitting to false BEFORE redirect
+      // This ensures state is clean before page navigation
+      setIsSubmitting(false);
+      
+      // Use setTimeout to ensure state update completes before redirect
+      // This prevents ECONNRESET errors from premature navigation
       if (typeof window !== 'undefined') {
-        console.log('✅ [ORDER SUBMIT] Window is defined');
-        console.log('🚀 [ORDER SUBMIT] REDIRECTING TO /payment...');
-        console.log('🚀 [ORDER SUBMIT] Current URL:', window.location.href);
-        window.location.href = '/payment';
-        console.log('✅ [ORDER SUBMIT] Redirect initiated');
+        console.log('🚀 [ORDER SUBMIT] Redirecting to payment page in 100ms...');
+        setTimeout(() => {
+          console.log('🚀 [ORDER SUBMIT] REDIRECT NOW:', '/payment');
+          window.location.href = '/payment';
+        }, 100);
       } else {
         console.error('❌ [ORDER SUBMIT] Window is undefined - cannot redirect!');
       }
