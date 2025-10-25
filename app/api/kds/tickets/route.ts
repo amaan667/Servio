@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import { createAdminClient } from "@/lib/supabase";
 import { logger } from "@/lib/logger";
+import { authenticateRequest } from "@/lib/api-auth";
 
 // Function to automatically backfill missing KDS tickets for orders
 async function autoBackfillMissingTickets(venueId: string) {
@@ -256,10 +257,14 @@ export async function GET(req: Request) {
 // PATCH - Update ticket status
 export async function PATCH(req: Request) {
   try {
+    console.info('🔧 [KDS TICKETS PATCH] Update ticket status request received');
     const body = await req.json();
     const { ticketId, status } = body;
 
+    console.info('🔧 [KDS TICKETS PATCH] Request body:', { ticketId, status });
+
     if (!ticketId || !status) {
+      console.error('❌ [KDS TICKETS PATCH] Missing required fields');
       return NextResponse.json(
         { ok: false, error: "ticketId and status are required" },
         { status: 400 }
@@ -268,23 +273,23 @@ export async function PATCH(req: Request) {
 
     const validStatuses = ["new", "in_progress", "ready", "bumped"];
     if (!validStatuses.includes(status)) {
+      console.error('❌ [KDS TICKETS PATCH] Invalid status:', status);
       return NextResponse.json(
         { ok: false, error: `Invalid status. Must be one of: ${validStatuses.join(", ")}` },
         { status: 400 }
       );
     }
 
-    const supabase = await createServerSupabase();
-
-    // Verify user has access
-    const {
-      data: { session },
-      error: userError,
-    } = await supabase.auth.getSession();
-    const user = session?.user;
-    if (userError || !user) {
-      return NextResponse.json({ ok: false, error: "Unauthorized" }, { status: 401 });
+    console.info('🔐 [KDS TICKETS PATCH] Authenticating request...');
+    const auth = await authenticateRequest(req);
+    
+    if (!auth.success || !auth.supabase) {
+      console.error('❌ [KDS TICKETS PATCH] Authentication failed:', auth.error);
+      return NextResponse.json({ ok: false, error: auth.error || "Unauthorized" }, { status: 401 });
     }
+
+    const { supabase } = auth;
+    console.info('✅ [KDS TICKETS PATCH] Authenticated successfully');
 
     // Build update object with timestamp
     const updateData: {
