@@ -148,14 +148,11 @@ export async function POST(request: NextRequest) {
     );
   }
 
-  // Create order in database
+  // Create order in database (using ONLY valid columns from OrderPayload type)
   const orderPayload = {
     venue_id: checkoutData.venueId,
     table_number: checkoutData.tableNumber,
     table_id: null,
-    // counter_number column doesn't exist in orders table - removed
-    order_type: checkoutData.orderType || "table",
-    order_location: checkoutData.orderLocation || checkoutData.tableNumber?.toString() || "1",
     customer_name: checkoutData.customerName,
     customer_phone: checkoutData.customerPhone,
     items: checkoutData.cart.map(
