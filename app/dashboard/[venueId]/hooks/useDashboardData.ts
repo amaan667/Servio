@@ -54,9 +54,12 @@ export function useDashboardData(
       tables_reserved_now: 0,
     }
   );
+  // Start with cached stats OR placeholder values that won't flicker
+  const initialStatsValue = initialStats || getCachedStats();
   const [stats, setStats] = useState<DashboardStats>(
-    initialStats || getCachedStats() || { revenue: 0, menuItems: 0, unpaid: 0 }
+    initialStatsValue || { revenue: 0, menuItems: 0, unpaid: 0 }
   );
+  const [hasLoadedStats, setHasLoadedStats] = useState(!!initialStatsValue);
   const [statsLoaded, setStatsLoaded] = useState(false);
   const [todayWindow, setTodayWindow] = useState<unknown>(null);
   const [error, setError] = useState<string | null>(null);

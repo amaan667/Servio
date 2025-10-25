@@ -307,7 +307,7 @@ const DashboardClient = React.memo(function DashboardClient({ venueId }: { venue
               <Link href={`/dashboard/${venueId}/analytics`}>
                 <EnhancedStatCard
                   title="Revenue"
-                  value={dashboardData.stats.revenue}
+                  value={dashboardData.stats.revenue || 0}
                   icon={TrendingUp}
                   iconColor="text-green-600"
                   iconBgColor="bg-green-100"

@@ -148,6 +148,7 @@ export default function KDSClient({ venueId }: KDSClientProps) {
   // Bump all ready tickets for an order
   const bumpOrder = useCallback(async (orderId: string) => {
     try {
+      console.info(`🎯 [KDS CLIENT] Bumping order ${orderId}`);
       const { apiClient } = await import("@/lib/api-client");
       const response = await apiClient.patch("/api/kds/tickets/bulk-update", {
         orderId,
@@ -155,17 +156,17 @@ export default function KDSClient({ venueId }: KDSClientProps) {
       });
 
       const data = await response.json();
+      console.info(`🎯 [KDS CLIENT] Bump response:`, data);
 
       if (data.ok) {
-        // Keep bumped tickets but mark them as bumped (will be sorted to bottom)
-        setTickets((prev) => prev.map((t) => 
-          t.order_id === orderId 
-            ? { ...t, ticket_status: "bumped" as const }
-            : t
-        ));
+        // REMOVE bumped tickets from KDS entirely
+        console.info(`✅ [KDS CLIENT] Removing ${data.updated} tickets for order ${orderId} from KDS`);
+        setTickets((prev) => prev.filter((t) => t.order_id !== orderId));
+      } else {
+        console.error(`❌ [KDS CLIENT] Bump failed:`, data.error);
       }
-    } catch {
-      // Silently fail
+    } catch (error) {
+      console.error(`❌ [KDS CLIENT] Bump error:`, error);
     }
   }, []);
 

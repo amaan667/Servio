@@ -3,9 +3,11 @@ import { authenticateRequest } from "@/lib/api-auth";
 import { logger } from "@/lib/logger";
 
 // PATCH - Bulk update multiple tickets (e.g., bump all ready tickets for an order)
-export async function PATCH(_req: Request) {
+export async function PATCH(req: Request) {
   try {
+    console.info('🎯 [KDS BULK UPDATE] Bump order request received');
     const body = await req.json();
+    console.info('🎯 [KDS BULK UPDATE] Request body:', body);
     const { orderId, stationId, status } = body;
 
     if (!status) {
