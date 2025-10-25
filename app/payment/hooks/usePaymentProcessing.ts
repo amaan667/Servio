@@ -93,23 +93,14 @@ export function usePaymentProcessing() {
           throw new Error('Failed to update payment status');
         }
 
-        setOrderNumber(orderNumber);
-        setPaymentComplete(true);
-        
-        toast({
-          title: "Payment Successful!",
-          description: "Demo payment processed successfully",
-        });
-
-        // Clear checkout data
-        localStorage.removeItem('servio-checkout-data');
+        // Redirect to order summary page
+        window.location.href = `/order-summary?orderId=${orderId}&demo=1`;
       } else if (action === 'stripe') {
-        // Stripe payment - DON'T create order yet, create on success page
-        // Save checkout data with pending flag for success page to create order
+        // Stripe payment - save checkout data and redirect to Stripe
         console.info('[PAYMENT] Stripe selected - order will be created on payment success');
         logger.info('💳 Stripe selected - redirecting to Stripe (order creation deferred)');
         
-        // Mark this as pending order creation
+        // Mark this as pending order creation for order summary page
         const pendingData = {
           ...checkoutData,
           pendingOrderCreation: true,
@@ -117,7 +108,7 @@ export function usePaymentProcessing() {
         };
         localStorage.setItem('servio-checkout-data', JSON.stringify(pendingData));
         
-        // Create Stripe checkout session (without order ID)
+        // Create Stripe checkout session
         const response = await fetch('/api/stripe/create-customer-checkout', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
@@ -176,19 +167,12 @@ export function usePaymentProcessing() {
         }
 
         const result = await response.json();
-        setOrderNumber(result.order_number || orderNumber);
-        setPaymentComplete(true);
         
         console.info('✅ [PAYMENT] Order confirmed for till payment');
         logger.info('✅ Till payment confirmed - order sent to kitchen', { orderId });
         
-        toast({
-          title: "Order Confirmed!",
-          description: "Order sent to kitchen. Pay at the till when ready.",
-        });
-
-        localStorage.removeItem('servio-checkout-data');
-        localStorage.removeItem('servio-current-session');
+        // Redirect to order summary page
+        window.location.href = `/order-summary?orderId=${orderId}`;
       } else if (action === 'later') {
         // Pay later - create order immediately, show "Order Confirmed!"
         const orderResult = await createOrder();
@@ -216,7 +200,9 @@ export function usePaymentProcessing() {
         }
 
         const result = await response.json();
-        setOrderNumber(result.order_number || orderNumber);
+        
+        console.info('✅ [PAYMENT] Order confirmed for pay later');
+        logger.info('✅ Pay later confirmed - order sent to kitchen', { orderId });
         
         // Store session for re-scanning
         const sessionId = checkoutData.sessionId || `session_${Date.now()}`;
@@ -232,17 +218,8 @@ export function usePaymentProcessing() {
           orderNumber: result.order_number || orderNumber
         }));
         
-        setPaymentComplete(true);
-        
-        console.info('✅ [PAYMENT] Order confirmed for pay later');
-        logger.info('✅ Pay later confirmed - order sent to kitchen', { orderId });
-        
-        toast({
-          title: "Order Confirmed!",
-          description: "Order sent to kitchen. You can pay later or scan the QR code again to pay online.",
-        });
-
-        localStorage.removeItem('servio-checkout-data');
+        // Redirect to order summary page
+        window.location.href = `/order-summary?orderId=${orderId}`;
       }
     } catch (err) {
 

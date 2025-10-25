@@ -68,8 +68,10 @@ export default function PaymentSuccessPage() {
               .then(result => {
                 if (result.ok && result.order?.id) {
                   console.info('✅ [STRIPE SUCCESS] Order created after successful payment:', result.order.id);
-                  setVerifiedOrderId(result.order.id);
                   localStorage.removeItem('servio-checkout-data');
+                  
+                  // Redirect to unified order summary page
+                  window.location.href = `/order-summary?orderId=${result.order.id}`;
                 }
               })
               .catch(error => {
