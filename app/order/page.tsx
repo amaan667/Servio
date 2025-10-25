@@ -213,10 +213,6 @@ export default function CustomerOrderPage() {
               <Alert variant="destructive">
                 <AlertDescription>{menuError}</AlertDescription>
               </Alert>
-            ) : loadingMenu || loadingTier ? (
-              <div className="flex justify-center items-center h-64">
-                <Loader2 className="h-8 w-8 animate-spin text-purple-600" />
-              </div>
             ) : (
               <EnhancedPDFMenuDisplay
                 venueId={venueSlug}

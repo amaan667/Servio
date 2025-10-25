@@ -47,12 +47,16 @@ export default function HomePage() {
   // Initialize with cached session state to prevent flicker
   const getInitialAuthState = () => {
     if (typeof window === 'undefined') return false;
-    // Check for any auth indicators in localStorage/sessionStorage
-    const hasSession = document.cookie.includes('sb-') || sessionStorage.getItem('supabase.auth.token');
-    return !!hasSession;
+    // Check cached auth state first
+    const cachedAuth = sessionStorage.getItem('user_authenticated');
+    if (cachedAuth !== null) return cachedAuth === 'true';
+    // Fallback to cookie check
+    const hasSession = document.cookie.includes('sb-');
+    return hasSession;
   };
   
   const [isSignedIn, setIsSignedIn] = useState(getInitialAuthState);
+  const [isLoading, setIsLoading] = useState(false); // Never show loading state
 
   useEffect(() => {
     const checkAuth = async () => {
@@ -62,12 +66,21 @@ export default function HomePage() {
           data: { session: checkAuthSession },
         } = await supabase.auth.getSession();
         const signedIn = !!checkAuthSession?.user;
+        
+        // Cache the auth state
+        if (typeof window !== 'undefined') {
+          sessionStorage.setItem('user_authenticated', signedIn ? 'true' : 'false');
+        }
+        
         // Only update if different to prevent unnecessary re-renders
         if (signedIn !== isSignedIn) {
           setIsSignedIn(signedIn);
         }
       } catch {
         // Silent error handling
+        if (typeof window !== 'undefined') {
+          sessionStorage.setItem('user_authenticated', 'false');
+        }
       }
     };
 
@@ -86,7 +99,13 @@ export default function HomePage() {
           };
         } | null
       ) => {
-        setIsSignedIn(!!session?.user);
+        const signedIn = !!session?.user;
+        setIsSignedIn(signedIn);
+        
+        // Update cache
+        if (typeof window !== 'undefined') {
+          sessionStorage.setItem('user_authenticated', signedIn ? 'true' : 'false');
+        }
       }
     );
 

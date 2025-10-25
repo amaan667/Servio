@@ -386,9 +386,9 @@ export function EnhancedPDFMenuDisplay({
                   variant={selectedCategory === category ? 'default' : 'outline'}
                   size="sm"
                   onClick={() => scrollToCategory(category)}
-                  className="whitespace-nowrap"
+                  className="shrink-0 min-w-fit"
                 >
-                  {category}
+                  <span className="truncate max-w-[120px] px-1">{category}</span>
                 </Button>
               ))}
             </div>
