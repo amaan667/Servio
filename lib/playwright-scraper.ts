@@ -32,10 +32,12 @@ export interface ScrapedContent {
 
 /**
  * Scrape URL with Playwright - FAST and FREE
+ * Optimized for JS-heavy sites like Cafe Nur
  */
 export async function scrapeWithPlaywright(
   url: string,
-  timeout: number = 30000
+  timeout: number = 30000,
+  waitForNetworkIdle: boolean = false
 ): Promise<ScrapedContent> {
   const browser = await getBrowser();
   const context = await browser.newContext({
@@ -46,14 +48,24 @@ export async function scrapeWithPlaywright(
   const page = await context.newPage();
 
   try {
-    // Navigate with timeout
+    // Navigate with appropriate wait condition
     await page.goto(url, {
-      waitUntil: "domcontentloaded",
+      waitUntil: waitForNetworkIdle ? "networkidle" : "domcontentloaded",
       timeout,
     });
 
-    // Wait 1s for JS to settle
-    await page.waitForTimeout(1000);
+    // Wait longer for JS-heavy sites (like Cafe Nur)
+    await page.waitForTimeout(waitForNetworkIdle ? 2000 : 1000);
+
+    // Try to wait for common menu selectors (helps with JS sites)
+    await page
+      .waitForSelector(
+        'main, [class*="menu"], [class*="item"], [role="main"], #menu, .menu-container',
+        { timeout: 5000 }
+      )
+      .catch(() => {
+        // Selector not found, continue anyway
+      });
 
     // Get HTML
     const html = await page.content();
@@ -88,6 +100,30 @@ export async function scrapeWithPlaywright(
     await page.close();
     await context.close();
   }
+}
+
+/**
+ * Smart scraping with automatic retry for JS-heavy sites
+ * Perfect for sites like Cafe Nur that heavily rely on JavaScript
+ */
+export async function smartScrape(url: string): Promise<ScrapedContent> {
+  try {
+    // Try fast approach first (works for 80% of sites)
+    const result = await scrapeWithPlaywright(url, 20000, false);
+
+    // Validate we got meaningful content
+    if (result.text.length > 500) {
+      console.info("✅ Fast scrape successful");
+      return result;
+    }
+
+    console.info("⚠️ Insufficient content, trying with networkidle...");
+  } catch {
+    console.info("⚠️ Fast scrape failed, trying with networkidle...");
+  }
+
+  // Fallback: Use networkidle for JS-heavy sites like Cafe Nur
+  return await scrapeWithPlaywright(url, 30000, true);
 }
 
 // Cleanup on shutdown

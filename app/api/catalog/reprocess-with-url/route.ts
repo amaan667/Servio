@@ -67,9 +67,9 @@ export async function POST(req: NextRequest) {
           ? `https://${process.env.RAILWAY_PUBLIC_DOMAIN}`
           : "http://localhost:3000");
 
-      // Create AbortController with 3-minute timeout
+      // Create AbortController with 60s timeout (Playwright scrapes in 10-30s)
       const controller = new AbortController();
-      const timeoutId = setTimeout(() => controller.abort(), 180000);
+      const timeoutId = setTimeout(() => controller.abort(), 60000);
 
       let scrapeResponse;
       try {
@@ -79,8 +79,8 @@ export async function POST(req: NextRequest) {
           body: JSON.stringify({ url: menuUrl }),
           signal: controller.signal,
           // @ts-expect-error - Node.js fetch specific options
-          headersTimeout: 180000,
-          bodyTimeout: 180000,
+          headersTimeout: 60000,
+          bodyTimeout: 60000,
         });
         clearTimeout(timeoutId);
       } catch (fetchError) {

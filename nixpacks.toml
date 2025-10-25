@@ -1,12 +1,24 @@
+# Railway deployment configuration for Playwright
+# Installs Chromium and required dependencies
+
 [phases.setup]
-node_version = "20.18.1"
-pnpm_version = "9.15.9"
+# Install Chromium and dependencies needed for Playwright
+nixPkgs = ["chromium", "nss", "freetype", "harfbuzz", "ca-certificates", "ttf-freefont", "fontconfig"]
 
 [phases.install]
-cmds = ["pnpm install --frozen-lockfile"]
+# Install Node dependencies and Playwright browsers
+cmds = [
+  "npm ci",
+  "npx playwright install chromium --with-deps"
+]
 
 [phases.build]
-cmds = ["pnpm run build"]
+cmds = ["npm run build"]
 
 [start]
-cmd = "pnpm start"
+cmd = "npm start"
+
+[variables]
+# Playwright configuration for production
+PLAYWRIGHT_SKIP_BROWSER_DOWNLOAD = "0"
+PLAYWRIGHT_CHROMIUM_EXECUTABLE_PATH = "/usr/bin/chromium"
