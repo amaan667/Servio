@@ -93,6 +93,26 @@ export default function PaymentPage() {
           </Card>
         )}
 
+        {/* Customer Information */}
+        <Card className="mb-6 shadow-lg">
+          <CardHeader>
+            <CardTitle className="flex items-center gap-2">
+              <User className="h-5 w-5 text-purple-600" />
+              Customer Information
+            </CardTitle>
+          </CardHeader>
+          <CardContent className="space-y-3">
+            <div className="flex items-center gap-2">
+              <User className="h-4 w-4 text-gray-500" />
+              <span className="font-medium">{paymentState.checkoutData.customerName}</span>
+            </div>
+            <div className="flex items-center gap-2">
+              <Phone className="h-4 w-4 text-gray-500" />
+              <span className="font-medium">{paymentState.checkoutData.customerPhone}</span>
+            </div>
+          </CardContent>
+        </Card>
+
         {/* Order Summary */}
         <Card className="mb-6 shadow-lg">
           <CardHeader>

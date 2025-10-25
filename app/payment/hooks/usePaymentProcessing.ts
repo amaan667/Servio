@@ -1,6 +1,7 @@
 import { useRouter } from 'next/navigation';
 import { toast } from '@/hooks/use-toast';
 import { PaymentAction } from './usePaymentState';
+import { logger } from '@/lib/logger';
 
 export function usePaymentProcessing() {
   const router = useRouter();
@@ -20,7 +21,7 @@ export function usePaymentProcessing() {
       // Helper function to create order in database
       const createOrder = async () => {
         console.info('💳 [PAYMENT] Creating order in database...');
-        logger.info('💳💳💳 CREATING ORDER NOW 💳💳💳', {
+        console.info('💳💳💳 CREATING ORDER NOW 💳💳💳', {
           customer: checkoutData.customerName,
           venue: checkoutData.venueId,
           total: checkoutData.total
@@ -65,7 +66,7 @@ export function usePaymentProcessing() {
 
         const orderResult = await createOrderResponse.json();
         console.info('✅ [PAYMENT] Order created in database:', orderResult.order?.id);
-        logger.info('✅✅✅ ORDER CREATED IN DB ✅✅✅', {
+        console.info('✅✅✅ ORDER CREATED IN DB ✅✅✅', {
           orderId: orderResult.order?.id,
         });
         
@@ -133,7 +134,7 @@ export function usePaymentProcessing() {
         }
 
         console.info('[PAYMENT] Redirecting to Stripe...');
-        logger.info('✅ Stripe session created, redirecting');
+        console.info('✅ Stripe session created, redirecting');
         
         // Redirect to Stripe checkout
         if (result.url) {
@@ -148,7 +149,7 @@ export function usePaymentProcessing() {
         const orderNumber = orderResult.order?.order_number || orderId;
         
         console.info('[PAYMENT] Processing till payment...');
-        logger.info('💵 Processing till payment', { orderId });
+        console.info('💵 Processing till payment', { orderId });
         
         const response = await fetch('/api/pay/till', {
           method: 'POST',
@@ -169,7 +170,7 @@ export function usePaymentProcessing() {
         const result = await response.json();
         
         console.info('✅ [PAYMENT] Order confirmed for till payment');
-        logger.info('✅ Till payment confirmed - order sent to kitchen', { orderId });
+        console.info('✅ Till payment confirmed - order sent to kitchen', { orderId });
         
         // Redirect to order summary page
         window.location.href = `/order-summary?orderId=${orderId}`;
@@ -180,7 +181,7 @@ export function usePaymentProcessing() {
         const orderNumber = orderResult.order?.order_number || orderId;
         
         console.info('[PAYMENT] Processing pay later...');
-        logger.info('⏰ Processing pay later', { orderId });
+        console.info('⏰ Processing pay later', { orderId });
         
         const response = await fetch('/api/pay/later', {
           method: 'POST',
@@ -202,7 +203,7 @@ export function usePaymentProcessing() {
         const result = await response.json();
         
         console.info('✅ [PAYMENT] Order confirmed for pay later');
-        logger.info('✅ Pay later confirmed - order sent to kitchen', { orderId });
+        console.info('✅ Pay later confirmed - order sent to kitchen', { orderId });
         
         // Store session for re-scanning
         const sessionId = checkoutData.sessionId || `session_${Date.now()}`;
