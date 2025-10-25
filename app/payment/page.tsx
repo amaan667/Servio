@@ -14,7 +14,9 @@ import {
   Shield,
   Receipt,
   Star,
-  Loader2
+  Loader2,
+  User,
+  Phone
 } from "lucide-react";
 import { CustomerFeedbackForm } from "@/components/customer-feedback-form";
 import { OrderTimeline } from "@/components/order-timeline";
