@@ -153,7 +153,7 @@ export async function POST(request: NextRequest) {
     venue_id: checkoutData.venueId,
     table_number: checkoutData.tableNumber,
     table_id: null,
-    counter_number: checkoutData.counterNumber || null,
+    // counter_number column doesn't exist in orders table - removed
     order_type: checkoutData.orderType || "table",
     order_location: checkoutData.orderLocation || checkoutData.tableNumber?.toString() || "1",
     customer_name: checkoutData.customerName,
