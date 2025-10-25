@@ -86,58 +86,97 @@ export async function POST(req: NextRequest) {
                         html.includes('react') ||
                         cleanText.length < 500;
 
+    let finalHtml = html;
+    let finalText = cleanText;
+
     if (isJSRendered) {
-      console.warn(`⚠️ [SCRAPE MENU ${requestId}] JavaScript-rendered site detected, using fallback method`);
+      console.warn(`⚠️ [SCRAPE MENU ${requestId}] JavaScript-rendered site detected`);
+      console.info(`🌐 [SCRAPE MENU ${requestId}] Using Browserless.io to render JavaScript...`);
       
-      // For JS-rendered sites, try to extract from Next.js data or use screenshot API
-      // Option 1: Look for embedded JSON data
-      const scriptTags = $('script[type="application/json"], script[id*="__NEXT"]').html();
-      if (scriptTags) {
-        console.info(`📦 [SCRAPE MENU ${requestId}] Found embedded data, attempting to parse...`);
-        try {
-          const jsonData = JSON.parse(scriptTags);
-          // Try to find menu data in the JSON
-          console.info(`📦 [SCRAPE MENU ${requestId}] Embedded data:`, JSON.stringify(jsonData).substring(0, 500));
-        } catch {
-          // Can't parse embedded data
-        }
-      }
-      
-      // Option 2: Use screenshot API for JS-rendered pages
-      console.info(`📸 [SCRAPE MENU ${requestId}] Using screenshot API for JS-rendered page...`);
-      
-      try {
-        // Use screenshot service (e.g., ScreenshotOne, ApiFlash, or self-hosted)
-        const screenshotUrl = `https://api.screenshotone.com/take?url=${encodeURIComponent(url)}&access_key=${process.env.SCREENSHOT_API_KEY || 'demo'}&full_page=true&format=png`;
-        
-        // For now, return a helpful error message
+      if (!process.env.BROWSERLESS_API_KEY) {
+        console.error(`❌ [SCRAPE MENU ${requestId}] BROWSERLESS_API_KEY not configured`);
         return NextResponse.json({
           ok: false,
-          error: `This website (${url}) uses JavaScript to load its menu content. The current text-based scraper cannot access the menu. 
+          error: `This website uses JavaScript to load menu content. Please add BROWSERLESS_API_KEY to environment variables to enable JavaScript rendering.
           
-Recommendations:
-1. Try using the website's API if available
-2. Check if they have a static menu PDF you can download
-3. Use a different menu page URL if available
-4. Contact the restaurant for menu data export
+Setup Instructions:
+1. Sign up at https://www.browserless.io/
+2. Get your API key
+3. Add to Railway: BROWSERLESS_API_KEY=your_key_here
+4. Try again
 
-For now, please manually update prices and images in the Menu Management section.`,
-          debug: {
-            pageTitle,
-            textLength: cleanText.length,
-            isJavaScriptSite: true,
-            suggestion: 'This site requires a browser to render. Consider manually updating items.'
-          }
+Alternative: Manually update menu items in Menu Management.`
         }, { status: 400 });
-      } catch (screenshotError) {
-        console.error(`❌ [SCRAPE MENU ${requestId}] Screenshot fallback failed:`, screenshotError);
+      }
+
+      try {
+        // Use Browserless.io to render JavaScript
+        const browserlessUrl = `https://chrome.browserless.io/content?token=${process.env.BROWSERLESS_API_KEY}`;
+        
+        console.info(`📡 [SCRAPE MENU ${requestId}] Requesting Browserless.io...`);
+        const browserlessResponse = await fetch(browserlessUrl, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            url: url,
+            waitFor: 5000, // Wait 5 seconds for JS to load
+            gotoOptions: {
+              waitUntil: 'networkidle2'
+            }
+          })
+        });
+
+        if (!browserlessResponse.ok) {
+          const errorText = await browserlessResponse.text();
+          console.error(`❌ [SCRAPE MENU ${requestId}] Browserless failed:`, errorText);
+          throw new Error(`Browserless request failed: ${browserlessResponse.status}`);
+        }
+
+        const browserlessData = await browserlessResponse.json();
+        finalHtml = browserlessData.data || browserlessData;
+        
+        console.info(`✅ [SCRAPE MENU ${requestId}] Got rendered HTML from Browserless (${finalHtml.length} chars)`);
+        
+        // Re-parse the rendered HTML
+        const $rendered = cheerio.load(finalHtml);
+        $rendered('script, style, nav, header, footer, iframe').remove();
+        finalText = $rendered('body').text().replace(/\s+/g, ' ').trim();
+        
+        console.info(`✅ [SCRAPE MENU ${requestId}] Rendered text length: ${finalText.length} chars`);
+        console.info(`✅ [SCRAPE MENU ${requestId}] Rendered preview: ${finalText.substring(0, 300)}...`);
+        
+        // Extract images from rendered HTML
+        imageUrls.length = 0; // Clear previous images
+        $rendered('img').each((_, img) => {
+          let src = $rendered(img).attr('src') || $rendered(img).attr('data-src');
+          if (src) {
+            if (!src.startsWith('http')) {
+              try {
+                src = new URL(src, url).href;
+              } catch {
+                // Invalid
+              }
+            }
+            if (src && src.startsWith('http')) {
+              imageUrls.push(src);
+            }
+          }
+        });
+        
+        console.info(`📷 [SCRAPE MENU ${requestId}] Images from rendered page: ${imageUrls.length}`);
+      } catch (browserlessError) {
+        console.error(`❌ [SCRAPE MENU ${requestId}] Browserless rendering failed:`, browserlessError);
+        return NextResponse.json({
+          ok: false,
+          error: `Failed to render JavaScript site. Error: ${browserlessError instanceof Error ? browserlessError.message : 'Unknown error'}`
+        }, { status: 500 });
       }
     }
 
-    // Step 4: Use GPT-4 to extract menu items from static HTML
-    console.info(`🤖 [SCRAPE MENU ${requestId}] Using AI to extract menu items from static HTML...`);
+    // Step 4: Use GPT-4 to extract menu items (from rendered or static HTML)
+    console.info(`🤖 [SCRAPE MENU ${requestId}] Using AI to extract menu items...`);
     
-    const truncatedText = cleanText.length > 30000 ? cleanText.substring(0, 30000) + '...' : cleanText;
+    const truncatedText = finalText.length > 30000 ? finalText.substring(0, 30000) + '...' : finalText;
 
     const extractionPrompt = `Extract ALL menu items from this restaurant menu text.
 
