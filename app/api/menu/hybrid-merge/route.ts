@@ -12,14 +12,14 @@ const openai = new OpenAI({ apiKey: process.env.OPENAI_API_KEY });
  */
 export async function POST(req: NextRequest) {
   const requestId = Math.random().toString(36).substring(7);
-  
+
   try {
     const body = await req.json();
     const { venueId, menuUrl } = body;
 
     if (!venueId || !menuUrl) {
       return NextResponse.json(
-        { ok: false, error: 'venueId and menuUrl required' },
+        { ok: false, error: "venueId and menuUrl required" },
         { status: 400 }
       );
     }
@@ -33,76 +33,102 @@ export async function POST(req: NextRequest) {
     // Step 1: Get existing PDF-extracted menu items
     console.info(`📋 [HYBRID MERGE ${requestId}] Fetching existing PDF menu items...`);
     const { data: existingItems, error: fetchError } = await supabase
-      .from('menu_items')
-      .select('*')
-      .eq('venue_id', venueId)
-      .order('position', { ascending: true });
+      .from("menu_items")
+      .select("*")
+      .eq("venue_id", venueId)
+      .order("position", { ascending: true });
 
     if (fetchError) {
       throw new Error(`Failed to fetch existing menu: ${fetchError.message}`);
     }
 
     if (!existingItems || existingItems.length === 0) {
-      return NextResponse.json({
-        ok: false,
-        error: 'No existing PDF menu found. Please upload a PDF first.'
-      }, { status: 400 });
+      return NextResponse.json(
+        {
+          ok: false,
+          error: "No existing PDF menu found. Please upload a PDF first.",
+        },
+        { status: 400 }
+      );
     }
 
     console.info(`✅ [HYBRID MERGE ${requestId}] Found ${existingItems.length} PDF items`);
 
     // Step 2: Scrape menu from URL
     console.info(`🌐 [HYBRID MERGE ${requestId}] Scraping menu from URL...`);
-    
+
     let urlMenuData;
     try {
       // Use absolute URL for Railway deployment
-      const baseUrl = process.env.NEXT_PUBLIC_APP_URL || process.env.RAILWAY_PUBLIC_DOMAIN 
-        ? `https://${process.env.RAILWAY_PUBLIC_DOMAIN}` 
-        : 'https://servio-production.up.railway.app';
-      
+      const baseUrl =
+        process.env.NEXT_PUBLIC_APP_URL || process.env.RAILWAY_PUBLIC_DOMAIN
+          ? `https://${process.env.RAILWAY_PUBLIC_DOMAIN}`
+          : "https://servio-production.up.railway.app";
+
       const scrapeUrl = `${baseUrl}/api/scrape-menu`;
       console.info(`📡 [HYBRID MERGE ${requestId}] Calling scrape API: ${scrapeUrl}`);
-      
-      const scrapeResponse = await fetch(scrapeUrl, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ url: menuUrl })
-      });
 
-      console.info(`📡 [HYBRID MERGE ${requestId}] Scrape response status: ${scrapeResponse.status}`);
+      // Create AbortController with 6-minute timeout (scrape can take up to 5 min + buffer)
+      const controller = new AbortController();
+      const timeoutId = setTimeout(() => controller.abort(), 360000); // 6 minutes
 
-      if (!scrapeResponse.ok) {
-        const errorData = await scrapeResponse.json().catch(() => ({ error: 'Unknown error' }));
-        console.error(`❌ [HYBRID MERGE ${requestId}] Scrape API failed:`, errorData);
-        throw new Error(errorData.error || `Scrape API returned ${scrapeResponse.status}`);
-      }
+      try {
+        const scrapeResponse = await fetch(scrapeUrl, {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ url: menuUrl }),
+          signal: controller.signal,
+          // @ts-expect-error - Node.js fetch specific options
+          headersTimeout: 360000, // 6 minutes for headers
+          bodyTimeout: 360000, // 6 minutes for body
+        });
 
-      urlMenuData = await scrapeResponse.json();
-      console.info(`✅ [HYBRID MERGE ${requestId}] Scraped ${urlMenuData.items?.length || 0} items from URL`);
-      
-      if (!urlMenuData.ok) {
-        console.error(`❌ [HYBRID MERGE ${requestId}] Scrape returned not ok:`, urlMenuData);
-        throw new Error(urlMenuData.error || 'Scraping returned error status');
+        clearTimeout(timeoutId);
+
+        console.info(
+          `📡 [HYBRID MERGE ${requestId}] Scrape response status: ${scrapeResponse.status}`
+        );
+
+        if (!scrapeResponse.ok) {
+          const errorData = await scrapeResponse.json().catch(() => ({ error: "Unknown error" }));
+          console.error(`❌ [HYBRID MERGE ${requestId}] Scrape API failed:`, errorData);
+          throw new Error(errorData.error || `Scrape API returned ${scrapeResponse.status}`);
+        }
+
+        urlMenuData = await scrapeResponse.json();
+        console.info(
+          `✅ [HYBRID MERGE ${requestId}] Scraped ${urlMenuData.items?.length || 0} items from URL`
+        );
+
+        if (!urlMenuData.ok) {
+          console.error(`❌ [HYBRID MERGE ${requestId}] Scrape returned not ok:`, urlMenuData);
+          throw new Error(urlMenuData.error || "Scraping returned error status");
+        }
+      } catch (fetchError) {
+        clearTimeout(timeoutId);
+        throw fetchError;
       }
     } catch (scrapeError) {
       console.error(`❌ [HYBRID MERGE ${requestId}] Scraping failed:`, scrapeError);
       console.error(`❌ [HYBRID MERGE ${requestId}] Error details:`, {
         message: scrapeError instanceof Error ? scrapeError.message : String(scrapeError),
-        stack: scrapeError instanceof Error ? scrapeError.stack : undefined
+        stack: scrapeError instanceof Error ? scrapeError.stack : undefined,
       });
-      
-      return NextResponse.json({
-        ok: false,
-        error: `Failed to scrape menu from URL: ${scrapeError instanceof Error ? scrapeError.message : 'Unknown error'}. Check Railway logs for details.`
-      }, { status: 500 });
+
+      return NextResponse.json(
+        {
+          ok: false,
+          error: `Failed to scrape menu from URL: ${scrapeError instanceof Error ? scrapeError.message : "Unknown error"}. Check Railway logs for details.`,
+        },
+        { status: 500 }
+      );
     }
 
     const urlItems = urlMenuData.items || [];
 
     console.info(`📊 [HYBRID MERGE ${requestId}] URL scraping result:`, {
       found: urlItems.length,
-      sample: urlItems.slice(0, 3)
+      sample: urlItems.slice(0, 3),
     });
 
     if (urlItems.length === 0) {
@@ -111,38 +137,49 @@ export async function POST(req: NextRequest) {
       console.error(`   - The URL doesn't have a menu`);
       console.error(`   - The website structure is complex`);
       console.error(`   - The URL requires JavaScript to load content`);
-      
-      return NextResponse.json({
-        ok: false,
-        error: `No items found at URL. The website might require JavaScript or have an unusual structure. Try a direct menu page URL.`,
-        debug: {
-          urlChecked: menuUrl,
-          suggestion: 'Try the direct menu page URL (e.g., /menu or /food)'
-        }
-      }, { status: 400 });
+
+      return NextResponse.json(
+        {
+          ok: false,
+          error: `No items found at URL. The website might require JavaScript or have an unusual structure. Try a direct menu page URL.`,
+          debug: {
+            urlChecked: menuUrl,
+            suggestion: "Try the direct menu page URL (e.g., /menu or /food)",
+          },
+        },
+        { status: 400 }
+      );
     }
 
     // Step 3: Use AI to intelligently match and merge items
     console.info(`🤖 [HYBRID MERGE ${requestId}] Using AI to compare and merge menus...`);
-    
+
     const aiPrompt = `You are a menu data expert. Compare these two menus and intelligently merge them.
 
 PDF Menu Items (${existingItems.length} items):
-${JSON.stringify(existingItems.map(item => ({
-  name: item.name,
-  description: item.description,
-  price: item.price,
-  category: item.category
-})), null, 2)}
+${JSON.stringify(
+  existingItems.map((item) => ({
+    name: item.name,
+    description: item.description,
+    price: item.price,
+    category: item.category,
+  })),
+  null,
+  2
+)}
 
 URL Menu Items (${urlItems.length} items):
-${JSON.stringify(urlItems.map((item: any) => ({
-  name: item.name,
-  description: item.description,
-  price: item.price,
-  category: item.category,
-  image: item.image
-})), null, 2)}
+${JSON.stringify(
+  urlItems.map((item) => ({
+    name: item.name,
+    description: item.description,
+    price: item.price,
+    category: item.category,
+    image: item.image,
+  })),
+  null,
+  2
+)}
 
 Instructions:
 1. Match items from URL to PDF items by name similarity (fuzzy matching)
@@ -180,20 +217,21 @@ Be smart about matching:
       messages: [
         {
           role: "system",
-          content: "You are a menu data expert. Return ONLY valid JSON, no markdown, no explanation."
+          content:
+            "You are a menu data expert. Return ONLY valid JSON, no markdown, no explanation.",
         },
         {
           role: "user",
-          content: aiPrompt
-        }
+          content: aiPrompt,
+        },
       ],
       temperature: 0.3,
-      response_format: { type: "json_object" }
+      response_format: { type: "json_object" },
     });
 
     const aiContent = aiResponse.choices[0]?.message?.content;
     if (!aiContent) {
-      throw new Error('AI response was empty');
+      throw new Error("AI response was empty");
     }
 
     let mergedItems;
@@ -205,14 +243,14 @@ Be smart about matching:
       }
     } catch (parseError) {
       console.error(`❌ [HYBRID MERGE ${requestId}] Failed to parse AI response:`, parseError);
-      throw new Error('AI returned invalid JSON');
+      throw new Error("AI returned invalid JSON");
     }
 
     console.info(`🤖 [HYBRID MERGE ${requestId}] AI merged ${mergedItems.length} items`);
 
     // Step 4: Apply updates to database
     console.info(`💾 [HYBRID MERGE ${requestId}] Applying updates to database...`);
-    
+
     const updates = [];
     const inserts = [];
     const stats = {
@@ -221,25 +259,28 @@ Be smart about matching:
       unchanged: 0,
       prices_updated: 0,
       descriptions_added: 0,
-      images_added: 0
+      images_added: 0,
     };
 
     for (const mergedItem of mergedItems) {
-      if (mergedItem.action === 'update' && mergedItem.pdf_item_id) {
+      if (mergedItem.action === "update" && mergedItem.pdf_item_id) {
         // Update existing item
-        const updateData: any = {};
-        
-        if (mergedItem.changes.includes('price_updated')) {
+        const updateData: Record<string, string | number> = {};
+
+        if (mergedItem.changes.includes("price_updated")) {
           updateData.price = mergedItem.price;
           stats.prices_updated++;
         }
-        
-        if (mergedItem.changes.includes('description_added') || mergedItem.changes.includes('description_updated')) {
+
+        if (
+          mergedItem.changes.includes("description_added") ||
+          mergedItem.changes.includes("description_updated")
+        ) {
           updateData.description = mergedItem.description;
           stats.descriptions_added++;
         }
-        
-        if (mergedItem.changes.includes('image_added') && mergedItem.image) {
+
+        if (mergedItem.changes.includes("image_added") && mergedItem.image) {
           updateData.image = mergedItem.image;
           stats.images_added++;
         }
@@ -248,24 +289,24 @@ Be smart about matching:
           updateData.updated_at = new Date().toISOString();
           updates.push({
             id: mergedItem.pdf_item_id,
-            ...updateData
+            ...updateData,
           });
           stats.updated++;
         } else {
           stats.unchanged++;
         }
-      } else if (mergedItem.action === 'new') {
+      } else if (mergedItem.action === "new") {
         // New item from URL
         inserts.push({
           venue_id: venueId,
           name: mergedItem.name,
           description: mergedItem.description || null,
           price: mergedItem.price,
-          category: mergedItem.category || 'Other',
+          category: mergedItem.category || "Other",
           image: mergedItem.image || null,
           is_available: true,
           position: existingItems.length + inserts.length,
-          created_at: new Date().toISOString()
+          created_at: new Date().toISOString(),
         });
         stats.new++;
       } else {
@@ -279,11 +320,11 @@ Be smart about matching:
       for (const update of updates) {
         const { id, ...updateData } = update;
         const { error } = await supabase
-          .from('menu_items')
+          .from("menu_items")
           .update(updateData)
-          .eq('id', id)
-          .eq('venue_id', venueId);
-        
+          .eq("id", id)
+          .eq("venue_id", venueId);
+
         if (error) {
           console.error(`❌ [HYBRID MERGE ${requestId}] Update failed for ${id}:`, error);
         }
@@ -293,10 +334,8 @@ Be smart about matching:
     // Execute database inserts
     if (inserts.length > 0) {
       console.info(`➕ [HYBRID MERGE ${requestId}] Inserting ${inserts.length} new items...`);
-      const { error: insertError } = await supabase
-        .from('menu_items')
-        .insert(inserts);
-      
+      const { error: insertError } = await supabase.from("menu_items").insert(inserts);
+
       if (insertError) {
         console.error(`❌ [HYBRID MERGE ${requestId}] Insert failed:`, insertError);
         throw new Error(`Failed to insert new items: ${insertError.message}`);
@@ -313,18 +352,19 @@ Be smart about matching:
       details: {
         pricesUpdated: stats.prices_updated,
         descriptionsAdded: stats.descriptions_added,
-        imagesAdded: stats.images_added
-      }
+        imagesAdded: stats.images_added,
+      },
     });
-
   } catch (error) {
     console.error(`❌ [HYBRID MERGE ${requestId}] Error:`, error);
-    logger.error('[HYBRID MERGE] Unexpected error:', error);
-    
-    return NextResponse.json({
-      ok: false,
-      error: error instanceof Error ? error.message : 'Failed to merge menus'
-    }, { status: 500 });
+    logger.error("[HYBRID MERGE] Unexpected error:", error);
+
+    return NextResponse.json(
+      {
+        ok: false,
+        error: error instanceof Error ? error.message : "Failed to merge menus",
+      },
+      { status: 500 }
+    );
   }
 }
-

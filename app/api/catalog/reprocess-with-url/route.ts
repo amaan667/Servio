@@ -67,11 +67,26 @@ export async function POST(req: NextRequest) {
           ? `https://${process.env.RAILWAY_PUBLIC_DOMAIN}`
           : "http://localhost:3000");
 
-      const scrapeResponse = await fetch(`${baseUrl}/api/scrape-menu`, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ url: menuUrl }),
-      });
+      // Create AbortController with 6-minute timeout
+      const controller = new AbortController();
+      const timeoutId = setTimeout(() => controller.abort(), 360000);
+
+      let scrapeResponse;
+      try {
+        scrapeResponse = await fetch(`${baseUrl}/api/scrape-menu`, {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ url: menuUrl }),
+          signal: controller.signal,
+          // @ts-expect-error - Node.js fetch specific options
+          headersTimeout: 360000,
+          bodyTimeout: 360000,
+        });
+        clearTimeout(timeoutId);
+      } catch (fetchError) {
+        clearTimeout(timeoutId);
+        throw fetchError;
+      }
 
       if (!scrapeResponse.ok) {
         const errorData = await scrapeResponse.json().catch(() => ({ error: "Unknown error" }));
