@@ -54,8 +54,50 @@ async function getBrowser() {
 }
 
 /**
+ * Quick detection: Is this a JS-heavy site?
+ * Fetches HTML and checks for common JS framework indicators
+ */
+async function detectJSHeavySite(url: string): Promise<boolean> {
+  try {
+    console.info(`🔍 Fetching initial HTML to detect site type...`);
+    const response = await fetch(url, {
+      headers: {
+        "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36",
+      },
+      signal: AbortSignal.timeout(5000), // 5 second timeout
+    });
+
+    const html = await response.text();
+    const lowerHtml = html.toLowerCase();
+
+    // Check for JS framework indicators
+    const indicators = [
+      lowerHtml.includes("loading..."),
+      lowerHtml.includes("__next_data__"),
+      lowerHtml.includes("__nuxt"),
+      lowerHtml.includes("react"),
+      lowerHtml.includes("vue"),
+      lowerHtml.includes("angular"),
+      html.length < 5000, // Very minimal HTML
+      lowerHtml.includes("spa-root"),
+      lowerHtml.includes("app-root"),
+    ];
+
+    const jsIndicatorCount = indicators.filter(Boolean).length;
+    const isJSHeavy = jsIndicatorCount >= 2;
+
+    console.info(`📊 JS indicators: ${jsIndicatorCount}/9 → ${isJSHeavy ? "JS-heavy" : "Static"}`);
+    return isJSHeavy;
+  } catch {
+    // If fetch fails, assume it needs JS rendering
+    console.info(`⚠️ Initial fetch failed → Assuming JS-heavy`);
+    return true;
+  }
+}
+
+/**
  * Smart scrape with Playwright
- * Tries fast approach first, falls back to networkidle for JS-heavy sites
+ * Uses the right strategy based on site type
  */
 async function scrapeWithPlaywright(url: string, waitForNetworkIdle: boolean = false) {
   console.info(
@@ -166,50 +208,24 @@ export async function POST(req: NextRequest) {
     console.info(`🌐 [SCRAPE MENU ${requestId}] Scraping: ${url}`);
     logger.info(`[MENU SCRAPE] Starting scrape`, { url, requestId });
 
-    // Try fast scrape first
-    console.info(`🚀 [SCRAPE MENU ${requestId}] Trying fast scrape...`);
+    // Smart detection: Determine site type FIRST (saves 20s for JS sites!)
+    console.info(`🔍 [SCRAPE MENU ${requestId}] Detecting site type...`);
+    const isJSHeavy = await detectJSHeavySite(url);
 
-    let finalText: string;
-    let imageUrls: string[];
-
-    try {
-      console.info(`🔄 [SCRAPE MENU ${requestId}] Attempting fast scrape (20s timeout)...`);
-      const result = await scrapeWithPlaywright(url, false);
+    if (isJSHeavy) {
       console.info(
-        `📊 [SCRAPE MENU ${requestId}] Fast scrape returned ${result.text.length} chars`
+        `⚡ [SCRAPE MENU ${requestId}] JS-heavy site detected → Using networkidle directly (30s)`
       );
-
-      // Validate we got meaningful content
-      if (result.text.length > 500) {
-        console.info(`✅ [SCRAPE MENU ${requestId}] Fast scrape successful`);
-        finalText = result.text;
-        imageUrls = result.images;
-      } else {
-        throw new Error("Insufficient content - trying with networkidle");
-      }
-    } catch (error) {
-      // Fallback to networkidle for JS-heavy sites
-      console.warn(
-        `⚠️ [SCRAPE MENU ${requestId}] Fast scrape failed:`,
-        error instanceof Error ? error.message : String(error)
-      );
-      console.info(`🔄 [SCRAPE MENU ${requestId}] Retrying with networkidle (30s timeout)...`);
-
-      try {
-        const result = await scrapeWithPlaywright(url, true);
-        console.info(
-          `📊 [SCRAPE MENU ${requestId}] Networkidle scrape returned ${result.text.length} chars`
-        );
-        finalText = result.text;
-        imageUrls = result.images;
-      } catch (networkError) {
-        console.error(
-          `❌ [SCRAPE MENU ${requestId}] Networkidle scrape also failed:`,
-          networkError
-        );
-        throw networkError; // Re-throw to outer catch
-      }
+    } else {
+      console.info(`⚡ [SCRAPE MENU ${requestId}] Static/light site → Using fast scrape (20s)`);
     }
+
+    // Scrape with the right strategy from the start
+    const { text: finalText, images: imageUrls } = await scrapeWithPlaywright(url, isJSHeavy);
+
+    console.info(
+      `📊 [SCRAPE MENU ${requestId}] Extraction complete: ${finalText.length} chars, ${imageUrls.length} images`
+    );
 
     if (!finalText || finalText.length < 50) {
       console.error(`❌ [SCRAPE MENU ${requestId}] Insufficient content extracted`);
