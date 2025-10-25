@@ -273,11 +273,10 @@ export default function KDSClient({ venueId }: KDSClientProps) {
     return new Date(a.created_at).getTime() - new Date(b.created_at).getTime();
   });
 
-  const activeTickets = sortedTickets.filter((t) => t.ticket_status !== "bumped");
-  const newTickets = activeTickets.filter((t) => t.status === "new");
-  const inProgressTickets = activeTickets.filter((t) => t.status === "in_progress");
+  const activeTickets = sortedTickets.filter((t) => t.status !== "bumped");
+  const newTickets = activeTickets.filter((t) => t.status === "new" || t.status === "in_progress"); // Treat both as "preparing"
   const readyTickets = activeTickets.filter((t) => t.status === "ready");
-  const bumpedTickets = sortedTickets.filter((t) => t.ticket_status === "bumped");
+  const bumpedTickets = sortedTickets.filter((t) => t.status === "bumped");
 
   return (
     <div className="space-y-6">
@@ -388,13 +387,13 @@ export default function KDSClient({ venueId }: KDSClientProps) {
                   <div className="space-y-3">
                     {/* Header */}
                     <div className="flex items-start justify-between">
-                      <div>
+                      <div className="flex-1">
                         <div className="font-semibold text-lg">{ticket.item_name}</div>
                         <div className="text-sm text-gray-500">
                           {ticket.table_label || `Table ${ticket.table_number}`}
                         </div>
                       </div>
-                      <Badge className="text-lg font-bold">{ticket.quantity}x</Badge>
+                      <Badge className="text-lg font-bold shrink-0">{ticket.quantity}x</Badge>
                     </div>
 
                     {/* Special Instructions */}
