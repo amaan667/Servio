@@ -5,201 +5,346 @@ import * as cheerio from "cheerio";
 
 const openai = new OpenAI({ apiKey: process.env.OPENAI_API_KEY });
 
+interface BrowserlessConfig {
+  url: string;
+  timeout: number;
+  waitUntil: "load" | "domcontentloaded" | "networkidle0" | "networkidle2";
+}
+
+interface ScrapedContent {
+  html: string;
+  text: string;
+  images: string[];
+}
+
 /**
- * Scrape Menu from URL using Cheerio + GPT-4
- * Serverless-friendly, no Puppeteer needed
+ * Scrape with Browserless using optimized configuration
+ * Configured for maximum compatibility and content extraction
+ */
+async function scrapeWithBrowserless(
+  url: string,
+  config: BrowserlessConfig,
+  requestId: string
+): Promise<ScrapedContent> {
+  const browserlessUrl = `https://production-sfo.browserless.io/scrape?token=${process.env.BROWSERLESS_API_KEY}`;
+
+  console.info(
+    `📡 [SCRAPE ${requestId}] Browserless: timeout=${config.timeout}ms, waitUntil=${config.waitUntil}`
+  );
+
+  const controller = new AbortController();
+  // Add generous buffer for API overhead and network latency
+  const timeoutId = setTimeout(() => controller.abort(), config.timeout + 30000);
+
+  try {
+    const response = await fetch(browserlessUrl, {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        "Cache-Control": "no-cache",
+      },
+      body: JSON.stringify({
+        url: url,
+        elements: [
+          {
+            selector: "body",
+          },
+        ],
+        gotoOptions: {
+          waitUntil: config.waitUntil,
+          timeout: config.timeout,
+        },
+        // Wait for dynamic content to load after page events
+        waitForTimeout: 3000, // 3 seconds for JS to settle
+        // Block unnecessary resources for faster loading
+        blockAds: true,
+        blockTrackers: true,
+        // Stealth mode to avoid bot detection
+        stealth: true,
+        // Ignore HTTPS errors
+        ignoreHTTPSErrors: true,
+        // Set realistic viewport
+        viewport: {
+          width: 1920,
+          height: 1080,
+          deviceScaleFactor: 1,
+        },
+      }),
+      signal: controller.signal,
+    });
+
+    clearTimeout(timeoutId);
+
+    if (!response.ok) {
+      const errorText = await response.text();
+      console.error(
+        `❌ [SCRAPE ${requestId}] Browserless HTTP error: ${response.status} - ${errorText}`
+      );
+      throw new Error(`Browserless HTTP ${response.status}: ${errorText}`);
+    }
+
+    const data = await response.json();
+    const scrapedElement = data.data?.[0];
+
+    if (!scrapedElement || !scrapedElement.results?.[0]?.html) {
+      console.error(
+        `❌ [SCRAPE ${requestId}] No HTML in response:`,
+        JSON.stringify(data).substring(0, 500)
+      );
+      throw new Error("Browserless returned no HTML content");
+    }
+
+    const html = scrapedElement.results[0].html;
+    console.info(`📄 [SCRAPE ${requestId}] Received HTML: ${html.length} chars`);
+
+    // Parse with Cheerio for content extraction
+    const $ = cheerio.load(html);
+
+    // Remove non-content elements but keep main content
+    $("script, style, noscript, svg, iframe").remove();
+    // Keep nav/header/footer for now as some menus might be there
+
+    // Extract text from body
+    let text = $("body").text();
+
+    // Clean up whitespace while preserving structure
+    text = text
+      .replace(/\r?\n/g, " ") // Replace newlines with spaces
+      .replace(/\s+/g, " ") // Collapse multiple spaces
+      .trim();
+
+    console.info(`📝 [SCRAPE ${requestId}] Extracted text: ${text.length} chars`);
+
+    // Extract all images with multiple fallback attributes
+    const images: string[] = [];
+    const imageSet = new Set<string>(); // Deduplicate images
+
+    $("img, picture source").each((_, elem) => {
+      const attrs = [
+        "src",
+        "data-src",
+        "data-lazy-src",
+        "data-original",
+        "data-srcset",
+        "srcset",
+        "data-fallback-src",
+      ];
+
+      for (const attr of attrs) {
+        let src = $(elem).attr(attr);
+        if (src) {
+          // Handle srcset (take first URL)
+          if (attr.includes("srcset")) {
+            src = src.split(",")[0].trim().split(" ")[0];
+          }
+
+          // Convert relative to absolute URLs
+          if (!src.startsWith("http") && !src.startsWith("data:")) {
+            try {
+              src = new URL(src, url).href;
+            } catch {
+              continue; // Invalid URL, skip
+            }
+          }
+
+          // Only add valid HTTP(S) images
+          if (src && src.startsWith("http") && !imageSet.has(src)) {
+            imageSet.add(src);
+            images.push(src);
+          }
+        }
+      }
+    });
+
+    console.info(`📷 [SCRAPE ${requestId}] Extracted images: ${images.length} unique URLs`);
+    console.info(
+      `✅ [SCRAPE ${requestId}] Extraction complete: ${html.length} chars HTML, ${text.length} chars text, ${images.length} images`
+    );
+
+    return { html, text, images };
+  } catch (error) {
+    clearTimeout(timeoutId);
+
+    if (error instanceof Error) {
+      if (error.name === "AbortError") {
+        throw new Error(
+          `Request timeout after ${config.timeout}ms with waitUntil='${config.waitUntil}'`
+        );
+      }
+      console.error(`❌ [SCRAPE ${requestId}] Error in scrapeWithBrowserless:`, error.message);
+    }
+
+    throw error;
+  }
+}
+
+/**
+ * Advanced retry strategy with progressive timeouts and wait conditions
+ * Ensures any URL can be scraped regardless of load time
+ *
+ * Strategy progression:
+ * 1. Quick: 45s with domcontentloaded (most sites)
+ * 2. Standard: 90s with domcontentloaded (slower sites)
+ * 3. Patient: 150s with load (waits for all resources)
+ * 4. Very Patient: 240s with networkidle2 (waits for network quiet - handles lazy loading)
+ * 5. Maximum: 300s with networkidle2 + extended wait (absolute maximum effort)
+ */
+async function scrapeWithRetry(url: string, requestId: string): Promise<ScrapedContent> {
+  const strategies: BrowserlessConfig[] = [
+    { url, timeout: 45000, waitUntil: "domcontentloaded" },
+    { url, timeout: 90000, waitUntil: "domcontentloaded" },
+    { url, timeout: 150000, waitUntil: "load" },
+    { url, timeout: 240000, waitUntil: "networkidle2" },
+    { url, timeout: 300000, waitUntil: "networkidle2" }, // 5 minutes - absolute max
+  ];
+
+  const errors: string[] = [];
+
+  for (let i = 0; i < strategies.length; i++) {
+    const strategy = strategies[i];
+    const attempt = i + 1;
+
+    console.info(
+      `🔄 [SCRAPE ${requestId}] Attempt ${attempt}/${strategies.length} (timeout: ${strategy.timeout / 1000}s, waitUntil: ${strategy.waitUntil})`
+    );
+
+    try {
+      const result = await scrapeWithBrowserless(url, strategy, requestId);
+
+      // Validate result has meaningful content
+      if (result.text.length < 50) {
+        throw new Error(`Insufficient content: only ${result.text.length} characters extracted`);
+      }
+
+      console.info(
+        `✅ [SCRAPE ${requestId}] Successfully scraped on attempt ${attempt} - ${result.text.length} chars, ${result.images.length} images`
+      );
+      return result;
+    } catch (error) {
+      const errorMsg = error instanceof Error ? error.message : String(error);
+      errors.push(`Attempt ${attempt} (${strategy.timeout / 1000}s): ${errorMsg}`);
+
+      console.warn(`⚠️ [SCRAPE ${requestId}] Attempt ${attempt} failed: ${errorMsg}`);
+
+      // Check if this is a retryable error
+      const isRetryable =
+        errorMsg.includes("timeout") ||
+        errorMsg.includes("Insufficient") ||
+        errorMsg.includes("Navigation") ||
+        errorMsg.includes("net::") ||
+        errorMsg.includes("ERR_") ||
+        errorMsg.includes("waiting for");
+
+      // If not retryable, fail immediately
+      if (!isRetryable) {
+        console.error(`❌ [SCRAPE ${requestId}] Fatal error (not retryable): ${errorMsg}`);
+        throw new Error(
+          `Unable to scrape URL: ${errorMsg}\n\n` +
+            `This error is not related to timeout. Possible causes:\n` +
+            `- Invalid or inaccessible URL\n` +
+            `- Page requires authentication\n` +
+            `- Anti-bot protection blocking access\n` +
+            `- Website is down or blocking automated access`
+        );
+      }
+
+      // If not the last attempt, continue to next strategy
+      if (i < strategies.length - 1) {
+        const delaySeconds = 3;
+        console.info(
+          `🔄 [SCRAPE ${requestId}] Waiting ${delaySeconds}s before trying next strategy...`
+        );
+        await new Promise((resolve) => setTimeout(resolve, delaySeconds * 1000));
+      }
+    }
+  }
+
+  // All attempts exhausted
+  throw new Error(
+    `Unable to scrape URL after ${strategies.length} attempts with timeouts up to ${strategies[strategies.length - 1].timeout / 1000} seconds.\n\n` +
+      `Attempt details:\n${errors.join("\n")}\n\n` +
+      `Possible causes:\n` +
+      `- Site takes extremely long to load (>5 minutes)\n` +
+      `- Site uses advanced anti-bot protection\n` +
+      `- Page requires login or specific cookies\n` +
+      `- Site is experiencing technical difficulties\n` +
+      `- Geo-blocking or access restrictions\n\n` +
+      `Recommendations:\n` +
+      `- Verify the URL is accessible in a regular browser\n` +
+      `- Check if the site requires authentication\n` +
+      `- Try again during off-peak hours\n` +
+      `- Contact support if the issue persists`
+  );
+}
+
+/**
+ * Scrape Menu from URL with Advanced Rendering & Timeout Handling
+ * Uses Browserless for ALL URLs to ensure perfect JavaScript rendering
  */
 export async function POST(req: NextRequest) {
   const requestId = Math.random().toString(36).substring(7);
-  
+
   try {
     const body = await req.json();
     const { url } = body;
 
     if (!url) {
-      return NextResponse.json(
-        { ok: false, error: 'URL is required' },
-        { status: 400 }
-      );
+      return NextResponse.json({ ok: false, error: "URL is required" }, { status: 400 });
     }
 
     console.info(`🌐 [SCRAPE MENU ${requestId}] Scraping: ${url}`);
     logger.info(`[MENU SCRAPE] Starting scrape`, { url, requestId });
 
-    // Step 1: Fetch the HTML content
-    console.info(`📄 [SCRAPE MENU ${requestId}] Fetching HTML...`);
-    const response = await fetch(url, {
-      headers: {
-        'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36'
-      }
-    });
-
-    if (!response.ok) {
-      throw new Error(`Failed to fetch URL: ${response.status} ${response.statusText}`);
-    }
-
-    const html = await response.text();
-    console.info(`✅ [SCRAPE MENU ${requestId}] HTML fetched (${html.length} chars)`);
-
-    // Step 2: Parse HTML with Cheerio
-    const $ = cheerio.load(html);
-    
-    // Log the page title for debugging
-    const pageTitle = $('title').text();
-    console.info(`📄 [SCRAPE MENU ${requestId}] Page title: ${pageTitle}`);
-    
-    // Remove script and style tags
-    $('script, style, nav, header, footer, iframe').remove();
-    
-    // Get clean text content
-    const bodyText = $('body').text();
-    const cleanText = bodyText.replace(/\s+/g, ' ').trim();
-    
-    console.info(`📝 [SCRAPE MENU ${requestId}] Extracted text length: ${cleanText.length} chars`);
-    console.info(`📝 [SCRAPE MENU ${requestId}] Text preview: ${cleanText.substring(0, 200)}...`);
-    
-    // Extract image URLs
-    const imageUrls: string[] = [];
-    $('img').each((_, img) => {
-      let src = $(img).attr('src') || $(img).attr('data-src') || $(img).attr('data-lazy-src');
-      if (src) {
-        // Convert relative to absolute
-        if (!src.startsWith('http')) {
-          try {
-            src = new URL(src, url).href;
-          } catch {
-            // Invalid URL, skip
-          }
-        }
-        if (src && src.startsWith('http')) {
-          imageUrls.push(src);
-        }
-      }
-    });
-
-    console.info(`📷 [SCRAPE MENU ${requestId}] Found ${imageUrls.length} images`);
-
-    // Step 3: Check if this is a JavaScript-rendered site
-    const isJSRendered = cleanText.includes('Loading...') || 
-                        cleanText.includes('__NEXT_DATA__') ||
-                        cleanText.includes('__nuxt') ||
-                        html.includes('react') ||
-                        cleanText.length < 500;
-
-    let finalHtml = html;
-    let finalText = cleanText;
-
-    if (isJSRendered) {
-      console.warn(`⚠️ [SCRAPE MENU ${requestId}] JavaScript-rendered site detected`);
-      console.info(`🌐 [SCRAPE MENU ${requestId}] Using Browserless.io to render JavaScript...`);
-      
-      if (!process.env.BROWSERLESS_API_KEY) {
-        console.error(`❌ [SCRAPE MENU ${requestId}] BROWSERLESS_API_KEY not configured`);
-        return NextResponse.json({
+    // Check for Browserless API key
+    if (!process.env.BROWSERLESS_API_KEY) {
+      console.error(`❌ [SCRAPE MENU ${requestId}] BROWSERLESS_API_KEY not configured`);
+      return NextResponse.json(
+        {
           ok: false,
-          error: `This website uses JavaScript to load menu content. Please add BROWSERLESS_API_KEY to environment variables to enable JavaScript rendering.
-          
+          error: `Menu scraping requires BROWSERLESS_API_KEY for reliable content extraction.
+        
 Setup Instructions:
 1. Sign up at https://www.browserless.io/
 2. Get your API key
-3. Add to Railway: BROWSERLESS_API_KEY=your_key_here
-4. Try again
+3. Add to environment: BROWSERLESS_API_KEY=your_key_here
+4. Restart the application
 
-Alternative: Manually update menu items in Menu Management.`
-        }, { status: 400 });
-      }
-
-      try {
-        // Use Browserless /scrape endpoint (simpler, more reliable)
-        // Docs: https://docs.browserless.io/rest-apis/scrape
-        const browserlessUrl = `https://production-sfo.browserless.io/scrape?token=${process.env.BROWSERLESS_API_KEY}`;
-        
-        console.info(`📡 [SCRAPE MENU ${requestId}] Requesting Browserless.io /scrape endpoint...`);
-        const browserlessResponse = await fetch(browserlessUrl, {
-          method: 'POST',
-          headers: { 
-            'Content-Type': 'application/json',
-            'Cache-Control': 'no-cache'
-          },
-          body: JSON.stringify({
-            url: url,
-            elements: [{
-              selector: "body"
-            }],
-            gotoOptions: {
-              waitUntil: 'domcontentloaded', // Faster than networkidle
-              timeout: 60000 // Increase timeout to 60 seconds
-            }
-          })
-        });
-
-        console.info(`📡 [SCRAPE MENU ${requestId}] Browserless response status: ${browserlessResponse.status}`);
-
-        if (!browserlessResponse.ok) {
-          const errorText = await browserlessResponse.text();
-          console.error(`❌ [SCRAPE MENU ${requestId}] Browserless failed:`, errorText);
-          throw new Error(`Browserless request failed: ${browserlessResponse.status} - ${errorText}`);
-        }
-
-        const browserlessData = await browserlessResponse.json();
-        
-        console.info(`📦 [SCRAPE MENU ${requestId}] Browserless response:`, {
-          hasData: !!browserlessData.data,
-          hasElements: !!browserlessData.data?.[0],
-          type: typeof browserlessData
-        });
-        
-        // Extract HTML from Browserless scrape response
-        const scrapedElement = browserlessData.data?.[0];
-        if (!scrapedElement || !scrapedElement.results?.[0]?.html) {
-          console.error(`❌ [SCRAPE MENU ${requestId}] No HTML in Browserless response`);
-          throw new Error('Browserless returned no HTML content');
-        }
-        
-        finalHtml = scrapedElement.results[0].html;
-        
-        console.info(`✅ [SCRAPE MENU ${requestId}] Got rendered HTML from Browserless (${finalHtml.length} chars)`);
-        
-        // Re-parse the rendered HTML
-        const $rendered = cheerio.load(finalHtml);
-        $rendered('script, style, nav, header, footer, iframe').remove();
-        finalText = $rendered('body').text().replace(/\s+/g, ' ').trim();
-        
-        console.info(`✅ [SCRAPE MENU ${requestId}] Rendered text length: ${finalText.length} chars`);
-        console.info(`✅ [SCRAPE MENU ${requestId}] Rendered preview: ${finalText.substring(0, 300)}...`);
-        
-        // Extract images from rendered HTML
-        imageUrls.length = 0; // Clear previous images
-        $rendered('img').each((_, img) => {
-          let src = $rendered(img).attr('src') || $rendered(img).attr('data-src');
-          if (src) {
-            if (!src.startsWith('http')) {
-              try {
-                src = new URL(src, url).href;
-              } catch {
-                // Invalid
-              }
-            }
-            if (src && src.startsWith('http')) {
-              imageUrls.push(src);
-            }
-          }
-        });
-        
-        console.info(`📷 [SCRAPE MENU ${requestId}] Images from rendered page: ${imageUrls.length}`);
-      } catch (browserlessError) {
-        console.error(`❌ [SCRAPE MENU ${requestId}] Browserless rendering failed:`, browserlessError);
-        return NextResponse.json({
-          ok: false,
-          error: `Failed to render JavaScript site. Error: ${browserlessError instanceof Error ? browserlessError.message : 'Unknown error'}`
-        }, { status: 500 });
-      }
+Alternative: Manually add menu items in Menu Management.`,
+        },
+        { status: 400 }
+      );
     }
+
+    // Use Browserless for ALL URLs - ensures perfect rendering
+    console.info(
+      `🚀 [SCRAPE MENU ${requestId}] Using Browserless.io with adaptive timeout strategy...`
+    );
+
+    const { images: imageUrls, text: finalText } = await scrapeWithRetry(url, requestId);
+
+    if (!finalText || finalText.length < 50) {
+      console.error(`❌ [SCRAPE MENU ${requestId}] Insufficient content extracted`);
+      return NextResponse.json(
+        {
+          ok: false,
+          error:
+            "Unable to extract meaningful content from the URL. The page may be empty, protected, or require authentication.",
+        },
+        { status: 400 }
+      );
+    }
+
+    console.info(`✅ [SCRAPE MENU ${requestId}] Content extracted successfully`);
+    console.info(
+      `📊 [SCRAPE MENU ${requestId}] Stats: ${finalText.length} chars, ${imageUrls.length} images`
+    );
+    console.info(`📝 [SCRAPE MENU ${requestId}] Preview: ${finalText.substring(0, 300)}...`);
 
     // Step 4: Use GPT-4 to extract menu items (from rendered or static HTML)
     console.info(`🤖 [SCRAPE MENU ${requestId}] Using AI to extract menu items...`);
-    
-    const truncatedText = finalText.length > 30000 ? finalText.substring(0, 30000) + '...' : finalText;
+
+    const truncatedText =
+      finalText.length > 30000 ? finalText.substring(0, 30000) + "..." : finalText;
 
     const extractionPrompt = `Extract ALL menu items from this restaurant menu text.
 
@@ -207,7 +352,7 @@ Menu Text:
 ${truncatedText}
 
 Available Images:
-${imageUrls.slice(0, 50).join('\n')}
+${imageUrls.slice(0, 50).join("\n")}
 
 Extract each menu item with:
 - name: Item name (required)
@@ -234,20 +379,21 @@ Return ONLY valid JSON:
       messages: [
         {
           role: "system",
-          content: "You are a menu extraction expert. Extract ALL menu items. Return ONLY valid JSON."
+          content:
+            "You are a menu extraction expert. Extract ALL menu items. Return ONLY valid JSON.",
         },
         {
           role: "user",
-          content: extractionPrompt
-        }
+          content: extractionPrompt,
+        },
       ],
       temperature: 0.1,
-      response_format: { type: "json_object" }
+      response_format: { type: "json_object" },
     });
 
     const aiContent = aiResponse.choices[0]?.message?.content;
     if (!aiContent) {
-      throw new Error('AI response was empty');
+      throw new Error("AI response was empty");
     }
 
     let menuItems;
@@ -256,25 +402,27 @@ Return ONLY valid JSON:
       menuItems = parsed.items || [];
     } catch (parseError) {
       console.error(`❌ [SCRAPE MENU ${requestId}] Failed to parse AI response:`, parseError);
-      throw new Error('AI returned invalid JSON');
+      throw new Error("AI returned invalid JSON");
     }
 
     console.info(`✅ [SCRAPE MENU ${requestId}] Extracted ${menuItems.length} items`);
-    logger.info('[MENU SCRAPE] Extraction complete', { itemCount: menuItems.length });
+    logger.info("[MENU SCRAPE] Extraction complete", { itemCount: menuItems.length });
 
     return NextResponse.json({
       ok: true,
       items: menuItems,
-      message: `Found ${menuItems.length} items from menu`
+      message: `Found ${menuItems.length} items from menu`,
     });
-
   } catch (error) {
     console.error(`❌ [SCRAPE MENU ${requestId}] Error:`, error);
-    logger.error('[MENU SCRAPE] Error:', error);
+    logger.error("[MENU SCRAPE] Error:", error);
 
-    return NextResponse.json({
-      ok: false,
-      error: error instanceof Error ? error.message : 'Failed to scrape menu'
-    }, { status: 500 });
+    return NextResponse.json(
+      {
+        ok: false,
+        error: error instanceof Error ? error.message : "Failed to scrape menu",
+      },
+      { status: 500 }
+    );
   }
 }
