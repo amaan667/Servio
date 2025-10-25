@@ -307,10 +307,11 @@ const DashboardClient = React.memo(function DashboardClient({ venueId }: { venue
               <Link href={`/dashboard/${venueId}/analytics`}>
                 <EnhancedStatCard
                   title="Revenue"
-                  value={`£${dashboardData.stats.revenue.toFixed(2)}`}
+                  value={dashboardData.stats.revenue}
                   icon={TrendingUp}
                   iconColor="text-green-600"
                   iconBgColor="bg-green-100"
+                  isCurrency
                   trend={
                     analyticsData.data?.yesterdayComparison
                       ? {
@@ -325,13 +326,14 @@ const DashboardClient = React.memo(function DashboardClient({ venueId }: { venue
                 />
               </Link>
             ) : (
-              <div className="invisible" aria-hidden="true">
+              <div className="opacity-0 pointer-events-none select-none" aria-hidden="true">
                 <EnhancedStatCard
                   title="Revenue"
-                  value="£0.00"
+                  value={0}
                   icon={TrendingUp}
                   iconColor="text-green-600"
                   iconBgColor="bg-green-100"
+                  isCurrency
                 />
               </div>
             )}
