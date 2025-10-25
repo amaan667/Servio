@@ -1,5 +1,5 @@
 import Stripe from "stripe";
-import { NextResponse } from "next/server";
+import { NextRequest, NextResponse } from "next/server";
 import { createAdminClient } from "@/lib/supabase";
 import { stripe } from "@/lib/stripe-client";
 import { apiLogger } from "@/lib/logger";
@@ -8,11 +8,14 @@ export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
 export const revalidate = 0;
 
+// Use the SAME webhook secret as subscriptions webhook
+const webhookSecret = process.env.STRIPE_WEBHOOK_SECRET!;
+
 /**
  * Stripe Webhook for CUSTOMER ORDER PAYMENTS
  * This is separate from /api/stripe/webhooks which handles SUBSCRIPTIONS
  */
-export async function POST(req: Request) {
+export async function POST(request: NextRequest) {
   const supabaseAdmin = createAdminClient();
 
   console.info("\n" + "=".repeat(80));
@@ -24,8 +27,8 @@ export async function POST(req: Request) {
   apiLogger.debug("[CUSTOMER ORDER WEBHOOK] ===== WEBHOOK RECEIVED =====");
   apiLogger.debug("[CUSTOMER ORDER WEBHOOK] Timestamp:", new Date().toISOString());
 
-  const sig = req.headers.get("stripe-signature");
-  if (!sig) {
+  const signature = request.headers.get("stripe-signature");
+  if (!signature) {
     console.error("❌ [CUSTOMER ORDER WEBHOOK] Missing stripe-signature header");
     apiLogger.error("[CUSTOMER ORDER WEBHOOK] Missing stripe-signature header");
     return new NextResponse("Missing stripe-signature", { status: 400 });
@@ -33,21 +36,16 @@ export async function POST(req: Request) {
 
   console.info("✅ [CUSTOMER ORDER WEBHOOK] Stripe signature found");
 
-  // Read raw text for Stripe verification
-  const raw = await req.text();
-  console.info("📄 [CUSTOMER ORDER WEBHOOK] Payload length:", raw.length, "bytes");
+  // IMPORTANT: Read raw body - exact same as subscriptions webhook
+  const body = await request.text();
+  console.info("📄 [CUSTOMER ORDER WEBHOOK] Payload length:", body.length, "bytes");
 
   let event: Stripe.Event;
   try {
     console.info("🔐 [CUSTOMER ORDER WEBHOOK] Verifying signature...");
 
-    // Trim the webhook secret to remove any whitespace/newlines
-    const webhookSecret = (process.env.STRIPE_WEBHOOK_SECRET || "").trim();
-    console.info("🔑 [CUSTOMER ORDER WEBHOOK] Using webhook secret (trimmed)");
-    console.info("🔑 Secret length:", webhookSecret.length);
-    console.info("🔑 Secret starts with:", webhookSecret.substring(0, 10) + "...");
-
-    event = stripe.webhooks.constructEvent(raw, sig, webhookSecret);
+    // Use EXACT same method as subscriptions webhook (no trimming!)
+    event = stripe.webhooks.constructEvent(body, signature, webhookSecret);
     console.info("✅ [CUSTOMER ORDER WEBHOOK] Signature verified");
     console.info("📦 [CUSTOMER ORDER WEBHOOK] Event type:", event.type);
     console.info("🆔 [CUSTOMER ORDER WEBHOOK] Event ID:", event.id);
@@ -57,16 +55,6 @@ export async function POST(req: Request) {
     console.error("❌ [CUSTOMER ORDER WEBHOOK] SIGNATURE VERIFICATION FAILED!");
     console.error("=".repeat(80));
     console.error("❌ Error:", errorMessage);
-    console.error("❌ Webhook secret env var exists:", !!process.env.STRIPE_WEBHOOK_SECRET);
-    console.error("❌ Webhook secret length (raw):", process.env.STRIPE_WEBHOOK_SECRET?.length);
-    console.error(
-      "❌ Webhook secret length (trimmed):",
-      process.env.STRIPE_WEBHOOK_SECRET?.trim().length
-    );
-    console.error(
-      "❌ Has whitespace:",
-      process.env.STRIPE_WEBHOOK_SECRET !== process.env.STRIPE_WEBHOOK_SECRET?.trim()
-    );
     console.error("=".repeat(80) + "\n");
 
     apiLogger.error("[CUSTOMER ORDER WEBHOOK] Webhook construction error:", errorMessage);
