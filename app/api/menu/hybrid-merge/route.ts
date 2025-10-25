@@ -281,7 +281,7 @@ Be smart about matching:
         }
 
         if (mergedItem.changes.includes("image_added") && mergedItem.image) {
-          updateData.image = mergedItem.image;
+          updateData.image_url = mergedItem.image;
           stats.images_added++;
         }
 
@@ -303,7 +303,7 @@ Be smart about matching:
           description: mergedItem.description || null,
           price: mergedItem.price,
           category: mergedItem.category || "Other",
-          image: mergedItem.image || null,
+          image_url: mergedItem.image || null,
           is_available: true,
           position: existingItems.length + inserts.length,
           created_at: new Date().toISOString(),
