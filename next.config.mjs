@@ -18,11 +18,11 @@ const nextConfig = {
     // Run `npm run typecheck` separately for TS validation
     ignoreBuildErrors: true,
   },
-  // Server-only packages (exclude from bundling)
-  serverComponentsExternalPackages: ['playwright-core', 'playwright'],
   // Performance optimizations
   experimental: {
     optimizePackageImports: ['lucide-react', 'recharts', '@radix-ui/react-icons'],
+    // Exclude server-only packages from bundling
+    serverComponentsExternalPackages: ['playwright-core', 'playwright'],
   },
   compiler: {
     // Remove console.logs in production but keep errors and warnings
@@ -145,7 +145,23 @@ const nextConfig = {
     ],
   },
   // Bundle optimization
-  webpack: (config, { dev, isServer }) => {
+  webpack: (config, { dev, isServer, webpack }) => {
+    // Only for client-side builds: ignore playwright-core
+    if (!isServer) {
+      config.plugins.push(
+        new webpack.IgnorePlugin({
+          resourceRegExp: /^playwright-core$/,
+        })
+      );
+      
+      // Add fallback for modules not found in browser
+      config.resolve.fallback = {
+        ...config.resolve.fallback,
+        electron: false,
+        'playwright-core': false,
+      };
+    }
+    
     if (!dev && !isServer) {
       config.optimization.splitChunks = {
         chunks: 'all',

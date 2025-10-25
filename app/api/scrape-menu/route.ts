@@ -9,6 +9,109 @@ export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
 
 /**
+ * Browser instance cache for reuse across requests
+ */
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+let browserInstance: any = null;
+
+/**
+ * Get or create browser instance with Playwright
+ */
+async function getBrowser() {
+  if (!browserInstance) {
+    // Dynamic import - only loaded at runtime, not during build
+    const playwright = await import("playwright-core");
+
+    const executablePath = process.env.PLAYWRIGHT_CHROMIUM_EXECUTABLE_PATH;
+    console.info(
+      `🌐 Launching browser${executablePath ? ` from ${executablePath}` : " (auto-detect)"}`
+    );
+
+    browserInstance = await playwright.chromium.launch({
+      headless: true,
+      executablePath,
+      args: [
+        "--no-sandbox",
+        "--disable-setuid-sandbox",
+        "--disable-dev-shm-usage",
+        "--disable-gpu",
+        "--disable-software-rasterizer",
+      ],
+    });
+
+    console.info("✅ Browser launched successfully");
+  }
+  return browserInstance;
+}
+
+/**
+ * Smart scrape with Playwright
+ * Tries fast approach first, falls back to networkidle for JS-heavy sites
+ */
+async function scrapeWithPlaywright(url: string, waitForNetworkIdle: boolean = false) {
+  const browser = await getBrowser();
+  const context = await browser.newContext({
+    viewport: { width: 1920, height: 1080 },
+    userAgent: "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36",
+  });
+
+  const page = await context.newPage();
+
+  try {
+    // Navigate
+    await page.goto(url, {
+      waitUntil: waitForNetworkIdle ? "networkidle" : "domcontentloaded",
+      timeout: waitForNetworkIdle ? 30000 : 20000,
+    });
+
+    // Wait for JS to settle
+    await page.waitForTimeout(waitForNetworkIdle ? 2000 : 1000);
+
+    // Try to wait for common menu selectors
+    await page
+      .waitForSelector('main, [class*="menu"], [class*="item"], [role="main"]', {
+        timeout: 5000,
+      })
+      .catch(() => {
+        // Selector not found, continue anyway
+      });
+
+    // Get HTML
+    const html = await page.content();
+
+    // Extract text (remove scripts/styles)
+    const text = await page.evaluate(() => {
+      const clone = document.body.cloneNode(true) as HTMLElement;
+      clone.querySelectorAll("script, style, noscript").forEach((el) => el.remove());
+      return clone.innerText;
+    });
+
+    // Extract images
+    const images = await page.evaluate((baseUrl: string) => {
+      const imgs = Array.from(document.querySelectorAll("img"));
+      return imgs
+        .map((img) => {
+          let src = img.src || img.dataset.src || img.dataset.lazySrc;
+          if (src && !src.startsWith("http")) {
+            try {
+              src = new URL(src, baseUrl).href;
+            } catch {
+              return null;
+            }
+          }
+          return src && src.startsWith("http") ? src : null;
+        })
+        .filter((src): src is string => src !== null);
+    }, url);
+
+    return { html, text, images };
+  } finally {
+    await page.close();
+    await context.close();
+  }
+}
+
+/**
  * Scrape Menu from URL using Playwright
  * Self-hosted browser automation - fast, free, and reliable
  * Optimized for JS-heavy sites like Cafe Nur
@@ -27,12 +130,32 @@ export async function POST(req: NextRequest) {
     console.info(`🌐 [SCRAPE MENU ${requestId}] Scraping: ${url}`);
     logger.info(`[MENU SCRAPE] Starting scrape`, { url, requestId });
 
-    // Use Playwright smart scraping (tries fast first, falls back to networkidle)
-    console.info(`🚀 [SCRAPE MENU ${requestId}] Using Playwright with smart retry...`);
+    // Try fast scrape first
+    console.info(`🚀 [SCRAPE MENU ${requestId}] Trying fast scrape...`);
 
-    // Dynamic import to avoid bundling playwright-core in the client
-    const { smartScrape } = await import("@/lib/playwright-scraper");
-    const { text: finalText, images: imageUrls } = await smartScrape(url);
+    let finalText: string;
+    let imageUrls: string[];
+
+    try {
+      const result = await scrapeWithPlaywright(url, false);
+
+      // Validate we got meaningful content
+      if (result.text.length > 500) {
+        console.info(`✅ [SCRAPE MENU ${requestId}] Fast scrape successful`);
+        finalText = result.text;
+        imageUrls = result.images;
+      } else {
+        throw new Error("Insufficient content - trying with networkidle");
+      }
+    } catch {
+      // Fallback to networkidle for JS-heavy sites
+      console.info(
+        `⚠️ [SCRAPE MENU ${requestId}] Fast scrape failed, retrying with networkidle...`
+      );
+      const result = await scrapeWithPlaywright(url, true);
+      finalText = result.text;
+      imageUrls = result.images;
+    }
 
     if (!finalText || finalText.length < 50) {
       console.error(`❌ [SCRAPE MENU ${requestId}] Insufficient content extracted`);
