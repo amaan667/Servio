@@ -361,8 +361,9 @@ const DashboardClient = React.memo(function DashboardClient({ venueId }: { venue
                 iconBgColor="bg-orange-100"
                 trend={{ value: 5, label: "available" }}
                 tooltip="Edit your menu items"
-              />
-            </Link>
+                />
+              </Link>
+            </div>
           </div>
 
           {/* AI Insights */}
