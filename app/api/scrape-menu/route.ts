@@ -4,6 +4,10 @@ import OpenAI from "openai";
 
 const openai = new OpenAI({ apiKey: process.env.OPENAI_API_KEY });
 
+// Force Node.js runtime (required for Playwright)
+export const runtime = "nodejs";
+export const dynamic = "force-dynamic";
+
 /**
  * Scrape Menu from URL using Playwright
  * Self-hosted browser automation - fast, free, and reliable

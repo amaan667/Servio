@@ -4,13 +4,19 @@
  * Much faster and free compared to Browserless
  */
 
-import { chromium, Browser } from "playwright-core";
+type BrowserInstance = {
+  newContext: (options: unknown) => Promise<unknown>;
+  close: () => Promise<void>;
+};
 
-let browser: Browser | null = null;
+let browser: BrowserInstance | null = null;
 
 // Initialize browser once and reuse (much faster)
-async function getBrowser(): Promise<Browser> {
+async function getBrowser(): Promise<BrowserInstance> {
   if (!browser) {
+    // Dynamic import to avoid Next.js bundling issues
+    const { chromium } = await import("playwright-core");
+
     // Use system Chromium on Railway, or Playwright's downloaded browser locally
     const executablePath = process.env.PLAYWRIGHT_CHROMIUM_EXECUTABLE_PATH;
 
@@ -18,7 +24,7 @@ async function getBrowser(): Promise<Browser> {
       `🌐 Launching browser${executablePath ? ` from ${executablePath}` : " (auto-detect)"}`
     );
 
-    browser = await chromium.launch({
+    browser = (await chromium.launch({
       headless: true,
       executablePath, // Use system Chromium on Railway
       args: [
@@ -28,7 +34,7 @@ async function getBrowser(): Promise<Browser> {
         "--disable-gpu",
         "--disable-software-rasterizer",
       ],
-    });
+    })) as BrowserInstance;
 
     console.info("✅ Browser launched successfully");
   }
@@ -51,12 +57,19 @@ export async function scrapeWithPlaywright(
   waitForNetworkIdle: boolean = false
 ): Promise<ScrapedContent> {
   const browser = await getBrowser();
-  const context = await browser.newContext({
+  const context = (await browser.newContext({
     viewport: { width: 1920, height: 1080 },
     userAgent: "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36",
-  });
+  })) as { newPage: () => Promise<unknown>; close: () => Promise<void> };
 
-  const page = await context.newPage();
+  const page = (await context.newPage()) as {
+    goto: (url: string, options: unknown) => Promise<void>;
+    waitForTimeout: (ms: number) => Promise<void>;
+    waitForSelector: (selector: string, options: unknown) => Promise<unknown>;
+    content: () => Promise<string>;
+    evaluate: (fn: (...args: unknown[]) => unknown, ...args: unknown[]) => Promise<unknown>;
+    close: () => Promise<void>;
+  };
 
   try {
     // Navigate with appropriate wait condition
