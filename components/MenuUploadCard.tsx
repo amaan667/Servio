@@ -243,57 +243,56 @@ export function MenuUploadCard({ venueId, onSuccess }: MenuUploadCardProps) {
     }
 
     setIsProcessing(true);
-    console.log('[MENU UPLOAD] Re-processing with URL:', menuUrl);
+    console.info('🔄 [MENU UPLOAD] Starting hybrid menu merge with URL:', menuUrl);
 
     try {
-      // Get existing PDF images from database
-      const { data: uploadData } = await supabase
-        .from('menu_uploads')
-        .select('pdf_images, pdf_images_cc, id')
+      // Check if PDF menu exists
+      const { data: existingItems } = await supabase
+        .from('menu_items')
+        .select('id')
         .eq('venue_id', venueId)
-        .order('created_at', { ascending: false })
-        .limit(1)
-        .single();
+        .limit(1);
 
-      if (!uploadData || (!uploadData.pdf_images && !uploadData.pdf_images_cc)) {
-        throw new Error('No existing PDF found. Please upload a PDF first.');
+      if (!existingItems || existingItems.length === 0) {
+        throw new Error('No existing PDF menu found. Please upload a PDF first.');
       }
 
-      const pdfImages = uploadData.pdf_images || uploadData.pdf_images_cc;
-      console.log('[MENU UPLOAD] Found existing PDF images:', pdfImages.length, 'pages');
+      console.info('✅ [MENU UPLOAD] Found existing PDF menu, starting hybrid merge...');
 
-      // Process with existing images and new URL
-      const response = await fetch('/api/catalog/reprocess-with-url', {
+      // Call new hybrid merge API
+      const response = await fetch('/api/menu/hybrid-merge', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
-          venue_id: venueId,
-          menu_url: menuUrl.trim(),
-          pdf_images: pdfImages,
-          replace_mode: isReplacing
+          venueId: venueId,
+          menuUrl: menuUrl.trim()
         })
       });
 
       if (!response.ok) {
-        const errorText = await response.text();
-        throw new Error(`Processing failed: ${response.status} - ${errorText}`);
+        const errorData = await response.json();
+        throw new Error(errorData.error || `Processing failed: ${response.status}`);
       }
 
       const result = await response.json();
 
       if (result.ok) {
         toast({
-          title: 'Menu processed successfully',
-          description: `Combined PDF and URL: ${result.result.items_created} items`
+          title: '🎉 Menu Updated Successfully!',
+          description: `${result.stats.items_updated} items updated, ${result.stats.new_items_added} new items added. Prices: ${result.stats.prices_updated}, Images: ${result.stats.images_added}`,
+          duration: 7000
         });
         
+        console.info('✅ [MENU UPLOAD] Hybrid merge complete:', result.stats);
+        
+        // Refresh menu items
         await new Promise(resolve => setTimeout(resolve, 500));
         onSuccess?.();
       }
     } catch (error) {
-      console.error('[MENU UPLOAD] Error:', error);
+      console.error('❌ [MENU UPLOAD] Hybrid merge error:', error);
       toast({
-        title: 'Processing failed',
+        title: 'Hybrid Merge Failed',
         description: error instanceof Error ? error.message : 'Unknown error',
         variant: 'destructive'
       });
