@@ -27,9 +27,7 @@ export function usePaymentProcessing() {
           venue_id: checkoutData.venueId,
           table_number: checkoutData.tableNumber,
           table_id: null,
-          counter_number: checkoutData.counterNumber || null,
-          order_type: checkoutData.orderType || "table",
-          order_location: checkoutData.orderLocation || checkoutData.tableNumber?.toString() || "1",
+          // Removed: counter_number, order_type, order_location - don't exist in DB
           customer_name: checkoutData.customerName,
           customer_phone: checkoutData.customerPhone,
           items: checkoutData.cart.map(
