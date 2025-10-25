@@ -68,9 +68,9 @@ export async function POST(req: NextRequest) {
       const scrapeUrl = `${baseUrl}/api/scrape-menu`;
       console.info(`📡 [HYBRID MERGE ${requestId}] Calling scrape API: ${scrapeUrl}`);
 
-      // Create AbortController with 6-minute timeout (scrape can take up to 5 min + buffer)
+      // Create AbortController with 3-minute timeout (scrape max is 2 min + buffer)
       const controller = new AbortController();
-      const timeoutId = setTimeout(() => controller.abort(), 360000); // 6 minutes
+      const timeoutId = setTimeout(() => controller.abort(), 180000); // 3 minutes
 
       try {
         const scrapeResponse = await fetch(scrapeUrl, {
@@ -79,8 +79,8 @@ export async function POST(req: NextRequest) {
           body: JSON.stringify({ url: menuUrl }),
           signal: controller.signal,
           // @ts-expect-error - Node.js fetch specific options
-          headersTimeout: 360000, // 6 minutes for headers
-          bodyTimeout: 360000, // 6 minutes for body
+          headersTimeout: 180000, // 3 minutes for headers
+          bodyTimeout: 180000, // 3 minutes for body
         });
 
         clearTimeout(timeoutId);

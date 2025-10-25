@@ -33,8 +33,8 @@ async function scrapeWithBrowserless(
   );
 
   const controller = new AbortController();
-  // Add generous buffer for API overhead and network latency
-  const timeoutId = setTimeout(() => controller.abort(), config.timeout + 30000);
+  // Add buffer for API overhead and network latency
+  const timeoutId = setTimeout(() => controller.abort(), config.timeout + 10000);
 
   try {
     const response = await fetch(browserlessUrl, {
@@ -55,7 +55,7 @@ async function scrapeWithBrowserless(
           timeout: config.timeout,
         },
         // Wait for dynamic content to load after page events
-        waitForTimeout: 3000, // 3 seconds for JS to settle
+        waitForTimeout: 1000, // 1 second for JS to settle (most sites load within 1s)
       }),
       signal: controller.signal,
     });
@@ -166,23 +166,19 @@ async function scrapeWithBrowserless(
 }
 
 /**
- * Advanced retry strategy with progressive timeouts and wait conditions
- * Ensures any URL can be scraped regardless of load time
+ * Optimized retry strategy - Fast by default, patient when needed
+ * Most sites will complete in under 30 seconds
  *
  * Strategy progression:
- * 1. Quick: 45s with domcontentloaded (most sites)
- * 2. Standard: 90s with domcontentloaded (slower sites)
- * 3. Patient: 150s with load (waits for all resources)
- * 4. Very Patient: 240s with networkidle2 (waits for network quiet - handles lazy loading)
- * 5. Maximum: 300s with networkidle2 + extended wait (absolute maximum effort)
+ * 1. Fast: 20s with domcontentloaded (catches 80% of sites)
+ * 2. Standard: 60s with load (handles slower sites)
+ * 3. Patient: 120s with networkidle2 (only for problematic sites)
  */
 async function scrapeWithRetry(url: string, requestId: string): Promise<ScrapedContent> {
   const strategies: BrowserlessConfig[] = [
-    { url, timeout: 45000, waitUntil: "domcontentloaded" },
-    { url, timeout: 90000, waitUntil: "domcontentloaded" },
-    { url, timeout: 150000, waitUntil: "load" },
-    { url, timeout: 240000, waitUntil: "networkidle2" },
-    { url, timeout: 300000, waitUntil: "networkidle2" }, // 5 minutes - absolute max
+    { url, timeout: 20000, waitUntil: "domcontentloaded" }, // Fast - 20s
+    { url, timeout: 60000, waitUntil: "load" }, // Standard - 60s
+    { url, timeout: 120000, waitUntil: "networkidle2" }, // Patient - 120s (only if needed)
   ];
 
   const errors: string[] = [];
@@ -237,7 +233,7 @@ async function scrapeWithRetry(url: string, requestId: string): Promise<ScrapedC
 
       // If not the last attempt, continue to next strategy
       if (i < strategies.length - 1) {
-        const delaySeconds = 3;
+        const delaySeconds = 1; // Reduced delay for faster retries
         console.info(
           `🔄 [SCRAPE ${requestId}] Waiting ${delaySeconds}s before trying next strategy...`
         );
@@ -251,7 +247,7 @@ async function scrapeWithRetry(url: string, requestId: string): Promise<ScrapedC
     `Unable to scrape URL after ${strategies.length} attempts with timeouts up to ${strategies[strategies.length - 1].timeout / 1000} seconds.\n\n` +
       `Attempt details:\n${errors.join("\n")}\n\n` +
       `Possible causes:\n` +
-      `- Site takes extremely long to load (>5 minutes)\n` +
+      `- Site takes very long to load (>2 minutes)\n` +
       `- Site uses advanced anti-bot protection\n` +
       `- Page requires login or specific cookies\n` +
       `- Site is experiencing technical difficulties\n` +
@@ -259,7 +255,7 @@ async function scrapeWithRetry(url: string, requestId: string): Promise<ScrapedC
       `Recommendations:\n` +
       `- Verify the URL is accessible in a regular browser\n` +
       `- Check if the site requires authentication\n` +
-      `- Try again during off-peak hours\n` +
+      `- Try again later or during off-peak hours\n` +
       `- Contact support if the issue persists`
   );
 }

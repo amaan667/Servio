@@ -10,18 +10,20 @@ The menu scraping system now uses **ONLY Browserless** for all URLs with advance
 - Works with static sites, React apps, Vue apps, Angular, or any JS framework
 - No manual detection needed - just scrape everything through the browser
 
-### 2. **Progressive Timeout Strategy**
-The system uses an intelligent 5-stage retry strategy to handle any site speed:
+### 2. **Optimized 3-Stage Retry Strategy**
+Fast by default, patient when needed. Most sites complete in under 30 seconds:
 
 | Attempt | Timeout | Wait Condition | Use Case |
 |---------|---------|----------------|----------|
-| 1 | 45s | domcontentloaded | Fast sites (most common) |
-| 2 | 90s | domcontentloaded | Average sites |
-| 3 | 150s | load | Slower sites waiting for resources |
-| 4 | 240s | networkidle2 | Sites with lazy loading |
-| 5 | 300s | networkidle2 | Maximum patience (5 minutes) |
+| 1 | 20s | domcontentloaded | Fast sites (80% of sites) |
+| 2 | 60s | load | Standard sites with resources |
+| 3 | 120s | networkidle2 | Complex sites with lazy loading |
 
-**Result**: If a site times out, it automatically retries with a more patient approach. Sites won't fail due to loading speed.
+**Result**: 
+- ⚡ **Most sites**: 20-30 seconds (attempt 1)
+- 🚀 **Average sites**: 60-70 seconds (attempt 2)
+- 🐌 **Slow sites**: Up to 2 minutes (attempt 3)
+- Only retries if needed, so fast sites stay fast!
 
 ### 3. **Perfect Content Extraction**
 
