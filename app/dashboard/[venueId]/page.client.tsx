@@ -264,14 +264,14 @@ const DashboardClient = React.memo(function DashboardClient({
 
   return (
     <div className="min-h-screen bg-gray-50/50">
-        {/* Trial Status Banner - Only for owners */}
-        <TrialStatusBanner userRole={userRole} />
+      {/* Trial Status Banner - Only for owners */}
+      <TrialStatusBanner userRole={userRole} />
 
-        {/* Quick Actions Toolbar */}
-        <QuickActionsToolbar venueId={venueId} userRole={userRole} />
+      {/* Quick Actions Toolbar */}
+      <QuickActionsToolbar venueId={venueId} userRole={userRole} />
 
-        {/* Main Content */}
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 space-y-8">
+      {/* Main Content */}
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 space-y-8">
           {/* Error Alert */}
           {dashboardData.error && (
             <div className="bg-red-50 border-l-4 border-red-500 rounded-lg p-4 flex items-center gap-3 animate-in slide-in-from-top">
@@ -312,26 +312,27 @@ const DashboardClient = React.memo(function DashboardClient({
             </Link>
 
             {/* Position 2: Revenue - Always rendered to maintain grid position */}
-            {(userRole === "owner" || userRole === "manager") ? (
-              <Link href={`/dashboard/${venueId}/analytics`}>
-                <EnhancedStatCard
-                  title="Revenue"
-                  value={dashboardData.stats.revenue || 0}
-                  icon={TrendingUp}
-                  iconColor="text-green-600"
-                  iconBgColor="bg-green-100"
-                  isCurrency
-                  trend={
-                    analyticsData.data?.yesterdayComparison
-                      ? {
-                          value:
-                            dashboardData.stats.revenue -
-                            analyticsData.data.yesterdayComparison.revenue,
-                          label: "vs yesterday",
-                        }
-                      : undefined
-                  }
-                  tooltip="View detailed revenue analytics"
+            <div className="min-h-[140px]">
+              {(userRole === "owner" || userRole === "manager") ? (
+                <Link href={`/dashboard/${venueId}/analytics`} className="block h-full">
+                  <EnhancedStatCard
+                    title="Revenue"
+                    value={dashboardData.stats.revenue || 0}
+                    icon={TrendingUp}
+                    iconColor="text-green-600"
+                    iconBgColor="bg-green-100"
+                    isCurrency
+                    trend={
+                      analyticsData.data?.yesterdayComparison
+                        ? {
+                            value:
+                              dashboardData.stats.revenue -
+                              analyticsData.data.yesterdayComparison.revenue,
+                            label: "vs yesterday",
+                          }
+                        : undefined
+                    }
+                    tooltip="View detailed revenue analytics"
                   />
                 </Link>
               ) : (
@@ -399,14 +400,13 @@ const DashboardClient = React.memo(function DashboardClient({
             loading={false}
           />
 
-          {/* Feature Sections */}
-          <FeatureSections venueId={venueId} userRole={userRole} />
-        </div>
-
-        {/* Footer Modals */}
-        <RoleManagementPopup />
-        <VenueSwitcherPopup currentVenueId={venueId} onVenueChange={handleVenueChange} />
+        {/* Feature Sections */}
+        <FeatureSections venueId={venueId} userRole={userRole} />
       </div>
+
+      {/* Footer Modals */}
+      <RoleManagementPopup />
+      <VenueSwitcherPopup currentVenueId={venueId} onVenueChange={handleVenueChange} />
     </div>
   );
 });
