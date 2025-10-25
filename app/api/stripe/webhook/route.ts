@@ -40,13 +40,35 @@ export async function POST(req: Request) {
   let event: Stripe.Event;
   try {
     console.info("🔐 [CUSTOMER ORDER WEBHOOK] Verifying signature...");
-    event = stripe.webhooks.constructEvent(raw, sig, process.env.STRIPE_WEBHOOK_SECRET!);
+
+    // Trim the webhook secret to remove any whitespace/newlines
+    const webhookSecret = (process.env.STRIPE_WEBHOOK_SECRET || "").trim();
+    console.info("🔑 [CUSTOMER ORDER WEBHOOK] Using webhook secret (trimmed)");
+    console.info("🔑 Secret length:", webhookSecret.length);
+    console.info("🔑 Secret starts with:", webhookSecret.substring(0, 10) + "...");
+
+    event = stripe.webhooks.constructEvent(raw, sig, webhookSecret);
     console.info("✅ [CUSTOMER ORDER WEBHOOK] Signature verified");
     console.info("📦 [CUSTOMER ORDER WEBHOOK] Event type:", event.type);
     console.info("🆔 [CUSTOMER ORDER WEBHOOK] Event ID:", event.id);
   } catch (err) {
     const errorMessage = err instanceof Error ? err.message : "Unknown error";
-    console.error("❌ [CUSTOMER ORDER WEBHOOK] Signature verification FAILED:", errorMessage);
+    console.error("\n" + "=".repeat(80));
+    console.error("❌ [CUSTOMER ORDER WEBHOOK] SIGNATURE VERIFICATION FAILED!");
+    console.error("=".repeat(80));
+    console.error("❌ Error:", errorMessage);
+    console.error("❌ Webhook secret env var exists:", !!process.env.STRIPE_WEBHOOK_SECRET);
+    console.error("❌ Webhook secret length (raw):", process.env.STRIPE_WEBHOOK_SECRET?.length);
+    console.error(
+      "❌ Webhook secret length (trimmed):",
+      process.env.STRIPE_WEBHOOK_SECRET?.trim().length
+    );
+    console.error(
+      "❌ Has whitespace:",
+      process.env.STRIPE_WEBHOOK_SECRET !== process.env.STRIPE_WEBHOOK_SECRET?.trim()
+    );
+    console.error("=".repeat(80) + "\n");
+
     apiLogger.error("[CUSTOMER ORDER WEBHOOK] Webhook construction error:", errorMessage);
     return new NextResponse(`Webhook Error: ${errorMessage}`, { status: 400 });
   }
