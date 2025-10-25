@@ -142,21 +142,24 @@ async function scrapeWithPlaywright(url: string, waitForNetworkIdle: boolean = f
       .catch(() => {
         console.info(`✅ No cookie popup found or already dismissed`);
       });
-    
+
     // Wait a bit after dismissing popup
     await page.waitForTimeout(1000);
 
-    // Scroll down to trigger lazy-loaded content
+    // Aggressive scrolling to trigger ALL lazy-loaded content
     console.info(`📜 Scrolling page to trigger lazy loading...`);
-    await page.evaluate(() => {
-      window.scrollTo(0, document.body.scrollHeight / 2);
-    });
-    await page.waitForTimeout(2000);
-    
-    await page.evaluate(() => {
-      window.scrollTo(0, document.body.scrollHeight);
-    });
-    await page.waitForTimeout(2000);
+
+    // Scroll incrementally (better for lazy loading)
+    for (let i = 0; i <= 5; i++) {
+      await page.evaluate((step) => {
+        const scrollHeight = document.body.scrollHeight;
+        window.scrollTo(0, (scrollHeight / 5) * step);
+      }, i);
+      await page.waitForTimeout(1500); // Wait for each section to load
+      console.info(`  📜 Scrolled to ${i * 20}% of page`);
+    }
+
+    console.info(`✅ Scrolling complete - all lazy-loaded sections should be visible`);
 
     // Try to wait for common menu selectors
     console.info(`🔍 Looking for menu content selectors...`);
@@ -170,7 +173,7 @@ async function scrapeWithPlaywright(url: string, waitForNetworkIdle: boolean = f
         console.warn(`⚠️ Menu selectors not found, continuing anyway`);
         return false;
       });
-    
+
     if (menuFound) {
       console.info(`✅ Menu content selector found`);
     }
