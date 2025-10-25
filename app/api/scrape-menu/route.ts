@@ -19,7 +19,7 @@ interface ScrapedContent {
 
 /**
  * Scrape with Browserless using optimized configuration
- * Configured for maximum compatibility and content extraction
+ * Uses progressive timeout strategy for reliable content extraction
  */
 async function scrapeWithBrowserless(
   url: string,
@@ -56,19 +56,6 @@ async function scrapeWithBrowserless(
         },
         // Wait for dynamic content to load after page events
         waitForTimeout: 3000, // 3 seconds for JS to settle
-        // Block unnecessary resources for faster loading
-        blockAds: true,
-        blockTrackers: true,
-        // Stealth mode to avoid bot detection
-        stealth: true,
-        // Ignore HTTPS errors
-        ignoreHTTPSErrors: true,
-        // Set realistic viewport
-        viewport: {
-          width: 1920,
-          height: 1080,
-          deviceScaleFactor: 1,
-        },
       }),
       signal: controller.signal,
     });
@@ -302,7 +289,7 @@ export async function POST(req: NextRequest) {
         {
           ok: false,
           error: `Menu scraping requires BROWSERLESS_API_KEY for reliable content extraction.
-        
+          
 Setup Instructions:
 1. Sign up at https://www.browserless.io/
 2. Get your API key
