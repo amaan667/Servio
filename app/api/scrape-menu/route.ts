@@ -110,7 +110,7 @@ Alternative: Manually update menu items in Menu Management.`
       }
 
       try {
-        // Use NEW Browserless.io REST API endpoint
+        // Use NEW Browserless.io REST API endpoint (correct format)
         const browserlessUrl = `https://production-sfo.browserless.io/content?token=${process.env.BROWSERLESS_API_KEY}`;
         
         console.info(`📡 [SCRAPE MENU ${requestId}] Requesting Browserless.io (new endpoint)...`);
@@ -122,11 +122,12 @@ Alternative: Manually update menu items in Menu Management.`
           },
           body: JSON.stringify({
             url: url,
-            waitFor: 5000, // Wait 5 seconds for JS to load
             gotoOptions: {
-              waitUntil: 'networkidle2',
+              waitUntil: 'networkidle0',
               timeout: 30000
-            }
+            },
+            waitForTimeout: 5000, // Correct parameter name
+            waitForSelector: 'body' // Wait for body to exist
           })
         });
 
