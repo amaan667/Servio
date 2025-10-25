@@ -110,10 +110,11 @@ Alternative: Manually update menu items in Menu Management.`
       }
 
       try {
-        // Use NEW Browserless.io REST API endpoint (correct format)
+        // Use NEW Browserless.io REST API endpoint
+        // Docs: https://docs.browserless.io/rest-apis/content
         const browserlessUrl = `https://production-sfo.browserless.io/content?token=${process.env.BROWSERLESS_API_KEY}`;
         
-        console.info(`📡 [SCRAPE MENU ${requestId}] Requesting Browserless.io (new endpoint)...`);
+        console.info(`📡 [SCRAPE MENU ${requestId}] Requesting Browserless.io...`);
         const browserlessResponse = await fetch(browserlessUrl, {
           method: 'POST',
           headers: { 
@@ -125,9 +126,7 @@ Alternative: Manually update menu items in Menu Management.`
             gotoOptions: {
               waitUntil: 'networkidle0',
               timeout: 30000
-            },
-            waitForTimeout: 5000, // Correct parameter name
-            waitForSelector: 'body' // Wait for body to exist
+            }
           })
         });
 
