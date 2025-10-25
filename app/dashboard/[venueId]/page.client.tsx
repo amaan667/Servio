@@ -12,8 +12,7 @@ import VenueSwitcherPopup from "@/components/venue-switcher-popup";
 import { supabaseBrowser } from "@/lib/supabase";
 import TrialStatusBanner from "@/components/TrialStatusBanner";
 
-// Dynamically import PullToRefresh to avoid SSR issues
-const PullToRefresh = dynamic(() => import("@/components/PullToRefresh"), { ssr: false });
+// Removed PullToRefresh - not needed, causes build issues
 
 // Hooks
 import { useDashboardData } from "./hooks/useDashboardData";
@@ -264,8 +263,7 @@ const DashboardClient = React.memo(function DashboardClient({
   // Render immediately with data (no loading states)
 
   return (
-    <PullToRefresh onRefresh={handleRefresh}>
-      <div className="min-h-screen bg-gray-50/50">
+    <div className="min-h-screen bg-gray-50/50">
         {/* Trial Status Banner - Only for owners */}
         <TrialStatusBanner userRole={userRole} />
 
@@ -409,7 +407,7 @@ const DashboardClient = React.memo(function DashboardClient({
         <RoleManagementPopup />
         <VenueSwitcherPopup currentVenueId={venueId} onVenueChange={handleVenueChange} />
       </div>
-    </PullToRefresh>
+    </div>
   );
 });
 
