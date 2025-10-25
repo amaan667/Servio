@@ -22,20 +22,15 @@ async function getBrowser() {
     // Dynamic import - only loaded at runtime, not during build
     const playwright = await import("playwright-core");
 
-    const executablePath = process.env.PLAYWRIGHT_CHROMIUM_EXECUTABLE_PATH;
-    console.info(
-      `🌐 Launching browser${executablePath ? ` from ${executablePath}` : " (auto-detect)"}`
-    );
+    console.info(`🌐 Launching Playwright Chromium...`);
 
     browserInstance = await playwright.chromium.launch({
       headless: true,
-      executablePath,
       args: [
         "--no-sandbox",
         "--disable-setuid-sandbox",
         "--disable-dev-shm-usage",
         "--disable-gpu",
-        "--disable-software-rasterizer",
       ],
     });
 
