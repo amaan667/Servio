@@ -19,22 +19,36 @@ let browserInstance: any = null;
  */
 async function getBrowser() {
   if (!browserInstance) {
-    // Dynamic import - only loaded at runtime, not during build
-    const playwright = await import("playwright-core");
+    try {
+      // Dynamic import - only loaded at runtime, not during build
+      console.info(`📦 Importing playwright-core...`);
+      const playwright = await import("playwright-core");
+      console.info(`✅ playwright-core imported`);
 
-    console.info(`🌐 Launching Playwright Chromium...`);
+      console.info(`🌐 Launching Playwright Chromium...`);
 
-    browserInstance = await playwright.chromium.launch({
-      headless: true,
-      args: [
-        "--no-sandbox",
-        "--disable-setuid-sandbox",
-        "--disable-dev-shm-usage",
-        "--disable-gpu",
-      ],
-    });
+      browserInstance = await playwright.chromium.launch({
+        headless: true,
+        args: [
+          "--no-sandbox",
+          "--disable-setuid-sandbox",
+          "--disable-dev-shm-usage",
+          "--disable-gpu",
+        ],
+      });
 
-    console.info("✅ Browser launched successfully");
+      console.info("✅ Browser launched successfully");
+    } catch (launchError) {
+      console.error(`❌ Failed to launch browser:`, launchError);
+      console.error(`Error details:`, {
+        message: launchError instanceof Error ? launchError.message : String(launchError),
+        stack: launchError instanceof Error ? launchError.stack : undefined,
+      });
+      throw new Error(
+        `Failed to launch Playwright browser: ${launchError instanceof Error ? launchError.message : "Unknown error"}. ` +
+          `Make sure Playwright is installed: npx playwright install chromium`
+      );
+    }
   }
   return browserInstance;
 }
@@ -44,44 +58,65 @@ async function getBrowser() {
  * Tries fast approach first, falls back to networkidle for JS-heavy sites
  */
 async function scrapeWithPlaywright(url: string, waitForNetworkIdle: boolean = false) {
-  const browser = await getBrowser();
-  const context = await browser.newContext({
-    viewport: { width: 1920, height: 1080 },
-    userAgent: "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36",
-  });
+  console.info(
+    `📡 Scrape config: networkIdle=${waitForNetworkIdle}, timeout=${waitForNetworkIdle ? 30 : 20}s`
+  );
 
-  const page = await context.newPage();
+  let browser;
+  let context;
+  let page;
 
   try {
+    browser = await getBrowser();
+    console.info(`✅ Browser instance obtained`);
+
+    context = await browser.newContext({
+      viewport: { width: 1920, height: 1080 },
+      userAgent: "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36",
+    });
+    console.info(`✅ Browser context created`);
+
+    page = await context.newPage();
+    console.info(`✅ New page created`);
+
     // Navigate
+    console.info(`🌐 Navigating to ${url}...`);
     await page.goto(url, {
       waitUntil: waitForNetworkIdle ? "networkidle" : "domcontentloaded",
       timeout: waitForNetworkIdle ? 30000 : 20000,
     });
+    console.info(`✅ Page loaded`);
 
     // Wait for JS to settle
+    console.info(`⏳ Waiting ${waitForNetworkIdle ? 2 : 1}s for JS to settle...`);
     await page.waitForTimeout(waitForNetworkIdle ? 2000 : 1000);
 
     // Try to wait for common menu selectors
+    console.info(`🔍 Looking for menu selectors...`);
     await page
       .waitForSelector('main, [class*="menu"], [class*="item"], [role="main"]', {
         timeout: 5000,
       })
       .catch(() => {
-        // Selector not found, continue anyway
+        console.info(`⚠️ Menu selectors not found, continuing anyway`);
       });
 
     // Get HTML
+    console.info(`📄 Extracting HTML...`);
     const html = await page.content();
+    console.info(`✅ HTML extracted: ${html.length} chars`);
 
     // Extract text (remove scripts/styles)
+    console.info(`📝 Extracting text content...`);
     const text = await page.evaluate(() => {
       const clone = document.body.cloneNode(true) as HTMLElement;
       clone.querySelectorAll("script, style, noscript").forEach((el) => el.remove());
       return clone.innerText;
     });
+    console.info(`✅ Text extracted: ${text.length} chars`);
 
     // Extract images
+    console.info(`🖼️  Extracting images...`);
     const images = await page.evaluate((baseUrl: string) => {
       const imgs = Array.from(document.querySelectorAll("img"));
       return imgs
@@ -98,11 +133,17 @@ async function scrapeWithPlaywright(url: string, waitForNetworkIdle: boolean = f
         })
         .filter((src): src is string => src !== null);
     }, url);
+    console.info(`✅ Images extracted: ${images.length} found`);
 
     return { html, text, images };
+  } catch (scrapeError) {
+    console.error(`❌ Error during scraping:`, scrapeError);
+    throw scrapeError;
   } finally {
-    await page.close();
-    await context.close();
+    console.info(`🧹 Cleaning up page and context...`);
+    if (page) await page.close().catch(() => {});
+    if (context) await context.close().catch(() => {});
+    console.info(`✅ Cleanup complete`);
   }
 }
 
@@ -132,7 +173,11 @@ export async function POST(req: NextRequest) {
     let imageUrls: string[];
 
     try {
+      console.info(`🔄 [SCRAPE MENU ${requestId}] Attempting fast scrape (20s timeout)...`);
       const result = await scrapeWithPlaywright(url, false);
+      console.info(
+        `📊 [SCRAPE MENU ${requestId}] Fast scrape returned ${result.text.length} chars`
+      );
 
       // Validate we got meaningful content
       if (result.text.length > 500) {
@@ -142,14 +187,28 @@ export async function POST(req: NextRequest) {
       } else {
         throw new Error("Insufficient content - trying with networkidle");
       }
-    } catch {
+    } catch (error) {
       // Fallback to networkidle for JS-heavy sites
-      console.info(
-        `⚠️ [SCRAPE MENU ${requestId}] Fast scrape failed, retrying with networkidle...`
+      console.warn(
+        `⚠️ [SCRAPE MENU ${requestId}] Fast scrape failed:`,
+        error instanceof Error ? error.message : String(error)
       );
-      const result = await scrapeWithPlaywright(url, true);
-      finalText = result.text;
-      imageUrls = result.images;
+      console.info(`🔄 [SCRAPE MENU ${requestId}] Retrying with networkidle (30s timeout)...`);
+
+      try {
+        const result = await scrapeWithPlaywright(url, true);
+        console.info(
+          `📊 [SCRAPE MENU ${requestId}] Networkidle scrape returned ${result.text.length} chars`
+        );
+        finalText = result.text;
+        imageUrls = result.images;
+      } catch (networkError) {
+        console.error(
+          `❌ [SCRAPE MENU ${requestId}] Networkidle scrape also failed:`,
+          networkError
+        );
+        throw networkError; // Re-throw to outer catch
+      }
     }
 
     if (!finalText || finalText.length < 50) {
