@@ -8,8 +8,9 @@ export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
 export const revalidate = 0;
 
-// Use the same webhook secret as subscriptions
-const webhookSecret = process.env.STRIPE_WEBHOOK_SECRET!;
+// Customer orders webhook uses its OWN signing secret from Stripe Dashboard
+// Get this from: Stripe Dashboard → Webhooks → "Servio" endpoint → Signing secret
+const webhookSecret = process.env.STRIPE_CUSTOMER_WEBHOOK_SECRET!;
 
 /**
  * Stripe Webhook for CUSTOMER ORDER PAYMENTS
