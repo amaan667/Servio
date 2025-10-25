@@ -19,19 +19,79 @@ export default function PaymentSuccessPage() {
   const venueNameParam = searchParams?.get('venueName');
 
   useEffect(() => {
-    // Handle Stripe payment success with session_id but no orderId
+    // Handle Stripe payment success - CREATE ORDER NOW
     if (sessionId && !orderId && !isDemo) {
-      // Look up order by stripe_session_id
-      fetch(`/api/orders/by-session/${sessionId}`)
-        .then(response => response.json())
-        .then(data => {
-          if (data.ok && data.orderId) {
-            setVerifiedOrderId(data.orderId);
-          }
-        })
-        .catch(error => {
+      // Check if we have pending order creation
+      const checkoutDataStr = localStorage.getItem('servio-checkout-data');
+      
+      if (checkoutDataStr) {
+        try {
+          const checkoutData = JSON.parse(checkoutDataStr);
+          
+          if (checkoutData.pendingOrderCreation) {
+            console.info('💳 [STRIPE SUCCESS] Payment successful - creating order in database NOW');
+            
+            // Create order now that payment succeeded
+            const orderData = {
+              venue_id: checkoutData.venueId,
+              table_number: checkoutData.tableNumber,
+              table_id: null,
+              counter_number: checkoutData.counterNumber || null,
+              order_type: checkoutData.orderType || 'table',
+              order_location: checkoutData.orderLocation || checkoutData.tableNumber?.toString() || '1',
+              customer_name: checkoutData.customerName,
+              customer_phone: checkoutData.customerPhone,
+              items: checkoutData.cart.map((item: any) => ({
+                menu_item_id: item.id || 'unknown',
+                quantity: item.quantity,
+                price: item.price,
+                item_name: item.name,
+                specialInstructions: item.specialInstructions || null,
+              })),
+              total_amount: checkoutData.total,
+              notes: checkoutData.notes || '',
+              order_status: 'PLACED',
+              payment_status: 'PAID',
+              payment_mode: 'online',
+              payment_method: 'stripe',
+              session_id: checkoutData.sessionId,
+              source: checkoutData.source || 'qr',
+              stripe_session_id: sessionId,
+            };
 
-        });
+            fetch('/api/orders', {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify(orderData),
+            })
+              .then(response => response.json())
+              .then(result => {
+                if (result.ok && result.order?.id) {
+                  console.info('✅ [STRIPE SUCCESS] Order created after successful payment:', result.order.id);
+                  setVerifiedOrderId(result.order.id);
+                  localStorage.removeItem('servio-checkout-data');
+                }
+              })
+              .catch(error => {
+                console.error('❌ [STRIPE SUCCESS] Failed to create order:', error);
+              });
+          }
+        } catch (parseError) {
+          console.error('❌ [STRIPE SUCCESS] Error parsing checkout data:', parseError);
+        }
+      } else {
+        // Fallback: Try to look up existing order by stripe_session_id
+        fetch(`/api/orders/by-session/${sessionId}`)
+          .then(response => response.json())
+          .then(data => {
+            if (data.ok && data.orderId) {
+              setVerifiedOrderId(data.orderId);
+            }
+          })
+          .catch(error => {
+            console.error('❌ [STRIPE SUCCESS] Error looking up order:', error);
+          });
+      }
     }
     
     if (isDemo && orderId) {

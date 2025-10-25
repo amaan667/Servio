@@ -17,65 +17,67 @@ export function usePaymentProcessing() {
     setError(null);
 
     try {
-      // STEP 1: Create the order in database FIRST (before processing payment)
-      console.info('💳 [PAYMENT] Creating order in database...');
-      logger.info('💳💳💳 CREATING ORDER AFTER PAYMENT METHOD SELECTED 💳💳💳', {
-        paymentMethod: action,
-        customer: checkoutData.customerName,
-        venue: checkoutData.venueId,
-        total: checkoutData.total
-      });
-      
-      const orderData = {
-        venue_id: checkoutData.venueId,
-        table_number: checkoutData.tableNumber,
-        table_id: null,
-        counter_number: checkoutData.counterNumber || null,
-        order_type: checkoutData.orderType || 'table',
-        order_location: checkoutData.orderLocation || checkoutData.tableNumber?.toString() || '1',
-        customer_name: checkoutData.customerName,
-        customer_phone: checkoutData.customerPhone,
-        items: checkoutData.cart.map((item: any) => ({
-          menu_item_id: item.id || 'unknown',
-          quantity: item.quantity,
-          price: item.price,
-          item_name: item.name,
-          specialInstructions: item.specialInstructions || null,
-        })),
-        total_amount: checkoutData.total,
-        notes: checkoutData.notes || '',
-        order_status: 'PLACED',
-        payment_status: 'UNPAID',
-        payment_mode: action === 'till' ? 'pay_at_till' : (action === 'later' ? 'pay_later' : 'online'),
-        payment_method: action === 'demo' ? 'demo' : (action === 'till' ? 'till' : null),
-        session_id: checkoutData.sessionId,
-        source: checkoutData.source || 'qr',
+      // Helper function to create order in database
+      const createOrder = async () => {
+        console.info('💳 [PAYMENT] Creating order in database...');
+        logger.info('💳💳💳 CREATING ORDER NOW 💳💳💳', {
+          customer: checkoutData.customerName,
+          venue: checkoutData.venueId,
+          total: checkoutData.total
+        });
+        
+        const orderData = {
+          venue_id: checkoutData.venueId,
+          table_number: checkoutData.tableNumber,
+          table_id: null,
+          counter_number: checkoutData.counterNumber || null,
+          order_type: checkoutData.orderType || 'table',
+          order_location: checkoutData.orderLocation || checkoutData.tableNumber?.toString() || '1',
+          customer_name: checkoutData.customerName,
+          customer_phone: checkoutData.customerPhone,
+          items: checkoutData.cart.map((item: any) => ({
+            menu_item_id: item.id || 'unknown',
+            quantity: item.quantity,
+            price: item.price,
+            item_name: item.name,
+            specialInstructions: item.specialInstructions || null,
+          })),
+          total_amount: checkoutData.total,
+          notes: checkoutData.notes || '',
+          order_status: 'PLACED',
+          payment_status: 'UNPAID',
+          payment_mode: action === 'till' ? 'pay_at_till' : (action === 'later' ? 'pay_later' : 'online'),
+          payment_method: action === 'demo' ? 'demo' : (action === 'till' ? 'till' : null),
+          session_id: checkoutData.sessionId,
+          source: checkoutData.source || 'qr',
+        };
+
+        const createOrderResponse = await fetch('/api/orders', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(orderData),
+        });
+
+        if (!createOrderResponse.ok) {
+          const errorData = await createOrderResponse.json();
+          throw new Error(errorData.error || 'Failed to create order');
+        }
+
+        const orderResult = await createOrderResponse.json();
+        console.info('✅ [PAYMENT] Order created in database:', orderResult.order?.id);
+        logger.info('✅✅✅ ORDER CREATED IN DB ✅✅✅', {
+          orderId: orderResult.order?.id,
+        });
+        
+        return orderResult;
       };
 
-      const createOrderResponse = await fetch('/api/orders', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(orderData),
-      });
-
-      if (!createOrderResponse.ok) {
-        const errorData = await createOrderResponse.json();
-        throw new Error(errorData.error || 'Failed to create order');
-      }
-
-      const orderResult = await createOrderResponse.json();
-      const orderId = orderResult.order?.id;
-      const orderNumber = orderResult.order?.order_number || orderId;
-
-      console.info('✅ [PAYMENT] Order created in database:', orderId);
-      logger.info('✅✅✅ ORDER CREATED SUCCESSFULLY ✅✅✅', {
-        orderId,
-        paymentMethod: action,
-        requestId: orderResult.requestId
-      });
-
-      // STEP 2: Process payment based on selected method
+      // Process payment based on selected method
       if (action === 'demo') {
+        // Create order immediately for demo
+        const orderResult = await createOrder();
+        const orderId = orderResult.order?.id;
+        const orderNumber = orderResult.order?.order_number || orderId;
         // Demo payment - just mark as paid
         const response = await fetch('/api/orders/update-payment-status', {
           method: 'POST',
@@ -102,19 +104,33 @@ export function usePaymentProcessing() {
         // Clear checkout data
         localStorage.removeItem('servio-checkout-data');
       } else if (action === 'stripe') {
-        // Stripe payment - redirect to Stripe checkout
-        console.info('[PAYMENT] Creating Stripe checkout session...');
-        logger.info('💳 Processing Stripe payment', { orderId });
+        // Stripe payment - DON'T create order yet, create on success page
+        // Save checkout data with pending flag for success page to create order
+        console.info('[PAYMENT] Stripe selected - order will be created on payment success');
+        logger.info('💳 Stripe selected - redirecting to Stripe (order creation deferred)');
         
-        const response = await fetch('/api/pay/stripe', {
+        // Mark this as pending order creation
+        const pendingData = {
+          ...checkoutData,
+          pendingOrderCreation: true,
+          paymentMethod: 'stripe'
+        };
+        localStorage.setItem('servio-checkout-data', JSON.stringify(pendingData));
+        
+        // Create Stripe checkout session (without order ID)
+        const response = await fetch('/api/stripe/create-customer-checkout', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({
-            orderId: orderId,
             amount: checkoutData.total,
             customerEmail: checkoutData.customerEmail || 'customer@email.com',
             customerName: checkoutData.customerName,
-            venueName: checkoutData.venueName || 'Restaurant'
+            venueName: checkoutData.venueName || 'Restaurant',
+            metadata: {
+              venueId: checkoutData.venueId,
+              tableNumber: checkoutData.tableNumber,
+              sessionId: checkoutData.sessionId
+            }
           }),
         });
 
@@ -125,8 +141,8 @@ export function usePaymentProcessing() {
           throw new Error(result.error || 'Failed to create checkout session');
         }
 
-        console.info('[PAYMENT] Stripe checkout session created, redirecting...');
-        logger.info('✅ Stripe checkout created, redirecting to Stripe', { orderId });
+        console.info('[PAYMENT] Redirecting to Stripe...');
+        logger.info('✅ Stripe session created, redirecting');
         
         // Redirect to Stripe checkout
         if (result.url) {
@@ -135,7 +151,11 @@ export function usePaymentProcessing() {
           throw new Error('No Stripe checkout URL returned');
         }
       } else if (action === 'till') {
-        // Till payment - marks order as confirmed
+        // Till payment - create order immediately, show "Order Confirmed!"
+        const orderResult = await createOrder();
+        const orderId = orderResult.order?.id;
+        const orderNumber = orderResult.order?.order_number || orderId;
+        
         console.info('[PAYMENT] Processing till payment...');
         logger.info('💵 Processing till payment', { orderId });
         
@@ -170,7 +190,11 @@ export function usePaymentProcessing() {
         localStorage.removeItem('servio-checkout-data');
         localStorage.removeItem('servio-current-session');
       } else if (action === 'later') {
-        // Pay later - order confirmed, can pay when re-scanning QR
+        // Pay later - create order immediately, show "Order Confirmed!"
+        const orderResult = await createOrder();
+        const orderId = orderResult.order?.id;
+        const orderNumber = orderResult.order?.order_number || orderId;
+        
         console.info('[PAYMENT] Processing pay later...');
         logger.info('⏰ Processing pay later', { orderId });
         
