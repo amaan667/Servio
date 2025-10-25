@@ -217,15 +217,61 @@ async function scrapeWithPlaywright(url: string, waitForNetworkIdle: boolean = f
           });
       });
 
-    // Strategy 3: If still nothing, check page title/content
+    // Strategy 3: Analyze page structure to find menu content
     if (!menuAppeared && !embeddedData) {
-      const pageInfo = await page.evaluate(() => ({
-        title: document.title,
-        bodyLength: document.body.innerText.length,
-        hasMain: !!document.querySelector("main"),
-        hasArticle: !!document.querySelector("article"),
-      }));
-      console.warn(`⚠️ Page info:`, pageInfo);
+      console.info(`🔍 Strategy 3: Analyzing page structure...`);
+
+      const pageAnalysis = await page.evaluate(() => {
+        // Find all elements with menu-related content
+        const allDivs = document.querySelectorAll("div, section, ul, li");
+        const menuLikeElements: string[] = [];
+
+        allDivs.forEach((el) => {
+          const className = el.className?.toString() || "";
+          const id = el.id || "";
+          const text = el.textContent || "";
+
+          // Look for elements that might contain menu items
+          if (
+            className.toLowerCase().includes("item") ||
+            className.toLowerCase().includes("card") ||
+            className.toLowerCase().includes("product") ||
+            text.includes("£") ||
+            text.includes("$")
+          ) {
+            const preview = text.substring(0, 50).replace(/\s+/g, " ");
+            if (preview.length > 10 && !menuLikeElements.includes(preview)) {
+              menuLikeElements.push(`${className || id || "div"}: ${preview}`);
+            }
+          }
+        });
+
+        return {
+          title: document.title,
+          bodyLength: document.body.innerText.length,
+          bodyText: document.body.innerText.substring(0, 1000),
+          hasMain: !!document.querySelector("main"),
+          hasArticle: !!document.querySelector("article"),
+          menuLikeElements: menuLikeElements.slice(0, 10),
+          uniqueClasses: Array.from(
+            new Set(
+              Array.from(document.querySelectorAll("*"))
+                .map((el) => el.className?.toString())
+                .filter((c) => c && c.length > 0 && c.length < 50)
+            )
+          ).slice(0, 20),
+        };
+      });
+
+      console.warn(`⚠️ Page Analysis:`);
+      console.warn(`  Title: ${pageAnalysis.title}`);
+      console.warn(`  Body length: ${pageAnalysis.bodyLength} chars`);
+      console.warn(`  Body preview:`, pageAnalysis.bodyText.substring(0, 200));
+      console.warn(`  Menu-like elements found: ${pageAnalysis.menuLikeElements.length}`);
+      pageAnalysis.menuLikeElements.forEach((el, i) => {
+        console.warn(`    ${i + 1}. ${el}`);
+      });
+      console.warn(`  Common classes:`, pageAnalysis.uniqueClasses.slice(0, 10).join(", "));
     }
 
     // Get HTML
