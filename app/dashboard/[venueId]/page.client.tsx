@@ -323,24 +323,26 @@ const DashboardClient = React.memo(function DashboardClient({ venueId }: { venue
                       : undefined
                   }
                   tooltip="View detailed revenue analytics"
-                />
-              </Link>
-            ) : (
-              <div className="opacity-0 pointer-events-none select-none" aria-hidden="true">
-                <EnhancedStatCard
-                  title="Revenue"
-                  value={0}
-                  icon={TrendingUp}
-                  iconColor="text-green-600"
-                  iconBgColor="bg-green-100"
-                  isCurrency
-                />
-              </div>
-            )}
+                  />
+                </Link>
+              ) : (
+                <div className="opacity-0 pointer-events-none select-none h-full" aria-hidden="true">
+                  <EnhancedStatCard
+                    title="Revenue"
+                    value={0}
+                    icon={TrendingUp}
+                    iconColor="text-green-600"
+                    iconBgColor="bg-green-100"
+                    isCurrency
+                  />
+                </div>
+              )}
+            </div>
 
             {/* Position 3: Tables Set Up - Always visible */}
-            <Link href={`/dashboard/${venueId}/tables`}>
-              <EnhancedStatCard
+            <div className="min-h-[140px]">
+              <Link href={`/dashboard/${venueId}/tables`} className="block h-full">
+                <EnhancedStatCard
                 title="Tables Set Up"
                 value={dashboardData.counts.tables_set_up}
                 icon={Table}
@@ -348,12 +350,14 @@ const DashboardClient = React.memo(function DashboardClient({ venueId }: { venue
                 iconBgColor="bg-purple-100"
                 trend={{ value: 0, label: "all active" }}
                 tooltip="Manage table setup and reservations"
-              />
-            </Link>
+                />
+              </Link>
+            </div>
 
             {/* Position 4: Menu Items - Always visible */}
-            <Link href={`/dashboard/${venueId}/menu-management`}>
-              <EnhancedStatCard
+            <div className="min-h-[140px]">
+              <Link href={`/dashboard/${venueId}/menu-management`} className="block h-full">
+                <EnhancedStatCard
                 title="Menu Items"
                 value={dashboardData.stats.menuItems}
                 icon={ShoppingBag}
@@ -364,6 +368,7 @@ const DashboardClient = React.memo(function DashboardClient({ venueId }: { venue
                 />
               </Link>
             </div>
+          </div>
           </div>
 
           {/* AI Insights */}
