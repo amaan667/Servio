@@ -76,14 +76,28 @@ export function useAnalyticsData(venueId: string, venueTz: string) {
         orders,
       }));
 
-      // Calculate revenue by category from order items
+      // Fetch menu items with categories
+      const { data: menuItems } = await supabase
+        .from('menu_items')
+        .select('id, name, category')
+        .eq('venue_id', venueId);
+
+      // Create a map of menu item ID to category
+      const menuItemCategories = new Map<string, string>();
+      (menuItems || []).forEach((item: Record<string, unknown>) => {
+        menuItemCategories.set(item.id as string, item.category as string || 'Other');
+      });
+
+      // Calculate revenue by category from order items using actual menu categories
       const categoryRevenue: { [key: string]: number } = {};
       (todayOrders || []).forEach((order: Record<string, unknown>) => {
         if (Array.isArray(order.items)) {
           order.items.forEach((item: Record<string, unknown>) => {
-            const category = item.category || 'Other';
-            const price = parseFloat(item.unit_price || item.price || 0);
-            const qty = parseInt(item.quantity || item.qty || 1);
+            // Get category from menu items database, not from order item
+            const menuItemId = item.menu_item_id as string;
+            const category = menuItemCategories.get(menuItemId) || item.category || 'Other';
+            const price = parseFloat((item.unit_price as string) || (item.price as string) || '0');
+            const qty = parseInt((item.quantity as string) || (item.qty as string) || '1');
             categoryRevenue[category] = (categoryRevenue[category] || 0) + price * qty;
           });
         }

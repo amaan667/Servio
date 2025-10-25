@@ -128,12 +128,8 @@ const DashboardClient = React.memo(function DashboardClient({ venueId }: { venue
     }));
   }, [analyticsData.data?.ordersByHour]);
 
-  const tableUtilization = useMemo(() => {
-    if (!dashboardData.counts.tables_set_up) return 0;
-    return Math.round(
-      (dashboardData.counts.tables_in_use / dashboardData.counts.tables_set_up) * 100
-    );
-  }, [dashboardData.counts]);
+  // Removed table utilization - can't calculate without knowing max table capacity
+  const tableUtilization = 0; // Placeholder, not displayed
 
   const revenueByCategory = useMemo(() => {
     if (analyticsData.data?.revenueByCategory && analyticsData.data.revenueByCategory.length > 0) {

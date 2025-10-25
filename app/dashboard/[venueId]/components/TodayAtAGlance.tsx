@@ -59,7 +59,7 @@ export function TodayAtAGlance({ ordersByHour, tableUtilization, revenueByCatego
         <h2 className="text-xl font-bold text-gray-900">Today at a Glance</h2>
       </div>
 
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
         {/* Orders by Hour */}
         <Card className="border-2 hover:shadow-lg transition-all duration-300 bg-gradient-to-br from-white to-blue-50/30">
           <CardHeader className="pb-3">
@@ -108,53 +108,7 @@ export function TodayAtAGlance({ ordersByHour, tableUtilization, revenueByCatego
           </CardContent>
         </Card>
 
-        {/* Table Utilization */}
-        <Card className="border-2 hover:shadow-lg transition-all duration-300 bg-gradient-to-br from-white to-purple-50/30">
-          <CardHeader className="pb-3">
-            <CardTitle className="text-sm font-medium text-gray-600 flex items-center gap-2">
-              <Users className="h-4 w-4 text-purple-600" />
-              Table Utilization
-            </CardTitle>
-          </CardHeader>
-          <CardContent>
-            <div className="h-[200px] flex flex-col items-center justify-center">
-              <div className="relative w-32 h-32">
-                <svg className="transform -rotate-90" viewBox="0 0 100 100">
-                  <circle
-                    cx="50"
-                    cy="50"
-                    r="45"
-                    fill="none"
-                    stroke="#e5e7eb"
-                    strokeWidth="10"
-                  />
-                  <circle
-                    cx="50"
-                    cy="50"
-                    r="45"
-                    fill="none"
-                    stroke="#8b5cf6"
-                    strokeWidth="10"
-                    strokeDasharray={`${tableUtilization * 2.827} 282.7`}
-                    strokeLinecap="round"
-                    className="transition-all duration-1000"
-                  />
-                </svg>
-                <div className="absolute inset-0 flex items-center justify-center">
-                  <div className="text-center">
-                    <div className="text-3xl font-bold text-gray-900">{tableUtilization}%</div>
-                    <div className="text-xs text-gray-500">in use</div>
-                  </div>
-                </div>
-              </div>
-              <p className="text-sm text-gray-600 mt-4 text-center">
-                {tableUtilization < 30 && 'Low occupancy - consider promotions'}
-                {tableUtilization >= 30 && tableUtilization < 70 && 'Good utilization'}
-                {tableUtilization >= 70 && 'High occupancy - great job!'}
-              </p>
-            </div>
-          </CardContent>
-        </Card>
+        {/* Table Utilization - Removed (can't calculate without max capacity) */}
 
         {/* Revenue by Category */}
         <Card className="border-2 hover:shadow-lg transition-all duration-300 bg-gradient-to-br from-white to-green-50/30">

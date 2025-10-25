@@ -238,10 +238,28 @@ export function OrderCard({
       );
     }
 
-    // Show status update actions for FOH (Live Orders) - only READY/SERVED/COMPLETED
+    // Show status update actions for FOH (Live Orders)
+    // IN_PREP: Show "Preparing" message (not clickable - waiting for KDS)
+    // READY: Show "Mark Served" button
+    // SERVING: Show "Complete" button
+    const orderStatus = (order.order_status || '').toUpperCase();
+    
     if (!isCompleted) {
+      // If order is IN_PREP, show preparing message (not clickable)
+      if (orderStatus === 'IN_PREP') {
+        return (
+          <div className="mt-4 pt-4 border-t border-slate-200">
+            <div className="flex items-center justify-center gap-2 p-3 bg-blue-50 rounded-lg">
+              <Clock className="h-4 w-4 text-blue-600 animate-pulse" />
+              <span className="text-sm font-medium text-blue-700">Preparing in Kitchen...</span>
+            </div>
+          </div>
+        );
+      }
+      
+      // For READY and SERVING, show action buttons
       const getNextStatus = () => {
-        switch ((order.order_status || '').toUpperCase()) {
+        switch (orderStatus) {
           case 'READY': return 'SERVING';
           case 'SERVING': return 'COMPLETED';
           default: return 'COMPLETED';
@@ -249,7 +267,7 @@ export function OrderCard({
       };
 
       const getStatusLabel = () => {
-        switch ((order.order_status || '').toUpperCase()) {
+        switch (orderStatus) {
           case 'READY': return 'Mark Served';
           case 'SERVING': return 'Complete';
           default: return 'Complete';
@@ -257,7 +275,7 @@ export function OrderCard({
       };
 
       const getStatusIcon = () => {
-        switch ((order.order_status || '').toUpperCase()) {
+        switch (orderStatus) {
           case 'READY': return <CheckCircle className="h-4 w-4 mr-1" />;
           case 'SERVING': return <CheckCircle className="h-4 w-4 mr-1" />;
           default: return <CheckCircle className="h-4 w-4 mr-1" />;
@@ -265,7 +283,7 @@ export function OrderCard({
       };
 
       const getStatusMessage = () => {
-        switch ((order.order_status || '').toUpperCase()) {
+        switch (orderStatus) {
           case 'READY':
             return "Kitchen Ready - Mark as Served";
           case 'SERVING':
