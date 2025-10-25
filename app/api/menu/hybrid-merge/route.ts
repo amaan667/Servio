@@ -97,12 +97,24 @@ export async function POST(req: NextRequest) {
 
         urlMenuData = await scrapeResponse.json();
         console.info(
-          `✅ [HYBRID MERGE ${requestId}] Scraped ${urlMenuData.items?.length || 0} items from URL`
+          `📦 [HYBRID MERGE ${requestId}] Scrape API response:`,
+          JSON.stringify(urlMenuData).substring(0, 500)
+        );
+        console.info(
+          `✅ [HYBRID MERGE ${requestId}] Response ok: ${urlMenuData.ok}, Items: ${urlMenuData.items?.length || 0}`
         );
 
         if (!urlMenuData.ok) {
-          console.error(`❌ [HYBRID MERGE ${requestId}] Scrape returned not ok:`, urlMenuData);
+          console.error(`❌ [HYBRID MERGE ${requestId}] Scrape returned not ok`);
+          console.error(`Error message:`, urlMenuData.error);
           throw new Error(urlMenuData.error || "Scraping returned error status");
+        }
+
+        if (urlMenuData.items && urlMenuData.items.length > 0) {
+          console.info(
+            `📋 [HYBRID MERGE ${requestId}] Sample items:`,
+            urlMenuData.items.slice(0, 2)
+          );
         }
       } catch (fetchError) {
         clearTimeout(timeoutId);

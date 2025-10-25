@@ -303,6 +303,12 @@ Return ONLY valid JSON:
 }`;
 
     console.info(`📡 [SCRAPE MENU ${requestId}] Calling OpenAI GPT-4o...`);
+    console.info(
+      `📤 [SCRAPE MENU ${requestId}] Sending ${truncatedText.length} chars of text to AI`
+    );
+    console.info(
+      `📸 [SCRAPE MENU ${requestId}] Sending ${imageUrls.slice(0, 50).length} image URLs to AI`
+    );
     const aiStart = Date.now();
 
     const aiResponse = await openai.chat.completions.create({
@@ -338,12 +344,25 @@ Return ONLY valid JSON:
     let menuItems;
     try {
       console.info(`🔄 [SCRAPE MENU ${requestId}] Parsing AI JSON response...`);
+      console.info(
+        `📋 [SCRAPE MENU ${requestId}] AI response preview:`,
+        aiContent.substring(0, 300)
+      );
       const parsed = JSON.parse(aiContent);
       menuItems = parsed.items || [];
       console.info(`✅ [SCRAPE MENU ${requestId}] JSON parsed successfully`);
+      console.info(`📊 [SCRAPE MENU ${requestId}] Parsed items count: ${menuItems.length}`);
+
+      if (menuItems.length === 0) {
+        console.warn(`⚠️ [SCRAPE MENU ${requestId}] GPT-4 returned ZERO items!`);
+        console.warn(`Full AI response:`, aiContent);
+        console.warn(`Text sent to AI (first 500 chars):`, truncatedText.substring(0, 500));
+      } else {
+        console.info(`📋 [SCRAPE MENU ${requestId}] First item sample:`, menuItems[0]);
+      }
     } catch (parseError) {
       console.error(`❌ [SCRAPE MENU ${requestId}] Failed to parse AI response:`, parseError);
-      console.error(`AI response preview:`, aiContent.substring(0, 500));
+      console.error(`AI response full:`, aiContent);
       throw new Error("AI returned invalid JSON");
     }
 
