@@ -18,13 +18,17 @@ export default function PaymentSuccessPage() {
       return;
     }
 
-    // Webhook creates the order - just look it up and redirect
+    // Webhook updates the order - just look it up and redirect
     const lookupOrder = async () => {
-      console.info("🔍 [STRIPE SUCCESS] Looking up webhook-created order...");
+      console.info("🔍 [STRIPE SUCCESS] Looking up webhook-updated order...");
       console.info("🎯 Session ID:", sessionId);
 
       try {
-        // Try immediate lookup
+        // Wait 1s for webhook to update order
+        console.info("⏳ [STRIPE SUCCESS] Waiting 1s for webhook...");
+        await new Promise((resolve) => setTimeout(resolve, 1000));
+
+        // Look up order by session ID
         const response = await fetch(`/api/orders/by-session/${sessionId}`);
         console.info("📦 [STRIPE SUCCESS] Response:", response.status, response.ok);
 
@@ -32,17 +36,17 @@ export default function PaymentSuccessPage() {
           const data = await response.json();
           if (data.ok && data.order?.id) {
             console.info("✅ [STRIPE SUCCESS] Order found! ID:", data.order.id);
+            console.info("✅ [STRIPE SUCCESS] Payment status:", data.order.payment_status);
             localStorage.removeItem("servio-checkout-data");
             window.location.href = `/order-summary?orderId=${data.order.id}`;
             return;
           }
         }
 
-        // Wait 3s for webhook to process
-        console.info("⏳ [STRIPE SUCCESS] Waiting 3s for webhook...");
-        await new Promise((resolve) => setTimeout(resolve, 3000));
+        // Retry once more
+        console.info("⏳ [STRIPE SUCCESS] Waiting 2s more for webhook...");
+        await new Promise((resolve) => setTimeout(resolve, 2000));
 
-        // Retry
         const retryResponse = await fetch(`/api/orders/by-session/${sessionId}`);
         console.info("📦 [STRIPE SUCCESS] Retry response:", retryResponse.status, retryResponse.ok);
 
@@ -57,9 +61,9 @@ export default function PaymentSuccessPage() {
         }
 
         // Still not found - webhook failed
-        console.error("❌ [STRIPE SUCCESS] Webhook didn't create order");
+        console.error("❌ [STRIPE SUCCESS] Webhook didn't update order");
         alert(
-          `Payment successful but order not created. Please check Railway logs and contact support with session ID: ${sessionId}`
+          `Payment successful but order not updated. Please check Railway logs. Session ID: ${sessionId}`
         );
         router.push("/");
       } catch (error) {

@@ -14,33 +14,28 @@ const stripe = new Stripe(process.env.STRIPE_SECRET_KEY!, {
  */
 export async function POST(req: Request) {
   try {
-    const { amount, customerEmail, customerName, venueName, checkoutData } = await req.json();
+    const { amount, customerEmail, customerName, venueName, orderId } = await req.json();
 
     console.info("💳 [STRIPE CUSTOMER CHECKOUT] Creating session...");
-    console.info("💳 [STRIPE CUSTOMER CHECKOUT] Checkout data:", {
-      venueId: checkoutData?.venueId,
-      customerName: checkoutData?.customerName,
-      tableNumber: checkoutData?.tableNumber,
-      cartItems: checkoutData?.cart?.length,
-      total: checkoutData?.total,
-    });
+    console.info("💳 [STRIPE CUSTOMER CHECKOUT] Order ID:", orderId);
 
     logger.info("💳 Creating Stripe customer checkout session", {
       amount,
       customerName,
       venueName,
+      orderId,
     });
 
     if (!amount || amount <= 0) {
       return NextResponse.json({ error: "Invalid amount" }, { status: 400 });
     }
 
-    if (!checkoutData) {
-      return NextResponse.json({ error: "Checkout data is required" }, { status: 400 });
+    if (!orderId) {
+      return NextResponse.json({ error: "Order ID is required" }, { status: 400 });
     }
 
     // Create Stripe checkout session for order payment
-    // Store checkout data in metadata so webhook can create the order
+    // Store ONLY order ID in metadata (avoids 500 char limit)
     const session = await stripe.checkout.sessions.create({
       payment_method_types: ["card"],
       line_items: [
@@ -49,7 +44,7 @@ export async function POST(req: Request) {
             currency: "gbp",
             product_data: {
               name: `Order at ${venueName || "Restaurant"}`,
-              description: `Table ${checkoutData.tableNumber || "N/A"}`,
+              description: customerName,
             },
             unit_amount: Math.round(amount * 100), // Convert to pence
           },
@@ -61,9 +56,7 @@ export async function POST(req: Request) {
       cancel_url: `${process.env.NEXT_PUBLIC_SITE_URL}/payment/cancel`,
       customer_email: customerEmail,
       metadata: {
-        orderType: "customer_order",
-        // Store checkout data as JSON string in metadata for webhook
-        checkoutDataJson: JSON.stringify(checkoutData),
+        orderId: orderId, // Just the order ID - webhook will update it
       },
     });
 

@@ -101,19 +101,21 @@ export function usePaymentProcessing() {
         // Redirect to order summary page
         window.location.href = `/order-summary?orderId=${orderId}&demo=1`;
       } else if (action === "stripe") {
-        // Stripe payment - save checkout data and redirect to Stripe
-        console.info("[PAYMENT] Stripe selected - order will be created on payment success");
-        console.info("💳 Stripe selected - redirecting to Stripe (order creation deferred)");
+        // Stripe payment - CREATE ORDER FIRST, then redirect to Stripe
+        console.info("[PAYMENT] Stripe selected - creating order then redirecting to Stripe");
+        console.info("💳 Creating order BEFORE Stripe checkout...");
 
-        // Mark this as pending order creation for order summary page
-        const pendingData = {
-          ...checkoutData,
-          pendingOrderCreation: true,
-          paymentMethod: "stripe",
-        };
-        localStorage.setItem("servio-checkout-data", JSON.stringify(pendingData));
+        // Create order first with UNPAID status
+        const orderResult = await createOrder();
+        const orderId = orderResult.order?.id;
 
-        // Create Stripe checkout session with FULL order data in metadata
+        if (!orderId) {
+          throw new Error("Failed to create order before Stripe checkout");
+        }
+
+        console.info("✅ Order created:", orderId, "- now creating Stripe session...");
+
+        // Create Stripe checkout session with just the order ID
         const response = await fetch("/api/stripe/create-customer-checkout", {
           method: "POST",
           headers: { "Content-Type": "application/json" },
@@ -122,7 +124,7 @@ export function usePaymentProcessing() {
             customerEmail: checkoutData.customerEmail || "customer@email.com",
             customerName: checkoutData.customerName,
             venueName: checkoutData.venueName || "Restaurant",
-            checkoutData: checkoutData, // Pass full checkout data for webhook to create order
+            orderId: orderId, // Just pass order ID (small!)
           }),
         });
 
