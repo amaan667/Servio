@@ -182,47 +182,77 @@ export default function PaymentPage() {
                 </Button>
               )}
 
-              {/* Stripe Payment */}
-              {!paymentState.isDemo && (
+              {/* Payment Method Buttons - All Same Style */}
+              <div className="space-y-3">
+                {/* Stripe Payment */}
+                {!paymentState.isDemo && (
+                  <Button
+                    onClick={() => {
+                      console.info('💳 [PAYMENT PAGE] Pay Now (Stripe) clicked');
+                      handlePayment('stripe');
+                    }}
+                    disabled={paymentState.isProcessing}
+                    variant="default"
+                    className="w-full h-12 text-base"
+                  >
+                    {paymentState.isProcessing && paymentState.paymentAction === 'stripe' ? (
+                      <>
+                        <Loader2 className="h-5 w-5 mr-2 animate-spin" />
+                        Processing...
+                      </>
+                    ) : (
+                      <>
+                        <CreditCard className="h-5 w-5 mr-2" />
+                        Pay Now
+                      </>
+                    )}
+                  </Button>
+                )}
+
+                {/* Pay at Till */}
                 <Button
-                  onClick={() => handlePayment('stripe')}
+                  variant="default"
+                  onClick={() => {
+                    console.info('💵 [PAYMENT PAGE] Pay at Till clicked');
+                    handlePayment('till');
+                  }}
                   disabled={paymentState.isProcessing}
-                  className="w-full bg-gradient-to-r from-purple-600 to-pink-600 hover:from-purple-700 hover:to-pink-700"
+                  className="w-full h-12 text-base"
                 >
-                  {paymentState.isProcessing ? (
+                  {paymentState.isProcessing && paymentState.paymentAction === 'till' ? (
                     <>
-                      <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                      <Loader2 className="h-5 w-5 mr-2 animate-spin" />
                       Processing...
                     </>
                   ) : (
                     <>
-                      <CreditCard className="h-4 w-4 mr-2" />
-                      Pay with Card
+                      <Receipt className="h-5 w-5 mr-2" />
+                      Pay at Till
                     </>
                   )}
                 </Button>
-              )}
 
-              {/* Alternative Payment Options */}
-              <div className="space-y-2">
+                {/* Pay Later */}
                 <Button
-                  variant="outline"
-                  onClick={() => handlePayment('till')}
+                  variant="default"
+                  onClick={() => {
+                    console.info('⏰ [PAYMENT PAGE] Pay Later clicked');
+                    handlePayment('later');
+                  }}
                   disabled={paymentState.isProcessing}
-                  className="w-full"
+                  className="w-full h-12 text-base"
                 >
-                  <Receipt className="h-4 w-4 mr-2" />
-                  Pay at Till
-                </Button>
-
-                <Button
-                  variant="outline"
-                  onClick={() => handlePayment('later')}
-                  disabled={paymentState.isProcessing}
-                  className="w-full"
-                >
-                  <Clock className="h-4 w-4 mr-2" />
-                  Pay Later
+                  {paymentState.isProcessing && paymentState.paymentAction === 'later' ? (
+                    <>
+                      <Loader2 className="h-5 w-5 mr-2 animate-spin" />
+                      Processing...
+                    </>
+                  ) : (
+                    <>
+                      <Clock className="h-5 w-5 mr-2" />
+                      Pay Later
+                    </>
+                  )}
                 </Button>
               </div>
             </CardContent>
