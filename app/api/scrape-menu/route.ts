@@ -196,16 +196,25 @@ async function scrapeWithPlaywright(url: string, waitForNetworkIdle: boolean = f
  */
 export async function POST(req: NextRequest) {
   const requestId = Math.random().toString(36).substring(7);
+  const startTime = Date.now();
+
+  console.info(`\n${"=".repeat(80)}`);
+  console.info(`🚀 [SCRAPE MENU ${requestId}] NEW REQUEST STARTED`);
+  console.info(`⏰ Timestamp: ${new Date().toISOString()}`);
+  console.info(`${"=".repeat(80)}\n`);
 
   try {
+    console.info(`📥 [SCRAPE MENU ${requestId}] Parsing request body...`);
     const body = await req.json();
     const { url } = body;
+    console.info(`✅ [SCRAPE MENU ${requestId}] Body parsed`);
 
     if (!url) {
+      console.error(`❌ [SCRAPE MENU ${requestId}] No URL provided`);
       return NextResponse.json({ ok: false, error: "URL is required" }, { status: 400 });
     }
 
-    console.info(`🌐 [SCRAPE MENU ${requestId}] Scraping: ${url}`);
+    console.info(`🌐 [SCRAPE MENU ${requestId}] Target URL: ${url}`);
     logger.info(`[MENU SCRAPE] Starting scrape`, { url, requestId });
 
     // Smart detection: Determine site type FIRST (saves 20s for JS sites!)
@@ -221,35 +230,49 @@ export async function POST(req: NextRequest) {
     }
 
     // Scrape with the right strategy from the start
+    console.info(`🚀 [SCRAPE MENU ${requestId}] Starting Playwright scrape...`);
+    const scrapeStart = Date.now();
     const { text: finalText, images: imageUrls } = await scrapeWithPlaywright(url, isJSHeavy);
+    const scrapeDuration = Date.now() - scrapeStart;
 
     console.info(
-      `📊 [SCRAPE MENU ${requestId}] Extraction complete: ${finalText.length} chars, ${imageUrls.length} images`
+      `✅ [SCRAPE MENU ${requestId}] Scraping complete in ${scrapeDuration}ms (${(scrapeDuration / 1000).toFixed(1)}s)`
+    );
+    console.info(
+      `📊 [SCRAPE MENU ${requestId}] Extraction: ${finalText.length} chars, ${imageUrls.length} images`
     );
 
     if (!finalText || finalText.length < 50) {
-      console.error(`❌ [SCRAPE MENU ${requestId}] Insufficient content extracted`);
-      return NextResponse.json(
-        {
-          ok: false,
-          error:
-            "Unable to extract meaningful content from the URL. The page may be empty, protected, or require authentication.",
-        },
-        { status: 400 }
+      console.error(
+        `❌ [SCRAPE MENU ${requestId}] Insufficient content: only ${finalText?.length || 0} chars`
       );
+      const errorResponse = {
+        ok: false,
+        error:
+          "Unable to extract meaningful content from the URL. The page may be empty, protected, or require authentication.",
+      };
+      console.info(`📤 [SCRAPE MENU ${requestId}] Sending error response:`, errorResponse);
+      return NextResponse.json(errorResponse, { status: 400 });
     }
 
-    console.info(`✅ [SCRAPE MENU ${requestId}] Content extracted successfully`);
-    console.info(
-      `📊 [SCRAPE MENU ${requestId}] Stats: ${finalText.length} chars, ${imageUrls.length} images`
-    );
-    console.info(`📝 [SCRAPE MENU ${requestId}] Preview: ${finalText.substring(0, 300)}...`);
+    console.info(`✅ [SCRAPE MENU ${requestId}] Content validation passed`);
+    console.info(`📝 [SCRAPE MENU ${requestId}] Text preview: ${finalText.substring(0, 200)}...`);
 
     // Use GPT-4 to extract menu items
-    console.info(`🤖 [SCRAPE MENU ${requestId}] Using AI to extract menu items...`);
+    console.info(`🤖 [SCRAPE MENU ${requestId}] Preparing AI extraction...`);
+    console.info(
+      `📏 [SCRAPE MENU ${requestId}] Text length: ${finalText.length} chars (will truncate to 30k if needed)`
+    );
 
     const truncatedText =
       finalText.length > 30000 ? finalText.substring(0, 30000) + "..." : finalText;
+
+    console.info(
+      `✅ [SCRAPE MENU ${requestId}] Text prepared for AI (${truncatedText.length} chars)`
+    );
+    console.info(
+      `🖼️  [SCRAPE MENU ${requestId}] Providing ${Math.min(imageUrls.length, 50)} image URLs to AI`
+    );
 
     const extractionPrompt = `Extract ALL menu items from this restaurant menu text.
 
@@ -279,6 +302,9 @@ Return ONLY valid JSON:
   ]
 }`;
 
+    console.info(`📡 [SCRAPE MENU ${requestId}] Calling OpenAI GPT-4o...`);
+    const aiStart = Date.now();
+
     const aiResponse = await openai.chat.completions.create({
       model: "gpt-4o",
       messages: [
@@ -296,38 +322,87 @@ Return ONLY valid JSON:
       response_format: { type: "json_object" },
     });
 
+    const aiDuration = Date.now() - aiStart;
+    console.info(
+      `✅ [SCRAPE MENU ${requestId}] AI response received in ${aiDuration}ms (${(aiDuration / 1000).toFixed(1)}s)`
+    );
+
     const aiContent = aiResponse.choices[0]?.message?.content;
     if (!aiContent) {
+      console.error(`❌ [SCRAPE MENU ${requestId}] AI response was empty`);
       throw new Error("AI response was empty");
     }
 
+    console.info(`📄 [SCRAPE MENU ${requestId}] AI content length: ${aiContent.length} chars`);
+
     let menuItems;
     try {
+      console.info(`🔄 [SCRAPE MENU ${requestId}] Parsing AI JSON response...`);
       const parsed = JSON.parse(aiContent);
       menuItems = parsed.items || [];
+      console.info(`✅ [SCRAPE MENU ${requestId}] JSON parsed successfully`);
     } catch (parseError) {
       console.error(`❌ [SCRAPE MENU ${requestId}] Failed to parse AI response:`, parseError);
+      console.error(`AI response preview:`, aiContent.substring(0, 500));
       throw new Error("AI returned invalid JSON");
     }
 
+    const totalDuration = Date.now() - startTime;
     console.info(`✅ [SCRAPE MENU ${requestId}] Extracted ${menuItems.length} items`);
-    logger.info("[MENU SCRAPE] Extraction complete", { itemCount: menuItems.length });
+    console.info(
+      `⏱️  [SCRAPE MENU ${requestId}] Total time: ${totalDuration}ms (${(totalDuration / 1000).toFixed(1)}s)`
+    );
+    logger.info("[MENU SCRAPE] Extraction complete", {
+      itemCount: menuItems.length,
+      duration: totalDuration,
+    });
 
-    return NextResponse.json({
+    const successResponse = {
       ok: true,
       items: menuItems,
       message: `Found ${menuItems.length} items from menu`,
-    });
+    };
+
+    console.info(
+      `📤 [SCRAPE MENU ${requestId}] Sending success response with ${menuItems.length} items`
+    );
+    console.info(`${"=".repeat(80)}`);
+    console.info(
+      `✅ [SCRAPE MENU ${requestId}] REQUEST COMPLETE - ${(totalDuration / 1000).toFixed(1)}s total`
+    );
+    console.info(`${"=".repeat(80)}\n`);
+
+    return NextResponse.json(successResponse);
   } catch (error) {
-    console.error(`❌ [SCRAPE MENU ${requestId}] Error:`, error);
+    const totalDuration = Date.now() - startTime;
+    console.error(`\n${"=".repeat(80)}`);
+    console.error(
+      `❌ [SCRAPE MENU ${requestId}] REQUEST FAILED after ${(totalDuration / 1000).toFixed(1)}s`
+    );
+    console.error(`${"=".repeat(80)}`);
+    console.error(
+      `❌ [SCRAPE MENU ${requestId}] Error type:`,
+      error?.constructor?.name || "Unknown"
+    );
+    console.error(
+      `❌ [SCRAPE MENU ${requestId}] Error message:`,
+      error instanceof Error ? error.message : String(error)
+    );
+    console.error(
+      `❌ [SCRAPE MENU ${requestId}] Error stack:`,
+      error instanceof Error ? error.stack : "No stack trace"
+    );
+    console.error(`${"=".repeat(80)}\n`);
+
     logger.error("[MENU SCRAPE] Error:", error);
 
-    return NextResponse.json(
-      {
-        ok: false,
-        error: error instanceof Error ? error.message : "Failed to scrape menu",
-      },
-      { status: 500 }
-    );
+    const errorResponse = {
+      ok: false,
+      error: error instanceof Error ? error.message : "Failed to scrape menu",
+    };
+
+    console.info(`📤 [SCRAPE MENU ${requestId}] Sending error response:`, errorResponse);
+
+    return NextResponse.json(errorResponse, { status: 500 });
   }
 }
