@@ -194,10 +194,10 @@ export async function POST(req: Request) {
   console.info(`🎯 [ORDERS API ${requestId}] NEW ORDER SUBMISSION`);
   console.info(`🎯 [ORDERS API ${requestId}] Timestamp:`, new Date().toISOString());
   
-  logger.info(`🎯 [ORDERS API ${requestId}] NEW ORDER SUBMISSION at ${new Date().toISOString()}`);
+  logger.info(`🎯🎯🎯 [ORDERS API ${requestId}] NEW ORDER SUBMISSION at ${new Date().toISOString()} 🎯🎯🎯`);
   
   try {
-    logger.info('[ORDER CREATION] ===== ORDER CREATION STARTED =====');
+    logger.info('===== ORDER CREATION STARTED =====');
     
     console.info(`📥 [ORDERS API ${requestId}] Parsing request body...`);
     const body = (await req.json()) as Partial<OrderPayload>;
@@ -209,12 +209,13 @@ export async function POST(req: Request) {
     console.info(`📋 [ORDERS API ${requestId}] Items:`, body.items?.length);
     console.info(`📋 [ORDERS API ${requestId}] Total:`, body.total_amount);
     
-    logger.info('[ORDER CREATION] Request body received', { 
+    logger.info('📥📥📥 REQUEST RECEIVED 📥📥📥', { 
       customer: body.customer_name,
       venue: body.venue_id,
       table: body.table_number,
       items: body.items?.length,
-      total: body.total_amount
+      total: body.total_amount,
+      requestId
     });
 
     console.info(`🔍 [ORDERS API ${requestId}] Starting validation...`);
@@ -250,11 +251,12 @@ export async function POST(req: Request) {
     console.info(`✅ [ORDERS API ${requestId}] Total amount valid: ${body.total_amount}`);
     console.info(`✅ [ORDERS API ${requestId}] All validations passed!`);
     
-    logger.info('[ORDER CREATION] ✅ All validations passed', {
+    logger.info('✅✅✅ ALL VALIDATIONS PASSED ✅✅✅', {
       customer: body.customer_name,
       venue: body.venue_id,
       items: body.items?.length,
-      total: body.total_amount
+      total: body.total_amount,
+      requestId
     });
     
 
@@ -530,15 +532,20 @@ export async function POST(req: Request) {
       return bad(`Insert failed: ${errorMessage}`, 400);
     }
     console.info(`✅ [ORDERS API ${requestId}] Database insert successful!`);
-    logger.info('[ORDER CREATION] ✅ Database insert successful');
+    logger.info('💾💾💾 DATABASE INSERT SUCCESSFUL 💾💾💾', { requestId });
 
     if (!inserted || inserted.length === 0) {
       console.error(`❌ [ORDERS API ${requestId}] No data returned from insert`);
-      logger.error('[ORDER CREATION] ❌ No data returned from insert');
+      logger.error('❌❌❌ NO DATA RETURNED FROM INSERT ❌❌❌', { requestId });
       return bad('Order creation failed - no data returned', 500);
     }
     console.info(`✅ [ORDERS API ${requestId}] Order created - ID:`, inserted[0].id);
-    logger.info('[ORDER CREATION] ✅ Order created successfully', { orderId: inserted[0].id });
+    logger.info('🎉🎉🎉 ORDER CREATED IN DATABASE 🎉🎉🎉', { 
+      orderId: inserted[0].id,
+      customer: inserted[0].customer_name,
+      table: inserted[0].table_number,
+      requestId
+    });
 
     logger.debug('[ORDER CREATION DEBUG] ===== ORDER CREATED SUCCESSFULLY =====');
     logger.debug('[ORDER CREATION DEBUG] Order ID:', inserted[0].id);
