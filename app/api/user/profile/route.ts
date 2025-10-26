@@ -29,7 +29,7 @@ export async function GET() {
 
     return NextResponse.json({ profile });
   } catch (_error) {
-    logger._error("[USER PROFILE API] Error:", {
+    logger.error("[USER PROFILE API] Error:", {
       error: _error instanceof Error ? _error.message : "Unknown _error",
     });
     return NextResponse.json({ error: "Internal server error" }, { status: 500 });
@@ -58,7 +58,7 @@ export async function PUT(__request: Request) {
       },
     });
   } catch (_error) {
-    logger._error("[USER PROFILE API] Error:", {
+    logger.error("[USER PROFILE API] Error:", {
       error: _error instanceof Error ? _error.message : "Unknown _error",
     });
     return NextResponse.json({ error: "Internal server error" }, { status: 500 });

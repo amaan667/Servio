@@ -70,7 +70,7 @@ export async function POST(_request: NextRequest) {
       updatedItems: updatedItems?.length || 0,
     });
   } catch (_error) {
-    logger._error("[UPDATE CATEGORY] Unexpected error:", {
+    logger.error("[UPDATE CATEGORY] Unexpected error:", {
       error: _error instanceof Error ? _error.message : "Unknown _error",
     });
     return NextResponse.json({ error: "Internal server error" }, { status: 500 });

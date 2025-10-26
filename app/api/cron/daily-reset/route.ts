@@ -183,7 +183,7 @@ export async function POST(_request: NextRequest) {
           deletedTables: venueTables?.length || 0,
         });
       } catch (_error) {
-        logger._error(`🕛 [CRON DAILY RESET] Error resetting venue ${venue.venue_name}:`, {
+        logger.error(`🕛 [CRON DAILY RESET] Error resetting venue ${venue.venue_name}:`, {
           error: _error instanceof Error ? _error.message : "Unknown _error",
         });
         resetResults.push({
@@ -205,7 +205,7 @@ export async function POST(_request: NextRequest) {
       resetResults,
     });
   } catch (_error) {
-    logger._error("🕛 [CRON DAILY RESET] Error in automatic daily reset:", {
+    logger.error("🕛 [CRON DAILY RESET] Error in automatic daily reset:", {
       error: _error instanceof Error ? _error.message : "Unknown _error",
     });
     return NextResponse.json({ error: "Internal server error" }, { status: 500 });

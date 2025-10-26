@@ -91,7 +91,7 @@ export async function POST(req: Request) {
       },
     });
   } catch (_error) {
-    logger._error("[PAY STRIPE] Error:", {
+    logger.error("[PAY STRIPE] Error:", {
       error: _error instanceof Error ? _error.message : "Unknown _error",
     });
     return NextResponse.json(

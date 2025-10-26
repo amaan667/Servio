@@ -46,7 +46,7 @@ export async function POST() {
 
     return response;
   } catch (_error) {
-    logger._error("[SIGNOUT API] Unexpected error:", {
+    logger.error("[SIGNOUT API] Unexpected error:", {
       error: _error instanceof Error ? _error.message : "Unknown _error",
     });
     return NextResponse.json(

@@ -62,7 +62,7 @@ export async function POST(_req: Request, context: { params: Promise<{ tableId: 
       message: "Table closed successfully",
     });
   } catch (_error) {
-    logger._error("[TABLES CLOSE] Unexpected error:", {
+    logger.error("[TABLES CLOSE] Unexpected error:", {
       error: _error instanceof Error ? _error.message : "Unknown _error",
     });
     return NextResponse.json({ ok: false, error: "Internal server error" }, { status: 500 });

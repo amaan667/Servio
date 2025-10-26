@@ -156,7 +156,7 @@ export async function POST(req: NextRequest) {
       reservation: reservation,
     });
   } catch (_error) {
-    logger._error("[CREATE RESERVATION] Error:", {
+    logger.error("[CREATE RESERVATION] Error:", {
       error: _error instanceof Error ? _error.message : "Unknown _error",
     });
     return NextResponse.json(

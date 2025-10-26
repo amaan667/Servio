@@ -97,7 +97,7 @@ export async function POST(_request: NextRequest) {
       deletedItems: itemsToDelete.map((item) => item.name),
     });
   } catch (_error) {
-    logger._error("[CATEGORIES DELETE] Error in delete category API:", {
+    logger.error("[CATEGORIES DELETE] Error in delete category API:", {
       error: _error instanceof Error ? _error.message : "Unknown _error",
     });
     return NextResponse.json(

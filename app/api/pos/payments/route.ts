@@ -87,7 +87,7 @@ export async function POST(req: NextRequest) {
 
     return NextResponse.json({ order: updatedOrder });
   } catch (_error) {
-    logger._error("[POS PAYMENTS] Unexpected error:", {
+    logger.error("[POS PAYMENTS] Unexpected error:", {
       error: _error instanceof Error ? _error.message : "Unknown _error",
     });
     return NextResponse.json({ error: "Internal server error" }, { status: 500 });
@@ -165,7 +165,7 @@ export async function GET(req: NextRequest) {
 
     return NextResponse.json({ orders });
   } catch (_error) {
-    logger._error("[POS PAYMENTS] Unexpected error:", {
+    logger.error("[POS PAYMENTS] Unexpected error:", {
       error: _error instanceof Error ? _error.message : "Unknown _error",
     });
     return NextResponse.json({ error: "Internal server error" }, { status: 500 });

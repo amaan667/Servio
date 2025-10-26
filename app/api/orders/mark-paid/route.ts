@@ -74,7 +74,7 @@ export async function POST(req: Request) {
       updated_at: new Date().toISOString(),
     });
   } catch (_error) {
-    logger._error("[MARK PAID] Error marking order as paid:", {
+    logger.error("[MARK PAID] Error marking order as paid:", {
       error: _error instanceof Error ? _error.message : "Unknown _error",
     });
     return NextResponse.json(

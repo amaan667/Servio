@@ -64,7 +64,7 @@ export async function POST() {
       deletedCount: deletedInvitations?.length || 0,
     });
   } catch (_error) {
-    logger._error("[CLEANUP] Unexpected error:", {
+    logger.error("[CLEANUP] Unexpected error:", {
       error: _error instanceof Error ? _error.message : "Unknown _error",
     });
     return NextResponse.json({ error: "Internal server error" }, { status: 500 });

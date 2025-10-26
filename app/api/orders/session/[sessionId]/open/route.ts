@@ -48,7 +48,7 @@ export async function GET(_req: Request, { params }: { params: Promise<{ session
       data: null,
     });
   } catch (_error) {
-    logger._error("[ORDERS SESSION] Error:", {
+    logger.error("[ORDERS SESSION] Error:", {
       error: _error instanceof Error ? _error.message : "Unknown _error",
     });
     return NextResponse.json(

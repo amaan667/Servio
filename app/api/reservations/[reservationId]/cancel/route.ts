@@ -61,7 +61,7 @@ export async function POST(_req: Request, context: { params: Promise<{ reservati
       message: "Reservation cancelled successfully",
     });
   } catch (_error) {
-    logger._error("[RESERVATIONS CANCEL] Unexpected error:", {
+    logger.error("[RESERVATIONS CANCEL] Unexpected error:", {
       error: _error instanceof Error ? _error.message : "Unknown _error",
     });
     return NextResponse.json({ ok: false, error: "Internal server error" }, { status: 500 });

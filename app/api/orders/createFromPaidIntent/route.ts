@@ -153,7 +153,7 @@ export async function POST(req: NextRequest) {
       },
     });
   } catch (_error) {
-    logger._error("[ORDER CREATION] Error:", {
+    logger.error("[ORDER CREATION] Error:", {
       error: _error instanceof Error ? _error.message : "Unknown _error",
     });
 
@@ -257,7 +257,7 @@ async function createDemoOrder(cartId: string) {
       },
     });
   } catch (_error) {
-    logger._error("[DEMO ORDER] Error:", {
+    logger.error("[DEMO ORDER] Error:", {
       error: _error instanceof Error ? _error.message : "Unknown _error",
     });
     return NextResponse.json(

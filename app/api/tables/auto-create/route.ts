@@ -113,7 +113,7 @@ export async function POST(req: Request) {
       },
     });
   } catch (_error) {
-    logger._error("[AUTO CREATE TABLE] Error:", {
+    logger.error("[AUTO CREATE TABLE] Error:", {
       error: _error instanceof Error ? _error.message : "Unknown _error",
     });
     return NextResponse.json(

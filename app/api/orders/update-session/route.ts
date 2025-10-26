@@ -61,7 +61,7 @@ export async function POST(req: Request) {
 
     return NextResponse.json({ success: true, orderId: order.id });
   } catch (_error) {
-    logger._error("[UPDATE SESSION] Unexpected error:", {
+    logger.error("[UPDATE SESSION] Unexpected error:", {
       error: _error instanceof Error ? _error.message : "Unknown _error",
     });
     return NextResponse.json(

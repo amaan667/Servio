@@ -267,7 +267,7 @@ CREATE TRIGGER trigger_update_ai_chat_conversations_updated_at
       ],
     });
   } catch (_error) {
-    logger._error("[AI MIGRATION] Migration failed:", {
+    logger.error("[AI MIGRATION] Migration failed:", {
       error: _error instanceof Error ? _error.message : "Unknown _error",
     });
     return NextResponse.json(

@@ -316,7 +316,7 @@ Be smart about matching:
       },
     });
   } catch (_error) {
-    logger._error("[HYBRID MERGE] Unexpected error:", _error);
+    logger.error("[HYBRID MERGE] Unexpected error:", _error);
 
     return NextResponse.json(
       {

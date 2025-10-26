@@ -180,7 +180,7 @@ export async function POST(_request: NextRequest) {
       });
     }
   } catch (_error) {
-    logger._error("[SIGNUP WITH SUBSCRIPTION] Error:", {
+    logger.error("[SIGNUP WITH SUBSCRIPTION] Error:", {
       error: _error instanceof Error ? _error.message : "Unknown _error",
     });
     return NextResponse.json(

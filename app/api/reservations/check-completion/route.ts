@@ -166,7 +166,7 @@ export async function POST(req: NextRequest) {
       reservations: updatedReservations,
     });
   } catch (_error) {
-    logger._error("[CHECK COMPLETION] Error:", {
+    logger.error("[CHECK COMPLETION] Error:", {
       error: _error instanceof Error ? _error.message : "Unknown _error",
     });
     return NextResponse.json(

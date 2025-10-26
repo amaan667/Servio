@@ -66,7 +66,7 @@ export async function POST(req: Request) {
 
     return NextResponse.json({ success: true });
   } catch (_error) {
-    logger._error("Set status error:", {
+    logger.error("Set status error:", {
       error: _error instanceof Error ? _error.message : "Unknown _error",
     });
     return NextResponse.json(

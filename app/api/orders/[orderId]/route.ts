@@ -75,7 +75,7 @@ export async function GET(_req: Request, { params }: { params: Promise<{ orderId
       order: transformedOrder,
     });
   } catch (_error) {
-    logger._error("[ORDER FETCH] Error:", {
+    logger.error("[ORDER FETCH] Error:", {
       error: _error instanceof Error ? _error.message : "Unknown _error",
     });
     return NextResponse.json(

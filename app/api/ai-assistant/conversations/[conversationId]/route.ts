@@ -36,7 +36,7 @@ export async function DELETE(
     logger.debug("[AI CHAT] Conversation deleted successfully");
     return NextResponse.json({ success: true });
   } catch (_error) {
-    logger._error("[AI CHAT] Delete conversation error:", {
+    logger.error("[AI CHAT] Delete conversation error:", {
       error: _error instanceof Error ? _error.message : "Unknown _error",
     });
     return NextResponse.json(

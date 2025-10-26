@@ -76,7 +76,7 @@ export async function GET(req: Request) {
       reservations: reservations || [],
     });
   } catch (_error) {
-    logger._error("[RESERVATIONS GET] Unexpected error:", {
+    logger.error("[RESERVATIONS GET] Unexpected error:", {
       error: _error instanceof Error ? _error.message : "Unknown _error",
     });
     return NextResponse.json({ ok: false, error: "Internal server error" }, { status: 500 });
@@ -146,7 +146,7 @@ export async function POST(req: Request) {
       reservation: reservation,
     });
   } catch (_error) {
-    logger._error("[RESERVATIONS POST] Unexpected error:", {
+    logger.error("[RESERVATIONS POST] Unexpected error:", {
       error: _error instanceof Error ? _error.message : "Unknown _error",
     });
     return NextResponse.json({ ok: false, error: "Internal server error" }, { status: 500 });

@@ -101,7 +101,7 @@ export async function POST(req: Request) {
 
     return NextResponse.json({ ok: true, order: data?.[0] });
   } catch (_error) {
-    logger._error("[UPDATE STATUS] Unexpected error:", {
+    logger.error("[UPDATE STATUS] Unexpected error:", {
       error: _error instanceof Error ? _error.message : "Unknown _error",
     });
     return NextResponse.json({ ok: false, error: "Internal server error" }, { status: 500 });

@@ -115,7 +115,7 @@ export async function POST(_request: NextRequest) {
     // User doesn't own venue and has no role - access denied
     return NextResponse.json({ error: "No access to this venue" }, { status: 403 });
   } catch (_error) {
-    logger._error("[AI ASSISTANT] Fix access error:", {
+    logger.error("[AI ASSISTANT] Fix access error:", {
       error: _error instanceof Error ? _error.message : "Unknown _error",
     });
 

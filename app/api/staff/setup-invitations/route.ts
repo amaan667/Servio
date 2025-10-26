@@ -174,7 +174,7 @@ export async function POST(_request: NextRequest) {
       ],
     });
   } catch (_error) {
-    logger._error("[STAFF INVITATION SETUP] Error:", {
+    logger.error("[STAFF INVITATION SETUP] Error:", {
       error: _error instanceof Error ? _error.message : "Unknown _error",
     });
     return NextResponse.json(

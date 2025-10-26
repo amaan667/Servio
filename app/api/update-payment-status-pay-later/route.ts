@@ -190,7 +190,7 @@ export async function POST() {
       testResult,
     });
   } catch (_error) {
-    logger._error("Error:", { error: _error instanceof Error ? _error.message : "Unknown _error" });
+    logger.error("Error:", { error: _error instanceof Error ? _error.message : "Unknown _error" });
     return NextResponse.json(
       {
         success: false,

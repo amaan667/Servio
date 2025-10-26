@@ -61,7 +61,7 @@ export async function GET(req: Request) {
       activeCount: activeCount,
     });
   } catch (_error) {
-    logger._error("[FEEDBACK:Q] list exception:", {
+    logger.error("[FEEDBACK:Q] list exception:", {
       error: _error instanceof Error ? _error.message : "Unknown _error",
     });
     return NextResponse.json({ error: "Internal server error" }, { status: 500 });
@@ -169,7 +169,7 @@ export async function POST(req: Request) {
 
     return NextResponse.json({ question });
   } catch (_error) {
-    logger._error("[FEEDBACK:Q] add exception:", {
+    logger.error("[FEEDBACK:Q] add exception:", {
       error: _error instanceof Error ? _error.message : "Unknown _error",
     });
     return NextResponse.json({ error: "Internal server error" }, { status: 500 });
@@ -265,7 +265,7 @@ export async function PATCH(req: Request) {
 
     return NextResponse.json({ question });
   } catch (_error) {
-    logger._error("[FEEDBACK:Q] update exception:", {
+    logger.error("[FEEDBACK:Q] update exception:", {
       error: _error instanceof Error ? _error.message : "Unknown _error",
     });
     return NextResponse.json({ error: "Internal server error" }, { status: 500 });
@@ -310,7 +310,7 @@ export async function DELETE(req: Request) {
 
     return NextResponse.json({ success: true });
   } catch (_error) {
-    logger._error("[FEEDBACK:Q] delete exception:", {
+    logger.error("[FEEDBACK:Q] delete exception:", {
       error: _error instanceof Error ? _error.message : "Unknown _error",
     });
     return NextResponse.json({ error: "Internal server error" }, { status: 500 });

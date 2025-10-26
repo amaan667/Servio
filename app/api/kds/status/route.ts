@@ -78,7 +78,7 @@ export async function GET() {
       status,
     });
   } catch (_error) {
-    logger._error("[KDS STATUS] Error:", {
+    logger.error("[KDS STATUS] Error:", {
       error: _error instanceof Error ? _error.message : "Unknown _error",
     });
     return NextResponse.json(

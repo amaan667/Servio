@@ -45,7 +45,7 @@ export async function GET(req: NextRequest) {
 
     return NextResponse.json({ counters: counterStatus });
   } catch (_error) {
-    logger._error("[POS COUNTER SESSIONS] Unexpected error:", {
+    logger.error("[POS COUNTER SESSIONS] Unexpected error:", {
       error: _error instanceof Error ? _error.message : "Unknown _error",
     });
     return NextResponse.json({ error: "Internal server error" }, { status: 500 });
@@ -157,7 +157,7 @@ export async function POST(req: NextRequest) {
 
     return NextResponse.json(result);
   } catch (_error) {
-    logger._error("[POS COUNTER SESSIONS] Unexpected error:", {
+    logger.error("[POS COUNTER SESSIONS] Unexpected error:", {
       error: _error instanceof Error ? _error.message : "Unknown _error",
     });
     return NextResponse.json({ error: "Internal server error" }, { status: 500 });

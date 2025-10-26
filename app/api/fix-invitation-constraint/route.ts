@@ -55,7 +55,7 @@ export async function POST() {
       deletedCount: cancelledInvitations?.length || 0,
     });
   } catch (_error) {
-    logger._error("[CONSTRAINT FIX] Unexpected error:", {
+    logger.error("[CONSTRAINT FIX] Unexpected error:", {
       error: _error instanceof Error ? _error.message : "Unknown _error",
     });
     return NextResponse.json({ error: "Internal server error" }, { status: 500 });

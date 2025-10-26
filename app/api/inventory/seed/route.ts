@@ -17,7 +17,7 @@ export async function POST(_request: NextRequest) {
 
     return NextResponse.json(result);
   } catch (_error) {
-    logger._error("[INVENTORY SEED API] Error:", {
+    logger.error("[INVENTORY SEED API] Error:", {
       error: _error instanceof Error ? _error.message : "Unknown _error",
     });
     return NextResponse.json({ error: "Failed to seed inventory data" }, { status: 500 });

@@ -87,7 +87,7 @@ export async function GET(_request: NextRequest) {
       messages: transformedMessages,
     });
   } catch (_error) {
-    logger._error("[AI CHAT] Messages error:", {
+    logger.error("[AI CHAT] Messages error:", {
       error: _error instanceof Error ? _error.message : "Unknown _error",
     });
     return NextResponse.json(
@@ -304,7 +304,7 @@ export async function POST(_request: NextRequest) {
       });
     }
   } catch (_error) {
-    logger._error("[AI CHAT] Create message error:", {
+    logger.error("[AI CHAT] Create message error:", {
       error: _error instanceof Error ? _error.message : "Unknown _error",
     });
 

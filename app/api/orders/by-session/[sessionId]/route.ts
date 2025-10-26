@@ -88,7 +88,7 @@ export async function GET(_req: Request, { params }: { params: Promise<{ session
       order: transformedOrder,
     });
   } catch (_error) {
-    logger._error("[ORDER SESSION LOOKUP DEBUG] Unexpected error:", {
+    logger.error("[ORDER SESSION LOOKUP DEBUG] Unexpected error:", {
       error: _error instanceof Error ? _error.message : "Unknown _error",
     });
     return NextResponse.json(

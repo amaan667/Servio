@@ -149,7 +149,7 @@ export async function POST(req: NextRequest) {
       description: mergeScenario.description,
     });
   } catch (_error) {
-    logger._error("[ENHANCED MERGE] Unexpected error:", {
+    logger.error("[ENHANCED MERGE] Unexpected error:", {
       error: _error instanceof Error ? _error.message : "Unknown _error",
     });
     return NextResponse.json({ error: "Internal server error" }, { status: 500 });
@@ -215,7 +215,7 @@ async function mergeFreeTables(
       },
     };
   } catch (_error) {
-    logger._error("[ENHANCED MERGE] Error merging free tables:", {
+    logger.error("[ENHANCED MERGE] Error merging free tables:", {
       error: _error instanceof Error ? _error.message : "Unknown _error",
     });
     return { error: "Failed to merge free tables" };
@@ -285,7 +285,7 @@ async function expandOccupiedTable(
       },
     };
   } catch (_error) {
-    logger._error("[ENHANCED MERGE] Error expanding occupied table:", {
+    logger.error("[ENHANCED MERGE] Error expanding occupied table:", {
       error: _error instanceof Error ? _error.message : "Unknown _error",
     });
     return { error: "Failed to expand occupied table" };
@@ -342,7 +342,7 @@ async function expandReservedTable(
       },
     };
   } catch (_error) {
-    logger._error("[ENHANCED MERGE] Error expanding reserved table:", {
+    logger.error("[ENHANCED MERGE] Error expanding reserved table:", {
       error: _error instanceof Error ? _error.message : "Unknown _error",
     });
     return { error: "Failed to expand reserved table" };
@@ -448,7 +448,7 @@ async function mergeOccupiedTables(
       },
     };
   } catch (_error) {
-    logger._error("[ENHANCED MERGE] Error merging occupied tables:", {
+    logger.error("[ENHANCED MERGE] Error merging occupied tables:", {
       error: _error instanceof Error ? _error.message : "Unknown _error",
     });
     return { error: "Failed to merge occupied tables" };
@@ -501,7 +501,7 @@ async function mergeReservedTables(
       },
     };
   } catch (_error) {
-    logger._error("[ENHANCED MERGE] Error merging reserved tables:", {
+    logger.error("[ENHANCED MERGE] Error merging reserved tables:", {
       error: _error instanceof Error ? _error.message : "Unknown _error",
     });
     return { error: "Failed to merge reserved tables" };

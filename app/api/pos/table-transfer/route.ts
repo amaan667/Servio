@@ -163,7 +163,7 @@ export async function POST(req: NextRequest) {
 
     return NextResponse.json(result);
   } catch (_error) {
-    logger._error("[POS TABLE TRANSFER] Unexpected error:", {
+    logger.error("[POS TABLE TRANSFER] Unexpected error:", {
       error: _error instanceof Error ? _error.message : "Unknown _error",
     });
     return NextResponse.json({ error: "Internal server error" }, { status: 500 });

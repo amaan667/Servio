@@ -87,7 +87,7 @@ export async function POST(_request: NextRequest) {
       message: "All tables and sessions force cleared successfully",
     });
   } catch (_error) {
-    logger._error("[FORCE CLEAR ALL] Error in force clear all tables API:", {
+    logger.error("[FORCE CLEAR ALL] Error in force clear all tables API:", {
       error: _error instanceof Error ? _error.message : "Unknown _error",
     });
     return NextResponse.json(

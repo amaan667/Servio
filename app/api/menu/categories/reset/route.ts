@@ -143,7 +143,7 @@ export async function POST(_request: NextRequest) {
         menuItems?.filter((item) => manuallyAddedCategories.includes(item.category)).length || 0,
     });
   } catch (_error) {
-    logger._error("[CATEGORIES RESET] Error in reset categories API:", {
+    logger.error("[CATEGORIES RESET] Error in reset categories API:", {
       error: _error instanceof Error ? _error.message : "Unknown _error",
     });
     return NextResponse.json(

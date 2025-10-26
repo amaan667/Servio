@@ -66,7 +66,7 @@ export async function POST(req: Request, context: { params: Promise<{ tableId: s
       message: "Party seated successfully",
     });
   } catch (_error) {
-    logger._error("[TABLES SEAT] Unexpected error:", {
+    logger.error("[TABLES SEAT] Unexpected error:", {
       error: _error instanceof Error ? _error.message : "Unknown _error",
     });
     return NextResponse.json({ ok: false, error: "Internal server error" }, { status: 500 });

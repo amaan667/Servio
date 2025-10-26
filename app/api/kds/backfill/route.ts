@@ -190,7 +190,7 @@ export async function POST(req: Request) {
         ordersProcessed++;
         logger.debug(`[KDS BACKFILL] Processed order ${order.id} with ${items.length} items`);
       } catch (_error) {
-        logger._error(`[KDS BACKFILL] Error processing order ${order.id}:`, {
+        logger.error(`[KDS BACKFILL] Error processing order ${order.id}:`, {
           error: _error instanceof Error ? _error.message : "Unknown _error",
         });
         errors.push(
@@ -213,7 +213,7 @@ export async function POST(req: Request) {
       errors: errors.length > 0 ? errors : undefined,
     });
   } catch (_error) {
-    logger._error("[KDS BACKFILL] Unexpected error:", {
+    logger.error("[KDS BACKFILL] Unexpected error:", {
       error: _error instanceof Error ? _error.message : "Unknown _error",
     });
     return NextResponse.json(

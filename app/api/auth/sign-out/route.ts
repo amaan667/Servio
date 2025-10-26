@@ -23,7 +23,7 @@ export async function POST() {
 
     return response;
   } catch (_error) {
-    logger._error("[AUTH] Sign-out error:", {
+    logger.error("[AUTH] Sign-out error:", {
       error: _error instanceof Error ? _error.message : "Unknown _error",
     });
     return NextResponse.json({ ok: true }); // Always return success to avoid client errors

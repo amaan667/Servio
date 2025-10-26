@@ -135,7 +135,7 @@ export async function POST(_request: NextRequest) {
       message: "Invitation cancelled successfully",
     });
   } catch (_error) {
-    logger._error("[INVITATION API] Unexpected error:", {
+    logger.error("[INVITATION API] Unexpected error:", {
       error: _error instanceof Error ? _error.message : "Unknown _error",
     });
     return NextResponse.json({ error: "Internal server error" }, { status: 500 });

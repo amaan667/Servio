@@ -110,7 +110,7 @@ export async function PUT(
       reservation: updatedReservation,
     });
   } catch (_error) {
-    logger._error("[MODIFY RESERVATION] Error:", {
+    logger.error("[MODIFY RESERVATION] Error:", {
       error: _error instanceof Error ? _error.message : "Unknown _error",
     });
     return NextResponse.json(

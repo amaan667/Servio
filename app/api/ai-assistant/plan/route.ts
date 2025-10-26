@@ -121,7 +121,7 @@ export async function POST(_request: NextRequest) {
       modelUsed: plan.modelUsed, // Return model info to client
     });
   } catch (_error) {
-    logger._error("[AI ASSISTANT] Planning error:", {
+    logger.error("[AI ASSISTANT] Planning error:", {
       error: _error instanceof Error ? _error.message : "Unknown _error",
     });
 

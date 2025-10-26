@@ -80,7 +80,7 @@ export async function GET(_req: Request) {
       order: transformedOrder,
     });
   } catch (_error) {
-    logger._error("[RECENT PAID] Error:", {
+    logger.error("[RECENT PAID] Error:", {
       error: _error instanceof Error ? _error.message : "Unknown _error",
     });
     return NextResponse.json(

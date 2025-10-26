@@ -41,7 +41,7 @@ export async function POST(req: NextRequest) {
 
     return NextResponse.json({ success: true, data });
   } catch (_error) {
-    logger._error("[UPDATE PAYMENT STATUS] Error:", {
+    logger.error("[UPDATE PAYMENT STATUS] Error:", {
       error: _error instanceof Error ? _error.message : "Unknown _error",
     });
     return NextResponse.json(

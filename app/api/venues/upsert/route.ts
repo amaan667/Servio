@@ -71,7 +71,7 @@ export async function POST(req: Request) {
       return NextResponse.json({ ok: true, venue: data });
     }
   } catch (_error) {
-    logger._error("[VENUES UPSERT] Error:", {
+    logger.error("[VENUES UPSERT] Error:", {
       error: _error instanceof Error ? _error.message : "Unknown _error",
     });
     return NextResponse.json({ ok: false, error: _error.message }, { status: 500 });

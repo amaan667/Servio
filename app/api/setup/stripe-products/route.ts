@@ -56,7 +56,7 @@ export async function POST() {
           `[STRIPE SETUP] Created ${product.tier}: Product ${stripeProduct.id}, Price ${price.id}`
         );
       } catch (_error) {
-        logger._error(`[STRIPE ERROR] Failed to create ${product.tier}:`, {
+        logger.error(`[STRIPE ERROR] Failed to create ${product.tier}:`, {
           error: _error instanceof Error ? _error.message : "Unknown _error",
         });
         results.push({
@@ -73,7 +73,7 @@ export async function POST() {
       results,
     });
   } catch (_error) {
-    logger._error("Stripe products setup error:", {
+    logger.error("Stripe products setup error:", {
       error: _error instanceof Error ? _error.message : "Unknown _error",
     });
     return NextResponse.json(

@@ -53,7 +53,7 @@ export async function GET(
       status: organization?.subscription_status || "active",
     });
   } catch (_error) {
-    logger._error("[VENUE TIER API] Unexpected error:", {
+    logger.error("[VENUE TIER API] Unexpected error:", {
       error: _error instanceof Error ? _error.message : "Unknown _error",
     });
     return NextResponse.json(

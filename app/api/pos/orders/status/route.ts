@@ -65,7 +65,7 @@ export async function PATCH(req: NextRequest) {
 
     return NextResponse.json({ order: updatedOrder });
   } catch (_error) {
-    logger._error("[POS ORDERS STATUS] Unexpected error:", {
+    logger.error("[POS ORDERS STATUS] Unexpected error:", {
       error: _error instanceof Error ? _error.message : "Unknown _error",
     });
     return NextResponse.json({ error: "Internal server error" }, { status: 500 });

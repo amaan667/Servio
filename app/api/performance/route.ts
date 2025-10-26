@@ -49,7 +49,7 @@ export async function POST(_request: NextRequest) {
 
     return NextResponse.json({ success: true });
   } catch (_error) {
-    logger._error("[PERFORMANCE] Error processing metric:", _error as Record<string, unknown>);
+    logger.error("[PERFORMANCE] Error processing metric:", _error as Record<string, unknown>);
     return NextResponse.json({ error: "Failed to process performance metric" }, { status: 500 });
   }
 }

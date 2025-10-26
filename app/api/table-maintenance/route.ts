@@ -29,7 +29,7 @@ export async function POST(_req: NextRequest) {
       timestamp: new Date().toISOString(),
     });
   } catch (_error) {
-    logger._error("[TABLE MAINTENANCE] Unexpected error:", {
+    logger.error("[TABLE MAINTENANCE] Unexpected error:", {
       error: _error instanceof Error ? _error.message : "Unknown _error",
     });
     return NextResponse.json({ error: "Internal server error" }, { status: 500 });
@@ -80,7 +80,7 @@ export async function GET(_req: NextRequest) {
       timestamp: new Date().toISOString(),
     });
   } catch (_error) {
-    logger._error("[TABLE MAINTENANCE] Unexpected error:", {
+    logger.error("[TABLE MAINTENANCE] Unexpected error:", {
       error: _error instanceof Error ? _error.message : "Unknown _error",
     });
     return NextResponse.json({ error: "Internal server error" }, { status: 500 });

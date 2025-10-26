@@ -40,7 +40,7 @@ export async function PUT(req: NextRequest, context: { params: Promise<{ id: str
 
     return NextResponse.json({ session });
   } catch (_error) {
-    logger._error("[TABLE SESSIONS API] Unexpected error:", {
+    logger.error("[TABLE SESSIONS API] Unexpected error:", {
       error: _error instanceof Error ? _error.message : "Unknown _error",
     });
     return NextResponse.json({ error: "Internal server error" }, { status: 500 });
@@ -65,7 +65,7 @@ export async function DELETE(req: NextRequest, context: { params: Promise<{ id: 
 
     return NextResponse.json({ success: true });
   } catch (_error) {
-    logger._error("[TABLE SESSIONS API] Unexpected error:", {
+    logger.error("[TABLE SESSIONS API] Unexpected error:", {
       error: _error instanceof Error ? _error.message : "Unknown _error",
     });
     return NextResponse.json({ error: "Internal server error" }, { status: 500 });

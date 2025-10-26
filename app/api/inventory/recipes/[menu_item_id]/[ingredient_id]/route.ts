@@ -27,7 +27,7 @@ export async function DELETE(
 
     return NextResponse.json({ success: true });
   } catch (_error) {
-    logger._error("[INVENTORY API] Unexpected error:", {
+    logger.error("[INVENTORY API] Unexpected error:", {
       error: _error instanceof Error ? _error.message : "Unknown _error",
     });
     return NextResponse.json({ error: "Internal server error" }, { status: 500 });

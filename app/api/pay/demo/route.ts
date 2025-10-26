@@ -72,7 +72,7 @@ export async function POST(req: Request) {
       },
     });
   } catch (_error) {
-    logger._error("[PAY DEMO] Error:", {
+    logger.error("[PAY DEMO] Error:", {
       error: _error instanceof Error ? _error.message : "Unknown _error",
     });
     return NextResponse.json(

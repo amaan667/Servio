@@ -194,7 +194,7 @@ export async function handleCloseTable(supabase: SupabaseClient, table_id: strin
       },
     });
   } catch (_error) {
-    logger._error("[TABLE ACTIONS] Unexpected _error closing table:", {
+    logger.error("[TABLE ACTIONS] Unexpected _error closing table:", {
       error: _error instanceof Error ? _error.message : "Unknown _error",
     });
     return NextResponse.json({ error: "Internal server error" }, { status: 500 });
@@ -401,7 +401,7 @@ export async function handleReserveTable(
 
     return NextResponse.json({ success: true });
   } catch (_error) {
-    logger._error("[TABLE ACTIONS] Unexpected _error in handleReserveTable:", {
+    logger.error("[TABLE ACTIONS] Unexpected _error in handleReserveTable:", {
       error: _error instanceof Error ? _error.message : "Unknown _error",
     });
     return NextResponse.json({ error: "Internal server error in reservation" }, { status: 500 });
@@ -580,7 +580,7 @@ export async function handleMergeTable(
       data: data,
     });
   } catch (_error) {
-    logger._error("[TABLE ACTIONS] Unexpected _error merging tables:", {
+    logger.error("[TABLE ACTIONS] Unexpected _error merging tables:", {
       error: _error instanceof Error ? _error.message : "Unknown _error",
     });
     return NextResponse.json({ error: "Internal server error" }, { status: 500 });
@@ -658,7 +658,7 @@ export async function handleUnmergeTable(supabase: unknown, table_id: string) {
 
     return NextResponse.json({ error: "No merged table found for this table" }, { status: 404 });
   } catch (_error) {
-    logger._error("[TABLE ACTIONS] Unexpected _error unmerging table:", {
+    logger.error("[TABLE ACTIONS] Unexpected _error unmerging table:", {
       error: _error instanceof Error ? _error.message : "Unknown _error",
     });
     return NextResponse.json({ error: "Internal server error" }, { status: 500 });
@@ -740,7 +740,7 @@ export async function handleCancelReservation(
       },
     });
   } catch (_error) {
-    logger._error("[TABLE ACTIONS] Unexpected _error cancelling reservation:", {
+    logger.error("[TABLE ACTIONS] Unexpected _error cancelling reservation:", {
       error: _error instanceof Error ? _error.message : "Unknown _error",
     });
     return NextResponse.json({ error: "Internal server error" }, { status: 500 });

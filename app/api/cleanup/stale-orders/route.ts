@@ -138,7 +138,7 @@ export async function POST(req: NextRequest) {
       })),
     });
   } catch (_error) {
-    logger._error("[STALE ORDERS CLEANUP] Unexpected error:", {
+    logger.error("[STALE ORDERS CLEANUP] Unexpected error:", {
       error: _error instanceof Error ? _error.message : "Unknown _error",
     });
     return NextResponse.json({ error: "Internal server error" }, { status: 500 });

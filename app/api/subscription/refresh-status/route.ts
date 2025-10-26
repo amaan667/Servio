@@ -141,7 +141,7 @@ export async function POST(_request: NextRequest) {
       });
     }
   } catch (_error) {
-    logger._error("[SUBSCRIPTION REFRESH] Error:", {
+    logger.error("[SUBSCRIPTION REFRESH] Error:", {
       error: _error instanceof Error ? _error.message : "Unknown _error",
     });
     return NextResponse.json(

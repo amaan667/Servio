@@ -94,7 +94,7 @@ export async function POST(req: NextRequest) {
       paymentIntentId: paymentIntent.id,
     });
   } catch (_error) {
-    logger._error("[PAYMENT INTENT] Error:", {
+    logger.error("[PAYMENT INTENT] Error:", {
       error: _error instanceof Error ? _error.message : "Unknown _error",
     });
 

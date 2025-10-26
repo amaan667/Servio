@@ -127,7 +127,7 @@ export async function POST(_req: Request) {
       venues_processed: venues?.length || 0,
     });
   } catch (_error) {
-    logger._error("[SETUP KDS] Unexpected error:", {
+    logger.error("[SETUP KDS] Unexpected error:", {
       error: _error instanceof Error ? _error.message : "Unknown _error",
     });
     return NextResponse.json(

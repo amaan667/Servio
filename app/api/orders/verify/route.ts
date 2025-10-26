@@ -108,7 +108,7 @@ export async function GET(req: Request) {
       updated: true,
     });
   } catch (_error) {
-    logger._error("[VERIFY] Error:", {
+    logger.error("[VERIFY] Error:", {
       error: _error instanceof Error ? _error.message : "Unknown _error",
     });
     return NextResponse.json(

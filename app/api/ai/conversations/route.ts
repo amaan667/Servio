@@ -74,7 +74,7 @@ export async function GET(_request: NextRequest) {
       nextCursor: conversations?.length === limit ? (parseInt(cursor) + limit).toString() : null,
     });
   } catch (_error) {
-    logger._error("[AI CHAT] Conversations error:", {
+    logger.error("[AI CHAT] Conversations error:", {
       error: _error instanceof Error ? _error.message : "Unknown _error",
     });
     return NextResponse.json(
@@ -150,7 +150,7 @@ export async function POST(_request: NextRequest) {
       conversation: transformedConversation,
     });
   } catch (_error) {
-    logger._error("[AI CHAT] Create conversation error:", {
+    logger.error("[AI CHAT] Create conversation error:", {
       error: _error instanceof Error ? _error.message : "Unknown _error",
     });
     return NextResponse.json(
@@ -237,7 +237,7 @@ export async function PATCH(_request: NextRequest) {
       conversation: transformedConversation,
     });
   } catch (_error) {
-    logger._error("[AI CHAT] Update conversation error:", {
+    logger.error("[AI CHAT] Update conversation error:", {
       error: _error instanceof Error ? _error.message : "Unknown _error",
     });
     return NextResponse.json(

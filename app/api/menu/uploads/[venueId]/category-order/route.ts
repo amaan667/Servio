@@ -41,7 +41,7 @@ export async function GET(_req: NextRequest, { params }: { params: Promise<{ ven
       categories: categories || null,
     });
   } catch (_error) {
-    logger._error("[CATEGORY ORDER API] Unexpected error:", {
+    logger.error("[CATEGORY ORDER API] Unexpected error:", {
       error: _error instanceof Error ? _error.message : "Unknown _error",
     });
     return NextResponse.json({ error: "Internal server error" }, { status: 500 });

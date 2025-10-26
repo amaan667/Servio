@@ -70,7 +70,7 @@ export async function POST(req: Request, context: { params: Promise<{ reservatio
       message: "Reservation assigned successfully",
     });
   } catch (_error) {
-    logger._error("[RESERVATIONS ASSIGN] Unexpected error:", {
+    logger.error("[RESERVATIONS ASSIGN] Unexpected error:", {
       error: _error instanceof Error ? _error.message : "Unknown _error",
     });
     return NextResponse.json({ ok: false, error: "Internal server error" }, { status: 500 });

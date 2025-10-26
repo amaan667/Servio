@@ -59,7 +59,7 @@ export async function POST(_request: NextRequest) {
       details: results,
     });
   } catch (_error) {
-    logger._error("[AUTH DEBUG] Clear menu error:", {
+    logger.error("[AUTH DEBUG] Clear menu error:", {
       error: _error instanceof Error ? _error.message : "Unknown _error",
     });
     return NextResponse.json(
