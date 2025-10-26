@@ -20,13 +20,7 @@ export interface DashboardStats {
   unpaid: number;
 }
 
-export function useDashboardData(
-  venueId: string,
-  venueTz: string,
-  initialVenue: unknown,
-  initialCounts?: DashboardCounts,
-  initialStats?: DashboardStats
-) {
+export function useDashboardData(venueId: string, venueTz: string, initialVenue: unknown) {
   // Cache dashboard data to prevent flicker when navigating back
   const getCachedCounts = () => {
     if (typeof window === "undefined") return null;
@@ -41,28 +35,25 @@ export function useDashboardData(
   };
 
   const [venue, setVenue] = useState<unknown>(initialVenue);
-  const [loading, setLoading] = useState(false); // Start with false to prevent flicker
+  const [loading, setLoading] = useState(true); // Start with true, will set to false after first fetch
 
-  // If we have initial data from server, use it immediately (no 0 flicker!)
-  // Otherwise use cached data, or null (will load immediately)
+  // Use cached data to show immediately while fetching
   const [counts, setCounts] = useState<DashboardCounts>(
-    initialCounts ||
-      getCachedCounts() || {
-        live_count: 0,
-        earlier_today_count: 0,
-        history_count: 0,
-        today_orders_count: 0,
-        active_tables_count: 0,
-        tables_set_up: 0,
-        tables_in_use: 0,
-        tables_reserved_now: 0,
-      }
+    getCachedCounts() || {
+      live_count: 0,
+      earlier_today_count: 0,
+      history_count: 0,
+      today_orders_count: 0,
+      active_tables_count: 0,
+      tables_set_up: 0,
+      tables_in_use: 0,
+      tables_reserved_now: 0,
+    }
   );
 
-  // Start with cached stats OR initial stats from server (no 0 flicker!)
-  const initialStatsValue = initialStats || getCachedStats();
+  // Use cached stats to show immediately while fetching
   const [stats, setStats] = useState<DashboardStats>(
-    initialStatsValue || { revenue: 0, menuItems: 0, unpaid: 0 }
+    getCachedStats() || { revenue: 0, menuItems: 0, unpaid: 0 }
   );
   const [todayWindow, setTodayWindow] = useState<unknown>(null);
   const [error, setError] = useState<string | null>(null);
@@ -176,16 +167,16 @@ export function useDashboardData(
     const window = todayWindowForTZ(venueTz);
     setTodayWindow(window);
 
-    // NEVER fetch on initial load - ALWAYS use server-side data
-    // This prevents ALL flickering
-    console.info("[DASHBOARD] Using server-side initial data exclusively");
-    console.info("[DASHBOARD] Has initial counts:", !!initialCounts);
-    console.info("[DASHBOARD] Has initial stats:", !!initialStats);
-    console.info("[DASHBOARD] Counts:", initialCounts);
-    console.info("[DASHBOARD] Stats:", initialStats);
+    // Fetch data immediately on mount (use cached data to prevent flicker)
+    const fetchData = async () => {
+      console.info("[DASHBOARD] Fetching counts and stats immediately...");
+      await refreshCounts();
+      await loadStats((venue as { venue_id: string }).venue_id, window);
+      setLoading(false);
+      console.info("[DASHBOARD] Data loaded successfully");
+    };
 
-    // Only mark as loaded, never fetch
-    setLoading(false);
+    fetchData();
 
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [venue]);
