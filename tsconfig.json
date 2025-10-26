@@ -4,7 +4,7 @@
     "allowJs": true,
     "target": "es6",
     "skipLibCheck": true,
-    "strict": false, // Too strict for real-world codebases
+    "strict": false, // Gradually enabling - see TYPE_SAFETY_PLAN.md
     "noEmit": true,
     "esModuleInterop": true,
     "module": "esnext",
@@ -13,18 +13,18 @@
     "isolatedModules": true,
     "jsx": "preserve",
     "incremental": true,
-    "noUnusedLocals": false, // ESLint handles this better
-    "noUnusedParameters": false, // ESLint handles this better
-    "noImplicitReturns": false, // Too strict for real-world code
-    "noFallthroughCasesInSwitch": false, // Intentional fallthrough exists
-    "noUncheckedIndexedAccess": false, // Too strict - causes many false positives
-    "strictNullChecks": false, // Too strict - causes 600+ errors
-    "strictFunctionTypes": false, // Too strict for callbacks
-    "strictBindCallApply": false, // Rarely needed
-    "strictPropertyInitialization": false, // Conflicts with React patterns
-    "noImplicitThis": true, // Keep this - prevents bugs
-    "alwaysStrict": true, // Keep this - good practice
-    "noImplicitAny": false, // Gradual typing approach - too strict for migration
+    "noUnusedLocals": false, // ESLint handles this - will enable gradually
+    "noUnusedParameters": false, // ESLint handles this - will enable gradually
+    "noImplicitReturns": false, // Will enable gradually
+    "noFallthroughCasesInSwitch": true, // Enabled - catches real bugs
+    "noUncheckedIndexedAccess": false, // Gradually enable - can cause many changes
+    "strictNullChecks": false, // Will enable gradually - requires fixing null checks
+    "strictFunctionTypes": false, // Will enable gradually
+    "strictBindCallApply": false, // Will enable gradually
+    "strictPropertyInitialization": false, // Conflicts with React patterns - keep disabled
+    "noImplicitThis": true, // Enabled - prevents bugs
+    "alwaysStrict": true, // Enabled - good practice
+    "noImplicitAny": false, // Will enable gradually - requires fixing implicit any
     "plugins": [
       {
         "name": "next"

@@ -4,6 +4,46 @@ import { apiLogger, logger } from "@/lib/logger";
 
 export const runtime = "nodejs";
 
+/**
+ * @swagger
+ * /api/orders:
+ *   get:
+ *     summary: Get orders for a venue
+ *     tags: [Orders]
+ *     parameters:
+ *       - in: query
+ *         name: venueId
+ *         required: true
+ *         schema:
+ *           type: string
+ *         description: Venue ID
+ *       - in: query
+ *         name: status
+ *         required: false
+ *         schema:
+ *           type: string
+ *         description: Filter by order status
+ *     responses:
+ *       200:
+ *         description: List of orders
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 ok:
+ *                   type: boolean
+ *                 orders:
+ *                   type: array
+ *                   items:
+ *                     $ref: '#/components/schemas/Order'
+ *       400:
+ *         description: Bad request
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/Error'
+ */
 // GET handler for orders
 export async function GET(req: Request) {
   try {
@@ -215,6 +255,64 @@ async function createKDSTickets(
   }
 }
 
+/**
+ * @swagger
+ * /api/orders:
+ *   post:
+ *     summary: Create a new order
+ *     tags: [Orders]
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             required:
+ *               - venue_id
+ *               - customer_name
+ *               - customer_phone
+ *               - items
+ *               - total_amount
+ *             properties:
+ *               venue_id:
+ *                 type: string
+ *               customer_name:
+ *                 type: string
+ *               customer_phone:
+ *                 type: string
+ *               table_number:
+ *                 type: number
+ *               items:
+ *                 type: array
+ *                 items:
+ *                   $ref: '#/components/schemas/OrderItem'
+ *               total_amount:
+ *                 type: number
+ *               order_status:
+ *                 type: string
+ *                 enum: [PLACED, ACCEPTED, IN_PREP, READY, SERVING, COMPLETED, CANCELLED]
+ *               payment_status:
+ *                 type: string
+ *                 enum: [UNPAID, PAID, TILL, REFUNDED]
+ *     responses:
+ *       200:
+ *         description: Order created successfully
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 ok:
+ *                   type: boolean
+ *                 order:
+ *                   $ref: '#/components/schemas/Order'
+ *       400:
+ *         description: Bad request
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/Error'
+ */
 export async function POST(req: Request) {
   const requestId = Math.random().toString(36).substring(7);
   const startTime = Date.now();
