@@ -65,7 +65,7 @@ export function useDailyReset(venueId: string) {
     if (venueId) {
       checkAndReset();
     }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
+     
   }, [venueId]);
 
   return {

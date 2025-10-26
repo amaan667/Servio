@@ -37,7 +37,7 @@ export function useQRCodeManagement(venueId: string) {
     if (typeof window !== "undefined" && venueId) {
       loadTablesAndCounters();
     }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
+     
   }, [venueId]);
 
   const loadTablesAndCounters = async () => {

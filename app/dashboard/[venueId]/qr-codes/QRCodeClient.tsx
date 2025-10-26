@@ -53,7 +53,7 @@ export default function QRCodeClient({
         qrManagement.generateQRForName(tableName, "table");
       }, 100);
     }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
+     
   }, [searchParams]);
 
   // Generate single QR code

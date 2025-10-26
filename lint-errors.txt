@@ -1,0 +1,920 @@
+
+/Users/amaan/Downloads/servio-mvp-cleaned/__tests__/payments/stripe-checkout.test.ts
+  2:10  error  'NextRequest' is defined but never used. Allowed unused vars must match /^_/u   @typescript-eslint/no-unused-vars
+  2:23  error  'NextResponse' is defined but never used. Allowed unused vars must match /^_/u  @typescript-eslint/no-unused-vars
+
+/Users/amaan/Downloads/servio-mvp-cleaned/app/api/ai-assistant/fix-access/route.ts
+  120:19  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  122:63  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+
+/Users/amaan/Downloads/servio-mvp-cleaned/app/api/ai-assistant/plan/route.ts
+   98:83  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  129:19  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  131:63  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+
+/Users/amaan/Downloads/servio-mvp-cleaned/app/api/ai/messages/route.ts
+  317:19  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  319:61  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+
+/Users/amaan/Downloads/servio-mvp-cleaned/app/api/cart/store/route.ts
+  6:10  error  'getSupabaseClient' is defined but never used. Allowed unused vars must match /^_/u  @typescript-eslint/no-unused-vars
+
+/Users/amaan/Downloads/servio-mvp-cleaned/app/api/catalog/replace/route.ts
+  427:46  error  'insertedItems' is assigned a value but never used. Allowed unused vars must match /^_/u     @typescript-eslint/no-unused-vars
+  437:49  error  'insertedHotspots' is assigned a value but never used. Allowed unused vars must match /^_/u  @typescript-eslint/no-unused-vars
+
+/Users/amaan/Downloads/servio-mvp-cleaned/app/api/catalog/reprocess-with-url/route.ts
+  247:11  error  'duration' is assigned a value but never used. Allowed unused vars must match /^_/u  @typescript-eslint/no-unused-vars
+  258:11  error  'duration' is assigned a value but never used. Allowed unused vars must match /^_/u  @typescript-eslint/no-unused-vars
+
+/Users/amaan/Downloads/servio-mvp-cleaned/app/api/dashboard/orders/route.ts
+  96:35  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+
+/Users/amaan/Downloads/servio-mvp-cleaned/app/api/kds/tickets/route.ts
+  168:11  error  'duration' is assigned a value but never used. Allowed unused vars must match /^_/u  @typescript-eslint/no-unused-vars
+  175:11  error  'duration' is assigned a value but never used. Allowed unused vars must match /^_/u  @typescript-eslint/no-unused-vars
+
+/Users/amaan/Downloads/servio-mvp-cleaned/app/api/live-orders/route.ts
+  71:35  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+
+/Users/amaan/Downloads/servio-mvp-cleaned/app/api/menu/[venueId]/route.ts
+   37:13  error  'duration' is assigned a value but never used. Allowed unused vars must match /^_/u  @typescript-eslint/no-unused-vars
+  112:11  error  'duration' is assigned a value but never used. Allowed unused vars must match /^_/u  @typescript-eslint/no-unused-vars
+  117:11  error  'duration' is assigned a value but never used. Allowed unused vars must match /^_/u  @typescript-eslint/no-unused-vars
+
+/Users/amaan/Downloads/servio-mvp-cleaned/app/api/menu/hybrid-merge/route.ts
+  212:14  error  'parseError' is defined but never used. Allowed unused caught errors must match /^_/u  @typescript-eslint/no-unused-vars
+
+/Users/amaan/Downloads/servio-mvp-cleaned/app/api/menu/upload/route.ts
+  8:9  error  'url' is assigned a value but never used. Allowed unused vars must match /^_/u  @typescript-eslint/no-unused-vars
+  9:9  error  'key' is assigned a value but never used. Allowed unused vars must match /^_/u  @typescript-eslint/no-unused-vars
+
+/Users/amaan/Downloads/servio-mvp-cleaned/app/api/orders/by-session/route.ts
+  45:46  error  'recentError' is assigned a value but never used. Allowed unused vars must match /^_/u  @typescript-eslint/no-unused-vars
+
+/Users/amaan/Downloads/servio-mvp-cleaned/app/api/orders/createFromPaidIntent/route.ts
+   3:10  error  'ENV' is defined but never used. Allowed unused vars must match /^_/u                    @typescript-eslint/no-unused-vars
+  68:7   error  'item_count' is assigned a value but never used. Allowed unused vars must match /^_/u    @typescript-eslint/no-unused-vars
+  70:7   error  'total_amount' is assigned a value but never used. Allowed unused vars must match /^_/u  @typescript-eslint/no-unused-vars
+
+/Users/amaan/Downloads/servio-mvp-cleaned/app/api/orders/session/[sessionId]/open/route.ts
+  23:11  error  'supabase' is assigned a value but never used. Allowed unused vars must match /^_/u  @typescript-eslint/no-unused-vars
+  29:15  error  'name' is defined but never used. Allowed unused args must match /^_/u               @typescript-eslint/no-unused-vars
+  29:29  error  'value' is defined but never used. Allowed unused args must match /^_/u              @typescript-eslint/no-unused-vars
+  29:44  error  'options' is defined but never used. Allowed unused args must match /^_/u            @typescript-eslint/no-unused-vars
+  30:18  error  'name' is defined but never used. Allowed unused args must match /^_/u               @typescript-eslint/no-unused-vars
+  30:32  error  'options' is defined but never used. Allowed unused args must match /^_/u            @typescript-eslint/no-unused-vars
+  38:11  error  'order' is assigned a value but never used. Allowed unused vars must match /^_/u     @typescript-eslint/no-unused-vars
+
+/Users/amaan/Downloads/servio-mvp-cleaned/app/api/orders/verify/route.ts
+  2:8  error  'Stripe' is defined but never used. Allowed unused vars must match /^_/u  @typescript-eslint/no-unused-vars
+
+/Users/amaan/Downloads/servio-mvp-cleaned/app/api/pay/demo/route.ts
+  27:15  error  'name' is defined but never used. Allowed unused args must match /^_/u     @typescript-eslint/no-unused-vars
+  27:29  error  'value' is defined but never used. Allowed unused args must match /^_/u    @typescript-eslint/no-unused-vars
+  27:44  error  'options' is defined but never used. Allowed unused args must match /^_/u  @typescript-eslint/no-unused-vars
+  28:18  error  'name' is defined but never used. Allowed unused args must match /^_/u     @typescript-eslint/no-unused-vars
+  28:32  error  'options' is defined but never used. Allowed unused args must match /^_/u  @typescript-eslint/no-unused-vars
+
+/Users/amaan/Downloads/servio-mvp-cleaned/app/api/pay/later/route.ts
+  34:15  error  'name' is defined but never used. Allowed unused args must match /^_/u     @typescript-eslint/no-unused-vars
+  34:29  error  'value' is defined but never used. Allowed unused args must match /^_/u    @typescript-eslint/no-unused-vars
+  34:44  error  'options' is defined but never used. Allowed unused args must match /^_/u  @typescript-eslint/no-unused-vars
+  35:18  error  'name' is defined but never used. Allowed unused args must match /^_/u     @typescript-eslint/no-unused-vars
+  35:32  error  'options' is defined but never used. Allowed unused args must match /^_/u  @typescript-eslint/no-unused-vars
+
+/Users/amaan/Downloads/servio-mvp-cleaned/app/api/pay/stripe/route.ts
+  27:15  error  'name' is defined but never used. Allowed unused args must match /^_/u     @typescript-eslint/no-unused-vars
+  27:29  error  'value' is defined but never used. Allowed unused args must match /^_/u    @typescript-eslint/no-unused-vars
+  27:44  error  'options' is defined but never used. Allowed unused args must match /^_/u  @typescript-eslint/no-unused-vars
+  28:18  error  'name' is defined but never used. Allowed unused args must match /^_/u     @typescript-eslint/no-unused-vars
+  28:32  error  'options' is defined but never used. Allowed unused args must match /^_/u  @typescript-eslint/no-unused-vars
+
+/Users/amaan/Downloads/servio-mvp-cleaned/app/api/pay/till/route.ts
+  33:15  error  'name' is defined but never used. Allowed unused args must match /^_/u     @typescript-eslint/no-unused-vars
+  33:29  error  'value' is defined but never used. Allowed unused args must match /^_/u    @typescript-eslint/no-unused-vars
+  33:44  error  'options' is defined but never used. Allowed unused args must match /^_/u  @typescript-eslint/no-unused-vars
+  34:18  error  'name' is defined but never used. Allowed unused args must match /^_/u     @typescript-eslint/no-unused-vars
+  34:32  error  'options' is defined but never used. Allowed unused args must match /^_/u  @typescript-eslint/no-unused-vars
+
+/Users/amaan/Downloads/servio-mvp-cleaned/app/api/payments/create-intent/route.ts
+  3:10  error  'ENV' is defined but never used. Allowed unused vars must match /^_/u  @typescript-eslint/no-unused-vars
+
+/Users/amaan/Downloads/servio-mvp-cleaned/app/api/pos/bill-splits/route.ts
+  45:9  error  Unexpected lexical declaration in case block  no-case-declarations
+
+/Users/amaan/Downloads/servio-mvp-cleaned/app/api/pos/counter-sessions/route.ts
+   83:9  error  Unexpected lexical declaration in case block  no-case-declarations
+  105:9  error  Unexpected lexical declaration in case block  no-case-declarations
+  123:9  error  Unexpected lexical declaration in case block  no-case-declarations
+
+/Users/amaan/Downloads/servio-mvp-cleaned/app/api/pos/table-sessions/route.ts
+   83:9  error  Unexpected lexical declaration in case block  no-case-declarations
+  106:9  error  Unexpected lexical declaration in case block  no-case-declarations
+  124:9  error  Unexpected lexical declaration in case block  no-case-declarations
+  140:9  error  Unexpected lexical declaration in case block  no-case-declarations
+  159:9  error  Unexpected lexical declaration in case block  no-case-declarations
+
+/Users/amaan/Downloads/servio-mvp-cleaned/app/api/pos/table-transfer/route.ts
+   50:9  error  Unexpected lexical declaration in case block  no-case-declarations
+   72:9  error  Unexpected lexical declaration in case block  no-case-declarations
+  131:9  error  Unexpected lexical declaration in case block  no-case-declarations
+
+/Users/amaan/Downloads/servio-mvp-cleaned/app/api/reviews/list/route.ts
+  2:10  error  'z' is defined but never used. Allowed unused vars must match /^_/u  @typescript-eslint/no-unused-vars
+
+/Users/amaan/Downloads/servio-mvp-cleaned/app/api/scrape-menu/route.ts
+  182:5   warning  Unnecessary catch clause                                                               no-useless-catch
+  299:17  error    'item' is assigned a value but never used. Allowed unused vars must match /^_/u        @typescript-eslint/no-unused-vars
+  304:15  error    'categories' is assigned a value but never used. Allowed unused vars must match /^_/u  @typescript-eslint/no-unused-vars
+  306:14  error    'parseError' is defined but never used. Allowed unused caught errors must match /^_/u  @typescript-eslint/no-unused-vars
+
+/Users/amaan/Downloads/servio-mvp-cleaned/app/api/signup/with-subscription/route.ts
+    5:8   error  'Stripe' is defined but never used. Allowed unused vars must match /^_/u          @typescript-eslint/no-unused-vars
+  109:19  error  'venue' is assigned a value but never used. Allowed unused vars must match /^_/u  @typescript-eslint/no-unused-vars
+
+/Users/amaan/Downloads/servio-mvp-cleaned/app/api/staff/invitations/[token]/route.ts
+  132:5  warning  'userId' is never reassigned. Use 'const' instead  prefer-const
+
+/Users/amaan/Downloads/servio-mvp-cleaned/app/api/table-maintenance/route.ts
+  18:13  error  'data' is assigned a value but never used. Allowed unused vars must match /^_/u  @typescript-eslint/no-unused-vars
+
+/Users/amaan/Downloads/servio-mvp-cleaned/app/api/table-sessions/enhanced-merge/route.ts
+  14:7   error  'requires_confirmation' is assigned a value but never used. Allowed unused vars must match /^_/u  @typescript-eslint/no-unused-vars
+  77:11  error  'targetState' is assigned a value but never used. Allowed unused vars must match /^_/u            @typescript-eslint/no-unused-vars
+
+/Users/amaan/Downloads/servio-mvp-cleaned/app/api/table/group-session/route.ts
+   62:14  error  'tableError' is defined but never used. Allowed unused caught errors must match /^_/u  @typescript-eslint/no-unused-vars
+  205:14  error  'tableError' is defined but never used. Allowed unused caught errors must match /^_/u  @typescript-eslint/no-unused-vars
+
+/Users/amaan/Downloads/servio-mvp-cleaned/app/api/table/group-sessions/route.ts
+  49:14  error  'tableError' is defined but never used. Allowed unused caught errors must match /^_/u  @typescript-eslint/no-unused-vars
+
+/Users/amaan/Downloads/servio-mvp-cleaned/app/api/tables/auto-create/route.ts
+  27:15  error  'name' is defined but never used. Allowed unused args must match /^_/u     @typescript-eslint/no-unused-vars
+  27:29  error  'value' is defined but never used. Allowed unused args must match /^_/u    @typescript-eslint/no-unused-vars
+  27:44  error  'options' is defined but never used. Allowed unused args must match /^_/u  @typescript-eslint/no-unused-vars
+  28:18  error  'name' is defined but never used. Allowed unused args must match /^_/u     @typescript-eslint/no-unused-vars
+  28:32  error  'options' is defined but never used. Allowed unused args must match /^_/u  @typescript-eslint/no-unused-vars
+
+/Users/amaan/Downloads/servio-mvp-cleaned/app/api/tables/cleanup-duplicates/route.ts
+  64:49  error  'label' is defined but never used. Allowed unused args must match /^_/u  @typescript-eslint/no-unused-vars
+
+/Users/amaan/Downloads/servio-mvp-cleaned/app/api/tables/clear-all/route.ts
+  34:25  error  'session' is defined but never used. Allowed unused args must match /^_/u  @typescript-eslint/no-unused-vars
+
+/Users/amaan/Downloads/servio-mvp-cleaned/app/api/tables/counters/route.ts
+  58:19  error  'realtimeCounts' is assigned a value but never used. Allowed unused vars must match /^_/u  @typescript-eslint/no-unused-vars
+
+/Users/amaan/Downloads/servio-mvp-cleaned/app/api/update-payment-status-pay-later/route.ts
+  14:15  error  'name' is defined but never used. Allowed unused args must match /^_/u     @typescript-eslint/no-unused-vars
+  15:15  error  'name' is defined but never used. Allowed unused args must match /^_/u     @typescript-eslint/no-unused-vars
+  15:29  error  'value' is defined but never used. Allowed unused args must match /^_/u    @typescript-eslint/no-unused-vars
+  15:44  error  'options' is defined but never used. Allowed unused args must match /^_/u  @typescript-eslint/no-unused-vars
+  16:18  error  'name' is defined but never used. Allowed unused args must match /^_/u     @typescript-eslint/no-unused-vars
+  16:32  error  'options' is defined but never used. Allowed unused args must match /^_/u  @typescript-eslint/no-unused-vars
+
+/Users/amaan/Downloads/servio-mvp-cleaned/app/api/user/profile/route.ts
+  59:11  error  'body' is assigned a value but never used. Allowed unused vars must match /^_/u  @typescript-eslint/no-unused-vars
+
+/Users/amaan/Downloads/servio-mvp-cleaned/app/api/venues/upsert/route.ts
+  3:17  error  'cacheKeys' is defined but never used. Allowed unused vars must match /^_/u  @typescript-eslint/no-unused-vars
+  3:28  error  'cacheTTL' is defined but never used. Allowed unused vars must match /^_/u   @typescript-eslint/no-unused-vars
+
+/Users/amaan/Downloads/servio-mvp-cleaned/app/auth/callback/page.tsx
+  329:6  warning  React Hook useEffect has a missing dependency: 'clearAuthState'. Either include it or remove the dependency array  react-hooks/exhaustive-deps
+
+/Users/amaan/Downloads/servio-mvp-cleaned/app/complete-profile/form.tsx
+  12:10  error    'logger' is defined but never used. Allowed unused vars must match /^_/u                                               @typescript-eslint/no-unused-vars
+  50:6   warning  React Hook useEffect has a missing dependency: 'formData.venueName'. Either include it or remove the dependency array  react-hooks/exhaustive-deps
+
+/Users/amaan/Downloads/servio-mvp-cleaned/app/components/HeroSection.tsx
+   4:8  error  'Image' is defined but never used. Allowed unused vars must match /^_/u        @typescript-eslint/no-unused-vars
+  16:3  error  'authLoading' is defined but never used. Allowed unused args must match /^_/u  @typescript-eslint/no-unused-vars
+
+/Users/amaan/Downloads/servio-mvp-cleaned/app/dashboard/[venueId]/analytics/AnalyticsClient.tsx
+  32:52  error  'venueName' is defined but never used. Allowed unused args must match /^_/u         @typescript-eslint/no-unused-vars
+  36:11  error  'loading' is assigned a value but never used. Allowed unused vars must match /^_/u  @typescript-eslint/no-unused-vars
+  36:20  error  'error' is assigned a value but never used. Allowed unused vars must match /^_/u    @typescript-eslint/no-unused-vars
+  36:58  error  'refetch' is assigned a value but never used. Allowed unused vars must match /^_/u  @typescript-eslint/no-unused-vars
+
+/Users/amaan/Downloads/servio-mvp-cleaned/app/dashboard/[venueId]/components/FeatureSections.tsx
+  41:31  error  'feature' is defined but never used. Allowed unused args must match /^_/u  @typescript-eslint/no-unused-vars
+  41:49  error  'section' is defined but never used. Allowed unused args must match /^_/u  @typescript-eslint/no-unused-vars
+
+/Users/amaan/Downloads/servio-mvp-cleaned/app/dashboard/[venueId]/components/StatusBanner.tsx
+   4:32  error  'AlertTriangle' is defined but never used. Allowed unused vars must match /^_/u  @typescript-eslint/no-unused-vars
+  33:3   error  'onVenueChange' is defined but never used. Allowed unused args must match /^_/u  @typescript-eslint/no-unused-vars
+
+/Users/amaan/Downloads/servio-mvp-cleaned/app/dashboard/[venueId]/components/TodayAtAGlance.tsx
+   5:22   error  'Users' is defined but never used. Allowed unused vars must match /^_/u               @typescript-eslint/no-unused-vars
+   6:10   error  'LineChart' is defined but never used. Allowed unused vars must match /^_/u           @typescript-eslint/no-unused-vars
+   6:21   error  'Line' is defined but never used. Allowed unused vars must match /^_/u                @typescript-eslint/no-unused-vars
+   6:109  error  'Legend' is defined but never used. Allowed unused vars must match /^_/u              @typescript-eslint/no-unused-vars
+  15:48   error  'tableUtilization' is defined but never used. Allowed unused args must match /^_/u    @typescript-eslint/no-unused-vars
+  16:9    error  'COLORS' is assigned a value but never used. Allowed unused vars must match /^_/u     @typescript-eslint/no-unused-vars
+  19:9    error  'isLoading' is assigned a value but never used. Allowed unused vars must match /^_/u  @typescript-eslint/no-unused-vars
+
+/Users/amaan/Downloads/servio-mvp-cleaned/app/dashboard/[venueId]/feedback/QuestionsClient.tsx
+    4:60  error    'Check' is defined but never used. Allowed unused vars must match /^_/u                                            @typescript-eslint/no-unused-vars
+    6:29  error    'CardHeader' is defined but never used. Allowed unused vars must match /^_/u                                       @typescript-eslint/no-unused-vars
+    6:41  error    'CardTitle' is defined but never used. Allowed unused vars must match /^_/u                                        @typescript-eslint/no-unused-vars
+   15:10  error    'dbLogger' is defined but never used. Allowed unused vars must match /^_/u                                         @typescript-eslint/no-unused-vars
+   24:52  error    'venueName' is defined but never used. Allowed unused args must match /^_/u                                        @typescript-eslint/no-unused-vars
+   96:6   warning  React Hook useEffect has a missing dependency: 'fetchQuestions'. Either include it or remove the dependency array  react-hooks/exhaustive-deps
+  137:15  error    'result' is assigned a value but never used. Allowed unused vars must match /^_/u                                  @typescript-eslint/no-unused-vars
+
+/Users/amaan/Downloads/servio-mvp-cleaned/app/dashboard/[venueId]/feedback/SimpleFeedbackClient.tsx
+   9:10  error    'Textarea' is defined but never used. Allowed unused vars must match /^_/u                                         @typescript-eslint/no-unused-vars
+  33:10  error    'showAddForm' is assigned a value but never used. Allowed unused vars must match /^_/u                             @typescript-eslint/no-unused-vars
+  84:6   warning  React Hook useEffect has a missing dependency: 'fetchQuestions'. Either include it or remove the dependency array  react-hooks/exhaustive-deps
+
+/Users/amaan/Downloads/servio-mvp-cleaned/app/dashboard/[venueId]/hooks/useDashboardRealtime.ts
+   73:16  error    'payload' is defined but never used. Allowed unused args must match /^_/u                                       @typescript-eslint/no-unused-vars
+   85:16  error    'payload' is defined but never used. Allowed unused args must match /^_/u                                       @typescript-eslint/no-unused-vars
+  100:27  error    'menuItems' is assigned a value but never used. Allowed unused vars must match /^_/u                            @typescript-eslint/no-unused-vars
+  140:6   warning  React Hook useEffect has a missing dependency: 'todayWindow'. Either include it or remove the dependency array  react-hooks/exhaustive-deps
+
+/Users/amaan/Downloads/servio-mvp-cleaned/app/dashboard/[venueId]/inventory/InventoryClient.tsx
+  15:52  error  'venueName' is defined but never used. Allowed unused args must match /^_/u  @typescript-eslint/no-unused-vars
+
+/Users/amaan/Downloads/servio-mvp-cleaned/app/dashboard/[venueId]/kds/KDSClient.tsx
+    8:40  error  'PlayCircle' is defined but never used. Allowed unused vars must match /^_/u              @typescript-eslint/no-unused-vars
+    8:52  error  'XCircle' is defined but never used. Allowed unused vars must match /^_/u                 @typescript-eslint/no-unused-vars
+   79:10  error  'loading' is assigned a value but never used. Allowed unused vars must match /^_/u        @typescript-eslint/no-unused-vars
+  286:9   error  'bumpedTickets' is assigned a value but never used. Allowed unused vars must match /^_/u  @typescript-eslint/no-unused-vars
+
+/Users/amaan/Downloads/servio-mvp-cleaned/app/dashboard/[venueId]/live-orders/LiveOrdersClient.tsx
+  59:5  error  'loading' is assigned a value but never used. Allowed unused vars must match /^_/u  @typescript-eslint/no-unused-vars
+
+/Users/amaan/Downloads/servio-mvp-cleaned/app/dashboard/[venueId]/live-orders/components/OrderTabs.tsx
+  3:10  error  'Clock' is defined but never used. Allowed unused vars must match /^_/u  @typescript-eslint/no-unused-vars
+
+/Users/amaan/Downloads/servio-mvp-cleaned/app/dashboard/[venueId]/live-orders/hooks/useBulkOperations.ts
+  2:29  error  'createClient' is defined but never used. Allowed unused vars must match /^_/u  @typescript-eslint/no-unused-vars
+
+/Users/amaan/Downloads/servio-mvp-cleaned/app/dashboard/[venueId]/live-orders/utils/orderHelpers.ts
+  2:10  error  'LIVE_TABLE_ORDER_STATUSES' is defined but never used. Allowed unused vars must match /^_/u    @typescript-eslint/no-unused-vars
+  2:37  error  'ACTIVE_TABLE_ORDER_STATUSES' is defined but never used. Allowed unused vars must match /^_/u  @typescript-eslint/no-unused-vars
+
+/Users/amaan/Downloads/servio-mvp-cleaned/app/dashboard/[venueId]/menu-management/MenuManagementClient.tsx
+   6:10   error  'Input' is defined but never used. Allowed unused vars must match /^_/u             @typescript-eslint/no-unused-vars
+   7:10   error  'Label' is defined but never used. Allowed unused vars must match /^_/u             @typescript-eslint/no-unused-vars
+   8:10   error  'Textarea' is defined but never used. Allowed unused vars must match /^_/u          @typescript-eslint/no-unused-vars
+   9:10   error  'ToggleSwitch' is defined but never used. Allowed unused vars must match /^_/u      @typescript-eslint/no-unused-vars
+  12:98   error  'Upload' is defined but never used. Allowed unused vars must match /^_/u            @typescript-eslint/no-unused-vars
+  12:135  error  'Info' is defined but never used. Allowed unused vars must match /^_/u              @typescript-eslint/no-unused-vars
+  40:57   error  'canEdit' is assigned a value but never used. Allowed unused args must match /^_/u  @typescript-eslint/no-unused-vars
+  57:22   error  'loading' is assigned a value but never used. Allowed unused vars must match /^_/u  @typescript-eslint/no-unused-vars
+
+/Users/amaan/Downloads/servio-mvp-cleaned/app/dashboard/[venueId]/menu-management/components/PreviewControls.tsx
+  3:16  error  'CardContent' is defined but never used. Allowed unused vars must match /^_/u  @typescript-eslint/no-unused-vars
+
+/Users/amaan/Downloads/servio-mvp-cleaned/app/dashboard/[venueId]/menu-management/hooks/useDesignSettings.ts
+  112:6  warning  React Hook useEffect has a missing dependency: 'loadDesignSettings'. Either include it or remove the dependency array  react-hooks/exhaustive-deps
+
+/Users/amaan/Downloads/servio-mvp-cleaned/app/dashboard/[venueId]/menu-management/hooks/useDragAndDrop.ts
+  1:10  error  'useState' is defined but never used. Allowed unused vars must match /^_/u  @typescript-eslint/no-unused-vars
+
+/Users/amaan/Downloads/servio-mvp-cleaned/app/dashboard/[venueId]/menu-management/hooks/useLogoUpload.ts
+  50:21  error  'uploadData' is assigned a value but never used. Allowed unused vars must match /^_/u  @typescript-eslint/no-unused-vars
+  84:16  error  'dbError' is defined but never used. Allowed unused caught errors must match /^_/u     @typescript-eslint/no-unused-vars
+
+/Users/amaan/Downloads/servio-mvp-cleaned/app/dashboard/[venueId]/menu-management/hooks/useMenuItems.ts
+  63:6  warning  React Hook useEffect has a missing dependency: 'loadMenuItems'. Either include it or remove the dependency array  react-hooks/exhaustive-deps
+
+/Users/amaan/Downloads/servio-mvp-cleaned/app/dashboard/[venueId]/orders/OrdersClient.tsx
+    4:29  error    'CardHeader' is defined but never used. Allowed unused vars must match /^_/u                                               @typescript-eslint/no-unused-vars
+    5:10  error    'Button' is defined but never used. Allowed unused vars must match /^_/u                                                   @typescript-eslint/no-unused-vars
+    6:10  error    'Badge' is defined but never used. Allowed unused vars must match /^_/u                                                    @typescript-eslint/no-unused-vars
+    7:17  error    'ArrowLeft' is defined but never used. Allowed unused vars must match /^_/u                                                @typescript-eslint/no-unused-vars
+    7:28  error    'User' is defined but never used. Allowed unused vars must match /^_/u                                                     @typescript-eslint/no-unused-vars
+    9:10  error    'liveOrdersWindow' is defined but never used. Allowed unused vars must match /^_/u                                         @typescript-eslint/no-unused-vars
+   59:83  error    'initialStats' is defined but never used. Allowed unused args must match /^_/u                                             @typescript-eslint/no-unused-vars
+   64:10  error    'loading' is assigned a value but never used. Allowed unused vars must match /^_/u                                         @typescript-eslint/no-unused-vars
+   65:10  error    'selectedOrder' is assigned a value but never used. Allowed unused vars must match /^_/u                                   @typescript-eslint/no-unused-vars
+   65:25  error    'setSelectedOrder' is assigned a value but never used. Allowed unused vars must match /^_/u                                @typescript-eslint/no-unused-vars
+   66:10  error    'todayWindow' is assigned a value but never used. Allowed unused vars must match /^_/u                                     @typescript-eslint/no-unused-vars
+   71:9   error    'LIVE_STATUSES' is assigned a value but never used. Allowed unused vars must match /^_/u                                   @typescript-eslint/no-unused-vars
+   72:9   error    'TERMINAL_STATUSES' is assigned a value but never used. Allowed unused vars must match /^_/u                               @typescript-eslint/no-unused-vars
+   73:9   error    'LIVE_WINDOW_STATUSES' is assigned a value but never used. Allowed unused vars must match /^_/u                            @typescript-eslint/no-unused-vars
+   82:30  error    'setAutoRefreshEnabled' is assigned a value but never used. Allowed unused vars must match /^_/u                           @typescript-eslint/no-unused-vars
+   83:27  error    'setRefreshInterval' is assigned a value but never used. Allowed unused vars must match /^_/u                              @typescript-eslint/no-unused-vars
+  172:6   warning  React Hook useCallback has a missing dependency: 'LIVE_ORDER_WINDOW_MS'. Either include it or remove the dependency array  react-hooks/exhaustive-deps
+  179:6   warning  React Hook useEffect has a missing dependency: 'initialOrders.length'. Either include it or remove the dependency array    react-hooks/exhaustive-deps
+
+/Users/amaan/Downloads/servio-mvp-cleaned/app/dashboard/[venueId]/pos/pos-dashboard-client.tsx
+   7:10  error  'Badge' is defined but never used. Allowed unused vars must match /^_/u        @typescript-eslint/no-unused-vars
+  16:3   error  'CheckCircle' is defined but never used. Allowed unused vars must match /^_/u  @typescript-eslint/no-unused-vars
+
+/Users/amaan/Downloads/servio-mvp-cleaned/app/dashboard/[venueId]/settings/components/OperatingHoursCard.tsx
+  6:40  error  'DayHours' is defined but never used. Allowed unused vars must match /^_/u  @typescript-eslint/no-unused-vars
+
+/Users/amaan/Downloads/servio-mvp-cleaned/app/dashboard/[venueId]/settings/hooks/useAccountDeletion.ts
+  40:15  error  'response' is assigned a value but never used. Allowed unused vars must match /^_/u  @typescript-eslint/no-unused-vars
+
+/Users/amaan/Downloads/servio-mvp-cleaned/app/dashboard/[venueId]/settings/settings-client.tsx
+  19:10  error  'loading' is assigned a value but never used. Allowed unused vars must match /^_/u  @typescript-eslint/no-unused-vars
+
+/Users/amaan/Downloads/servio-mvp-cleaned/app/dashboard/[venueId]/staff/hooks/useShiftManagement.ts
+  2:10  error  'buildIsoFromLocal' is defined but never used. Allowed unused vars must match /^_/u  @typescript-eslint/no-unused-vars
+  2:29  error  'addDaysISO' is defined but never used. Allowed unused vars must match /^_/u         @typescript-eslint/no-unused-vars
+  5:53  error  'staff' is defined but never used. Allowed unused args must match /^_/u              @typescript-eslint/no-unused-vars
+
+/Users/amaan/Downloads/servio-mvp-cleaned/app/dashboard/[venueId]/staff/hooks/useStaffManagement.ts
+  28:80  error  'initialCounts' is defined but never used. Allowed unused args must match /^_/u        @typescript-eslint/no-unused-vars
+  38:19  error  'setLoading' is assigned a value but never used. Allowed unused vars must match /^_/u  @typescript-eslint/no-unused-vars
+
+/Users/amaan/Downloads/servio-mvp-cleaned/app/global-error.tsx
+  3:39  error  'error' is defined but never used. Allowed unused args must match /^_/u  @typescript-eslint/no-unused-vars
+
+/Users/amaan/Downloads/servio-mvp-cleaned/app/onboarding/layout.tsx
+  4:8  error  'Image' is defined but never used. Allowed unused vars must match /^_/u  @typescript-eslint/no-unused-vars
+
+/Users/amaan/Downloads/servio-mvp-cleaned/app/onboarding/tables/page.tsx
+  29:6  warning  React Hook useEffect has a missing dependency: 'checkAuth'. Either include it or remove the dependency array  react-hooks/exhaustive-deps
+
+/Users/amaan/Downloads/servio-mvp-cleaned/app/order-summary/[orderId]/page.tsx
+   11:3   error  'CheckCircle' is defined but never used. Allowed unused vars must match /^_/u           @typescript-eslint/no-unused-vars
+   13:3   error  'RefreshCw' is defined but never used. Allowed unused vars must match /^_/u             @typescript-eslint/no-unused-vars
+   72:9   error  'isCancelled' is assigned a value but never used. Allowed unused vars must match /^_/u  @typescript-eslint/no-unused-vars
+   96:23  error  'isCurrent' is assigned a value but never used. Allowed unused vars must match /^_/u    @typescript-eslint/no-unused-vars
+  220:20  error  'Label' is not defined                                                                  react/jsx-no-undef
+
+/Users/amaan/Downloads/servio-mvp-cleaned/app/order-summary/page.tsx
+  38:78  error  React Hook "useOrderSummary" is called conditionally. React Hooks must be called in the exact same order in every component render  react-hooks/rules-of-hooks
+
+/Users/amaan/Downloads/servio-mvp-cleaned/app/order-tracking/[orderId]/page.tsx
+    8:50  error    'Truck' is defined but never used. Allowed unused vars must match /^_/u                                        @typescript-eslint/no-unused-vars
+    8:57  error    'User' is defined but never used. Allowed unused vars must match /^_/u                                         @typescript-eslint/no-unused-vars
+    8:63  error    'Hash' is defined but never used. Allowed unused vars must match /^_/u                                         @typescript-eslint/no-unused-vars
+  134:6   warning  React Hook useEffect has a missing dependency: 'fetchOrder'. Either include it or remove the dependency array  react-hooks/exhaustive-deps
+  136:9   error    'getStatusInfo' is assigned a value but never used. Allowed unused vars must match /^_/u                       @typescript-eslint/no-unused-vars
+
+/Users/amaan/Downloads/servio-mvp-cleaned/app/order/components/MobileCart.tsx
+  3:10  error  'ShoppingCart' is defined but never used. Allowed unused vars must match /^_/u  @typescript-eslint/no-unused-vars
+
+/Users/amaan/Downloads/servio-mvp-cleaned/app/order/hooks/useOrderMenu.ts
+   75:18  error    'parseError' is defined but never used. Allowed unused caught errors must match /^_/u                           @typescript-eslint/no-unused-vars
+  127:6   warning  React Hook useCallback has a missing dependency: 'menuItems'. Either include it or remove the dependency array  react-hooks/exhaustive-deps
+
+/Users/amaan/Downloads/servio-mvp-cleaned/app/order/hooks/useOrderSession.ts
+  45:6  warning  React Hook useEffect has a missing dependency: 'checkForExistingOrder'. Either include it or remove the dependency array  react-hooks/exhaustive-deps
+
+/Users/amaan/Downloads/servio-mvp-cleaned/app/order/hooks/useOrderSubmission.ts
+  60:13  error  'safeTable' is assigned a value but never used. Allowed unused vars must match /^_/u  @typescript-eslint/no-unused-vars
+
+/Users/amaan/Downloads/servio-mvp-cleaned/app/order/page.tsx
+    7:10  error  'Loader2' is defined but never used. Allowed unused vars must match /^_/u                    @typescript-eslint/no-unused-vars
+  125:5   error  'session' is assigned a value but never used. Allowed unused vars must match /^_/u           @typescript-eslint/no-unused-vars
+  149:10  error  'subscriptionTier' is assigned a value but never used. Allowed unused vars must match /^_/u  @typescript-eslint/no-unused-vars
+  150:10  error  'loadingTier' is assigned a value but never used. Allowed unused vars must match /^_/u       @typescript-eslint/no-unused-vars
+
+/Users/amaan/Downloads/servio-mvp-cleaned/app/page.tsx
+  59:10  error  'isLoading' is assigned a value but never used. Allowed unused vars must match /^_/u     @typescript-eslint/no-unused-vars
+  59:21  error  'setIsLoading' is assigned a value but never used. Allowed unused vars must match /^_/u  @typescript-eslint/no-unused-vars
+
+/Users/amaan/Downloads/servio-mvp-cleaned/app/pay-later/[orderId]/page.tsx
+  137:13  error  'result' is assigned a value but never used. Allowed unused vars must match /^_/u  @typescript-eslint/no-unused-vars
+
+/Users/amaan/Downloads/servio-mvp-cleaned/app/payment/page.tsx
+   5:10  error  'Badge' is defined but never used. Allowed unused vars must match /^_/u          @typescript-eslint/no-unused-vars
+   6:10  error  'Input' is defined but never used. Allowed unused vars must match /^_/u          @typescript-eslint/no-unused-vars
+   7:10  error  'Label' is defined but never used. Allowed unused vars must match /^_/u          @typescript-eslint/no-unused-vars
+  22:10  error  'OrderTimeline' is defined but never used. Allowed unused vars must match /^_/u  @typescript-eslint/no-unused-vars
+
+/Users/amaan/Downloads/servio-mvp-cleaned/app/protected-route.tsx
+  5:10  error  'redirect' is defined but never used. Allowed unused vars must match /^_/u  @typescript-eslint/no-unused-vars
+
+/Users/amaan/Downloads/servio-mvp-cleaned/app/sign-in/signin-form.tsx
+  25:9  error  'router' is assigned a value but never used. Allowed unused vars must match /^_/u  @typescript-eslint/no-unused-vars
+
+/Users/amaan/Downloads/servio-mvp-cleaned/app/sign-up/page.tsx
+  10:9  error  'router' is assigned a value but never used. Allowed unused vars must match /^_/u  @typescript-eslint/no-unused-vars
+
+/Users/amaan/Downloads/servio-mvp-cleaned/app/sign-up/signup-form.tsx
+  11:10  error  'supabaseBrowser' is defined but never used. Allowed unused vars must match /^_/u  @typescript-eslint/no-unused-vars
+  21:9   error  'router' is assigned a value but never used. Allowed unused vars must match /^_/u  @typescript-eslint/no-unused-vars
+
+/Users/amaan/Downloads/servio-mvp-cleaned/components/AuthWrapper.tsx
+  11:11  error  'session' is assigned a value but never used. Allowed unused vars must match /^_/u  @typescript-eslint/no-unused-vars
+
+/Users/amaan/Downloads/servio-mvp-cleaned/components/CategoriesManagement.tsx
+   32:6   warning  React Hook useEffect has a missing dependency: 'loadCategories'. Either include it or remove the dependency array  react-hooks/exhaustive-deps
+  122:13  error    'data' is assigned a value but never used. Allowed unused vars must match /^_/u                                    @typescript-eslint/no-unused-vars
+
+/Users/amaan/Downloads/servio-mvp-cleaned/components/EnhancedPDFMenuDisplay.tsx
+    6:37  error  'X' is defined but never used. Allowed unused vars must match /^_/u                   @typescript-eslint/no-unused-vars
+   96:9   error  'imageRefs' is assigned a value but never used. Allowed unused vars must match /^_/u  @typescript-eslint/no-unused-vars
+  107:35  error  'error' is assigned a value but never used. Allowed unused vars must match /^_/u      @typescript-eslint/no-unused-vars
+
+/Users/amaan/Downloads/servio-mvp-cleaned/components/ItemDetailsModal.tsx
+  35:3  error  'onAddToCart' is defined but never used. Allowed unused args must match /^_/u  @typescript-eslint/no-unused-vars
+
+/Users/amaan/Downloads/servio-mvp-cleaned/components/LiveOrdersList.tsx
+  8:17  error  'isLoading' is assigned a value but never used. Allowed unused vars must match /^_/u  @typescript-eslint/no-unused-vars
+
+/Users/amaan/Downloads/servio-mvp-cleaned/components/MenuUploadCard.tsx
+  7:10  error  'Badge' is defined but never used. Allowed unused vars must match /^_/u  @typescript-eslint/no-unused-vars
+
+/Users/amaan/Downloads/servio-mvp-cleaned/components/MobileNav.tsx
+  21:3   error  'Bell' is defined but never used. Allowed unused vars must match /^_/u                @typescript-eslint/no-unused-vars
+  24:10  error  'useSwipeNavigation' is defined but never used. Allowed unused vars must match /^_/u  @typescript-eslint/no-unused-vars
+
+/Users/amaan/Downloads/servio-mvp-cleaned/components/OrderFeedbackForm.tsx
+   22:10  error    'activeCount' is assigned a value but never used. Allowed unused vars must match /^_/u                                 @typescript-eslint/no-unused-vars
+  123:6   warning  React Hook useCallback has a missing dependency: 'genericQuestions'. Either include it or remove the dependency array  react-hooks/exhaustive-deps
+  147:19  error    'status' is defined but never used. Allowed unused args must match /^_/u                                               @typescript-eslint/no-unused-vars
+
+/Users/amaan/Downloads/servio-mvp-cleaned/components/PageLoader.tsx
+  24:14  warning  Unknown property 'jsx' found  react/no-unknown-property
+
+/Users/amaan/Downloads/servio-mvp-cleaned/components/PullToRefresh.tsx
+   3:27  error  'useEffect' is defined but never used. Allowed unused vars must match /^_/u                       @typescript-eslint/no-unused-vars
+  23:21  error  'isPullToRefreshActive' is assigned a value but never used. Allowed unused vars must match /^_/u  @typescript-eslint/no-unused-vars
+
+/Users/amaan/Downloads/servio-mvp-cleaned/components/SimpleFeedbackForm.tsx
+   4:16  error  'Send' is defined but never used. Allowed unused vars must match /^_/u     @typescript-eslint/no-unused-vars
+  15:46  error  'venueId' is defined but never used. Allowed unused args must match /^_/u  @typescript-eslint/no-unused-vars
+  15:55  error  'orderId' is defined but never used. Allowed unused args must match /^_/u  @typescript-eslint/no-unused-vars
+
+/Users/amaan/Downloads/servio-mvp-cleaned/components/StyledMenuDisplay.tsx
+   92:37  warning  A `require()` style import is forbidden                                               @typescript-eslint/no-require-imports
+  258:10  error    'DefaultMenuDisplay' is defined but never used. Allowed unused vars must match /^_/u  @typescript-eslint/no-unused-vars
+  263:3   error    'onRemoveFromCart' is defined but never used. Allowed unused args must match /^_/u    @typescript-eslint/no-unused-vars
+
+/Users/amaan/Downloads/servio-mvp-cleaned/components/TrialStatusBanner.tsx
+   39:28  error    React Hook "useCallback" is called conditionally. React Hooks must be called in the exact same order in every component render                                                               react-hooks/rules-of-hooks
+  141:6   warning  React Hook useCallback has a missing dependency: 'processTrialStatus'. Either include it or remove the dependency array                                                                      react-hooks/exhaustive-deps
+  187:3   error    React Hook "useEffect" is called conditionally. React Hooks must be called in the exact same order in every component render                                                                 react-hooks/rules-of-hooks
+  197:3   error    React Hook "useEffect" is called conditionally. React Hooks must be called in the exact same order in every component render                                                                 react-hooks/rules-of-hooks
+  228:3   error    React Hook "useEffect" is called conditionally. React Hooks must be called in the exact same order in every component render                                                                 react-hooks/rules-of-hooks
+  242:3   error    React Hook "useEffect" is called conditionally. React Hooks must be called in the exact same order in every component render. Did you accidentally call a React Hook after an early return?  react-hooks/rules-of-hooks
+  291:6   warning  React Hook useEffect has a missing dependency: 'processTrialStatus'. Either include it or remove the dependency array                                                                        react-hooks/exhaustive-deps
+
+/Users/amaan/Downloads/servio-mvp-cleaned/components/UnifiedFeedbackForm.tsx
+   11:29  error    'createClient' is defined but never used. Allowed unused vars must match /^_/u                                         @typescript-eslint/no-unused-vars
+   25:3   error    'customerName' is assigned a value but never used. Allowed unused args must match /^_/u                                @typescript-eslint/no-unused-vars
+   26:3   error    'customerPhone' is defined but never used. Allowed unused args must match /^_/u                                        @typescript-eslint/no-unused-vars
+  125:6   warning  React Hook useCallback has a missing dependency: 'genericQuestions'. Either include it or remove the dependency array  react-hooks/exhaustive-deps
+
+/Users/amaan/Downloads/servio-mvp-cleaned/components/VerticalMenuDisplay.tsx
+  33:3  error  'onRemoveFromCart' is defined but never used. Allowed unused args must match /^_/u  @typescript-eslint/no-unused-vars
+
+/Users/amaan/Downloads/servio-mvp-cleaned/components/account-migrator.tsx
+  28:10  error  'logger' is defined but never used. Allowed unused vars must match /^_/u  @typescript-eslint/no-unused-vars
+
+/Users/amaan/Downloads/servio-mvp-cleaned/components/ai/activity-log.tsx
+  25:6  warning  React Hook useEffect has a missing dependency: 'fetchActivities'. Either include it or remove the dependency array  react-hooks/exhaustive-deps
+
+/Users/amaan/Downloads/servio-mvp-cleaned/components/ai/assistant-command-palette.tsx
+   6:31  error  'useCallback' is defined but never used. Allowed unused vars must match /^_/u  @typescript-eslint/no-unused-vars
+  23:10  error  'aiLogger' is defined but never used. Allowed unused vars must match /^_/u     @typescript-eslint/no-unused-vars
+
+/Users/amaan/Downloads/servio-mvp-cleaned/components/ai/chat-interface.tsx
+  29:9   error    'router' is assigned a value but never used. Allowed unused vars must match /^_/u                                                      @typescript-eslint/no-unused-vars
+  33:10  error    'success' is assigned a value but never used. Allowed unused vars must match /^_/u                                                     @typescript-eslint/no-unused-vars
+  42:5   error    'loadConversations' is assigned a value but never used. Allowed unused vars must match /^_/u                                           @typescript-eslint/no-unused-vars
+  61:14  error    'actionSuccess' is assigned a value but never used. Allowed unused vars must match /^_/u                                               @typescript-eslint/no-unused-vars
+  67:15  error    'setActionError' is assigned a value but never used. Allowed unused vars must match /^_/u                                              @typescript-eslint/no-unused-vars
+  68:17  error    'setActionSuccess' is assigned a value but never used. Allowed unused vars must match /^_/u                                            @typescript-eslint/no-unused-vars
+  97:6   warning  React Hook useEffect has missing dependencies: 'clearMessages' and 'loadMessages'. Either include them or remove the dependency array  react-hooks/exhaustive-deps
+
+/Users/amaan/Downloads/servio-mvp-cleaned/components/ai/components/MessageList.tsx
+  5:33  error  'AlertTriangle' is defined but never used. Allowed unused vars must match /^_/u  @typescript-eslint/no-unused-vars
+
+/Users/amaan/Downloads/servio-mvp-cleaned/components/ai/components/PlanPreview.tsx
+  4:26  error  'AlertTriangle' is defined but never used. Allowed unused vars must match /^_/u  @typescript-eslint/no-unused-vars
+
+/Users/amaan/Downloads/servio-mvp-cleaned/components/ai/contextual-assistant.tsx
+  58:10  error  'selectedPrompt' is assigned a value but never used. Allowed unused vars must match /^_/u  @typescript-eslint/no-unused-vars
+
+/Users/amaan/Downloads/servio-mvp-cleaned/components/ai/hooks/useChatActions.ts
+  2:10  error  'ChatMessage' is defined but never used. Allowed unused vars must match /^_/u  @typescript-eslint/no-unused-vars
+
+/Users/amaan/Downloads/servio-mvp-cleaned/components/ai/hooks/useChatConversations.ts
+   9:5  warning  Unnecessary try/catch wrapper                                                                                         no-useless-catch
+  45:5  warning  Unnecessary try/catch wrapper                                                                                         no-useless-catch
+  68:5  warning  Unnecessary try/catch wrapper                                                                                         no-useless-catch
+  91:6  warning  React Hook useEffect has a missing dependency: 'loadConversations'. Either include it or remove the dependency array  react-hooks/exhaustive-deps
+
+/Users/amaan/Downloads/servio-mvp-cleaned/components/ai/hooks/useChatMessages.ts
+  2:23  error    'ChatConversation' is defined but never used. Allowed unused vars must match /^_/u  @typescript-eslint/no-unused-vars
+  8:5   warning  Unnecessary try/catch wrapper                                                       no-useless-catch
+
+/Users/amaan/Downloads/servio-mvp-cleaned/components/ai/production-chat-interface.tsx
+  62:6  warning  React Hook useEffect has a missing dependency: 'loadConversations'. Either include it or remove the dependency array  react-hooks/exhaustive-deps
+
+/Users/amaan/Downloads/servio-mvp-cleaned/components/analytics/AdvancedAnalytics.tsx
+  9:10  error  'Button' is defined but never used. Allowed unused vars must match /^_/u  @typescript-eslint/no-unused-vars
+
+/Users/amaan/Downloads/servio-mvp-cleaned/components/customer-feedback-form.tsx
+  7:10  error  'Badge' is defined but never used. Allowed unused vars must match /^_/u  @typescript-eslint/no-unused-vars
+
+/Users/amaan/Downloads/servio-mvp-cleaned/components/database-connection-error.tsx
+  11:10  error  'Button' is defined but never used. Allowed unused vars must match /^_/u        @typescript-eslint/no-unused-vars
+  12:25  error  'ExternalLink' is defined but never used. Allowed unused vars must match /^_/u  @typescript-eslint/no-unused-vars
+
+/Users/amaan/Downloads/servio-mvp-cleaned/components/enhanced-error-boundary.tsx
+  4:42  error  'Wifi' is defined but never used. Allowed unused vars must match /^_/u  @typescript-eslint/no-unused-vars
+
+/Users/amaan/Downloads/servio-mvp-cleaned/components/enhanced-feedback-system.tsx
+   13:3   error    'TrendingUp' is defined but never used. Allowed unused vars must match /^_/u                                         @typescript-eslint/no-unused-vars
+   14:3   error    'TrendingDown' is defined but never used. Allowed unused vars must match /^_/u                                       @typescript-eslint/no-unused-vars
+   15:3   error    'Filter' is defined but never used. Allowed unused vars must match /^_/u                                             @typescript-eslint/no-unused-vars
+   16:3   error    'Search' is defined but never used. Allowed unused vars must match /^_/u                                             @typescript-eslint/no-unused-vars
+   21:3   error    'Clock' is defined but never used. Allowed unused vars must match /^_/u                                              @typescript-eslint/no-unused-vars
+   28:10  error    'logger' is defined but never used. Allowed unused vars must match /^_/u                                             @typescript-eslint/no-unused-vars
+  156:6   warning  React Hook useCallback has a missing dependency: 'calculateStats'. Either include it or remove the dependency array  react-hooks/exhaustive-deps
+  241:9   error    'getRatingColor' is assigned a value but never used. Allowed unused vars must match /^_/u                            @typescript-eslint/no-unused-vars
+
+/Users/amaan/Downloads/servio-mvp-cleaned/components/enhanced-order-lifecycle.tsx
+    3:31  error    'useCallback' is defined but never used. Allowed unused vars must match /^_/u                                                                     @typescript-eslint/no-unused-vars
+   15:3   error    'Hash' is defined but never used. Allowed unused vars must match /^_/u                                                                            @typescript-eslint/no-unused-vars
+   17:3   error    'Pause' is defined but never used. Allowed unused vars must match /^_/u                                                                           @typescript-eslint/no-unused-vars
+   24:10  error    'logger' is defined but never used. Allowed unused vars must match /^_/u                                                                          @typescript-eslint/no-unused-vars
+  158:42  error    'venueId' is defined but never used. Allowed unused args must match /^_/u                                                                         @typescript-eslint/no-unused-vars
+  217:6   warning  React Hook useEffect has missing dependencies: 'autoTransitionTimer' and 'updateOrderStatus'. Either include them or remove the dependency array  react-hooks/exhaustive-deps
+
+/Users/amaan/Downloads/servio-mvp-cleaned/components/error-boundaries/FeatureErrorBoundary.tsx
+  36:21  error  'error' is defined but never used. Allowed unused args must match /^_/u      @typescript-eslint/no-unused-vars
+  36:35  error  'errorInfo' is defined but never used. Allowed unused args must match /^_/u  @typescript-eslint/no-unused-vars
+
+/Users/amaan/Downloads/servio-mvp-cleaned/components/global-nav.tsx
+   68:9  error    'isLoadingAuth' is assigned a value but never used. Allowed unused vars must match /^_/u                            @typescript-eslint/no-unused-vars
+  164:6  warning  React Hook useEffect has a missing dependency: 'isAuthenticated'. Either include it or remove the dependency array  react-hooks/exhaustive-deps
+
+/Users/amaan/Downloads/servio-mvp-cleaned/components/inventory/InventoryMovements.tsx
+  24:67  error    'Calendar' is defined but never used. Allowed unused vars must match /^_/u                                         @typescript-eslint/no-unused-vars
+  42:47  error    'canEdit' is assigned a value but never used. Allowed unused args must match /^_/u                                 @typescript-eslint/no-unused-vars
+  89:6   warning  React Hook useEffect has a missing dependency: 'fetchMovements'. Either include it or remove the dependency array  react-hooks/exhaustive-deps
+
+/Users/amaan/Downloads/servio-mvp-cleaned/components/inventory/InventoryOverview.tsx
+  35:46  error    'canEdit' is assigned a value but never used. Allowed unused args must match /^_/u                                   @typescript-eslint/no-unused-vars
+  62:6   warning  React Hook useEffect has a missing dependency: 'fetchIngredients'. Either include it or remove the dependency array  react-hooks/exhaustive-deps
+  86:54  error    'reason' is defined but never used. Allowed unused args must match /^_/u                                             @typescript-eslint/no-unused-vars
+
+/Users/amaan/Downloads/servio-mvp-cleaned/components/inventory/RecipeDialog.tsx
+  48:6  warning  React Hook useEffect has missing dependencies: 'fetchIngredients' and 'fetchRecipe'. Either include them or remove the dependency array  react-hooks/exhaustive-deps
+
+/Users/amaan/Downloads/servio-mvp-cleaned/components/inventory/StockAdjustmentDialog.tsx
+  9:27  error  'StockMovementReason' is defined but never used. Allowed unused vars must match /^_/u  @typescript-eslint/no-unused-vars
+
+/Users/amaan/Downloads/servio-mvp-cleaned/components/marketing/FAQ.tsx
+  4:29  error  'ArrowRight' is defined but never used. Allowed unused vars must match /^_/u  @typescript-eslint/no-unused-vars
+  6:8   error  'Link' is defined but never used. Allowed unused vars must match /^_/u        @typescript-eslint/no-unused-vars
+
+/Users/amaan/Downloads/servio-mvp-cleaned/components/menu-item-image.tsx
+  18:3  error  'fallbackIcon' is assigned a value but never used. Allowed unused args must match /^_/u  @typescript-eslint/no-unused-vars
+
+/Users/amaan/Downloads/servio-mvp-cleaned/components/menu-management/components/CategoriesManagementSection.tsx
+   4:10  error  'Input' is defined but never used. Allowed unused vars must match /^_/u           @typescript-eslint/no-unused-vars
+   5:43  error  'RefreshCw' is defined but never used. Allowed unused vars must match /^_/u       @typescript-eslint/no-unused-vars
+   5:54  error  'PlusCircle' is defined but never used. Allowed unused vars must match /^_/u      @typescript-eslint/no-unused-vars
+  14:56  error  'menuItemsCount' is defined but never used. Allowed unused args must match /^_/u  @typescript-eslint/no-unused-vars
+
+/Users/amaan/Downloads/servio-mvp-cleaned/components/menu-management/components/MenuItemList.tsx
+  6:39  error  'Edit' is defined but never used. Allowed unused vars must match /^_/u  @typescript-eslint/no-unused-vars
+
+/Users/amaan/Downloads/servio-mvp-cleaned/components/menu-management/hooks/useBatchOperations.ts
+  31:14  error  'error' is defined but never used. Allowed unused caught errors must match /^_/u  @typescript-eslint/no-unused-vars
+  83:14  error  'error' is defined but never used. Allowed unused caught errors must match /^_/u  @typescript-eslint/no-unused-vars
+
+/Users/amaan/Downloads/servio-mvp-cleaned/components/menu-management/hooks/useMenuData.ts
+   23:19  warning  'error' is never reassigned. Use 'const' instead                                                                               prefer-const
+  103:19  error    'status' is defined but never used. Allowed unused args must match /^_/u                                                       @typescript-eslint/no-unused-vars
+  111:6   warning  React Hook useEffect has missing dependencies: 'fetchMenu' and 'supabase'. Either include them or remove the dependency array  react-hooks/exhaustive-deps
+  117:6   warning  React Hook useEffect has a missing dependency: 'fetchMenu'. Either include it or remove the dependency array                   react-hooks/exhaustive-deps
+
+/Users/amaan/Downloads/servio-mvp-cleaned/components/menu-management/hooks/useMenuItemActions.ts
+    5:53  error  'onRefresh' is defined but never used. Allowed unused args must match /^_/u       @typescript-eslint/no-unused-vars
+   44:14  error  'error' is defined but never used. Allowed unused caught errors must match /^_/u  @typescript-eslint/no-unused-vars
+   71:14  error  'error' is defined but never used. Allowed unused caught errors must match /^_/u  @typescript-eslint/no-unused-vars
+   99:14  error  'error' is defined but never used. Allowed unused caught errors must match /^_/u  @typescript-eslint/no-unused-vars
+  129:14  error  'error' is defined but never used. Allowed unused caught errors must match /^_/u  @typescript-eslint/no-unused-vars
+
+/Users/amaan/Downloads/servio-mvp-cleaned/components/menu-management/index.tsx
+  23:43  error  'session' is defined but never used. Allowed unused args must match /^_/u                         @typescript-eslint/no-unused-vars
+  52:5   error  'handleClearMenu' is assigned a value but never used. Allowed unused vars must match /^_/u        @typescript-eslint/no-unused-vars
+  56:5   error  'batchEditOpen' is assigned a value but never used. Allowed unused vars must match /^_/u          @typescript-eslint/no-unused-vars
+  57:5   error  'setBatchEditOpen' is assigned a value but never used. Allowed unused vars must match /^_/u       @typescript-eslint/no-unused-vars
+  58:5   error  'batchEditItems' is assigned a value but never used. Allowed unused vars must match /^_/u         @typescript-eslint/no-unused-vars
+  63:5   error  'allSelected' is assigned a value but never used. Allowed unused vars must match /^_/u            @typescript-eslint/no-unused-vars
+  64:5   error  'openBatchEdit' is assigned a value but never used. Allowed unused vars must match /^_/u          @typescript-eslint/no-unused-vars
+  65:5   error  'handleBatchEditChange' is assigned a value but never used. Allowed unused vars must match /^_/u  @typescript-eslint/no-unused-vars
+  66:5   error  'saveBatchEdit' is assigned a value but never used. Allowed unused vars must match /^_/u          @typescript-eslint/no-unused-vars
+
+/Users/amaan/Downloads/servio-mvp-cleaned/components/navigation-breadcrumb.tsx
+   3:10  error  'useRouter' is defined but never used. Allowed unused vars must match /^_/u        @typescript-eslint/no-unused-vars
+   5:16  error  'ArrowLeft' is defined but never used. Allowed unused vars must match /^_/u        @typescript-eslint/no-unused-vars
+  24:3   error  'customBackPath' is defined but never used. Allowed unused args must match /^_/u   @typescript-eslint/no-unused-vars
+  25:3   error  'customBackLabel' is defined but never used. Allowed unused args must match /^_/u  @typescript-eslint/no-unused-vars
+
+/Users/amaan/Downloads/servio-mvp-cleaned/components/orders/OrderCard.tsx
+  118:15  error  'result' is assigned a value but never used. Allowed unused vars must match /^_/u  @typescript-eslint/no-unused-vars
+  132:15  error  'result' is assigned a value but never used. Allowed unused vars must match /^_/u  @typescript-eslint/no-unused-vars
+
+/Users/amaan/Downloads/servio-mvp-cleaned/components/pos/BillSplittingDialog.tsx
+    7:10  error    'Input' is defined but never used. Allowed unused vars must match /^_/u                                              @typescript-eslint/no-unused-vars
+   18:3   error    'Select' is defined but never used. Allowed unused vars must match /^_/u                                             @typescript-eslint/no-unused-vars
+   19:3   error    'SelectContent' is defined but never used. Allowed unused vars must match /^_/u                                      @typescript-eslint/no-unused-vars
+   20:3   error    'SelectItem' is defined but never used. Allowed unused vars must match /^_/u                                         @typescript-eslint/no-unused-vars
+   21:3   error    'SelectTrigger' is defined but never used. Allowed unused vars must match /^_/u                                      @typescript-eslint/no-unused-vars
+   22:3   error    'SelectValue' is defined but never used. Allowed unused vars must match /^_/u                                        @typescript-eslint/no-unused-vars
+   28:3   error    'DollarSign' is defined but never used. Allowed unused vars must match /^_/u                                         @typescript-eslint/no-unused-vars
+   29:3   error    'Users' is defined but never used. Allowed unused vars must match /^_/u                                              @typescript-eslint/no-unused-vars
+   30:3   error    'CreditCard' is defined but never used. Allowed unused vars must match /^_/u                                         @typescript-eslint/no-unused-vars
+   31:3   error    'CheckCircle' is defined but never used. Allowed unused vars must match /^_/u                                        @typescript-eslint/no-unused-vars
+   82:6   warning  React Hook useEffect has a missing dependency: 'initializeSplits'. Either include it or remove the dependency array  react-hooks/exhaustive-deps
+   86:11  error    'amountPerSplit' is assigned a value but never used. Allowed unused vars must match /^_/u                            @typescript-eslint/no-unused-vars
+  105:15  error    'order' is assigned a value but never used. Allowed unused vars must match /^_/u                                     @typescript-eslint/no-unused-vars
+  145:9   error    'getSplitForOrder' is assigned a value but never used. Allowed unused vars must match /^_/u                          @typescript-eslint/no-unused-vars
+
+/Users/amaan/Downloads/servio-mvp-cleaned/components/pos/LiveOrdersPOS.tsx
+    3:31  error    'useCallback' is defined but never used. Allowed unused vars must match /^_/u                                   @typescript-eslint/no-unused-vars
+    5:41  error    'CardTitle' is defined but never used. Allowed unused vars must match /^_/u                                     @typescript-eslint/no-unused-vars
+   18:3   error    'Pause' is defined but never used. Allowed unused vars must match /^_/u                                         @typescript-eslint/no-unused-vars
+   19:3   error    'Square' is defined but never used. Allowed unused vars must match /^_/u                                        @typescript-eslint/no-unused-vars
+   21:3   error    'Filter' is defined but never used. Allowed unused vars must match /^_/u                                        @typescript-eslint/no-unused-vars
+   90:10  error    'serverFilter' is assigned a value but never used. Allowed unused vars must match /^_/u                         @typescript-eslint/no-unused-vars
+   90:24  error    'setServerFilter' is assigned a value but never used. Allowed unused vars must match /^_/u                      @typescript-eslint/no-unused-vars
+  114:6   warning  React Hook useEffect has a missing dependency: 'fetchOrders'. Either include it or remove the dependency array  react-hooks/exhaustive-deps
+  150:9   error    'updateItemStatus' is assigned a value but never used. Allowed unused vars must match /^_/u                     @typescript-eslint/no-unused-vars
+
+/Users/amaan/Downloads/servio-mvp-cleaned/components/pos/TableManagementEntity.tsx
+  16:3  error    'Minus' is defined but never used. Allowed unused vars must match /^_/u                                           @typescript-eslint/no-unused-vars
+  17:3  error    'Split' is defined but never used. Allowed unused vars must match /^_/u                                           @typescript-eslint/no-unused-vars
+  18:3  error    'ArrowRight' is defined but never used. Allowed unused vars must match /^_/u                                      @typescript-eslint/no-unused-vars
+  19:3  error    'User' is defined but never used. Allowed unused vars must match /^_/u                                            @typescript-eslint/no-unused-vars
+  21:3  error    'DollarSign' is defined but never used. Allowed unused vars must match /^_/u                                      @typescript-eslint/no-unused-vars
+  89:6  warning  React Hook useEffect has a missing dependency: 'fetchEntities'. Either include it or remove the dependency array  react-hooks/exhaustive-deps
+
+/Users/amaan/Downloads/servio-mvp-cleaned/components/protected-route.tsx
+  13:3   error  'redirectTo' is assigned a value but never used. Allowed unused args must match /^_/u  @typescript-eslint/no-unused-vars
+  16:11  error  'user' is assigned a value but never used. Allowed unused vars must match /^_/u        @typescript-eslint/no-unused-vars
+
+/Users/amaan/Downloads/servio-mvp-cleaned/components/real-time-order-timeline.tsx
+    7:50  error    'User' is defined but never used. Allowed unused vars must match /^_/u                                         @typescript-eslint/no-unused-vars
+    7:56  error    'Hash' is defined but never used. Allowed unused vars must match /^_/u                                         @typescript-eslint/no-unused-vars
+    7:62  error    'Loader2' is defined but never used. Allowed unused vars must match /^_/u                                      @typescript-eslint/no-unused-vars
+   69:50  error    'venueId' is defined but never used. Allowed unused args must match /^_/u                                      @typescript-eslint/no-unused-vars
+  157:6   warning  React Hook useEffect has a missing dependency: 'fetchOrder'. Either include it or remove the dependency array  react-hooks/exhaustive-deps
+  159:9   error    'getStatusInfo' is assigned a value but never used. Allowed unused vars must match /^_/u                       @typescript-eslint/no-unused-vars
+  254:9   error    'isGreyedOutStatus' is assigned a value but never used. Allowed unused vars must match /^_/u                   @typescript-eslint/no-unused-vars
+
+/Users/amaan/Downloads/servio-mvp-cleaned/components/settings/AddressInput.tsx
+   9:10  error    'loadGoogleMapsAPI' is defined but never used. Allowed unused vars must match /^_/u                                     @typescript-eslint/no-unused-vars
+  35:6   warning  React Hook useEffect has a missing dependency: 'handleManualGeocode'. Either include it or remove the dependency array  react-hooks/exhaustive-deps
+
+/Users/amaan/Downloads/servio-mvp-cleaned/components/staff/EnhancedShiftSchedule.tsx
+    7:60  error  'DialogTrigger' is defined but never used. Allowed unused vars must match /^_/u  @typescript-eslint/no-unused-vars
+  215:48  error  'date' is defined but never used. Allowed unused args must match /^_/u           @typescript-eslint/no-unused-vars
+
+/Users/amaan/Downloads/servio-mvp-cleaned/components/staff/InvitationBasedStaffManagement.tsx
+    6:29  error    'CardHeader' is defined but never used. Allowed unused vars must match /^_/u                                                                                                                                                          @typescript-eslint/no-unused-vars
+    6:41  error    'CardTitle' is defined but never used. Allowed unused vars must match /^_/u                                                                                                                                                           @typescript-eslint/no-unused-vars
+   12:3   error    'Dialog' is defined but never used. Allowed unused vars must match /^_/u                                                                                                                                                              @typescript-eslint/no-unused-vars
+   13:3   error    'DialogContent' is defined but never used. Allowed unused vars must match /^_/u                                                                                                                                                       @typescript-eslint/no-unused-vars
+   14:3   error    'DialogDescription' is defined but never used. Allowed unused vars must match /^_/u                                                                                                                                                   @typescript-eslint/no-unused-vars
+   15:3   error    'DialogHeader' is defined but never used. Allowed unused vars must match /^_/u                                                                                                                                                        @typescript-eslint/no-unused-vars
+   16:3   error    'DialogTitle' is defined but never used. Allowed unused vars must match /^_/u                                                                                                                                                         @typescript-eslint/no-unused-vars
+   17:3   error    'DialogTrigger' is defined but never used. Allowed unused vars must match /^_/u                                                                                                                                                       @typescript-eslint/no-unused-vars
+   35:3   error    'Trash2' is defined but never used. Allowed unused vars must match /^_/u                                                                                                                                                              @typescript-eslint/no-unused-vars
+   36:3   error    'Edit' is defined but never used. Allowed unused vars must match /^_/u                                                                                                                                                                @typescript-eslint/no-unused-vars
+   89:3   error    'venueName' is defined but never used. Allowed unused args must match /^_/u                                                                                                                                                           @typescript-eslint/no-unused-vars
+   96:10  error    'inviteDialogOpen' is assigned a value but never used. Allowed unused vars must match /^_/u                                                                                                                                           @typescript-eslint/no-unused-vars
+   99:10  error    'inviteLoading' is assigned a value but never used. Allowed unused vars must match /^_/u                                                                                                                                              @typescript-eslint/no-unused-vars
+  100:10  error    'error' is assigned a value but never used. Allowed unused vars must match /^_/u                                                                                                                                                      @typescript-eslint/no-unused-vars
+  107:6   warning  React Hook useEffect has a missing dependency: 'loadData'. Either include it or remove the dependency array                                                                                                                           react-hooks/exhaustive-deps
+  156:9   error    'handleSendInvitation' is assigned a value but never used. Allowed unused vars must match /^_/u                                                                                                                                       @typescript-eslint/no-unused-vars
+  308:5   error    'onDeleteRow' is defined but never used. Allowed unused args must match /^_/u                                                                                                                                                         @typescript-eslint/no-unused-vars
+  319:12  error    'showEditor' is assigned a value but never used. Allowed unused vars must match /^_/u                                                                                                                                                 @typescript-eslint/no-unused-vars
+  319:24  error    'setShowEditor' is assigned a value but never used. Allowed unused vars must match /^_/u                                                                                                                                              @typescript-eslint/no-unused-vars
+  338:8   warning  React Hook useCallback has an unnecessary dependency: 'venueId'. Either exclude it or remove the dependency array. Outer scope values like 'venueId' aren't valid dependencies because mutating them doesn't re-render the component  react-hooks/exhaustive-deps
+  379:8   warning  React Hook useCallback has an unnecessary dependency: 'venueId'. Either exclude it or remove the dependency array. Outer scope values like 'venueId' aren't valid dependencies because mutating them doesn't re-render the component  react-hooks/exhaustive-deps
+
+/Users/amaan/Downloads/servio-mvp-cleaned/components/table-management/AddTableDialog.tsx
+  47:13  error  'result' is assigned a value but never used. Allowed unused vars must match /^_/u  @typescript-eslint/no-unused-vars
+
+/Users/amaan/Downloads/servio-mvp-cleaned/components/table-management/CounterOrderCard.tsx
+   8:3   error  'Clock' is defined but never used. Allowed unused vars must match /^_/u       @typescript-eslint/no-unused-vars
+   9:3   error  'Receipt' is defined but never used. Allowed unused vars must match /^_/u     @typescript-eslint/no-unused-vars
+  13:3   error  'Split' is defined but never used. Allowed unused vars must match /^_/u       @typescript-eslint/no-unused-vars
+  22:10  error  'StatusPill' is defined but never used. Allowed unused vars must match /^_/u  @typescript-eslint/no-unused-vars
+
+/Users/amaan/Downloads/servio-mvp-cleaned/components/table-management/EnhancedTableMergeDialog.tsx
+   5:15  error  'TableWithState' is defined but never used. Allowed unused vars must match /^_/u    @typescript-eslint/no-unused-vars
+  37:3   error  'getMergeScenario' is defined but never used. Allowed unused vars must match /^_/u  @typescript-eslint/no-unused-vars
+  41:3   error  'getStateIcon' is defined but never used. Allowed unused vars must match /^_/u      @typescript-eslint/no-unused-vars
+  78:3   error  'venueId' is defined but never used. Allowed unused args must match /^_/u           @typescript-eslint/no-unused-vars
+
+/Users/amaan/Downloads/servio-mvp-cleaned/components/table-management/MergeConfirmationDialog.tsx
+  49:9  error  'isReservedReserved' is assigned a value but never used. Allowed unused vars must match /^_/u  @typescript-eslint/no-unused-vars
+
+/Users/amaan/Downloads/servio-mvp-cleaned/components/table-management/ReservationDialog.tsx
+  92:6  warning  React Hook useEffect has a missing dependency: 'reservationTime'. Either include it or remove the dependency array  react-hooks/exhaustive-deps
+
+/Users/amaan/Downloads/servio-mvp-cleaned/components/table-management/TableOrderCard.tsx
+  8:3  error  'Clock' is defined but never used. Allowed unused vars must match /^_/u  @typescript-eslint/no-unused-vars
+
+/Users/amaan/Downloads/servio-mvp-cleaned/components/table-management/TableSelectionDialog.tsx
+    3:20  error  'useEffect' is defined but never used. Allowed unused vars must match /^_/u        @typescript-eslint/no-unused-vars
+  102:15  error  'result' is assigned a value but never used. Allowed unused vars must match /^_/u  @typescript-eslint/no-unused-vars
+
+/Users/amaan/Downloads/servio-mvp-cleaned/components/table-management/UnassignedReservationsPanel.tsx
+  28:3  error  'venueId' is defined but never used. Allowed unused args must match /^_/u  @typescript-eslint/no-unused-vars
+
+/Users/amaan/Downloads/servio-mvp-cleaned/components/table-management/WaitingList.tsx
+   4:29  error    'CardHeader' is defined but never used. Allowed unused vars must match /^_/u                                            @typescript-eslint/no-unused-vars
+   4:41  error    'CardTitle' is defined but never used. Allowed unused vars must match /^_/u                                             @typescript-eslint/no-unused-vars
+  13:3   error    'UserCheck' is defined but never used. Allowed unused vars must match /^_/u                                             @typescript-eslint/no-unused-vars
+  59:6   warning  React Hook useEffect has a missing dependency: 'fetchWaitingParties'. Either include it or remove the dependency array  react-hooks/exhaustive-deps
+
+/Users/amaan/Downloads/servio-mvp-cleaned/components/ui/calendar.tsx
+  57:25  error  'props' is defined but never used. Allowed unused args must match /^_/u  @typescript-eslint/no-unused-vars
+  58:26  error  'props' is defined but never used. Allowed unused args must match /^_/u  @typescript-eslint/no-unused-vars
+
+/Users/amaan/Downloads/servio-mvp-cleaned/components/ui/combobox.tsx
+  42:3  error  'emptyPlaceholder' is assigned a value but never used. Allowed unused args must match /^_/u  @typescript-eslint/no-unused-vars
+
+/Users/amaan/Downloads/servio-mvp-cleaned/components/ui/command.tsx
+  42:52  warning  Unknown property 'cmdk-input-wrapper' found  react/no-unknown-property
+
+/Users/amaan/Downloads/servio-mvp-cleaned/components/ui/progressive-image.tsx
+  3:20  error  'useEffect' is defined but never used. Allowed unused vars must match /^_/u  @typescript-eslint/no-unused-vars
+
+/Users/amaan/Downloads/servio-mvp-cleaned/components/ui/sidebar.tsx
+  22:7  error  'SIDEBAR_COOKIE_NAME' is assigned a value but never used. Allowed unused vars must match /^_/u     @typescript-eslint/no-unused-vars
+  23:7  error  'SIDEBAR_COOKIE_MAX_AGE' is assigned a value but never used. Allowed unused vars must match /^_/u  @typescript-eslint/no-unused-vars
+
+/Users/amaan/Downloads/servio-mvp-cleaned/components/ui/textarea.tsx
+  5:18  error  An interface declaring no members is equivalent to its supertype  @typescript-eslint/no-empty-object-type
+
+/Users/amaan/Downloads/servio-mvp-cleaned/components/ui/use-toast.ts
+  18:7  error  'actionTypes' is assigned a value but only used as a type. Allowed unused vars must match /^_/u  @typescript-eslint/no-unused-vars
+
+/Users/amaan/Downloads/servio-mvp-cleaned/components/ui/virtual-list.tsx
+  3:28  error  'useEffect' is defined but never used. Allowed unused vars must match /^_/u  @typescript-eslint/no-unused-vars
+
+/Users/amaan/Downloads/servio-mvp-cleaned/components/venue-switcher-popup.tsx
+  24:3  error  'Check' is defined but never used. Allowed unused vars must match /^_/u  @typescript-eslint/no-unused-vars
+
+/Users/amaan/Downloads/servio-mvp-cleaned/components/venue-switcher.tsx
+  14:10  error  'Button' is defined but never used. Allowed unused vars must match /^_/u  @typescript-eslint/no-unused-vars
+
+/Users/amaan/Downloads/servio-mvp-cleaned/fix-batch2.mjs
+  121:12  error  'err' is defined but never used. Allowed unused caught errors must match /^_/u  @typescript-eslint/no-unused-vars
+
+/Users/amaan/Downloads/servio-mvp-cleaned/fix-lint-batch1.mjs
+  91:12  error  'err' is defined but never used. Allowed unused caught errors must match /^_/u  @typescript-eslint/no-unused-vars
+
+/Users/amaan/Downloads/servio-mvp-cleaned/fix-lint-safe.mjs
+  79:12  error  'err' is defined but never used. Allowed unused caught errors must match /^_/u  @typescript-eslint/no-unused-vars
+
+/Users/amaan/Downloads/servio-mvp-cleaned/hooks/use-counts-realtime.ts
+  32:6  warning  React Hook useEffect has a missing dependency: 'supabase'. Either include it or remove the dependency array  react-hooks/exhaustive-deps
+
+/Users/amaan/Downloads/servio-mvp-cleaned/hooks/use-tab-counts.ts
+  4:44  error  'useMemo' is defined but never used. Allowed unused vars must match /^_/u  @typescript-eslint/no-unused-vars
+
+/Users/amaan/Downloads/servio-mvp-cleaned/hooks/use-toast.ts
+  18:7  error  'actionTypes' is assigned a value but only used as a type. Allowed unused vars must match /^_/u  @typescript-eslint/no-unused-vars
+
+/Users/amaan/Downloads/servio-mvp-cleaned/hooks/useCounterOrders.ts
+  5:10  error  'todayWindowForTZ' is defined but never used. Allowed unused vars must match /^_/u  @typescript-eslint/no-unused-vars
+
+/Users/amaan/Downloads/servio-mvp-cleaned/hooks/useCsvDownload.ts
+  1:10  error  'errorToContext' is defined but never used. Allowed unused vars must match /^_/u  @typescript-eslint/no-unused-vars
+
+/Users/amaan/Downloads/servio-mvp-cleaned/hooks/useDragAndDrop.ts
+  30:34  error  'draggableId' is assigned a value but never used. Allowed unused vars must match /^_/u  @typescript-eslint/no-unused-vars
+
+/Users/amaan/Downloads/servio-mvp-cleaned/hooks/useEnhancedTableMerge.ts
+  94:5  warning  React Hook useCallback has a missing dependency: 'error'. Either include it or remove the dependency array  react-hooks/exhaustive-deps
+
+/Users/amaan/Downloads/servio-mvp-cleaned/hooks/useGestures.ts
+  151:39  error  'e' is defined but never used. Allowed unused args must match /^_/u                   @typescript-eslint/no-unused-vars
+  155:11  error  'totalTime' is assigned a value but never used. Allowed unused vars must match /^_/u  @typescript-eslint/no-unused-vars
+
+/Users/amaan/Downloads/servio-mvp-cleaned/hooks/useLiveOrders.ts
+  30:7   error  'LIVE_STATUSES' is assigned a value but never used. Allowed unused vars must match /^_/u  @typescript-eslint/no-unused-vars
+  33:46  error  'ms' is assigned a value but never used. Allowed unused args must match /^_/u             @typescript-eslint/no-unused-vars
+
+/Users/amaan/Downloads/servio-mvp-cleaned/hooks/usePerformance.ts
+    6:11  error    'PerformanceMetrics' is defined but never used. Allowed unused vars must match /^_/u                                                                                                                                                            @typescript-eslint/no-unused-vars
+  140:8   warning  React Hook useEffect has an unnecessary dependency: 'componentName'. Either exclude it or remove the dependency array. Outer scope values like 'componentName' aren't valid dependencies because mutating them doesn't re-render the component  react-hooks/exhaustive-deps
+
+/Users/amaan/Downloads/servio-mvp-cleaned/hooks/useTableOrders.ts
+  5:10  error  'todayWindowForTZ' is defined but never used. Allowed unused vars must match /^_/u  @typescript-eslint/no-unused-vars
+
+/Users/amaan/Downloads/servio-mvp-cleaned/hooks/useTableRealtime.ts
+  48:19  error    'status' is defined but never used. Allowed unused args must match /^_/u                                     @typescript-eslint/no-unused-vars
+  53:6   warning  React Hook useEffect has a missing dependency: 'supabase'. Either include it or remove the dependency array  react-hooks/exhaustive-deps
+
+/Users/amaan/Downloads/servio-mvp-cleaned/hooks/useTableRuntimeState.ts
+  145:22  error  'tableId' is defined but never used. Allowed unused args must match /^_/u                @typescript-eslint/no-unused-vars
+  235:35  error  'venueId' is defined but never used. Allowed unused args must match /^_/u                @typescript-eslint/no-unused-vars
+  251:13  error  'responseData' is assigned a value but never used. Allowed unused vars must match /^_/u  @typescript-eslint/no-unused-vars
+  286:13  error  'responseData' is assigned a value but never used. Allowed unused vars must match /^_/u  @typescript-eslint/no-unused-vars
+
+/Users/amaan/Downloads/servio-mvp-cleaned/hooks/useTablesData.ts
+  60:13  error  'fetchTime' is assigned a value but never used. Allowed unused vars must match /^_/u  @typescript-eslint/no-unused-vars
+
+/Users/amaan/Downloads/servio-mvp-cleaned/lib/ai/executors/menu-executors.ts
+  4:3  error  'ToolName' is defined but never used. Allowed unused vars must match /^_/u  @typescript-eslint/no-unused-vars
+
+/Users/amaan/Downloads/servio-mvp-cleaned/lib/ai/executors/other-executors.ts
+   66:3  error  'preview' is defined but never used. Allowed unused args must match /^_/u  @typescript-eslint/no-unused-vars
+  100:3  error  'venueId' is defined but never used. Allowed unused args must match /^_/u  @typescript-eslint/no-unused-vars
+  101:3  error  'userId' is defined but never used. Allowed unused args must match /^_/u   @typescript-eslint/no-unused-vars
+  102:3  error  'preview' is defined but never used. Allowed unused args must match /^_/u  @typescript-eslint/no-unused-vars
+
+/Users/amaan/Downloads/servio-mvp-cleaned/lib/ai/openai-service.ts
+  111:11  error  'Message' is defined but never used. Allowed unused vars must match /^_/u  @typescript-eslint/no-unused-vars
+  125:3   error  'userId' is defined but never used. Allowed unused args must match /^_/u   @typescript-eslint/no-unused-vars
+
+/Users/amaan/Downloads/servio-mvp-cleaned/lib/auth/signin.ts
+  107:9  error  'oauthKeys' is assigned a value but never used. Allowed unused vars must match /^_/u  @typescript-eslint/no-unused-vars
+
+/Users/amaan/Downloads/servio-mvp-cleaned/lib/dates.ts
+  61:24  error  'endUtcISO' is assigned a value but never used. Allowed unused vars must match /^_/u  @typescript-eslint/no-unused-vars
+
+/Users/amaan/Downloads/servio-mvp-cleaned/lib/error-tracking.ts
+  63:15  error  'error' is defined but never used. Allowed unused args must match /^_/u  @typescript-eslint/no-unused-vars
+
+/Users/amaan/Downloads/servio-mvp-cleaned/lib/feature-gates.ts
+  48:19  error  'venue' is assigned a value but never used. Allowed unused vars must match /^_/u  @typescript-eslint/no-unused-vars
+
+/Users/amaan/Downloads/servio-mvp-cleaned/lib/gptVisionMenuParser.ts
+  187:29  warning  Unexpected any. Specify a different type                                 @typescript-eslint/no-explicit-any
+  187:34  error    'index' is defined but never used. Allowed unused args must match /^_/u  @typescript-eslint/no-unused-vars
+  193:32  warning  Unexpected any. Specify a different type                                 @typescript-eslint/no-explicit-any
+
+/Users/amaan/Downloads/servio-mvp-cleaned/lib/image-utils.ts
+  161:11  error  'data' is assigned a value but never used. Allowed unused vars must match /^_/u  @typescript-eslint/no-unused-vars
+  261:32  error  'reject' is defined but never used. Allowed unused args must match /^_/u         @typescript-eslint/no-unused-vars
+
+/Users/amaan/Downloads/servio-mvp-cleaned/lib/inventory-seed.ts
+  17:15  error  'CreateIngredientRequest' is defined but never used. Allowed unused vars must match /^_/u  @typescript-eslint/no-unused-vars
+
+/Users/amaan/Downloads/servio-mvp-cleaned/lib/logger.ts
+  14:25  warning  A `require()` style import is forbidden  @typescript-eslint/no-require-imports
+  20:24  warning  A `require()` style import is forbidden  @typescript-eslint/no-require-imports
+
+/Users/amaan/Downloads/servio-mvp-cleaned/lib/menuLike.ts
+  2:46  error  Unnecessary escape character: \.  no-useless-escape
+
+/Users/amaan/Downloads/servio-mvp-cleaned/lib/normalizeMenu.ts
+  14:48  error  'idx' is defined but never used. Allowed unused args must match /^_/u  @typescript-eslint/no-unused-vars
+
+/Users/amaan/Downloads/servio-mvp-cleaned/lib/orders/test-unified-system.ts
+  3:10  error  'deriveEntityKind' is defined but never used. Allowed unused vars must match /^_/u  @typescript-eslint/no-unused-vars
+
+/Users/amaan/Downloads/servio-mvp-cleaned/lib/performance-monitor.ts
+  314:15  error  'error' is defined but never used. Allowed unused args must match /^_/u  @typescript-eslint/no-unused-vars
+
+/Users/amaan/Downloads/servio-mvp-cleaned/lib/performance/request-optimizer.ts
+  47:66  error  The `Function` type accepts any function-like value.
+Prefer explicitly defining any function parameters and return type  @typescript-eslint/no-unsafe-function-type
+  47:84  error  The `Function` type accepts any function-like value.
+Prefer explicitly defining any function parameters and return type  @typescript-eslint/no-unsafe-function-type
+
+/Users/amaan/Downloads/servio-mvp-cleaned/lib/react-performance.ts
+  25:10  warning  React Hook useMemo received a function whose dependencies are unknown. Pass an inline function instead                                                              react-hooks/exhaustive-deps
+  35:10  warning  React Hook useCallback received a function whose dependencies are unknown. Pass an inline function instead                                                          react-hooks/exhaustive-deps
+  42:29  warning  React Hook useMemo was passed a dependency list that is not an array literal. This means we can't statically verify whether you've passed the correct dependencies  react-hooks/exhaustive-deps
+  42:29  warning  React Hook useMemo has a missing dependency: 'obj'. Either include it or remove the dependency array                                                                react-hooks/exhaustive-deps
+  49:29  warning  React Hook useMemo was passed a dependency list that is not an array literal. This means we can't statically verify whether you've passed the correct dependencies  react-hooks/exhaustive-deps
+  49:29  warning  React Hook useMemo has a missing dependency: 'arr'. Either include it or remove the dependency array                                                                react-hooks/exhaustive-deps
+
+/Users/amaan/Downloads/servio-mvp-cleaned/lib/repos/menu.repo.ts
+  9:6  error  'MenuItem' is defined but never used. Allowed unused vars must match /^_/u  @typescript-eslint/no-unused-vars
+
+/Users/amaan/Downloads/servio-mvp-cleaned/lib/repos/orders.repo.ts
+    9:6   error  'Order' is defined but never used. Allowed unused vars must match /^_/u              @typescript-eslint/no-unused-vars
+  152:50  error  'timezone' is assigned a value but never used. Allowed unused args must match /^_/u  @typescript-eslint/no-unused-vars
+
+/Users/amaan/Downloads/servio-mvp-cleaned/lib/repos/venues.repo.ts
+  9:6  error  'Venue' is defined but never used. Allowed unused vars must match /^_/u  @typescript-eslint/no-unused-vars
+
+/Users/amaan/Downloads/servio-mvp-cleaned/lib/repositories/base-repository.ts
+  111:13  error  'select' is assigned a value but never used. Allowed unused vars must match /^_/u  @typescript-eslint/no-unused-vars
+
+/Users/amaan/Downloads/servio-mvp-cleaned/lib/repositories/order-repository.ts
+  144:5  error  'notes' is defined but never used. Allowed unused args must match /^_/u  @typescript-eslint/no-unused-vars
+
+/Users/amaan/Downloads/servio-mvp-cleaned/lib/structured-logger.ts
+  77:11  error  'json' is assigned a value but never used. Allowed unused vars must match /^_/u  @typescript-eslint/no-unused-vars
+
+/Users/amaan/Downloads/servio-mvp-cleaned/lib/supabase-retry.ts
+  50:42  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+
+/Users/amaan/Downloads/servio-mvp-cleaned/lib/table-states.ts
+  260:9  error  'sourceState' is assigned a value but never used. Allowed unused vars must match /^_/u  @typescript-eslint/no-unused-vars
+
+/Users/amaan/Downloads/servio-mvp-cleaned/lib/webhooks.ts
+  118:20  warning  A `require()` style import is forbidden  @typescript-eslint/no-require-imports
+  128:20  warning  A `require()` style import is forbidden  @typescript-eslint/no-require-imports
+
+✖ 503 problems (427 errors, 76 warnings)
+

@@ -55,7 +55,7 @@ export default function RoleBasedNavigation({
   const isDashboard = currentPage === "Dashboard";
 
   // Navigation items definition (currently unused but kept for future use)
-  // eslint-disable-next-line @typescript-eslint/no-unused-vars
+   
   const navigationItems = [
     {
       label: "Dashboard",

@@ -146,7 +146,7 @@ export function useOrderManagement(venueId: string) {
     return () => {
       createClient().removeChannel(channel);
     };
-    // eslint-disable-next-line react-hooks/exhaustive-deps
+     
   }, [venueId]);
 
   const handleOrderInsert = (order: Order) => {

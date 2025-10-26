@@ -61,7 +61,7 @@ export function useGroupSessions(venueId: string): UseGroupSessionsReturn {
 
   useEffect(() => {
     fetchGroupSessions();
-    // eslint-disable-next-line react-hooks/exhaustive-deps
+     
   }, [venueId]);
 
   // Auto-refresh every 30 seconds - but only if there are active group sessions
@@ -72,7 +72,7 @@ export function useGroupSessions(venueId: string): UseGroupSessionsReturn {
 
     const interval = setInterval(fetchGroupSessions, 120000);
     return () => clearInterval(interval);
-    // eslint-disable-next-line react-hooks/exhaustive-deps
+     
   }, [venueId, groupSessions.length]);
 
   return {

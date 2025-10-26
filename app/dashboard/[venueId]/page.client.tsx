@@ -247,7 +247,7 @@ const DashboardClient = React.memo(function DashboardClient({
     }
 
     checkAuth();
-    // eslint-disable-next-line react-hooks/exhaustive-deps
+     
   }, [venueId]);
 
   // NO AUTH REDIRECTS - User requested ZERO sign-in redirects
