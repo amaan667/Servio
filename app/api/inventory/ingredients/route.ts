@@ -1,44 +1,39 @@
-import { NextRequest, NextResponse } from 'next/server';
-import { createClient } from '@/lib/supabase';
-import type { CreateIngredientRequest } from '@/types/inventory';
-import { logger } from '@/lib/logger';
+import { NextRequest, NextResponse } from "next/server";
+import { createClient } from "@/lib/supabase";
+import type { CreateIngredientRequest } from "@/types/inventory";
+import { logger } from "@/lib/logger";
 
 // GET /api/inventory/ingredients?venue_id=xxx
 export async function GET(_request: NextRequest) {
   try {
     const supabase = await createClient();
-    const { searchParams } = new URL(request.url);
-    const venue_id = searchParams.get('venue_id');
+    const { searchParams } = new URL(_request.url);
+    const venue_id = searchParams.get("venue_id");
 
     if (!venue_id) {
-      return NextResponse.json(
-        { error: 'venue_id is required' },
-        { status: 400 }
-      );
+      return NextResponse.json({ error: "venue_id is required" }, { status: 400 });
     }
 
     // Fetch ingredients with current stock levels from view
     const { data, error } = await supabase
-      .from('v_stock_levels')
-      .select('*')
-      .eq('venue_id', venue_id)
-      .order('name', { ascending: true });
+      .from("v_stock_levels")
+      .select("*")
+      .eq("venue_id", venue_id)
+      .order("name", { ascending: true });
 
     if (error) {
-      logger.error('[INVENTORY API] Error fetching ingredients:', { error: error instanceof Error ? error.message : 'Unknown error' });
-      return NextResponse.json(
-        { error: error.message },
-        { status: 500 }
-      );
+      logger.error("[INVENTORY API] Error fetching ingredients:", {
+        error: error instanceof Error ? error.message : "Unknown error",
+      });
+      return NextResponse.json({ error: error.message }, { status: 500 });
     }
 
     return NextResponse.json({ data });
   } catch (_error) {
-    logger.error('[INVENTORY API] Unexpected error:', { error: error instanceof Error ? error.message : 'Unknown error' });
-    return NextResponse.json(
-      { error: 'Internal server error' },
-      { status: 500 }
-    );
+    logger._error("[INVENTORY API] Unexpected error:", {
+      error: _error instanceof Error ? _error.message : "Unknown _error",
+    });
+    return NextResponse.json({ error: "Internal server error" }, { status: 500 });
   }
 }
 
@@ -46,7 +41,7 @@ export async function GET(_request: NextRequest) {
 export async function POST(_request: NextRequest) {
   try {
     const supabase = await createClient();
-    const body: CreateIngredientRequest = await request.json();
+    const body: CreateIngredientRequest = await _request.json();
 
     const {
       venue_id,
@@ -62,15 +57,12 @@ export async function POST(_request: NextRequest) {
     } = body;
 
     if (!venue_id || !name || !unit) {
-      return NextResponse.json(
-        { error: 'venue_id, name, and unit are required' },
-        { status: 400 }
-      );
+      return NextResponse.json({ error: "venue_id, name, and unit are required" }, { status: 400 });
     }
 
     // Create ingredient
     const { data: ingredient, error: ingredientError } = await supabase
-      .from('ingredients')
+      .from("ingredients")
       .insert({
         venue_id,
         name,
@@ -86,42 +78,39 @@ export async function POST(_request: NextRequest) {
       .single();
 
     if (ingredientError) {
-      logger.error('[INVENTORY API] Error creating ingredient:', { error: ingredientError.message });
-      return NextResponse.json(
-        { error: ingredientError.message },
-        { status: 500 }
-      );
+      logger.error("[INVENTORY API] Error creating ingredient:", {
+        error: ingredientError.message,
+      });
+      return NextResponse.json({ error: ingredientError.message }, { status: 500 });
     }
 
     // If initial stock provided, create a receive ledger entry
     if (initial_stock && initial_stock > 0) {
       const { data: currentUser } = await supabase.auth.getSession();
-      
-      const { error: ledgerError } = await supabase
-        .from('stock_ledgers')
-        .insert({
-          ingredient_id: ingredient.id,
-          venue_id,
-          delta: initial_stock,
-          reason: 'receive',
-          ref_type: 'manual',
-          note: 'Initial stock',
-          created_by: currentUser?.user?.id,
-        });
+
+      const { error: ledgerError } = await supabase.from("stock_ledgers").insert({
+        ingredient_id: ingredient.id,
+        venue_id,
+        delta: initial_stock,
+        reason: "receive",
+        ref_type: "manual",
+        note: "Initial stock",
+        created_by: currentUser?.user?.id,
+      });
 
       if (ledgerError) {
-        logger.error('[INVENTORY API] Error creating initial stock:', { error: ledgerError.message });
+        logger.error("[INVENTORY API] Error creating initial stock:", {
+          error: ledgerError.message,
+        });
         // Don't fail the request, ingredient is already created
       }
     }
 
     return NextResponse.json({ data: ingredient }, { status: 201 });
   } catch (_error) {
-    logger.error('[INVENTORY API] Unexpected error:', { error: error instanceof Error ? error.message : 'Unknown error' });
-    return NextResponse.json(
-      { error: 'Internal server error' },
-      { status: 500 }
-    );
+    logger._error("[INVENTORY API] Unexpected error:", {
+      error: _error instanceof Error ? _error.message : "Unknown _error",
+    });
+    return NextResponse.json({ error: "Internal server error" }, { status: 500 });
   }
 }
-

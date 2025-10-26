@@ -3,7 +3,7 @@
  * Using Zod for runtime type validation and sanitization
  */
 
-import { z } from 'zod';
+import { z } from "zod";
 
 // Common validation schemas
 export const UUIDSchema = z.string().uuid();
@@ -16,19 +16,16 @@ export const URLSchema = z.string().url();
 
 // Sanitization helpers
 export function sanitizeString(input: string, maxLength = 1000): string {
-  return input
-    .trim()
-    .slice(0, maxLength)
-    .replace(/[<>]/g, ''); // Remove potential XSS characters
+  return input.trim().slice(0, maxLength).replace(/[<>]/g, ""); // Remove potential XSS characters
 }
 
 export function sanitizeHTML(input: string): string {
   // Strip all HTML tags and dangerous characters
   return input
-    .replace(/<script\b[^<]*(?:(?!<\/script>)<[^<]*)*<\/script>/gi, '')
-    .replace(/<[^>]+>/g, '')
-    .replace(/javascript:/gi, '')
-    .replace(/on\w+\s*=/gi, '');
+    .replace(/<script\b[^<]*(?:(?!<\/script>)<[^<]*)*<\/script>/gi, "")
+    .replace(/<[^>]+>/g, "")
+    .replace(/javascript:/gi, "")
+    .replace(/on\w+\s*=/gi, "");
 }
 
 // Order validation
@@ -51,11 +48,16 @@ export const CreateOrderSchema = z.object({
   table_id: z.string().optional().nullable(),
   items: z.array(OrderItemSchema).min(1).max(50),
   total_amount: z.number().nonnegative(),
-  payment_method: z.enum(['CARD', 'CASH', 'PAY_LATER', 'STRIPE']),
-  payment_status: z.enum(['PAID', 'UNPAID', 'PROCESSING']),
-  source: z.enum(['qr', 'counter', 'pos', 'admin']).optional(),
+  payment_method: z.enum(["CARD", "CASH", "PAY_LATER", "STRIPE"]),
+  payment_status: z.enum(["PAID", "UNPAID", "PROCESSING"]),
+  source: z.enum(["qr", "counter", "pos", "admin"]).optional(),
   session_id: z.string().optional().nullable(),
-  notes: z.string().max(1000).optional().nullable().transform((val) => val ? sanitizeString(val) : null),
+  notes: z
+    .string()
+    .max(1000)
+    .optional()
+    .nullable()
+    .transform((val) => (val ? sanitizeString(val) : null)),
 });
 
 // Menu item validation
@@ -72,7 +74,7 @@ export const MenuItemSchema = z.object({
 // Staff invitation validation
 export const StaffInvitationSchema = z.object({
   email: EmailSchema,
-  role: z.enum(['owner', 'manager', 'staff', 'kitchen_staff', 'waiter']),
+  role: z.enum(["owner", "manager", "staff", "kitchen_staff", "waiter"]),
   venue_id: VenueIdSchema,
   expires_in_days: z.number().int().min(1).max(30).default(7),
 });
@@ -80,9 +82,14 @@ export const StaffInvitationSchema = z.object({
 // Feedback validation
 export const FeedbackAnswerSchema = z.object({
   question_id: z.string(),
-  type: z.enum(['rating', 'text', 'multiple_choice']),
+  type: z.enum(["rating", "text", "multiple_choice"]),
   rating_value: z.number().int().min(1).max(5).optional().nullable(),
-  text_value: z.string().max(2000).optional().nullable().transform((val) => val ? sanitizeHTML(val) : null),
+  text_value: z
+    .string()
+    .max(2000)
+    .optional()
+    .nullable()
+    .transform((val) => (val ? sanitizeHTML(val) : null)),
   answer_choice: z.string().max(255).optional().nullable(),
 });
 
@@ -120,7 +127,7 @@ export const PaginationSchema = z.object({
   page: z.number().int().positive().default(1),
   limit: z.number().int().min(1).max(100).default(20),
   sortBy: z.string().max(50).optional(),
-  sortOrder: z.enum(['asc', 'desc']).default('desc'),
+  sortOrder: z.enum(["asc", "desc"]).default("desc"),
 });
 
 /**
@@ -131,21 +138,20 @@ export async function validateRequest<T>(
   schema: z.ZodSchema<T>
 ): Promise<{ success: true; data: T } | { success: false; error: string; details?: unknown }> {
   try {
-    const body = await request.json();
+    const body = await _request.json();
     const validated = schema.parse(body);
     return { success: true, data: validated };
   } catch (_error) {
-    if (error instanceof z.ZodError) {
+    if (_error instanceof z.ZodError) {
       return {
         success: false,
-        error: 'Validation failed',
-        details: error.errors,
+        error: "Validation failed",
+        details: _error.errors,
       };
     }
     return {
       success: false,
-      error: 'Invalid request body',
+      error: "Invalid request body",
     };
   }
 }
-

@@ -8,14 +8,14 @@ import { apiLogger as logger } from "@/lib/logger";
 export async function POST(_request: NextRequest) {
   try {
     // Authenticate using Authorization header
-    const auth = await authenticateRequest(request);
+    const auth = await authenticateRequest(_request);
     if (!auth.success || !auth.user || !auth.supabase) {
       return NextResponse.json({ error: auth.error || "Unauthorized" }, { status: 401 });
     }
 
     const { user, supabase } = auth;
 
-    const body = await request.json();
+    const body = await _request.json();
     const { organizationId } = body;
 
     // Get organization
@@ -143,7 +143,7 @@ export async function POST(_request: NextRequest) {
       );
     }
   } catch (_error) {
-    const errorMessage = error instanceof Error ? error.message : "Unknown error";
+    const errorMessage = _error instanceof Error ? _error.message : "Unknown _error";
     logger.error("[STRIPE PORTAL] Error:", { error: errorMessage });
     return NextResponse.json(
       { error: errorMessage || "Failed to create portal session" },

@@ -3,9 +3,9 @@
  * @module lib/repositories/order-repository
  */
 
-import { BaseRepository } from './base-repository';
-import { SupabaseClient } from '@supabase/supabase-js';
-import { logger } from '@/lib/logger';
+import { BaseRepository } from "./base-repository";
+import { SupabaseClient } from "@supabase/supabase-js";
+import { logger } from "@/lib/logger";
 
 export interface Order {
   id: string;
@@ -16,9 +16,9 @@ export interface Order {
   customer_phone?: string;
   customer_email?: string;
   items: OrderItem[];
-  status: 'pending' | 'confirmed' | 'preparing' | 'ready' | 'served' | 'completed' | 'cancelled';
+  status: "pending" | "confirmed" | "preparing" | "ready" | "served" | "completed" | "cancelled";
   payment_method: string;
-  payment_status: 'pending' | 'paid' | 'failed' | 'refunded';
+  payment_status: "pending" | "paid" | "failed" | "refunded";
   total_amount: number;
   tax_amount?: number;
   tip_amount?: number;
@@ -45,7 +45,7 @@ export interface OrderStats {
 }
 
 export class OrderRepository extends BaseRepository<Order> {
-  protected tableName = 'orders';
+  protected tableName = "orders";
 
   constructor(supabase: SupabaseClient) {
     super(supabase);
@@ -54,34 +54,30 @@ export class OrderRepository extends BaseRepository<Order> {
   /**
    * Find orders by venue ID
    */
-  async findByVenue(
-    venueId: string,
-    status?: string,
-    limit: number = 100
-  ): Promise<Order[]> {
+  async findByVenue(venueId: string, status?: string, limit: number = 100): Promise<Order[]> {
     try {
       let query = this.supabase
         .from(this.tableName)
-        .select('*')
-        .eq('venue_id', venueId)
-        .order('created_at', { ascending: false })
+        .select("*")
+        .eq("venue_id", venueId)
+        .order("created_at", { ascending: false })
         .limit(limit);
 
       if (status) {
-        query = query.eq('status', status);
+        query = query.eq("status", status);
       }
 
       const { data, error } = await query;
 
       if (error) {
-        logger.error('[ORDER_REPO] Error finding orders by venue', { error, venueId });
+        logger.error("[ORDER_REPO] Error finding orders by venue", { error, venueId });
         throw error;
       }
 
       return (data as Order[]) || [];
     } catch (_error) {
-      logger.error('[ORDER_REPO] Unexpected error finding orders by venue', { error, venueId });
-      throw error;
+      logger.error("[ORDER_REPO] Unexpected error finding orders by venue", { error, venueId });
+      throw _error;
     }
   }
 
@@ -89,23 +85,29 @@ export class OrderRepository extends BaseRepository<Order> {
    * Find orders by table
    */
   async findByTable(venueId: string, tableId: string): Promise<Order[]> {
-    return this.findAll({
-      venue_id: venueId,
-      table_id: tableId,
-    } as Partial<Order>, {
-      orderBy: { column: 'created_at', ascending: false },
-    });
+    return this.findAll(
+      {
+        venue_id: venueId,
+        table_id: tableId,
+      } as Partial<Order>,
+      {
+        orderBy: { column: "created_at", ascending: false },
+      }
+    );
   }
 
   /**
    * Find orders by session ID
    */
   async findBySession(sessionId: string): Promise<Order[]> {
-    return this.findAll({
-      session_id: sessionId,
-    } as Partial<Order>, {
-      orderBy: { column: 'created_at', ascending: false },
-    });
+    return this.findAll(
+      {
+        session_id: sessionId,
+      } as Partial<Order>,
+      {
+        orderBy: { column: "created_at", ascending: false },
+      }
+    );
   }
 
   /**
@@ -117,21 +119,21 @@ export class OrderRepository extends BaseRepository<Order> {
 
       const { data, error } = await this.supabase
         .from(this.tableName)
-        .select('*')
-        .eq('venue_id', venueId)
-        .gte('created_at', since)
-        .order('created_at', { ascending: false })
+        .select("*")
+        .eq("venue_id", venueId)
+        .gte("created_at", since)
+        .order("created_at", { ascending: false })
         .limit(limit);
 
       if (error) {
-        logger.error('[ORDER_REPO] Error finding recent orders', { error, venueId });
+        logger.error("[ORDER_REPO] Error finding recent orders", { error, venueId });
         throw error;
       }
 
       return (data as Order[]) || [];
     } catch (_error) {
-      logger.error('[ORDER_REPO] Unexpected error finding recent orders', { error, venueId });
-      throw error;
+      logger.error("[ORDER_REPO] Unexpected error finding recent orders", { error, venueId });
+      throw _error;
     }
   }
 
@@ -140,7 +142,7 @@ export class OrderRepository extends BaseRepository<Order> {
    */
   async updateStatus(
     orderId: string,
-    status: Order['status'],
+    status: Order["status"],
     notes?: string
   ): Promise<Order | null> {
     const updateData: Partial<Order> = {
@@ -156,7 +158,7 @@ export class OrderRepository extends BaseRepository<Order> {
    */
   async markAsPaid(orderId: string, paymentMethod: string): Promise<Order | null> {
     return this.update(orderId, {
-      payment_status: 'paid',
+      payment_status: "paid",
       payment_method: paymentMethod,
       updated_at: new Date().toISOString(),
     } as Partial<Order>);
@@ -169,20 +171,20 @@ export class OrderRepository extends BaseRepository<Order> {
     try {
       let query = this.supabase
         .from(this.tableName)
-        .select('status, total_amount')
-        .eq('venue_id', venueId);
+        .select("status, total_amount")
+        .eq("venue_id", venueId);
 
       if (startDate) {
-        query = query.gte('created_at', startDate);
+        query = query.gte("created_at", startDate);
       }
       if (endDate) {
-        query = query.lte('created_at', endDate);
+        query = query.lte("created_at", endDate);
       }
 
       const { data, error } = await query;
 
       if (error) {
-        logger.error('[ORDER_REPO] Error getting order stats', { error, venueId });
+        logger.error("[ORDER_REPO] Error getting order stats", { error, venueId });
         throw error;
       }
 
@@ -190,7 +192,9 @@ export class OrderRepository extends BaseRepository<Order> {
       const total = orders.length;
       const revenue = orders.reduce((sum, order) => sum + order.total_amount, 0);
       const avgOrderValue = total > 0 ? revenue / total : 0;
-      const byStatus: Record<string, number> = { /* Empty */ };
+      const byStatus: Record<string, number> = {
+        /* Empty */
+      };
 
       orders.forEach((order) => {
         byStatus[order.status] = (byStatus[order.status] || 0) + 1;
@@ -203,15 +207,15 @@ export class OrderRepository extends BaseRepository<Order> {
         byStatus,
       };
     } catch (_error) {
-      logger.error('[ORDER_REPO] Unexpected error getting order stats', { error, venueId });
-      throw error;
+      logger.error("[ORDER_REPO] Unexpected error getting order stats", { error, venueId });
+      throw _error;
     }
   }
 
   /**
    * Bulk update order statuses
    */
-  async bulkUpdateStatus(orderIds: string[], status: Order['status']): Promise<Order[]> {
+  async bulkUpdateStatus(orderIds: string[], status: Order["status"]): Promise<Order[]> {
     try {
       const { data, error } = await this.supabase
         .from(this.tableName)
@@ -219,18 +223,18 @@ export class OrderRepository extends BaseRepository<Order> {
           status,
           updated_at: new Date().toISOString(),
         })
-        .in('id', orderIds)
+        .in("id", orderIds)
         .select();
 
       if (error) {
-        logger.error('[ORDER_REPO] Error bulk updating order status', { error, orderIds, status });
+        logger.error("[ORDER_REPO] Error bulk updating order status", { error, orderIds, status });
         throw error;
       }
 
       return (data as Order[]) || [];
     } catch (_error) {
-      logger.error('[ORDER_REPO] Unexpected error bulk updating order status', { error, orderIds });
-      throw error;
+      logger.error("[ORDER_REPO] Unexpected error bulk updating order status", { error, orderIds });
+      throw _error;
     }
   }
 
@@ -241,22 +245,21 @@ export class OrderRepository extends BaseRepository<Order> {
     try {
       const { data, error } = await this.supabase
         .from(this.tableName)
-        .select('*')
-        .eq('venue_id', venueId)
+        .select("*")
+        .eq("venue_id", venueId)
         .or(`customer_name.ilike.%${query}%,customer_phone.ilike.%${query}%,id.eq.${query}`)
-        .order('created_at', { ascending: false })
+        .order("created_at", { ascending: false })
         .limit(50);
 
       if (error) {
-        logger.error('[ORDER_REPO] Error searching orders', { error, venueId, query });
+        logger.error("[ORDER_REPO] Error searching orders", { error, venueId, query });
         throw error;
       }
 
       return (data as Order[]) || [];
     } catch (_error) {
-      logger.error('[ORDER_REPO] Unexpected error searching orders', { error, venueId, query });
-      throw error;
+      logger.error("[ORDER_REPO] Unexpected error searching orders", { error, venueId, query });
+      throw _error;
     }
   }
 }
-

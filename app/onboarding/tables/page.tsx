@@ -1,14 +1,14 @@
-'use client';
+"use client";
 
-import { useState, useEffect } from 'react';
-import { useRouter } from 'next/navigation';
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
-import { Button } from '@/components/ui/button';
-import { ArrowRight, QrCode, Download } from 'lucide-react';
-import OnboardingProgress from '@/components/onboarding-progress';
-import { createClient } from '@/lib/supabase';
-import { toast } from '@/hooks/use-toast';
-import QRCode from 'qrcode';
+import { useState, useEffect } from "react";
+import { useRouter } from "next/navigation";
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import { Button } from "@/components/ui/button";
+import { ArrowRight, QrCode, Download } from "lucide-react";
+import OnboardingProgress from "@/components/onboarding-progress";
+import { createClient } from "@/lib/supabase";
+import { toast } from "@/hooks/use-toast";
+import QRCode from "qrcode";
 
 interface PreviewTable {
   number: number;
@@ -31,7 +31,9 @@ export default function OnboardingTablesPage() {
   const checkAuth = async () => {
     try {
       const supabase = await createClient();
-      const { data: { user } } = await supabase.auth.getSession();
+      const {
+        data: { user },
+      } = await supabase.auth.getSession();
 
       if (!user) {
         setLoading(false);
@@ -40,9 +42,9 @@ export default function OnboardingTablesPage() {
 
       // Get venue
       const { data: venues } = await supabase
-        .from('venues')
-        .select('venue_id, name')
-        .eq('owner_user_id', user.id)
+        .from("venues")
+        .select("venue_id, name")
+        .eq("owner_user_id", user.id)
         .limit(1);
 
       if (!venues || venues.length === 0) {
@@ -54,14 +56,13 @@ export default function OnboardingTablesPage() {
       generatePreview(selectedCount, venues[0]?.venue_id);
       setLoading(false);
     } catch (_error) {
-
       setLoading(false);
     }
   };
 
   const generatePreview = async (count: number, vId: string) => {
     const tables = [];
-    const baseUrl = process.env.NEXT_PUBLIC_SITE_URL || 'https://servio-production.up.railway.app';
+    const baseUrl = process.env.NEXT_PUBLIC_SITE_URL || "https://servio-production.up.railway.app";
 
     for (let i = 1; i <= Math.min(count, 3); i++) {
       const tableUrl = `${baseUrl}/order?venue=${vId}&table=${i}`;
@@ -70,8 +71,8 @@ export default function OnboardingTablesPage() {
           width: 200,
           margin: 2,
           color: {
-            dark: '#7c3aed',
-            light: '#ffffff',
+            dark: "#7c3aed",
+            light: "#ffffff",
           },
         });
         tables.push({
@@ -80,8 +81,8 @@ export default function OnboardingTablesPage() {
           url: tableUrl,
         });
       } catch (_error) {
-      // Error silently handled
-    }
+        // Error silently handled
+      }
     }
 
     setPreviewTables(tables);
@@ -106,44 +107,41 @@ export default function OnboardingTablesPage() {
       const tablesToInsert = Array.from({ length: selectedCount }, (_, i) => ({
         venue_id: venueId,
         table_number: i + 1,
-        status: 'available',
+        status: "available",
         capacity: 4,
       }));
 
-      const { error } = await supabase
-        .from('tables')
-        .insert(tablesToInsert);
+      const { error } = await supabase.from("tables").insert(tablesToInsert);
 
       if (error) {
         // Check if tables already exist
-        if (error.code === '23505') {
+        if (error.code === "23505") {
           // Unique constraint violation - tables already exist
           toast({
-            title: 'Tables already exist',
-            description: 'Moving to next step...',
+            title: "Tables already exist",
+            description: "Moving to next step...",
           });
         } else {
           throw error;
         }
       } else {
         toast({
-          title: 'Tables created!',
+          title: "Tables created!",
           description: `Successfully created ${selectedCount} tables with QR codes.`,
         });
       }
 
       // Store progress
-      localStorage.setItem('onboarding_step', '2');
-      localStorage.setItem('onboarding_tables_complete', 'true');
+      localStorage.setItem("onboarding_step", "2");
+      localStorage.setItem("onboarding_tables_complete", "true");
 
       // Move to next step
-      router.push('/onboarding/test-order');
+      router.push("/onboarding/test-order");
     } catch (_error) {
-
       toast({
-        title: 'Failed to create tables',
-        description: error.message || 'Please try again.',
-        variant: 'destructive',
+        title: "Failed to create tables",
+        description: _error.message || "Please try again.",
+        variant: "destructive",
       });
     } finally {
       setCreating(false);
@@ -154,14 +152,14 @@ export default function OnboardingTablesPage() {
     if (!venueId) return;
 
     toast({
-      title: 'Coming soon!',
-      description: 'QR code download will be available after setup.',
+      title: "Coming soon!",
+      description: "QR code download will be available after setup.",
     });
   };
 
   const handleSkip = () => {
-    localStorage.setItem('onboarding_step', '2');
-    router.push('/onboarding/test-order');
+    localStorage.setItem("onboarding_step", "2");
+    router.push("/onboarding/test-order");
   };
 
   if (loading) {
@@ -194,9 +192,9 @@ export default function OnboardingTablesPage() {
               {[5, 10, 15, 20].map((count) => (
                 <Button
                   key={count}
-                  variant={selectedCount === count ? 'default' : 'outline'}
+                  variant={selectedCount === count ? "default" : "outline"}
                   onClick={() => handleCountChange(count)}
-                  className={selectedCount === count ? 'bg-purple-600 hover:bg-purple-700' : ''}
+                  className={selectedCount === count ? "bg-purple-600 hover:bg-purple-700" : ""}
                 >
                   {count}
                 </Button>
@@ -212,22 +210,24 @@ export default function OnboardingTablesPage() {
             <h3 className="font-semibold text-lg mb-4">Preview (First 3 tables)</h3>
             <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
               {previewTables.map((table) => (
-                <div key={table.number} className="bg-white rounded-lg p-4 text-center border-2 border-gray-200">
+                <div
+                  key={table.number}
+                  className="bg-white rounded-lg p-4 text-center border-2 border-gray-200"
+                >
                   <div className="font-bold text-gray-900 mb-2">Table {table.number}</div>
                   <img
                     src={table.qrCode}
                     alt={`QR Code for Table ${table.number}`}
                     className="w-full max-w-[150px] mx-auto"
                   />
-                  <div className="text-xs text-gray-600 mt-2 break-all">
-                    {table.url}
-                  </div>
+                  <div className="text-xs text-gray-600 mt-2 break-all">{table.url}</div>
                 </div>
               ))}
             </div>
             {selectedCount > 3 && (
               <p className="text-center text-sm text-gray-600 mt-4">
-                + {selectedCount - 3} more {selectedCount - 3 === 1 ? 'table' : 'tables'} will be created
+                + {selectedCount - 3} more {selectedCount - 3 === 1 ? "table" : "tables"} will be
+                created
               </p>
             )}
           </div>
@@ -235,8 +235,9 @@ export default function OnboardingTablesPage() {
           {/* Info Box */}
           <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
             <p className="text-sm text-blue-900">
-              <strong>💡 How it works:</strong> Each table gets a unique QR code. When customers scan it, 
-              they'll see your menu and can place orders directly from their phones. No app download required!
+              <strong>💡 How it works:</strong> Each table gets a unique QR code. When customers
+              scan it, they'll see your menu and can place orders directly from their phones. No app
+              download required!
             </p>
           </div>
 
@@ -247,7 +248,7 @@ export default function OnboardingTablesPage() {
               disabled={creating}
               className="flex-1 bg-purple-600 hover:bg-purple-700 h-12 text-lg"
             >
-              {creating ? 'Creating Tables...' : `Create ${selectedCount} Tables`}
+              {creating ? "Creating Tables..." : `Create ${selectedCount} Tables`}
               <ArrowRight className="ml-2 w-5 h-5" />
             </Button>
             <Button
@@ -263,12 +264,7 @@ export default function OnboardingTablesPage() {
 
           {/* Skip Button */}
           <div className="pt-4 border-t">
-            <Button
-              variant="ghost"
-              onClick={handleSkip}
-              disabled={creating}
-              className="w-full"
-            >
+            <Button variant="ghost" onClick={handleSkip} disabled={creating} className="w-full">
               Skip for Now
             </Button>
           </div>
@@ -277,4 +273,3 @@ export default function OnboardingTablesPage() {
     </div>
   );
 }
-

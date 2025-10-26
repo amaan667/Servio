@@ -1,76 +1,88 @@
-import { NextResponse } from 'next/server';
-import { createAdminClient } from '@/lib/supabase';
-import { logger } from '@/lib/logger';
+import { NextResponse } from "next/server";
+import { createAdminClient } from "@/lib/supabase";
+import { logger } from "@/lib/logger";
 
-export const runtime = 'nodejs';
-export const dynamic = 'force-dynamic';
+export const runtime = "nodejs";
+export const dynamic = "force-dynamic";
 
-export async function GET(
-  _req: Request,
-  { params }: { params: Promise<{ orderId: string }> }
-) {
+export async function GET(_req: Request, { params }: { params: Promise<{ orderId: string }> }) {
   try {
     const supabaseAdmin = createAdminClient();
     const { orderId } = await params;
-    
+
     if (!orderId) {
-      return NextResponse.json({ error: 'Order ID is required' }, { status: 400 });
+      return NextResponse.json({ error: "Order ID is required" }, { status: 400 });
     }
 
-    logger.debug('[ORDER FETCH DEBUG] ===== FETCHING ORDER BY ID =====');
-    logger.debug('[ORDER FETCH DEBUG] Order ID:', { value: orderId });
+    logger.debug("[ORDER FETCH DEBUG] ===== FETCHING ORDER BY ID =====");
+    logger.debug("[ORDER FETCH DEBUG] Order ID:", { value: orderId });
 
     // Fetch order with items (items are stored as JSONB in orders table)
     const { data: order, error: orderError } = await supabaseAdmin
-      .from('orders')
-      .select('*')
-      .eq('id', orderId)
+      .from("orders")
+      .select("*")
+      .eq("id", orderId)
       .single();
 
-    logger.debug('[ORDER FETCH DEBUG] Query result:', { data: { found: !!order, error: orderError, keys: order ? Object.keys(order) : 'N/A' } });
+    logger.debug("[ORDER FETCH DEBUG] Query result:", {
+      data: { found: !!order, error: orderError, keys: order ? Object.keys(order) : "N/A" },
+    });
 
     if (orderError) {
-      logger.error('[ORDER FETCH DEBUG] ===== ORDER NOT FOUND =====');
-      logger.error('[ORDER FETCH DEBUG] Error fetching order:', { value: orderError });
-      return NextResponse.json({ 
-        error: 'Order not found' 
-      }, { status: 404 });
+      logger.error("[ORDER FETCH DEBUG] ===== ORDER NOT FOUND =====");
+      logger.error("[ORDER FETCH DEBUG] Error fetching order:", { value: orderError });
+      return NextResponse.json(
+        {
+          error: "Order not found",
+        },
+        { status: 404 }
+      );
     }
 
     if (!order) {
-      logger.error('[ORDER FETCH DEBUG] ===== NO ORDER DATA =====');
-      return NextResponse.json({ 
-        error: 'Order not found' 
-      }, { status: 404 });
+      logger.error("[ORDER FETCH DEBUG] ===== NO ORDER DATA =====");
+      return NextResponse.json(
+        {
+          error: "Order not found",
+        },
+        { status: 404 }
+      );
     }
 
     // Log payment details
-    logger.debug('[ORDER FETCH DEBUG] ===== ORDER FOUND - PAYMENT DETAILS =====');
-    logger.debug('[ORDER FETCH DEBUG] Payment method:', order.payment_method);
-    logger.debug('[ORDER FETCH DEBUG] Payment status:', order.payment_status);
-    logger.debug('[ORDER FETCH DEBUG] Stripe session ID:', order.stripe_session_id);
-    logger.debug('[ORDER FETCH DEBUG] Stripe payment intent ID:', order.stripe_payment_intent_id);
-    logger.debug('[ORDER FETCH DEBUG] Order notes:', order.notes);
+    logger.debug("[ORDER FETCH DEBUG] ===== ORDER FOUND - PAYMENT DETAILS =====");
+    logger.debug("[ORDER FETCH DEBUG] Payment method:", order.payment_method);
+    logger.debug("[ORDER FETCH DEBUG] Payment status:", order.payment_status);
+    logger.debug("[ORDER FETCH DEBUG] Stripe session ID:", order.stripe_session_id);
+    logger.debug("[ORDER FETCH DEBUG] Stripe payment intent ID:", order.stripe_payment_intent_id);
+    logger.debug("[ORDER FETCH DEBUG] Order notes:", order.notes);
 
     // Items are already in the order object as JSONB
     // Ensure items array exists (fallback to empty array if null)
     const transformedOrder = {
       ...order,
-      items: order.items || []
+      items: order.items || [],
     };
 
-    logger.debug('[ORDER FETCH DEBUG] ===== RETURNING TRANSFORMED ORDER =====');
-    logger.debug('[ORDER FETCH DEBUG] Transformed order keys:', Object.keys(transformedOrder));
-    logger.debug('[ORDER FETCH DEBUG] Items count:', Array.isArray(transformedOrder.items) ? transformedOrder.items.length : 0);
+    logger.debug("[ORDER FETCH DEBUG] ===== RETURNING TRANSFORMED ORDER =====");
+    logger.debug("[ORDER FETCH DEBUG] Transformed order keys:", Object.keys(transformedOrder));
+    logger.debug(
+      "[ORDER FETCH DEBUG] Items count:",
+      Array.isArray(transformedOrder.items) ? transformedOrder.items.length : 0
+    );
 
-    return NextResponse.json({ 
-      order: transformedOrder 
+    return NextResponse.json({
+      order: transformedOrder,
     });
-
   } catch (_error) {
-    logger.error('[ORDER FETCH] Error:', { error: error instanceof Error ? error.message : 'Unknown error' });
-    return NextResponse.json({ 
-      error: 'Internal server error' 
-    }, { status: 500 });
+    logger._error("[ORDER FETCH] Error:", {
+      error: _error instanceof Error ? _error.message : "Unknown _error",
+    });
+    return NextResponse.json(
+      {
+        error: "Internal server error",
+      },
+      { status: 500 }
+    );
   }
 }

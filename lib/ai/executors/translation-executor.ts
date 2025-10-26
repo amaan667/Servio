@@ -1,6 +1,5 @@
-
 import { createClient } from "@/lib/supabase";
-import { aiLogger as logger } from '@/lib/logger';
+import { aiLogger as logger } from "@/lib/logger";
 import { AIPreviewDiff, AIExecutionResult, AIAssistantError } from "@/types/ai-assistant";
 
 const LANGUAGE_NAMES: Record<string, string> = {
@@ -17,121 +16,215 @@ const LANGUAGE_NAMES: Record<string, string> = {
 
 const CATEGORY_MAPPINGS: Record<string, Record<string, string>> = {
   "en-es": {
-    "STARTERS": "ENTRADAS",
-    "APPETIZERS": "APERITIVOS",
+    STARTERS: "ENTRADAS",
+    APPETIZERS: "APERITIVOS",
     "MAIN COURSES": "PLATOS PRINCIPALES",
-    "ENTREES": "PLATOS PRINCIPALES",
-    "DESSERTS": "POSTRES",
-    "SALADS": "ENSALADAS",
-    "KIDS": "NIÑOS",
-    "CHILDREN": "NIÑOS",
-    "DRINKS": "BEBIDAS",
-    "BEVERAGES": "BEBIDAS",
-    "COFFEE": "CAFÉ",
+    ENTREES: "PLATOS PRINCIPALES",
+    DESSERTS: "POSTRES",
+    SALADS: "ENSALADAS",
+    KIDS: "NIÑOS",
+    CHILDREN: "NIÑOS",
+    DRINKS: "BEBIDAS",
+    BEVERAGES: "BEBIDAS",
+    COFFEE: "CAFÉ",
     "SPECIAL COFFEE": "CAFÉ ESPECIAL",
-    "TEA": "TÉ",
-    "SPECIALS": "ESPECIALES",
-    "SPECIAL": "ESPECIAL",
-    "WRAPS": "WRAPS",
-    "SANDWICHES": "SÁNDWICHES",
-    "MILKSHAKES": "MALTEADAS",
-    "SHAKES": "BATIDOS",
-    "SMOOTHIES": "BATIDOS",
-    "BRUNCH": "BRUNCH",
-    "BREAKFAST": "DESAYUNO",
-    "LUNCH": "ALMUERZO",
-    "DINNER": "CENA",
-    "SOUP": "SOPA",
-    "SOUPS": "SOPAS",
-    "PASTA": "PASTA",
-    "PIZZA": "PIZZA",
-    "SEAFOOD": "MARISCOS",
-    "CHICKEN": "POLLO",
-    "BEEF": "CARNE DE RES",
-    "PORK": "CERDO",
-    "VEGETARIAN": "VEGETARIANO",
-    "VEGAN": "VEGANO",
-    "GLUTEN FREE": "SIN GLUTEN"
+    TEA: "TÉ",
+    SPECIALS: "ESPECIALES",
+    SPECIAL: "ESPECIAL",
+    WRAPS: "WRAPS",
+    SANDWICHES: "SÁNDWICHES",
+    MILKSHAKES: "MALTEADAS",
+    SHAKES: "BATIDOS",
+    SMOOTHIES: "BATIDOS",
+    BRUNCH: "BRUNCH",
+    BREAKFAST: "DESAYUNO",
+    LUNCH: "ALMUERZO",
+    DINNER: "CENA",
+    SOUP: "SOPA",
+    SOUPS: "SOPAS",
+    PASTA: "PASTA",
+    PIZZA: "PIZZA",
+    SEAFOOD: "MARISCOS",
+    CHICKEN: "POLLO",
+    BEEF: "CARNE DE RES",
+    PORK: "CERDO",
+    VEGETARIAN: "VEGETARIANO",
+    VEGAN: "VEGANO",
+    "GLUTEN FREE": "SIN GLUTEN",
   },
   "es-en": {
-    "ENTRADAS": "STARTERS",
-    "APERITIVOS": "APPETIZERS",
+    ENTRADAS: "STARTERS",
+    APERITIVOS: "APPETIZERS",
     "PLATOS PRINCIPALES": "MAIN COURSES",
-    "POSTRES": "DESSERTS",
-    "ENSALADAS": "SALADS",
-    "NIÑOS": "KIDS",
-    "NINOS": "KIDS",
-    "BEBIDAS": "DRINKS",
-    "CAFÉ": "COFFEE",
-    "CAFE": "COFFEE",
+    POSTRES: "DESSERTS",
+    ENSALADAS: "SALADS",
+    NIÑOS: "KIDS",
+    NINOS: "KIDS",
+    BEBIDAS: "DRINKS",
+    CAFÉ: "COFFEE",
+    CAFE: "COFFEE",
     "CAFÉ ESPECIAL": "SPECIAL COFFEE",
     "CAFE ESPECIAL": "SPECIAL COFFEE",
-    "TÉ": "TEA",
-    "TE": "TEA",
-    "ESPECIALES": "SPECIALS",
-    "ESPECIAL": "SPECIAL",
-    "SÁNDWICHES": "SANDWICHES",
-    "SANDWICHES": "SANDWICHES",
-    "MALTEADAS": "MILKSHAKES",
-    "BATIDOS": "SHAKES",
-    "SHAKES": "SHAKES",
-    "DESAYUNO": "BREAKFAST",
-    "ALMUERZO": "LUNCH",
-    "CENA": "DINNER",
-    "SOPA": "SOUP",
-    "SOPAS": "SOUPS",
-    "MARISCOS": "SEAFOOD",
-    "POLLO": "CHICKEN",
+    TÉ: "TEA",
+    TE: "TEA",
+    ESPECIALES: "SPECIALS",
+    ESPECIAL: "SPECIAL",
+    SÁNDWICHES: "SANDWICHES",
+    SANDWICHES: "SANDWICHES",
+    MALTEADAS: "MILKSHAKES",
+    BATIDOS: "SHAKES",
+    SHAKES: "SHAKES",
+    DESAYUNO: "BREAKFAST",
+    ALMUERZO: "LUNCH",
+    CENA: "DINNER",
+    SOPA: "SOUP",
+    SOPAS: "SOUPS",
+    MARISCOS: "SEAFOOD",
+    POLLO: "CHICKEN",
     "CARNE DE RES": "BEEF",
-    "CERDO": "PORK",
-    "VEGETARIANO": "VEGETARIAN",
-    "VEGANO": "VEGAN",
-    "SIN GLUTEN": "GLUTEN FREE"
-  }
+    CERDO: "PORK",
+    VEGETARIANO: "VEGETARIAN",
+    VEGANO: "VEGAN",
+    "SIN GLUTEN": "GLUTEN FREE",
+  },
 };
 
-function detectSourceLanguage(items: Array<{ name: string; category: string }>, targetLanguage: string): string {
+function detectSourceLanguage(
+  items: Array<{ name: string; category: string }>,
+  targetLanguage: string
+): string {
   const spanishIndicators = [
-    'CAFÉ', 'CAFE', 'BEBIDAS', 'TÉ', 'TE', 'ESPECIALES', 'ESPECIAL', 'NIÑOS', 'NINOS',
-    'ENSALADAS', 'POSTRES', 'ENTRADAS', 'PLATOS PRINCIPALES', 'APERITIVOS',
-    'MALTEADAS', 'BATIDOS', 'SÁNDWICHES', 'SANDWICHES', 'DESAYUNO', 'ALMUERZO',
-    'CENA', 'SOPA', 'SOPAS', 'MARISCOS', 'POLLO', 'CARNE DE RES', 'CERDO',
-    'VEGETARIANO', 'VEGANO', 'SIN GLUTEN',
-    'CON', 'DE', 'Y', 'PARA', 'LOS', 'LAS', 'EL', 'LA', 'DEL', 'AL',
-    'HUEVOS', 'QUESO', 'LECHE', 'PAN', 'ARROZ', 'FRIJOLES', 'SALSA',
-    'TORTILLA', 'TACO', 'BURRITO', 'QUESADILLA', 'ENCHILADA'
+    "CAFÉ",
+    "CAFE",
+    "BEBIDAS",
+    "TÉ",
+    "TE",
+    "ESPECIALES",
+    "ESPECIAL",
+    "NIÑOS",
+    "NINOS",
+    "ENSALADAS",
+    "POSTRES",
+    "ENTRADAS",
+    "PLATOS PRINCIPALES",
+    "APERITIVOS",
+    "MALTEADAS",
+    "BATIDOS",
+    "SÁNDWICHES",
+    "SANDWICHES",
+    "DESAYUNO",
+    "ALMUERZO",
+    "CENA",
+    "SOPA",
+    "SOPAS",
+    "MARISCOS",
+    "POLLO",
+    "CARNE DE RES",
+    "CERDO",
+    "VEGETARIANO",
+    "VEGANO",
+    "SIN GLUTEN",
+    "CON",
+    "DE",
+    "Y",
+    "PARA",
+    "LOS",
+    "LAS",
+    "EL",
+    "LA",
+    "DEL",
+    "AL",
+    "HUEVOS",
+    "QUESO",
+    "LECHE",
+    "PAN",
+    "ARROZ",
+    "FRIJOLES",
+    "SALSA",
+    "TORTILLA",
+    "TACO",
+    "BURRITO",
+    "QUESADILLA",
+    "ENCHILADA",
   ];
-  
+
   const englishIndicators = [
-    'STARTERS', 'APPETIZERS', 'MAIN COURSES', 'ENTREES', 'DESSERTS',
-    'SALADS', 'KIDS', 'CHILDREN', 'DRINKS', 'BEVERAGES', 'COFFEE',
-    'TEA', 'SPECIALS', 'WRAPS', 'SANDWICHES', 'MILKSHAKES', 'SHAKES',
-    'SMOOTHIES', 'BRUNCH', 'BREAKFAST', 'LUNCH', 'DINNER', 'SOUP',
-    'SOUPS', 'PASTA', 'PIZZA', 'SEAFOOD', 'CHICKEN', 'BEEF', 'PORK',
-    'VEGETARIAN', 'VEGAN', 'GLUTEN FREE', 'GLUTEN-FREE',
-    'WITH', 'AND', 'OR', 'THE', 'OF', 'FOR', 'IN', 'ON', 'TO',
-    'EGGS', 'CHEESE', 'MILK', 'BREAD', 'RICE', 'BEANS', 'SAUCE',
-    'BURGER', 'SANDWICH', 'STEAK', 'GRILLED', 'FRIED', 'BAKED'
+    "STARTERS",
+    "APPETIZERS",
+    "MAIN COURSES",
+    "ENTREES",
+    "DESSERTS",
+    "SALADS",
+    "KIDS",
+    "CHILDREN",
+    "DRINKS",
+    "BEVERAGES",
+    "COFFEE",
+    "TEA",
+    "SPECIALS",
+    "WRAPS",
+    "SANDWICHES",
+    "MILKSHAKES",
+    "SHAKES",
+    "SMOOTHIES",
+    "BRUNCH",
+    "BREAKFAST",
+    "LUNCH",
+    "DINNER",
+    "SOUP",
+    "SOUPS",
+    "PASTA",
+    "PIZZA",
+    "SEAFOOD",
+    "CHICKEN",
+    "BEEF",
+    "PORK",
+    "VEGETARIAN",
+    "VEGAN",
+    "GLUTEN FREE",
+    "GLUTEN-FREE",
+    "WITH",
+    "AND",
+    "OR",
+    "THE",
+    "OF",
+    "FOR",
+    "IN",
+    "ON",
+    "TO",
+    "EGGS",
+    "CHEESE",
+    "MILK",
+    "BREAD",
+    "RICE",
+    "BEANS",
+    "SAUCE",
+    "BURGER",
+    "SANDWICH",
+    "STEAK",
+    "GRILLED",
+    "FRIED",
+    "BAKED",
   ];
-  
+
   let spanishCount = 0;
   let englishCount = 0;
-  
-  items.forEach(item => {
+
+  items.forEach((item) => {
     const text = `${item.name} ${item.category}`.toUpperCase();
-    
-    spanishIndicators.forEach(indicator => {
+
+    spanishIndicators.forEach((indicator) => {
       if (text.includes(indicator)) spanishCount++;
     });
-    
-    englishIndicators.forEach(indicator => {
+
+    englishIndicators.forEach((indicator) => {
       if (text.includes(indicator)) englishCount++;
     });
   });
-  
-  if (spanishCount > englishCount) return 'es';
-  if (englishCount > spanishCount) return 'en';
-  return targetLanguage === 'es' ? 'en' : 'es';
+
+  if (spanishCount > englishCount) return "es";
+  if (englishCount > spanishCount) return "en";
+  return targetLanguage === "es" ? "en" : "es";
 }
 
 export async function executeMenuTranslate(
@@ -153,30 +246,41 @@ export async function executeMenuTranslate(
     throw new AIAssistantError("No menu items found", "INVALID_PARAMS");
   }
 
-  logger.debug(`[AI ASSISTANT] Starting translation of ${items.length} items to ${typedParams.targetLanguage}`);
+  logger.debug(
+    `[AI ASSISTANT] Starting translation of ${items.length} items to ${typedParams.targetLanguage}`
+  );
 
   const targetLangName = LANGUAGE_NAMES[typedParams.targetLanguage] || typedParams.targetLanguage;
-  const uniqueCategories = Array.from(new Set(items.map(item => item.category).filter(Boolean)));
+  const uniqueCategories = Array.from(new Set(items.map((item) => item.category).filter(Boolean)));
   const detectedSourceLanguage = detectSourceLanguage(items, typedParams.targetLanguage);
-  
+
   if (preview) {
     try {
       const { getOpenAI } = await import("@/lib/openai");
       const openai = getOpenAI();
 
       const sampleItems = items.slice(0, 5);
-      
-      const itemsToTranslate = sampleItems.map(item => ({
+
+      const itemsToTranslate = sampleItems.map((item) => ({
         id: item.id,
         name: item.name,
         category: item.category,
-        ...(typedParams.includeDescriptions && item.description ? { description: item.description } : { /* Empty */ })
+        ...(typedParams.includeDescriptions && item.description
+          ? { description: item.description }
+          : {
+              /* Empty */
+            }),
       }));
 
       const mappingKey = `${detectedSourceLanguage}-${typedParams.targetLanguage}`;
-      const categoryMappingList = Object.entries(CATEGORY_MAPPINGS[mappingKey] || { /* Empty */ })
+      const categoryMappingList = Object.entries(
+        CATEGORY_MAPPINGS[mappingKey] ||
+          {
+            /* Empty */
+          }
+      )
         .map(([from, to]) => `   - "${from}" → "${to}"`)
-        .join('\n');
+        .join("\n");
 
       const prompt = `You are a professional menu translator. Translate the following menu items from ${detectedSourceLanguage.toUpperCase()} to ${targetLangName}.
 
@@ -205,12 +309,13 @@ OUTPUT FORMAT:
         messages: [
           {
             role: "system",
-            content: "You are a professional menu translator. Return valid JSON with an 'items' array containing the EXACT same number of items as provided."
+            content:
+              "You are a professional menu translator. Return valid JSON with an 'items' array containing the EXACT same number of items as provided.",
           },
           {
             role: "user",
-            content: prompt
-          }
+            content: prompt,
+          },
         ],
         temperature: 0.1,
         response_format: { type: "json_object" },
@@ -220,18 +325,18 @@ OUTPUT FORMAT:
       if (content) {
         const translated = JSON.parse(content);
         const translatedArray = translated.items || [];
-        
+
         return {
           toolName: "menu.translate",
-          before: sampleItems.map(i => ({ 
-            name: i.name, 
+          before: sampleItems.map((i) => ({
+            name: i.name,
             description: i.description || "",
-            category: i.category || ""
+            category: i.category || "",
           })),
           after: translatedArray.map((i: unknown) => ({
             name: i.name || i.originalName,
             description: i.description || "",
-            category: i.category || ""
+            category: i.category || "",
           })),
           impact: {
             itemsAffected: items.length,
@@ -241,20 +346,23 @@ OUTPUT FORMAT:
         };
       }
     } catch (_error) {
-      logger.error("[AI ASSISTANT] Preview translation failed:", error as Record<string, unknown>);
+      logger._error(
+        "[AI ASSISTANT] Preview translation failed:",
+        _error as Record<string, unknown>
+      );
     }
 
     return {
       toolName: "menu.translate",
-      before: items.slice(0, 5).map(i => ({ 
-        name: i.name, 
+      before: items.slice(0, 5).map((i) => ({
+        name: i.name,
         description: i.description || "",
-        category: i.category || ""
+        category: i.category || "",
       })),
-      after: items.slice(0, 5).map(i => ({
+      after: items.slice(0, 5).map((i) => ({
         name: `[Will translate to ${targetLangName}] ${i.name}`,
         description: i.description ? `[Will translate to ${targetLangName}] ${i.description}` : "",
-        category: i.category ? `[Will translate to ${targetLangName}] ${i.category}` : ""
+        category: i.category ? `[Will translate to ${targetLangName}] ${i.category}` : "",
       })),
       impact: {
         itemsAffected: items.length,
@@ -272,22 +380,33 @@ OUTPUT FORMAT:
     const originalItemCount = items.length;
     const translatedItems: unknown[] = [];
     const batchSize = 15;
-    
+
     for (let i = 0; i < items.length; i += batchSize) {
       const batch = items.slice(i, i + batchSize);
-      logger.debug(`[AI ASSISTANT] Processing batch ${Math.floor(i/batchSize) + 1}/${Math.ceil(items.length/batchSize)}`);
-      
-      const itemsToTranslate = batch.map(item => ({
+      logger.debug(
+        `[AI ASSISTANT] Processing batch ${Math.floor(i / batchSize) + 1}/${Math.ceil(items.length / batchSize)}`
+      );
+
+      const itemsToTranslate = batch.map((item) => ({
         id: item.id,
         name: item.name,
         category: item.category,
-        ...(typedParams.includeDescriptions && item.description ? { description: item.description } : { /* Empty */ })
+        ...(typedParams.includeDescriptions && item.description
+          ? { description: item.description }
+          : {
+              /* Empty */
+            }),
       }));
 
       const mappingKey = `${detectedSourceLanguage}-${typedParams.targetLanguage}`;
-      const categoryMappingList = Object.entries(CATEGORY_MAPPINGS[mappingKey] || { /* Empty */ })
+      const categoryMappingList = Object.entries(
+        CATEGORY_MAPPINGS[mappingKey] ||
+          {
+            /* Empty */
+          }
+      )
         .map(([from, to]) => `   - "${from}" → "${to}"`)
-        .join('\n');
+        .join("\n");
 
       const prompt = `You are a professional menu translator. Translate the following menu items from ${detectedSourceLanguage.toUpperCase()} to ${targetLangName}.
 
@@ -322,12 +441,12 @@ OUTPUT FORMAT:
             messages: [
               {
                 role: "system",
-                content: `You are a professional menu translator. Return valid JSON with an 'items' array containing EXACTLY ${batch.length} items. Never omit items.`
+                content: `You are a professional menu translator. Return valid JSON with an 'items' array containing EXACTLY ${batch.length} items. Never omit items.`,
               },
               {
                 role: "user",
-                content: prompt
-              }
+                content: prompt,
+              },
             ],
             temperature: 0.1,
             response_format: { type: "json_object" },
@@ -337,12 +456,12 @@ OUTPUT FORMAT:
           if (content) {
             const translated = JSON.parse(content);
             const translatedArray = translated.items || [];
-            
+
             if (translatedArray.length === batch.length) {
-              const validItems = translatedArray.filter((item: Record<string, unknown>) => 
-                item && item.id && item.name && item.category
+              const validItems = translatedArray.filter(
+                (item: Record<string, unknown>) => item && item.id && item.name && item.category
               );
-              
+
               if (validItems.length === batch.length) {
                 translatedItems.push(...translatedArray);
                 batchTranslated = true;
@@ -356,18 +475,23 @@ OUTPUT FORMAT:
             retryCount++;
           }
         } catch (batchError) {
-          logger.error(`[AI ASSISTANT] Batch ${Math.floor(i/batchSize) + 1} translation error:`, batchError);
+          logger.error(
+            `[AI ASSISTANT] Batch ${Math.floor(i / batchSize) + 1} translation error:`,
+            batchError
+          );
           retryCount++;
         }
       }
 
       if (!batchTranslated) {
-        logger.error(`[AI ASSISTANT] Batch ${Math.floor(i/batchSize) + 1} failed after ${maxRetries} retries`);
-        const fallbackItems = batch.map(item => ({
+        logger.error(
+          `[AI ASSISTANT] Batch ${Math.floor(i / batchSize) + 1} failed after ${maxRetries} retries`
+        );
+        const fallbackItems = batch.map((item) => ({
           id: item.id,
           name: item.name,
           category: item.category,
-          description: item.description || ""
+          description: item.description || "",
         }));
         translatedItems.push(...fallbackItems);
       }
@@ -383,7 +507,7 @@ OUTPUT FORMAT:
     logger.debug(`[AI ASSISTANT] Updating ${translatedItems.length} translated items in database`);
     let updatedCount = 0;
     let failedCount = 0;
-    
+
     for (const translatedItem of translatedItems) {
       if (!translatedItem || !translatedItem.id || !translatedItem.name) {
         failedCount++;
@@ -392,13 +516,13 @@ OUTPUT FORMAT:
 
       const updateData: unknown = {
         name: translatedItem.name,
-        updated_at: new Date().toISOString()
+        updated_at: new Date().toISOString(),
       };
-      
+
       if (translatedItem.category) {
         updateData.category = translatedItem.category;
       }
-      
+
       if (typedParams.includeDescriptions && translatedItem.description) {
         updateData.description = translatedItem.description;
       }
@@ -416,7 +540,9 @@ OUTPUT FORMAT:
       }
     }
 
-    logger.debug(`[AI ASSISTANT] Translation complete: ${updatedCount} updated, ${failedCount} failed`);
+    logger.debug(
+      `[AI ASSISTANT] Translation complete: ${updatedCount} updated, ${failedCount} failed`
+    );
 
     if (updatedCount === 0 && translatedItems.length > 0) {
       throw new AIAssistantError(
@@ -436,17 +562,12 @@ OUTPUT FORMAT:
         targetLanguage: typedParams.targetLanguage,
         includeDescriptions: typedParams.includeDescriptions,
         originalItemCount,
-        finalItemCount: translatedItems.length
+        finalItemCount: translatedItems.length,
       },
       auditId: "",
     };
   } catch (_error) {
-    logger.error("[AI ASSISTANT] Translation error:", error as Record<string, unknown>);
-    throw new AIAssistantError(
-      `Translation failed: ${error.message}`,
-      "EXECUTION_FAILED",
-      error
-    );
+    logger._error("[AI ASSISTANT] Translation error:", _error as Record<string, unknown>);
+    throw new AIAssistantError(`Translation failed: ${_error.message}`, "EXECUTION_FAILED", _error);
   }
 }
-

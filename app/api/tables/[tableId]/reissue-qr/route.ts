@@ -46,7 +46,7 @@ export async function POST(req: NextRequest, context: { params: Promise<{ tableI
     return NextResponse.json({ table });
   } catch (_error) {
     logger.error("[TABLES API] Unexpected error:", {
-      error: error instanceof Error ? error.message : "Unknown error",
+      error: _error instanceof Error ? _error.message : "Unknown _error",
     });
     return NextResponse.json({ error: "Internal server error" }, { status: 500 });
   }

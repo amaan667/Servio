@@ -16,11 +16,11 @@ import { ScrollArea } from "@/components/ui/scroll-area";
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Plus, Send, Bot, User, Wrench } from "lucide-react";
-import { logger } from '@/lib/logger';
+import { logger } from "@/lib/logger";
 
 interface Message {
   id: string;
-  authorRole: 'system' | 'user' | 'assistant' | 'tool';
+  authorRole: "system" | "user" | "assistant" | "tool";
   text: string;
   content: unknown;
   callId?: string;
@@ -78,7 +78,7 @@ export function ProductionChatInterface({ isOpen, onClose, venueId }: ChatInterf
         setError(errorData.error || "Failed to load conversations");
       }
     } catch (_err) {
-      logger.error("[AI CHAT] Failed to load conversations:", err);
+      logger.error("[AI CHAT] Failed to load conversations:", _err);
       setError("Failed to load conversations");
     }
   };
@@ -95,7 +95,7 @@ export function ProductionChatInterface({ isOpen, onClose, venueId }: ChatInterf
         setError(errorData.error || "Failed to load messages");
       }
     } catch (_err) {
-      logger.error("[AI CHAT] Failed to load messages:", err);
+      logger.error("[AI CHAT] Failed to load messages:", _err);
       setError("Failed to load messages");
     }
   };
@@ -133,13 +133,15 @@ export function ProductionChatInterface({ isOpen, onClose, venueId }: ChatInterf
 
       if (response.ok) {
         const data = await response.json();
-        
+
         // Update conversation list if new conversation was created
         if (!currentConversation) {
           await loadConversations();
           // Find the new conversation
-          const newConv = conversations.find(c => c.id === data.conversationId) || 
-                          { id: data.conversationId, title: "New Chat" };
+          const newConv = conversations.find((c) => c.id === data.conversationId) || {
+            id: data.conversationId,
+            title: "New Chat",
+          };
           setCurrentConversation(newConv as Conversation);
         }
 
@@ -162,7 +164,7 @@ export function ProductionChatInterface({ isOpen, onClose, venueId }: ChatInterf
         setError(errorData.error || "Failed to send message");
       }
     } catch (_err) {
-      logger.error("[AI CHAT] Failed to send message:", err);
+      logger.error("[AI CHAT] Failed to send message:", _err);
       setError("Failed to send message");
     } finally {
       setLoading(false);
@@ -203,16 +205,12 @@ export function ProductionChatInterface({ isOpen, onClose, venueId }: ChatInterf
           {/* Sidebar */}
           <div className="w-80 border-r flex flex-col">
             <div className="p-4 border-b">
-              <Button
-                onClick={createNewConversation}
-                className="w-full"
-                variant="outline"
-              >
+              <Button onClick={createNewConversation} className="w-full" variant="outline">
                 <Plus className="h-4 w-4 mr-2" />
                 New Conversation
               </Button>
             </div>
-            
+
             <ScrollArea className="flex-1">
               <div className="p-4 space-y-2">
                 {error && (
@@ -220,7 +218,7 @@ export function ProductionChatInterface({ isOpen, onClose, venueId }: ChatInterf
                     <p className="text-sm text-red-600">{error}</p>
                   </div>
                 )}
-                
+
                 {conversations.length === 0 ? (
                   <div className="text-center py-8">
                     <p className="text-sm text-muted-foreground">No conversations yet</p>
@@ -242,9 +240,7 @@ export function ProductionChatInterface({ isOpen, onClose, venueId }: ChatInterf
                       <CardContent className="p-3">
                         <div className="flex items-start justify-between">
                           <div className="flex-1 min-w-0">
-                            <p className="text-sm font-medium truncate">
-                              {conv.title}
-                            </p>
+                            <p className="text-sm font-medium truncate">{conv.title}</p>
                             <p className="text-xs text-muted-foreground">
                               {new Date(conv.lastMessageAt).toLocaleDateString()}
                             </p>
@@ -265,17 +261,16 @@ export function ProductionChatInterface({ isOpen, onClose, venueId }: ChatInterf
                 <h3 className="font-medium">{currentConversation.title}</h3>
               </div>
             )}
-            
+
             <ScrollArea className="flex-1 p-4">
               <div className="space-y-4">
                 {messages.length === 0 ? (
                   <div className="text-center py-8">
                     <Bot className="h-12 w-12 mx-auto text-muted-foreground mb-4" />
                     <p className="text-muted-foreground">
-                      {currentConversation 
+                      {currentConversation
                         ? "Start a conversation by typing a message below"
-                        : "Select a conversation or start a new one"
-                      }
+                        : "Select a conversation or start a new one"}
                     </p>
                   </div>
                 ) : (
@@ -291,14 +286,14 @@ export function ProductionChatInterface({ isOpen, onClose, venueId }: ChatInterf
                           {getMessageIcon(message.authorRole)}
                         </div>
                       )}
-                      
+
                       <div
                         className={`max-w-[80%] rounded-lg px-4 py-2 ${
                           message.authorRole === "user"
                             ? "bg-primary text-primary-foreground"
                             : message.authorRole === "tool"
-                            ? "bg-blue-50 border border-blue-200"
-                            : "bg-muted"
+                              ? "bg-blue-50 border border-blue-200"
+                              : "bg-muted"
                         }`}
                       >
                         {message.authorRole === "tool" && (
@@ -311,7 +306,7 @@ export function ProductionChatInterface({ isOpen, onClose, venueId }: ChatInterf
                           {new Date(message.createdAt).toLocaleTimeString()}
                         </p>
                       </div>
-                      
+
                       {message.authorRole === "user" && (
                         <div className="flex-shrink-0 w-8 h-8 rounded-full bg-primary/10 flex items-center justify-center">
                           <User className="h-4 w-4" />
@@ -335,11 +330,7 @@ export function ProductionChatInterface({ isOpen, onClose, venueId }: ChatInterf
                   disabled={loading}
                   className="flex-1"
                 />
-                <Button
-                  onClick={handleSendMessage}
-                  disabled={loading || !input.trim()}
-                  size="icon"
-                >
+                <Button onClick={handleSendMessage} disabled={loading || !input.trim()} size="icon">
                   <Send className="h-4 w-4" />
                 </Button>
               </div>

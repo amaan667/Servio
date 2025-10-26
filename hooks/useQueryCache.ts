@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback, useRef } from 'react';
+import { useState, useEffect, useCallback, useRef } from "react";
 
 interface CacheEntry<T> {
   data: T;
@@ -19,12 +19,14 @@ interface QueryOptions {
 export function useQueryCache<T>(
   key: string,
   fetcher: () => Promise<T>,
-  options: QueryOptions = { /* Empty */ }
+  options: QueryOptions = {
+    /* Empty */
+  }
 ) {
   const {
     staleTime = 5 * 60 * 1000, // 5 minutes
     cacheTime = 10 * 60 * 1000, // 10 minutes
-    refetchOnWindowFocus = true
+    refetchOnWindowFocus = true,
   } = options;
 
   const [data, setData] = useState<T | null>(null);
@@ -38,46 +40,49 @@ export function useQueryCache<T>(
     fetcherRef.current = fetcher;
   }, [fetcher]);
 
-  const fetchData = useCallback(async (forceRefresh = false) => {
-    const now = Date.now();
-    const cacheEntry = cacheRef.current.get(key);
+  const fetchData = useCallback(
+    async (forceRefresh = false) => {
+      const now = Date.now();
+      const cacheEntry = cacheRef.current.get(key);
 
-    // Return cached data if it's still fresh and not forcing refresh
-    if (!forceRefresh && cacheEntry && now < cacheEntry.expiresAt) {
-      setData(cacheEntry.data);
-      setIsLoading(false);
-      setError(null);
-      
-      // Background refetch if data is stale
-      if (now > cacheEntry.timestamp + staleTime) {
-        fetchData(true);
-      }
-      return;
-    }
-
-    try {
-      setIsLoading(true);
-      setError(null);
-
-      const result = await fetcherRef.current();
-      const newCacheEntry: CacheEntry<T> = {
-        data: result,
-        timestamp: now,
-        expiresAt: now + cacheTime
-      };
-
-      cacheRef.current.set(key, newCacheEntry);
-      setData(result);
-    } catch (_err) {
-      setError(err instanceof Error ? err : new Error('Unknown error'));
-      // Return stale data if available
-      if (cacheEntry) {
+      // Return cached data if it's still fresh and not forcing refresh
+      if (!forceRefresh && cacheEntry && now < cacheEntry.expiresAt) {
         setData(cacheEntry.data);
+        setIsLoading(false);
+        setError(null);
+
+        // Background refetch if data is stale
+        if (now > cacheEntry.timestamp + staleTime) {
+          fetchData(true);
+        }
+        return;
       }
-    } finally {
-      setIsLoading(false);
-    }
-  }, [key, staleTime, cacheTime]);
+
+      try {
+        setIsLoading(true);
+        setError(null);
+
+        const result = await fetcherRef.current();
+        const newCacheEntry: CacheEntry<T> = {
+          data: result,
+          timestamp: now,
+          expiresAt: now + cacheTime,
+        };
+
+        cacheRef.current.set(key, newCacheEntry);
+        setData(result);
+      } catch (_err) {
+        setError(_err instanceof Error ? _err : new Error("Unknown error"));
+        // Return stale data if available
+        if (cacheEntry) {
+          setData(cacheEntry.data);
+        }
+      } finally {
+        setIsLoading(false);
+      }
+    },
+    [key, staleTime, cacheTime]
+  );
 
   // Initial fetch
   useEffect(() => {
@@ -92,8 +97,8 @@ export function useQueryCache<T>(
       fetchData(true);
     };
 
-    window.addEventListener('focus', handleFocus);
-    return () => window.removeEventListener('focus', handleFocus);
+    window.addEventListener("focus", handleFocus);
+    return () => window.removeEventListener("focus", handleFocus);
   }, [fetchData, refetchOnWindowFocus]);
 
   // Cleanup expired cache entries
@@ -118,6 +123,6 @@ export function useQueryCache<T>(
     isLoading,
     error,
     refetch,
-    isStale: data ? Date.now() > (cacheRef.current.get(key)?.timestamp || 0) + staleTime : false
+    isStale: data ? Date.now() > (cacheRef.current.get(key)?.timestamp || 0) + staleTime : false,
   };
 }

@@ -4,7 +4,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { createClient } from "@/lib/supabase";
 import { z } from "zod";
-import { logger } from '@/lib/logger';
+import { logger } from "@/lib/logger";
 
 const FixAccessRequestSchema = z.object({
   venueId: z.string().min(1),
@@ -25,7 +25,7 @@ export async function POST(_request: NextRequest) {
     }
 
     // Parse request
-    const body = await request.json();
+    const body = await _request.json();
     const { venueId } = FixAccessRequestSchema.parse(body);
 
     // Check if user_venue_roles table exists and if user already has a role for this venue
@@ -46,7 +46,9 @@ export async function POST(_request: NextRequest) {
       }
     } catch (tableError) {
       // Table doesn't exist or other error - we'll create the role anyway
-      logger.debug("[AI ASSISTANT] user_venue_roles table check failed:", { error: tableError instanceof Error ? tableError.message : 'Unknown error' });
+      logger.debug("[AI ASSISTANT] user_venue_roles table check failed:", {
+        error: tableError instanceof Error ? tableError.message : "Unknown error",
+      });
     }
 
     // Check if user owns this venue
@@ -57,10 +59,7 @@ export async function POST(_request: NextRequest) {
       .single();
 
     if (!venue) {
-      return NextResponse.json(
-        { error: "Venue not found" },
-        { status: 404 }
-      );
+      return NextResponse.json({ error: "Venue not found" }, { status: 404 });
     }
 
     // If user owns the venue, create owner role
@@ -78,19 +77,21 @@ export async function POST(_request: NextRequest) {
           .single();
 
         if (roleError) {
-          logger.error("[AI ASSISTANT] Failed to create owner role:", { error: roleError.message || 'Unknown error' });
+          logger.error("[AI ASSISTANT] Failed to create owner role:", {
+            error: roleError.message || "Unknown error",
+          });
           // If table doesn't exist, return success anyway since user owns the venue
-          if (roleError.message?.includes("relation") && roleError.message?.includes("does not exist")) {
+          if (
+            roleError.message?.includes("relation") &&
+            roleError.message?.includes("does not exist")
+          ) {
             return NextResponse.json({
               success: true,
               message: "Access configured as owner (legacy mode)",
               role: "owner",
             });
           }
-          return NextResponse.json(
-            { error: "Failed to configure access" },
-            { status: 500 }
-          );
+          return NextResponse.json({ error: "Failed to configure access" }, { status: 500 });
         }
 
         return NextResponse.json({
@@ -99,7 +100,9 @@ export async function POST(_request: NextRequest) {
           role: roleData.role,
         });
       } catch (insertError) {
-        logger.error("[AI ASSISTANT] Failed to insert owner role:", { error: insertError instanceof Error ? insertError.message : 'Unknown error' });
+        logger.error("[AI ASSISTANT] Failed to insert owner role:", {
+          error: insertError instanceof Error ? insertError.message : "Unknown error",
+        });
         // If we can't create the role but user owns venue, allow access anyway
         return NextResponse.json({
           success: true,
@@ -110,22 +113,21 @@ export async function POST(_request: NextRequest) {
     }
 
     // User doesn't own venue and has no role - access denied
-    return NextResponse.json(
-      { error: "No access to this venue" },
-      { status: 403 }
-    );
+    return NextResponse.json({ error: "No access to this venue" }, { status: 403 });
   } catch (_error) {
-    logger.error("[AI ASSISTANT] Fix access error:", { error: error instanceof Error ? error.message : 'Unknown error' });
+    logger._error("[AI ASSISTANT] Fix access error:", {
+      error: _error instanceof Error ? _error.message : "Unknown _error",
+    });
 
-    if ((error as any)?.name === "ZodError") {
+    if ((_error as any)?.name === "ZodError") {
       return NextResponse.json(
-        { error: "Invalid request format", details: (error as any)?.errors },
+        { error: "Invalid request format", details: (_error as any)?.errors },
         { status: 400 }
       );
     }
 
     return NextResponse.json(
-      { error: error instanceof Error ? error.message : "Failed to fix access" },
+      { error: _error instanceof Error ? _error.message : "Failed to fix access" },
       { status: 500 }
     );
   }

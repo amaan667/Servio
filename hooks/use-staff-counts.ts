@@ -1,8 +1,8 @@
-import { errorToContext } from '@/lib/utils/error-to-context';
+import { errorToContext } from "@/lib/utils/error-to-context";
 
-import { useState, useEffect, useCallback } from 'react';
-import { supabaseBrowser as createClient } from '@/lib/supabase';
-import { logger } from '@/lib/logger';
+import { useState, useEffect, useCallback } from "react";
+import { supabaseBrowser as createClient } from "@/lib/supabase";
+import { logger } from "@/lib/logger";
 
 export interface StaffCounts {
   total_staff: number;
@@ -18,28 +18,28 @@ export function useStaffCounts(venueId: string) {
 
   const fetchCounts = useCallback(async () => {
     if (!venueId) return;
-    
+
     setIsLoading(true);
     setError(null);
-    
+
     try {
       const supabase = createClient();
       const { data: result, error: rpcError } = await supabase
-        .rpc('staff_counts', { 
-          p_venue_id: venueId
+        .rpc("staff_counts", {
+          p_venue_id: venueId,
         })
         .single();
-      
+
       if (rpcError) {
-        logger.error('[STAFF_COUNTS] RPC error:', rpcError);
+        logger.error("[STAFF_COUNTS] RPC error:", rpcError);
         setError(rpcError.message);
         return;
       }
-      
+
       setData(result);
     } catch (_err) {
-      logger.error('[STAFF_COUNTS] Fetch error:', errorToContext(err));
-      setError(err instanceof Error ? err.message : 'Unknown error');
+      logger.error("[STAFF_COUNTS] Fetch error:", errorToContext(_err));
+      setError(_err instanceof Error ? _err.message : "Unknown error");
     } finally {
       setIsLoading(false);
     }

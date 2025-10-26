@@ -1,15 +1,15 @@
-import { errorToContext } from '@/lib/utils/error-to-context';
+import { errorToContext } from "@/lib/utils/error-to-context";
 
 // Session management utilities for QR rescan and order resume functionality
 
-import { logger } from '@/lib/logger';
+import { logger } from "@/lib/logger";
 export interface SessionData {
   sessionId: string;
   tableId?: string | null;
   tableNumber?: number;
   venueId: string;
   orderId?: string;
-  paymentStatus?: 'unpaid' | 'paid' | 'till';
+  paymentStatus?: "unpaid" | "paid" | "till";
   createdAt: string;
 }
 
@@ -25,40 +25,40 @@ export function generateSessionId(): string {
  */
 export function getOrCreateSessionId(tableNumber?: number, venueId?: string): string {
   // First, try to get from URL params
-  if (typeof window !== 'undefined') {
+  if (typeof window !== "undefined") {
     const urlParams = new URLSearchParams(window.location.search);
-    const sessionParam = urlParams.get('session');
-    
+    const sessionParam = urlParams.get("session");
+
     if (sessionParam) {
       // Store in localStorage for future use
-      localStorage.setItem('servio-current-session', sessionParam);
+      localStorage.setItem("servio-current-session", sessionParam);
       return sessionParam;
     }
-    
+
     // Try to get from localStorage
-    const storedSession = localStorage.getItem('servio-current-session');
+    const storedSession = localStorage.getItem("servio-current-session");
     if (storedSession) {
       return storedSession;
     }
-    
+
     // Generate new session ID
     const newSessionId = generateSessionId();
-    localStorage.setItem('servio-current-session', newSessionId);
-    
+    localStorage.setItem("servio-current-session", newSessionId);
+
     // Store session data
     const sessionData: SessionData = {
       sessionId: newSessionId,
       tableId: null,
       tableNumber: tableNumber || undefined,
-      venueId: venueId || '',
-      createdAt: new Date().toISOString()
+      venueId: venueId || "",
+      createdAt: new Date().toISOString(),
     };
-    
+
     localStorage.setItem(`servio-session-${newSessionId}`, JSON.stringify(sessionData));
-    
+
     return newSessionId;
   }
-  
+
   return generateSessionId();
 }
 
@@ -66,9 +66,9 @@ export function getOrCreateSessionId(tableNumber?: number, venueId?: string): st
  * Store session data
  */
 export function storeSessionData(sessionData: SessionData): void {
-  if (typeof window !== 'undefined') {
+  if (typeof window !== "undefined") {
     localStorage.setItem(`servio-session-${sessionData.sessionId}`, JSON.stringify(sessionData));
-    localStorage.setItem('servio-current-session', sessionData.sessionId);
+    localStorage.setItem("servio-current-session", sessionData.sessionId);
   }
 }
 
@@ -76,13 +76,13 @@ export function storeSessionData(sessionData: SessionData): void {
  * Get session data by session ID
  */
 export function getSessionData(sessionId: string): SessionData | null {
-  if (typeof window !== 'undefined') {
+  if (typeof window !== "undefined") {
     const stored = localStorage.getItem(`servio-session-${sessionId}`);
     if (stored) {
       try {
         return JSON.parse(stored);
       } catch (_error) {
-        logger.error('[SESSION] Error parsing session data:', errorToContext(error));
+        logger._error("[SESSION] Error parsing session data:", errorToContext(_error));
       }
     }
   }
@@ -92,7 +92,11 @@ export function getSessionData(sessionId: string): SessionData | null {
 /**
  * Update session data with order information
  */
-export function updateSessionWithOrder(sessionId: string, orderId: string, paymentStatus: 'unpaid' | 'paid' | 'till'): void {
+export function updateSessionWithOrder(
+  sessionId: string,
+  orderId: string,
+  paymentStatus: "unpaid" | "paid" | "till"
+): void {
   const sessionData = getSessionData(sessionId);
   if (sessionData) {
     sessionData.orderId = orderId;
@@ -105,9 +109,9 @@ export function updateSessionWithOrder(sessionId: string, orderId: string, payme
  * Clear session data
  */
 export function clearSession(sessionId: string): void {
-  if (typeof window !== 'undefined') {
+  if (typeof window !== "undefined") {
     localStorage.removeItem(`servio-session-${sessionId}`);
-    localStorage.removeItem('servio-current-session');
+    localStorage.removeItem("servio-current-session");
   }
 }
 
@@ -118,14 +122,14 @@ export async function checkForOpenOrder(sessionId: string): Promise<unknown | nu
   try {
     const response = await fetch(`/api/orders/session/${sessionId}/open`);
     const result = await response.json();
-    
+
     if (result.success && result.data) {
       return result.data;
     }
-    
+
     return null;
   } catch (_error) {
-    logger.error('[SESSION] Error checking for open order:', errorToContext(error));
+    logger._error("[SESSION] Error checking for open order:", errorToContext(_error));
     return null;
   }
 }
@@ -135,10 +139,10 @@ export async function checkForOpenOrder(sessionId: string): Promise<unknown | nu
  */
 export function generateQRUrl(venueId: string, tableNumber: number, sessionId?: string): string {
   const baseUrl = `${window.location.origin}/order?venue=${venueId}&table=${tableNumber}`;
-  
+
   if (sessionId) {
     return `${baseUrl}&session=${sessionId}`;
   }
-  
+
   return baseUrl;
 }

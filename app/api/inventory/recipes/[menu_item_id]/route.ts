@@ -1,7 +1,7 @@
-import { NextRequest, NextResponse } from 'next/server';
-import { createClient } from '@/lib/supabase';
-import type { RecipeIngredient } from '@/types/inventory';
-import { logger } from '@/lib/logger';
+import { NextRequest, NextResponse } from "next/server";
+import { createClient } from "@/lib/supabase";
+import type { RecipeIngredient } from "@/types/inventory";
+import { logger } from "@/lib/logger";
 
 interface RecipeItem {
   ingredient?: {
@@ -20,37 +20,38 @@ export async function GET(
     const { menu_item_id } = await params;
 
     const { data, error } = await supabase
-      .from('menu_item_ingredients')
-      .select(`
+      .from("menu_item_ingredients")
+      .select(
+        `
         *,
         ingredient:ingredients(id, name, unit, cost_per_unit)
-      `)
-      .eq('menu_item_id', menu_item_id);
+      `
+      )
+      .eq("menu_item_id", menu_item_id);
 
     if (error) {
-      logger.error('[INVENTORY API] Error fetching recipe:', { error: error instanceof Error ? error.message : 'Unknown error' });
-      return NextResponse.json(
-        { error: error.message },
-        { status: 500 }
-      );
+      logger.error("[INVENTORY API] Error fetching recipe:", {
+        error: error instanceof Error ? error.message : "Unknown error",
+      });
+      return NextResponse.json({ error: error.message }, { status: 500 });
     }
 
     // Calculate total recipe cost
-    const totalCost = data?.reduce((sum, item: RecipeItem) => {
-      const ingredientCost = item.ingredient?.cost_per_unit || 0;
-      return sum + (ingredientCost * item.qty_per_item);
-    }, 0) || 0;
+    const totalCost =
+      data?.reduce((sum, item: RecipeItem) => {
+        const ingredientCost = item.ingredient?.cost_per_unit || 0;
+        return sum + ingredientCost * item.qty_per_item;
+      }, 0) || 0;
 
     return NextResponse.json({
       data,
       total_cost: totalCost,
     });
   } catch (_error) {
-    logger.error('[INVENTORY API] Unexpected error:', { error: error instanceof Error ? error.message : 'Unknown error' });
-    return NextResponse.json(
-      { error: 'Internal server error' },
-      { status: 500 }
-    );
+    logger._error("[INVENTORY API] Unexpected error:", {
+      error: _error instanceof Error ? _error.message : "Unknown _error",
+    });
+    return NextResponse.json({ error: "Internal server error" }, { status: 500 });
   }
 }
 
@@ -63,27 +64,23 @@ export async function POST(
   try {
     const supabase = await createClient();
     const { menu_item_id } = await params;
-    const body: { ingredients: RecipeIngredient[] } = await request.json();
+    const body: { ingredients: RecipeIngredient[] } = await _request.json();
 
     if (!body.ingredients || !Array.isArray(body.ingredients)) {
-      return NextResponse.json(
-        { error: 'ingredients array is required' },
-        { status: 400 }
-      );
+      return NextResponse.json({ error: "ingredients array is required" }, { status: 400 });
     }
 
     // Delete existing recipe
     const { error: deleteError } = await supabase
-      .from('menu_item_ingredients')
+      .from("menu_item_ingredients")
       .delete()
-      .eq('menu_item_id', menu_item_id);
+      .eq("menu_item_id", menu_item_id);
 
     if (deleteError) {
-      logger.error('[INVENTORY API] Error deleting existing recipe:', { error: deleteError.message });
-      return NextResponse.json(
-        { error: deleteError.message },
-        { status: 500 }
-      );
+      logger.error("[INVENTORY API] Error deleting existing recipe:", {
+        error: deleteError.message,
+      });
+      return NextResponse.json({ error: deleteError.message }, { status: 500 });
     }
 
     // Insert new recipe if ingredients provided
@@ -96,16 +93,13 @@ export async function POST(
       }));
 
       const { data, error: insertError } = await supabase
-        .from('menu_item_ingredients')
+        .from("menu_item_ingredients")
         .insert(recipeData)
         .select();
 
       if (insertError) {
-        logger.error('[INVENTORY API] Error inserting recipe:', { error: insertError.message });
-        return NextResponse.json(
-          { error: insertError.message },
-          { status: 500 }
-        );
+        logger.error("[INVENTORY API] Error inserting recipe:", { error: insertError.message });
+        return NextResponse.json({ error: insertError.message }, { status: 500 });
       }
 
       return NextResponse.json({ data }, { status: 201 });
@@ -113,11 +107,10 @@ export async function POST(
 
     return NextResponse.json({ data: [] }, { status: 200 });
   } catch (_error) {
-    logger.error('[INVENTORY API] Unexpected error:', { error: error instanceof Error ? error.message : 'Unknown error' });
-    return NextResponse.json(
-      { error: 'Internal server error' },
-      { status: 500 }
-    );
+    logger._error("[INVENTORY API] Unexpected error:", {
+      error: _error instanceof Error ? _error.message : "Unknown _error",
+    });
+    return NextResponse.json({ error: "Internal server error" }, { status: 500 });
   }
 }
 
@@ -132,25 +125,22 @@ export async function DELETE(
     const { menu_item_id } = await params;
 
     const { error } = await supabase
-      .from('menu_item_ingredients')
+      .from("menu_item_ingredients")
       .delete()
-      .eq('menu_item_id', menu_item_id);
+      .eq("menu_item_id", menu_item_id);
 
     if (error) {
-      logger.error('[INVENTORY API] Error deleting recipe:', { error: error instanceof Error ? error.message : 'Unknown error' });
-      return NextResponse.json(
-        { error: error.message },
-        { status: 500 }
-      );
+      logger.error("[INVENTORY API] Error deleting recipe:", {
+        error: error instanceof Error ? error.message : "Unknown error",
+      });
+      return NextResponse.json({ error: error.message }, { status: 500 });
     }
 
     return NextResponse.json({ success: true });
   } catch (_error) {
-    logger.error('[INVENTORY API] Unexpected error:', { error: error instanceof Error ? error.message : 'Unknown error' });
-    return NextResponse.json(
-      { error: 'Internal server error' },
-      { status: 500 }
-    );
+    logger._error("[INVENTORY API] Unexpected error:", {
+      error: _error instanceof Error ? _error.message : "Unknown _error",
+    });
+    return NextResponse.json({ error: "Internal server error" }, { status: 500 });
   }
 }
-

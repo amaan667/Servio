@@ -67,7 +67,6 @@ export async function PATCH(req: Request) {
 
     // If bumping tickets, update the main order status to READY (not SERVED - that comes later)
     if (status === "bumped" && orderId) {
-
       const { error: orderUpdateError } = await supabase
         .from("orders")
         .update({
@@ -92,8 +91,8 @@ export async function PATCH(req: Request) {
         const { cleanupTableOnOrderCompletion } = await import("@/lib/table-cleanup");
         await cleanupTableOnOrderCompletion(orderId, "READY");
       } catch (_error) {
-      // Error handled silently
-    }
+        // Error handled silently
+      }
     }
 
     return NextResponse.json({
@@ -103,10 +102,10 @@ export async function PATCH(req: Request) {
     });
   } catch (_error) {
     logger.error("[KDS] Unexpected error:", {
-      error: error instanceof Error ? error.message : "Unknown error",
+      error: _error instanceof Error ? _error.message : "Unknown _error",
     });
     return NextResponse.json(
-      { ok: false, error: error instanceof Error ? error.message : "Internal server error" },
+      { ok: false, error: _error instanceof Error ? _error.message : "Internal server _error" },
       { status: 500 }
     );
   }

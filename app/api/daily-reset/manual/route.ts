@@ -1,231 +1,221 @@
-import { NextRequest, NextResponse } from 'next/server';
-import { createAdminClient } from '@/lib/supabase';
-import { logger } from '@/lib/logger';
+import { NextRequest, NextResponse } from "next/server";
+import { createAdminClient } from "@/lib/supabase";
+import { logger } from "@/lib/logger";
 
 export async function POST(_request: NextRequest) {
   try {
-    
-    const { venueId } = await request.json();
+    const { venueId } = await _request.json();
 
     if (!venueId) {
-      return NextResponse.json(
-        { error: 'Venue ID is required' },
-        { status: 400 }
-      );
+      return NextResponse.json({ error: "Venue ID is required" }, { status: 400 });
     }
 
     // Check if service role key is available
     if (!process.env.SUPABASE_SERVICE_ROLE_KEY) {
-      logger.error('🔄 [MANUAL DAILY RESET] SUPABASE_SERVICE_ROLE_KEY not found');
-      return NextResponse.json(
-        { error: 'Service role key not configured' },
-        { status: 500 }
-      );
+      logger.error("🔄 [MANUAL DAILY RESET] SUPABASE_SERVICE_ROLE_KEY not found");
+      return NextResponse.json({ error: "Service role key not configured" }, { status: 500 });
     }
 
     const supabase = createAdminClient();
 
     // Check if venue exists
     const { data: venue, error: venueError } = await supabase
-      .from('venues')
-      .select('venue_id, venue_name')
-      .eq('venue_id', venueId)
+      .from("venues")
+      .select("venue_id, venue_name")
+      .eq("venue_id", venueId)
       .single();
 
     if (venueError) {
-      logger.error('🔄 [MANUAL DAILY RESET] Error fetching venue:', { error: venueError.message || 'Unknown error' });
-      return NextResponse.json(
-        { error: `Database error: ${venueError.message}` },
-        { status: 500 }
-      );
+      logger.error("🔄 [MANUAL DAILY RESET] Error fetching venue:", {
+        error: venueError.message || "Unknown error",
+      });
+      return NextResponse.json({ error: `Database error: ${venueError.message}` }, { status: 500 });
     }
 
     if (!venue) {
-      return NextResponse.json(
-        { error: 'Venue not found' },
-        { status: 404 }
-      );
+      return NextResponse.json({ error: "Venue not found" }, { status: 404 });
     }
 
     // Check if there are unknown recent orders (within last 2 hours) - if so, warn user
     const twoHoursAgo = new Date(Date.now() - 2 * 60 * 60 * 1000).toISOString();
     const { error: recentOrdersError } = await supabase
-      .from('orders')
-      .select('id, created_at')
-      .eq('venue_id', venueId)
-      .gte('created_at', twoHoursAgo)
+      .from("orders")
+      .select("id, created_at")
+      .eq("venue_id", venueId)
+      .gte("created_at", twoHoursAgo)
       .limit(1);
 
     if (recentOrdersError) {
-      logger.error('🔄 [MANUAL DAILY RESET] Error checking recent orders:', { error: recentOrdersError.message || 'Unknown error' });
+      logger.error("🔄 [MANUAL DAILY RESET] Error checking recent orders:", {
+        error: recentOrdersError.message || "Unknown error",
+      });
       // Continue with reset if we can't check
     }
 
     // Step 1: Complete all active orders (mark as COMPLETED)
     const { data: activeOrders, error: activeOrdersError } = await supabase
-      .from('orders')
-      .select('id, order_status, table_number')
-      .eq('venue_id', venueId)
-      .in('order_status', ['PLACED', 'ACCEPTED', 'IN_PREP', 'READY', 'SERVING']);
+      .from("orders")
+      .select("id, order_status, table_number")
+      .eq("venue_id", venueId)
+      .in("order_status", ["PLACED", "ACCEPTED", "IN_PREP", "READY", "SERVING"]);
 
     if (activeOrdersError) {
-      logger.error('🔄 [MANUAL DAILY RESET] Error fetching active orders:', { error: activeOrdersError.message || 'Unknown error' });
-      return NextResponse.json(
-        { error: 'Failed to fetch active orders' },
-        { status: 500 }
-      );
+      logger.error("🔄 [MANUAL DAILY RESET] Error fetching active orders:", {
+        error: activeOrdersError.message || "Unknown error",
+      });
+      return NextResponse.json({ error: "Failed to fetch active orders" }, { status: 500 });
     }
 
     if (activeOrders && activeOrders.length > 0) {
       const { error: completeOrdersError } = await supabase
-        .from('orders')
-        .update({ 
-          order_status: 'COMPLETED',
-          updated_at: new Date().toISOString()
+        .from("orders")
+        .update({
+          order_status: "COMPLETED",
+          updated_at: new Date().toISOString(),
         })
-        .eq('venue_id', venueId)
-        .in('order_status', ['PLACED', 'ACCEPTED', 'IN_PREP', 'READY', 'SERVING']);
+        .eq("venue_id", venueId)
+        .in("order_status", ["PLACED", "ACCEPTED", "IN_PREP", "READY", "SERVING"]);
 
       if (completeOrdersError) {
-        logger.error('🔄 [MANUAL DAILY RESET] Error completing orders:', { error: completeOrdersError.message || 'Unknown error' });
-        return NextResponse.json(
-          { error: 'Failed to complete active orders' },
-          { status: 500 }
-        );
+        logger.error("🔄 [MANUAL DAILY RESET] Error completing orders:", {
+          error: completeOrdersError.message || "Unknown error",
+        });
+        return NextResponse.json({ error: "Failed to complete active orders" }, { status: 500 });
       }
-
     }
 
     // Step 2: Cancel all active reservations
     const { data: activeReservations, error: activeReservationsError } = await supabase
-      .from('reservations')
-      .select('id, status')
-      .eq('venue_id', venueId)
-      .eq('status', 'BOOKED');
+      .from("reservations")
+      .select("id, status")
+      .eq("venue_id", venueId)
+      .eq("status", "BOOKED");
 
     if (activeReservationsError) {
-      logger.error('🔄 [MANUAL DAILY RESET] Error fetching active reservations:', { error: activeReservationsError.message || 'Unknown error' });
-      return NextResponse.json(
-        { error: 'Failed to fetch active reservations' },
-        { status: 500 }
-      );
+      logger.error("🔄 [MANUAL DAILY RESET] Error fetching active reservations:", {
+        error: activeReservationsError.message || "Unknown error",
+      });
+      return NextResponse.json({ error: "Failed to fetch active reservations" }, { status: 500 });
     }
 
     if (activeReservations && activeReservations.length > 0) {
       const { error: cancelReservationsError } = await supabase
-        .from('reservations')
-        .update({ 
-          status: 'CANCELLED',
-          updated_at: new Date().toISOString()
+        .from("reservations")
+        .update({
+          status: "CANCELLED",
+          updated_at: new Date().toISOString(),
         })
-        .eq('venue_id', venueId)
-        .eq('status', 'BOOKED');
+        .eq("venue_id", venueId)
+        .eq("status", "BOOKED");
 
       if (cancelReservationsError) {
-        logger.error('🔄 [MANUAL DAILY RESET] Error canceling reservations:', { error: cancelReservationsError.message || 'Unknown error' });
+        logger.error("🔄 [MANUAL DAILY RESET] Error canceling reservations:", {
+          error: cancelReservationsError.message || "Unknown error",
+        });
         return NextResponse.json(
-          { error: 'Failed to cancel active reservations' },
+          { error: "Failed to cancel active reservations" },
           { status: 500 }
         );
       }
-
     }
 
     // Step 3: Delete all tables for complete reset
     const { data: tables, error: tablesError } = await supabase
-      .from('tables')
-      .select('id, label')
-      .eq('venue_id', venueId);
+      .from("tables")
+      .select("id, label")
+      .eq("venue_id", venueId);
 
     if (tablesError) {
-      logger.error('🔄 [MANUAL DAILY RESET] Error fetching tables:', { error: tablesError.message || 'Unknown error' });
-      return NextResponse.json(
-        { error: 'Failed to fetch tables' },
-        { status: 500 }
-      );
+      logger.error("🔄 [MANUAL DAILY RESET] Error fetching tables:", {
+        error: tablesError.message || "Unknown error",
+      });
+      return NextResponse.json({ error: "Failed to fetch tables" }, { status: 500 });
     }
 
     if (tables && tables.length > 0) {
       // Delete all table sessions first (if they exist)
       const { error: deleteSessionsError } = await supabase
-        .from('table_sessions')
+        .from("table_sessions")
         .delete()
-        .eq('venue_id', venueId);
+        .eq("venue_id", venueId);
 
       if (deleteSessionsError) {
-        logger.warn('🔄 [MANUAL DAILY RESET] Warning clearing table sessions:', { error: deleteSessionsError.message || 'Unknown error' });
+        logger.warn("🔄 [MANUAL DAILY RESET] Warning clearing table sessions:", {
+          error: deleteSessionsError.message || "Unknown error",
+        });
         // Don't fail for this, continue
       }
 
       // Delete all tables for the venue
       const { error: deleteTablesError } = await supabase
-        .from('tables')
+        .from("tables")
         .delete()
-        .eq('venue_id', venueId);
+        .eq("venue_id", venueId);
 
       if (deleteTablesError) {
-        logger.error('🔄 [MANUAL DAILY RESET] Error deleting tables:', { error: deleteTablesError.message || 'Unknown error' });
-        return NextResponse.json(
-          { error: 'Failed to delete tables' },
-          { status: 500 }
-        );
+        logger.error("🔄 [MANUAL DAILY RESET] Error deleting tables:", {
+          error: deleteTablesError.message || "Unknown error",
+        });
+        return NextResponse.json({ error: "Failed to delete tables" }, { status: 500 });
       }
-
     }
 
     // Step 4: Clear unknown table runtime state
     const { error: clearRuntimeError } = await supabase
-      .from('table_runtime_state')
+      .from("table_runtime_state")
       .delete()
-      .eq('venue_id', venueId);
+      .eq("venue_id", venueId);
 
     if (clearRuntimeError) {
-      logger.error('🔄 [MANUAL DAILY RESET] Error clearing runtime state:', { error: clearRuntimeError.message || 'Unknown error' });
+      logger.error("🔄 [MANUAL DAILY RESET] Error clearing runtime state:", {
+        error: clearRuntimeError.message || "Unknown error",
+      });
       // Don't fail the entire operation for this
-      logger.warn('🔄 [MANUAL DAILY RESET] Continuing despite runtime state clear error');
+      logger.warn("🔄 [MANUAL DAILY RESET] Continuing despite runtime state clear error");
     }
 
     // Step 5: Record the manual reset in the log (but don't prevent future resets)
     const today = new Date();
-    const todayString = today.toISOString().split('T')[0]; // YYYY-MM-DD format
-    
-    const { error: logError } = await supabase
-      .from('daily_reset_log')
-      .upsert({
+    const todayString = today.toISOString().split("T")[0]; // YYYY-MM-DD format
+
+    const { error: logError } = await supabase.from("daily_reset_log").upsert(
+      {
         venue_id: venueId,
         reset_date: todayString,
         reset_timestamp: new Date().toISOString(),
         completed_orders: activeOrders?.length || 0,
         canceled_reservations: activeReservations?.length || 0,
-        reset_tables: tables?.length || 0
-      }, {
-        onConflict: 'venue_id,reset_date'
-      });
+        reset_tables: tables?.length || 0,
+      },
+      {
+        onConflict: "venue_id,reset_date",
+      }
+    );
 
     if (logError) {
-      logger.error('🔄 [MANUAL DAILY RESET] Error logging reset:', { error: logError.message || 'Unknown error' });
+      logger.error("🔄 [MANUAL DAILY RESET] Error logging reset:", {
+        error: logError.message || "Unknown error",
+      });
       // Don't fail the operation for this
-      logger.warn('🔄 [MANUAL DAILY RESET] Continuing despite log error');
+      logger.warn("🔄 [MANUAL DAILY RESET] Continuing despite log error");
     }
 
     return NextResponse.json({
       success: true,
-      message: 'Manual daily reset completed successfully',
+      message: "Manual daily reset completed successfully",
       summary: {
         venueId,
         venueName: venue.venue_name,
         completedOrders: activeOrders?.length || 0,
         canceledReservations: activeReservations?.length || 0,
         deletedTables: tables?.length || 0,
-        timestamp: new Date().toISOString()
-      }
+        timestamp: new Date().toISOString(),
+      },
     });
-
   } catch (_error) {
-    logger.error('🔄 [MANUAL DAILY RESET] Error in manual daily reset:', { error: error instanceof Error ? error.message : 'Unknown error' });
-    return NextResponse.json(
-      { error: 'Internal server error' },
-      { status: 500 }
-    );
+    logger._error("🔄 [MANUAL DAILY RESET] Error in manual daily reset:", {
+      error: _error instanceof Error ? _error.message : "Unknown _error",
+    });
+    return NextResponse.json({ error: "Internal server error" }, { status: 500 });
   }
 }

@@ -3,9 +3,9 @@
  * @module lib/repositories/menu-repository
  */
 
-import { BaseRepository } from './base-repository';
-import { SupabaseClient } from '@supabase/supabase-js';
-import { logger } from '@/lib/logger';
+import { BaseRepository } from "./base-repository";
+import { SupabaseClient } from "@supabase/supabase-js";
+import { logger } from "@/lib/logger";
 
 export interface MenuItem {
   id: string;
@@ -35,7 +35,7 @@ export interface MenuCategory {
 }
 
 export class MenuRepository extends BaseRepository<MenuItem> {
-  protected tableName = 'menu_items';
+  protected tableName = "menu_items";
 
   constructor(supabase: SupabaseClient) {
     super(supabase);
@@ -48,26 +48,26 @@ export class MenuRepository extends BaseRepository<MenuItem> {
     try {
       let query = this.supabase
         .from(this.tableName)
-        .select('*')
-        .eq('venue_id', venueId)
-        .order('category')
-        .order('name');
+        .select("*")
+        .eq("venue_id", venueId)
+        .order("category")
+        .order("name");
 
       if (!includeUnavailable) {
-        query = query.eq('is_available', true);
+        query = query.eq("is_available", true);
       }
 
       const { data, error } = await query;
 
       if (error) {
-        logger.error('[MENU_REPO] Error finding menu by venue', { error, venueId });
+        logger.error("[MENU_REPO] Error finding menu by venue", { error, venueId });
         throw error;
       }
 
       return (data as MenuItem[]) || [];
     } catch (_error) {
-      logger.error('[MENU_REPO] Unexpected error finding menu by venue', { error, venueId });
-      throw error;
+      logger.error("[MENU_REPO] Unexpected error finding menu by venue", { error, venueId });
+      throw _error;
     }
   }
 
@@ -89,22 +89,22 @@ export class MenuRepository extends BaseRepository<MenuItem> {
     try {
       const { data, error } = await this.supabase
         .from(this.tableName)
-        .select('*')
-        .eq('venue_id', venueId)
+        .select("*")
+        .eq("venue_id", venueId)
         .or(`name.ilike.%${query}%,description.ilike.%${query}%,category.ilike.%${query}%`)
-        .eq('is_available', true)
-        .order('name')
+        .eq("is_available", true)
+        .order("name")
         .limit(50);
 
       if (error) {
-        logger.error('[MENU_REPO] Error searching menu items', { error, venueId, query });
+        logger.error("[MENU_REPO] Error searching menu items", { error, venueId, query });
         throw error;
       }
 
       return (data as MenuItem[]) || [];
     } catch (_error) {
-      logger.error('[MENU_REPO] Unexpected error searching menu items', { error, venueId, query });
-      throw error;
+      logger.error("[MENU_REPO] Unexpected error searching menu items", { error, venueId, query });
+      throw _error;
     }
   }
 
@@ -114,21 +114,21 @@ export class MenuRepository extends BaseRepository<MenuItem> {
   async getCategories(venueId: string): Promise<MenuCategory[]> {
     try {
       const { data, error } = await this.supabase
-        .from('menu_categories')
-        .select('*')
-        .eq('venue_id', venueId)
-        .eq('is_active', true)
-        .order('display_order');
+        .from("menu_categories")
+        .select("*")
+        .eq("venue_id", venueId)
+        .eq("is_active", true)
+        .order("display_order");
 
       if (error) {
-        logger.error('[MENU_REPO] Error getting categories', { error, venueId });
+        logger.error("[MENU_REPO] Error getting categories", { error, venueId });
         throw error;
       }
 
       return (data as MenuCategory[]) || [];
     } catch (_error) {
-      logger.error('[MENU_REPO] Unexpected error getting categories', { error, venueId });
-      throw error;
+      logger.error("[MENU_REPO] Unexpected error getting categories", { error, venueId });
+      throw _error;
     }
   }
 
@@ -140,19 +140,18 @@ export class MenuRepository extends BaseRepository<MenuItem> {
       const { data, error } = await this.supabase
         .from(this.tableName)
         .update({ is_available: isAvailable })
-        .in('id', itemIds)
+        .in("id", itemIds)
         .select();
 
       if (error) {
-        logger.error('[MENU_REPO] Error bulk updating availability', { error, itemIds });
+        logger.error("[MENU_REPO] Error bulk updating availability", { error, itemIds });
         throw error;
       }
 
       return (data as MenuItem[]) || [];
     } catch (_error) {
-      logger.error('[MENU_REPO] Unexpected error bulk updating availability', { error, itemIds });
-      throw error;
+      logger.error("[MENU_REPO] Unexpected error bulk updating availability", { error, itemIds });
+      throw _error;
     }
   }
 }
-

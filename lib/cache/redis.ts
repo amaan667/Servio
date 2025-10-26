@@ -3,8 +3,8 @@
  * Provides high-performance caching with Redis
  */
 
-import Redis from 'ioredis';
-import { logger } from '@/lib/logger';
+import Redis from "ioredis";
+import { logger } from "@/lib/logger";
 
 let redis: Redis | null = null;
 
@@ -14,7 +14,7 @@ function getRedisClient(): Redis | null {
   }
 
   const redisUrl = process.env.REDIS_URL;
-  
+
   if (!redisUrl) {
     return null;
   }
@@ -27,7 +27,7 @@ function getRedisClient(): Redis | null {
         return delay;
       },
       reconnectOnError(err) {
-        const targetError = 'READONLY';
+        const targetError = "READONLY";
         if (err.message.includes(targetError)) {
           return true;
         }
@@ -35,15 +35,17 @@ function getRedisClient(): Redis | null {
       },
     });
 
-    redis.on('error', (err) => {
-      logger.error('[REDIS] Connection error:', err);
+    redis.on("error", (err) => {
+      logger.error("[REDIS] Connection error:", err);
     });
 
-    redis.on('connect', () => { /* Empty */ });
+    redis.on("connect", () => {
+      /* Empty */
+    });
 
     return redis;
   } catch (_error) {
-    logger.error('[REDIS] Failed to create client:', error as Record<string, unknown>);
+    logger._error("[REDIS] Failed to create client:", _error as Record<string, unknown>);
     return null;
   }
 }
@@ -70,7 +72,7 @@ export class RedisCache {
       }
       return JSON.parse(value) as T;
     } catch (_error) {
-      logger.error('[REDIS] Error getting key:', key, error as Record<string, unknown>);
+      logger._error("[REDIS] Error getting key:", key, _error as Record<string, unknown>);
       return null;
     }
   }
@@ -87,7 +89,7 @@ export class RedisCache {
       await this.client.setex(key, ttlSeconds, JSON.stringify(value));
       return true;
     } catch (_error) {
-      logger.error('[REDIS] Error setting key:', key, error as Record<string, unknown>);
+      logger._error("[REDIS] Error setting key:", key, _error as Record<string, unknown>);
       return false;
     }
   }
@@ -104,7 +106,7 @@ export class RedisCache {
       await this.client.del(key);
       return true;
     } catch (_error) {
-      logger.error('[REDIS] Error deleting key:', key, error as Record<string, unknown>);
+      logger._error("[REDIS] Error deleting key:", key, _error as Record<string, unknown>);
       return false;
     }
   }
@@ -124,7 +126,7 @@ export class RedisCache {
       }
       return true;
     } catch (_error) {
-      logger.error('[REDIS] Error deleting pattern:', pattern, error as Record<string, unknown>);
+      logger._error("[REDIS] Error deleting pattern:", pattern, _error as Record<string, unknown>);
       return false;
     }
   }
@@ -141,7 +143,7 @@ export class RedisCache {
       const result = await this.client.exists(key);
       return result === 1;
     } catch (_error) {
-      logger.error('[REDIS] Error checking existence:', key, error as Record<string, unknown>);
+      logger._error("[REDIS] Error checking existence:", key, _error as Record<string, unknown>);
       return false;
     }
   }
@@ -157,7 +159,7 @@ export class RedisCache {
     try {
       return await this.client.ttl(key);
     } catch (_error) {
-      logger.error('[REDIS] Error getting TTL:', key, error as Record<string, unknown>);
+      logger._error("[REDIS] Error getting TTL:", key, _error as Record<string, unknown>);
       return -1;
     }
   }
@@ -173,7 +175,7 @@ export class RedisCache {
     try {
       return await this.client.incrby(key, by);
     } catch (_error) {
-      logger.error('[REDIS] Error incrementing:', key, error as Record<string, unknown>);
+      logger._error("[REDIS] Error incrementing:", key, _error as Record<string, unknown>);
       return 0;
     }
   }
@@ -190,7 +192,7 @@ export class RedisCache {
       const values = await this.client.mget(...keys);
       return values.map((v) => (v ? JSON.parse(v) : null)) as T[];
     } catch (_error) {
-      logger.error('[REDIS] Error getting multiple keys:', error as Record<string, unknown>);
+      logger._error("[REDIS] Error getting multiple keys:", _error as Record<string, unknown>);
       return [];
     }
   }
@@ -205,7 +207,7 @@ export class RedisCache {
 
     try {
       const pipeline = this.client.pipeline();
-      
+
       for (const item of items) {
         if (item.ttl) {
           pipeline.setex(item.key, item.ttl, JSON.stringify(item.value));
@@ -213,11 +215,11 @@ export class RedisCache {
           pipeline.set(item.key, JSON.stringify(item.value));
         }
       }
-      
+
       await pipeline.exec();
       return true;
     } catch (_error) {
-      logger.error('[REDIS] Error setting multiple keys:', error as Record<string, unknown>);
+      logger._error("[REDIS] Error setting multiple keys:", _error as Record<string, unknown>);
       return false;
     }
   }
@@ -234,7 +236,7 @@ export class RedisCache {
       await this.client.flushdb();
       return true;
     } catch (_error) {
-      logger.error('[REDIS] Error clearing cache:', error as Record<string, unknown>);
+      logger._error("[REDIS] Error clearing cache:", _error as Record<string, unknown>);
       return false;
     }
   }
@@ -252,4 +254,3 @@ export class RedisCache {
 
 // Export singleton instance
 export const redisCache = new RedisCache();
-

@@ -2,7 +2,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { createClient } from "@/lib/supabase";
 import { checkLimit, checkFeatureAccess, getTierLimits } from "@/lib/tier-restrictions";
-import { logger } from '@/lib/logger';
+import { logger } from "@/lib/logger";
 
 export async function POST(_request: NextRequest) {
   try {
@@ -17,7 +17,7 @@ export async function POST(_request: NextRequest) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
 
-    const body = await request.json();
+    const body = await _request.json();
     const { action, resource, currentCount, venueId } = body;
 
     // Get venue to verify access
@@ -28,16 +28,13 @@ export async function POST(_request: NextRequest) {
       .single();
 
     if (!venue) {
-      return NextResponse.json(
-        { error: "Venue not found" },
-        { status: 404 }
-      );
+      return NextResponse.json({ error: "Venue not found" }, { status: 404 });
     }
 
     // Check based on action type
     if (action === "create" && resource) {
       const limitCheck = await checkLimit(user.id, resource, currentCount);
-      
+
       if (!limitCheck.allowed) {
         return NextResponse.json({
           allowed: false,
@@ -60,7 +57,7 @@ export async function POST(_request: NextRequest) {
     // Check feature access
     if (action === "access" && resource) {
       const featureCheck = await checkFeatureAccess(user.id, resource);
-      
+
       if (!featureCheck.allowed) {
         return NextResponse.json({
           allowed: false,
@@ -79,7 +76,7 @@ export async function POST(_request: NextRequest) {
 
     // Get all limits and current tier
     const limits = await getTierLimits(user.id);
-    
+
     // Get user's organization to return tier info
     const { data: org } = await supabase
       .from("organizations")
@@ -93,11 +90,9 @@ export async function POST(_request: NextRequest) {
       tier: org?.subscription_tier || "basic",
     });
   } catch (_error) {
-    logger.error("[TIER CHECK] Error:", { error: error instanceof Error ? error.message : 'Unknown error' });
-    return NextResponse.json(
-      { error: error.message || "Tier check failed" },
-      { status: 500 }
-    );
+    logger._error("[TIER CHECK] Error:", {
+      error: _error instanceof Error ? _error.message : "Unknown _error",
+    });
+    return NextResponse.json({ error: _error.message || "Tier check failed" }, { status: 500 });
   }
 }
-

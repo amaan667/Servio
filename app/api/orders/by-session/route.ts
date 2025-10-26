@@ -121,7 +121,7 @@ export async function GET(req: Request) {
     });
   } catch (_error) {
     logger.error("[ORDER BY SESSION] Error:", {
-      error: error instanceof Error ? error.message : "Unknown error",
+      error: _error instanceof Error ? _error.message : "Unknown _error",
     });
     return NextResponse.json(
       {

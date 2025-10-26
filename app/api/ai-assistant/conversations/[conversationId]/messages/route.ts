@@ -5,7 +5,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { createClient, createAdminClient } from "@/lib/supabase";
 import { generateConversationTitle } from "@/lib/ai/openai-service";
 import { z } from "zod";
-import { logger } from '@/lib/logger';
+import { logger } from "@/lib/logger";
 
 const CreateMessageSchema = z.object({
   role: z.enum(["user", "assistant", "system"]),
@@ -25,7 +25,7 @@ export async function GET(
   try {
     const supabase = await createClient();
     const adminSupabase = createAdminClient();
-    
+
     const { conversationId } = await params;
 
     // Try to get user from auth, but don't fail if not available
@@ -46,22 +46,22 @@ export async function GET(
 
     if (error) {
       logger.error("[AI CHAT] Failed to fetch messages:", { error: error.message });
-      
+
       // If table doesn't exist, return empty messages array
-      if (error.code === 'PGRST116' || error.message?.includes('relation "ai_chat_messages" does not exist')) {
+      if (
+        error.code === "PGRST116" ||
+        error.message?.includes('relation "ai_chat_messages" does not exist')
+      ) {
         return NextResponse.json({
           messages: [],
         });
       }
-      
-      return NextResponse.json(
-        { error: "Failed to fetch messages" },
-        { status: 500 }
-      );
+
+      return NextResponse.json({ error: "Failed to fetch messages" }, { status: 500 });
     }
 
     // Transform messages to match frontend expectations
-    const transformedMessages = (messages || []).map(msg => ({
+    const transformedMessages = (messages || []).map((msg) => ({
       ...msg,
       createdAt: msg.created_at,
     }));
@@ -70,12 +70,9 @@ export async function GET(
       messages: transformedMessages,
     });
   } catch (error: unknown) {
-    const errorMessage = error instanceof Error ? error.message : 'Unknown error';
+    const errorMessage = error instanceof Error ? error.message : "Unknown error";
     logger.error("[AI CHAT] Messages error:", { error: errorMessage });
-    return NextResponse.json(
-      { error: errorMessage || "Internal server error" },
-      { status: 500 }
-    );
+    return NextResponse.json({ error: errorMessage || "Internal server error" }, { status: 500 });
   }
 }
 
@@ -86,7 +83,7 @@ export async function POST(
   try {
     const supabase = await createClient();
     const adminSupabase = createAdminClient();
-    
+
     const { conversationId } = await params;
 
     // Try to get user from auth, but don't fail if not available
@@ -98,10 +95,12 @@ export async function POST(
     logger.debug("[AI CHAT MESSAGES POST] Auth check - user:", { authenticated: !!user });
 
     // Parse request body
-    const body = await request.json();
+    const body = await _request.json();
     const messageData = CreateMessageSchema.parse(body);
 
-    logger.debug("[AI CHAT MESSAGES POST] Creating message:", { data: { conversationId, extra: messageData } });
+    logger.debug("[AI CHAT MESSAGES POST] Creating message:", {
+      data: { conversationId, extra: messageData },
+    });
 
     // Create new message using admin client (skip user verification for now)
     const { data: message, error } = await adminSupabase
@@ -115,9 +114,12 @@ export async function POST(
 
     if (error) {
       logger.error("[AI CHAT] Failed to create message:", { error: error.message });
-      
+
       // If table doesn't exist, return a mock message
-      if (error.code === 'PGRST116' || error.message?.includes('relation "ai_chat_messages" does not exist')) {
+      if (
+        error.code === "PGRST116" ||
+        error.message?.includes('relation "ai_chat_messages" does not exist')
+      ) {
         return NextResponse.json({
           message: {
             id: `temp-${Date.now()}`,
@@ -128,11 +130,8 @@ export async function POST(
           },
         });
       }
-      
-      return NextResponse.json(
-        { error: "Failed to create message" },
-        { status: 500 }
-      );
+
+      return NextResponse.json({ error: "Failed to create message" }, { status: 500 });
     }
 
     logger.debug("[AI CHAT MESSAGES POST] Message created successfully:", message);
@@ -152,14 +151,16 @@ export async function POST(
           const aiTitle = await generateConversationTitle(messageData.content);
           await adminSupabase
             .from("ai_chat_conversations")
-            .update({ 
+            .update({
               title: aiTitle,
-              updated_at: new Date().toISOString() 
+              updated_at: new Date().toISOString(),
             })
             .eq("id", conversationId);
           logger.debug("[AI CHAT] Updated conversation title to:", { title: aiTitle });
         } catch (_error) {
-          logger.error("[AI CHAT] Failed to generate title:", { error: error instanceof Error ? error.message : 'Unknown error' });
+          logger.error("[AI CHAT] Failed to generate title:", {
+            error: error instanceof Error ? error.message : "Unknown error",
+          });
           // Continue without failing the message creation
         }
       }
@@ -181,9 +182,9 @@ export async function POST(
       message: transformedMessage,
     });
   } catch (error: unknown) {
-    const errorMessage = error instanceof Error ? error.message : 'Unknown error';
+    const errorMessage = error instanceof Error ? error.message : "Unknown error";
     logger.error("[AI CHAT] Create message error:", { error: errorMessage });
-    
+
     if (error instanceof Error && error.name === "ZodError") {
       return NextResponse.json(
         { error: "Invalid request data", details: (error as { errors?: unknown }).errors },
@@ -191,9 +192,6 @@ export async function POST(
       );
     }
 
-    return NextResponse.json(
-      { error: errorMessage || "Internal server error" },
-      { status: 500 }
-    );
+    return NextResponse.json({ error: errorMessage || "Internal server error" }, { status: 500 });
   }
 }

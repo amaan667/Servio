@@ -87,13 +87,14 @@ export async function POST(req: NextRequest) {
           throw new Error(urlMenuData.error || "Scraping returned error status");
         }
 
-        if (urlMenuData.items && urlMenuData.items.length > 0) { /* Empty */ }
+        if (urlMenuData.items && urlMenuData.items.length > 0) {
+          /* Empty */
+        }
       } catch (fetchError) {
         clearTimeout(timeoutId);
         throw fetchError;
       }
     } catch (scrapeError) {
-
       return NextResponse.json(
         {
           ok: false,
@@ -106,7 +107,6 @@ export async function POST(req: NextRequest) {
     const urlItems = urlMenuData.items || [];
 
     if (urlItems.length === 0) {
-
       return NextResponse.json(
         {
           ok: false,
@@ -229,7 +229,9 @@ Be smart about matching:
     for (const mergedItem of mergedItems) {
       if (mergedItem.action === "update" && mergedItem.pdf_item_id) {
         // Update existing item
-        const updateData: Record<string, string | number> = { /* Empty */ };
+        const updateData: Record<string, string | number> = {
+          /* Empty */
+        };
 
         if (mergedItem.changes.includes("price_updated")) {
           updateData.price = mergedItem.price;
@@ -288,7 +290,9 @@ Be smart about matching:
           .eq("id", id)
           .eq("venue_id", venueId);
 
-        if (error) { /* Empty */ }
+        if (error) {
+          /* Empty */
+        }
       }
     }
 
@@ -312,12 +316,12 @@ Be smart about matching:
       },
     });
   } catch (_error) {
-    logger.error("[HYBRID MERGE] Unexpected error:", error);
+    logger._error("[HYBRID MERGE] Unexpected error:", _error);
 
     return NextResponse.json(
       {
         ok: false,
-        error: error instanceof Error ? error.message : "Failed to merge menus",
+        error: _error instanceof Error ? _error.message : "Failed to merge menus",
       },
       { status: 500 }
     );

@@ -3,12 +3,12 @@
 
 import { NextResponse } from "next/server";
 import { createClient } from "@/lib/supabase";
-import { logger } from '@/lib/logger';
+import { logger } from "@/lib/logger";
 
 export async function POST() {
   try {
     const supabase = await createClient();
-    
+
     // Check auth
     const {
       data: { session },
@@ -94,18 +94,19 @@ CREATE TABLE IF NOT EXISTS ai_action_audit (
     // Try to create tables using direct queries
     logger.debug("[AI MIGRATION] Creating ai_chat_conversations table...");
     const { error: conversationsError } = await supabase
-      .from('ai_chat_conversations')
-      .select('id')
+      .from("ai_chat_conversations")
+      .select("id")
       .limit(1);
 
-    if (conversationsError && conversationsError.code === 'PGRST116') {
+    if (conversationsError && conversationsError.code === "PGRST116") {
       // Table doesn't exist, we need to create it via SQL
       logger.debug("[AI MIGRATION] Tables don't exist, returning instructions for manual creation");
       return NextResponse.json({
         success: false,
         message: "Database tables need to be created manually",
-        instructions: "Please run the SQL from migrations/ai-chat-schema.sql in your Supabase dashboard SQL editor",
-        sql: migrationSQL
+        instructions:
+          "Please run the SQL from migrations/ai-chat-schema.sql in your Supabase dashboard SQL editor",
+        sql: migrationSQL,
       });
     }
 
@@ -126,7 +127,7 @@ CREATE INDEX IF NOT EXISTS idx_ai_action_audit_user_id ON ai_action_audit(user_i
 CREATE INDEX IF NOT EXISTS idx_ai_action_audit_created_at ON ai_action_audit(created_at DESC);
 `;
 
-    await supabase.rpc('exec_sql', { sql: indexSQL });
+    await supabase.rpc("exec_sql", { sql: indexSQL });
 
     // Enable RLS and create policies
     const rlsSQL = `
@@ -231,7 +232,7 @@ CREATE POLICY "Users can create audit records for their actions" ON ai_action_au
   FOR INSERT WITH CHECK (auth.uid() = user_id);
 `;
 
-    await supabase.rpc('exec_sql', { sql: rlsSQL });
+    await supabase.rpc("exec_sql", { sql: rlsSQL });
 
     // Create the updated_at trigger function
     const triggerSQL = `
@@ -250,7 +251,7 @@ CREATE TRIGGER trigger_update_ai_chat_conversations_updated_at
   EXECUTE FUNCTION update_ai_chat_conversations_updated_at();
 `;
 
-    await supabase.rpc('exec_sql', { sql: triggerSQL });
+    await supabase.rpc("exec_sql", { sql: triggerSQL });
 
     logger.debug("[AI MIGRATION] Migration completed successfully");
 
@@ -259,17 +260,18 @@ CREATE TRIGGER trigger_update_ai_chat_conversations_updated_at
       message: "AI chat database schema created successfully",
       tables: [
         "ai_chat_conversations",
-        "ai_chat_messages", 
+        "ai_chat_messages",
         "ai_undo_actions",
         "ai_context_cache",
-        "ai_action_audit"
-      ]
+        "ai_action_audit",
+      ],
     });
-
   } catch (_error) {
-    logger.error("[AI MIGRATION] Migration failed:", { error: error instanceof Error ? error.message : 'Unknown error' });
+    logger._error("[AI MIGRATION] Migration failed:", {
+      error: _error instanceof Error ? _error.message : "Unknown _error",
+    });
     return NextResponse.json(
-      { error: error instanceof Error ? error.message : "Migration failed" },
+      { error: _error instanceof Error ? _error.message : "Migration failed" },
       { status: 500 }
     );
   }

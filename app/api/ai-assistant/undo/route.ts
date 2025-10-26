@@ -31,7 +31,7 @@ export async function POST(_request: NextRequest) {
     }
 
     // Parse request body
-    const body = await request.json();
+    const body = await _request.json();
     const { venueId, messageId, undoData } = UndoRequestSchema.parse(body);
 
     // Verify user has access to venue
@@ -136,19 +136,19 @@ export async function POST(_request: NextRequest) {
     });
   } catch (_error) {
     logger.error("[AI UNDO] Undo error:", {
-      error: error instanceof Error ? error.message : "Unknown error",
+      error: _error instanceof Error ? _error.message : "Unknown _error",
     });
 
     // Handle Zod validation errors
-    if (error && typeof error === "object" && "name" in error && error.name === "ZodError") {
+    if (_error && typeof _error === "object" && "name" in _error && _error.name === "ZodError") {
       return NextResponse.json(
-        { error: "Invalid request data", details: "errors" in error ? error.errors : [] },
+        { error: "Invalid request data", details: "errors" in _error ? _error.errors : [] },
         { status: 400 }
       );
     }
 
     return NextResponse.json(
-      { error: error instanceof Error ? error.message : "Undo failed" },
+      { error: _error instanceof Error ? _error.message : "Undo failed" },
       { status: 500 }
     );
   }
@@ -417,7 +417,10 @@ async function undoMenuTranslation(venueId: string, undoData: unknown, supabase:
       // Generate comprehensive category mapping instructions for undo
       const categoryMappingsRecord = categoryMappings as Record<string, Record<string, string>>;
       const categoryMappingList = Object.entries(
-        categoryMappingsRecord[detectedSourceLanguage] || { /* Empty */ }
+        categoryMappingsRecord[detectedSourceLanguage] ||
+          {
+            /* Empty */
+          }
       )
         .map(([from, to]) => `   - "${from}" → "${to}"`)
         .join("\n");
@@ -545,9 +548,9 @@ IMPORTANT: Every item in the input must appear in your output with a translated 
     };
   } catch (_error) {
     logger.error("[AI UNDO] Menu translation undo error:", {
-      error: error instanceof Error ? error.message : "Unknown error",
+      error: _error instanceof Error ? _error.message : "Unknown _error",
     });
-    return { success: false, error: error instanceof Error ? error.message : "Unknown error" };
+    return { success: false, error: _error instanceof Error ? _error.message : "Unknown _error" };
   }
 }
 
@@ -581,9 +584,9 @@ async function undoMenuPriceUpdate(venueId: string, undoData: unknown, supabase:
     };
   } catch (_error) {
     logger.error("[AI UNDO] Menu price update undo error:", {
-      error: error instanceof Error ? error.message : "Unknown error",
+      error: _error instanceof Error ? _error.message : "Unknown _error",
     });
-    return { success: false, error: error instanceof Error ? error.message : "Unknown error" };
+    return { success: false, error: _error instanceof Error ? _error.message : "Unknown _error" };
   }
 }
 
@@ -619,9 +622,9 @@ async function undoMenuAvailabilityToggle(
     };
   } catch (_error) {
     logger.error("[AI UNDO] Menu availability toggle undo error:", {
-      error: error instanceof Error ? error.message : "Unknown error",
+      error: _error instanceof Error ? _error.message : "Unknown _error",
     });
-    return { success: false, error: error instanceof Error ? error.message : "Unknown error" };
+    return { success: false, error: _error instanceof Error ? _error.message : "Unknown _error" };
   }
 }
 
@@ -649,9 +652,9 @@ async function undoMenuItemCreation(venueId: string, undoData: unknown, supabase
     };
   } catch (_error) {
     logger.error("[AI UNDO] Menu item creation undo error:", {
-      error: error instanceof Error ? error.message : "Unknown error",
+      error: _error instanceof Error ? _error.message : "Unknown _error",
     });
-    return { success: false, error: error instanceof Error ? error.message : "Unknown error" };
+    return { success: false, error: _error instanceof Error ? _error.message : "Unknown _error" };
   }
 }
 
@@ -691,9 +694,9 @@ async function undoMenuItemDeletion(venueId: string, undoData: unknown, supabase
     };
   } catch (_error) {
     logger.error("[AI UNDO] Menu item deletion undo error:", {
-      error: error instanceof Error ? error.message : "Unknown error",
+      error: _error instanceof Error ? _error.message : "Unknown _error",
     });
-    return { success: false, error: error instanceof Error ? error.message : "Unknown error" };
+    return { success: false, error: _error instanceof Error ? _error.message : "Unknown _error" };
   }
 }
 
@@ -729,8 +732,8 @@ async function undoInventoryAdjustment(
     };
   } catch (_error) {
     logger.error("[AI UNDO] Inventory adjustment undo error:", {
-      error: error instanceof Error ? error.message : "Unknown error",
+      error: _error instanceof Error ? _error.message : "Unknown _error",
     });
-    return { success: false, error: error instanceof Error ? error.message : "Unknown error" };
+    return { success: false, error: _error instanceof Error ? _error.message : "Unknown _error" };
   }
 }

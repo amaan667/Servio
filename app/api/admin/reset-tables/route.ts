@@ -58,7 +58,7 @@ export async function POST(req: NextRequest) {
     });
   } catch (_error) {
     logger.error("[AUTH DEBUG] Table reset API error:", {
-      error: error instanceof Error ? error.message : "Unknown error",
+      error: _error instanceof Error ? _error.message : "Unknown _error",
     });
     return NextResponse.json({ error: "Internal server error" }, { status: 500 });
   }
@@ -102,7 +102,7 @@ export async function GET(req: NextRequest) {
     });
   } catch (_error) {
     logger.error("[AUTH DEBUG] Reset logs API error:", {
-      error: error instanceof Error ? error.message : "Unknown error",
+      error: _error instanceof Error ? _error.message : "Unknown _error",
     });
     return NextResponse.json({ error: "Internal server error" }, { status: 500 });
   }

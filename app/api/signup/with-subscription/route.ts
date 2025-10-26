@@ -5,7 +5,7 @@ import { NextRequest, NextResponse } from "next/server";
 import Stripe from "stripe";
 import { createAdminClient } from "@/lib/supabase";
 import { stripe } from "@/lib/stripe-client";
-import { logger } from '@/lib/logger';
+import { logger } from "@/lib/logger";
 
 const PRICE_IDS = {
   basic: process.env.STRIPE_BASIC_PRICE_ID || "price_basic",
@@ -15,22 +15,25 @@ const PRICE_IDS = {
 
 export async function POST(_request: NextRequest) {
   try {
-    const body = await request.json();
-    const { email, password, fullName, venueName, venueType, serviceType = 'table_service', tier, stripeSessionId } = body;
+    const body = await _request.json();
+    const {
+      email,
+      password,
+      fullName,
+      venueName,
+      venueType,
+      serviceType = "table_service",
+      tier,
+      stripeSessionId,
+    } = body;
 
     // Validate required fields
     if (!email || !password || !fullName || !venueName || !tier) {
-      return NextResponse.json(
-        { error: "Missing required fields" },
-        { status: 400 }
-      );
+      return NextResponse.json({ error: "Missing required fields" }, { status: 400 });
     }
 
     if (!["basic", "standard", "premium"].includes(tier)) {
-      return NextResponse.json(
-        { error: "Invalid tier" },
-        { status: 400 }
-      );
+      return NextResponse.json({ error: "Invalid tier" }, { status: 400 });
     }
 
     const supabase = createAdminClient();
@@ -86,7 +89,7 @@ export async function POST(_request: NextRequest) {
       });
     }
 
-        const { data: org, error: orgError } = await supabase
+    const { data: org, error: orgError } = await supabase
       .from("organizations")
       .insert({
         owner_user_id: userId,
@@ -99,10 +102,7 @@ export async function POST(_request: NextRequest) {
       .single();
 
     if (orgError || !org) {
-      return NextResponse.json(
-        { error: "Failed to create organization" },
-        { status: 500 }
-      );
+      return NextResponse.json({ error: "Failed to create organization" }, { status: 500 });
     }
 
     // Create venue
@@ -120,10 +120,7 @@ export async function POST(_request: NextRequest) {
       .single();
 
     if (venueError) {
-      return NextResponse.json(
-        { error: "Failed to create venue" },
-        { status: 500 }
-      );
+      return NextResponse.json({ error: "Failed to create venue" }, { status: 500 });
     }
 
     // Create user-venue role
@@ -183,11 +180,12 @@ export async function POST(_request: NextRequest) {
       });
     }
   } catch (_error) {
-    logger.error("[SIGNUP WITH SUBSCRIPTION] Error:", { error: error instanceof Error ? error.message : 'Unknown error' });
+    logger._error("[SIGNUP WITH SUBSCRIPTION] Error:", {
+      error: _error instanceof Error ? _error.message : "Unknown _error",
+    });
     return NextResponse.json(
-      { error: error instanceof Error ? error.message : "Signup failed" },
+      { error: _error instanceof Error ? _error.message : "Signup failed" },
       { status: 500 }
     );
   }
 }
-

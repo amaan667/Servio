@@ -1,4 +1,4 @@
-import { logger } from './logger';
+import { logger } from "./logger";
 
 /**
  * Serverless-friendly PDF to image conversion
@@ -7,42 +7,41 @@ import { logger } from './logger';
 export async function convertPDFToImages(pdfBuffer: Buffer): Promise<string[]> {
   try {
     // Use pdf2pic for serverless environments
-    const { fromBuffer } = await import('pdf2pic');
-    
+    const { fromBuffer } = await import("pdf2pic");
+
     const converter = fromBuffer(pdfBuffer, {
       density: 150,
-      saveFilename: 'menu',
-      savePath: '/tmp',
-      format: 'png',
+      saveFilename: "menu",
+      savePath: "/tmp",
+      format: "png",
       width: 1200,
       height: 1800,
     });
 
     const imageBuffers: string[] = [];
-    
+
     // Get page count first
-    const pdfLib = await import('pdf-lib');
+    const pdfLib = await import("pdf-lib");
     const pdfDoc = await pdfLib.PDFDocument.load(pdfBuffer);
     const pageCount = pdfDoc.getPageCount();
-    
-    logger.info('[PDF-TO-IMAGES] Converting pages:', pageCount);
+
+    logger.info("[PDF-TO-IMAGES] Converting pages:", pageCount);
 
     // Convert each page
     for (let pageNum = 1; pageNum <= pageCount; pageNum++) {
-      const result = await converter(pageNum, { responseType: 'base64' });
+      const result = await converter(pageNum, { responseType: "base64" });
       if (result.base64) {
         imageBuffers.push(`data:image/png;base64,${result.base64}`);
       }
     }
 
-    logger.info('[PDF-TO-IMAGES] Converted pages:', imageBuffers.length);
+    logger.info("[PDF-TO-IMAGES] Converted pages:", imageBuffers.length);
     return imageBuffers;
   } catch (_error) {
-    logger.error('[PDF-TO-IMAGES] Error:', error);
-    
+    logger._error("[PDF-TO-IMAGES] Error:", _error);
+
     // Fallback: Return empty array and let Vision work with PDF directly
-    logger.warn('[PDF-TO-IMAGES] Conversion not available, continuing without images');
+    logger.warn("[PDF-TO-IMAGES] Conversion not available, continuing without images");
     return [];
   }
 }
-

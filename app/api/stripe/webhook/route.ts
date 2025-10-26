@@ -22,22 +22,21 @@ export async function POST(_request: NextRequest) {
   apiLogger.debug("[CUSTOMER ORDER WEBHOOK] ===== WEBHOOK RECEIVED =====");
   apiLogger.debug("[CUSTOMER ORDER WEBHOOK] Timestamp:", new Date().toISOString());
 
-  const signature = request.headers.get("stripe-signature");
+  const signature = _request.headers.get("stripe-signature");
   if (!signature) {
     apiLogger.error("[CUSTOMER ORDER WEBHOOK] Missing stripe-signature header");
     return new NextResponse("Missing stripe-signature", { status: 400 });
   }
 
   // IMPORTANT: Read raw body - exact same as subscriptions webhook
-  const body = await request.text();
+  const body = await _request.text();
 
   let event: Stripe.Event;
   try {
-
     // Use EXACT same method as subscriptions webhook (no trimming!)
     event = stripe.webhooks.constructEvent(body, signature, webhookSecret);
   } catch (_err) {
-    const errorMessage = err instanceof Error ? err.message : "Unknown error";
+    const errorMessage = _err instanceof Error ? _err.message : "Unknown error";
 
     apiLogger.error("[CUSTOMER ORDER WEBHOOK] Webhook construction error:", errorMessage);
     return new NextResponse(`Webhook Error: ${errorMessage}`, { status: 400 });

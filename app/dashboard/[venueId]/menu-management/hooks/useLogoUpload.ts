@@ -4,7 +4,11 @@ import { useToast } from "@/hooks/use-toast";
 import { detectColorsFromImage } from "../utils/colorDetection";
 import { DesignSettings } from "../types";
 
-export function useLogoUpload(venueId: string, designSettings: DesignSettings, setDesignSettings: (settings: DesignSettings) => void) {
+export function useLogoUpload(
+  venueId: string,
+  designSettings: DesignSettings,
+  setDesignSettings: (settings: DesignSettings) => void
+) {
   const [isUploadingLogo, setIsUploadingLogo] = useState(false);
   const { toast } = useToast();
 
@@ -12,7 +16,7 @@ export function useLogoUpload(venueId: string, designSettings: DesignSettings, s
     const file = event.target.files?.[0];
     if (!file) return;
 
-    if (!file.type.startsWith('image/')) {
+    if (!file.type.startsWith("image/")) {
       toast({
         title: "Invalid file type",
         description: "Please upload an image file (PNG, JPG, etc.)",
@@ -35,29 +39,29 @@ export function useLogoUpload(venueId: string, designSettings: DesignSettings, s
       const supabase = createClient();
 
       try {
-        await supabase.storage.createBucket('venue-assets', {
+        await supabase.storage.createBucket("venue-assets", {
           public: true,
-          allowedMimeTypes: ['image/png', 'image/jpeg', 'image/jpg', 'image/gif', 'image/webp'],
-          fileSizeLimit: 2097152
+          allowedMimeTypes: ["image/png", "image/jpeg", "image/jpg", "image/gif", "image/webp"],
+          fileSizeLimit: 2097152,
         });
       } catch (bucketError: unknown) {
-        if (!bucketError.message?.includes('already exists')) { /* Empty */ }
+        if (!bucketError.message?.includes("already exists")) {
+          /* Empty */
+        }
       }
 
-      const fileExt = file.name.split('.').pop();
+      const fileExt = file.name.split(".").pop();
       const fileName = `${venueId}/logo-${Date.now()}.${fileExt}`;
-      
+
       const { data: uploadData, error: uploadError } = await supabase.storage
-        .from('venue-assets')
+        .from("venue-assets")
         .upload(fileName, file);
 
       if (uploadError) {
         throw uploadError;
       }
 
-      const { data: urlData } = supabase.storage
-        .from('venue-assets')
-        .getPublicUrl(fileName);
+      const { data: urlData } = supabase.storage.from("venue-assets").getPublicUrl(fileName);
 
       const detectedColors = await detectColorsFromImage(urlData.publicUrl);
 
@@ -68,22 +72,20 @@ export function useLogoUpload(venueId: string, designSettings: DesignSettings, s
         detected_primary_color: detectedColors.primary,
         detected_secondary_color: detectedColors.secondary,
         primary_color: detectedColors.primary,
-        secondary_color: detectedColors.secondary
+        secondary_color: detectedColors.secondary,
       };
 
       setDesignSettings(updatedSettings);
 
       try {
-        await supabase
-          .from('menu_design_settings')
-          .upsert({
-            venue_id: venueId,
-            ...updatedSettings,
-            updated_at: new Date().toISOString()
-          });
+        await supabase.from("menu_design_settings").upsert({
+          venue_id: venueId,
+          ...updatedSettings,
+          updated_at: new Date().toISOString(),
+        });
       } catch (dbError) {
-      // Error silently handled
-    }
+        // Error silently handled
+      }
 
       toast({
         title: "🎉 Logo uploaded successfully!",
@@ -91,10 +93,9 @@ export function useLogoUpload(venueId: string, designSettings: DesignSettings, s
         duration: 5000,
       });
     } catch (_error) {
-
       toast({
         title: "Upload failed",
-        description: error.message || "Failed to upload logo",
+        description: _error.message || "Failed to upload logo",
         variant: "destructive",
       });
     } finally {
@@ -104,7 +105,6 @@ export function useLogoUpload(venueId: string, designSettings: DesignSettings, s
 
   return {
     isUploadingLogo,
-    handleLogoUpload
+    handleLogoUpload,
   };
 }
-

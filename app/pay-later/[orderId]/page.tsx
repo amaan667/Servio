@@ -64,7 +64,7 @@ export default function PayLaterPage() {
 
         setOrder(data.order);
       } catch (_err) {
-        setError(err instanceof Error ? err.message : "Failed to load order");
+        setError(_err instanceof Error ? _err.message : "Failed to load order");
       } finally {
         setLoading(false);
       }
@@ -81,7 +81,6 @@ export default function PayLaterPage() {
     setError(null);
 
     try {
-
       // Create Stripe checkout session for this order
       const response = await fetch("/api/stripe/create-customer-checkout", {
         method: "POST",
@@ -106,7 +105,7 @@ export default function PayLaterPage() {
       // Redirect to Stripe
       window.location.href = url;
     } catch (_err) {
-      setError(err instanceof Error ? err.message : "Failed to process payment");
+      setError(_err instanceof Error ? _err.message : "Failed to process payment");
       setProcessing(false);
     }
   };
@@ -119,7 +118,6 @@ export default function PayLaterPage() {
     setError(null);
 
     try {
-
       const response = await fetch(`/api/orders/${orderId}/update-payment-mode`, {
         method: "PATCH",
         headers: { "Content-Type": "application/json" },
@@ -140,7 +138,7 @@ export default function PayLaterPage() {
       setOrder({ ...order, payment_mode: "pay_at_till" });
       setSwitchedToTill(true);
     } catch (_err) {
-      setError(err instanceof Error ? err.message : "Failed to switch payment method");
+      setError(_err instanceof Error ? _err.message : "Failed to switch payment method");
     } finally {
       setSwitching(false);
     }

@@ -46,7 +46,7 @@ export async function PUT(req: NextRequest, context: { params: Promise<{ tableId
     return NextResponse.json({ table });
   } catch (_error) {
     logger.error("[TABLES API] Unexpected error:", {
-      error: error instanceof Error ? error.message : "Unknown error",
+      error: _error instanceof Error ? _error.message : "Unknown _error",
     });
     return NextResponse.json({ error: "Internal server error" }, { status: 500 });
   }
@@ -327,7 +327,7 @@ export async function DELETE(req: NextRequest, context: { params: Promise<{ tabl
     return NextResponse.json({ success: true, deletedTable: existingTable });
   } catch (_error) {
     logger.error("[TABLES API] Unexpected error:", {
-      error: error instanceof Error ? error.message : "Unknown error",
+      error: _error instanceof Error ? _error.message : "Unknown _error",
     });
     return NextResponse.json({ error: "Internal server error" }, { status: 500 });
   }

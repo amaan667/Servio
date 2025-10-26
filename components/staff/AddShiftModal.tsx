@@ -1,7 +1,13 @@
 "use client";
 
 import React, { useState } from "react";
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogFooter,
+} from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { Label } from "@/components/ui/label";
 import { Input } from "@/components/ui/input";
@@ -18,7 +24,13 @@ interface AddShiftModalProps {
   onShiftAdded?: () => void;
 }
 
-export function AddShiftModal({ isOpen, onClose, staffMember, venueId, onShiftAdded }: AddShiftModalProps) {
+export function AddShiftModal({
+  isOpen,
+  onClose,
+  staffMember,
+  venueId,
+  onShiftAdded,
+}: AddShiftModalProps) {
   const [date, setDate] = useState("");
   const [startTime, setStartTime] = useState("09:00");
   const [endTime, setEndTime] = useState("17:00");
@@ -60,22 +72,22 @@ export function AddShiftModal({ isOpen, onClose, staffMember, venueId, onShiftAd
       setDate("");
       setStartTime("09:00");
       setEndTime("17:00");
-      
+
       if (onShiftAdded) {
         onShiftAdded();
       }
-      
+
       // Close modal after callback
       onClose();
     } catch (_err) {
-      setError(err instanceof Error ? err.message : "Failed to add shift");
+      setError(_err instanceof Error ? _err.message : "Failed to add shift");
     } finally {
       setAdding(false);
     }
   };
 
   // Get today's date in YYYY-MM-DD format for min attribute
-  const today = new Date().toISOString().split('T')[0];
+  const today = new Date().toISOString().split("T")[0];
 
   return (
     <Dialog open={isOpen} onOpenChange={onClose}>
@@ -131,4 +143,3 @@ export function AddShiftModal({ isOpen, onClose, staffMember, venueId, onShiftAd
     </Dialog>
   );
 }
-

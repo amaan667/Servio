@@ -1,9 +1,9 @@
-import { NextResponse } from 'next/server';
-import { createServerClient } from '@supabase/ssr';
-import { cookies } from 'next/headers';
-import { logger } from '@/lib/logger';
+import { NextResponse } from "next/server";
+import { createServerClient } from "@supabase/ssr";
+import { cookies } from "next/headers";
+import { logger } from "@/lib/logger";
 
-export const runtime = 'nodejs';
+export const runtime = "nodejs";
 
 export async function POST(req: Request) {
   try {
@@ -11,10 +11,13 @@ export async function POST(req: Request) {
     const { order_id, payment_intent_id } = body;
 
     if (!order_id) {
-      return NextResponse.json({ 
-        success: false, 
-        error: 'Order ID is required' 
-      }, { status: 400 });
+      return NextResponse.json(
+        {
+          success: false,
+          error: "Order ID is required",
+        },
+        { status: 400 }
+      );
     }
 
     const cookieStore = await cookies();
@@ -23,9 +26,15 @@ export async function POST(req: Request) {
       process.env.SUPABASE_SERVICE_ROLE_KEY!,
       {
         cookies: {
-          get(name: string) { return cookieStore.get(name)?.value; },
-          set(name: string, value: string, options: unknown) { /* Empty */ },
-          remove(name: string, options: unknown) { /* Empty */ },
+          get(name: string) {
+            return cookieStore.get(name)?.value;
+          },
+          set(name: string, value: string, options: unknown) {
+            /* Empty */
+          },
+          remove(name: string, options: unknown) {
+            /* Empty */
+          },
         },
       }
     );
@@ -34,53 +43,63 @@ export async function POST(req: Request) {
     // 1. Verify the payment intent with Stripe
     // 2. Confirm the payment was successful
     // 3. Handle unknown failed payments
-    
+
     // For now, we'll simulate a successful payment
     const paymentSuccess = true; // In production, verify with Stripe API
 
     if (!paymentSuccess) {
-      return NextResponse.json({ 
-        success: false, 
-        error: 'Payment failed' 
-      }, { status: 400 });
+      return NextResponse.json(
+        {
+          success: false,
+          error: "Payment failed",
+        },
+        { status: 400 }
+      );
     }
 
     // Update order payment status to paid with stripe method
     const { data: order, error: updateError } = await supabase
-      .from('orders')
+      .from("orders")
       .update({
-        payment_status: 'PAID',
-        payment_method: 'stripe',
-        updated_at: new Date().toISOString()
+        payment_status: "PAID",
+        payment_method: "stripe",
+        updated_at: new Date().toISOString(),
       })
-      .eq('id', order_id)
+      .eq("id", order_id)
       .select()
       .single();
 
     if (updateError || !order) {
-      logger.error('[PAY STRIPE] Failed to update order:', { value: updateError });
-      return NextResponse.json({ 
-        success: false, 
-        error: 'Failed to process payment' 
-      }, { status: 500 });
+      logger.error("[PAY STRIPE] Failed to update order:", { value: updateError });
+      return NextResponse.json(
+        {
+          success: false,
+          error: "Failed to process payment",
+        },
+        { status: 500 }
+      );
     }
 
     return NextResponse.json({
       success: true,
       data: {
         order_id: order.id,
-        payment_status: 'PAID',
-        payment_method: 'stripe',
+        payment_status: "PAID",
+        payment_method: "stripe",
         total_amount: order.total_amount,
-        payment_intent_id: payment_intent_id
-      }
+        payment_intent_id: payment_intent_id,
+      },
     });
-
   } catch (_error) {
-    logger.error('[PAY STRIPE] Error:', { error: error instanceof Error ? error.message : 'Unknown error' });
-    return NextResponse.json({ 
-      success: false, 
-      error: 'Internal server error' 
-    }, { status: 500 });
+    logger._error("[PAY STRIPE] Error:", {
+      error: _error instanceof Error ? _error.message : "Unknown _error",
+    });
+    return NextResponse.json(
+      {
+        success: false,
+        error: "Internal server error",
+      },
+      { status: 500 }
+    );
   }
 }

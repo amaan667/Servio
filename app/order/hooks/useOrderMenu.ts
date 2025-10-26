@@ -1,22 +1,22 @@
-import { useState, useEffect, useCallback } from 'react';
-import { MenuItem } from '../types';
-import { demoMenuItems } from '@/data/demoMenuItems';
+import { useState, useEffect, useCallback } from "react";
+import { MenuItem } from "../types";
+import { demoMenuItems } from "@/data/demoMenuItems";
 
 export function useOrderMenu(venueSlug: string, isDemo: boolean) {
   // Cache helper functions
   const getCachedMenu = () => {
-    if (typeof window === 'undefined') return null;
+    if (typeof window === "undefined") return null;
     const cached = sessionStorage.getItem(`menu_${venueSlug}`);
     return cached ? JSON.parse(cached) : null;
   };
 
   const getCachedVenueName = () => {
-    if (typeof window === 'undefined') return 'Our Venue';
-    return sessionStorage.getItem(`venue_name_${venueSlug}`) || 'Our Venue';
+    if (typeof window === "undefined") return "Our Venue";
+    return sessionStorage.getItem(`venue_name_${venueSlug}`) || "Our Venue";
   };
 
   const getCachedCategories = () => {
-    if (typeof window === 'undefined') return null;
+    if (typeof window === "undefined") return null;
     const cached = sessionStorage.getItem(`categories_${venueSlug}`);
     return cached ? JSON.parse(cached) : null;
   };
@@ -35,7 +35,7 @@ export function useOrderMenu(venueSlug: string, isDemo: boolean) {
     setMenuError(null);
 
     // Check if this is demo mode
-    if (isDemo || venueSlug === 'demo-cafe') {
+    if (isDemo || venueSlug === "demo-cafe") {
       const mappedItems = demoMenuItems.map((item, idx) => ({
         ...item,
         id: `demo-${idx}`,
@@ -44,13 +44,13 @@ export function useOrderMenu(venueSlug: string, isDemo: boolean) {
         image: item.image || undefined,
       }));
       setMenuItems(mappedItems);
-      setVenueName('Demo Café');
+      setVenueName("Demo Café");
       setLoadingMenu(false);
-      
+
       // Cache demo menu
-      if (typeof window !== 'undefined') {
+      if (typeof window !== "undefined") {
         sessionStorage.setItem(`menu_${venueSlug}`, JSON.stringify(mappedItems));
-        sessionStorage.setItem(`venue_name_${venueSlug}`, 'Demo Café');
+        sessionStorage.setItem(`venue_name_${venueSlug}`, "Demo Café");
       }
       return;
     }
@@ -62,13 +62,13 @@ export function useOrderMenu(venueSlug: string, isDemo: boolean) {
         return;
       }
 
-      setVenueName('Cafe Nur');
+      setVenueName("Cafe Nur");
 
       const apiUrl = `${window.location.origin}/api/menu/${venueSlug}`;
       const response = await fetch(apiUrl);
-      
+
       if (!response.ok) {
-        let errorMessage = 'Failed to load menu';
+        let errorMessage = "Failed to load menu";
         try {
           const errorData = await response.json();
           errorMessage = errorData.error || errorMessage;
@@ -82,46 +82,51 @@ export function useOrderMenu(venueSlug: string, isDemo: boolean) {
       }
 
       const data = await response.json();
-      
-      const normalized = (data.menuItems || []).map((mi: Record<string, unknown>) => ({ 
-        ...mi, 
-        venue_name: data.venue?.venue_name || 'Our Venue'
+
+      const normalized = (data.menuItems || []).map((mi: Record<string, unknown>) => ({
+        ...mi,
+        venue_name: data.venue?.venue_name || "Our Venue",
       }));
-      
+
       setMenuItems(normalized);
-      const venueNameValue = data.venue?.venue_name || 'Our Venue';
+      const venueNameValue = data.venue?.venue_name || "Our Venue";
       setVenueName(venueNameValue);
-      
+
       // Cache menu data
-      if (typeof window !== 'undefined') {
+      if (typeof window !== "undefined") {
         sessionStorage.setItem(`menu_${venueSlug}`, JSON.stringify(normalized));
         sessionStorage.setItem(`venue_name_${venueSlug}`, venueNameValue);
       }
-      
+
       // Fetch category order
       try {
-        const categoryOrderResponse = await fetch(`${window.location.origin}/api/menu/categories?venueId=${venueSlug}`);
+        const categoryOrderResponse = await fetch(
+          `${window.location.origin}/api/menu/categories?venueId=${venueSlug}`
+        );
         if (categoryOrderResponse.ok) {
           const categoryOrderData = await categoryOrderResponse.json();
           if (categoryOrderData.categories && Array.isArray(categoryOrderData.categories)) {
             setCategoryOrder(categoryOrderData.categories);
             // Cache categories
-            if (typeof window !== 'undefined') {
-              sessionStorage.setItem(`categories_${venueSlug}`, JSON.stringify(categoryOrderData.categories));
+            if (typeof window !== "undefined") {
+              sessionStorage.setItem(
+                `categories_${venueSlug}`,
+                JSON.stringify(categoryOrderData.categories)
+              );
             }
           }
         }
       } catch (_error) {
         setCategoryOrder(null);
       }
-      
+
       if (!data.menuItems || data.menuItems.length === 0) {
         setMenuError("This venue has no available menu items yet.");
       }
-      
+
       setLoadingMenu(false);
     } catch (_err) {
-      setMenuError(`Error loading menu: ${err instanceof Error ? err.message : 'Unknown error'}`);
+      setMenuError(`Error loading menu: ${_err instanceof Error ? _err.message : "Unknown error"}`);
       setLoadingMenu(false);
     }
   }, [venueSlug, isDemo]);
@@ -138,4 +143,3 @@ export function useOrderMenu(venueSlug: string, isDemo: boolean) {
     venueName,
   };
 }
-

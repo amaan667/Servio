@@ -1,6 +1,6 @@
-import { NextRequest, NextResponse } from 'next/server';
-import { createAdminClient } from '@/lib/supabase';
-import { logger } from '@/lib/logger';
+import { NextRequest, NextResponse } from "next/server";
+import { createAdminClient } from "@/lib/supabase";
+import { logger } from "@/lib/logger";
 
 export async function GET(
   _request: NextRequest,
@@ -8,20 +8,18 @@ export async function GET(
 ) {
   try {
     const { venueId } = await context.params;
-    
+
     if (!venueId) {
-      return NextResponse.json(
-        { error: 'Venue ID is required' },
-        { status: 400 }
-      );
+      return NextResponse.json({ error: "Venue ID is required" }, { status: 400 });
     }
 
     const supabase = createAdminClient();
 
     // Get venue with organization data
     const { data: venue, error: venueError } = await supabase
-      .from('venues')
-      .select(`
+      .from("venues")
+      .select(
+        `
         venue_id,
         venue_name,
         organization_id,
@@ -30,39 +28,40 @@ export async function GET(
           subscription_tier,
           subscription_status
         )
-      `)
-      .eq('venue_id', venueId)
+      `
+      )
+      .eq("venue_id", venueId)
       .single();
 
     if (venueError || !venue) {
-      logger.error('[VENUE TIER API] Venue not found:', { venueId, error: venueError });
+      logger.error("[VENUE TIER API] Venue not found:", { venueId, error: venueError });
       return NextResponse.json(
-        { 
-          tier: 'basic',
-          status: 'active'
+        {
+          tier: "basic",
+          status: "active",
         },
         { status: 200 }
       );
     }
 
-    const organization = Array.isArray(venue.organizations) 
-      ? venue.organizations[0] 
+    const organization = Array.isArray(venue.organizations)
+      ? venue.organizations[0]
       : venue.organizations;
 
     return NextResponse.json({
-      tier: organization?.subscription_tier || 'basic',
-      status: organization?.subscription_status || 'active'
+      tier: organization?.subscription_tier || "basic",
+      status: organization?.subscription_status || "active",
     });
-
   } catch (_error) {
-    logger.error('[VENUE TIER API] Unexpected error:', { error: error instanceof Error ? error.message : 'Unknown error' });
+    logger._error("[VENUE TIER API] Unexpected error:", {
+      error: _error instanceof Error ? _error.message : "Unknown _error",
+    });
     return NextResponse.json(
-      { 
-        tier: 'basic',
-        status: 'active'
+      {
+        tier: "basic",
+        status: "active",
       },
       { status: 200 }
     );
   }
 }
-

@@ -38,7 +38,7 @@ class RedisCache {
         logger.info("[REDIS] Redis URL not provided, using in-memory cache fallback");
       }
     } catch (_error) {
-      logger.warn("[REDIS] Failed to initialize Redis cache:", error as Record<string, unknown>);
+      logger.warn("[REDIS] Failed to initialize Redis cache:", _error as Record<string, unknown>);
     }
   }
 
@@ -57,7 +57,7 @@ class RedisCache {
       }
       return null;
     } catch (_error) {
-      logger.warn("[REDIS] Cache get error:", error as Record<string, unknown>);
+      logger.warn("[REDIS] Cache get error:", _error as Record<string, unknown>);
       return null;
     }
   }
@@ -65,7 +65,13 @@ class RedisCache {
   /**
    * Set value in cache
    */
-  async set(key: string, value: unknown, options: CacheOptions = { /* Empty */ }): Promise<boolean> {
+  async set(
+    key: string,
+    value: unknown,
+    options: CacheOptions = {
+      /* Empty */
+    }
+  ): Promise<boolean> {
     if (!this.redis || !this.isConnected) {
       return false;
     }
@@ -92,7 +98,7 @@ class RedisCache {
 
       return true;
     } catch (_error) {
-      logger.warn("[REDIS] Cache set error:", error as Record<string, unknown>);
+      logger.warn("[REDIS] Cache set error:", _error as Record<string, unknown>);
       return false;
     }
   }
@@ -109,7 +115,7 @@ class RedisCache {
       await this.redis.del(key);
       return true;
     } catch (_error) {
-      logger.warn("[REDIS] Cache delete error:", error as Record<string, unknown>);
+      logger.warn("[REDIS] Cache delete error:", _error as Record<string, unknown>);
       return false;
     }
   }
@@ -136,7 +142,7 @@ class RedisCache {
       await pipeline.exec();
       return true;
     } catch (_error) {
-      logger.warn("[REDIS] Cache invalidation error:", error as Record<string, unknown>);
+      logger.warn("[REDIS] Cache invalidation error:", _error as Record<string, unknown>);
       return false;
     }
   }
@@ -153,7 +159,7 @@ class RedisCache {
       await this.redis.flushdb();
       return true;
     } catch (_error) {
-      logger.warn("[REDIS] Cache clear error:", error as Record<string, unknown>);
+      logger.warn("[REDIS] Cache clear error:", _error as Record<string, unknown>);
       return false;
     }
   }
@@ -190,7 +196,7 @@ class RedisCache {
         misses: 0,
       };
     } catch (_error) {
-      logger.warn("[REDIS] Cache stats error:", error as Record<string, unknown>);
+      logger.warn("[REDIS] Cache stats error:", _error as Record<string, unknown>);
       return {
         connected: false,
         memory: "0B",
@@ -252,8 +258,12 @@ export const cacheUtils = {
   /**
    * Generate cache key for orders
    */
-  ordersKey: (venueId: string, filters: Record<string, unknown> = { /* Empty */ }) =>
-    `orders:${venueId}:${JSON.stringify(filters)}`,
+  ordersKey: (
+    venueId: string,
+    filters: Record<string, unknown> = {
+      /* Empty */
+    }
+  ) => `orders:${venueId}:${JSON.stringify(filters)}`,
 
   /**
    * Generate cache key for menu items

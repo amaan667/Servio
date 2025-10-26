@@ -1,17 +1,16 @@
-
 import { getOpenAI } from "./openai";
 import fs from "fs";
-import { logger } from '@/lib/logger';
+import { logger } from "@/lib/logger";
 
 export async function extractMenuFromImage(imagePathOrDataUrl: string) {
   const openai = getOpenAI();
-  
+
   // Handle both file paths and data URLs
   let imageUrl: string;
-  if (imagePathOrDataUrl.startsWith('data:')) {
+  if (imagePathOrDataUrl.startsWith("data:")) {
     // Already a data URL
     imageUrl = imagePathOrDataUrl;
-  } else if (imagePathOrDataUrl.startsWith('http')) {
+  } else if (imagePathOrDataUrl.startsWith("http")) {
     // HTTP URL
     imageUrl = imagePathOrDataUrl;
   } else {
@@ -52,7 +51,7 @@ Rules:
             type: "image_url",
             image_url: {
               url: imageUrl,
-              detail: 'high',
+              detail: "high",
             },
           },
         ],
@@ -65,11 +64,11 @@ Rules:
   const text = response.choices[0]?.message?.content;
   try {
     if (!text) {
-      throw new Error('No response from Vision AI');
+      throw new Error("No response from Vision AI");
     }
-    
-    logger.info('[VISION] Item extraction response length:', text.length);
-    
+
+    logger.info("[VISION] Item extraction response length:", text.length);
+
     // Extract JSON from response (might be wrapped in markdown)
     const jsonMatch = text.match(/\[[\s\S]*\]/);
     if (!jsonMatch) {
@@ -77,17 +76,17 @@ Rules:
       return [];
     }
     const json = JSON.parse(jsonMatch[0]);
-    
+
     if (!Array.isArray(json)) {
-      logger.error('[VISION] Parsed data is not an array:', json);
+      logger.error("[VISION] Parsed data is not an array:", json);
       return [];
     }
-    
-    logger.info('[VISION] Extracted items:', json.length);
+
+    logger.info("[VISION] Extracted items:", json.length);
     return json;
   } catch (_err) {
     logger.error("Failed to parse item extraction JSON:", text);
-    logger.error("Parse error details:", err);
+    logger.error("Parse error details:", _err);
     return [];
   }
 }
@@ -145,7 +144,7 @@ Return ONLY the JSON array, no explanation.
             type: "image_url",
             image_url: {
               url: imageUrl,
-              detail: 'high',
+              detail: "high",
             },
           },
         ],
@@ -158,53 +157,57 @@ Return ONLY the JSON array, no explanation.
   const text = response.choices[0]?.message?.content;
   try {
     if (!text) {
-      throw new Error('No response from Vision AI');
+      throw new Error("No response from Vision AI");
     }
-    
-    logger.info('[VISION] Raw response length:', text.length);
-    logger.info('[VISION] First 200 chars:', text.substring(0, 200));
-    
+
+    logger.info("[VISION] Raw response length:", text.length);
+    logger.info("[VISION] First 200 chars:", text.substring(0, 200));
+
     // Extract JSON from response (might be wrapped in markdown or have explanation text)
     const jsonMatch = text.match(/\[[\s\S]*\]/);
     if (!jsonMatch) {
-      logger.error('[VISION] No JSON array found in response:', text);
+      logger.error("[VISION] No JSON array found in response:", text);
       // Return empty array instead of crashing
       return [];
     }
-    
+
     const positions = JSON.parse(jsonMatch[0]);
-    
+
     if (!Array.isArray(positions)) {
-      logger.error('[VISION] Parsed data is not an array:', positions);
+      logger.error("[VISION] Parsed data is not an array:", positions);
       return [];
     }
-    
-    logger.info('[VISION] Parsed positions:', positions.length);
-    
+
+    logger.info("[VISION] Parsed positions:", positions.length);
+
     // Log first few positions for debugging
-    
+
     // Validate positions
     positions.forEach((pos: any, index: number) => {
-      if (!pos.name || !pos.x1 || !pos.y1 || !pos.x2 || !pos.y2) { /* Empty */ }
-      if (pos.x2 - pos.x1 > 50) { /* Empty */ }
+      if (!pos.name || !pos.x1 || !pos.y1 || !pos.x2 || !pos.y2) {
+        /* Empty */
+      }
+      if (pos.x2 - pos.x1 > 50) {
+        /* Empty */
+      }
     });
-    
+
     // Convert and validate bounding box coordinates
     return positions.map((pos: any) => {
       // Clamp values to valid range (0-100)
       const clamp = (val: number) => Math.max(0, Math.min(100, val));
-      
+
       const x1 = clamp(pos.x1 !== undefined ? pos.x1 : (pos.x || 50) - 5);
       const y1 = clamp(pos.y1 !== undefined ? pos.y1 : (pos.y || 50) - 3);
       const x2 = clamp(pos.x2 !== undefined ? pos.x2 : (pos.x || 50) + 5);
       const y2 = clamp(pos.y2 !== undefined ? pos.y2 : (pos.y || 50) + 3);
-      
+
       // Ensure x2 > x1 and y2 > y1
       const finalX2 = Math.max(x2, x1 + 1);
       const finalY2 = Math.max(y2, y1 + 1);
-      
+
       return {
-        name: pos.name || 'Unknown Item',
+        name: pos.name || "Unknown Item",
         x: clamp((x1 + finalX2) / 2),
         y: clamp((y1 + finalY2) / 2),
         x1,
@@ -216,7 +219,7 @@ Return ONLY the JSON array, no explanation.
     });
   } catch (_err) {
     logger.error("Failed to parse menu positions JSON:", text);
-    logger.error("Parse error details:", err);
+    logger.error("Parse error details:", _err);
     // Return empty array instead of crashing - menu will still work without hotspots
     return [];
   }

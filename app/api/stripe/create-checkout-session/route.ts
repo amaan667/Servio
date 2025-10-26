@@ -35,7 +35,9 @@ const ensureStripeProducts = async () => {
     },
   ];
 
-  const priceIds: Record<string, string> = { /* Empty */ };
+  const priceIds: Record<string, string> = {
+    /* Empty */
+  };
 
   for (const product of products) {
     try {
@@ -66,9 +68,9 @@ const ensureStripeProducts = async () => {
       logger.debug(`[STRIPE SETUP] Created ${product.tier} price: ${price.id}`);
     } catch (_error) {
       logger.error(`[STRIPE ERROR] Failed to create ${product.tier} product/price:`, {
-        error: error instanceof Error ? error.message : "Unknown error",
+        error: _error instanceof Error ? _error.message : "Unknown _error",
       });
-      throw error;
+      throw _error;
     }
   }
 
@@ -80,7 +82,7 @@ export async function POST(_request: NextRequest) {
     // Ensure Stripe products and prices exist
     const priceIds = await ensureStripeProducts();
 
-    const body = await request.json();
+    const body = await _request.json();
     const { tier, organizationId, isSignup, email, fullName, venueName } = body;
 
     if (!tier || !["basic", "standard", "premium"].includes(tier)) {
@@ -308,7 +310,7 @@ export async function POST(_request: NextRequest) {
 
     return NextResponse.json({ sessionId: session.id, url: session.url });
   } catch (_error) {
-    const errorMessage = error instanceof Error ? error.message : "Unknown error";
+    const errorMessage = _error instanceof Error ? _error.message : "Unknown _error";
     logger.error("[STRIPE CHECKOUT] Error:", { error: errorMessage });
     return NextResponse.json(
       { error: errorMessage || "Failed to create checkout session" },

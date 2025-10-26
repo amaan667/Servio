@@ -1,13 +1,10 @@
-import { NextRequest, NextResponse } from 'next/server';
-import { createClient } from '@supabase/supabase-js';
-import { ENV } from '@/lib/env';
-import { logger } from '@/lib/logger';
+import { NextRequest, NextResponse } from "next/server";
+import { createClient } from "@supabase/supabase-js";
+import { ENV } from "@/lib/env";
+import { logger } from "@/lib/logger";
 
 function getSupabaseClient() {
-  return createClient(
-    ENV.SUPABASE_URL,
-    ENV.SUPABASE_SERVICE_ROLE_KEY!
-  );
+  return createClient(ENV.SUPABASE_URL, ENV.SUPABASE_SERVICE_ROLE_KEY!);
 }
 
 interface CartItem {
@@ -36,10 +33,7 @@ export async function POST(req: NextRequest) {
     const { cartId, venueId, tableNumber, customerName, customerPhone, items, total, notes } = body;
 
     if (!cartId || !venueId || !items || items.length === 0) {
-      return NextResponse.json(
-        { error: 'Missing required fields' },
-        { status: 400 }
-      );
+      return NextResponse.json({ error: "Missing required fields" }, { status: 400 });
     }
 
     // Store cart data in a temporary table or use a simple approach
@@ -50,7 +44,7 @@ export async function POST(req: NextRequest) {
       table_number: tableNumber,
       customer_name: customerName,
       customer_phone: customerPhone,
-      items: items.map(item => ({
+      items: items.map((item) => ({
         menu_item_id: item.id,
         name: item.name,
         price: item.price,
@@ -70,26 +64,21 @@ export async function POST(req: NextRequest) {
       success: true,
       cartData,
     });
-
   } catch (_error) {
-    logger.error('[CART STORE] Error:', { error: error instanceof Error ? error.message : 'Unknown error' });
-    return NextResponse.json(
-      { error: 'Internal server error' },
-      { status: 500 }
-    );
+    logger._error("[CART STORE] Error:", {
+      error: _error instanceof Error ? _error.message : "Unknown _error",
+    });
+    return NextResponse.json({ error: "Internal server error" }, { status: 500 });
   }
 }
 
 export async function GET(req: NextRequest) {
   try {
     const { searchParams } = new URL(req.url);
-    const cartId = searchParams.get('cartId');
+    const cartId = searchParams.get("cartId");
 
     if (!cartId) {
-      return NextResponse.json(
-        { error: 'Missing cart ID' },
-        { status: 400 }
-      );
+      return NextResponse.json({ error: "Missing cart ID" }, { status: 400 });
     }
 
     // In a real implementation, you'd retrieve from database
@@ -98,12 +87,10 @@ export async function GET(req: NextRequest) {
       success: true,
       cartData: null,
     });
-
   } catch (_error) {
-    logger.error('[CART STORE] Error:', { error: error instanceof Error ? error.message : 'Unknown error' });
-    return NextResponse.json(
-      { error: 'Internal server error' },
-      { status: 500 }
-    );
+    logger._error("[CART STORE] Error:", {
+      error: _error instanceof Error ? _error.message : "Unknown _error",
+    });
+    return NextResponse.json({ error: "Internal server error" }, { status: 500 });
   }
 }

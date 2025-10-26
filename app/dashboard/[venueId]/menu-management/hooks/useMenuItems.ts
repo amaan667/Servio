@@ -13,15 +13,14 @@ export function useMenuItems(venueId: string) {
     try {
       setLoading(true);
       const supabase = createClient();
-      
+
       const { data: items, error } = await supabase
-        .from('menu_items')
-        .select('*')
-        .eq('venue_id', venueId)
-        .order('position', { ascending: true, nullsFirst: false });
+        .from("menu_items")
+        .select("*")
+        .eq("venue_id", venueId)
+        .order("position", { ascending: true, nullsFirst: false });
 
       if (error) {
-
         toast({
           title: "Error",
           description: `Failed to load menu items: ${error.message}`,
@@ -31,13 +30,13 @@ export function useMenuItems(venueId: string) {
       }
 
       setMenuItems(items || []);
-      
+
       if (items && items.length > 0) {
         const { data: uploadData } = await supabase
-          .from('menu_uploads')
-          .select('category_order')
-          .eq('venue_id', venueId)
-          .order('created_at', { ascending: false })
+          .from("menu_uploads")
+          .select("category_order")
+          .eq("venue_id", venueId)
+          .order("created_at", { ascending: false })
           .limit(1);
 
         if (uploadData && uploadData.length > 0) {
@@ -45,10 +44,9 @@ export function useMenuItems(venueId: string) {
         }
       }
     } catch (_error) {
-
       toast({
         title: "Error",
-        description: `Failed to load menu items: ${error instanceof Error ? error.message : 'Unknown error'}`,
+        description: `Failed to load menu items: ${_error instanceof Error ? _error.message : "Unknown _error"}`,
         variant: "destructive",
       });
     } finally {
@@ -67,7 +65,6 @@ export function useMenuItems(venueId: string) {
     loading,
     categoryOrder,
     setMenuItems,
-    loadMenuItems
+    loadMenuItems,
   };
 }
-

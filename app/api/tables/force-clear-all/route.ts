@@ -1,66 +1,69 @@
-import { NextRequest, NextResponse } from 'next/server';
-import { createAdminClient } from '@/lib/supabase';
-import { logger } from '@/lib/logger';
+import { NextRequest, NextResponse } from "next/server";
+import { createAdminClient } from "@/lib/supabase";
+import { logger } from "@/lib/logger";
 
 export async function POST(_request: NextRequest) {
   try {
-    const { venue_id } = await request.json();
+    const { venue_id } = await _request.json();
 
     if (!venue_id) {
-      return NextResponse.json({ ok: false, error: 'venue_id is required' }, { status: 400 });
+      return NextResponse.json({ ok: false, error: "venue_id is required" }, { status: 400 });
     }
 
     const supabase = await createAdminClient();
 
     // Step 1: Force clear ALL table references from orders (including completed ones)
     const { error: clearAllRefsError } = await supabase
-      .from('orders')
+      .from("orders")
       .update({ table_id: null })
-      .eq('venue_id', venue_id);
+      .eq("venue_id", venue_id);
 
     if (clearAllRefsError) {
-      logger.error('[FORCE CLEAR ALL] Error clearing table references:', clearAllRefsError);
-      return NextResponse.json({ 
-        ok: false, 
-        error: `Failed to clear table references: ${clearAllRefsError.message}` 
-      }, { status: 500 });
+      logger.error("[FORCE CLEAR ALL] Error clearing table references:", clearAllRefsError);
+      return NextResponse.json(
+        {
+          ok: false,
+          error: `Failed to clear table references: ${clearAllRefsError.message}`,
+        },
+        { status: 500 }
+      );
     }
 
     // Step 2: Delete all table sessions
     const { error: sessionsError } = await supabase
-      .from('table_sessions')
+      .from("table_sessions")
       .delete()
-      .eq('venue_id', venue_id);
+      .eq("venue_id", venue_id);
 
     if (sessionsError) {
-      logger.error('[FORCE CLEAR ALL] Error deleting table sessions:', sessionsError);
+      logger.error("[FORCE CLEAR ALL] Error deleting table sessions:", sessionsError);
       // Continue anyway
     } else {
       // Intentionally empty
     }
 
     // Step 3: Delete all tables
-    const { error: tablesError } = await supabase
-      .from('tables')
-      .delete()
-      .eq('venue_id', venue_id);
+    const { error: tablesError } = await supabase.from("tables").delete().eq("venue_id", venue_id);
 
     if (tablesError) {
-      logger.error('[FORCE CLEAR ALL] Error deleting tables:', tablesError);
-      return NextResponse.json({ 
-        ok: false, 
-        error: `Failed to delete tables: ${tablesError.message}` 
-      }, { status: 500 });
+      logger.error("[FORCE CLEAR ALL] Error deleting tables:", tablesError);
+      return NextResponse.json(
+        {
+          ok: false,
+          error: `Failed to delete tables: ${tablesError.message}`,
+        },
+        { status: 500 }
+      );
     }
 
     // Step 4: Clear table runtime state
     const { error: runtimeError } = await supabase
-      .from('table_runtime_state')
+      .from("table_runtime_state")
       .delete()
-      .eq('venue_id', venue_id);
+      .eq("venue_id", venue_id);
 
     if (runtimeError) {
-      logger.error('[FORCE CLEAR ALL] Error clearing runtime state:', runtimeError);
+      logger.error("[FORCE CLEAR ALL] Error clearing runtime state:", runtimeError);
       // Continue anyway
     } else {
       // Intentionally empty
@@ -68,27 +71,31 @@ export async function POST(_request: NextRequest) {
 
     // Step 5: Clear group sessions
     const { error: groupSessionsError } = await supabase
-      .from('table_group_sessions')
+      .from("table_group_sessions")
       .delete()
-      .eq('venue_id', venue_id);
+      .eq("venue_id", venue_id);
 
     if (groupSessionsError) {
-      logger.error('[FORCE CLEAR ALL] Error clearing group sessions:', groupSessionsError);
+      logger.error("[FORCE CLEAR ALL] Error clearing group sessions:", groupSessionsError);
       // Continue anyway
     } else {
       // Intentionally empty
     }
 
-    return NextResponse.json({ 
-      ok: true, 
-      message: 'All tables and sessions force cleared successfully' 
+    return NextResponse.json({
+      ok: true,
+      message: "All tables and sessions force cleared successfully",
     });
-
   } catch (_error) {
-    logger.error('[FORCE CLEAR ALL] Error in force clear all tables API:', { error: error instanceof Error ? error.message : 'Unknown error' });
-    return NextResponse.json({ 
-      ok: false, 
-      error: 'Internal server error' 
-    }, { status: 500 });
+    logger._error("[FORCE CLEAR ALL] Error in force clear all tables API:", {
+      error: _error instanceof Error ? _error.message : "Unknown _error",
+    });
+    return NextResponse.json(
+      {
+        ok: false,
+        error: "Internal server error",
+      },
+      { status: 500 }
+    );
   }
 }

@@ -59,7 +59,7 @@ export async function POST() {
     });
   } catch (_error) {
     logger.error("[CLEAR COMPLETED TABLES] Error:", {
-      error: error instanceof Error ? error.message : String(error),
+      error: _error instanceof Error ? _error.message : String(_error),
     });
     return NextResponse.json({ ok: false, error: "Internal server error" }, { status: 500 });
   }

@@ -1,12 +1,12 @@
 "use client";
 
-import { useState } from 'react';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { Button } from '@/components/ui/button';
-import { Textarea } from '@/components/ui/textarea';
-import { Badge } from '@/components/ui/badge';
-import { Star, MessageSquare, Send, CheckCircle } from 'lucide-react';
-import { supabaseBrowser as createClient } from '@/lib/supabase';
+import { useState } from "react";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Button } from "@/components/ui/button";
+import { Textarea } from "@/components/ui/textarea";
+import { Badge } from "@/components/ui/badge";
+import { Star, MessageSquare, Send, CheckCircle } from "lucide-react";
+import { supabaseBrowser as createClient } from "@/lib/supabase";
 
 interface CustomerFeedbackFormProps {
   venueId: string;
@@ -18,28 +18,28 @@ interface CustomerFeedbackFormProps {
 }
 
 const FEEDBACK_CATEGORIES = [
-  'Food Quality',
-  'Service Speed',
-  'Staff Friendliness',
-  'Value for Money',
-  'Ambiance',
-  'Menu Variety',
-  'Cleanliness',
-  'Overall Experience'
+  "Food Quality",
+  "Service Speed",
+  "Staff Friendliness",
+  "Value for Money",
+  "Ambiance",
+  "Menu Variety",
+  "Cleanliness",
+  "Overall Experience",
 ];
 
-export function CustomerFeedbackForm({ 
-  venueId, 
-  orderId, 
-  customerName, 
-  customerEmail, 
+export function CustomerFeedbackForm({
+  venueId,
+  orderId,
+  customerName,
+  customerEmail,
   customerPhone,
-  onFeedbackSubmitted 
+  onFeedbackSubmitted,
 }: CustomerFeedbackFormProps) {
   const [rating, setRating] = useState(0);
   const [hoveredRating, setHoveredRating] = useState(0);
-  const [comment, setComment] = useState('');
-  const [selectedCategory, setSelectedCategory] = useState<string>('');
+  const [comment, setComment] = useState("");
+  const [selectedCategory, setSelectedCategory] = useState<string>("");
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [isSubmitted, setIsSubmitted] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -58,35 +58,41 @@ export function CustomerFeedbackForm({
 
   const getRatingLabel = (rating: number) => {
     switch (rating) {
-      case 1: return 'Poor';
-      case 2: return 'Fair';
-      case 3: return 'Good';
-      case 4: return 'Very Good';
-      case 5: return 'Excellent';
-      default: return 'Rate your experience';
+      case 1:
+        return "Poor";
+      case 2:
+        return "Fair";
+      case 3:
+        return "Good";
+      case 4:
+        return "Very Good";
+      case 5:
+        return "Excellent";
+      default:
+        return "Rate your experience";
     }
   };
 
   const getRatingColor = (rating: number) => {
-    if (rating >= 4) return 'text-green-600';
-    if (rating >= 3) return 'text-yellow-600';
-    if (rating >= 1) return 'text-red-600';
-    return 'text-gray-700';
+    if (rating >= 4) return "text-green-600";
+    if (rating >= 3) return "text-yellow-600";
+    if (rating >= 1) return "text-red-600";
+    return "text-gray-700";
   };
 
   const submitFeedback = async () => {
     if (rating === 0) {
-      setError('Please select a rating');
+      setError("Please select a rating");
       return;
     }
 
     if (!comment.trim()) {
-      setError('Please provide a comment');
+      setError("Please provide a comment");
       return;
     }
 
     if (!selectedCategory) {
-      setError('Please select a category');
+      setError("Please select a category");
       return;
     }
 
@@ -95,46 +101,42 @@ export function CustomerFeedbackForm({
 
     try {
       const supabase = createClient();
-      if (!supabase) throw new Error('Service unavailable');
+      if (!supabase) throw new Error("Service unavailable");
 
       // Calculate sentiment score based on rating
-      let sentimentLabel: 'positive' | 'negative' | 'neutral';
+      let sentimentLabel: "positive" | "negative" | "neutral";
       let sentimentScore: number;
-      
+
       if (rating >= 4) {
-        sentimentLabel = 'positive';
+        sentimentLabel = "positive";
         sentimentScore = 0.8 + (rating - 4) * 0.1;
       } else if (rating <= 2) {
-        sentimentLabel = 'negative';
+        sentimentLabel = "negative";
         sentimentScore = 0.2 - (2 - rating) * 0.1;
       } else {
-        sentimentLabel = 'neutral';
+        sentimentLabel = "neutral";
         sentimentScore = 0.5;
       }
 
-      const { error: insertError } = await supabase
-        .from('feedback')
-        .insert({
-          venue_id: venueId,
-          order_id: orderId,
-          customer_name: customerName,
-          customer_email: customerEmail,
-          customer_phone: customerPhone,
-          rating: rating,
-          comment: comment.trim(),
-          category: selectedCategory,
-          sentiment_score: sentimentScore,
-          sentiment_label: sentimentLabel
-        });
+      const { error: insertError } = await supabase.from("feedback").insert({
+        venue_id: venueId,
+        order_id: orderId,
+        customer_name: customerName,
+        customer_email: customerEmail,
+        customer_phone: customerPhone,
+        rating: rating,
+        comment: comment.trim(),
+        category: selectedCategory,
+        sentiment_score: sentimentScore,
+        sentiment_label: sentimentLabel,
+      });
 
       if (insertError) throw new Error(insertError.message);
 
       setIsSubmitted(true);
       onFeedbackSubmitted?.();
-
     } catch (_err) {
-
-      setError(err.message || 'Failed to submit feedback. Please try again.');
+      setError(_err.message || "Failed to submit feedback. Please try again.");
     } finally {
       setIsSubmitting(false);
     }
@@ -147,18 +149,17 @@ export function CustomerFeedbackForm({
           <div className="w-16 h-16 bg-green-100 rounded-full flex items-center justify-center mx-auto mb-4">
             <CheckCircle className="h-8 w-8 text-green-600" />
           </div>
-          <h3 className="text-xl font-semibold text-gray-900 mb-2">
-            Thank You!
-          </h3>
+          <h3 className="text-xl font-semibold text-gray-900 mb-2">Thank You!</h3>
           <p className="text-gray-900 mb-4">
-            Your feedback has been submitted successfully. We appreciate you taking the time to share your experience.
+            Your feedback has been submitted successfully. We appreciate you taking the time to
+            share your experience.
           </p>
           <div className="flex items-center justify-center space-x-1 mb-4">
             {[1, 2, 3, 4, 5].map((star) => (
               <Star
                 key={star}
                 className={`h-5 w-5 ${
-                  star <= rating ? 'text-yellow-500 fill-current' : 'text-gray-700'
+                  star <= rating ? "text-yellow-500 fill-current" : "text-gray-700"
                 }`}
               />
             ))}
@@ -198,9 +199,9 @@ export function CustomerFeedbackForm({
               >
                 <Star
                   className={`h-8 w-8 transition-colors ${
-                    star <= (hoveredRating || rating) 
-                      ? 'text-yellow-500 fill-current' 
-                      : 'text-gray-700'
+                    star <= (hoveredRating || rating)
+                      ? "text-yellow-500 fill-current"
+                      : "text-gray-700"
                   }`}
                 />
               </button>
@@ -224,8 +225,8 @@ export function CustomerFeedbackForm({
                 onClick={() => setSelectedCategory(category)}
                 className={`p-2 text-sm border rounded-lg transition-colors focus:outline-none focus:ring-2 focus:ring-blue-500 ${
                   selectedCategory === category
-                    ? 'bg-blue-50 border-blue-500 text-blue-700'
-                    : 'border-gray-300 hover:border-gray-400 hover:bg-gray-50'
+                    ? "bg-blue-50 border-blue-500 text-blue-700"
+                    : "border-gray-300 hover:border-gray-400 hover:bg-gray-50"
                 }`}
               >
                 {category}

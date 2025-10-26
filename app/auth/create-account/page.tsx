@@ -1,34 +1,34 @@
-'use client';
+"use client";
 
-import { useEffect, useState } from 'react';
-import { useRouter, useSearchParams } from 'next/navigation';
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
-import { Button } from '@/components/ui/button';
-import { Input } from '@/components/ui/input';
-import { Label } from '@/components/ui/label';
-import { Loader2 } from 'lucide-react';
+import { useEffect, useState } from "react";
+import { useRouter, useSearchParams } from "next/navigation";
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { Loader2 } from "lucide-react";
 
 export default function CreateAccountPage() {
   const router = useRouter();
   const searchParams = useSearchParams();
-  const [status, setStatus] = useState<'loading' | 'form' | 'success' | 'error'>('loading');
+  const [status, setStatus] = useState<"loading" | "form" | "success" | "error">("loading");
   const [error, setError] = useState<string | null>(null);
   const [sessionData, setSessionData] = useState<unknown>(null);
   const [loading, setLoading] = useState(false);
   const [formData, setFormData] = useState({
-    password: '',
-    venueName: '',
-    businessType: 'Restaurant',
-    serviceType: 'table_service',
+    password: "",
+    venueName: "",
+    businessType: "Restaurant",
+    serviceType: "table_service",
   });
 
   useEffect(() => {
     const fetchSession = async () => {
       try {
-        const sessionId = searchParams.get('session_id');
+        const sessionId = searchParams.get("session_id");
         if (!sessionId) {
-          setError('No session ID found. Please start over.');
-          setStatus('error');
+          setError("No session ID found. Please start over.");
+          setStatus("error");
           return;
         }
 
@@ -38,16 +38,15 @@ export default function CreateAccountPage() {
 
         if (data.error) {
           setError(data.error);
-          setStatus('error');
+          setStatus("error");
           return;
         }
 
         setSessionData(data);
-        setStatus('form');
+        setStatus("form");
       } catch (_err) {
-
-        setError(err.message || 'Failed to fetch session details.');
-        setStatus('error');
+        setError(_err.message || "Failed to fetch session details.");
+        setStatus("error");
       }
     };
 
@@ -60,9 +59,9 @@ export default function CreateAccountPage() {
     setError(null);
 
     try {
-      const response = await fetch('/api/signup/with-subscription', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+      const response = await fetch("/api/signup/with-subscription", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           email: sessionData.customer_email,
           password: formData.password,
@@ -78,23 +77,22 @@ export default function CreateAccountPage() {
       const data = await response.json();
 
       if (data.error || !data.success) {
-        setError(data.error || 'Failed to create account. Please try again.');
+        setError(data.error || "Failed to create account. Please try again.");
         setLoading(false);
         return;
       }
 
-      setStatus('success');
+      setStatus("success");
       setTimeout(() => {
         router.push(`/dashboard/${data.venueId}?welcome=true`);
       }, 2000);
     } catch (_err) {
-
-      setError(err.message || 'Failed to create account. Please try again.');
+      setError(_err.message || "Failed to create account. Please try again.");
       setLoading(false);
     }
   };
 
-  if (status === 'loading') {
+  if (status === "loading") {
     return (
       <div className="min-h-screen bg-gray-50 flex items-center justify-center p-4">
         <Card className="w-full max-w-md">
@@ -111,7 +109,7 @@ export default function CreateAccountPage() {
     );
   }
 
-  if (status === 'form' && sessionData) {
+  if (status === "form" && sessionData) {
     return (
       <div className="min-h-screen bg-gray-50 flex items-center justify-center p-4">
         <Card className="w-full max-w-md">
@@ -127,7 +125,7 @@ export default function CreateAccountPage() {
                 <p className="text-sm text-red-600">{error}</p>
               </div>
             )}
-            
+
             <form onSubmit={handleSubmit} className="space-y-4">
               <div className="space-y-2">
                 <Label htmlFor="email">Email Address</Label>
@@ -210,7 +208,9 @@ export default function CreateAccountPage() {
                   required
                 >
                   <option value="table_service">Table Service (QR codes on tables)</option>
-                  <option value="counter_pickup">Pickup/Counter Service (QR codes for orders)</option>
+                  <option value="counter_pickup">
+                    Pickup/Counter Service (QR codes for orders)
+                  </option>
                 </select>
               </div>
 
@@ -221,7 +221,7 @@ export default function CreateAccountPage() {
                     Creating account...
                   </>
                 ) : (
-                  'Create Account & Start Trial'
+                  "Create Account & Start Trial"
                 )}
               </Button>
             </form>
@@ -231,7 +231,7 @@ export default function CreateAccountPage() {
     );
   }
 
-  if (status === 'success') {
+  if (status === "success") {
     return (
       <div className="min-h-screen bg-gray-50 flex items-center justify-center p-4">
         <Card className="w-full max-w-md">
@@ -259,7 +259,7 @@ export default function CreateAccountPage() {
           <div className="text-6xl mb-4">❌</div>
           <p className="text-red-600 mb-4">{error}</p>
           <button
-            onClick={() => router.push('/sign-up')}
+            onClick={() => router.push("/sign-up")}
             className="text-purple-600 hover:underline"
           >
             Go back to sign up
@@ -269,4 +269,3 @@ export default function CreateAccountPage() {
     </div>
   );
 }
-

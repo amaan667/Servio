@@ -21,7 +21,7 @@ interface WebhookEvent {
   webhook_id: string;
   event_type: string;
   _payload: unknown;
-  status: 'pending' | 'delivered' | 'failed';
+  status: "pending" | "delivered" | "failed";
   attempts: number;
   last_attempt: string;
   created_at: string;
@@ -58,7 +58,7 @@ class WebhookService {
       is_active: true,
       retry_count: 0,
       created_at: new Date().toISOString(),
-      updated_at: new Date().toISOString()
+      updated_at: new Date().toISOString(),
     };
 
     this.webhooks.set(webhook.id, webhook);
@@ -69,8 +69,9 @@ class WebhookService {
    * Send webhook event
    */
   async sendWebhook(organizationId: string, eventType: string, _payload: unknown): Promise<void> {
-    const webhooks = Array.from(this.webhooks.values())
-      .filter(w => w.organization_id === organizationId && w.is_active && w.events.includes(eventType));
+    const webhooks = Array.from(this.webhooks.values()).filter(
+      (w) => w.organization_id === organizationId && w.is_active && w.events.includes(eventType)
+    );
 
     for (const webhook of webhooks) {
       await this.deliverWebhook(webhook, eventType, payload);
@@ -80,25 +81,29 @@ class WebhookService {
   /**
    * Deliver webhook to endpoint
    */
-  private async deliverWebhook(webhook: Webhook, eventType: string, _payload: unknown): Promise<void> {
+  private async deliverWebhook(
+    webhook: Webhook,
+    eventType: string,
+    _payload: unknown
+  ): Promise<void> {
     const delivery: WebhookDelivery = {
       webhook_id: webhook.id,
       event_type: eventType,
       payload,
       signature: this.generateSignature(payload, webhook.secret),
-      timestamp: new Date().toISOString()
+      timestamp: new Date().toISOString(),
     };
 
     try {
       const response = await fetch(webhook.url, {
-        method: 'POST',
+        method: "POST",
         headers: {
-          'Content-Type': 'application/json',
-          'X-Webhook-Signature': delivery.signature,
-          'X-Webhook-Event': eventType,
-          'X-Webhook-Timestamp': delivery.timestamp
+          "Content-Type": "application/json",
+          "X-Webhook-Signature": delivery.signature,
+          "X-Webhook-Event": eventType,
+          "X-Webhook-Timestamp": delivery.timestamp,
         },
-        body: JSON.stringify(delivery)
+        body: JSON.stringify(delivery),
       });
 
       if (response.ok) {
@@ -107,7 +112,7 @@ class WebhookService {
         throw new Error(`Webhook delivery failed: ${response.status}`);
       }
     } catch (_error) {
-      await this.logWebhookFailure(webhook.id, error);
+      await this.logWebhookFailure(webhook.id, _error);
     }
   }
 
@@ -115,18 +120,18 @@ class WebhookService {
    * Generate webhook signature
    */
   private generateSignature(_payload: unknown, secret: string): string {
-    const crypto = require('crypto');
-    const hmac = crypto.createHmac('sha256', secret);
+    const crypto = require("crypto");
+    const hmac = crypto.createHmac("sha256", secret);
     hmac.update(JSON.stringify(payload));
-    return hmac.digest('hex');
+    return hmac.digest("hex");
   }
 
   /**
    * Generate webhook secret
    */
   private generateSecret(): string {
-    const crypto = require('crypto');
-    return crypto.randomBytes(32).toString('hex');
+    const crypto = require("crypto");
+    return crypto.randomBytes(32).toString("hex");
   }
 
   /**
@@ -137,12 +142,12 @@ class WebhookService {
     const event: WebhookEvent = {
       id: `event_${Date.now()}`,
       webhook_id: webhookId,
-      event_type: 'webhook_failure',
+      event_type: "webhook_failure",
       payload: { error: errorMessage },
-      status: 'failed',
+      status: "failed",
       attempts: 1,
       last_attempt: new Date().toISOString(),
-      created_at: new Date().toISOString()
+      created_at: new Date().toISOString(),
     };
 
     this.events.set(event.id, event);
@@ -152,8 +157,7 @@ class WebhookService {
    * Get webhook events
    */
   getWebhookEvents(webhookId: string): WebhookEvent[] {
-    return Array.from(this.events.values())
-      .filter(e => e.webhook_id === webhookId);
+    return Array.from(this.events.values()).filter((e) => e.webhook_id === webhookId);
   }
 
   /**
@@ -171,10 +175,10 @@ class WebhookService {
 
     try {
       await this.deliverWebhook(webhook, event.event_type, event.payload);
-      event.status = 'delivered';
+      event.status = "delivered";
     } catch (_error) {
-      event.status = 'failed';
-      await this.logWebhookFailure(webhook.id, error);
+      event.status = "failed";
+      await this.logWebhookFailure(webhook.id, _error);
     }
   }
 
@@ -186,13 +190,13 @@ class WebhookService {
     if (!webhook) return false;
 
     const testPayload = {
-      event: 'webhook.test',
-      data: { message: 'This is a test webhook' },
-      timestamp: new Date().toISOString()
+      event: "webhook.test",
+      data: { message: "This is a test webhook" },
+      timestamp: new Date().toISOString(),
     };
 
     try {
-      await this.deliverWebhook(webhook, 'test', testPayload);
+      await this.deliverWebhook(webhook, "test", testPayload);
       return true;
     } catch (_error) {
       return false;

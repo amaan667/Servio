@@ -208,12 +208,12 @@ export async function POST() {
     return response;
   } catch (_error) {
     logger.error("[ORG ENSURE] Unexpected error:", {
-      error: error instanceof Error ? error.message : "Unknown error",
+      error: _error instanceof Error ? _error.message : "Unknown _error",
     });
     return NextResponse.json(
       {
         error: "Internal server error",
-        details: error instanceof Error ? error.message : "Unknown error",
+        details: _error instanceof Error ? _error.message : "Unknown _error",
       },
       { status: 500 }
     );

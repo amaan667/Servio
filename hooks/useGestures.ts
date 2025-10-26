@@ -1,7 +1,7 @@
-import { errorToContext } from '@/lib/utils/error-to-context';
+import { errorToContext } from "@/lib/utils/error-to-context";
 
-import { useCallback, useEffect, useRef, useState } from 'react';
-import { logger } from '@/lib/logger';
+import { useCallback, useEffect, useRef, useState } from "react";
+import { logger } from "@/lib/logger";
 
 interface GestureState {
   isDragging: boolean;
@@ -11,7 +11,7 @@ interface GestureState {
   currentY: number;
   deltaX: number;
   deltaY: number;
-  direction: 'left' | 'right' | 'up' | 'down' | null;
+  direction: "left" | "right" | "up" | "down" | null;
   velocity: number;
 }
 
@@ -27,7 +27,11 @@ interface GestureOptions {
   preventDefault?: boolean;
 }
 
-export function useGestures(options: GestureOptions = { /* Empty */ }) {
+export function useGestures(
+  options: GestureOptions = {
+    /* Empty */
+  }
+) {
   const {
     onSwipeLeft,
     onSwipeRight,
@@ -37,7 +41,7 @@ export function useGestures(options: GestureOptions = { /* Empty */ }) {
     swipeThreshold = 100,
     pullToRefreshThreshold = 150,
     velocityThreshold = 0.3,
-    preventDefault = true
+    preventDefault = true,
   } = options;
 
   const [gestureState, setGestureState] = useState<GestureState>({
@@ -49,40 +53,43 @@ export function useGestures(options: GestureOptions = { /* Empty */ }) {
     deltaX: 0,
     deltaY: 0,
     direction: null,
-    velocity: 0
+    velocity: 0,
   });
 
   const [isPullToRefreshActive, setIsPullToRefreshActive] = useState(false);
   const [pullToRefreshProgress, setPullToRefreshProgress] = useState(0);
-  
+
   const startTimeRef = useRef<number>(0);
   const lastMoveTimeRef = useRef<number>(0);
   const lastMoveXRef = useRef<number>(0);
   const lastMoveYRef = useRef<number>(0);
 
-  const getDirection = useCallback((deltaX: number, deltaY: number): GestureState['direction'] => {
+  const getDirection = useCallback((deltaX: number, deltaY: number): GestureState["direction"] => {
     const absX = Math.abs(deltaX);
     const absY = Math.abs(deltaY);
-    
+
     if (absX > absY) {
-      return deltaX > 0 ? 'right' : 'left';
+      return deltaX > 0 ? "right" : "left";
     } else {
-      return deltaY > 0 ? 'down' : 'up';
+      return deltaY > 0 ? "down" : "up";
     }
   }, []);
 
-  const calculateVelocity = useCallback((deltaX: number, deltaY: number, deltaTime: number): number => {
-    if (deltaTime === 0) return 0;
-    const distance = Math.sqrt(deltaX * deltaX + deltaY * deltaY);
-    return distance / deltaTime;
-  }, []);
+  const calculateVelocity = useCallback(
+    (deltaX: number, deltaY: number, deltaTime: number): number => {
+      if (deltaTime === 0) return 0;
+      const distance = Math.sqrt(deltaX * deltaX + deltaY * deltaY);
+      return distance / deltaTime;
+    },
+    []
+  );
 
   const handleTouchStart = useCallback((e: TouchEvent) => {
     if (e.touches.length !== 1) return;
-    
+
     const touch = e.touches[0];
     const now = Date.now();
-    
+
     startTimeRef.current = now;
     lastMoveTimeRef.current = now;
     lastMoveXRef.current = touch.clientX;
@@ -97,121 +104,144 @@ export function useGestures(options: GestureOptions = { /* Empty */ }) {
       deltaX: 0,
       deltaY: 0,
       direction: null,
-      velocity: 0
+      velocity: 0,
     });
 
     setIsPullToRefreshActive(false);
     setPullToRefreshProgress(0);
   }, []);
 
-  const handleTouchMove = useCallback((e: TouchEvent) => {
-    if (e.touches.length !== 1 || !gestureState.isDragging) return;
-    
-    const touch = e.touches[0];
-    const now = Date.now();
-    
-    const deltaX = touch.clientX - gestureState.startX;
-    const deltaY = touch.clientY - gestureState.startY;
-    const deltaTime = now - lastMoveTimeRef.current;
-    const deltaMoveX = touch.clientX - lastMoveXRef.current;
-    const deltaMoveY = touch.clientY - lastMoveYRef.current;
-    
-    const velocity = calculateVelocity(deltaMoveX, deltaMoveY, deltaTime);
-    const direction = getDirection(deltaX, deltaY);
+  const handleTouchMove = useCallback(
+    (e: TouchEvent) => {
+      if (e.touches.length !== 1 || !gestureState.isDragging) return;
 
-    // Check for pull-to-refresh (only if we're at the top of the page)
-    const isAtTop = window.scrollY === 0;
-    const isPullingDown = deltaY > 0 && direction === 'down';
-    
-    if (isAtTop && isPullingDown && onPullToRefresh) {
-      const progress = Math.min(deltaY / pullToRefreshThreshold, 1);
-      setPullToRefreshProgress(progress);
-      setIsPullToRefreshActive(progress >= 1);
-      
-      if (preventDefault) {
-        e.preventDefault();
+      const touch = e.touches[0];
+      const now = Date.now();
+
+      const deltaX = touch.clientX - gestureState.startX;
+      const deltaY = touch.clientY - gestureState.startY;
+      const deltaTime = now - lastMoveTimeRef.current;
+      const deltaMoveX = touch.clientX - lastMoveXRef.current;
+      const deltaMoveY = touch.clientY - lastMoveYRef.current;
+
+      const velocity = calculateVelocity(deltaMoveX, deltaMoveY, deltaTime);
+      const direction = getDirection(deltaX, deltaY);
+
+      // Check for pull-to-refresh (only if we're at the top of the page)
+      const isAtTop = window.scrollY === 0;
+      const isPullingDown = deltaY > 0 && direction === "down";
+
+      if (isAtTop && isPullingDown && onPullToRefresh) {
+        const progress = Math.min(deltaY / pullToRefreshThreshold, 1);
+        setPullToRefreshProgress(progress);
+        setIsPullToRefreshActive(progress >= 1);
+
+        if (preventDefault) {
+          e.preventDefault();
+        }
       }
-    }
 
-    setGestureState({
-      ...gestureState,
-      currentX: touch.clientX,
-      currentY: touch.clientY,
-      deltaX,
-      deltaY,
-      direction,
-      velocity
-    });
+      setGestureState({
+        ...gestureState,
+        currentX: touch.clientX,
+        currentY: touch.clientY,
+        deltaX,
+        deltaY,
+        direction,
+        velocity,
+      });
 
-    lastMoveTimeRef.current = now;
-    lastMoveXRef.current = touch.clientX;
-    lastMoveYRef.current = touch.clientY;
-  }, [gestureState, pullToRefreshThreshold, onPullToRefresh, preventDefault, calculateVelocity, getDirection]);
+      lastMoveTimeRef.current = now;
+      lastMoveXRef.current = touch.clientX;
+      lastMoveYRef.current = touch.clientY;
+    },
+    [
+      gestureState,
+      pullToRefreshThreshold,
+      onPullToRefresh,
+      preventDefault,
+      calculateVelocity,
+      getDirection,
+    ]
+  );
 
-  const handleTouchEnd = useCallback((e: TouchEvent) => {
-    if (!gestureState.isDragging) return;
+  const handleTouchEnd = useCallback(
+    (e: TouchEvent) => {
+      if (!gestureState.isDragging) return;
 
-    const { deltaX, deltaY, direction, velocity } = gestureState;
-    const totalTime = Date.now() - startTimeRef.current;
-    
-    // Reset gesture state
-    setGestureState({
-      isDragging: false,
-      startX: 0,
-      startY: 0,
-      currentX: 0,
-      currentY: 0,
-      deltaX: 0,
-      deltaY: 0,
-      direction: null,
-      velocity: 0
-    });
+      const { deltaX, deltaY, direction, velocity } = gestureState;
+      const totalTime = Date.now() - startTimeRef.current;
 
-    // Handle pull-to-refresh
-    if (isPullToRefreshActive && onPullToRefresh) {
-      onPullToRefresh();
+      // Reset gesture state
+      setGestureState({
+        isDragging: false,
+        startX: 0,
+        startY: 0,
+        currentX: 0,
+        currentY: 0,
+        deltaX: 0,
+        deltaY: 0,
+        direction: null,
+        velocity: 0,
+      });
+
+      // Handle pull-to-refresh
+      if (isPullToRefreshActive && onPullToRefresh) {
+        onPullToRefresh();
+        setIsPullToRefreshActive(false);
+        setPullToRefreshProgress(0);
+        return;
+      }
+
+      // Check if gesture meets threshold and velocity requirements
+      const meetsThreshold = Math.abs(deltaX) > swipeThreshold || Math.abs(deltaY) > swipeThreshold;
+      const meetsVelocity = velocity > velocityThreshold;
+
+      if (meetsThreshold && meetsVelocity && direction) {
+        switch (direction) {
+          case "left":
+            onSwipeLeft?.();
+            break;
+          case "right":
+            onSwipeRight?.();
+            break;
+          case "up":
+            onSwipeUp?.();
+            break;
+          case "down":
+            onSwipeDown?.();
+            break;
+        }
+      }
+
+      // Reset pull-to-refresh
       setIsPullToRefreshActive(false);
       setPullToRefreshProgress(0);
-      return;
-    }
-
-    // Check if gesture meets threshold and velocity requirements
-    const meetsThreshold = Math.abs(deltaX) > swipeThreshold || Math.abs(deltaY) > swipeThreshold;
-    const meetsVelocity = velocity > velocityThreshold;
-    
-    if (meetsThreshold && meetsVelocity && direction) {
-      switch (direction) {
-        case 'left':
-          onSwipeLeft?.();
-          break;
-        case 'right':
-          onSwipeRight?.();
-          break;
-        case 'up':
-          onSwipeUp?.();
-          break;
-        case 'down':
-          onSwipeDown?.();
-          break;
-      }
-    }
-
-    // Reset pull-to-refresh
-    setIsPullToRefreshActive(false);
-    setPullToRefreshProgress(0);
-  }, [gestureState, isPullToRefreshActive, onPullToRefresh, onSwipeLeft, onSwipeRight, onSwipeUp, onSwipeDown, swipeThreshold, velocityThreshold]);
+    },
+    [
+      gestureState,
+      isPullToRefreshActive,
+      onPullToRefresh,
+      onSwipeLeft,
+      onSwipeRight,
+      onSwipeUp,
+      onSwipeDown,
+      swipeThreshold,
+      velocityThreshold,
+    ]
+  );
 
   useEffect(() => {
     const element = document.body;
-    
-    element.addEventListener('touchstart', handleTouchStart, { passive: false });
-    element.addEventListener('touchmove', handleTouchMove, { passive: false });
-    element.addEventListener('touchend', handleTouchEnd, { passive: false });
+
+    element.addEventListener("touchstart", handleTouchStart, { passive: false });
+    element.addEventListener("touchmove", handleTouchMove, { passive: false });
+    element.addEventListener("touchend", handleTouchEnd, { passive: false });
 
     return () => {
-      element.removeEventListener('touchstart', handleTouchStart);
-      element.removeEventListener('touchmove', handleTouchMove);
-      element.removeEventListener('touchend', handleTouchEnd);
+      element.removeEventListener("touchstart", handleTouchStart);
+      element.removeEventListener("touchmove", handleTouchMove);
+      element.removeEventListener("touchend", handleTouchEnd);
     };
   }, [handleTouchStart, handleTouchMove, handleTouchEnd]);
 
@@ -219,7 +249,7 @@ export function useGestures(options: GestureOptions = { /* Empty */ }) {
     gestureState,
     isPullToRefreshActive,
     pullToRefreshProgress,
-    isDragging: gestureState.isDragging
+    isDragging: gestureState.isDragging,
   };
 }
 
@@ -231,7 +261,7 @@ export function useSwipeNavigation() {
   const goToNext = useCallback(() => {
     setIsTransitioning(true);
     setTimeout(() => {
-      setCurrentIndex(prev => prev + 1);
+      setCurrentIndex((prev) => prev + 1);
       setIsTransitioning(false);
     }, 150);
   }, []);
@@ -239,7 +269,7 @@ export function useSwipeNavigation() {
   const goToPrevious = useCallback(() => {
     setIsTransitioning(true);
     setTimeout(() => {
-      setCurrentIndex(prev => Math.max(0, prev - 1));
+      setCurrentIndex((prev) => Math.max(0, prev - 1));
       setIsTransitioning(false);
     }, 150);
   }, []);
@@ -256,7 +286,7 @@ export function useSwipeNavigation() {
     onSwipeLeft: goToNext,
     onSwipeRight: goToPrevious,
     swipeThreshold: 50,
-    velocityThreshold: 0.2
+    velocityThreshold: 0.2,
   });
 
   return {
@@ -265,7 +295,7 @@ export function useSwipeNavigation() {
     goToNext,
     goToPrevious,
     goToIndex,
-    gestureState
+    gestureState,
   };
 }
 
@@ -276,12 +306,12 @@ export function usePullToRefresh(onRefresh: () => Promise<void>) {
 
   const handleRefresh = useCallback(async () => {
     if (isRefreshing) return;
-    
+
     setIsRefreshing(true);
     try {
       await onRefresh();
     } catch (_error) {
-      logger.error('Pull-to-refresh failed:', errorToContext(error));
+      logger._error("Pull-to-refresh failed:", errorToContext(_error));
     } finally {
       setIsRefreshing(false);
     }
@@ -289,7 +319,7 @@ export function usePullToRefresh(onRefresh: () => Promise<void>) {
 
   const { pullToRefreshProgress, isPullToRefreshActive } = useGestures({
     onPullToRefresh: handleRefresh,
-    pullToRefreshThreshold: 120
+    pullToRefreshThreshold: 120,
   });
 
   useEffect(() => {
@@ -300,6 +330,6 @@ export function usePullToRefresh(onRefresh: () => Promise<void>) {
     isRefreshing,
     progress,
     isPullToRefreshActive,
-    canRefresh: isPullToRefreshActive
+    canRefresh: isPullToRefreshActive,
   };
 }

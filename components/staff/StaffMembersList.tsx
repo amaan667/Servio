@@ -43,7 +43,10 @@ const StaffMembersList: React.FC<StaffMembersListProps> = ({
   const [adding, setAdding] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [shiftModalOpen, setShiftModalOpen] = useState(false);
-  const [selectedStaffForShift, setSelectedStaffForShift] = useState<{ id: string; name: string } | null>(null);
+  const [selectedStaffForShift, setSelectedStaffForShift] = useState<{
+    id: string;
+    name: string;
+  } | null>(null);
 
   const handleAddStaff = async () => {
     if (!name.trim()) {
@@ -71,7 +74,7 @@ const StaffMembersList: React.FC<StaffMembersListProps> = ({
       setRole("Server");
       if (onStaffAdded) onStaffAdded();
     } catch (_err) {
-      setError(err instanceof Error ? err.message : "Failed to add staff member");
+      setError(_err instanceof Error ? _err.message : "Failed to add staff member");
     } finally {
       setAdding(false);
     }

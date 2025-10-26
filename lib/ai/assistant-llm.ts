@@ -397,7 +397,7 @@ export async function planAssistantAction(
 
     throw new Error("Failed to parse AI response: no parsed or content available");
   } catch (_error) {
-    logger.error(`[AI ASSISTANT] Planning error with ${selectedModel}:`, errorToContext(error));
+    logger._error(`[AI ASSISTANT] Planning _error with ${selectedModel}:`, errorToContext(_error));
 
     // If we used mini and got an error, try falling back to full model
     if (selectedModel === MODEL_MINI && !usedFallback) {
@@ -442,7 +442,10 @@ export async function planAssistantAction(
           };
         }
       } catch (fallbackError) {
-        logger.error("[AI ASSISTANT] Fallback to GPT-4o also failed:", fallbackError as Record<string, unknown>);
+        logger.error(
+          "[AI ASSISTANT] Fallback to GPT-4o also failed:",
+          fallbackError as Record<string, unknown>
+        );
         // Re-throw the fallback error
         if (fallbackError instanceof z.ZodError) {
           logger.error(
@@ -455,10 +458,13 @@ export async function planAssistantAction(
     }
 
     // If original error wasn't from mini, or fallback also failed
-    if (error instanceof z.ZodError) {
-      logger.error("[AI ASSISTANT] Zod validation errors:", JSON.stringify(error.errors, null, 2));
+    if (_error instanceof z.ZodError) {
+      logger._error(
+        "[AI ASSISTANT] Zod validation errors:",
+        JSON.stringify(_error.errors, null, 2)
+      );
     }
-    throw error;
+    throw _error;
   }
 }
 
@@ -493,7 +499,7 @@ User Role: ${context.userRole}`;
 
     return completion.choices[0].message.content || "Action explanation unavailable.";
   } catch (_error) {
-    logger.error("[AI ASSISTANT] Explanation error:", error as Record<string, unknown>);
+    logger._error("[AI ASSISTANT] Explanation error:", _error as Record<string, unknown>);
     return "Unable to generate explanation.";
   }
 }
@@ -528,7 +534,7 @@ Focus on common tasks, optimizations, or insights based on the data.`;
     const response = JSON.parse(completion.choices[0].message.content || "{ /* Empty */ }");
     return response.suggestions || [];
   } catch (_error) {
-    logger.error("[AI ASSISTANT] Suggestion generation error:", error as Record<string, unknown>);
+    logger._error("[AI ASSISTANT] Suggestion generation error:", _error as Record<string, unknown>);
     return [];
   }
 }

@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect } from "react";
 
 export type StaffRow = {
   id: string;
@@ -8,11 +8,11 @@ export type StaffRow = {
   created_at: string;
 };
 
-export type LegacyShift = { 
-  id: string; 
-  staff_id: string; 
-  start_time: string; 
-  end_time: string; 
+export type LegacyShift = {
+  id: string;
+  staff_id: string;
+  start_time: string;
+  end_time: string;
   area?: string;
   staff_name: string;
   staff_role: string;
@@ -25,11 +25,15 @@ export interface StaffCounts {
   active_shifts_count: number;
 }
 
-export function useStaffManagement(venueId: string, initialStaff?: StaffRow[], initialCounts?: StaffCounts) {
+export function useStaffManagement(
+  venueId: string,
+  initialStaff?: StaffRow[],
+  initialCounts?: StaffCounts
+) {
   // Use initialStaff directly, no empty array fallback to prevent flicker
   const [staff, setStaff] = useState<StaffRow[]>(initialStaff || []);
-  const [name, setName] = useState('');
-  const [role, setRole] = useState('Server');
+  const [name, setName] = useState("");
+  const [role, setRole] = useState("Server");
   const [adding, setAdding] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [allShifts, setAllShifts] = useState<LegacyShift[]>([]);
@@ -41,19 +45,21 @@ export function useStaffManagement(venueId: string, initialStaff?: StaffRow[], i
   useEffect(() => {
     const loadStaff = async () => {
       if (staffLoaded) return;
-      
+
       try {
         const res = await fetch(`/api/staff/check?venue_id=${encodeURIComponent(venueId)}`);
-        const j = await res.json().catch(() => ({ /* Empty */ }));
+        const j = await res.json().catch(() => ({
+          /* Empty */
+        }));
         if (res.ok && !j?.error) {
           setStaff(j.staff || []);
           setStaffLoaded(true);
         } else {
-      // Intentionally empty
-    }
+          // Intentionally empty
+        }
       } catch (_e) {
-      // Error silently handled
-    }
+        // Error silently handled
+      }
     };
 
     if (!staffLoaded) {
@@ -65,7 +71,9 @@ export function useStaffManagement(venueId: string, initialStaff?: StaffRow[], i
   useEffect(() => {
     const loadShifts = async () => {
       const res = await fetch(`/api/staff/shifts/list?venue_id=${encodeURIComponent(venueId)}`);
-      const j = await res.json().catch(() => ({ /* Empty */ }));
+      const j = await res.json().catch(() => ({
+        /* Empty */
+      }));
       if (res.ok && !j?.error) {
         const shifts = j.shifts || [];
         setAllShifts(shifts);
@@ -80,7 +88,7 @@ export function useStaffManagement(venueId: string, initialStaff?: StaffRow[], i
 
   const addStaff = async () => {
     if (!name.trim()) {
-      setError('Please enter a name');
+      setError("Please enter a name");
       return;
     }
 
@@ -88,23 +96,23 @@ export function useStaffManagement(venueId: string, initialStaff?: StaffRow[], i
     setError(null);
 
     try {
-      const res = await fetch('/api/staff/add', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+      const res = await fetch("/api/staff/add", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ venue_id: venueId, name, role }),
       });
 
       const data = await res.json();
 
       if (!res.ok) {
-        throw new Error(data.error || 'Failed to add staff member');
+        throw new Error(data.error || "Failed to add staff member");
       }
 
-      setStaff(prev => [...prev, data.staff]);
-      setName('');
-      setRole('Server');
+      setStaff((prev) => [...prev, data.staff]);
+      setName("");
+      setRole("Server");
     } catch (_err) {
-      setError(err.message);
+      setError(_err.message);
     } finally {
       setAdding(false);
     }
@@ -113,22 +121,26 @@ export function useStaffManagement(venueId: string, initialStaff?: StaffRow[], i
   const toggleStaffActive = async (staffId: string, currentActive: boolean) => {
     try {
       const newActiveState = !currentActive;
-      
-      const res = await fetch('/api/staff/toggle', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+
+      const res = await fetch("/api/staff/toggle", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ id: staffId, active: newActiveState }),
       });
 
       if (!res.ok) {
-        const data = await res.json().catch(() => ({ /* Empty */ }));
-        throw new Error(data.error || 'Failed to toggle staff status');
+        const data = await res.json().catch(() => ({
+          /* Empty */
+        }));
+        throw new Error(data.error || "Failed to toggle staff status");
       }
 
       // Update local state immediately
-      setStaff(prev => prev.map(s => s.id === staffId ? { ...s, active: newActiveState } : s));
+      setStaff((prev) =>
+        prev.map((s) => (s.id === staffId ? { ...s, active: newActiveState } : s))
+      );
     } catch (_err) {
-      setError(err instanceof Error ? err.message : 'Failed to toggle staff status');
+      setError(_err instanceof Error ? _err.message : "Failed to toggle staff status");
     }
   };
 
@@ -145,7 +157,6 @@ export function useStaffManagement(venueId: string, initialStaff?: StaffRow[], i
     allShifts,
     loading,
     addStaff,
-    toggleStaffActive
+    toggleStaffActive,
   };
 }
-

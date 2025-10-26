@@ -33,7 +33,7 @@ class PerformanceMonitor {
       return result;
     } catch (_error) {
       success = false;
-      throw error;
+      throw _error;
     } finally {
       const duration = performance.now() - startTime;
 
@@ -46,7 +46,9 @@ class PerformanceMonitor {
       });
 
       // Log slow operations (>1s)
-      if (duration > 1000) { /* Empty */ }
+      if (duration > 1000) {
+        /* Empty */
+      }
     }
   }
 
@@ -93,7 +95,9 @@ class PerformanceMonitor {
    */
   getAllStats(): Record<string, ReturnType<PerformanceMonitor["getStats"]>> {
     const operations = new Set(this.metrics.map((m) => m.operationName));
-    const stats: Record<string, ReturnType<PerformanceMonitor["getStats"]>> = { /* Empty */ };
+    const stats: Record<string, ReturnType<PerformanceMonitor["getStats"]>> = {
+      /* Empty */
+    };
 
     operations.forEach((op) => {
       stats[op] = this.getStats(op);

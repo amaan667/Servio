@@ -18,7 +18,7 @@ export async function PATCH(
   const { orderId } = await params;
 
   try {
-    const body = await request.json();
+    const body = await _request.json();
     const { new_payment_mode, venue_id } = body;
 
     logger.info("[UPDATE PAYMENT MODE] Customer changing payment method", {
@@ -104,7 +104,7 @@ export async function PATCH(
     });
   } catch (_error) {
     logger.error("[UPDATE PAYMENT MODE] Unexpected error", {
-      data: { orderId, error: error instanceof Error ? error.message : String(error) },
+      data: { orderId, error: _error instanceof Error ? _error.message : String(_error) },
     });
     return NextResponse.json({ error: "Internal server error" }, { status: 500 });
   }

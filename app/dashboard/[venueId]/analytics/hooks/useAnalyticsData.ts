@@ -154,7 +154,7 @@ export function useAnalyticsData(
 
       setFilteredOrders(validOrders);
     } catch (_err) {
-      const errorMessage = err instanceof Error ? err.message : "Failed to load analytics data";
+      const errorMessage = _err instanceof Error ? _err.message : "Failed to load analytics data";
       setError(errorMessage);
     } finally {
       setLoading(false);

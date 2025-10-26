@@ -93,8 +93,8 @@ class PerformanceMonitor {
         });
         observer.observe({ entryTypes: [name.toLowerCase()] });
       } catch (_error) {
-      // Error handled silently
-    }
+        // Error handled silently
+      }
     }
   }
 
@@ -112,8 +112,8 @@ class PerformanceMonitor {
         });
         observer.observe({ entryTypes: ["navigation"] });
       } catch (_error) {
-      // Error handled silently
-    }
+        // Error handled silently
+      }
     }
   }
 
@@ -167,9 +167,9 @@ class PerformanceMonitor {
         const end = performance.now();
         this.recordCustomMetric("api-error", end - start, {
           url,
-          error: error instanceof Error ? error.message : "Unknown error",
+          error: _error instanceof Error ? _error.message : "Unknown _error",
         });
-        throw error;
+        throw _error;
       }
     };
   }
@@ -241,8 +241,8 @@ class PerformanceMonitor {
         });
         observer.observe({ entryTypes: ["resource"] });
       } catch (_error) {
-      // Error handled silently
-    }
+        // Error handled silently
+      }
     }
   }
 
@@ -259,8 +259,8 @@ class PerformanceMonitor {
         });
         observer.observe({ entryTypes: ["longtask"] });
       } catch (_error) {
-      // Error handled silently
-    }
+        // Error handled silently
+      }
     }
   }
 
@@ -311,7 +311,9 @@ class PerformanceMonitor {
         deviceMemory: (navigator as { deviceMemory?: number }).deviceMemory,
         hardwareConcurrency: navigator.hardwareConcurrency,
       }),
-    }).catch((error) => { /* Empty */ });
+    }).catch((error) => {
+      /* Empty */
+    });
   }
 
   private generateId(): string {

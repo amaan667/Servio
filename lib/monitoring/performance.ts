@@ -3,7 +3,7 @@
  * Tracks and optimizes application performance
  */
 
-import { logger } from '@/lib/logger';
+import { logger } from "@/lib/logger";
 
 interface PerformanceMetric {
   name: string;
@@ -34,7 +34,7 @@ class PerformanceMonitor {
 
     // Log slow operations
     if (duration > 1000) {
-      logger.warn('[PERFORMANCE] Slow operation detected', {
+      logger.warn("[PERFORMANCE] Slow operation detected", {
         operation: name,
         duration,
         tags,
@@ -53,8 +53,10 @@ class PerformanceMonitor {
    * Calculate percentiles for an operation
    */
   getPercentiles(name: string): { p50: number; p95: number; p99: number } | null {
-    const values = this.getMetrics(name).map((m) => m.value).sort((a, b) => a - b);
-    
+    const values = this.getMetrics(name)
+      .map((m) => m.value)
+      .sort((a, b) => a - b);
+
     if (values.length === 0) return null;
 
     const p50Index = Math.floor(values.length * 0.5);
@@ -72,23 +74,25 @@ class PerformanceMonitor {
    * Get summary of all operations
    */
   getSummary(): Record<string, { count: number; avg: number; p95: number }> {
-    const summary: Record<string, { count: number; avg: number; p95: number }> = { /* Empty */ };
-    
+    const summary: Record<string, { count: number; avg: number; p95: number }> = {
+      /* Empty */
+    };
+
     const uniqueNames = [...new Set(this.metrics.map((m) => m.name))];
-    
+
     for (const name of uniqueNames) {
       const metrics = this.getMetrics(name);
       const values = metrics.map((m) => m.value);
       const avg = values.reduce((sum, val) => sum + val, 0) / values.length;
       const percentiles = this.getPercentiles(name);
-      
+
       summary[name] = {
         count: metrics.length,
         avg: Math.round(avg),
         p95: percentiles?.p95 || 0,
       };
     }
-    
+
     return summary;
   }
 
@@ -138,9 +142,7 @@ export class Timer {
  * Decorator for timing async functions
  */
 export function measurePerformance(operationName: string) {
-  return function <T extends (...args: unknown[]) => Promise<unknown>>(
-    target: T
-  ): T {
+  return function <T extends (...args: unknown[]) => Promise<unknown>>(target: T): T {
     return (async (...args: unknown[]) => {
       const timer = new Timer(operationName);
       try {
@@ -149,7 +151,7 @@ export function measurePerformance(operationName: string) {
         return result;
       } catch (_error) {
         timer.end();
-        throw error;
+        throw _error;
       }
     }) as T;
   };
@@ -185,10 +187,7 @@ export function memoize<T extends (...args: unknown[]) => unknown>(
 /**
  * Debounce function calls
  */
-export function debounce<T extends (...args: unknown[]) => unknown>(
-  fn: T,
-  delay: number
-): T {
+export function debounce<T extends (...args: unknown[]) => unknown>(fn: T, delay: number): T {
   let timeoutId: NodeJS.Timeout;
 
   return ((...args: unknown[]) => {
@@ -200,10 +199,7 @@ export function debounce<T extends (...args: unknown[]) => unknown>(
 /**
  * Throttle function calls
  */
-export function throttle<T extends (...args: unknown[]) => unknown>(
-  fn: T,
-  limit: number
-): T {
+export function throttle<T extends (...args: unknown[]) => unknown>(fn: T, limit: number): T {
   let inThrottle: boolean;
 
   return ((...args: unknown[]) => {
@@ -220,14 +216,14 @@ export function throttle<T extends (...args: unknown[]) => unknown>(
  */
 export async function reportPerformanceMetrics(): Promise<void> {
   const summary = performanceMonitor.getSummary();
-  
+
   // Log to Sentry or your monitoring service
-  logger.info('[PERFORMANCE SUMMARY]', { data: summary });
-  
+  logger.info("[PERFORMANCE SUMMARY]", { data: summary });
+
   // Check for performance degradation
   for (const [operation, stats] of Object.entries(summary)) {
     if (stats.p95 > 2000) {
-      logger.warn('[PERFORMANCE] Operation degraded', {
+      logger.warn("[PERFORMANCE] Operation degraded", {
         operation,
         p95: stats.p95,
         threshold: 2000,
@@ -237,6 +233,6 @@ export async function reportPerformanceMetrics(): Promise<void> {
 }
 
 // Report metrics every 5 minutes in production
-if (typeof setInterval !== 'undefined' && process.env.NODE_ENV === 'production') {
+if (typeof setInterval !== "undefined" && process.env.NODE_ENV === "production") {
   setInterval(reportPerformanceMetrics, 5 * 60 * 1000);
 }

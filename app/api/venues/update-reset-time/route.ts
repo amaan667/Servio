@@ -4,7 +4,7 @@ import { logger } from "@/lib/logger";
 
 export async function POST(_request: NextRequest) {
   try {
-    const { venueId, resetTime } = await request.json();
+    const { venueId, resetTime } = await _request.json();
 
     if (!venueId || !resetTime) {
       return NextResponse.json({ error: "Venue ID and reset time are required" }, { status: 400 });
@@ -20,7 +20,7 @@ export async function POST(_request: NextRequest) {
     }
 
     // Authenticate using Authorization header
-    const auth = await authenticateRequest(request);
+    const auth = await authenticateRequest(_request);
     if (!auth.success || !auth.user || !auth.supabase) {
       return NextResponse.json({ error: auth.error || "Unauthorized" }, { status: 401 });
     }
@@ -51,7 +51,7 @@ export async function POST(_request: NextRequest) {
     });
   } catch (_error) {
     logger.error("Error in update reset time API:", {
-      error: error instanceof Error ? error.message : "Unknown error",
+      error: _error instanceof Error ? _error.message : "Unknown _error",
     });
     return NextResponse.json({ error: "Internal server error" }, { status: 500 });
   }

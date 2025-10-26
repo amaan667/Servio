@@ -4,9 +4,9 @@
  * Manages menu items state and operations
  */
 
-import { useState, useEffect, useCallback } from 'react';
-import { supabaseBrowser as createClient } from '@/lib/supabase';
-import { logger } from '@/lib/logger';
+import { useState, useEffect, useCallback } from "react";
+import { supabaseBrowser as createClient } from "@/lib/supabase";
+import { logger } from "@/lib/logger";
 
 interface MenuItem {
   id: string;
@@ -29,21 +29,21 @@ export function useMenuItems(venueId: string) {
     try {
       setLoading(true);
       setError(null);
-      
+
       const supabase = createClient();
       const { data, error: fetchError } = await supabase
-        .from('menu_items')
-        .select('*')
-        .eq('venue_id', venueId)
-        .order('category')
-        .order('position');
+        .from("menu_items")
+        .select("*")
+        .eq("venue_id", venueId)
+        .order("category")
+        .order("position");
 
       if (fetchError) throw fetchError;
 
       setMenuItems(data || []);
     } catch (_err) {
-      logger.error('Error fetching menu items', { venueId, error: err });
-      setError('Failed to load menu items');
+      logger.error("Error fetching menu items", { venueId, error: _err });
+      setError("Failed to load menu items");
     } finally {
       setLoading(false);
     }
@@ -55,22 +55,22 @@ export function useMenuItems(venueId: string) {
     }
   }, [venueId, fetchMenuItems]);
 
-  const addMenuItem = useCallback(async (item: Omit<MenuItem, 'id' | 'created_at'>) => {
+  const addMenuItem = useCallback(async (item: Omit<MenuItem, "id" | "created_at">) => {
     try {
       const supabase = createClient();
       const { data, error: insertError } = await supabase
-        .from('menu_items')
+        .from("menu_items")
         .insert([item])
         .select()
         .single();
 
       if (insertError) throw insertError;
 
-      setMenuItems(prev => [...prev, data]);
+      setMenuItems((prev) => [...prev, data]);
       return { success: true, data };
     } catch (_err) {
-      logger.error('Error adding menu item', { error: err });
-      return { success: false, error: err };
+      logger.error("Error adding menu item", { error: _err });
+      return { success: false, error: _err };
     }
   }, []);
 
@@ -78,52 +78,55 @@ export function useMenuItems(venueId: string) {
     try {
       const supabase = createClient();
       const { data, error: updateError } = await supabase
-        .from('menu_items')
+        .from("menu_items")
         .update(updates)
-        .eq('id', id)
+        .eq("id", id)
         .select()
         .single();
 
       if (updateError) throw updateError;
 
-      setMenuItems(prev => prev.map(item => item.id === id ? data : item));
+      setMenuItems((prev) => prev.map((item) => (item.id === id ? data : item)));
       return { success: true, data };
     } catch (_err) {
-      logger.error('Error updating menu item', { id, error: err });
-      return { success: false, error: err };
+      logger.error("Error updating menu item", { id, error: _err });
+      return { success: false, error: _err };
     }
   }, []);
 
   const deleteMenuItem = useCallback(async (id: string) => {
     try {
       const supabase = createClient();
-      const { error: deleteError } = await supabase
-        .from('menu_items')
-        .delete()
-        .eq('id', id);
+      const { error: deleteError } = await supabase.from("menu_items").delete().eq("id", id);
 
       if (deleteError) throw deleteError;
 
-      setMenuItems(prev => prev.filter(item => item.id !== id));
+      setMenuItems((prev) => prev.filter((item) => item.id !== id));
       return { success: true };
     } catch (_err) {
-      logger.error('Error deleting menu item', { id, error: err });
-      return { success: false, error: err };
+      logger.error("Error deleting menu item", { id, error: _err });
+      return { success: false, error: _err };
     }
   }, []);
 
-  const toggleAvailability = useCallback(async (id: string, isAvailable: boolean) => {
-    return updateMenuItem(id, { is_available: isAvailable });
-  }, [updateMenuItem]);
+  const toggleAvailability = useCallback(
+    async (id: string, isAvailable: boolean) => {
+      return updateMenuItem(id, { is_available: isAvailable });
+    },
+    [updateMenuItem]
+  );
 
-  const updatePrice = useCallback(async (id: string, price: number) => {
-    return updateMenuItem(id, { price });
-  }, [updateMenuItem]);
+  const updatePrice = useCallback(
+    async (id: string, price: number) => {
+      return updateMenuItem(id, { price });
+    },
+    [updateMenuItem]
+  );
 
   const reorderItems = useCallback(async (items: MenuItem[]) => {
     try {
       const supabase = createClient();
-      
+
       // Update positions
       const updates = items.map((item, index) => ({
         id: item.id,
@@ -131,16 +134,16 @@ export function useMenuItems(venueId: string) {
       }));
 
       const { error: updateError } = await supabase
-        .from('menu_items')
-        .upsert(updates, { onConflict: 'id' });
+        .from("menu_items")
+        .upsert(updates, { onConflict: "id" });
 
       if (updateError) throw updateError;
 
       setMenuItems(items);
       return { success: true };
     } catch (_err) {
-      logger.error('Error reordering items', { error: err });
-      return { success: false, error: err };
+      logger.error("Error reordering items", { error: _err });
+      return { success: false, error: _err };
     }
   }, []);
 
@@ -157,4 +160,3 @@ export function useMenuItems(venueId: string) {
     reorderItems,
   };
 }
-

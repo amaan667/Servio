@@ -32,7 +32,6 @@ export async function POST(req: NextRequest) {
   const requestId = Math.random().toString(36).substring(7);
 
   try {
-
     const body = await req.json();
     const {
       venue_id: venueId,
@@ -127,7 +126,6 @@ export async function POST(req: NextRequest) {
     }> = [];
 
     for (let pageIndex = 0; pageIndex < pdfImages.length; pageIndex++) {
-
       const extractedItems = await extractMenuFromImage(pdfImages[pageIndex]);
       pdfExtractedItems.push(...extractedItems.map((item) => ({ ...item, page: pageIndex })));
 
@@ -135,7 +133,6 @@ export async function POST(req: NextRequest) {
       positions.forEach((pos) => {
         pdfPositions.push({ ...pos, page: pageIndex });
       });
-
     }
 
     // Step 3: Combine data
@@ -256,7 +253,7 @@ export async function POST(req: NextRequest) {
     });
   } catch (_err) {
     const _duration = Date.now() - startTime;
-    const errorMessage = err instanceof Error ? err.message : "Processing failed";
+    const errorMessage = _err instanceof Error ? _err.message : "Processing failed";
     logger.error(`[REPROCESS ${requestId}] Error:`, { error: errorMessage });
     return NextResponse.json({ ok: false, error: errorMessage }, { status: 500 });
   }

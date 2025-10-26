@@ -14,8 +14,8 @@ const webhookSecret = process.env.STRIPE_WEBHOOK_SECRET!;
 
 export async function POST(_request: NextRequest) {
   try {
-    const body = await request.text();
-    const signature = request.headers.get("stripe-signature");
+    const body = await _request.text();
+    const signature = _request.headers.get("stripe-signature");
 
     if (!signature) {
       return NextResponse.json({ error: "No signature" }, { status: 400 });
@@ -58,14 +58,13 @@ export async function POST(_request: NextRequest) {
 
     return NextResponse.json({ received: true });
   } catch (_error) {
-    const errorMessage = error instanceof Error ? error.message : "Unknown error";
+    const errorMessage = _error instanceof Error ? _error.message : "Unknown _error";
     apiLogger.error("[STRIPE WEBHOOK] Error:", { error: errorMessage });
     return NextResponse.json({ error: errorMessage }, { status: 400 });
   }
 }
 
 async function handleCheckoutCompleted(session: Stripe.Checkout.Session) {
-
   apiLogger.debug("[SUBSCRIPTION WEBHOOK] ===== CHECKOUT COMPLETED =====");
   apiLogger.debug("[SUBSCRIPTION WEBHOOK] handleCheckoutCompleted called with session:", {
     id: session.id,
@@ -84,7 +83,6 @@ async function handleCheckoutCompleted(session: Stripe.Checkout.Session) {
   apiLogger.debug("[SUBSCRIPTION WEBHOOK] Extracted data:", { organizationId, tier, userId });
 
   if (!organizationId || !tier) {
-
     apiLogger.error(
       "[SUBSCRIPTION WEBHOOK] ❌ Missing required metadata in checkout session:",
       session.metadata

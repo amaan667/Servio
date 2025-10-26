@@ -54,7 +54,7 @@ export function useDailyReset(venueId: string) {
         logger.error("🔄 [DAILY RESET HOOK] Reset check failed:", result);
       }
     } catch (_error) {
-      logger.error("🔄 [DAILY RESET HOOK] Error checking daily reset:", errorToContext(error));
+      logger._error("🔄 [DAILY RESET HOOK] Error checking daily reset:", errorToContext(_error));
     } finally {
       setIsChecking(false);
     }
@@ -65,7 +65,6 @@ export function useDailyReset(venueId: string) {
     if (venueId) {
       checkAndReset();
     }
-     
   }, [venueId]);
 
   return {

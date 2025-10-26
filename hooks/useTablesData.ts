@@ -1,6 +1,6 @@
-import { useState, useEffect, useCallback } from 'react';
-import { supabaseBrowser as createClient } from '@/lib/supabase';
-import { logger } from '@/lib/logger';
+import { useState, useEffect, useCallback } from "react";
+import { supabaseBrowser as createClient } from "@/lib/supabase";
+import { logger } from "@/lib/logger";
 
 export interface TableWithSession {
   id: string;
@@ -11,7 +11,15 @@ export interface TableWithSession {
   table_created_at: string;
   merged_with_table_id: string | null;
   session_id: string | null;
-  status: 'FREE' | 'ORDERING' | 'IN_PREP' | 'READY' | 'SERVED' | 'AWAITING_BILL' | 'RESERVED' | 'CLOSED';
+  status:
+    | "FREE"
+    | "ORDERING"
+    | "IN_PREP"
+    | "READY"
+    | "SERVED"
+    | "AWAITING_BILL"
+    | "RESERVED"
+    | "CLOSED";
   order_id: string | null;
   opened_at: string | null;
   closed_at: string | null;
@@ -55,31 +63,31 @@ export function useTablesData(venueId: string) {
 
       const startTime = Date.now();
       const url = `/api/tables?venue_id=${encodeURIComponent(venueId)}`;
-      
+
       const response = await fetch(url);
       const fetchTime = Date.now() - startTime;
-      
-      logger.debug('[TABLES HOOK] Fetch response:', {
+
+      logger.debug("[TABLES HOOK] Fetch response:", {
         status: response.status,
         statusText: response.statusText,
-        ok: response.ok
+        ok: response.ok,
       });
-      
+
       if (!response.ok) {
         const errorText = await response.text();
-        logger.error('[TABLES HOOK] Response not OK:', {
+        logger.error("[TABLES HOOK] Response not OK:", {
           status: response.status,
           statusText: response.statusText,
-          body: errorText
+          body: errorText,
         });
         throw new Error(`HTTP ${response.status}: ${response.statusText}`);
       }
-      
+
       const data = await response.json();
-      logger.debug('[TABLES HOOK] Data received:', {
+      logger.debug("[TABLES HOOK] Data received:", {
         tablesCount: data.tables?.length || 0,
         hasError: !!data.error,
-        error: data.error
+        error: data.error,
       });
 
       if (data.error) {
@@ -88,13 +96,13 @@ export function useTablesData(venueId: string) {
 
       setTables(data.tables || []);
     } catch (_err) {
-      logger.error('[TABLES HOOK] Error fetching tables:', {
-        error: err,
-        message: err instanceof Error ? err.message : 'Unknown error',
+      logger.error("[TABLES HOOK] Error fetching tables:", {
+        error: _err,
+        message: _err instanceof Error ? _err.message : "Unknown error",
         venueId,
-        timestamp: new Date().toISOString()
+        timestamp: new Date().toISOString(),
       });
-      setError(err instanceof Error ? err.message : 'Failed to fetch tables');
+      setError(_err instanceof Error ? _err.message : "Failed to fetch tables");
     } finally {
       setLoading(false);
     }
@@ -112,13 +120,13 @@ export function useTablesData(venueId: string) {
 
     // Subscribe to table_sessions changes
     const subscription = supabase
-      .channel('table-sessions-changes')
+      .channel("table-sessions-changes")
       .on(
-        'postgres_changes',
+        "postgres_changes",
         {
-          event: '*',
-          schema: 'public',
-          table: 'table_sessions',
+          event: "*",
+          schema: "public",
+          table: "table_sessions",
           filter: `venue_id=eq.${venueId}`,
         },
         (_payload: unknown) => {
@@ -127,11 +135,11 @@ export function useTablesData(venueId: string) {
         }
       )
       .on(
-        'postgres_changes',
+        "postgres_changes",
         {
-          event: '*',
-          schema: 'public',
-          table: 'orders',
+          event: "*",
+          schema: "public",
+          table: "orders",
           filter: `venue_id=eq.${venueId}`,
         },
         (_payload: unknown) => {
@@ -140,11 +148,11 @@ export function useTablesData(venueId: string) {
         }
       )
       .on(
-        'postgres_changes',
+        "postgres_changes",
         {
-          event: '*',
-          schema: 'public',
-          table: 'tables',
+          event: "*",
+          schema: "public",
+          table: "tables",
           filter: `venue_id=eq.${venueId}`,
         },
         (_payload: unknown) => {
@@ -161,12 +169,12 @@ export function useTablesData(venueId: string) {
 
   // Add debugging to track table data changes
   useEffect(() => {
-    logger.debug('[TABLES HOOK] Table data changed:', {
+    logger.debug("[TABLES HOOK] Table data changed:", {
       venueId,
       tablesCount: tables.length,
-      tableIds: tables.map(t => t.id),
-      tableLabels: tables.map(t => t.label),
-      timestamp: new Date().toISOString()
+      tableIds: tables.map((t) => t.id),
+      tableLabels: tables.map((t) => t.label),
+      timestamp: new Date().toISOString(),
     });
   }, [tables, venueId]);
 

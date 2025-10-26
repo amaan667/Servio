@@ -2,7 +2,7 @@
  * Retry utility with exponential backoff for handling network failures
  */
 
-import { logger } from '@/lib/logger';
+import { logger } from "@/lib/logger";
 
 export interface RetryOptions {
   maxAttempts?: number;
@@ -27,20 +27,22 @@ export const DEFAULT_RETRY_OPTIONS: Required<RetryOptions> = {
     // Retry on network errors, timeouts, and 5xx server errors
     const err = error as RetryableError;
     return (
-      err?.message?.includes('network') ||
-      err?.message?.includes('timeout') ||
-      err?.message?.includes('fetch') ||
-      err?.code === 'NETWORK_ERROR' ||
-      err?.code === 'TIMEOUT_ERROR' ||
+      err?.message?.includes("network") ||
+      err?.message?.includes("timeout") ||
+      err?.message?.includes("fetch") ||
+      err?.code === "NETWORK_ERROR" ||
+      err?.code === "TIMEOUT_ERROR" ||
       (err?.status !== undefined && err.status >= 500 && err.status < 600) ||
       err?.status === 429 // Rate limited
     );
-  }
+  },
 };
 
 export async function withRetry<T>(
   operation: () => Promise<T>,
-  options: RetryOptions = { /* Empty */ }
+  options: RetryOptions = {
+    /* Empty */
+  }
 ): Promise<T> {
   const config = { ...DEFAULT_RETRY_OPTIONS, ...options };
   let lastError: unknown;
@@ -50,11 +52,11 @@ export async function withRetry<T>(
       const result = await operation();
       return result;
     } catch (_error) {
-      lastError = error;
+      lastError = _error;
 
       // Don't retry if this is the last attempt or error doesn't match retry condition
-      if (attempt === config.maxAttempts || !config.retryCondition(error)) {
-        throw error;
+      if (attempt === config.maxAttempts || !config.retryCondition(_error)) {
+        throw _error;
       }
 
       // Calculate delay with exponential backoff
@@ -63,12 +65,12 @@ export async function withRetry<T>(
         config.maxDelay
       );
 
-      const err = error as RetryableError;
+      const err = _error as RetryableError;
       logger.warn(`[RETRY] Attempt ${attempt} failed, retrying in ${delay}ms:`, err?.message);
-      
+
       // Add jitter to prevent thundering herd
       const jitter = Math.random() * 0.1 * delay;
-      await new Promise(resolve => setTimeout(resolve, delay + jitter));
+      await new Promise((resolve) => setTimeout(resolve, delay + jitter));
     }
   }
 
@@ -77,19 +79,23 @@ export async function withRetry<T>(
 
 export function createRetryableFetch(
   baseFetch: typeof fetch = fetch,
-  options: RetryOptions = { /* Empty */ }
+  options: RetryOptions = {
+    /* Empty */
+  }
 ) {
   return async (input: RequestInfo | URL, init?: RequestInit): Promise<Response> => {
     return withRetry(async () => {
       const response = await baseFetch(input, init);
-      
+
       // Throw error for non-2xx responses to trigger retry logic
       if (!response.ok) {
-        const error = new Error(`HTTP ${response.status}: ${response.statusText}`) as RetryableError;
+        const error = new Error(
+          `HTTP ${response.status}: ${response.statusText}`
+        ) as RetryableError;
         error.status = response.status;
         throw error;
       }
-      
+
       return response;
     }, options);
   };
@@ -98,7 +104,9 @@ export function createRetryableFetch(
 // Utility for Supabase operations with retry
 export async function withSupabaseRetry<T>(
   operation: () => Promise<{ data: T | null; error: unknown }>,
-  options: RetryOptions = { /* Empty */ }
+  options: RetryOptions = {
+    /* Empty */
+  }
 ): Promise<{ data: T | null; error: unknown }> {
   try {
     return await withRetry(operation, options);

@@ -3,7 +3,7 @@
  * @module lib/monitoring/sentry-enhanced
  */
 
-import * as Sentry from '@sentry/nextjs';
+import * as Sentry from "@sentry/nextjs";
 
 /**
  * Enhanced error tracking with custom context
@@ -31,12 +31,12 @@ export class EnhancedErrorTracker {
 
       // Set venue context
       if (context?.venue) {
-        scope.setContext('venue', context.venue);
+        scope.setContext("venue", context.venue);
       }
 
       // Set order context
       if (context?.order) {
-        scope.setContext('order', context.order);
+        scope.setContext("order", context.order);
       }
 
       // Set custom tags
@@ -67,7 +67,7 @@ export class EnhancedErrorTracker {
    */
   static captureMessage(
     message: string,
-    level: Sentry.SeverityLevel = 'info',
+    level: Sentry.SeverityLevel = "info",
     context?: {
       tags?: Record<string, string>;
       extra?: Record<string, unknown>;
@@ -94,11 +94,7 @@ export class EnhancedErrorTracker {
   /**
    * Start a transaction for performance monitoring
    */
-  static startTransaction(
-    name: string,
-    operation: string,
-    data?: Record<string, unknown>
-  ) {
+  static startTransaction(name: string, operation: string, data?: Record<string, unknown>) {
     return Sentry.startTransaction({
       name,
       op: operation,
@@ -114,22 +110,22 @@ export class EnhancedErrorTracker {
     method: string,
     handler: () => Promise<T>
   ): Promise<T> {
-    const transaction = this.startTransaction(`${method} ${route}`, 'http.server');
+    const transaction = this.startTransaction(`${method} ${route}`, "http.server");
 
     try {
       const result = await handler();
-      transaction.setStatus('ok');
+      transaction.setStatus("ok");
       return result;
     } catch (_error) {
-      transaction.setStatus('internal_error');
-      this.captureException(error as Error, {
+      transaction.setStatus("internal_error");
+      this.captureException(_error as Error, {
         tags: {
           route,
           method,
         },
-        level: 'error',
+        level: "error",
       });
-      throw error;
+      throw _error;
     } finally {
       transaction.finish();
     }
@@ -145,17 +141,17 @@ export class EnhancedErrorTracker {
   ): Promise<T> {
     const transaction = Sentry.getCurrentHub().getScope()?.getTransaction();
     const span = transaction?.startChild({
-      op: 'db.query',
+      op: "db.query",
       description: `${operation} ${table}`,
     });
 
     try {
       const result = await handler();
-      span?.setStatus('ok');
+      span?.setStatus("ok");
       return result;
     } catch (_error) {
-      span?.setStatus('internal_error');
-      throw error;
+      span?.setStatus("internal_error");
+      throw _error;
     } finally {
       span?.finish();
     }
@@ -178,7 +174,7 @@ export class EnhancedErrorTracker {
   static addBreadcrumb(
     message: string,
     category: string,
-    level: Sentry.SeverityLevel = 'info',
+    level: Sentry.SeverityLevel = "info",
     data?: Record<string, unknown>
   ) {
     Sentry.addBreadcrumb({
@@ -200,16 +196,15 @@ export function TrackErrors(target: unknown, propertyKey: string, descriptor: Pr
     try {
       return await originalMethod.apply(this, args);
     } catch (_error) {
-      EnhancedErrorTracker.captureException(error as Error, {
+      EnhancedErrorTracker.captureException(_error as Error, {
         tags: {
           method: propertyKey,
           class: target.constructor.name,
         },
       });
-      throw error;
+      throw _error;
     }
   };
 
   return descriptor;
 }
-

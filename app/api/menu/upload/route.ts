@@ -1,8 +1,8 @@
-import { NextResponse } from 'next/server';
-import { createAdminClient } from '@/lib/supabase';
-import { logger } from '@/lib/logger';
+import { NextResponse } from "next/server";
+import { createAdminClient } from "@/lib/supabase";
+import { logger } from "@/lib/logger";
 
-export const runtime = 'nodejs';
+export const runtime = "nodejs";
 
 function admin() {
   const _url = process.env.NEXT_PUBLIC_SUPABASE_URL!;
@@ -11,28 +11,31 @@ function admin() {
 }
 
 async function sha256(buffer: ArrayBuffer): Promise<string> {
-  const digest = await crypto.subtle.digest('SHA-256', buffer);
+  const digest = await crypto.subtle.digest("SHA-256", buffer);
   const bytes = Array.from(new Uint8Array(digest));
-  return bytes.map((b) => b.toString(16).padStart(2, '0')).join('');
+  return bytes.map((b) => b.toString(16).padStart(2, "0")).join("");
 }
 
 export async function POST(req: Request) {
   const supa = admin();
   try {
     const form = await req.formData();
-    const file = form.get('file') as File | null;
-    const venueId = (form.get('venue_id') as string) || (form.get('venueId') as string) || '';
+    const file = form.get("file") as File | null;
+    const venueId = (form.get("venue_id") as string) || (form.get("venueId") as string) || "";
     if (!file || !venueId) {
-      return NextResponse.json({ ok: false, error: 'file and venue_id are required' }, { status: 400 });
+      return NextResponse.json(
+        { ok: false, error: "file and venue_id are required" },
+        { status: 400 }
+      );
     }
 
     // Ensure table + RLS exists (idempotent)
     try {
       // Use a lightweight insert-select approach to avoid ts complaints; Supabase JS doesn't support arbitrary SQL without a function.
       // Expect this to fail harmlessly if a security defers creation; DDL should be applied via scripts as the primary path.
-      await supa.from('menu_uploads').select('id').limit(1);
+      await supa.from("menu_uploads").select("id").limit(1);
     } catch (_e) {
-      logger.warn('[MENU_UPLOAD] menu_uploads not accessible yet');
+      logger.warn("[MENU_UPLOAD] menu_uploads not accessible yet");
     }
     // Note: primary table creation should be done via scripts/menu-upload-schema.sql
     // Included here as documentation for desired RLS settings:
@@ -54,15 +57,13 @@ export async function POST(req: Request) {
     );
     alter table public.menu_uploads enable row level security;
     */
-    
-    
 
     // Ensure bucket exists
     try {
       const { data: buckets } = await supa.storage.listBuckets();
-      const has = (buckets || []).some((b: unknown) => (b as { name?: string }).name === 'menus');
+      const has = (buckets || []).some((b: unknown) => (b as { name?: string }).name === "menus");
       if (!has) {
-        await supa.storage.createBucket('menus', { public: false });
+        await supa.storage.createBucket("menus", { public: false });
       }
     } catch {
       // Silent error handling - bucket might already exist
@@ -73,42 +74,46 @@ export async function POST(req: Request) {
     // Preserve original extension for routing (pdf vs images vs text)
     const originalName = file.name || `${hash}`;
     const lower = originalName.toLowerCase();
-    const ext = lower.includes('.') ? lower.substring(lower.lastIndexOf('.')) : '.pdf';
-    const safeExt = ['.pdf', '.png', '.jpg', '.jpeg', '.webp', '.heic'].includes(ext) ? ext : '.pdf';
+    const ext = lower.includes(".") ? lower.substring(lower.lastIndexOf(".")) : ".pdf";
+    const safeExt = [".pdf", ".png", ".jpg", ".jpeg", ".webp", ".heic"].includes(ext)
+      ? ext
+      : ".pdf";
     const contentType =
-      safeExt === '.pdf'
-        ? 'application/pdf'
-        : safeExt === '.png'
-        ? 'image/png'
-        : safeExt === '.webp'
-        ? 'image/webp'
-        : safeExt === '.heic'
-        ? 'image/heic'
-        : 'image/jpeg';
+      safeExt === ".pdf"
+        ? "application/pdf"
+        : safeExt === ".png"
+          ? "image/png"
+          : safeExt === ".webp"
+            ? "image/webp"
+            : safeExt === ".heic"
+              ? "image/heic"
+              : "image/jpeg";
     const path = `${venueId}/${hash}${safeExt}`;
 
     // Check cache
     const { data: existing, error: selErr } = await supa
-      .from('menu_uploads')
-      .select('id, status')
-      .eq('venue_id', venueId)
-      .eq('sha256', hash)
+      .from("menu_uploads")
+      .select("id, status")
+      .eq("venue_id", venueId)
+      .eq("sha256", hash)
       .maybeSingle();
     if (selErr) {
-      logger.error('[MENU_UPLOAD] select cache error', selErr);
+      logger.error("[MENU_UPLOAD] select cache error", selErr);
     }
     let uploadId: string | null = existing?.id ?? null;
     if (!existing) {
-      const { error: upErr } = await supa.storage.from('menus').upload(path, new Blob([arrayBuf]), { upsert: true, contentType });
+      const { error: upErr } = await supa.storage
+        .from("menus")
+        .upload(path, new Blob([arrayBuf]), { upsert: true, contentType });
       if (upErr) return NextResponse.json({ ok: false, error: upErr.message }, { status: 400 });
 
       const { data: ins, error: insErr } = await supa
-        .from('menu_uploads')
-        .insert({ venue_id: venueId, filename: path, sha256: hash, status: 'uploaded' })
-        .select('id')
+        .from("menu_uploads")
+        .insert({ venue_id: venueId, filename: path, sha256: hash, status: "uploaded" })
+        .select("id")
         .maybeSingle();
       if (insErr) {
-        logger.error('[MENU_UPLOAD] insert error', insErr);
+        logger.error("[MENU_UPLOAD] insert error", insErr);
         return NextResponse.json({ ok: false, error: insErr.message }, { status: 400 });
       }
       uploadId = ins?.id ?? null;
@@ -116,8 +121,10 @@ export async function POST(req: Request) {
 
     return NextResponse.json({ ok: true, upload_id: uploadId, sha256: hash, path });
   } catch (_e) {
-    logger.error('[MENU_UPLOAD] fatal', { error: e });
-    return NextResponse.json({ ok: false, error: e instanceof Error ? e.message : 'upload failed' }, { status: 500 });
+    logger.error("[MENU_UPLOAD] fatal", { error: _e });
+    return NextResponse.json(
+      { ok: false, error: _e instanceof Error ? _e.message : "upload failed" },
+      { status: 500 }
+    );
   }
 }
-

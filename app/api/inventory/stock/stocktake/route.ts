@@ -1,50 +1,44 @@
-import { NextRequest, NextResponse } from 'next/server';
-import { createClient } from '@/lib/supabase';
-import type { StocktakeRequest } from '@/types/inventory';
-import { logger } from '@/lib/logger';
+import { NextRequest, NextResponse } from "next/server";
+import { createClient } from "@/lib/supabase";
+import type { StocktakeRequest } from "@/types/inventory";
+import { logger } from "@/lib/logger";
 
 // POST /api/inventory/stock/stocktake
 export async function POST(_request: NextRequest) {
   try {
     const supabase = await createClient();
-    const body: StocktakeRequest = await request.json();
+    const body: StocktakeRequest = await _request.json();
 
     const { ingredient_id, actual_count, note } = body;
 
     if (!ingredient_id || actual_count === undefined) {
       return NextResponse.json(
-        { error: 'ingredient_id and actual_count are required' },
+        { error: "ingredient_id and actual_count are required" },
         { status: 400 }
       );
     }
 
     // Get ingredient to find venue_id
     const { data: ingredient, error: ingredientError } = await supabase
-      .from('ingredients')
-      .select('venue_id')
-      .eq('id', ingredient_id)
+      .from("ingredients")
+      .select("venue_id")
+      .eq("id", ingredient_id)
       .single();
 
     if (ingredientError || !ingredient) {
-      return NextResponse.json(
-        { error: 'Ingredient not found' },
-        { status: 404 }
-      );
+      return NextResponse.json({ error: "Ingredient not found" }, { status: 404 });
     }
 
     // Get current stock level
     const { data: stockLevel, error: stockError } = await supabase
-      .from('v_stock_levels')
-      .select('on_hand')
-      .eq('ingredient_id', ingredient_id)
+      .from("v_stock_levels")
+      .select("on_hand")
+      .eq("ingredient_id", ingredient_id)
       .single();
 
     if (stockError) {
-      logger.error('[INVENTORY API] Error fetching stock level:', { error: stockError.message });
-      return NextResponse.json(
-        { error: stockError.message },
-        { status: 500 }
-      );
+      logger.error("[INVENTORY API] Error fetching stock level:", { error: stockError.message });
+      return NextResponse.json({ error: stockError.message }, { status: 500 });
     }
 
     const currentStock = stockLevel?.on_hand || 0;
@@ -55,13 +49,13 @@ export async function POST(_request: NextRequest) {
 
     // Create stocktake ledger entry
     const { data, error } = await supabase
-      .from('stock_ledgers')
+      .from("stock_ledgers")
       .insert({
         ingredient_id,
         venue_id: ingredient.venue_id,
         delta,
-        reason: 'stocktake',
-        ref_type: 'manual',
+        reason: "stocktake",
+        ref_type: "manual",
         note: note || `Stocktake: ${currentStock} → ${actual_count}`,
         created_by: currentUser?.user?.id,
       })
@@ -69,25 +63,25 @@ export async function POST(_request: NextRequest) {
       .single();
 
     if (error) {
-      logger.error('[INVENTORY API] Error creating stocktake:', { error: error instanceof Error ? error.message : 'Unknown error' });
-      return NextResponse.json(
-        { error: error.message },
-        { status: 500 }
-      );
+      logger.error("[INVENTORY API] Error creating stocktake:", {
+        error: error instanceof Error ? error.message : "Unknown error",
+      });
+      return NextResponse.json({ error: error.message }, { status: 500 });
     }
 
-    return NextResponse.json({
-      data,
-      previous_stock: currentStock,
-      new_stock: actual_count,
-      delta,
-    }, { status: 201 });
-  } catch (_error) {
-    logger.error('[INVENTORY API] Unexpected error:', { error: error instanceof Error ? error.message : 'Unknown error' });
     return NextResponse.json(
-      { error: 'Internal server error' },
-      { status: 500 }
+      {
+        data,
+        previous_stock: currentStock,
+        new_stock: actual_count,
+        delta,
+      },
+      { status: 201 }
     );
+  } catch (_error) {
+    logger._error("[INVENTORY API] Unexpected error:", {
+      error: _error instanceof Error ? _error.message : "Unknown _error",
+    });
+    return NextResponse.json({ error: "Internal server error" }, { status: 500 });
   }
 }
-

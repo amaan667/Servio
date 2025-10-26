@@ -25,7 +25,7 @@ export async function executeAnalyticsGetInsights(
 
   const now = new Date();
   let startDate = new Date();
-  
+
   switch (params.timeRange) {
     case "today":
       startDate.setHours(0, 0, 0, 0);
@@ -52,7 +52,8 @@ export async function executeAnalyticsGetInsights(
   if (params.itemId) {
     const { data: orderItems } = await supabase
       .from("order_items")
-      .select(`
+      .select(
+        `
         menu_item_id,
         quantity,
         price,
@@ -61,14 +62,17 @@ export async function executeAnalyticsGetInsights(
           created_at,
           venue_id
         )
-      `)
+      `
+      )
       .eq("orders.venue_id", venueId)
       .eq("menu_item_id", params.itemId)
       .gte("orders.created_at", startDate.toISOString());
 
-    const totalRevenue = orderItems?.reduce((sum, item) => sum + (item.price * item.quantity), 0) || 0;
+    const totalRevenue =
+      orderItems?.reduce((sum, item) => sum + item.price * item.quantity, 0) || 0;
     const totalQuantity = orderItems?.reduce((sum, item) => sum + item.quantity, 0) || 0;
-    const orderCount = new Set(orderItems?.map((item: Record<string, unknown>) => item.orders.id)).size;
+    const orderCount = new Set(orderItems?.map((item: Record<string, unknown>) => item.orders.id))
+      .size;
 
     const insights = {
       itemName: params.itemName || "Unknown Item",
@@ -134,7 +138,11 @@ export async function executeAnalyticsExport(
   return {
     success: true,
     toolName: "analytics.export",
-    result: { message: "Export functionality requires file generation service", type: params.type, format: params.format },
+    result: {
+      message: "Export functionality requires file generation service",
+      type: params.type,
+      format: params.format,
+    },
     auditId: "",
   };
 }
@@ -161,15 +169,18 @@ export async function executeAnalyticsGetStats(
     };
   }
 
-  let stats = { /* Empty */ };
-  
+  let stats = {
+    /* Empty */
+  };
+
   try {
     const timeStart = getTimeRangeStart(params.timeRange);
-    
+
     if (params.itemId) {
       const { data: orderItems } = await supabase
         .from("order_items")
-        .select(`
+        .select(
+          `
           menu_item_id,
           quantity,
           price,
@@ -179,14 +190,17 @@ export async function executeAnalyticsGetStats(
             venue_id,
             total_amount
           )
-        `)
+        `
+        )
         .eq("orders.venue_id", venueId)
         .eq("menu_item_id", params.itemId)
         .gte("orders.created_at", timeStart);
 
-      const totalRevenue = orderItems?.reduce((sum, item) => sum + (item.price * item.quantity), 0) || 0;
+      const totalRevenue =
+        orderItems?.reduce((sum, item) => sum + item.price * item.quantity, 0) || 0;
       const totalQuantity = orderItems?.reduce((sum, item) => sum + item.quantity, 0) || 0;
-      const orderCount = new Set(orderItems?.map((item: Record<string, unknown>) => item.orders.id)).size;
+      const orderCount = new Set(orderItems?.map((item: Record<string, unknown>) => item.orders.id))
+        .size;
 
       stats = {
         itemName: params.itemName || "Unknown Item",
@@ -206,69 +220,74 @@ export async function executeAnalyticsGetStats(
         .gte("created_at", timeStart);
 
       switch (params.metric) {
-        case "revenue":
-          {
-            const totalRevenue = orders?.reduce((sum, order) => sum + (order.total_amount || 0), 0) || 0;
-            stats = {
-              total: totalRevenue,
-              count: orders?.length || 0,
-              average: orders?.length ? totalRevenue / orders.length : 0,
-              timeRange: params.timeRange,
-              message: `Total revenue for ${params.timeRange}: £${totalRevenue.toFixed(2)} from ${orders?.length || 0} orders.`,
-            };
+        case "revenue": {
+          const totalRevenue =
+            orders?.reduce((sum, order) => sum + (order.total_amount || 0), 0) || 0;
+          stats = {
+            total: totalRevenue,
+            count: orders?.length || 0,
+            average: orders?.length ? totalRevenue / orders.length : 0,
+            timeRange: params.timeRange,
+            message: `Total revenue for ${params.timeRange}: £${totalRevenue.toFixed(2)} from ${orders?.length || 0} orders.`,
+          };
           break;
-          }
+        }
         case "orders_count":
-          stats = { 
+          stats = {
             count: orders?.length || 0,
             timeRange: params.timeRange,
             message: `Total orders for ${params.timeRange}: ${orders?.length || 0}`,
           };
           break;
-        case "top_items":
-          {
-            const { data: topItems } = await supabase
-              .from("order_items")
-              .select(`
+        case "top_items": {
+          const { data: topItems } = await supabase
+            .from("order_items")
+            .select(
+              `
                 menu_item_id,
                 quantity,
                 price,
                 menu_items!inner(name),
                 orders!inner(venue_id, created_at)
-              `)
-              .eq("orders.venue_id", venueId)
-              .gte("orders.created_at", timeStart);
-  
-            const itemSales = new Map();
-            topItems?.forEach((item: Record<string, unknown>) => {
-              const existing = itemSales.get(item.menu_item_id) || { name: item.menu_items.name, quantity: 0, revenue: 0 };
-              itemSales.set(item.menu_item_id, {
-                name: existing.name,
-                quantity: existing.quantity + item.quantity,
-                revenue: existing.revenue + (item.price * item.quantity),
-              });
-            });
-  
-            const top10 = Array.from(itemSales.values())
-              .sort((a, b) => b.revenue - a.revenue)
-              .slice(0, 10);
-  
-            stats = {
-              topItems: top10,
-              timeRange: params.timeRange,
-              message: `Top ${top10.length} items by revenue for ${params.timeRange}`,
+              `
+            )
+            .eq("orders.venue_id", venueId)
+            .gte("orders.created_at", timeStart);
+
+          const itemSales = new Map();
+          topItems?.forEach((item: Record<string, unknown>) => {
+            const existing = itemSales.get(item.menu_item_id) || {
+              name: item.menu_items.name,
+              quantity: 0,
+              revenue: 0,
             };
+            itemSales.set(item.menu_item_id, {
+              name: existing.name,
+              quantity: existing.quantity + item.quantity,
+              revenue: existing.revenue + item.price * item.quantity,
+            });
+          });
+
+          const top10 = Array.from(itemSales.values())
+            .sort((a, b) => b.revenue - a.revenue)
+            .slice(0, 10);
+
+          stats = {
+            topItems: top10,
+            timeRange: params.timeRange,
+            message: `Top ${top10.length} items by revenue for ${params.timeRange}`,
+          };
           break;
-          }
+        }
         default:
-          stats = { 
+          stats = {
             message: `${params.metric} analysis for ${params.timeRange}`,
             timeRange: params.timeRange,
           };
       }
     }
   } catch (_error) {
-    throw new AIAssistantError("Failed to get analytics data", "EXECUTION_FAILED", error);
+    throw new AIAssistantError("Failed to get analytics data", "EXECUTION_FAILED", _error);
   }
 
   return {
@@ -285,8 +304,13 @@ export async function executeAnalyticsCreateReport(
   _userId: string,
   preview: boolean
 ): Promise<AIPreviewDiff | AIExecutionResult> {
-  const typedParams = params as { name: string; metrics: unknown[]; timeRange: string; format: string };
-  
+  const typedParams = params as {
+    name: string;
+    metrics: unknown[];
+    timeRange: string;
+    format: string;
+  };
+
   if (preview) {
     return {
       toolName: "analytics.create_report",
@@ -327,9 +351,17 @@ function getTimeRangeStart(timeRange: string): string {
       {
         const yesterday = new Date(now);
         yesterday.setDate(yesterday.getDate() - 1);
-        return new Date(yesterday.getFullYear(), yesterday.getMonth(), yesterday.getDate()).toISOString();
+        return new Date(
+          yesterday.getFullYear(),
+          yesterday.getMonth(),
+          yesterday.getDate()
+        ).toISOString();
       }
-      return new Date(yesterday.getFullYear(), yesterday.getMonth(), yesterday.getDate()).toISOString();
+      return new Date(
+        yesterday.getFullYear(),
+        yesterday.getMonth(),
+        yesterday.getDate()
+      ).toISOString();
     case "week":
       return new Date(now.getTime() - 7 * 24 * 60 * 60 * 1000).toISOString();
     case "month":
@@ -342,4 +374,3 @@ function getTimeRangeStart(timeRange: string): string {
       return new Date(now.getTime() - 7 * 24 * 60 * 60 * 1000).toISOString();
   }
 }
-

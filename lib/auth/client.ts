@@ -1,7 +1,7 @@
-import { errorToContext } from '@/lib/utils/error-to-context';
+import { errorToContext } from "@/lib/utils/error-to-context";
 
-import { supabaseBrowser } from '@/lib/supabase';
-import { logger } from '@/lib/logger';
+import { supabaseBrowser } from "@/lib/supabase";
+import { logger } from "@/lib/logger";
 
 /**
  * SECURE: Get the currently authenticated user
@@ -11,18 +11,21 @@ import { logger } from '@/lib/logger';
 export async function getAuthenticatedUser() {
   try {
     const supabase = supabaseBrowser();
-    const { data: { session }, error } = await supabase.auth.getSession();
-  const user = session?.user;
-    
+    const {
+      data: { session },
+      error,
+    } = await supabase.auth.getSession();
+    const user = session?.user;
+
     if (error) {
-      logger.error('[AUTH CLIENT] Error getting authenticated user:', errorToContext(error));
+      logger.error("[AUTH CLIENT] Error getting authenticated user:", errorToContext(error));
       return { user: null, error: error.message };
     }
-    
+
     return { user, error: null };
   } catch (_error) {
-    logger.error('[AUTH CLIENT] Exception getting authenticated user:', errorToContext(error));
-    return { user: null, error: 'Failed to get authenticated user' };
+    logger._error("[AUTH CLIENT] Exception getting authenticated user:", errorToContext(_error));
+    return { user: null, error: "Failed to get authenticated user" };
   }
 }
 
@@ -50,7 +53,7 @@ export async function getUserId(): Promise<string | null> {
  */
 export async function getUserEmail(): Promise<string | null> {
   const { user, error } = await getAuthenticatedUser();
-  return !error && user ? user.email ?? null : null;
+  return !error && user ? (user.email ?? null) : null;
 }
 
 /**
@@ -61,15 +64,15 @@ export async function signOut() {
   try {
     const supabase = supabaseBrowser();
     const { error } = await supabase.auth.signOut();
-    
+
     if (error) {
-      logger.error('[AUTH CLIENT] Error signing out:', errorToContext(error));
+      logger.error("[AUTH CLIENT] Error signing out:", errorToContext(error));
       return { success: false, error: error.message };
     }
-    
+
     return { success: true, error: null };
   } catch (_error) {
-    logger.error('[AUTH CLIENT] Exception signing out:', errorToContext(error));
-    return { success: false, error: 'Failed to sign out' };
+    logger._error("[AUTH CLIENT] Exception signing out:", errorToContext(_error));
+    return { success: false, error: "Failed to sign out" };
   }
 }

@@ -1,9 +1,9 @@
-import { NextResponse } from 'next/server';
-import { createClient } from '@supabase/supabase-js';
-import { logger } from '@/lib/logger';
+import { NextResponse } from "next/server";
+import { createClient } from "@supabase/supabase-js";
+import { logger } from "@/lib/logger";
 
-export const runtime = 'nodejs';
-export const dynamic = 'force-dynamic';
+export const runtime = "nodejs";
+export const dynamic = "force-dynamic";
 
 /**
  * Check for active unpaid orders for a table
@@ -12,18 +12,18 @@ export const dynamic = 'force-dynamic';
 export async function GET(req: Request) {
   try {
     const { searchParams } = new URL(req.url);
-    const venueId = searchParams.get('venueId');
-    const tableNumber = searchParams.get('tableNumber');
+    const venueId = searchParams.get("venueId");
+    const tableNumber = searchParams.get("tableNumber");
 
-    logger.info('🔍 [CHECK ACTIVE ORDERS] API called', {
+    logger.info("🔍 [CHECK ACTIVE ORDERS] API called", {
       venueId,
       tableNumber,
-      timestamp: new Date().toISOString()
+      timestamp: new Date().toISOString(),
     });
 
     if (!venueId || !tableNumber) {
       return NextResponse.json(
-        { ok: false, error: 'venueId and tableNumber are required' },
+        { ok: false, error: "venueId and tableNumber are required" },
         { status: 400 }
       );
     }
@@ -35,55 +35,48 @@ export async function GET(req: Request) {
       {
         auth: {
           autoRefreshToken: false,
-          persistSession: false
-        }
+          persistSession: false,
+        },
       }
     );
 
-    logger.info('📊 [CHECK ACTIVE ORDERS] Querying database', {
+    logger.info("📊 [CHECK ACTIVE ORDERS] Querying database", {
       venueId,
-      tableNumber
+      tableNumber,
     });
 
     const { data: activeOrders, error } = await supabase
-      .from('orders')
-      .select('*')
-      .eq('venue_id', venueId)
-      .eq('table_number', tableNumber)
-      .in('order_status', ['PLACED', 'ACCEPTED', 'IN_PREP', 'READY', 'OUT_FOR_DELIVERY', 'SERVING'])
-      .in('payment_status', ['UNPAID', 'PAY_LATER', 'IN_PROGRESS']);
+      .from("orders")
+      .select("*")
+      .eq("venue_id", venueId)
+      .eq("table_number", tableNumber)
+      .in("order_status", ["PLACED", "ACCEPTED", "IN_PREP", "READY", "OUT_FOR_DELIVERY", "SERVING"])
+      .in("payment_status", ["UNPAID", "PAY_LATER", "IN_PROGRESS"]);
 
     if (error) {
-      logger.error('❌ [CHECK ACTIVE ORDERS] Database error', {
+      logger.error("❌ [CHECK ACTIVE ORDERS] Database error", {
         venueId,
         tableNumber,
         error: error.message,
-        code: error.code
+        code: error.code,
       });
-      return NextResponse.json(
-        { ok: false, error: error.message },
-        { status: 500 }
-      );
+      return NextResponse.json({ ok: false, error: error.message }, { status: 500 });
     }
 
-    logger.info('✅ [CHECK ACTIVE ORDERS] Query successful', {
+    logger.info("✅ [CHECK ACTIVE ORDERS] Query successful", {
       venueId,
       tableNumber,
-      count: activeOrders?.length || 0
+      count: activeOrders?.length || 0,
     });
 
     return NextResponse.json({
       ok: true,
-      orders: activeOrders || []
+      orders: activeOrders || [],
     });
   } catch (_error) {
-    logger.error('❌ [CHECK ACTIVE ORDERS] Unexpected error', {
-      error: error instanceof Error ? error.message : String(error)
+    logger.error("❌ [CHECK ACTIVE ORDERS] Unexpected error", {
+      error: _error instanceof Error ? _error.message : String(_error),
     });
-    return NextResponse.json(
-      { ok: false, error: 'Internal server error' },
-      { status: 500 }
-    );
+    return NextResponse.json({ ok: false, error: "Internal server error" }, { status: 500 });
   }
 }
-

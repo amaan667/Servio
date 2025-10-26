@@ -18,7 +18,7 @@ export async function POST(
   const { orderId } = await params;
 
   try {
-    const body = await request.json();
+    const body = await _request.json();
     const { payment_method, venue_id } = body;
 
     logger.info("[COLLECT PAYMENT] Processing till payment", {
@@ -97,7 +97,7 @@ export async function POST(
     });
   } catch (_error) {
     logger.error("[COLLECT PAYMENT] Unexpected error", {
-      data: { orderId, error: error instanceof Error ? error.message : String(error) },
+      data: { orderId, error: _error instanceof Error ? _error.message : String(_error) },
     });
     return NextResponse.json({ error: "Internal server error" }, { status: 500 });
   }

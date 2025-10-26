@@ -4,7 +4,7 @@ import { logger } from "@/lib/logger";
 
 export async function POST(_request: NextRequest) {
   try {
-    const { venueId, force = false } = await request.json();
+    const { venueId, force = false } = await _request.json();
 
     if (!venueId) {
       return NextResponse.json({ error: "Venue ID is required" }, { status: 400 });
@@ -302,7 +302,7 @@ export async function POST(_request: NextRequest) {
     });
   } catch (_error) {
     logger.error("🔄 [DAILY RESET CHECK] Error in daily reset check:", {
-      error: error instanceof Error ? error.message : "Unknown error",
+      error: _error instanceof Error ? _error.message : "Unknown _error",
     });
     return NextResponse.json({ error: "Internal server error" }, { status: 500 });
   }

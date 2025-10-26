@@ -4,12 +4,9 @@
 import { NextRequest, NextResponse } from "next/server";
 import { createClient } from "@/lib/supabase";
 import { planAssistantAction } from "@/lib/ai/assistant-llm";
-import {
-  getAssistantContext,
-  getAllSummaries,
-} from "@/lib/ai/context-builders";
+import { getAssistantContext, getAllSummaries } from "@/lib/ai/context-builders";
 import { z } from "zod";
-import { logger } from '@/lib/logger';
+import { logger } from "@/lib/logger";
 
 const PlanRequestSchema = z.object({
   prompt: z.string().min(1).max(500),
@@ -36,12 +33,12 @@ export async function POST(_request: NextRequest) {
     }
 
     // Parse request
-    const body = await request.json();
+    const body = await _request.json();
     const { prompt, venueId } = PlanRequestSchema.parse(body);
 
     // Verify user has access to venue
     let userRole = "owner"; // Default to owner for backward compatibility
-    
+
     try {
       const { data: roleData } = await supabase
         .from("user_venue_roles")
@@ -61,17 +58,16 @@ export async function POST(_request: NextRequest) {
           .single();
 
         if (!venue || venue.owner_user_id !== user.id) {
-          return NextResponse.json(
-            { error: "Access denied to this venue" },
-            { status: 403 }
-          );
+          return NextResponse.json({ error: "Access denied to this venue" }, { status: 403 });
         }
         // User owns venue, allow access
       }
     } catch (tableError) {
       // Table doesn't exist - check if user owns venue
-      logger.debug("[AI ASSISTANT] user_venue_roles table check failed, checking venue ownership", { extra: { error: tableError instanceof Error ? tableError.message : 'Unknown error' } });
-      
+      logger.debug("[AI ASSISTANT] user_venue_roles table check failed, checking venue ownership", {
+        extra: { error: tableError instanceof Error ? tableError.message : "Unknown error" },
+      });
+
       const { data: venue } = await supabase
         .from("venues")
         .select("owner_user_id")
@@ -79,10 +75,7 @@ export async function POST(_request: NextRequest) {
         .single();
 
       if (!venue || venue.owner_user_id !== user.id) {
-        return NextResponse.json(
-          { error: "Access denied to this venue" },
-          { status: 403 }
-        );
+        return NextResponse.json({ error: "Access denied to this venue" }, { status: 403 });
       }
       // User owns venue, allow access
     }
@@ -107,7 +100,11 @@ export async function POST(_request: NextRequest) {
         user_prompt: prompt,
         intent: plan.intent,
         tool_name: plan.tools[0]?.name || "unknown",
-        params: plan.tools[0]?.params || { /* Empty */ },
+        params:
+          plan.tools[0]?.params ||
+          {
+            /* Empty */
+          },
         preview: true,
         executed: false,
         model_version: plan.modelUsed || "gpt-4o-mini", // Track which model was actually used
@@ -124,19 +121,20 @@ export async function POST(_request: NextRequest) {
       modelUsed: plan.modelUsed, // Return model info to client
     });
   } catch (_error) {
-    logger.error("[AI ASSISTANT] Planning error:", { error: error instanceof Error ? error.message : 'Unknown error' });
+    logger._error("[AI ASSISTANT] Planning error:", {
+      error: _error instanceof Error ? _error.message : "Unknown _error",
+    });
 
-    if ((error as any)?.name === "ZodError") {
+    if ((_error as any)?.name === "ZodError") {
       return NextResponse.json(
-        { error: "Invalid request format", details: (error as any)?.errors },
+        { error: "Invalid request format", details: (_error as any)?.errors },
         { status: 400 }
       );
     }
 
     return NextResponse.json(
-      { error: error instanceof Error ? error.message : "Planning failed" },
+      { error: _error instanceof Error ? _error.message : "Planning failed" },
       { status: 500 }
     );
   }
 }
-

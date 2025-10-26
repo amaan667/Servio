@@ -37,7 +37,6 @@ export function useQRCodeManagement(venueId: string) {
     if (typeof window !== "undefined" && venueId) {
       loadTablesAndCounters();
     }
-     
   }, [venueId]);
 
   const loadTablesAndCounters = async () => {
@@ -67,8 +66,8 @@ export function useQRCodeManagement(venueId: string) {
         if (!result.error) {
           countersData = result.data || [];
         } else {
-      // Intentionally empty
-    }
+          // Intentionally empty
+        }
       } catch {
         // Silently fail - counters are optional
       }
@@ -78,7 +77,7 @@ export function useQRCodeManagement(venueId: string) {
     } catch (_error) {
       toast({
         title: "Error",
-        description: `Failed to load data: ${error instanceof Error ? error.message : "Unknown error"}`,
+        description: `Failed to load data: ${_error instanceof Error ? _error.message : "Unknown _error"}`,
         variant: "destructive",
       });
     } finally {

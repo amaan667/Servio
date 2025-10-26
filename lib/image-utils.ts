@@ -9,20 +9,17 @@
  * @param quality - Quality of the WEBP output (0-100, default: 80)
  * @returns Promise<string> - Data URL of the converted image
  */
-export async function convertToWebP(
-  imageUrl: string,
-  quality: number = 80
-): Promise<string> {
+export async function convertToWebP(imageUrl: string, quality: number = 80): Promise<string> {
   return new Promise((resolve, reject) => {
     const img = new Image();
-    img.crossOrigin = 'anonymous';
+    img.crossOrigin = "anonymous";
 
     img.onload = () => {
-      const canvas = document.createElement('canvas');
-      const ctx = canvas.getContext('2d');
+      const canvas = document.createElement("canvas");
+      const ctx = canvas.getContext("2d");
 
       if (!ctx) {
-        reject(new Error('Failed to get canvas context'));
+        reject(new Error("Failed to get canvas context"));
         return;
       }
 
@@ -32,10 +29,10 @@ export async function convertToWebP(
       ctx.drawImage(img, 0, 0);
 
       try {
-        const webpDataUrl = canvas.toDataURL('image/webp', quality / 100);
+        const webpDataUrl = canvas.toDataURL("image/webp", quality / 100);
         resolve(webpDataUrl);
       } catch (_error) {
-        reject(error);
+        reject(_error);
       }
     };
 
@@ -57,7 +54,7 @@ export async function convertMultipleToWebP(
   imageUrls: string[],
   quality: number = 80
 ): Promise<string[]> {
-  const conversions = imageUrls.map(url => convertToWebP(url, quality));
+  const conversions = imageUrls.map((url) => convertToWebP(url, quality));
   return Promise.all(conversions);
 }
 
@@ -77,14 +74,14 @@ export async function compressImage(
 ): Promise<string> {
   return new Promise((resolve, reject) => {
     const img = new Image();
-    img.crossOrigin = 'anonymous';
+    img.crossOrigin = "anonymous";
 
     img.onload = () => {
-      const canvas = document.createElement('canvas');
-      const ctx = canvas.getContext('2d');
+      const canvas = document.createElement("canvas");
+      const ctx = canvas.getContext("2d");
 
       if (!ctx) {
-        reject(new Error('Failed to get canvas context'));
+        reject(new Error("Failed to get canvas context"));
         return;
       }
 
@@ -110,10 +107,10 @@ export async function compressImage(
       ctx.drawImage(img, 0, 0, width, height);
 
       try {
-        const compressedDataUrl = canvas.toDataURL('image/jpeg', quality / 100);
+        const compressedDataUrl = canvas.toDataURL("image/jpeg", quality / 100);
         resolve(compressedDataUrl);
       } catch (_error) {
-        reject(error);
+        reject(_error);
       }
     };
 
@@ -131,8 +128,8 @@ export async function compressImage(
  * @returns Blob
  */
 export function dataURLtoBlob(dataUrl: string): Blob {
-  const arr = dataUrl.split(',');
-  const mime = arr[0].match(/:(.*?);/)?.[1] || 'image/png';
+  const arr = dataUrl.split(",");
+  const mime = arr[0].match(/:(.*?);/)?.[1] || "image/png";
   const bstr = atob(arr[1]);
   let n = bstr.length;
   const u8arr = new Uint8Array(n);
@@ -158,20 +155,16 @@ export async function uploadImageToStorage(
   path: string,
   imageBlob: Blob
 ): Promise<string> {
-  const { data, error } = await supabase.storage
-    .from(bucket)
-    .upload(path, imageBlob, {
-      contentType: imageBlob.type,
-      upsert: true
-    });
+  const { data, error } = await supabase.storage.from(bucket).upload(path, imageBlob, {
+    contentType: imageBlob.type,
+    upsert: true,
+  });
 
   if (error) {
     throw new Error(`Failed to upload image: ${error.message}`);
   }
 
-  const { data: urlData } = supabase.storage
-    .from(bucket)
-    .getPublicUrl(path);
+  const { data: urlData } = supabase.storage.from(bucket).getPublicUrl(path);
 
   return urlData.publicUrl;
 }
@@ -185,24 +178,21 @@ export async function uploadImageToStorage(
 export async function optimizeImageForWeb(
   imageUrl: string,
   options: {
-    format?: 'webp' | 'jpeg' | 'png';
+    format?: "webp" | "jpeg" | "png";
     quality?: number;
     maxWidth?: number;
     maxHeight?: number;
-  } = { /* Empty */ }
+  } = {
+    /* Empty */
+  }
 ): Promise<string> {
-  const {
-    format = 'webp',
-    quality = 80,
-    maxWidth = 1920,
-    maxHeight = 1080
-  } = options;
+  const { format = "webp", quality = 80, maxWidth = 1920, maxHeight = 1080 } = options;
 
   // First compress the image
   const compressed = await compressImage(imageUrl, maxWidth, maxHeight, quality);
 
   // Then convert to desired format
-  if (format === 'webp') {
+  if (format === "webp") {
     return convertToWebP(compressed, quality);
   }
 
@@ -223,7 +213,7 @@ export async function getImageDimensions(
     img.onload = () => {
       resolve({
         width: img.width,
-        height: img.height
+        height: img.height,
       });
     };
 
@@ -240,12 +230,12 @@ export async function getImageDimensions(
  * @returns boolean
  */
 export function supportsWebP(): boolean {
-  if (typeof window === 'undefined') return false;
+  if (typeof window === "undefined") return false;
 
-  const canvas = document.createElement('canvas');
+  const canvas = document.createElement("canvas");
   canvas.width = 1;
   canvas.height = 1;
-  return canvas.toDataURL('image/webp').indexOf('data:image/webp') === 0;
+  return canvas.toDataURL("image/webp").indexOf("data:image/webp") === 0;
 }
 
 /**
@@ -254,10 +244,7 @@ export function supportsWebP(): boolean {
  * @param element - Element to observe
  * @returns Promise<string> - Image URL when loaded
  */
-export async function lazyLoadImage(
-  imageUrl: string,
-  element: HTMLElement
-): Promise<string> {
+export async function lazyLoadImage(imageUrl: string, element: HTMLElement): Promise<string> {
   return new Promise((resolve, reject) => {
     const observer = new IntersectionObserver(
       (entries) => {
@@ -268,10 +255,9 @@ export async function lazyLoadImage(
           }
         });
       },
-      { rootMargin: '50px' }
+      { rootMargin: "50px" }
     );
 
     observer.observe(element);
   });
 }
-

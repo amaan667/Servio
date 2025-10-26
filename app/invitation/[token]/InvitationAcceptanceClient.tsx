@@ -1,24 +1,24 @@
-'use client';
+"use client";
 
-import { useState } from 'react';
-import { useRouter } from 'next/navigation';
-import { Button } from '@/components/ui/button';
-import { Input } from '@/components/ui/input';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { Badge } from '@/components/ui/badge';
-import { Alert, AlertDescription } from '@/components/ui/alert';
-import { createClient } from '@/lib/supabase';
-import { 
-  Users, 
-  Mail, 
-  Shield, 
-  Building, 
-  CheckCircle, 
+import { useState } from "react";
+import { useRouter } from "next/navigation";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Badge } from "@/components/ui/badge";
+import { Alert, AlertDescription } from "@/components/ui/alert";
+import { createClient } from "@/lib/supabase";
+import {
+  Users,
+  Mail,
+  Shield,
+  Building,
+  CheckCircle,
   AlertCircle,
   Loader2,
   Eye,
-  EyeOff
-} from 'lucide-react';
+  EyeOff,
+} from "lucide-react";
 
 interface Invitation {
   id: string;
@@ -38,13 +38,13 @@ interface InvitationAcceptanceClientProps {
   token: string;
 }
 
-export default function InvitationAcceptanceClient({ 
-  invitation, 
-  token 
+export default function InvitationAcceptanceClient({
+  invitation,
+  token,
 }: InvitationAcceptanceClientProps) {
-  const [fullName, setFullName] = useState('');
-  const [password, setPassword] = useState('');
-  const [confirmPassword, setConfirmPassword] = useState('');
+  const [fullName, setFullName] = useState("");
+  const [password, setPassword] = useState("");
+  const [confirmPassword, setConfirmPassword] = useState("");
   const [showPassword, setShowPassword] = useState(false);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -57,22 +57,22 @@ export default function InvitationAcceptanceClient({
 
     // Validation
     if (!fullName.trim()) {
-      setError('Full name is required');
+      setError("Full name is required");
       return;
     }
 
     if (!password) {
-      setError('Password is required');
+      setError("Password is required");
       return;
     }
 
     if (password.length < 6) {
-      setError('Password must be at least 6 characters long');
+      setError("Password must be at least 6 characters long");
       return;
     }
 
     if (password !== confirmPassword) {
-      setError('Passwords do not match');
+      setError("Passwords do not match");
       return;
     }
 
@@ -80,9 +80,9 @@ export default function InvitationAcceptanceClient({
 
     try {
       const response = await fetch(`/api/staff/invitations/${token}`, {
-        method: 'POST',
+        method: "POST",
         headers: {
-          'Content-Type': 'application/json',
+          "Content-Type": "application/json",
         },
         body: JSON.stringify({
           full_name: fullName.trim(),
@@ -95,13 +95,17 @@ export default function InvitationAcceptanceClient({
       if (!response.ok) {
         // If the error is that user already exists, redirect to sign in
         if (response.status === 409) {
-          setError('An account with this email already exists. Please sign in to accept the invitation.');
+          setError(
+            "An account with this email already exists. Please sign in to accept the invitation."
+          );
           setTimeout(() => {
-            router.push(`/sign-in?email=${encodeURIComponent(invitation.email)}&redirect=/invitation/${token}`);
+            router.push(
+              `/sign-in?email=${encodeURIComponent(invitation.email)}&redirect=/invitation/${token}`
+            );
           }, 3000);
           return;
         }
-        throw new Error(data.error || 'Failed to accept invitation');
+        throw new Error(data.error || "Failed to accept invitation");
       }
 
       // Sign the user in after account creation
@@ -112,18 +116,17 @@ export default function InvitationAcceptanceClient({
       });
 
       if (signInError) {
-        throw new Error('Account created but failed to sign in. Please try signing in manually.');
+        throw new Error("Account created but failed to sign in. Please try signing in manually.");
       }
 
       setSuccess(true);
-      
+
       // Redirect to the venue dashboard after a short delay
       setTimeout(() => {
         router.push(`/dashboard/${invitation.venue_id}`);
       }, 2000);
-
     } catch (_err) {
-      setError(err.message || 'Failed to accept invitation');
+      setError(_err.message || "Failed to accept invitation");
     } finally {
       setLoading(false);
     }
@@ -131,31 +134,31 @@ export default function InvitationAcceptanceClient({
 
   const getRoleColor = (role: string) => {
     switch (role) {
-      case 'owner':
-        return 'bg-yellow-100 text-yellow-800 border-yellow-200';
-      case 'manager':
-        return 'bg-blue-100 text-blue-800 border-blue-200';
-      case 'staff':
-        return 'bg-green-100 text-green-800 border-green-200';
-      case 'kitchen':
-        return 'bg-orange-100 text-orange-800 border-orange-200';
+      case "owner":
+        return "bg-yellow-100 text-yellow-800 border-yellow-200";
+      case "manager":
+        return "bg-blue-100 text-blue-800 border-blue-200";
+      case "staff":
+        return "bg-green-100 text-green-800 border-green-200";
+      case "kitchen":
+        return "bg-orange-100 text-orange-800 border-orange-200";
       default:
-        return 'bg-gray-100 text-gray-800 border-gray-200';
+        return "bg-gray-100 text-gray-800 border-gray-200";
     }
   };
 
   const getRoleIcon = (role: string) => {
     switch (role) {
-      case 'owner':
-        return '👑';
-      case 'manager':
-        return '🛡️';
-      case 'staff':
-        return '👤';
-      case 'kitchen':
-        return '👨‍🍳';
+      case "owner":
+        return "👑";
+      case "manager":
+        return "🛡️";
+      case "staff":
+        return "👤";
+      case "kitchen":
+        return "👨‍🍳";
       default:
-        return '👤';
+        return "👤";
     }
   };
 
@@ -166,19 +169,15 @@ export default function InvitationAcceptanceClient({
           <div className="w-16 h-16 bg-green-100 rounded-full flex items-center justify-center mx-auto mb-4">
             <CheckCircle className="h-8 w-8 text-green-600" />
           </div>
-          <h2 className="text-2xl font-bold text-gray-900 mb-2">
-            Welcome to Servio!
-          </h2>
+          <h2 className="text-2xl font-bold text-gray-900 mb-2">Welcome to Servio!</h2>
           <p className="text-gray-600 mb-4">
-            Your account has been created successfully. You now have access to{' '}
-            <strong>{invitation.venue_name}</strong> as a{' '}
+            Your account has been created successfully. You now have access to{" "}
+            <strong>{invitation.venue_name}</strong> as a{" "}
             <Badge className={getRoleColor(invitation.role)}>
               {getRoleIcon(invitation.role)} {invitation.role}
             </Badge>
           </p>
-          <p className="text-sm text-gray-500">
-            Redirecting to your dashboard...
-          </p>
+          <p className="text-sm text-gray-500">Redirecting to your dashboard...</p>
         </CardContent>
       </Card>
     );
@@ -190,9 +189,7 @@ export default function InvitationAcceptanceClient({
         <div className="w-16 h-16 bg-purple-100 rounded-full flex items-center justify-center mx-auto mb-4">
           <Users className="h-8 w-8 text-purple-600" />
         </div>
-        <CardTitle className="text-2xl font-bold text-gray-900">
-          You're Invited!
-        </CardTitle>
+        <CardTitle className="text-2xl font-bold text-gray-900">You're Invited!</CardTitle>
         <p className="text-gray-600">
           Join the team at <strong>{invitation.venue_name}</strong>
         </p>
@@ -208,7 +205,7 @@ export default function InvitationAcceptanceClient({
               {getRoleIcon(invitation.role)} {invitation.role}
             </Badge>
           </div>
-          
+
           <div className="flex items-center gap-3">
             <Building className="h-5 w-5 text-gray-500" />
             <span className="text-sm text-gray-600">Venue:</span>
@@ -243,7 +240,9 @@ export default function InvitationAcceptanceClient({
               disabled
               className="h-11 bg-gray-50 cursor-not-allowed"
             />
-            <p className="text-xs text-gray-500 mt-1">This is the email address the invitation was sent to</p>
+            <p className="text-xs text-gray-500 mt-1">
+              This is the email address the invitation was sent to
+            </p>
           </div>
 
           <div>
@@ -268,7 +267,7 @@ export default function InvitationAcceptanceClient({
             <div className="relative">
               <Input
                 id="password"
-                type={showPassword ? 'text' : 'password'}
+                type={showPassword ? "text" : "password"}
                 value={password}
                 onChange={(e) => setPassword(e.target.value)}
                 placeholder="Create a password"
@@ -287,7 +286,10 @@ export default function InvitationAcceptanceClient({
           </div>
 
           <div>
-            <label htmlFor="confirmPassword" className="block text-sm font-medium text-gray-700 mb-2">
+            <label
+              htmlFor="confirmPassword"
+              className="block text-sm font-medium text-gray-700 mb-2"
+            >
               Confirm Password
             </label>
             <Input
@@ -319,14 +321,15 @@ export default function InvitationAcceptanceClient({
                 Creating Account...
               </>
             ) : (
-              'Accept Invitation & Create Account'
+              "Accept Invitation & Create Account"
             )}
           </Button>
         </form>
 
         <div className="text-center">
           <p className="text-xs text-gray-500">
-            By accepting this invitation, you agree to join the team and will have access to the venue's systems.
+            By accepting this invitation, you agree to join the team and will have access to the
+            venue's systems.
           </p>
         </div>
       </CardContent>

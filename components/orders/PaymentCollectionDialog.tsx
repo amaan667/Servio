@@ -53,7 +53,6 @@ export function PaymentCollectionDialog({
     setError(null);
 
     try {
-
       const response = await fetch(`/api/orders/${orderId}/collect-payment`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
@@ -72,7 +71,7 @@ export function PaymentCollectionDialog({
       onOpenChange(false);
       onSuccess();
     } catch (_err) {
-      setError(err instanceof Error ? err.message : "Failed to collect payment");
+      setError(_err instanceof Error ? _err.message : "Failed to collect payment");
     } finally {
       setProcessing(false);
     }

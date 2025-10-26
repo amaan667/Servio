@@ -7,9 +7,31 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { ToggleSwitch } from "@/components/ui/toggle-switch";
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogTrigger,
+} from "@/components/ui/dialog";
 import { supabaseBrowser as createClient } from "@/lib/supabase";
-import { Plus, Edit, Trash2, ShoppingBag, Trash, ChevronDown, ChevronRight, Save, Eye, Settings, Upload, Grid, GripVertical, Palette, Info } from "lucide-react";
+import {
+  Plus,
+  Edit,
+  Trash2,
+  ShoppingBag,
+  Trash,
+  ChevronDown,
+  ChevronRight,
+  Save,
+  Eye,
+  Settings,
+  Upload,
+  Grid,
+  GripVertical,
+  Palette,
+  Info,
+} from "lucide-react";
 import { MenuUploadCard } from "@/components/MenuUploadCard";
 import { CategoriesManagement } from "@/components/CategoriesManagement";
 import { MenuPreview } from "@/components/MenuPreview";
@@ -37,27 +59,38 @@ import { loadFontForFamily } from "./utils/fontLoader";
 // Types
 import { MenuItem, ActiveTab, PreviewMode } from "./types";
 
-export default function MenuManagementClient({ venueId, canEdit = true }: { venueId: string; canEdit?: boolean }) {
+export default function MenuManagementClient({
+  venueId,
+  canEdit = true,
+}: {
+  venueId: string;
+  canEdit?: boolean;
+}) {
   const [isAddModalOpen, setIsAddModalOpen] = useState(false);
   const [editingItem, setEditingItem] = useState<MenuItem | null>(null);
   const [expandedCategories, setExpandedCategories] = useState<Set<string>>(new Set());
   const [formData, setFormData] = useState({
-    name: '',
-    description: '',
-    price: '',
-    category: '',
-    available: true
+    name: "",
+    description: "",
+    price: "",
+    category: "",
+    available: true,
   });
   const [isClearing, setIsClearing] = useState(false);
-  const [activeTab, setActiveTab] = useState<ActiveTab>('manage');
+  const [activeTab, setActiveTab] = useState<ActiveTab>("manage");
   const [showCategories, setShowCategories] = useState(false);
-  const [previewMode, setPreviewMode] = useState<PreviewMode>('pdf');
+  const [previewMode, setPreviewMode] = useState<PreviewMode>("pdf");
   const { toast } = useToast();
 
   const { menuItems, loading, categoryOrder, setMenuItems, loadMenuItems } = useMenuItems(venueId);
-  const { designSettings, setDesignSettings, isSavingDesign, saveDesignSettings } = useDesignSettings(venueId);
+  const { designSettings, setDesignSettings, isSavingDesign, saveDesignSettings } =
+    useDesignSettings(venueId);
   const { handleDragEnd } = useDragAndDrop(menuItems, setMenuItems);
-  const { isUploadingLogo, handleLogoUpload } = useLogoUpload(venueId, designSettings, setDesignSettings);
+  const { isUploadingLogo, handleLogoUpload } = useLogoUpload(
+    venueId,
+    designSettings,
+    setDesignSettings
+  );
 
   useEffect(() => {
     loadFontForFamily(designSettings.font_family);
@@ -65,7 +98,7 @@ export default function MenuManagementClient({ venueId, canEdit = true }: { venu
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    
+
     if (!venueId) {
       toast({
         title: "Error",
@@ -77,13 +110,15 @@ export default function MenuManagementClient({ venueId, canEdit = true }: { venu
 
     try {
       const supabase = createClient();
-      
+
       let position = 0;
       if (!editingItem) {
-        const categoryItems = menuItems.filter(item => item.category === formData.category.trim());
+        const categoryItems = menuItems.filter(
+          (item) => item.category === formData.category.trim()
+        );
         position = categoryItems.length;
       }
-      
+
       const itemData = {
         venue_id: venueId,
         name: formData.name.trim(),
@@ -92,19 +127,14 @@ export default function MenuManagementClient({ venueId, canEdit = true }: { venu
         category: formData.category.trim(),
         is_available: formData.available,
         position: editingItem ? editingItem.position : position,
-        created_at: new Date().toISOString()
+        created_at: new Date().toISOString(),
       };
 
       let result;
       if (editingItem) {
-        result = await supabase
-          .from('menu_items')
-          .update(itemData)
-          .eq('id', editingItem.id);
+        result = await supabase.from("menu_items").update(itemData).eq("id", editingItem.id);
       } else {
-        result = await supabase
-          .from('menu_items')
-          .insert(itemData);
+        result = await supabase.from("menu_items").insert(itemData);
       }
 
       if (result.error) {
@@ -113,25 +143,24 @@ export default function MenuManagementClient({ venueId, canEdit = true }: { venu
 
       toast({
         title: editingItem ? "Menu item updated" : "Menu item added",
-        description: `"${formData.name}" has been ${editingItem ? 'updated' : 'added'} successfully.`,
+        description: `"${formData.name}" has been ${editingItem ? "updated" : "added"} successfully.`,
       });
 
       setFormData({
-        name: '',
-        description: '',
-        price: '',
-        category: '',
-        available: true
+        name: "",
+        description: "",
+        price: "",
+        category: "",
+        available: true,
       });
       setIsAddModalOpen(false);
       setEditingItem(null);
-      
+
       await loadMenuItems();
     } catch (_error) {
-
       toast({
         title: "Error",
-        description: error.message || "Failed to save menu item",
+        description: _error.message || "Failed to save menu item",
         variant: "destructive",
       });
     }
@@ -144,10 +173,7 @@ export default function MenuManagementClient({ venueId, canEdit = true }: { venu
 
     try {
       const supabase = createClient();
-      const { error } = await supabase
-        .from('menu_items')
-        .delete()
-        .eq('id', item.id);
+      const { error } = await supabase.from("menu_items").delete().eq("id", item.id);
 
       if (error) {
         throw error;
@@ -160,10 +186,9 @@ export default function MenuManagementClient({ venueId, canEdit = true }: { venu
 
       await loadMenuItems();
     } catch (_error) {
-
       toast({
         title: "Error",
-        description: error.message || "Failed to delete menu item",
+        description: _error.message || "Failed to delete menu item",
         variant: "destructive",
       });
     }
@@ -173,10 +198,10 @@ export default function MenuManagementClient({ venueId, canEdit = true }: { venu
     setEditingItem(item);
     setFormData({
       name: item.name,
-      description: item.description || '',
+      description: item.description || "",
       price: item.price.toString(),
       category: item.category,
-      available: item.is_available
+      available: item.is_available,
     });
     setIsAddModalOpen(true);
   };
@@ -192,50 +217,47 @@ export default function MenuManagementClient({ venueId, canEdit = true }: { venu
   };
 
   const getCategories = () => {
-    const uniqueCategories = Array.from(new Set(menuItems.map(item => item.category)));
-    
+    const uniqueCategories = Array.from(new Set(menuItems.map((item) => item.category)));
+
     // Always use categoryOrder from database if available
     if (categoryOrder && categoryOrder.length > 0) {
       // Use PDF order, add any new categories at the end
-      const ordered = categoryOrder.filter(cat => uniqueCategories.includes(cat));
-      const newCategories = uniqueCategories.filter(cat => !categoryOrder.includes(cat));
+      const ordered = categoryOrder.filter((cat) => uniqueCategories.includes(cat));
+      const newCategories = uniqueCategories.filter((cat) => !categoryOrder.includes(cat));
       return [...ordered, ...newCategories];
     }
-    
+
     // Fallback: extract order from item positions
     const categoriesInOrder: string[] = [];
     const seen = new Set<string>();
-    
+
     menuItems
       .sort((a, b) => (a.position || 0) - (b.position || 0))
-      .forEach(item => {
+      .forEach((item) => {
         if (item.category && !seen.has(item.category)) {
           categoriesInOrder.push(item.category);
           seen.add(item.category);
         }
       });
-    
+
     return categoriesInOrder;
   };
 
   const getItemsByCategory = (category: string) => {
     return menuItems
-      .filter(item => item.category === category)
+      .filter((item) => item.category === category)
       .sort((a, b) => (a.position || 0) - (b.position || 0));
   };
 
   const clearAllMenu = async () => {
-    if (!confirm('Are you sure you want to clear all menu items? This action cannot be undone.')) {
+    if (!confirm("Are you sure you want to clear all menu items? This action cannot be undone.")) {
       return;
     }
 
     try {
       setIsClearing(true);
       const supabase = createClient();
-      const { error } = await supabase
-        .from('menu_items')
-        .delete()
-        .eq('venue_id', venueId);
+      const { error } = await supabase.from("menu_items").delete().eq("venue_id", venueId);
 
       if (error) {
         throw error;
@@ -248,10 +270,9 @@ export default function MenuManagementClient({ venueId, canEdit = true }: { venu
 
       await loadMenuItems();
     } catch (_error) {
-
       toast({
         title: "Error",
-        description: error.message || "Failed to clear menu",
+        description: _error.message || "Failed to clear menu",
         variant: "destructive",
       });
     } finally {
@@ -266,24 +287,24 @@ export default function MenuManagementClient({ venueId, canEdit = true }: { venu
       {/* Tab Navigation */}
       <div className="flex flex-col sm:flex-row space-y-2 sm:space-y-0 sm:space-x-1 mb-6 bg-muted p-1 rounded-lg w-full sm:w-fit">
         <Button
-          variant={activeTab === 'manage' ? 'default' : 'ghost'}
-          onClick={() => setActiveTab('manage')}
+          variant={activeTab === "manage" ? "default" : "ghost"}
+          onClick={() => setActiveTab("manage")}
           className="flex items-center justify-center space-x-2 w-full sm:w-auto"
         >
           <Settings className="h-4 w-4" />
           <span>Manage</span>
         </Button>
         <Button
-          variant={activeTab === 'design' ? 'default' : 'ghost'}
-          onClick={() => setActiveTab('design')}
+          variant={activeTab === "design" ? "default" : "ghost"}
+          onClick={() => setActiveTab("design")}
           className="flex items-center justify-center space-x-2 w-full sm:w-auto"
         >
           <Palette className="h-4 w-4" />
           <span>Design</span>
         </Button>
         <Button
-          variant={activeTab === 'preview' ? 'default' : 'ghost'}
-          onClick={() => setActiveTab('preview')}
+          variant={activeTab === "preview" ? "default" : "ghost"}
+          onClick={() => setActiveTab("preview")}
           className="flex items-center justify-center space-x-2 w-full sm:w-auto"
         >
           <Eye className="h-4 w-4" />
@@ -292,7 +313,7 @@ export default function MenuManagementClient({ venueId, canEdit = true }: { venu
       </div>
 
       {/* Manage Tab */}
-      {activeTab === 'manage' && (
+      {activeTab === "manage" && (
         <div className="space-y-6">
           {/* Unified Menu Upload - Handles PDF + Optional URL */}
           <MenuUploadCard venueId={venueId} onSuccess={() => loadMenuItems()} />
@@ -310,14 +331,21 @@ export default function MenuManagementClient({ venueId, canEdit = true }: { venu
                     onClick={() => setShowCategories(!showCategories)}
                     className="flex items-center space-x-2"
                   >
-                    {showCategories ? <ChevronDown className="h-4 w-4" /> : <ChevronRight className="h-4 w-4" />}
-                    <span>{showCategories ? 'Hide' : 'Manage'}</span>
+                    {showCategories ? (
+                      <ChevronDown className="h-4 w-4" />
+                    ) : (
+                      <ChevronRight className="h-4 w-4" />
+                    )}
+                    <span>{showCategories ? "Hide" : "Manage"}</span>
                   </Button>
                 </CardTitle>
               </CardHeader>
               {showCategories && (
                 <CardContent>
-                  <CategoriesManagement venueId={venueId} onCategoriesUpdate={() => loadMenuItems()} />
+                  <CategoriesManagement
+                    venueId={venueId}
+                    onCategoriesUpdate={() => loadMenuItems()}
+                  />
                 </CardContent>
               )}
             </Card>
@@ -338,9 +366,11 @@ export default function MenuManagementClient({ venueId, canEdit = true }: { venu
                         <span>Add Item</span>
                       </Button>
                     </DialogTrigger>
-                      <DialogContent className="sm:max-w-[425px]">
+                    <DialogContent className="sm:max-w-[425px]">
                       <DialogHeader>
-                        <DialogTitle>{editingItem ? 'Edit Menu Item' : 'Add Menu Item'}</DialogTitle>
+                        <DialogTitle>
+                          {editingItem ? "Edit Menu Item" : "Add Menu Item"}
+                        </DialogTitle>
                       </DialogHeader>
                       <MenuItemForm
                         formData={formData}
@@ -359,7 +389,7 @@ export default function MenuManagementClient({ venueId, canEdit = true }: { venu
                       className="flex items-center space-x-2"
                     >
                       <Trash className="h-4 w-4" />
-                      <span>{isClearing ? 'Clearing...' : 'Clear All'}</span>
+                      <span>{isClearing ? "Clearing..." : "Clear All"}</span>
                     </Button>
                   )}
                 </div>
@@ -370,8 +400,13 @@ export default function MenuManagementClient({ venueId, canEdit = true }: { venu
                 <div className="text-center py-8">
                   <ShoppingBag className="h-12 w-12 text-muted-foreground mx-auto mb-4" />
                   <h3 className="text-lg font-medium text-foreground mb-2">No menu items yet</h3>
-                  <p className="text-muted-foreground mb-4">Get started by adding your first menu item or uploading a menu.</p>
-                  <Button onClick={() => setIsAddModalOpen(true)} className="flex items-center space-x-2">
+                  <p className="text-muted-foreground mb-4">
+                    Get started by adding your first menu item or uploading a menu.
+                  </p>
+                  <Button
+                    onClick={() => setIsAddModalOpen(true)}
+                    className="flex items-center space-x-2"
+                  >
                     <Plus className="h-4 w-4" />
                     <span>Add First Item</span>
                   </Button>
@@ -379,7 +414,7 @@ export default function MenuManagementClient({ venueId, canEdit = true }: { venu
               ) : (
                 <DragDropContext onDragEnd={handleDragEnd}>
                   <div className="space-y-4">
-                    {getCategories().map(category => (
+                    {getCategories().map((category) => (
                       <div key={category} className="border rounded-lg">
                         <div
                           className="flex items-center justify-between p-4 cursor-pointer hover:bg-muted/50"
@@ -403,7 +438,7 @@ export default function MenuManagementClient({ venueId, canEdit = true }: { venu
                               <div
                                 ref={provided.innerRef}
                                 {...provided.droppableProps}
-                                className={`border-t ${snapshot.isDraggingOver ? 'bg-blue-50' : ''}`}
+                                className={`border-t ${snapshot.isDraggingOver ? "bg-blue-50" : ""}`}
                               >
                                 {getItemsByCategory(category)
                                   .sort((a, b) => (a.position || 0) - (b.position || 0))
@@ -414,7 +449,9 @@ export default function MenuManagementClient({ venueId, canEdit = true }: { venu
                                           ref={provided.innerRef}
                                           {...provided.draggableProps}
                                           className={`flex items-center justify-between p-4 hover:bg-muted/25 transition-colors ${
-                                            snapshot.isDragging ? 'bg-blue-50 border-l-4 border-blue-500 shadow-md' : ''
+                                            snapshot.isDragging
+                                              ? "bg-blue-50 border-l-4 border-blue-500 shadow-md"
+                                              : ""
                                           }`}
                                         >
                                           <div className="flex items-center space-x-2 flex-1">
@@ -426,15 +463,23 @@ export default function MenuManagementClient({ venueId, canEdit = true }: { venu
                                             </div>
                                             <div className="flex-1">
                                               <div className="flex items-center space-x-2">
-                                                <h4 className="font-medium text-foreground">{item.name}</h4>
+                                                <h4 className="font-medium text-foreground">
+                                                  {item.name}
+                                                </h4>
                                                 {!item.is_available && (
-                                                  <span className="text-xs bg-red-100 text-red-800 px-2 py-1 rounded">Unavailable</span>
+                                                  <span className="text-xs bg-red-100 text-red-800 px-2 py-1 rounded">
+                                                    Unavailable
+                                                  </span>
                                                 )}
                                               </div>
                                               {item.description && (
-                                                <p className="text-sm text-muted-foreground mt-1">{item.description}</p>
+                                                <p className="text-sm text-muted-foreground mt-1">
+                                                  {item.description}
+                                                </p>
                                               )}
-                                              <p className="text-sm font-medium text-foreground mt-1">{formatPriceWithCurrency(item.price, '£')}</p>
+                                              <p className="text-sm font-medium text-foreground mt-1">
+                                                {formatPriceWithCurrency(item.price, "£")}
+                                              </p>
                                             </div>
                                           </div>
                                           <div className="flex items-center space-x-2">
@@ -473,17 +518,11 @@ export default function MenuManagementClient({ venueId, canEdit = true }: { venu
       )}
 
       {/* Design Tab */}
-      {activeTab === 'design' && (
+      {activeTab === "design" && (
         <div className="space-y-6">
-          <ThemeSettings
-            designSettings={designSettings}
-            setDesignSettings={setDesignSettings}
-          />
+          <ThemeSettings designSettings={designSettings} setDesignSettings={setDesignSettings} />
 
-          <LayoutSettings
-            designSettings={designSettings}
-            setDesignSettings={setDesignSettings}
-          />
+          <LayoutSettings designSettings={designSettings} setDesignSettings={setDesignSettings} />
 
           <BrandingSettings
             designSettings={designSettings}
@@ -496,20 +535,20 @@ export default function MenuManagementClient({ venueId, canEdit = true }: { venu
             <div className="text-sm text-gray-600">
               💡 Changes will be visible in the Preview tab
             </div>
-            <Button 
+            <Button
               onClick={saveDesignSettings}
               disabled={isSavingDesign}
               className="flex items-center space-x-2 w-full sm:w-auto"
             >
               <Save className="h-4 w-4" />
-              <span>{isSavingDesign ? 'Saving...' : 'Save Design'}</span>
+              <span>{isSavingDesign ? "Saving..." : "Save Design"}</span>
             </Button>
           </div>
         </div>
       )}
 
       {/* Preview Tab */}
-      {activeTab === 'preview' && (
+      {activeTab === "preview" && (
         <div className="space-y-6">
           <PreviewControls
             previewMode={previewMode}
@@ -520,18 +559,18 @@ export default function MenuManagementClient({ venueId, canEdit = true }: { venu
               if (navigator.share) {
                 try {
                   await navigator.share({
-                    title: 'View Our Menu',
-                    text: 'Check out our menu!',
+                    title: "View Our Menu",
+                    text: "Check out our menu!",
                     url: shareUrl,
                   });
                 } catch (_err) {
-      // Error silently handled
-    }
+                  // Error silently handled
+                }
               } else {
                 await navigator.clipboard.writeText(shareUrl);
                 toast({
-                  title: 'Link copied!',
-                  description: 'Menu link has been copied to your clipboard',
+                  title: "Link copied!",
+                  description: "Menu link has been copied to your clipboard",
                 });
               }
             }}
@@ -542,59 +581,75 @@ export default function MenuManagementClient({ venueId, canEdit = true }: { venu
               <CardContent className="p-12">
                 <div className="text-center">
                   <ShoppingBag className="h-16 w-16 text-gray-300 mx-auto mb-4" />
-                  <h3 className="text-lg font-medium text-gray-900 mb-2">No menu items to preview</h3>
-                  <p className="text-gray-500 mb-4">Upload a PDF menu in the Manage tab to see your styled menu preview.</p>
-                  <Button onClick={() => setActiveTab('manage')} className="flex items-center space-x-2 mx-auto">
+                  <h3 className="text-lg font-medium text-gray-900 mb-2">
+                    No menu items to preview
+                  </h3>
+                  <p className="text-gray-500 mb-4">
+                    Upload a PDF menu in the Manage tab to see your styled menu preview.
+                  </p>
+                  <Button
+                    onClick={() => setActiveTab("manage")}
+                    className="flex items-center space-x-2 mx-auto"
+                  >
                     <Plus className="h-4 w-4" />
                     <span>Go to Manage</span>
                   </Button>
                 </div>
               </CardContent>
             </Card>
-          ) : previewMode === 'pdf' ? (
+          ) : previewMode === "pdf" ? (
             <EnhancedPDFMenuDisplay
               venueId={venueId}
               menuItems={menuItems}
               categoryOrder={categoryOrder}
-              onAddToCart={() => { /* Empty */ }}
+              onAddToCart={() => {
+                /* Empty */
+              }}
               cart={[]}
-              onRemoveFromCart={() => { /* Empty */ }}
-              onUpdateQuantity={() => { /* Empty */ }}
+              onRemoveFromCart={() => {
+                /* Empty */
+              }}
+              onUpdateQuantity={() => {
+                /* Empty */
+              }}
               isOrdering={false}
             />
-          ) : previewMode === 'styled' ? (
-            <MenuPreview
-              venueId={venueId}
-              menuItems={menuItems}
-              categoryOrder={categoryOrder}
-            />
+          ) : previewMode === "styled" ? (
+            <MenuPreview venueId={venueId} menuItems={menuItems} categoryOrder={categoryOrder} />
           ) : (
             <Card>
               <CardContent className="p-6">
                 <div className="space-y-8">
                   {(() => {
                     const categories = Array.from(new Set(menuItems.map((i) => i.category)));
-                    const sortedCats = categoryOrder 
-                      ? categories.sort((a,b) => {
-                          const orderA = categoryOrder.findIndex(c => c.toLowerCase() === a.toLowerCase());
-                          const orderB = categoryOrder.findIndex(c => c.toLowerCase() === b.toLowerCase());
+                    const sortedCats = categoryOrder
+                      ? categories.sort((a, b) => {
+                          const orderA = categoryOrder.findIndex(
+                            (c) => c.toLowerCase() === a.toLowerCase()
+                          );
+                          const orderB = categoryOrder.findIndex(
+                            (c) => c.toLowerCase() === b.toLowerCase()
+                          );
                           if (orderA >= 0 && orderB >= 0) return orderA - orderB;
                           if (orderA >= 0) return -1;
                           if (orderB >= 0) return 1;
                           return 0;
                         })
                       : categories.sort();
-                    
-                    return sortedCats.map(category => (
+
+                    return sortedCats.map((category) => (
                       <div key={category} className="space-y-4">
                         <h2 className="text-2xl font-bold text-gray-900 border-b-2 border-gray-200 pb-2">
                           {category}
                         </h2>
                         <div className="space-y-3">
                           {menuItems
-                            .filter(item => item.category === category && item.is_available)
-                            .map(item => (
-                              <div key={item.id} className="flex justify-between items-start py-2 border-b border-gray-100 last:border-b-0">
+                            .filter((item) => item.category === category && item.is_available)
+                            .map((item) => (
+                              <div
+                                key={item.id}
+                                className="flex justify-between items-start py-2 border-b border-gray-100 last:border-b-0"
+                              >
                                 <div className="flex-1">
                                   <h3 className="font-semibold text-gray-900">{item.name}</h3>
                                   {item.description && (

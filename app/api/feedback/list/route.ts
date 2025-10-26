@@ -89,12 +89,12 @@ export async function POST(req: Request) {
     });
   } catch (_error) {
     logger.error("[AUTH DEBUG] Error in feedback list:", {
-      error: error instanceof Error ? error.message : "Unknown error",
+      error: _error instanceof Error ? _error.message : "Unknown _error",
     });
     return NextResponse.json(
       {
         ok: false,
-        error: `Failed to fetch feedback: ${error instanceof Error ? error.message : "Unknown error"}`,
+        error: `Failed to fetch feedback: ${_error instanceof Error ? _error.message : "Unknown _error"}`,
       },
       { status: 500 }
     );

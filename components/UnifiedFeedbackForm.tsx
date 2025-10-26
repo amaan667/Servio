@@ -1,15 +1,15 @@
 "use client";
 
-import { useState, useEffect, useCallback } from 'react';
-import { Star, Send, CheckCircle } from 'lucide-react';
-import { Button } from '@/components/ui/button';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { Textarea } from '@/components/ui/textarea';
-import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
-import { Label } from '@/components/ui/label';
-import { useToast } from '@/hooks/use-toast';
-import { supabaseBrowser as createClient } from '@/lib/supabase';
-import type { FeedbackQuestion, FeedbackAnswer } from '@/types/feedback';
+import { useState, useEffect, useCallback } from "react";
+import { Star, Send, CheckCircle } from "lucide-react";
+import { Button } from "@/components/ui/button";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Textarea } from "@/components/ui/textarea";
+import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
+import { Label } from "@/components/ui/label";
+import { useToast } from "@/hooks/use-toast";
+import { supabaseBrowser as createClient } from "@/lib/supabase";
+import type { FeedbackQuestion, FeedbackAnswer } from "@/types/feedback";
 
 interface UnifiedFeedbackFormProps {
   venueId: string;
@@ -19,83 +19,85 @@ interface UnifiedFeedbackFormProps {
   onSubmit?: () => void;
 }
 
-export default function UnifiedFeedbackForm({ 
-  venueId, 
-  orderId, 
-  customerName = 'Customer',
+export default function UnifiedFeedbackForm({
+  venueId,
+  orderId,
+  customerName = "Customer",
   customerPhone,
-  onSubmit 
+  onSubmit,
 }: UnifiedFeedbackFormProps) {
   const [questions, setQuestions] = useState<FeedbackQuestion[]>([]);
   const [loading, setLoading] = useState(true);
   const [submitting, setSubmitting] = useState(false);
   const [isSubmitted, setIsSubmitted] = useState(false);
-  const [answers, setAnswers] = useState<{[key: string]: unknown}>({ /* Empty */ });
+  const [answers, setAnswers] = useState<{ [key: string]: unknown }>({
+    /* Empty */
+  });
   const { toast } = useToast();
 
   // Generic feedback questions (matching the screenshot layout)
   const genericQuestions: FeedbackQuestion[] = [
     {
-      id: 'generic-overall-experience',
+      id: "generic-overall-experience",
       venue_id: venueId,
-      prompt: 'How would you rate your overall experience?',
-      type: 'stars',
+      prompt: "How would you rate your overall experience?",
+      type: "stars",
       choices: null,
       is_active: true,
       sort_index: 1,
       created_at: new Date().toISOString(),
-      updated_at: new Date().toISOString()
+      updated_at: new Date().toISOString(),
     },
     {
-      id: 'generic-food-quality',
+      id: "generic-food-quality",
       venue_id: venueId,
-      prompt: 'How was the food quality?',
-      type: 'stars',
+      prompt: "How was the food quality?",
+      type: "stars",
       choices: null,
       is_active: true,
       sort_index: 2,
       created_at: new Date().toISOString(),
-      updated_at: new Date().toISOString()
+      updated_at: new Date().toISOString(),
     },
     {
-      id: 'generic-service',
+      id: "generic-service",
       venue_id: venueId,
-      prompt: 'How was the service?',
-      type: 'stars',
+      prompt: "How was the service?",
+      type: "stars",
       choices: null,
       is_active: true,
       sort_index: 3,
       created_at: new Date().toISOString(),
-      updated_at: new Date().toISOString()
+      updated_at: new Date().toISOString(),
     },
     {
-      id: 'generic-recommendation',
+      id: "generic-recommendation",
       venue_id: venueId,
-      prompt: 'Would you recommend us to others?',
-      type: 'multiple_choice',
+      prompt: "Would you recommend us to others?",
+      type: "multiple_choice",
       choices: [
-        'Yes, definitely',
-        'Yes, probably',
-        'Maybe',
-        'No, probably not',
-        'No, definitely not'
+        "Yes, definitely",
+        "Yes, probably",
+        "Maybe",
+        "No, probably not",
+        "No, definitely not",
       ],
       is_active: true,
       sort_index: 4,
       created_at: new Date().toISOString(),
-      updated_at: new Date().toISOString()
+      updated_at: new Date().toISOString(),
     },
     {
-      id: 'generic-comments',
+      id: "generic-comments",
       venue_id: venueId,
-      prompt: 'Any additional comments or suggestions?',
-      type: 'paragraph',
+      prompt: "Any additional comments or suggestions?",
+      type: "paragraph",
       choices: null,
       is_active: true,
       sort_index: 5,
       created_at: new Date().toISOString(),
-      updated_at: new Date().toISOString()
-    }
+      updated_at: new Date().toISOString(),
+    },
   ];
 
   // Fetch owner-created questions
@@ -103,11 +105,11 @@ export default function UnifiedFeedbackForm({
     try {
       setLoading(true);
       const response = await fetch(`/api/feedback/questions/public?venueId=${venueId}`);
-      
+
       if (response.ok) {
         const data = await response.json();
         const ownerQuestions = data.questions || [];
-        
+
         if (ownerQuestions.length > 0) {
           setQuestions(ownerQuestions);
         } else {
@@ -117,7 +119,6 @@ export default function UnifiedFeedbackForm({
         setQuestions(genericQuestions);
       }
     } catch (_error) {
-
       setQuestions(genericQuestions);
     } finally {
       setLoading(false);
@@ -129,87 +130,89 @@ export default function UnifiedFeedbackForm({
   }, [fetchQuestions]);
 
   const handleAnswerChange = (questionId: string, answer: unknown) => {
-    setAnswers(prev => ({
+    setAnswers((prev) => ({
       ...prev,
-      [questionId]: answer
+      [questionId]: answer,
     }));
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    
+
     if (questions.length === 0) return;
 
     setSubmitting(true);
 
     try {
-      const feedbackAnswers: FeedbackAnswer[] = questions.map(question => {
-        const answer = answers[question.id];
-        
-        switch (question.type) {
-          case 'stars':
-            return {
-              question_id: question.id,
-              type: 'stars' as const,
-              answer_stars: answer || 0,
-              order_id: orderId
-            };
-          case 'multiple_choice':
-            return {
-              question_id: question.id,
-              type: 'multiple_choice' as const,
-              answer_choice: answer || '',
-              order_id: orderId
-            };
-          case 'paragraph':
-            return {
-              question_id: question.id,
-              type: 'paragraph' as const,
-              answer_text: answer || '',
-              order_id: orderId
-            };
-          default:
-            throw new Error('Invalid question type');
-        }
-      }).filter(answer => {
-        // Filter out empty answers
-        switch (answer.type) {
-          case 'stars':
-            return answer.answer_stars > 0;
-          case 'multiple_choice':
-            return answer.answer_choice.trim() !== '';
-          case 'paragraph':
-            return answer.answer_text.trim() !== '';
-          default:
-            return false;
-        }
-      });
+      const feedbackAnswers: FeedbackAnswer[] = questions
+        .map((question) => {
+          const answer = answers[question.id];
+
+          switch (question.type) {
+            case "stars":
+              return {
+                question_id: question.id,
+                type: "stars" as const,
+                answer_stars: answer || 0,
+                order_id: orderId,
+              };
+            case "multiple_choice":
+              return {
+                question_id: question.id,
+                type: "multiple_choice" as const,
+                answer_choice: answer || "",
+                order_id: orderId,
+              };
+            case "paragraph":
+              return {
+                question_id: question.id,
+                type: "paragraph" as const,
+                answer_text: answer || "",
+                order_id: orderId,
+              };
+            default:
+              throw new Error("Invalid question type");
+          }
+        })
+        .filter((answer) => {
+          // Filter out empty answers
+          switch (answer.type) {
+            case "stars":
+              return answer.answer_stars > 0;
+            case "multiple_choice":
+              return answer.answer_choice.trim() !== "";
+            case "paragraph":
+              return answer.answer_text.trim() !== "";
+            default:
+              return false;
+          }
+        });
 
       if (feedbackAnswers.length === 0) {
         toast({
           title: "No Feedback",
           description: "Please answer at least one question",
-          variant: "destructive"
+          variant: "destructive",
         });
         return;
       }
 
       // Submit feedback
-      const response = await fetch('/api/feedback-responses', {
-        method: 'POST',
+      const response = await fetch("/api/feedback-responses", {
+        method: "POST",
         headers: {
-          'Content-Type': 'application/json',
+          "Content-Type": "application/json",
         },
         body: JSON.stringify({
           venue_id: venueId,
           order_id: orderId,
-          answers: feedbackAnswers
+          answers: feedbackAnswers,
         }),
       });
 
       if (!response.ok) {
         const errorData = await response.json();
-        throw new Error(errorData.error || 'Failed to submit feedback');
+        throw new Error(errorData.error || "Failed to submit feedback");
       }
 
       setIsSubmitted(true);
@@ -221,27 +224,26 @@ export default function UnifiedFeedbackForm({
       if (onSubmit) {
         onSubmit();
       }
-
     } catch (_error) {
-
       toast({
         title: "Error",
-        description: error instanceof Error ? error.message : 'Failed to submit feedback. Please try again.',
-        variant: "destructive"
+        description:
+          _error instanceof Error ? _error.message : "Failed to submit feedback. Please try again.",
+        variant: "destructive",
       });
     } finally {
       setSubmitting(false);
     }
   };
 
-  const StarRating = ({ 
-    value, 
-    onChange, 
-    label 
-  }: { 
-    value: number; 
-    onChange: (rating: number) => void; 
-    label: string; 
+  const StarRating = ({
+    value,
+    onChange,
+    label,
+  }: {
+    value: number;
+    onChange: (rating: number) => void;
+    label: string;
   }) => (
     <div className="space-y-2">
       <Label className="text-sm font-medium text-gray-700">{label}</Label>
@@ -255,9 +257,7 @@ export default function UnifiedFeedbackForm({
           >
             <Star
               className={`h-6 w-6 ${
-                star <= value
-                  ? 'text-yellow-400 fill-current'
-                  : 'text-gray-600'
+                star <= value ? "text-yellow-400 fill-current" : "text-gray-600"
               }`}
             />
           </button>
@@ -302,7 +302,7 @@ export default function UnifiedFeedbackForm({
         <form onSubmit={handleSubmit} className="space-y-6">
           {questions.map((question) => (
             <div key={question.id} className="space-y-3">
-              {question.type === 'stars' && (
+              {question.type === "stars" && (
                 <StarRating
                   value={answers[question.id] || 0}
                   onChange={(rating) => handleAnswerChange(question.id, rating)}
@@ -310,19 +310,20 @@ export default function UnifiedFeedbackForm({
                 />
               )}
 
-              {question.type === 'multiple_choice' && (
+              {question.type === "multiple_choice" && (
                 <div className="space-y-2">
-                  <Label className="text-sm font-medium text-gray-700">
-                    {question.prompt}
-                  </Label>
+                  <Label className="text-sm font-medium text-gray-700">{question.prompt}</Label>
                   <RadioGroup
-                    value={answers[question.id] || ''}
+                    value={answers[question.id] || ""}
                     onValueChange={(value) => handleAnswerChange(question.id, value)}
                   >
                     {question.choices?.map((choice, index) => (
                       <div key={index} className="flex items-center space-x-2">
                         <RadioGroupItem value={choice} id={`${question.id}-${index}`} />
-                        <Label htmlFor={`${question.id}-${index}`} className="text-sm text-gray-700">
+                        <Label
+                          htmlFor={`${question.id}-${index}`}
+                          className="text-sm text-gray-700"
+                        >
                           {choice}
                         </Label>
                       </div>
@@ -331,13 +332,11 @@ export default function UnifiedFeedbackForm({
                 </div>
               )}
 
-              {question.type === 'paragraph' && (
+              {question.type === "paragraph" && (
                 <div className="space-y-2">
-                  <Label className="text-sm font-medium text-gray-700">
-                    {question.prompt}
-                  </Label>
+                  <Label className="text-sm font-medium text-gray-700">{question.prompt}</Label>
                   <Textarea
-                    value={answers[question.id] || ''}
+                    value={answers[question.id] || ""}
                     onChange={(e) => handleAnswerChange(question.id, e.target.value)}
                     placeholder="Share your thoughts..."
                     rows={3}
@@ -345,7 +344,7 @@ export default function UnifiedFeedbackForm({
                     className="resize-none"
                   />
                   <p className="text-xs text-gray-900">
-                    {(answers[question.id] || '').length}/600 characters
+                    {(answers[question.id] || "").length}/600 characters
                   </p>
                 </div>
               )}

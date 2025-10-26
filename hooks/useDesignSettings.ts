@@ -4,9 +4,9 @@
  * Manages menu design settings
  */
 
-import { useState, useEffect, useCallback } from 'react';
-import { supabaseBrowser as createClient } from '@/lib/supabase';
-import { logger } from '@/lib/logger';
+import { useState, useEffect, useCallback } from "react";
+import { supabaseBrowser as createClient } from "@/lib/supabase";
+import { logger } from "@/lib/logger";
 
 interface DesignSettings {
   venue_name: string;
@@ -26,18 +26,18 @@ interface DesignSettings {
 }
 
 const defaultSettings: DesignSettings = {
-  venue_name: '',
+  venue_name: "",
   logo_url: null,
-  primary_color: '#8b5cf6',
-  secondary_color: '#f3f4f6',
-  font_family: 'inter',
-  font_size: 'medium',
+  primary_color: "#8b5cf6",
+  secondary_color: "#f3f4f6",
+  font_family: "inter",
+  font_size: "medium",
   font_size_numeric: 16,
-  logo_size: 'large',
-  custom_heading: '',
+  logo_size: "large",
+  custom_heading: "",
   auto_theme_enabled: false,
-  detected_primary_color: '',
-  detected_secondary_color: '',
+  detected_primary_color: "",
+  detected_secondary_color: "",
   show_descriptions: true,
   show_prices: true,
 };
@@ -55,9 +55,11 @@ export function useDesignSettings(venueId: string) {
 
       const supabase = createClient();
       const { data, error: fetchError } = await supabase
-        .from('venues')
-        .select('venue_name, logo_url, primary_color, secondary_color, font_family, font_size, font_size_numeric, logo_size, custom_heading, auto_theme_enabled, detected_primary_color, detected_secondary_color, show_descriptions, show_prices')
-        .eq('venue_id', venueId)
+        .from("venues")
+        .select(
+          "venue_name, logo_url, primary_color, secondary_color, font_family, font_size, font_size_numeric, logo_size, custom_heading, auto_theme_enabled, detected_primary_color, detected_secondary_color, show_descriptions, show_prices"
+        )
+        .eq("venue_id", venueId)
         .single();
 
       if (fetchError) throw fetchError;
@@ -67,8 +69,8 @@ export function useDesignSettings(venueId: string) {
         ...data,
       });
     } catch (_err) {
-      logger.error('Error fetching design settings', { venueId, error: err });
-      setError('Failed to load design settings');
+      logger.error("Error fetching design settings", { venueId, error: _err });
+      setError("Failed to load design settings");
     } finally {
       setLoading(false);
     }
@@ -80,49 +82,64 @@ export function useDesignSettings(venueId: string) {
     }
   }, [venueId, fetchSettings]);
 
-  const saveSettings = useCallback(async (updates: Partial<DesignSettings>) => {
-    try {
-      setSaving(true);
-      setError(null);
+  const saveSettings = useCallback(
+    async (updates: Partial<DesignSettings>) => {
+      try {
+        setSaving(true);
+        setError(null);
 
-      const supabase = createClient();
-      const { error: updateError } = await supabase
-        .from('venues')
-        .update(updates)
-        .eq('venue_id', venueId);
+        const supabase = createClient();
+        const { error: updateError } = await supabase
+          .from("venues")
+          .update(updates)
+          .eq("venue_id", venueId);
 
-      if (updateError) throw updateError;
+        if (updateError) throw updateError;
 
-      setSettings(prev => ({ ...prev, ...updates }));
-      return { success: true };
-    } catch (_err) {
-      logger.error('Error saving design settings', { venueId, error: err });
-      setError('Failed to save design settings');
-      return { success: false, error: err };
-    } finally {
-      setSaving(false);
-    }
-  }, [venueId]);
+        setSettings((prev) => ({ ...prev, ...updates }));
+        return { success: true };
+      } catch (_err) {
+        logger.error("Error saving design settings", { venueId, error: _err });
+        setError("Failed to save design settings");
+        return { success: false, error: _err };
+      } finally {
+        setSaving(false);
+      }
+    },
+    [venueId]
+  );
 
-  const updateColor = useCallback(async (type: 'primary' | 'secondary', color: string) => {
-    return saveSettings({ [`${type}_color`]: color });
-  }, [saveSettings]);
+  const updateColor = useCallback(
+    async (type: "primary" | "secondary", color: string) => {
+      return saveSettings({ [`${type}_color`]: color });
+    },
+    [saveSettings]
+  );
 
-  const updateFont = useCallback(async (family: string, size: string, sizeNumeric?: number) => {
-    return saveSettings({
-      font_family: family,
-      font_size: size,
-      font_size_numeric: sizeNumeric,
-    });
-  }, [saveSettings]);
+  const updateFont = useCallback(
+    async (family: string, size: string, sizeNumeric?: number) => {
+      return saveSettings({
+        font_family: family,
+        font_size: size,
+        font_size_numeric: sizeNumeric,
+      });
+    },
+    [saveSettings]
+  );
 
-  const updateLogo = useCallback(async (logoUrl: string) => {
-    return saveSettings({ logo_url: logoUrl });
-  }, [saveSettings]);
+  const updateLogo = useCallback(
+    async (logoUrl: string) => {
+      return saveSettings({ logo_url: logoUrl });
+    },
+    [saveSettings]
+  );
 
-  const toggleFeature = useCallback(async (feature: 'show_descriptions' | 'show_prices' | 'auto_theme_enabled', value: boolean) => {
-    return saveSettings({ [feature]: value });
-  }, [saveSettings]);
+  const toggleFeature = useCallback(
+    async (feature: "show_descriptions" | "show_prices" | "auto_theme_enabled", value: boolean) => {
+      return saveSettings({ [feature]: value });
+    },
+    [saveSettings]
+  );
 
   return {
     settings,
@@ -137,4 +154,3 @@ export function useDesignSettings(venueId: string) {
     toggleFeature,
   };
 }
-

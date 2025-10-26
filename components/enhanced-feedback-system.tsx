@@ -8,10 +8,10 @@ import { Input } from "@/components/ui/input";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { Progress } from "@/components/ui/progress";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { 
-  Star, 
-  TrendingUp, 
-  TrendingDown, 
+import {
+  Star,
+  TrendingUp,
+  TrendingDown,
   Filter,
   Search,
   ThumbsUp,
@@ -22,7 +22,7 @@ import {
   BarChart3,
   RefreshCw,
   Plus,
-  MessageSquare
+  MessageSquare,
 } from "lucide-react";
 import { supabaseBrowser as createClient } from "@/lib/supabase";
 import { logger } from "@/lib/logger";
@@ -38,7 +38,7 @@ interface Feedback {
   rating: number;
   comment: string;
   sentiment_score?: number;
-  sentiment_label?: 'positive' | 'negative' | 'neutral';
+  sentiment_label?: "positive" | "negative" | "neutral";
   category?: string;
   created_at: string;
   updated_at: string;
@@ -64,14 +64,14 @@ export function EnhancedFeedbackSystem({ venueId }: FeedbackSystemProps) {
   const [questions, setQuestions] = useState<unknown[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
-  const [activeTab, setActiveTab] = useState<'overview' | 'feedback' | 'create'>('overview');
+  const [activeTab, setActiveTab] = useState<"overview" | "feedback" | "create">("overview");
   const [filters, setFilters] = useState({
     rating: 0,
-    sentiment: 'all',
-    category: 'all',
-    dateRange: '30d'
+    sentiment: "all",
+    category: "all",
+    dateRange: "30d",
   });
-  const [searchQuery, setSearchQuery] = useState('');
+  const [searchQuery, setSearchQuery] = useState("");
 
   const fetchQuestions = useCallback(async () => {
     try {
@@ -91,43 +91,43 @@ export function EnhancedFeedbackSystem({ venueId }: FeedbackSystemProps) {
 
     try {
       const supabase = createClient();
-      if (!supabase) throw new Error('Supabase client not available');
+      if (!supabase) throw new Error("Supabase client not available");
 
       let query = supabase
-        .from('feedback')
-        .select('*')
-        .eq('venue_id', venueId)
-        .order('created_at', { ascending: false });
+        .from("feedback")
+        .select("*")
+        .eq("venue_id", venueId)
+        .order("created_at", { ascending: false });
 
       // Apply filters
       if (filters.rating > 0) {
-        query = query.eq('rating', filters.rating);
+        query = query.eq("rating", filters.rating);
       }
-      if (filters.sentiment !== 'all') {
-        query = query.eq('sentiment_label', filters.sentiment);
+      if (filters.sentiment !== "all") {
+        query = query.eq("sentiment_label", filters.sentiment);
       }
-      if (filters.category !== 'all') {
-        query = query.eq('category', filters.category);
+      if (filters.category !== "all") {
+        query = query.eq("category", filters.category);
       }
 
       // Apply date range
       const now = new Date();
       const startDate = new Date();
       switch (filters.dateRange) {
-        case '7d':
+        case "7d":
           startDate.setDate(now.getDate() - 7);
           break;
-        case '30d':
+        case "30d":
           startDate.setDate(now.getDate() - 30);
           break;
-        case '90d':
+        case "90d":
           startDate.setDate(now.getDate() - 90);
           break;
-        case '1y':
+        case "1y":
           startDate.setFullYear(now.getFullYear() - 1);
           break;
       }
-      query = query.gte('created_at', startDate.toISOString());
+      query = query.gte("created_at", startDate.toISOString());
 
       const { data, error: fetchError } = await query;
 
@@ -137,19 +137,18 @@ export function EnhancedFeedbackSystem({ venueId }: FeedbackSystemProps) {
 
       // Apply search filter (only filter not handled by query)
       if (searchQuery.trim()) {
-        filteredFeedback = filteredFeedback.filter((f: unknown) => 
-          f.customer_name.toLowerCase().includes(searchQuery.toLowerCase()) ||
-          f.comment.toLowerCase().includes(searchQuery.toLowerCase()) ||
-          f.category?.toLowerCase().includes(searchQuery.toLowerCase())
+        filteredFeedback = filteredFeedback.filter(
+          (f: unknown) =>
+            f.customer_name.toLowerCase().includes(searchQuery.toLowerCase()) ||
+            f.comment.toLowerCase().includes(searchQuery.toLowerCase()) ||
+            f.category?.toLowerCase().includes(searchQuery.toLowerCase())
         );
       }
 
       setFeedback(filteredFeedback);
       calculateStats(filteredFeedback);
-
     } catch (_err) {
-
-      setError(err.message);
+      setError(_err.message);
     } finally {
       setLoading(false);
     }
@@ -163,21 +162,28 @@ export function EnhancedFeedbackSystem({ venueId }: FeedbackSystemProps) {
 
     const totalFeedback = feedbackData.length;
     const averageRating = feedbackData.reduce((sum, f) => sum + f.rating, 0) / totalFeedback;
-    
-    const sentimentCounts = feedbackData.reduce((acc, f) => {
-      const sentiment = f.sentiment_label || 'neutral';
-      acc[sentiment] = (acc[sentiment] || 0) + 1;
-      return acc;
-    }, { /* Empty */ } as Record<string, number>);
+
+    const sentimentCounts = feedbackData.reduce(
+      (acc, f) => {
+        const sentiment = f.sentiment_label || "neutral";
+        acc[sentiment] = (acc[sentiment] || 0) + 1;
+        return acc;
+      },
+      {
+        /* Empty */
+      } as Record<string, number>
+    );
 
     const positiveSentiment = sentimentCounts.positive || 0;
     const negativeSentiment = sentimentCounts.negative || 0;
     const neutralSentiment = sentimentCounts.neutral || 0;
 
     // Category analysis
-    const categoryStats: Record<string, { count: number; totalRating: number }> = { /* Empty */ };
-    feedbackData.forEach(f => {
-      const category = f.category || 'General';
+    const categoryStats: Record<string, { count: number; totalRating: number }> = {
+      /* Empty */
+    };
+    feedbackData.forEach((f) => {
+      const category = f.category || "General";
       if (!categoryStats[category]) {
         categoryStats[category] = { count: 0, totalRating: 0 };
       }
@@ -189,24 +195,26 @@ export function EnhancedFeedbackSystem({ venueId }: FeedbackSystemProps) {
       .map(([category, stats]) => ({
         category,
         count: stats.count,
-        avgRating: stats.totalRating / stats.count
+        avgRating: stats.totalRating / stats.count,
       }))
       .sort((a, b) => b.count - a.count)
       .slice(0, 5);
 
     // Rating distribution
-    const ratingCounts: Record<number, number> = { /* Empty */ };
+    const ratingCounts: Record<number, number> = {
+      /* Empty */
+    };
     for (let i = 1; i <= 5; i++) {
       ratingCounts[i] = 0;
     }
-    feedbackData.forEach(f => {
+    feedbackData.forEach((f) => {
       ratingCounts[f.rating] = (ratingCounts[f.rating] || 0) + 1;
     });
 
     const ratingDistribution = Object.entries(ratingCounts).map(([rating, count]) => ({
       rating: parseInt(rating),
       count,
-      percentage: (count / totalFeedback) * 100
+      percentage: (count / totalFeedback) * 100,
     }));
 
     setStats({
@@ -216,32 +224,40 @@ export function EnhancedFeedbackSystem({ venueId }: FeedbackSystemProps) {
       negativeSentiment,
       neutralSentiment,
       topCategories,
-      ratingDistribution
+      ratingDistribution,
     });
   }, []);
 
   const getSentimentColor = (sentiment: string) => {
     switch (sentiment) {
-      case 'positive': return 'bg-green-100 text-green-800';
-      case 'negative': return 'bg-red-100 text-red-800';
-      case 'neutral': return 'bg-gray-100 text-gray-800';
-      default: return 'bg-gray-100 text-gray-800';
+      case "positive":
+        return "bg-green-100 text-green-800";
+      case "negative":
+        return "bg-red-100 text-red-800";
+      case "neutral":
+        return "bg-gray-100 text-gray-800";
+      default:
+        return "bg-gray-100 text-gray-800";
     }
   };
 
   const getSentimentIcon = (sentiment: string) => {
     switch (sentiment) {
-      case 'positive': return <ThumbsUp className="h-3 w-3" />;
-      case 'negative': return <ThumbsDown className="h-3 w-3" />;
-      case 'neutral': return <Heart className="h-3 w-3" />;
-      default: return <Heart className="h-3 w-3" />;
+      case "positive":
+        return <ThumbsUp className="h-3 w-3" />;
+      case "negative":
+        return <ThumbsDown className="h-3 w-3" />;
+      case "neutral":
+        return <Heart className="h-3 w-3" />;
+      default:
+        return <Heart className="h-3 w-3" />;
     }
   };
 
   const getRatingColor = (rating: number) => {
-    if (rating >= 4) return 'text-green-600';
-    if (rating >= 3) return 'text-yellow-600';
-    return 'text-red-600';
+    if (rating >= 4) return "text-green-600";
+    if (rating >= 3) return "text-yellow-600";
+    return "text-red-600";
   };
 
   useEffect(() => {
@@ -254,12 +270,12 @@ export function EnhancedFeedbackSystem({ venueId }: FeedbackSystemProps) {
     const handleQuestionsUpdated = () => {
       fetchQuestions();
     };
-    
+
     // Listen for custom event when questions are created/updated
-    window.addEventListener('feedbackQuestionsUpdated', handleQuestionsUpdated);
-    
+    window.addEventListener("feedbackQuestionsUpdated", handleQuestionsUpdated);
+
     return () => {
-      window.removeEventListener('feedbackQuestionsUpdated', handleQuestionsUpdated);
+      window.removeEventListener("feedbackQuestionsUpdated", handleQuestionsUpdated);
     };
   }, [fetchQuestions]);
 
@@ -288,7 +304,10 @@ export function EnhancedFeedbackSystem({ venueId }: FeedbackSystemProps) {
           </CardDescription>
         </CardHeader>
         <CardContent className="pt-0">
-          <Tabs value={activeTab} onValueChange={(value) => setActiveTab(value as "create" | "feedback" | "overview")}>
+          <Tabs
+            value={activeTab}
+            onValueChange={(value) => setActiveTab(value as "create" | "feedback" | "overview")}
+          >
             <TabsList className="grid w-full grid-cols-3 gap-1">
               <TabsTrigger value="overview">Overview</TabsTrigger>
               <TabsTrigger value="feedback">All Feedback</TabsTrigger>
@@ -305,7 +324,9 @@ export function EnhancedFeedbackSystem({ venueId }: FeedbackSystemProps) {
                         <div className="flex items-center justify-between">
                           <div className="space-y-1">
                             <p className="text-sm text-gray-700 font-medium">Total Feedback</p>
-                            <p className="text-2xl font-bold text-gray-900">{stats.totalFeedback}</p>
+                            <p className="text-2xl font-bold text-gray-900">
+                              {stats.totalFeedback}
+                            </p>
                           </div>
                           <MessageSquare className="h-8 w-8 text-blue-500" />
                         </div>
@@ -318,7 +339,9 @@ export function EnhancedFeedbackSystem({ venueId }: FeedbackSystemProps) {
                           <div className="space-y-1">
                             <p className="text-sm text-gray-700 font-medium">Average Rating</p>
                             <div className="flex items-center">
-                              <span className="text-2xl font-bold text-gray-900">{stats.averageRating.toFixed(1)}</span>
+                              <span className="text-2xl font-bold text-gray-900">
+                                {stats.averageRating.toFixed(1)}
+                              </span>
                               <Star className="h-5 w-5 text-yellow-500 ml-1" />
                             </div>
                           </div>
@@ -378,13 +401,18 @@ export function EnhancedFeedbackSystem({ venueId }: FeedbackSystemProps) {
                     <CardContent>
                       <div className="space-y-3">
                         {stats.topCategories.map(({ category, count, avgRating }) => (
-                          <div key={category} className="flex items-center justify-between p-3 border rounded-lg">
+                          <div
+                            key={category}
+                            className="flex items-center justify-between p-3 border rounded-lg"
+                          >
                             <div>
                               <p className="font-medium">{category}</p>
                               <p className="text-sm text-gray-900">{count} feedback items</p>
                             </div>
                             <div className="flex items-center">
-                              <span className="text-sm font-medium mr-2">{avgRating.toFixed(1)}</span>
+                              <span className="text-sm font-medium mr-2">
+                                {avgRating.toFixed(1)}
+                              </span>
                               <Star className="h-4 w-4 text-yellow-500" />
                             </div>
                           </div>
@@ -414,36 +442,33 @@ export function EnhancedFeedbackSystem({ venueId }: FeedbackSystemProps) {
                       <p className="text-sm text-gray-900">
                         Customers will see generic questions until you create custom ones.
                       </p>
-                      <Button 
-                        onClick={() => setActiveTab('create')} 
-                        className="mt-4"
-                      >
+                      <Button onClick={() => setActiveTab("create")} className="mt-4">
                         Create Your First Question
                       </Button>
                     </div>
                   ) : (
                     <div className="space-y-4">
                       {questions.map((question, index) => (
-                        <div key={question.id} className="flex items-center justify-between p-4 border rounded-lg">
+                        <div
+                          key={question.id}
+                          className="flex items-center justify-between p-4 border rounded-lg"
+                        >
                           <div className="flex-1">
                             <div className="flex items-center space-x-3">
-                              <span className="text-sm font-medium text-gray-900">#{index + 1}</span>
+                              <span className="text-sm font-medium text-gray-900">
+                                #{index + 1}
+                              </span>
                               <span className="font-medium">{question.prompt}</span>
                               <Badge variant={question.is_active ? "default" : "secondary"}>
                                 {question.type}
                               </Badge>
-                              {!question.is_active && (
-                                <Badge variant="outline">Inactive</Badge>
-                              )}
+                              {!question.is_active && <Badge variant="outline">Inactive</Badge>}
                             </div>
                           </div>
                         </div>
                       ))}
                       <div className="pt-4 border-t">
-                        <Button 
-                          onClick={() => setActiveTab('create')} 
-                          variant="outline"
-                        >
+                        <Button onClick={() => setActiveTab("create")} variant="outline">
                           <Plus className="h-4 w-4 mr-2" />
                           Add More Questions
                         </Button>
@@ -468,7 +493,9 @@ export function EnhancedFeedbackSystem({ venueId }: FeedbackSystemProps) {
                 <div className="flex flex-col sm:flex-row gap-2">
                   <select
                     value={filters.rating}
-                    onChange={(e) => setFilters(prev => ({ ...prev, rating: parseInt(e.target.value) }))}
+                    onChange={(e) =>
+                      setFilters((prev) => ({ ...prev, rating: parseInt(e.target.value) }))
+                    }
                     className="border rounded px-3 py-2 text-sm h-11 min-w-[120px]"
                   >
                     <option value={0}>All Ratings</option>
@@ -480,7 +507,7 @@ export function EnhancedFeedbackSystem({ venueId }: FeedbackSystemProps) {
                   </select>
                   <select
                     value={filters.sentiment}
-                    onChange={(e) => setFilters(prev => ({ ...prev, sentiment: e.target.value }))}
+                    onChange={(e) => setFilters((prev) => ({ ...prev, sentiment: e.target.value }))}
                     className="border rounded px-3 py-2 text-sm h-11 min-w-[120px]"
                   >
                     <option value="all">All Sentiments</option>
@@ -490,7 +517,7 @@ export function EnhancedFeedbackSystem({ venueId }: FeedbackSystemProps) {
                   </select>
                   <select
                     value={filters.dateRange}
-                    onChange={(e) => setFilters(prev => ({ ...prev, dateRange: e.target.value }))}
+                    onChange={(e) => setFilters((prev) => ({ ...prev, dateRange: e.target.value }))}
                     className="border rounded px-3 py-2 text-sm h-11 min-w-[120px]"
                   >
                     <option value="7d">Last 7 days</option>
@@ -515,30 +542,30 @@ export function EnhancedFeedbackSystem({ venueId }: FeedbackSystemProps) {
                                 <Star
                                   key={star}
                                   className={`h-4 w-4 ${
-                                    star <= item.rating ? 'text-yellow-500 fill-current' : 'text-gray-900'
+                                    star <= item.rating
+                                      ? "text-yellow-500 fill-current"
+                                      : "text-gray-900"
                                   }`}
                                 />
                               ))}
                               <span className="ml-2 text-sm text-gray-900">({item.rating})</span>
                             </div>
-                            <Badge className={getSentimentColor(item.sentiment_label || 'neutral')}>
-                              {getSentimentIcon(item.sentiment_label || 'neutral')}
-                              <span className="ml-1 capitalize">{item.sentiment_label || 'neutral'}</span>
+                            <Badge className={getSentimentColor(item.sentiment_label || "neutral")}>
+                              {getSentimentIcon(item.sentiment_label || "neutral")}
+                              <span className="ml-1 capitalize">
+                                {item.sentiment_label || "neutral"}
+                              </span>
                             </Badge>
-                            {item.category && (
-                              <Badge variant="outline">{item.category}</Badge>
-                            )}
+                            {item.category && <Badge variant="outline">{item.category}</Badge>}
                           </div>
-                          
+
                           <p className="text-gray-700 mb-2">{item.comment}</p>
-                          
+
                           <div className="flex items-center justify-between text-sm text-gray-900">
                             <span>{new Date(item.created_at).toLocaleDateString()}</span>
                           </div>
                         </div>
-
                       </div>
-
                     </CardContent>
                   </Card>
                 ))}
@@ -553,10 +580,7 @@ export function EnhancedFeedbackSystem({ venueId }: FeedbackSystemProps) {
             </TabsContent>
 
             <TabsContent value="create" className="space-y-6 mt-6">
-              <QuestionsClient 
-                venueId={venueId} 
-                mode="full"
-              />
+              <QuestionsClient venueId={venueId} mode="full" />
             </TabsContent>
           </Tabs>
         </CardContent>

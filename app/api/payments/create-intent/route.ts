@@ -1,8 +1,8 @@
-import { NextRequest, NextResponse } from 'next/server';
-import Stripe from 'stripe';
-import { ENV as _ENV } from '@/lib/env';
-import { stripe } from '@/lib/stripe-client';
-import { logger } from '@/lib/logger';
+import { NextRequest, NextResponse } from "next/server";
+import Stripe from "stripe";
+import { ENV as _ENV } from "@/lib/env";
+import { stripe } from "@/lib/stripe-client";
+import { logger } from "@/lib/logger";
 
 interface CreateIntentRequest {
   cartId: string;
@@ -24,7 +24,7 @@ interface CreateIntentRequest {
 export async function POST(req: NextRequest) {
   try {
     const body: CreateIntentRequest = await req.json();
-    
+
     const {
       cartId,
       venueId,
@@ -38,18 +38,13 @@ export async function POST(req: NextRequest) {
 
     // Validate required fields
     if (!cartId || !venueId || !items || items.length === 0 || !totalAmount) {
-      return NextResponse.json(
-        { error: 'Missing required fields' },
-        { status: 400 }
-      );
+      return NextResponse.json({ error: "Missing required fields" }, { status: 400 });
     }
 
     // Validate total amount (should be in pence/cents)
-    if (totalAmount < 50) { // Minimum £0.50
-      return NextResponse.json(
-        { error: 'Amount too small' },
-        { status: 400 }
-      );
+    if (totalAmount < 50) {
+      // Minimum £0.50
+      return NextResponse.json({ error: "Amount too small" }, { status: 400 });
     }
 
     // Store cart data for later retrieval
@@ -65,12 +60,12 @@ export async function POST(req: NextRequest) {
 
     // Store cart data in localStorage equivalent (client-side) or database
     // For now, we'll pass it in metadata (limited size)
-    const itemsSummary = items.map(item => `${item.name} x${item.quantity}`).join(', ');
+    const itemsSummary = items.map((item) => `${item.name} x${item.quantity}`).join(", ");
 
     // Create payment intent with idempotency key
     const paymentIntentParams: Stripe.PaymentIntentCreateParams = {
       amount: totalAmount,
-      currency: 'gbp',
+      currency: "gbp",
       automatic_payment_methods: { enabled: true },
       metadata: {
         cart_id: cartId,
@@ -86,35 +81,27 @@ export async function POST(req: NextRequest) {
     };
 
     // Add receipt email if provided - Stripe will automatically send digital receipts
-    if (receiptEmail && receiptEmail.trim() !== '') {
+    if (receiptEmail && receiptEmail.trim() !== "") {
       paymentIntentParams.receipt_email = receiptEmail.trim();
     }
 
-    const paymentIntent = await stripe.paymentIntents.create(
-      paymentIntentParams,
-      {
-        idempotencyKey: `pi_${cartId}`,
-      }
-    );
+    const paymentIntent = await stripe.paymentIntents.create(paymentIntentParams, {
+      idempotencyKey: `pi_${cartId}`,
+    });
 
     return NextResponse.json({
       clientSecret: paymentIntent.client_secret,
       paymentIntentId: paymentIntent.id,
     });
-
   } catch (_error) {
-    logger.error('[PAYMENT INTENT] Error:', { error: error instanceof Error ? error.message : 'Unknown error' });
-    
-    if (error instanceof Stripe.errors.StripeError) {
-      return NextResponse.json(
-        { error: error.message },
-        { status: 400 }
-      );
+    logger._error("[PAYMENT INTENT] Error:", {
+      error: _error instanceof Error ? _error.message : "Unknown _error",
+    });
+
+    if (_error instanceof Stripe.errors.StripeError) {
+      return NextResponse.json({ error: _error.message }, { status: 400 });
     }
 
-    return NextResponse.json(
-      { error: 'Internal server error' },
-      { status: 500 }
-    );
+    return NextResponse.json({ error: "Internal server error" }, { status: 500 });
   }
 }

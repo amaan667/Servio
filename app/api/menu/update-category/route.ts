@@ -1,23 +1,23 @@
-import { NextRequest, NextResponse } from 'next/server';
+import { NextRequest, NextResponse } from "next/server";
 // Deployment trigger
-import { createClient } from '@/lib/supabase';
-import { logger } from '@/lib/logger';
+import { createClient } from "@/lib/supabase";
+import { logger } from "@/lib/logger";
 
 export async function POST(_request: NextRequest) {
   try {
-    const { venueId, oldCategory, newCategory } = await request.json();
-    
+    const { venueId, oldCategory, newCategory } = await _request.json();
+
     if (!venueId || !oldCategory || !newCategory) {
       return NextResponse.json(
-        { error: 'venueId, oldCategory, and newCategory are required' },
+        { error: "venueId, oldCategory, and newCategory are required" },
         { status: 400 }
       );
     }
 
     if (oldCategory === newCategory) {
-      return NextResponse.json({ 
-        success: true, 
-        message: 'No changes needed' 
+      return NextResponse.json({
+        success: true,
+        message: "No changes needed",
       });
     }
 
@@ -25,59 +25,54 @@ export async function POST(_request: NextRequest) {
 
     // Update all menu items with the old category name
     const { data: updatedItems, error: updateError } = await supabase
-      .from('menu_items')
+      .from("menu_items")
       .update({ category: newCategory })
-      .eq('venue_id', venueId)
-      .eq('category', oldCategory)
-      .select('id, name, category');
+      .eq("venue_id", venueId)
+      .eq("category", oldCategory)
+      .select("id, name, category");
 
     if (updateError) {
-      logger.error('[UPDATE CATEGORY] Error updating menu items:', updateError);
-      return NextResponse.json(
-        { error: 'Failed to update menu items' },
-        { status: 500 }
-      );
+      logger.error("[UPDATE CATEGORY] Error updating menu items:", updateError);
+      return NextResponse.json({ error: "Failed to update menu items" }, { status: 500 });
     }
 
     // Update category order in menu_uploads if it exists
     const { data: uploadData, error: fetchError } = await supabase
-      .from('menu_uploads')
-      .select('id, category_order')
-      .eq('venue_id', venueId)
-      .order('created_at', { ascending: false })
+      .from("menu_uploads")
+      .select("id, category_order")
+      .eq("venue_id", venueId)
+      .order("created_at", { ascending: false })
       .limit(1)
       .maybeSingle();
 
     if (!fetchError && uploadData?.category_order) {
-      const updatedCategoryOrder = uploadData.category_order.map((cat: string) => 
+      const updatedCategoryOrder = uploadData.category_order.map((cat: string) =>
         cat === oldCategory ? newCategory : cat
       );
 
       const { error: orderUpdateError } = await supabase
-        .from('menu_uploads')
-        .update({ 
+        .from("menu_uploads")
+        .update({
           category_order: updatedCategoryOrder,
-          updated_at: new Date().toISOString()
+          updated_at: new Date().toISOString(),
         })
-        .eq('id', uploadData.id);
+        .eq("id", uploadData.id);
 
       if (orderUpdateError) {
-        logger.error('[UPDATE CATEGORY] Error updating category order:', orderUpdateError);
+        logger.error("[UPDATE CATEGORY] Error updating category order:", orderUpdateError);
         // Don't fail the whole operation for this
       }
     }
 
-    return NextResponse.json({ 
-      success: true, 
+    return NextResponse.json({
+      success: true,
       message: `Category updated from "${oldCategory}" to "${newCategory}"`,
-      updatedItems: updatedItems?.length || 0
+      updatedItems: updatedItems?.length || 0,
     });
-
   } catch (_error) {
-    logger.error('[UPDATE CATEGORY] Unexpected error:', { error: error instanceof Error ? error.message : 'Unknown error' });
-    return NextResponse.json(
-      { error: 'Internal server error' },
-      { status: 500 }
-    );
+    logger._error("[UPDATE CATEGORY] Unexpected error:", {
+      error: _error instanceof Error ? _error.message : "Unknown _error",
+    });
+    return NextResponse.json({ error: "Internal server error" }, { status: 500 });
   }
 }

@@ -3,7 +3,7 @@
 
 import { NextRequest, NextResponse } from "next/server";
 import { createClient } from "@/lib/supabase";
-import { logger } from '@/lib/logger';
+import { logger } from "@/lib/logger";
 
 export async function GET(_request: NextRequest) {
   try {
@@ -20,15 +20,12 @@ export async function GET(_request: NextRequest) {
     }
 
     // Get params
-    const { searchParams } = new URL(request.url);
+    const { searchParams } = new URL(_request.url);
     const venueId = searchParams.get("venueId");
     const limit = parseInt(searchParams.get("limit") || "20", 10);
 
     if (!venueId) {
-      return NextResponse.json(
-        { error: "venueId is required" },
-        { status: 400 }
-      );
+      return NextResponse.json({ error: "venueId is required" }, { status: 400 });
     }
 
     // Verify user has access to venue
@@ -40,10 +37,7 @@ export async function GET(_request: NextRequest) {
       .single();
 
     if (!roleData) {
-      return NextResponse.json(
-        { error: "Access denied to this venue" },
-        { status: 403 }
-      );
+      return NextResponse.json({ error: "Access denied to this venue" }, { status: 403 });
     }
 
     // Fetch activity log
@@ -63,7 +57,7 @@ export async function GET(_request: NextRequest) {
       activities: activities || [],
     });
   } catch (_error) {
-    const errorMessage = _error instanceof Error ? _error.message : 'Unknown _error';
+    const errorMessage = _error instanceof Error ? _error.message : "Unknown _error";
     logger.error("[AI ASSISTANT] Activity fetch error:", { error: errorMessage });
     return NextResponse.json(
       { error: errorMessage || "Failed to fetch activity" },
@@ -71,4 +65,3 @@ export async function GET(_request: NextRequest) {
     );
   }
 }
-

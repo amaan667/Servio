@@ -1,28 +1,28 @@
 import { NextResponse } from "next/server";
 import { stripe } from "@/lib/stripe-client";
-import { logger } from '@/lib/logger';
+import { logger } from "@/lib/logger";
 
 export async function POST() {
   try {
     const products = [
       {
-        tier: 'basic',
-        name: 'Basic Plan',
-        description: 'Perfect for small cafes and restaurants',
+        tier: "basic",
+        name: "Basic Plan",
+        description: "Perfect for small cafes and restaurants",
         amount: 9900, // £99.00 in pence
       },
       {
-        tier: 'standard', 
-        name: 'Standard Plan',
-        description: 'Most popular for growing businesses',
+        tier: "standard",
+        name: "Standard Plan",
+        description: "Most popular for growing businesses",
         amount: 24900, // £249.00 in pence
       },
       {
-        tier: 'premium',
-        name: 'Premium Plan', 
-        description: 'Unlimited power for enterprises',
+        tier: "premium",
+        name: "Premium Plan",
+        description: "Unlimited power for enterprises",
         amount: 44900, // £449.00 in pence
-      }
+      },
     ];
 
     const results = [];
@@ -33,48 +33,55 @@ export async function POST() {
         const stripeProduct = await stripe.products.create({
           name: product.name,
           description: product.description,
-          metadata: { tier: product.tier }
+          metadata: { tier: product.tier },
         });
 
         // Create price for the product
         const price = await stripe.prices.create({
           unit_amount: product.amount,
-          currency: 'gbp',
-          recurring: { interval: 'month' },
+          currency: "gbp",
+          recurring: { interval: "month" },
           product: stripeProduct.id,
-          nickname: `${product.name} - £${product.amount / 100}/month`
+          nickname: `${product.name} - £${product.amount / 100}/month`,
         });
 
         results.push({
           tier: product.tier,
           productId: stripeProduct.id,
           priceId: price.id,
-          status: 'created'
+          status: "created",
         });
 
-        logger.debug(`[STRIPE SETUP] Created ${product.tier}: Product ${stripeProduct.id}, Price ${price.id}`);
-
+        logger.debug(
+          `[STRIPE SETUP] Created ${product.tier}: Product ${stripeProduct.id}, Price ${price.id}`
+        );
       } catch (_error) {
-        logger.error(`[STRIPE ERROR] Failed to create ${product.tier}:`, { error: error instanceof Error ? error.message : 'Unknown error' });
+        logger._error(`[STRIPE ERROR] Failed to create ${product.tier}:`, {
+          error: _error instanceof Error ? _error.message : "Unknown _error",
+        });
         results.push({
           tier: product.tier,
-          status: 'error',
-          error: error instanceof Error ? error.message : 'Unknown error'
+          status: "error",
+          error: _error instanceof Error ? _error.message : "Unknown _error",
         });
       }
     }
 
     return NextResponse.json({
       success: true,
-      message: 'Stripe products setup completed',
-      results
+      message: "Stripe products setup completed",
+      results,
     });
-
   } catch (_error) {
-    logger.error('Stripe products setup error:', { error: error instanceof Error ? error.message : 'Unknown error' });
-    return NextResponse.json({
-      success: false,
-      error: error instanceof Error ? error.message : 'Unknown error'
-    }, { status: 500 });
+    logger._error("Stripe products setup error:", {
+      error: _error instanceof Error ? _error.message : "Unknown _error",
+    });
+    return NextResponse.json(
+      {
+        success: false,
+        error: _error instanceof Error ? _error.message : "Unknown _error",
+      },
+      { status: 500 }
+    );
   }
 }

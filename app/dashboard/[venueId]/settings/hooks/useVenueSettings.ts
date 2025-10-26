@@ -1,10 +1,18 @@
-import { useState, useEffect } from 'react';
-import { useRouter } from 'next/navigation';
-import { supabaseBrowser as createClient } from '@/lib/supabase';
-import { toast } from '@/hooks/use-toast';
-import { TIMEZONES } from '../constants';
+import { useState, useEffect } from "react";
+import { useRouter } from "next/navigation";
+import { supabaseBrowser as createClient } from "@/lib/supabase";
+import { toast } from "@/hooks/use-toast";
+import { TIMEZONES } from "../constants";
 
-export const DAYS_OF_WEEK = ['monday', 'tuesday', 'wednesday', 'thursday', 'friday', 'saturday', 'sunday'] as const;
+export const DAYS_OF_WEEK = [
+  "monday",
+  "tuesday",
+  "wednesday",
+  "thursday",
+  "friday",
+  "saturday",
+  "sunday",
+] as const;
 
 export interface Venue {
   venue_id: string;
@@ -59,16 +67,21 @@ export function useVenueSettings(venue: Venue) {
   const [error, setError] = useState<string | null>(null);
   const [success, setSuccess] = useState<string | null>(null);
   const [hasUnsavedChanges, setHasUnsavedChanges] = useState(false);
-  
+
   // Venue settings state
   const [venueName, setVenueName] = useState(venue.venue_name);
-  const [venueEmail, setVenueEmail] = useState(venue.email || '');
-  const [venuePhone, setVenuePhone] = useState(venue.phone || '');
-  const [venueAddress, setVenueAddress] = useState(venue.address || '');
-  const [timezone, setTimezone] = useState(venue.timezone || 'Europe/London');
-  const [venueType, setVenueType] = useState(venue.venue_type || 'restaurant');
-  const [serviceType, setServiceType] = useState(venue.service_type || 'table_service');
-  const [operatingHours, setOperatingHours] = useState<OperatingHours>(venue.operating_hours || { /* Empty */ });
+  const [venueEmail, setVenueEmail] = useState(venue.email || "");
+  const [venuePhone, setVenuePhone] = useState(venue.phone || "");
+  const [venueAddress, setVenueAddress] = useState(venue.address || "");
+  const [timezone, setTimezone] = useState(venue.timezone || "Europe/London");
+  const [venueType, setVenueType] = useState(venue.venue_type || "restaurant");
+  const [serviceType, setServiceType] = useState(venue.service_type || "table_service");
+  const [operatingHours, setOperatingHours] = useState<OperatingHours>(
+    venue.operating_hours ||
+      {
+        /* Empty */
+      }
+  );
   const [latitude, setLatitude] = useState<number | undefined>(venue.latitude);
   const [longitude, setLongitude] = useState<number | undefined>(venue.longitude);
 
@@ -76,7 +89,7 @@ export function useVenueSettings(venue: Venue) {
   useEffect(() => {
     if (!venue.timezone) {
       const detectedTimezone = Intl.DateTimeFormat().resolvedOptions().timeZone;
-      const matchingTimezone = TIMEZONES.find(tz => tz.value === detectedTimezone);
+      const matchingTimezone = TIMEZONES.find((tz) => tz.value === detectedTimezone);
       if (matchingTimezone) {
         setTimezone(detectedTimezone);
       }
@@ -85,15 +98,15 @@ export function useVenueSettings(venue: Venue) {
 
   // Track unsaved changes
   useEffect(() => {
-    const changed = 
+    const changed =
       venueName !== venue.venue_name ||
-      venueEmail !== (venue.email || '') ||
-      venuePhone !== (venue.phone || '') ||
-      venueAddress !== (venue.address || '') ||
-      timezone !== (venue.timezone || 'Europe/London') ||
-      venueType !== (venue.venue_type || 'restaurant') ||
-      serviceType !== (venue.service_type || 'table_service');
-    
+      venueEmail !== (venue.email || "") ||
+      venuePhone !== (venue.phone || "") ||
+      venueAddress !== (venue.address || "") ||
+      timezone !== (venue.timezone || "Europe/London") ||
+      venueType !== (venue.venue_type || "restaurant") ||
+      serviceType !== (venue.service_type || "table_service");
+
     setHasUnsavedChanges(changed);
   }, [venueName, venueEmail, venuePhone, venueAddress, timezone, venueType, serviceType, venue]);
 
@@ -104,7 +117,7 @@ export function useVenueSettings(venue: Venue) {
 
     try {
       const { error } = await createClient()
-        .from('venues')
+        .from("venues")
         .update({
           venue_name: venueName,
           email: venueEmail || null,
@@ -116,17 +129,17 @@ export function useVenueSettings(venue: Venue) {
           operating_hours: Object.keys(operatingHours).length > 0 ? operatingHours : null,
           latitude: latitude || null,
           longitude: longitude || null,
-          updated_at: new Date().toISOString()
+          updated_at: new Date().toISOString(),
         })
-        .eq('venue_id', venue.venue_id);
+        .eq("venue_id", venue.venue_id);
 
       if (error) {
         throw new Error(error.message);
       }
 
-      setSuccess('✅ Venue settings updated successfully!');
+      setSuccess("✅ Venue settings updated successfully!");
       setHasUnsavedChanges(false);
-      
+
       toast({
         title: "Success",
         description: "✅ Venue settings updated successfully!",
@@ -137,10 +150,10 @@ export function useVenueSettings(venue: Venue) {
         router.refresh();
       }, 1500);
     } catch (_err) {
-      setError(err.message || 'Failed to update venue settings');
+      setError(_err.message || "Failed to update venue settings");
       toast({
         title: "Error",
-        description: err.message || 'Failed to update venue settings',
+        description: _err.message || "Failed to update venue settings",
         variant: "destructive",
       });
     } finally {
@@ -148,13 +161,17 @@ export function useVenueSettings(venue: Venue) {
     }
   };
 
-  const updateDayHours = (day: string, field: 'open' | 'close' | 'closed', value: string | boolean) => {
-    setOperatingHours(prev => ({
+  const updateDayHours = (
+    day: string,
+    field: "open" | "close" | "closed",
+    value: string | boolean
+  ) => {
+    setOperatingHours((prev) => ({
       ...prev,
       [day]: {
         ...prev[day as keyof OperatingHours],
-        [field]: value
-      } as DayHours
+        [field]: value,
+      } as DayHours,
     }));
   };
 
@@ -184,7 +201,6 @@ export function useVenueSettings(venue: Venue) {
     longitude,
     setLongitude,
     updateVenueSettings,
-    updateDayHours
+    updateDayHours,
   };
 }
-

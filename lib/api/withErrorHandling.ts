@@ -1,5 +1,5 @@
-import { NextRequest, NextResponse } from 'next/server';
-import { getErrorMessage } from '@/lib/utils/errors';
+import { NextRequest, NextResponse } from "next/server";
+import { getErrorMessage } from "@/lib/utils/errors";
 
 type Handler<T> = (req: NextRequest) => Promise<T>;
 
@@ -9,9 +9,8 @@ export function withErrorHandling<T>(handler: Handler<T>) {
       const data = await handler(req);
       return NextResponse.json({ ok: true, data });
     } catch (_e) {
-      const message = getErrorMessage(e);
+      const message = getErrorMessage(_e);
       return NextResponse.json({ ok: false, error: message }, { status: 400 });
     }
   };
 }
-

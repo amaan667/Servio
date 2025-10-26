@@ -9,10 +9,7 @@ class RequestDeduplicator {
   private pendingRequests = new Map<string, PendingRequest<unknown>>();
   private dedupWindow = 100; // 100ms deduplication window
 
-  async deduplicate<T>(
-    key: string,
-    fetcher: () => Promise<T>
-  ): Promise<T> {
+  async deduplicate<T>(key: string, fetcher: () => Promise<T>): Promise<T> {
     const now = Date.now();
     const pending = this.pendingRequests.get(key);
 
@@ -58,7 +55,7 @@ class RequestBatcher {
       if (!this.batches.has(batchKey)) {
         this.batches.set(batchKey, []);
       }
-      
+
       this.batches.get(batchKey)!.push({ id: itemId, resolve, reject });
 
       // Clear existing timer
@@ -75,11 +72,11 @@ class RequestBatcher {
         if (batch.length === 0) return;
 
         try {
-          const ids = batch.map(item => item.id);
+          const ids = batch.map((item) => item.id);
           const results = await batchFetcher(ids);
 
           // Resolve individual promises
-          batch.forEach(item => {
+          batch.forEach((item) => {
             if (results[item.id]) {
               item.resolve(results[item.id]);
             } else {
@@ -88,7 +85,7 @@ class RequestBatcher {
           });
         } catch (_error) {
           // Reject all promises in batch
-          batch.forEach(item => item.reject(error));
+          batch.forEach((item) => item.reject(_error));
         }
       }, this.batchTimeout);
 
@@ -97,7 +94,7 @@ class RequestBatcher {
   }
 
   clear(): void {
-    this.batchTimers.forEach(timer => clearTimeout(timer));
+    this.batchTimers.forEach((timer) => clearTimeout(timer));
     this.batches.clear();
     this.batchTimers.clear();
   }
@@ -108,12 +105,14 @@ export const requestDeduplicator = new RequestDeduplicator();
 export const requestBatcher = new RequestBatcher();
 
 // Helper function for deduplicating fetch requests
-export async function deduplicatedFetch<T>(
-  url: string,
-  options?: RequestInit
-): Promise<T> {
-  const key = `${url}-${JSON.stringify(options || { /* Empty */ })}`;
-  
+export async function deduplicatedFetch<T>(url: string, options?: RequestInit): Promise<T> {
+  const key = `${url}-${JSON.stringify(
+    options ||
+      {
+        /* Empty */
+      }
+  )}`;
+
   return requestDeduplicator.deduplicate(key, async () => {
     const response = await fetch(url, options);
     if (!response.ok) {
@@ -131,4 +130,3 @@ export async function batchedItemFetch<T>(
 ): Promise<T> {
   return requestBatcher.batch(batchKey, itemId, fetchMultiple);
 }
-

@@ -1,86 +1,90 @@
-import { NextResponse } from 'next/server';
-import { createClient } from '@/lib/supabase';
-import { getUserSafe } from '@/utils/getUserSafe';
-import { logger } from '@/lib/logger';
+import { NextResponse } from "next/server";
+import { createClient } from "@/lib/supabase";
+import { getUserSafe } from "@/utils/getUserSafe";
+import { logger } from "@/lib/logger";
 
 // POST /api/fix-owner-column - Fix the owner column name mismatch
 export async function POST() {
   try {
     const user = await getUserSafe();
     if (!user) {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
 
     const supabase = await createClient();
 
-    logger.debug('[COLUMN FIX] Starting owner column name fix...');
+    logger.debug("[COLUMN FIX] Starting owner column name fix...");
 
     // Check current column names
-    const { data: columns, error: columnError } = await supabase.rpc('exec_sql', {
+    const { data: columns, error: columnError } = await supabase.rpc("exec_sql", {
       sql: `SELECT column_name, data_type, is_nullable
             FROM information_schema.columns  
             WHERE table_name = 'venues' AND column_name LIKE '%owner%'
-            ORDER BY column_name;`
+            ORDER BY column_name;`,
     });
 
     if (columnError) {
-      logger.error('[COLUMN FIX] Error checking columns:', { error: columnError.message });
-      return NextResponse.json({ 
-        error: 'Failed to check current column structure',
-        details: columnError.message 
-      }, { status: 500 });
+      logger.error("[COLUMN FIX] Error checking columns:", { error: columnError.message });
+      return NextResponse.json(
+        {
+          error: "Failed to check current column structure",
+          details: columnError.message,
+        },
+        { status: 500 }
+      );
     }
 
-    logger.debug('[COLUMN FIX] Current columns:', columns);
+    logger.debug("[COLUMN FIX] Current columns:", columns);
 
     // Try to rename the column
-    const { error: renameError } = await supabase.rpc('exec_sql', {
-      sql: 'ALTER TABLE venues RENAME COLUMN owner_user_id TO owner_user_id;'
+    const { error: renameError } = await supabase.rpc("exec_sql", {
+      sql: "ALTER TABLE venues RENAME COLUMN owner_user_id TO owner_user_id;",
     });
 
     if (renameError) {
-      logger.error('[COLUMN FIX] Error renaming column:', { error: renameError.message });
+      logger.error("[COLUMN FIX] Error renaming column:", { error: renameError.message });
       // Column might already be renamed or not exist
-      logger.debug('[COLUMN FIX] Column rename failed, checking if already correct...');
+      logger.debug("[COLUMN FIX] Column rename failed, checking if already correct...");
     } else {
-      logger.debug('[COLUMN FIX] Column renamed successfully');
+      logger.debug("[COLUMN FIX] Column renamed successfully");
     }
 
     // Update indexes
-    const { error: indexError } = await supabase.rpc('exec_sql', {
+    const { error: indexError } = await supabase.rpc("exec_sql", {
       sql: `DROP INDEX IF EXISTS idx_venues_owner;
-            CREATE INDEX IF NOT EXISTS idx_venues_owner_user ON venues(owner_user_id);`
+            CREATE INDEX IF NOT EXISTS idx_venues_owner_user ON venues(owner_user_id);`,
     });
 
     if (indexError) {
-      logger.warn('[COLUMN FIX] Index update warning:', { error: indexError.message });
+      logger.warn("[COLUMN FIX] Index update warning:", { error: indexError.message });
     } else {
-      logger.debug('[COLUMN FIX] Indexes updated successfully');
+      logger.debug("[COLUMN FIX] Indexes updated successfully");
     }
 
     // Verify the fix worked
-    const { data: finalColumns, error: finalError } = await supabase.rpc('exec_sql', {
+    const { data: finalColumns, error: finalError } = await supabase.rpc("exec_sql", {
       sql: `SELECT column_name, data_type, is_nullable
             FROM information_schema.columns  
             WHERE table_name = 'venues' AND column_name LIKE '%owner%'
-            ORDER BY column_name;`
+            ORDER BY column_name;`,
     });
 
     if (finalError) {
-      logger.error('[COLUMN FIX] Error verifying fix:', { error: finalError.message });
+      logger.error("[COLUMN FIX] Error verifying fix:", { error: finalError.message });
     }
 
-    logger.debug('[COLUMN FIX] Final columns:', finalColumns);
+    logger.debug("[COLUMN FIX] Final columns:", finalColumns);
 
-    return NextResponse.json({ 
+    return NextResponse.json({
       success: true,
-      message: 'Owner column fix completed. The owner validation should now work properly.',
+      message: "Owner column fix completed. The owner validation should now work properly.",
       beforeColumns: columns,
-      afterColumns: finalColumns
+      afterColumns: finalColumns,
     });
-
   } catch (_error) {
-    logger.error('[COLUMN FIX] Unexpected error:', { error: error instanceof Error ? error.message : 'Unknown error' });
-    return NextResponse.json({ error: 'Internal server error' }, { status: 500 });
+    logger._error("[COLUMN FIX] Unexpected error:", {
+      error: _error instanceof Error ? _error.message : "Unknown _error",
+    });
+    return NextResponse.json({ error: "Internal server error" }, { status: 500 });
   }
 }

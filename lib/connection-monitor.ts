@@ -84,7 +84,7 @@ class ConnectionMonitor {
         });
       }
     } catch (_error) {
-      logger.warn("[CONNECTION] Connection check failed:", errorToContext(error));
+      logger.warn("[CONNECTION] Connection check failed:", errorToContext(_error));
       // Fallback to navigator.onLine
       this.updateState({
         isOnline: navigator.onLine,

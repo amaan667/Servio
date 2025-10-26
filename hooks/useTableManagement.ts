@@ -46,10 +46,10 @@ export function useTableManagement() {
 
       return data.table;
     } catch (_err) {
-      logger.error("[TABLE MANAGEMENT HOOK] Error creating table:", errorToContext(err));
-      const errorMessage = err instanceof Error ? err.message : "Failed to create table";
+      logger.error("[TABLE MANAGEMENT HOOK] Error creating table:", errorToContext(_err));
+      const errorMessage = _err instanceof Error ? _err.message : "Failed to create table";
       setError(errorMessage);
-      throw err;
+      throw _err;
     } finally {
       setLoading(false);
     }
@@ -76,10 +76,10 @@ export function useTableManagement() {
 
       return data.table;
     } catch (_err) {
-      logger.error("[TABLE MANAGEMENT HOOK] Error updating table:", errorToContext(err));
-      const errorMessage = err instanceof Error ? err.message : "Failed to update table";
+      logger.error("[TABLE MANAGEMENT HOOK] Error updating table:", errorToContext(_err));
+      const errorMessage = _err instanceof Error ? _err.message : "Failed to update table";
       setError(errorMessage);
-      throw err;
+      throw _err;
     } finally {
       setLoading(false);
     }
@@ -101,10 +101,10 @@ export function useTableManagement() {
 
       return data;
     } catch (_err) {
-      logger.error("[TABLE MANAGEMENT HOOK] Error deleting table:", errorToContext(err));
-      const errorMessage = err instanceof Error ? err.message : "Failed to delete table";
+      logger.error("[TABLE MANAGEMENT HOOK] Error deleting table:", errorToContext(_err));
+      const errorMessage = _err instanceof Error ? _err.message : "Failed to delete table";
       setError(errorMessage);
-      throw err;
+      throw _err;
     } finally {
       setLoading(false);
     }
@@ -116,7 +116,9 @@ export function useTableManagement() {
       setError(null);
 
       const { apiClient } = await import("@/lib/api-client");
-      const response = await apiClient.post(`/api/tables/${tableId}/reissue-qr`, { /* Empty */ });
+      const response = await apiClient.post(`/api/tables/${tableId}/reissue-qr`, {
+        /* Empty */
+      });
 
       const data = await response.json();
 
@@ -126,10 +128,10 @@ export function useTableManagement() {
 
       return data.table;
     } catch (_err) {
-      logger.error("[TABLE MANAGEMENT HOOK] Error reissuing QR:", errorToContext(err));
-      const errorMessage = err instanceof Error ? err.message : "Failed to reissue QR";
+      logger.error("[TABLE MANAGEMENT HOOK] Error reissuing QR:", errorToContext(_err));
+      const errorMessage = _err instanceof Error ? _err.message : "Failed to reissue QR";
       setError(errorMessage);
-      throw err;
+      throw _err;
     } finally {
       setLoading(false);
     }

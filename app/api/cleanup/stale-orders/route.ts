@@ -1,81 +1,85 @@
-import { NextRequest, NextResponse } from 'next/server';
-import { createClient, getAuthenticatedUser } from '@/lib/supabase';
-import { cleanupTableOnOrderCompletion } from '@/lib/table-cleanup';
-import { logger } from '@/lib/logger';
+import { NextRequest, NextResponse } from "next/server";
+import { createClient, getAuthenticatedUser } from "@/lib/supabase";
+import { cleanupTableOnOrderCompletion } from "@/lib/table-cleanup";
+import { logger } from "@/lib/logger";
 
-export const runtime = 'nodejs';
+export const runtime = "nodejs";
 
 export async function POST(req: NextRequest) {
   try {
     const { venueId, hoursThreshold = 4, closeAll = false } = await req.json();
-    
+
     if (!venueId) {
-      return NextResponse.json({ error: 'Venue ID is required' }, { status: 400 });
+      return NextResponse.json({ error: "Venue ID is required" }, { status: 400 });
     }
 
     const { user } = await getAuthenticatedUser();
     if (!user) {
-      return NextResponse.json({ error: 'Not authenticated' }, { status: 401 });
+      return NextResponse.json({ error: "Not authenticated" }, { status: 401 });
     }
-    
+
     const supabase = await createClient();
-    
+
     // Verify venue ownership
     const { data: venue, error: venueError } = await supabase
-      .from('venues')
-      .select('venue_id')
-      .eq('venue_id', venueId)
-      .eq('owner_user_id', user.id)
+      .from("venues")
+      .select("venue_id")
+      .eq("venue_id", venueId)
+      .eq("owner_user_id", user.id)
       .single();
 
     if (venueError || !venue) {
-      return NextResponse.json({ error: 'Venue not found or access denied' }, { status: 403 });
+      return NextResponse.json({ error: "Venue not found or access denied" }, { status: 403 });
     }
 
     // Find stale orders
     let staleOrdersQuery = supabase
-      .from('orders')
-      .select('id, table_id, table_number, venue_id, customer_name, order_status, created_at')
-      .eq('venue_id', venueId)
-      .in('order_status', ['PLACED', 'ACCEPTED', 'IN_PREP', 'READY', 'SERVING']);
+      .from("orders")
+      .select("id, table_id, table_number, venue_id, customer_name, order_status, created_at")
+      .eq("venue_id", venueId)
+      .in("order_status", ["PLACED", "ACCEPTED", "IN_PREP", "READY", "SERVING"]);
 
     if (!closeAll) {
       // Only get orders older than the threshold
-      const cutoffTime = new Date(Date.now() - (hoursThreshold * 60 * 60 * 1000));
-      staleOrdersQuery = staleOrdersQuery.lt('created_at', cutoffTime.toISOString());
+      const cutoffTime = new Date(Date.now() - hoursThreshold * 60 * 60 * 1000);
+      staleOrdersQuery = staleOrdersQuery.lt("created_at", cutoffTime.toISOString());
     }
 
     const { data: staleOrders, error: fetchError } = await staleOrdersQuery;
 
     if (fetchError) {
-      logger.error('[STALE ORDERS CLEANUP] Error fetching stale orders:', { error: fetchError.message || 'Unknown error' });
-      return NextResponse.json({ error: 'Failed to fetch orders' }, { status: 500 });
+      logger.error("[STALE ORDERS CLEANUP] Error fetching stale orders:", {
+        error: fetchError.message || "Unknown error",
+      });
+      return NextResponse.json({ error: "Failed to fetch orders" }, { status: 500 });
     }
 
     if (!staleOrders || staleOrders.length === 0) {
       return NextResponse.json({
         success: true,
-        message: 'No stale orders found',
+        message: "No stale orders found",
         completedCount: 0,
-        cleanedTables: 0
+        cleanedTables: 0,
       });
     }
 
     logger.debug(`[STALE ORDERS CLEANUP] Found ${staleOrders.length} stale orders to clean up`);
 
     // Update orders to completed
-    const orderIds = staleOrders.map(order => order.id);
+    const orderIds = staleOrders.map((order) => order.id);
     const { error: updateError } = await supabase
-      .from('orders')
-      .update({ 
-        order_status: 'COMPLETED',
-        updated_at: new Date().toISOString()
+      .from("orders")
+      .update({
+        order_status: "COMPLETED",
+        updated_at: new Date().toISOString(),
       })
-      .in('id', orderIds);
+      .in("id", orderIds);
 
     if (updateError) {
-      logger.error('[STALE ORDERS CLEANUP] Error updating orders:', { error: updateError.message || 'Unknown error' });
-      return NextResponse.json({ error: 'Failed to update orders' }, { status: 500 });
+      logger.error("[STALE ORDERS CLEANUP] Error updating orders:", {
+        error: updateError.message || "Unknown error",
+      });
+      return NextResponse.json({ error: "Failed to update orders" }, { status: 500 });
     }
 
     // Clean up tables for each order
@@ -91,7 +95,7 @@ export async function POST(req: NextRequest) {
             cleanupTableOnOrderCompletion({
               venueId: order.venue_id,
               tableId: order.table_id,
-              tableNumber: order.table_number
+              tableNumber: order.table_number,
             })
           );
         }
@@ -100,35 +104,43 @@ export async function POST(req: NextRequest) {
 
     // Execute table cleanup in parallel
     const cleanupResults = await Promise.allSettled(tableCleanupTasks);
-    
+
     let successfulCleanups = 0;
     cleanupResults.forEach((result, index) => {
-      if (result.status === 'fulfilled' && result.value.success) {
+      if (result.status === "fulfilled" && result.value.success) {
         successfulCleanups++;
         logger.debug(`[STALE ORDERS CLEANUP] Table cleanup ${index + 1} successful`);
       } else {
-        logger.error(`[STALE ORDERS CLEANUP] Table cleanup ${index + 1} failed:`, 
-          result.status === 'fulfilled' ? result.value.error : result.reason);
+        logger.error(
+          `[STALE ORDERS CLEANUP] Table cleanup ${index + 1} failed:`,
+          result.status === "fulfilled" ? result.value.error : result.reason
+        );
       }
     });
 
-    logger.debug(`[STALE ORDERS CLEANUP] Completed ${staleOrders.length} orders and cleaned ${successfulCleanups} tables`);
+    logger.debug(
+      `[STALE ORDERS CLEANUP] Completed ${staleOrders.length} orders and cleaned ${successfulCleanups} tables`
+    );
 
     return NextResponse.json({
       success: true,
       message: `Successfully cleaned up ${staleOrders.length} stale orders and ${successfulCleanups} tables`,
       completedCount: staleOrders.length,
       cleanedTables: successfulCleanups,
-      orders: staleOrders.map(order => ({
+      orders: staleOrders.map((order) => ({
         id: order.id,
         table: order.table_number || order.table_id,
         customer: order.customer_name,
-        hoursOpen: Math.round((Date.now() - new Date(order.created_at).getTime()) / (1000 * 60 * 60) * 10) / 10
-      }))
+        hoursOpen:
+          Math.round(
+            ((Date.now() - new Date(order.created_at).getTime()) / (1000 * 60 * 60)) * 10
+          ) / 10,
+      })),
     });
-
   } catch (_error) {
-    logger.error('[STALE ORDERS CLEANUP] Unexpected error:', { error: error instanceof Error ? error.message : 'Unknown error' });
-    return NextResponse.json({ error: 'Internal server error' }, { status: 500 });
+    logger._error("[STALE ORDERS CLEANUP] Unexpected error:", {
+      error: _error instanceof Error ? _error.message : "Unknown _error",
+    });
+    return NextResponse.json({ error: "Internal server error" }, { status: 500 });
   }
 }

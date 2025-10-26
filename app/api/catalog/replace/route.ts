@@ -474,7 +474,7 @@ export async function POST(req: NextRequest) {
     });
   } catch (_err) {
     const duration = Date.now() - startTime;
-    const errorMessage = err instanceof Error ? err.message : "Processing failed";
+    const errorMessage = _err instanceof Error ? _err.message : "Processing failed";
 
     logger.error(`[MENU IMPORT ${requestId}] Error:`, { error: errorMessage, duration });
     return NextResponse.json({ ok: false, error: errorMessage }, { status: 500 });

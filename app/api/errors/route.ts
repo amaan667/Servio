@@ -25,7 +25,7 @@ interface ErrorData {
 
 export async function POST(_request: NextRequest) {
   try {
-    const data: ErrorData = await request.json();
+    const data: ErrorData = await _request.json();
 
     // Log error/message
     if (data.error) {
@@ -76,7 +76,7 @@ export async function POST(_request: NextRequest) {
 
     return NextResponse.json({ success: true });
   } catch (_error) {
-    logger.error("[ERROR TRACKING] Failed to process error:", error as Record<string, unknown>);
+    logger._error("[ERROR TRACKING] Failed to process error:", _error as Record<string, unknown>);
     return NextResponse.json({ error: "Failed to process error" }, { status: 500 });
   }
 }

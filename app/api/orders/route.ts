@@ -210,9 +210,9 @@ async function createKDSTickets(
     });
   } catch (_error) {
     logger.error("[KDS TICKETS] Error creating KDS tickets:", {
-      error: error instanceof Error ? error.message : "Unknown error",
+      error: _error instanceof Error ? _error.message : "Unknown _error",
     });
-    throw error;
+    throw _error;
   }
 }
 
@@ -532,7 +532,6 @@ export async function POST(req: Request) {
     logger.debug("[ORDER CREATION DEBUG] - Insert error:", { value: insertErr });
 
     if (insertErr) {
-
       logger.error("[ORDER CREATION DEBUG] ===== INSERT FAILED =====");
       logger.error("[ORDER CREATION DEBUG] Error details:", { value: insertErr });
 

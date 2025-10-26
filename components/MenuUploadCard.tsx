@@ -1,16 +1,16 @@
-'use client';
+"use client";
 
-import { useState, useRef, useEffect } from 'react';
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
-import { Button } from '@/components/ui/button';
-import { Alert, AlertDescription } from '@/components/ui/alert';
-import { Badge } from '@/components/ui/badge';
-import { Switch } from '@/components/ui/switch';
-import { Label } from '@/components/ui/label';
-import { FileText, Upload, Info, Trash2 } from 'lucide-react';
-import { Input } from '@/components/ui/input';
-import { useToast } from '@/hooks/use-toast';
-import { supabaseBrowser as createClient } from '@/lib/supabase';
+import { useState, useRef, useEffect } from "react";
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import { Button } from "@/components/ui/button";
+import { Alert, AlertDescription } from "@/components/ui/alert";
+import { Badge } from "@/components/ui/badge";
+import { Switch } from "@/components/ui/switch";
+import { Label } from "@/components/ui/label";
+import { FileText, Upload, Info, Trash2 } from "lucide-react";
+import { Input } from "@/components/ui/input";
+import { useToast } from "@/hooks/use-toast";
+import { supabaseBrowser as createClient } from "@/lib/supabase";
 
 interface MenuUploadCardProps {
   venueId: string;
@@ -23,22 +23,22 @@ export function MenuUploadCard({ venueId, onSuccess }: MenuUploadCardProps) {
   const [isClearing, setIsClearing] = useState(false);
   const [isDragOver, setIsDragOver] = useState(false);
   const [hasExistingUpload, setHasExistingUpload] = useState(false);
-  const [menuUrl, setMenuUrl] = useState(''); // Add URL input for hybrid import
+  const [menuUrl, setMenuUrl] = useState(""); // Add URL input for hybrid import
   const fileInputRef = useRef<HTMLInputElement>(null);
   const { toast } = useToast();
   const supabase = createClient();
-  
+
   // Check if venue has existing menu items (not uploads)
   useEffect(() => {
     const checkExistingItems = async () => {
       try {
         const { data, error } = await supabase
-          .from('menu_items')
-          .select('id')
-          .eq('venue_id', venueId)
+          .from("menu_items")
+          .select("id")
+          .eq("venue_id", venueId)
           .limit(1)
           .single();
-        
+
         if (data && !error) {
           setHasExistingUpload(true);
         }
@@ -47,7 +47,7 @@ export function MenuUploadCard({ venueId, onSuccess }: MenuUploadCardProps) {
         setHasExistingUpload(false);
       }
     };
-    
+
     checkExistingItems();
   }, [venueId, supabase]);
 
@@ -55,22 +55,21 @@ export function MenuUploadCard({ venueId, onSuccess }: MenuUploadCardProps) {
   const saveExtractedStyle = async (extractedText: string) => {
     try {
       // Import the style extractor
-      const { extractStyleFromPDF } = await import('@/lib/menu-style-extractor');
-      
+      const { extractStyleFromPDF } = await import("@/lib/menu-style-extractor");
+
       // Extract style from text
       const style = extractStyleFromPDF(extractedText);
-      
+
       // Get venue name
       const { data: venue } = await supabase
-        .from('venues')
-        .select('venue_name')
-        .eq('venue_id', venueId)
+        .from("venues")
+        .select("venue_name")
+        .eq("venue_id", venueId)
         .single();
-      
+
       // Upsert style settings
-      const { error } = await supabase
-        .from('menu_design_settings')
-        .upsert({
+      const { error } = await supabase.from("menu_design_settings").upsert(
+        {
           venue_id: venueId,
           venue_name: venue?.venue_name || undefined,
           primary_color: style.detected_primary_color || style.primary_color,
@@ -79,15 +78,17 @@ export function MenuUploadCard({ venueId, onSuccess }: MenuUploadCardProps) {
           font_size: style.font_size,
           show_descriptions: style.show_descriptions,
           show_prices: style.show_prices,
-          auto_theme_enabled: true
-        }, {
-          onConflict: 'venue_id'
-        });
-      
+          auto_theme_enabled: true,
+        },
+        {
+          onConflict: "venue_id",
+        }
+      );
+
       if (!error) {
         toast({
-          title: 'Menu style extracted',
-          description: 'Your menu design has been automatically configured from the PDF'
+          title: "Menu style extracted",
+          description: "Your menu design has been automatically configured from the PDF",
         });
       }
     } catch {
@@ -101,27 +102,29 @@ export function MenuUploadCard({ venueId, onSuccess }: MenuUploadCardProps) {
     }
 
     // Validate file type (now accepts common image formats)
-    const validTypes = ['.txt', '.md', '.json', '.pdf', '.png', '.jpg', '.jpeg', '.webp', '.heic'];
-    const fileExtension = file.name.toLowerCase().substring(file.name.lastIndexOf('.'));
-    
+    const validTypes = [".txt", ".md", ".json", ".pdf", ".png", ".jpg", ".jpeg", ".webp", ".heic"];
+    const fileExtension = file.name.toLowerCase().substring(file.name.lastIndexOf("."));
+
     if (!validTypes.includes(fileExtension)) {
       toast({
-        title: 'Invalid file type',
-        description: 'Please upload a .txt, .md, .json, or .pdf file',
-        variant: 'destructive'
+        title: "Invalid file type",
+        description: "Please upload a .txt, .md, .json, or .pdf file",
+        variant: "destructive",
       });
       return;
     }
 
     // Validate file size (max 10MB for PDF/images, 1MB for text files)
-    const maxSize = (fileExtension === '.pdf' || ['.png', '.jpg', '.jpeg', '.webp', '.heic'].includes(fileExtension))
-      ? 10 * 1024 * 1024
-      : 1024 * 1024;
+    const maxSize =
+      fileExtension === ".pdf" ||
+      [".png", ".jpg", ".jpeg", ".webp", ".heic"].includes(fileExtension)
+        ? 10 * 1024 * 1024
+        : 1024 * 1024;
     if (file.size > maxSize) {
       toast({
-        title: 'File too large',
-        description: `Please upload a file smaller than ${fileExtension === '.pdf' ? '10MB' : '1MB'}`,
-        variant: 'destructive'
+        title: "File too large",
+        description: `Please upload a file smaller than ${fileExtension === ".pdf" ? "10MB" : "1MB"}`,
+        variant: "destructive",
       });
       return;
     }
@@ -129,98 +132,96 @@ export function MenuUploadCard({ venueId, onSuccess }: MenuUploadCardProps) {
     setIsProcessing(true);
 
     try {
-      
-      if (fileExtension === '.pdf') {
+      if (fileExtension === ".pdf") {
         // Use catalog replace endpoint
         const formData = new FormData();
-        formData.append('file', file);
-        formData.append('venue_id', venueId);
-        formData.append('replace_mode', String(isReplacing)); // Send replace/append mode
-        
+        formData.append("file", file);
+        formData.append("venue_id", venueId);
+        formData.append("replace_mode", String(isReplacing)); // Send replace/append mode
+
         // Add menu URL if provided (for hybrid import)
         if (menuUrl && menuUrl.trim()) {
-          formData.append('menu_url', menuUrl.trim());
+          formData.append("menu_url", menuUrl.trim());
         }
 
-        const response = await fetch('/api/catalog/replace', {
-          method: 'POST',
-          body: formData
+        const response = await fetch("/api/catalog/replace", {
+          method: "POST",
+          body: formData,
         });
-          
-          if (!response.ok) {
-            const errorText = await response.text();
-            throw new Error(`Catalog replacement failed: ${response.status} - ${errorText}`);
+
+        if (!response.ok) {
+          const errorText = await response.text();
+          throw new Error(`Catalog replacement failed: ${response.status} - ${errorText}`);
+        }
+
+        const result = await response.json();
+
+        if (result.ok) {
+          toast({
+            title: isReplacing ? "Menu replaced successfully" : "Menu items added successfully",
+            description: `${result.result.items_created} items, ${result.result.categories_created} categories`,
+          });
+
+          // Save extracted style to database if available
+          if (result.result.extracted_text) {
+            await saveExtractedStyle(result.result.extracted_text);
           }
 
-          const result = await response.json();
-          
-          if (result.ok) {
-            toast({
-              title: isReplacing ? 'Menu replaced successfully' : 'Menu items added successfully',
-              description: `${result.result.items_created} items, ${result.result.categories_created} categories`
-            });
-            
-            // Save extracted style to database if available
-            if (result.result.extracted_text) {
-              await saveExtractedStyle(result.result.extracted_text);
-            }
-            
-            onSuccess?.();
-          } else {
-            throw new Error(`Catalog replacement failed: ${result.error}`);
-          }
+          onSuccess?.();
+        } else {
+          throw new Error(`Catalog replacement failed: ${result.error}`);
+        }
       } else {
         // Unified processing for all file types (PDFs, images, text)
-      // Step 1: Upload file to storage
-      const formData = new FormData();
-      formData.append('file', file);
-      formData.append('venue_id', venueId);
+        // Step 1: Upload file to storage
+        const formData = new FormData();
+        formData.append("file", file);
+        formData.append("venue_id", venueId);
 
-      const uploadResponse = await fetch('/api/menu/upload', { 
-        method: 'POST', 
-        body: formData 
-      });
-      
-      const uploadResult = await uploadResponse.json();
-      
-      if (!uploadResponse.ok || !uploadResult?.ok) {
-        throw new Error(uploadResult?.error || 'Upload failed');
-      }
-
-      // Step 2: Process with GPT-4o Vision (auto-creates hotspots)
-      const processResponse = await fetch('/api/menu/process', {
-        method: 'POST',
-        headers: { 'content-type': 'application/json' },
-        body: JSON.stringify({ uploadId: uploadResult.upload_id })
-      });
-      
-      const processResult = await processResponse.json();
-      
-      if (!processResponse.ok || !processResult?.ok) {
-        throw new Error(processResult?.error || 'Processing failed');
-      }
-      
-      const itemCount = (processResult.items || []).length;
-      const hotspotCount = processResult.hotspots_created || 0;
-      
-        toast({ 
-          title: 'Menu imported successfully', 
-          description: `${itemCount} items extracted${hotspotCount > 0 ? `, ${hotspotCount} hotspots created` : ''}` 
+        const uploadResponse = await fetch("/api/menu/upload", {
+          method: "POST",
+          body: formData,
         });
-        
+
+        const uploadResult = await uploadResponse.json();
+
+        if (!uploadResponse.ok || !uploadResult?.ok) {
+          throw new Error(uploadResult?.error || "Upload failed");
+        }
+
+        // Step 2: Process with GPT-4o Vision (auto-creates hotspots)
+        const processResponse = await fetch("/api/menu/process", {
+          method: "POST",
+          headers: { "content-type": "application/json" },
+          body: JSON.stringify({ uploadId: uploadResult.upload_id }),
+        });
+
+        const processResult = await processResponse.json();
+
+        if (!processResponse.ok || !processResult?.ok) {
+          throw new Error(processResult?.error || "Processing failed");
+        }
+
+        const itemCount = (processResult.items || []).length;
+        const hotspotCount = processResult.hotspots_created || 0;
+
+        toast({
+          title: "Menu imported successfully",
+          description: `${itemCount} items extracted${hotspotCount > 0 ? `, ${hotspotCount} hotspots created` : ""}`,
+        });
+
         onSuccess?.();
       }
-      
     } catch (_error) {
       toast({
-        title: 'Upload failed',
-        description: error.message,
-        variant: 'destructive'
+        title: "Upload failed",
+        description: _error.message,
+        variant: "destructive",
       });
     } finally {
       setIsProcessing(false);
       if (fileInputRef.current) {
-        fileInputRef.current.value = '';
+        fileInputRef.current.value = "";
       }
     }
   };
@@ -235,9 +236,9 @@ export function MenuUploadCard({ venueId, onSuccess }: MenuUploadCardProps) {
   const handleProcessWithUrl = async () => {
     if (!menuUrl || !menuUrl.trim()) {
       toast({
-        title: 'No URL provided',
-        description: 'Please enter a menu URL first',
-        variant: 'destructive'
+        title: "No URL provided",
+        description: "Please enter a menu URL first",
+        variant: "destructive",
       });
       return;
     }
@@ -247,23 +248,23 @@ export function MenuUploadCard({ venueId, onSuccess }: MenuUploadCardProps) {
     try {
       // Check if PDF menu exists
       const { data: existingItems } = await supabase
-        .from('menu_items')
-        .select('id')
-        .eq('venue_id', venueId)
+        .from("menu_items")
+        .select("id")
+        .eq("venue_id", venueId)
         .limit(1);
 
       if (!existingItems || existingItems.length === 0) {
-        throw new Error('No existing PDF menu found. Please upload a PDF first.');
+        throw new Error("No existing PDF menu found. Please upload a PDF first.");
       }
 
       // Call new hybrid merge API
-      const response = await fetch('/api/menu/hybrid-merge', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+      const response = await fetch("/api/menu/hybrid-merge", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           venueId: venueId,
-          menuUrl: menuUrl.trim()
-        })
+          menuUrl: menuUrl.trim(),
+        }),
       });
 
       if (!response.ok) {
@@ -275,21 +276,20 @@ export function MenuUploadCard({ venueId, onSuccess }: MenuUploadCardProps) {
 
       if (result.ok) {
         toast({
-          title: '🎉 Menu Updated Successfully!',
+          title: "🎉 Menu Updated Successfully!",
           description: `${result.stats.items_updated} items updated, ${result.stats.new_items_added} new items added. Prices: ${result.stats.prices_updated}, Images: ${result.stats.images_added}`,
-          duration: 7000
+          duration: 7000,
         });
-        
-        
+
         // Refresh menu items
-        await new Promise(resolve => setTimeout(resolve, 500));
+        await new Promise((resolve) => setTimeout(resolve, 500));
         onSuccess?.();
       }
     } catch (_error) {
       toast({
-        title: 'Hybrid Merge Failed',
-        description: error instanceof Error ? error.message : 'Unknown error',
-        variant: 'destructive'
+        title: "Hybrid Merge Failed",
+        description: _error instanceof Error ? _error.message : "Unknown _error",
+        variant: "destructive",
       });
     } finally {
       setIsProcessing(false);
@@ -309,7 +309,7 @@ export function MenuUploadCard({ venueId, onSuccess }: MenuUploadCardProps) {
   const handleDrop = async (event: React.DragEvent) => {
     event.preventDefault();
     setIsDragOver(false);
-    
+
     const files = event.dataTransfer.files;
     if (files.length > 0) {
       await processFile(files[0]);
@@ -317,20 +317,21 @@ export function MenuUploadCard({ venueId, onSuccess }: MenuUploadCardProps) {
   };
 
   const handleClearCatalog = async () => {
-    if (!confirm('Are you sure you want to clear the entire catalog? This action cannot be undone.')) {
+    if (
+      !confirm("Are you sure you want to clear the entire catalog? This action cannot be undone.")
+    ) {
       return;
     }
 
     setIsClearing(true);
 
     try {
-
-      const response = await fetch('/api/catalog/clear', {
-        method: 'POST',
+      const response = await fetch("/api/catalog/clear", {
+        method: "POST",
         headers: {
-          'Content-Type': 'application/json',
+          "Content-Type": "application/json",
         },
-        body: JSON.stringify({ venueId })
+        body: JSON.stringify({ venueId }),
       });
 
       if (!response.ok) {
@@ -342,8 +343,8 @@ export function MenuUploadCard({ venueId, onSuccess }: MenuUploadCardProps) {
 
       if (result.ok) {
         toast({
-          title: 'Catalog cleared successfully',
-          description: `Removed ${result.deletedCount} items from catalog`
+          title: "Catalog cleared successfully",
+          description: `Removed ${result.deletedCount} items from catalog`,
         });
         onSuccess?.();
       } else {
@@ -351,9 +352,9 @@ export function MenuUploadCard({ venueId, onSuccess }: MenuUploadCardProps) {
       }
     } catch (_error) {
       toast({
-        title: 'Clear catalog failed',
-        description: error instanceof Error ? error.message : 'Unknown error',
-        variant: 'destructive'
+        title: "Clear catalog failed",
+        description: _error instanceof Error ? _error.message : "Unknown _error",
+        variant: "destructive",
       });
     } finally {
       setIsClearing(false);
@@ -367,15 +368,15 @@ export function MenuUploadCard({ venueId, onSuccess }: MenuUploadCardProps) {
           <Upload className="h-5 w-5" />
           Upload Menu
         </CardTitle>
-                    <CardDescription className="text-gray-900">Add your menu URL (if available), then upload your PDF. Both sources will be combined using AI for perfect menu extraction.</CardDescription>
+        <CardDescription className="text-gray-900">
+          Add your menu URL (if available), then upload your PDF. Both sources will be combined
+          using AI for perfect menu extraction.
+        </CardDescription>
       </CardHeader>
       <CardContent className="space-y-4">
-        
         {/* Menu URL for Enhanced Matching */}
         <div className="space-y-2">
-          <Label htmlFor="menu-url-upload">
-            Menu Website URL
-          </Label>
+          <Label htmlFor="menu-url-upload">Menu Website URL</Label>
           <Input
             id="menu-url-upload"
             type="url"
@@ -395,7 +396,7 @@ export function MenuUploadCard({ venueId, onSuccess }: MenuUploadCardProps) {
                 size="sm"
                 variant="outline"
               >
-                {isProcessing ? 'Processing...' : 'Process'}
+                {isProcessing ? "Processing..." : "Process"}
               </Button>
             )}
           </div>
@@ -411,10 +412,10 @@ export function MenuUploadCard({ venueId, onSuccess }: MenuUploadCardProps) {
               disabled={isProcessing}
             />
             <Label htmlFor="replace-mode" className="text-sm font-medium cursor-pointer">
-              {isReplacing ? '🔄 Replace entire menu' : '➕ Append to existing menu'}
+              {isReplacing ? "🔄 Replace entire menu" : "➕ Append to existing menu"}
             </Label>
             <p className="text-xs text-muted-foreground ml-auto">
-              {isReplacing ? 'Deletes old items, uses new menu' : 'Keeps old items, adds new ones'}
+              {isReplacing ? "Deletes old items, uses new menu" : "Keeps old items, adds new ones"}
             </p>
           </div>
         )}
@@ -424,18 +425,14 @@ export function MenuUploadCard({ venueId, onSuccess }: MenuUploadCardProps) {
           {/* Drag and Drop Area */}
           <div
             className={`border-2 border-dashed rounded-lg p-6 text-center transition-colors ${
-              isDragOver 
-                ? 'border-blue-500 bg-blue-50' 
-                : 'border-gray-300 hover:border-gray-400'
+              isDragOver ? "border-blue-500 bg-blue-50" : "border-gray-300 hover:border-gray-400"
             }`}
             onDragOver={handleDragOver}
             onDragLeave={handleDragLeave}
             onDrop={handleDrop}
           >
             <FileText className="h-8 w-8 mx-auto mb-2 text-gray-900" />
-            <p className="text-sm text-gray-900 mb-2">
-              Drag and drop your menu PDF here, or
-            </p>
+            <p className="text-sm text-gray-900 mb-2">Drag and drop your menu PDF here, or</p>
             {menuUrl && (
               <p className="text-xs text-muted-foreground mb-2">
                 Will combine with URL data for best results
@@ -447,7 +444,7 @@ export function MenuUploadCard({ venueId, onSuccess }: MenuUploadCardProps) {
               disabled={isProcessing}
             >
               <FileText className="h-4 w-4 mr-2" />
-              {isProcessing ? 'Processing...' : 'Choose PDF'}
+              {isProcessing ? "Processing..." : "Choose PDF"}
             </Button>
             <input
               ref={fileInputRef}
@@ -466,10 +463,10 @@ export function MenuUploadCard({ venueId, onSuccess }: MenuUploadCardProps) {
               size="sm"
             >
               <Trash2 className="h-4 w-4 mr-2" />
-              {isClearing ? 'Clearing...' : 'Clear Menu'}
+              {isClearing ? "Clearing..." : "Clear Menu"}
             </Button>
           </div>
-          
+
           <div className="text-sm text-gray-900">
             Supported formats: PDF (max 10MB), TXT, MD, JSON (max 1MB)
           </div>
@@ -481,7 +478,6 @@ export function MenuUploadCard({ venueId, onSuccess }: MenuUploadCardProps) {
             <p>For best results, ensure your PDF has clear, readable text and good contrast.</p>
           </AlertDescription>
         </Alert>
-
       </CardContent>
     </Card>
   );

@@ -2,7 +2,7 @@
  * Request utilities for timeout handling and cancellation
  */
 
-import React from 'react';
+import React from "react";
 
 export interface RequestConfig {
   timeout?: number;
@@ -12,16 +12,16 @@ export interface RequestConfig {
 }
 
 export class RequestTimeoutError extends Error {
-  constructor(message: string = 'Request timeout') {
+  constructor(message: string = "Request timeout") {
     super(message);
-    this.name = 'RequestTimeoutError';
+    this.name = "RequestTimeoutError";
   }
 }
 
 export class RequestCancelledError extends Error {
-  constructor(message: string = 'Request cancelled') {
+  constructor(message: string = "Request cancelled") {
     super(message);
-    this.name = 'RequestCancelledError';
+    this.name = "RequestCancelledError";
   }
 }
 
@@ -30,16 +30,16 @@ export class RequestCancelledError extends Error {
  */
 export function createTimeoutController(timeoutMs: number = 10000): AbortController {
   const controller = new AbortController();
-  
+
   const timeoutId = setTimeout(() => {
     controller.abort();
   }, timeoutMs);
-  
+
   // Clear timeout if request completes before timeout
-  controller.signal.addEventListener('abort', () => {
+  controller.signal.addEventListener("abort", () => {
     clearTimeout(timeoutId);
   });
-  
+
   return controller;
 }
 
@@ -48,15 +48,11 @@ export function createTimeoutController(timeoutMs: number = 10000): AbortControl
  */
 export async function fetchWithTimeout(
   url: string | URL | Request,
-  options: RequestInit & RequestConfig = { /* Empty */ }
+  options: RequestInit & RequestConfig = {
+    /* Empty */
+  }
 ): Promise<Response> {
-  const {
-    timeout = 10000,
-    signal,
-    retries = 0,
-    retryDelay = 1000,
-    ...fetchOptions
-  } = options;
+  const { timeout = 10000, signal, retries = 0, retryDelay = 1000, ...fetchOptions } = options;
 
   let attempt = 0;
   let lastError: Error;
@@ -65,11 +61,11 @@ export async function fetchWithTimeout(
     try {
       // Create timeout controller
       const timeoutController = createTimeoutController(timeout);
-      
+
       // Combine signals if both provided
-      const combinedSignal = signal ? 
-        AbortSignal.unknown([signal, timeoutController.signal]) : 
-        timeoutController.signal;
+      const combinedSignal = signal
+        ? AbortSignal.unknown([signal, timeoutController.signal])
+        : timeoutController.signal;
 
       const response = await fetch(url, {
         ...fetchOptions,
@@ -78,16 +74,16 @@ export async function fetchWithTimeout(
 
       return response;
     } catch (_error) {
-      lastError = error as Error;
+      lastError = _error as Error;
       attempt++;
 
       // Don't retry on certain errors
       if (
-        error instanceof RequestCancelledError ||
-        (error as Error).name === 'AbortError' ||
-        (error as Error).name === 'RequestTimeoutError'
+        _error instanceof RequestCancelledError ||
+        (_error as Error).name === "AbortError" ||
+        (_error as Error).name === "RequestTimeoutError"
       ) {
-        throw error;
+        throw _error;
       }
 
       // Don't retry if this was the last attempt
@@ -96,7 +92,7 @@ export async function fetchWithTimeout(
       }
 
       // Wait before retrying
-      await new Promise(resolve => setTimeout(resolve, retryDelay * attempt));
+      await new Promise((resolve) => setTimeout(resolve, retryDelay * attempt));
     }
   }
 
@@ -107,22 +103,28 @@ export async function fetchWithTimeout(
  * Creates a cancellable promise that can be aborted
  */
 export function createCancellablePromise<T>(
-  executor: (resolve: (value: T) => void, reject: (reason?: unknown) => void, signal: AbortSignal) => void,
+  executor: (
+    resolve: (value: T) => void,
+    reject: (reason?: unknown) => void,
+    signal: AbortSignal
+  ) => void,
   timeoutMs?: number
 ): { promise: Promise<T>; abort: () => void } {
   const controller = new AbortController();
-  
+
   const promise = new Promise<T>((resolve, reject) => {
-    const timeoutId = timeoutMs ? setTimeout(() => {
-      controller.abort();
-      reject(new RequestTimeoutError(`Operation timed out after ${timeoutMs}ms`));
-    }, timeoutMs) : null;
+    const timeoutId = timeoutMs
+      ? setTimeout(() => {
+          controller.abort();
+          reject(new RequestTimeoutError(`Operation timed out after ${timeoutMs}ms`));
+        }, timeoutMs)
+      : null;
 
     const cleanup = () => {
       if (timeoutId) clearTimeout(timeoutId);
     };
 
-    controller.signal.addEventListener('abort', () => {
+    controller.signal.addEventListener("abort", () => {
       cleanup();
       reject(new RequestCancelledError());
     });
@@ -141,13 +143,13 @@ export function createCancellablePromise<T>(
       );
     } catch (_error) {
       cleanup();
-      reject(error);
+      reject(_error);
     }
   });
 
   return {
     promise,
-    abort: () => controller.abort()
+    abort: () => controller.abort(),
   };
 }
 
@@ -179,8 +181,8 @@ export function createCancellableDebounce<T extends (...args: unknown[]) => unkn
           const result = await func(...args);
           resolve(result);
         } catch (_error) {
-          if ((error as Error).name !== 'RequestCancelledError') {
-            reject(error);
+          if ((_error as Error).name !== "RequestCancelledError") {
+            reject(_error);
           }
         }
       }, delay);
@@ -215,7 +217,7 @@ export function useRequestCancellation() {
 
     // Create new controller
     abortControllerRef.current = new AbortController();
-    
+
     // Set timeout if specified
     if (timeoutMs) {
       setTimeout(() => {

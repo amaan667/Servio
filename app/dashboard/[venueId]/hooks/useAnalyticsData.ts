@@ -64,7 +64,9 @@ export function useAnalyticsData(venueId: string) {
         .lt("created_at", yesterdayEnd.toISOString());
 
       // Aggregate orders by hour
-      const hourlyOrders: { [key: number]: number } = { /* Empty */ };
+      const hourlyOrders: { [key: number]: number } = {
+        /* Empty */
+      };
       for (let i = 0; i < 24; i++) {
         hourlyOrders[i] = 0;
       }
@@ -94,7 +96,9 @@ export function useAnalyticsData(venueId: string) {
       });
 
       // Calculate revenue by category from order items using actual menu categories
-      const categoryRevenue: { [key: string]: number } = { /* Empty */ };
+      const categoryRevenue: { [key: string]: number } = {
+        /* Empty */
+      };
       (todayOrders || []).forEach((order: Record<string, unknown>) => {
         if (Array.isArray(order.items)) {
           order.items.forEach((item: Record<string, unknown>) => {
@@ -118,7 +122,9 @@ export function useAnalyticsData(venueId: string) {
         .slice(0, 6);
 
       // Get top selling items - count by QUANTITY added to cart (not number of orders)
-      const itemCounts: { [key: string]: { name: string; price: number; count: number } } = { /* Empty */ };
+      const itemCounts: { [key: string]: { name: string; price: number; count: number } } = {
+        /* Empty */
+      };
       (todayOrders || []).forEach((order: Record<string, unknown>) => {
         if (Array.isArray(order.items)) {
           order.items.forEach((item: Record<string, unknown>) => {
@@ -172,7 +178,7 @@ export function useAnalyticsData(venueId: string) {
         );
       }
     } catch (_err) {
-      setError(err instanceof Error ? err.message : "Failed to fetch analytics");
+      setError(_err instanceof Error ? _err.message : "Failed to fetch analytics");
     } finally {
       setLoading(false);
     }

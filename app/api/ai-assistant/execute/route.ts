@@ -37,7 +37,7 @@ export async function POST(_request: NextRequest) {
     }
 
     // Parse request
-    const body = await request.json();
+    const body = await _request.json();
     const { venueId, toolName, params, preview } = ExecuteRequestSchema.parse(body);
 
     // Verify user has access to venue
@@ -172,19 +172,19 @@ export async function POST(_request: NextRequest) {
     });
   } catch (_error) {
     logger.error("[AI ASSISTANT] Execution error:", {
-      error: error instanceof Error ? error.message : "Unknown error",
+      error: _error instanceof Error ? _error.message : "Unknown _error",
     });
 
     // Handle Zod validation errors
-    if (error && typeof error === "object" && "name" in error && error.name === "ZodError") {
+    if (_error && typeof _error === "object" && "name" in _error && _error.name === "ZodError") {
       return NextResponse.json(
-        { error: "Invalid parameters", details: "errors" in error ? error.errors : [] },
+        { error: "Invalid parameters", details: "errors" in _error ? _error.errors : [] },
         { status: 400 }
       );
     }
 
     // Handle custom AIAssistantError
-    if (error && typeof error === "object" && "code" in error && error.code) {
+    if (_error && typeof _error === "object" && "code" in _error && _error.code) {
       const statusMap: Record<string, number> = {
         UNAUTHORIZED: 403,
         INVALID_PARAMS: 400,
@@ -195,13 +195,13 @@ export async function POST(_request: NextRequest) {
       };
 
       const errorCode =
-        typeof error === "object" && error && "code" in error ? String(error.code) : "UNKNOWN";
+        typeof _error === "object" && _error && "code" in _error ? String(_error.code) : "UNKNOWN";
       const errorMessage =
-        typeof error === "object" && error && "message" in error
-          ? String(error.message)
+        typeof _error === "object" && _error && "message" in _error
+          ? String(_error.message)
           : "Execution failed";
       const errorDetails =
-        typeof error === "object" && error && "details" in error ? error.details : undefined;
+        typeof _error === "object" && _error && "details" in _error ? _error.details : undefined;
 
       return NextResponse.json(
         { error: errorMessage, code: errorCode, details: errorDetails },
@@ -210,7 +210,7 @@ export async function POST(_request: NextRequest) {
     }
 
     return NextResponse.json(
-      { error: error instanceof Error ? error.message : "Execution failed" },
+      { error: _error instanceof Error ? _error.message : "Execution failed" },
       { status: 500 }
     );
   }

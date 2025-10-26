@@ -1,16 +1,16 @@
-'use client';
+"use client";
 
-import { useState } from 'react';
-import { useRouter } from 'next/navigation';
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
-import { Button } from '@/components/ui/button';
-import { Input } from '@/components/ui/input';
-import { Label } from '@/components/ui/label';
-import { Alert, AlertDescription } from '@/components/ui/alert';
-import { Badge } from '@/components/ui/badge';
-import { supabaseBrowser } from '@/lib/supabase';
-import Link from 'next/link';
-import { Check, Loader2, Mail } from 'lucide-react';
+import { useState } from "react";
+import { useRouter } from "next/navigation";
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { Alert, AlertDescription } from "@/components/ui/alert";
+import { Badge } from "@/components/ui/badge";
+import { supabaseBrowser } from "@/lib/supabase";
+import Link from "next/link";
+import { Check, Loader2, Mail } from "lucide-react";
 
 interface SignUpFormProps {
   onGoogleSignIn: () => Promise<void>;
@@ -21,15 +21,15 @@ export default function SignUpForm({ onGoogleSignIn, isSigningUp = false }: Sign
   const router = useRouter();
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const [step, setStep] = useState<'tier' | 'form'>('tier');
+  const [step, setStep] = useState<"tier" | "form">("tier");
   const [selectedTier, setSelectedTier] = useState<string | null>(null);
   const [formData, setFormData] = useState({
-    fullName: '',
-    email: '',
-    password: '',
-    venueName: '',
-    businessType: 'Restaurant',
-    serviceType: 'table_service', // 'table_service' or 'counter_pickup'
+    fullName: "",
+    email: "",
+    password: "",
+    venueName: "",
+    businessType: "Restaurant",
+    serviceType: "table_service", // 'table_service' or 'counter_pickup'
   });
 
   const handleEmailSignUp = async (e: React.FormEvent) => {
@@ -39,59 +39,62 @@ export default function SignUpForm({ onGoogleSignIn, isSigningUp = false }: Sign
 
     // Validate all required fields
     if (!formData.fullName.trim()) {
-      setError('Full name is required.');
+      setError("Full name is required.");
       setLoading(false);
       return;
     }
     if (!formData.email.trim()) {
-      setError('Email address is required.');
+      setError("Email address is required.");
       setLoading(false);
       return;
     }
     // Basic email format validation
     const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
     if (!emailRegex.test(formData.email)) {
-      setError('Please enter a valid email address.');
+      setError("Please enter a valid email address.");
       setLoading(false);
       return;
     }
     if (!formData.password.trim()) {
-      setError('Password is required.');
+      setError("Password is required.");
       setLoading(false);
       return;
     }
     if (formData.password.length < 6) {
-      setError('Password must be at least 6 characters long.');
+      setError("Password must be at least 6 characters long.");
       setLoading(false);
       return;
     }
     if (!formData.venueName.trim()) {
-      setError('Business name is required.');
+      setError("Business name is required.");
       setLoading(false);
       return;
     }
     if (!selectedTier) {
-      setError('Please select a pricing tier.');
+      setError("Please select a pricing tier.");
       setLoading(false);
       return;
     }
 
     try {
       // Store form data temporarily for after Stripe checkout
-      localStorage.setItem('signup_data', JSON.stringify({
-        email: formData.email,
-        password: formData.password,
-        fullName: formData.fullName,
-        venueName: formData.venueName,
-        venueType: formData.businessType,
-        serviceType: formData.serviceType,
-        tier: selectedTier,
-      }));
+      localStorage.setItem(
+        "signup_data",
+        JSON.stringify({
+          email: formData.email,
+          password: formData.password,
+          fullName: formData.fullName,
+          venueName: formData.venueName,
+          venueType: formData.businessType,
+          serviceType: formData.serviceType,
+          tier: selectedTier,
+        })
+      );
 
       // Create Stripe checkout session FIRST
-      const response = await fetch('/api/stripe/create-checkout-session', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+      const response = await fetch("/api/stripe/create-checkout-session", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           tier: selectedTier,
           email: formData.email,
@@ -104,8 +107,8 @@ export default function SignUpForm({ onGoogleSignIn, isSigningUp = false }: Sign
       const data = await response.json();
 
       if (data.error || !data.url) {
-        setError(data.error || 'Failed to create checkout session. Please try again.');
-        localStorage.removeItem('signup_data');
+        setError(data.error || "Failed to create checkout session. Please try again.");
+        localStorage.removeItem("signup_data");
         setLoading(false);
         return;
       }
@@ -113,9 +116,8 @@ export default function SignUpForm({ onGoogleSignIn, isSigningUp = false }: Sign
       // Redirect to Stripe checkout FIRST
       window.location.href = data.url;
     } catch (_err) {
-
-      setError(err.message || 'Sign-up failed. Please try again.');
-      localStorage.removeItem('signup_data');
+      setError(_err.message || "Sign-up failed. Please try again.");
+      localStorage.removeItem("signup_data");
       setLoading(false);
     }
   };
@@ -123,13 +125,12 @@ export default function SignUpForm({ onGoogleSignIn, isSigningUp = false }: Sign
   const handleGoogleSignUp = async () => {
     setLoading(true);
     setError(null);
-    
+
     try {
       await onGoogleSignIn();
       // The redirect will happen automatically
     } catch (_err) {
-
-      setError(err.message || 'Google sign-up failed. Please try again.');
+      setError(_err.message || "Google sign-up failed. Please try again.");
       setLoading(false);
     }
   };
@@ -137,50 +138,52 @@ export default function SignUpForm({ onGoogleSignIn, isSigningUp = false }: Sign
   // Tier selection data
   const tiers = [
     {
-      name: 'Basic',
-      id: 'basic',
-      price: '£99',
-      description: 'Perfect for small cafes',
-      features: ['10 tables', '50 menu items', 'QR ordering', 'Basic analytics'],
+      name: "Basic",
+      id: "basic",
+      price: "£99",
+      description: "Perfect for small cafes",
+      features: ["10 tables", "50 menu items", "QR ordering", "Basic analytics"],
     },
     {
-      name: 'Standard',
-      id: 'standard',
-      price: '£249',
-      description: 'Most popular for growing businesses',
+      name: "Standard",
+      id: "standard",
+      price: "£249",
+      description: "Most popular for growing businesses",
       popular: true,
-      features: ['20 tables', '200 menu items', 'KDS', 'Inventory', 'Advanced analytics'],
+      features: ["20 tables", "200 menu items", "KDS", "Inventory", "Advanced analytics"],
     },
     {
-      name: 'Premium',
-      id: 'premium',
-      price: '£449+',
-      description: 'Unlimited for enterprises',
+      name: "Premium",
+      id: "premium",
+      price: "£449+",
+      description: "Unlimited for enterprises",
       contact: true,
-      features: ['Unlimited tables', 'Unlimited items', 'AI Assistant', 'Multi-venue'],
+      features: ["Unlimited tables", "Unlimited items", "AI Assistant", "Multi-venue"],
     },
   ];
 
   // Render tier selection step
-  if (step === 'tier') {
+  if (step === "tier") {
     return (
-    <div className="min-h-screen bg-gray-50 flex items-center justify-center p-4">
-      <Card className="w-full max-w-6xl animate-in fade-in duration-300">
-        <CardHeader className="text-center">
-          <CardTitle className="text-3xl font-bold">Choose Your Plan</CardTitle>
-          <CardDescription>Start your 14-day free trial • First billing after trial ends</CardDescription>
-        </CardHeader>
-        <CardContent>
-          <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 mb-6 max-w-5xl mx-auto">
+      <div className="min-h-screen bg-gray-50 flex items-center justify-center p-4">
+        <Card className="w-full max-w-6xl animate-in fade-in duration-300">
+          <CardHeader className="text-center">
+            <CardTitle className="text-3xl font-bold">Choose Your Plan</CardTitle>
+            <CardDescription>
+              Start your 14-day free trial • First billing after trial ends
+            </CardDescription>
+          </CardHeader>
+          <CardContent>
+            <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 mb-6 max-w-5xl mx-auto">
               {tiers.map((tier) => (
                 <Card
                   key={tier.id}
                   className={`relative cursor-pointer transition-all hover:shadow-lg ${
-                    selectedTier === tier.id ? 'border-2 border-purple-500 shadow-lg' : ''
-                  } ${tier.popular ? 'border-2 border-purple-400' : ''}`}
+                    selectedTier === tier.id ? "border-2 border-purple-500 shadow-lg" : ""
+                  } ${tier.popular ? "border-2 border-purple-400" : ""}`}
                   onClick={() => {
                     if (tier.contact) {
-                      window.location.href = 'mailto:sales@servio.app?subject=Premium Plan Inquiry';
+                      window.location.href = "mailto:sales@servio.app?subject=Premium Plan Inquiry";
                     } else {
                       setSelectedTier(tier.id);
                     }
@@ -213,7 +216,7 @@ export default function SignUpForm({ onGoogleSignIn, isSigningUp = false }: Sign
                       </div>
                     ) : (
                       <div className="text-xs text-gray-500">
-                        {selectedTier === tier.id && '✓ Selected'}
+                        {selectedTier === tier.id && "✓ Selected"}
                       </div>
                     )}
                   </CardContent>
@@ -234,17 +237,17 @@ export default function SignUpForm({ onGoogleSignIn, isSigningUp = false }: Sign
               <Button
                 onClick={async () => {
                   if (!selectedTier) {
-                    setError('Please select a plan to continue');
+                    setError("Please select a plan to continue");
                     return;
                   }
                   setError(null);
                   setLoading(true);
-                  
+
                   try {
                     // Redirect directly to Stripe checkout
-                    const response = await fetch('/api/stripe/create-checkout-session', {
-                      method: 'POST',
-                      headers: { 'Content-Type': 'application/json' },
+                    const response = await fetch("/api/stripe/create-checkout-session", {
+                      method: "POST",
+                      headers: { "Content-Type": "application/json" },
                       body: JSON.stringify({
                         tier: selectedTier,
                         isSignup: true,
@@ -254,7 +257,9 @@ export default function SignUpForm({ onGoogleSignIn, isSigningUp = false }: Sign
                     const data = await response.json();
 
                     if (data.error || !data.url) {
-                      setError(data.error || 'Failed to create checkout session. Please try again.');
+                      setError(
+                        data.error || "Failed to create checkout session. Please try again."
+                      );
                       setLoading(false);
                       return;
                     }
@@ -262,8 +267,9 @@ export default function SignUpForm({ onGoogleSignIn, isSigningUp = false }: Sign
                     // Redirect to Stripe checkout
                     window.location.href = data.url;
                   } catch (_err) {
-
-                    setError(err.message || 'Failed to create checkout session. Please try again.');
+                    setError(
+                      _err.message || "Failed to create checkout session. Please try again."
+                    );
                     setLoading(false);
                   }
                 }}
@@ -277,7 +283,7 @@ export default function SignUpForm({ onGoogleSignIn, isSigningUp = false }: Sign
                     Redirecting...
                   </>
                 ) : (
-                  `Continue with ${selectedTier ? tiers.find(t => t.id === selectedTier)?.name : 'Selected Plan'}`
+                  `Continue with ${selectedTier ? tiers.find((t) => t.id === selectedTier)?.name : "Selected Plan"}`
                 )}
               </Button>
             </div>
@@ -298,19 +304,19 @@ export default function SignUpForm({ onGoogleSignIn, isSigningUp = false }: Sign
         <CardHeader className="text-center">
           <CardTitle className="text-2xl font-bold">Create Account</CardTitle>
           <CardDescription>
-            Sign up for {tiers.find(t => t.id === selectedTier)?.name} plan • 14-day free trial
+            Sign up for {tiers.find((t) => t.id === selectedTier)?.name} plan • 14-day free trial
           </CardDescription>
         </CardHeader>
         <CardContent className="space-y-4">
           {error && (
             <Alert variant="destructive">
               <AlertDescription>
-                {error.includes('already have an account') ? (
+                {error.includes("already have an account") ? (
                   <>
-                    You already have an account with this email. Please{' '}
+                    You already have an account with this email. Please{" "}
                     <Link href="/sign-in" className="underline hover:no-underline font-medium">
                       sign in
-                    </Link>{' '}
+                    </Link>{" "}
                     instead.
                   </>
                 ) : (
@@ -319,7 +325,7 @@ export default function SignUpForm({ onGoogleSignIn, isSigningUp = false }: Sign
               </AlertDescription>
             </Alert>
           )}
-          
+
           {/* Google Sign Up Button */}
           <Button
             onClick={handleGoogleSignUp}
@@ -328,14 +334,26 @@ export default function SignUpForm({ onGoogleSignIn, isSigningUp = false }: Sign
           >
             <svg className="w-5 h-5" viewBox="0 0 48 48">
               <g>
-                <path fill="#4285F4" d="M24 9.5c3.54 0 6.7 1.22 9.19 3.22l6.85-6.85C35.64 2.09 30.18 0 24 0 14.82 0 6.44 5.48 2.69 13.44l7.98 6.2C12.13 13.09 17.62 9.5 24 9.5z"/>
-                <path fill="#34A853" d="M46.1 24.55c0-1.64-.15-3.22-.42-4.74H24v9.01h12.42c-.54 2.9-2.18 5.36-4.65 7.01l7.19 5.6C43.93 37.36 46.1 31.45 46.1 24.55z"/>
-                <path fill="#FBBC05" d="M10.67 28.09c-1.09-3.22-1.09-6.7 0-9.92l-7.98-6.2C.64 16.36 0 20.09 0 24s.64 7.64 2.69 11.03l7.98-6.2z"/>
-                <path fill="#EA4335" d="M24 48c6.18 0 11.36-2.05 15.14-5.59l-7.19-5.6c-2.01 1.35-4.59 2.15-7.95 2.15-6.38 0-11.87-3.59-14.33-8.75l-7.98 6.2C6.44 42.52 14.82 48 24 48z"/>
-                <path fill="none" d="M0 0h48v48H0z"/>
+                <path
+                  fill="#4285F4"
+                  d="M24 9.5c3.54 0 6.7 1.22 9.19 3.22l6.85-6.85C35.64 2.09 30.18 0 24 0 14.82 0 6.44 5.48 2.69 13.44l7.98 6.2C12.13 13.09 17.62 9.5 24 9.5z"
+                />
+                <path
+                  fill="#34A853"
+                  d="M46.1 24.55c0-1.64-.15-3.22-.42-4.74H24v9.01h12.42c-.54 2.9-2.18 5.36-4.65 7.01l7.19 5.6C43.93 37.36 46.1 31.45 46.1 24.55z"
+                />
+                <path
+                  fill="#FBBC05"
+                  d="M10.67 28.09c-1.09-3.22-1.09-6.7 0-9.92l-7.98-6.2C.64 16.36 0 20.09 0 24s.64 7.64 2.69 11.03l7.98-6.2z"
+                />
+                <path
+                  fill="#EA4335"
+                  d="M24 48c6.18 0 11.36-2.05 15.14-5.59l-7.19-5.6c-2.01 1.35-4.59 2.15-7.95 2.15-6.38 0-11.87-3.59-14.33-8.75l-7.98 6.2C6.44 42.52 14.82 48 24 48z"
+                />
+                <path fill="none" d="M0 0h48v48H0z" />
               </g>
             </svg>
-            {loading || isSigningUp ? 'Creating account...' : 'Sign up with Google'}
+            {loading || isSigningUp ? "Creating account..." : "Sign up with Google"}
           </Button>
 
           <div className="relative">
@@ -456,18 +474,13 @@ export default function SignUpForm({ onGoogleSignIn, isSigningUp = false }: Sign
                   Redirecting to payment...
                 </>
               ) : (
-                'Continue to Payment & Start Trial'
+                "Continue to Payment & Start Trial"
               )}
             </Button>
           </form>
 
           <div className="flex justify-between items-center text-sm">
-            <Button
-              variant="ghost"
-              size="sm"
-              onClick={() => setStep('tier')}
-              disabled={loading}
-            >
+            <Button variant="ghost" size="sm" onClick={() => setStep("tier")} disabled={loading}>
               ← Change Plan
             </Button>
             <Link href="/sign-in" className="text-purple-600 hover:underline">
@@ -476,7 +489,8 @@ export default function SignUpForm({ onGoogleSignIn, isSigningUp = false }: Sign
           </div>
 
           <p className="text-xs text-center text-gray-500">
-            You'll enter payment details first. Your card won't be charged for 14 days. Your account will be created after payment setup.
+            You'll enter payment details first. Your card won't be charged for 14 days. Your account
+            will be created after payment setup.
           </p>
         </CardContent>
       </Card>

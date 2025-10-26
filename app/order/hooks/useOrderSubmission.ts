@@ -1,5 +1,5 @@
-import { useState } from 'react';
-import { CartItem, CustomerInfo } from '../types';
+import { useState } from "react";
+import { CartItem, CustomerInfo } from "../types";
 
 interface OrderSubmissionParams {
   cart: CartItem[];
@@ -8,7 +8,7 @@ interface OrderSubmissionParams {
   tableNumber: string;
   counterNumber: string;
   orderLocation: string;
-  orderType: 'counter' | 'table';
+  orderType: "counter" | "table";
   isCounterOrder: boolean;
   isDemo: boolean;
   isDemoFallback: boolean;
@@ -18,7 +18,6 @@ export function useOrderSubmission() {
   const [isSubmitting, setIsSubmitting] = useState(false);
 
   const submitOrder = async (params: OrderSubmissionParams) => {
-    
     const {
       cart,
       customerInfo,
@@ -33,38 +32,38 @@ export function useOrderSubmission() {
     } = params;
 
     // Validate order data
-    
+
     if (!customerInfo.name.trim()) {
       alert("Please enter your name before placing the order.");
       return;
     }
-    
+
     if (!customerInfo.phone.trim()) {
       alert("Please enter your phone number before placing the order.");
       return;
     }
-    
+
     if (cart.length === 0) {
       alert("Your cart is empty. Please add items before placing the order.");
       return;
     }
-    
+
     if (!venueSlug) {
       alert("Invalid venue. Please check your QR code and try again.");
       return;
     }
 
     setIsSubmitting(true);
-    
+
     try {
-      const safeTable = isCounterOrder ? (parseInt(counterNumber) || 1) : (parseInt(tableNumber) || 1);
-      const paymentMode = isCounterOrder ? 'pay_at_till' : 'online';
+      const safeTable = isCounterOrder ? parseInt(counterNumber) || 1 : parseInt(tableNumber) || 1;
+      const paymentMode = isCounterOrder ? "pay_at_till" : "online";
 
       // For demo orders
-      if (isDemo || isDemoFallback || venueSlug === 'demo-cafe') {
+      if (isDemo || isDemoFallback || venueSlug === "demo-cafe") {
         const orderData = {
-          venueId: 'demo-cafe',
-          venueName: 'Demo Café',
+          venueId: "demo-cafe",
+          venueName: "Demo Café",
           tableNumber: parseInt(orderLocation) || 1,
           counterNumber: counterNumber,
           orderType: orderType,
@@ -72,7 +71,7 @@ export function useOrderSubmission() {
           customerName: customerInfo.name.trim(),
           customerPhone: customerInfo.phone.trim(),
           cart: cart.map((item) => ({
-            id: item.id && item.id.startsWith('demo-') ? null : item.id,
+            id: item.id && item.id.startsWith("demo-") ? null : item.id,
             name: item.name,
             price: item.price,
             quantity: item.quantity,
@@ -86,12 +85,12 @@ export function useOrderSubmission() {
             .join("; "),
           isDemo: true,
         };
-        
-        localStorage.setItem('servio-pending-order', JSON.stringify(orderData));
+
+        localStorage.setItem("servio-pending-order", JSON.stringify(orderData));
         setIsSubmitting(false);
-        
-        if (typeof window !== 'undefined') {
-          window.location.href = '/order-summary';
+
+        if (typeof window !== "undefined") {
+          window.location.href = "/order-summary";
         }
         return;
       }
@@ -99,11 +98,11 @@ export function useOrderSubmission() {
       // For real orders
       // DON'T create order yet - just save to localStorage and go to payment
       const sessionId = `session_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
-      localStorage.setItem('servio-current-session', sessionId);
-      
+      localStorage.setItem("servio-current-session", sessionId);
+
       const checkoutData = {
         venueId: venueSlug,
-        venueName: 'Restaurant',
+        venueName: "Restaurant",
         tableNumber: parseInt(orderLocation) || 1,
         counterNumber: counterNumber,
         orderType: orderType,
@@ -111,7 +110,7 @@ export function useOrderSubmission() {
         customerName: customerInfo.name.trim(),
         customerPhone: customerInfo.phone.trim(),
         cart: cart.map((item) => ({
-          id: item.id && item.id.startsWith('demo-') ? null : item.id,
+          id: item.id && item.id.startsWith("demo-") ? null : item.id,
           name: item.name,
           price: item.price,
           quantity: item.quantity,
@@ -126,39 +125,37 @@ export function useOrderSubmission() {
         sessionId: sessionId,
         isDemo: isDemo,
         paymentMode: paymentMode,
-        source: orderType === 'counter' ? 'counter' : 'qr',
+        source: orderType === "counter" ? "counter" : "qr",
       };
 
-      localStorage.setItem('servio-checkout-data', JSON.stringify(checkoutData));
-      
+      localStorage.setItem("servio-checkout-data", JSON.stringify(checkoutData));
+
       // Instant redirect to payment method selection page
       // Order will be created AFTER payment method is selected
-      window.location.href = '/payment';
+      window.location.href = "/payment";
     } catch (_error) {
-
       let errorMessage = "Failed to place order. Please try again.";
-      
-      if (error instanceof Error) {
-        
-        if (error.message.includes('venue_id is required')) {
+
+      if (_error instanceof Error) {
+        if (_error.message.includes("venue_id is required")) {
           errorMessage = "Invalid venue. Please check your QR code and try again.";
-        } else if (error.message.includes('customer_name is required')) {
+        } else if (_error.message.includes("customer_name is required")) {
           errorMessage = "Please enter your name before placing the order.";
-        } else if (error.message.includes('customer_phone is required')) {
+        } else if (_error.message.includes("customer_phone is required")) {
           errorMessage = "Please enter your phone number before placing the order.";
-        } else if (error.message.includes('items must be a non-empty array')) {
+        } else if (_error.message.includes("items must be a non-empty array")) {
           errorMessage = "Your cart is empty. Please add items before placing the order.";
-        } else if (error.message.includes('total_amount must be a number')) {
+        } else if (_error.message.includes("total_amount must be a number")) {
           errorMessage = "Invalid order total. Please try again.";
-        } else if (error.message.includes('Failed to create order')) {
+        } else if (_error.message.includes("Failed to create order")) {
           errorMessage = "Unable to create order. Please check your connection and try again.";
-        } else if (error.message.includes('Failed to verify venue')) {
+        } else if (_error.message.includes("Failed to verify venue")) {
           errorMessage = "Invalid venue. Please check your QR code and try again.";
         } else {
-          errorMessage = `Order failed: ${error.message}`;
+          errorMessage = `Order failed: ${_error.message}`;
         }
       }
-      
+
       alert(errorMessage);
       setIsSubmitting(false);
     }
@@ -169,4 +166,3 @@ export function useOrderSubmission() {
     submitOrder,
   };
 }
-

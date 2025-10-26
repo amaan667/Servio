@@ -1,8 +1,8 @@
-import { NextRequest, NextResponse } from 'next/server';
-import { createAdminClient } from '@/lib/supabase';
-import { logger } from '@/lib/logger';
+import { NextRequest, NextResponse } from "next/server";
+import { createAdminClient } from "@/lib/supabase";
+import { logger } from "@/lib/logger";
 
-export const runtime = 'nodejs';
+export const runtime = "nodejs";
 
 /**
  * Clear entire menu catalog for a venue
@@ -13,19 +13,16 @@ export async function POST(req: NextRequest) {
     const { venueId } = body;
 
     if (!venueId) {
-      return NextResponse.json(
-        { ok: false, error: 'venueId required' },
-        { status: 400 }
-      );
+      return NextResponse.json({ ok: false, error: "venueId required" }, { status: 400 });
     }
 
     const supabase = createAdminClient();
 
     // Delete menu items
     const { error: deleteItemsError, count: itemsCount } = await supabase
-      .from('menu_items')
-      .delete({ count: 'exact' })
-      .eq('venue_id', venueId);
+      .from("menu_items")
+      .delete({ count: "exact" })
+      .eq("venue_id", venueId);
 
     if (deleteItemsError) {
       throw new Error(`Failed to delete items: ${deleteItemsError.message}`);
@@ -33,9 +30,9 @@ export async function POST(req: NextRequest) {
 
     // Delete hotspots
     const { error: deleteHotspotsError } = await supabase
-      .from('menu_hotspots')
+      .from("menu_hotspots")
       .delete()
-      .eq('venue_id', venueId);
+      .eq("venue_id", venueId);
 
     if (deleteHotspotsError) {
       throw new Error(`Failed to delete hotspots: ${deleteHotspotsError.message}`);
@@ -43,28 +40,23 @@ export async function POST(req: NextRequest) {
 
     // Delete uploads
     const { error: deleteUploadsError } = await supabase
-      .from('menu_uploads')
+      .from("menu_uploads")
       .delete()
-      .eq('venue_id', venueId);
+      .eq("venue_id", venueId);
 
     if (deleteUploadsError) {
       throw new Error(`Failed to delete uploads: ${deleteUploadsError.message}`);
     }
 
-    logger.info('Catalog cleared successfully', { venueId, deletedCount: itemsCount });
+    logger.info("Catalog cleared successfully", { venueId, deletedCount: itemsCount });
 
     return NextResponse.json({
       ok: true,
       deletedCount: itemsCount || 0,
     });
-
   } catch (_err) {
-    const errorMessage = err instanceof Error ? err.message : 'Clear failed';
-    logger.error('Failed to clear catalog', { error: errorMessage });
-    return NextResponse.json(
-      { ok: false, error: errorMessage },
-      { status: 500 }
-    );
+    const errorMessage = _err instanceof Error ? _err.message : "Clear failed";
+    logger.error("Failed to clear catalog", { error: errorMessage });
+    return NextResponse.json({ ok: false, error: errorMessage }, { status: 500 });
   }
 }
-

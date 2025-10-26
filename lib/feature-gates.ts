@@ -1,20 +1,20 @@
-import { errorToContext } from '@/lib/utils/error-to-context';
+import { errorToContext } from "@/lib/utils/error-to-context";
 
 /**
  * Feature Gating System
- * 
+ *
  * Controls access to premium features based on venue subscription tier.
- * 
+ *
  * Subscription Tiers:
  * - basic: Up to 10 tables, QR ordering
  * - standard: Up to 20 tables, Full analytics
  * - premium: Unlimited tables/venues, KDS, Inventory, Staff management
  */
 
-import { createClient } from '@/lib/supabase';
-import { logger } from '@/lib/logger';
+import { createClient } from "@/lib/supabase";
+import { logger } from "@/lib/logger";
 
-export type SubscriptionTier = 'basic' | 'standard' | 'premium';
+export type SubscriptionTier = "basic" | "standard" | "premium";
 
 export interface FeatureAccess {
   hasAccess: boolean;
@@ -25,11 +25,11 @@ export interface FeatureAccess {
 
 // Premium features that require subscription
 export const PREMIUM_FEATURES = {
-  INVENTORY: 'premium' as SubscriptionTier,
-  KDS: 'premium' as SubscriptionTier,
-  STAFF_MANAGEMENT: 'premium' as SubscriptionTier,
-  ADVANCED_ANALYTICS: 'standard' as SubscriptionTier,
-  MULTIPLE_VENUES: 'premium' as SubscriptionTier,
+  INVENTORY: "premium" as SubscriptionTier,
+  KDS: "premium" as SubscriptionTier,
+  STAFF_MANAGEMENT: "premium" as SubscriptionTier,
+  ADVANCED_ANALYTICS: "standard" as SubscriptionTier,
+  MULTIPLE_VENUES: "premium" as SubscriptionTier,
 } as const;
 
 /**
@@ -46,24 +46,24 @@ export async function checkFeatureAccess(
     // For now, we'll check if a subscription_tier column exists on venues table
     // This can be enhanced to check Stripe subscriptions
     const { data: venue, error } = await supabase
-      .from('venues')
-      .select('subscription_tier')
-      .eq('venue_id', venueId)
+      .from("venues")
+      .select("subscription_tier")
+      .eq("venue_id", venueId)
       .single();
 
     if (error) {
-      logger.error('[FEATURE GATE] Error fetching venue:', errorToContext(error));
+      logger.error("[FEATURE GATE] Error fetching venue:", errorToContext(error));
       // Default to premium tier if error (allow all features)
       return {
         hasAccess: true,
-        tier: 'premium',
+        tier: "premium",
         requiredTier,
         message: undefined,
       };
     }
 
     // Temporarily allow all features for development
-    const currentTier = 'premium';
+    const currentTier = "premium";
 
     const tierHierarchy: Record<SubscriptionTier, number> = {
       basic: 1,
@@ -82,10 +82,10 @@ export async function checkFeatureAccess(
         : `This feature requires ${requiredTier} tier. Your current tier is ${currentTier}.`,
     };
   } catch (_error) {
-    logger.error('[FEATURE GATE] Unexpected error:', errorToContext(error));
+    logger._error("[FEATURE GATE] Unexpected error:", errorToContext(_error));
     return {
       hasAccess: true,
-      tier: 'premium',
+      tier: "premium",
       requiredTier,
       message: undefined,
     };
@@ -106,14 +106,14 @@ export async function requireFeatureAccess(
       allowed: false,
       response: new Response(
         JSON.stringify({
-          error: 'Feature not available',
+          error: "Feature not available",
           message: access.message,
           currentTier: access.tier,
           requiredTier: access.requiredTier,
         }),
         {
           status: 403,
-          headers: { 'Content-Type': 'application/json' },
+          headers: { "Content-Type": "application/json" },
         }
       ),
     };
@@ -134,12 +134,11 @@ export async function clientCheckFeatureAccess(
     const response = await fetch(`/api/features/check?venue_id=${venueId}&feature=${feature}`);
     return await response.json();
   } catch (_error) {
-    logger.error('[FEATURE GATE CLIENT] Error:', errorToContext(error));
+    logger._error("[FEATURE GATE CLIENT] Error:", errorToContext(_error));
     return {
       hasAccess: true,
-      tier: 'premium',
+      tier: "premium",
       message: undefined,
     };
   }
 }
-

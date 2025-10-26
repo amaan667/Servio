@@ -1,4 +1,4 @@
-import { logger } from '@/lib/logger';
+import { logger } from "@/lib/logger";
 // Email sending utilities for Servio
 // This is a basic implementation that can be enhanced with proper email service integration
 
@@ -21,7 +21,7 @@ interface InvitationEmailData {
 // Generate invitation email HTML
 export function generateInvitationEmail(data: InvitationEmailData): EmailTemplate {
   const { email, venueName, role, invitedBy, invitationLink, expiresAt } = data;
-  
+
   const html = `
     <!DOCTYPE html>
     <html>
@@ -129,7 +129,7 @@ If you didn't expect this invitation, you can safely ignore this email.
     to: email,
     subject: `You're invited to join the team at ${venueName}`,
     html,
-    text
+    text,
   };
 }
 
@@ -137,68 +137,71 @@ If you didn't expect this invitation, you can safely ignore this email.
 export async function sendEmail(template: EmailTemplate): Promise<boolean> {
   try {
     // Method 1: Try Resend (if API key is available)
-    logger.debug('🔍 Checking RESEND_API_KEY', { present: !!process.env.RESEND_API_KEY });
+    logger.debug("🔍 Checking RESEND_API_KEY", { present: !!process.env.RESEND_API_KEY });
     if (process.env.RESEND_API_KEY) {
       try {
-        const { Resend } = await import('resend');
+        const { Resend } = await import("resend");
         const resend = new Resend(process.env.RESEND_API_KEY);
-        
+
         const result = await resend.emails.send({
-          from: 'Team Invitations <invite@servio.uk>',
+          from: "Team Invitations <invite@servio.uk>",
           to: template.to,
           subject: template.subject,
           html: template.html,
           text: template.text,
         });
-        
+
         if (result.data) {
-          logger.debug('✅ Email sent successfully via Resend', { id: result.data.id });
+          logger.debug("✅ Email sent successfully via Resend", { id: result.data.id });
           return true;
         } else {
-          logger.error('❌ Resend returned no data:', result);
+          logger.error("❌ Resend returned no data:", result);
         }
       } catch (resendError) {
-        logger.error('❌ Resend failed with error:', resendError as Record<string, unknown>);
-        logger.warn('⚠️ Resend failed, trying fallback:', resendError as Record<string, unknown>);
+        logger.error("❌ Resend failed with error:", resendError as Record<string, unknown>);
+        logger.warn("⚠️ Resend failed, trying fallback:", resendError as Record<string, unknown>);
       }
     }
 
     // Method 2: Try SendGrid (if API key is available)
     if (process.env.SENDGRID_API_KEY) {
       try {
-        const sgMail = await import('@sendgrid/mail');
+        const sgMail = await import("@sendgrid/mail");
         (sgMail as unknown).default.setApiKey(process.env.SENDGRID_API_KEY);
-        
+
         await (sgMail as unknown).default.send({
           to: template.to,
-          from: 'noreply@servio.app',
+          from: "noreply@servio.app",
           subject: template.subject,
           html: template.html,
           text: template.text,
         });
-        
-        logger.debug('✅ Email sent successfully via SendGrid');
+
+        logger.debug("✅ Email sent successfully via SendGrid");
         return true;
       } catch (sendgridError) {
-        logger.warn('⚠️ SendGrid failed, trying fallback:', sendgridError as Record<string, unknown>);
+        logger.warn(
+          "⚠️ SendGrid failed, trying fallback:",
+          sendgridError as Record<string, unknown>
+        );
       }
     }
 
     // Method 3: Try SMTP (if credentials are available)
     if (process.env.SMTP_HOST && process.env.SMTP_USER && process.env.SMTP_PASS) {
       try {
-        const nodemailer = await import('nodemailer');
-        
+        const nodemailer = await import("nodemailer");
+
         const transporter = (nodemailer as unknown).default.createTransporter({
           host: process.env.SMTP_HOST,
-          port: parseInt(process.env.SMTP_PORT || '587'),
-          secure: process.env.SMTP_PORT === '465',
+          port: parseInt(process.env.SMTP_PORT || "587"),
+          secure: process.env.SMTP_PORT === "465",
           auth: {
             user: process.env.SMTP_USER,
             pass: process.env.SMTP_PASS,
           },
         });
-        
+
         await transporter.sendMail({
           from: process.env.SMTP_USER,
           to: template.to,
@@ -206,49 +209,55 @@ export async function sendEmail(template: EmailTemplate): Promise<boolean> {
           html: template.html,
           text: template.text,
         });
-        
-        logger.debug('✅ Email sent successfully via SMTP');
+
+        logger.debug("✅ Email sent successfully via SMTP");
         return true;
       } catch (smtpError) {
-        logger.warn('⚠️ SMTP failed, using console fallback:', smtpError as Record<string, unknown>);
+        logger.warn(
+          "⚠️ SMTP failed, using console fallback:",
+          smtpError as Record<string, unknown>
+        );
       }
     }
 
     // Method 4: Try EmailJS (for development without domain)
-    if (process.env.EMAILJS_SERVICE_ID && process.env.EMAILJS_TEMPLATE_ID && process.env.EMAILJS_PUBLIC_KEY) {
+    if (
+      process.env.EMAILJS_SERVICE_ID &&
+      process.env.EMAILJS_TEMPLATE_ID &&
+      process.env.EMAILJS_PUBLIC_KEY
+    ) {
       try {
-        logger.debug('📧 Using EmailJS for development email sending');
-        
+        logger.debug("📧 Using EmailJS for development email sending");
+
         // For now, we'll simulate success and log the details
         // In a real implementation, you'd use EmailJS API
-        logger.debug('📧 EMAIL TO SEND via EmailJS:');
-        logger.debug('Email details', { 
-          to: template.to, 
+        logger.debug("📧 EMAIL TO SEND via EmailJS:");
+        logger.debug("Email details", {
+          to: template.to,
           subject: template.subject,
-          link: template.html.match(/href="([^"]+)"/)?.[1] || 'Not found'
+          link: template.html.match(/href="([^"]+)"/)?.[1] || "Not found",
         });
-        
+
         return true; // Simulate success for development
       } catch (emailjsError) {
-        logger.warn('⚠️ EmailJS failed:', emailjsError as Record<string, unknown>);
+        logger.warn("⚠️ EmailJS failed:", emailjsError as Record<string, unknown>);
       }
     }
 
     // Fallback: Log to console (for development/testing)
-    logger.debug('📧 EMAIL TO SEND (No email service configured):');
-    logger.debug('Email details', { 
-      to: template.to, 
+    logger.debug("📧 EMAIL TO SEND (No email service configured):");
+    logger.debug("Email details", {
+      to: template.to,
       subject: template.subject,
-      preview: template.html.substring(0, 200) + '...',
-      link: template.html.match(/href="([^"]+)"/)?.[1] || 'Not found'
+      preview: template.html.substring(0, 200) + "...",
+      link: template.html.match(/href="([^"]+)"/)?.[1] || "Not found",
     });
-    
+
     // In development, we'll return true so the invitation flow continues
     // In production, you should configure an email service
-    return process.env.NODE_ENV === 'development';
-    
+    return process.env.NODE_ENV === "development";
   } catch (_error) {
-    logger.error('❌ Failed to send email:', error as Record<string, unknown>);
+    logger._error("❌ Failed to send email:", _error as Record<string, unknown>);
     return false;
   }
 }
@@ -261,6 +270,6 @@ export async function sendInvitationEmail(data: InvitationEmailData): Promise<bo
 
 // Generate invitation link
 export function generateInvitationLink(token: string): string {
-  const baseUrl = process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:3000';
+  const baseUrl = process.env.NEXT_PUBLIC_APP_URL || "http://localhost:3000";
   return `${baseUrl}/invitation/${token}`;
 }

@@ -1,6 +1,6 @@
-import { NextResponse } from 'next/server';
-import { createAdminClient } from '@/lib/supabase';
-import { logger } from '@/lib/logger';
+import { NextResponse } from "next/server";
+import { createAdminClient } from "@/lib/supabase";
+import { logger } from "@/lib/logger";
 
 interface KDSStation {
   id: string;
@@ -8,67 +8,73 @@ interface KDSStation {
   [key: string]: unknown;
 }
 
-export const runtime = 'nodejs'; // KDS backfill endpoint
+export const runtime = "nodejs"; // KDS backfill endpoint
 
 export async function POST(req: Request) {
   try {
     const supabaseAdmin = createAdminClient();
-    logger.debug('[KDS BACKFILL] Starting KDS backfill for existing orders...');
-    
-    const { venueId, scope = 'today' } = await req.json();
-    
+    logger.debug("[KDS BACKFILL] Starting KDS backfill for existing orders...");
+
+    const { venueId, scope = "today" } = await req.json();
+
     if (!venueId) {
-      return NextResponse.json({ 
-        ok: false, 
-        error: 'venueId is required' 
-      }, { status: 400 });
+      return NextResponse.json(
+        {
+          ok: false,
+          error: "venueId is required",
+        },
+        { status: 400 }
+      );
     }
 
     // First, ensure KDS stations exist for this venue
     const { data: existingStations } = await supabaseAdmin
-      .from('kds_stations')
-      .select('id, station_type')
-      .eq('venue_id', venueId)
-      .eq('is_active', true);
+      .from("kds_stations")
+      .select("id, station_type")
+      .eq("venue_id", venueId)
+      .eq("is_active", true);
 
     if (!existingStations || existingStations.length === 0) {
-      logger.debug('[KDS BACKFILL] No stations found, creating default stations for venue', { extra: { value: venueId } });
-      
+      logger.debug("[KDS BACKFILL] No stations found, creating default stations for venue", {
+        extra: { value: venueId },
+      });
+
       // Create default stations
       const defaultStations = [
-        { name: 'Expo', type: 'expo', order: 0, color: '#3b82f6' },
-        { name: 'Grill', type: 'grill', order: 1, color: '#ef4444' },
-        { name: 'Fryer', type: 'fryer', order: 2, color: '#f59e0b' },
-        { name: 'Barista', type: 'barista', order: 3, color: '#8b5cf6' },
-        { name: 'Cold Prep', type: 'cold', order: 4, color: '#06b6d4' }
+        { name: "Expo", type: "expo", order: 0, color: "#3b82f6" },
+        { name: "Grill", type: "grill", order: 1, color: "#ef4444" },
+        { name: "Fryer", type: "fryer", order: 2, color: "#f59e0b" },
+        { name: "Barista", type: "barista", order: 3, color: "#8b5cf6" },
+        { name: "Cold Prep", type: "cold", order: 4, color: "#06b6d4" },
       ];
-      
+
       for (const station of defaultStations) {
-        await supabaseAdmin
-          .from('kds_stations')
-          .upsert({
+        await supabaseAdmin.from("kds_stations").upsert(
+          {
             venue_id: venueId,
             station_name: station.name,
             station_type: station.type,
             display_order: station.order,
             color_code: station.color,
-            is_active: true
-          }, {
-            onConflict: 'venue_id,station_name'
-          });
+            is_active: true,
+          },
+          {
+            onConflict: "venue_id,station_name",
+          }
+        );
       }
-      
+
       // Fetch stations again
       const { data: stations } = await supabaseAdmin
-        .from('kds_stations')
-        .select('id, station_type')
-        .eq('venue_id', venueId)
-        .eq('is_active', true);
-      
+        .from("kds_stations")
+        .select("id, station_type")
+        .eq("venue_id", venueId)
+        .eq("is_active", true);
+
       if (!stations || stations.length === 0) {
-        throw new Error('Failed to create KDS stations');
+        throw new Error("Failed to create KDS stations");
       }
-      
+
       if (existingStations) {
         existingStations.push(...stations);
       }
@@ -76,52 +82,58 @@ export async function POST(req: Request) {
 
     // Get the expo station (default for all items)
     if (!existingStations || existingStations.length === 0) {
-      throw new Error('No KDS stations available');
+      throw new Error("No KDS stations available");
     }
-    
-    const expoStation = existingStations.find((s: KDSStation) => s.station_type === 'expo') || existingStations[0];
-    
+
+    const expoStation =
+      existingStations.find((s: KDSStation) => s.station_type === "expo") || existingStations[0];
+
     if (!expoStation) {
-      throw new Error('No KDS station available');
+      throw new Error("No KDS station available");
     }
 
     // Build query for orders based on scope
     let query = supabaseAdmin
-      .from('orders')
-      .select('id, venue_id, table_number, table_id, items, order_status, payment_status, created_at')
-      .eq('venue_id', venueId)
-      .in('payment_status', ['PAID', 'UNPAID']) // Only active orders
-      .in('order_status', ['PLACED', 'IN_PREP', 'READY']) // Only orders that need preparation
-      .order('created_at', { ascending: false });
+      .from("orders")
+      .select(
+        "id, venue_id, table_number, table_id, items, order_status, payment_status, created_at"
+      )
+      .eq("venue_id", venueId)
+      .in("payment_status", ["PAID", "UNPAID"]) // Only active orders
+      .in("order_status", ["PLACED", "IN_PREP", "READY"]) // Only orders that need preparation
+      .order("created_at", { ascending: false });
 
     // Apply time filtering based on scope
-    if (scope === 'live') {
+    if (scope === "live") {
       // Live orders: last 30 minutes only
       const thirtyMinutesAgo = new Date(Date.now() - 30 * 60 * 1000);
-      query = query.gte('created_at', thirtyMinutesAgo.toISOString());
-    } else if (scope === 'today') {
+      query = query.gte("created_at", thirtyMinutesAgo.toISOString());
+    } else if (scope === "today") {
       // Today's orders: from start of today until now
       const todayStart = new Date();
       todayStart.setHours(0, 0, 0, 0);
-      query = query.gte('created_at', todayStart.toISOString());
+      query = query.gte("created_at", todayStart.toISOString());
     }
 
     const { data: orders, error: ordersError } = await query;
 
     if (ordersError) {
-      logger.error('[KDS BACKFILL] Error fetching orders:', { value: ordersError });
-      return NextResponse.json({ 
-        ok: false, 
-        error: ordersError.message 
-      }, { status: 500 });
+      logger.error("[KDS BACKFILL] Error fetching orders:", { value: ordersError });
+      return NextResponse.json(
+        {
+          ok: false,
+          error: ordersError.message,
+        },
+        { status: 500 }
+      );
     }
 
     if (!orders || orders.length === 0) {
-      return NextResponse.json({ 
-        ok: true, 
+      return NextResponse.json({
+        ok: true,
         message: `No orders found for ${scope} scope`,
         orders_processed: 0,
-        tickets_created: 0
+        tickets_created: 0,
       });
     }
 
@@ -136,9 +148,9 @@ export async function POST(req: Request) {
       try {
         // Check if this order already has KDS tickets
         const { data: existingTickets } = await supabaseAdmin
-          .from('kds_tickets')
-          .select('id')
-          .eq('order_id', order.id)
+          .from("kds_tickets")
+          .select("id")
+          .eq("order_id", order.id)
           .limit(1);
 
         if (existingTickets && existingTickets.length > 0) {
@@ -148,61 +160,68 @@ export async function POST(req: Request) {
 
         // Create tickets for each order item
         const items = Array.isArray(order.items) ? order.items : [];
-        
+
         for (const item of items) {
           const ticketData = {
             venue_id: order.venue_id,
             order_id: order.id,
             station_id: expoStation.id,
-            item_name: item.item_name || 'Unknown Item',
+            item_name: item.item_name || "Unknown Item",
             quantity: parseInt(item.quantity) || 1,
             special_instructions: item.specialInstructions || null,
             table_number: order.table_number,
-            table_label: order.table_id || order.table_number?.toString() || 'Unknown',
-            status: 'new'
+            table_label: order.table_id || order.table_number?.toString() || "Unknown",
+            status: "new",
           };
-          
-          const { error: ticketError } = await supabaseAdmin
-            .from('kds_tickets')
-            .insert(ticketData);
-          
+
+          const { error: ticketError } = await supabaseAdmin.from("kds_tickets").insert(ticketData);
+
           if (ticketError) {
-            logger.error('[KDS BACKFILL] Failed to create ticket for item:', { error: { item, context: ticketError.message } });
+            logger.error("[KDS BACKFILL] Failed to create ticket for item:", {
+              error: { item, context: ticketError.message },
+            });
             errors.push(`Failed to create ticket for order ${order.id}: ${ticketError.message}`);
             continue;
           }
-          
+
           ticketsCreated++;
         }
-        
+
         ordersProcessed++;
         logger.debug(`[KDS BACKFILL] Processed order ${order.id} with ${items.length} items`);
-        
       } catch (_error) {
-        logger.error(`[KDS BACKFILL] Error processing order ${order.id}:`, { error: error instanceof Error ? error.message : 'Unknown error' });
-        errors.push(`Error processing order ${order.id}: ${error instanceof Error ? error.message : 'Unknown error'}`);
+        logger._error(`[KDS BACKFILL] Error processing order ${order.id}:`, {
+          error: _error instanceof Error ? _error.message : "Unknown _error",
+        });
+        errors.push(
+          `Error processing order ${order.id}: ${_error instanceof Error ? _error.message : "Unknown _error"}`
+        );
       }
     }
 
-    logger.debug('[KDS BACKFILL] Backfill completed:', {
+    logger.debug("[KDS BACKFILL] Backfill completed:", {
       ordersProcessed,
       ticketsCreated,
-      errors: errors.length
+      errors: errors.length,
     });
 
-    return NextResponse.json({ 
-      ok: true, 
+    return NextResponse.json({
+      ok: true,
       message: `KDS backfill completed for ${scope} scope`,
       orders_processed: ordersProcessed,
       tickets_created: ticketsCreated,
-      errors: errors.length > 0 ? errors : undefined
+      errors: errors.length > 0 ? errors : undefined,
     });
-
   } catch (_error) {
-    logger.error('[KDS BACKFILL] Unexpected error:', { error: error instanceof Error ? error.message : 'Unknown error' });
-    return NextResponse.json({ 
-      ok: false, 
-      error: error instanceof Error ? error.message : 'Backfill failed' 
-    }, { status: 500 });
+    logger._error("[KDS BACKFILL] Unexpected error:", {
+      error: _error instanceof Error ? _error.message : "Unknown _error",
+    });
+    return NextResponse.json(
+      {
+        ok: false,
+        error: _error instanceof Error ? _error.message : "Backfill failed",
+      },
+      { status: 500 }
+    );
   }
 }

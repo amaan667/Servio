@@ -3,9 +3,9 @@
  * @module lib/repositories/venue-repository
  */
 
-import { BaseRepository } from './base-repository';
-import { SupabaseClient } from '@supabase/supabase-js';
-import { logger } from '@/lib/logger';
+import { BaseRepository } from "./base-repository";
+import { SupabaseClient } from "@supabase/supabase-js";
+import { logger } from "@/lib/logger";
 
 export interface Venue {
   venue_id: string;
@@ -24,7 +24,7 @@ export interface Venue {
 }
 
 export class VenueRepository extends BaseRepository<Venue> {
-  protected tableName = 'venues';
+  protected tableName = "venues";
 
   constructor(supabase: SupabaseClient) {
     super(supabase);
@@ -34,11 +34,14 @@ export class VenueRepository extends BaseRepository<Venue> {
    * Find venues by owner
    */
   async findByOwner(userId: string): Promise<Venue[]> {
-    return this.findAll({
-      owner_user_id: userId,
-    } as Partial<Venue>, {
-      orderBy: { column: 'created_at', ascending: true },
-    });
+    return this.findAll(
+      {
+        owner_user_id: userId,
+      } as Partial<Venue>,
+      {
+        orderBy: { column: "created_at", ascending: true },
+      }
+    );
   }
 
   /**
@@ -48,20 +51,20 @@ export class VenueRepository extends BaseRepository<Venue> {
     try {
       const { data, error } = await this.supabase
         .from(this.tableName)
-        .select('*')
-        .eq('venue_id', venueId)
+        .select("*")
+        .eq("venue_id", venueId)
         .single();
 
       if (error) {
-        if (error.code === 'PGRST116') return null;
-        logger.error('[VENUE_REPO] Error finding venue by ID', { error, venueId });
+        if (error.code === "PGRST116") return null;
+        logger.error("[VENUE_REPO] Error finding venue by ID", { error, venueId });
         throw error;
       }
 
       return data as Venue;
     } catch (_error) {
-      logger.error('[VENUE_REPO] Unexpected error finding venue by ID', { error, venueId });
-      throw error;
+      logger.error("[VENUE_REPO] Unexpected error finding venue by ID", { error, venueId });
+      throw _error;
     }
   }
 
@@ -76,20 +79,19 @@ export class VenueRepository extends BaseRepository<Venue> {
           settings,
           updated_at: new Date().toISOString(),
         })
-        .eq('venue_id', venueId)
+        .eq("venue_id", venueId)
         .select()
         .single();
 
       if (error) {
-        logger.error('[VENUE_REPO] Error updating venue settings', { error, venueId });
+        logger.error("[VENUE_REPO] Error updating venue settings", { error, venueId });
         throw error;
       }
 
       return data as Venue;
     } catch (_error) {
-      logger.error('[VENUE_REPO] Unexpected error updating venue settings', { error, venueId });
-      throw error;
+      logger.error("[VENUE_REPO] Unexpected error updating venue settings", { error, venueId });
+      throw _error;
     }
   }
 }
-

@@ -3,12 +3,12 @@
 
 import { NextRequest, NextResponse } from "next/server";
 import { createClient } from "@/lib/supabase";
-import { logger } from '@/lib/logger';
+import { logger } from "@/lib/logger";
 
 export async function GET(_request: NextRequest) {
   try {
     const supabase = await createClient();
-    
+
     // Check auth
     const {
       data: { session },
@@ -19,7 +19,7 @@ export async function GET(_request: NextRequest) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
 
-    const { searchParams } = new URL(request.url);
+    const { searchParams } = new URL(_request.url);
     const venueId = searchParams.get("venueId");
     const cursor = searchParams.get("cursor") || "0";
     const limit = parseInt(searchParams.get("limit") || "20");
@@ -36,10 +36,7 @@ export async function GET(_request: NextRequest) {
       .single();
 
     if (!venue || venue.owner_user_id !== user.id) {
-      return NextResponse.json(
-        { error: "Access denied to this venue" },
-        { status: 403 }
-      );
+      return NextResponse.json({ error: "Access denied to this venue" }, { status: 403 });
     }
 
     // Get conversations for this venue
@@ -51,7 +48,9 @@ export async function GET(_request: NextRequest) {
       .range(parseInt(cursor), parseInt(cursor) + limit - 1);
 
     if (error) {
-      logger.error("[AI CHAT] Failed to fetch conversations:", { error: error instanceof Error ? error.message : 'Unknown error' });
+      logger.error("[AI CHAT] Failed to fetch conversations:", {
+        error: error instanceof Error ? error.message : "Unknown error",
+      });
       return NextResponse.json(
         { error: "Failed to fetch conversations", details: error.message },
         { status: 500 }
@@ -59,7 +58,7 @@ export async function GET(_request: NextRequest) {
     }
 
     // Transform data to match frontend expectations
-    const transformedConversations = (conversations || []).map(conv => ({
+    const transformedConversations = (conversations || []).map((conv) => ({
       id: conv.id,
       title: conv.title,
       venueId: conv.venue_id,
@@ -75,9 +74,11 @@ export async function GET(_request: NextRequest) {
       nextCursor: conversations?.length === limit ? (parseInt(cursor) + limit).toString() : null,
     });
   } catch (_error) {
-    logger.error("[AI CHAT] Conversations error:", { error: error instanceof Error ? error.message : 'Unknown error' });
+    logger._error("[AI CHAT] Conversations error:", {
+      error: _error instanceof Error ? _error.message : "Unknown _error",
+    });
     return NextResponse.json(
-      { error: error instanceof Error ? error.message : "Internal server error" },
+      { error: _error instanceof Error ? _error.message : "Internal server _error" },
       { status: 500 }
     );
   }
@@ -86,7 +87,7 @@ export async function GET(_request: NextRequest) {
 export async function POST(_request: NextRequest) {
   try {
     const supabase = await createClient();
-    
+
     // Check auth
     const {
       data: { session },
@@ -98,14 +99,11 @@ export async function POST(_request: NextRequest) {
     }
 
     // Parse request body
-    const body = await request.json();
+    const body = await _request.json();
     const { venueId, title } = body;
 
     if (!venueId) {
-      return NextResponse.json(
-        { error: "Missing venueId" },
-        { status: 400 }
-      );
+      return NextResponse.json({ error: "Missing venueId" }, { status: 400 });
     }
 
     // Verify user has access to venue
@@ -116,10 +114,7 @@ export async function POST(_request: NextRequest) {
       .single();
 
     if (!venue || venue.owner_user_id !== user.id) {
-      return NextResponse.json(
-        { error: "Access denied to this venue" },
-        { status: 403 }
-      );
+      return NextResponse.json({ error: "Access denied to this venue" }, { status: 403 });
     }
 
     // Create new conversation
@@ -134,11 +129,10 @@ export async function POST(_request: NextRequest) {
       .single();
 
     if (error) {
-      logger.error("[AI CHAT] Failed to create conversation:", { error: error instanceof Error ? error.message : 'Unknown error' });
-      return NextResponse.json(
-        { error: "Failed to create conversation" },
-        { status: 500 }
-      );
+      logger.error("[AI CHAT] Failed to create conversation:", {
+        error: error instanceof Error ? error.message : "Unknown error",
+      });
+      return NextResponse.json({ error: "Failed to create conversation" }, { status: 500 });
     }
 
     // Transform the created conversation
@@ -156,9 +150,11 @@ export async function POST(_request: NextRequest) {
       conversation: transformedConversation,
     });
   } catch (_error) {
-    logger.error("[AI CHAT] Create conversation error:", { error: error instanceof Error ? error.message : 'Unknown error' });
+    logger._error("[AI CHAT] Create conversation error:", {
+      error: _error instanceof Error ? _error.message : "Unknown _error",
+    });
     return NextResponse.json(
-      { error: error instanceof Error ? error.message : "Internal server error" },
+      { error: _error instanceof Error ? _error.message : "Internal server _error" },
       { status: 500 }
     );
   }
@@ -167,7 +163,7 @@ export async function POST(_request: NextRequest) {
 export async function PATCH(_request: NextRequest) {
   try {
     const supabase = await createClient();
-    
+
     // Check auth
     const {
       data: { session },
@@ -179,14 +175,11 @@ export async function PATCH(_request: NextRequest) {
     }
 
     // Parse request body
-    const body = await request.json();
+    const body = await _request.json();
     const { conversationId, title } = body;
 
     if (!conversationId || !title) {
-      return NextResponse.json(
-        { error: "Missing conversationId or title" },
-        { status: 400 }
-      );
+      return NextResponse.json({ error: "Missing conversationId or title" }, { status: 400 });
     }
 
     // Verify user has access to this conversation
@@ -197,10 +190,7 @@ export async function PATCH(_request: NextRequest) {
       .single();
 
     if (!conversation) {
-      return NextResponse.json(
-        { error: "Conversation not found" },
-        { status: 404 }
-      );
+      return NextResponse.json({ error: "Conversation not found" }, { status: 404 });
     }
 
     // Verify venue access
@@ -211,29 +201,25 @@ export async function PATCH(_request: NextRequest) {
       .single();
 
     if (!venue || venue.owner_user_id !== user.id) {
-      return NextResponse.json(
-        { error: "Access denied to this venue" },
-        { status: 403 }
-      );
+      return NextResponse.json({ error: "Access denied to this venue" }, { status: 403 });
     }
 
     // Update the conversation title
     const { data: updatedConversation, error } = await supabase
       .from("ai_conversations")
-      .update({ 
+      .update({
         title,
-        updated_at: new Date().toISOString()
+        updated_at: new Date().toISOString(),
       })
       .eq("id", conversationId)
       .select("*")
       .single();
 
     if (error) {
-      logger.error("[AI CHAT] Failed to update conversation:", { error: error instanceof Error ? error.message : 'Unknown error' });
-      return NextResponse.json(
-        { error: "Failed to update conversation" },
-        { status: 500 }
-      );
+      logger.error("[AI CHAT] Failed to update conversation:", {
+        error: error instanceof Error ? error.message : "Unknown error",
+      });
+      return NextResponse.json({ error: "Failed to update conversation" }, { status: 500 });
     }
 
     // Transform the updated conversation
@@ -251,9 +237,11 @@ export async function PATCH(_request: NextRequest) {
       conversation: transformedConversation,
     });
   } catch (_error) {
-    logger.error("[AI CHAT] Update conversation error:", { error: error instanceof Error ? error.message : 'Unknown error' });
+    logger._error("[AI CHAT] Update conversation error:", {
+      error: _error instanceof Error ? _error.message : "Unknown _error",
+    });
     return NextResponse.json(
-      { error: error instanceof Error ? error.message : "Internal server error" },
+      { error: _error instanceof Error ? _error.message : "Internal server _error" },
       { status: 500 }
     );
   }

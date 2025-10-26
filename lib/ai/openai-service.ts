@@ -1,13 +1,12 @@
-
 // Production OpenAI Integration with Responses API and Tool Calling
 // Implements proper tool correlation and error handling
 
 import OpenAI from "openai";
 import { createClient } from "@/lib/supabase";
-import { logger } from '@/lib/logger';
+import { logger } from "@/lib/logger";
 
-const client = new OpenAI({ 
-  apiKey: process.env.OPENAI_API_KEY 
+const client = new OpenAI({
+  apiKey: process.env.OPENAI_API_KEY,
 });
 
 const SYSTEM_PROMPT = `
@@ -27,14 +26,14 @@ const TOOLS: OpenAI.Chat.Completions.ChatCompletionTool[] = [
         type: "object",
         additionalProperties: false,
         properties: {
-          venue_id: { 
-            type: "string", 
-            description: "Venue UUID" 
-          }
+          venue_id: {
+            type: "string",
+            description: "Venue UUID",
+          },
         },
-        required: ["venue_id"]
-      }
-    }
+        required: ["venue_id"],
+      },
+    },
   },
   {
     type: "function",
@@ -45,18 +44,18 @@ const TOOLS: OpenAI.Chat.Completions.ChatCompletionTool[] = [
         type: "object",
         additionalProperties: false,
         properties: {
-          venue_id: { 
-            type: "string", 
-            description: "Venue UUID" 
+          venue_id: {
+            type: "string",
+            description: "Venue UUID",
           },
-          category: { 
-            type: "string", 
-            description: "Optional category filter" 
-          }
+          category: {
+            type: "string",
+            description: "Optional category filter",
+          },
         },
-        required: ["venue_id"]
-      }
-    }
+        required: ["venue_id"],
+      },
+    },
   },
   {
     type: "function",
@@ -67,22 +66,22 @@ const TOOLS: OpenAI.Chat.Completions.ChatCompletionTool[] = [
         type: "object",
         additionalProperties: false,
         properties: {
-          venue_id: { 
-            type: "string", 
-            description: "Venue UUID" 
+          venue_id: {
+            type: "string",
+            description: "Venue UUID",
           },
-          item_id: { 
-            type: "string", 
-            description: "Menu item ID" 
+          item_id: {
+            type: "string",
+            description: "Menu item ID",
           },
-          new_price: { 
-            type: "number", 
-            description: "New price" 
-          }
+          new_price: {
+            type: "number",
+            description: "New price",
+          },
         },
-        required: ["venue_id", "item_id", "new_price"]
-      }
-    }
+        required: ["venue_id", "item_id", "new_price"],
+      },
+    },
   },
   {
     type: "function",
@@ -95,22 +94,22 @@ const TOOLS: OpenAI.Chat.Completions.ChatCompletionTool[] = [
         properties: {
           page: {
             type: "string",
-            enum: ["orders", "menu", "tables", "settings", "analytics", "dashboard"]
+            enum: ["orders", "menu", "tables", "settings", "analytics", "dashboard"],
           },
-          subpage: { 
+          subpage: {
             type: "string",
-            description: "Optional subpage" 
-          }
+            description: "Optional subpage",
+          },
         },
-        required: ["page"]
-      }
-    }
-  }
+        required: ["page"],
+      },
+    },
+  },
 ];
 
 interface Message {
   id: string;
-  authorRole: 'system' | 'user' | 'assistant' | 'tool';
+  authorRole: "system" | "user" | "assistant" | "tool";
   text: string;
   content: unknown;
   callId?: string;
@@ -122,7 +121,7 @@ export async function handleUserMessage({
   venueId,
   conversationId,
   userText,
-  userId
+  userId,
 }: {
   venueId: string;
   conversationId: string;
@@ -141,15 +140,15 @@ export async function handleUserMessage({
       .limit(30);
 
     // 2) Transform to OpenAI format
-    const history = (messages || []).reverse().map(msg => ({
+    const history = (messages || []).reverse().map((msg) => ({
       role: msg.author_role,
-      content: msg.text || ""
+      content: msg.text || "",
     }));
 
     const openaiMessages = [
       { role: "system" as const, content: SYSTEM_PROMPT },
       ...history,
-      { role: "user" as const, content: userText }
+      { role: "user" as const, content: userText },
     ];
 
     // 3) First model call
@@ -190,8 +189,8 @@ export async function handleUserMessage({
               break;
             case "update_menu_price":
               toolResult = await executeUpdateMenuPrice(
-                parsedArgs.venue_id, 
-                parsedArgs.item_id, 
+                parsedArgs.venue_id,
+                parsedArgs.item_id,
                 parsedArgs.new_price
               );
               break;
@@ -219,13 +218,15 @@ export async function handleUserMessage({
           toolMessages.push({
             role: "tool",
             content: JSON.stringify(toolResult),
-            tool_call_id: callId
+            tool_call_id: callId,
           } as unknown);
-
         } catch (_error) {
-          logger.error(`[AI] Tool execution error for ${name}:`, error as Record<string, unknown>);
-          toolResult = { error: `Tool execution failed: ${error?.message || 'Unknown error'}` };
-          
+          logger._error(
+            `[AI] Tool execution _error for ${name}:`,
+            _error as Record<string, unknown>
+          );
+          toolResult = { error: `Tool execution failed: ${_error?.message || "Unknown _error"}` };
+
           await supabase.from("ai_messages").insert({
             conversation_id: conversationId,
             venue_id: venueId,
@@ -240,7 +241,7 @@ export async function handleUserMessage({
           toolMessages.push({
             role: "tool",
             content: JSON.stringify(toolResult),
-            tool_call_id: callId
+            tool_call_id: callId,
           } as unknown);
         }
       }
@@ -253,7 +254,7 @@ export async function handleUserMessage({
       });
 
       const finalMessage = finalResponse.choices[0].message;
-      
+
       // Save assistant message
       await supabase.from("ai_messages").insert({
         conversation_id: conversationId,
@@ -265,7 +266,7 @@ export async function handleUserMessage({
 
       return {
         response: finalMessage.content || "I've completed the requested actions.",
-        toolResults
+        toolResults,
       };
     } else {
       // No tool calls, just save the response
@@ -279,65 +280,62 @@ export async function handleUserMessage({
 
       return {
         response: message.content || "I understand your request.",
-        toolResults: []
+        toolResults: [],
       };
     }
   } catch (_error) {
-    logger.error("[AI] OpenAI service error:", error as Record<string, unknown>);
-    throw new Error(`AI service error: ${error?.message || 'Unknown error'}`);
+    logger._error("[AI] OpenAI service error:", _error as Record<string, unknown>);
+    throw new Error(`AI service error: ${_error?.message || "Unknown _error"}`);
   }
 }
 
 // Tool execution functions
 async function executeGetTodaysRevenue(venueId: string) {
   const supabase = await createClient();
-  
+
   const { data: orders } = await supabase
     .from("orders")
     .select("total_amount")
     .eq("venue_id", venueId)
-    .gte("created_at", new Date().toISOString().split('T')[0]);
+    .gte("created_at", new Date().toISOString().split("T")[0]);
 
   const totalRevenue = orders?.reduce((sum, order) => sum + (order.total_amount || 0), 0) || 0;
-  
+
   return {
     venue_id: venueId,
-    date: new Date().toISOString().split('T')[0],
+    date: new Date().toISOString().split("T")[0],
     total_revenue: totalRevenue,
-    currency: "GBP"
+    currency: "GBP",
   };
 }
 
 async function executeGetMenuItems(venueId: string, category?: string) {
   const supabase = await createClient();
-  
-  let query = supabase
-    .from("menu_items")
-    .select("*")
-    .eq("venue_id", venueId);
+
+  let query = supabase.from("menu_items").select("*").eq("venue_id", venueId);
 
   if (category) {
     query = query.eq("category", category);
   }
 
   const { data: items } = await query;
-  
+
   return {
     venue_id: venueId,
     category: category || "all",
     items: items || [],
-    count: items?.length || 0
+    count: items?.length || 0,
   };
 }
 
 async function executeUpdateMenuPrice(venueId: string, itemId: string, newPrice: number) {
   const supabase = await createClient();
-  
+
   const { data, error } = await supabase
     .from("menu_items")
-    .update({ 
+    .update({
       price: newPrice,
-      updated_at: new Date().toISOString()
+      updated_at: new Date().toISOString(),
     })
     .eq("id", itemId)
     .eq("venue_id", venueId)
@@ -353,7 +351,7 @@ async function executeUpdateMenuPrice(venueId: string, itemId: string, newPrice:
     item_id: itemId,
     old_price: data.price,
     new_price: newPrice,
-    updated_at: data.updated_at
+    updated_at: data.updated_at,
   };
 }
 
@@ -364,7 +362,7 @@ async function executeOpenPage(page: string, subpage?: string) {
     action: "navigate",
     page: page,
     subpage: subpage,
-    url: `/dashboard/${page}${subpage ? `/${subpage}` : ''}`
+    url: `/dashboard/${page}${subpage ? `/${subpage}` : ""}`,
   };
 }
 
@@ -375,17 +373,17 @@ export async function generateConversationTitle(firstUserMessage: string): Promi
       messages: [
         {
           role: "user",
-          content: `Make a 5-word title for this chat: "${firstUserMessage}". Return only the title.`
-        }
+          content: `Make a 5-word title for this chat: "${firstUserMessage}". Return only the title.`,
+        },
       ],
       temperature: 0.3,
-      max_tokens: 20
+      max_tokens: 20,
     });
 
     const title = response.choices[0].message.content?.trim() || "New Chat";
     return title.substring(0, 60); // Limit length
   } catch (_error) {
-    logger.error("[AI] Title generation error:", error as Record<string, unknown>);
+    logger._error("[AI] Title generation error:", _error as Record<string, unknown>);
     return firstUserMessage.substring(0, 60);
   }
 }

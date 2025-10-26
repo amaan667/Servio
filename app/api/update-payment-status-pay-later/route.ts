@@ -1,8 +1,8 @@
-import { NextResponse } from 'next/server';
-import { createServerClient } from '@supabase/ssr';
-import { logger } from '@/lib/logger';
+import { NextResponse } from "next/server";
+import { createServerClient } from "@supabase/ssr";
+import { logger } from "@/lib/logger";
 
-export const runtime = 'nodejs';
+export const runtime = "nodejs";
 
 export async function POST() {
   try {
@@ -11,31 +11,40 @@ export async function POST() {
       process.env.SUPABASE_SERVICE_ROLE_KEY!,
       {
         cookies: {
-          get(name: string) { return undefined; },
-          set(name: string, value: string, options: unknown) { /* Empty */ },
-          remove(name: string, options: unknown) { /* Empty */ },
+          get(name: string) {
+            return undefined;
+          },
+          set(name: string, value: string, options: unknown) {
+            /* Empty */
+          },
+          remove(name: string, options: unknown) {
+            /* Empty */
+          },
         },
       }
     );
 
     // Step 1: Update existing orders that have payment_method = 'later' to use PAY_LATER status
     const { data: updateResult, error: updateError } = await supabase
-      .from('orders')
-      .update({ payment_status: 'PAY_LATER' })
-      .eq('payment_method', 'later')
-      .eq('payment_status', 'UNPAID')
-      .select('id, payment_status, payment_method');
+      .from("orders")
+      .update({ payment_status: "PAY_LATER" })
+      .eq("payment_method", "later")
+      .eq("payment_status", "UNPAID")
+      .select("id, payment_status, payment_method");
 
     if (updateError) {
-      logger.error('Error updating existing orders:', updateError);
-      return NextResponse.json({ 
-        success: false, 
-        error: 'Failed to update existing orders: ' + updateError.message 
-      }, { status: 500 });
+      logger.error("Error updating existing orders:", updateError);
+      return NextResponse.json(
+        {
+          success: false,
+          error: "Failed to update existing orders: " + updateError.message,
+        },
+        { status: 500 }
+      );
     }
 
     // Step 2: Update the dashboard_counts function to include PAY_LATER status
-    
+
     const createFunctionSQL = `
       DROP FUNCTION IF EXISTS dashboard_counts(text, text, integer);
 
@@ -139,47 +148,55 @@ export async function POST() {
       $$;
     `;
 
-    const { error: createError } = await supabase.rpc('exec_sql', {
-      sql: createFunctionSQL
+    const { error: createError } = await supabase.rpc("exec_sql", {
+      sql: createFunctionSQL,
     });
 
     if (createError) {
-      logger.error('Error creating function:', createError);
-      return NextResponse.json({ 
-        success: false, 
-        error: 'Failed to create function: ' + createError.message 
-      }, { status: 500 });
+      logger.error("Error creating function:", createError);
+      return NextResponse.json(
+        {
+          success: false,
+          error: "Failed to create function: " + createError.message,
+        },
+        { status: 500 }
+      );
     }
 
     // Step 3: Test the updated function
     const { data: testResult, error: testError } = await supabase
-      .rpc('dashboard_counts', { 
-        p_venue_id: 'venue-1e02af4d', 
-        p_tz: 'Europe/London', 
-        p_live_window_mins: 30 
+      .rpc("dashboard_counts", {
+        p_venue_id: "venue-1e02af4d",
+        p_tz: "Europe/London",
+        p_live_window_mins: 30,
       })
       .single();
 
     if (testError) {
-      logger.error('Error testing function:', testError);
-      return NextResponse.json({ 
-        success: false, 
-        error: 'Function created but test failed: ' + testError.message 
-      }, { status: 500 });
+      logger.error("Error testing function:", testError);
+      return NextResponse.json(
+        {
+          success: false,
+          error: "Function created but test failed: " + testError.message,
+        },
+        { status: 500 }
+      );
     }
 
     return NextResponse.json({
       success: true,
-      message: 'Payment status updated to PAY_LATER and dashboard_counts function updated',
+      message: "Payment status updated to PAY_LATER and dashboard_counts function updated",
       updatedOrders: updateResult,
-      testResult
+      testResult,
     });
-
   } catch (_error) {
-    logger.error('Error:', { error: error instanceof Error ? error.message : 'Unknown error' });
-    return NextResponse.json({ 
-      success: false, 
-      error: 'Internal server error' 
-    }, { status: 500 });
+    logger._error("Error:", { error: _error instanceof Error ? _error.message : "Unknown _error" });
+    return NextResponse.json(
+      {
+        success: false,
+        error: "Internal server error",
+      },
+      { status: 500 }
+    );
   }
 }

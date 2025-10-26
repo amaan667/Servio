@@ -81,9 +81,9 @@ async function autoBackfillMissingTickets(venueId: string) {
     );
   } catch (_error) {
     logger.error("[KDS AUTO-BACKFILL] Error during auto-backfill:", {
-      error: error instanceof Error ? error.message : "Unknown error",
+      error: _error instanceof Error ? _error.message : "Unknown _error",
     });
-    throw error;
+    throw _error;
   }
 }
 
@@ -93,7 +93,6 @@ export async function GET(req: Request) {
   let venueId = "unknown";
 
   try {
-
     const { searchParams } = new URL(req.url);
     venueId = searchParams.get("venueId") || "none";
     const stationId = searchParams.get("stationId");
@@ -175,12 +174,12 @@ export async function GET(req: Request) {
     const _duration = Date.now() - startTime;
 
     logger.error("[KDS] Unexpected error:", {
-      error: error instanceof Error ? error.message : "Unknown error",
-      stack: error instanceof Error ? error.stack : undefined,
+      error: _error instanceof Error ? _error.message : "Unknown _error",
+      stack: _error instanceof Error ? _error.stack : undefined,
       venueId,
     });
     return NextResponse.json(
-      { ok: false, error: error instanceof Error ? error.message : "Internal server error" },
+      { ok: false, error: _error instanceof Error ? _error.message : "Internal server _error" },
       { status: 500 }
     );
   }
@@ -263,7 +262,9 @@ export async function PATCH(req: Request) {
 
     // Orders now start as IN_PREP, so ticket status changes don't affect order status
     // until ALL tickets are bumped (handled in bulk-update route)
-    if (ticket?.order_id && status === "ready") { /* Empty */ }
+    if (ticket?.order_id && status === "ready") {
+      /* Empty */
+    }
 
     return NextResponse.json({
       ok: true,
@@ -271,10 +272,10 @@ export async function PATCH(req: Request) {
     });
   } catch (_error) {
     logger.error("[KDS] Unexpected error:", {
-      error: error instanceof Error ? error.message : "Unknown error",
+      error: _error instanceof Error ? _error.message : "Unknown _error",
     });
     return NextResponse.json(
-      { ok: false, error: error instanceof Error ? error.message : "Internal server error" },
+      { ok: false, error: _error instanceof Error ? _error.message : "Internal server _error" },
       { status: 500 }
     );
   }

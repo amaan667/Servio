@@ -1,14 +1,14 @@
-import { NextResponse } from 'next/server';
-import { createAdminClient } from '@/lib/supabase';
-import { logger } from '@/lib/logger';
+import { NextResponse } from "next/server";
+import { createAdminClient } from "@/lib/supabase";
+import { logger } from "@/lib/logger";
 
-export const runtime = 'nodejs';
+export const runtime = "nodejs";
 
 export async function POST(_req: Request) {
   try {
     const supabaseAdmin = createAdminClient();
-    logger.debug('[SETUP KDS] Starting KDS setup...');
-    
+    logger.debug("[SETUP KDS] Starting KDS setup...");
+
     // Create KDS Stations table
     const createStationsTable = `
       CREATE TABLE IF NOT EXISTS kds_stations (
@@ -24,7 +24,7 @@ export async function POST(_req: Request) {
         UNIQUE(venue_id, station_name)
       );
     `;
-    
+
     // Create KDS Tickets table
     const createTicketsTable = `
       CREATE TABLE IF NOT EXISTS kds_tickets (
@@ -46,90 +46,96 @@ export async function POST(_req: Request) {
         updated_at TIMESTAMPTZ DEFAULT NOW()
       );
     `;
-    
+
     // Execute table creation
-    const { error: stationsError } = await supabaseAdmin.rpc('exec', {
-      query: createStationsTable
+    const { error: stationsError } = await supabaseAdmin.rpc("exec", {
+      query: createStationsTable,
     });
-    
+
     if (stationsError) {
-      logger.warn('[SETUP KDS] Stations table warning:', stationsError.message);
+      logger.warn("[SETUP KDS] Stations table warning:", stationsError.message);
     }
-    
-    const { error: ticketsError } = await supabaseAdmin.rpc('exec', {
-      query: createTicketsTable
+
+    const { error: ticketsError } = await supabaseAdmin.rpc("exec", {
+      query: createTicketsTable,
     });
-    
+
     if (ticketsError) {
-      logger.warn('[SETUP KDS] Tickets table warning:', ticketsError.message);
+      logger.warn("[SETUP KDS] Tickets table warning:", ticketsError.message);
     }
-    
+
     // Create indexes
-    await supabaseAdmin.rpc('exec', {
-      query: 'CREATE INDEX IF NOT EXISTS idx_kds_tickets_venue ON kds_tickets(venue_id);'
+    await supabaseAdmin.rpc("exec", {
+      query: "CREATE INDEX IF NOT EXISTS idx_kds_tickets_venue ON kds_tickets(venue_id);",
     });
-    
-    await supabaseAdmin.rpc('exec', {
-      query: 'CREATE INDEX IF NOT EXISTS idx_kds_tickets_order ON kds_tickets(order_id);'
+
+    await supabaseAdmin.rpc("exec", {
+      query: "CREATE INDEX IF NOT EXISTS idx_kds_tickets_order ON kds_tickets(order_id);",
     });
-    
-    await supabaseAdmin.rpc('exec', {
-      query: 'CREATE INDEX IF NOT EXISTS idx_kds_tickets_station ON kds_tickets(station_id);'
+
+    await supabaseAdmin.rpc("exec", {
+      query: "CREATE INDEX IF NOT EXISTS idx_kds_tickets_station ON kds_tickets(station_id);",
     });
-    
-    await supabaseAdmin.rpc('exec', {
-      query: 'CREATE INDEX IF NOT EXISTS idx_kds_tickets_status ON kds_tickets(status);'
+
+    await supabaseAdmin.rpc("exec", {
+      query: "CREATE INDEX IF NOT EXISTS idx_kds_tickets_status ON kds_tickets(status);",
     });
-    
+
     // Create default stations for existing venues
-    const { data: venues } = await supabaseAdmin
-      .from('venues')
-      .select('venue_id');
-    
+    const { data: venues } = await supabaseAdmin.from("venues").select("venue_id");
+
     if (venues && venues.length > 0) {
       for (const venue of venues) {
         const defaultStations = [
-          { name: 'Expo', type: 'expo', order: 0, color: '#3b82f6' },
-          { name: 'Grill', type: 'grill', order: 1, color: '#ef4444' },
-          { name: 'Fryer', type: 'fryer', order: 2, color: '#f59e0b' },
-          { name: 'Barista', type: 'barista', order: 3, color: '#8b5cf6' },
-          { name: 'Cold Prep', type: 'cold', order: 4, color: '#06b6d4' }
+          { name: "Expo", type: "expo", order: 0, color: "#3b82f6" },
+          { name: "Grill", type: "grill", order: 1, color: "#ef4444" },
+          { name: "Fryer", type: "fryer", order: 2, color: "#f59e0b" },
+          { name: "Barista", type: "barista", order: 3, color: "#8b5cf6" },
+          { name: "Cold Prep", type: "cold", order: 4, color: "#06b6d4" },
         ];
-        
+
         for (const station of defaultStations) {
-          const { error: insertError } = await supabaseAdmin
-            .from('kds_stations')
-            .upsert({
+          const { error: insertError } = await supabaseAdmin.from("kds_stations").upsert(
+            {
               venue_id: venue.venue_id,
               station_name: station.name,
               station_type: station.type,
               display_order: station.order,
               color_code: station.color,
-              is_active: true
-            }, {
-              onConflict: 'venue_id,station_name'
-            });
-          
+              is_active: true,
+            },
+            {
+              onConflict: "venue_id,station_name",
+            }
+          );
+
           if (insertError) {
-            logger.warn(`[SETUP KDS] Station creation warning for ${venue.venue_id}:`, insertError.message);
+            logger.warn(
+              `[SETUP KDS] Station creation warning for ${venue.venue_id}:`,
+              insertError.message
+            );
           }
         }
       }
     }
-    
-    logger.debug('[SETUP KDS] KDS setup completed successfully');
-    
-    return NextResponse.json({ 
-      ok: true, 
-      message: 'KDS setup completed successfully',
-      venues_processed: venues?.length || 0
+
+    logger.debug("[SETUP KDS] KDS setup completed successfully");
+
+    return NextResponse.json({
+      ok: true,
+      message: "KDS setup completed successfully",
+      venues_processed: venues?.length || 0,
     });
-    
   } catch (_error) {
-    logger.error('[SETUP KDS] Unexpected error:', { error: error instanceof Error ? error.message : 'Unknown error' });
-    return NextResponse.json({ 
-      ok: false, 
-      error: error instanceof Error ? error.message : 'KDS setup failed' 
-    }, { status: 500 });
+    logger._error("[SETUP KDS] Unexpected error:", {
+      error: _error instanceof Error ? _error.message : "Unknown _error",
+    });
+    return NextResponse.json(
+      {
+        ok: false,
+        error: _error instanceof Error ? _error.message : "KDS setup failed",
+      },
+      { status: 500 }
+    );
   }
 }

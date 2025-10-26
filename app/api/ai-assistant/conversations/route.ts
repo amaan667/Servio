@@ -18,7 +18,7 @@ export async function GET(_request: NextRequest) {
     const supabase = await createSupabaseClient();
     const adminSupabase = createAdminClient();
 
-    const { searchParams } = new URL(request.url);
+    const { searchParams } = new URL(_request.url);
     const venueId = searchParams.get("venueId");
 
     logger.debug("[AI CHAT] Request venueId:", { venueId });
@@ -53,7 +53,7 @@ export async function GET(_request: NextRequest) {
         }
       } catch (_e) {
         logger.debug("[AI CHAT] user_venue_roles lookup failed, will fallback to ownership check", {
-          extra: { error: e instanceof Error ? e.message : "Unknown error" },
+          extra: { error: _e instanceof Error ? _e.message : "Unknown error" },
         });
       }
 
@@ -176,7 +176,7 @@ export async function POST(_request: NextRequest) {
     const adminSupabase = createAdminClient();
 
     // Parse request body
-    const body = await request.json();
+    const body = await _request.json();
     const { venueId, title } = CreateConversationSchema.parse(body);
 
     logger.debug("[AI CHAT CONVERSATION POST] Creating conversation:", {
@@ -257,7 +257,7 @@ export async function PATCH(_request: NextRequest) {
     }
 
     // Parse request body
-    const body = await request.json();
+    const body = await _request.json();
     const { conversationId, title } = body;
 
     if (!conversationId || !title) {

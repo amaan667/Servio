@@ -51,8 +51,8 @@ export function useGroupSessions(venueId: string): UseGroupSessionsReturn {
         throw new Error(data.error || "Failed to fetch group sessions");
       }
     } catch (_err) {
-      logger.error("[USE GROUP SESSIONS] Error fetching group sessions:", errorToContext(err));
-      setError(err instanceof Error ? err.message : "Unknown error");
+      logger.error("[USE GROUP SESSIONS] Error fetching group sessions:", errorToContext(_err));
+      setError(_err instanceof Error ? _err.message : "Unknown error");
       setGroupSessions([]);
     } finally {
       setLoading(false);
@@ -61,7 +61,6 @@ export function useGroupSessions(venueId: string): UseGroupSessionsReturn {
 
   useEffect(() => {
     fetchGroupSessions();
-     
   }, [venueId]);
 
   // Auto-refresh every 30 seconds - but only if there are active group sessions
@@ -72,7 +71,6 @@ export function useGroupSessions(venueId: string): UseGroupSessionsReturn {
 
     const interval = setInterval(fetchGroupSessions, 120000);
     return () => clearInterval(interval);
-     
   }, [venueId, groupSessions.length]);
 
   return {

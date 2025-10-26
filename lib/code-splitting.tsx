@@ -1,12 +1,12 @@
-import { errorToContext } from '@/lib/utils/error-to-context';
+import { errorToContext } from "@/lib/utils/error-to-context";
 
 /**
  * Code Splitting Utilities
  * Provides lazy loading and code splitting helpers
  */
 
-import { lazy, ComponentType, Suspense } from 'react';
-import { logger } from '@/lib/logger';
+import { lazy, ComponentType, Suspense } from "react";
+import { logger } from "@/lib/logger";
 
 /**
  * Create a lazy-loaded component with loading state
@@ -64,15 +64,17 @@ export function lazyWithRetry<P extends object>(
       try {
         return await importFn();
       } catch (_error) {
-        lastError = error as Error;
-        logger.error(`Failed to load component (attempt ${i + 1}/${retries}):`, errorToContext(error));
-        
+        lastError = _error as Error;
+        logger._error(
+          `Failed to load component (attempt ${i + 1}/${retries}):`,
+          errorToContext(_error)
+        );
+
         // Wait before retrying
-        await new Promise(resolve => setTimeout(resolve, 1000 * (i + 1)));
+        await new Promise((resolve) => setTimeout(resolve, 1000 * (i + 1)));
       }
     }
 
     throw lastError;
   }) as unknown as ComponentType<P>;
 }
-

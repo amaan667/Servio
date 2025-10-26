@@ -98,7 +98,9 @@ class SecurityService {
     }
 
     if (typeof input === "object" && input !== null) {
-      const sanitized: unknown = { /* Empty */ };
+      const sanitized: unknown = {
+        /* Empty */
+      };
       for (const [key, value] of Object.entries(input)) {
         sanitized[key] = this.sanitizeInput(value);
       }
@@ -167,8 +169,8 @@ class SecurityService {
    * Get client IP address
    */
   getClientIP(_request: NextRequest): string {
-    const forwarded = request.headers.get("x-forwarded-for");
-    const realIP = request.headers.get("x-real-ip");
+    const forwarded = _request.headers.get("x-forwarded-for");
+    const realIP = _request.headers.get("x-real-ip");
 
     if (forwarded) {
       return forwarded.split(",")[0].trim();
@@ -178,14 +180,14 @@ class SecurityService {
       return realIP;
     }
 
-    return request.ip || "unknown";
+    return _request.ip || "unknown";
   }
 
   /**
    * Get user agent
    */
   getUserAgent(_request: NextRequest): string {
-    return request.headers.get("user-agent") || "unknown";
+    return _request.headers.get("user-agent") || "unknown";
   }
 
   /**
@@ -209,7 +211,7 @@ export const security = new SecurityService();
  * Rate limiting middleware
  */
 export async function rateLimitMiddleware(_request: NextRequest, config?: RateLimitConfig) {
-  const ip = security.getClientIP(request);
+  const ip = security.getClientIP(_request);
   const isAllowed = await security.checkRateLimit(ip, config);
 
   if (!isAllowed) {
@@ -230,11 +232,11 @@ export async function rateLimitMiddleware(_request: NextRequest, config?: RateLi
  * CSRF protection middleware
  */
 export function csrfMiddleware(_request: NextRequest, userId: string) {
-  if (request.method === "GET") {
+  if (_request.method === "GET") {
     return null; // Skip CSRF for GET requests
   }
 
-  const token = request.headers.get("x-csrf-token");
+  const token = _request.headers.get("x-csrf-token");
   if (!token) {
     return new Response("CSRF token required", { status: 403 });
   }
@@ -250,7 +252,7 @@ export function csrfMiddleware(_request: NextRequest, userId: string) {
  * Input validation middleware
  */
 export function validateInputMiddleware(_request: NextRequest) {
-  const contentType = request.headers.get("content-type");
+  const contentType = _request.headers.get("content-type");
 
   if (contentType?.includes("application/json")) {
     // Future: Implement JSON body validation with Zod schemas

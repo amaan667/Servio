@@ -1,19 +1,19 @@
-import { useState } from 'react';
-import { useRouter } from 'next/navigation';
-import { supabaseBrowser as createClient } from '@/lib/supabase';
-import { toast } from '@/hooks/use-toast';
-import { User } from './useVenueSettings';
+import { useState } from "react";
+import { useRouter } from "next/navigation";
+import { supabaseBrowser as createClient } from "@/lib/supabase";
+import { toast } from "@/hooks/use-toast";
+import { User } from "./useVenueSettings";
 
 export function useAccountDeletion(user: User) {
   const router = useRouter();
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [showDeleteDialog, setShowDeleteDialog] = useState(false);
-  const [deleteConfirmation, setDeleteConfirmation] = useState('');
+  const [deleteConfirmation, setDeleteConfirmation] = useState("");
 
   const deleteAccount = async () => {
-    if (deleteConfirmation !== 'DELETE') {
-      setError('Please type DELETE to confirm account deletion');
+    if (deleteConfirmation !== "DELETE") {
+      setError("Please type DELETE to confirm account deletion");
       return;
     }
 
@@ -22,13 +22,13 @@ export function useAccountDeletion(user: User) {
 
     try {
       const { error: venueError } = await createClient()
-        .from('venues')
+        .from("venues")
         .delete()
-        .eq('owner_user_id', user.id);
+        .eq("owner_user_id", user.id);
 
       if (venueError) {
-      // Empty block
-    }
+        // Empty block
+      }
 
       const { error } = await createClient().auth.admin.deleteUser(user.id);
 
@@ -37,34 +37,34 @@ export function useAccountDeletion(user: User) {
       }
 
       try {
-        const response = await fetch('/api/auth/signout', {
-          method: 'POST',
+        const response = await fetch("/api/auth/signout", {
+          method: "POST",
           headers: {
-            'Content-Type': 'application/json',
+            "Content-Type": "application/json",
           },
         });
       } catch (_error) {
-      // Error silently handled
-    }
-      
+        // Error silently handled
+      }
+
       try {
-        const { clearAuthStorage } = await import('@/lib/supabase');
+        const { clearAuthStorage } = await import("@/lib/supabase");
         clearAuthStorage();
       } catch (_error) {
-      // Error silently handled
-    }
-      
-      router.push('/');
-      
+        // Error silently handled
+      }
+
+      router.push("/");
+
       toast({
         title: "Account Deleted",
         description: "Your account has been permanently deleted.",
       });
     } catch (_err) {
-      setError(err.message || 'Failed to delete account');
+      setError(_err.message || "Failed to delete account");
       toast({
         title: "Error",
-        description: err.message || 'Failed to delete account',
+        description: _err.message || "Failed to delete account",
         variant: "destructive",
       });
     } finally {
@@ -79,7 +79,6 @@ export function useAccountDeletion(user: User) {
     setShowDeleteDialog,
     deleteConfirmation,
     setDeleteConfirmation,
-    deleteAccount
+    deleteAccount,
   };
 }
-

@@ -69,7 +69,7 @@ export async function POST(req: Request) {
     });
   } catch (_error) {
     logger.error("[STRIPE CUSTOMER CHECKOUT] Error creating session", {
-      error: error instanceof Error ? error.message : "Unknown error",
+      error: _error instanceof Error ? _error.message : "Unknown _error",
     });
 
     return NextResponse.json({ error: "Failed to create checkout session" }, { status: 500 });

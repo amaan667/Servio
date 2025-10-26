@@ -2,7 +2,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { createClient } from "@/lib/supabase";
 import { stripe } from "@/lib/stripe-client";
-import { apiLogger as logger } from '@/lib/logger';
+import { apiLogger as logger } from "@/lib/logger";
 
 export async function POST(_request: NextRequest) {
   try {
@@ -18,7 +18,7 @@ export async function POST(_request: NextRequest) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
 
-    const body = await request.json();
+    const body = await _request.json();
     const { organizationId, newTier } = body;
 
     if (!organizationId || !newTier) {
@@ -29,10 +29,7 @@ export async function POST(_request: NextRequest) {
     }
 
     if (!["basic", "standard", "premium"].includes(newTier)) {
-      return NextResponse.json(
-        { error: "Invalid tier" },
-        { status: 400 }
-      );
+      return NextResponse.json({ error: "Invalid tier" }, { status: 400 });
     }
 
     // Get organization
@@ -44,54 +41,50 @@ export async function POST(_request: NextRequest) {
       .single();
 
     if (!org) {
-      return NextResponse.json(
-        { error: "Organization not found" },
-        { status: 404 }
-      );
+      return NextResponse.json({ error: "Organization not found" }, { status: 404 });
     }
 
     // If already on the requested tier, no action needed
     if (org.subscription_tier === newTier) {
-      return NextResponse.json({ 
-        success: true, 
-        message: `Already on ${newTier} plan` 
+      return NextResponse.json({
+        success: true,
+        message: `Already on ${newTier} plan`,
       });
     }
 
-    logger.debug(`[DOWNGRADE] Downgrading organization ${org.id} from ${org.subscription_tier} to ${newTier}`);
+    logger.debug(
+      `[DOWNGRADE] Downgrading organization ${org.id} from ${org.subscription_tier} to ${newTier}`
+    );
 
     // For downgrades, we'll update the organization immediately
     // and let Stripe handle the billing changes through their system
     const { error: updateError } = await supabase
       .from("organizations")
-      .update({ 
+      .update({
         subscription_tier: newTier,
-        updated_at: new Date().toISOString()
+        updated_at: new Date().toISOString(),
       })
       .eq("id", org.id);
 
     if (updateError) {
       logger.error("[DOWNGRADE] Database update error:", updateError);
-      return NextResponse.json(
-        { error: "Failed to update subscription tier" },
-        { status: 500 }
-      );
+      return NextResponse.json({ error: "Failed to update subscription tier" }, { status: 500 });
     }
 
-    // If the organization has an active Stripe subscription, 
+    // If the organization has an active Stripe subscription,
     // we should update it in Stripe as well
     if (org.stripe_customer_id) {
       try {
         // Get the customer's subscriptions
         const subscriptions = await stripe.subscriptions.list({
           customer: org.stripe_customer_id,
-          status: 'active',
-          limit: 1
+          status: "active",
+          limit: 1,
         });
 
         if (subscriptions.data.length > 0) {
           const subscription = subscriptions.data[0];
-          
+
           // Get the price ID for the new tier
           const priceIds = {
             basic: process.env.STRIPE_BASIC_PRICE_ID,
@@ -100,16 +93,18 @@ export async function POST(_request: NextRequest) {
           };
 
           const newPriceId = priceIds[newTier as keyof typeof priceIds];
-          
+
           if (newPriceId && subscription.items.data[0]) {
             // Update the subscription to the new price immediately
             // Use 'always_invoice' to immediately apply the change
             await stripe.subscriptions.update(subscription.id, {
-              items: [{
-                id: subscription.items.data[0].id,
-                price: newPriceId,
-              }],
-              proration_behavior: 'always_invoice', // Invoice immediately for the change
+              items: [
+                {
+                  id: subscription.items.data[0].id,
+                  price: newPriceId,
+                },
+              ],
+              proration_behavior: "always_invoice", // Invoice immediately for the change
               metadata: {
                 organization_id: org.id,
                 tier: newTier,
@@ -117,25 +112,26 @@ export async function POST(_request: NextRequest) {
               },
             });
 
-            logger.debug(`[DOWNGRADE] Updated Stripe subscription ${subscription.id} to ${newTier} with immediate billing`);
+            logger.debug(
+              `[DOWNGRADE] Updated Stripe subscription ${subscription.id} to ${newTier} with immediate billing`
+            );
           }
         }
       } catch (stripeError: unknown) {
-        const errorMessage = stripeError instanceof Error ? stripeError.message : 'Unknown error';
+        const errorMessage = stripeError instanceof Error ? stripeError.message : "Unknown error";
         logger.error("[DOWNGRADE] Stripe update error:", { error: errorMessage });
         // Don't fail the entire operation if Stripe update fails
         // The database update already succeeded
       }
     }
 
-    return NextResponse.json({ 
-      success: true, 
+    return NextResponse.json({
+      success: true,
       message: `Successfully downgraded to ${newTier} plan`,
-      newTier 
+      newTier,
     });
-
   } catch (_error) {
-    const errorMessage = error instanceof Error ? error.message : 'Unknown error';
+    const errorMessage = _error instanceof Error ? _error.message : "Unknown _error";
     logger.error("[DOWNGRADE] Error:", { error: errorMessage });
     return NextResponse.json(
       { error: errorMessage || "Failed to downgrade plan" },

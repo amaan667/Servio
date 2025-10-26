@@ -14,17 +14,17 @@ import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
-import { 
-  Building2, 
-  MapPin, 
-  Phone, 
-  Plus, 
-  Edit, 
-  Trash2, 
+import {
+  Building2,
+  MapPin,
+  Phone,
+  Plus,
+  Edit,
+  Trash2,
   Check,
   X,
   Store,
-  Settings
+  Settings,
 } from "lucide-react";
 import { supabaseBrowser as createClient } from "@/lib/supabase";
 import { toast } from "@/hooks/use-toast";
@@ -45,9 +45,9 @@ interface VenueSwitcherPopupProps {
   onVenueChange: (venueId: string) => void;
 }
 
-export default function VenueSwitcherPopup({ 
+export default function VenueSwitcherPopup({
   currentVenueId,
-  onVenueChange 
+  onVenueChange,
 }: VenueSwitcherPopupProps) {
   const [open, setOpen] = useState(false);
   const [venues, setVenues] = useState<Venue[]>([]);
@@ -55,13 +55,13 @@ export default function VenueSwitcherPopup({
   const [showAddForm, setShowAddForm] = useState(false);
   const [editingVenue, setEditingVenue] = useState<Venue | null>(null);
   const router = useRouter();
-  
+
   // Form state
   const [formData, setFormData] = useState({
     name: "",
     address: "",
     phone: "",
-    description: ""
+    description: "",
   });
 
   // Load venues
@@ -74,26 +74,26 @@ export default function VenueSwitcherPopup({
   const loadVenues = async () => {
     try {
       const supabase = createClient();
-      
-      // Get current user first
-      const { data: { user } } = await supabase.auth.getSession();
-      if (!user) {
 
+      // Get current user first
+      const {
+        data: { user },
+      } = await supabase.auth.getSession();
+      if (!user) {
         return;
       }
 
       // Only load venues owned by the current user
       const { data, error } = await supabase
-        .from('venues')
-        .select('*')
-        .eq('owner_user_id', user.id)
-        .order('is_primary', { ascending: false })
-        .order('created_at', { ascending: true });
+        .from("venues")
+        .select("*")
+        .eq("owner_user_id", user.id)
+        .order("is_primary", { ascending: false })
+        .order("created_at", { ascending: true });
 
       if (error) throw error;
       setVenues(data || []);
     } catch (_error) {
-
       toast({
         title: "Error",
         description: "Failed to load venues",
@@ -115,23 +115,25 @@ export default function VenueSwitcherPopup({
     setLoading(true);
     try {
       const supabase = createClient();
-      
+
       // Get current user
-      const { data: { user } } = await supabase.auth.getSession();
-      if (!user) throw new Error('User not authenticated');
+      const {
+        data: { user },
+      } = await supabase.auth.getSession();
+      if (!user) throw new Error("User not authenticated");
 
       // Get organization_id from current venue
       const { data: currentVenue } = await supabase
-        .from('venues')
-        .select('organization_id')
-        .eq('venue_id', currentVenueId)
+        .from("venues")
+        .select("organization_id")
+        .eq("venue_id", currentVenueId)
         .single();
 
       // Generate a unique venue_id
-      const venueId = `venue-${crypto.randomUUID().replace(/-/g, '')}`;
+      const venueId = `venue-${crypto.randomUUID().replace(/-/g, "")}`;
 
       const { data, error } = await supabase
-        .from('venues')
+        .from("venues")
         .insert({
           venue_id: venueId,
           venue_name: formData.name.trim(),
@@ -140,7 +142,7 @@ export default function VenueSwitcherPopup({
           description: formData.description.trim() || null,
           organization_id: currentVenue?.organization_id,
           owner_user_id: user.id,
-          is_primary: false
+          is_primary: false,
         })
         .select()
         .single();
@@ -155,22 +157,20 @@ export default function VenueSwitcherPopup({
       // Reset form and close modals
       setFormData({ name: "", address: "", phone: "", description: "" });
       setShowAddForm(false);
-      
+
       // Reload venues to show the new one
       await loadVenues();
-      
+
       // Automatically switch to the newly added venue
 
       onVenueChange(data.venue_id);
-      
+
       // Close the main modal
       setOpen(false);
-      
     } catch (_error) {
-
       toast({
         title: "Error",
-        description: error.message || "Failed to add venue",
+        description: _error.message || "Failed to add venue",
         variant: "destructive",
       });
     } finally {
@@ -191,16 +191,16 @@ export default function VenueSwitcherPopup({
     setLoading(true);
     try {
       const supabase = createClient();
-      
+
       const { error } = await supabase
-        .from('venues')
+        .from("venues")
         .update({
           venue_name: formData.name.trim(),
           address: formData.address.trim() || null,
           phone: formData.phone.trim() || null,
           description: formData.description.trim() || null,
         })
-        .eq('venue_id', editingVenue.venue_id);
+        .eq("venue_id", editingVenue.venue_id);
 
       if (error) throw error;
 
@@ -214,10 +214,9 @@ export default function VenueSwitcherPopup({
       await loadVenues();
       setOpen(false);
     } catch (_error) {
-
       toast({
         title: "Error",
-        description: error.message || "Failed to update venue",
+        description: _error.message || "Failed to update venue",
         variant: "destructive",
       });
     } finally {
@@ -233,11 +232,8 @@ export default function VenueSwitcherPopup({
     setLoading(true);
     try {
       const supabase = createClient();
-      
-      const { error } = await supabase
-        .from('venues')
-        .delete()
-        .eq('venue_id', venueId);
+
+      const { error } = await supabase.from("venues").delete().eq("venue_id", venueId);
 
       if (error) throw error;
 
@@ -248,10 +244,9 @@ export default function VenueSwitcherPopup({
 
       loadVenues();
     } catch (_error) {
-
       toast({
         title: "Error",
-        description: error.message || "Failed to delete venue",
+        description: _error.message || "Failed to delete venue",
         variant: "destructive",
       });
     } finally {
@@ -265,7 +260,7 @@ export default function VenueSwitcherPopup({
       name: venue.venue_name,
       address: venue.address || "",
       phone: venue.phone || "",
-      description: venue.description || ""
+      description: venue.description || "",
     });
     setShowAddForm(false);
   };
@@ -276,7 +271,7 @@ export default function VenueSwitcherPopup({
     setShowAddForm(false);
   };
 
-  const currentVenue = venues.find(v => v.venue_id === currentVenueId);
+  const currentVenue = venues.find((v) => v.venue_id === currentVenueId);
 
   return (
     <Dialog open={open} onOpenChange={setOpen}>
@@ -309,9 +304,13 @@ export default function VenueSwitcherPopup({
                   <div className="flex items-center gap-2">
                     <h3 className="font-semibold text-blue-900">{currentVenue.venue_name}</h3>
                     {currentVenue.is_primary && (
-                      <Badge variant="default" className="text-xs">Primary</Badge>
+                      <Badge variant="default" className="text-xs">
+                        Primary
+                      </Badge>
                     )}
-                    <Badge variant="secondary" className="text-xs">Current</Badge>
+                    <Badge variant="secondary" className="text-xs">
+                      Current
+                    </Badge>
                   </div>
                   {currentVenue.address && (
                     <p className="text-sm text-blue-700 flex items-center gap-1">
@@ -331,19 +330,17 @@ export default function VenueSwitcherPopup({
               <div
                 key={venue.venue_id}
                 className={`p-4 border rounded-lg transition-all hover:shadow-md ${
-                  venue.venue_id === currentVenueId 
-                    ? "border-blue-500 bg-blue-50" 
+                  venue.venue_id === currentVenueId
+                    ? "border-blue-500 bg-blue-50"
                     : "border-border hover:border-primary/50 cursor-pointer hover:bg-gray-50"
                 }`}
                 onClick={() => {
-
                   if (venue.venue_id !== currentVenueId) {
-
                     onVenueChange(venue.venue_id);
                     setOpen(false);
                   } else {
-      // Intentionally empty
-    }
+                    // Intentionally empty
+                  }
                 }}
               >
                 <div className="flex items-start gap-3">
@@ -354,10 +351,14 @@ export default function VenueSwitcherPopup({
                     <div className="flex items-center gap-2 mb-1">
                       <h4 className="font-semibold">{venue.venue_name}</h4>
                       {venue.is_primary && (
-                        <Badge variant="default" className="text-xs">Primary</Badge>
+                        <Badge variant="default" className="text-xs">
+                          Primary
+                        </Badge>
                       )}
                       {venue.venue_id === currentVenueId ? (
-                        <Badge variant="secondary" className="text-xs">Current</Badge>
+                        <Badge variant="secondary" className="text-xs">
+                          Current
+                        </Badge>
                       ) : (
                         <span className="text-xs text-gray-500 italic">Click to switch</span>
                       )}
@@ -419,7 +420,7 @@ export default function VenueSwitcherPopup({
                   <Input
                     id="name"
                     value={formData.name}
-                    onChange={(e) => setFormData(prev => ({ ...prev, name: e.target.value }))}
+                    onChange={(e) => setFormData((prev) => ({ ...prev, name: e.target.value }))}
                     placeholder="e.g., Downtown Location"
                   />
                 </div>
@@ -428,7 +429,7 @@ export default function VenueSwitcherPopup({
                   <Input
                     id="address"
                     value={formData.address}
-                    onChange={(e) => setFormData(prev => ({ ...prev, address: e.target.value }))}
+                    onChange={(e) => setFormData((prev) => ({ ...prev, address: e.target.value }))}
                     placeholder="123 Main St, City, State"
                   />
                 </div>
@@ -437,7 +438,7 @@ export default function VenueSwitcherPopup({
                   <Input
                     id="phone"
                     value={formData.phone}
-                    onChange={(e) => setFormData(prev => ({ ...prev, phone: e.target.value }))}
+                    onChange={(e) => setFormData((prev) => ({ ...prev, phone: e.target.value }))}
                     placeholder="(555) 123-4567"
                   />
                 </div>
@@ -446,7 +447,9 @@ export default function VenueSwitcherPopup({
                   <Textarea
                     id="description"
                     value={formData.description}
-                    onChange={(e) => setFormData(prev => ({ ...prev, description: e.target.value }))}
+                    onChange={(e) =>
+                      setFormData((prev) => ({ ...prev, description: e.target.value }))
+                    }
                     placeholder="Brief description of this venue..."
                     rows={2}
                   />
@@ -459,11 +462,7 @@ export default function VenueSwitcherPopup({
                   >
                     {loading ? "Saving..." : editingVenue ? "Update Venue" : "Add Venue"}
                   </Button>
-                  <Button
-                    variant="outline"
-                    onClick={cancelEdit}
-                    disabled={loading}
-                  >
+                  <Button variant="outline" onClick={cancelEdit} disabled={loading}>
                     <X className="h-4 w-4" />
                   </Button>
                 </div>
@@ -473,11 +472,7 @@ export default function VenueSwitcherPopup({
 
           {/* Add Venue Button */}
           {!showAddForm && !editingVenue && (
-            <Button
-              variant="outline"
-              onClick={() => setShowAddForm(true)}
-              className="w-full"
-            >
+            <Button variant="outline" onClick={() => setShowAddForm(true)} className="w-full">
               <Plus className="h-4 w-4 mr-2" />
               Add New Venue
             </Button>

@@ -1,24 +1,24 @@
-'use client';
+"use client";
 
-import { useState, useEffect } from 'react';
-import { useRouter } from 'next/navigation';
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
-import { Button } from '@/components/ui/button';
-import { Input } from '@/components/ui/input';
-import { Label } from '@/components/ui/label';
-import { Upload, Plus, ArrowRight, Sparkles } from 'lucide-react';
-import OnboardingProgress from '@/components/onboarding-progress';
-import { createClient } from '@/lib/supabase';
-import { toast } from '@/hooks/use-toast';
+import { useState, useEffect } from "react";
+import { useRouter } from "next/navigation";
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { Upload, Plus, ArrowRight, Sparkles } from "lucide-react";
+import OnboardingProgress from "@/components/onboarding-progress";
+import { createClient } from "@/lib/supabase";
+import { toast } from "@/hooks/use-toast";
 
 export default function OnboardingMenuPage() {
   const router = useRouter();
   const [loading, setLoading] = useState(true);
   const [uploading, setUploading] = useState(false);
   const [venueId, setVenueId] = useState<string | null>(null);
-  const [manualItems, setManualItems] = useState<{ name: string; price: string; category: string }[]>([
-    { name: '', price: '', category: 'Drinks' },
-  ]);
+  const [manualItems, setManualItems] = useState<
+    { name: string; price: string; category: string }[]
+  >([{ name: "", price: "", category: "Drinks" }]);
 
   useEffect(() => {
     checkAuth();
@@ -27,7 +27,9 @@ export default function OnboardingMenuPage() {
   const checkAuth = async () => {
     try {
       const supabase = await createClient();
-      const { data: { user } } = await supabase.auth.getSession();
+      const {
+        data: { user },
+      } = await supabase.auth.getSession();
 
       if (!user) {
         setLoading(false);
@@ -36,9 +38,9 @@ export default function OnboardingMenuPage() {
 
       // Get venue
       const { data: venues } = await supabase
-        .from('venues')
-        .select('venue_id')
-        .eq('owner_user_id', user.id)
+        .from("venues")
+        .select("venue_id")
+        .eq("owner_user_id", user.id)
         .limit(1);
 
       if (!venues || venues.length === 0) {
@@ -49,7 +51,6 @@ export default function OnboardingMenuPage() {
       setVenueId(venues[0]?.venue_id);
       setLoading(false);
     } catch (_error) {
-
       setLoading(false);
     }
   };
@@ -62,37 +63,36 @@ export default function OnboardingMenuPage() {
 
     try {
       const formData = new FormData();
-      formData.append('file', file);
-      formData.append('venueId', venueId);
+      formData.append("file", file);
+      formData.append("venueId", venueId);
 
-      const response = await fetch('/api/menu/upload', {
-        method: 'POST',
+      const response = await fetch("/api/menu/upload", {
+        method: "POST",
         body: formData,
       });
 
       const result = await response.json();
 
       if (!response.ok) {
-        throw new Error(result.error || 'Upload failed');
+        throw new Error(result.error || "Upload failed");
       }
 
       // Store progress
-      localStorage.setItem('onboarding_step', '1');
-      localStorage.setItem('onboarding_menu_complete', 'true');
+      localStorage.setItem("onboarding_step", "1");
+      localStorage.setItem("onboarding_menu_complete", "true");
 
       toast({
-        title: 'Menu uploaded!',
+        title: "Menu uploaded!",
         description: `Successfully extracted ${result.itemsCount || 0} items from your menu.`,
       });
 
       // Move to next step
-      router.push('/onboarding/tables');
+      router.push("/onboarding/tables");
     } catch (_error) {
-
       toast({
-        title: 'Upload failed',
-        description: error.message || 'Failed to upload menu. Please try again.',
-        variant: 'destructive',
+        title: "Upload failed",
+        description: _error.message || "Failed to upload menu. Please try again.",
+        variant: "destructive",
       });
     } finally {
       setUploading(false);
@@ -103,12 +103,12 @@ export default function OnboardingMenuPage() {
     if (!venueId) return;
 
     // Validate at least one item
-    const validItems = manualItems.filter(item => item.name.trim() && item.price.trim());
+    const validItems = manualItems.filter((item) => item.name.trim() && item.price.trim());
     if (validItems.length === 0) {
       toast({
-        title: 'No items to add',
-        description: 'Please add at least one menu item.',
-        variant: 'destructive',
+        title: "No items to add",
+        description: "Please add at least one menu item.",
+        variant: "destructive",
       });
       return;
     }
@@ -119,39 +119,36 @@ export default function OnboardingMenuPage() {
       const supabase = await createClient();
 
       // Insert items
-      const itemsToInsert = validItems.map(item => ({
+      const itemsToInsert = validItems.map((item) => ({
         venue_id: venueId,
         name: item.name.trim(),
         price: parseFloat(item.price),
         category: item.category,
-        description: '',
+        description: "",
         is_available: true,
         image_url: null,
       }));
 
-      const { error } = await supabase
-        .from('menu_items')
-        .insert(itemsToInsert);
+      const { error } = await supabase.from("menu_items").insert(itemsToInsert);
 
       if (error) throw error;
 
       // Store progress
-      localStorage.setItem('onboarding_step', '1');
-      localStorage.setItem('onboarding_menu_complete', 'true');
+      localStorage.setItem("onboarding_step", "1");
+      localStorage.setItem("onboarding_menu_complete", "true");
 
       toast({
-        title: 'Menu items created!',
+        title: "Menu items created!",
         description: `Added ${validItems.length} items to your menu.`,
       });
 
       // Move to next step
-      router.push('/onboarding/tables');
+      router.push("/onboarding/tables");
     } catch (_error) {
-
       toast({
-        title: 'Failed to create items',
-        description: error.message || 'Please try again.',
-        variant: 'destructive',
+        title: "Failed to create items",
+        description: _error.message || "Please try again.",
+        variant: "destructive",
       });
     } finally {
       setUploading(false);
@@ -159,7 +156,7 @@ export default function OnboardingMenuPage() {
   };
 
   const addManualItem = () => {
-    setManualItems([...manualItems, { name: '', price: '', category: 'Drinks' }]);
+    setManualItems([...manualItems, { name: "", price: "", category: "Drinks" }]);
   };
 
   const updateManualItem = (index: number, field: string, value: string) => {
@@ -169,8 +166,8 @@ export default function OnboardingMenuPage() {
   };
 
   const handleSkip = () => {
-    localStorage.setItem('onboarding_step', '1');
-    router.push('/onboarding/tables');
+    localStorage.setItem("onboarding_step", "1");
+    router.push("/onboarding/tables");
   };
 
   if (loading) {
@@ -192,7 +189,8 @@ export default function OnboardingMenuPage() {
             Let's start with your menu
           </CardTitle>
           <CardDescription className="text-base">
-            Upload a PDF/image of your menu, or create items manually. Servio will automatically recognize categories and prices.
+            Upload a PDF/image of your menu, or create items manually. Servio will automatically
+            recognize categories and prices.
           </CardDescription>
         </CardHeader>
         <CardContent className="space-y-6">
@@ -208,13 +206,10 @@ export default function OnboardingMenuPage() {
                 className="hidden"
                 disabled={uploading}
               />
-              <label
-                htmlFor="menu-upload"
-                className="cursor-pointer flex flex-col items-center"
-              >
+              <label htmlFor="menu-upload" className="cursor-pointer flex flex-col items-center">
                 <Upload className="w-12 h-12 text-purple-600 mb-3" />
                 <span className="text-lg font-medium text-gray-900">
-                  {uploading ? 'Uploading...' : 'Click to upload menu'}
+                  {uploading ? "Uploading..." : "Click to upload menu"}
                 </span>
                 <span className="text-sm text-gray-600 mt-1">
                   PDF, JPG, or PNG • AI will extract items automatically
@@ -237,13 +232,16 @@ export default function OnboardingMenuPage() {
             <h3 className="font-semibold text-lg mb-3">Option 2: Create Manually</h3>
             <div className="space-y-3">
               {manualItems.map((item, index) => (
-                <div key={index} className="grid grid-cols-1 md:grid-cols-3 gap-3 p-4 bg-gray-50 rounded-lg">
+                <div
+                  key={index}
+                  className="grid grid-cols-1 md:grid-cols-3 gap-3 p-4 bg-gray-50 rounded-lg"
+                >
                   <div>
                     <Label htmlFor={`item-name-${index}`}>Item Name</Label>
                     <Input
                       id={`item-name-${index}`}
                       value={item.name}
-                      onChange={(e) => updateManualItem(index, 'name', e.target.value)}
+                      onChange={(e) => updateManualItem(index, "name", e.target.value)}
                       placeholder="e.g. Cappuccino"
                       disabled={uploading}
                     />
@@ -255,7 +253,7 @@ export default function OnboardingMenuPage() {
                       type="number"
                       step="0.01"
                       value={item.price}
-                      onChange={(e) => updateManualItem(index, 'price', e.target.value)}
+                      onChange={(e) => updateManualItem(index, "price", e.target.value)}
                       placeholder="4.50"
                       disabled={uploading}
                     />
@@ -265,7 +263,7 @@ export default function OnboardingMenuPage() {
                     <select
                       id={`item-category-${index}`}
                       value={item.category}
-                      onChange={(e) => updateManualItem(index, 'category', e.target.value)}
+                      onChange={(e) => updateManualItem(index, "category", e.target.value)}
                       className="w-full h-10 px-3 rounded-md border border-gray-300 bg-white"
                       disabled={uploading}
                     >
@@ -295,7 +293,7 @@ export default function OnboardingMenuPage() {
                 disabled={uploading}
                 className="w-full bg-purple-600 hover:bg-purple-700"
               >
-                {uploading ? 'Creating...' : 'Create Menu Items'}
+                {uploading ? "Creating..." : "Create Menu Items"}
                 <ArrowRight className="ml-2 w-4 h-4" />
               </Button>
             </div>
@@ -303,12 +301,7 @@ export default function OnboardingMenuPage() {
 
           {/* Skip Button */}
           <div className="pt-4 border-t">
-            <Button
-              variant="ghost"
-              onClick={handleSkip}
-              disabled={uploading}
-              className="w-full"
-            >
+            <Button variant="ghost" onClick={handleSkip} disabled={uploading} className="w-full">
               Skip for Now
             </Button>
           </div>
@@ -317,4 +310,3 @@ export default function OnboardingMenuPage() {
     </div>
   );
 }
-

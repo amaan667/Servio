@@ -24,7 +24,7 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ error: "Missing items or venue_id" }, { status: 400 });
   } catch (_err) {
     return NextResponse.json(
-      { error: err instanceof Error ? err.message : "Failed to save menu." },
+      { error: _err instanceof Error ? _err.message : "Failed to save menu." },
       { status: 500 }
     );
   }

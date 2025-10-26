@@ -3,13 +3,7 @@
 import type React from "react";
 
 import { useState, useEffect } from "react";
-import {
-  Card,
-  CardContent,
-  CardDescription,
-  CardHeader,
-  CardTitle,
-} from "@/components/ui/card";
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Progress } from "@/components/ui/progress";
@@ -27,7 +21,9 @@ import {
 } from "lucide-react";
 import { logger } from "@/lib/logger";
 
-const hasSupabaseConfig = !!(process.env.NEXT_PUBLIC_SUPABASE_URL && process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY);
+const hasSupabaseConfig = !!(
+  process.env.NEXT_PUBLIC_SUPABASE_URL && process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY
+);
 
 interface LocalAccount {
   venueId: string;
@@ -43,7 +39,9 @@ export function AccountMigrator() {
   const [localAccounts, setLocalAccounts] = useState<LocalAccount[]>([]);
   const [migrationStatus, setMigrationStatus] = useState<
     Record<string, "pending" | "success" | "error">
-  >({ /* Empty */ });
+  >({
+    /* Empty */
+  });
   const [migrationProgress, setMigrationProgress] = useState(0);
   const [isMigrating, setIsMigrating] = useState(false);
   const [showPasswords, setShowPasswords] = useState(false);
@@ -59,9 +57,7 @@ export function AccountMigrator() {
       const stored = localStorage.getItem("servio-accounts");
       const accounts = stored ? JSON.parse(stored) : [];
       setLocalAccounts(accounts);
-
     } catch (_error) {
-
       setLocalAccounts([]);
     }
   };
@@ -70,7 +66,6 @@ export function AccountMigrator() {
     const timestamp = new Date().toLocaleTimeString();
     const logEntry = `[${timestamp}] ${message}`;
     setLogs((prev: string[]) => [...prev, logEntry]);
-
   };
 
   const migrateAccount = async (account: LocalAccount): Promise<boolean> => {
@@ -84,7 +79,7 @@ export function AccountMigrator() {
       addLog(`⚠️ Sign up not implemented yet for ${account.contactEmail}`);
       return false;
     } catch (_error) {
-      addLog(`❌ Error migrating ${account.contactEmail}: ${(error as Error).message}`);
+      addLog(`❌ Error migrating ${account.contactEmail}: ${(_error as Error).message}`);
 
       return false;
     }
@@ -106,21 +101,17 @@ export function AccountMigrator() {
 
     for (let i = 0; i < localAccounts.length; i++) {
       const account = localAccounts[i];
-      setMigrationStatus(
-        (prev: Record<string, "pending" | "success" | "error">) => ({
-          ...prev,
-          [account.contactEmail]: "pending",
-        }),
-      );
+      setMigrationStatus((prev: Record<string, "pending" | "success" | "error">) => ({
+        ...prev,
+        [account.contactEmail]: "pending",
+      }));
 
       const success = await migrateAccount(account);
 
-      setMigrationStatus(
-        (prev: Record<string, "pending" | "success" | "error">) => ({
-          ...prev,
-          [account.contactEmail]: success ? "success" : "error",
-        }),
-      );
+      setMigrationStatus((prev: Record<string, "pending" | "success" | "error">) => ({
+        ...prev,
+        [account.contactEmail]: success ? "success" : "error",
+      }));
 
       if (success) successCount++;
 
@@ -131,22 +122,19 @@ export function AccountMigrator() {
     }
 
     addLog(
-      `🎉 Migration complete: ${successCount}/${totalAccounts} accounts migrated successfully`,
+      `🎉 Migration complete: ${successCount}/${totalAccounts} accounts migrated successfully`
     );
     setIsMigrating(false);
   };
 
   const clearLocalAccounts = () => {
-    if (
-      confirm(
-        "Are you sure you want to clear all local accounts? This cannot be undone.",
-      )
-    ) {
+    if (confirm("Are you sure you want to clear all local accounts? This cannot be undone.")) {
       localStorage.removeItem("servio-accounts");
       setLocalAccounts([]);
-      setMigrationStatus({ /* Empty */ });
+      setMigrationStatus({
+        /* Empty */
+      });
       addLog("🗑️ Local accounts cleared");
-
     }
   };
 
@@ -179,7 +167,6 @@ export function AccountMigrator() {
         }
       } catch (_error) {
         addLog("❌ Failed to import accounts");
-
       }
     };
     reader.readAsText(file);
@@ -207,36 +194,26 @@ export function AccountMigrator() {
             <Database className="h-5 w-5" />
             <span>Account Migration Status</span>
           </CardTitle>
-          <CardDescription>
-            Migrate local accounts to Supabase authentication
-          </CardDescription>
+          <CardDescription>Migrate local accounts to Supabase authentication</CardDescription>
         </CardHeader>
         <CardContent className="space-y-4">
           <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
             <div className="text-center p-4 bg-blue-50 rounded-lg">
               <Users className="h-8 w-8 mx-auto text-blue-600 mb-2" />
-              <div className="text-2xl font-bold text-blue-600">
-                {localAccounts.length}
-              </div>
+              <div className="text-2xl font-bold text-blue-600">{localAccounts.length}</div>
               <div className="text-sm text-blue-600">Local Accounts</div>
             </div>
             <div className="text-center p-4 bg-green-50 rounded-lg">
               <CheckCircle className="h-8 w-8 mx-auto text-green-600 mb-2" />
               <div className="text-2xl font-bold text-green-600">
-                {
-                  Object.values(migrationStatus).filter((s) => s === "success")
-                    .length
-                }
+                {Object.values(migrationStatus).filter((s) => s === "success").length}
               </div>
               <div className="text-sm text-green-600">Migrated</div>
             </div>
             <div className="text-center p-4 bg-red-50 rounded-lg">
               <AlertTriangle className="h-8 w-8 mx-auto text-red-600 mb-2" />
               <div className="text-2xl font-bold text-red-600">
-                {
-                  Object.values(migrationStatus).filter((s) => s === "error")
-                    .length
-                }
+                {Object.values(migrationStatus).filter((s) => s === "error").length}
               </div>
               <div className="text-sm text-red-600">Failed</div>
             </div>
@@ -244,9 +221,7 @@ export function AccountMigrator() {
 
           <div className="flex items-center space-x-2">
             <Badge variant={hasSupabaseConfig ? "default" : "destructive"}>
-              {hasSupabaseConfig
-                ? "Supabase Connected"
-                : "Supabase Not Configured"}
+              {hasSupabaseConfig ? "Supabase Connected" : "Supabase Not Configured"}
             </Badge>
             {!hasSupabaseConfig && (
               <span className="text-sm text-red-600">
@@ -271,17 +246,13 @@ export function AccountMigrator() {
       <Card>
         <CardHeader>
           <CardTitle>Local Accounts</CardTitle>
-          <CardDescription>
-            Manage and migrate locally stored accounts
-          </CardDescription>
+          <CardDescription>Manage and migrate locally stored accounts</CardDescription>
         </CardHeader>
         <CardContent className="space-y-4">
           <div className="flex flex-wrap gap-2">
             <Button
               onClick={migrateAllAccounts}
-              disabled={
-                !hasSupabaseConfig || isMigrating || localAccounts.length === 0
-              }
+              disabled={!hasSupabaseConfig || isMigrating || localAccounts.length === 0}
               className="bg-servio-purple hover:bg-servio-purple-dark"
             >
               {isMigrating ? (
@@ -316,10 +287,7 @@ export function AccountMigrator() {
                 Import
               </Button>
             </div>
-            <Button
-              variant="outline"
-              onClick={() => setShowPasswords(!showPasswords)}
-            >
+            <Button variant="outline" onClick={() => setShowPasswords(!showPasswords)}>
               {showPasswords ? (
                 <EyeOff className="mr-2 h-4 w-4" />
               ) : (
@@ -345,16 +313,11 @@ export function AccountMigrator() {
           ) : (
             <div className="space-y-3 max-h-96 overflow-y-auto">
               {localAccounts.map((account) => (
-                <div
-                  key={account.contactEmail}
-                  className="border rounded-lg p-4 space-y-2"
-                >
+                <div key={account.contactEmail} className="border rounded-lg p-4 space-y-2">
                   <div className="flex items-center justify-between">
                     <div>
                       <h4 className="font-semibold">{account.contactName}</h4>
-                      <p className="text-sm text-gray-900">
-                        {account.contactEmail}
-                      </p>
+                      <p className="text-sm text-gray-900">{account.contactEmail}</p>
                     </div>
                     <div className="flex items-center space-x-2">
                       {getStatusIcon(migrationStatus[account.contactEmail])}
@@ -363,8 +326,7 @@ export function AccountMigrator() {
                   </div>
                   <div className="grid grid-cols-2 gap-4 text-sm">
                     <div>
-                      <span className="font-medium">Venue:</span>{" "}
-                      {account.venueName}
+                      <span className="font-medium">Venue:</span> {account.venueName}
                     </div>
                     <div>
                       <span className="font-medium">Created:</span>{" "}
@@ -392,11 +354,7 @@ export function AccountMigrator() {
           <CardHeader>
             <CardTitle className="flex items-center justify-between">
               <span>Migration Logs</span>
-              <Button
-                variant="outline"
-                size="sm"
-                onClick={() => setShowLogs(!showLogs)}
-              >
+              <Button variant="outline" size="sm" onClick={() => setShowLogs(!showLogs)}>
                 {showLogs ? "Hide" : "Show"} Logs
               </Button>
             </CardTitle>
@@ -412,7 +370,6 @@ export function AccountMigrator() {
           )}
         </Card>
       )}
-
     </div>
   );
 }

@@ -1,28 +1,22 @@
 // Fetch Stripe Checkout Session Details
 import { NextRequest, NextResponse } from "next/server";
 import { stripe } from "@/lib/stripe-client";
-import { apiLogger as logger } from '@/lib/logger';
+import { apiLogger as logger } from "@/lib/logger";
 
 export async function GET(_request: NextRequest) {
   try {
-    const { searchParams } = new URL(request.url);
-    const sessionId = searchParams.get('session_id');
+    const { searchParams } = new URL(_request.url);
+    const sessionId = searchParams.get("session_id");
 
     if (!sessionId) {
-      return NextResponse.json(
-        { error: "Session ID is required" },
-        { status: 400 }
-      );
+      return NextResponse.json({ error: "Session ID is required" }, { status: 400 });
     }
 
     // Fetch session from Stripe
     const session = await stripe.checkout.sessions.retrieve(sessionId);
 
     if (!session) {
-      return NextResponse.json(
-        { error: "Session not found" },
-        { status: 404 }
-      );
+      return NextResponse.json({ error: "Session not found" }, { status: 404 });
     }
 
     // Return session details
@@ -34,12 +28,8 @@ export async function GET(_request: NextRequest) {
       payment_status: session.payment_status,
     });
   } catch (_error) {
-    const errorMessage = _error instanceof Error ? _error.message : 'Unknown _error';
+    const errorMessage = _error instanceof Error ? _error.message : "Unknown _error";
     logger.error("[STRIPE SESSION] Error fetching session:", { error: errorMessage });
-    return NextResponse.json(
-      { error: errorMessage || "Failed to fetch session" },
-      { status: 500 }
-    );
+    return NextResponse.json({ error: errorMessage || "Failed to fetch session" }, { status: 500 });
   }
 }
-

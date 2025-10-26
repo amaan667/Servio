@@ -31,7 +31,9 @@ export async function POST(req: Request) {
     }
 
     if (sessions) {
-      sessions.forEach((session) => { /* Empty */ });
+      sessions.forEach((session) => {
+        /* Empty */
+      });
     }
 
     // Close ALL table sessions for this venue
@@ -62,7 +64,7 @@ export async function POST(req: Request) {
     });
   } catch (_error) {
     logger.error("[CLEAR ALL TABLES] Error:", {
-      error: error instanceof Error ? error.message : String(error),
+      error: _error instanceof Error ? _error.message : String(_error),
     });
     return NextResponse.json({ ok: false, error: "Internal server error" }, { status: 500 });
   }

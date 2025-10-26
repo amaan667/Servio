@@ -148,7 +148,7 @@ export function OrderCard({
 
       await onActionComplete?.();
     } catch (_error) {
-      alert(`Error: ${error instanceof Error ? error.message : "Failed to update order status"}`);
+      alert(`Error: ${_error instanceof Error ? _error.message : "Failed to update order status"}`);
     } finally {
       setIsProcessing(false);
     }

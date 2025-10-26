@@ -17,7 +17,7 @@ interface PerformanceMetric {
 
 export async function POST(_request: NextRequest) {
   try {
-    const metric: PerformanceMetric = await request.json();
+    const metric: PerformanceMetric = await _request.json();
 
     // Log performance metric
     logger.info("[PERFORMANCE] Metric received:", {
@@ -49,7 +49,7 @@ export async function POST(_request: NextRequest) {
 
     return NextResponse.json({ success: true });
   } catch (_error) {
-    logger.error("[PERFORMANCE] Error processing metric:", error as Record<string, unknown>);
+    logger._error("[PERFORMANCE] Error processing metric:", _error as Record<string, unknown>);
     return NextResponse.json({ error: "Failed to process performance metric" }, { status: 500 });
   }
 }

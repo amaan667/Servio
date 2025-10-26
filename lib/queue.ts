@@ -1,91 +1,97 @@
-
 /**
  * Job queue for background processing
  * Handles PDF conversion, image processing, and other heavy tasks
  */
 
-import { Queue, Worker, QueueEvents } from 'bullmq';
-import { convertPDFToImages } from './pdf-to-images';
-import { logger } from './logger';
+import { Queue, Worker, QueueEvents } from "bullmq";
+import { convertPDFToImages } from "./pdf-to-images";
+import { logger } from "./logger";
 
 // Redis connection for BullMQ
 const connection = {
-  host: process.env.REDIS_HOST || 'localhost',
-  port: parseInt(process.env.REDIS_PORT || '6379'),
+  host: process.env.REDIS_HOST || "localhost",
+  port: parseInt(process.env.REDIS_PORT || "6379"),
   password: process.env.REDIS_PASSWORD,
 };
 
 // PDF Processing Queue (server-only)
-export const pdfQueue = typeof window === 'undefined' ? new Queue('pdf-processing', {
-  connection,
-  defaultJobOptions: {
-    attempts: 3,
-    backoff: {
-      type: 'exponential',
-      delay: 2000,
-    },
-    removeOnComplete: {
-      age: 3600, // Keep completed jobs for 1 hour
-    },
-    removeOnFail: {
-      age: 86400, // Keep failed jobs for 24 hours
-    },
-  },
-}) : null;
+export const pdfQueue =
+  typeof window === "undefined"
+    ? new Queue("pdf-processing", {
+        connection,
+        defaultJobOptions: {
+          attempts: 3,
+          backoff: {
+            type: "exponential",
+            delay: 2000,
+          },
+          removeOnComplete: {
+            age: 3600, // Keep completed jobs for 1 hour
+          },
+          removeOnFail: {
+            age: 86400, // Keep failed jobs for 24 hours
+          },
+        },
+      })
+    : null;
 
 // PDF Processing Worker (server-only)
-export const pdfWorker = typeof window === 'undefined' ? new Worker(
-  'pdf-processing',
-  async (job) => {
-    const { pdfBytes, venueId, uploadId } = job.data;
-    
-    logger.info('PDF processing job started', {
-      jobId: job.id,
-      venueId,
-      uploadId,
-    });
+export const pdfWorker =
+  typeof window === "undefined"
+    ? new Worker(
+        "pdf-processing",
+        async (job) => {
+          const { pdfBytes, venueId, uploadId } = job.data;
 
-    try {
-      // Convert PDF to images
-      const images = await convertPDFToImages(pdfBytes, venueId);
-      
-      logger.info('PDF processing job completed', {
-        jobId: job.id,
-        venueId,
-        uploadId,
-        imageCount: images.length,
-      });
+          logger.info("PDF processing job started", {
+            jobId: job.id,
+            venueId,
+            uploadId,
+          });
 
-      return {
-        success: true,
-        images,
-        imageCount: images.length,
-      };
-    } catch (_error) {
-      logger.error('PDF processing job failed', error, {
-        jobId: job.id,
-        venueId,
-        uploadId,
-      });
-      throw error;
-    }
-  },
-  {
-    connection,
-    concurrency: 2, // Process 2 PDFs at a time
-  }
-) : null;
+          try {
+            // Convert PDF to images
+            const images = await convertPDFToImages(pdfBytes, venueId);
+
+            logger.info("PDF processing job completed", {
+              jobId: job.id,
+              venueId,
+              uploadId,
+              imageCount: images.length,
+            });
+
+            return {
+              success: true,
+              images,
+              imageCount: images.length,
+            };
+          } catch (_error) {
+            logger._error("PDF processing job failed", _error, {
+              jobId: job.id,
+              venueId,
+              uploadId,
+            });
+            throw _error;
+          }
+        },
+        {
+          connection,
+          concurrency: 2, // Process 2 PDFs at a time
+        }
+      )
+    : null;
 
 // Queue events for monitoring (server-only)
-export const pdfQueueEvents = typeof window === 'undefined' ? new QueueEvents('pdf-processing', { connection }) : null;
+export const pdfQueueEvents =
+  typeof window === "undefined" ? new QueueEvents("pdf-processing", { connection }) : null;
 
 if (pdfQueueEvents) {
-  pdfQueueEvents.on('completed', ({ jobId, returnvalue }) => {
-    logger.info('PDF job completed', { jobId, returnvalue });
+  pdfQueueEvents.on("completed", ({ jobId, returnvalue }) => {
+    logger.info("PDF job completed", { jobId, returnvalue });
   });
 
-  pdfQueueEvents.on('failed', ({ jobId, failedReason }) => {
-    logger.error('PDF job failed', new Error(failedReason), { jobId });
+  pdfQueueEvents.on("failed", ({ jobId, failedReason }) => {
+    logger.error("PDF job failed", new Error(failedReason), { jobId });
   });
 }
 
@@ -96,22 +102,22 @@ export const jobHelpers = {
    */
   async addPdfJob(pdfBytes: ArrayBuffer, venueId: string, uploadId?: string) {
     if (!pdfQueue) {
-      logger.warn('PDF queue not available');
+      logger.warn("PDF queue not available");
       return null;
     }
-    
-    const job = await pdfQueue.add('convert-pdf', {
+
+    const job = await pdfQueue.add("convert-pdf", {
       pdfBytes,
       venueId,
       uploadId,
     });
-    
-    logger.info('PDF job added', {
+
+    logger.info("PDF job added", {
       jobId: job.id,
       venueId,
       uploadId,
     });
-    
+
     return job;
   },
 
@@ -120,7 +126,7 @@ export const jobHelpers = {
    */
   async getJobStatus(jobId: string) {
     if (!pdfQueue) return null;
-    
+
     const job = await pdfQueue.getJob(jobId);
     if (!job) return null;
 
@@ -144,12 +150,12 @@ export const jobHelpers = {
    */
   async cancelJob(jobId: string) {
     if (!pdfQueue) return false;
-    
+
     const job = await pdfQueue.getJob(jobId);
     if (!job) return false;
 
     await job.remove();
-    logger.info('PDF job cancelled', { jobId });
+    logger.info("PDF job cancelled", { jobId });
     return true;
   },
 
@@ -166,7 +172,7 @@ export const jobHelpers = {
         total: 0,
       };
     }
-    
+
     const waiting = await pdfQueue.getWaitingCount();
     const active = await pdfQueue.getActiveCount();
     const completed = await pdfQueue.getCompletedCount();
@@ -181,4 +187,3 @@ export const jobHelpers = {
     };
   },
 };
-

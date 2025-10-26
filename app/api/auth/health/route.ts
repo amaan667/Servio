@@ -1,6 +1,6 @@
-import { NextResponse } from 'next/server';
-import { createServerSupabase } from '@/lib/supabase';
-import { cookies } from 'next/headers';
+import { NextResponse } from "next/server";
+import { createServerSupabase } from "@/lib/supabase";
+import { cookies } from "next/headers";
 
 export async function GET() {
   try {
@@ -8,58 +8,64 @@ export async function GET() {
     const supabase = await createServerSupabase();
 
     // Check for auth cookies
-    const authCookies = cookieStore.getAll().filter(cookie =>
-      cookie.name.includes('sb-') || cookie.name.includes('auth')
-    );
+    const authCookies = cookieStore
+      .getAll()
+      .filter((cookie) => cookie.name.includes("sb-") || cookie.name.includes("auth"));
 
     // Try to get session
-    let sessionStatus = 'unknown';
+    let sessionStatus = "unknown";
     let sessionError = null;
     let userId = null;
 
     try {
-      const { data: { session }, error } = await supabase.auth.getSession();
+      const {
+        data: { session },
+        error,
+      } = await supabase.auth.getSession();
       if (error) {
-        sessionStatus = 'error';
+        sessionStatus = "error";
         sessionError = error.message;
       } else if (session) {
-        sessionStatus = 'active';
+        sessionStatus = "active";
         userId = session.user?.id;
       } else {
-        sessionStatus = 'none';
+        sessionStatus = "none";
       }
     } catch (_err) {
-      sessionStatus = 'exception';
-      sessionError = err instanceof Error ? err.message : 'Unknown error';
+      sessionStatus = "exception";
+      sessionError = _err instanceof Error ? _err.message : "Unknown error";
     }
 
     return NextResponse.json({
-      status: 'healthy',
+      status: "healthy",
       timestamp: new Date().toISOString(),
       environment: process.env.NODE_ENV,
       auth: {
         sessionStatus,
         hasUser: !!userId,
-        userId: userId?.substring(0, 8) + '...',
+        userId: userId?.substring(0, 8) + "...",
         sessionError,
         authCookiesCount: authCookies.length,
-        authCookies: authCookies.map(c => ({ name: c.name, hasValue: !!c.value }))
+        authCookies: authCookies.map((c) => ({ name: c.name, hasValue: !!c.value })),
       },
       supabase: {
-        url: process.env.NEXT_PUBLIC_SUPABASE_URL ? 'configured' : 'missing',
-        key: process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY ? 'configured' : 'missing',
-        serviceKey: process.env.SUPABASE_SERVICE_ROLE_KEY ? 'configured' : 'missing'
+        url: process.env.NEXT_PUBLIC_SUPABASE_URL ? "configured" : "missing",
+        key: process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY ? "configured" : "missing",
+        serviceKey: process.env.SUPABASE_SERVICE_ROLE_KEY ? "configured" : "missing",
       },
       urls: {
         siteUrl: process.env.NEXT_PUBLIC_SITE_URL,
-        appUrl: process.env.NEXT_PUBLIC_APP_URL
-      }
+        appUrl: process.env.NEXT_PUBLIC_APP_URL,
+      },
     });
   } catch (_error) {
-    return NextResponse.json({
-      status: '_error',
-      timestamp: new Date().toISOString(),
-      error: _error instanceof Error ? _error.message : 'Unknown _error'
-    }, { status: 500 });
+    return NextResponse.json(
+      {
+        status: "_error",
+        timestamp: new Date().toISOString(),
+        error: _error instanceof Error ? _error.message : "Unknown _error",
+      },
+      { status: 500 }
+    );
   }
 }

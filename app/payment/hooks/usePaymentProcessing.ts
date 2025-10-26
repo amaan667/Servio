@@ -16,7 +16,6 @@ export function usePaymentProcessing() {
     try {
       // Helper function to create order in database
       const createOrder = async () => {
-
         const orderData = {
           venue_id: checkoutData.venueId,
           table_number: checkoutData.tableNumber,
@@ -194,10 +193,10 @@ export function usePaymentProcessing() {
         window.location.href = `/order-summary?orderId=${orderId}`;
       }
     } catch (_err) {
-      setError(err.message || "Payment failed. Please try again.");
+      setError(_err.message || "Payment failed. Please try again.");
       toast({
         title: "Payment Error",
-        description: err.message || "Payment failed. Please try again.",
+        description: _err.message || "Payment failed. Please try again.",
         variant: "destructive",
       });
     } finally {
