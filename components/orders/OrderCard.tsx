@@ -116,39 +116,55 @@ export function OrderCard({
   };
 
   const handleStatusUpdate = async (nextStatusRaw: string) => {
-    if (!venueId) return;
+    if (!venueId) {
+      console.error("[ORDER CARD] No venueId provided");
+      alert("Error: Venue ID missing. Please refresh the page.");
+      return;
+    }
 
     const nextStatus = (nextStatusRaw || "").toUpperCase();
 
     try {
       setIsProcessing(true);
+      console.info(`[ORDER CARD] Updating order ${order.id} to status: ${nextStatus}`);
 
       if (nextStatus === "SERVED" || nextStatus === "SERVING") {
         // Use server endpoint for serving to ensure related side-effects
+        console.info("[ORDER CARD] Calling /api/orders/serve");
         const response = await fetch("/api/orders/serve", {
           method: "POST",
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({ orderId: order.id }),
         });
+
         if (!response.ok) {
-          await response.text();
-          throw new Error("Failed to mark order as served");
+          const errorText = await response.text();
+          console.error("[ORDER CARD] Serve failed:", response.status, errorText);
+          throw new Error(`Failed to mark order as served: ${response.status} - ${errorText}`);
         }
-        await response.json().catch(() => null);
+
+        const result = await response.json().catch(() => null);
+        console.info("[ORDER CARD] Serve success:", result);
       } else if (nextStatus === "COMPLETED") {
         // Use server endpoint for completing to clear tables
+        console.info("[ORDER CARD] Calling /api/orders/complete");
         const response = await fetch("/api/orders/complete", {
           method: "POST",
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({ orderId: order.id }),
         });
+
         if (!response.ok) {
-          await response.text();
-          throw new Error("Failed to mark order as completed");
+          const errorText = await response.text();
+          console.error("[ORDER CARD] Complete failed:", response.status, errorText);
+          throw new Error(`Failed to mark order as completed: ${response.status} - ${errorText}`);
         }
-        await response.json().catch(() => null);
+
+        const result = await response.json().catch(() => null);
+        console.info("[ORDER CARD] Complete success:", result);
       } else {
         // Directly update status via Supabase for other transitions
+        console.info("[ORDER CARD] Updating status via Supabase");
         const supabase = createClient();
         const { error } = await supabase
           .from("orders")
@@ -159,13 +175,18 @@ export function OrderCard({
           .eq("id", order.id)
           .eq("venue_id", venueId);
         if (error) {
-          throw new Error("Failed to update order status");
+          console.error("[ORDER CARD] Supabase update failed:", error);
+          throw new Error(`Failed to update order status: ${error.message}`);
         }
+        console.info("[ORDER CARD] Supabase update success");
       }
 
+      console.info("[ORDER CARD] Calling onActionComplete");
       await onActionComplete?.();
-    } catch {
-      // Error silently handled
+      console.info("[ORDER CARD] Status update complete!");
+    } catch (error) {
+      console.error("[ORDER CARD] Error updating order status:", error);
+      alert(`Error: ${error instanceof Error ? error.message : "Failed to update order status"}`);
     } finally {
       setIsProcessing(false);
     }
