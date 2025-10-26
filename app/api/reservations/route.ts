@@ -6,7 +6,7 @@ import { logger } from '@/lib/logger';
 export const runtime = 'nodejs';
 
 // GET /api/reservations?venueId=xxx - Get reservations for a venue
-export async function GET(_req: Request) {
+export async function GET(req: Request) {
   try {
     const { searchParams } = new URL(req.url);
     const venueId = searchParams.get('venueId');
@@ -72,14 +72,14 @@ export async function GET(_req: Request) {
       reservations: reservations || []
     });
 
-  } catch (_error) {
+  } catch (error) {
     logger.error('[RESERVATIONS GET] Unexpected error:', { error: error instanceof Error ? error.message : 'Unknown error' });
     return NextResponse.json({ ok: false, error: 'Internal server error' }, { status: 500 });
   }
 }
 
 // POST /api/reservations - Create a new reservation
-export async function POST(_req: Request) {
+export async function POST(req: Request) {
   try {
     const body = await req.json();
     const { 
@@ -144,7 +144,7 @@ export async function POST(_req: Request) {
       reservation: reservation
     });
 
-  } catch (_error) {
+  } catch (error) {
     logger.error('[RESERVATIONS POST] Unexpected error:', { error: error instanceof Error ? error.message : 'Unknown error' });
     return NextResponse.json({ ok: false, error: 'Internal server error' }, { status: 500 });
   }

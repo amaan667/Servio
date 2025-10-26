@@ -211,7 +211,7 @@ export function MenuUploadCard({ venueId, onSuccess }: MenuUploadCardProps) {
         onSuccess?.();
       }
       
-    } catch (_error) {
+    } catch (error) {
       toast({
         title: 'Upload failed',
         description: error.message,
@@ -285,7 +285,7 @@ export function MenuUploadCard({ venueId, onSuccess }: MenuUploadCardProps) {
         await new Promise(resolve => setTimeout(resolve, 500));
         onSuccess?.();
       }
-    } catch (_error) {
+    } catch (error) {
       toast({
         title: 'Hybrid Merge Failed',
         description: error instanceof Error ? error.message : 'Unknown error',
@@ -349,7 +349,7 @@ export function MenuUploadCard({ venueId, onSuccess }: MenuUploadCardProps) {
       } else {
         throw new Error(`Clear catalog failed: ${result.error}`);
       }
-    } catch (_error) {
+    } catch (error) {
       toast({
         title: 'Clear catalog failed',
         description: error instanceof Error ? error.message : 'Unknown error',

@@ -10,7 +10,7 @@ interface KDSStation {
 
 export const runtime = 'nodejs';
 
-export async function POST(_req: Request) {
+export async function POST(req: Request) {
   try {
     const supabaseAdmin = createAdminClient();
     
@@ -183,7 +183,7 @@ export async function POST(_req: Request) {
           scopeOrdersProcessed++;
           logger.debug(`[KDS BACKFILL ALL] Processed order ${order.id} with ${items.length} items for ${scope}`);
           
-        } catch (_error) {
+        } catch (error) {
           logger.error(`[KDS BACKFILL ALL] Error processing order ${order.id} for ${scope}:`, { error: error instanceof Error ? error.message : 'Unknown error' });
           scopeErrors.push(`Error processing order ${order.id}: ${error instanceof Error ? error.message : 'Unknown error'}`);
         }
@@ -216,7 +216,7 @@ export async function POST(_req: Request) {
       results
     });
 
-  } catch (_error) {
+  } catch (error) {
     logger.error('[KDS BACKFILL ALL] Unexpected error:', { error: error instanceof Error ? error.message : 'Unknown error' });
     return NextResponse.json({ 
       ok: false, 

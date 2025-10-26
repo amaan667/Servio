@@ -49,7 +49,7 @@ export default function CustomerOrderPage() {
           const data = await response.json();
           setSubscriptionTier(data.tier || 'basic');
         }
-      } catch (_error) {
+      } catch (error) {
         logger.error('Failed to fetch venue tier', { error });
         setSubscriptionTier('basic');
       } finally {

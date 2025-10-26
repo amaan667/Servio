@@ -124,7 +124,7 @@ export async function POST(req: NextRequest) {
     }
 
     return NextResponse.json(result);
-  } catch (_error) {
+  } catch (error) {
     logger.error('[POS BILL SPLITS] Unexpected error:', { error: error instanceof Error ? error.message : 'Unknown error' });
     return NextResponse.json({ error: 'Internal server error' }, { status: 500 });
   }
@@ -193,7 +193,7 @@ export async function GET(req: NextRequest) {
     }
 
     return NextResponse.json({ splits });
-  } catch (_error) {
+  } catch (error) {
     logger.error('[POS BILL SPLITS] Unexpected error:', { error: error instanceof Error ? error.message : 'Unknown error' });
     return NextResponse.json({ error: 'Internal server error' }, { status: 500 });
   }

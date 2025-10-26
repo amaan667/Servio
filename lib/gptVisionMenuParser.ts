@@ -85,7 +85,7 @@ Rules:
     
     logger.info('[VISION] Extracted items:', json.length);
     return json;
-  } catch (_err) {
+  } catch (err) {
     logger.error("Failed to parse item extraction JSON:", text);
     logger.error("Parse error details:", err);
     return [];
@@ -216,7 +216,7 @@ Return ONLY the JSON array, no explanation.
         confidence: pos.confidence || 0.8,
       };
     });
-  } catch (_err) {
+  } catch (err) {
     logger.error("Failed to parse menu positions JSON:", text);
     logger.error("Parse error details:", err);
     // Return empty array instead of crashing - menu will still work without hotspots

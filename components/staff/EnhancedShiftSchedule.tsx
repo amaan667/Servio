@@ -197,7 +197,7 @@ export default function EnhancedShiftSchedule({
       // Notify parent component
       onShiftAdded();
       
-    } catch (_err) {
+    } catch (err) {
       setError(err instanceof Error ? err.message : 'Failed to save shift');
     } finally {
       setSaving(false);

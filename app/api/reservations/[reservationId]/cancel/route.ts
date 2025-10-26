@@ -62,7 +62,7 @@ export async function POST(
       message: 'Reservation cancelled successfully'
     });
 
-  } catch (_error) {
+  } catch (error) {
     logger.error('[RESERVATIONS CANCEL] Unexpected error:', { error: error instanceof Error ? error.message : 'Unknown error' });
     return NextResponse.json({ ok: false, error: 'Internal server error' }, { status: 500 });
   }

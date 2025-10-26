@@ -37,7 +37,7 @@ export function useStaffCounts(venueId: string) {
       }
       
       setData(result);
-    } catch (_err) {
+    } catch (err) {
       logger.error('[STAFF_COUNTS] Fetch error:', errorToContext(err));
       setError(err instanceof Error ? err.message : 'Unknown error');
     } finally {

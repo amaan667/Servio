@@ -67,7 +67,7 @@ export async function GET(_request: NextRequest) {
         'Content-Disposition': `attachment; filename="inventory-${venue_id}-${new Date().toISOString().split('T')[0]}.csv"`,
       },
     });
-  } catch (_error) {
+  } catch (error) {
     logger.error('[INVENTORY API] Unexpected error:', { error: error instanceof Error ? error.message : 'Unknown error' });
     return NextResponse.json(
       { error: 'Internal server error' },

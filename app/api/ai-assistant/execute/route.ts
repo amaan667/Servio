@@ -170,7 +170,7 @@ export async function POST(_request: NextRequest) {
       result: result as AIExecutionResult,
       executionTimeMs: executionTime,
     });
-  } catch (_error) {
+  } catch (error) {
     logger.error("[AI ASSISTANT] Execution error:", {
       error: error instanceof Error ? error.message : "Unknown error",
     });

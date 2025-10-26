@@ -159,7 +159,7 @@ export function useOrderSession(orderParams: OrderParams) {
           }
         }
       }
-    } catch (_error) {
+    } catch (error) {
       // Error silently handled
     }
   };
@@ -227,7 +227,7 @@ export function useOrderSession(orderParams: OrderParams) {
                 name: session.customerName,
                 phone: session.customerPhone
               });
-            } catch (_error) {
+            } catch (error) {
       // Error silently handled
     }
           }
@@ -241,7 +241,7 @@ export function useOrderSession(orderParams: OrderParams) {
             localStorage.removeItem(sessionSessionKey);
           }
         }
-      } catch (_error) {
+      } catch (error) {
       // Error silently handled
     }
     };
@@ -261,7 +261,7 @@ export function useOrderSession(orderParams: OrderParams) {
     }
         };
       }
-    } catch (_err) {
+    } catch (err) {
       // Auth state change setup failed
     }
     return () => {};

@@ -134,7 +134,7 @@ export function EnhancedPDFMenuDisplay({
             sessionStorage.removeItem(`pdf_images_${venueId}`);
           }
         }
-      } catch (_error) {
+      } catch (error) {
         setViewMode('list');
       } finally {
         setLoading(false);
@@ -185,7 +185,7 @@ export function EnhancedPDFMenuDisplay({
             }
           }
         }
-      } catch (_error) {
+      } catch (error) {
       // Error handled silently
     }
     };
@@ -819,7 +819,7 @@ async function saveHotspotsToDatabase(
       .from('menu_hotspots')
       .insert(hotspotsToInsert);
       
-  } catch (_error) {
+  } catch (error) {
       // Error handled silently
     }
 }

@@ -48,7 +48,7 @@ export function ImportCSVDialog({ open, onOpenChange, venueId, onSuccess }: Impo
           setResult(null);
         }, 2000);
       }
-    } catch (_error) {
+    } catch (error) {
 
       setResult({ success: false, error: 'Failed to import CSV' });
     } finally {

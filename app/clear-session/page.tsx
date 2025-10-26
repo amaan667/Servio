@@ -41,7 +41,7 @@ export default function ClearSessionPage() {
         });
 
         setStatus("cleared");
-      } catch (_error) {
+      } catch (error) {
         setStatus("error");
       }
     };

@@ -5,7 +5,7 @@ import { logger } from '@/lib/logger';
 
 export const runtime = 'nodejs';
 
-export async function GET(_req: Request) {
+export async function GET(req: Request) {
   const { searchParams } = new URL(req.url);
   const venueId = searchParams.get('venueId');
 

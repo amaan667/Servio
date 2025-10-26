@@ -3,7 +3,7 @@ export const runtime = "nodejs";
 import { createAdminClient } from "@/lib/supabase";
 import { apiLogger as logger } from "@/lib/logger";
 
-export async function POST(_req: Request) {
+export async function POST(req: Request) {
   try {
     const startedAt = new Date().toISOString();
     logger.debug("[ORDERS SERVE][START]", { startedAt });
@@ -95,7 +95,7 @@ export async function POST(_req: Request) {
       logger.debug("[ORDERS SERVE] table_sessions updated to SERVED", {
         data: { orderId, extra: venueId },
       });
-    } catch (_e) {
+    } catch (e) {
       // best-effort; don't fail the request if this errors (RLS or not found)
       logger.warn("[ORDERS SERVE] table_sessions update warning", { orderId, venueId, error: e });
     }

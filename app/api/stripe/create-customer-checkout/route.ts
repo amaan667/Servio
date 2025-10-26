@@ -12,7 +12,7 @@ const stripe = new Stripe(process.env.STRIPE_SECRET_KEY!, {
  * Create Stripe checkout session for customer order payment
  * This is different from subscription checkout - no tier validation needed
  */
-export async function POST(_req: Request) {
+export async function POST(req: Request) {
   try {
     const { amount, customerEmail, customerName, venueName, orderId } = await req.json();
 
@@ -67,7 +67,7 @@ export async function POST(_req: Request) {
       url: session.url,
       sessionId: session.id,
     });
-  } catch (_error) {
+  } catch (error) {
     logger.error("[STRIPE CUSTOMER CHECKOUT] Error creating session", {
       error: error instanceof Error ? error.message : "Unknown error",
     });

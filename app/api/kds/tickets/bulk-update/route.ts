@@ -2,7 +2,7 @@ import { NextResponse } from "next/server";
 import { logger } from "@/lib/logger";
 
 // PATCH - Bulk update multiple tickets (e.g., bump all ready tickets for an order)
-export async function PATCH(_req: Request) {
+export async function PATCH(req: Request) {
   try {
     const body = await req.json();
     const { orderId, stationId, status } = body;
@@ -91,7 +91,7 @@ export async function PATCH(_req: Request) {
       try {
         const { cleanupTableOnOrderCompletion } = await import("@/lib/table-cleanup");
         await cleanupTableOnOrderCompletion(orderId, "READY");
-      } catch (_error) {
+      } catch (error) {
       // Error handled silently
     }
     }
@@ -101,7 +101,7 @@ export async function PATCH(_req: Request) {
       updated: tickets?.length || 0,
       tickets,
     });
-  } catch (_error) {
+  } catch (error) {
     logger.error("[KDS] Unexpected error:", {
       error: error instanceof Error ? error.message : "Unknown error",
     });

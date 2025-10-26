@@ -67,7 +67,7 @@ export function useDesignSettings(venueId: string) {
           show_prices: data.show_prices ?? true
         });
       }
-    } catch (_error) {
+    } catch (error) {
       // Error silently handled
     }
   };
@@ -93,7 +93,7 @@ export function useDesignSettings(venueId: string) {
         title: "Design saved successfully",
         description: "Your design settings have been saved.",
       });
-    } catch (_error) {
+    } catch (error) {
 
       toast({
         title: "Save failed",

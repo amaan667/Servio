@@ -39,7 +39,7 @@ export function useFeedbackManagement(venueId: string) {
         if (error) throw error;
 
         setFeedbackQuestions(data || []);
-      } catch (_err) {
+      } catch (err) {
       // Error silently handled
     }
     };
@@ -82,7 +82,7 @@ export function useFeedbackManagement(venueId: string) {
       });
 
       setFeedbackResponses([]);
-    } catch (_err) {
+    } catch (err) {
 
       toast({
         title: "Error",

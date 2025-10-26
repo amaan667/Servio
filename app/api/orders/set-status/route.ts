@@ -3,7 +3,7 @@ import { createClient } from '@/lib/supabase';
 import { cleanupTableOnOrderCompletion } from '@/lib/table-cleanup';
 import { apiLogger as logger } from '@/lib/logger';
 
-export async function POST(_req: Request) {
+export async function POST(req: Request) {
   try {
     const { orderId, status } = await req.json();
     
@@ -64,7 +64,7 @@ export async function POST(_req: Request) {
     }
 
     return NextResponse.json({ success: true });
-  } catch (_error) {
+  } catch (error) {
     logger.error('Set status error:', { error: error instanceof Error ? error.message : 'Unknown error' });
     return NextResponse.json({ error: error instanceof Error ? error.message : 'Unknown error' }, { status: 500 });
   }

@@ -249,7 +249,7 @@ export function EnhancedOrderLifecycle({ venueId, order, onUpdate }: OrderLifecy
       }
 
       onUpdate();
-    } catch (_error) {
+    } catch (error) {
       // Error silently handled
     } finally {
       setUpdating(false);

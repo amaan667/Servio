@@ -20,7 +20,7 @@ interface AuthResult {
  *
  * @example
  * ```ts
- * export async function GET(_req: Request) {
+ * export async function GET(req: Request) {
  *   const auth = await authenticateRequest(req);
  *   if (!auth.success) {
  *     return NextResponse.json({ error: auth.error }, { status: 401 });
@@ -31,7 +31,7 @@ interface AuthResult {
  * }
  * ```
  */
-export async function authenticateRequest(_req: Request): Promise<AuthResult> {
+export async function authenticateRequest(req: Request): Promise<AuthResult> {
   try {
     // Get auth token from Authorization header
     const authHeader = req.headers.get("authorization");
@@ -75,7 +75,7 @@ export async function authenticateRequest(_req: Request): Promise<AuthResult> {
       user,
       supabase,
     };
-  } catch (_error) {
+  } catch (error) {
     return {
       success: false,
       error: "Authentication failed",

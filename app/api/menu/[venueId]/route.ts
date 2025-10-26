@@ -114,7 +114,7 @@ export async function GET(
     
     return NextResponse.json(response);
 
-  } catch (_error) {
+  } catch (error) {
     const duration = Date.now() - startTime;
     
     logger.error('[MENU API] Unexpected error:', { 

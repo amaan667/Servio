@@ -111,7 +111,7 @@ export function useOrderMenu(venueSlug: string, isDemo: boolean) {
             }
           }
         }
-      } catch (_error) {
+      } catch (error) {
         setCategoryOrder(null);
       }
       
@@ -120,7 +120,7 @@ export function useOrderMenu(venueSlug: string, isDemo: boolean) {
       }
       
       setLoadingMenu(false);
-    } catch (_err) {
+    } catch (err) {
       setMenuError(`Error loading menu: ${err instanceof Error ? err.message : 'Unknown error'}`);
       setLoadingMenu(false);
     }

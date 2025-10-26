@@ -75,7 +75,7 @@ export function useQRCodeManagement(venueId: string) {
 
       setTables(tablesData || []);
       setCounters(countersData);
-    } catch (_error) {
+    } catch (error) {
       toast({
         title: "Error",
         description: `Failed to load data: ${error instanceof Error ? error.message : "Unknown error"}`,

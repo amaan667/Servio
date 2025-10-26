@@ -221,7 +221,7 @@ export async function POST(_request: NextRequest) {
       }
     });
 
-  } catch (_error) {
+  } catch (error) {
     logger.error('🔄 [MANUAL DAILY RESET] Error in manual daily reset:', { error: error instanceof Error ? error.message : 'Unknown error' });
     return NextResponse.json(
       { error: 'Internal server error' },

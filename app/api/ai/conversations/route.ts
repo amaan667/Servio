@@ -74,7 +74,7 @@ export async function GET(_request: NextRequest) {
       hasMore: conversations?.length === limit,
       nextCursor: conversations?.length === limit ? (parseInt(cursor) + limit).toString() : null,
     });
-  } catch (_error) {
+  } catch (error) {
     logger.error("[AI CHAT] Conversations error:", { error: error instanceof Error ? error.message : 'Unknown error' });
     return NextResponse.json(
       { error: error instanceof Error ? error.message : "Internal server error" },
@@ -155,7 +155,7 @@ export async function POST(_request: NextRequest) {
     return NextResponse.json({
       conversation: transformedConversation,
     });
-  } catch (_error) {
+  } catch (error) {
     logger.error("[AI CHAT] Create conversation error:", { error: error instanceof Error ? error.message : 'Unknown error' });
     return NextResponse.json(
       { error: error instanceof Error ? error.message : "Internal server error" },
@@ -250,7 +250,7 @@ export async function PATCH(_request: NextRequest) {
     return NextResponse.json({
       conversation: transformedConversation,
     });
-  } catch (_error) {
+  } catch (error) {
     logger.error("[AI CHAT] Update conversation error:", { error: error instanceof Error ? error.message : 'Unknown error' });
     return NextResponse.json(
       { error: error instanceof Error ? error.message : "Internal server error" },

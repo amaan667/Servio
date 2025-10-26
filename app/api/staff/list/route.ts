@@ -3,7 +3,7 @@ import { createAdminClient } from '@/lib/supabase';
 
 export const runtime = 'nodejs';
 
-export async function GET(_req: Request) {
+export async function GET(req: Request) {
   try {
     const { searchParams } = new URL(req.url);
     const venue_id = searchParams.get('venue_id');
@@ -24,7 +24,7 @@ export async function GET(_req: Request) {
     }
 
     return NextResponse.json({ success: true, staff: data || [] });
-  } catch (_e) {
+  } catch (e) {
     const errorMessage = e instanceof Error ? e.message : 'Unknown error';
     return NextResponse.json({ error: errorMessage }, { status: 500 });
   }

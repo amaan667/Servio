@@ -53,7 +53,7 @@ export function createApiHandler<TRequest, TResponse>(
         ok: true,
         data: result,
       });
-    } catch (_error) {
+    } catch (error) {
       logger.error('API handler error', {
         error,
         path: req.url,
@@ -97,7 +97,7 @@ export function createGetHandler<TResponse>(
         ok: true,
         data: result,
       });
-    } catch (_error) {
+    } catch (error) {
       logger.error('GET handler error', {
         error,
         path: req.url,

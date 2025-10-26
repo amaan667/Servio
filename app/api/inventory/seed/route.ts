@@ -19,7 +19,7 @@ export async function POST(_request: NextRequest) {
     const result = await seedInventoryData(venue_id);
 
     return NextResponse.json(result);
-  } catch (_error) {
+  } catch (error) {
     logger.error('[INVENTORY SEED API] Error:', { error: error instanceof Error ? error.message : 'Unknown error' });
     return NextResponse.json(
       { error: 'Failed to seed inventory data' },

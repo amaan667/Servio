@@ -171,7 +171,7 @@ export function useAnalyticsData(venueId: string) {
           })
         );
       }
-    } catch (_err) {
+    } catch (err) {
       setError(err instanceof Error ? err.message : "Failed to fetch analytics");
     } finally {
       setLoading(false);

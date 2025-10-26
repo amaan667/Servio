@@ -51,7 +51,7 @@ export async function GET(_request: NextRequest) {
         if (!roleErr && roleRow?.role) {
           roleName = roleRow.role;
         }
-      } catch (_e) {
+      } catch (e) {
         logger.debug("[AI CHAT] user_venue_roles lookup failed, will fallback to ownership check", {
           extra: { error: e instanceof Error ? e.message : "Unknown error" },
         });

@@ -17,7 +17,7 @@ export async function POST(req: NextRequest) {
       if (error) throw error;
     }
     return NextResponse.json({ success: true });
-  } catch (_error) {
+  } catch (error) {
     return NextResponse.json(
       { success: false, message: error instanceof Error ? error.message : "Failed to delete account" },
       { status: 500 },

@@ -43,14 +43,14 @@ export function useAccountDeletion(user: User) {
             'Content-Type': 'application/json',
           },
         });
-      } catch (_error) {
+      } catch (error) {
       // Error silently handled
     }
       
       try {
         const { clearAuthStorage } = await import('@/lib/supabase');
         clearAuthStorage();
-      } catch (_error) {
+      } catch (error) {
       // Error silently handled
     }
       
@@ -60,7 +60,7 @@ export function useAccountDeletion(user: User) {
         title: "Account Deleted",
         description: "Your account has been permanently deleted.",
       });
-    } catch (_err) {
+    } catch (err) {
       setError(err.message || 'Failed to delete account');
       toast({
         title: "Error",

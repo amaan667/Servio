@@ -155,7 +155,7 @@ export async function POST(req: NextRequest) {
       },
     });
 
-  } catch (_error) {
+  } catch (error) {
     logger.error('[ORDER CREATION] Error:', { error: error instanceof Error ? error.message : 'Unknown error' });
     
     if (error instanceof Stripe.errors.StripeError) {
@@ -260,7 +260,7 @@ async function createDemoOrder(cartId: string) {
       },
     });
 
-  } catch (_error) {
+  } catch (error) {
     logger.error('[DEMO ORDER] Error:', { error: error instanceof Error ? error.message : 'Unknown error' });
     return NextResponse.json(
       { 

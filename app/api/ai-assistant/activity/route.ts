@@ -62,7 +62,7 @@ export async function GET(_request: NextRequest) {
       success: true,
       activities: activities || [],
     });
-  } catch (_error) {
+  } catch (error) {
     const errorMessage = error instanceof Error ? error.message : 'Unknown error';
     logger.error("[AI ASSISTANT] Activity fetch error:", { error: errorMessage });
     return NextResponse.json(

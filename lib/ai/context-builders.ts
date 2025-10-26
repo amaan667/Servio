@@ -40,7 +40,7 @@ export async function getAssistantContext(
       if (roleData) {
         userRole = roleData.role;
       }
-    } catch (_error) {
+    } catch (error) {
       // Table doesn't exist or other error - use default
       aiLogger.debug("[AI ASSISTANT] Could not get user role:", error);
     }

@@ -324,7 +324,7 @@ Return ONLY valid JSON:
     };
 
     return NextResponse.json(successResponse);
-  } catch (_error) {
+  } catch (error) {
     logger.error("[MENU SCRAPE] Error:", _error);
 
     const errorResponse = {

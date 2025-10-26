@@ -41,7 +41,7 @@ export async function POST(_request: NextRequest) {
       instructions: 'Check server logs for manual email sending instructions'
     });
 
-  } catch (_error) {
+  } catch (error) {
     logger.error('[DEV EMAIL] Unexpected error:', { error: error instanceof Error ? error.message : 'Unknown error' });
     return NextResponse.json({ error: 'Internal server error' }, { status: 500 });
   }

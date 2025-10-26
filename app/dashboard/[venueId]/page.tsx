@@ -117,7 +117,7 @@ export default async function VenuePage({ params }: { params: Promise<{ venueId:
       unpaid,
     };
 
-  } catch (_error) {
+  } catch (error) {
     // Continue without initial data - client will load it
   }
 

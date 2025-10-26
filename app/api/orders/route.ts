@@ -6,7 +6,7 @@ import { apiLogger, logger } from "@/lib/logger";
 export const runtime = "nodejs";
 
 // GET handler for orders
-export async function GET(_req: Request) {
+export async function GET(req: Request) {
   try {
     const { searchParams } = new URL(req.url);
     const venueId = searchParams.get("venueId");
@@ -208,7 +208,7 @@ async function createKDSTickets(
     logger.debug("[KDS TICKETS] Successfully created KDS tickets", {
       data: { count: items.length, orderId: order.id },
     });
-  } catch (_error) {
+  } catch (error) {
     logger.error("[KDS TICKETS] Error creating KDS tickets:", {
       error: error instanceof Error ? error.message : "Unknown error",
     });
@@ -216,7 +216,7 @@ async function createKDSTickets(
   }
 }
 
-export async function POST(_req: Request) {
+export async function POST(req: Request) {
   const requestId = Math.random().toString(36).substring(7);
   const startTime = Date.now();
 

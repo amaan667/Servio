@@ -157,7 +157,7 @@ export function ReservationDialog({
       onReservationComplete?.();
       onClose();
       handleClose();
-    } catch (_error) {
+    } catch (error) {
 
       setError(error instanceof Error ? error.message : `Failed to ${isModifyMode ? 'modify' : 'create'} reservation`);
     }

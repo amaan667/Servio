@@ -128,7 +128,7 @@ export async function POST(req: NextRequest) {
       description: mergeScenario.description
     });
 
-  } catch (_error) {
+  } catch (error) {
     logger.error('[ENHANCED MERGE] Unexpected error:', { error: error instanceof Error ? error.message : 'Unknown error' });
     return NextResponse.json({ error: 'Internal server error' }, { status: 500 });
   }
@@ -191,7 +191,7 @@ async function mergeFreeTables(supabase: SupabaseClient, sourceTable: { id: stri
         total_seats: sourceTable.seat_count + targetTable.seat_count
       }
     };
-  } catch (_error) {
+  } catch (error) {
     logger.error('[ENHANCED MERGE] Error merging free tables:', { error: error instanceof Error ? error.message : 'Unknown error' });
     return { error: 'Failed to merge free tables' };
   }
@@ -255,7 +255,7 @@ async function expandOccupiedTable(supabase: SupabaseClient, sourceTable: { id: 
         session_id: occupiedSession.id
       }
     };
-  } catch (_error) {
+  } catch (error) {
     logger.error('[ENHANCED MERGE] Error expanding occupied table:', { error: error instanceof Error ? error.message : 'Unknown error' });
     return { error: 'Failed to expand occupied table' };
   }
@@ -306,7 +306,7 @@ async function expandReservedTable(supabase: SupabaseClient, sourceTable: { id: 
         total_seats: reservedTable.seat_count + freeTable.seat_count
       }
     };
-  } catch (_error) {
+  } catch (error) {
     logger.error('[ENHANCED MERGE] Error expanding reserved table:', { error: error instanceof Error ? error.message : 'Unknown error' });
     return { error: 'Failed to expand reserved table' };
   }
@@ -407,7 +407,7 @@ async function mergeOccupiedTables(supabase: SupabaseClient, sourceTable: { id: 
         total_seats: sourceTable.seat_count + targetTable.seat_count
       }
     };
-  } catch (_error) {
+  } catch (error) {
     logger.error('[ENHANCED MERGE] Error merging occupied tables:', { error: error instanceof Error ? error.message : 'Unknown error' });
     return { error: 'Failed to merge occupied tables' };
   }
@@ -455,7 +455,7 @@ async function mergeReservedTables(supabase: SupabaseClient, sourceTable: { id: 
         total_seats: sourceTable.seat_count + targetTable.seat_count
       }
     };
-  } catch (_error) {
+  } catch (error) {
     logger.error('[ENHANCED MERGE] Error merging reserved tables:', { error: error instanceof Error ? error.message : 'Unknown error' });
     return { error: 'Failed to merge reserved tables' };
   }

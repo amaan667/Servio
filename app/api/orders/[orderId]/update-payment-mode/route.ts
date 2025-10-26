@@ -102,7 +102,7 @@ export async function PATCH(
       changed_from: order.payment_mode,
       changed_to: new_payment_mode,
     });
-  } catch (_error) {
+  } catch (error) {
     logger.error("[UPDATE PAYMENT MODE] Unexpected error", {
       data: { orderId, error: error instanceof Error ? error.message : String(error) },
     });

@@ -165,7 +165,7 @@ const OrdersClient: React.FC<OrdersClientProps> = ({ venueId, initialOrders = []
       setGroupedHistoryOrders(grouped);
       
       setLoading(false);
-    } catch (_error) {
+    } catch (error) {
 
       setLoading(false);
     }

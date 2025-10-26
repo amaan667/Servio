@@ -115,7 +115,7 @@ export default function TrialStatusBanner({ userRole }: TrialStatusBannerProps) 
           sessionStorage.setItem(`trial_status_${user.id}`, JSON.stringify(status));
         }
       }
-    } catch (_error) {
+    } catch (error) {
       // Show default trial status as fallback
       const userCreatedAt = new Date(user.created_at);
       const trialEndsAt = new Date(userCreatedAt.getTime() + 14 * 24 * 60 * 60 * 1000);

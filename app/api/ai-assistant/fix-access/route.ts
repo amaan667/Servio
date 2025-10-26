@@ -114,7 +114,7 @@ export async function POST(_request: NextRequest) {
       { error: "No access to this venue" },
       { status: 403 }
     );
-  } catch (_error) {
+  } catch (error) {
     logger.error("[AI ASSISTANT] Fix access error:", { error: error instanceof Error ? error.message : 'Unknown error' });
 
     if ((error as any)?.name === "ZodError") {

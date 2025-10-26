@@ -300,7 +300,7 @@ export async function POST(_request: NextRequest) {
         timestamp: new Date().toISOString(),
       },
     });
-  } catch (_error) {
+  } catch (error) {
     logger.error("🔄 [DAILY RESET CHECK] Error in daily reset check:", {
       error: error instanceof Error ? error.message : "Unknown error",
     });

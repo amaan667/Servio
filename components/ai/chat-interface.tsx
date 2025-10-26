@@ -110,7 +110,7 @@ export function ChatInterface({ venueId, isOpen, onClose, initialPrompt }: ChatI
       await loadMessages(newConv.id);
       setActiveTab("chat");
       setInput("");
-    } catch (_error) {
+    } catch (error) {
       setError(error.message);
     }
   };
@@ -124,7 +124,7 @@ export function ChatInterface({ venueId, isOpen, onClose, initialPrompt }: ChatI
     try {
       await deleteConversation(conversationId);
       setActiveTab("chat");
-    } catch (_error) {
+    } catch (error) {
       setError(error.message);
     }
   };
@@ -141,7 +141,7 @@ export function ChatInterface({ venueId, isOpen, onClose, initialPrompt }: ChatI
     if (!conv) {
       try {
         conv = await createNewConversation();
-      } catch (_error) {
+      } catch (error) {
         setError(error.message);
         return;
       }
@@ -160,7 +160,7 @@ export function ChatInterface({ venueId, isOpen, onClose, initialPrompt }: ChatI
     // Send to AI
     try {
       await sendMessage(conv.id, messageText);
-    } catch (_error) {
+    } catch (error) {
       setError(error.message);
     }
   };
@@ -182,7 +182,7 @@ export function ChatInterface({ venueId, isOpen, onClose, initialPrompt }: ChatI
         canUndo: false,
       };
       addMessage(assistantMessage);
-    } catch (_error) {
+    } catch (error) {
       setError(error.message);
     }
   };
@@ -197,7 +197,7 @@ export function ChatInterface({ venueId, isOpen, onClose, initialPrompt }: ChatI
         executionResult: null,
         canUndo: false,
       });
-    } catch (_error) {
+    } catch (error) {
       setError(error.message);
     }
   };

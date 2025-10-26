@@ -286,7 +286,7 @@ export function AnalyticsDashboard({ venueId }: AnalyticsDashboardProps) {
       });
       setDayOfWeekData(dow);
 
-    } catch (_error) {
+    } catch (error) {
 
       setStats({ revenue: 0, orderCount: 0, activeTables: 0, unpaidOrders: 0, averageOrderValue: 0, completionRate: 0 });
     } finally {

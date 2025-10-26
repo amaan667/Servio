@@ -313,7 +313,7 @@ Be smart about matching:
         imagesAdded: stats.images_added,
       },
     });
-  } catch (_error) {
+  } catch (error) {
     logger.error("[HYBRID MERGE] Unexpected error:", error);
 
     return NextResponse.json(

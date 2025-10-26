@@ -134,7 +134,7 @@ export async function POST(_request: NextRequest) {
       newTier 
     });
 
-  } catch (_error) {
+  } catch (error) {
     const errorMessage = error instanceof Error ? error.message : 'Unknown error';
     logger.error("[DOWNGRADE] Error:", { error: errorMessage });
     return NextResponse.json(

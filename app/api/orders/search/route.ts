@@ -55,7 +55,7 @@ export async function GET(req: NextRequest) {
       orders: orders || []
     });
 
-  } catch (_error) {
+  } catch (error) {
     logger.error('[ORDERS SEARCH] Error:', { error: error instanceof Error ? error.message : 'Unknown error' });
     return NextResponse.json(
       { ok: false, error: 'Internal server error' },

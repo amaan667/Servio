@@ -15,7 +15,7 @@ type OrderRow = {
   payment_status: "paid" | "unpaid" | null;
 };
 
-export async function GET(_req: Request) {
+export async function GET(req: Request) {
   try {
     const url = new URL(req.url);
     const venueId = url.searchParams.get("venueId");
@@ -122,7 +122,7 @@ export async function GET(_req: Request) {
       meta: { scope, zone, count: transformedOrders?.length ?? 0 },
       orders: (transformedOrders || []) as OrderRow[],
     });
-  } catch (_e) {
+  } catch (e) {
     return NextResponse.json(
       { ok: false, error: e instanceof Error ? e.message : "Unknown error" },
       { status: 500 }

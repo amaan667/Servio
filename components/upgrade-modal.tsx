@@ -95,7 +95,7 @@ export function UpgradeModal({
     }
         }
       }
-    } catch (_error) {
+    } catch (error) {
       // Error silently handled
     } finally {
       setLoading(null);

@@ -103,7 +103,7 @@ export function useStaffManagement(venueId: string, initialStaff?: StaffRow[], i
       setStaff(prev => [...prev, data.staff]);
       setName('');
       setRole('Server');
-    } catch (_err) {
+    } catch (err) {
       setError(err.message);
     } finally {
       setAdding(false);
@@ -127,7 +127,7 @@ export function useStaffManagement(venueId: string, initialStaff?: StaffRow[], i
 
       // Update local state immediately
       setStaff(prev => prev.map(s => s.id === staffId ? { ...s, active: newActiveState } : s));
-    } catch (_err) {
+    } catch (err) {
       setError(err instanceof Error ? err.message : 'Failed to toggle staff status');
     }
   };

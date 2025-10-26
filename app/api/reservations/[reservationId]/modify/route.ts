@@ -89,7 +89,7 @@ export async function PUT(req: NextRequest, context: { params: Promise<{ reserva
       reservation: updatedReservation
     });
 
-  } catch (_error) {
+  } catch (error) {
     logger.error('[MODIFY RESERVATION] Error:', { error: error instanceof Error ? error.message : 'Unknown error' });
     return NextResponse.json({ 
       ok: false, 

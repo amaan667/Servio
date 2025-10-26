@@ -79,7 +79,7 @@ async function autoBackfillMissingTickets(venueId: string) {
     logger.debug(
       `[KDS AUTO-BACKFILL] Auto-backfill completed for ${ordersWithoutTickets.length} orders`
     );
-  } catch (_error) {
+  } catch (error) {
     logger.error("[KDS AUTO-BACKFILL] Error during auto-backfill:", {
       error: error instanceof Error ? error.message : "Unknown error",
     });
@@ -88,7 +88,7 @@ async function autoBackfillMissingTickets(venueId: string) {
 }
 
 // GET - Fetch KDS tickets for a venue or station
-export async function GET(_req: Request) {
+export async function GET(req: Request) {
   const startTime = Date.now();
   let venueId = "unknown";
 
@@ -171,7 +171,7 @@ export async function GET(_req: Request) {
       ok: true,
       tickets: finalTickets || [],
     });
-  } catch (_error) {
+  } catch (error) {
     const duration = Date.now() - startTime;
 
     logger.error("[KDS] Unexpected error:", {
@@ -187,7 +187,7 @@ export async function GET(_req: Request) {
 }
 
 // PATCH - Update ticket status
-export async function PATCH(_req: Request) {
+export async function PATCH(req: Request) {
   try {
     const body = await req.json();
     const { ticketId, status } = body;
@@ -270,7 +270,7 @@ export async function PATCH(_req: Request) {
       ok: true,
       ticket,
     });
-  } catch (_error) {
+  } catch (error) {
     logger.error("[KDS] Unexpected error:", {
       error: error instanceof Error ? error.message : "Unknown error",
     });

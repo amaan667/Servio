@@ -5,7 +5,7 @@ import { logger } from '@/lib/logger';
 
 export const runtime = 'nodejs';
 
-export async function POST(_req: Request) {
+export async function POST(req: Request) {
   try {
     const body = await req.json();
     const { order_id, payment_intent_id } = body;
@@ -76,7 +76,7 @@ export async function POST(_req: Request) {
       }
     });
 
-  } catch (_error) {
+  } catch (error) {
     logger.error('[PAY STRIPE] Error:', { error: error instanceof Error ? error.message : 'Unknown error' });
     return NextResponse.json({ 
       success: false, 

@@ -142,7 +142,7 @@ export async function POST(_request: NextRequest) {
         { status: 500 }
       );
     }
-  } catch (_error) {
+  } catch (error) {
     const errorMessage = error instanceof Error ? error.message : "Unknown error";
     logger.error("[STRIPE PORTAL] Error:", { error: errorMessage });
     return NextResponse.json(

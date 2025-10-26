@@ -57,7 +57,7 @@ export async function POST() {
       cleared: clearedSessions?.length || 0,
       orderIds: orderIds,
     });
-  } catch (_error) {
+  } catch (error) {
     logger.error("[CLEAR COMPLETED TABLES] Error:", {
       error: error instanceof Error ? error.message : String(error),
     });

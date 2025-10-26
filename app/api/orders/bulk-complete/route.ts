@@ -5,7 +5,7 @@ import { logger } from "@/lib/logger";
 
 export const runtime = "nodejs";
 
-export async function POST(_req: Request) {
+export async function POST(req: Request) {
   try {
     const { venueId, orderIds } = await req.json();
 
@@ -203,7 +203,7 @@ export async function POST(_req: Request) {
       completedCount: updatedOrders?.length || 0,
       message: `Successfully completed ${updatedOrders?.length || 0} orders and cleaned up tables`,
     });
-  } catch (_error) {
+  } catch (error) {
     logger.error("[BULK COMPLETE] Unexpected error:", {
       error: error instanceof Error ? error.message : "Unknown error",
     });

@@ -10,7 +10,7 @@ export const dynamic = "force-dynamic";
  * Call: POST /api/tables/clear-all
  * Body: { "venueId": "venue-1e02af4d" }
  */
-export async function POST(_req: Request) {
+export async function POST(req: Request) {
   try {
     const { venueId } = await req.json();
 
@@ -61,7 +61,7 @@ export async function POST(_req: Request) {
       message: `Cleared ${updated?.length || 0} table sessions`,
       cleared: updated?.length || 0,
     });
-  } catch (_error) {
+  } catch (error) {
     logger.error("[CLEAR ALL TABLES] Error:", {
       error: error instanceof Error ? error.message : String(error),
     });

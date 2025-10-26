@@ -6,7 +6,7 @@ import { logger } from '@/lib/logger';
 export const runtime = 'nodejs';
 
 // POST /api/tables/cleanup-duplicates - Remove duplicate tables
-export async function POST(_req: Request) {
+export async function POST(req: Request) {
   try {
     const { venue_id } = await req.json();
 
@@ -141,7 +141,7 @@ export async function POST(_req: Request) {
       duplicates_removed: safeToRemove.length
     });
 
-  } catch (_error) {
+  } catch (error) {
     logger.error('[CLEANUP DUPLICATES] Unexpected error:', { error: error instanceof Error ? error.message : 'Unknown error' });
     return NextResponse.json({ ok: false, error: 'Internal server error' }, { status: 500 });
   }

@@ -240,7 +240,7 @@ const DashboardClient = React.memo(function DashboardClient({
         }
 
         // No loading state needed - prevents flicker
-      } catch (_error) {
+      } catch (error) {
         // No auth error display needed("Authentication failed");
         // No loading state needed - prevents flicker
       }

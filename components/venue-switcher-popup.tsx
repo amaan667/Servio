@@ -92,7 +92,7 @@ export default function VenueSwitcherPopup({
 
       if (error) throw error;
       setVenues(data || []);
-    } catch (_error) {
+    } catch (error) {
 
       toast({
         title: "Error",
@@ -166,7 +166,7 @@ export default function VenueSwitcherPopup({
       // Close the main modal
       setOpen(false);
       
-    } catch (_error) {
+    } catch (error) {
 
       toast({
         title: "Error",
@@ -213,7 +213,7 @@ export default function VenueSwitcherPopup({
       setEditingVenue(null);
       await loadVenues();
       setOpen(false);
-    } catch (_error) {
+    } catch (error) {
 
       toast({
         title: "Error",
@@ -247,7 +247,7 @@ export default function VenueSwitcherPopup({
       });
 
       loadVenues();
-    } catch (_error) {
+    } catch (error) {
 
       toast({
         title: "Error",

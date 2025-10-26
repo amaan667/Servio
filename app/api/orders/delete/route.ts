@@ -3,7 +3,7 @@ import { createAdminClient } from "@/lib/supabase";
 
 export const runtime = "nodejs";
 
-export async function POST(_req: Request) {
+export async function POST(req: Request) {
   const { orderId, venue_id } = await req.json().catch(() => ({}));
   if (!orderId || !venue_id)
     return NextResponse.json(

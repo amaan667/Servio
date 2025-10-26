@@ -33,7 +33,7 @@ export async function signInWithGoogle() {
     // Clear OAuth progress flags from previous attempts
     sessionStorage.removeItem("sb_oauth_retry");
     sessionStorage.removeItem("sb_oauth_in_progress");
-  } catch (_error) {
+  } catch (error) {
     // Silent error handling
   }
 
@@ -68,7 +68,7 @@ export async function signInWithGoogle() {
   try {
     sessionStorage.setItem("sb_oauth_in_progress", "true");
     sessionStorage.setItem("sb_oauth_start_time", Date.now().toString());
-  } catch (_e) {
+  } catch (e) {
     logger.debug('[AUTH] Session storage error:', e as Record<string, unknown>);
   }
   

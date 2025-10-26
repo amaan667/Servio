@@ -214,7 +214,7 @@ class ErrorTracker {
       }
 
       captureMessage(message, level as "info" | "warning" | "error");
-    } catch (_error) {
+    } catch (error) {
       // Error handled silently
     }
   }
@@ -235,7 +235,7 @@ class ErrorTracker {
           context,
         }),
       });
-    } catch (_error) {
+    } catch (error) {
       // Error handled silently
     }
   }
@@ -255,7 +255,7 @@ class ErrorTracker {
           context,
         }),
       });
-    } catch (_error) {
+    } catch (error) {
       // Error handled silently
     }
   }

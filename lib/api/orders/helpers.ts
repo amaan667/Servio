@@ -120,7 +120,7 @@ export async function createKDSTickets(
     
     logger.debug('[KDS TICKETS] Successfully created KDS tickets', { data: { count: items.length, orderId: order.id } });
     
-  } catch (_error) {
+  } catch (error) {
     logger.error('[KDS TICKETS] Error creating KDS tickets:', { error: error instanceof Error ? error.message : 'Unknown error' });
     throw error;
   }
@@ -197,7 +197,7 @@ export async function findDuplicateOrder(
     }
     
     return data && data.length > 0 ? (data[0] as Record<string, unknown>) : null;
-  } catch (_error) {
+  } catch (error) {
     logger.warn('[ORDER DUPLICATE CHECK] Error:', { error: error instanceof Error ? error.message : 'Unknown' });
     return null;
   }

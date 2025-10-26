@@ -45,7 +45,7 @@ export async function GET(
       data,
       total_cost: totalCost,
     });
-  } catch (_error) {
+  } catch (error) {
     logger.error('[INVENTORY API] Unexpected error:', { error: error instanceof Error ? error.message : 'Unknown error' });
     return NextResponse.json(
       { error: 'Internal server error' },
@@ -112,7 +112,7 @@ export async function POST(
     }
 
     return NextResponse.json({ data: [] }, { status: 200 });
-  } catch (_error) {
+  } catch (error) {
     logger.error('[INVENTORY API] Unexpected error:', { error: error instanceof Error ? error.message : 'Unknown error' });
     return NextResponse.json(
       { error: 'Internal server error' },
@@ -145,7 +145,7 @@ export async function DELETE(
     }
 
     return NextResponse.json({ success: true });
-  } catch (_error) {
+  } catch (error) {
     logger.error('[INVENTORY API] Unexpected error:', { error: error instanceof Error ? error.message : 'Unknown error' });
     return NextResponse.json(
       { error: 'Internal server error' },

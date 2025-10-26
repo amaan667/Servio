@@ -7,7 +7,7 @@ export const runtime = 'nodejs';
 
 // POST /api/tables/[tableId]/seat - Seat a party at a table
 export async function POST(
-  _req: Request,
+  req: Request,
   context: { params: Promise<{ tableId: string }> }
 ) {
   try {
@@ -67,7 +67,7 @@ export async function POST(
       message: 'Party seated successfully'
     });
 
-  } catch (_error) {
+  } catch (error) {
     logger.error('[TABLES SEAT] Unexpected error:', { error: error instanceof Error ? error.message : 'Unknown error' });
     return NextResponse.json({ ok: false, error: 'Internal server error' }, { status: 500 });
   }

@@ -182,7 +182,7 @@ export async function POST(_request: NextRequest) {
         message: "Account created! Complete payment setup to activate your 14-day free trial.",
       });
     }
-  } catch (_error) {
+  } catch (error) {
     logger.error("[SIGNUP WITH SUBSCRIPTION] Error:", { error: error instanceof Error ? error.message : 'Unknown error' });
     return NextResponse.json(
       { error: error instanceof Error ? error.message : "Signup failed" },

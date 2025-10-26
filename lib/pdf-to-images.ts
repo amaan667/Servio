@@ -29,7 +29,7 @@ export async function convertPDFToImages(pdfBuffer: Buffer): Promise<string[]> {
 
     logger.info('[PDF-TO-IMAGES] Converted pages:', imageUrls.length);
     return imageUrls;
-  } catch (_error) {
+  } catch (error) {
     logger.error('[PDF-TO-IMAGES] Error:', error);
     throw new Error('Failed to convert PDF to images');
   }

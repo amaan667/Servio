@@ -79,7 +79,7 @@ export class OrderRepository extends BaseRepository<Order> {
       }
 
       return (data as Order[]) || [];
-    } catch (_error) {
+    } catch (error) {
       logger.error('[ORDER_REPO] Unexpected error finding orders by venue', { error, venueId });
       throw error;
     }
@@ -129,7 +129,7 @@ export class OrderRepository extends BaseRepository<Order> {
       }
 
       return (data as Order[]) || [];
-    } catch (_error) {
+    } catch (error) {
       logger.error('[ORDER_REPO] Unexpected error finding recent orders', { error, venueId });
       throw error;
     }
@@ -202,7 +202,7 @@ export class OrderRepository extends BaseRepository<Order> {
         avgOrderValue,
         byStatus,
       };
-    } catch (_error) {
+    } catch (error) {
       logger.error('[ORDER_REPO] Unexpected error getting order stats', { error, venueId });
       throw error;
     }
@@ -228,7 +228,7 @@ export class OrderRepository extends BaseRepository<Order> {
       }
 
       return (data as Order[]) || [];
-    } catch (_error) {
+    } catch (error) {
       logger.error('[ORDER_REPO] Unexpected error bulk updating order status', { error, orderIds });
       throw error;
     }
@@ -253,7 +253,7 @@ export class OrderRepository extends BaseRepository<Order> {
       }
 
       return (data as Order[]) || [];
-    } catch (_error) {
+    } catch (error) {
       logger.error('[ORDER_REPO] Unexpected error searching orders', { error, venueId, query });
       throw error;
     }

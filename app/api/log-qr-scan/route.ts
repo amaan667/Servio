@@ -1,7 +1,7 @@
 import { NextResponse } from 'next/server';
 import { logger } from '@/lib/logger';
 
-export async function POST(_req: Request) {
+export async function POST(req: Request) {
   try {
     const body = await req.json();
     
@@ -19,7 +19,7 @@ export async function POST(_req: Request) {
     });
 
     return NextResponse.json({ success: true });
-  } catch (_error) {
+  } catch (error) {
     logger.error('Failed to log QR scan', {
       error: error instanceof Error ? error.message : String(error)
     });

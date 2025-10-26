@@ -4,7 +4,7 @@ import { logger } from "@/lib/logger";
 
 export const runtime = "nodejs";
 
-export async function POST(_req: Request) {
+export async function POST(req: Request) {
   try {
     const { venue_id } = await req.json();
 
@@ -87,7 +87,7 @@ export async function POST(_req: Request) {
       ok: true,
       feedback: transformedFeedback,
     });
-  } catch (_error) {
+  } catch (error) {
     logger.error("[AUTH DEBUG] Error in feedback list:", {
       error: error instanceof Error ? error.message : "Unknown error",
     });

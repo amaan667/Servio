@@ -32,7 +32,7 @@ export async function POST(_request: NextRequest) {
     }
 
     return NextResponse.json(data);
-  } catch (_error) {
+  } catch (error) {
     logger.error('[INVENTORY API] Unexpected error:', { error: error instanceof Error ? error.message : 'Unknown error' });
     return NextResponse.json(
       { error: 'Internal server error' },

@@ -3,7 +3,7 @@ import { authenticateRequest, verifyVenueAccess } from "@/lib/api-auth";
 import { logger } from "@/lib/logger";
 
 // GET - Fetch all KDS stations for a venue
-export async function GET(_req: Request) {
+export async function GET(req: Request) {
   try {
     const { searchParams } = new URL(req.url);
     const venueId = searchParams.get("venueId");
@@ -81,7 +81,7 @@ export async function GET(_req: Request) {
       ok: true,
       stations,
     });
-  } catch (_error) {
+  } catch (error) {
     logger.error("[KDS] Unexpected error:", {
       error: error instanceof Error ? error.message : "Unknown error",
     });
@@ -93,7 +93,7 @@ export async function GET(_req: Request) {
 }
 
 // POST - Create a new KDS station
-export async function POST(_req: Request) {
+export async function POST(req: Request) {
   try {
     const body = await req.json();
     const { venueId, stationName, stationType, displayOrder, colorCode } = body;
@@ -147,7 +147,7 @@ export async function POST(_req: Request) {
       ok: true,
       station,
     });
-  } catch (_error) {
+  } catch (error) {
     logger.error("[KDS] Unexpected error:", {
       error: error instanceof Error ? error.message : "Unknown error",
     });
