@@ -2,8 +2,8 @@
  * Hook to fetch live analytics data for dashboard charts
  */
 
-import { useEffect, useState, useCallback } from 'react';
-import { supabaseBrowser } from '@/lib/supabase';
+import { useEffect, useState, useCallback } from "react";
+import { supabaseBrowser } from "@/lib/supabase";
 
 interface AnalyticsData {
   ordersByHour: Array<{ hour: string; orders: number }>;
@@ -15,12 +15,12 @@ interface AnalyticsData {
   };
 }
 
-const COLORS = ['#5B21B6', '#22C55E', '#F59E0B', '#EF4444', '#8B5CF6', '#06B6D4'];
+const COLORS = ["#5B21B6", "#22C55E", "#F59E0B", "#EF4444", "#8B5CF6", "#06B6D4"];
 
-export function useAnalyticsData(venueId: string, venueTz: string) {
+export function useAnalyticsData(venueId: string) {
   // Cache analytics data to prevent flicker
   const getCachedAnalytics = () => {
-    if (typeof window === 'undefined') return null;
+    if (typeof window === "undefined") return null;
     const cached = sessionStorage.getItem(`analytics_data_${venueId}`);
     return cached ? JSON.parse(cached) : null;
   };
@@ -37,26 +37,39 @@ export function useAnalyticsData(venueId: string, venueTz: string) {
       const supabase = supabaseBrowser();
       const now = new Date();
       const todayStart = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+
+      // Compare apples-to-apples: same time period
+      // If it's 2:49 PM today, compare today 12 AM - 2:49 PM vs yesterday 12 AM - 2:49 PM
       const yesterdayStart = new Date(todayStart.getTime() - 24 * 60 * 60 * 1000);
-      const yesterdayEnd = todayStart;
+      const yesterdayEnd = new Date(
+        yesterdayStart.getTime() + (now.getTime() - todayStart.getTime())
+      );
+
+      console.info("[ANALYTICS] Time comparison:", {
+        todayStart: todayStart.toISOString(),
+        todayEnd: now.toISOString(),
+        yesterdayStart: yesterdayStart.toISOString(),
+        yesterdayEnd: yesterdayEnd.toISOString(),
+        duration: `${Math.round((now.getTime() - todayStart.getTime()) / 1000 / 60)} minutes`,
+      });
 
       // Fetch today's orders
       const { data: todayOrders, error: ordersError } = await supabase
-        .from('orders')
-        .select('created_at, items, total_amount')
-        .eq('venue_id', venueId)
-        .gte('created_at', todayStart.toISOString())
-        .order('created_at', { ascending: true });
+        .from("orders")
+        .select("created_at, items, total_amount")
+        .eq("venue_id", venueId)
+        .gte("created_at", todayStart.toISOString())
+        .order("created_at", { ascending: true });
 
       if (ordersError) throw ordersError;
 
       // Fetch yesterday's orders for comparison
       const { data: yesterdayOrders } = await supabase
-        .from('orders')
-        .select('created_at, total_amount')
-        .eq('venue_id', venueId)
-        .gte('created_at', yesterdayStart.toISOString())
-        .lt('created_at', yesterdayEnd.toISOString());
+        .from("orders")
+        .select("created_at, total_amount")
+        .eq("venue_id", venueId)
+        .gte("created_at", yesterdayStart.toISOString())
+        .lt("created_at", yesterdayEnd.toISOString());
 
       // Aggregate orders by hour
       const hourlyOrders: { [key: number]: number } = {};
@@ -78,14 +91,14 @@ export function useAnalyticsData(venueId: string, venueTz: string) {
 
       // Fetch menu items with categories
       const { data: menuItems } = await supabase
-        .from('menu_items')
-        .select('id, name, category')
-        .eq('venue_id', venueId);
+        .from("menu_items")
+        .select("id, name, category")
+        .eq("venue_id", venueId);
 
       // Create a map of menu item ID to category
       const menuItemCategories = new Map<string, string>();
       (menuItems || []).forEach((item: Record<string, unknown>) => {
-        menuItemCategories.set(item.id as string, item.category as string || 'Other');
+        menuItemCategories.set(item.id as string, (item.category as string) || "Other");
       });
 
       // Calculate revenue by category from order items using actual menu categories
@@ -95,9 +108,9 @@ export function useAnalyticsData(venueId: string, venueTz: string) {
           order.items.forEach((item: Record<string, unknown>) => {
             // Get category from menu items database, not from order item
             const menuItemId = item.menu_item_id as string;
-            const category = menuItemCategories.get(menuItemId) || item.category || 'Other';
-            const price = parseFloat((item.unit_price as string) || (item.price as string) || '0');
-            const qty = parseInt((item.quantity as string) || (item.qty as string) || '1');
+            const category = menuItemCategories.get(menuItemId) || item.category || "Other";
+            const price = parseFloat((item.unit_price as string) || (item.price as string) || "0");
+            const qty = parseInt((item.quantity as string) || (item.qty as string) || "1");
             categoryRevenue[category] = (categoryRevenue[category] || 0) + price * qty;
           });
         }
@@ -112,18 +125,21 @@ export function useAnalyticsData(venueId: string, venueTz: string) {
         .sort((a, b) => b.value - a.value)
         .slice(0, 6);
 
-      // Get top selling items
+      // Get top selling items - count by QUANTITY added to cart (not number of orders)
       const itemCounts: { [key: string]: { name: string; price: number; count: number } } = {};
       (todayOrders || []).forEach((order: Record<string, unknown>) => {
         if (Array.isArray(order.items)) {
           order.items.forEach((item: Record<string, unknown>) => {
             // Try item_name first (from orders API), then name, never "Unknown"
-            const name = (item.item_name as string) || (item.name as string) || 'Menu Item';
-            const price = parseFloat((item.unit_price as string) || (item.price as string) || '0');
+            const name = (item.item_name as string) || (item.name as string) || "Menu Item";
+            const price = parseFloat((item.unit_price as string) || (item.price as string) || "0");
+            const quantity = parseInt((item.quantity as string) || (item.qty as string) || "1");
+
             if (!itemCounts[name]) {
               itemCounts[name] = { name, price, count: 0 };
             }
-            itemCounts[name].count += parseInt((item.quantity as string) || (item.qty as string) || '1');
+            // Add the quantity (e.g., if someone orders 5x, add 5 to the count)
+            itemCounts[name].count += quantity;
           });
         }
       });
@@ -131,6 +147,8 @@ export function useAnalyticsData(venueId: string, venueTz: string) {
       const topSellingItems = Object.values(itemCounts)
         .sort((a, b) => b.count - a.count)
         .slice(0, 5);
+
+      console.info("[ANALYTICS] Top selling items by quantity:", topSellingItems);
 
       // Calculate yesterday comparison
       const yesterdayOrdersCount = yesterdayOrders?.length || 0;
@@ -149,24 +167,26 @@ export function useAnalyticsData(venueId: string, venueTz: string) {
       });
 
       // Cache the analytics data
-      if (typeof window !== 'undefined') {
-        sessionStorage.setItem(`analytics_data_${venueId}`, JSON.stringify({
-          ordersByHour,
-          revenueByCategory,
-          topSellingItems,
-          yesterdayComparison: {
-            orders: yesterdayOrdersCount,
-            revenue: yesterdayRevenue,
-          },
-        }));
+      if (typeof window !== "undefined") {
+        sessionStorage.setItem(
+          `analytics_data_${venueId}`,
+          JSON.stringify({
+            ordersByHour,
+            revenueByCategory,
+            topSellingItems,
+            yesterdayComparison: {
+              orders: yesterdayOrdersCount,
+              revenue: yesterdayRevenue,
+            },
+          })
+        );
       }
     } catch (err) {
-
-      setError(err instanceof Error ? err.message : 'Failed to fetch analytics');
+      setError(err instanceof Error ? err.message : "Failed to fetch analytics");
     } finally {
       setLoading(false);
     }
-  }, [venueId, venueTz]);
+  }, [venueId]);
 
   useEffect(() => {
     fetchAnalytics();
@@ -174,4 +194,3 @@ export function useAnalyticsData(venueId: string, venueTz: string) {
 
   return { data, loading, error, refetch: fetchAnalytics };
 }
-

@@ -92,7 +92,7 @@ const DashboardClient = React.memo(function DashboardClient({
   });
 
   // Fetch live analytics data for charts
-  const analyticsData = useAnalyticsData(venueId, venueTz);
+  const analyticsData = useAnalyticsData(venueId);
 
   // Handle venue change
   const handleVenueChange = useCallback(
@@ -358,7 +358,7 @@ const DashboardClient = React.memo(function DashboardClient({
                 icon={Table}
                 iconColor="text-purple-600"
                 iconBgColor="bg-purple-100"
-                trend={{ value: 0, label: "all active" }}
+                subtitle="all active"
                 tooltip="Manage table setup and reservations"
               />
             </Link>
@@ -373,14 +373,14 @@ const DashboardClient = React.memo(function DashboardClient({
                 icon={ShoppingBag}
                 iconColor="text-orange-600"
                 iconBgColor="bg-orange-100"
-                trend={{ value: 5, label: "available" }}
+                subtitle="available"
                 tooltip="Edit your menu items"
               />
             </Link>
           </div>
         </div>
 
-        {/* AI Insights */}
+        {/* AI Insights - Hide revenue insights for staff */}
         <AIInsights
           venueId={venueId}
           stats={{
@@ -390,6 +390,7 @@ const DashboardClient = React.memo(function DashboardClient({
           }}
           topSellingItems={analyticsData.data?.topSellingItems}
           yesterdayComparison={analyticsData.data?.yesterdayComparison}
+          userRole={userRole}
         />
 
         {/* Today at a Glance */}
