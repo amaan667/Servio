@@ -147,7 +147,7 @@ export function TableManagementClientNew({ venueId }: TableManagementClientNewPr
       <CounterOrdersSection counterOrders={state.counterOrders} />
 
       {/* Table Orders Section */}
-      <TableOrdersSection groupedTableOrders={groupedTableOrders} />
+      <TableOrdersSection groupedTableOrders={groupedTableOrders} venueId={venueId} />
 
       {/* Table Grid Section */}
       <TableGridSection
