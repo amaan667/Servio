@@ -54,7 +54,7 @@ export async function POST(_request: NextRequest) {
 
     const userId = authData.user.id;
     const venueId = `venue-${userId.slice(0, 8)}`;
-    const orgSlug = `${venueName.toLowerCase().replace(/[^a-z0-9]+/g, "-")}-${userId.slice(0, 8)}`;
+    const _orgSlug = `${venueName.toLowerCase().replace(/[^a-z0-9]+/g, "-")}-${userId.slice(0, 8)}`;
 
     // Create or retrieve Stripe customer
     let customer;

@@ -11,7 +11,7 @@ const openai = new OpenAI({ apiKey: process.env.OPENAI_API_KEY });
  * Uses AI to match items and merge data (prices, descriptions, images)
  */
 export async function POST(req: NextRequest) {
-  const requestId = Math.random().toString(36).substring(7);
+  const _requestId = Math.random().toString(36).substring(7);
 
   try {
     const body = await req.json();

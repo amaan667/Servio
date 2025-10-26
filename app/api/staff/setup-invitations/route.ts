@@ -101,7 +101,7 @@ export async function POST(_request: NextRequest) {
 
     // If we get here, the table might exist or there was an error
     // Let's try to create indexes
-    const indexSQL = `
+    const _indexSQL = `
       CREATE INDEX IF NOT EXISTS idx_staff_invitations_venue ON staff_invitations(venue_id);
       CREATE INDEX IF NOT EXISTS idx_staff_invitations_email ON staff_invitations(email);
       CREATE INDEX IF NOT EXISTS idx_staff_invitations_token ON staff_invitations(token);
@@ -111,7 +111,7 @@ export async function POST(_request: NextRequest) {
     `;
 
     // Enable RLS
-    const rlsSQL = `
+    const _rlsSQL = `
       ALTER TABLE staff_invitations ENABLE ROW LEVEL SECURITY;
       
       -- Policy: Users can view invitations for venues they manage

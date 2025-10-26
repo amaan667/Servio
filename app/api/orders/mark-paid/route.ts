@@ -55,7 +55,7 @@ export async function POST(req: Request) {
         });
 
         if (completionResponse.ok) {
-          const completionResult = await completionResponse.json();
+          const _completionResult = await completionResponse.json();
         }
       } catch (completionError) {
         logger.error('[MARK PAID] Error checking reservation completion:', { value: completionError });

@@ -179,7 +179,7 @@ export async function POST(_request: NextRequest) {
         "[STRIPE DEBUG] No organization found - creating real organization for user:",
         user.id
       );
-      const userName = user.user_metadata?.full_name || user.email?.split("@")[0] || "User";
+      const _userName = user.user_metadata?.full_name || user.email?.split("@")[0] || "User";
 
       const { data: newOrg, error: createError } = await supabase
         .from("organizations")

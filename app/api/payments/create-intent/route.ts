@@ -53,7 +53,7 @@ export async function POST(req: NextRequest) {
     }
 
     // Store cart data for later retrieval
-    const cartData = {
+    const _cartData = {
       cartId,
       venueId,
       tableNumber,

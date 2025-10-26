@@ -218,7 +218,7 @@ export async function POST(req: NextRequest) {
     // Scrape with the right strategy from the start
     const scrapeStart = Date.now();
     const { text: finalText, images: imageUrls } = await scrapeWithPlaywright(url, isJSHeavy);
-    const scrapeDuration = Date.now() - scrapeStart;
+    const _scrapeDuration = Date.now() - scrapeStart;
 
     if (!finalText || finalText.length < 50) {
       const errorResponse = {
@@ -281,7 +281,7 @@ Return ONLY valid JSON:
       response_format: { type: "json_object" },
     });
 
-    const aiDuration = Date.now() - aiStart;
+    const _aiDuration = Date.now() - aiStart;
 
     const aiContent = aiResponse.choices[0]?.message?.content;
     if (!aiContent) {
