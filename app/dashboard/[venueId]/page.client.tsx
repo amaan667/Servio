@@ -38,7 +38,15 @@ import { FeatureSections } from "./components/FeatureSections";
  * - Optimized mobile responsive layout
  */
 
-const DashboardClient = React.memo(function DashboardClient({ venueId }: { venueId: string }) {
+const DashboardClient = React.memo(function DashboardClient({
+  venueId,
+  initialCounts,
+  initialStats,
+}: {
+  venueId: string;
+  initialCounts?: unknown;
+  initialStats?: unknown;
+}) {
   const router = useRouter();
 
   // Get cached user/venue data to prevent flicker
@@ -72,7 +80,7 @@ const DashboardClient = React.memo(function DashboardClient({ venueId }: { venue
 
   // Custom hooks for dashboard data and realtime (call before any returns)
   const venueTz = "Europe/London"; // Default timezone
-  const dashboardData = useDashboardData(venueId, venueTz, venue);
+  const dashboardData = useDashboardData(venueId, venueTz, venue, initialCounts, initialStats);
 
   useDashboardRealtime({
     venueId,
