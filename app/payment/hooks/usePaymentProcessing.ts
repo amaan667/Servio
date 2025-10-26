@@ -52,7 +52,7 @@ export function usePaymentProcessing() {
           payment_mode:
             action === "till" ? "pay_at_till" : action === "later" ? "pay_later" : "online",
           payment_method: action === "demo" ? "demo" : action === "till" ? "till" : null,
-          session_id: checkoutData.sessionId,
+          // NOTE: session_id is NOT a database column - don't send it
           source: checkoutData.source || "qr",
         };
 

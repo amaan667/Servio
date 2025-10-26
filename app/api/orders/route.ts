@@ -81,7 +81,7 @@ type OrderPayload = {
   payment_status?: "UNPAID" | "PAID" | "TILL" | "REFUNDED";
   payment_mode?: "online" | "pay_later" | "pay_at_till";
   payment_method?: "demo" | "stripe" | "till" | null;
-  session_id?: string | null; // Session ID for tracking and re-scanning
+  // NOTE: session_id is NOT a database column - it's only used for client-side tracking
   source?: "qr" | "counter"; // Order source - qr for table orders, counter for counter orders
   stripe_session_id?: string | null;
   stripe_payment_intent_id?: string | null;
@@ -486,7 +486,7 @@ export async function POST(req: Request) {
       payment_status: body.payment_status || "UNPAID", // Use provided status or default to 'UNPAID'
       payment_mode: body.payment_mode || "online", // New field for payment mode
       payment_method: body.payment_method || null,
-      session_id: body.session_id || null, // Session ID for tracking
+      // NOTE: session_id is NOT a database column - don't include in payload
       source: orderSource, // Use source from client (based on QR code URL: ?table=X -> 'qr', ?counter=X -> 'counter')
     };
 
