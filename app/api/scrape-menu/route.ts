@@ -23,14 +23,6 @@ async function getBrowser() {
       // Dynamic import - only loaded at runtime, not during build
       const playwright = await import("playwright-core");
 
-      // Check if Chromium is installed
-      const browserPaths = [
-        process.env.PLAYWRIGHT_CHROMIUM_EXECUTABLE_PATH,
-        "/root/.cache/ms-playwright/chromium-*/chrome-linux/chrome",
-        "/usr/bin/chromium",
-        "/usr/bin/chromium-browser",
-      ].filter(Boolean);
-
       browserInstance = await playwright.chromium.launch({
         headless: true,
         args: [
@@ -333,13 +325,11 @@ Return ONLY valid JSON:
 
     return NextResponse.json(successResponse);
   } catch (_error) {
-    const totalDuration = Date.now() - startTime;
-
-    logger.error("[MENU SCRAPE] Error:", error);
+    logger.error("[MENU SCRAPE] Error:", _error);
 
     const errorResponse = {
       ok: false,
-      error: error instanceof Error ? error.message : "Failed to scrape menu",
+      error: _error instanceof Error ? _error.message : "Failed to scrape menu",
     };
 
     return NextResponse.json(errorResponse, { status: 500 });
