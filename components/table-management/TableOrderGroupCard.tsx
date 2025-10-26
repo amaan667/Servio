@@ -85,7 +85,10 @@ export function TableOrderGroupCard({ tableLabel, orders, venueId }: TableOrderG
   const handleViewOrder = () => {
     // Extract table number from label (e.g., "Table 5" -> "5")
     const tableNumber = tableLabel.replace(/^Table\s*/i, "");
-    router.push(`/dashboard/${venueId}/live-orders?table=${encodeURIComponent(tableNumber)}`);
+    // Filter for ALL orders today (not just live 30 mins) - order might be in "Earlier Today" tab
+    router.push(
+      `/dashboard/${venueId}/live-orders?table=${encodeURIComponent(tableNumber)}&tab=all&since=today`
+    );
   };
 
   const overallStatus = getOverallStatus();

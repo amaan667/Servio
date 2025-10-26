@@ -34,6 +34,35 @@ export default async function VenuePage({ params }: { params: Promise<{ venueId:
       initialCounts = countsData;
     }
 
+    // Fetch table counters to get accurate table counts
+    console.info("[DASHBOARD SSR] Calling api_table_counters RPC...");
+    const { data: tableCounters, error: tableError } = await supabase.rpc("api_table_counters", {
+      p_venue_id: venueId,
+    });
+
+    if (tableError) {
+      console.error("[DASHBOARD SSR] api_table_counters RPC failed:", tableError);
+    } else {
+      console.info("[DASHBOARD SSR] Table counters fetched:", tableCounters);
+
+      // Merge table counters into counts
+      if (
+        initialCounts &&
+        tableCounters &&
+        Array.isArray(tableCounters) &&
+        tableCounters.length > 0
+      ) {
+        initialCounts = {
+          ...initialCounts,
+          tables_set_up: tableCounters[0].tables_set_up || 0,
+          tables_in_use: tableCounters[0].tables_in_use || 0,
+          tables_reserved_now: tableCounters[0].tables_reserved_now || 0,
+          active_tables_count: tableCounters[0].active_tables_count || 0,
+        };
+        console.info("[DASHBOARD SSR] Merged table counters:", initialCounts);
+      }
+    }
+
     // Fetch stats (revenue, menu items)
     console.info("[DASHBOARD SSR] Fetching orders for revenue...");
     const { data: orders, error: ordersError } = await supabase

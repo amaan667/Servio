@@ -84,14 +84,20 @@ export async function POST(req: Request) {
       data: { orderId, extra: venueId },
     });
 
-    // Clear table session for QR orders - free up the table
-    if ((orderData.table_id || orderData.table_number) && orderData.source === "qr") {
-      logger.debug("[ORDERS COMPLETE] Clearing table session for QR order", {
-        data: { orderId, tableId: orderData.table_id, tableNumber: orderData.table_number },
+    // Clear table session for ALL orders with tables - free up the table (regardless of payment status)
+    if (orderData.table_id || orderData.table_number) {
+      logger.debug("[ORDERS COMPLETE] Clearing table session for order", {
+        data: {
+          orderId,
+          tableId: orderData.table_id,
+          tableNumber: orderData.table_number,
+          paymentStatus: orderData.payment_status,
+          source: orderData.source,
+        },
       });
 
       try {
-        // Close the table session
+        // Close the table session by order_id
         const { error: sessionError } = await admin
           .from("table_sessions")
           .update({
@@ -104,7 +110,32 @@ export async function POST(req: Request) {
           .eq("venue_id", venueId);
 
         if (sessionError) {
-          logger.warn("[ORDERS COMPLETE] Failed to clear table session", { error: sessionError });
+          logger.warn("[ORDERS COMPLETE] Failed to clear table session by order_id", {
+            error: sessionError,
+          });
+
+          // Fallback: Try clearing by table_id if we have it
+          if (orderData.table_id) {
+            const { error: fallbackError } = await admin
+              .from("table_sessions")
+              .update({
+                status: "FREE",
+                order_id: null,
+                closed_at: new Date().toISOString(),
+                updated_at: new Date().toISOString(),
+              })
+              .eq("table_id", orderData.table_id)
+              .eq("venue_id", venueId)
+              .is("closed_at", null);
+
+            if (fallbackError) {
+              logger.warn("[ORDERS COMPLETE] Fallback table clear also failed", {
+                error: fallbackError,
+              });
+            } else {
+              logger.debug("[ORDERS COMPLETE] Table cleared via fallback (table_id)");
+            }
+          }
         } else {
           logger.debug("[ORDERS COMPLETE] Table session cleared successfully");
         }
