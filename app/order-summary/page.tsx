@@ -1,29 +1,40 @@
-'use client';
+"use client";
 
-import { Button } from '@/components/ui/button';
-import { 
-  CreditCard, 
-  CheckCircle,
-  ArrowLeft,
-  Loader2
-} from 'lucide-react';
+import { useSearchParams } from "next/navigation";
+import { Button } from "@/components/ui/button";
+import { CreditCard, CheckCircle, ArrowLeft, Loader2 } from "lucide-react";
+
+// Import the POST-payment OrderSummary component
+import OrderSummary from "@/components/order-summary";
 
 // Hooks
-import { useOrderSummary } from './hooks/useOrderSummary';
+import { useOrderSummary } from "./hooks/useOrderSummary";
 
 // Components
-import { OrderDetailsCard } from './components/OrderDetailsCard';
-import { CartItemsCard } from './components/CartItemsCard';
+import { OrderDetailsCard } from "./components/OrderDetailsCard";
+import { CartItemsCard } from "./components/CartItemsCard";
 
 /**
  * Order Summary Page
- * Shows order details before payment
- * 
+ *
+ * DUAL PURPOSE:
+ * 1. PRE-payment: Shows cart and order details before payment (no orderId query param)
+ * 2. POST-payment: Shows order confirmation with status timeline (has orderId query param)
+ *
  * Refactored: Extracted hooks and components for better organization
- * Original: 795 lines → Now: ~150 lines
  */
 
 export default function OrderSummaryPage() {
+  const searchParams = useSearchParams();
+  const orderId = searchParams?.get("orderId");
+  const sessionId = searchParams?.get("sessionId");
+
+  // POST-PAYMENT: If orderId or sessionId exists, show the confirmation page
+  if (orderId || sessionId) {
+    return <OrderSummary orderId={orderId || undefined} sessionId={sessionId || undefined} />;
+  }
+
+  // PRE-PAYMENT: Show the cart summary before payment
   const { orderData, loading, isCreatingOrder, orderPlaced, handlePayNow } = useOrderSummary();
 
   if (loading) {
@@ -42,7 +53,7 @@ export default function OrderSummaryPage() {
       <div className="min-h-screen flex items-center justify-center bg-gray-50">
         <div className="text-center">
           <p className="text-gray-600 mb-4">No order data found</p>
-          <Button onClick={() => window.location.href = '/order'}>
+          <Button onClick={() => (window.location.href = "/order")}>
             <ArrowLeft className="h-4 w-4 mr-2" />
             Back to Order
           </Button>
@@ -110,7 +121,8 @@ export default function OrderSummaryPage() {
         {/* Info Message */}
         <div className="mt-6 bg-blue-50 border border-blue-200 rounded-lg p-4">
           <p className="text-sm text-blue-800">
-            💡 Your order will be prepared as soon as payment is confirmed. You'll receive updates on your order status.
+            💡 Your order will be prepared as soon as payment is confirmed. You&apos;ll receive
+            updates on your order status.
           </p>
         </div>
       </div>

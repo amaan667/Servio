@@ -71,10 +71,10 @@ export function TableManagementClientNew({ venueId }: TableManagementClientNewPr
   };
 
   const handleAddReservation = () => {
-    toast({
-      title: "Make a Reservation",
-      description: "Click on any free table below and select 'Make Reservation' to book it.",
-    });
+    // Show a simple alert instead of toast to avoid React hydration errors
+    alert(
+      "To make a reservation:\n\n1. Find a free table below\n2. Click the ⋮ menu button\n3. Select 'Make Reservation'\n4. Fill in the details"
+    );
   };
 
   // Group table orders by table
