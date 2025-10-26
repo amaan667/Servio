@@ -51,7 +51,7 @@ export async function POST(_request: NextRequest) {
         -- Invitation details
         email TEXT NOT NULL,
         role TEXT NOT NULL CHECK (role IN ('owner', 'manager', 'staff', 'kitchen', 'server', 'cashier')),
-        permissions JSONB DEFAULT '{}',
+        permissions JSONB DEFAULT '{ /* Empty */ }',
         
         -- Invitation status
         status TEXT NOT NULL DEFAULT 'pending' CHECK (status IN ('pending', 'accepted', 'expired', 'cancelled')),
@@ -95,7 +95,7 @@ export async function POST(_request: NextRequest) {
           sql: createTableSQL
         });
       }
-    } catch (error) {
+    } catch (_error) {
       logger.debug("[STAFF INVITATION SETUP] Error testing table existence:", { error: error instanceof Error ? error.message : 'Unknown error' });
     }
 
@@ -168,7 +168,7 @@ export async function POST(_request: NextRequest) {
       ]
     });
 
-  } catch (error) {
+  } catch (_error) {
     logger.error("[STAFF INVITATION SETUP] Error:", { error: error instanceof Error ? error.message : 'Unknown error' });
     return NextResponse.json({
       success: false,

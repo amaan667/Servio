@@ -71,7 +71,7 @@ export function PaymentCollectionDialog({
       // Close dialog and refresh parent
       onOpenChange(false);
       onSuccess();
-    } catch (err) {
+    } catch (_err) {
       setError(err instanceof Error ? err.message : "Failed to collect payment");
     } finally {
       setProcessing(false);

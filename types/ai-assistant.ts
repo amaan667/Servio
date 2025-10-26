@@ -98,7 +98,7 @@ export const AnalyticsGetInsightsSchema = z.object({
 export const AnalyticsExportSchema = z.object({
   type: z.enum(["sales", "orders", "inventory", "customers"]),
   format: z.enum(["csv", "json", "pdf"]),
-  filters: z.object({}).strict().nullable().default(null), // No more z.record - strict empty object for flexible filters
+  filters: z.object({ /* Empty */ }).strict().nullable().default(null), // No more z.record - strict empty object for flexible filters
 }).strict();
 
 export const AnalyticsGetStatsSchema = z.object({
@@ -527,18 +527,18 @@ export const DEFAULT_GUARDRAILS: Record<ToolName, ToolGuardrails> = {
   "menu.delete_item": {
     requiresManagerApproval: true,
   },
-  "menu.translate": {},
+  "menu.translate": { /* Empty */ },
   "inventory.adjust_stock": {
     maxBulkOperationSize: 50,
   },
   "inventory.set_par_levels": {
     requiresManagerApproval: true,
   },
-  "inventory.generate_purchase_order": {},
-  "orders.mark_served": {},
-  "orders.complete": {},
-  "analytics.get_insights": {},
-  "analytics.get_stats": {},
+  "inventory.generate_purchase_order": { /* Empty */ },
+  "orders.mark_served": { /* Empty */ },
+  "orders.complete": { /* Empty */ },
+  "analytics.get_insights": { /* Empty */ },
+  "analytics.get_stats": { /* Empty */ },
   "analytics.export": {
     requiresManagerApproval: true,
   },
@@ -548,9 +548,9 @@ export const DEFAULT_GUARDRAILS: Record<ToolName, ToolGuardrails> = {
   "discounts.create": {
     maxDiscountPercent: 30,
   },
-  "kds.get_overdue": {},
-  "kds.suggest_optimization": {},
-  "navigation.go_to_page": {},
+  "kds.get_overdue": { /* Empty */ },
+  "kds.suggest_optimization": { /* Empty */ },
+  "navigation.go_to_page": { /* Empty */ },
 };
 
 // ============================================================================

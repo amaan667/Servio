@@ -86,7 +86,7 @@ export default function ServiceWorkerRegistration({ children }: ServiceWorkerReg
     };
   }, []);
 
-  // const handleUpdate = () => {};
+  // const handleUpdate = () => { /* Empty */ };
 
   return (
     <>

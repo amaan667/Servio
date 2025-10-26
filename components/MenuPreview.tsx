@@ -63,7 +63,7 @@ export function MenuPreview({
           };
           setMenuStyle(style);
         }
-      } catch (error) {
+      } catch (_error) {
       // Error silently handled
     } finally {
         setLoading(false);
@@ -91,7 +91,7 @@ export function MenuPreview({
     }
     acc[item.category].push(item);
     return acc;
-  }, {} as Record<string, MenuItem[]>);
+  }, { /* Empty */ } as Record<string, MenuItem[]>);
 
   // Get category order or use alphabetical
   const categories = categoryOrder || Object.keys(groupedItems).sort();
@@ -197,7 +197,7 @@ function DefaultMenuPreview({
     }
     acc[item.category].push(item);
     return acc;
-  }, {} as Record<string, MenuItem[]>);
+  }, { /* Empty */ } as Record<string, MenuItem[]>);
 
   const categories = categoryOrder || Object.keys(groupedItems).sort();
 

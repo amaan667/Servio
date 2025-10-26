@@ -72,7 +72,7 @@ export async function GET(req: Request) {
       reservations: reservations || []
     });
 
-  } catch (error) {
+  } catch (_error) {
     logger.error('[RESERVATIONS GET] Unexpected error:', { error: error instanceof Error ? error.message : 'Unknown error' });
     return NextResponse.json({ ok: false, error: 'Internal server error' }, { status: 500 });
   }
@@ -144,7 +144,7 @@ export async function POST(req: Request) {
       reservation: reservation
     });
 
-  } catch (error) {
+  } catch (_error) {
     logger.error('[RESERVATIONS POST] Unexpected error:', { error: error instanceof Error ? error.message : 'Unknown error' });
     return NextResponse.json({ ok: false, error: 'Internal server error' }, { status: 500 });
   }

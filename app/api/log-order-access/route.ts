@@ -3,7 +3,7 @@ import { logger } from '@/lib/logger';
 
 export async function POST(req: NextRequest) {
   try {
-    const data = await req.json().catch(() => ({}));
+    const data = await req.json().catch(() => ({ /* Empty */ }));
 
     const ipFromHeaders = req.headers.get('x-forwarded-for') || req.headers.get('cf-connecting-ip') || req.headers.get('x-real-ip');
     const logData = {
@@ -23,7 +23,7 @@ export async function POST(req: NextRequest) {
     logger.debug('[ORDER ACCESS]', logData);
 
     return NextResponse.json({ ok: true });
-  } catch (err) {
+  } catch (_err) {
     logger.error('[ORDER ACCESS] log failure:', { value: err });
     return NextResponse.json({ ok: false }, { status: 500 });
   }

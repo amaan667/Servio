@@ -92,7 +92,7 @@ export async function POST(_request: NextRequest) {
       limits,
       tier: org?.subscription_tier || "basic",
     });
-  } catch (error) {
+  } catch (_error) {
     logger.error("[TIER CHECK] Error:", { error: error instanceof Error ? error.message : 'Unknown error' });
     return NextResponse.json(
       { error: error.message || "Tier check failed" },

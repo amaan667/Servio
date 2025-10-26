@@ -36,7 +36,7 @@ export function VerticalMenuDisplay({
   const [selectedCategory, setSelectedCategory] = useState<string | null>(null);
   const [searchQuery, setSearchQuery] = useState('');
   const [sidebarOpen, setSidebarOpen] = useState(false);
-  const categoryRefs = useRef<Record<string, HTMLDivElement | null>>({});
+  const categoryRefs = useRef<Record<string, HTMLDivElement | null>>({ /* Empty */ });
 
   // Group items by category
   const groupedItems = menuItems.reduce((acc, item) => {
@@ -45,7 +45,7 @@ export function VerticalMenuDisplay({
     }
     acc[item.category].push(item);
     return acc;
-  }, {} as Record<string, MenuItem[]>);
+  }, { /* Empty */ } as Record<string, MenuItem[]>);
 
   const categories = categoryOrder || Object.keys(groupedItems).sort();
 
@@ -62,7 +62,7 @@ export function VerticalMenuDisplay({
         }
         acc[item.category].push(item);
         return acc;
-      }, {} as Record<string, MenuItem[]>)
+      }, { /* Empty */ } as Record<string, MenuItem[]>)
     : groupedItems;
 
   // Scroll to category

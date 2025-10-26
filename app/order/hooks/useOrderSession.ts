@@ -39,7 +39,7 @@ export function useOrderSession(orderParams: OrderParams) {
         isDemo: orderParams.isDemo,
         url: window.location.href
       })
-    }).catch(() => {});
+    }).catch(() => { /* Empty */ });
 
     checkForExistingOrder();
   }, [orderParams, searchParams]);
@@ -159,7 +159,7 @@ export function useOrderSession(orderParams: OrderParams) {
           }
         }
       }
-    } catch (error) {
+    } catch (_error) {
       // Error silently handled
     }
   };
@@ -227,7 +227,7 @@ export function useOrderSession(orderParams: OrderParams) {
                 name: session.customerName,
                 phone: session.customerPhone
               });
-            } catch (error) {
+            } catch (_error) {
       // Error silently handled
     }
           }
@@ -241,7 +241,7 @@ export function useOrderSession(orderParams: OrderParams) {
             localStorage.removeItem(sessionSessionKey);
           }
         }
-      } catch (error) {
+      } catch (_error) {
       // Error silently handled
     }
     };
@@ -261,10 +261,10 @@ export function useOrderSession(orderParams: OrderParams) {
     }
         };
       }
-    } catch (err) {
+    } catch (_err) {
       // Auth state change setup failed
     }
-    return () => {};
+    return () => { /* Empty */ };
   }, [orderParams, router, searchParams]);
 
   return {

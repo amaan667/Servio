@@ -32,7 +32,7 @@ export async function GET(req: Request) {
   const transformedShifts = data?.map(shift => {
     const staff = shift.staff as unknown;
     const staffObj = Array.isArray(staff) ? staff[0] : staff;
-    const staffData = staffObj && typeof staffObj === 'object' ? staffObj as Record<string, unknown> : {};
+    const staffData = staffObj && typeof staffObj === 'object' ? staffObj as Record<string, unknown> : { /* Empty */ };
     return {
       ...shift,
       staff_name: staffData.name ? String(staffData.name) : 'Unknown',

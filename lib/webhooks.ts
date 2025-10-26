@@ -106,7 +106,7 @@ class WebhookService {
       } else {
         throw new Error(`Webhook delivery failed: ${response.status}`);
       }
-    } catch (error) {
+    } catch (_error) {
       await this.logWebhookFailure(webhook.id, error);
     }
   }
@@ -172,7 +172,7 @@ class WebhookService {
     try {
       await this.deliverWebhook(webhook, event.event_type, event.payload);
       event.status = 'delivered';
-    } catch (error) {
+    } catch (_error) {
       event.status = 'failed';
       await this.logWebhookFailure(webhook.id, error);
     }
@@ -194,7 +194,7 @@ class WebhookService {
     try {
       await this.deliverWebhook(webhook, 'test', testPayload);
       return true;
-    } catch (error) {
+    } catch (_error) {
       return false;
     }
   }

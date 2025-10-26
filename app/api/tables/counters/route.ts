@@ -77,7 +77,7 @@ export async function GET(req: Request) {
       }
     });
 
-  } catch (error) {
+  } catch (_error) {
     logger.error('[TABLES COUNTERS] Unexpected error:', { error: error instanceof Error ? error.message : 'Unknown error' });
     return NextResponse.json({ ok: false, error: 'Internal server error' }, { status: 500 });
   }

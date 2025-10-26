@@ -193,7 +193,7 @@ export function usePaymentProcessing() {
         // Redirect to order summary page
         window.location.href = `/order-summary?orderId=${orderId}`;
       }
-    } catch (err) {
+    } catch (_err) {
       setError(err.message || "Payment failed. Please try again.");
       toast({
         title: "Payment Error",

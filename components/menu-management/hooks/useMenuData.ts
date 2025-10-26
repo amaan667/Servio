@@ -100,9 +100,7 @@ export function useMenuData(venueId: string, refreshTrigger?: number) {
           fetchMenu();
         },
       )
-      .subscribe((status: unknown) => {
-
-      });
+      .subscribe((status: unknown) => { /* Empty */ });
 
     return () => {
 

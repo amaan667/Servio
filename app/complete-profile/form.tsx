@@ -132,7 +132,7 @@ export default function CompleteProfileForm({ user }: CompleteProfileFormProps) 
         })
       });
       
-      const j = await res.json().catch(()=>({}));
+      const j = await res.json().catch(()=>({ /* Empty */ }));
       
       if (!res.ok || !j?.ok) {
 
@@ -154,7 +154,7 @@ export default function CompleteProfileForm({ user }: CompleteProfileFormProps) 
       });
 
       router.replace(`/dashboard/${returnedVenueId}`);
-    } catch (error) {
+    } catch (_error) {
 
       setError(error.message || "Failed to complete profile setup");
     } finally {

@@ -19,7 +19,7 @@ interface QueryOptions {
 export function useQueryCache<T>(
   key: string,
   fetcher: () => Promise<T>,
-  options: QueryOptions = {}
+  options: QueryOptions = { /* Empty */ }
 ) {
   const {
     staleTime = 5 * 60 * 1000, // 5 minutes
@@ -68,7 +68,7 @@ export function useQueryCache<T>(
 
       cacheRef.current.set(key, newCacheEntry);
       setData(result);
-    } catch (err) {
+    } catch (_err) {
       setError(err instanceof Error ? err : new Error('Unknown error'));
       // Return stale data if available
       if (cacheEntry) {

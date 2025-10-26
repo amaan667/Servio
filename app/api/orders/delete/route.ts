@@ -4,7 +4,7 @@ import { createAdminClient } from "@/lib/supabase";
 export const runtime = "nodejs";
 
 export async function POST(req: Request) {
-  const { orderId, venue_id } = await req.json().catch(() => ({}));
+  const { orderId, venue_id } = await req.json().catch(() => ({ /* Empty */ }));
   if (!orderId || !venue_id)
     return NextResponse.json(
       { ok: false, error: "orderId and venue_id required" },

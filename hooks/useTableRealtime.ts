@@ -45,8 +45,7 @@ export function useTableRealtime(venueId: string, onTableChange?: () => void) {
           onTableChangeRef.current()
         }
       })
-      .subscribe((status: unknown) => {
-      })
+      .subscribe((status: unknown) => { /* Empty */ })
 
     return () => { 
       supabase.removeChannel(channel) 

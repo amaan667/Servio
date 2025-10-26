@@ -48,7 +48,7 @@ export function createTimeoutController(timeoutMs: number = 10000): AbortControl
  */
 export async function fetchWithTimeout(
   url: string | URL | Request,
-  options: RequestInit & RequestConfig = {}
+  options: RequestInit & RequestConfig = { /* Empty */ }
 ): Promise<Response> {
   const {
     timeout = 10000,
@@ -77,7 +77,7 @@ export async function fetchWithTimeout(
       });
 
       return response;
-    } catch (error) {
+    } catch (_error) {
       lastError = error as Error;
       attempt++;
 
@@ -139,7 +139,7 @@ export function createCancellablePromise<T>(
         },
         controller.signal
       );
-    } catch (error) {
+    } catch (_error) {
       cleanup();
       reject(error);
     }
@@ -178,7 +178,7 @@ export function createCancellableDebounce<T extends (...args: unknown[]) => unkn
         try {
           const result = await func(...args);
           resolve(result);
-        } catch (error) {
+        } catch (_error) {
           if ((error as Error).name !== 'RequestCancelledError') {
             reject(error);
           }

@@ -153,7 +153,7 @@ export async function GET(req: Request) {
       ok: true,
       tables: tablesWithSessions,
     });
-  } catch (error) {
+  } catch (_error) {
     logger.error("[TABLES GET] Unexpected error:", {
       error: error instanceof Error ? error.message : "Unknown error",
     });
@@ -300,7 +300,7 @@ export async function POST(req: Request) {
       table: table,
       message: `Table "${label}" created successfully!`,
     });
-  } catch (error) {
+  } catch (_error) {
     logger.error("[TABLES POST] Unexpected error:", {
       error: error instanceof Error ? error.message : "Unknown error",
     });

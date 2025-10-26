@@ -44,7 +44,7 @@ export async function PUT(req: NextRequest, context: { params: Promise<{ tableId
     }
 
     return NextResponse.json({ table });
-  } catch (error) {
+  } catch (_error) {
     logger.error("[TABLES API] Unexpected error:", {
       error: error instanceof Error ? error.message : "Unknown error",
     });
@@ -104,7 +104,7 @@ export async function DELETE(req: NextRequest, context: { params: Promise<{ tabl
 
       activeOrders = ordersResult.data || [];
       ordersError = ordersResult.error;
-    } catch (error) {
+    } catch (_error) {
       logger.error("[TABLES API] Exception during active orders check:", {
         error: error instanceof Error ? error.message : "Unknown error",
       });
@@ -152,7 +152,7 @@ export async function DELETE(req: NextRequest, context: { params: Promise<{ tabl
 
       activeReservations = reservationsResult.data || [];
       reservationsError = reservationsResult.error;
-    } catch (error) {
+    } catch (_error) {
       logger.error("[TABLES API] Exception during active reservations check:", {
         error: error instanceof Error ? error.message : "Unknown error",
       });
@@ -325,7 +325,7 @@ export async function DELETE(req: NextRequest, context: { params: Promise<{ tabl
     }
 
     return NextResponse.json({ success: true, deletedTable: existingTable });
-  } catch (error) {
+  } catch (_error) {
     logger.error("[TABLES API] Unexpected error:", {
       error: error instanceof Error ? error.message : "Unknown error",
     });

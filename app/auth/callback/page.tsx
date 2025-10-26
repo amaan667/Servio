@@ -89,7 +89,7 @@ function CallbackContent() {
 
         if (!code) {
           addDebugLog('[AUTH CALLBACK] No code found in URL parameters');
-          addDebugLog(`[AUTH CALLBACK] All search params: ${JSON.stringify(searchParams ? Object.fromEntries(searchParams.entries()) : {})}`);
+          addDebugLog(`[AUTH CALLBACK] All search params: ${JSON.stringify(searchParams ? Object.fromEntries(searchParams.entries()) : { /* Empty */ })}`);
           setError('No authorization code found in URL parameters');
           setLoading(false);
           return;

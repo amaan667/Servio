@@ -156,7 +156,7 @@ export async function POST(req: NextRequest) {
         } else {
           throw new Error(scrapeResult.error || "Scraping returned no items");
         }
-      } catch (error) {
+      } catch (_error) {
         logger.warn(`[MENU IMPORT ${requestId}] URL scraping failed, using PDF-only`);
         // Continue with PDF-only extraction
       }
@@ -474,7 +474,7 @@ export async function POST(req: NextRequest) {
         categories_created: new Set(menuItems.map((i: { category: string }) => i.category)).size,
       },
     });
-  } catch (err) {
+  } catch (_err) {
     const duration = Date.now() - startTime;
     const errorMessage = err instanceof Error ? err.message : "Processing failed";
 

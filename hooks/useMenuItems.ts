@@ -41,7 +41,7 @@ export function useMenuItems(venueId: string) {
       if (fetchError) throw fetchError;
 
       setMenuItems(data || []);
-    } catch (err) {
+    } catch (_err) {
       logger.error('Error fetching menu items', { venueId, error: err });
       setError('Failed to load menu items');
     } finally {
@@ -68,7 +68,7 @@ export function useMenuItems(venueId: string) {
 
       setMenuItems(prev => [...prev, data]);
       return { success: true, data };
-    } catch (err) {
+    } catch (_err) {
       logger.error('Error adding menu item', { error: err });
       return { success: false, error: err };
     }
@@ -88,7 +88,7 @@ export function useMenuItems(venueId: string) {
 
       setMenuItems(prev => prev.map(item => item.id === id ? data : item));
       return { success: true, data };
-    } catch (err) {
+    } catch (_err) {
       logger.error('Error updating menu item', { id, error: err });
       return { success: false, error: err };
     }
@@ -106,7 +106,7 @@ export function useMenuItems(venueId: string) {
 
       setMenuItems(prev => prev.filter(item => item.id !== id));
       return { success: true };
-    } catch (err) {
+    } catch (_err) {
       logger.error('Error deleting menu item', { id, error: err });
       return { success: false, error: err };
     }
@@ -138,7 +138,7 @@ export function useMenuItems(venueId: string) {
 
       setMenuItems(items);
       return { success: true };
-    } catch (err) {
+    } catch (_err) {
       logger.error('Error reordering items', { error: err });
       return { success: false, error: err };
     }

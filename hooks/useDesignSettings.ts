@@ -66,7 +66,7 @@ export function useDesignSettings(venueId: string) {
         ...defaultSettings,
         ...data,
       });
-    } catch (err) {
+    } catch (_err) {
       logger.error('Error fetching design settings', { venueId, error: err });
       setError('Failed to load design settings');
     } finally {
@@ -95,7 +95,7 @@ export function useDesignSettings(venueId: string) {
 
       setSettings(prev => ({ ...prev, ...updates }));
       return { success: true };
-    } catch (err) {
+    } catch (_err) {
       logger.error('Error saving design settings', { venueId, error: err });
       setError('Failed to save design settings');
       return { success: false, error: err };

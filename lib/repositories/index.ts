@@ -12,7 +12,7 @@ import { VenueRepository } from './venue-repository';
  * Repository factory
  */
 export class RepositoryFactory {
-  constructor(private supabase: SupabaseClient) {}
+  constructor(private supabase: SupabaseClient) { /* Empty */ }
 
   get orders() {
     return new OrderRepository(this.supabase);

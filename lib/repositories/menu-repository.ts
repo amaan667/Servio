@@ -65,7 +65,7 @@ export class MenuRepository extends BaseRepository<MenuItem> {
       }
 
       return (data as MenuItem[]) || [];
-    } catch (error) {
+    } catch (_error) {
       logger.error('[MENU_REPO] Unexpected error finding menu by venue', { error, venueId });
       throw error;
     }
@@ -102,7 +102,7 @@ export class MenuRepository extends BaseRepository<MenuItem> {
       }
 
       return (data as MenuItem[]) || [];
-    } catch (error) {
+    } catch (_error) {
       logger.error('[MENU_REPO] Unexpected error searching menu items', { error, venueId, query });
       throw error;
     }
@@ -126,7 +126,7 @@ export class MenuRepository extends BaseRepository<MenuItem> {
       }
 
       return (data as MenuCategory[]) || [];
-    } catch (error) {
+    } catch (_error) {
       logger.error('[MENU_REPO] Unexpected error getting categories', { error, venueId });
       throw error;
     }
@@ -149,7 +149,7 @@ export class MenuRepository extends BaseRepository<MenuItem> {
       }
 
       return (data as MenuItem[]) || [];
-    } catch (error) {
+    } catch (_error) {
       logger.error('[MENU_REPO] Unexpected error bulk updating availability', { error, itemIds });
       throw error;
     }

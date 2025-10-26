@@ -70,7 +70,7 @@ export async function GET(_request: NextRequest) {
       unassignedReservations: unassignedReservations || []
     });
 
-  } catch (error) {
+  } catch (_error) {
     logger.error('Error in tables-runtime API:', { error: error instanceof Error ? error.message : 'Unknown error' });
     return NextResponse.json(
       { error: 'Internal server error' },

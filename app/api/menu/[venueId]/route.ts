@@ -92,8 +92,7 @@ export async function GET(
       );
     }
     
-    if (menuItems && menuItems.length > 0) {
-    } else {
+    if (menuItems && menuItems.length > 0) { /* Empty */ } else {
       // Intentionally empty
     }
 
@@ -114,7 +113,7 @@ export async function GET(
     
     return NextResponse.json(response);
 
-  } catch (error) {
+  } catch (_error) {
     const duration = Date.now() - startTime;
     
     logger.error('[MENU API] Unexpected error:', { 

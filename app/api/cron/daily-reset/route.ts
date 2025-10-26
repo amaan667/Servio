@@ -148,8 +148,7 @@ export async function POST(_request: NextRequest) {
             .delete()
             .eq('venue_id', venue.venue_id);
             
-          if (sessionDeleteError) {
-          } else {
+          if (sessionDeleteError) { /* Empty */ } else {
       // Intentionally empty
     }
 
@@ -159,8 +158,7 @@ export async function POST(_request: NextRequest) {
             .delete()
             .eq('venue_id', venue.venue_id);
             
-          if (tableDeleteError) {
-          } else {
+          if (tableDeleteError) { /* Empty */ } else {
       // Intentionally empty
     }
         } else {
@@ -173,8 +171,7 @@ export async function POST(_request: NextRequest) {
           .delete()
           .eq('venue_id', venue.venue_id);
           
-        if (runtimeDeleteError) {
-        } else {
+        if (runtimeDeleteError) { /* Empty */ } else {
       // Intentionally empty
     }
 
@@ -188,7 +185,7 @@ export async function POST(_request: NextRequest) {
           deletedTables: venueTables?.length || 0
         });
 
-      } catch (error) {
+      } catch (_error) {
         logger.error(`🕛 [CRON DAILY RESET] Error resetting venue ${venue.venue_name}:`, { error: error instanceof Error ? error.message : 'Unknown error' });
         resetResults.push({
           venueId: venue.venue_id,
@@ -209,7 +206,7 @@ export async function POST(_request: NextRequest) {
       resetResults
     });
 
-  } catch (error) {
+  } catch (_error) {
     logger.error('🕛 [CRON DAILY RESET] Error in automatic daily reset:', { error: error instanceof Error ? error.message : 'Unknown error' });
     return NextResponse.json(
       { error: 'Internal server error' },

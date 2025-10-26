@@ -55,7 +55,7 @@ export async function POST(_request: NextRequest) {
       const lineContent = lines[i];
       if (!lineContent) continue;
       const values = lineContent.split(',').map(v => v.trim().replace(/"/g, ''));
-      const row: Record<string, string> = {};
+      const row: Record<string, string> = { /* Empty */ };
 
       headers.forEach((header, index) => {
         const value = values[index] || '';
@@ -172,7 +172,7 @@ export async function POST(_request: NextRequest) {
       imported,
       errors,
     });
-  } catch (error) {
+  } catch (_error) {
     logger.error('[INVENTORY API] Unexpected error:', { error: error instanceof Error ? error.message : 'Unknown error' });
     return NextResponse.json(
       { error: 'Internal server error' },

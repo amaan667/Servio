@@ -13,8 +13,8 @@ const mockSupabase = {
       })),
     })),
     insert: vi.fn(() => Promise.resolve({ data: { id: "order-123" }, error: null })),
-    update: vi.fn(() => Promise.resolve({ data: {}, error: null })),
-    delete: vi.fn(() => Promise.resolve({ data: {}, error: null })),
+    update: vi.fn(() => Promise.resolve({ data: { /* Empty */ }, error: null })),
+    delete: vi.fn(() => Promise.resolve({ data: { /* Empty */ }, error: null })),
   })),
   auth: {
     getUser: vi.fn(() => Promise.resolve({ data: { user: { id: "user-123" } }, error: null })),

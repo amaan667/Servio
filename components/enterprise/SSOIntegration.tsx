@@ -28,28 +28,28 @@ export const SSOIntegration: React.FC = () => {
       name: 'Google Workspace',
       type: 'oauth',
       enabled: false,
-      config: {}
+      config: { /* Empty */ }
     },
     {
       id: 'microsoft',
       name: 'Microsoft Azure AD',
       type: 'oidc',
       enabled: false,
-      config: {}
+      config: { /* Empty */ }
     },
     {
       id: 'okta',
       name: 'Okta',
       type: 'saml',
       enabled: false,
-      config: {}
+      config: { /* Empty */ }
     },
     {
       id: 'auth0',
       name: 'Auth0',
       type: 'oidc',
       enabled: false,
-      config: {}
+      config: { /* Empty */ }
     }
   ]);
 

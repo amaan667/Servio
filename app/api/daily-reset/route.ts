@@ -186,7 +186,7 @@ export async function POST(_request: NextRequest) {
       }
     });
 
-  } catch (error) {
+  } catch (_error) {
     logger.error('🔄 [DAILY RESET] Error in daily reset API:', { error: error instanceof Error ? error.message : 'Unknown error' });
     return NextResponse.json(
       { error: 'Internal server error' },
@@ -244,7 +244,7 @@ export async function GET(_request: NextRequest) {
       }
     });
 
-  } catch (error) {
+  } catch (_error) {
     logger.error('🔄 [DAILY RESET] Error checking reset status:', { error: error instanceof Error ? error.message : 'Unknown error' });
     return NextResponse.json(
       { error: 'Internal server error' },

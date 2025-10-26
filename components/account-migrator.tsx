@@ -43,7 +43,7 @@ export function AccountMigrator() {
   const [localAccounts, setLocalAccounts] = useState<LocalAccount[]>([]);
   const [migrationStatus, setMigrationStatus] = useState<
     Record<string, "pending" | "success" | "error">
-  >({});
+  >({ /* Empty */ });
   const [migrationProgress, setMigrationProgress] = useState(0);
   const [isMigrating, setIsMigrating] = useState(false);
   const [showPasswords, setShowPasswords] = useState(false);
@@ -144,7 +144,7 @@ export function AccountMigrator() {
     ) {
       localStorage.removeItem("servio-accounts");
       setLocalAccounts([]);
-      setMigrationStatus({});
+      setMigrationStatus({ /* Empty */ });
       addLog("🗑️ Local accounts cleared");
 
     }

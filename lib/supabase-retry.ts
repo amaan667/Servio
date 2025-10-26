@@ -14,7 +14,7 @@ interface RetryOptions {
 
 export async function retrySupabaseQuery<T>(
   queryFn: () => Promise<{ data: T | null; error: unknown }>,
-  options: RetryOptions = {}
+  options: RetryOptions = { /* Empty */ }
 ): Promise<{ data: T | null; error: unknown }> {
   const {
     maxRetries = 5,
@@ -80,7 +80,7 @@ export async function retrySupabaseQuery<T>(
       await new Promise(resolve => setTimeout(resolve, currentDelay));
       currentDelay = Math.floor(currentDelay * backoffMultiplier);
       
-    } catch (error) {
+    } catch (_error) {
       const errorMessage = error instanceof Error ? error.message : String(error);
       logger.error(`❌ [RETRY] ${logContext} - Exception on attempt ${attempt + 1}`, {
         error: errorMessage,

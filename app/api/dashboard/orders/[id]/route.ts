@@ -11,7 +11,7 @@ function admin() {
 
 export async function PATCH(req: Request, context: { params: Promise<{ id: string }> }) {
   const { id } = await context.params;
-  const body = await req.json().catch(() => ({}));
+  const body = await req.json().catch(() => ({ /* Empty */ }));
   const { order_status, payment_status } = body as { order_status?: 'PLACED'|'IN_PREP'|'READY'|'SERVING'|'SERVED'|'COMPLETED'|'CANCELLED'|'REFUNDED'|'EXPIRED', payment_status?: 'UNPAID'|'PAID'|'REFUNDED' };
   if (!id) {
     return NextResponse.json({ ok: false, error: 'Invalid payload' }, { status: 400 });
@@ -20,7 +20,7 @@ export async function PATCH(req: Request, context: { params: Promise<{ id: strin
     return NextResponse.json({ ok: false, error: 'Invalid payload' }, { status: 400 });
   }
   const supa = await admin();
-  const update: Record<string, unknown> = {};
+  const update: Record<string, unknown> = { /* Empty */ };
   if (order_status) {
     update.order_status = order_status;
   }

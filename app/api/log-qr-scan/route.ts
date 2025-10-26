@@ -19,7 +19,7 @@ export async function POST(req: Request) {
     });
 
     return NextResponse.json({ success: true });
-  } catch (error) {
+  } catch (_error) {
     logger.error('Failed to log QR scan', {
       error: error instanceof Error ? error.message : String(error)
     });

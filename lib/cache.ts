@@ -55,7 +55,7 @@ class CacheService {
   /**
    * Set value in cache
    */
-  async set<T>(key: string, value: T, config: CacheConfig = {}): Promise<void> {
+  async set<T>(key: string, value: T, config: CacheConfig = { /* Empty */ }): Promise<void> {
     try {
       const ttl = config.ttl || 3600; // Default 1 hour
       const expires = Date.now() + ttl * 1000;

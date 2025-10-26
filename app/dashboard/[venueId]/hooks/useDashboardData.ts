@@ -97,7 +97,7 @@ export function useDashboardData(
         if (typeof window !== "undefined") {
           sessionStorage.setItem(`dashboard_stats_${venueId}`, JSON.stringify(newStats));
         }
-      } catch (error) {
+      } catch (_error) {
       // Error handled silently
     }
     },
@@ -168,7 +168,7 @@ export function useDashboardData(
           sessionStorage.setItem(`dashboard_counts_${venueId}`, JSON.stringify(finalCounts));
         }
       }
-    } catch (err) {
+    } catch (_err) {
       setError("Failed to refresh dashboard data");
     }
   }, [venueId, venueTz]);

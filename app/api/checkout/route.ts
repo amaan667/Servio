@@ -68,7 +68,7 @@ export async function POST(req: Request) {
     });
 
     return NextResponse.json({ id: session.id, url: session.url });
-  } catch (error) {
+  } catch (_error) {
     logger.error('[CHECKOUT] Error creating checkout session:', {
       error: error instanceof Error ? error.message : 'Unknown error'
     });

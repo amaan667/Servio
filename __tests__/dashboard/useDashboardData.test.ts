@@ -85,7 +85,7 @@ describe("useDashboardData", () => {
         const hour = new Date(order.created_at).getUTCHours();
         acc[hour] = (acc[hour] || 0) + 1;
         return acc;
-      }, {});
+      }, { /* Empty */ });
 
       expect(ordersByHour[10]).toBe(2);
       expect(ordersByHour[11]).toBe(1);
@@ -144,7 +144,7 @@ describe("useDashboardData", () => {
       const revenueByCategory = orderItems.reduce((acc: Record<string, number>, item) => {
         acc[item.category] = (acc[item.category] || 0) + item.total;
         return acc;
-      }, {});
+      }, { /* Empty */ });
 
       expect(revenueByCategory["Main"]).toBe(55.0);
       expect(revenueByCategory["Dessert"]).toBe(10.0);
@@ -175,7 +175,7 @@ describe("useDashboardData", () => {
       const statusCounts = orders.reduce((acc: Record<string, number>, order) => {
         acc[order.status] = (acc[order.status] || 0) + 1;
         return acc;
-      }, {});
+      }, { /* Empty */ });
 
       expect(statusCounts["completed"]).toBe(3);
       expect(statusCounts["pending"]).toBe(1);

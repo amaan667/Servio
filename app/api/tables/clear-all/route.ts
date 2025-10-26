@@ -31,8 +31,7 @@ export async function POST(req: Request) {
     }
 
     if (sessions) {
-      sessions.forEach((session) => {
-      });
+      sessions.forEach((session) => { /* Empty */ });
     }
 
     // Close ALL table sessions for this venue
@@ -61,7 +60,7 @@ export async function POST(req: Request) {
       message: `Cleared ${updated?.length || 0} table sessions`,
       cleared: updated?.length || 0,
     });
-  } catch (error) {
+  } catch (_error) {
     logger.error("[CLEAR ALL TABLES] Error:", {
       error: error instanceof Error ? error.message : String(error),
     });

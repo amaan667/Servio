@@ -107,7 +107,7 @@ const SimpleStaffGrid: React.FC<SimpleStaffGridProps> = ({ venueId }) => {
 
   // Group shifts by date for grid display
   const shiftsByDate = useMemo(() => {
-    const grouped: Record<string, LegacyShift[]> = {};
+    const grouped: Record<string, LegacyShift[]> = { /* Empty */ };
 
     visibleShifts.forEach((shift) => {
       const startDate = new Date(shift.start_time);
@@ -279,7 +279,7 @@ const SimpleStaffGrid: React.FC<SimpleStaffGridProps> = ({ venueId }) => {
               style={
                 calendarView !== "month"
                   ? { gridTemplateColumns: `repeat(${displayDates.length}, 1fr)` }
-                  : {}
+                  : { /* Empty */ }
               }
             >
               {calendarView === "month"
@@ -306,7 +306,7 @@ const SimpleStaffGrid: React.FC<SimpleStaffGridProps> = ({ venueId }) => {
               style={
                 calendarView !== "month"
                   ? { gridTemplateColumns: `repeat(${displayDates.length}, 1fr)` }
-                  : {}
+                  : { /* Empty */ }
               }
             >
               {displayDates.map((date, index) => {

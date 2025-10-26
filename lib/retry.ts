@@ -40,7 +40,7 @@ export const DEFAULT_RETRY_OPTIONS: Required<RetryOptions> = {
 
 export async function withRetry<T>(
   operation: () => Promise<T>,
-  options: RetryOptions = {}
+  options: RetryOptions = { /* Empty */ }
 ): Promise<T> {
   const config = { ...DEFAULT_RETRY_OPTIONS, ...options };
   let lastError: unknown;
@@ -49,7 +49,7 @@ export async function withRetry<T>(
     try {
       const result = await operation();
       return result;
-    } catch (error) {
+    } catch (_error) {
       lastError = error;
 
       // Don't retry if this is the last attempt or error doesn't match retry condition
@@ -77,7 +77,7 @@ export async function withRetry<T>(
 
 export function createRetryableFetch(
   baseFetch: typeof fetch = fetch,
-  options: RetryOptions = {}
+  options: RetryOptions = { /* Empty */ }
 ) {
   return async (input: RequestInfo | URL, init?: RequestInit): Promise<Response> => {
     return withRetry(async () => {
@@ -98,11 +98,11 @@ export function createRetryableFetch(
 // Utility for Supabase operations with retry
 export async function withSupabaseRetry<T>(
   operation: () => Promise<{ data: T | null; error: unknown }>,
-  options: RetryOptions = {}
+  options: RetryOptions = { /* Empty */ }
 ): Promise<{ data: T | null; error: unknown }> {
   try {
     return await withRetry(operation, options);
-  } catch (error) {
+  } catch (_error) {
     return { data: null, error };
   }
 }

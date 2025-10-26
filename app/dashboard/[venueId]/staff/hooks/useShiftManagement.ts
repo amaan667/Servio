@@ -11,7 +11,7 @@ export function useShiftManagement(venueId: string, staff: unknown[]) {
   useEffect(() => {
     const loadShifts = async () => {
       const res = await fetch(`/api/staff/shifts/list?venue_id=${encodeURIComponent(venueId)}`);
-      const j = await res.json().catch(() => ({}));
+      const j = await res.json().catch(() => ({ /* Empty */ }));
       if (res.ok && !j?.error) {
         const shifts = j.shifts || [];
         setAllShifts(shifts);

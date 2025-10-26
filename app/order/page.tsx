@@ -49,7 +49,7 @@ export default function CustomerOrderPage() {
           const data = await response.json();
           setSubscriptionTier(data.tier || 'basic');
         }
-      } catch (error) {
+      } catch (_error) {
         logger.error('Failed to fetch venue tier', { error });
         setSubscriptionTier('basic');
       } finally {
@@ -151,8 +151,7 @@ export default function CustomerOrderPage() {
 
   // Log menu loading for debugging
   useEffect(() => {
-    if (!loadingMenu) {
-    }
+    if (!loadingMenu) { /* Empty */ }
   }, [loadingMenu, menuItems.length, menuError, venueName, venueSlug]);
 
   const handleSubmitOrder = () => {

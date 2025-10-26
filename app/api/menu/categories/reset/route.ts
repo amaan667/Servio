@@ -67,7 +67,7 @@ export async function POST(_request: NextRequest) {
 
     // Create a mapping of original categories to current categories
     // This preserves translations while maintaining original order
-    const categoryMapping: Record<string, string> = {};
+    const categoryMapping: Record<string, string> = { /* Empty */ };
     originalCategories.forEach(origCat => {
       const matchingCurrentCat = currentCategories.find(currCat => 
         currCat.toLowerCase() === origCat.toLowerCase()
@@ -127,7 +127,7 @@ export async function POST(_request: NextRequest) {
       ).length || 0
     });
 
-  } catch (error) {
+  } catch (_error) {
     logger.error('[CATEGORIES RESET] Error in reset categories API:', { error: error instanceof Error ? error.message : 'Unknown error' });
     return NextResponse.json({ 
       ok: false, 

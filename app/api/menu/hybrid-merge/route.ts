@@ -87,8 +87,7 @@ export async function POST(req: NextRequest) {
           throw new Error(urlMenuData.error || "Scraping returned error status");
         }
 
-        if (urlMenuData.items && urlMenuData.items.length > 0) {
-        }
+        if (urlMenuData.items && urlMenuData.items.length > 0) { /* Empty */ }
       } catch (fetchError) {
         clearTimeout(timeoutId);
         throw fetchError;
@@ -230,7 +229,7 @@ Be smart about matching:
     for (const mergedItem of mergedItems) {
       if (mergedItem.action === "update" && mergedItem.pdf_item_id) {
         // Update existing item
-        const updateData: Record<string, string | number> = {};
+        const updateData: Record<string, string | number> = { /* Empty */ };
 
         if (mergedItem.changes.includes("price_updated")) {
           updateData.price = mergedItem.price;
@@ -289,8 +288,7 @@ Be smart about matching:
           .eq("id", id)
           .eq("venue_id", venueId);
 
-        if (error) {
-        }
+        if (error) { /* Empty */ }
       }
     }
 
@@ -313,7 +311,7 @@ Be smart about matching:
         imagesAdded: stats.images_added,
       },
     });
-  } catch (error) {
+  } catch (_error) {
     logger.error("[HYBRID MERGE] Unexpected error:", error);
 
     return NextResponse.json(

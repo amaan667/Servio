@@ -138,15 +138,14 @@ async function scrapeWithPlaywright(url: string, waitForNetworkIdle: boolean = f
       return null;
     });
 
-    if (embeddedData) {
-    }
+    if (embeddedData) { /* Empty */ }
 
     // Strategy 2: FAST extraction - no waiting!
 
     // Quick cookie dismissal (don't wait)
     await page
       .click('button:has-text("Accept"), button:has-text("Agree")', { timeout: 1000 })
-      .catch(() => {});
+      .catch(() => { /* Empty */ });
 
     // Single scroll to trigger lazy content (no waiting)
     await page.evaluate(() => window.scrollTo(0, document.body.scrollHeight));
@@ -183,8 +182,8 @@ async function scrapeWithPlaywright(url: string, waitForNetworkIdle: boolean = f
   } catch (scrapeError) {
     throw scrapeError;
   } finally {
-    if (page) await page.close().catch(() => {});
-    if (context) await context.close().catch(() => {});
+    if (page) await page.close().catch(() => { /* Empty */ });
+    if (context) await context.close().catch(() => { /* Empty */ });
   }
 }
 
@@ -210,8 +209,7 @@ export async function POST(req: NextRequest) {
     // Smart detection: Determine site type FIRST (saves 20s for JS sites!)
     const isJSHeavy = await detectJSHeavySite(url);
 
-    if (isJSHeavy) {
-    } else {
+    if (isJSHeavy) { /* Empty */ } else {
       // Intentionally empty
     }
 
@@ -293,8 +291,7 @@ Return ONLY valid JSON:
       const parsed = JSON.parse(aiContent);
       menuItems = parsed.items || [];
 
-      if (menuItems.length === 0) {
-      } else {
+      if (menuItems.length === 0) { /* Empty */ } else {
 
         // Log first 10 items in detail
         const itemsToShow = Math.min(10, menuItems.length);
@@ -302,8 +299,7 @@ Return ONLY valid JSON:
           const item = menuItems[i];
         }
 
-        if (menuItems.length > 10) {
-        }
+        if (menuItems.length > 10) { /* Empty */ }
 
         const categories = Array.from(new Set(menuItems.map((i) => i.category)));
       }
@@ -324,7 +320,7 @@ Return ONLY valid JSON:
     };
 
     return NextResponse.json(successResponse);
-  } catch (error) {
+  } catch (_error) {
     logger.error("[MENU SCRAPE] Error:", _error);
 
     const errorResponse = {

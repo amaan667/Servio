@@ -95,7 +95,7 @@ export async function POST(
       order: updatedOrder,
       message: "Payment collected successfully",
     });
-  } catch (error) {
+  } catch (_error) {
     logger.error("[COLLECT PAYMENT] Unexpected error", {
       data: { orderId, error: error instanceof Error ? error.message : String(error) },
     });

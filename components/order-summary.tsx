@@ -152,7 +152,7 @@ export default function OrderSummary({ orderId, sessionId, orderData }: OrderSum
             throw new Error(`Order not found after ${maxRetries} attempts`);
           }
         }
-      } catch (error) {
+      } catch (_error) {
         setError("Failed to load order details");
       } finally {
         setLoading(false);

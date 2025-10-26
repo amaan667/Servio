@@ -98,7 +98,7 @@ class SecurityService {
     }
 
     if (typeof input === "object" && input !== null) {
-      const sanitized: unknown = {};
+      const sanitized: unknown = { /* Empty */ };
       for (const [key, value] of Object.entries(input)) {
         sanitized[key] = this.sanitizeInput(value);
       }
@@ -138,7 +138,7 @@ class SecurityService {
       errors.push("Password must contain at least one number");
     }
 
-    if (!/[!@#$%^&*(),.?":{}|<>]/.test(password)) {
+    if (!/[!@#$%^&*(),.?":{ /* Empty */ }|<>]/.test(password)) {
       errors.push("Password must contain at least one special character");
     }
 

@@ -43,7 +43,7 @@ describe('Type Utilities', () => {
       expect(isDefined('test')).toBe(true);
       expect(isDefined(0)).toBe(true);
       expect(isDefined(false)).toBe(true);
-      expect(isDefined({})).toBe(true);
+      expect(isDefined({ /* Empty */ })).toBe(true);
     });
 
     it('should return false for null or undefined', () => {
@@ -54,7 +54,7 @@ describe('Type Utilities', () => {
 
   describe('isObject', () => {
     it('should return true for objects', () => {
-      expect(isObject({})).toBe(true);
+      expect(isObject({ /* Empty */ })).toBe(true);
       expect(isObject({ key: 'value' })).toBe(true);
     });
 
@@ -73,7 +73,7 @@ describe('Type Utilities', () => {
     });
 
     it('should return false for non-arrays', () => {
-      expect(isArray({})).toBe(false);
+      expect(isArray({ /* Empty */ })).toBe(false);
       expect(isArray('string')).toBe(false);
       expect(isArray(null)).toBe(false);
     });
@@ -98,9 +98,9 @@ describe('Type Utilities', () => {
     });
 
     it('should return empty object for non-objects', () => {
-      expect(toRecord(null)).toEqual({});
-      expect(toRecord('string')).toEqual({});
-      expect(toRecord([])).toEqual({});
+      expect(toRecord(null)).toEqual({ /* Empty */ });
+      expect(toRecord('string')).toEqual({ /* Empty */ });
+      expect(toRecord([])).toEqual({ /* Empty */ });
     });
   });
 
@@ -113,7 +113,7 @@ describe('Type Utilities', () => {
     it('should return empty array for non-arrays', () => {
       expect(toArray(null)).toEqual([]);
       expect(toArray('string')).toEqual([]);
-      expect(toArray({})).toEqual([]);
+      expect(toArray({ /* Empty */ })).toEqual([]);
     });
   });
 

@@ -107,7 +107,7 @@ export async function POST(_request: NextRequest) {
         user_prompt: prompt,
         intent: plan.intent,
         tool_name: plan.tools[0]?.name || "unknown",
-        params: plan.tools[0]?.params || {},
+        params: plan.tools[0]?.params || { /* Empty */ },
         preview: true,
         executed: false,
         model_version: plan.modelUsed || "gpt-4o-mini", // Track which model was actually used
@@ -123,7 +123,7 @@ export async function POST(_request: NextRequest) {
       executionTimeMs: executionTime,
       modelUsed: plan.modelUsed, // Return model info to client
     });
-  } catch (error) {
+  } catch (_error) {
     logger.error("[AI ASSISTANT] Planning error:", { error: error instanceof Error ? error.message : 'Unknown error' });
 
     if ((error as any)?.name === "ZodError") {

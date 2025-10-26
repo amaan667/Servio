@@ -29,7 +29,7 @@ export const detectColorsFromImage = (imageUrl: string): Promise<{primary: strin
         const imageData = ctx.getImageData(0, 0, canvas.width, canvas.height);
         const pixels = imageData.data;
         
-        const colors: { [key: string]: number } = {};
+        const colors: { [key: string]: number } = { /* Empty */ };
         const sampleSize = Math.min(1000, pixels.length / 4);
         
         for (let i = 0; i < sampleSize; i++) {

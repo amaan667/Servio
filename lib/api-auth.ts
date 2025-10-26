@@ -75,7 +75,7 @@ export async function authenticateRequest(req: Request): Promise<AuthResult> {
       user,
       supabase,
     };
-  } catch (error) {
+  } catch (_error) {
     return {
       success: false,
       error: "Authentication failed",

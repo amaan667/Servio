@@ -134,7 +134,7 @@ export function useOrderSubmission() {
       // Instant redirect to payment method selection page
       // Order will be created AFTER payment method is selected
       window.location.href = '/payment';
-    } catch (error) {
+    } catch (_error) {
 
       let errorMessage = "Failed to place order. Please try again.";
       

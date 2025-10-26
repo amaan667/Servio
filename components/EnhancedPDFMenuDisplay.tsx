@@ -95,7 +95,7 @@ export function EnhancedPDFMenuDisplay({
   const [selectedCategory, setSelectedCategory] = useState<string | null>(null);
   const imageRefs = useRef<(HTMLDivElement | null)[]>([]);
   const containerRef = useRef<HTMLDivElement>(null);
-  const categoryRefs = useRef<Record<string, HTMLDivElement | null>>({});
+  const categoryRefs = useRef<Record<string, HTMLDivElement | null>>({ /* Empty */ });
 
   useEffect(() => {
     const fetchPDFImages = async () => {
@@ -115,8 +115,7 @@ export function EnhancedPDFMenuDisplay({
         // Try pdf_images first, then fallback to pdf_images_cc
         const images = uploadData?.pdf_images || uploadData?.pdf_images_cc;
         
-        if (images && images.length > 0) {
-        }
+        if (images && images.length > 0) { /* Empty */ }
 
         if (uploadData && images && images.length > 0) {
           setPdfImages(images);
@@ -134,7 +133,7 @@ export function EnhancedPDFMenuDisplay({
             sessionStorage.removeItem(`pdf_images_${venueId}`);
           }
         }
-      } catch (error) {
+      } catch (_error) {
         setViewMode('list');
       } finally {
         setLoading(false);
@@ -161,8 +160,7 @@ export function EnhancedPDFMenuDisplay({
           // Check if hotspots have new bounding box format
           const hasBoundingBoxes = existingHotspots.some(h => h.x1_percent !== undefined);
           
-          if (!hasBoundingBoxes) {
-          }
+          if (!hasBoundingBoxes) { /* Empty */ }
           
           setHotspots(existingHotspots);
           
@@ -185,7 +183,7 @@ export function EnhancedPDFMenuDisplay({
             }
           }
         }
-      } catch (error) {
+      } catch (_error) {
       // Error handled silently
     }
     };
@@ -316,7 +314,7 @@ export function EnhancedPDFMenuDisplay({
     }
     acc[item.category].push(item);
     return acc;
-  }, {} as Record<string, MenuItem[]>);
+  }, { /* Empty */ } as Record<string, MenuItem[]>);
 
   const categories = categoryOrder
     ? categoryOrder.filter(cat => groupedItems[cat]?.length > 0)
@@ -819,7 +817,7 @@ async function saveHotspotsToDatabase(
       .from('menu_hotspots')
       .insert(hotspotsToInsert);
       
-  } catch (error) {
+  } catch (_error) {
       // Error handled silently
     }
 }

@@ -17,7 +17,7 @@ export class QueryCache {
   static async cacheQuery<T>(
     key: string,
     queryFn: () => Promise<T>,
-    options: QueryCacheOptions = {}
+    options: QueryCacheOptions = { /* Empty */ }
   ): Promise<T> {
     const { ttl = 300, tags = [], skipCache = false } = options;
 
@@ -40,7 +40,7 @@ export class QueryCache {
 
       await redisCache.set(key, result, { ttl, tags });
       return result;
-    } catch (error) {
+    } catch (_error) {
       logger.warn("[QUERY CACHE] Cache error, falling back to direct query:", error as Record<string, unknown>);
       return await queryFn();
     }
@@ -53,7 +53,7 @@ export class QueryCache {
     venueId: string,
     dataType: string,
     queryFn: () => Promise<T>,
-    options: QueryCacheOptions = {}
+    options: QueryCacheOptions = { /* Empty */ }
   ): Promise<T> {
     const key = cacheUtils.venueKey(venueId, dataType);
     const tags = [cacheUtils.tags.venue(venueId)];
@@ -68,7 +68,7 @@ export class QueryCache {
     userId: string,
     dataType: string,
     queryFn: () => Promise<T>,
-    options: QueryCacheOptions = {}
+    options: QueryCacheOptions = { /* Empty */ }
   ): Promise<T> {
     const key = cacheUtils.userKey(userId, dataType);
     const tags = [cacheUtils.tags.user(userId)];
@@ -83,7 +83,7 @@ export class QueryCache {
     venueId: string,
     filters: Record<string, unknown>,
     queryFn: () => Promise<T>,
-    options: QueryCacheOptions = {}
+    options: QueryCacheOptions = { /* Empty */ }
   ): Promise<T> {
     const key = cacheUtils.ordersKey(venueId, filters);
     const tags = [cacheUtils.tags.orders(venueId)];
@@ -97,7 +97,7 @@ export class QueryCache {
   static async cacheMenuItems<T>(
     venueId: string,
     queryFn: () => Promise<T>,
-    options: QueryCacheOptions = {}
+    options: QueryCacheOptions = { /* Empty */ }
   ): Promise<T> {
     const key = cacheUtils.menuKey(venueId);
     const tags = [cacheUtils.tags.menu(venueId)];
@@ -111,7 +111,7 @@ export class QueryCache {
   static async cacheTables<T>(
     venueId: string,
     queryFn: () => Promise<T>,
-    options: QueryCacheOptions = {}
+    options: QueryCacheOptions = { /* Empty */ }
   ): Promise<T> {
     const key = cacheUtils.tablesKey(venueId);
     const tags = [cacheUtils.tags.tables(venueId)];
@@ -189,7 +189,7 @@ export class QueryCache {
 /**
  * Cache middleware for API routes
  */
-export function withCache(options: QueryCacheOptions = {}) {
+export function withCache(options: QueryCacheOptions = { /* Empty */ }) {
   return function (target: unknown, propertyName: string, descriptor: PropertyDescriptor) {
     const method = descriptor.value;
 

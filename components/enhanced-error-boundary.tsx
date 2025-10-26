@@ -93,7 +93,7 @@ export class EnhancedErrorBoundary extends React.Component<
     try {
       await clearAuthStorage();
       window.location.reload();
-    } catch (err) {
+    } catch (_err) {
 
       window.location.reload();
     }

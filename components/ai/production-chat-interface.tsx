@@ -77,7 +77,7 @@ export function ProductionChatInterface({ isOpen, onClose, venueId }: ChatInterf
         const errorData = await response.json();
         setError(errorData.error || "Failed to load conversations");
       }
-    } catch (err) {
+    } catch (_err) {
       logger.error("[AI CHAT] Failed to load conversations:", err);
       setError("Failed to load conversations");
     }
@@ -94,7 +94,7 @@ export function ProductionChatInterface({ isOpen, onClose, venueId }: ChatInterf
         const errorData = await response.json();
         setError(errorData.error || "Failed to load messages");
       }
-    } catch (err) {
+    } catch (_err) {
       logger.error("[AI CHAT] Failed to load messages:", err);
       setError("Failed to load messages");
     }
@@ -161,7 +161,7 @@ export function ProductionChatInterface({ isOpen, onClose, venueId }: ChatInterf
         const errorData = await response.json();
         setError(errorData.error || "Failed to send message");
       }
-    } catch (err) {
+    } catch (_err) {
       logger.error("[AI CHAT] Failed to send message:", err);
       setError("Failed to send message");
     } finally {

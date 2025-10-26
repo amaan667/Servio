@@ -26,8 +26,8 @@ export async function GET(
       {
         cookies: {
           get(name: string) { return cookieStore.get(name)?.value; },
-          set(name: string, value: string, options: unknown) { },
-          remove(name: string, options: unknown) { },
+          set(name: string, value: string, options: unknown) { /* Empty */ },
+          remove(name: string, options: unknown) { /* Empty */ },
         },
       }
     );
@@ -42,7 +42,7 @@ export async function GET(
       data: null
     });
 
-  } catch (error) {
+  } catch (_error) {
     logger.error('[ORDERS SESSION] Error:', { error: error instanceof Error ? error.message : 'Unknown error' });
     return NextResponse.json({ 
       success: false, 

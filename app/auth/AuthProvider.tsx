@@ -15,7 +15,7 @@ const AuthCtx = createContext<AuthValue>({
   session: null,
   user: null,
   loading: true,
-  signOut: async () => {},
+  signOut: async () => { /* Empty */ },
 });
 
 export function useAuth() {

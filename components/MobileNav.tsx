@@ -43,7 +43,7 @@ interface NavItem {
   isActive?: boolean;
 }
 
-export default function MobileNav({ venueId, venueName, counts = {} }: MobileNavProps) {
+export default function MobileNav({ venueId, venueName, counts = { /* Empty */ } }: MobileNavProps) {
   const [isOpen, setIsOpen] = useState(false);
   const [isVisible, setIsVisible] = useState(false);
   const router = useRouter();

@@ -9,7 +9,7 @@ function ThrowError() {
 describe("FeatureErrorBoundary", () => {
   // Suppress console.error for these tests
   beforeAll(() => {
-    jest.spyOn(console, "error").mockImplementation(() => {});
+    jest.spyOn(console, "error").mockImplementation(() => { /* Empty */ });
   });
 
   afterAll(() => {

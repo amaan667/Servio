@@ -85,7 +85,7 @@ Rules:
     
     logger.info('[VISION] Extracted items:', json.length);
     return json;
-  } catch (err) {
+  } catch (_err) {
     logger.error("Failed to parse item extraction JSON:", text);
     logger.error("Parse error details:", err);
     return [];
@@ -185,10 +185,8 @@ Return ONLY the JSON array, no explanation.
     
     // Validate positions
     positions.forEach((pos: any, index: number) => {
-      if (!pos.name || !pos.x1 || !pos.y1 || !pos.x2 || !pos.y2) {
-      }
-      if (pos.x2 - pos.x1 > 50) {
-      }
+      if (!pos.name || !pos.x1 || !pos.y1 || !pos.x2 || !pos.y2) { /* Empty */ }
+      if (pos.x2 - pos.x1 > 50) { /* Empty */ }
     });
     
     // Convert and validate bounding box coordinates
@@ -216,7 +214,7 @@ Return ONLY the JSON array, no explanation.
         confidence: pos.confidence || 0.8,
       };
     });
-  } catch (err) {
+  } catch (_err) {
     logger.error("Failed to parse menu positions JSON:", text);
     logger.error("Parse error details:", err);
     // Return empty array instead of crashing - menu will still work without hotspots

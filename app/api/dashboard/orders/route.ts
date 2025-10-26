@@ -107,14 +107,14 @@ export async function GET(req: Request) {
   //     else if (ageMinutes < 1440) acc['1-24hrs'] = (acc['1-24hrs'] || 0) + 1;
   //     else acc['>24hrs'] = (acc['>24hrs'] || 0) + 1;
   //     return acc;
-  //   }, {} as Record<string, number>);
+  //   }, { /* Empty */ } as Record<string, number>);
   //   
   //   
   //   // Status distribution
   //   const statusDistribution = orders.reduce((acc, order) => {
   //     acc[order.order_status] = (acc[order.order_status] || 0) + 1;
   //     return acc;
-  //   }, {} as Record<string, number>);
+  //   }, { /* Empty */ } as Record<string, number>);
   //   
   // }
 

@@ -203,7 +203,7 @@ export async function POST(req: Request) {
       completedCount: updatedOrders?.length || 0,
       message: `Successfully completed ${updatedOrders?.length || 0} orders and cleaned up tables`,
     });
-  } catch (error) {
+  } catch (_error) {
     logger.error("[BULK COMPLETE] Unexpected error:", {
       error: error instanceof Error ? error.message : "Unknown error",
     });

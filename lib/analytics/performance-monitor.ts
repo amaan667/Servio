@@ -117,7 +117,7 @@ export class PerformanceMonitor {
         const end = performance.now();
         this.recordMetric("apiResponseTime", end - start);
         return response;
-      } catch (error) {
+      } catch (_error) {
         const end = performance.now();
         this.recordMetric("apiResponseTime", end - start);
         throw error;
@@ -212,12 +212,12 @@ export class PerformanceMonitor {
     trends: Record<string, number>;
   } {
     if (this.metrics.length === 0) {
-      return { average: {}, current: {}, trends: {} };
+      return { average: { /* Empty */ }, current: { /* Empty */ }, trends: { /* Empty */ } };
     }
 
-    const average: Partial<PerformanceMetrics> = {};
+    const average: Partial<PerformanceMetrics> = { /* Empty */ };
     const current = this.metrics[this.metrics.length - 1];
-    const trends: Record<string, number> = {};
+    const trends: Record<string, number> = { /* Empty */ };
 
     // Calculate averages
     Object.keys(this.metrics[0]).forEach((key) => {
@@ -272,7 +272,7 @@ export class PerformanceMonitor {
           userAgent: navigator.userAgent,
         }),
       });
-    } catch (error) {
+    } catch (_error) {
       logger.warn("[PERFORMANCE] Failed to send metric to analytics:", error as Record<string, unknown>);
     }
   }

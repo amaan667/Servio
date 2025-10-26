@@ -117,7 +117,7 @@ export default function KDSClient({ venueId, initialTickets, initialStations }: 
     try {
       const { apiClient } = await import("@/lib/api-client");
       const response = await apiClient.get("/api/kds/tickets", {
-        params: { venueId, ...(selectedStation ? { stationId: selectedStation } : {}) },
+        params: { venueId, ...(selectedStation ? { stationId: selectedStation } : { /* Empty */ }) },
       });
       const data = await response.json();
 

@@ -30,7 +30,7 @@ export default function UnifiedFeedbackForm({
   const [loading, setLoading] = useState(true);
   const [submitting, setSubmitting] = useState(false);
   const [isSubmitted, setIsSubmitted] = useState(false);
-  const [answers, setAnswers] = useState<{[key: string]: unknown}>({});
+  const [answers, setAnswers] = useState<{[key: string]: unknown}>({ /* Empty */ });
   const { toast } = useToast();
 
   // Generic feedback questions (matching the screenshot layout)
@@ -116,7 +116,7 @@ export default function UnifiedFeedbackForm({
       } else {
         setQuestions(genericQuestions);
       }
-    } catch (error) {
+    } catch (_error) {
 
       setQuestions(genericQuestions);
     } finally {
@@ -222,7 +222,7 @@ export default function UnifiedFeedbackForm({
         onSubmit();
       }
 
-    } catch (error) {
+    } catch (_error) {
 
       toast({
         title: "Error",

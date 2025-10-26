@@ -95,7 +95,7 @@ export async function POST(req: Request) {
       logger.debug("[ORDERS SERVE] table_sessions updated to SERVED", {
         data: { orderId, extra: venueId },
       });
-    } catch (e) {
+    } catch (_e) {
       // best-effort; don't fail the request if this errors (RLS or not found)
       logger.warn("[ORDERS SERVE] table_sessions update warning", { orderId, venueId, error: e });
     }

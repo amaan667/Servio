@@ -24,8 +24,8 @@ export async function POST(req: Request) {
       {
         cookies: {
           get(name: string) { return cookieStore.get(name)?.value; },
-          set(name: string, value: string, options: unknown) { },
-          remove(name: string, options: unknown) { },
+          set(name: string, value: string, options: unknown) { /* Empty */ },
+          remove(name: string, options: unknown) { /* Empty */ },
         },
       }
     );
@@ -101,7 +101,7 @@ export async function POST(req: Request) {
       }
     });
 
-  } catch (error) {
+  } catch (_error) {
     logger.error('[AUTO CREATE TABLE] Error:', { error: error instanceof Error ? error.message : 'Unknown error' });
     return NextResponse.json({ 
       success: false, 

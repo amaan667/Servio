@@ -4,7 +4,7 @@ import { createAdminClient } from '@/lib/supabase';
 export const runtime = 'nodejs';
 
 export async function POST(req: Request) {
-  const { venue_id } = await req.json().catch(()=>({}));
+  const { venue_id } = await req.json().catch(()=>({ /* Empty */ }));
   if (!venue_id) return NextResponse.json({ error: 'venue_id required' }, { status: 400 });
   const admin = createAdminClient();
 

@@ -149,7 +149,7 @@ export default function LiveOrdersClient({ venueId, venueName: venueNameProp }: 
     if (parsedTableFilter) {
       newUrl.searchParams.set('table', `Table ${parsedTableFilter}`);
     }
-    window.history.replaceState({}, '', newUrl.toString());
+    window.history.replaceState({ /* Empty */ }, '', newUrl.toString());
   };
 
   const handleBulkComplete = () => {

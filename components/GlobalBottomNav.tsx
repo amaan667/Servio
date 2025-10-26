@@ -23,7 +23,7 @@ interface NavItem {
   isActive?: boolean;
 }
 
-export default function GlobalBottomNav({ venueId, counts = {} }: GlobalBottomNavProps) {
+export default function GlobalBottomNav({ venueId, counts = { /* Empty */ } }: GlobalBottomNavProps) {
   const [isVisible, setIsVisible] = useState(true);
   const [liveOrdersCount, setLiveOrdersCount] = useState(counts.live_orders || 0);
   const router = useRouter();

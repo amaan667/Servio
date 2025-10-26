@@ -27,7 +27,7 @@ interface GestureOptions {
   preventDefault?: boolean;
 }
 
-export function useGestures(options: GestureOptions = {}) {
+export function useGestures(options: GestureOptions = { /* Empty */ }) {
   const {
     onSwipeLeft,
     onSwipeRight,
@@ -280,7 +280,7 @@ export function usePullToRefresh(onRefresh: () => Promise<void>) {
     setIsRefreshing(true);
     try {
       await onRefresh();
-    } catch (error) {
+    } catch (_error) {
       logger.error('Pull-to-refresh failed:', errorToContext(error));
     } finally {
       setIsRefreshing(false);

@@ -91,7 +91,7 @@ export async function PATCH(req: Request) {
       try {
         const { cleanupTableOnOrderCompletion } = await import("@/lib/table-cleanup");
         await cleanupTableOnOrderCompletion(orderId, "READY");
-      } catch (error) {
+      } catch (_error) {
       // Error handled silently
     }
     }
@@ -101,7 +101,7 @@ export async function PATCH(req: Request) {
       updated: tickets?.length || 0,
       tickets,
     });
-  } catch (error) {
+  } catch (_error) {
     logger.error("[KDS] Unexpected error:", {
       error: error instanceof Error ? error.message : "Unknown error",
     });

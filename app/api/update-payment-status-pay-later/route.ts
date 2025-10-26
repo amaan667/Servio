@@ -12,8 +12,8 @@ export async function POST() {
       {
         cookies: {
           get(name: string) { return undefined; },
-          set(name: string, value: string, options: unknown) { },
-          remove(name: string, options: unknown) { },
+          set(name: string, value: string, options: unknown) { /* Empty */ },
+          remove(name: string, options: unknown) { /* Empty */ },
         },
       }
     );
@@ -175,7 +175,7 @@ export async function POST() {
       testResult
     });
 
-  } catch (error) {
+  } catch (_error) {
     logger.error('Error:', { error: error instanceof Error ? error.message : 'Unknown error' });
     return NextResponse.json({ 
       success: false, 

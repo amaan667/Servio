@@ -66,7 +66,7 @@ export function toRecord(value: unknown): Record<string, unknown> {
   if (isObject(value)) {
     return value;
   }
-  return {};
+  return { /* Empty */ };
 }
 
 /**

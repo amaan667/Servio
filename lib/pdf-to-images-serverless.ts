@@ -37,7 +37,7 @@ export async function convertPDFToImages(pdfBuffer: Buffer): Promise<string[]> {
 
     logger.info('[PDF-TO-IMAGES] Converted pages:', imageBuffers.length);
     return imageBuffers;
-  } catch (error) {
+  } catch (_error) {
     logger.error('[PDF-TO-IMAGES] Error:', error);
     
     // Fallback: Return empty array and let Vision work with PDF directly

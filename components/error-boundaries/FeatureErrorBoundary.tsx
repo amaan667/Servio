@@ -33,8 +33,7 @@ export class FeatureErrorBoundary extends React.Component<
     return { hasError: true, error };
   }
 
-  componentDidCatch(error: Error, errorInfo: React.ErrorInfo) {
-  }
+  componentDidCatch(error: Error, errorInfo: React.ErrorInfo) { /* Empty */ }
 
   render() {
     if (this.state.hasError) {

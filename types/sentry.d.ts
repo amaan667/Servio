@@ -15,5 +15,5 @@ declare global {
   }
 }
 
-export {};
+export { /* Empty */ };
 

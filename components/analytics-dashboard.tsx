@@ -181,8 +181,8 @@ export function AnalyticsDashboard({ venueId }: AnalyticsDashboardProps) {
       setHourlyData(hourlyStats);
 
       // Calculate top-selling items
-      const itemStats: { [key: string]: { quantity: number; revenue: number } } = {};
-      const categoryStats: { [key: string]: { quantity: number; revenue: number } } = {};
+      const itemStats: { [key: string]: { quantity: number; revenue: number } } = { /* Empty */ };
+      const categoryStats: { [key: string]: { quantity: number; revenue: number } } = { /* Empty */ };
       filteredOrders.forEach(order => {
         order.items.forEach(item => {
           if (!itemStats[item.item_name]) {
@@ -223,7 +223,7 @@ export function AnalyticsDashboard({ venueId }: AnalyticsDashboardProps) {
       setCategoryPerformance(categoryData);
 
       // Calculate customer frequency
-      const customerStats: { [key: string]: number } = {};
+      const customerStats: { [key: string]: number } = { /* Empty */ };
       filteredOrders.forEach(order => {
         const customerKey = order.customer_phone || order.customer_email || order.customer_name;
         customerStats[customerKey] = (customerStats[customerKey] || 0) + 1;
@@ -241,7 +241,7 @@ export function AnalyticsDashboard({ venueId }: AnalyticsDashboardProps) {
 
       // Calculate revenue trend (last 7 days)
       if (timeRange === 'week') {
-        const dailyRevenue: { [key: string]: number } = {};
+        const dailyRevenue: { [key: string]: number } = { /* Empty */ };
         for (let i = 6; i >= 0; i--) {
           const date = new Date(now.getTime() - i * 24 * 60 * 60 * 1000);
           const dateKey = date.toISOString().split('T')[0];
@@ -286,7 +286,7 @@ export function AnalyticsDashboard({ venueId }: AnalyticsDashboardProps) {
       });
       setDayOfWeekData(dow);
 
-    } catch (error) {
+    } catch (_error) {
 
       setStats({ revenue: 0, orderCount: 0, activeTables: 0, unpaidOrders: 0, averageOrderValue: 0, completionRate: 0 });
     } finally {

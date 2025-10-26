@@ -6,7 +6,7 @@ export const isCounterOrder = (order: Order) => {
 };
 
 export const groupOrdersByTable = (orders: Order[]) => {
-  const tableGroups: { [tableNumber: number]: Order[] } = {};
+  const tableGroups: { [tableNumber: number]: Order[] } = { /* Empty */ };
   
   orders.forEach(order => {
     const tableNum = order.table_number || 0;
@@ -16,7 +16,7 @@ export const groupOrdersByTable = (orders: Order[]) => {
     tableGroups[tableNum].push(order);
   });
 
-  const filteredGroups: { [tableNumber: number]: Order[] } = {};
+  const filteredGroups: { [tableNumber: number]: Order[] } = { /* Empty */ };
   
   Object.keys(tableGroups).forEach(tableNum => {
     const orders = tableGroups[Number(tableNum)];

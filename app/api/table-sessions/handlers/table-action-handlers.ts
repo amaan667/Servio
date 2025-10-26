@@ -179,7 +179,7 @@ export async function handleCloseTable(supabase: SupabaseClient, table_id: strin
         new_session: newSessionData
       }
     });
-  } catch (error) {
+  } catch (_error) {
     logger.error('[TABLE ACTIONS] Unexpected error closing table:', { error: error instanceof Error ? error.message : 'Unknown error' });
     return NextResponse.json({ error: 'Internal server error' }, { status: 500 });
   }
@@ -358,7 +358,7 @@ export async function handleReserveTable(supabase: SupabaseClient, table_id: str
     }
 
     return NextResponse.json({ success: true });
-  } catch (error) {
+  } catch (_error) {
     logger.error('[TABLE ACTIONS] Unexpected error in handleReserveTable:', { error: error instanceof Error ? error.message : 'Unknown error' });
     return NextResponse.json({ error: 'Internal server error in reservation' }, { status: 500 });
   }
@@ -518,7 +518,7 @@ export async function handleMergeTable(supabase: SupabaseClient, venue_id: strin
       success: true, 
       data: data 
     });
-  } catch (error) {
+  } catch (_error) {
     logger.error('[TABLE ACTIONS] Unexpected error merging tables:', { error: error instanceof Error ? error.message : 'Unknown error' });
     return NextResponse.json({ error: 'Internal server error' }, { status: 500 });
   }
@@ -584,7 +584,7 @@ export async function handleUnmergeTable(supabase: unknown, table_id: string) {
     }
 
     return NextResponse.json({ error: 'No merged table found for this table' }, { status: 404 });
-  } catch (error) {
+  } catch (_error) {
     logger.error('[TABLE ACTIONS] Unexpected error unmerging table:', { error: error instanceof Error ? error.message : 'Unknown error' });
     return NextResponse.json({ error: 'Internal server error' }, { status: 500 });
   }
@@ -660,7 +660,7 @@ export async function handleCancelReservation(supabase: unknown, table_id: strin
         new_session: newSessionData
       }
     });
-  } catch (error) {
+  } catch (_error) {
     logger.error('[TABLE ACTIONS] Unexpected error cancelling reservation:', { error: error instanceof Error ? error.message : 'Unknown error' });
     return NextResponse.json({ error: 'Internal server error' }, { status: 500 });
   }

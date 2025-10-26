@@ -3,7 +3,7 @@
 import { useEffect, useState } from "react";
 
 export default function EnvCheckPage() {
-  const [clientVars, setClientVars] = useState<Record<string, string>>({});
+  const [clientVars, setClientVars] = useState<Record<string, string>>({ /* Empty */ });
 
   useEffect(() => {
     // Check environment variables available to the browser

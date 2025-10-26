@@ -45,7 +45,7 @@ export function useTableManagement() {
       }
 
       return data.table;
-    } catch (err) {
+    } catch (_err) {
       logger.error("[TABLE MANAGEMENT HOOK] Error creating table:", errorToContext(err));
       const errorMessage = err instanceof Error ? err.message : "Failed to create table";
       setError(errorMessage);
@@ -75,7 +75,7 @@ export function useTableManagement() {
       }
 
       return data.table;
-    } catch (err) {
+    } catch (_err) {
       logger.error("[TABLE MANAGEMENT HOOK] Error updating table:", errorToContext(err));
       const errorMessage = err instanceof Error ? err.message : "Failed to update table";
       setError(errorMessage);
@@ -100,7 +100,7 @@ export function useTableManagement() {
       }
 
       return data;
-    } catch (err) {
+    } catch (_err) {
       logger.error("[TABLE MANAGEMENT HOOK] Error deleting table:", errorToContext(err));
       const errorMessage = err instanceof Error ? err.message : "Failed to delete table";
       setError(errorMessage);
@@ -116,7 +116,7 @@ export function useTableManagement() {
       setError(null);
 
       const { apiClient } = await import("@/lib/api-client");
-      const response = await apiClient.post(`/api/tables/${tableId}/reissue-qr`, {});
+      const response = await apiClient.post(`/api/tables/${tableId}/reissue-qr`, { /* Empty */ });
 
       const data = await response.json();
 
@@ -125,7 +125,7 @@ export function useTableManagement() {
       }
 
       return data.table;
-    } catch (err) {
+    } catch (_err) {
       logger.error("[TABLE MANAGEMENT HOOK] Error reissuing QR:", errorToContext(err));
       const errorMessage = err instanceof Error ? err.message : "Failed to reissue QR";
       setError(errorMessage);

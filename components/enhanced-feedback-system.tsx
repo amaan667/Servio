@@ -80,7 +80,7 @@ export function EnhancedFeedbackSystem({ venueId }: FeedbackSystemProps) {
         const data = await response.json();
         setQuestions(data.questions || []);
       }
-    } catch (error) {
+    } catch (_error) {
       // Error silently handled
     }
   }, [venueId]);
@@ -147,7 +147,7 @@ export function EnhancedFeedbackSystem({ venueId }: FeedbackSystemProps) {
       setFeedback(filteredFeedback);
       calculateStats(filteredFeedback);
 
-    } catch (err) {
+    } catch (_err) {
 
       setError(err.message);
     } finally {
@@ -168,14 +168,14 @@ export function EnhancedFeedbackSystem({ venueId }: FeedbackSystemProps) {
       const sentiment = f.sentiment_label || 'neutral';
       acc[sentiment] = (acc[sentiment] || 0) + 1;
       return acc;
-    }, {} as Record<string, number>);
+    }, { /* Empty */ } as Record<string, number>);
 
     const positiveSentiment = sentimentCounts.positive || 0;
     const negativeSentiment = sentimentCounts.negative || 0;
     const neutralSentiment = sentimentCounts.neutral || 0;
 
     // Category analysis
-    const categoryStats: Record<string, { count: number; totalRating: number }> = {};
+    const categoryStats: Record<string, { count: number; totalRating: number }> = { /* Empty */ };
     feedbackData.forEach(f => {
       const category = f.category || 'General';
       if (!categoryStats[category]) {
@@ -195,7 +195,7 @@ export function EnhancedFeedbackSystem({ venueId }: FeedbackSystemProps) {
       .slice(0, 5);
 
     // Rating distribution
-    const ratingCounts: Record<number, number> = {};
+    const ratingCounts: Record<number, number> = { /* Empty */ };
     for (let i = 1; i <= 5; i++) {
       ratingCounts[i] = 0;
     }

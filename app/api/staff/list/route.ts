@@ -24,7 +24,7 @@ export async function GET(req: Request) {
     }
 
     return NextResponse.json({ success: true, staff: data || [] });
-  } catch (e) {
+  } catch (_e) {
     const errorMessage = e instanceof Error ? e.message : 'Unknown error';
     return NextResponse.json({ error: errorMessage }, { status: 500 });
   }

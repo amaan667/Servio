@@ -60,7 +60,7 @@ const OrdersClient: React.FC<OrdersClientProps> = ({ venueId, initialOrders = []
   const [orders, setOrders] = useState<Order[]>([]);
   const [allTodayOrders, setAllTodayOrders] = useState<Order[]>([]);
   const [historyOrders, setHistoryOrders] = useState<Order[]>([]);
-  const [groupedHistoryOrders, setGroupedHistoryOrders] = useState<GroupedHistoryOrders>({});
+  const [groupedHistoryOrders, setGroupedHistoryOrders] = useState<GroupedHistoryOrders>({ /* Empty */ });
   const [loading, setLoading] = useState(!initialOrders.length);
   const [selectedOrder, setSelectedOrder] = useState<Order | null>(null);
   const [todayWindow, setTodayWindow] = useState<{ startUtcISO: string; endUtcISO: string } | null>(null);
@@ -161,11 +161,11 @@ const OrdersClient: React.FC<OrdersClientProps> = ({ venueId, initialOrders = []
         }
         acc[date].push(order);
         return acc;
-      }, {});
+      }, { /* Empty */ });
       setGroupedHistoryOrders(grouped);
       
       setLoading(false);
-    } catch (error) {
+    } catch (_error) {
 
       setLoading(false);
     }

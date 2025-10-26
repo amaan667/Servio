@@ -22,8 +22,8 @@ export async function GET(req: Request) {
         {
           cookies: {
             get() { return undefined; },
-            set() { },
-            remove() { },
+            set() { /* Empty */ },
+            remove() { /* Empty */ },
           },
         }
       );
@@ -80,7 +80,7 @@ export async function GET(req: Request) {
     }
 
     return NextResponse.json({ paid: false }, { status: 200 });
-  } catch (e) {
+  } catch (_e) {
     logger.error("verify error", { error: e instanceof Error ? e.message : 'Unknown error' });
     return NextResponse.json({ error: e instanceof Error ? e.message : "verify failed" }, { status: 500 });
   }

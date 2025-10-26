@@ -32,7 +32,7 @@ export async function POST(req: NextRequest) {
     }
 
     return NextResponse.json({ session });
-  } catch (error) {
+  } catch (_error) {
     logger.error('[TABLE SESSIONS API] Unexpected error:', { error: error instanceof Error ? error.message : 'Unknown error' });
     return NextResponse.json({ error: 'Internal server error' }, { status: 500 });
   }

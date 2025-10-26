@@ -35,7 +35,7 @@ const ensureStripeProducts = async () => {
     },
   ];
 
-  const priceIds: Record<string, string> = {};
+  const priceIds: Record<string, string> = { /* Empty */ };
 
   for (const product of products) {
     try {
@@ -64,7 +64,7 @@ const ensureStripeProducts = async () => {
 
       priceIds[product.tier] = price.id;
       logger.debug(`[STRIPE SETUP] Created ${product.tier} price: ${price.id}`);
-    } catch (error) {
+    } catch (_error) {
       logger.error(`[STRIPE ERROR] Failed to create ${product.tier} product/price:`, {
         error: error instanceof Error ? error.message : "Unknown error",
       });
@@ -307,7 +307,7 @@ export async function POST(_request: NextRequest) {
     });
 
     return NextResponse.json({ sessionId: session.id, url: session.url });
-  } catch (error) {
+  } catch (_error) {
     const errorMessage = error instanceof Error ? error.message : "Unknown error";
     logger.error("[STRIPE CHECKOUT] Error:", { error: errorMessage });
     return NextResponse.json(

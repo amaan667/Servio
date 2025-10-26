@@ -132,7 +132,7 @@ export default function InvitationBasedStaffManagement({
       if (shiftsResponse.ok) {
         setAllShifts(shiftsData.shifts || []);
       }
-    } catch (err) {
+    } catch (_err) {
 
       setError('Failed to load staff data');
     } finally {
@@ -143,7 +143,7 @@ export default function InvitationBasedStaffManagement({
   const reloadAllShifts = useCallback(async () => {
     try {
       const res = await fetch(`/api/staff/shifts/list?venue_id=${encodeURIComponent(venueId)}`);
-      const j = await res.json().catch(() => ({}));
+      const j = await res.json().catch(() => ({ /* Empty */ }));
       if (res.ok && !j?.error) {
         const shifts = j.shifts || [];
         setAllShifts(shifts);
@@ -218,7 +218,7 @@ export default function InvitationBasedStaffManagement({
       // Switch to invitations tab and reload data
       setActiveTab('invitations');
       loadData(); // Reload to show new invitation
-    } catch (err) {
+    } catch (_err) {
       setError(err.message || 'Failed to send invitation');
     } finally {
       setInviteLoading(false);
@@ -257,7 +257,7 @@ export default function InvitationBasedStaffManagement({
 
       // Also reload data to ensure consistency
       loadData();
-    } catch (err) {
+    } catch (_err) {
       toast({
         title: 'Error',
         description: err.message || 'Failed to remove invitation',
@@ -328,7 +328,7 @@ export default function InvitationBasedStaffManagement({
     const load = useCallback(async () => {
       try {
         const res = await fetch(`/api/staff/shifts/list?venue_id=${encodeURIComponent(venueId)}&staff_id=${encodeURIComponent(row.id)}`);
-        const j = await res.json().catch(() => ({}));
+        const j = await res.json().catch(() => ({ /* Empty */ }));
         if (res.ok && !j?.error) {
           setShifts(j.shifts || []);
         }
@@ -361,7 +361,7 @@ export default function InvitationBasedStaffManagement({
           area: area || null 
         }) 
       });
-      const j = await res.json().catch(() => ({}));
+      const j = await res.json().catch(() => ({ /* Empty */ }));
       if (!res.ok || j?.error) { 
         setErr(j?.error || 'Failed to save shift'); 
         setSaving(false); 
@@ -574,7 +574,7 @@ export default function InvitationBasedStaffManagement({
                           <div className="mt-4">
                             <StaffRowItem 
                               row={member} 
-                              onDeleteRow={() => {}} 
+                              onDeleteRow={() => { /* Empty */ }} 
                               onShiftsChanged={reloadAllShifts}
                               embedded={true}
                               onClose={() => setEditingShiftFor(null)}
@@ -694,7 +694,7 @@ export default function InvitationBasedStaffManagement({
                         
                         <StaffRowItem 
                           row={member} 
-                          onDeleteRow={() => {}} 
+                          onDeleteRow={() => { /* Empty */ }} 
                           onShiftsChanged={reloadAllShifts}
                           embedded={false}
                         />

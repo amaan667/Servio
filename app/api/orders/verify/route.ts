@@ -33,7 +33,7 @@ export async function GET(req: Request) {
     }
 
     // Get metadata from session
-    const metadata = session.metadata || {};
+    const metadata = session.metadata || { /* Empty */ };
     const orderId = metadata.orderId;
     
     logger.debug('[VERIFY] Order ID from metadata:', { value: orderId });
@@ -92,7 +92,7 @@ export async function GET(req: Request) {
       updated: true 
     });
 
-  } catch (error) {
+  } catch (_error) {
     logger.error('[VERIFY] Error:', { error: error instanceof Error ? error.message : 'Unknown error' });
     return NextResponse.json({ 
       error: 'Internal server error',

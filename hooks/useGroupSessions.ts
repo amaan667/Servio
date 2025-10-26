@@ -50,7 +50,7 @@ export function useGroupSessions(venueId: string): UseGroupSessionsReturn {
       } else {
         throw new Error(data.error || "Failed to fetch group sessions");
       }
-    } catch (err) {
+    } catch (_err) {
       logger.error("[USE GROUP SESSIONS] Error fetching group sessions:", errorToContext(err));
       setError(err instanceof Error ? err.message : "Unknown error");
       setGroupSessions([]);

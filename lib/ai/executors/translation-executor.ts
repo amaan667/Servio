@@ -170,11 +170,11 @@ export async function executeMenuTranslate(
         id: item.id,
         name: item.name,
         category: item.category,
-        ...(typedParams.includeDescriptions && item.description ? { description: item.description } : {})
+        ...(typedParams.includeDescriptions && item.description ? { description: item.description } : { /* Empty */ })
       }));
 
       const mappingKey = `${detectedSourceLanguage}-${typedParams.targetLanguage}`;
-      const categoryMappingList = Object.entries(CATEGORY_MAPPINGS[mappingKey] || {})
+      const categoryMappingList = Object.entries(CATEGORY_MAPPINGS[mappingKey] || { /* Empty */ })
         .map(([from, to]) => `   - "${from}" → "${to}"`)
         .join('\n');
 
@@ -240,7 +240,7 @@ OUTPUT FORMAT:
           },
         };
       }
-    } catch (error) {
+    } catch (_error) {
       logger.error("[AI ASSISTANT] Preview translation failed:", error as Record<string, unknown>);
     }
 
@@ -281,11 +281,11 @@ OUTPUT FORMAT:
         id: item.id,
         name: item.name,
         category: item.category,
-        ...(typedParams.includeDescriptions && item.description ? { description: item.description } : {})
+        ...(typedParams.includeDescriptions && item.description ? { description: item.description } : { /* Empty */ })
       }));
 
       const mappingKey = `${detectedSourceLanguage}-${typedParams.targetLanguage}`;
-      const categoryMappingList = Object.entries(CATEGORY_MAPPINGS[mappingKey] || {})
+      const categoryMappingList = Object.entries(CATEGORY_MAPPINGS[mappingKey] || { /* Empty */ })
         .map(([from, to]) => `   - "${from}" → "${to}"`)
         .join('\n');
 
@@ -440,7 +440,7 @@ OUTPUT FORMAT:
       },
       auditId: "",
     };
-  } catch (error) {
+  } catch (_error) {
     logger.error("[AI ASSISTANT] Translation error:", error as Record<string, unknown>);
     throw new AIAssistantError(
       `Translation failed: ${error.message}`,

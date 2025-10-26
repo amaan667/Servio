@@ -72,7 +72,7 @@ class PerformanceMonitor {
    * Get summary of all operations
    */
   getSummary(): Record<string, { count: number; avg: number; p95: number }> {
-    const summary: Record<string, { count: number; avg: number; p95: number }> = {};
+    const summary: Record<string, { count: number; avg: number; p95: number }> = { /* Empty */ };
     
     const uniqueNames = [...new Set(this.metrics.map((m) => m.name))];
     
@@ -147,7 +147,7 @@ export function measurePerformance(operationName: string) {
         const result = await target(...args);
         timer.end();
         return result;
-      } catch (error) {
+      } catch (_error) {
         timer.end();
         throw error;
       }

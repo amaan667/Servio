@@ -52,7 +52,7 @@ export async function POST(req: Request) {
 
     return NextResponse.json({ success: true, orderId: order.id });
 
-  } catch (error) {
+  } catch (_error) {
     logger.error('[UPDATE SESSION] Unexpected error:', { error: error instanceof Error ? error.message : 'Unknown error' });
     return NextResponse.json({ 
       error: 'Internal server error' 

@@ -71,7 +71,7 @@ const options: swaggerJsdoc.Options = {
           properties: {
             data: {
               type: 'array',
-              items: {},
+              items: { /* Empty */ },
             },
             pagination: {
               type: 'object',

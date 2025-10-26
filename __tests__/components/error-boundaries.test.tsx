@@ -20,7 +20,7 @@ describe('Error Boundaries', () => {
 
     it('should render error UI when error occurs', () => {
       // Suppress error console output in test
-      const spy = vi.spyOn(console, 'error').mockImplementation(() => {});
+      const spy = vi.spyOn(console, 'error').mockImplementation(() => { /* Empty */ });
       
       render(
         <DashboardErrorBoundary>
@@ -46,7 +46,7 @@ describe('Error Boundaries', () => {
     });
 
     it('should render error message when error occurs', () => {
-      const spy = vi.spyOn(console, 'error').mockImplementation(() => {});
+      const spy = vi.spyOn(console, 'error').mockImplementation(() => { /* Empty */ });
       
       render(
         <APIErrorBoundary>

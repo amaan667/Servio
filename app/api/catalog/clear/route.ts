@@ -58,7 +58,7 @@ export async function POST(req: NextRequest) {
       deletedCount: itemsCount || 0,
     });
 
-  } catch (err) {
+  } catch (_err) {
     const errorMessage = err instanceof Error ? err.message : 'Clear failed';
     logger.error('Failed to clear catalog', { error: errorMessage });
     return NextResponse.json(

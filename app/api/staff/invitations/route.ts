@@ -64,7 +64,7 @@ export async function GET(_request: NextRequest) {
     }
 
     return NextResponse.json({ invitations });
-  } catch (error) {
+  } catch (_error) {
     const errorMessage = error instanceof Error ? error.message : 'Internal server error';
     return NextResponse.json({ 
       error: errorMessage 
@@ -89,7 +89,7 @@ export async function POST(_request: NextRequest) {
       }, { status: 400 });
     }
 
-    const { venue_id, email, role, permissions = {} } = body;
+    const { venue_id, email, role, permissions = { /* Empty */ } } = body;
 
     if (!venue_id) {
       return NextResponse.json({ 
@@ -357,7 +357,7 @@ export async function POST(_request: NextRequest) {
       emailSent,
       invitationLink: emailSent ? undefined : (await import('@/lib/email')).generateInvitationLink(invitation.token)
     });
-  } catch (error) {
+  } catch (_error) {
     const errorMessage = error instanceof Error ? error.message : 'Internal server error';
     return NextResponse.json({ 
       error: errorMessage 
@@ -448,7 +448,7 @@ export async function DELETE(_request: NextRequest) {
       success: true,
       message: 'Invitation removed successfully'
     });
-  } catch (error) {
+  } catch (_error) {
     const errorMessage = error instanceof Error ? error.message : 'Internal server error';
     return NextResponse.json({ 
       error: errorMessage 

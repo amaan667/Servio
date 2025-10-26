@@ -206,7 +206,7 @@ export async function POST() {
     response.headers.set("Expires", "0");
 
     return response;
-  } catch (error) {
+  } catch (_error) {
     logger.error("[ORG ENSURE] Unexpected error:", {
       error: error instanceof Error ? error.message : "Unknown error",
     });

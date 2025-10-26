@@ -62,7 +62,7 @@ export function downloadCSV({ filename, csv }: CsvDownloadOptions): void {
     URL.revokeObjectURL(url);
 
     logger.debug(`[CSV Download] Successfully downloaded: ${sanitizedFilename}`);
-  } catch (error) {
+  } catch (_error) {
     logger.warn('[CSV Download] Failed to download CSV:', error as Record<string, unknown>);
     
     // Fallback: try to open in new window (may not work in all browsers)

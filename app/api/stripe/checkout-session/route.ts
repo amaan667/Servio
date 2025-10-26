@@ -33,7 +33,7 @@ export async function GET(_request: NextRequest) {
       subscription: session.subscription,
       payment_status: session.payment_status,
     });
-  } catch (error) {
+  } catch (_error) {
     const errorMessage = error instanceof Error ? error.message : 'Unknown error';
     logger.error("[STRIPE SESSION] Error fetching session:", { error: errorMessage });
     return NextResponse.json(

@@ -76,7 +76,7 @@ export async function GET(req: Request) {
       ok: true,
       orders: activeOrders || []
     });
-  } catch (error) {
+  } catch (_error) {
     logger.error('❌ [CHECK ACTIVE ORDERS] Unexpected error', {
       error: error instanceof Error ? error.message : String(error)
     });

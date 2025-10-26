@@ -63,7 +63,7 @@ export default function PayLaterPage() {
         }
 
         setOrder(data.order);
-      } catch (err) {
+      } catch (_err) {
         setError(err instanceof Error ? err.message : "Failed to load order");
       } finally {
         setLoading(false);
@@ -105,7 +105,7 @@ export default function PayLaterPage() {
 
       // Redirect to Stripe
       window.location.href = url;
-    } catch (err) {
+    } catch (_err) {
       setError(err instanceof Error ? err.message : "Failed to process payment");
       setProcessing(false);
     }
@@ -139,7 +139,7 @@ export default function PayLaterPage() {
       // Update local order state
       setOrder({ ...order, payment_mode: "pay_at_till" });
       setSwitchedToTill(true);
-    } catch (err) {
+    } catch (_err) {
       setError(err instanceof Error ? err.message : "Failed to switch payment method");
     } finally {
       setSwitching(false);

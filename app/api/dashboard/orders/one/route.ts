@@ -106,14 +106,14 @@ export async function GET(req: Request) {
     //     else if (ageMinutes < 1440) acc['1-24hrs'] = (acc['1-24hrs'] || 0) + 1;
     //     else acc['>24hrs'] = (acc['>24hrs'] || 0) + 1;
     //     return acc;
-    //   }, {} as Record<string, number>);
+    //   }, { /* Empty */ } as Record<string, number>);
     //
     //
     //   // Status distribution
     //   const statusDistribution = data.reduce((acc, order) => {
     //     acc[order.order_status] = (acc[order.order_status] || 0) + 1;
     //     return acc;
-    //   }, {} as Record<string, number>);
+    //   }, { /* Empty */ } as Record<string, number>);
     //
     // }
 
@@ -122,7 +122,7 @@ export async function GET(req: Request) {
       meta: { scope, zone, count: transformedOrders?.length ?? 0 },
       orders: (transformedOrders || []) as OrderRow[],
     });
-  } catch (e) {
+  } catch (_e) {
     return NextResponse.json(
       { ok: false, error: e instanceof Error ? e.message : "Unknown error" },
       { status: 500 }

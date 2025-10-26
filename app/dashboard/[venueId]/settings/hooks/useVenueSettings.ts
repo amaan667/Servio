@@ -68,7 +68,7 @@ export function useVenueSettings(venue: Venue) {
   const [timezone, setTimezone] = useState(venue.timezone || 'Europe/London');
   const [venueType, setVenueType] = useState(venue.venue_type || 'restaurant');
   const [serviceType, setServiceType] = useState(venue.service_type || 'table_service');
-  const [operatingHours, setOperatingHours] = useState<OperatingHours>(venue.operating_hours || {});
+  const [operatingHours, setOperatingHours] = useState<OperatingHours>(venue.operating_hours || { /* Empty */ });
   const [latitude, setLatitude] = useState<number | undefined>(venue.latitude);
   const [longitude, setLongitude] = useState<number | undefined>(venue.longitude);
 
@@ -136,7 +136,7 @@ export function useVenueSettings(venue: Venue) {
       setTimeout(() => {
         router.refresh();
       }, 1500);
-    } catch (err) {
+    } catch (_err) {
       setError(err.message || 'Failed to update venue settings');
       toast({
         title: "Error",

@@ -86,7 +86,7 @@ class RequestBatcher {
               item.reject(new Error(`No result for ${item.id}`));
             }
           });
-        } catch (error) {
+        } catch (_error) {
           // Reject all promises in batch
           batch.forEach(item => item.reject(error));
         }
@@ -112,7 +112,7 @@ export async function deduplicatedFetch<T>(
   url: string,
   options?: RequestInit
 ): Promise<T> {
-  const key = `${url}-${JSON.stringify(options || {})}`;
+  const key = `${url}-${JSON.stringify(options || { /* Empty */ })}`;
   
   return requestDeduplicator.deduplicate(key, async () => {
     const response = await fetch(url, options);

@@ -79,7 +79,7 @@ export class OrderRepository extends BaseRepository<Order> {
       }
 
       return (data as Order[]) || [];
-    } catch (error) {
+    } catch (_error) {
       logger.error('[ORDER_REPO] Unexpected error finding orders by venue', { error, venueId });
       throw error;
     }
@@ -129,7 +129,7 @@ export class OrderRepository extends BaseRepository<Order> {
       }
 
       return (data as Order[]) || [];
-    } catch (error) {
+    } catch (_error) {
       logger.error('[ORDER_REPO] Unexpected error finding recent orders', { error, venueId });
       throw error;
     }
@@ -190,7 +190,7 @@ export class OrderRepository extends BaseRepository<Order> {
       const total = orders.length;
       const revenue = orders.reduce((sum, order) => sum + order.total_amount, 0);
       const avgOrderValue = total > 0 ? revenue / total : 0;
-      const byStatus: Record<string, number> = {};
+      const byStatus: Record<string, number> = { /* Empty */ };
 
       orders.forEach((order) => {
         byStatus[order.status] = (byStatus[order.status] || 0) + 1;
@@ -202,7 +202,7 @@ export class OrderRepository extends BaseRepository<Order> {
         avgOrderValue,
         byStatus,
       };
-    } catch (error) {
+    } catch (_error) {
       logger.error('[ORDER_REPO] Unexpected error getting order stats', { error, venueId });
       throw error;
     }
@@ -228,7 +228,7 @@ export class OrderRepository extends BaseRepository<Order> {
       }
 
       return (data as Order[]) || [];
-    } catch (error) {
+    } catch (_error) {
       logger.error('[ORDER_REPO] Unexpected error bulk updating order status', { error, orderIds });
       throw error;
     }
@@ -253,7 +253,7 @@ export class OrderRepository extends BaseRepository<Order> {
       }
 
       return (data as Order[]) || [];
-    } catch (error) {
+    } catch (_error) {
       logger.error('[ORDER_REPO] Unexpected error searching orders', { error, venueId, query });
       throw error;
     }

@@ -37,7 +37,7 @@ class RedisCache {
       } else {
         logger.info("[REDIS] Redis URL not provided, using in-memory cache fallback");
       }
-    } catch (error) {
+    } catch (_error) {
       logger.warn("[REDIS] Failed to initialize Redis cache:", error as Record<string, unknown>);
     }
   }
@@ -56,7 +56,7 @@ class RedisCache {
         return JSON.parse(value);
       }
       return null;
-    } catch (error) {
+    } catch (_error) {
       logger.warn("[REDIS] Cache get error:", error as Record<string, unknown>);
       return null;
     }
@@ -65,7 +65,7 @@ class RedisCache {
   /**
    * Set value in cache
    */
-  async set(key: string, value: unknown, options: CacheOptions = {}): Promise<boolean> {
+  async set(key: string, value: unknown, options: CacheOptions = { /* Empty */ }): Promise<boolean> {
     if (!this.redis || !this.isConnected) {
       return false;
     }
@@ -91,7 +91,7 @@ class RedisCache {
       }
 
       return true;
-    } catch (error) {
+    } catch (_error) {
       logger.warn("[REDIS] Cache set error:", error as Record<string, unknown>);
       return false;
     }
@@ -108,7 +108,7 @@ class RedisCache {
     try {
       await this.redis.del(key);
       return true;
-    } catch (error) {
+    } catch (_error) {
       logger.warn("[REDIS] Cache delete error:", error as Record<string, unknown>);
       return false;
     }
@@ -135,7 +135,7 @@ class RedisCache {
 
       await pipeline.exec();
       return true;
-    } catch (error) {
+    } catch (_error) {
       logger.warn("[REDIS] Cache invalidation error:", error as Record<string, unknown>);
       return false;
     }
@@ -152,7 +152,7 @@ class RedisCache {
     try {
       await this.redis.flushdb();
       return true;
-    } catch (error) {
+    } catch (_error) {
       logger.warn("[REDIS] Cache clear error:", error as Record<string, unknown>);
       return false;
     }
@@ -189,7 +189,7 @@ class RedisCache {
         hits: 0, // Would need to track these separately
         misses: 0,
       };
-    } catch (error) {
+    } catch (_error) {
       logger.warn("[REDIS] Cache stats error:", error as Record<string, unknown>);
       return {
         connected: false,
@@ -252,7 +252,7 @@ export const cacheUtils = {
   /**
    * Generate cache key for orders
    */
-  ordersKey: (venueId: string, filters: Record<string, unknown> = {}) =>
+  ordersKey: (venueId: string, filters: Record<string, unknown> = { /* Empty */ }) =>
     `orders:${venueId}:${JSON.stringify(filters)}`,
 
   /**

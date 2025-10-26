@@ -118,7 +118,7 @@ const DashboardClient = React.memo(function DashboardClient({
         handleRefresh();
         const url = new URL(window.location.href);
         url.searchParams.delete("upgrade");
-        window.history.replaceState({}, document.title, url.toString());
+        window.history.replaceState({ /* Empty */ }, document.title, url.toString());
       }, 1000);
     }
   }, [handleRefresh]);
@@ -240,7 +240,7 @@ const DashboardClient = React.memo(function DashboardClient({
         }
 
         // No loading state needed - prevents flicker
-      } catch (error) {
+      } catch (_error) {
         // No auth error display needed("Authentication failed");
         // No loading state needed - prevents flicker
       }

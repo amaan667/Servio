@@ -5,7 +5,7 @@ import { redisCache } from '@/lib/cache/redis';
 export const runtime = 'nodejs';
 
 export async function GET() {
-  const checks: Record<string, { status: string; responseTime?: number }> = {};
+  const checks: Record<string, { status: string; responseTime?: number }> = { /* Empty */ };
   let overallStatus = 'ready';
 
   // Check Supabase connectivity

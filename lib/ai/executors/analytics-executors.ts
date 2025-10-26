@@ -161,7 +161,7 @@ export async function executeAnalyticsGetStats(
     };
   }
 
-  let stats = {};
+  let stats = { /* Empty */ };
   
   try {
     const timeStart = getTimeRangeStart(params.timeRange);
@@ -267,7 +267,7 @@ export async function executeAnalyticsGetStats(
           };
       }
     }
-  } catch (error) {
+  } catch (_error) {
     throw new AIAssistantError("Failed to get analytics data", "EXECUTION_FAILED", error);
   }
 

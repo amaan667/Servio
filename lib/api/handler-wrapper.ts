@@ -37,7 +37,7 @@ export interface HandlerOptions {
  */
 export function withErrorHandling<TRequest = unknown, TResponse = unknown>(
   handler: ApiHandler<TRequest, TResponse>,
-  options: HandlerOptions = {}
+  options: HandlerOptions = { /* Empty */ }
 ): (req: NextRequest) => Promise<NextResponse<ApiResponse<TResponse>>> {
   return async (req: NextRequest): Promise<NextResponse<ApiResponse<TResponse>>> => {
     const startTime = Date.now();
@@ -57,7 +57,7 @@ export function withErrorHandling<TRequest = unknown, TResponse = unknown>(
       try {
         body = (await req.json()) as TRequest;
       } catch {
-        body = {} as TRequest;
+        body = { /* Empty */ } as TRequest;
       }
 
       // Execute handler
@@ -76,7 +76,7 @@ export function withErrorHandling<TRequest = unknown, TResponse = unknown>(
 
       // Return success response
       return ok(result);
-    } catch (error) {
+    } catch (_error) {
       const duration = Date.now() - startTime;
 
       // Log error
@@ -120,7 +120,7 @@ export function withErrorHandling<TRequest = unknown, TResponse = unknown>(
  */
 export function createGetHandler<TResponse = unknown>(
   handler: (req: NextRequest) => Promise<TResponse>,
-  options: HandlerOptions = {}
+  options: HandlerOptions = { /* Empty */ }
 ): (req: NextRequest) => Promise<NextResponse<ApiResponse<TResponse>>> {
   return withErrorHandling(async (req) => handler(req), options);
 }
@@ -130,7 +130,7 @@ export function createGetHandler<TResponse = unknown>(
  */
 export function createPostHandler<TRequest = unknown, TResponse = unknown>(
   handler: ApiHandler<TRequest, TResponse>,
-  options: HandlerOptions = {}
+  options: HandlerOptions = { /* Empty */ }
 ): (req: NextRequest) => Promise<NextResponse<ApiResponse<TResponse>>> {
   return withErrorHandling(handler, options);
 }
@@ -140,7 +140,7 @@ export function createPostHandler<TRequest = unknown, TResponse = unknown>(
  */
 export function createPutHandler<TRequest = unknown, TResponse = unknown>(
   handler: ApiHandler<TRequest, TResponse>,
-  options: HandlerOptions = {}
+  options: HandlerOptions = { /* Empty */ }
 ): (req: NextRequest) => Promise<NextResponse<ApiResponse<TResponse>>> {
   return withErrorHandling(handler, options);
 }
@@ -150,7 +150,7 @@ export function createPutHandler<TRequest = unknown, TResponse = unknown>(
  */
 export function createDeleteHandler<TResponse = unknown>(
   handler: (req: NextRequest) => Promise<TResponse>,
-  options: HandlerOptions = {}
+  options: HandlerOptions = { /* Empty */ }
 ): (req: NextRequest) => Promise<NextResponse<ApiResponse<TResponse>>> {
   return withErrorHandling(async (req) => handler(req), options);
 }

@@ -40,7 +40,7 @@ export async function getAssistantContext(
       if (roleData) {
         userRole = roleData.role;
       }
-    } catch (error) {
+    } catch (_error) {
       // Table doesn't exist or other error - use default
       aiLogger.debug("[AI ASSISTANT] Could not get user role:", error);
     }
@@ -434,7 +434,7 @@ export async function getAnalyticsSummary(
     .map((i) => i.name);
 
   // Count by category
-  const categoryPerformance: Record<string, number> = {};
+  const categoryPerformance: Record<string, number> = { /* Empty */ };
   recentItems?.forEach((item: Record<string, unknown>) => {
     const categoryName = item.menu_items?.category || "Uncategorized";
     categoryPerformance[categoryName] = (categoryPerformance[categoryName] || 0) + item.quantity;

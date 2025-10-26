@@ -42,7 +42,7 @@ export function createApiHandler<TRequest, TResponse>(
         
         body = validation.data;
       } else {
-        body = {} as TRequest;
+        body = { /* Empty */ } as TRequest;
       }
       
       // Execute handler
@@ -53,7 +53,7 @@ export function createApiHandler<TRequest, TResponse>(
         ok: true,
         data: result,
       });
-    } catch (error) {
+    } catch (_error) {
       logger.error('API handler error', {
         error,
         path: req.url,
@@ -97,7 +97,7 @@ export function createGetHandler<TResponse>(
         ok: true,
         data: result,
       });
-    } catch (error) {
+    } catch (_error) {
       logger.error('GET handler error', {
         error,
         path: req.url,

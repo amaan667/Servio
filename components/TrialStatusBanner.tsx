@@ -115,7 +115,7 @@ export default function TrialStatusBanner({ userRole }: TrialStatusBannerProps) 
           sessionStorage.setItem(`trial_status_${user.id}`, JSON.stringify(status));
         }
       }
-    } catch (error) {
+    } catch (_error) {
       // Show default trial status as fallback
       const userCreatedAt = new Date(user.created_at);
       const trialEndsAt = new Date(userCreatedAt.getTime() + 14 * 24 * 60 * 60 * 1000);
@@ -285,7 +285,7 @@ export default function TrialStatusBanner({ userRole }: TrialStatusBannerProps) 
       setTimeout(() => {
         const url = new URL(window.location.href);
         url.searchParams.delete("upgrade");
-        window.history.replaceState({}, document.title, url.toString());
+        window.history.replaceState({ /* Empty */ }, document.title, url.toString());
       }, 3000);
     }
   }, []);

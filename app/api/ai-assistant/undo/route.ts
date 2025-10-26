@@ -134,7 +134,7 @@ export async function POST(_request: NextRequest) {
       message: "Action successfully undone",
       undoResult,
     });
-  } catch (error) {
+  } catch (_error) {
     logger.error("[AI UNDO] Undo error:", {
       error: error instanceof Error ? error.message : "Unknown error",
     });
@@ -417,7 +417,7 @@ async function undoMenuTranslation(venueId: string, undoData: unknown, supabase:
       // Generate comprehensive category mapping instructions for undo
       const categoryMappingsRecord = categoryMappings as Record<string, Record<string, string>>;
       const categoryMappingList = Object.entries(
-        categoryMappingsRecord[detectedSourceLanguage] || {}
+        categoryMappingsRecord[detectedSourceLanguage] || { /* Empty */ }
       )
         .map(([from, to]) => `   - "${from}" → "${to}"`)
         .join("\n");
@@ -543,7 +543,7 @@ IMPORTANT: Every item in the input must appear in your output with a translated 
       message: `Successfully reversed translation: ${updatedCount} items translated back to ${targetLangName}`,
       itemsUpdated: updatedCount,
     };
-  } catch (error) {
+  } catch (_error) {
     logger.error("[AI UNDO] Menu translation undo error:", {
       error: error instanceof Error ? error.message : "Unknown error",
     });
@@ -579,7 +579,7 @@ async function undoMenuPriceUpdate(venueId: string, undoData: unknown, supabase:
       message: `Successfully restored original prices for ${updatedCount} items`,
       itemsUpdated: updatedCount,
     };
-  } catch (error) {
+  } catch (_error) {
     logger.error("[AI UNDO] Menu price update undo error:", {
       error: error instanceof Error ? error.message : "Unknown error",
     });
@@ -617,7 +617,7 @@ async function undoMenuAvailabilityToggle(
       message: `Successfully restored availability for ${itemIds.length} items`,
       itemsUpdated: itemIds.length,
     };
-  } catch (error) {
+  } catch (_error) {
     logger.error("[AI UNDO] Menu availability toggle undo error:", {
       error: error instanceof Error ? error.message : "Unknown error",
     });
@@ -647,7 +647,7 @@ async function undoMenuItemCreation(venueId: string, undoData: unknown, supabase
       message: `Successfully deleted created item: ${createdItemName}`,
       itemsDeleted: 1,
     };
-  } catch (error) {
+  } catch (_error) {
     logger.error("[AI UNDO] Menu item creation undo error:", {
       error: error instanceof Error ? error.message : "Unknown error",
     });
@@ -689,7 +689,7 @@ async function undoMenuItemDeletion(venueId: string, undoData: unknown, supabase
       message: `Successfully recreated deleted item: ${deletedItem.name}`,
       itemsRecreated: 1,
     };
-  } catch (error) {
+  } catch (_error) {
     logger.error("[AI UNDO] Menu item deletion undo error:", {
       error: error instanceof Error ? error.message : "Unknown error",
     });
@@ -727,7 +727,7 @@ async function undoInventoryAdjustment(
       message: `Successfully reversed inventory adjustments for ${updatedCount} ingredients`,
       ingredientsUpdated: updatedCount,
     };
-  } catch (error) {
+  } catch (_error) {
     logger.error("[AI UNDO] Inventory adjustment undo error:", {
       error: error instanceof Error ? error.message : "Unknown error",
     });

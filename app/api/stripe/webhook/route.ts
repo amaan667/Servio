@@ -36,7 +36,7 @@ export async function POST(_request: NextRequest) {
 
     // Use EXACT same method as subscriptions webhook (no trimming!)
     event = stripe.webhooks.constructEvent(body, signature, webhookSecret);
-  } catch (err) {
+  } catch (_err) {
     const errorMessage = err instanceof Error ? err.message : "Unknown error";
 
     apiLogger.error("[CUSTOMER ORDER WEBHOOK] Webhook construction error:", errorMessage);

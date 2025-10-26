@@ -92,7 +92,7 @@ export async function GET(req: NextRequest) {
     await cache.set(cacheKey, response, { ttl: 60 });
 
     return NextResponse.json(response);
-  } catch (error) {
+  } catch (_error) {
     logger.error('[POS ORDERS] Unexpected error:', { error: error instanceof Error ? error.message : 'Unknown error' });
     return NextResponse.json({ error: 'Internal server error' }, { status: 500 });
   }

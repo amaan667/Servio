@@ -44,7 +44,7 @@ export function useStaffManagement(venueId: string, initialStaff?: StaffRow[], i
       
       try {
         const res = await fetch(`/api/staff/check?venue_id=${encodeURIComponent(venueId)}`);
-        const j = await res.json().catch(() => ({}));
+        const j = await res.json().catch(() => ({ /* Empty */ }));
         if (res.ok && !j?.error) {
           setStaff(j.staff || []);
           setStaffLoaded(true);
@@ -65,7 +65,7 @@ export function useStaffManagement(venueId: string, initialStaff?: StaffRow[], i
   useEffect(() => {
     const loadShifts = async () => {
       const res = await fetch(`/api/staff/shifts/list?venue_id=${encodeURIComponent(venueId)}`);
-      const j = await res.json().catch(() => ({}));
+      const j = await res.json().catch(() => ({ /* Empty */ }));
       if (res.ok && !j?.error) {
         const shifts = j.shifts || [];
         setAllShifts(shifts);
@@ -103,7 +103,7 @@ export function useStaffManagement(venueId: string, initialStaff?: StaffRow[], i
       setStaff(prev => [...prev, data.staff]);
       setName('');
       setRole('Server');
-    } catch (err) {
+    } catch (_err) {
       setError(err.message);
     } finally {
       setAdding(false);
@@ -121,13 +121,13 @@ export function useStaffManagement(venueId: string, initialStaff?: StaffRow[], i
       });
 
       if (!res.ok) {
-        const data = await res.json().catch(() => ({}));
+        const data = await res.json().catch(() => ({ /* Empty */ }));
         throw new Error(data.error || 'Failed to toggle staff status');
       }
 
       // Update local state immediately
       setStaff(prev => prev.map(s => s.id === staffId ? { ...s, active: newActiveState } : s));
-    } catch (err) {
+    } catch (_err) {
       setError(err instanceof Error ? err.message : 'Failed to toggle staff status');
     }
   };

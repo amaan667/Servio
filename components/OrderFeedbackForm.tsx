@@ -23,7 +23,7 @@ export default function OrderFeedbackForm({ venueId, orderId }: OrderFeedbackFor
   const [loading, setLoading] = useState(true);
   const [submitting, setSubmitting] = useState(false);
   const [showForm, setShowForm] = useState(false);
-  const [answers, setAnswers] = useState<{[key: string]: unknown}>({});
+  const [answers, setAnswers] = useState<{[key: string]: unknown}>({ /* Empty */ });
   const { toast } = useToast();
 
   // Generic feedback questions to show if owner hasn't created unknown
@@ -87,8 +87,7 @@ export default function OrderFeedbackForm({ venueId, orderId }: OrderFeedbackFor
 
   // useEffect moved after fetchQuestions definition
 
-  useEffect(() => {
-  }, [totalCount]);
+  useEffect(() => { /* Empty */ }, [totalCount]);
 
   // Real-time subscription moved after fetchQuestions definition
 
@@ -112,7 +111,7 @@ export default function OrderFeedbackForm({ venueId, orderId }: OrderFeedbackFor
         }
         
       }
-    } catch (error) {
+    } catch (_error) {
 
       // If API fails, fall back to generic questions
       setQuestions(genericQuestions);
@@ -145,8 +144,7 @@ export default function OrderFeedbackForm({ venueId, orderId }: OrderFeedbackFor
           fetchQuestions();
         },
       )
-      .subscribe((status: unknown) => {
-      });
+      .subscribe((status: unknown) => { /* Empty */ });
 
     return () => {
       supabase.removeChannel(channel);
@@ -237,7 +235,7 @@ export default function OrderFeedbackForm({ venueId, orderId }: OrderFeedbackFor
           description: "Your feedback has been submitted successfully"
         });
         setShowForm(false);
-        setAnswers({});
+        setAnswers({ /* Empty */ });
       } else {
         const error = await response.json();
         toast({
@@ -246,7 +244,7 @@ export default function OrderFeedbackForm({ venueId, orderId }: OrderFeedbackFor
           variant: "destructive"
         });
       }
-    } catch (error) {
+    } catch (_error) {
 
       // If we have generic questions and the main API fails, still show success
       if (questions.some(q => q.id.startsWith('generic'))) {
@@ -255,7 +253,7 @@ export default function OrderFeedbackForm({ venueId, orderId }: OrderFeedbackFor
           description: "Your feedback has been recorded"
         });
         setShowForm(false);
-        setAnswers({});
+        setAnswers({ /* Empty */ });
       } else {
         toast({
           title: "Error",
@@ -388,7 +386,7 @@ export default function OrderFeedbackForm({ venueId, orderId }: OrderFeedbackFor
                   variant="outline" 
                   onClick={() => {
                     setShowForm(false);
-                    setAnswers({});
+                    setAnswers({ /* Empty */ });
                   }}
                   disabled={submitting}
                 >

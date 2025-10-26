@@ -23,7 +23,7 @@ export async function POST(_request: NextRequest) {
     ];
 
     let totalDeleted = 0;
-    const results: Record<string, number> = {};
+    const results: Record<string, number> = { /* Empty */ };
 
     for (const operation of clearOperations) {
       const { count, error } = await supabase
@@ -53,7 +53,7 @@ export async function POST(_request: NextRequest) {
       details: results
     });
 
-  } catch (error) {
+  } catch (_error) {
     logger.error('[AUTH DEBUG] Clear menu error:', { error: error instanceof Error ? error.message : 'Unknown error' });
     return NextResponse.json({ 
       ok: false, 

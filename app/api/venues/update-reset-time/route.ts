@@ -49,7 +49,7 @@ export async function POST(_request: NextRequest) {
       message: "Reset time updated successfully",
       resetTime,
     });
-  } catch (error) {
+  } catch (_error) {
     logger.error("Error in update reset time API:", {
       error: error instanceof Error ? error.message : "Unknown error",
     });

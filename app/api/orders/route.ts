@@ -208,7 +208,7 @@ async function createKDSTickets(
     logger.debug("[KDS TICKETS] Successfully created KDS tickets", {
       data: { count: items.length, orderId: order.id },
     });
-  } catch (error) {
+  } catch (_error) {
     logger.error("[KDS TICKETS] Error creating KDS tickets:", {
       error: error instanceof Error ? error.message : "Unknown error",
     });

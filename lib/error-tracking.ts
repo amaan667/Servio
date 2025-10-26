@@ -60,8 +60,7 @@ class ErrorTracker {
           },
         });
       })
-      .catch((error) => {
-      });
+      .catch((error) => { /* Empty */ });
   }
 
   public captureError(error: Error, context?: Partial<ErrorContext>) {
@@ -214,7 +213,7 @@ class ErrorTracker {
       }
 
       captureMessage(message, level as "info" | "warning" | "error");
-    } catch (error) {
+    } catch (_error) {
       // Error handled silently
     }
   }
@@ -235,7 +234,7 @@ class ErrorTracker {
           context,
         }),
       });
-    } catch (error) {
+    } catch (_error) {
       // Error handled silently
     }
   }
@@ -255,7 +254,7 @@ class ErrorTracker {
           context,
         }),
       });
-    } catch (error) {
+    } catch (_error) {
       // Error handled silently
     }
   }

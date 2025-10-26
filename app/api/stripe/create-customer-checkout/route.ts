@@ -67,7 +67,7 @@ export async function POST(req: Request) {
       url: session.url,
       sessionId: session.id,
     });
-  } catch (error) {
+  } catch (_error) {
     logger.error("[STRIPE CUSTOMER CHECKOUT] Error creating session", {
       error: error instanceof Error ? error.message : "Unknown error",
     });

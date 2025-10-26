@@ -35,7 +35,7 @@ export function usePerformance() {
           performance.clearMeasures(measureName);
 
           return measure.duration;
-        } catch (error) {
+        } catch (_error) {
           // Silent error handling
           return 0;
         }
@@ -102,7 +102,7 @@ export function usePerformance() {
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({ taskName, duration }),
           keepalive: true,
-        }).catch(() => {});
+        }).catch(() => { /* Empty */ });
       }
     }
   }, []);

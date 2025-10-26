@@ -13,7 +13,7 @@ export function useOrderManagement(venueId: string) {
   const cachedAllToday = PersistentCache.get<Order[]>(`all_today_orders_${venueId}`) || [];
   const cachedHistory = PersistentCache.get<Order[]>(`history_orders_${venueId}`) || [];
   const cachedGroupedHistory =
-    PersistentCache.get<Record<string, Order[]>>(`grouped_history_${venueId}`) || {};
+    PersistentCache.get<Record<string, Order[]>>(`grouped_history_${venueId}`) || { /* Empty */ };
 
   const [orders, setOrders] = useState<Order[]>(cachedLiveOrders);
   const [allTodayOrders, setAllTodayOrders] = useState<Order[]>(cachedAllToday);
@@ -102,7 +102,7 @@ export function useOrderManagement(venueId: string) {
           if (!acc[date]) acc[date] = [];
           acc[date].push(order);
           return acc;
-        }, {});
+        }, { /* Empty */ });
         setGroupedHistoryOrders(grouped);
         // ANTI-FLICKER: Cache grouped history
         PersistentCache.set(`grouped_history_${venueId}`, grouped, 10 * 60 * 1000); // 10 min TTL

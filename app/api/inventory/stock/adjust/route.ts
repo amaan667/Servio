@@ -59,7 +59,7 @@ export async function POST(_request: NextRequest) {
     }
 
     return NextResponse.json({ data }, { status: 201 });
-  } catch (error) {
+  } catch (_error) {
     logger.error('[INVENTORY API] Unexpected error:', { error: error instanceof Error ? error.message : 'Unknown error' });
     return NextResponse.json(
       { error: 'Internal server error' },

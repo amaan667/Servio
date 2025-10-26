@@ -109,7 +109,7 @@ export default function EnhancedShiftSchedule({
 
   // Group shifts by date for display
   const groupedShifts = useMemo(() => {
-    const grouped: Record<string, Shift[]> = {};
+    const grouped: Record<string, Shift[]> = { /* Empty */ };
     
     shiftsForPeriod.forEach(shift => {
       const shiftDate = new Date(shift.start_time).toDateString();
@@ -197,7 +197,7 @@ export default function EnhancedShiftSchedule({
       // Notify parent component
       onShiftAdded();
       
-    } catch (err) {
+    } catch (_err) {
       setError(err instanceof Error ? err.message : 'Failed to save shift');
     } finally {
       setSaving(false);
