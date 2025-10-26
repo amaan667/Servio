@@ -1,3 +1,4 @@
+import React from "react";
 import DashboardClient from "./page.client";
 import { createAdminClient } from "@/lib/supabase";
 import { todayWindowForTZ } from "@/lib/time";
@@ -6,8 +7,10 @@ export default async function VenuePage({ params }: { params: Promise<{ venueId:
   const { venueId } = await params;
 
   // Fetch initial dashboard data on server WITHOUT auth (use admin client)
-  let initialCounts = null;
-  let initialStats = null;
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  let initialCounts: any = null;
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  let initialStats: any = null;
 
   try {
     console.info("[DASHBOARD SSR] Fetching initial data for venueId:", venueId);
@@ -34,32 +37,64 @@ export default async function VenuePage({ params }: { params: Promise<{ venueId:
       initialCounts = countsData;
     }
 
-    // Fetch table counters to get accurate table counts
-    console.info("[DASHBOARD SSR] Calling api_table_counters RPC...");
-    const { data: tableCounters, error: tableError } = await supabase.rpc("api_table_counters", {
-      p_venue_id: venueId,
-    });
+    // Fetch REAL table counts directly from tables table (no RPC, no caching)
+    console.info("[DASHBOARD SSR] Fetching real table counts from tables table...");
 
-    if (tableError) {
-      console.error("[DASHBOARD SSR] api_table_counters RPC failed:", tableError);
+    // Get total tables set up
+    const { data: allTables, error: tablesError } = await supabase
+      .from("tables")
+      .select("id, is_active")
+      .eq("venue_id", venueId);
+
+    if (tablesError) {
+      console.error("[DASHBOARD SSR] Tables fetch failed:", tablesError);
     } else {
-      console.info("[DASHBOARD SSR] Table counters fetched:", tableCounters);
+      console.info("[DASHBOARD SSR] Tables fetched:", allTables?.length || 0);
 
-      // Merge table counters into counts
-      if (
-        initialCounts &&
-        tableCounters &&
-        Array.isArray(tableCounters) &&
-        tableCounters.length > 0
-      ) {
+      // Get active table sessions (currently occupied)
+      const { data: activeSessions, error: sessionsError } = await supabase
+        .from("table_sessions")
+        .select("id, status, table_id")
+        .eq("venue_id", venueId)
+        .eq("status", "OCCUPIED")
+        .is("closed_at", null);
+
+      if (sessionsError) {
+        console.error("[DASHBOARD SSR] Sessions fetch failed:", sessionsError);
+      } else {
+        console.info("[DASHBOARD SSR] Active sessions fetched:", activeSessions?.length || 0);
+      }
+
+      // Get current reservations
+      const now = new Date();
+      const { data: currentReservations, error: reservationsError } = await supabase
+        .from("reservations")
+        .select("id")
+        .eq("venue_id", venueId)
+        .eq("status", "BOOKED")
+        .lte("start_time", now.toISOString())
+        .gte("end_time", now.toISOString());
+
+      if (reservationsError) {
+        console.error("[DASHBOARD SSR] Reservations fetch failed:", reservationsError);
+      } else {
+        console.info(
+          "[DASHBOARD SSR] Current reservations fetched:",
+          currentReservations?.length || 0
+        );
+      }
+
+      // Merge real counts into initialCounts
+      if (initialCounts) {
+        const activeTables = allTables?.filter((t) => t.is_active) || [];
         initialCounts = {
           ...initialCounts,
-          tables_set_up: tableCounters[0].tables_set_up || 0,
-          tables_in_use: tableCounters[0].tables_in_use || 0,
-          tables_reserved_now: tableCounters[0].tables_reserved_now || 0,
-          active_tables_count: tableCounters[0].active_tables_count || 0,
+          tables_set_up: activeTables.length, // Real count from tables table
+          tables_in_use: activeSessions?.length || 0, // Real count from table_sessions
+          tables_reserved_now: currentReservations?.length || 0, // Real count from reservations
+          active_tables_count: activeTables.length, // Same as tables_set_up
         };
-        console.info("[DASHBOARD SSR] Merged table counters:", initialCounts);
+        console.info("[DASHBOARD SSR] Merged REAL table counters:", initialCounts);
       }
     }
 

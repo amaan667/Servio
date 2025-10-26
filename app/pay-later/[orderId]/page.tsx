@@ -4,8 +4,9 @@ import { useEffect, useState } from "react";
 import { useParams, useRouter } from "next/navigation";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { Loader2, XCircle, CreditCard } from "lucide-react";
+import { Loader2, XCircle, CreditCard, Store, AlertCircle, CheckCircle2, Hash } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
+import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 
 interface Order {
   id: string;
@@ -32,6 +33,8 @@ export default function PayLaterPage() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [processing, setProcessing] = useState(false);
+  const [switchedToTill, setSwitchedToTill] = useState(false);
+  const [switching, setSwitching] = useState(false);
 
   // Fetch order details
   useEffect(() => {
@@ -112,6 +115,44 @@ export default function PayLaterPage() {
     }
   };
 
+  // Handle switching to pay at till
+  const handleSwitchToTill = async () => {
+    if (!order) return;
+
+    setSwitching(true);
+    setError(null);
+
+    try {
+      console.info("🏪 [PAY LATER] Customer switching to pay at till:", orderId);
+
+      const response = await fetch(`/api/orders/${orderId}/update-payment-mode`, {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          new_payment_mode: "pay_at_till",
+          venue_id: order.venue_id,
+        }),
+      });
+
+      if (!response.ok) {
+        const errorData = await response.json();
+        throw new Error(errorData.error || "Failed to switch payment method");
+      }
+
+      const result = await response.json();
+      console.info("✅ [PAY LATER] Successfully switched to till payment:", result);
+
+      // Update local order state
+      setOrder({ ...order, payment_mode: "pay_at_till" });
+      setSwitchedToTill(true);
+    } catch (err) {
+      console.error("❌ [PAY LATER] Switch error:", err);
+      setError(err instanceof Error ? err.message : "Failed to switch payment method");
+    } finally {
+      setSwitching(false);
+    }
+  };
+
   if (loading) {
     return (
       <div className="min-h-screen flex items-center justify-center bg-gray-50">
@@ -150,12 +191,71 @@ export default function PayLaterPage() {
           <CardHeader>
             <div className="flex items-center justify-between">
               <CardTitle>Complete Your Payment</CardTitle>
-              <Badge variant="outline" className="bg-orange-50 text-orange-700 border-orange-200">
-                Payment Pending
+              <Badge
+                variant="outline"
+                className={
+                  switchedToTill
+                    ? "bg-green-50 text-green-700 border-green-200"
+                    : "bg-orange-50 text-orange-700 border-orange-200"
+                }
+              >
+                {switchedToTill ? "Payment at Till" : "Payment Pending"}
               </Badge>
             </div>
           </CardHeader>
           <CardContent className="space-y-6">
+            {/* Success message when switched to till */}
+            {switchedToTill && (
+              <Alert className="border-green-200 bg-green-50">
+                <CheckCircle2 className="h-4 w-4 text-green-600" />
+                <AlertTitle className="text-green-900 font-semibold">
+                  Payment Method Updated!
+                </AlertTitle>
+                <AlertDescription className="text-green-800 space-y-3">
+                  <p>Your order is now set to be paid at the till.</p>
+
+                  {/* Customer notification code */}
+                  <div className="bg-white rounded-lg border-2 border-green-300 p-4 mt-3">
+                    <p className="text-sm font-medium text-gray-700 mb-2 flex items-center gap-2">
+                      <Hash className="h-4 w-4" />
+                      Show this to staff:
+                    </p>
+                    <div className="bg-gradient-to-r from-purple-50 to-blue-50 rounded-lg p-4 border border-purple-200">
+                      <div className="text-center space-y-1">
+                        <p className="text-xs text-gray-600 uppercase tracking-wide">
+                          Order Number
+                        </p>
+                        <p className="text-3xl font-bold text-purple-600 tracking-wider">
+                          #{order.order_number}
+                        </p>
+                        <p className="text-sm text-gray-700 mt-2">
+                          Table {order.table_number || "—"}
+                        </p>
+                        <p className="text-lg font-semibold text-gray-900 mt-3">
+                          £{order.total_amount.toFixed(2)}
+                        </p>
+                      </div>
+                    </div>
+                    <p className="text-xs text-gray-600 mt-3 text-center">
+                      Staff will use this to find your order at the till
+                    </p>
+                  </div>
+
+                  <div className="flex items-start gap-2 mt-4 bg-blue-50 rounded-lg p-3 border border-blue-200">
+                    <AlertCircle className="h-5 w-5 text-blue-600 mt-0.5 flex-shrink-0" />
+                    <div className="text-sm text-blue-900">
+                      <p className="font-medium mb-1">Next Steps:</p>
+                      <ol className="list-decimal list-inside space-y-1 text-blue-800">
+                        <li>Take a screenshot of your order number</li>
+                        <li>Go to the till/counter</li>
+                        <li>Show your order number to staff</li>
+                        <li>Complete payment (cash or card)</li>
+                      </ol>
+                    </div>
+                  </div>
+                </AlertDescription>
+              </Alert>
+            )}
             {/* Order Summary */}
             <div>
               <h3 className="font-semibold text-lg mb-2">Order Summary</h3>
@@ -202,37 +302,87 @@ export default function PayLaterPage() {
               </div>
             </div>
 
-            {/* Payment Button */}
-            <div className="space-y-3">
-              <Button
-                onClick={handlePayNow}
-                disabled={processing}
-                className="w-full bg-purple-600 hover:bg-purple-700 text-white h-12 text-lg"
-              >
-                {processing ? (
-                  <>
-                    <Loader2 className="mr-2 h-5 w-5 animate-spin" />
-                    Processing...
-                  </>
-                ) : (
-                  <>
-                    <CreditCard className="mr-2 h-5 w-5" />
-                    Pay £{order.total_amount.toFixed(2)} Now
-                  </>
-                )}
-              </Button>
+            {/* Payment Options */}
+            {!switchedToTill ? (
+              <div className="space-y-4">
+                <div>
+                  <p className="text-sm font-medium text-gray-700 mb-3">Choose Payment Method:</p>
 
-              <p className="text-sm text-gray-500 text-center">Secure payment powered by Stripe</p>
-            </div>
+                  {/* Primary: Pay Online */}
+                  <Button
+                    onClick={handlePayNow}
+                    disabled={processing || switching}
+                    className="w-full bg-purple-600 hover:bg-purple-700 text-white h-14 text-lg mb-3"
+                  >
+                    {processing ? (
+                      <>
+                        <Loader2 className="mr-2 h-5 w-5 animate-spin" />
+                        Processing...
+                      </>
+                    ) : (
+                      <>
+                        <CreditCard className="mr-2 h-5 w-5" />
+                        Pay £{order.total_amount.toFixed(2)} Online Now
+                      </>
+                    )}
+                  </Button>
 
-            {/* Help Text */}
-            <div className="bg-blue-50 rounded-lg p-4 text-sm text-gray-700">
-              <p className="font-medium mb-1">📱 Rescanned QR Code?</p>
-              <p>
-                You can complete your payment now using card, Apple Pay, or Google Pay. Your order
-                will be marked as complete once payment is confirmed.
-              </p>
-            </div>
+                  <p className="text-xs text-gray-500 text-center mb-4">
+                    Secure payment • Card, Apple Pay, Google Pay
+                  </p>
+
+                  {/* Secondary: Switch to Till */}
+                  <div className="relative">
+                    <div className="absolute inset-0 flex items-center">
+                      <div className="w-full border-t border-gray-200"></div>
+                    </div>
+                    <div className="relative flex justify-center text-xs">
+                      <span className="bg-white px-2 text-gray-500">or</span>
+                    </div>
+                  </div>
+
+                  <Button
+                    onClick={handleSwitchToTill}
+                    disabled={processing || switching}
+                    variant="outline"
+                    className="w-full h-12 text-base mt-4 border-2 hover:bg-gray-50"
+                  >
+                    {switching ? (
+                      <>
+                        <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                        Switching...
+                      </>
+                    ) : (
+                      <>
+                        <Store className="mr-2 h-5 w-5" />
+                        Pay at Till Instead
+                      </>
+                    )}
+                  </Button>
+
+                  <p className="text-xs text-gray-500 text-center mt-2">
+                    Changed your mind? Pay in person at the till
+                  </p>
+                </div>
+
+                {/* Help Text */}
+                <div className="bg-blue-50 rounded-lg p-4 text-sm text-gray-700">
+                  <p className="font-medium mb-1">📱 Rescanned QR Code?</p>
+                  <p>
+                    Choose how you&apos;d like to pay. Online payment is instant, or you can switch
+                    to paying at the till if you prefer.
+                  </p>
+                </div>
+              </div>
+            ) : (
+              /* Already switched to till - show confirmation only */
+              <div className="text-center py-4">
+                <p className="text-gray-600">
+                  Your payment preference has been updated. Please proceed to the till to complete
+                  your payment.
+                </p>
+              </div>
+            )}
           </CardContent>
         </Card>
       </div>

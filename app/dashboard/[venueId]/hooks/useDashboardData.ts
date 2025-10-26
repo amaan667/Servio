@@ -124,25 +124,43 @@ export function useDashboardData(
         return;
       }
 
-      const { data: tableCounters } = await withSupabaseRetry(() =>
-        supabase.rpc("api_table_counters", {
-          p_venue_id: venueId,
-        })
+      // Fetch REAL table counts directly (no RPC, no caching)
+      const { data: allTables } = await withSupabaseRetry(() =>
+        supabase.from("tables").select("id, is_active").eq("venue_id", venueId)
+      );
+
+      const { data: activeSessions } = await withSupabaseRetry(() =>
+        supabase
+          .from("table_sessions")
+          .select("id")
+          .eq("venue_id", venueId)
+          .eq("status", "OCCUPIED")
+          .is("closed_at", null)
+      );
+
+      const now = new Date();
+      const { data: currentReservations } = await withSupabaseRetry(() =>
+        supabase
+          .from("reservations")
+          .select("id")
+          .eq("venue_id", venueId)
+          .eq("status", "BOOKED")
+          .lte("start_time", now.toISOString())
+          .gte("end_time", now.toISOString())
       );
 
       if (newCounts && typeof newCounts === "object") {
         const counts = newCounts as DashboardCounts;
 
-        const finalCounts =
-          tableCounters && Array.isArray(tableCounters) && tableCounters.length > 0
-            ? {
-                ...counts,
-                tables_set_up: tableCounters[0].tables_set_up || 0,
-                tables_in_use: tableCounters[0].tables_in_use || 0,
-                tables_reserved_now: tableCounters[0].tables_reserved_now || 0,
-                active_tables_count: tableCounters[0].active_tables_count || 0,
-              }
-            : counts;
+        // Merge real table counts
+        const activeTables = allTables?.filter((t) => t.is_active) || [];
+        const finalCounts = {
+          ...counts,
+          tables_set_up: activeTables.length, // Real count from tables table
+          tables_in_use: activeSessions?.length || 0, // Real count from table_sessions
+          tables_reserved_now: currentReservations?.length || 0, // Real count from reservations
+          active_tables_count: activeTables.length, // Same as tables_set_up
+        };
 
         setCounts(finalCounts);
         // Cache the counts to prevent flicker
