@@ -2,6 +2,7 @@ import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { useEffect } from "react";
 import { supabaseBrowser as createClient } from "@/lib/supabase";
 import { toast } from "@/hooks/use-toast";
+import { getCachedQueryData, setCachedQueryData } from "@/lib/persistent-cache";
 
 const supabase = createClient();
 
@@ -45,6 +46,9 @@ export function useTableGrid(venueId: string, leadTimeMinutes: number = 30) {
 
   const query = useQuery({
     queryKey: ["tables", "grid", venueId, leadTimeMinutes],
+    // ANTI-FLICKER: Use cached data as placeholder
+    placeholderData: () =>
+      getCachedQueryData<TableGridItem[]>(["tables", "grid", venueId, leadTimeMinutes]),
     queryFn: async () => {
       // First, get the table data from the main tables table (which has merged_with_table_id)
       const { data: tableData, error: tableError } = await supabase
@@ -164,14 +168,24 @@ export function useTableGrid(venueId: string, leadTimeMinutes: number = 30) {
         };
       }) as TableGridItem[];
     },
-    refetchInterval: 15000,
+    // ANTI-FLICKER: Don't refetch too frequently
+    refetchInterval: 30000, // 30 seconds (was 15)
+    refetchIntervalInBackground: true, // Refetch silently in background
     enabled: !!venueId,
-    staleTime: 0, // Always consider data stale to ensure fresh data on navigation
-    refetchOnMount: true, // Always refetch when component mounts
-    gcTime: 30000, // Keep in cache for 30 seconds
-    retry: 3, // Retry failed requests 3 times
+    staleTime: 15000, // Data fresh for 15 seconds (was 0)
+    refetchOnMount: false, // Don't refetch on mount (use cache, was true)
+    refetchOnWindowFocus: false, // Don't refetch on window focus
+    gcTime: 5 * 60 * 1000, // Keep in cache for 5 minutes (was 30 seconds)
+    retry: 1, // Retry failed requests once (was 3)
     retryDelay: 1000, // Wait 1 second between retries
   });
+
+  // ANTI-FLICKER: Cache query data when it changes
+  useEffect(() => {
+    if (query.data) {
+      setCachedQueryData(["tables", "grid", venueId, leadTimeMinutes], query.data, 5 * 60 * 1000);
+    }
+  }, [query.data, venueId, leadTimeMinutes]);
 
   // Set up real-time subscriptions for table updates
   useEffect(() => {
