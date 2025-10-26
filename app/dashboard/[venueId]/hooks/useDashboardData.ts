@@ -64,7 +64,6 @@ export function useDashboardData(
   const [stats, setStats] = useState<DashboardStats>(
     initialStatsValue || { revenue: 0, menuItems: 0, unpaid: 0 }
   );
-  const [statsLoaded, setStatsLoaded] = useState(!!initialStatsValue);
   const [todayWindow, setTodayWindow] = useState<unknown>(null);
   const [error, setError] = useState<string | null>(null);
 
@@ -96,7 +95,6 @@ export function useDashboardData(
           unpaid,
         };
         setStats(newStats);
-        setStatsLoaded(true);
         // Cache the stats to prevent flicker
         if (typeof window !== "undefined") {
           sessionStorage.setItem(`dashboard_stats_${venueId}`, JSON.stringify(newStats));
@@ -173,51 +171,24 @@ export function useDashboardData(
   );
 
   useEffect(() => {
-    const loadVenueAndStats = async () => {
-      try {
-        if (venue) {
-          const window = todayWindowForTZ(venueTz);
-          setTodayWindow(window);
+    if (!venue) return;
 
-          // IMPORTANT: If we have initial data from server-side, DON'T fetch again!
-          // This prevents the "0 → real value" flicker
-          const hasInitialCounts = !!initialCounts;
-          const hasInitialStats = !!initialStats;
+    const window = todayWindowForTZ(venueTz);
+    setTodayWindow(window);
 
-          console.info("[DASHBOARD] Initial data check:", {
-            hasInitialCounts,
-            hasInitialStats,
-            countsValue: initialCounts,
-            statsValue: initialStats,
-          });
+    // NEVER fetch on initial load - ALWAYS use server-side data
+    // This prevents ALL flickering
+    console.info("[DASHBOARD] Using server-side initial data exclusively");
+    console.info("[DASHBOARD] Has initial counts:", !!initialCounts);
+    console.info("[DASHBOARD] Has initial stats:", !!initialStats);
+    console.info("[DASHBOARD] Counts:", initialCounts);
+    console.info("[DASHBOARD] Stats:", initialStats);
 
-          // Only fetch if we don't have initial server-side data
-          if (!hasInitialCounts) {
-            console.info("[DASHBOARD] No initial counts - fetching...");
-            await refreshCounts();
-          } else {
-            console.info("[DASHBOARD] Using initial counts from server - no fetch needed!");
-          }
+    // Only mark as loaded, never fetch
+    setLoading(false);
 
-          if (!statsLoaded && !hasInitialStats) {
-            console.info("[DASHBOARD] No initial stats - fetching...");
-            await loadStats((venue as { venue_id: string }).venue_id, window);
-          } else {
-            console.info("[DASHBOARD] Using initial stats from server - no fetch needed!");
-          }
-
-          setLoading(false);
-        }
-      } catch (err) {
-        console.error("Failed to load dashboard data:", err);
-        setError("Failed to load dashboard data");
-        setLoading(false);
-      }
-    };
-
-    loadVenueAndStats();
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [venue, venueTz]);
+  }, [venue]);
 
   return {
     venue,
