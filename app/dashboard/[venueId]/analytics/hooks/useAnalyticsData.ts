@@ -115,7 +115,7 @@ export function useAnalyticsData(
 
       const totalOrders = validOrders.length;
       const totalRevenue = validOrders.reduce(
-        (sum: number, order: unknown) => sum + (order.total_amount || 0),
+        (sum: number, order: unknown) => sum + ((order as any).total_amount || 0),
         0
       );
       const averageOrderValue = totalOrders > 0 ? totalRevenue / totalOrders : 0;
@@ -222,7 +222,7 @@ function generateRevenueOverTime(
 
     if (dateFormat === "day") {
       periodOrdersList = orders.filter((order: Record<string, unknown>) => {
-        const orderDate = order.created_at.split("T")[0];
+        const orderDate = (order.created_at as any).split("T")[0];
         return orderDate === dateStr;
       });
     } else if (dateFormat === "week") {
@@ -231,7 +231,7 @@ function generateRevenueOverTime(
       const weekEndStr = endOfWeek.toISOString().split("T")[0];
 
       periodOrdersList = orders.filter((order: Record<string, unknown>) => {
-        const orderDate = order.created_at.split("T")[0];
+        const orderDate = (order.created_at as any).split("T")[0];
         return orderDate >= dateStr && orderDate <= weekEndStr;
       });
     } else if (dateFormat === "month") {
@@ -240,13 +240,13 @@ function generateRevenueOverTime(
       const monthEndStr = endOfMonth.toISOString().split("T")[0];
 
       periodOrdersList = orders.filter((order: Record<string, unknown>) => {
-        const orderDate = order.created_at.split("T")[0];
+        const orderDate = (order.created_at as any).split("T")[0];
         return orderDate >= dateStr && orderDate <= monthEndStr;
       });
     }
 
     const periodRevenue = periodOrdersList.reduce(
-      (sum: number, order: unknown) => sum + (order.total_amount || 0),
+      (sum: number, order: unknown) => sum + ((order as any).total_amount || 0),
       0
     );
     const periodOrders = periodOrdersList.length;
@@ -296,7 +296,9 @@ function findPeakAndLowestDays(revenueOverTime: unknown[]) {
   let lowestDay = { date: "", revenue: 0 };
 
   if (revenueOverTime.length > 0) {
-    const sortedByRevenue = [...revenueOverTime].sort((a, b) => b.revenue - a.revenue);
+    const sortedByRevenue = [...revenueOverTime].sort(
+      (a, b) => (b as any).revenue - (a as any).revenue
+    );
     peakDay = { date: sortedByRevenue[0].date, revenue: sortedByRevenue[0].revenue };
     lowestDay = {
       date: sortedByRevenue[sortedByRevenue.length - 1].date,
@@ -304,8 +306,8 @@ function findPeakAndLowestDays(revenueOverTime: unknown[]) {
     };
 
     revenueOverTime.forEach((period) => {
-      if (period.date === peakDay.date) period.isPeak = true;
-      if (period.date === lowestDay.date) period.isLowest = true;
+      if ((period as any).date === (peakDay as any).date) (period as any).isPeak = true;
+      if ((period as any).date === (lowestDay as any).date) (period as any).isLowest = true;
     });
   }
 
@@ -321,25 +323,25 @@ function markCurrentPeriod(revenueOverTime: unknown[], timePeriod: TimePeriod) {
   else if (timePeriod === "1y") dateFormat = "month";
 
   revenueOverTime.forEach((period) => {
-    if (dateFormat === "day" && period.date === todayStr) {
-      period.isCurrentPeriod = true;
+    if (dateFormat === "day" && (period as any).date === todayStr) {
+      (period as any).isCurrentPeriod = true;
     } else if (dateFormat === "week") {
-      const periodDate = new Date(period.date);
+      const periodDate = new Date((period as any).date);
       const weekStart = new Date(periodDate);
       weekStart.setDate(periodDate.getDate() - periodDate.getDay());
       const weekEnd = new Date(weekStart);
       weekEnd.setDate(weekStart.getDate() + 6);
 
       if (now >= weekStart && now <= weekEnd) {
-        period.isCurrentPeriod = true;
+        (period as any).isCurrentPeriod = true;
       }
     } else if (dateFormat === "month") {
-      const periodDate = new Date(period.date);
+      const periodDate = new Date((period as any).date);
       if (
         now.getMonth() === periodDate.getMonth() &&
         now.getFullYear() === periodDate.getFullYear()
       ) {
-        period.isCurrentPeriod = true;
+        (period as any).isCurrentPeriod = true;
       }
     }
   });

@@ -3,13 +3,13 @@
  * Provides AI-powered insights, predictive analytics, and business intelligence
  */
 
-import React, { useState, useEffect } from 'react';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { Badge } from '@/components/ui/badge';
-import { Button } from '@/components/ui/button';
-import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { TrendingUp, TrendingDown, Minus, Brain, Target, Zap } from 'lucide-react';
-import { analytics } from '@/lib/analytics';
+import React, { useState, useEffect } from "react";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { TrendingUp, TrendingDown, Minus, Brain, Target, Zap } from "lucide-react";
+import { analytics } from "@/lib/analytics";
 
 interface AdvancedAnalyticsProps {
   venueId: string;
@@ -25,8 +25,8 @@ export const AdvancedAnalytics: React.FC<AdvancedAnalyticsProps> = ({ venueId })
         const data = await analytics.getBusinessIntelligence(venueId);
         setBusinessIntelligence(data);
       } catch (_error) {
-      // Error handled silently
-    } finally {
+        // Error handled silently
+      } finally {
         setLoading(false);
       }
     };
@@ -63,23 +63,31 @@ export const AdvancedAnalytics: React.FC<AdvancedAnalyticsProps> = ({ venueId })
     <div className="space-y-6">
       {/* KPIs Section */}
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
-        {businessIntelligence.kpis.map((kpi: unknown, index: number) => (
+        {(businessIntelligence as any).kpis.map((kpi: unknown, index: number) => (
           <Card key={index} className="hover:shadow-lg transition-shadow">
             <CardContent className="p-6">
               <div className="flex items-center justify-between">
                 <div>
-                  <p className="text-sm font-medium text-gray-600">{kpi.name}</p>
-                  <p className="text-2xl font-bold">{kpi.value.toLocaleString()}</p>
+                  <p className="text-sm font-medium text-gray-600">{(kpi as any).name}</p>
+                  <p className="text-2xl font-bold">{(kpi as any).value.toLocaleString()}</p>
                 </div>
                 <div className="flex items-center space-x-1">
-                  {kpi.trend === 'up' && <TrendingUp className="h-4 w-4 text-green-500" />}
-                  {kpi.trend === 'down' && <TrendingDown className="h-4 w-4 text-red-500" />}
-                  {kpi.trend === 'stable' && <Minus className="h-4 w-4 text-gray-500" />}
-                  <span className={`text-sm font-medium ${
-                    kpi.trend === 'up' ? 'text-green-600' : 
-                    kpi.trend === 'down' ? 'text-red-600' : 'text-gray-600'
-                  }`}>
-                    {kpi.change > 0 ? '+' : ''}{kpi.change}%
+                  {(kpi as any).trend === "up" && <TrendingUp className="h-4 w-4 text-green-500" />}
+                  {(kpi as any).trend === "down" && (
+                    <TrendingDown className="h-4 w-4 text-red-500" />
+                  )}
+                  {(kpi as any).trend === "stable" && <Minus className="h-4 w-4 text-gray-500" />}
+                  <span
+                    className={`text-sm font-medium ${
+                      (kpi as any).trend === "up"
+                        ? "text-green-600"
+                        : (kpi as any).trend === "down"
+                          ? "text-red-600"
+                          : "text-gray-600"
+                    }`}
+                  >
+                    {(kpi as any).change > 0 ? "+" : ""}
+                    {(kpi as any).change}%
                   </span>
                 </div>
               </div>
@@ -98,21 +106,34 @@ export const AdvancedAnalytics: React.FC<AdvancedAnalyticsProps> = ({ venueId })
         </CardHeader>
         <CardContent>
           <div className="space-y-4">
-            {businessIntelligence.insights.map((insight: unknown) => (
-              <div key={insight.id} className="border rounded-lg p-4 hover:bg-gray-50 transition-colors">
+            {(businessIntelligence as any).insights.map((insight: unknown) => (
+              <div
+                key={(insight as any).id}
+                className="border rounded-lg p-4 hover:bg-gray-50 transition-colors"
+              >
                 <div className="flex items-start justify-between">
                   <div className="flex-1">
                     <div className="flex items-center space-x-2 mb-2">
-                      <h3 className="font-semibold">{insight.title}</h3>
-                      <Badge variant={insight.impact === 'high' ? 'destructive' : insight.impact === 'medium' ? 'default' : 'secondary'}>
-                        {insight.impact} impact
+                      <h3 className="font-semibold">{(insight as any).title}</h3>
+                      <Badge
+                        variant={
+                          (insight as any).impact === "high"
+                            ? "destructive"
+                            : (insight as any).impact === "medium"
+                              ? "default"
+                              : "secondary"
+                        }
+                      >
+                        {(insight as any).impact} impact
                       </Badge>
                       <Badge variant="outline">
-                        {Math.round(insight.confidence * 100)}% confidence
+                        {Math.round((insight as any).confidence * 100)}% confidence
                       </Badge>
                     </div>
-                    <p className="text-gray-600 mb-2">{insight.description}</p>
-                    <p className="text-sm font-medium text-blue-600">{insight.recommendation}</p>
+                    <p className="text-gray-600 mb-2">{(insight as any).description}</p>
+                    <p className="text-sm font-medium text-blue-600">
+                      {(insight as any).recommendation}
+                    </p>
                   </div>
                 </div>
               </div>
@@ -127,7 +148,7 @@ export const AdvancedAnalytics: React.FC<AdvancedAnalyticsProps> = ({ venueId })
           <TabsTrigger value="forecasts">Forecasts</TabsTrigger>
           <TabsTrigger value="recommendations">Recommendations</TabsTrigger>
         </TabsList>
-        
+
         <TabsContent value="forecasts" className="space-y-4">
           <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
             <Card>
@@ -139,12 +160,14 @@ export const AdvancedAnalytics: React.FC<AdvancedAnalyticsProps> = ({ venueId })
               </CardHeader>
               <CardContent>
                 <div className="space-y-2">
-                  {businessIntelligence.forecasts.revenue.slice(0, 7).map((value: number, index: number) => (
-                    <div key={index} className="flex justify-between items-center">
-                      <span className="text-sm text-gray-600">Day {index + 1}</span>
-                      <span className="font-medium">${value.toFixed(2)}</span>
-                    </div>
-                  ))}
+                  {(businessIntelligence as any).forecasts.revenue
+                    .slice(0, 7)
+                    .map((value: number, index: number) => (
+                      <div key={index} className="flex justify-between items-center">
+                        <span className="text-sm text-gray-600">Day {index + 1}</span>
+                        <span className="font-medium">${value.toFixed(2)}</span>
+                      </div>
+                    ))}
                 </div>
               </CardContent>
             </Card>
@@ -158,12 +181,14 @@ export const AdvancedAnalytics: React.FC<AdvancedAnalyticsProps> = ({ venueId })
               </CardHeader>
               <CardContent>
                 <div className="space-y-2">
-                  {businessIntelligence.forecasts.orders.slice(0, 7).map((value: number, index: number) => (
-                    <div key={index} className="flex justify-between items-center">
-                      <span className="text-sm text-gray-600">Day {index + 1}</span>
-                      <span className="font-medium">{value} orders</span>
-                    </div>
-                  ))}
+                  {(businessIntelligence as any).forecasts.orders
+                    .slice(0, 7)
+                    .map((value: number, index: number) => (
+                      <div key={index} className="flex justify-between items-center">
+                        <span className="text-sm text-gray-600">Day {index + 1}</span>
+                        <span className="font-medium">{value} orders</span>
+                      </div>
+                    ))}
                 </div>
               </CardContent>
             </Card>
@@ -177,12 +202,14 @@ export const AdvancedAnalytics: React.FC<AdvancedAnalyticsProps> = ({ venueId })
               </CardHeader>
               <CardContent>
                 <div className="space-y-2">
-                  {businessIntelligence.forecasts.customers.slice(0, 7).map((value: number, index: number) => (
-                    <div key={index} className="flex justify-between items-center">
-                      <span className="text-sm text-gray-600">Day {index + 1}</span>
-                      <span className="font-medium">{value} customers</span>
-                    </div>
-                  ))}
+                  {(businessIntelligence as any).forecasts.customers
+                    .slice(0, 7)
+                    .map((value: number, index: number) => (
+                      <div key={index} className="flex justify-between items-center">
+                        <span className="text-sm text-gray-600">Day {index + 1}</span>
+                        <span className="font-medium">{value} customers</span>
+                      </div>
+                    ))}
                 </div>
               </CardContent>
             </Card>
@@ -196,12 +223,17 @@ export const AdvancedAnalytics: React.FC<AdvancedAnalyticsProps> = ({ venueId })
             </CardHeader>
             <CardContent>
               <div className="space-y-3">
-                {businessIntelligence.recommendations.map((recommendation: string, index: number) => (
-                  <div key={index} className="flex items-start space-x-3 p-3 bg-blue-50 rounded-lg">
-                    <div className="w-2 h-2 bg-blue-500 rounded-full mt-2 flex-shrink-0"></div>
-                    <p className="text-sm text-gray-700">{recommendation}</p>
-                  </div>
-                ))}
+                {(businessIntelligence as any).recommendations.map(
+                  (recommendation: string, index: number) => (
+                    <div
+                      key={index}
+                      className="flex items-start space-x-3 p-3 bg-blue-50 rounded-lg"
+                    >
+                      <div className="w-2 h-2 bg-blue-500 rounded-full mt-2 flex-shrink-0"></div>
+                      <p className="text-sm text-gray-700">{recommendation}</p>
+                    </div>
+                  )
+                )}
               </div>
             </CardContent>
           </Card>

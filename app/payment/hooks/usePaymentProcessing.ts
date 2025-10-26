@@ -17,13 +17,13 @@ export function usePaymentProcessing() {
       // Helper function to create order in database
       const createOrder = async () => {
         const orderData = {
-          venue_id: checkoutData.venueId,
-          table_number: checkoutData.tableNumber,
+          venue_id: (checkoutData as any).venueId,
+          table_number: (checkoutData as any).tableNumber,
           table_id: null,
           // Removed: counter_number, order_type, order_location - don't exist in DB
-          customer_name: checkoutData.customerName,
-          customer_phone: checkoutData.customerPhone,
-          items: checkoutData.cart.map(
+          customer_name: (checkoutData as any).customerName,
+          customer_phone: (checkoutData as any).customerPhone,
+          items: (checkoutData as any).cart.map(
             (item: {
               id?: string;
               quantity: number;
@@ -38,15 +38,15 @@ export function usePaymentProcessing() {
               specialInstructions: item.specialInstructions || null,
             })
           ),
-          total_amount: checkoutData.total,
-          notes: checkoutData.notes || "",
+          total_amount: (checkoutData as any).total,
+          notes: (checkoutData as any).notes || "",
           order_status: "IN_PREP", // Start as IN_PREP so it shows in Live Orders immediately as "Preparing"
           payment_status: "UNPAID",
           payment_mode:
             action === "till" ? "pay_at_till" : action === "later" ? "pay_later" : "online",
           payment_method: action === "demo" ? "demo" : action === "till" ? "till" : null,
           // NOTE: session_id is NOT a database column - don't send it
-          source: checkoutData.source || "qr",
+          source: (checkoutData as any).source || "qr",
         };
 
         const createOrderResponse = await fetch("/api/orders", {
@@ -103,10 +103,10 @@ export function usePaymentProcessing() {
           method: "POST",
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({
-            amount: checkoutData.total,
-            customerEmail: checkoutData.customerEmail || "customer@email.com",
-            customerName: checkoutData.customerName,
-            venueName: checkoutData.venueName || "Restaurant",
+            amount: (checkoutData as any).total,
+            customerEmail: (checkoutData as any).customerEmail || "customer@email.com",
+            customerName: (checkoutData as any).customerName,
+            venueName: (checkoutData as any).venueName || "Restaurant",
             orderId: orderId, // Just pass order ID (small!)
           }),
         });
@@ -133,10 +133,10 @@ export function usePaymentProcessing() {
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({
             order_id: orderId,
-            venueId: checkoutData.venueId,
-            tableNumber: checkoutData.tableNumber,
-            customerName: checkoutData.customerName,
-            customerPhone: checkoutData.customerPhone,
+            venueId: (checkoutData as any).venueId,
+            tableNumber: (checkoutData as any).tableNumber,
+            customerName: (checkoutData as any).customerName,
+            customerPhone: (checkoutData as any).customerPhone,
           }),
         });
 
@@ -158,11 +158,11 @@ export function usePaymentProcessing() {
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({
             order_id: orderId,
-            venueId: checkoutData.venueId,
-            tableNumber: checkoutData.tableNumber,
-            customerName: checkoutData.customerName,
-            customerPhone: checkoutData.customerPhone,
-            sessionId: checkoutData.sessionId || `session_${Date.now()}`,
+            venueId: (checkoutData as any).venueId,
+            tableNumber: (checkoutData as any).tableNumber,
+            customerName: (checkoutData as any).customerName,
+            customerPhone: (checkoutData as any).customerPhone,
+            sessionId: (checkoutData as any).sessionId || `session_${Date.now()}`,
           }),
         });
 
@@ -173,18 +173,18 @@ export function usePaymentProcessing() {
         const result = await response.json();
 
         // Store session for re-scanning
-        const sessionId = checkoutData.sessionId || `session_${Date.now()}`;
+        const sessionId = (checkoutData as any).sessionId || `session_${Date.now()}`;
         localStorage.setItem("servio-current-session", sessionId);
         localStorage.setItem(
           `servio-order-${sessionId}`,
           JSON.stringify({
             orderId: orderId,
-            venueId: checkoutData.venueId,
-            tableNumber: checkoutData.tableNumber,
-            customerName: checkoutData.customerName,
-            customerPhone: checkoutData.customerPhone,
-            cart: checkoutData.cart,
-            total: checkoutData.total,
+            venueId: (checkoutData as any).venueId,
+            tableNumber: (checkoutData as any).tableNumber,
+            customerName: (checkoutData as any).customerName,
+            customerPhone: (checkoutData as any).customerPhone,
+            cart: (checkoutData as any).cart,
+            total: (checkoutData as any).total,
             orderNumber: result.order_number || orderNumber,
           })
         );

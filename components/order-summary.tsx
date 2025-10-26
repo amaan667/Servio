@@ -170,14 +170,14 @@ export default function OrderSummary({ orderId, sessionId, orderData }: OrderSum
     if (!supabase) return;
 
     const channel = supabase
-      .channel(`order-summary-${order.id}`)
+      .channel(`order-summary-${(order as any).id}`)
       .on(
         "postgres_changes",
         {
           event: "*",
           schema: "public",
           table: "orders",
-          filter: `id=eq.${order.id}`,
+          filter: `id=eq.${(order as any).id}`,
         },
         (payload: {
           eventType: string;
@@ -255,7 +255,10 @@ export default function OrderSummary({ orderId, sessionId, orderData }: OrderSum
     );
   }
 
-  const paymentMessage = getPaymentSuccessMessage(order.payment_method, order.payment_status);
+  const paymentMessage = getPaymentSuccessMessage(
+    (order as any).payment_method,
+    (order as any).payment_status
+  );
   const timelineItems = getTimelineItems();
 
   return (
@@ -284,64 +287,72 @@ export default function OrderSummary({ orderId, sessionId, orderData }: OrderSum
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               <div>
                 <p className="text-sm text-gray-900">Customer Name</p>
-                <p className="font-semibold">{order.customer_name || "Not provided"}</p>
+                <p className="font-semibold">{(order as any).customer_name || "Not provided"}</p>
               </div>
-              {order.customer_phone && (
+              {(order as any).customer_phone && (
                 <div>
                   <p className="text-sm text-gray-900">Phone Number</p>
-                  <p className="font-semibold">{order.customer_phone}</p>
+                  <p className="font-semibold">{(order as any).customer_phone}</p>
                 </div>
               )}
               <div>
                 <p className="text-sm text-gray-900">Order Number</p>
-                <p className="font-semibold">#{getShortOrderNumber(order.id)}</p>
+                <p className="font-semibold">#{getShortOrderNumber((order as any).id)}</p>
               </div>
               <div>
                 <p className="text-sm text-gray-900">Table</p>
-                <p className="font-semibold">{order.table_number || "N/A"}</p>
+                <p className="font-semibold">{(order as any).table_number || "N/A"}</p>
               </div>
             </div>
           </CardContent>
         </Card>
 
         {/* Order Items */}
-        {order.items && order.items.length > 0 && (
+        {(order as any).items && (order as any).items.length > 0 && (
           <Card className="mb-6">
             <CardHeader>
               <CardTitle>Order Items</CardTitle>
             </CardHeader>
             <CardContent>
               <div className="space-y-4">
-                {order.items.map((item: unknown, index: number) => (
+                {(order as any).items.map((item: unknown, index: number) => (
                   <div
                     key={index}
                     className="flex justify-between items-start py-3 border-b border-gray-100 last:border-b-0"
                   >
                     <div className="flex-1">
                       <div className="flex items-center gap-3">
-                        {item.image_url && (
+                        {(item as any).image_url && (
                           <div className="w-12 h-12 bg-gray-50 rounded-lg flex items-center justify-center overflow-hidden border border-gray-200">
                             <img
-                              src={item.image_url}
-                              alt={item.item_name}
+                              src={(item as any).image_url}
+                              alt={(item as any).item_name}
                               className="w-full h-full object-cover"
                             />
                           </div>
                         )}
                         <div>
-                          <p className="font-medium">{item.item_name || `Item ${index + 1}`}</p>
-                          <p className="text-sm text-gray-900">Quantity: {item.quantity}</p>
-                          {item.special_instructions && (
+                          <p className="font-medium">
+                            {(item as any).item_name || `Item ${index + 1}`}
+                          </p>
+                          <p className="text-sm text-gray-900">
+                            Quantity: {(item as any).quantity}
+                          </p>
+                          {(item as any).special_instructions && (
                             <p className="text-sm text-blue-600 italic">
-                              Note: {item.special_instructions}
+                              Note: {(item as any).special_instructions}
                             </p>
                           )}
                         </div>
                       </div>
                     </div>
                     <div className="text-right">
-                      <p className="font-semibold">£{(item.price * item.quantity).toFixed(2)}</p>
-                      <p className="text-sm text-gray-900">£{item.price.toFixed(2)} each</p>
+                      <p className="font-semibold">
+                        £{((item as any).price * (item as any).quantity).toFixed(2)}
+                      </p>
+                      <p className="text-sm text-gray-900">
+                        £{(item as any).price.toFixed(2)} each
+                      </p>
                     </div>
                   </div>
                 ))}
@@ -350,7 +361,9 @@ export default function OrderSummary({ orderId, sessionId, orderData }: OrderSum
                 <div className="pt-4 border-t-2 border-gray-200">
                   <div className="flex justify-between items-center">
                     <p className="text-lg font-bold">Total</p>
-                    <p className="text-lg font-bold">£{order.total_amount?.toFixed(2) || "0.00"}</p>
+                    <p className="text-lg font-bold">
+                      £{(order as any).total_amount?.toFixed(2) || "0.00"}
+                    </p>
                   </div>
                 </div>
               </div>
@@ -432,10 +445,10 @@ export default function OrderSummary({ orderId, sessionId, orderData }: OrderSum
             </CardHeader>
             <CardContent>
               <UnifiedFeedbackForm
-                orderId={order.id}
-                venueId={order.venue_id}
-                customerName={order.customer_name}
-                customerPhone={order.customer_phone}
+                orderId={(order as any).id}
+                venueId={(order as any).venue_id}
+                customerName={(order as any).customer_name}
+                customerPhone={(order as any).customer_phone}
                 onSubmit={() => {
                   setFeedbackSubmitted(true);
                   setShowFeedback(false);

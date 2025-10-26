@@ -334,9 +334,9 @@ OUTPUT FORMAT:
             category: i.category || "",
           })),
           after: translatedArray.map((i: unknown) => ({
-            name: i.name || i.originalName,
-            description: i.description || "",
-            category: i.category || "",
+            name: (i as any).name || (i as any).originalName,
+            description: (i as any).description || "",
+            category: (i as any).category || "",
           })),
           impact: {
             itemsAffected: items.length,
@@ -509,28 +509,28 @@ OUTPUT FORMAT:
     let failedCount = 0;
 
     for (const translatedItem of translatedItems) {
-      if (!translatedItem || !translatedItem.id || !translatedItem.name) {
+      if (!translatedItem || !(translatedItem as any).id || !(translatedItem as any).name) {
         failedCount++;
         continue;
       }
 
       const updateData: unknown = {
-        name: translatedItem.name,
+        name: (translatedItem as any).name,
         updated_at: new Date().toISOString(),
       };
 
-      if (translatedItem.category) {
-        updateData.category = translatedItem.category;
+      if ((translatedItem as any).category) {
+        (updateData as any).category = (translatedItem as any).category;
       }
 
-      if (typedParams.includeDescriptions && translatedItem.description) {
-        updateData.description = translatedItem.description;
+      if (typedParams.includeDescriptions && (translatedItem as any).description) {
+        (updateData as any).description = (translatedItem as any).description;
       }
 
       const { error } = await supabase
         .from("menu_items")
         .update(updateData)
-        .eq("id", translatedItem.id)
+        .eq("id", (translatedItem as any).id)
         .eq("venue_id", venueId);
 
       if (!error) {

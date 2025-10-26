@@ -8,7 +8,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Alert, AlertDescription } from "@/components/ui/alert";
-import { createClient } from '@/lib/supabase';
+import { createClient } from "@/lib/supabase";
 import { logger } from "@/lib/logger";
 import NavigationBreadcrumb from "@/components/navigation-breadcrumb";
 
@@ -21,7 +21,11 @@ export default function CompleteProfileForm({ user }: CompleteProfileFormProps) 
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [formData, setFormData] = useState({
-    venueName: user?.user_metadata?.venue_name || user?.user_metadata?.full_name || user?.user_metadata?.name || "",
+    venueName:
+      user?.user_metadata?.venue_name ||
+      user?.user_metadata?.full_name ||
+      user?.user_metadata?.name ||
+      "",
     businessType: user?.user_metadata?.business_type || "Restaurant",
     address: user?.user_metadata?.address || "",
     phone: user?.user_metadata?.phone || "",
@@ -30,22 +34,23 @@ export default function CompleteProfileForm({ user }: CompleteProfileFormProps) 
   });
 
   // Check if user signed up with OAuth (Google) and needs to set a password
-  const isOAuthUser = (user as unknown)?.identities?.some((identity: Record<string, unknown>) => 
-    identity.provider === 'google' || identity.provider === 'oauth'
+  const isOAuthUser = (user as unknown)?.identities?.some(
+    (identity: Record<string, unknown>) =>
+      identity.provider === "google" || identity.provider === "oauth"
   );
 
   // Pre-populate form with Google data if available
   useEffect(() => {
     if (user && isOAuthUser) {
-      const googleName = user.user_metadata?.full_name || user.user_metadata?.name;
-      
+      const googleName =
+        (user as any).user_metadata?.full_name || (user as any).user_metadata?.name;
+
       if (googleName && !formData.venueName) {
-        setFormData(prev => ({
+        setFormData((prev) => ({
           ...prev,
-          venueName: `${googleName}'s Business`
+          venueName: `${googleName}'s Business`,
         }));
       }
-      
     }
   }, [user, isOAuthUser]);
 
@@ -66,13 +71,13 @@ export default function CompleteProfileForm({ user }: CompleteProfileFormProps) 
         setLoading(false);
         return;
       }
-      
+
       if (!formData.address.trim()) {
         setError("Business address is required.");
         setLoading(false);
         return;
       }
-      
+
       if (!formData.phone.trim()) {
         setError("Phone number is required.");
         setLoading(false);
@@ -86,13 +91,13 @@ export default function CompleteProfileForm({ user }: CompleteProfileFormProps) 
           setLoading(false);
           return;
         }
-        
+
         if (formData.password !== formData.confirmPassword) {
           setError("Passwords do not match.");
           setLoading(false);
           return;
         }
-        
+
         if (formData.password.length < 6) {
           setError("Password must be at least 6 characters long.");
           setLoading(false);
@@ -104,10 +109,9 @@ export default function CompleteProfileForm({ user }: CompleteProfileFormProps) 
       if (isOAuthUser) {
         const supabase = await createClient();
         const { error: passwordError } = await supabase.auth.updateUser({
-          password: formData.password
+          password: formData.password,
         });
         if (passwordError) {
-
           setError(`Failed to set password: ${passwordError.message}`);
           setLoading(false);
           return;
@@ -115,28 +119,31 @@ export default function CompleteProfileForm({ user }: CompleteProfileFormProps) 
       }
 
       // Ensure we have a valid venue name
-      const venueName = formData.venueName.trim() || `${user?.user_metadata?.full_name || user?.email?.split('@')[0] || 'My'}'s Business`;
-      
+      const venueName =
+        formData.venueName.trim() ||
+        `${user?.user_metadata?.full_name || user?.email?.split("@")[0] || "My"}'s Business`;
+
       // Generate venue ID based on user ID
-      const venueId = `venue-${user.id.slice(0, 8)}`;
-      
-      const res = await fetch('/api/venues/upsert', {
-        method: 'POST',
-        headers: { 'content-type': 'application/json' },
+      const venueId = `venue-${(user as any).id.slice(0, 8)}`;
+
+      const res = await fetch("/api/venues/upsert", {
+        method: "POST",
+        headers: { "content-type": "application/json" },
         body: JSON.stringify({
           venueId: venueId,
           name: venueName,
           business_type: formData.businessType,
           address: formData.address || null,
           phone: formData.phone || null,
-        })
+        }),
       });
-      
-      const j = await res.json().catch(()=>({ /* Empty */ }));
-      
-      if (!res.ok || !j?.ok) {
 
-        throw new Error(j?.error || 'Failed to save venue');
+      const j = await res.json().catch(() => ({
+        /* Empty */
+      }));
+
+      if (!res.ok || !j?.ok) {
+        throw new Error(j?.error || "Failed to save venue");
       }
 
       const returnedVenueId = j.venue?.venue_id || venueId;
@@ -144,18 +151,17 @@ export default function CompleteProfileForm({ user }: CompleteProfileFormProps) 
       // Update user metadata to mark profile as complete and save additional info
       const supabase2 = await createClient();
       await supabase2.auth.updateUser({
-        data: { 
+        data: {
           profileComplete: true,
           venue_name: venueName,
           business_type: formData.businessType,
           address: formData.address || null,
-          phone: formData.phone || null
-        }
+          phone: formData.phone || null,
+        },
       });
 
       router.replace(`/dashboard/${returnedVenueId}`);
     } catch (_error) {
-
       setError(error.message || "Failed to complete profile setup");
     } finally {
       setLoading(false);
@@ -166,12 +172,10 @@ export default function CompleteProfileForm({ user }: CompleteProfileFormProps) 
     <div className="min-h-screen bg-gray-50">
       <div className="max-w-md w-full mx-auto py-12 px-4 sm:px-6 lg:px-8">
         <NavigationBreadcrumb showBackButton={false} />
-        
+
         <div className="text-center">
           <h2 className="text-3xl font-bold text-gray-900">Complete Your Profile</h2>
-          <p className="mt-2 text-sm text-gray-900">
-            Set up your business details to get started
-          </p>
+          <p className="mt-2 text-sm text-gray-900">Set up your business details to get started</p>
         </div>
 
         <Card>
@@ -195,9 +199,7 @@ export default function CompleteProfileForm({ user }: CompleteProfileFormProps) 
                   id="venueName"
                   type="text"
                   value={formData.venueName}
-                  onChange={(e) =>
-                    setFormData({ ...formData, venueName: e.target.value })
-                  }
+                  onChange={(e) => setFormData({ ...formData, venueName: e.target.value })}
                   placeholder="Enter your business name"
                   disabled={loading}
                   required
@@ -209,9 +211,7 @@ export default function CompleteProfileForm({ user }: CompleteProfileFormProps) 
                 <select
                   id="businessType"
                   value={formData.businessType}
-                  onChange={(e) =>
-                    setFormData({ ...formData, businessType: e.target.value })
-                  }
+                  onChange={(e) => setFormData({ ...formData, businessType: e.target.value })}
                   disabled={loading}
                   className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-purple-500"
                   required
@@ -244,9 +244,7 @@ export default function CompleteProfileForm({ user }: CompleteProfileFormProps) 
                 <Textarea
                   id="address"
                   value={formData.address}
-                  onChange={(e) =>
-                    setFormData({ ...formData, address: e.target.value })
-                  }
+                  onChange={(e) => setFormData({ ...formData, address: e.target.value })}
                   placeholder="Enter your business address"
                   disabled={loading}
                   rows={3}
@@ -260,9 +258,7 @@ export default function CompleteProfileForm({ user }: CompleteProfileFormProps) 
                   id="phone"
                   type="tel"
                   value={formData.phone}
-                  onChange={(e) =>
-                    setFormData({ ...formData, phone: e.target.value })
-                  }
+                  onChange={(e) => setFormData({ ...formData, phone: e.target.value })}
                   placeholder="Enter your phone number"
                   disabled={loading}
                   required
@@ -274,7 +270,8 @@ export default function CompleteProfileForm({ user }: CompleteProfileFormProps) 
                   <div className="border-t pt-4 mt-4">
                     <h3 className="text-lg font-medium text-gray-900 mb-3">Set Up Password *</h3>
                     <p className="text-sm text-gray-900 mb-4">
-                      Set a password so you can also sign in with your email and password in the future.
+                      Set a password so you can also sign in with your email and password in the
+                      future.
                     </p>
                   </div>
 
@@ -284,9 +281,7 @@ export default function CompleteProfileForm({ user }: CompleteProfileFormProps) 
                       id="password"
                       type="password"
                       value={formData.password}
-                      onChange={(e) =>
-                        setFormData({ ...formData, password: e.target.value })
-                      }
+                      onChange={(e) => setFormData({ ...formData, password: e.target.value })}
                       placeholder="Create a password"
                       disabled={loading}
                       required

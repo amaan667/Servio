@@ -1,12 +1,19 @@
-'use client';
+"use client";
 
-import { useState } from 'react';
-import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from '@/components/ui/dialog';
-import { Button } from '@/components/ui/button';
-import { Input } from '@/components/ui/input';
-import { Label } from '@/components/ui/label';
-import { Alert, AlertDescription } from '@/components/ui/alert';
-import { Upload, CheckCircle, XCircle } from 'lucide-react';
+import { useState } from "react";
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { Alert, AlertDescription } from "@/components/ui/alert";
+import { Upload, CheckCircle, XCircle } from "lucide-react";
 
 interface ImportCSVDialogProps {
   open: boolean;
@@ -29,11 +36,11 @@ export function ImportCSVDialog({ open, onOpenChange, venueId, onSuccess }: Impo
 
     try {
       const formData = new FormData();
-      formData.append('file', file);
-      formData.append('venue_id', venueId);
+      formData.append("file", file);
+      formData.append("venue_id", venueId);
 
-      const response = await fetch('/api/inventory/import/csv', {
-        method: 'POST',
+      const response = await fetch("/api/inventory/import/csv", {
+        method: "POST",
         body: formData,
       });
 
@@ -49,8 +56,7 @@ export function ImportCSVDialog({ open, onOpenChange, venueId, onSuccess }: Impo
         }, 2000);
       }
     } catch (_error) {
-
-      setResult({ success: false, error: 'Failed to import CSV' });
+      setResult({ success: false, error: "Failed to import CSV" });
     } finally {
       setLoading(false);
     }
@@ -77,36 +83,44 @@ export function ImportCSVDialog({ open, onOpenChange, venueId, onSuccess }: Impo
                 required
               />
               <p className="text-sm text-muted-foreground">
-                Expected format: Name, SKU, Unit, Cost Per Unit, On Hand, Par Level, Reorder Level, Supplier
+                Expected format: Name, SKU, Unit, Cost Per Unit, On Hand, Par Level, Reorder Level,
+                Supplier
               </p>
             </div>
 
             {result && (
-              <Alert variant={result.success && result.error_count === 0 ? 'default' : 'destructive'}>
-                {result.success && result.error_count === 0 ? (
+              <Alert
+                variant={
+                  (result as any).success && (result as any).error_count === 0
+                    ? "default"
+                    : "destructive"
+                }
+              >
+                {(result as any).success && (result as any).error_count === 0 ? (
                   <CheckCircle className="h-4 w-4" />
                 ) : (
                   <XCircle className="h-4 w-4" />
                 )}
                 <AlertDescription>
-                  {result.success ? (
+                  {(result as any).success ? (
                     <>
-                      Successfully imported {result.imported_count} ingredient(s).
-                      {result.error_count > 0 && ` ${result.error_count} error(s) occurred.`}
+                      Successfully imported {(result as any).imported_count} ingredient(s).
+                      {(result as any).error_count > 0 &&
+                        ` ${(result as any).error_count} error(s) occurred.`}
                     </>
                   ) : (
-                    result.error || 'Failed to import CSV'
+                    (result as any).error || "Failed to import CSV"
                   )}
                 </AlertDescription>
               </Alert>
             )}
 
-            {result?.errors && result.errors.length > 0 && (
+            {result?.errors && (result as any).errors.length > 0 && (
               <div className="max-h-32 overflow-y-auto text-sm">
                 <p className="font-medium mb-1">Errors:</p>
-                {result.errors.map((err: unknown, i: number) => (
+                {(result as any).errors.map((err: unknown, i: number) => (
                   <p key={i} className="text-red-600">
-                    {err.row}: {err.error}
+                    {(err as any).row}: {(err as any).error}
                   </p>
                 ))}
               </div>
@@ -118,7 +132,7 @@ export function ImportCSVDialog({ open, onOpenChange, venueId, onSuccess }: Impo
             </Button>
             <Button type="submit" disabled={loading || !file}>
               <Upload className="h-4 w-4 mr-2" />
-              {loading ? 'Importing...' : 'Import'}
+              {loading ? "Importing..." : "Import"}
             </Button>
           </DialogFooter>
         </form>
@@ -126,4 +140,3 @@ export function ImportCSVDialog({ open, onOpenChange, venueId, onSuccess }: Impo
     </Dialog>
   );
 }
-

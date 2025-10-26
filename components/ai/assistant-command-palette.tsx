@@ -146,8 +146,8 @@ export function AssistantCommandPalette({
                 headers: { "Content-Type": "application/json" },
                 body: JSON.stringify({
                   venueId,
-                  toolName: tool.name,
-                  params: tool.params,
+                  toolName: (tool as any).name,
+                  params: (tool as any).params,
                   preview: true,
                 }),
               }).then((res) => res.json())
@@ -172,8 +172,8 @@ export function AssistantCommandPalette({
               headers: { "Content-Type": "application/json" },
               body: JSON.stringify({
                 venueId,
-                toolName: tool.name,
-                params: tool.params,
+                toolName: (tool as any).name,
+                params: (tool as any).params,
                 preview: true,
               }),
             });
@@ -246,9 +246,9 @@ export function AssistantCommandPalette({
           setOpen(false);
 
           // Find the navigation tool result
-          const navResult = results.find((r) => r.tool === "navigation.go_to_page");
+          const navResult = results.find((r) => (r as any).tool === "navigation.go_to_page");
           if (navResult?.result?.route) {
-            router.push(navResult.result.route);
+            router.push((navResult as any).result.route);
           }
         }, 1500);
       } else if (!hasAnalytics) {
@@ -398,10 +398,10 @@ export function AssistantCommandPalette({
                 {executionResults.length > 0 && (
                   <div className="space-y-3">
                     {executionResults.map((item, idx) => {
-                      const result = item.result;
+                      const result = (item as any).result;
 
                       // Analytics results display
-                      if (item.tool.startsWith("analytics.")) {
+                      if ((item as any).tool.startsWith("analytics.")) {
                         return (
                           <div
                             key={idx}
@@ -494,9 +494,9 @@ export function AssistantCommandPalette({
                                 <div className="space-y-1">
                                   {result.topItems.slice(0, 5).map((item: unknown, i: number) => (
                                     <div key={i} className="flex justify-between text-sm">
-                                      <span>{item.name}</span>
+                                      <span>{(item as any).name}</span>
                                       <span className="font-semibold">
-                                        £{item.revenue.toFixed(2)}
+                                        £{(item as any).revenue.toFixed(2)}
                                       </span>
                                     </div>
                                   ))}
@@ -508,7 +508,7 @@ export function AssistantCommandPalette({
                       }
 
                       // Navigation results
-                      if (item.tool === "navigation.go_to_page") {
+                      if ((item as any).tool === "navigation.go_to_page") {
                         return (
                           <div key={idx} className="text-sm text-muted-foreground">
                             Navigating to {result.page}...
@@ -585,8 +585,8 @@ export function AssistantCommandPalette({
                             <div className="space-y-1">
                               {preview.before.slice(0, 5).map((item: unknown, j: number) => (
                                 <div key={j} className="text-muted-foreground">
-                                  {item.name || item.id}: £
-                                  {item.price?.toFixed(2) || item.onHand || "-"}
+                                  {(item as any).name || (item as any).id}: £
+                                  {(item as any).price?.toFixed(2) || (item as any).onHand || "-"}
                                 </div>
                               ))}
                               {preview.before.length > 5 && (
@@ -599,15 +599,17 @@ export function AssistantCommandPalette({
                           <div>
                             <p className="font-medium mb-2">After</p>
                             <div className="space-y-1">
-                              {preview.after.slice(0, 5).map((item: unknown, j: number) => (
-                                <div key={j} className="text-green-600 dark:text-green-400">
-                                  {item.name || item.id}: £
-                                  {item.price?.toFixed(2) || item.onHand || "-"}
-                                </div>
-                              ))}
-                              {preview.after.length > 5 && (
+                              {(preview.after as any)
+                                .slice(0, 5)
+                                .map((item: unknown, j: number) => (
+                                  <div key={j} className="text-green-600 dark:text-green-400">
+                                    {(item as any).name || (item as any).id}: £
+                                    {(item as any).price?.toFixed(2) || (item as any).onHand || "-"}
+                                  </div>
+                                ))}
+                              {(preview.after as any).length > 5 && (
                                 <div className="text-xs text-muted-foreground">
-                                  +{preview.after.length - 5} more...
+                                  +{(preview.after as any).length - 5} more...
                                 </div>
                               )}
                             </div>

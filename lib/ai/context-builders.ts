@@ -122,17 +122,17 @@ export async function getMenuSummary(venueId: string, useCache = true): Promise<
   >();
 
   orderItems?.forEach((oi: unknown) => {
-    const existing = salesMap.get(oi.menu_item_id) || {
+    const existing = salesMap.get((oi as any).menu_item_id) || {
       sales: 0,
       revenue: 0,
       name: "",
       price: 0,
     };
-    salesMap.set(oi.menu_item_id, {
-      sales: existing.sales + oi.quantity,
-      revenue: existing.revenue + oi.price * oi.quantity,
-      name: items.find((i) => i.id === oi.menu_item_id)?.name || "",
-      price: items.find((i) => i.id === oi.menu_item_id)?.price || 0,
+    salesMap.set((oi as any).menu_item_id, {
+      sales: existing.sales + (oi as any).quantity,
+      revenue: existing.revenue + (oi as any).price * (oi as any).quantity,
+      name: items.find((i) => i.id === (oi as any).menu_item_id)?.name || "",
+      price: items.find((i) => i.id === (oi as any).menu_item_id)?.price || 0,
     });
   });
 
@@ -305,19 +305,19 @@ export async function getOrdersSummary(venueId: string, useCache = true): Promis
   const overdueTickets =
     kdsTickets
       ?.filter((ticket: unknown) => {
-        if (ticket.status !== "in_progress" || !ticket.started_at) return false;
-        const startedAt = new Date(ticket.started_at);
+        if ((ticket as any).status !== "in_progress" || !(ticket as any).started_at) return false;
+        const startedAt = new Date((ticket as any).started_at);
         const minutesElapsed = (now.getTime() - startedAt.getTime()) / 1000 / 60;
         return minutesElapsed > 10;
       })
       .map((ticket: unknown) => {
-        const startedAt = new Date(ticket.started_at);
+        const startedAt = new Date((ticket as any).started_at);
         const minutesOverdue = (now.getTime() - startedAt.getTime()) / 1000 / 60 - 10;
         return {
-          id: ticket.id,
-          orderId: ticket.order_id,
-          station: ticket.station_name,
-          items: ticket.items.map((i: unknown) => i.name),
+          id: (ticket as any).id,
+          orderId: (ticket as any).order_id,
+          station: (ticket as any).station_name,
+          items: (ticket as any).items.map((i: unknown) => (i as any).name),
           minutesOverdue: Math.round(minutesOverdue),
         };
       }) || [];
@@ -339,15 +339,15 @@ export async function getOrdersSummary(venueId: string, useCache = true): Promis
   const stationStats = new Map<string, { totalTime: number; count: number }>();
 
   completedTickets?.forEach((ticket: unknown) => {
-    const startedAt = new Date(ticket.started_at);
-    const completedAt = new Date(ticket.completed_at);
+    const startedAt = new Date((ticket as any).started_at);
+    const completedAt = new Date((ticket as any).completed_at);
     const prepTime = (completedAt.getTime() - startedAt.getTime()) / 1000 / 60;
 
-    const existing = stationStats.get(ticket.station_name) || {
+    const existing = stationStats.get((ticket as any).station_name) || {
       totalTime: 0,
       count: 0,
     };
-    stationStats.set(ticket.station_name, {
+    stationStats.set((ticket as any).station_name, {
       totalTime: existing.totalTime + prepTime,
       count: existing.count + 1,
     });
@@ -514,12 +514,12 @@ export async function getAllSummaries(venueId: string, features: unknown) {
     analytics: await getAnalyticsSummary(venueId),
   };
 
-  if (features.inventoryEnabled) {
-    summaries.inventory = await getInventorySummary(venueId);
+  if ((features as any).inventoryEnabled) {
+    (summaries as any).inventory = await getInventorySummary(venueId);
   }
 
-  if (features.kdsEnabled) {
-    summaries.orders = await getOrdersSummary(venueId);
+  if ((features as any).kdsEnabled) {
+    (summaries as any).orders = await getOrdersSummary(venueId);
   }
 
   return summaries;
