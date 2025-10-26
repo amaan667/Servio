@@ -29,38 +29,42 @@ export function useDashboardData(
 ) {
   // Cache dashboard data to prevent flicker when navigating back
   const getCachedCounts = () => {
-    if (typeof window === 'undefined') return null;
+    if (typeof window === "undefined") return null;
     const cached = sessionStorage.getItem(`dashboard_counts_${venueId}`);
     return cached ? JSON.parse(cached) : null;
   };
 
   const getCachedStats = () => {
-    if (typeof window === 'undefined') return null;
+    if (typeof window === "undefined") return null;
     const cached = sessionStorage.getItem(`dashboard_stats_${venueId}`);
     return cached ? JSON.parse(cached) : null;
   };
 
   const [venue, setVenue] = useState<unknown>(initialVenue);
   const [loading, setLoading] = useState(false); // Start with false to prevent flicker
+
+  // If we have initial data from server, use it immediately (no 0 flicker!)
+  // Otherwise use cached data, or null (will load immediately)
   const [counts, setCounts] = useState<DashboardCounts>(
-    initialCounts || getCachedCounts() || {
-      live_count: 0,
-      earlier_today_count: 0,
-      history_count: 0,
-      today_orders_count: 0,
-      active_tables_count: 0,
-      tables_set_up: 0,
-      tables_in_use: 0,
-      tables_reserved_now: 0,
-    }
+    initialCounts ||
+      getCachedCounts() || {
+        live_count: 0,
+        earlier_today_count: 0,
+        history_count: 0,
+        today_orders_count: 0,
+        active_tables_count: 0,
+        tables_set_up: 0,
+        tables_in_use: 0,
+        tables_reserved_now: 0,
+      }
   );
-  // Start with cached stats OR placeholder values that won't flicker
+
+  // Start with cached stats OR initial stats from server (no 0 flicker!)
   const initialStatsValue = initialStats || getCachedStats();
   const [stats, setStats] = useState<DashboardStats>(
     initialStatsValue || { revenue: 0, menuItems: 0, unpaid: 0 }
   );
-  const [hasLoadedStats, setHasLoadedStats] = useState(!!initialStatsValue);
-  const [statsLoaded, setStatsLoaded] = useState(false);
+  const [statsLoaded, setStatsLoaded] = useState(!!initialStatsValue);
   const [todayWindow, setTodayWindow] = useState<unknown>(null);
   const [error, setError] = useState<string | null>(null);
 
@@ -94,7 +98,7 @@ export function useDashboardData(
         setStats(newStats);
         setStatsLoaded(true);
         // Cache the stats to prevent flicker
-        if (typeof window !== 'undefined') {
+        if (typeof window !== "undefined") {
           sessionStorage.setItem(`dashboard_stats_${venueId}`, JSON.stringify(newStats));
         }
       } catch (err) {
@@ -133,19 +137,20 @@ export function useDashboardData(
       if (newCounts && typeof newCounts === "object") {
         const counts = newCounts as DashboardCounts;
 
-        const finalCounts = tableCounters && Array.isArray(tableCounters) && tableCounters.length > 0
-          ? {
-              ...counts,
-              tables_set_up: tableCounters[0].tables_set_up || 0,
-              tables_in_use: tableCounters[0].tables_in_use || 0,
-              tables_reserved_now: tableCounters[0].tables_reserved_now || 0,
-              active_tables_count: tableCounters[0].active_tables_count || 0,
-            }
-          : counts;
+        const finalCounts =
+          tableCounters && Array.isArray(tableCounters) && tableCounters.length > 0
+            ? {
+                ...counts,
+                tables_set_up: tableCounters[0].tables_set_up || 0,
+                tables_in_use: tableCounters[0].tables_in_use || 0,
+                tables_reserved_now: tableCounters[0].tables_reserved_now || 0,
+                active_tables_count: tableCounters[0].active_tables_count || 0,
+              }
+            : counts;
 
         setCounts(finalCounts);
         // Cache the counts to prevent flicker
-        if (typeof window !== 'undefined') {
+        if (typeof window !== "undefined") {
           sessionStorage.setItem(`dashboard_counts_${venueId}`, JSON.stringify(finalCounts));
         }
       }
@@ -174,17 +179,34 @@ export function useDashboardData(
           const window = todayWindowForTZ(venueTz);
           setTodayWindow(window);
 
-          // Refresh counts on initial load
-          await refreshCounts();
+          // IMPORTANT: If we have initial data from server-side, DON'T fetch again!
+          // This prevents the "0 → real value" flicker
+          const hasInitialCounts = !!initialCounts;
+          const hasInitialStats = !!initialStats;
 
-          if (!statsLoaded) {
+          console.info("[DASHBOARD] Initial data check:", {
+            hasInitialCounts,
+            hasInitialStats,
+            countsValue: initialCounts,
+            statsValue: initialStats,
+          });
+
+          // Only fetch if we don't have initial server-side data
+          if (!hasInitialCounts) {
+            console.info("[DASHBOARD] No initial counts - fetching...");
+            await refreshCounts();
+          } else {
+            console.info("[DASHBOARD] Using initial counts from server - no fetch needed!");
+          }
+
+          if (!statsLoaded && !hasInitialStats) {
+            console.info("[DASHBOARD] No initial stats - fetching...");
             await loadStats((venue as { venue_id: string }).venue_id, window);
+          } else {
+            console.info("[DASHBOARD] Using initial stats from server - no fetch needed!");
           }
 
           setLoading(false);
-        } else {
-          // If no venue yet, keep loading state as is
-          // It will be updated when venue becomes available
         }
       } catch (err) {
         console.error("Failed to load dashboard data:", err);
@@ -194,7 +216,8 @@ export function useDashboardData(
     };
 
     loadVenueAndStats();
-  }, [venue, venueTz, statsLoaded, loadStats, refreshCounts]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [venue, venueTz]);
 
   return {
     venue,

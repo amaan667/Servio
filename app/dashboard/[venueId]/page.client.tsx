@@ -1,11 +1,10 @@
 "use client";
 
-import React, { useEffect, useMemo, useCallback, Suspense, useState } from "react";
+import React, { useEffect, useMemo, useCallback, useState } from "react";
 import { useRouter } from "next/navigation";
 import { Clock, TrendingUp, ShoppingBag, Table } from "lucide-react";
 import Link from "next/link";
 import { useDashboardPrefetch } from "@/hooks/usePrefetch";
-import dynamic from "next/dynamic";
 import { useConnectionMonitor } from "@/lib/connection-monitor";
 import RoleManagementPopup from "@/components/role-management-popup";
 import VenueSwitcherPopup from "@/components/venue-switcher-popup";
@@ -39,41 +38,39 @@ import { FeatureSections } from "./components/FeatureSections";
  * - Optimized mobile responsive layout
  */
 
-const DashboardClient = React.memo(function DashboardClient({ 
-  venueId, 
-  initialCounts, 
-  initialStats 
-}: { 
+const DashboardClient = React.memo(function DashboardClient({
+  venueId,
+  initialCounts,
+  initialStats,
+}: {
   venueId: string;
   initialCounts?: unknown;
   initialStats?: unknown;
 }) {
   const router = useRouter();
-  
+
   // Get cached user/venue data to prevent flicker
   const getCachedUser = () => {
-    if (typeof window === 'undefined') return null;
+    if (typeof window === "undefined") return null;
     const cached = sessionStorage.getItem(`dashboard_user_${venueId}`);
     return cached ? JSON.parse(cached) : null;
   };
 
   const getCachedVenue = () => {
-    if (typeof window === 'undefined') return null;
+    if (typeof window === "undefined") return null;
     const cached = sessionStorage.getItem(`dashboard_venue_${venueId}`);
     return cached ? JSON.parse(cached) : null;
   };
 
   // Get cached role to prevent flicker
   const getCachedRole = () => {
-    if (typeof window === 'undefined') return null;
+    if (typeof window === "undefined") return null;
     return sessionStorage.getItem(`user_role_${venueId}`);
   };
 
   const [user, setUser] = useState<{ id: string } | null>(getCachedUser());
   const [venue, setVenue] = useState<Record<string, unknown> | null>(getCachedVenue());
   const [userRole, setUserRole] = useState<string | null>(getCachedRole()); // Initialize with cached role
-  const [loading, setLoading] = useState(false); // Start with false to prevent flicker
-  const [authError, setAuthError] = useState<string | null>(null);
 
   // Monitor connection status (must be at top before any returns)
   useConnectionMonitor();
@@ -155,7 +152,7 @@ const DashboardClient = React.memo(function DashboardClient({
       if (user && venue) {
         return;
       }
-      
+
       try {
         const supabase = supabaseBrowser();
 
@@ -167,19 +164,18 @@ const DashboardClient = React.memo(function DashboardClient({
 
         if (sessionError) {
           console.error("[Dashboard] Session error:", sessionError);
-          setAuthError("Authentication error");
-          setLoading(false);
+          // Authentication error - redirect handled by router
           return;
         }
 
         if (!session?.user) {
-          setLoading(false);
+          // No loading state needed - prevents flicker
           return;
         }
 
         setUser(session.user);
         // Cache user data
-        if (typeof window !== 'undefined') {
+        if (typeof window !== "undefined") {
           sessionStorage.setItem(`dashboard_user_${venueId}`, JSON.stringify(session.user));
         }
         const userId = session.user.id;
@@ -206,8 +202,8 @@ const DashboardClient = React.memo(function DashboardClient({
         // Auth check completed
 
         if (!isOwner && !isStaff) {
-          setAuthError("You don't have access to this venue");
-          setLoading(false);
+          // No auth error display needed("You don't have access to this venue");
+          // No loading state needed - prevents flicker
           return;
         }
 
@@ -216,12 +212,12 @@ const DashboardClient = React.memo(function DashboardClient({
           setVenue(venueData);
           dashboardData.setVenue(venueData);
           // Cache venue data
-          if (typeof window !== 'undefined') {
+          if (typeof window !== "undefined") {
             sessionStorage.setItem(`dashboard_venue_${venueId}`, JSON.stringify(venueData));
           }
           setUserRole("owner");
           // Cache role to prevent flicker
-          if (typeof window !== 'undefined') {
+          if (typeof window !== "undefined") {
             sessionStorage.setItem(`user_role_${venueId}`, "owner");
           }
         } else if (isStaff) {
@@ -238,17 +234,17 @@ const DashboardClient = React.memo(function DashboardClient({
             const role = roleData?.role || "staff";
             setUserRole(role);
             // Cache role to prevent flicker
-            if (typeof window !== 'undefined') {
+            if (typeof window !== "undefined") {
               sessionStorage.setItem(`user_role_${venueId}`, role);
             }
           }
         }
 
-        setLoading(false);
+        // No loading state needed - prevents flicker
       } catch (error) {
         console.error("[Dashboard] Auth check error:", error);
-        setAuthError("Authentication failed");
-        setLoading(false);
+        // No auth error display needed("Authentication failed");
+        // No loading state needed - prevents flicker
       }
     }
 
@@ -272,87 +268,91 @@ const DashboardClient = React.memo(function DashboardClient({
 
       {/* Main Content */}
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 space-y-8">
-          {/* Error Alert */}
-          {dashboardData.error && (
-            <div className="bg-red-50 border-l-4 border-red-500 rounded-lg p-4 flex items-center gap-3 animate-in slide-in-from-top">
-              <div className="flex-shrink-0">
-                <div className="w-8 h-8 bg-red-100 rounded-full flex items-center justify-center">
-                  <span className="text-red-600 text-sm font-bold">!</span>
-                </div>
-              </div>
-              <div className="flex-1">
-                <p className="text-sm font-medium text-red-900">Error Loading Dashboard</p>
-                <p className="text-xs text-red-700">{dashboardData.error}</p>
+        {/* Error Alert */}
+        {dashboardData.error && (
+          <div className="bg-red-50 border-l-4 border-red-500 rounded-lg p-4 flex items-center gap-3 animate-in slide-in-from-top">
+            <div className="flex-shrink-0">
+              <div className="w-8 h-8 bg-red-100 rounded-full flex items-center justify-center">
+                <span className="text-red-600 text-sm font-bold">!</span>
               </div>
             </div>
-          )}
+            <div className="flex-1">
+              <p className="text-sm font-medium text-red-900">Error Loading Dashboard</p>
+              <p className="text-xs text-red-700">{dashboardData.error}</p>
+            </div>
+          </div>
+        )}
 
-          {/* Enhanced KPI Cards - Fixed Position Grid */}
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 sm:gap-6">
-            {/* Position 1: Today's Orders - Always visible */}
-            <Link href={`/dashboard/${venueId}/live-orders?since=today`}>
-              <EnhancedStatCard
-                title="Today's Orders"
-                value={dashboardData.counts.today_orders_count}
-                icon={Clock}
-                iconColor="text-blue-600"
-                iconBgColor="bg-blue-100"
-                trend={
-                  analyticsData.data?.yesterdayComparison
-                    ? {
-                        value:
-                          dashboardData.counts.today_orders_count -
-                          analyticsData.data.yesterdayComparison.orders,
-                        label: "vs yesterday",
-                      }
-                    : undefined
-                }
-                tooltip="View all orders placed today"
-              />
-            </Link>
-
-            {/* Position 2: Revenue - Always rendered to maintain grid position */}
-            <div className="min-h-[140px]">
-              {(userRole === "owner" || userRole === "manager") ? (
-                <Link href={`/dashboard/${venueId}/analytics`} className="block h-full">
-                  <EnhancedStatCard
-                    title="Revenue"
-                    value={dashboardData.stats.revenue || 0}
-                    icon={TrendingUp}
-                    iconColor="text-green-600"
-                    iconBgColor="bg-green-100"
-                    isCurrency
-                    trend={
-                      analyticsData.data?.yesterdayComparison
-                        ? {
-                            value:
-                              dashboardData.stats.revenue -
-                              analyticsData.data.yesterdayComparison.revenue,
-                            label: "vs yesterday",
-                          }
-                        : undefined
+        {/* Enhanced KPI Cards - Fixed Position Grid */}
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 sm:gap-6">
+          {/* Position 1: Today's Orders - Always visible */}
+          <Link href={`/dashboard/${venueId}/live-orders?since=today`}>
+            <EnhancedStatCard
+              title="Today's Orders"
+              value={dashboardData.counts.today_orders_count}
+              icon={Clock}
+              iconColor="text-blue-600"
+              iconBgColor="bg-blue-100"
+              trend={
+                analyticsData.data?.yesterdayComparison
+                  ? {
+                      value:
+                        ((dashboardData.counts.today_orders_count -
+                          analyticsData.data.yesterdayComparison.orders) /
+                          (analyticsData.data.yesterdayComparison.orders || 1)) *
+                        100,
+                      label: "vs yesterday",
                     }
-                    tooltip="View detailed revenue analytics"
-                  />
-                </Link>
-              ) : (
-                <div className="opacity-0 pointer-events-none select-none h-full" aria-hidden="true">
-                  <EnhancedStatCard
-                    title="Revenue"
-                    value={0}
-                    icon={TrendingUp}
-                    iconColor="text-green-600"
-                    iconBgColor="bg-green-100"
-                    isCurrency
-                  />
-                </div>
-              )}
-            </div>
+                  : undefined
+              }
+              tooltip="View all orders placed today"
+            />
+          </Link>
 
-            {/* Position 3: Tables Set Up - Always visible */}
-            <div className="min-h-[140px]">
-              <Link href={`/dashboard/${venueId}/tables`} className="block h-full">
+          {/* Position 2: Revenue - Always rendered to maintain grid position */}
+          <div className="min-h-[140px]">
+            {userRole === "owner" || userRole === "manager" ? (
+              <Link href={`/dashboard/${venueId}/analytics`} className="block h-full">
                 <EnhancedStatCard
+                  title="Revenue"
+                  value={dashboardData.stats.revenue || 0}
+                  icon={TrendingUp}
+                  iconColor="text-green-600"
+                  iconBgColor="bg-green-100"
+                  isCurrency
+                  trend={
+                    analyticsData.data?.yesterdayComparison
+                      ? {
+                          value:
+                            ((dashboardData.stats.revenue -
+                              analyticsData.data.yesterdayComparison.revenue) /
+                              (analyticsData.data.yesterdayComparison.revenue || 1)) *
+                            100,
+                          label: "vs yesterday",
+                        }
+                      : undefined
+                  }
+                  tooltip="View detailed revenue analytics"
+                />
+              </Link>
+            ) : (
+              <div className="opacity-0 pointer-events-none select-none h-full" aria-hidden="true">
+                <EnhancedStatCard
+                  title="Revenue"
+                  value={0}
+                  icon={TrendingUp}
+                  iconColor="text-green-600"
+                  iconBgColor="bg-green-100"
+                  isCurrency
+                />
+              </div>
+            )}
+          </div>
+
+          {/* Position 3: Tables Set Up - Always visible */}
+          <div className="min-h-[140px]">
+            <Link href={`/dashboard/${venueId}/tables`} className="block h-full">
+              <EnhancedStatCard
                 title="Tables Set Up"
                 value={dashboardData.counts.tables_set_up}
                 icon={Table}
@@ -360,14 +360,14 @@ const DashboardClient = React.memo(function DashboardClient({
                 iconBgColor="bg-purple-100"
                 trend={{ value: 0, label: "all active" }}
                 tooltip="Manage table setup and reservations"
-                />
-              </Link>
-            </div>
+              />
+            </Link>
+          </div>
 
-            {/* Position 4: Menu Items - Always visible */}
-            <div className="min-h-[140px]">
-              <Link href={`/dashboard/${venueId}/menu-management`} className="block h-full">
-                <EnhancedStatCard
+          {/* Position 4: Menu Items - Always visible */}
+          <div className="min-h-[140px]">
+            <Link href={`/dashboard/${venueId}/menu-management`} className="block h-full">
+              <EnhancedStatCard
                 title="Menu Items"
                 value={dashboardData.stats.menuItems}
                 icon={ShoppingBag}
@@ -375,30 +375,30 @@ const DashboardClient = React.memo(function DashboardClient({
                 iconBgColor="bg-orange-100"
                 trend={{ value: 5, label: "available" }}
                 tooltip="Edit your menu items"
-                />
-              </Link>
-            </div>
+              />
+            </Link>
           </div>
+        </div>
 
-          {/* AI Insights */}
-          <AIInsights
-            venueId={venueId}
-            stats={{
-              revenue: dashboardData.stats.revenue,
-              menuItems: dashboardData.stats.menuItems,
-              todayOrdersCount: dashboardData.counts.today_orders_count,
-            }}
-            topSellingItems={analyticsData.data?.topSellingItems}
-            yesterdayComparison={analyticsData.data?.yesterdayComparison}
-          />
+        {/* AI Insights */}
+        <AIInsights
+          venueId={venueId}
+          stats={{
+            revenue: dashboardData.stats.revenue,
+            menuItems: dashboardData.stats.menuItems,
+            todayOrdersCount: dashboardData.counts.today_orders_count,
+          }}
+          topSellingItems={analyticsData.data?.topSellingItems}
+          yesterdayComparison={analyticsData.data?.yesterdayComparison}
+        />
 
-          {/* Today at a Glance */}
-          <TodayAtAGlance
-            ordersByHour={ordersByHour}
-            tableUtilization={tableUtilization}
-            revenueByCategory={revenueByCategory}
-            loading={false}
-          />
+        {/* Today at a Glance */}
+        <TodayAtAGlance
+          ordersByHour={ordersByHour}
+          tableUtilization={tableUtilization}
+          revenueByCategory={revenueByCategory}
+          loading={false}
+        />
 
         {/* Feature Sections */}
         <FeatureSections venueId={venueId} userRole={userRole} />
