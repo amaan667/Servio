@@ -13,18 +13,18 @@
     "isolatedModules": true,
     "jsx": "preserve",
     "incremental": true,
-    "noUnusedLocals": false, // ESLint handles this - will enable gradually
-    "noUnusedParameters": false, // ESLint handles this - will enable gradually
-    "noImplicitReturns": false, // Will enable gradually
+    "noUnusedLocals": false, // ESLint handles this better
+    "noUnusedParameters": true, // Phase 2: Enabled - respects _ prefix convention
+    "noImplicitReturns": false, // React hooks need conditional returns - handled by ESLint
     "noFallthroughCasesInSwitch": true, // Enabled - catches real bugs
     "noUncheckedIndexedAccess": false, // Gradually enable - can cause many changes
-    "strictNullChecks": false, // Will enable gradually - requires fixing null checks
-    "strictFunctionTypes": false, // Will enable gradually
-    "strictBindCallApply": false, // Will enable gradually
+    "strictNullChecks": true, // Phase 3: Enabled - null safety enforcement
+    "strictFunctionTypes": true, // Phase 3: Enabled - function type checking
+    "strictBindCallApply": true, // Phase 3: Enabled - bind/call/apply checks
     "strictPropertyInitialization": false, // Conflicts with React patterns - keep disabled
     "noImplicitThis": true, // Enabled - prevents bugs
     "alwaysStrict": true, // Enabled - good practice
-    "noImplicitAny": false, // Will enable gradually - requires fixing implicit any
+    "noImplicitAny": true, // Phase 3: Enabled - implicit any detection
     "plugins": [
       {
         "name": "next"

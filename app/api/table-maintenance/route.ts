@@ -14,7 +14,7 @@ export async function POST(_req: NextRequest) {
     const supabase = createAdminClient();
 
     // Run the table maintenance function
-    const { data, error } = await supabase.rpc("run_table_maintenance");
+    const { error } = await supabase.rpc("run_table_maintenance");
 
     if (error) {
       logger.error("[TABLE MAINTENANCE] Error running maintenance:", {

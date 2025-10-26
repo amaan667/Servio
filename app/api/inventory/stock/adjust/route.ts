@@ -42,7 +42,7 @@ export async function POST(_request: NextRequest) {
         reason,
         ref_type: "manual",
         note,
-        created_by: currentUser?.user?.id,
+        created_by: currentUser?.session?.user?.id || null,
       })
       .select()
       .single();

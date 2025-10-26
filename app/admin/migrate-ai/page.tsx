@@ -41,7 +41,7 @@ export default function MigrateAIPage() {
         setError(data.error || "Failed to check migration status");
       }
     } catch (_error) {
-      const errorMessage = error instanceof Error ? error.message : String(error);
+      const errorMessage = _error instanceof Error ? _error.message : String(_error);
       setError("Failed to check migration status: " + errorMessage);
     } finally {
       setLoading(false);
@@ -67,7 +67,7 @@ export default function MigrateAIPage() {
         setError(data.error || "Migration failed");
       }
     } catch (_error) {
-      const errorMessage = error instanceof Error ? error.message : String(error);
+      const errorMessage = _error instanceof Error ? _error.message : String(_error);
       setError("Migration failed: " + errorMessage);
     } finally {
       setLoading(false);
@@ -94,21 +94,25 @@ export default function MigrateAIPage() {
           </CardHeader>
           <CardContent className="space-y-4">
             <div className="flex gap-2">
-              <Button 
-                onClick={checkMigrationStatus} 
-                disabled={loading}
-                variant="outline"
-              >
-                {loading ? <Loader2 className="w-4 h-4 animate-spin" /> : <RefreshCw className="w-4 h-4" />}
+              <Button onClick={checkMigrationStatus} disabled={loading} variant="outline">
+                {loading ? (
+                  <Loader2 className="w-4 h-4 animate-spin" />
+                ) : (
+                  <RefreshCw className="w-4 h-4" />
+                )}
                 Check Status
               </Button>
-              
-              <Button 
-                onClick={runMigration} 
+
+              <Button
+                onClick={runMigration}
                 disabled={loading}
                 className="bg-purple-600 hover:bg-purple-700"
               >
-                {loading ? <Loader2 className="w-4 h-4 animate-spin" /> : <Database className="w-4 h-4" />}
+                {loading ? (
+                  <Loader2 className="w-4 h-4 animate-spin" />
+                ) : (
+                  <Database className="w-4 h-4" />
+                )}
                 Run Migration
               </Button>
             </div>
@@ -120,14 +124,22 @@ export default function MigrateAIPage() {
                     <div key={index} className="border rounded-lg p-3">
                       <div className="flex items-center justify-between mb-2">
                         <span className="font-medium">{status.table_name}</span>
-                        <Badge variant={status.table_name === 'ai_chat_conversations' ? 'default' : 'secondary'}>
+                        <Badge
+                          variant={
+                            status.table_name === "ai_chat_conversations" ? "default" : "secondary"
+                          }
+                        >
                           {status.total_conversations} conversations
                         </Badge>
                       </div>
                       <div className="text-sm text-muted-foreground">
                         <div>Generic titles: {status.generic_titles}</div>
-                        <div>Oldest: {new Date(status.oldest_conversation).toLocaleDateString()}</div>
-                        <div>Newest: {new Date(status.newest_conversation).toLocaleDateString()}</div>
+                        <div>
+                          Oldest: {new Date(status.oldest_conversation).toLocaleDateString()}
+                        </div>
+                        <div>
+                          Newest: {new Date(status.newest_conversation).toLocaleDateString()}
+                        </div>
                       </div>
                     </div>
                   ))}
@@ -139,7 +151,8 @@ export default function MigrateAIPage() {
                     <span className="font-medium">AI Title Generation</span>
                   </div>
                   <div className="text-sm text-blue-700 dark:text-blue-300">
-                    {migrationStatus.conversationsNeedingAiTitles} conversations need AI-generated titles
+                    {migrationStatus.conversationsNeedingAiTitles} conversations need AI-generated
+                    titles
                   </div>
                 </div>
               </div>

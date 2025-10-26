@@ -57,7 +57,7 @@ export async function POST(_request: NextRequest) {
         reason: "stocktake",
         ref_type: "manual",
         note: note || `Stocktake: ${currentStock} → ${actual_count}`,
-        created_by: currentUser?.user?.id,
+        created_by: currentUser?.session?.user?.id || null,
       })
       .select()
       .single();

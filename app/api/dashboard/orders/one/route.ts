@@ -86,13 +86,14 @@ export async function GET(req: Request) {
 
     // Transform orders to include table_label
     const transformedOrders =
-      data?.map((order) => ({
-        ...order,
+      data?.map((order: Record<string, unknown>) => ({
+        ...(order as Record<string, unknown>),
         table_label:
-          ((order as any).tables as { label?: string } | null)?.label ||
-          ((order as any).source === "counter"
-            ? `Counter ${(order as any).table_number}`
-            : `Table ${(order as any).table_number}`),
+          (order.tables as { label?: string } | null | undefined)?.label ||
+          (order.source === "counter"
+            ? `Counter ${order.table_number}`
+            : `Table ${order.table_number}`) ||
+          null,
       })) || [];
 
     // Detailed logging for Railway deployment monitoring (disabled for performance)
@@ -120,7 +121,7 @@ export async function GET(req: Request) {
     return NextResponse.json({
       ok: true,
       meta: { scope, zone, count: transformedOrders?.length ?? 0 },
-      orders: (transformedOrders || []) as OrderRow[],
+      orders: transformedOrders || [],
     });
   } catch (_e) {
     return NextResponse.json(

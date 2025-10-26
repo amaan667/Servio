@@ -87,7 +87,7 @@ export async function POST(req: Request) {
             });
 
             if (completionResponse.ok) {
-              const _completionResult = await completionResponse.json();
+              await completionResponse.json();
             }
           } catch (completionError) {
             logger.error("[UPDATE STATUS] Error checking reservation completion:", {

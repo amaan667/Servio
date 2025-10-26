@@ -61,17 +61,19 @@ export async function POST(req: Request) {
 
     // Find duplicates (keep the oldest one, remove the rest)
     const duplicatesToRemove: string[] = [];
-    tablesByLabel.forEach((tablesWithSameLabel, label) => {
+    tablesByLabel.forEach((tablesWithSameLabel, _label) => {
       if (tablesWithSameLabel.length > 1) {
         // Sort by created_at, keep the oldest
-        const sorted = tablesWithSameLabel.sort(
-          (a, b) =>
-            new Date((a as any).created_at).getTime() - new Date((b as any).created_at).getTime()
-        );
+        const sorted = tablesWithSameLabel.sort((a, b) => {
+          const aCreated = (a as { id: string; created_at?: string }).created_at;
+          const bCreated = (b as { id: string; created_at?: string }).created_at;
+          return new Date(aCreated || 0).getTime() - new Date(bCreated || 0).getTime();
+        });
 
         // Mark all but the first (oldest) for removal
         for (let i = 1; i < sorted.length; i++) {
-          duplicatesToRemove.push(sorted[i].id);
+          const table = sorted[i] as { id: string };
+          duplicatesToRemove.push(table.id);
         }
       }
     });

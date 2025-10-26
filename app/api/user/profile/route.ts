@@ -36,7 +36,7 @@ export async function GET() {
   }
 }
 
-export async function PUT(__request: Request) {
+export async function PUT(req: Request) {
   try {
     // SECURE: Use getUser() for authentication check
     const { user, error } = await getAuthUserForAPI();
@@ -45,7 +45,7 @@ export async function PUT(__request: Request) {
       return NextResponse.json({ error: "Authentication failed" }, { status: 401 });
     }
 
-    const body = await _request.json();
+    const body = await req.json();
 
     // Here you would typically update user metadata or profile data
     // For this example, we'll just return the current user data

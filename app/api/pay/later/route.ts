@@ -36,10 +36,10 @@ export async function POST(req: Request) {
           get(name: string) {
             return cookieStore.get(name)?.value;
           },
-          set(name: string, value: string, options: unknown) {
+          set(_name: string, _value: string, _options: unknown) {
             /* Empty */
           },
-          remove(name: string, options: unknown) {
+          remove(_name: string, _options: unknown) {
             /* Empty */
           },
         },

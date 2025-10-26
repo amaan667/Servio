@@ -105,59 +105,7 @@ export async function POST(_request: NextRequest) {
       });
     }
 
-    // If we get here, the table might exist or there was an error
-    // Let's try to create indexes
-    const _indexSQL = `
-      CREATE INDEX IF NOT EXISTS idx_staff_invitations_venue ON staff_invitations(venue_id);
-      CREATE INDEX IF NOT EXISTS idx_staff_invitations_email ON staff_invitations(email);
-      CREATE INDEX IF NOT EXISTS idx_staff_invitations_token ON staff_invitations(token);
-      CREATE INDEX IF NOT EXISTS idx_staff_invitations_status ON staff_invitations(status);
-      CREATE INDEX IF NOT EXISTS idx_staff_invitations_expires ON staff_invitations(expires_at);
-      CREATE INDEX IF NOT EXISTS idx_staff_invitations_org ON staff_invitations(organization_id);
-    `;
-
-    // Enable RLS
-    const _rlsSQL = `
-      ALTER TABLE staff_invitations ENABLE ROW LEVEL SECURITY;
-      
-      -- Policy: Users can view invitations for venues they manage
-      DROP POLICY IF EXISTS "Users can view venue invitations" ON staff_invitations;
-      CREATE POLICY "Users can view venue invitations" ON staff_invitations
-        FOR SELECT
-        USING (
-          venue_id IN (
-            SELECT venue_id FROM user_venue_roles 
-            WHERE user_id = auth.uid() AND role IN ('owner', 'manager')
-          )
-        );
-      
-      -- Policy: Owners and managers can create invitations
-      DROP POLICY IF EXISTS "Owners and managers can create invitations" ON staff_invitations;
-      CREATE POLICY "Owners and managers can create invitations" ON staff_invitations
-        FOR INSERT
-        WITH CHECK (
-          venue_id IN (
-            SELECT venue_id FROM user_venue_roles 
-            WHERE user_id = auth.uid() AND role IN ('owner', 'manager')
-          )
-        );
-      
-      -- Policy: Owners and managers can update invitations
-      DROP POLICY IF EXISTS "Owners and managers can update invitations" ON staff_invitations;
-      CREATE POLICY "Owners and managers can update invitations" ON staff_invitations
-        FOR UPDATE
-        USING (
-          venue_id IN (
-            SELECT venue_id FROM user_venue_roles 
-            WHERE user_id = auth.uid() AND role IN ('owner', 'manager')
-          )
-        );
-      
-      -- Service role bypass
-      DROP POLICY IF EXISTS "Service role full access to invitations" ON staff_invitations;
-      CREATE POLICY "Service role full access to invitations" ON staff_invitations
-        FOR ALL TO service_role USING (true);
-    `;
+    // Indexes and RLS will be set up via migration scripts
 
     logger.debug("[STAFF INVITATION SETUP] Setup completed successfully");
 

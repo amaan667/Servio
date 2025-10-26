@@ -89,7 +89,6 @@ async function autoBackfillMissingTickets(venueId: string) {
 
 // GET - Fetch KDS tickets for a venue or station
 export async function GET(req: Request) {
-  const startTime = Date.now();
   let venueId = "unknown";
 
   try {
@@ -164,15 +163,11 @@ export async function GET(req: Request) {
       return NextResponse.json({ ok: false, error: finalError.message }, { status: 500 });
     }
 
-    const _duration = Date.now() - startTime;
-
     return NextResponse.json({
       ok: true,
       tickets: finalTickets || [],
     });
   } catch (_error) {
-    const _duration = Date.now() - startTime;
-
     logger.error("[KDS] Unexpected error:", {
       error: _error instanceof Error ? _error.message : "Unknown _error",
       stack: _error instanceof Error ? _error.stack : undefined,

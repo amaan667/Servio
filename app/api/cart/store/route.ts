@@ -1,11 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
-import { createClient } from "@supabase/supabase-js";
-import { ENV } from "@/lib/env";
 import { logger } from "@/lib/logger";
-
-function getSupabaseClient() {
-  return createClient(ENV.SUPABASE_URL, ENV.SUPABASE_SERVICE_ROLE_KEY!);
-}
 
 interface CartItem {
   id: string;

@@ -7,13 +7,7 @@ import type { SupabaseClient } from "@supabase/supabase-js";
 export async function POST(req: NextRequest) {
   try {
     const body = await req.json();
-    const {
-      source_table_id,
-      target_table_id,
-      venue_id,
-      requires_confirmation = false,
-      confirmed = false,
-    } = body;
+    const { source_table_id, target_table_id, venue_id, confirmed = false } = body;
 
     if (!source_table_id || !target_table_id || !venue_id) {
       return NextResponse.json(
@@ -79,7 +73,7 @@ export async function POST(req: NextRequest) {
 
     // Get table states and merge scenario
     const sourceState = getTableState(sourceTable);
-    const targetState = getTableState(targetTable);
+    getTableState(targetTable); // targetState calculated but not used yet
     const mergeScenario = getMergeScenario(sourceTable, targetTable);
 
     // Validate merge scenario

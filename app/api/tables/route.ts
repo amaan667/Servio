@@ -69,27 +69,32 @@ export async function GET(req: Request) {
 
     // Combine tables with their sessions
     const tablesWithSessions =
-      tables?.map((table) => {
-        const session = sessions?.find((s) => (s as any).table_id === (table as any).id);
+      tables?.map((table: Record<string, unknown>) => {
+        const session = sessions?.find((s: Record<string, unknown>) => s.table_id === table.id) as
+          | Record<string, unknown>
+          | undefined;
+        const tableRecord = table as Record<string, unknown>;
         const result = {
-          ...table,
-          table_id: (table as any).id, // Add table_id field for consistency with TableRuntimeState interface
-          merged_with_table_id: (table as any).merged_with_table_id || null, // Include merge relationship
-          session_id: (session as any)?.id || null,
-          status: session?.status || "FREE",
-          order_id: session?.order_id || null,
-          opened_at: session?.opened_at || null,
-          closed_at: session?.closed_at || null,
-          total_amount: session?.total_amount || null,
-          customer_name: session?.customer_name || null,
-          order_status: session?.order_status || null,
-          payment_status: session?.payment_status || null,
-          order_updated_at: session?.order_updated_at || null,
-          reservation_time: session?.reservation_time || null,
-          reservation_duration_minutes: session?.reservation_duration_minutes || null,
-          reservation_end_time: session?.reservation_end_time || null,
-          reservation_created_at: session?.reservation_created_at || null,
-          most_recent_activity: session?.most_recent_activity || (table as any).table_created_at,
+          ...tableRecord,
+          table_id: tableRecord.id as string, // Add table_id field for consistency with TableRuntimeState interface
+          merged_with_table_id: (tableRecord.merged_with_table_id as string | null) || null, // Include merge relationship
+          session_id: (session?.id as string | null) || null,
+          status: (session?.status as string) || "FREE",
+          order_id: (session?.order_id as string | null) || null,
+          opened_at: (session?.opened_at as string | null) || null,
+          closed_at: (session?.closed_at as string | null) || null,
+          total_amount: (session?.total_amount as number | null) || null,
+          customer_name: (session?.customer_name as string | null) || null,
+          order_status: (session?.order_status as string | null) || null,
+          payment_status: (session?.payment_status as string | null) || null,
+          order_updated_at: (session?.order_updated_at as string | null) || null,
+          reservation_time: (session?.reservation_time as string | null) || null,
+          reservation_duration_minutes:
+            (session?.reservation_duration_minutes as number | null) || null,
+          reservation_end_time: (session?.reservation_end_time as string | null) || null,
+          reservation_created_at: (session?.reservation_created_at as string | null) || null,
+          most_recent_activity:
+            (session?.most_recent_activity as string) || (tableRecord.table_created_at as string),
           reserved_now_id: null,
           reserved_now_start: null,
           reserved_now_end: null,
@@ -112,9 +117,11 @@ export async function GET(req: Request) {
 
     if (tablesWithoutSessions.length > 0) {
       for (const table of tablesWithoutSessions) {
-        const { error: sessionError } = await adminSupabase.from("table_sessions").insert({
+        const tableId =
+          (table as { table_id?: string; id?: string }).table_id || (table as { id: string }).id;
+        const { error: sessionError } = await (adminSupabase as any).from("table_sessions").insert({
           venue_id: venueId,
-          table_id: table.id,
+          table_id: tableId,
           status: "FREE",
           opened_at: new Date().toISOString(),
           closed_at: null,
@@ -122,7 +129,7 @@ export async function GET(req: Request) {
 
         if (sessionError) {
           logger.error("[TABLES API DEBUG] Error creating session for table:", {
-            error: table.id,
+            error: tableId,
             context: sessionError,
           });
         }
@@ -139,7 +146,11 @@ export async function GET(req: Request) {
       // Update the tables with the new sessions
       tablesWithSessions.forEach((table) => {
         if (!table.session_id) {
-          const newSession = updatedSessions?.find((s) => s.table_id === table.id);
+          const tableId =
+            (table as { table_id?: string; id?: string }).table_id || (table as { id: string }).id;
+          const newSession = updatedSessions?.find(
+            (s: Record<string, unknown>) => (s.table_id as string) === tableId
+          ) as Record<string, unknown> | undefined;
           if (newSession) {
             table.session_id = newSession.id;
             table.status = newSession.status;

@@ -26,7 +26,7 @@ export async function POST(req: NextRequest, context: { params: Promise<{ tableI
     }
 
     // Increment qr_version
-    const { data: table, error } = await supabase
+    const { data: table, error } = await (supabase as any)
       .from("tables")
       .update({
         qr_version: ((currentTable as any).qr_version || 1) + 1,

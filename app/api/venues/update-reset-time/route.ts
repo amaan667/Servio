@@ -34,7 +34,7 @@ export async function POST(_request: NextRequest) {
     }
 
     // Update the reset time
-    const { error: updateError } = await supabase
+    const { error: updateError } = await (supabase as any)
       .from("venues")
       .update({ daily_reset_time: resetTime })
       .eq("venue_id", venueId);

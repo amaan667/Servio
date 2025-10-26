@@ -24,7 +24,7 @@ export async function POST(_request: NextRequest) {
     // Verify webhook signature
     const event = stripe.webhooks.constructEvent(body, signature, webhookSecret);
 
-    apiLogger.debug("[STRIPE WEBHOOK] Event:", event.type, "ID:", event.id);
+    apiLogger.debug("[STRIPE WEBHOOK] Event:", { type: event.type, id: event.id });
 
     // Handle the event
     switch (event.type) {
@@ -173,6 +173,7 @@ async function handleCheckoutWithOrg(
     trialEndsAt = new Date(userCreatedAt.getTime() + 14 * 24 * 60 * 60 * 1000).toISOString();
   }
 
+  // @ts-expect-error - Supabase type inference issue
   const updateData = {
     stripe_subscription_id: session.subscription as string,
     stripe_customer_id: session.customer as string,
@@ -254,7 +255,10 @@ async function handleSubscriptionCreated(subscription: Stripe.Subscription) {
     .single();
 
   if (orgCheckError || !existingOrg) {
-    apiLogger.error("[STRIPE WEBHOOK] Organization not found:", organizationId, orgCheckError);
+    apiLogger.error("[STRIPE WEBHOOK] Organization not found:", {
+      organizationId,
+      error: orgCheckError,
+    });
     return;
   }
 
@@ -319,11 +323,10 @@ async function handleSubscriptionUpdated(subscription: Stripe.Subscription) {
     .maybeSingle();
 
   if (orgCheckError || !org) {
-    apiLogger.error(
-      "[STRIPE WEBHOOK] Organization not found by ID:",
+    apiLogger.error("[STRIPE WEBHOOK] Organization not found by ID:", {
       organizationId,
-      orgCheckError
-    );
+      error: orgCheckError,
+    });
     // Try fallback by user_id
     if (userId) {
       apiLogger.debug("[STRIPE WEBHOOK] 🔄 Attempting fallback lookup by user_id:", userId);

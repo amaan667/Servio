@@ -96,8 +96,8 @@ export default function AuthProvider({
         async (event: unknown, newSession: unknown) => {
           switch (event) {
             case "SIGNED_IN":
-              setSession(newSession);
-              setUser(newSession?.user ?? null);
+              setSession(newSession as Session | null);
+              setUser((newSession as { user?: User } | null)?.user ?? null);
               // Store session to prevent flicker on reload
               if (typeof window !== "undefined" && newSession) {
                 localStorage.setItem("sb-auth-session", JSON.stringify(newSession));
@@ -114,21 +114,21 @@ export default function AuthProvider({
               setLoading(false);
               break;
             case "TOKEN_REFRESHED":
-              setSession(newSession);
-              setUser(newSession?.user ?? null);
+              setSession(newSession as Session | null);
+              setUser((newSession as { user?: User } | null)?.user ?? null);
               // Update stored session
               if (typeof window !== "undefined" && newSession) {
                 localStorage.setItem("sb-auth-session", JSON.stringify(newSession));
               }
               break;
             case "USER_UPDATED":
-              setSession(newSession);
-              setUser(newSession?.user ?? null);
+              setSession(newSession as Session | null);
+              setUser((newSession as { user?: User } | null)?.user ?? null);
               break;
             default:
               if (newSession) {
-                setSession(newSession);
-                setUser(newSession?.user ?? null);
+                setSession(newSession as Session | null);
+                setUser((newSession as { user?: User } | null)?.user ?? null);
               }
               setLoading(false);
           }

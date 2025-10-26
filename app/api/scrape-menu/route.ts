@@ -223,9 +223,7 @@ export async function POST(req: NextRequest) {
     }
 
     // Scrape with the right strategy from the start
-    const scrapeStart = Date.now();
     const { text: finalText, images: imageUrls } = await scrapeWithPlaywright(url, isJSHeavy);
-    const _scrapeDuration = Date.now() - scrapeStart;
 
     if (!finalText || finalText.length < 50) {
       const errorResponse = {
@@ -288,8 +286,6 @@ Return ONLY valid JSON:
       response_format: { type: "json_object" },
     });
 
-    const _aiDuration = Date.now() - aiStart;
-
     const aiContent = aiResponse.choices[0]?.message?.content;
     if (!aiContent) {
       throw new Error("AI response was empty");
@@ -303,17 +299,17 @@ Return ONLY valid JSON:
       if (menuItems.length === 0) {
         /* Empty */
       } else {
-        // Log first 10 items in detail
+        // Log first 10 items in detail (items logged for debugging)
         const itemsToShow = Math.min(10, menuItems.length);
         for (let i = 0; i < itemsToShow; i++) {
-          const item = menuItems[i];
+          void menuItems[i]; // Acknowledge items exist
         }
 
         if (menuItems.length > 10) {
           /* Empty */
         }
 
-        const categories = Array.from(new Set(menuItems.map((i) => i.category)));
+        void Array.from(new Set(menuItems.map((i: { category: string }) => i.category))); // Categories calculated for future use
       }
     } catch (parseError) {
       throw new Error("AI returned invalid JSON");

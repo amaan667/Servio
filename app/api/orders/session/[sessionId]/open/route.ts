@@ -19,29 +19,9 @@ export async function GET(_req: Request, { params }: { params: Promise<{ session
       );
     }
 
-    const cookieStore = await cookies();
-    const _supabase = createServerClient(
-      process.env.NEXT_PUBLIC_SUPABASE_URL!,
-      process.env.SUPABASE_SERVICE_ROLE_KEY!,
-      {
-        cookies: {
-          get(name: string) {
-            return cookieStore.get(name)?.value;
-          },
-          set(name: string, value: string, options: unknown) {
-            /* Empty */
-          },
-          remove(name: string, options: unknown) {
-            /* Empty */
-          },
-        },
-      }
-    );
-
     // Since session_id column doesn't exist in database yet, we'll use localStorage approach
     // For now, return null to indicate no session-based order found
     // This will be handled client-side using localStorage
-    const _order = null;
 
     return NextResponse.json({
       success: true,

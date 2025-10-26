@@ -31,7 +31,7 @@ export async function POST(req: Request) {
     }
 
     if (sessions) {
-      sessions.forEach((session) => {
+      sessions.forEach((_session) => {
         /* Empty */
       });
     }

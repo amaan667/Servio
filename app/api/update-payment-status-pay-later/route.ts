@@ -11,13 +11,13 @@ export async function POST() {
       process.env.SUPABASE_SERVICE_ROLE_KEY!,
       {
         cookies: {
-          get(name: string) {
+          get(_name: string) {
             return undefined;
           },
-          set(name: string, value: string, options: unknown) {
+          set(_name: string, _value: string, _options: unknown) {
             /* Empty */
           },
-          remove(name: string, options: unknown) {
+          remove(_name: string, _options: unknown) {
             /* Empty */
           },
         },

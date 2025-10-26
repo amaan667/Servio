@@ -7,7 +7,6 @@ export async function GET(
   _request: NextRequest,
   context: { params: Promise<{ venueId: string }> }
 ) {
-  const startTime = Date.now();
   let rawVenueId = "unknown";
 
   try {
@@ -31,7 +30,6 @@ export async function GET(
 
     if (cachedMenu) {
       logger.debug("[MENU API] Cache hit for:", { value: venueId });
-      const _duration = Date.now() - startTime;
       return NextResponse.json(cachedMenu);
     }
 
@@ -107,12 +105,8 @@ export async function GET(
     // Cache the response for 5 minutes
     await cache.set(cacheKey, response, { ttl: cacheTTL.medium });
 
-    const _duration = Date.now() - startTime;
-
     return NextResponse.json(response);
   } catch (_error) {
-    const _duration = Date.now() - startTime;
-
     logger.error("[MENU API] Unexpected error:", {
       error: _error instanceof Error ? _error.message : "Unknown _error",
       stack: _error instanceof Error ? _error.stack : undefined,

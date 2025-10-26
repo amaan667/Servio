@@ -60,15 +60,8 @@ export async function POST(req: NextRequest) {
     }
 
     // Extract order data from payment intent metadata
-    const {
-      venue_id,
-      table_number,
-      customer_name,
-      customer_phone,
-      item_count,
-      items_summary,
-      total_amount,
-    } = paymentIntent.metadata;
+    const { venue_id, table_number, customer_name, customer_phone, items_summary } =
+      paymentIntent.metadata;
 
     if (!venue_id || !table_number || !customer_name) {
       return NextResponse.json(

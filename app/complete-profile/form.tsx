@@ -20,21 +20,25 @@ export default function CompleteProfileForm({ user }: CompleteProfileFormProps) 
   const router = useRouter();
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const userMeta = user as {
+    user_metadata?: Record<string, unknown>;
+    identities?: Array<Record<string, unknown>>;
+  } | null;
   const [formData, setFormData] = useState({
     venueName:
-      user?.user_metadata?.venue_name ||
-      user?.user_metadata?.full_name ||
-      user?.user_metadata?.name ||
+      (userMeta?.user_metadata?.venue_name as string) ||
+      (userMeta?.user_metadata?.full_name as string) ||
+      (userMeta?.user_metadata?.name as string) ||
       "",
-    businessType: user?.user_metadata?.business_type || "Restaurant",
-    address: user?.user_metadata?.address || "",
-    phone: user?.user_metadata?.phone || "",
+    businessType: (userMeta?.user_metadata?.business_type as string) || "Restaurant",
+    address: (userMeta?.user_metadata?.address as string) || "",
+    phone: (userMeta?.user_metadata?.phone as string) || "",
     password: "",
     confirmPassword: "",
   });
 
   // Check if user signed up with OAuth (Google) and needs to set a password
-  const isOAuthUser = (user as unknown)?.identities?.some(
+  const isOAuthUser = userMeta?.identities?.some(
     (identity: Record<string, unknown>) =>
       identity.provider === "google" || identity.provider === "oauth"
   );
@@ -119,12 +123,17 @@ export default function CompleteProfileForm({ user }: CompleteProfileFormProps) 
       }
 
       // Ensure we have a valid venue name
+      const userMeta = user as {
+        user_metadata?: Record<string, unknown>;
+        email?: string;
+        id?: string;
+      } | null;
       const venueName =
         formData.venueName.trim() ||
-        `${user?.user_metadata?.full_name || user?.email?.split("@")[0] || "My"}'s Business`;
+        `${(userMeta?.user_metadata?.full_name as string) || userMeta?.email?.split("@")[0] || "My"}'s Business`;
 
       // Generate venue ID based on user ID
-      const venueId = `venue-${(user as any).id.slice(0, 8)}`;
+      const venueId = `venue-${(userMeta?.id || "").slice(0, 8)}`;
 
       const res = await fetch("/api/venues/upsert", {
         method: "POST",

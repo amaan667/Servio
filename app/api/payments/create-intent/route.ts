@@ -47,16 +47,7 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: "Amount too small" }, { status: 400 });
     }
 
-    // Store cart data for later retrieval
-    const _cartData = {
-      cartId,
-      venueId,
-      tableNumber,
-      customerName,
-      customerPhone,
-      items,
-      totalAmount,
-    };
+    // Cart data stored in metadata
 
     // Store cart data in localStorage equivalent (client-side) or database
     // For now, we'll pass it in metadata (limited size)

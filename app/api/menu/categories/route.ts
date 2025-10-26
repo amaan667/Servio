@@ -13,7 +13,7 @@ export async function GET(_request: NextRequest) {
     }
 
     // Try to get from cache first
-    const cacheKey = cacheKeys.menuCategories(venueId);
+    const cacheKey = `menu:categories:${venueId}`;
     const cachedCategories = await cache.get(cacheKey);
 
     if (cachedCategories) {

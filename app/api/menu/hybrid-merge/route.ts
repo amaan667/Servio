@@ -11,8 +11,6 @@ const openai = new OpenAI({ apiKey: process.env.OPENAI_API_KEY });
  * Uses AI to match items and merge data (prices, descriptions, images)
  */
 export async function POST(req: NextRequest) {
-  const _requestId = Math.random().toString(36).substring(7);
-
   try {
     const body = await req.json();
     const { venueId, menuUrl } = body;
@@ -138,13 +136,21 @@ ${JSON.stringify(
 
 URL Menu Items (${urlItems.length} items):
 ${JSON.stringify(
-  urlItems.map((item) => ({
-    name: item.name,
-    description: item.description,
-    price: item.price,
-    category: item.category,
-    image: item.image,
-  })),
+  urlItems.map(
+    (item: {
+      name: string;
+      description?: string;
+      price: number;
+      category: string;
+      image?: string;
+    }) => ({
+      name: item.name,
+      description: item.description,
+      price: item.price,
+      category: item.category,
+      image: item.image,
+    })
+  ),
   null,
   2
 )}

@@ -2,7 +2,6 @@
 // New accounts must select a plan during signup (14-day free trial)
 
 import { NextRequest, NextResponse } from "next/server";
-import Stripe from "stripe";
 import { createAdminClient } from "@/lib/supabase";
 import { stripe } from "@/lib/stripe-client";
 import { logger } from "@/lib/logger";
@@ -57,7 +56,6 @@ export async function POST(_request: NextRequest) {
 
     const userId = authData.user.id;
     const venueId = `venue-${userId.slice(0, 8)}`;
-    const _orgSlug = `${venueName.toLowerCase().replace(/[^a-z0-9]+/g, "-")}-${userId.slice(0, 8)}`;
 
     // Create or retrieve Stripe customer
     let customer;
@@ -106,7 +104,7 @@ export async function POST(_request: NextRequest) {
     }
 
     // Create venue
-    const { data: venue, error: venueError } = await supabase
+    const { error: venueError } = await supabase
       .from("venues")
       .insert({
         venue_id: venueId,
