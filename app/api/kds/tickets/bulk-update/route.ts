@@ -1,13 +1,12 @@
 import { NextResponse } from "next/server";
-import { authenticateRequest } from "@/lib/api-auth";
 import { logger } from "@/lib/logger";
 
 // PATCH - Bulk update multiple tickets (e.g., bump all ready tickets for an order)
 export async function PATCH(req: Request) {
   try {
-    console.info('🎯 [KDS BULK UPDATE] Bump order request received');
+    console.info("🎯 [KDS BULK UPDATE] Bump order request received");
     const body = await req.json();
-    console.info('🎯 [KDS BULK UPDATE] Request body:', body);
+    console.info("🎯 [KDS BULK UPDATE] Request body:", body);
     const { orderId, stationId, status } = body;
 
     if (!status) {
@@ -29,13 +28,10 @@ export async function PATCH(req: Request) {
       );
     }
 
-    // Authenticate using Authorization header
-    const auth = await authenticateRequest(req);
-    if (!auth.success || !auth.supabase) {
-      return NextResponse.json({ ok: false, error: auth.error || "Unauthorized" }, { status: 401 });
-    }
-
-    const { supabase } = auth;
+    // Use admin client - no authentication required for KDS feature
+    const { createAdminClient } = await import("@/lib/supabase");
+    const supabase = createAdminClient();
+    console.info("🎯 [KDS BULK UPDATE] Using admin client (no auth required)");
 
     // Build update object with timestamp
     const updateData: Record<string, unknown> = { status };
@@ -74,8 +70,10 @@ export async function PATCH(req: Request) {
 
     // If bumping tickets, update the main order status to READY (not SERVED - that comes later)
     if (status === "bumped" && orderId) {
-      console.info(`🎯 [KDS BUMP] All tickets bumped for order ${orderId} - updating order to READY`);
-      
+      console.info(
+        `🎯 [KDS BUMP] All tickets bumped for order ${orderId} - updating order to READY`
+      );
+
       const { error: orderUpdateError } = await supabase
         .from("orders")
         .update({
@@ -85,15 +83,23 @@ export async function PATCH(req: Request) {
         .eq("id", orderId);
 
       if (orderUpdateError) {
-        console.error(`❌ [KDS BUMP] Failed to update order ${orderId} to READY:`, orderUpdateError.message);
+        console.error(
+          `❌ [KDS BUMP] Failed to update order ${orderId} to READY:`,
+          orderUpdateError.message
+        );
         logger.error("[KDS] Error updating order status after bump:", {
           error: orderUpdateError.message,
         });
       } else {
-        console.info(`✅ [KDS BUMP] Order ${orderId} → READY (shows in Live Orders as 'Mark Served')`);
-        logger.info("[KDS] Order status updated to READY after bump - staff can now mark as SERVED", { orderId });
+        console.info(
+          `✅ [KDS BUMP] Order ${orderId} → READY (shows in Live Orders as 'Mark Served')`
+        );
+        logger.info(
+          "[KDS] Order status updated to READY after bump - staff can now mark as SERVED",
+          { orderId }
+        );
       }
-      
+
       // Clean up table session after bumping
       try {
         const { cleanupTableOnOrderCompletion } = await import("@/lib/table-cleanup");
