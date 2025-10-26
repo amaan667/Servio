@@ -112,7 +112,7 @@ export async function verifyVenueAccess(
     .maybeSingle();
 
   if (staffAccess) {
-    return { hasAccess: true, role: staffAccess.role };
+    return { hasAccess: true, role: (staffAccess as any).role };
   }
 
   return { hasAccess: false };

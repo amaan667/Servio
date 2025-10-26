@@ -89,10 +89,10 @@ export async function GET(req: Request) {
       data?.map((order) => ({
         ...order,
         table_label:
-          (order.tables as { label?: string } | null)?.label ||
-          (order.source === "counter"
-            ? `Counter ${order.table_number}`
-            : `Table ${order.table_number}`),
+          ((order as any).tables as { label?: string } | null)?.label ||
+          ((order as any).source === "counter"
+            ? `Counter ${(order as any).table_number}`
+            : `Table ${(order as any).table_number}`),
       })) || [];
 
     // Detailed logging for Railway deployment monitoring (disabled for performance)

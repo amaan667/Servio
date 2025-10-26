@@ -29,7 +29,7 @@ export async function POST(req: NextRequest, context: { params: Promise<{ tableI
     const { data: table, error } = await supabase
       .from("tables")
       .update({
-        qr_version: (currentTable.qr_version || 1) + 1,
+        qr_version: ((currentTable as any).qr_version || 1) + 1,
         updated_at: new Date().toISOString(),
       })
       .eq("id", tableId)

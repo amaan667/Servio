@@ -30,14 +30,14 @@ export async function POST(_request: NextRequest) {
       return NextResponse.json({ error: "Organization not found" }, { status: 404 });
     }
 
-    if (!org.stripe_customer_id) {
+    if (!(org as any).stripe_customer_id) {
       return NextResponse.json({ error: "No billing account found" }, { status: 400 });
     }
 
     // Create billing portal session
     const returnUrl = `${process.env.NEXT_PUBLIC_SITE_URL || "https://servio-production.up.railway.app"}/dashboard`;
 
-    logger.debug("[STRIPE PORTAL] Creating session for customer:", org.stripe_customer_id);
+    logger.debug("[STRIPE PORTAL] Creating session for customer:", (org as any).stripe_customer_id);
     logger.debug("[STRIPE PORTAL] Return URL:", { value: returnUrl });
 
     // Try to get or create a billing portal configuration
@@ -97,7 +97,7 @@ export async function POST(_request: NextRequest) {
     // Create billing portal session
     try {
       const sessionParams: Stripe.BillingPortal.SessionCreateParams = {
-        customer: org.stripe_customer_id,
+        customer: (org as any).stripe_customer_id,
         return_url: returnUrl,
       };
 
@@ -106,7 +106,7 @@ export async function POST(_request: NextRequest) {
       }
 
       logger.debug("[STRIPE PORTAL] Creating session with params:", {
-        customer: org.stripe_customer_id,
+        customer: (org as any).stripe_customer_id,
         configuration: configurationId || "default",
       });
 

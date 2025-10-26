@@ -59,7 +59,7 @@ export async function GET(req: Request) {
       .from("table_sessions")
       .select("*")
       .eq("venue_id", venueId)
-      .in("table_id", tables?.map((t) => t.id) || [])
+      .in("table_id", tables?.map((t) => (t as any).id) || [])
       .is("closed_at", null); // Only get active sessions
 
     if (sessionsError) {
@@ -70,11 +70,11 @@ export async function GET(req: Request) {
     // Combine tables with their sessions
     const tablesWithSessions =
       tables?.map((table) => {
-        const session = sessions?.find((s) => s.table_id === table.id);
+        const session = sessions?.find((s) => (s as any).table_id === (table as any).id);
         const result = {
           ...table,
-          table_id: table.id, // Add table_id field for consistency with TableRuntimeState interface
-          merged_with_table_id: table.merged_with_table_id || null, // Include merge relationship
+          table_id: (table as any).id, // Add table_id field for consistency with TableRuntimeState interface
+          merged_with_table_id: (table as any).merged_with_table_id || null, // Include merge relationship
           session_id: session?.id || null,
           status: session?.status || "FREE",
           order_id: session?.order_id || null,
@@ -89,7 +89,7 @@ export async function GET(req: Request) {
           reservation_duration_minutes: session?.reservation_duration_minutes || null,
           reservation_end_time: session?.reservation_end_time || null,
           reservation_created_at: session?.reservation_created_at || null,
-          most_recent_activity: session?.most_recent_activity || table.table_created_at,
+          most_recent_activity: session?.most_recent_activity || (table as any).table_created_at,
           reserved_now_id: null,
           reserved_now_start: null,
           reserved_now_end: null,
@@ -133,7 +133,7 @@ export async function GET(req: Request) {
         .from("table_sessions")
         .select("*")
         .eq("venue_id", venueId)
-        .in("table_id", tables?.map((t) => t.id) || [])
+        .in("table_id", tables?.map((t) => (t as any).id) || [])
         .is("closed_at", null);
 
       // Update the tables with the new sessions

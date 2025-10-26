@@ -76,11 +76,11 @@ export async function POST(req: Request) {
     // Transform the data to match the expected format
     const transformedFeedback =
       feedback?.map((f) => ({
-        id: f.id,
-        created_at: f.created_at,
-        rating: f.rating,
-        comment: f.comment,
-        order_id: f.order_id,
+        id: (f as any).id,
+        created_at: (f as any).created_at,
+        rating: (f as any).rating,
+        comment: (f as any).comment,
+        order_id: (f as any).order_id,
       })) || [];
 
     return NextResponse.json({
