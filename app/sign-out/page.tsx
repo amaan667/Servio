@@ -21,13 +21,14 @@ export default function SignOutPage() {
         if (!response.ok) {
       // Empty block
     } else {
-        }
+      // Intentionally empty
+    }
         
         // Clear client storage
         try {
           const { clearAuthStorage } = await import('@/lib/supabase');
           clearAuthStorage();
-        } catch (error) {
+        } catch (_error) {
       // Error silently handled
     }
         
@@ -37,7 +38,7 @@ export default function SignOutPage() {
         // Redirect to home page
         router.replace('/');
         
-      } catch (error) {
+      } catch (_error) {
 
         router.replace('/');
       }

@@ -2,7 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { createAdminClient } from "@/lib/supabase";
 import { logger } from "@/lib/logger";
 
-export async function POST(request: NextRequest) {
+export async function POST(_request: NextRequest) {
   try {
     const { venueId, force = false } = await request.json();
 
@@ -300,7 +300,7 @@ export async function POST(request: NextRequest) {
         timestamp: new Date().toISOString(),
       },
     });
-  } catch (error) {
+  } catch (_error) {
     logger.error("🔄 [DAILY RESET CHECK] Error in daily reset check:", {
       error: error instanceof Error ? error.message : "Unknown error",
     });

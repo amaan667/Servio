@@ -3,7 +3,7 @@ import { createAdminClient } from '@/lib/supabase';
 
 export const runtime = 'nodejs';
 
-export async function POST(req: Request) {
+export async function POST(_req: Request) {
   const { id, active } = await req.json().catch(()=>({}));
   if (!id || typeof active !== 'boolean') return NextResponse.json({ error:'id and active required' }, { status:400 });
   const admin = createAdminClient();

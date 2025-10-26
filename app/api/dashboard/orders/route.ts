@@ -6,7 +6,7 @@ import { liveOrdersWindow, earlierTodayWindow, historyWindow } from '@/lib/dates
 
 export const runtime = 'nodejs';
 
-export async function GET(req: Request) {
+export async function GET(_req: Request) {
   const { searchParams } = new URL(req.url);
   const venueId = searchParams.get('venueId');
   const status = searchParams.get('status') || 'all';

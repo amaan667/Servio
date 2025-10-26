@@ -2,7 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { authenticateRequest, verifyVenueAccess } from "@/lib/api-auth";
 import { logger } from "@/lib/logger";
 
-export async function POST(request: NextRequest) {
+export async function POST(_request: NextRequest) {
   try {
     const { venueId, resetTime } = await request.json();
 
@@ -49,7 +49,7 @@ export async function POST(request: NextRequest) {
       message: "Reset time updated successfully",
       resetTime,
     });
-  } catch (error) {
+  } catch (_error) {
     logger.error("Error in update reset time API:", {
       error: error instanceof Error ? error.message : "Unknown error",
     });

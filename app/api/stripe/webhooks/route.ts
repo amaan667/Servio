@@ -12,7 +12,7 @@ interface InvoiceWithSubscription extends Stripe.Invoice {
 
 const webhookSecret = process.env.STRIPE_WEBHOOK_SECRET!;
 
-export async function POST(request: NextRequest) {
+export async function POST(_request: NextRequest) {
   try {
     const body = await request.text();
     const signature = request.headers.get("stripe-signature");
@@ -57,7 +57,7 @@ export async function POST(request: NextRequest) {
     }
 
     return NextResponse.json({ received: true });
-  } catch (error) {
+  } catch (_error) {
     const errorMessage = error instanceof Error ? error.message : "Unknown error";
     apiLogger.error("[STRIPE WEBHOOK] Error:", { error: errorMessage });
     return NextResponse.json({ error: errorMessage }, { status: 400 });
@@ -65,13 +65,6 @@ export async function POST(request: NextRequest) {
 }
 
 async function handleCheckoutCompleted(session: Stripe.Checkout.Session) {
-  console.info("\n" + "=".repeat(80));
-  console.info("💼 [SUBSCRIPTION WEBHOOK] CHECKOUT COMPLETED");
-  console.info("=".repeat(80));
-  console.info("🎯 Session ID:", session.id);
-  console.info("💰 Amount:", session.amount_total, session.currency);
-  console.info("📦 Metadata:", session.metadata);
-  console.info("=".repeat(80) + "\n");
 
   apiLogger.debug("[SUBSCRIPTION WEBHOOK] ===== CHECKOUT COMPLETED =====");
   apiLogger.debug("[SUBSCRIPTION WEBHOOK] handleCheckoutCompleted called with session:", {
@@ -88,21 +81,9 @@ async function handleCheckoutCompleted(session: Stripe.Checkout.Session) {
   const tier = session.metadata?.tier;
   const userId = session.metadata?.user_id;
 
-  console.info("🔍 [SUBSCRIPTION WEBHOOK] Looking for subscription metadata...");
-  console.info("  📋 Organization ID:", organizationId);
-  console.info("  📋 Tier:", tier);
-  console.info("  📋 User ID:", userId);
-
   apiLogger.debug("[SUBSCRIPTION WEBHOOK] Extracted data:", { organizationId, tier, userId });
 
   if (!organizationId || !tier) {
-    console.warn("\n" + "=".repeat(80));
-    console.warn("⚠️  [SUBSCRIPTION WEBHOOK] NOT A SUBSCRIPTION PAYMENT");
-    console.warn("=".repeat(80));
-    console.warn("⚠️  Missing organization_id or tier in metadata");
-    console.warn("⚠️  This might be a customer order payment (wrong webhook!)");
-    console.warn("⚠️  Customer orders should go to /api/stripe/webhook (singular)");
-    console.warn("=".repeat(80) + "\n");
 
     apiLogger.error(
       "[SUBSCRIPTION WEBHOOK] ❌ Missing required metadata in checkout session:",
@@ -110,8 +91,6 @@ async function handleCheckoutCompleted(session: Stripe.Checkout.Session) {
     );
     return;
   }
-
-  console.info("✅ [SUBSCRIPTION WEBHOOK] Valid subscription payment detected");
 
   // Verify the organization exists
   const { data: existingOrg, error: orgCheckError } = await supabase

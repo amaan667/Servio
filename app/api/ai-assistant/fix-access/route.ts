@@ -10,7 +10,7 @@ const FixAccessRequestSchema = z.object({
   venueId: z.string().min(1),
 });
 
-export async function POST(request: NextRequest) {
+export async function POST(_request: NextRequest) {
   try {
     const supabase = await createClient();
 
@@ -114,7 +114,7 @@ export async function POST(request: NextRequest) {
       { error: "No access to this venue" },
       { status: 403 }
     );
-  } catch (error) {
+  } catch (_error) {
     logger.error("[AI ASSISTANT] Fix access error:", { error: error instanceof Error ? error.message : 'Unknown error' });
 
     if ((error as any)?.name === "ZodError") {

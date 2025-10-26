@@ -5,7 +5,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { createClient } from "@/lib/supabase";
 import { logger } from '@/lib/logger';
 
-export async function GET(request: NextRequest) {
+export async function GET(_request: NextRequest) {
   try {
     const supabase = await createClient();
     
@@ -74,7 +74,7 @@ export async function GET(request: NextRequest) {
       hasMore: conversations?.length === limit,
       nextCursor: conversations?.length === limit ? (parseInt(cursor) + limit).toString() : null,
     });
-  } catch (error) {
+  } catch (_error) {
     logger.error("[AI CHAT] Conversations error:", { error: error instanceof Error ? error.message : 'Unknown error' });
     return NextResponse.json(
       { error: error instanceof Error ? error.message : "Internal server error" },
@@ -83,7 +83,7 @@ export async function GET(request: NextRequest) {
   }
 }
 
-export async function POST(request: NextRequest) {
+export async function POST(_request: NextRequest) {
   try {
     const supabase = await createClient();
     
@@ -155,7 +155,7 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({
       conversation: transformedConversation,
     });
-  } catch (error) {
+  } catch (_error) {
     logger.error("[AI CHAT] Create conversation error:", { error: error instanceof Error ? error.message : 'Unknown error' });
     return NextResponse.json(
       { error: error instanceof Error ? error.message : "Internal server error" },
@@ -164,7 +164,7 @@ export async function POST(request: NextRequest) {
   }
 }
 
-export async function PATCH(request: NextRequest) {
+export async function PATCH(_request: NextRequest) {
   try {
     const supabase = await createClient();
     
@@ -250,7 +250,7 @@ export async function PATCH(request: NextRequest) {
     return NextResponse.json({
       conversation: transformedConversation,
     });
-  } catch (error) {
+  } catch (_error) {
     logger.error("[AI CHAT] Update conversation error:", { error: error instanceof Error ? error.message : 'Unknown error' });
     return NextResponse.json(
       { error: error instanceof Error ? error.message : "Internal server error" },

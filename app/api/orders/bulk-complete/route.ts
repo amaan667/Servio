@@ -5,7 +5,7 @@ import { logger } from "@/lib/logger";
 
 export const runtime = "nodejs";
 
-export async function POST(req: Request) {
+export async function POST(_req: Request) {
   try {
     const { venueId, orderIds } = await req.json();
 
@@ -127,7 +127,8 @@ export async function POST(req: Request) {
             logger.error('[BULK COMPLETE] Error clearing table references in orders:', { value: clearTableRefsError });
             logger.warn('[BULK COMPLETE] Proceeding with table deletion despite table reference clear failure');
           } else {
-          }
+      // Intentionally empty
+    }
 
           // Delete table sessions first
           const { error: deleteSessionError } = await supabase
@@ -140,7 +141,8 @@ export async function POST(req: Request) {
             logger.error('[BULK COMPLETE] Error deleting table sessions:', { value: deleteSessionError });
             logger.warn('[BULK COMPLETE] Proceeding with table deletion despite session deletion failure');
           } else {
-          }
+      // Intentionally empty
+    }
           
           // Clean up table runtime state
           const { error: deleteRuntimeError } = await supabase
@@ -153,7 +155,8 @@ export async function POST(req: Request) {
             logger.error('[BULK COMPLETE] Error deleting table runtime state:', { value: deleteRuntimeError });
             logger.warn('[BULK COMPLETE] Proceeding with table deletion despite runtime state deletion failure');
           } else {
-          }
+      // Intentionally empty
+    }
           
           // Clean up group sessions for this table
           const { error: deleteGroupSessionError } = await supabase
@@ -166,7 +169,8 @@ export async function POST(req: Request) {
             logger.error('[BULK COMPLETE] Error deleting group sessions:', { value: deleteGroupSessionError });
             logger.warn('[BULK COMPLETE] Proceeding with table deletion despite group session deletion failure');
           } else {
-          }
+      // Intentionally empty
+    }
 
           // Finally, delete the table itself
           const { error: deleteTableError } = await supabase
@@ -184,7 +188,8 @@ export async function POST(req: Request) {
               code: deleteTableError.code
             });
           } else {
-          }
+      // Intentionally empty
+    }
           
         } catch (tableError) {
           logger.error('[BULK COMPLETE] Error handling table cleanup for table:', { error: tableId, context: tableError });
@@ -198,7 +203,7 @@ export async function POST(req: Request) {
       completedCount: updatedOrders?.length || 0,
       message: `Successfully completed ${updatedOrders?.length || 0} orders and cleaned up tables`,
     });
-  } catch (error) {
+  } catch (_error) {
     logger.error("[BULK COMPLETE] Unexpected error:", {
       error: error instanceof Error ? error.message : "Unknown error",
     });

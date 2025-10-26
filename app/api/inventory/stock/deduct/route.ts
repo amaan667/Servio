@@ -4,7 +4,7 @@ import { logger } from '@/lib/logger';
 
 // POST /api/inventory/stock/deduct
 // Deducts stock for an order using the SQL function
-export async function POST(request: NextRequest) {
+export async function POST(_request: NextRequest) {
   try {
     const supabase = await createClient();
     const body = await request.json();
@@ -32,7 +32,7 @@ export async function POST(request: NextRequest) {
     }
 
     return NextResponse.json(data);
-  } catch (error) {
+  } catch (_error) {
     logger.error('[INVENTORY API] Unexpected error:', { error: error instanceof Error ? error.message : 'Unknown error' });
     return NextResponse.json(
       { error: 'Internal server error' },

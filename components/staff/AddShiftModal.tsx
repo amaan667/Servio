@@ -67,7 +67,7 @@ export function AddShiftModal({ isOpen, onClose, staffMember, venueId, onShiftAd
       
       // Close modal after callback
       onClose();
-    } catch (err) {
+    } catch (_err) {
       setError(err instanceof Error ? err.message : "Failed to add shift");
     } finally {
       setAdding(false);

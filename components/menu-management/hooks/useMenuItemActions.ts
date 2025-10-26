@@ -39,8 +39,8 @@ export function useMenuItemActions(venueId: string, onRefresh: () => void) {
 
         setError(result.error || "Failed to add item.");
       } else {
-
-      }
+      // Intentionally empty
+    }
     } catch (error: unknown) {
 
       setError("An unexpected error occurred.");
@@ -66,8 +66,8 @@ export function useMenuItemActions(venueId: string, onRefresh: () => void) {
 
         setError(`Failed to update item: ${error.message}`);
       } else {
-
-      }
+      // Intentionally empty
+    }
     } catch (error: unknown) {
 
       setError("An unexpected error occurred.");
@@ -94,8 +94,8 @@ export function useMenuItemActions(venueId: string, onRefresh: () => void) {
 
         setError(`Failed to delete item: ${error.message}`);
       } else {
-
-      }
+      // Intentionally empty
+    }
     } catch (error: unknown) {
 
       setError("An unexpected error occurred.");

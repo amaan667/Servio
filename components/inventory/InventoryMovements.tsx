@@ -77,7 +77,7 @@ export function InventoryMovements({ venueId, canEdit = true }: InventoryMovemen
         setMovements(result.data);
         setHasMore(result.data.length === limit);
       }
-    } catch (error) {
+    } catch (_error) {
       // Error silently handled
     } finally {
       setLoading(false);
@@ -116,7 +116,7 @@ export function InventoryMovements({ venueId, canEdit = true }: InventoryMovemen
       a.click();
       document.body.removeChild(a);
       window.URL.revokeObjectURL(url);
-    } catch (error) {
+    } catch (_error) {
       // Error silently handled
     }
   };

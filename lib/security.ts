@@ -166,7 +166,7 @@ class SecurityService {
   /**
    * Get client IP address
    */
-  getClientIP(request: NextRequest): string {
+  getClientIP(_request: NextRequest): string {
     const forwarded = request.headers.get("x-forwarded-for");
     const realIP = request.headers.get("x-real-ip");
 
@@ -184,7 +184,7 @@ class SecurityService {
   /**
    * Get user agent
    */
-  getUserAgent(request: NextRequest): string {
+  getUserAgent(_request: NextRequest): string {
     return request.headers.get("user-agent") || "unknown";
   }
 
@@ -208,7 +208,7 @@ export const security = new SecurityService();
 /**
  * Rate limiting middleware
  */
-export async function rateLimitMiddleware(request: NextRequest, config?: RateLimitConfig) {
+export async function rateLimitMiddleware(_request: NextRequest, config?: RateLimitConfig) {
   const ip = security.getClientIP(request);
   const isAllowed = await security.checkRateLimit(ip, config);
 
@@ -229,7 +229,7 @@ export async function rateLimitMiddleware(request: NextRequest, config?: RateLim
 /**
  * CSRF protection middleware
  */
-export function csrfMiddleware(request: NextRequest, userId: string) {
+export function csrfMiddleware(_request: NextRequest, userId: string) {
   if (request.method === "GET") {
     return null; // Skip CSRF for GET requests
   }
@@ -249,7 +249,7 @@ export function csrfMiddleware(request: NextRequest, userId: string) {
 /**
  * Input validation middleware
  */
-export function validateInputMiddleware(request: NextRequest) {
+export function validateInputMiddleware(_request: NextRequest) {
   const contentType = request.headers.get("content-type");
 
   if (contentType?.includes("application/json")) {

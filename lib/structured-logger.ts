@@ -85,16 +85,12 @@ class StructuredLogger {
     // Output to console in structured format
     switch (entry.level) {
       case LogLevel.DEBUG:
-        console.debug(json);
         break;
       case LogLevel.INFO:
-        console.info(json);
         break;
       case LogLevel.WARN:
-        console.warn(json);
         break;
       case LogLevel.ERROR:
-        console.error(json);
         break;
     }
   }

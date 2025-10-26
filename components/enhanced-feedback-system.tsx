@@ -80,7 +80,7 @@ export function EnhancedFeedbackSystem({ venueId }: FeedbackSystemProps) {
         const data = await response.json();
         setQuestions(data.questions || []);
       }
-    } catch (error) {
+    } catch (_error) {
       // Error silently handled
     }
   }, [venueId]);
@@ -147,7 +147,7 @@ export function EnhancedFeedbackSystem({ venueId }: FeedbackSystemProps) {
       setFeedback(filteredFeedback);
       calculateStats(filteredFeedback);
 
-    } catch (err) {
+    } catch (_err) {
 
       setError(err.message);
     } finally {

@@ -4,7 +4,7 @@ import type { CreateIngredientRequest } from '@/types/inventory';
 import { logger } from '@/lib/logger';
 
 // GET /api/inventory/ingredients?venue_id=xxx
-export async function GET(request: NextRequest) {
+export async function GET(_request: NextRequest) {
   try {
     const supabase = await createClient();
     const { searchParams } = new URL(request.url);
@@ -33,7 +33,7 @@ export async function GET(request: NextRequest) {
     }
 
     return NextResponse.json({ data });
-  } catch (error) {
+  } catch (_error) {
     logger.error('[INVENTORY API] Unexpected error:', { error: error instanceof Error ? error.message : 'Unknown error' });
     return NextResponse.json(
       { error: 'Internal server error' },
@@ -43,7 +43,7 @@ export async function GET(request: NextRequest) {
 }
 
 // POST /api/inventory/ingredients
-export async function POST(request: NextRequest) {
+export async function POST(_request: NextRequest) {
   try {
     const supabase = await createClient();
     const body: CreateIngredientRequest = await request.json();
@@ -116,7 +116,7 @@ export async function POST(request: NextRequest) {
     }
 
     return NextResponse.json({ data: ingredient }, { status: 201 });
-  } catch (error) {
+  } catch (_error) {
     logger.error('[INVENTORY API] Unexpected error:', { error: error instanceof Error ? error.message : 'Unknown error' });
     return NextResponse.json(
       { error: 'Internal server error' },

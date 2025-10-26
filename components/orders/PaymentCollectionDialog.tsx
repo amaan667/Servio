@@ -53,10 +53,6 @@ export function PaymentCollectionDialog({
     setError(null);
 
     try {
-      console.info("💰 [COLLECT PAYMENT] Processing till payment:", {
-        orderId,
-        method: selectedMethod,
-      });
 
       const response = await fetch(`/api/orders/${orderId}/collect-payment`, {
         method: "POST",
@@ -72,13 +68,10 @@ export function PaymentCollectionDialog({
         throw new Error(errorData.error || "Failed to collect payment");
       }
 
-      console.info("✅ [COLLECT PAYMENT] Payment collected successfully");
-
       // Close dialog and refresh parent
       onOpenChange(false);
       onSuccess();
-    } catch (err) {
-      console.error("❌ [COLLECT PAYMENT] Error:", err);
+    } catch (_err) {
       setError(err instanceof Error ? err.message : "Failed to collect payment");
     } finally {
       setProcessing(false);

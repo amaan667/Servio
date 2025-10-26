@@ -16,12 +16,6 @@ export function usePaymentProcessing() {
     try {
       // Helper function to create order in database
       const createOrder = async () => {
-        console.info("💳 [PAYMENT] Creating order in database...");
-        console.info("💳💳💳 CREATING ORDER NOW 💳💳💳", {
-          customer: checkoutData.customerName,
-          venue: checkoutData.venueId,
-          total: checkoutData.total,
-        });
 
         const orderData = {
           venue_id: checkoutData.venueId,
@@ -68,10 +62,6 @@ export function usePaymentProcessing() {
         }
 
         const orderResult = await createOrderResponse.json();
-        console.info("✅ [PAYMENT] Order created in database:", orderResult.order?.id);
-        console.info("✅✅✅ ORDER CREATED IN DB ✅✅✅", {
-          orderId: orderResult.order?.id,
-        });
 
         return orderResult;
       };
@@ -100,8 +90,6 @@ export function usePaymentProcessing() {
         window.location.href = `/order-summary?orderId=${orderId}&demo=1`;
       } else if (action === "stripe") {
         // Stripe payment - CREATE ORDER FIRST, then redirect to Stripe
-        console.info("[PAYMENT] Stripe selected - creating order then redirecting to Stripe");
-        console.info("💳 Creating order BEFORE Stripe checkout...");
 
         // Create order first with UNPAID status
         const orderResult = await createOrder();
@@ -110,8 +98,6 @@ export function usePaymentProcessing() {
         if (!orderId) {
           throw new Error("Failed to create order before Stripe checkout");
         }
-
-        console.info("✅ Order created:", orderId, "- now creating Stripe session...");
 
         // Create Stripe checkout session with just the order ID
         const response = await fetch("/api/stripe/create-customer-checkout", {
@@ -129,12 +115,8 @@ export function usePaymentProcessing() {
         const result = await response.json();
 
         if (!response.ok) {
-          console.error("[PAYMENT] Stripe checkout failed:", result);
           throw new Error(result.error || "Failed to create checkout session");
         }
-
-        console.info("[PAYMENT] Redirecting to Stripe...");
-        console.info("✅ Stripe session created, redirecting");
 
         // Redirect to Stripe checkout
         if (result.url) {
@@ -146,9 +128,6 @@ export function usePaymentProcessing() {
         // Till payment - create order immediately, show "Order Confirmed!"
         const orderResult = await createOrder();
         const orderId = orderResult.order?.id;
-
-        console.info("[PAYMENT] Processing till payment...");
-        console.info("💵 Processing till payment", { orderId });
 
         const response = await fetch("/api/pay/till", {
           method: "POST",
@@ -168,18 +147,12 @@ export function usePaymentProcessing() {
 
         await response.json();
 
-        console.info("✅ [PAYMENT] Order confirmed for till payment");
-        console.info("✅ Till payment confirmed - order sent to kitchen", { orderId });
-
         // Redirect to order summary page
         window.location.href = `/order-summary?orderId=${orderId}`;
       } else if (action === "later") {
         // Pay later - create order immediately, show "Order Confirmed!"
         const orderResult = await createOrder();
         const orderId = orderResult.order?.id;
-
-        console.info("[PAYMENT] Processing pay later...");
-        console.info("⏰ Processing pay later", { orderId });
 
         const response = await fetch("/api/pay/later", {
           method: "POST",
@@ -199,9 +172,6 @@ export function usePaymentProcessing() {
         }
 
         const result = await response.json();
-
-        console.info("✅ [PAYMENT] Order confirmed for pay later");
-        console.info("✅ Pay later confirmed - order sent to kitchen", { orderId });
 
         // Store session for re-scanning
         const sessionId = checkoutData.sessionId || `session_${Date.now()}`;
@@ -223,7 +193,7 @@ export function usePaymentProcessing() {
         // Redirect to order summary page
         window.location.href = `/order-summary?orderId=${orderId}`;
       }
-    } catch (err) {
+    } catch (_err) {
       setError(err.message || "Payment failed. Please try again.");
       toast({
         title: "Payment Error",

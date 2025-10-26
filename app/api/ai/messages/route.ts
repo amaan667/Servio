@@ -13,7 +13,7 @@ const CreateMessageSchema = z.object({
   text: z.string().min(1),
 });
 
-export async function GET(request: NextRequest) {
+export async function GET(_request: NextRequest) {
   try {
     const supabase = await createClient();
     
@@ -91,7 +91,7 @@ export async function GET(request: NextRequest) {
     return NextResponse.json({
       messages: transformedMessages,
     });
-  } catch (error) {
+  } catch (_error) {
     logger.error("[AI CHAT] Messages error:", { error: error instanceof Error ? error.message : 'Unknown error' });
     return NextResponse.json(
       { error: error instanceof Error ? error.message : "Internal server error" },
@@ -100,7 +100,7 @@ export async function GET(request: NextRequest) {
   }
 }
 
-export async function POST(request: NextRequest) {
+export async function POST(_request: NextRequest) {
   try {
     const supabase = await createClient();
     
@@ -311,7 +311,7 @@ export async function POST(request: NextRequest) {
               error: errorMessage
             });
     }
-  } catch (error) {
+  } catch (_error) {
     logger.error("[AI CHAT] Create message error:", { error: error instanceof Error ? error.message : 'Unknown error' });
     
     if ((error as any)?.name === "ZodError") {

@@ -4,7 +4,7 @@ import { createClient } from "@/lib/supabase";
 import { stripe } from "@/lib/stripe-client";
 import { apiLogger as logger } from '@/lib/logger';
 
-export async function POST(request: NextRequest) {
+export async function POST(_request: NextRequest) {
   try {
     const supabase = await createClient();
 
@@ -134,7 +134,7 @@ export async function POST(request: NextRequest) {
       newTier 
     });
 
-  } catch (error) {
+  } catch (_error) {
     const errorMessage = error instanceof Error ? error.message : 'Unknown error';
     logger.error("[DOWNGRADE] Error:", { error: errorMessage });
     return NextResponse.json(

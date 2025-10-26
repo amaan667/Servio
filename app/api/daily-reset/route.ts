@@ -2,7 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { createAdminClient } from '@/lib/supabase';
 import { logger } from '@/lib/logger';
 
-export async function POST(request: NextRequest) {
+export async function POST(_request: NextRequest) {
   try {
     
     const { venueId, force = false } = await request.json();
@@ -186,7 +186,7 @@ export async function POST(request: NextRequest) {
       }
     });
 
-  } catch (error) {
+  } catch (_error) {
     logger.error('🔄 [DAILY RESET] Error in daily reset API:', { error: error instanceof Error ? error.message : 'Unknown error' });
     return NextResponse.json(
       { error: 'Internal server error' },
@@ -196,7 +196,7 @@ export async function POST(request: NextRequest) {
 }
 
 // GET endpoint to check if daily reset is needed
-export async function GET(request: NextRequest) {
+export async function GET(_request: NextRequest) {
   try {
     const { searchParams } = new URL(request.url);
     const venueId = searchParams.get('venueId');
@@ -244,7 +244,7 @@ export async function GET(request: NextRequest) {
       }
     });
 
-  } catch (error) {
+  } catch (_error) {
     logger.error('🔄 [DAILY RESET] Error checking reset status:', { error: error instanceof Error ? error.message : 'Unknown error' });
     return NextResponse.json(
       { error: 'Internal server error' },

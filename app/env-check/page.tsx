@@ -55,7 +55,7 @@ export default function EnvCheckPage() {
         <div className="bg-yellow-50 border border-yellow-200 rounded-lg p-6 mt-6">
           <h3 className="text-lg font-semibold mb-2">How to Fix in Railway:</h3>
           <ol className="list-decimal list-inside space-y-2 text-sm">
-            <li>Go to <a href="https://railway.app" target="_blank" className="text-blue-600 underline">railway.app</a></li>
+            <li>Go to <a href="https://railway.app" target="_blank" className="text-blue-600 underline" rel="noreferrer">railway.app</a></li>
             <li>Open your servio-mvp-cleaned project</li>
             <li>Click on the "Variables" tab</li>
             <li>Add these variables:

@@ -84,8 +84,7 @@ export function CategoriesManagement({ venueId, onCategoriesUpdate }: Categories
       // Cache for fast load
       localStorage.setItem(`category-order-${venueId}`, JSON.stringify(finalCategories));
 
-    } catch (error) {
-      console.error('[CATEGORIES] Load error:', error);
+    } catch (_error) {
       toast({
         title: "Error",
         description: "Failed to load categories",
@@ -137,7 +136,7 @@ export function CategoriesManagement({ venueId, onCategoriesUpdate }: Categories
         // Still update the parent component since we saved to localStorage
         onCategoriesUpdate?.(categoriesToSave);
       }
-    } catch (error) {
+    } catch (_error) {
 
       // Still show success since we saved to localStorage
       toast({
@@ -196,7 +195,7 @@ export function CategoriesManagement({ venueId, onCategoriesUpdate }: Categories
       if (!response.ok) {
       // Empty block
     }
-    } catch (error) {
+    } catch (_error) {
 
       // Category was already added locally, so show success
       toast({
@@ -258,7 +257,7 @@ export function CategoriesManagement({ venueId, onCategoriesUpdate }: Categories
           variant: "destructive",
         });
       }
-    } catch (error) {
+    } catch (_error) {
 
       toast({
         title: "Error",
@@ -323,7 +322,7 @@ export function CategoriesManagement({ venueId, onCategoriesUpdate }: Categories
           variant: "destructive",
         });
       }
-    } catch (error) {
+    } catch (_error) {
 
       toast({
         title: "Error",
@@ -391,7 +390,7 @@ export function CategoriesManagement({ venueId, onCategoriesUpdate }: Categories
           });
         }
       }
-    } catch (error) {
+    } catch (_error) {
 
       toast({
         title: "Error",

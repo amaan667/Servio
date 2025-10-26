@@ -6,7 +6,7 @@ import { logger } from '@/lib/logger';
 export const runtime = 'nodejs';
 
 // GET /api/tables/counters?venueId=xxx - Get table counters for dashboard
-export async function GET(req: Request) {
+export async function GET(_req: Request) {
   try {
     const { searchParams } = new URL(req.url);
     const venueId = searchParams.get('venueId');
@@ -62,6 +62,7 @@ export async function GET(req: Request) {
     if (realtimeError) {
       logger.error('[TABLES COUNTERS] Realtime error:', realtimeError);
     } else {
+      // Intentionally empty
     }
 
     return NextResponse.json({
@@ -76,7 +77,7 @@ export async function GET(req: Request) {
       }
     });
 
-  } catch (error) {
+  } catch (_error) {
     logger.error('[TABLES COUNTERS] Unexpected error:', { error: error instanceof Error ? error.message : 'Unknown error' });
     return NextResponse.json({ ok: false, error: 'Internal server error' }, { status: 500 });
   }

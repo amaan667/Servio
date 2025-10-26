@@ -2,7 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { createAdminClient } from '@/lib/supabase';
 import { logger } from '@/lib/logger';
 
-export async function POST(request: NextRequest) {
+export async function POST(_request: NextRequest) {
   try {
     const { venue_id } = await request.json();
 
@@ -36,6 +36,7 @@ export async function POST(request: NextRequest) {
       logger.error('[FORCE CLEAR ALL] Error deleting table sessions:', sessionsError);
       // Continue anyway
     } else {
+      // Intentionally empty
     }
 
     // Step 3: Delete all tables
@@ -62,6 +63,7 @@ export async function POST(request: NextRequest) {
       logger.error('[FORCE CLEAR ALL] Error clearing runtime state:', runtimeError);
       // Continue anyway
     } else {
+      // Intentionally empty
     }
 
     // Step 5: Clear group sessions
@@ -74,6 +76,7 @@ export async function POST(request: NextRequest) {
       logger.error('[FORCE CLEAR ALL] Error clearing group sessions:', groupSessionsError);
       // Continue anyway
     } else {
+      // Intentionally empty
     }
 
     return NextResponse.json({ 
@@ -81,7 +84,7 @@ export async function POST(request: NextRequest) {
       message: 'All tables and sessions force cleared successfully' 
     });
 
-  } catch (error) {
+  } catch (_error) {
     logger.error('[FORCE CLEAR ALL] Error in force clear all tables API:', { error: error instanceof Error ? error.message : 'Unknown error' });
     return NextResponse.json({ 
       ok: false, 

@@ -124,7 +124,6 @@ export default function RoleBasedNavigation({
 
   // Ensure venueId is valid before rendering
   if (!venueId) {
-    console.error("[RoleBasedNavigation] No venueId provided");
     return null;
   }
 

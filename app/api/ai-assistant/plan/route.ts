@@ -21,7 +21,7 @@ const PlanRequestSchema = z.object({
     .optional(),
 });
 
-export async function POST(request: NextRequest) {
+export async function POST(_request: NextRequest) {
   try {
     const supabase = await createClient();
 
@@ -123,7 +123,7 @@ export async function POST(request: NextRequest) {
       executionTimeMs: executionTime,
       modelUsed: plan.modelUsed, // Return model info to client
     });
-  } catch (error) {
+  } catch (_error) {
     logger.error("[AI ASSISTANT] Planning error:", { error: error instanceof Error ? error.message : 'Unknown error' });
 
     if ((error as any)?.name === "ZodError") {

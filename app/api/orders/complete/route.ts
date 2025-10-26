@@ -3,7 +3,7 @@ export const runtime = "nodejs";
 import { createAdminClient } from "@/lib/supabase";
 import { apiLogger as logger } from "@/lib/logger";
 
-export async function POST(req: Request) {
+export async function POST(_req: Request) {
   try {
     const startedAt = new Date().toISOString();
     logger.debug("[ORDERS COMPLETE][START]", { startedAt });

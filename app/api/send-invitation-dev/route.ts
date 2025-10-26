@@ -3,7 +3,7 @@ import { getUserSafe } from '@/utils/getUserSafe';
 import { logger } from '@/lib/logger';
 
 // POST /api/send-invitation-dev - Send invitation email in development mode
-export async function POST(request: NextRequest) {
+export async function POST(_request: NextRequest) {
   try {
     const user = await getUserSafe();
     if (!user) {
@@ -41,7 +41,7 @@ export async function POST(request: NextRequest) {
       instructions: 'Check server logs for manual email sending instructions'
     });
 
-  } catch (error) {
+  } catch (_error) {
     logger.error('[DEV EMAIL] Unexpected error:', { error: error instanceof Error ? error.message : 'Unknown error' });
     return NextResponse.json({ error: 'Internal server error' }, { status: 500 });
   }

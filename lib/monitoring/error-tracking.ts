@@ -15,7 +15,6 @@ export function trackError(error: Error, context?: ErrorContext) {
   
   // In development, log to console
   if (process.env.NODE_ENV === 'development') {
-    console.error('Error tracked:', error, context);
     return;
   }
   

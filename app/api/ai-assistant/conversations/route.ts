@@ -13,7 +13,7 @@ const CreateConversationSchema = z.object({
   title: z.string().min(1).max(255),
 });
 
-export async function GET(request: NextRequest) {
+export async function GET(_request: NextRequest) {
   try {
     const supabase = await createSupabaseClient();
     const adminSupabase = createAdminClient();
@@ -51,7 +51,7 @@ export async function GET(request: NextRequest) {
         if (!roleErr && roleRow?.role) {
           roleName = roleRow.role;
         }
-      } catch (e) {
+      } catch (_e) {
         logger.debug("[AI CHAT] user_venue_roles lookup failed, will fallback to ownership check", {
           extra: { error: e instanceof Error ? e.message : "Unknown error" },
         });
@@ -170,7 +170,7 @@ export async function GET(request: NextRequest) {
   }
 }
 
-export async function POST(request: NextRequest) {
+export async function POST(_request: NextRequest) {
   try {
     const supabase = await createSupabaseClient();
     const adminSupabase = createAdminClient();
@@ -241,7 +241,7 @@ export async function POST(request: NextRequest) {
   }
 }
 
-export async function PATCH(request: NextRequest) {
+export async function PATCH(_request: NextRequest) {
   try {
     const supabase = await createSupabaseClient();
     const adminSupabase = createAdminClient();

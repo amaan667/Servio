@@ -117,8 +117,7 @@ export default function SettingsPageClient({ venueId }: { venueId: string }) {
         }
         
         setLoading(false);
-      } catch (error) {
-        console.error("Error loading settings:", error);
+      } catch (_error) {
         setLoading(false);
       }
     };

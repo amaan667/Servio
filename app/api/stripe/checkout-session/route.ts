@@ -3,7 +3,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { stripe } from "@/lib/stripe-client";
 import { apiLogger as logger } from '@/lib/logger';
 
-export async function GET(request: NextRequest) {
+export async function GET(_request: NextRequest) {
   try {
     const { searchParams } = new URL(request.url);
     const sessionId = searchParams.get('session_id');
@@ -33,7 +33,7 @@ export async function GET(request: NextRequest) {
       subscription: session.subscription,
       payment_status: session.payment_status,
     });
-  } catch (error) {
+  } catch (_error) {
     const errorMessage = error instanceof Error ? error.message : 'Unknown error';
     logger.error("[STRIPE SESSION] Error fetching session:", { error: errorMessage });
     return NextResponse.json(

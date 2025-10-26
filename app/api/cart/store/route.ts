@@ -71,7 +71,7 @@ export async function POST(req: NextRequest) {
       cartData,
     });
 
-  } catch (error) {
+  } catch (_error) {
     logger.error('[CART STORE] Error:', { error: error instanceof Error ? error.message : 'Unknown error' });
     return NextResponse.json(
       { error: 'Internal server error' },
@@ -99,7 +99,7 @@ export async function GET(req: NextRequest) {
       cartData: null,
     });
 
-  } catch (error) {
+  } catch (_error) {
     logger.error('[CART STORE] Error:', { error: error instanceof Error ? error.message : 'Unknown error' });
     return NextResponse.json(
       { error: 'Internal server error' },

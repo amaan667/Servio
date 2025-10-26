@@ -31,7 +31,7 @@ class PerformanceMonitor {
     try {
       result = await fn();
       return result;
-    } catch (error) {
+    } catch (_error) {
       success = false;
       throw error;
     } finally {
@@ -47,9 +47,6 @@ class PerformanceMonitor {
 
       // Log slow operations (>1s)
       if (duration > 1000) {
-        console.warn(
-          `[PERFORMANCE] Slow operation detected: ${operationName} took ${duration.toFixed(2)}ms`
-        );
       }
     }
   }

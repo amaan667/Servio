@@ -116,7 +116,7 @@ export default function UnifiedFeedbackForm({
       } else {
         setQuestions(genericQuestions);
       }
-    } catch (error) {
+    } catch (_error) {
 
       setQuestions(genericQuestions);
     } finally {
@@ -222,7 +222,7 @@ export default function UnifiedFeedbackForm({
         onSubmit();
       }
 
-    } catch (error) {
+    } catch (_error) {
 
       toast({
         title: "Error",

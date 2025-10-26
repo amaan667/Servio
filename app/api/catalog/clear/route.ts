@@ -19,8 +19,6 @@ export async function POST(req: NextRequest) {
       );
     }
 
-    console.log('[CATALOG CLEAR] Clearing menu for venue:', venueId);
-
     const supabase = createAdminClient();
 
     // Delete menu items
@@ -53,18 +51,16 @@ export async function POST(req: NextRequest) {
       throw new Error(`Failed to delete uploads: ${deleteUploadsError.message}`);
     }
 
-    console.log(`✅ [CATALOG CLEAR] Cleared ${itemsCount || 0} items for venue:`, venueId);
-    logger.info('[CATALOG CLEAR] Success:', { venueId, deletedCount: itemsCount });
+    logger.info('Catalog cleared successfully', { venueId, deletedCount: itemsCount });
 
     return NextResponse.json({
       ok: true,
       deletedCount: itemsCount || 0,
     });
 
-  } catch (err) {
+  } catch (_err) {
     const errorMessage = err instanceof Error ? err.message : 'Clear failed';
-    console.error('[CATALOG CLEAR] Error:', errorMessage);
-    logger.error('[CATALOG CLEAR] Error:', { error: errorMessage });
+    logger.error('Failed to clear catalog', { error: errorMessage });
     return NextResponse.json(
       { ok: false, error: errorMessage },
       { status: 500 }

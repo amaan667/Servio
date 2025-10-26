@@ -16,7 +16,7 @@ async function sha256(buffer: ArrayBuffer): Promise<string> {
   return bytes.map((b) => b.toString(16).padStart(2, '0')).join('');
 }
 
-export async function POST(req: Request) {
+export async function POST(_req: Request) {
   const supa = admin();
   try {
     const form = await req.formData();
@@ -31,7 +31,7 @@ export async function POST(req: Request) {
       // Use a lightweight insert-select approach to avoid ts complaints; Supabase JS doesn't support arbitrary SQL without a function.
       // Expect this to fail harmlessly if a security defers creation; DDL should be applied via scripts as the primary path.
       await supa.from('menu_uploads').select('id').limit(1);
-    } catch (e) {
+    } catch (_e) {
       logger.warn('[MENU_UPLOAD] menu_uploads not accessible yet');
     }
     // Note: primary table creation should be done via scripts/menu-upload-schema.sql
@@ -115,7 +115,7 @@ export async function POST(req: Request) {
     }
 
     return NextResponse.json({ ok: true, upload_id: uploadId, sha256: hash, path });
-  } catch (e) {
+  } catch (_e) {
     logger.error('[MENU_UPLOAD] fatal', { error: e });
     return NextResponse.json({ ok: false, error: e instanceof Error ? e.message : 'upload failed' }, { status: 500 });
   }

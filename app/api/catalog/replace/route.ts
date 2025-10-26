@@ -32,9 +32,6 @@ export async function POST(req: NextRequest) {
   const requestId = Math.random().toString(36).substring(7);
 
   try {
-    console.info(`🚀 [CATALOG REPLACE ${requestId}] ========================================`);
-    console.info(`🚀 [CATALOG REPLACE ${requestId}] New request started`);
-    console.info(`🚀 [CATALOG REPLACE ${requestId}] Timestamp:`, new Date().toISOString());
 
     const formData = await req.formData();
     const file = formData.get("file") as File;
@@ -42,13 +39,7 @@ export async function POST(req: NextRequest) {
     const menuUrl = formData.get("menu_url") as string | null;
     const replaceMode = formData.get("replace_mode") !== "false"; // Default to true
 
-    console.info(`📋 [CATALOG REPLACE ${requestId}] Venue ID:`, venueId);
-    console.info(`📋 [CATALOG REPLACE ${requestId}] File:`, file?.name, `(${file?.size} bytes)`);
-    console.info(`📋 [CATALOG REPLACE ${requestId}] Menu URL:`, menuUrl || "None");
-    console.info(`📋 [CATALOG REPLACE ${requestId}] Mode:`, replaceMode ? "REPLACE" : "APPEND");
-
     if (!file || !venueId) {
-      console.error(`❌ [CATALOG REPLACE ${requestId}] Missing required fields`);
       return NextResponse.json({ ok: false, error: "file and venue_id required" }, { status: 400 });
     }
 
@@ -59,17 +50,14 @@ export async function POST(req: NextRequest) {
     const supabase = createAdminClient();
 
     // Step 1: Convert PDF to images (serverless-friendly)
-    console.info(`📄 [CATALOG REPLACE ${requestId}] Converting PDF to images...`);
     const pdfBuffer = Buffer.from(await file.arrayBuffer());
 
     let pdfImages: string[] = [];
     try {
       const { convertPDFToImages } = await import("@/lib/pdf-to-images-serverless");
       pdfImages = await convertPDFToImages(pdfBuffer);
-      console.info(`✅ [CATALOG REPLACE ${requestId}] PDF converted: ${pdfImages.length} pages`);
       logger.info(`[MENU IMPORT ${requestId}] Converted to images:`, { count: pdfImages.length });
     } catch (conversionError) {
-      console.error(`❌ [CATALOG REPLACE ${requestId}] PDF conversion failed:`, conversionError);
       logger.error(`[MENU IMPORT ${requestId}] Conversion error:`, conversionError);
       throw new Error("PDF to image conversion failed - please check Railway logs");
     }
@@ -92,7 +80,6 @@ export async function POST(req: NextRequest) {
     }
 
     // Step 3: Extract data from all available sources
-    console.info(`🔍 [CATALOG REPLACE ${requestId}] Starting extraction phase...`);
     const urlItems: ScrapedMenuItem[] = [];
     const pdfExtractedItems: PDFMenuItem[] = [];
     const pdfPositions: Array<{
@@ -109,7 +96,6 @@ export async function POST(req: NextRequest) {
 
     // Extract from URL if provided
     if (menuUrl && menuUrl.trim()) {
-      console.info(`🌐 [CATALOG REPLACE ${requestId}] Extracting from URL:`, menuUrl);
       logger.info(`[MENU IMPORT ${requestId}] Extracting from URL...`);
       try {
         // Call the centralized scrape-menu API (Browserless-based)
@@ -166,28 +152,19 @@ export async function POST(req: NextRequest) {
               image_url: item.image || null,
             }))
           );
-          console.info(`✅ [CATALOG REPLACE ${requestId}] URL extracted: ${urlItems.length} items`);
           logger.info(`[MENU IMPORT ${requestId}] URL items:`, { count: urlItems.length });
         } else {
           throw new Error(scrapeResult.error || "Scraping returned no items");
         }
-      } catch (error) {
-        console.warn(
-          `⚠️ [CATALOG REPLACE ${requestId}] URL scraping failed:`,
-          error instanceof Error ? error.message : String(error)
-        );
+      } catch (_error) {
         logger.warn(`[MENU IMPORT ${requestId}] URL scraping failed, using PDF-only`);
         // Continue with PDF-only extraction
       }
     }
 
     // Extract from PDF using Vision AI
-    console.info(`👁️ [CATALOG REPLACE ${requestId}] Extracting from PDF with Vision AI...`);
     logger.info(`[MENU IMPORT ${requestId}] Extracting from PDF with Vision AI...`);
     for (let pageIndex = 0; pageIndex < pdfImages.length; pageIndex++) {
-      console.info(
-        `👁️ [CATALOG REPLACE ${requestId}] Processing page ${pageIndex + 1}/${pdfImages.length}...`
-      );
 
       // Get item data from Vision
       const extractedItems = await extractMenuFromImage(pdfImages[pageIndex]);
@@ -211,22 +188,15 @@ export async function POST(req: NextRequest) {
         }
       );
 
-      console.info(
-        `✅ [CATALOG REPLACE ${requestId}] Page ${pageIndex + 1}: ${extractedItems.length} items, ${positions.length} positions`
-      );
       logger.info(
         `[MENU IMPORT ${requestId}] Page ${pageIndex + 1}: ${extractedItems.length} items, ${positions.length} positions`
       );
     }
 
-    console.info(
-      `📊 [CATALOG REPLACE ${requestId}] Extraction complete - PDF items: ${pdfExtractedItems.length}, positions: ${pdfPositions.length}`
-    );
     logger.info(`[MENU IMPORT ${requestId}] PDF items:`, { count: pdfExtractedItems.length });
     logger.info(`[MENU IMPORT ${requestId}] PDF positions:`, { count: pdfPositions.length });
 
     // Step 4: Combine data intelligently
-    console.info(`🔄 [CATALOG REPLACE ${requestId}] Starting data combination...`);
     const menuItems = [];
     const hotspots = [];
     const combinedItems = new Map();
@@ -234,7 +204,6 @@ export async function POST(req: NextRequest) {
 
     // If we have both URL and PDF data, merge them
     if (urlItems.length > 0 && pdfExtractedItems.length > 0) {
-      console.info(`🔄 [CATALOG REPLACE ${requestId}] HYBRID MODE: Combining URL and PDF data...`);
       logger.info(`[MENU IMPORT ${requestId}] Combining URL and PDF data...`);
 
       // Start with URL items (better data quality)
@@ -414,35 +383,23 @@ export async function POST(req: NextRequest) {
 
     // Step 4: Clear existing catalog (if replace mode)
     if (replaceMode) {
-      console.info(`🗑️ [CATALOG REPLACE ${requestId}] REPLACE MODE - Deleting old menu items...`);
       const { error: deleteItemsError } = await supabase
         .from("menu_items")
         .delete()
         .eq("venue_id", venueId);
       if (deleteItemsError) {
-        console.error(
-          `❌ [CATALOG REPLACE ${requestId}] Failed to delete items:`,
-          deleteItemsError
-        );
         throw new Error(`Failed to delete old items: ${deleteItemsError.message}`);
       }
-      console.info(`✅ [CATALOG REPLACE ${requestId}] Old items deleted`);
 
-      console.info(`🗑️ [CATALOG REPLACE ${requestId}] Deleting old hotspots...`);
       const { error: deleteHotspotsError } = await supabase
         .from("menu_hotspots")
         .delete()
         .eq("venue_id", venueId);
       if (deleteHotspotsError) {
-        console.error(
-          `❌ [CATALOG REPLACE ${requestId}] Failed to delete hotspots:`,
-          deleteHotspotsError
-        );
         throw new Error(`Failed to delete old hotspots: ${deleteHotspotsError.message}`);
       }
-      console.info(`✅ [CATALOG REPLACE ${requestId}] Old hotspots deleted`);
     } else {
-      console.info(`➕ [CATALOG REPLACE ${requestId}] APPEND MODE - Keeping existing items`);
+      // Intentionally empty
     }
 
     // Step 5: Extract and preserve category order
@@ -465,66 +422,38 @@ export async function POST(req: NextRequest) {
       }
     }
 
-    console.info(`📋 [CATALOG REPLACE ${requestId}] Category order:`, categoryOrder);
-
     // Step 6: Insert new items and hotspots
     if (menuItems.length > 0) {
-      console.info(`💾 [CATALOG REPLACE ${requestId}] Inserting ${menuItems.length} new items...`);
       const { error: insertItemsError, data: insertedItems } = await supabase
         .from("menu_items")
         .insert(menuItems)
         .select();
       if (insertItemsError) {
-        console.error(
-          `❌ [CATALOG REPLACE ${requestId}] Failed to insert items:`,
-          insertItemsError
-        );
         throw new Error(`Failed to insert items: ${insertItemsError.message}`);
       }
-      console.info(
-        `✅ [CATALOG REPLACE ${requestId}] Inserted ${insertedItems?.length || 0} items`
-      );
     }
 
     if (hotspots.length > 0) {
-      console.info(`💾 [CATALOG REPLACE ${requestId}] Inserting ${hotspots.length} hotspots...`);
       const { error: insertHotspotsError, data: insertedHotspots } = await supabase
         .from("menu_hotspots")
         .insert(hotspots)
         .select();
       if (insertHotspotsError) {
-        console.error(
-          `❌ [CATALOG REPLACE ${requestId}] Failed to insert hotspots:`,
-          insertHotspotsError
-        );
         throw new Error(`Failed to insert hotspots: ${insertHotspotsError.message}`);
       }
-      console.info(
-        `✅ [CATALOG REPLACE ${requestId}] Inserted ${insertedHotspots?.length || 0} hotspots`
-      );
     }
 
     // Step 7: Save category order to menu_uploads
     if (categoryOrder.length > 0) {
-      console.info(`💾 [CATALOG REPLACE ${requestId}] Saving category order...`);
       await supabase
         .from("menu_uploads")
         .update({ category_order: categoryOrder })
         .eq("venue_id", venueId)
         .order("created_at", { ascending: false })
         .limit(1);
-      console.info(`✅ [CATALOG REPLACE ${requestId}] Category order saved:`, categoryOrder);
     }
 
     const duration = Date.now() - startTime;
-    console.info(`✅ [CATALOG REPLACE ${requestId}] ========================================`);
-    console.info(`✅ [CATALOG REPLACE ${requestId}] SUCCESS! Completed in ${duration}ms`);
-    console.info(
-      `✅ [CATALOG REPLACE ${requestId}] Items: ${menuItems.length}, Hotspots: ${hotspots.length}`
-    );
-    console.info(
-      `✅ [CATALOG REPLACE ${requestId}] Sources - URL: ${urlItems.length}, PDF: ${pdfExtractedItems.length}`
-    );
 
     logger.info(`[MENU IMPORT ${requestId}] Complete`, {
       items: menuItems.length,
@@ -545,16 +474,9 @@ export async function POST(req: NextRequest) {
         categories_created: new Set(menuItems.map((i: { category: string }) => i.category)).size,
       },
     });
-  } catch (err) {
+  } catch (_err) {
     const duration = Date.now() - startTime;
     const errorMessage = err instanceof Error ? err.message : "Processing failed";
-    console.error(`❌ [CATALOG REPLACE ${requestId}] ========================================`);
-    console.error(`❌ [CATALOG REPLACE ${requestId}] FAILED after ${duration}ms`);
-    console.error(`❌ [CATALOG REPLACE ${requestId}] Error:`, errorMessage);
-    console.error(
-      `❌ [CATALOG REPLACE ${requestId}] Stack:`,
-      err instanceof Error ? err.stack : "No stack"
-    );
 
     logger.error(`[MENU IMPORT ${requestId}] Error:`, { error: errorMessage, duration });
     return NextResponse.json({ ok: false, error: errorMessage }, { status: 500 });

@@ -14,7 +14,7 @@ export default function SignInButton() {
     setLoading(true);
     try {
       router.push('/sign-in');
-    } catch (error) {
+    } catch (_error) {
 
       setLoading(false);
     }

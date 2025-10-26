@@ -91,38 +91,40 @@ export async function POST(req: NextRequest) {
         break;
 
       case 'pay_split':
-        const { split_id, payment_method } = body;
-        
-        if (!split_id || !payment_method) {
-          return NextResponse.json({ error: 'split_id and payment_method are required' }, { status: 400 });
-        }
-
-        // Mark split as paid
-        const { data: paidSplit, error: payError } = await supabase
-          .from('bill_splits')
-          .update({ 
-            payment_status: 'PAID',
-            payment_method
-          })
-          .eq('id', split_id)
-          .eq('venue_id', venue_id)
-          .select()
-          .single();
-
-        if (payError) {
-          logger.error('[POS BILL SPLITS] Error paying split:', payError);
-          return NextResponse.json({ error: 'Failed to mark split as paid' }, { status: 500 });
-        }
-
-        result = { split: paidSplit, action: 'paid' };
+        {
+          const { split_id, payment_method } = body;
+          
+          if (!split_id || !payment_method) {
+            return NextResponse.json({ error: 'split_id and payment_method are required' }, { status: 400 });
+          }
+  
+          // Mark split as paid
+          const { data: paidSplit, error: payError } = await supabase
+            .from('bill_splits')
+            .update({ 
+              payment_status: 'PAID',
+              payment_method
+            })
+            .eq('id', split_id)
+            .eq('venue_id', venue_id)
+            .select()
+            .single();
+  
+          if (payError) {
+            logger.error('[POS BILL SPLITS] Error paying split:', payError);
+            return NextResponse.json({ error: 'Failed to mark split as paid' }, { status: 500 });
+          }
+  
+          result = { split: paidSplit, action: 'paid' };
         break;
+        }
 
       default:
         return NextResponse.json({ error: 'Invalid action' }, { status: 400 });
     }
 
     return NextResponse.json(result);
-  } catch (error) {
+  } catch (_error) {
     logger.error('[POS BILL SPLITS] Unexpected error:', { error: error instanceof Error ? error.message : 'Unknown error' });
     return NextResponse.json({ error: 'Internal server error' }, { status: 500 });
   }
@@ -191,7 +193,7 @@ export async function GET(req: NextRequest) {
     }
 
     return NextResponse.json({ splits });
-  } catch (error) {
+  } catch (_error) {
     logger.error('[POS BILL SPLITS] Unexpected error:', { error: error instanceof Error ? error.message : 'Unknown error' });
     return NextResponse.json({ error: 'Internal server error' }, { status: 500 });
   }

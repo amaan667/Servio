@@ -190,7 +190,6 @@ export default function PaymentPage() {
                 {!paymentState.isDemo && (
                   <Button
                     onClick={() => {
-                      console.info('💳 [PAYMENT PAGE] Pay Now (Stripe) clicked');
                       handlePayment('stripe');
                     }}
                     disabled={paymentState.isProcessing}
@@ -215,7 +214,6 @@ export default function PaymentPage() {
                 <Button
                   variant="default"
                   onClick={() => {
-                    console.info('💵 [PAYMENT PAGE] Pay at Till clicked');
                     handlePayment('till');
                   }}
                   disabled={paymentState.isProcessing}
@@ -238,7 +236,6 @@ export default function PaymentPage() {
                 <Button
                   variant="default"
                   onClick={() => {
-                    console.info('⏰ [PAYMENT PAGE] Pay Later clicked');
                     handlePayment('later');
                   }}
                   disabled={paymentState.isProcessing}

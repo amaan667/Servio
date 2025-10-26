@@ -24,9 +24,9 @@ export const AdvancedAnalytics: React.FC<AdvancedAnalyticsProps> = ({ venueId })
       try {
         const data = await analytics.getBusinessIntelligence(venueId);
         setBusinessIntelligence(data);
-      } catch (error) {
-        console.error('Failed to load analytics:', error);
-      } finally {
+      } catch (_error) {
+      // Error handled silently
+    } finally {
         setLoading(false);
       }
     };

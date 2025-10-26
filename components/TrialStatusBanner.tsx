@@ -57,12 +57,6 @@ export default function TrialStatusBanner({ userRole }: TrialStatusBannerProps) 
         .maybeSingle();
 
       if (orgError) {
-        console.error("[TRIAL BANNER] Organization query error:", {
-          error: orgError,
-          message: orgError.message,
-          code: orgError.code,
-          details: orgError.details,
-        });
         // Show a default trial status if query fails (better than nothing)
         const userCreatedAt = new Date(user.created_at);
         const trialEndsAt = new Date(userCreatedAt.getTime() + 14 * 24 * 60 * 60 * 1000);
@@ -101,7 +95,6 @@ export default function TrialStatusBanner({ userRole }: TrialStatusBannerProps) 
           trial_ends_at: organization.trial_ends_at,
         });
       } else {
-        console.warn("[TRIAL BANNER] No organization found, creating default trial status");
         // Show default trial status based on user creation date
         const userCreatedAt = new Date(user.created_at);
         const trialEndsAt = new Date(userCreatedAt.getTime() + 14 * 24 * 60 * 60 * 1000);
@@ -122,8 +115,7 @@ export default function TrialStatusBanner({ userRole }: TrialStatusBannerProps) 
           sessionStorage.setItem(`trial_status_${user.id}`, JSON.stringify(status));
         }
       }
-    } catch (error) {
-      console.error("[TRIAL BANNER] Fetch error:", error);
+    } catch (_error) {
       // Show default trial status as fallback
       const userCreatedAt = new Date(user.created_at);
       const trialEndsAt = new Date(userCreatedAt.getTime() + 14 * 24 * 60 * 60 * 1000);

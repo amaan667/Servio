@@ -240,7 +240,7 @@ OUTPUT FORMAT:
           },
         };
       }
-    } catch (error) {
+    } catch (_error) {
       logger.error("[AI ASSISTANT] Preview translation failed:", error as Record<string, unknown>);
     }
 
@@ -440,7 +440,7 @@ OUTPUT FORMAT:
       },
       auditId: "",
     };
-  } catch (error) {
+  } catch (_error) {
     logger.error("[AI ASSISTANT] Translation error:", error as Record<string, unknown>);
     throw new AIAssistantError(
       `Translation failed: ${error.message}`,

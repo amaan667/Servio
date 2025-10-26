@@ -47,9 +47,9 @@ const SimpleStaffGrid: React.FC<SimpleStaffGridProps> = ({ venueId }) => {
         if (data.ok && data.shifts) {
           setShifts(data.shifts);
         }
-      } catch (error) {
-        console.error('Failed to fetch shifts:', error);
-      }
+      } catch (_error) {
+      // Error handled silently
+    }
     };
     
     fetchShifts();

@@ -4,7 +4,7 @@ import { createClient } from "@/lib/supabase";
 import { stripe } from "@/lib/stripe-client";
 import { logger } from '@/lib/logger';
 
-export async function POST(request: NextRequest) {
+export async function POST(_request: NextRequest) {
   try {
     const supabase = await createClient();
 
@@ -149,7 +149,7 @@ export async function POST(request: NextRequest) {
       });
     }
 
-  } catch (error) {
+  } catch (_error) {
     logger.error("[SUBSCRIPTION REFRESH] Error:", { error: error instanceof Error ? error.message : 'Unknown error' });
     return NextResponse.json(
       { error: error.message || "Failed to refresh subscription status" },

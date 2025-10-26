@@ -49,7 +49,7 @@ export async function withRetry<T>(
     try {
       const result = await operation();
       return result;
-    } catch (error) {
+    } catch (_error) {
       lastError = error;
 
       // Don't retry if this is the last attempt or error doesn't match retry condition
@@ -102,7 +102,7 @@ export async function withSupabaseRetry<T>(
 ): Promise<{ data: T | null; error: unknown }> {
   try {
     return await withRetry(operation, options);
-  } catch (error) {
+  } catch (_error) {
     return { data: null, error };
   }
 }

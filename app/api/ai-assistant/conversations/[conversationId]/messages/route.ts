@@ -80,7 +80,7 @@ export async function GET(
 }
 
 export async function POST(
-  request: NextRequest,
+  _request: NextRequest,
   { params }: { params: Promise<{ conversationId: string }> }
 ) {
   try {
@@ -158,7 +158,7 @@ export async function POST(
             })
             .eq("id", conversationId);
           logger.debug("[AI CHAT] Updated conversation title to:", { title: aiTitle });
-        } catch (error) {
+        } catch (_error) {
           logger.error("[AI CHAT] Failed to generate title:", { error: error instanceof Error ? error.message : 'Unknown error' });
           // Continue without failing the message creation
         }

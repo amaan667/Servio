@@ -3,7 +3,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { createClient } from '@/lib/supabase';
 import { logger } from '@/lib/logger';
 
-export async function POST(request: NextRequest) {
+export async function POST(_request: NextRequest) {
   try {
     const { venueId, oldCategory, newCategory } = await request.json();
     
@@ -73,7 +73,7 @@ export async function POST(request: NextRequest) {
       updatedItems: updatedItems?.length || 0
     });
 
-  } catch (error) {
+  } catch (_error) {
     logger.error('[UPDATE CATEGORY] Unexpected error:', { error: error instanceof Error ? error.message : 'Unknown error' });
     return NextResponse.json(
       { error: 'Internal server error' },

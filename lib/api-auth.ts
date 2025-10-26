@@ -31,14 +31,13 @@ interface AuthResult {
  * }
  * ```
  */
-export async function authenticateRequest(req: Request): Promise<AuthResult> {
+export async function authenticateRequest(_req: Request): Promise<AuthResult> {
   try {
     // Get auth token from Authorization header
     const authHeader = req.headers.get("authorization");
     const token = authHeader?.replace("Bearer ", "");
 
     if (!token) {
-      console.warn("[API AUTH] No authorization header found");
       return {
         success: false,
         error: "No authorization token provided",
@@ -65,7 +64,6 @@ export async function authenticateRequest(req: Request): Promise<AuthResult> {
     } = await supabase.auth.getUser();
 
     if (userError || !user) {
-      console.warn("[API AUTH] Invalid token:", userError?.message);
       return {
         success: false,
         error: "Invalid or expired token",
@@ -77,8 +75,7 @@ export async function authenticateRequest(req: Request): Promise<AuthResult> {
       user,
       supabase,
     };
-  } catch (error) {
-    console.error("[API AUTH] Authentication error:", error);
+  } catch (_error) {
     return {
       success: false,
       error: "Authentication failed",

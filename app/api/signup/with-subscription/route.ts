@@ -13,7 +13,7 @@ const PRICE_IDS = {
   premium: process.env.STRIPE_PREMIUM_PRICE_ID || "price_premium",
 };
 
-export async function POST(request: NextRequest) {
+export async function POST(_request: NextRequest) {
   try {
     const body = await request.json();
     const { email, password, fullName, venueName, venueType, serviceType = 'table_service', tier, stripeSessionId } = body;
@@ -182,7 +182,7 @@ export async function POST(request: NextRequest) {
         message: "Account created! Complete payment setup to activate your 14-day free trial.",
       });
     }
-  } catch (error) {
+  } catch (_error) {
     logger.error("[SIGNUP WITH SUBSCRIPTION] Error:", { error: error instanceof Error ? error.message : 'Unknown error' });
     return NextResponse.json(
       { error: error instanceof Error ? error.message : "Signup failed" },

@@ -114,8 +114,7 @@ export function useFeatureAuth({
         }
 
         setLoading(false);
-      } catch (error) {
-        console.error(`❌ [${featureName.toUpperCase()} CLIENT] Auth error:`, error);
+      } catch (_error) {
         setAuthError("Failed to verify access");
         setLoading(false);
       }

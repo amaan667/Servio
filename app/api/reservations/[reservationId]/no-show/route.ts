@@ -32,7 +32,7 @@ export async function POST(
 
     return NextResponse.json({ success: true });
 
-  } catch (error) {
+  } catch (_error) {
     logger.error('Error in no-show reservation API:', { error: error instanceof Error ? error.message : 'Unknown error' });
     return NextResponse.json(
       { error: 'Internal server error' },

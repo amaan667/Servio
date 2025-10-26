@@ -2,7 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { createClient } from '@/lib/supabase';
 import { logger } from '@/lib/logger';
 
-export async function GET(request: NextRequest) {
+export async function GET(_request: NextRequest) {
   try {
     const { searchParams } = new URL(request.url);
     const venueId = searchParams.get('venue_id');
@@ -70,7 +70,7 @@ export async function GET(request: NextRequest) {
       unassignedReservations: unassignedReservations || []
     });
 
-  } catch (error) {
+  } catch (_error) {
     logger.error('Error in tables-runtime API:', { error: error instanceof Error ? error.message : 'Unknown error' });
     return NextResponse.json(
       { error: 'Internal server error' },

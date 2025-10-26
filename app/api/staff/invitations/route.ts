@@ -3,7 +3,7 @@ import { createClient } from '@/lib/supabase';
 import { getUserSafe } from '@/utils/getUserSafe';
 
 // GET /api/staff/invitations - List invitations for a venue
-export async function GET(request: NextRequest) {
+export async function GET(_request: NextRequest) {
   try {
     const user = await getUserSafe();
     if (!user) {
@@ -64,7 +64,7 @@ export async function GET(request: NextRequest) {
     }
 
     return NextResponse.json({ invitations });
-  } catch (error) {
+  } catch (_error) {
     const errorMessage = error instanceof Error ? error.message : 'Internal server error';
     return NextResponse.json({ 
       error: errorMessage 
@@ -73,7 +73,7 @@ export async function GET(request: NextRequest) {
 }
 
 // POST /api/staff/invitations - Create a new invitation
-export async function POST(request: NextRequest) {
+export async function POST(_request: NextRequest) {
   try {
     const user = await getUserSafe();
     if (!user) {
@@ -357,7 +357,7 @@ export async function POST(request: NextRequest) {
       emailSent,
       invitationLink: emailSent ? undefined : (await import('@/lib/email')).generateInvitationLink(invitation.token)
     });
-  } catch (error) {
+  } catch (_error) {
     const errorMessage = error instanceof Error ? error.message : 'Internal server error';
     return NextResponse.json({ 
       error: errorMessage 
@@ -366,7 +366,7 @@ export async function POST(request: NextRequest) {
 }
 
 // DELETE /api/staff/invitations - Delete an invitation
-export async function DELETE(request: NextRequest) {
+export async function DELETE(_request: NextRequest) {
   try {
     const user = await getUserSafe();
     if (!user) {
@@ -448,7 +448,7 @@ export async function DELETE(request: NextRequest) {
       success: true,
       message: 'Invitation removed successfully'
     });
-  } catch (error) {
+  } catch (_error) {
     const errorMessage = error instanceof Error ? error.message : 'Internal server error';
     return NextResponse.json({ 
       error: errorMessage 

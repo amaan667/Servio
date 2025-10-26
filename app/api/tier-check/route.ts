@@ -4,7 +4,7 @@ import { createClient } from "@/lib/supabase";
 import { checkLimit, checkFeatureAccess, getTierLimits } from "@/lib/tier-restrictions";
 import { logger } from '@/lib/logger';
 
-export async function POST(request: NextRequest) {
+export async function POST(_request: NextRequest) {
   try {
     const supabase = await createClient();
 
@@ -92,7 +92,7 @@ export async function POST(request: NextRequest) {
       limits,
       tier: org?.subscription_tier || "basic",
     });
-  } catch (error) {
+  } catch (_error) {
     logger.error("[TIER CHECK] Error:", { error: error instanceof Error ? error.message : 'Unknown error' });
     return NextResponse.json(
       { error: error.message || "Tier check failed" },

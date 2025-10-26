@@ -88,10 +88,13 @@ export default function EnhancedShiftSchedule({
         case 'day':
           return shiftDate.toDateString() === currentDate.toDateString();
         case 'week':
-          const weekStart = new Date(currentDate);
-          weekStart.setDate(currentDate.getDate() - currentDate.getDay());
-          const weekEnd = new Date(weekStart);
-          weekEnd.setDate(weekStart.getDate() + 6);
+          {
+            const weekStart = new Date(currentDate);
+            weekStart.setDate(currentDate.getDate() - currentDate.getDay());
+            const weekEnd = new Date(weekStart);
+            weekEnd.setDate(weekStart.getDate() + 6);
+            return shiftDate >= weekStart && shiftDate <= weekEnd;
+          }
           return shiftDate >= weekStart && shiftDate <= weekEnd;
         case 'month':
           return shiftDate.getMonth() === currentDate.getMonth() && 
@@ -130,10 +133,13 @@ export default function EnhancedShiftSchedule({
           day: 'numeric' 
         });
       case 'week':
-        const weekStart = new Date(currentDate);
-        weekStart.setDate(currentDate.getDate() - currentDate.getDay());
-        const weekEnd = new Date(weekStart);
-        weekEnd.setDate(weekStart.getDate() + 6);
+        {
+          const weekStart = new Date(currentDate);
+          weekStart.setDate(currentDate.getDate() - currentDate.getDay());
+          const weekEnd = new Date(weekStart);
+          weekEnd.setDate(weekStart.getDate() + 6);
+          return `${weekStart.toLocaleDateString('en-US', { month: 'short', day: 'numeric' })} - ${weekEnd.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })}`;
+        }
         return `${weekStart.toLocaleDateString('en-US', { month: 'short', day: 'numeric' })} - ${weekEnd.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })}`;
       case 'month':
         return currentDate.toLocaleDateString('en-US', { 
@@ -191,7 +197,7 @@ export default function EnhancedShiftSchedule({
       // Notify parent component
       onShiftAdded();
       
-    } catch (err) {
+    } catch (_err) {
       setError(err instanceof Error ? err.message : 'Failed to save shift');
     } finally {
       setSaving(false);

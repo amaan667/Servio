@@ -2,7 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { createAdminClient } from '@/lib/supabase';
 import { logger } from '@/lib/logger';
 
-export async function POST(request: NextRequest) {
+export async function POST(_request: NextRequest) {
   try {
     const { venueId, categoryName } = await request.json();
 
@@ -79,7 +79,7 @@ export async function POST(request: NextRequest) {
             logger.warn(`[CATEGORIES DELETE] Warning deleting from ${table}:`, { table, error });
           }
         }
-      } catch (error) {
+      } catch (_error) {
         logger.warn(`[CATEGORIES DELETE] Warning processing ${table}:`, { table, error });
       }
     }
@@ -91,7 +91,7 @@ export async function POST(request: NextRequest) {
       deletedItems: itemsToDelete.map(item => item.name)
     });
 
-  } catch (error) {
+  } catch (_error) {
     logger.error('[CATEGORIES DELETE] Error in delete category API:', { error: error instanceof Error ? error.message : 'Unknown error' });
     return NextResponse.json({ 
       ok: false, 

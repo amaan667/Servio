@@ -24,14 +24,9 @@ export async function POST(req: NextRequest) {
       );
     }
 
-    console.info(`🔄 [HYBRID MERGE ${requestId}] Starting hybrid menu comparison...`);
-    console.info(`🔄 [HYBRID MERGE ${requestId}] Venue: ${venueId}`);
-    console.info(`🔄 [HYBRID MERGE ${requestId}] URL: ${menuUrl}`);
-
     const supabase = createAdminClient();
 
     // Step 1: Get existing PDF-extracted menu items
-    console.info(`📋 [HYBRID MERGE ${requestId}] Fetching existing PDF menu items...`);
     const { data: existingItems, error: fetchError } = await supabase
       .from("menu_items")
       .select("*")
@@ -52,10 +47,7 @@ export async function POST(req: NextRequest) {
       );
     }
 
-    console.info(`✅ [HYBRID MERGE ${requestId}] Found ${existingItems.length} PDF items`);
-
     // Step 2: Scrape menu from URL
-    console.info(`🌐 [HYBRID MERGE ${requestId}] Scraping menu from URL...`);
 
     let urlMenuData;
     try {
@@ -66,7 +58,6 @@ export async function POST(req: NextRequest) {
           : "https://servio-production.up.railway.app";
 
       const scrapeUrl = `${baseUrl}/api/scrape-menu`;
-      console.info(`📡 [HYBRID MERGE ${requestId}] Calling scrape API: ${scrapeUrl}`);
 
       // Create AbortController with 120s timeout (Playwright with scrolling can take 60-90s)
       const controller = new AbortController();
@@ -85,47 +76,24 @@ export async function POST(req: NextRequest) {
 
         clearTimeout(timeoutId);
 
-        console.info(
-          `📡 [HYBRID MERGE ${requestId}] Scrape response status: ${scrapeResponse.status}`
-        );
-
         if (!scrapeResponse.ok) {
           const errorData = await scrapeResponse.json().catch(() => ({ error: "Unknown error" }));
-          console.error(`❌ [HYBRID MERGE ${requestId}] Scrape API failed:`, errorData);
           throw new Error(errorData.error || `Scrape API returned ${scrapeResponse.status}`);
         }
 
         urlMenuData = await scrapeResponse.json();
-        console.info(
-          `📦 [HYBRID MERGE ${requestId}] Scrape API response:`,
-          JSON.stringify(urlMenuData).substring(0, 500)
-        );
-        console.info(
-          `✅ [HYBRID MERGE ${requestId}] Response ok: ${urlMenuData.ok}, Items: ${urlMenuData.items?.length || 0}`
-        );
 
         if (!urlMenuData.ok) {
-          console.error(`❌ [HYBRID MERGE ${requestId}] Scrape returned not ok`);
-          console.error(`Error message:`, urlMenuData.error);
           throw new Error(urlMenuData.error || "Scraping returned error status");
         }
 
         if (urlMenuData.items && urlMenuData.items.length > 0) {
-          console.info(
-            `📋 [HYBRID MERGE ${requestId}] Sample items:`,
-            urlMenuData.items.slice(0, 2)
-          );
         }
       } catch (fetchError) {
         clearTimeout(timeoutId);
         throw fetchError;
       }
     } catch (scrapeError) {
-      console.error(`❌ [HYBRID MERGE ${requestId}] Scraping failed:`, scrapeError);
-      console.error(`❌ [HYBRID MERGE ${requestId}] Error details:`, {
-        message: scrapeError instanceof Error ? scrapeError.message : String(scrapeError),
-        stack: scrapeError instanceof Error ? scrapeError.stack : undefined,
-      });
 
       return NextResponse.json(
         {
@@ -138,17 +106,7 @@ export async function POST(req: NextRequest) {
 
     const urlItems = urlMenuData.items || [];
 
-    console.info(`📊 [HYBRID MERGE ${requestId}] URL scraping result:`, {
-      found: urlItems.length,
-      sample: urlItems.slice(0, 3),
-    });
-
     if (urlItems.length === 0) {
-      console.error(`❌ [HYBRID MERGE ${requestId}] No items extracted from URL`);
-      console.error(`❌ [HYBRID MERGE ${requestId}] This could mean:`);
-      console.error(`   - The URL doesn't have a menu`);
-      console.error(`   - The website structure is complex`);
-      console.error(`   - The URL requires JavaScript to load content`);
 
       return NextResponse.json(
         {
@@ -164,7 +122,6 @@ export async function POST(req: NextRequest) {
     }
 
     // Step 3: Use AI to intelligently match and merge items
-    console.info(`🤖 [HYBRID MERGE ${requestId}] Using AI to compare and merge menus...`);
 
     const aiPrompt = `You are a menu data expert. Compare these two menus and intelligently merge them.
 
@@ -254,14 +211,10 @@ Be smart about matching:
         mergedItems = [mergedItems];
       }
     } catch (parseError) {
-      console.error(`❌ [HYBRID MERGE ${requestId}] Failed to parse AI response:`, parseError);
       throw new Error("AI returned invalid JSON");
     }
 
-    console.info(`🤖 [HYBRID MERGE ${requestId}] AI merged ${mergedItems.length} items`);
-
     // Step 4: Apply updates to database
-    console.info(`💾 [HYBRID MERGE ${requestId}] Applying updates to database...`);
 
     const updates = [];
     const inserts = [];
@@ -328,7 +281,6 @@ Be smart about matching:
 
     // Execute database updates
     if (updates.length > 0) {
-      console.info(`📝 [HYBRID MERGE ${requestId}] Updating ${updates.length} items...`);
       for (const update of updates) {
         const { id, ...updateData } = update;
         const { error } = await supabase
@@ -338,24 +290,18 @@ Be smart about matching:
           .eq("venue_id", venueId);
 
         if (error) {
-          console.error(`❌ [HYBRID MERGE ${requestId}] Update failed for ${id}:`, error);
         }
       }
     }
 
     // Execute database inserts
     if (inserts.length > 0) {
-      console.info(`➕ [HYBRID MERGE ${requestId}] Inserting ${inserts.length} new items...`);
       const { error: insertError } = await supabase.from("menu_items").insert(inserts);
 
       if (insertError) {
-        console.error(`❌ [HYBRID MERGE ${requestId}] Insert failed:`, insertError);
         throw new Error(`Failed to insert new items: ${insertError.message}`);
       }
     }
-
-    console.info(`✅ [HYBRID MERGE ${requestId}] Merge complete!`);
-    console.info(`📊 [HYBRID MERGE ${requestId}] Stats:`, stats);
 
     return NextResponse.json({
       ok: true,
@@ -367,8 +313,7 @@ Be smart about matching:
         imagesAdded: stats.images_added,
       },
     });
-  } catch (error) {
-    console.error(`❌ [HYBRID MERGE ${requestId}] Error:`, error);
+  } catch (_error) {
     logger.error("[HYBRID MERGE] Unexpected error:", error);
 
     return NextResponse.json(

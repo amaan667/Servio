@@ -150,9 +150,9 @@ export default function GlobalNav() {
             sessionStorage.setItem(`user_role_${session.user.id}`, staffResult.data.role);
             sessionStorage.setItem(`venue_id_${session.user.id}`, staffResult.data.venue_id);
           }
-        } catch (error) {
-          console.error("Error fetching user data:", error);
-        }
+        } catch (_error) {
+      // Error handled silently
+    }
       } else if (!initiallyAuthenticated) {
         // Only clear if we're definitely not authenticated
         setPrimaryVenueId(null);

@@ -2,11 +2,9 @@ import { NextResponse } from "next/server";
 import { logger } from "@/lib/logger";
 
 // PATCH - Bulk update multiple tickets (e.g., bump all ready tickets for an order)
-export async function PATCH(req: Request) {
+export async function PATCH(_req: Request) {
   try {
-    console.info("🎯 [KDS BULK UPDATE] Bump order request received");
     const body = await req.json();
-    console.info("🎯 [KDS BULK UPDATE] Request body:", body);
     const { orderId, stationId, status } = body;
 
     if (!status) {
@@ -31,7 +29,6 @@ export async function PATCH(req: Request) {
     // Use admin client - no authentication required for KDS feature
     const { createAdminClient } = await import("@/lib/supabase");
     const supabase = createAdminClient();
-    console.info("🎯 [KDS BULK UPDATE] Using admin client (no auth required)");
 
     // Build update object with timestamp
     const updateData: Record<string, unknown> = { status };
@@ -70,9 +67,6 @@ export async function PATCH(req: Request) {
 
     // If bumping tickets, update the main order status to READY (not SERVED - that comes later)
     if (status === "bumped" && orderId) {
-      console.info(
-        `🎯 [KDS BUMP] All tickets bumped for order ${orderId} - updating order to READY`
-      );
 
       const { error: orderUpdateError } = await supabase
         .from("orders")
@@ -83,17 +77,10 @@ export async function PATCH(req: Request) {
         .eq("id", orderId);
 
       if (orderUpdateError) {
-        console.error(
-          `❌ [KDS BUMP] Failed to update order ${orderId} to READY:`,
-          orderUpdateError.message
-        );
         logger.error("[KDS] Error updating order status after bump:", {
           error: orderUpdateError.message,
         });
       } else {
-        console.info(
-          `✅ [KDS BUMP] Order ${orderId} → READY (shows in Live Orders as 'Mark Served')`
-        );
         logger.info(
           "[KDS] Order status updated to READY after bump - staff can now mark as SERVED",
           { orderId }
@@ -104,10 +91,9 @@ export async function PATCH(req: Request) {
       try {
         const { cleanupTableOnOrderCompletion } = await import("@/lib/table-cleanup");
         await cleanupTableOnOrderCompletion(orderId, "READY");
-        console.info(`✅ [KDS BUMP] Table cleanup initiated for order ${orderId}`);
-      } catch (cleanupError) {
-        console.warn(`⚠️ [KDS BUMP] Table cleanup failed for order ${orderId}:`, cleanupError);
-      }
+      } catch (_error) {
+      // Error handled silently
+    }
     }
 
     return NextResponse.json({
@@ -115,7 +101,7 @@ export async function PATCH(req: Request) {
       updated: tickets?.length || 0,
       tickets,
     });
-  } catch (error) {
+  } catch (_error) {
     logger.error("[KDS] Unexpected error:", {
       error: error instanceof Error ? error.message : "Unknown error",
     });

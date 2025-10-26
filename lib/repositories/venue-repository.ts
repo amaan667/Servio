@@ -59,7 +59,7 @@ export class VenueRepository extends BaseRepository<Venue> {
       }
 
       return data as Venue;
-    } catch (error) {
+    } catch (_error) {
       logger.error('[VENUE_REPO] Unexpected error finding venue by ID', { error, venueId });
       throw error;
     }
@@ -86,7 +86,7 @@ export class VenueRepository extends BaseRepository<Venue> {
       }
 
       return data as Venue;
-    } catch (error) {
+    } catch (_error) {
       logger.error('[VENUE_REPO] Unexpected error updating venue settings', { error, venueId });
       throw error;
     }

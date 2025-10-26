@@ -81,7 +81,7 @@ export async function checkFeatureAccess(
         ? undefined
         : `This feature requires ${requiredTier} tier. Your current tier is ${currentTier}.`,
     };
-  } catch (error) {
+  } catch (_error) {
     logger.error('[FEATURE GATE] Unexpected error:', errorToContext(error));
     return {
       hasAccess: true,
@@ -133,7 +133,7 @@ export async function clientCheckFeatureAccess(
   try {
     const response = await fetch(`/api/features/check?venue_id=${venueId}&feature=${feature}`);
     return await response.json();
-  } catch (error) {
+  } catch (_error) {
     logger.error('[FEATURE GATE CLIENT] Error:', errorToContext(error));
     return {
       hasAccess: true,

@@ -104,7 +104,7 @@ export function TableSelectionDialog({
       
       onActionComplete?.();
       onClose();
-    } catch (error) {
+    } catch (_error) {
       // Error silently handled
     } finally {
       setIsLoading(false);

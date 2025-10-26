@@ -48,8 +48,7 @@ export default async function KDSPage({ params }: { params: Promise<{ venueId: s
     if (tickets) {
       initialTickets = tickets;
     }
-  } catch (error) {
-    console.error("[KDS SSR] Failed to fetch initial data:", error);
+  } catch (_error) {
     // Continue without initial data - client will load it
   }
 

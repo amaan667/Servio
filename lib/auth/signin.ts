@@ -15,6 +15,7 @@ export async function signInWithGoogle() {
       // Temporarily store it
       sessionStorage.setItem('_temp_pkce_verifier', pkceVerifier);
     } else {
+      // Intentionally empty
     }
     
     // Clear all Supabase-related localStorage EXCEPT code verifier
@@ -32,7 +33,7 @@ export async function signInWithGoogle() {
     // Clear OAuth progress flags from previous attempts
     sessionStorage.removeItem("sb_oauth_retry");
     sessionStorage.removeItem("sb_oauth_in_progress");
-  } catch (error) {
+  } catch (_error) {
     // Silent error handling
   }
 
@@ -67,7 +68,7 @@ export async function signInWithGoogle() {
   try {
     sessionStorage.setItem("sb_oauth_in_progress", "true");
     sessionStorage.setItem("sb_oauth_start_time", Date.now().toString());
-  } catch (e) {
+  } catch (_e) {
     logger.debug('[AUTH] Session storage error:', e as Record<string, unknown>);
   }
   

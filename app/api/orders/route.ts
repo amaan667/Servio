@@ -6,7 +6,7 @@ import { apiLogger, logger } from "@/lib/logger";
 export const runtime = "nodejs";
 
 // GET handler for orders
-export async function GET(req: Request) {
+export async function GET(_req: Request) {
   try {
     const { searchParams } = new URL(req.url);
     const venueId = searchParams.get("venueId");
@@ -208,7 +208,7 @@ async function createKDSTickets(
     logger.debug("[KDS TICKETS] Successfully created KDS tickets", {
       data: { count: items.length, orderId: order.id },
     });
-  } catch (error) {
+  } catch (_error) {
     logger.error("[KDS TICKETS] Error creating KDS tickets:", {
       error: error instanceof Error ? error.message : "Unknown error",
     });
@@ -216,14 +216,11 @@ async function createKDSTickets(
   }
 }
 
-export async function POST(req: Request) {
+export async function POST(_req: Request) {
   const requestId = Math.random().toString(36).substring(7);
   const startTime = Date.now();
 
   // Use console.info (not console.log - that's stripped in production!)
-  console.info(`🎯 [ORDERS API ${requestId}] ========================================`);
-  console.info(`🎯 [ORDERS API ${requestId}] NEW ORDER SUBMISSION`);
-  console.info(`🎯 [ORDERS API ${requestId}] Timestamp:`, new Date().toISOString());
 
   logger.info(
     `🎯🎯🎯 [ORDERS API ${requestId}] NEW ORDER SUBMISSION at ${new Date().toISOString()} 🎯🎯🎯`
@@ -232,15 +229,7 @@ export async function POST(req: Request) {
   try {
     logger.info("===== ORDER CREATION STARTED =====");
 
-    console.info(`📥 [ORDERS API ${requestId}] Parsing request body...`);
     const body = (await req.json()) as Partial<OrderPayload>;
-    console.info(`✅ [ORDERS API ${requestId}] Body parsed successfully`);
-    console.info(`📋 [ORDERS API ${requestId}] Customer:`, body.customer_name);
-    console.info(`📋 [ORDERS API ${requestId}] Phone:`, body.customer_phone);
-    console.info(`📋 [ORDERS API ${requestId}] Venue:`, body.venue_id);
-    console.info(`📋 [ORDERS API ${requestId}] Table:`, body.table_number);
-    console.info(`📋 [ORDERS API ${requestId}] Items:`, body.items?.length);
-    console.info(`📋 [ORDERS API ${requestId}] Total:`, body.total_amount);
 
     logger.info("📥📥📥 REQUEST RECEIVED 📥📥📥", {
       customer: body.customer_name,
@@ -251,38 +240,25 @@ export async function POST(req: Request) {
       requestId,
     });
 
-    console.info(`🔍 [ORDERS API ${requestId}] Starting validation...`);
-
     if (!body.venue_id || typeof body.venue_id !== "string") {
-      console.error(`❌ [ORDERS API ${requestId}] Validation failed: venue_id required`);
       return bad("venue_id is required");
     }
-    console.info(`✅ [ORDERS API ${requestId}] Venue ID valid`);
 
     if (!body.customer_name || !body.customer_name.trim()) {
-      console.error(`❌ [ORDERS API ${requestId}] Validation failed: customer_name required`);
       return bad("customer_name is required");
     }
-    console.info(`✅ [ORDERS API ${requestId}] Customer name valid`);
 
     if (!body.customer_phone || !body.customer_phone.trim()) {
-      console.error(`❌ [ORDERS API ${requestId}] Validation failed: customer_phone required`);
       return bad("customer_phone is required");
     }
-    console.info(`✅ [ORDERS API ${requestId}] Customer phone valid`);
 
     if (!Array.isArray(body.items) || body.items.length === 0) {
-      console.error(`❌ [ORDERS API ${requestId}] Validation failed: items array empty`);
       return bad("items must be a non-empty array");
     }
-    console.info(`✅ [ORDERS API ${requestId}] Items valid (${body.items.length} items)`);
 
     if (typeof body.total_amount !== "number" || isNaN(body.total_amount)) {
-      console.error(`❌ [ORDERS API ${requestId}] Validation failed: invalid total_amount`);
       return bad("total_amount must be a number");
     }
-    console.info(`✅ [ORDERS API ${requestId}] Total amount valid: ${body.total_amount}`);
-    console.info(`✅ [ORDERS API ${requestId}] All validations passed!`);
 
     logger.info("✅✅✅ ALL VALIDATIONS PASSED ✅✅✅", {
       customer: body.customer_name,
@@ -546,26 +522,16 @@ export async function POST(req: Request) {
       },
     });
 
-    console.info(`💾 [ORDERS API ${requestId}] Inserting order into database...`);
     const { data: inserted, error: insertErr } = await supabase
       .from("orders")
       .insert(payload)
       .select("*");
-
-    console.info(`📊 [ORDERS API ${requestId}] Insert result:`);
-    console.info(`📊 [ORDERS API ${requestId}] - Success:`, !insertErr);
-    console.info(`📊 [ORDERS API ${requestId}] - Inserted data:`, inserted);
-    console.info(`📊 [ORDERS API ${requestId}] - Insert error:`, insertErr);
 
     logger.debug("[ORDER CREATION DEBUG] Insert result:");
     logger.debug("[ORDER CREATION DEBUG] - Inserted data:", { value: inserted });
     logger.debug("[ORDER CREATION DEBUG] - Insert error:", { value: insertErr });
 
     if (insertErr) {
-      console.error(`❌ [ORDERS API ${requestId}] Database insert FAILED`);
-      console.error(`❌ [ORDERS API ${requestId}] Error code:`, insertErr.code);
-      console.error(`❌ [ORDERS API ${requestId}] Error message:`, insertErr.message);
-      console.error(`❌ [ORDERS API ${requestId}] Error details:`, insertErr);
 
       logger.error("[ORDER CREATION DEBUG] ===== INSERT FAILED =====");
       logger.error("[ORDER CREATION DEBUG] Error details:", { value: insertErr });
@@ -582,15 +548,12 @@ export async function POST(req: Request) {
 
       return bad(`Insert failed: ${errorMessage}`, 400);
     }
-    console.info(`✅ [ORDERS API ${requestId}] Database insert successful!`);
     logger.info("💾💾💾 DATABASE INSERT SUCCESSFUL 💾💾💾", { requestId });
 
     if (!inserted || inserted.length === 0) {
-      console.error(`❌ [ORDERS API ${requestId}] No data returned from insert`);
       logger.error("❌❌❌ NO DATA RETURNED FROM INSERT ❌❌❌", { requestId });
       return bad("Order creation failed - no data returned", 500);
     }
-    console.info(`✅ [ORDERS API ${requestId}] Order created - ID:`, inserted[0].id);
     logger.info("🎉🎉🎉 ORDER CREATED IN DATABASE 🎉🎉🎉", {
       orderId: inserted[0].id,
       customer: inserted[0].customer_name,
@@ -695,15 +658,9 @@ export async function POST(req: Request) {
     });
 
     // Create KDS tickets for the order
-    console.info(`🍳 [ORDERS API ${requestId}] Creating KDS tickets...`);
     try {
       await createKDSTickets(supabase, inserted[0]);
-      console.info(`✅ [ORDERS API ${requestId}] KDS tickets created successfully`);
     } catch (kdsError) {
-      console.warn(
-        `⚠️ [ORDERS API ${requestId}] KDS ticket creation failed (non-critical):`,
-        kdsError
-      );
       logger.warn("[ORDER CREATION DEBUG] KDS ticket creation failed (non-critical):", {
         value: kdsError,
       });
@@ -711,12 +668,6 @@ export async function POST(req: Request) {
     }
 
     const duration = Date.now() - startTime;
-    console.info(`✅✅✅ [ORDERS API ${requestId}] ORDER CREATED SUCCESSFULLY ✅✅✅`);
-    console.info(`✅ [ORDERS API ${requestId}] Order ID:`, inserted[0].id);
-    console.info(`✅ [ORDERS API ${requestId}] Duration:`, duration, "ms");
-    console.info(`✅ [ORDERS API ${requestId}] Returning response...`);
-    console.info(`✅ [ORDERS API ${requestId}] Response:`, response);
-    console.info(`✅ [ORDERS API ${requestId}] ========================================`);
 
     logger.info("✅✅✅ ORDER CREATED SUCCESSFULLY ✅✅✅", {
       orderId: inserted[0].id,
@@ -732,20 +683,6 @@ export async function POST(req: Request) {
   } catch (e: unknown) {
     const error = e as Error;
     const duration = Date.now() - startTime;
-
-    console.error(`❌❌❌ [ORDERS API ${requestId}] UNEXPECTED ERROR ❌❌❌`);
-    console.error(`❌ [ORDERS API ${requestId}] Error type:`, typeof error);
-    console.error(`❌ [ORDERS API ${requestId}] Error:`, error);
-    console.error(
-      `❌ [ORDERS API ${requestId}] Message:`,
-      error instanceof Error ? error.message : String(error)
-    );
-    console.error(
-      `❌ [ORDERS API ${requestId}] Stack:`,
-      error instanceof Error ? error.stack : "No stack"
-    );
-    console.error(`❌ [ORDERS API ${requestId}] Duration:`, duration, "ms");
-    console.error(`❌ [ORDERS API ${requestId}] ========================================`);
 
     logger.error("❌❌❌ ORDER CREATION FAILED ❌❌❌", {
       error: error instanceof Error ? error.message : String(error),

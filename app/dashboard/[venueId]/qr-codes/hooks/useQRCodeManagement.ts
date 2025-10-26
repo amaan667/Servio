@@ -52,7 +52,6 @@ export function useQRCodeManagement(venueId: string) {
         .order("label", { ascending: true });
 
       if (tablesError) {
-        console.error("[QR MANAGEMENT] Error loading tables:", tablesError);
         toast({
           title: "Error",
           description: `Failed to load tables: ${tablesError.message || "Unknown error"}`,
@@ -68,17 +67,15 @@ export function useQRCodeManagement(venueId: string) {
         if (!result.error) {
           countersData = result.data || [];
         } else {
-          console.error("Counters not available:", result.error.message);
-        }
+      // Intentionally empty
+    }
       } catch {
         // Silently fail - counters are optional
-        console.error("Counters table not accessible");
       }
 
       setTables(tablesData || []);
       setCounters(countersData);
-    } catch (error) {
-      console.error("[QR MANAGEMENT] Error loading data:", error);
+    } catch (_error) {
       toast({
         title: "Error",
         description: `Failed to load data: ${error instanceof Error ? error.message : "Unknown error"}`,

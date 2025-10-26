@@ -79,7 +79,7 @@ export async function POST() {
       afterColumns: finalColumns
     });
 
-  } catch (error) {
+  } catch (_error) {
     logger.error('[COLUMN FIX] Unexpected error:', { error: error instanceof Error ? error.message : 'Unknown error' });
     return NextResponse.json({ error: 'Internal server error' }, { status: 500 });
   }

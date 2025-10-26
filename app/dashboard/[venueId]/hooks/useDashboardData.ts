@@ -97,9 +97,9 @@ export function useDashboardData(
         if (typeof window !== "undefined") {
           sessionStorage.setItem(`dashboard_stats_${venueId}`, JSON.stringify(newStats));
         }
-      } catch (err) {
-        console.error("Failed to load stats:", err);
-      }
+      } catch (_error) {
+      // Error handled silently
+    }
     },
     []
   );
@@ -168,8 +168,7 @@ export function useDashboardData(
           sessionStorage.setItem(`dashboard_counts_${venueId}`, JSON.stringify(finalCounts));
         }
       }
-    } catch (err) {
-      console.error("Failed to refresh dashboard data:", err);
+    } catch (_err) {
       setError("Failed to refresh dashboard data");
     }
   }, [venueId, venueTz]);
@@ -194,20 +193,15 @@ export function useDashboardData(
 
     // If we have initial data from server, use it and DON'T fetch
     if (initialCounts && initialStats) {
-      console.info("[DASHBOARD] Using server-side initial data - no fetch needed!");
-      console.info("[DASHBOARD] Initial counts:", initialCounts);
-      console.info("[DASHBOARD] Initial stats:", initialStats);
       setLoading(false);
       return;
     }
 
     // No initial data - fetch immediately
     const fetchData = async () => {
-      console.info("[DASHBOARD] No server data - fetching from client...");
       await refreshCounts();
       await loadStats((venue as { venue_id: string }).venue_id, window);
       setLoading(false);
-      console.info("[DASHBOARD] Data loaded successfully");
     };
 
     fetchData();

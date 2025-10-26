@@ -40,7 +40,7 @@ export class QueryCache {
 
       await redisCache.set(key, result, { ttl, tags });
       return result;
-    } catch (error) {
+    } catch (_error) {
       logger.warn("[QUERY CACHE] Cache error, falling back to direct query:", error as Record<string, unknown>);
       return await queryFn();
     }

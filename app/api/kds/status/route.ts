@@ -75,7 +75,7 @@ export async function GET() {
       status 
     });
 
-  } catch (error) {
+  } catch (_error) {
     logger.error('[KDS STATUS] Error:', { error: error instanceof Error ? error.message : 'Unknown error' });
     return NextResponse.json({ 
       error: 'Internal server error',

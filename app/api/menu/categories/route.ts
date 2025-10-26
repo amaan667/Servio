@@ -3,7 +3,7 @@ import { createClient } from '@/lib/supabase';
 import { cache, cacheKeys, cacheTTL } from '@/lib/cache';
 import { logger } from '@/lib/logger';
 
-export async function GET(request: NextRequest) {
+export async function GET(_request: NextRequest) {
   try {
     const { searchParams } = new URL(request.url);
     const venueId = searchParams.get('venueId');
@@ -84,7 +84,7 @@ export async function GET(request: NextRequest) {
     
     return NextResponse.json(response);
 
-  } catch (error) {
+  } catch (_error) {
     logger.error('[CATEGORIES API] Unexpected error:', { error: error instanceof Error ? error.message : 'Unknown error' });
     return NextResponse.json(
       { error: 'Internal server error' },
@@ -93,7 +93,7 @@ export async function GET(request: NextRequest) {
   }
 }
 
-export async function PUT(request: NextRequest) {
+export async function PUT(_request: NextRequest) {
   try {
     const { venueId, categories } = await request.json();
     
@@ -166,7 +166,7 @@ export async function PUT(request: NextRequest) {
       categories 
     });
 
-  } catch (error) {
+  } catch (_error) {
     logger.error('[CATEGORIES API] Unexpected error:', { error: error instanceof Error ? error.message : 'Unknown error' });
     return NextResponse.json(
       { error: 'Internal server error' },
@@ -175,7 +175,7 @@ export async function PUT(request: NextRequest) {
   }
 }
 
-export async function POST(request: NextRequest) {
+export async function POST(_request: NextRequest) {
   try {
     const { venueId, categoryName } = await request.json();
     
@@ -245,7 +245,7 @@ export async function POST(request: NextRequest) {
       categories: newCategories
     });
 
-  } catch (error) {
+  } catch (_error) {
     logger.error('[CATEGORIES API] Unexpected error:', { error: error instanceof Error ? error.message : 'Unknown error' });
     return NextResponse.json(
       { error: 'Internal server error' },

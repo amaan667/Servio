@@ -9,7 +9,7 @@ export const runtime = 'edge';
  * Cron job to automatically reset demo data every few hours
  * This endpoint should be called by a cron service (e.g., Vercel Cron, Railway Cron)
  */
-export async function GET(request: NextRequest) {
+export async function GET(_request: NextRequest) {
   try {
     // Verify cron secret for security
     const authHeader = request.headers.get('authorization');
@@ -63,7 +63,7 @@ export async function GET(request: NextRequest) {
         sessions: sessionsError?.message || null,
       }
     });
-  } catch (error) {
+  } catch (_error) {
     apiLogger.error('[DEMO RESET CRON] Error:', { error: error instanceof Error ? error.message : 'Unknown error' });
     return NextResponse.json(
       { 

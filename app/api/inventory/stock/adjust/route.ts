@@ -4,7 +4,7 @@ import type { StockAdjustmentRequest } from '@/types/inventory';
 import { logger } from '@/lib/logger';
 
 // POST /api/inventory/stock/adjust
-export async function POST(request: NextRequest) {
+export async function POST(_request: NextRequest) {
   try {
     const supabase = await createClient();
     const body: StockAdjustmentRequest = await request.json();
@@ -59,7 +59,7 @@ export async function POST(request: NextRequest) {
     }
 
     return NextResponse.json({ data }, { status: 201 });
-  } catch (error) {
+  } catch (_error) {
     logger.error('[INVENTORY API] Unexpected error:', { error: error instanceof Error ? error.message : 'Unknown error' });
     return NextResponse.json(
       { error: 'Internal server error' },

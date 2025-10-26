@@ -96,43 +96,27 @@ export default function OrderSummary({ orderId, sessionId, orderData }: OrderSum
     const fetchOrder = async () => {
       try {
         setLoading(true);
-        console.info("🔍 [ORDER SUMMARY] Fetching order...", { orderId, sessionId });
 
         if (sessionId) {
           // Fetch order by Stripe session ID
-          console.info("📡 [ORDER SUMMARY] Fetching by session ID:", sessionId);
           const res = await fetch(`/api/orders/by-session/${sessionId}`);
-          console.info("📦 [ORDER SUMMARY] Response status:", res.status, res.ok);
 
           if (res.ok) {
             const data = await res.json();
-            console.info("✅ [ORDER SUMMARY] Response data:", {
-              ok: data.ok,
-              hasOrder: !!data.order,
-              orderId: data.order?.id,
-            });
 
             if (data.ok && data.order) {
-              console.info("✅ [ORDER SUMMARY] Order found!", {
-                id: data.order.id,
-                status: data.order.order_status,
-                payment: data.order.payment_status,
-              });
               setOrder(data.order);
             } else {
-              console.error("❌ [ORDER SUMMARY] Order not found in response");
               throw new Error("Order not found for this session");
             }
           } else {
             const errorData = await res.json();
-            console.error("❌ [ORDER SUMMARY] Fetch failed:", errorData);
             throw new Error(
               `Failed to fetch order by session ID: ${errorData.error || "Unknown error"}`
             );
           }
         } else if (orderId) {
           // Fetch order by ID with retry logic (for race conditions after Stripe payment)
-          console.info("📡 [ORDER SUMMARY] Fetching by order ID:", orderId);
 
           let retryCount = 0;
           const maxRetries = 3;
@@ -140,45 +124,25 @@ export default function OrderSummary({ orderId, sessionId, orderData }: OrderSum
 
           while (!fetchSuccess && retryCount < maxRetries) {
             if (retryCount > 0) {
-              console.info(`🔄 [ORDER SUMMARY] Retry ${retryCount}/${maxRetries} - waiting 1s...`);
               await new Promise((resolve) => setTimeout(resolve, 1000));
             }
 
             const res = await fetch(`/api/orders/${orderId}`);
-            console.info(
-              `📦 [ORDER SUMMARY] Response status (attempt ${retryCount + 1}):`,
-              res.status,
-              res.ok
-            );
 
             if (res.ok) {
               const data = await res.json();
-              console.info("✅ [ORDER SUMMARY] Response data:", {
-                hasOrder: !!data.order,
-                orderId: data.order?.id,
-              });
 
               if (data.order) {
-                console.info("✅ [ORDER SUMMARY] Order found!", {
-                  id: data.order.id,
-                  status: data.order.order_status,
-                  payment: data.order.payment_status,
-                });
                 setOrder(data.order);
                 fetchSuccess = true;
               } else {
-                console.warn(
-                  `⚠️  [ORDER SUMMARY] Order not in response (attempt ${retryCount + 1})`
-                );
                 retryCount++;
               }
             } else {
               if (res.status === 404 && retryCount < maxRetries - 1) {
-                console.warn(`⚠️  [ORDER SUMMARY] Order not found yet (404), will retry...`);
                 retryCount++;
               } else {
                 const errorData = await res.json();
-                console.error("❌ [ORDER SUMMARY] Fetch failed:", errorData);
                 throw new Error(`Failed to fetch order: ${errorData.error || "Unknown error"}`);
               }
             }
@@ -188,13 +152,7 @@ export default function OrderSummary({ orderId, sessionId, orderData }: OrderSum
             throw new Error(`Order not found after ${maxRetries} attempts`);
           }
         }
-      } catch (error) {
-        console.error("❌ [ORDER SUMMARY] Error fetching order:", {
-          message: error instanceof Error ? error.message : String(error),
-          stack: error instanceof Error ? error.stack : undefined,
-          orderId,
-          sessionId,
-        });
+      } catch (_error) {
         setError("Failed to load order details");
       } finally {
         setLoading(false);

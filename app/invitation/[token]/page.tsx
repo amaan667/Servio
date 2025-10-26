@@ -51,7 +51,7 @@ export default async function InvitationPage({ params }: InvitationPageProps) {
         </div>
       </div>
     );
-  } catch (error) {
+  } catch (_error) {
     redirect('/invitation/invalid');
   }
 }

@@ -4,7 +4,7 @@ import { logger } from '@/lib/logger';
 
 // This endpoint can be called by a cron job or scheduled task
 // to automatically perform daily reset at midnight
-export async function POST(request: NextRequest) {
+export async function POST(_request: NextRequest) {
   try {
     
     // Verify this is a legitimate cron request (you can add authentication here)
@@ -109,11 +109,9 @@ export async function POST(request: NextRequest) {
         }
 
         // Perform the reset
-        console.info(`🕛 [DAILY RESET] Resetting venue: ${venue.venue_name} (${venue.venue_id})`);
 
         // Complete all active orders (moves them to history)
         if (activeOrders && activeOrders.length > 0) {
-          console.info(`🕛 [DAILY RESET] Completing ${activeOrders.length} active orders...`);
           await supabase
             .from('orders')
             .update({ 
@@ -122,12 +120,10 @@ export async function POST(request: NextRequest) {
             })
             .eq('venue_id', venue.venue_id)
             .in('order_status', ['PLACED', 'ACCEPTED', 'IN_PREP', 'READY', 'SERVING']);
-          console.info(`✅ [DAILY RESET] ${activeOrders.length} orders marked as COMPLETED`);
         }
 
         // Cancel all active reservations
         if (activeReservations && activeReservations.length > 0) {
-          console.info(`🕛 [DAILY RESET] Cancelling ${activeReservations.length} reservations...`);
           await supabase
             .from('reservations')
             .update({ 
@@ -136,62 +132,52 @@ export async function POST(request: NextRequest) {
             })
             .eq('venue_id', venue.venue_id)
             .eq('status', 'BOOKED');
-          console.info(`✅ [DAILY RESET] ${activeReservations.length} reservations cancelled`);
         }
 
         // Get all tables before deletion
-        console.info(`🕛 [DAILY RESET] Fetching all tables...`);
         const { data: venueTables } = await supabase
           .from('tables')
           .select('id, label')
           .eq('venue_id', venue.venue_id);
 
         if (venueTables && venueTables.length > 0) {
-          console.info(`🕛 [DAILY RESET] Found ${venueTables.length} tables to delete`);
           
           // Delete all table sessions first
-          console.info(`🕛 [DAILY RESET] Deleting table sessions...`);
           const { error: sessionDeleteError } = await supabase
             .from('table_sessions')
             .delete()
             .eq('venue_id', venue.venue_id);
             
           if (sessionDeleteError) {
-            console.error(`❌ [DAILY RESET] Error deleting sessions:`, sessionDeleteError);
           } else {
-            console.info(`✅ [DAILY RESET] Table sessions deleted`);
-          }
+      // Intentionally empty
+    }
 
           // Delete all tables
-          console.info(`🕛 [DAILY RESET] Deleting tables...`);
           const { error: tableDeleteError } = await supabase
             .from('tables')
             .delete()
             .eq('venue_id', venue.venue_id);
             
           if (tableDeleteError) {
-            console.error(`❌ [DAILY RESET] Error deleting tables:`, tableDeleteError);
           } else {
-            console.info(`✅ [DAILY RESET] ${venueTables.length} tables deleted`);
-          }
+      // Intentionally empty
+    }
         } else {
-          console.info(`ℹ️ [DAILY RESET] No tables to delete`);
-        }
+      // Intentionally empty
+    }
 
         // Clear table runtime state
-        console.info(`🕛 [DAILY RESET] Clearing table runtime state...`);
         const { error: runtimeDeleteError } = await supabase
           .from('table_runtime_state')
           .delete()
           .eq('venue_id', venue.venue_id);
           
         if (runtimeDeleteError) {
-          console.error(`❌ [DAILY RESET] Error clearing runtime state:`, runtimeDeleteError);
         } else {
-          console.info(`✅ [DAILY RESET] Table runtime state cleared`);
-        }
+      // Intentionally empty
+    }
 
-        console.info(`✅✅✅ [DAILY RESET] Reset complete for ${venue.venue_name} ✅✅✅`);
         
         resetResults.push({
           venueId: venue.venue_id,
@@ -202,7 +188,7 @@ export async function POST(request: NextRequest) {
           deletedTables: venueTables?.length || 0
         });
 
-      } catch (error) {
+      } catch (_error) {
         logger.error(`🕛 [CRON DAILY RESET] Error resetting venue ${venue.venue_name}:`, { error: error instanceof Error ? error.message : 'Unknown error' });
         resetResults.push({
           venueId: venue.venue_id,
@@ -216,11 +202,6 @@ export async function POST(request: NextRequest) {
     const successfulResets = resetResults.filter(r => r.reset).length;
     const totalVenues = venuesToReset.length;
 
-    console.info(`🕛✅ [DAILY RESET] ========================================`);
-    console.info(`🕛✅ [DAILY RESET] Daily reset completed for ${successfulResets}/${totalVenues} venues`);
-    console.info(`🕛✅ [DAILY RESET] Results:`, resetResults);
-    console.info(`🕛✅ [DAILY RESET] ========================================`);
-
     return NextResponse.json({
       success: true,
       message: `Daily reset completed for ${successfulResets}/${totalVenues} venues`,
@@ -228,7 +209,7 @@ export async function POST(request: NextRequest) {
       resetResults
     });
 
-  } catch (error) {
+  } catch (_error) {
     logger.error('🕛 [CRON DAILY RESET] Error in automatic daily reset:', { error: error instanceof Error ? error.message : 'Unknown error' });
     return NextResponse.json(
       { error: 'Internal server error' },

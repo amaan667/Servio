@@ -40,14 +40,14 @@ export async function GET(
     }
 
     return NextResponse.json({ invitation });
-  } catch (error) {
+  } catch (_error) {
     return NextResponse.json({ error: 'Internal server error' }, { status: 500 });
   }
 }
 
 // POST /api/staff/invitations/[token] - Accept invitation and create account
 export async function POST(
-  request: NextRequest,
+  _request: NextRequest,
   { params }: { params: Promise<{ token: string }> }
 ) {
   try {
@@ -166,7 +166,7 @@ export async function POST(
       message: 'Invitation accepted successfully',
       invitation: updatedInvitation
     });
-  } catch (error) {
+  } catch (_error) {
     return NextResponse.json({ error: 'Internal server error' }, { status: 500 });
   }
 }

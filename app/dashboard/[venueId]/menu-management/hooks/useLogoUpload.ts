@@ -92,7 +92,7 @@ export function useLogoUpload(venueId: string, designSettings: DesignSettings, s
         description: "Your logo has been uploaded and a theme has been automatically detected.",
         duration: 5000,
       });
-    } catch (error) {
+    } catch (_error) {
 
       toast({
         title: "Upload failed",

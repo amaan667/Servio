@@ -27,8 +27,7 @@ export class PersistentCache {
       }
 
       return parsed.data as T;
-    } catch (error) {
-      console.warn("[PersistentCache] Failed to get cached data:", error);
+    } catch (_error) {
       return null;
     }
   }
@@ -47,8 +46,8 @@ export class PersistentCache {
       };
 
       sessionStorage.setItem(this.prefix + key, JSON.stringify(cacheData));
-    } catch (error) {
-      console.warn("[PersistentCache] Failed to set cached data:", error);
+    } catch (_error) {
+      // Error handled silently
     }
   }
 
@@ -60,8 +59,8 @@ export class PersistentCache {
 
     try {
       sessionStorage.removeItem(this.prefix + key);
-    } catch (error) {
-      console.warn("[PersistentCache] Failed to remove cached data:", error);
+    } catch (_error) {
+      // Error handled silently
     }
   }
 
@@ -78,8 +77,8 @@ export class PersistentCache {
           sessionStorage.removeItem(key);
         }
       });
-    } catch (error) {
-      console.warn("[PersistentCache] Failed to clear cache:", error);
+    } catch (_error) {
+      // Error handled silently
     }
   }
 

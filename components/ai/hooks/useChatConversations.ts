@@ -31,7 +31,7 @@ export function useChatConversations(venueId: string, isOpen: boolean) {
           } else {
             throw new Error(errorJson.error || "Failed to load conversations");
           }
-        } catch (e) {
+        } catch (_e) {
           throw new Error("Failed to load conversations");
         }
       }

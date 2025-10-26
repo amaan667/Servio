@@ -35,7 +35,7 @@ export async function GET() {
     
     return NextResponse.json({ profile });
     
-  } catch (error) {
+  } catch (_error) {
     logger.error('[USER PROFILE API] Error:', { error: error instanceof Error ? error.message : 'Unknown error' });
     return NextResponse.json(
       { error: 'Internal server error' },
@@ -44,7 +44,7 @@ export async function GET() {
   }
 }
 
-export async function PUT(_request: Request) {
+export async function PUT(__request: Request) {
   try {
     // SECURE: Use getUser() for authentication check
     const { user, error } = await getAuthUserForAPI();
@@ -69,7 +69,7 @@ export async function PUT(_request: Request) {
       }
     });
     
-  } catch (error) {
+  } catch (_error) {
     logger.error('[USER PROFILE API] Error:', { error: error instanceof Error ? error.message : 'Unknown error' });
     return NextResponse.json(
       { error: 'Internal server error' },

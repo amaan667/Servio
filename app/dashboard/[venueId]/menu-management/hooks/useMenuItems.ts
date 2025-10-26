@@ -44,7 +44,7 @@ export function useMenuItems(venueId: string) {
           setCategoryOrder(uploadData[0]?.category_order);
         }
       }
-    } catch (error) {
+    } catch (_error) {
 
       toast({
         title: "Error",

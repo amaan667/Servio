@@ -95,7 +95,7 @@ export async function POST(_request: NextRequest) {
           sql: createTableSQL
         });
       }
-    } catch (error) {
+    } catch (_error) {
       logger.debug("[STAFF INVITATION SETUP] Error testing table existence:", { error: error instanceof Error ? error.message : 'Unknown error' });
     }
 
@@ -168,7 +168,7 @@ export async function POST(_request: NextRequest) {
       ]
     });
 
-  } catch (error) {
+  } catch (_error) {
     logger.error("[STAFF INVITATION SETUP] Error:", { error: error instanceof Error ? error.message : 'Unknown error' });
     return NextResponse.json({
       success: false,

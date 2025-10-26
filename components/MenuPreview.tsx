@@ -63,7 +63,7 @@ export function MenuPreview({
           };
           setMenuStyle(style);
         }
-      } catch (error) {
+      } catch (_error) {
       // Error silently handled
     } finally {
         setLoading(false);

@@ -163,7 +163,6 @@ const DashboardClient = React.memo(function DashboardClient({
         } = await supabase.auth.getSession();
 
         if (sessionError) {
-          console.error("[Dashboard] Session error:", sessionError);
           // Authentication error - redirect handled by router
           return;
         }
@@ -241,8 +240,7 @@ const DashboardClient = React.memo(function DashboardClient({
         }
 
         // No loading state needed - prevents flicker
-      } catch (error) {
-        console.error("[Dashboard] Auth check error:", error);
+      } catch (_error) {
         // No auth error display needed("Authentication failed");
         // No loading state needed - prevents flicker
       }

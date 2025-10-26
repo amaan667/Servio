@@ -12,7 +12,7 @@ export const dynamic = "force-dynamic";
  * Staff uses this after processing payment via card reader/cash register
  */
 export async function POST(
-  request: NextRequest,
+  _request: NextRequest,
   { params }: { params: Promise<{ orderId: string }> }
 ) {
   const { orderId } = await params;
@@ -95,7 +95,7 @@ export async function POST(
       order: updatedOrder,
       message: "Payment collected successfully",
     });
-  } catch (error) {
+  } catch (_error) {
     logger.error("[COLLECT PAYMENT] Unexpected error", {
       data: { orderId, error: error instanceof Error ? error.message : String(error) },
     });

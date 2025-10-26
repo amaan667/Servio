@@ -5,7 +5,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { createClient } from "@/lib/supabase";
 import { logger } from '@/lib/logger';
 
-export async function GET(request: NextRequest) {
+export async function GET(_request: NextRequest) {
   try {
     const supabase = await createClient();
 
@@ -62,7 +62,7 @@ export async function GET(request: NextRequest) {
       success: true,
       activities: activities || [],
     });
-  } catch (error) {
+  } catch (_error) {
     const errorMessage = error instanceof Error ? error.message : 'Unknown error';
     logger.error("[AI ASSISTANT] Activity fetch error:", { error: errorMessage });
     return NextResponse.json(

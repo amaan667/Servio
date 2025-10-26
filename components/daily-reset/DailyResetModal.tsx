@@ -35,7 +35,7 @@ export function DailyResetModal({
     try {
       await onConfirm();
       onClose();
-    } catch (error) {
+    } catch (_error) {
 
       // Error handling is done in the parent component
     }

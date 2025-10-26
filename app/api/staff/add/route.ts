@@ -3,7 +3,7 @@ import { createAdminClient } from '@/lib/supabase';
 
 export const runtime = 'nodejs';
 
-export async function POST(req: Request) {
+export async function POST(_req: Request) {
   try {
     const body = await req.json().catch(() => ({}));
     const { venue_id, name, role } = body || {};
@@ -16,7 +16,7 @@ export async function POST(req: Request) {
     const { data, error } = await admin.from('staff').insert([{ venue_id, name, role: role || 'Server' }]).select('*');
     if (error) return NextResponse.json({ error: error.message }, { status: 400 });
     return NextResponse.json({ success: true, data: data ?? [] });
-  } catch (e) {
+  } catch (_e) {
     return NextResponse.json({ error: e instanceof Error ? e.message : 'Unknown error' }, { status: 500 });
   }
 }

@@ -32,8 +32,6 @@ export async function POST(req: NextRequest) {
   const requestId = Math.random().toString(36).substring(7);
 
   try {
-    console.info(`🔄 [REPROCESS ${requestId}] ========================================`);
-    console.info(`🔄 [REPROCESS ${requestId}] Starting with existing PDF images`);
 
     const body = await req.json();
     const {
@@ -42,11 +40,6 @@ export async function POST(req: NextRequest) {
       pdf_images: pdfImages,
       replace_mode: replaceMode,
     } = body;
-
-    console.info(`📋 [REPROCESS ${requestId}] Venue:`, venueId);
-    console.info(`📋 [REPROCESS ${requestId}] URL:`, menuUrl);
-    console.info(`📋 [REPROCESS ${requestId}] PDF Pages:`, pdfImages?.length);
-    console.info(`📋 [REPROCESS ${requestId}] Mode:`, replaceMode ? "REPLACE" : "APPEND");
 
     if (!venueId || !menuUrl || !pdfImages || pdfImages.length === 0) {
       return NextResponse.json(
@@ -58,7 +51,6 @@ export async function POST(req: NextRequest) {
     const supabase = createAdminClient();
 
     // Step 1: Scrape URL for item data using centralized API
-    console.info(`🌐 [REPROCESS ${requestId}] Scraping URL...`);
     let urlItems: ScrapedMenuItem[] = [];
     try {
       const baseUrl =
@@ -112,21 +104,15 @@ export async function POST(req: NextRequest) {
           category: item.category || "Menu Items",
           image_url: item.image || null,
         }));
-        console.info(`✅ [REPROCESS ${requestId}] Scraped ${urlItems.length} items from URL`);
       } else {
         throw new Error(scrapeResult.error || "Scraping returned no items");
       }
-    } catch (error) {
-      console.warn(
-        `⚠️ [REPROCESS ${requestId}] URL scraping failed, using PDF-only:`,
-        error instanceof Error ? error.message : String(error)
-      );
+    } catch (_error) {
       logger.warn(`[REPROCESS ${requestId}] URL scraping failed, falling back to PDF-only`);
       // Continue with PDF-only extraction
     }
 
     // Step 2: Extract positions from existing PDF images
-    console.info(`👁️ [REPROCESS ${requestId}] Extracting positions from PDF...`);
     const pdfExtractedItems: PDFMenuItem[] = [];
     const pdfPositions: Array<{
       name: string;
@@ -141,9 +127,6 @@ export async function POST(req: NextRequest) {
     }> = [];
 
     for (let pageIndex = 0; pageIndex < pdfImages.length; pageIndex++) {
-      console.info(
-        `👁️ [REPROCESS ${requestId}] Processing page ${pageIndex + 1}/${pdfImages.length}...`
-      );
 
       const extractedItems = await extractMenuFromImage(pdfImages[pageIndex]);
       pdfExtractedItems.push(...extractedItems.map((item) => ({ ...item, page: pageIndex })));
@@ -153,17 +136,9 @@ export async function POST(req: NextRequest) {
         pdfPositions.push({ ...pos, page: pageIndex });
       });
 
-      console.info(
-        `✅ [REPROCESS ${requestId}] Page ${pageIndex + 1}: ${extractedItems.length} items, ${positions.length} positions`
-      );
     }
 
-    console.info(
-      `📊 [REPROCESS ${requestId}] PDF: ${pdfExtractedItems.length} items, ${pdfPositions.length} positions`
-    );
-
     // Step 3: Combine data
-    console.info(`🔄 [REPROCESS ${requestId}] Combining URL + PDF data...`);
     const menuItems = [];
     const hotspots = [];
     const combinedItems = new Map();
@@ -250,34 +225,26 @@ export async function POST(req: NextRequest) {
       }
     }
 
-    console.info(
-      `✅ [REPROCESS ${requestId}] Combined: ${menuItems.length} items, ${hotspots.length} hotspots`
-    );
-
     // Step 4: Replace or Append
     if (replaceMode) {
-      console.info(`🗑️ [REPROCESS ${requestId}] REPLACE mode - clearing old items...`);
       await supabase.from("menu_items").delete().eq("venue_id", venueId);
       await supabase.from("menu_hotspots").delete().eq("venue_id", venueId);
     } else {
-      console.info(`➕ [REPROCESS ${requestId}] APPEND mode - keeping old items`);
+      // Intentionally empty
     }
 
     // Step 5: Insert
     if (menuItems.length > 0) {
-      console.info(`💾 [REPROCESS ${requestId}] Inserting ${menuItems.length} items...`);
       const { error: insertError } = await supabase.from("menu_items").insert(menuItems);
       if (insertError) throw new Error(`Insert failed: ${insertError.message}`);
     }
 
     if (hotspots.length > 0) {
-      console.info(`💾 [REPROCESS ${requestId}] Inserting ${hotspots.length} hotspots...`);
       const { error: insertError } = await supabase.from("menu_hotspots").insert(hotspots);
       if (insertError) throw new Error(`Insert hotspots failed: ${insertError.message}`);
     }
 
     const duration = Date.now() - startTime;
-    console.info(`✅ [REPROCESS ${requestId}] SUCCESS in ${duration}ms!`);
 
     return NextResponse.json({
       ok: true,
@@ -287,10 +254,9 @@ export async function POST(req: NextRequest) {
         categories_created: new Set(menuItems.map((i) => i.category)).size,
       },
     });
-  } catch (err) {
+  } catch (_err) {
     const duration = Date.now() - startTime;
     const errorMessage = err instanceof Error ? err.message : "Processing failed";
-    console.error(`❌ [REPROCESS ${requestId}] FAILED after ${duration}ms:`, errorMessage);
     logger.error(`[REPROCESS ${requestId}] Error:`, { error: errorMessage });
     return NextResponse.json({ ok: false, error: errorMessage }, { status: 500 });
   }

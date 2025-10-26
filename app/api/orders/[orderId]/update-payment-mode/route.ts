@@ -12,7 +12,7 @@ export const dynamic = "force-dynamic";
  * Used when customer changes their mind about how to pay
  */
 export async function PATCH(
-  request: NextRequest,
+  _request: NextRequest,
   { params }: { params: Promise<{ orderId: string }> }
 ) {
   const { orderId } = await params;
@@ -102,7 +102,7 @@ export async function PATCH(
       changed_from: order.payment_mode,
       changed_to: new_payment_mode,
     });
-  } catch (error) {
+  } catch (_error) {
     logger.error("[UPDATE PAYMENT MODE] Unexpected error", {
       data: { orderId, error: error instanceof Error ? error.message : String(error) },
     });

@@ -5,7 +5,7 @@ import { authenticateRequest } from "@/lib/api-auth";
 import { stripe } from "@/lib/stripe-client";
 import { apiLogger as logger } from "@/lib/logger";
 
-export async function POST(request: NextRequest) {
+export async function POST(_request: NextRequest) {
   try {
     // Authenticate using Authorization header
     const auth = await authenticateRequest(request);
@@ -142,7 +142,7 @@ export async function POST(request: NextRequest) {
         { status: 500 }
       );
     }
-  } catch (error) {
+  } catch (_error) {
     const errorMessage = error instanceof Error ? error.message : "Unknown error";
     logger.error("[STRIPE PORTAL] Error:", { error: errorMessage });
     return NextResponse.json(

@@ -85,7 +85,7 @@ Rules:
     
     logger.info('[VISION] Extracted items:', json.length);
     return json;
-  } catch (err) {
+  } catch (_err) {
     logger.error("Failed to parse item extraction JSON:", text);
     logger.error("Parse error details:", err);
     return [];
@@ -182,15 +182,12 @@ Return ONLY the JSON array, no explanation.
     logger.info('[VISION] Parsed positions:', positions.length);
     
     // Log first few positions for debugging
-    console.log('[VISION] Sample positions (first 3):', JSON.stringify(positions.slice(0, 3), null, 2));
     
     // Validate positions
     positions.forEach((pos: any, index: number) => {
       if (!pos.name || !pos.x1 || !pos.y1 || !pos.x2 || !pos.y2) {
-        console.warn(`[VISION] ⚠️ Position ${index} missing required fields:`, pos);
       }
       if (pos.x2 - pos.x1 > 50) {
-        console.warn(`[VISION] ⚠️ Position ${index} TOO WIDE (${pos.x2 - pos.x1}%):`, pos.name);
       }
     });
     
@@ -219,7 +216,7 @@ Return ONLY the JSON array, no explanation.
         confidence: pos.confidence || 0.8,
       };
     });
-  } catch (err) {
+  } catch (_err) {
     logger.error("Failed to parse menu positions JSON:", text);
     logger.error("Parse error details:", err);
     // Return empty array instead of crashing - menu will still work without hotspots

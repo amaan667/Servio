@@ -45,14 +45,6 @@ export function useAnalyticsData(venueId: string) {
         yesterdayStart.getTime() + (now.getTime() - todayStart.getTime())
       );
 
-      console.info("[ANALYTICS] Time comparison:", {
-        todayStart: todayStart.toISOString(),
-        todayEnd: now.toISOString(),
-        yesterdayStart: yesterdayStart.toISOString(),
-        yesterdayEnd: yesterdayEnd.toISOString(),
-        duration: `${Math.round((now.getTime() - todayStart.getTime()) / 1000 / 60)} minutes`,
-      });
-
       // Fetch today's orders
       const { data: todayOrders, error: ordersError } = await supabase
         .from("orders")
@@ -148,8 +140,6 @@ export function useAnalyticsData(venueId: string) {
         .sort((a, b) => b.count - a.count)
         .slice(0, 5);
 
-      console.info("[ANALYTICS] Top selling items by quantity:", topSellingItems);
-
       // Calculate yesterday comparison
       const yesterdayOrdersCount = yesterdayOrders?.length || 0;
       const yesterdayRevenue = (yesterdayOrders || []).reduce((sum, order) => {
@@ -181,7 +171,7 @@ export function useAnalyticsData(venueId: string) {
           })
         );
       }
-    } catch (err) {
+    } catch (_err) {
       setError(err instanceof Error ? err.message : "Failed to fetch analytics");
     } finally {
       setLoading(false);

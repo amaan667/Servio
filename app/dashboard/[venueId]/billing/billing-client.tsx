@@ -93,9 +93,9 @@ export default function BillingClient({ venueId }: BillingClientProps) {
           const usageData = await usageRes.json();
           setUsage(usageData.usage || usageData);
         }
-      } catch (err) {
-        console.error("Failed to fetch billing data:", err);
-      } finally {
+      } catch (_error) {
+      // Error handled silently
+    } finally {
         setLoading(false);
       }
     };

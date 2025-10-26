@@ -10,7 +10,7 @@ const Body = z.object({
   comment: z.string().optional(),
 });
 
-export async function POST(req: Request) {
+export async function POST(_req: Request) {
   try {
     const json = await req.json();
     const { orderId, rating, comment } = Body.parse(json);

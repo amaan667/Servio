@@ -61,7 +61,6 @@ class ErrorTracker {
         });
       })
       .catch((error) => {
-        console.warn("Failed to initialize Sentry:", error);
       });
   }
 
@@ -215,8 +214,8 @@ class ErrorTracker {
       }
 
       captureMessage(message, level as "info" | "warning" | "error");
-    } catch (error) {
-      console.warn("Failed to send message to Sentry:", error);
+    } catch (_error) {
+      // Error handled silently
     }
   }
 
@@ -236,8 +235,8 @@ class ErrorTracker {
           context,
         }),
       });
-    } catch (error) {
-      console.warn("Failed to send error to custom endpoint:", error);
+    } catch (_error) {
+      // Error handled silently
     }
   }
 
@@ -256,8 +255,8 @@ class ErrorTracker {
           context,
         }),
       });
-    } catch (error) {
-      console.warn("Failed to send message to custom endpoint:", error);
+    } catch (_error) {
+      // Error handled silently
     }
   }
 

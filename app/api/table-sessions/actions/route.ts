@@ -103,7 +103,7 @@ export async function POST(req: NextRequest) {
       default:
         return NextResponse.json({ error: 'Invalid action' }, { status: 400 });
     }
-  } catch (error) {
+  } catch (_error) {
     logger.error('[TABLE SESSIONS ACTIONS API] Unexpected error:', { error: error instanceof Error ? error.message : 'Unknown error' });
     return NextResponse.json({ error: 'Internal server error' }, { status: 500 });
   }

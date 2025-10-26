@@ -36,9 +36,12 @@ export function formatTooltipDate(dateStr: string, period: TimePeriod): string {
         month: 'short' 
       });
     case '3m':
-      const weekStart = new Date(date);
-      const weekEnd = new Date(date);
-      weekEnd.setDate(date.getDate() + 6);
+      {
+        const weekStart = new Date(date);
+        const weekEnd = new Date(date);
+        weekEnd.setDate(date.getDate() + 6);
+        return `${weekStart.toLocaleDateString('en-GB', { day: 'numeric', month: 'short' })} - ${weekEnd.toLocaleDateString('en-GB', { day: 'numeric', month: 'short' })}`;
+      }
       return `${weekStart.toLocaleDateString('en-GB', { day: 'numeric', month: 'short' })} - ${weekEnd.toLocaleDateString('en-GB', { day: 'numeric', month: 'short' })}`;
     case '1y':
       return date.toLocaleDateString('en-GB', { 

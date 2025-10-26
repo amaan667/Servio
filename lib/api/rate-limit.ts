@@ -40,7 +40,7 @@ export const RATE_LIMITS = {
 /**
  * Get client identifier from request
  */
-function getClientId(request: NextRequest): string {
+function getClientId(_request: NextRequest): string {
   // Try to get user ID from session/auth
   const authHeader = request.headers.get('authorization');
   if (authHeader) {
@@ -58,7 +58,7 @@ function getClientId(request: NextRequest): string {
  * Check rate limit for a request
  */
 export function checkRateLimit(
-  request: NextRequest,
+  _request: NextRequest,
   config: RateLimitConfig = RATE_LIMITS.authenticated
 ): { allowed: boolean; remaining: number; resetAt: number } {
   const clientId = getClientId(request);
@@ -105,10 +105,10 @@ export function checkRateLimit(
  * Rate limit middleware wrapper
  */
 export function withRateLimit(
-  handler: (request: NextRequest) => Promise<NextResponse>,
+  handler: (_request: NextRequest) => Promise<NextResponse>,
   config: RateLimitConfig = RATE_LIMITS.authenticated
 ) {
-  return async (request: NextRequest): Promise<NextResponse> => {
+  return async (_request: NextRequest): Promise<NextResponse> => {
     const { allowed, remaining, resetAt } = checkRateLimit(request, config);
     
     if (!allowed) {

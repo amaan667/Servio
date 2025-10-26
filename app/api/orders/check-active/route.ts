@@ -9,7 +9,7 @@ export const dynamic = 'force-dynamic';
  * Check for active unpaid orders for a table
  * Uses service role to bypass RLS - customers don't need auth to check their orders
  */
-export async function GET(req: Request) {
+export async function GET(_req: Request) {
   try {
     const { searchParams } = new URL(req.url);
     const venueId = searchParams.get('venueId');
@@ -76,7 +76,7 @@ export async function GET(req: Request) {
       ok: true,
       orders: activeOrders || []
     });
-  } catch (error) {
+  } catch (_error) {
     logger.error('❌ [CHECK ACTIVE ORDERS] Unexpected error', {
       error: error instanceof Error ? error.message : String(error)
     });

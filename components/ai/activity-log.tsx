@@ -34,7 +34,7 @@ export function AIActivityLog({ venueId, limit = 20 }: ActivityLogProps) {
       if (response.ok) {
         setActivities(data.activities || []);
       }
-    } catch (error) {
+    } catch (_error) {
       // Error silently handled
     } finally {
       setLoading(false);

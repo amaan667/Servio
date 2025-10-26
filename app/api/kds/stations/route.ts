@@ -3,7 +3,7 @@ import { authenticateRequest, verifyVenueAccess } from "@/lib/api-auth";
 import { logger } from "@/lib/logger";
 
 // GET - Fetch all KDS stations for a venue
-export async function GET(req: Request) {
+export async function GET(_req: Request) {
   try {
     const { searchParams } = new URL(req.url);
     const venueId = searchParams.get("venueId");
@@ -15,18 +15,12 @@ export async function GET(req: Request) {
     });
 
     if (!venueId) {
-      console.error("[KDS STATIONS] ❌ No venueId provided");
       return NextResponse.json({ ok: false, error: "venueId is required" }, { status: 400 });
     }
 
     // Authenticate request
     const auth = await authenticateRequest(req);
     if (!auth.success || !auth.user || !auth.supabase) {
-      console.error("[KDS STATIONS] ❌ Authentication failed:", {
-        error: auth.error,
-        hasUser: !!auth.user,
-        hasSupabase: !!auth.supabase,
-      });
       return NextResponse.json({ ok: false, error: auth.error }, { status: 401 });
     }
 
@@ -87,7 +81,7 @@ export async function GET(req: Request) {
       ok: true,
       stations,
     });
-  } catch (error) {
+  } catch (_error) {
     logger.error("[KDS] Unexpected error:", {
       error: error instanceof Error ? error.message : "Unknown error",
     });
@@ -99,7 +93,7 @@ export async function GET(req: Request) {
 }
 
 // POST - Create a new KDS station
-export async function POST(req: Request) {
+export async function POST(_req: Request) {
   try {
     const body = await req.json();
     const { venueId, stationName, stationType, displayOrder, colorCode } = body;
@@ -114,7 +108,6 @@ export async function POST(req: Request) {
     // Authenticate using Authorization header
     const auth = await authenticateRequest(req);
     if (!auth.success || !auth.user || !auth.supabase) {
-      console.error("[KDS STATIONS POST] ❌ Authentication failed:", auth.error);
       return NextResponse.json({ ok: false, error: auth.error }, { status: 401 });
     }
 
@@ -154,7 +147,7 @@ export async function POST(req: Request) {
       ok: true,
       station,
     });
-  } catch (error) {
+  } catch (_error) {
     logger.error("[KDS] Unexpected error:", {
       error: error instanceof Error ? error.message : "Unknown error",
     });

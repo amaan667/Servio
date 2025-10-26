@@ -396,7 +396,7 @@ export async function planAssistantAction(
     }
 
     throw new Error("Failed to parse AI response: no parsed or content available");
-  } catch (error) {
+  } catch (_error) {
     logger.error(`[AI ASSISTANT] Planning error with ${selectedModel}:`, errorToContext(error));
 
     // If we used mini and got an error, try falling back to full model
@@ -492,7 +492,7 @@ User Role: ${context.userRole}`;
     });
 
     return completion.choices[0].message.content || "Action explanation unavailable.";
-  } catch (error) {
+  } catch (_error) {
     logger.error("[AI ASSISTANT] Explanation error:", error as Record<string, unknown>);
     return "Unable to generate explanation.";
   }
@@ -527,7 +527,7 @@ Focus on common tasks, optimizations, or insights based on the data.`;
 
     const response = JSON.parse(completion.choices[0].message.content || "{}");
     return response.suggestions || [];
-  } catch (error) {
+  } catch (_error) {
     logger.error("[AI ASSISTANT] Suggestion generation error:", error as Record<string, unknown>);
     return [];
   }

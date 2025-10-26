@@ -10,7 +10,7 @@ export const dynamic = "force-dynamic";
  * Call: POST /api/tables/clear-all
  * Body: { "venueId": "venue-1e02af4d" }
  */
-export async function POST(req: Request) {
+export async function POST(_req: Request) {
   try {
     const { venueId } = await req.json();
 
@@ -20,12 +20,6 @@ export async function POST(req: Request) {
 
     const admin = createAdminClient();
 
-    console.info("\n" + "=".repeat(80));
-    console.info("🧹 [CLEAR ALL TABLES] CLEARING ALL TABLE SESSIONS");
-    console.info("=".repeat(80));
-    console.info("🏪 Venue ID:", venueId);
-    console.info("=".repeat(80) + "\n");
-
     // Get all table sessions for this venue
     const { data: sessions, error: fetchError } = await admin
       .from("table_sessions")
@@ -33,17 +27,11 @@ export async function POST(req: Request) {
       .eq("venue_id", venueId);
 
     if (fetchError) {
-      console.error("❌ Error fetching sessions:", fetchError);
       return NextResponse.json({ ok: false, error: fetchError.message }, { status: 500 });
     }
 
-    console.info("📊 Found", sessions?.length || 0, "table sessions");
-
     if (sessions) {
       sessions.forEach((session) => {
-        console.info(
-          `  - Table ID: ${session.table_id}, Status: ${session.status}, Order: ${session.order_id || "N/A"}, Closed: ${session.closed_at || "Open"}`
-        );
       });
     }
 
@@ -60,15 +48,8 @@ export async function POST(req: Request) {
       .select("id, table_id");
 
     if (updateError) {
-      console.error("❌ Error clearing sessions:", updateError);
       return NextResponse.json({ ok: false, error: updateError.message }, { status: 500 });
     }
-
-    console.info("\n" + "=".repeat(80));
-    console.info("✅ [CLEAR ALL TABLES] ALL SESSIONS CLEARED!");
-    console.info("=".repeat(80));
-    console.info("🧹 Cleared", updated?.length || 0, "table sessions");
-    console.info("=".repeat(80) + "\n");
 
     logger.debug("[CLEAR ALL TABLES] Cleared all table sessions", {
       venueId,
@@ -80,8 +61,7 @@ export async function POST(req: Request) {
       message: `Cleared ${updated?.length || 0} table sessions`,
       cleared: updated?.length || 0,
     });
-  } catch (error) {
-    console.error("❌ [CLEAR ALL TABLES] Fatal error:", error);
+  } catch (_error) {
     logger.error("[CLEAR ALL TABLES] Error:", {
       error: error instanceof Error ? error.message : String(error),
     });

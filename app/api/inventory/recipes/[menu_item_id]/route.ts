@@ -45,7 +45,7 @@ export async function GET(
       data,
       total_cost: totalCost,
     });
-  } catch (error) {
+  } catch (_error) {
     logger.error('[INVENTORY API] Unexpected error:', { error: error instanceof Error ? error.message : 'Unknown error' });
     return NextResponse.json(
       { error: 'Internal server error' },
@@ -57,7 +57,7 @@ export async function GET(
 // POST /api/inventory/recipes/[menu_item_id]
 // Upserts recipe ingredients for a menu item
 export async function POST(
-  request: NextRequest,
+  _request: NextRequest,
   { params }: { params: Promise<{ menu_item_id: string }> }
 ) {
   try {
@@ -112,7 +112,7 @@ export async function POST(
     }
 
     return NextResponse.json({ data: [] }, { status: 200 });
-  } catch (error) {
+  } catch (_error) {
     logger.error('[INVENTORY API] Unexpected error:', { error: error instanceof Error ? error.message : 'Unknown error' });
     return NextResponse.json(
       { error: 'Internal server error' },
@@ -145,7 +145,7 @@ export async function DELETE(
     }
 
     return NextResponse.json({ success: true });
-  } catch (error) {
+  } catch (_error) {
     logger.error('[INVENTORY API] Unexpected error:', { error: error instanceof Error ? error.message : 'Unknown error' });
     return NextResponse.json(
       { error: 'Internal server error' },

@@ -22,7 +22,7 @@ const ExecuteRequestSchema = z.object({
   auditId: z.string().uuid().optional(), // Link to planning audit
 });
 
-export async function POST(request: NextRequest) {
+export async function POST(_request: NextRequest) {
   try {
     const supabase = await createClient();
 
@@ -170,7 +170,7 @@ export async function POST(request: NextRequest) {
       result: result as AIExecutionResult,
       executionTimeMs: executionTime,
     });
-  } catch (error) {
+  } catch (_error) {
     logger.error("[AI ASSISTANT] Execution error:", {
       error: error instanceof Error ? error.message : "Unknown error",
     });

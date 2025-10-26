@@ -93,7 +93,6 @@ export function OrderCard({
 
   const handleStatusUpdate = async (nextStatusRaw: string) => {
     if (!venueId) {
-      console.error("[ORDER CARD] No venueId provided");
       alert("Error: Venue ID missing. Please refresh the page.");
       return;
     }
@@ -102,11 +101,9 @@ export function OrderCard({
 
     try {
       setIsProcessing(true);
-      console.info(`[ORDER CARD] Updating order ${order.id} to status: ${nextStatus}`);
 
       if (nextStatus === "SERVED" || nextStatus === "SERVING") {
         // Use server endpoint for serving to ensure related side-effects
-        console.info("[ORDER CARD] Calling /api/orders/serve");
         const response = await fetch("/api/orders/serve", {
           method: "POST",
           headers: { "Content-Type": "application/json" },
@@ -115,15 +112,12 @@ export function OrderCard({
 
         if (!response.ok) {
           const errorText = await response.text();
-          console.error("[ORDER CARD] Serve failed:", response.status, errorText);
           throw new Error(`Failed to mark order as served: ${response.status} - ${errorText}`);
         }
 
         const result = await response.json().catch(() => null);
-        console.info("[ORDER CARD] Serve success:", result);
       } else if (nextStatus === "COMPLETED") {
         // Use server endpoint for completing to clear tables
-        console.info("[ORDER CARD] Calling /api/orders/complete");
         const response = await fetch("/api/orders/complete", {
           method: "POST",
           headers: { "Content-Type": "application/json" },
@@ -132,15 +126,12 @@ export function OrderCard({
 
         if (!response.ok) {
           const errorText = await response.text();
-          console.error("[ORDER CARD] Complete failed:", response.status, errorText);
           throw new Error(`Failed to mark order as completed: ${response.status} - ${errorText}`);
         }
 
         const result = await response.json().catch(() => null);
-        console.info("[ORDER CARD] Complete success:", result);
       } else {
         // Directly update status via Supabase for other transitions
-        console.info("[ORDER CARD] Updating status via Supabase");
         const supabase = createClient();
         const { error } = await supabase
           .from("orders")
@@ -151,17 +142,12 @@ export function OrderCard({
           .eq("id", order.id)
           .eq("venue_id", venueId);
         if (error) {
-          console.error("[ORDER CARD] Supabase update failed:", error);
           throw new Error(`Failed to update order status: ${error.message}`);
         }
-        console.info("[ORDER CARD] Supabase update success");
       }
 
-      console.info("[ORDER CARD] Calling onActionComplete");
       await onActionComplete?.();
-      console.info("[ORDER CARD] Status update complete!");
-    } catch (error) {
-      console.error("[ORDER CARD] Error updating order status:", error);
+    } catch (_error) {
       alert(`Error: ${error instanceof Error ? error.message : "Failed to update order status"}`);
     } finally {
       setIsProcessing(false);
@@ -177,15 +163,6 @@ export function OrderCard({
     const orderStatus = (order.order_status || "").toUpperCase();
     const paymentMode = order.payment_mode; // "online", "pay_at_till", "pay_later"
 
-    console.info("[ORDER CARD] Rendering actions for order:", {
-      orderId: order.id,
-      rawStatus: order.order_status,
-      orderStatus,
-      isPaid,
-      isCompleted,
-      paymentMode,
-    });
-
     // If already completed, no actions needed
     if (isCompleted) {
       return null;
@@ -193,7 +170,6 @@ export function OrderCard({
 
     // If order is IN_PREP or PREPARING, show preparing message (not clickable)
     if (orderStatus === "IN_PREP" || orderStatus === "PREPARING") {
-      console.info("[ORDER CARD] Showing 'Preparing in Kitchen...' label");
       return (
         <div className="mt-4 pt-4 border-t border-slate-200">
           <div className="flex items-center justify-center gap-2 p-3 bg-blue-50 rounded-lg">

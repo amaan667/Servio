@@ -47,8 +47,7 @@ class CacheService {
       }
 
       return null;
-    } catch (error) {
-      console.error("[CACHE] Error getting key:", key, error);
+    } catch (_error) {
       return null;
     }
   }
@@ -69,8 +68,8 @@ class CacheService {
 
       // Fallback to memory cache
       this.memoryCache.set(key, { value, expires });
-    } catch (error) {
-      console.error("[CACHE] Error setting key:", key, error);
+    } catch (_error) {
+      // Error handled silently
     }
   }
 
@@ -84,8 +83,8 @@ class CacheService {
       } else {
         this.memoryCache.delete(key);
       }
-    } catch (error) {
-      console.error("[CACHE] Error deleting key:", key, error);
+    } catch (_error) {
+      // Error handled silently
     }
   }
 
@@ -108,8 +107,8 @@ class CacheService {
           }
         }
       }
-    } catch (error) {
-      console.error("[CACHE] Error invalidating pattern:", pattern, error);
+    } catch (_error) {
+      // Error handled silently
     }
   }
 
@@ -123,8 +122,8 @@ class CacheService {
       } else {
         this.memoryCache.clear();
       }
-    } catch (error) {
-      console.error("[CACHE] Error clearing cache:", error);
+    } catch (_error) {
+      // Error handled silently
     }
   }
 

@@ -5,7 +5,7 @@ import { logger } from '@/lib/logger';
 export const runtime = 'nodejs';
 export const dynamic = 'force-dynamic';
 
-export async function GET(req: Request) {
+export async function GET(_req: Request) {
   try {
     const supabaseAdmin = createAdminClient();
     const { searchParams } = new URL(req.url);
@@ -106,7 +106,7 @@ export async function GET(req: Request) {
       order: transformedOrder 
     });
 
-  } catch (error) {
+  } catch (_error) {
     logger.error('[ORDER BY SESSION] Error:', { error: error instanceof Error ? error.message : 'Unknown error' });
     return NextResponse.json({ 
       error: 'Internal server error' 

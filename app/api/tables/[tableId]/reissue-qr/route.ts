@@ -44,7 +44,7 @@ export async function POST(req: NextRequest, context: { params: Promise<{ tableI
     }
 
     return NextResponse.json({ table });
-  } catch (error) {
+  } catch (_error) {
     logger.error("[TABLES API] Unexpected error:", {
       error: error instanceof Error ? error.message : "Unknown error",
     });

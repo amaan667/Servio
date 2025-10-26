@@ -4,7 +4,7 @@ import { logger } from '@/lib/logger';
 
 export const runtime = 'nodejs';
 
-export async function POST(req: Request) {
+export async function POST(_req: Request) {
   try {
     const { order_id, rating, comment } = await req.json();
     const admin = await createClient();
@@ -41,7 +41,7 @@ export async function POST(req: Request) {
 
     return NextResponse.json({ ok: true });
     
-  } catch (e) {
+  } catch (_e) {
     logger.error('[AUTH DEBUG] Feedback submission exception:', { error: e instanceof Error ? e.message : 'Unknown error' });
     return NextResponse.json({ 
       ok: false, 

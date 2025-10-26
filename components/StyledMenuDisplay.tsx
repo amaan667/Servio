@@ -73,7 +73,7 @@ export function StyledMenuDisplay({
           };
           setMenuStyle(style);
         }
-      } catch (error) {
+      } catch (_error) {
       // Error silently handled
     } finally {
         setLoading(false);

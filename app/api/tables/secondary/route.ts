@@ -6,7 +6,7 @@ import { logger } from '@/lib/logger';
 export const runtime = 'nodejs';
 
 // GET /api/tables/secondary?primary_table_id=xxx&venue_id=xxx - Find secondary table for a primary table
-export async function GET(req: Request) {
+export async function GET(_req: Request) {
   try {
     const { searchParams } = new URL(req.url);
     const primaryTableId = searchParams.get('primary_table_id');
@@ -56,7 +56,7 @@ export async function GET(req: Request) {
       table: secondaryTable
     });
 
-  } catch (error) {
+  } catch (_error) {
     logger.error('[TABLES SECONDARY GET] Unexpected error:', { error: error instanceof Error ? error.message : 'Unknown error' });
     return NextResponse.json({ ok: false, error: 'Internal server error' }, { status: 500 });
   }

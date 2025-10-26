@@ -4,7 +4,7 @@ import { getUserSafe } from '@/utils/getUserSafe';
 import { logger } from '@/lib/logger';
 
 // POST /api/staff/invitations/cancel - Cancel an invitation
-export async function POST(request: NextRequest) {
+export async function POST(_request: NextRequest) {
   try {
     const user = await getUserSafe();
     if (!user) {
@@ -116,7 +116,7 @@ export async function POST(request: NextRequest) {
       success: true,
       message: 'Invitation cancelled successfully'
     });
-  } catch (error) {
+  } catch (_error) {
     logger.error('[INVITATION API] Unexpected error:', { error: error instanceof Error ? error.message : 'Unknown error' });
     return NextResponse.json({ error: 'Internal server error' }, { status: 500 });
   }

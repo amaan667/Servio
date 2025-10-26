@@ -211,7 +211,7 @@ export function MenuUploadCard({ venueId, onSuccess }: MenuUploadCardProps) {
         onSuccess?.();
       }
       
-    } catch (error) {
+    } catch (_error) {
       toast({
         title: 'Upload failed',
         description: error.message,
@@ -243,7 +243,6 @@ export function MenuUploadCard({ venueId, onSuccess }: MenuUploadCardProps) {
     }
 
     setIsProcessing(true);
-    console.info('🔄 [MENU UPLOAD] Starting hybrid menu merge with URL:', menuUrl);
 
     try {
       // Check if PDF menu exists
@@ -256,8 +255,6 @@ export function MenuUploadCard({ venueId, onSuccess }: MenuUploadCardProps) {
       if (!existingItems || existingItems.length === 0) {
         throw new Error('No existing PDF menu found. Please upload a PDF first.');
       }
-
-      console.info('✅ [MENU UPLOAD] Found existing PDF menu, starting hybrid merge...');
 
       // Call new hybrid merge API
       const response = await fetch('/api/menu/hybrid-merge', {
@@ -283,14 +280,12 @@ export function MenuUploadCard({ venueId, onSuccess }: MenuUploadCardProps) {
           duration: 7000
         });
         
-        console.info('✅ [MENU UPLOAD] Hybrid merge complete:', result.stats);
         
         // Refresh menu items
         await new Promise(resolve => setTimeout(resolve, 500));
         onSuccess?.();
       }
-    } catch (error) {
-      console.error('❌ [MENU UPLOAD] Hybrid merge error:', error);
+    } catch (_error) {
       toast({
         title: 'Hybrid Merge Failed',
         description: error instanceof Error ? error.message : 'Unknown error',
@@ -320,7 +315,6 @@ export function MenuUploadCard({ venueId, onSuccess }: MenuUploadCardProps) {
       await processFile(files[0]);
     }
   };
-
 
   const handleClearCatalog = async () => {
     if (!confirm('Are you sure you want to clear the entire catalog? This action cannot be undone.')) {
@@ -355,7 +349,7 @@ export function MenuUploadCard({ venueId, onSuccess }: MenuUploadCardProps) {
       } else {
         throw new Error(`Clear catalog failed: ${result.error}`);
       }
-    } catch (error) {
+    } catch (_error) {
       toast({
         title: 'Clear catalog failed',
         description: error instanceof Error ? error.message : 'Unknown error',

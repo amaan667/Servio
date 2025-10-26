@@ -3,7 +3,7 @@ import { checkFeatureAccess, PREMIUM_FEATURES } from '@/lib/feature-gates';
 import { logger } from '@/lib/logger';
 
 // GET /api/features/check?venue_id=xxx&feature=INVENTORY
-export async function GET(request: NextRequest) {
+export async function GET(_request: NextRequest) {
   try {
     const { searchParams } = new URL(request.url);
     const venueId = searchParams.get('venue_id');
@@ -27,7 +27,7 @@ export async function GET(request: NextRequest) {
     const access = await checkFeatureAccess(venueId, requiredTier);
 
     return NextResponse.json(access);
-  } catch (error) {
+  } catch (_error) {
     logger.error('[FEATURE CHECK API] Error:', { error: error instanceof Error ? error.message : 'Unknown error' });
     return NextResponse.json(
       { error: 'Internal server error' },

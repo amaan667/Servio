@@ -34,7 +34,7 @@ export function useBulkOperations(venueId: string) {
       } else {
         alert(`Error completing orders: ${result.error || 'Unknown error'}`);
       }
-    } catch (error) {
+    } catch (_error) {
 
       alert('Error completing orders. Please try again.');
     } finally {

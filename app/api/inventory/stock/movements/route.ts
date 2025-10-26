@@ -3,7 +3,7 @@ import { createClient } from '@/lib/supabase';
 import { logger } from '@/lib/logger';
 
 // GET /api/inventory/stock/movements?venue_id=xxx&limit=50&offset=0
-export async function GET(request: NextRequest) {
+export async function GET(_request: NextRequest) {
   try {
     const supabase = await createClient();
     const { searchParams } = new URL(request.url);
@@ -52,7 +52,7 @@ export async function GET(request: NextRequest) {
         total: count || 0,
       },
     });
-  } catch (error) {
+  } catch (_error) {
     logger.error('[INVENTORY API] Unexpected error:', { error: error instanceof Error ? error.message : 'Unknown error' });
     return NextResponse.json(
       { error: 'Internal server error' },

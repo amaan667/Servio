@@ -35,13 +35,14 @@ export async function GET(
       // Categories are stored as an array of strings in the correct PDF order
       categories = uploadData.parsed_json.categories;
     } else {
+      // Intentionally empty
     }
 
     return NextResponse.json({
       categories: categories || null
     });
 
-  } catch (error) {
+  } catch (_error) {
     logger.error('[CATEGORY ORDER API] Unexpected error:', { error: error instanceof Error ? error.message : 'Unknown error' });
     return NextResponse.json({ error: 'Internal server error' }, { status: 500 });
   }

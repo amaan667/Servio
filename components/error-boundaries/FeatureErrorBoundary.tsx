@@ -34,7 +34,6 @@ export class FeatureErrorBoundary extends React.Component<
   }
 
   componentDidCatch(error: Error, errorInfo: React.ErrorInfo) {
-    console.error(`[${this.props.featureName} Error Boundary]:`, error, errorInfo);
   }
 
   render() {

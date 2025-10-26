@@ -86,7 +86,7 @@ export function CounterOrderCard({ order, venueId, onActionComplete }: CounterOr
       }
 
       onActionComplete?.();
-    } catch (error) {
+    } catch (_error) {
       // Error silently handled
     } finally {
       setIsRemoving(false);
@@ -148,7 +148,7 @@ export function CounterOrderCard({ order, venueId, onActionComplete }: CounterOr
       }
 
       onActionComplete?.();
-    } catch (error) {
+    } catch (_error) {
       // Error silently handled
     } finally {
       setIsProcessingPayment(false);
@@ -175,7 +175,7 @@ export function CounterOrderCard({ order, venueId, onActionComplete }: CounterOr
       }
 
       onActionComplete?.();
-    } catch (error) {
+    } catch (_error) {
       // Error silently handled
     } finally {
       setIsProcessingPayment(false);

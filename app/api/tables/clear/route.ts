@@ -2,7 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { createAdminClient } from '@/lib/supabase';
 import { logger } from '@/lib/logger';
 
-export async function POST(request: NextRequest) {
+export async function POST(_request: NextRequest) {
   try {
     const { venue_id } = await request.json();
 
@@ -49,7 +49,7 @@ export async function POST(request: NextRequest) {
       message: 'Table runtime state cleared successfully' 
     });
 
-  } catch (error) {
+  } catch (_error) {
     logger.error('[AUTH DEBUG] Error in clear tables API:', { error: error instanceof Error ? error.message : 'Unknown error' });
     return NextResponse.json({ 
       ok: false, 

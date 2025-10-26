@@ -2,7 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { createAdminClient } from '@/lib/supabase';
 import { logger } from '@/lib/logger';
 
-export async function GET(request: NextRequest) {
+export async function GET(_request: NextRequest) {
   try {
     const { searchParams } = new URL(request.url);
     const venueId = searchParams.get('venueId');
@@ -67,7 +67,7 @@ export async function GET(request: NextRequest) {
       });
     }
 
-  } catch (error) {
+  } catch (_error) {
     logger.error('[GROUP SESSION] Error in GET group session API:', { error: error instanceof Error ? error.message : 'Unknown error' });
     return NextResponse.json({ 
       ok: false, 
@@ -76,7 +76,7 @@ export async function GET(request: NextRequest) {
   }
 }
 
-export async function POST(request: NextRequest) {
+export async function POST(_request: NextRequest) {
   try {
     const { venueId, tableNumber, groupSize } = await request.json();
 
@@ -212,7 +212,7 @@ export async function POST(request: NextRequest) {
       });
     }
 
-  } catch (error) {
+  } catch (_error) {
     logger.error('[GROUP SESSION] Error in POST group session API:', { error: error instanceof Error ? error.message : 'Unknown error' });
     return NextResponse.json({ 
       ok: false, 

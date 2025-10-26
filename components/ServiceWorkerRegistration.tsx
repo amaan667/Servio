@@ -20,7 +20,6 @@ export default function ServiceWorkerRegistration({ children }: ServiceWorkerReg
       setIsOnline(true);
     };
     const handleOffline = () => {
-      console.warn("[SERVICE WORKER] Network offline");
       setIsOnline(false);
     };
 

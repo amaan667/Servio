@@ -3,7 +3,7 @@ import { createClient } from '@/lib/supabase';
 import { logger } from '@/lib/logger';
 
 // GET /api/inventory/export/csv?venue_id=xxx
-export async function GET(request: NextRequest) {
+export async function GET(_request: NextRequest) {
   try {
     const supabase = await createClient();
     const { searchParams } = new URL(request.url);
@@ -67,7 +67,7 @@ export async function GET(request: NextRequest) {
         'Content-Disposition': `attachment; filename="inventory-${venue_id}-${new Date().toISOString().split('T')[0]}.csv"`,
       },
     });
-  } catch (error) {
+  } catch (_error) {
     logger.error('[INVENTORY API] Unexpected error:', { error: error instanceof Error ? error.message : 'Unknown error' });
     return NextResponse.json(
       { error: 'Internal server error' },

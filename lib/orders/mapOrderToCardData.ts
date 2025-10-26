@@ -111,6 +111,7 @@ export function mapOrderToCardData(legacyOrder: LegacyOrder, currency: string = 
     if (order.table_number) {
       // Empty block
     } else {
+      // Intentionally empty
     }
     
     if (isCounterOrder) {

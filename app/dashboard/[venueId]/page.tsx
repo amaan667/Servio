@@ -13,15 +13,11 @@ export default async function VenuePage({ params }: { params: Promise<{ venueId:
   let initialStats: any = null;
 
   try {
-    console.info("[DASHBOARD SSR] Fetching initial data for venueId:", venueId);
     const supabase = createAdminClient(); // Use admin client - no auth required!
     const venueTz = "Europe/London";
     const window = todayWindowForTZ(venueTz);
 
-    console.info("[DASHBOARD SSR] Time window:", window);
-
     // Fetch dashboard counts using RPC
-    console.info("[DASHBOARD SSR] Calling dashboard_counts RPC...");
     const { data: countsData, error: countsError } = await supabase
       .rpc("dashboard_counts", {
         p_venue_id: venueId,
@@ -31,14 +27,11 @@ export default async function VenuePage({ params }: { params: Promise<{ venueId:
       .single();
 
     if (countsError) {
-      console.error("[DASHBOARD SSR] dashboard_counts RPC failed:", countsError);
     } else {
-      console.info("[DASHBOARD SSR] Counts fetched:", countsData);
       initialCounts = countsData;
     }
 
     // Fetch REAL table counts directly from tables table (no RPC, no caching)
-    console.info("[DASHBOARD SSR] Fetching real table counts from tables table...");
 
     // Get total tables set up
     const { data: allTables, error: tablesError } = await supabase
@@ -47,9 +40,7 @@ export default async function VenuePage({ params }: { params: Promise<{ venueId:
       .eq("venue_id", venueId);
 
     if (tablesError) {
-      console.error("[DASHBOARD SSR] Tables fetch failed:", tablesError);
     } else {
-      console.info("[DASHBOARD SSR] Tables fetched:", allTables?.length || 0);
 
       // Get active table sessions (currently occupied)
       const { data: activeSessions, error: sessionsError } = await supabase
@@ -60,10 +51,9 @@ export default async function VenuePage({ params }: { params: Promise<{ venueId:
         .is("closed_at", null);
 
       if (sessionsError) {
-        console.error("[DASHBOARD SSR] Sessions fetch failed:", sessionsError);
       } else {
-        console.info("[DASHBOARD SSR] Active sessions fetched:", activeSessions?.length || 0);
-      }
+      // Intentionally empty
+    }
 
       // Get current reservations
       const now = new Date();
@@ -76,13 +66,9 @@ export default async function VenuePage({ params }: { params: Promise<{ venueId:
         .gte("end_time", now.toISOString());
 
       if (reservationsError) {
-        console.error("[DASHBOARD SSR] Reservations fetch failed:", reservationsError);
       } else {
-        console.info(
-          "[DASHBOARD SSR] Current reservations fetched:",
-          currentReservations?.length || 0
-        );
-      }
+      // Intentionally empty
+    }
 
       // Merge real counts into initialCounts
       if (initialCounts) {
@@ -94,12 +80,10 @@ export default async function VenuePage({ params }: { params: Promise<{ venueId:
           tables_reserved_now: currentReservations?.length || 0, // Real count from reservations
           active_tables_count: activeTables.length, // Same as tables_set_up
         };
-        console.info("[DASHBOARD SSR] Merged REAL table counters:", initialCounts);
       }
     }
 
     // Fetch stats (revenue, menu items)
-    console.info("[DASHBOARD SSR] Fetching orders for revenue...");
     const { data: orders, error: ordersError } = await supabase
       .from("orders")
       .select("total_amount, order_status")
@@ -109,12 +93,10 @@ export default async function VenuePage({ params }: { params: Promise<{ venueId:
       .neq("order_status", "CANCELLED");
 
     if (ordersError) {
-      console.error("[DASHBOARD SSR] Orders fetch failed:", ordersError);
     } else {
-      console.info("[DASHBOARD SSR] Orders fetched:", orders?.length || 0);
+      // Intentionally empty
     }
 
-    console.info("[DASHBOARD SSR] Fetching menu items...");
     const { data: menuItems, error: menuError } = await supabase
       .from("menu_items")
       .select("id")
@@ -122,9 +104,8 @@ export default async function VenuePage({ params }: { params: Promise<{ venueId:
       .eq("is_available", true);
 
     if (menuError) {
-      console.error("[DASHBOARD SSR] Menu items fetch failed:", menuError);
     } else {
-      console.info("[DASHBOARD SSR] Menu items fetched:", menuItems?.length || 0);
+      // Intentionally empty
     }
 
     const revenue = orders?.reduce((sum, order) => sum + (order.total_amount || 0), 0) || 0;
@@ -136,19 +117,9 @@ export default async function VenuePage({ params }: { params: Promise<{ venueId:
       unpaid,
     };
 
-    console.info("[DASHBOARD SSR] Initial stats calculated:", initialStats);
-    console.info("[DASHBOARD SSR] Initial counts final:", initialCounts);
-  } catch (error) {
-    console.error("[DASHBOARD SSR] Failed to fetch initial data:", error);
+  } catch (_error) {
     // Continue without initial data - client will load it
   }
-
-  console.info("[DASHBOARD SSR] Rendering client with data:", {
-    hasCounts: !!initialCounts,
-    hasStats: !!initialStats,
-    countsValue: initialCounts,
-    statsValue: initialStats,
-  });
 
   return (
     <DashboardClient venueId={venueId} initialCounts={initialCounts} initialStats={initialStats} />

@@ -102,7 +102,6 @@ export function EnhancedPDFMenuDisplay({
       try {
         const supabase = createClient();
 
-        console.log('[PDF MENU] Fetching PDF images for venue:', venueId);
         
         // Fetch the most recent PDF upload for this venue
         const { data: uploadData, error } = await supabase
@@ -113,21 +112,13 @@ export function EnhancedPDFMenuDisplay({
           .limit(1)
           .single();
 
-        console.log('[PDF MENU] Upload data:', uploadData);
-        console.log('[PDF MENU] Error:', error);
-
         // Try pdf_images first, then fallback to pdf_images_cc
         const images = uploadData?.pdf_images || uploadData?.pdf_images_cc;
-        console.log('[PDF MENU] pdf_images:', uploadData?.pdf_images?.length || 0);
-        console.log('[PDF MENU] pdf_images_cc:', uploadData?.pdf_images_cc?.length || 0);
-        console.log('[PDF MENU] Selected images array:', images?.length || 0);
         
         if (images && images.length > 0) {
-          console.log('[PDF MENU] First image preview:', images[0]?.substring(0, 100));
         }
 
         if (uploadData && images && images.length > 0) {
-          console.log('[PDF MENU] ✅ PDF images loaded, enabling PDF view');
           setPdfImages(images);
           setHasPdfImages(true);
           // Cache PDF images for instant load next time
@@ -136,7 +127,6 @@ export function EnhancedPDFMenuDisplay({
             sessionStorage.setItem(`pdf_images_${venueId}`, JSON.stringify(images));
           }
         } else {
-          console.log('[PDF MENU] ⚠️ No PDF images found, defaulting to list view');
           setViewMode('list');
           setHasPdfImages(false);
           if (typeof window !== 'undefined') {
@@ -144,8 +134,7 @@ export function EnhancedPDFMenuDisplay({
             sessionStorage.removeItem(`pdf_images_${venueId}`);
           }
         }
-      } catch (error) {
-        console.error('[PDF MENU] ❌ Error fetching PDF images:', error);
+      } catch (_error) {
         setViewMode('list');
       } finally {
         setLoading(false);
@@ -171,11 +160,8 @@ export function EnhancedPDFMenuDisplay({
         if (!error && existingHotspots && existingHotspots.length > 0) {
           // Check if hotspots have new bounding box format
           const hasBoundingBoxes = existingHotspots.some(h => h.x1_percent !== undefined);
-          console.log('[PDF MENU] Loaded hotspots:', existingHotspots.length);
-          console.log('[PDF MENU] Has bounding boxes:', hasBoundingBoxes);
           
           if (!hasBoundingBoxes) {
-            console.log('[PDF MENU] ℹ️ Old format hotspots - will render as smart overlay cards');
           }
           
           setHotspots(existingHotspots);
@@ -187,7 +173,6 @@ export function EnhancedPDFMenuDisplay({
         } else {
           // Auto-generate hotspots if none exist and we have PDF images
           if (pdfImages.length > 0 && menuItems.length > 0) {
-            console.log('[PDF MENU] No hotspots found, auto-generating...');
             const generatedHotspots = await generateHotspotsFromMenu(menuItems, pdfImages.length);
             setHotspots(generatedHotspots);
             
@@ -200,9 +185,9 @@ export function EnhancedPDFMenuDisplay({
             }
           }
         }
-      } catch (error) {
-        console.error('Error with hotspots:', error);
-      }
+      } catch (_error) {
+      // Error handled silently
+    }
     };
 
     if (pdfImages.length > 0) {
@@ -406,8 +391,8 @@ export function EnhancedPDFMenuDisplay({
               if (pdfImages.length > 0 || hasPdfImages) {
                 setViewMode('pdf');
               } else {
-                console.warn('[PDF MENU] No PDF images available yet');
-              }
+      // Intentionally empty
+    }
             }}
             disabled={!hasPdfImages && pdfImages.length === 0}
           >
@@ -834,9 +819,8 @@ async function saveHotspotsToDatabase(
       .from('menu_hotspots')
       .insert(hotspotsToInsert);
       
-    console.log('✅ Hotspots saved to database');
-  } catch (error) {
-    console.error('Error saving hotspots:', error);
-  }
+  } catch (_error) {
+      // Error handled silently
+    }
 }
 

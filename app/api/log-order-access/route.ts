@@ -23,7 +23,7 @@ export async function POST(req: NextRequest) {
     logger.debug('[ORDER ACCESS]', logData);
 
     return NextResponse.json({ ok: true });
-  } catch (err) {
+  } catch (_err) {
     logger.error('[ORDER ACCESS] log failure:', { value: err });
     return NextResponse.json({ ok: false }, { status: 500 });
   }

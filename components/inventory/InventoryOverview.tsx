@@ -50,7 +50,7 @@ export function InventoryOverview({ venueId, canEdit = true }: InventoryOverview
       if (result.data) {
         setIngredients(result.data);
       }
-    } catch (error) {
+    } catch (_error) {
       // Error silently handled
     } finally {
       setLoading(false);
@@ -73,7 +73,7 @@ export function InventoryOverview({ venueId, canEdit = true }: InventoryOverview
       a.click();
       document.body.removeChild(a);
       window.URL.revokeObjectURL(url);
-    } catch (error) {
+    } catch (_error) {
       // Error silently handled
     }
   };
@@ -104,7 +104,7 @@ export function InventoryOverview({ venueId, canEdit = true }: InventoryOverview
       if (response.ok) {
         fetchIngredients();
       }
-    } catch (error) {
+    } catch (_error) {
       // Error silently handled
     }
   };

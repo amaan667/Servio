@@ -4,7 +4,7 @@ import { logger } from '@/lib/logger';
 
 // POST /api/inventory/seed
 // Seeds inventory data for a venue (for testing/demo purposes)
-export async function POST(request: NextRequest) {
+export async function POST(_request: NextRequest) {
   try {
     const body = await request.json();
     const { venue_id } = body;
@@ -19,7 +19,7 @@ export async function POST(request: NextRequest) {
     const result = await seedInventoryData(venue_id);
 
     return NextResponse.json(result);
-  } catch (error) {
+  } catch (_error) {
     logger.error('[INVENTORY SEED API] Error:', { error: error instanceof Error ? error.message : 'Unknown error' });
     return NextResponse.json(
       { error: 'Failed to seed inventory data' },

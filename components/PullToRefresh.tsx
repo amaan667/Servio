@@ -32,7 +32,7 @@ export default function PullToRefresh({
       setTimeout(() => {
         setRefreshSuccess(false);
       }, 1000);
-    } catch (error) {
+    } catch (_error) {
       // Error silently handled
     } finally {
       setIsRefreshing(false);
@@ -125,7 +125,7 @@ export function usePullToRefreshWrapper(onRefresh: () => Promise<void>) {
     setIsRefreshing(true);
     try {
       await onRefresh();
-    } catch (error) {
+    } catch (_error) {
       // Error silently handled
     } finally {
       setIsRefreshing(false);
