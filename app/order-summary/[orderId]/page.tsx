@@ -6,28 +6,20 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Separator } from "@/components/ui/separator";
-import { 
-  Clock, 
-  CheckCircle, 
-  XCircle, 
-  RefreshCw,
-  User, 
-  Hash, 
-  Star,
-  Loader2
-} from "lucide-react";
+import { Label } from "@/components/ui/label";
+import { Clock, CheckCircle, XCircle, RefreshCw, User, Hash, Star, Loader2 } from "lucide-react";
 
 // Hooks
-import { useOrderDetails } from './hooks/useOrderDetails';
-import { useFeedbackManagement } from './hooks/useFeedbackManagement';
+import { useOrderDetails } from "./hooks/useOrderDetails";
+import { useFeedbackManagement } from "./hooks/useFeedbackManagement";
 
 // Constants
-import { TABLE_ORDER_STATUSES, COUNTER_ORDER_STATUSES, GREYED_OUT_STATUSES } from './constants';
+import { TABLE_ORDER_STATUSES, COUNTER_ORDER_STATUSES, GREYED_OUT_STATUSES } from "./constants";
 
 /**
  * Order Details Page
  * Shows order status and allows feedback
- * 
+ *
  * Refactored: Extracted hooks and constants for better organization
  * Original: 630 lines → Now: ~200 lines
  */
@@ -38,7 +30,7 @@ export default function OrderDetailsPage() {
   const [showFeedback, setShowFeedback] = useState(false);
 
   const { order, loading, error } = useOrderDetails(orderId);
-  const feedback = useFeedbackManagement(order?.venue_id || '');
+  const feedback = useFeedbackManagement(order?.venue_id || "");
 
   if (loading) {
     return (
@@ -57,19 +49,17 @@ export default function OrderDetailsPage() {
         <div className="text-center">
           <XCircle className="h-12 w-12 text-red-600 mx-auto mb-4" />
           <p className="text-gray-900 font-semibold mb-2">Order Not Found</p>
-          <p className="text-gray-600 mb-4">{error || 'This order does not exist'}</p>
-          <Button onClick={() => window.location.href = '/'}>
-            Go Home
-          </Button>
+          <p className="text-gray-600 mb-4">{error || "This order does not exist"}</p>
+          <Button onClick={() => (window.location.href = "/")}>Go Home</Button>
         </div>
       </div>
     );
   }
 
-  const isTableOrder = order.order_type === 'table' || order.table_number;
+  const isTableOrder = order.order_type === "table" || order.table_number;
   const orderStatuses = isTableOrder ? TABLE_ORDER_STATUSES : COUNTER_ORDER_STATUSES;
-  const currentStatusIndex = orderStatuses.findIndex(s => s.key === order.order_status);
-  const isCancelled = GREYED_OUT_STATUSES.some(s => s.key === order.order_status);
+  const currentStatusIndex = orderStatuses.findIndex((s) => s.key === order.order_status);
+  const isCancelled = GREYED_OUT_STATUSES.some((s) => s.key === order.order_status);
 
   return (
     <div className="min-h-screen bg-gray-50 py-8 px-4">
@@ -97,13 +87,17 @@ export default function OrderDetailsPage() {
 
                 return (
                   <div key={status.key} className="flex items-start gap-4">
-                    <div className={`flex-shrink-0 w-10 h-10 rounded-full flex items-center justify-center ${
-                      isCompleted ? status.color : 'bg-gray-200 text-gray-500'
-                    }`}>
+                    <div
+                      className={`flex-shrink-0 w-10 h-10 rounded-full flex items-center justify-center ${
+                        isCompleted ? status.color : "bg-gray-200 text-gray-500"
+                      }`}
+                    >
                       <StatusIcon className="h-5 w-5" />
                     </div>
                     <div className="flex-1">
-                      <p className={`font-medium ${isCompleted ? 'text-gray-900' : 'text-gray-500'}`}>
+                      <p
+                        className={`font-medium ${isCompleted ? "text-gray-900" : "text-gray-500"}`}
+                      >
                         {status.label}
                       </p>
                       <p className="text-sm text-gray-600">{status.description}</p>
@@ -129,7 +123,9 @@ export default function OrderDetailsPage() {
               <div>
                 <p className="text-sm text-gray-600">Location</p>
                 <p className="font-medium">
-                  {order.table_number ? `Table ${order.table_number}` : `Counter ${order.counter_number}`}
+                  {order.table_number
+                    ? `Table ${order.table_number}`
+                    : `Counter ${order.counter_number}`}
                 </p>
               </div>
             </div>
@@ -148,7 +144,10 @@ export default function OrderDetailsPage() {
 
             <div>
               <p className="text-sm text-gray-600">Payment Status</p>
-              <Badge variant={order.payment_status === 'PAID' ? 'default' : 'secondary'} className="mt-1">
+              <Badge
+                variant={order.payment_status === "PAID" ? "default" : "secondary"}
+                className="mt-1"
+              >
                 {order.payment_status}
               </Badge>
             </div>
@@ -186,21 +185,28 @@ export default function OrderDetailsPage() {
 
               <div className="flex justify-between items-center">
                 <p className="text-lg font-semibold">Total</p>
-                <p className="text-xl font-bold text-purple-600">£{order.total_amount.toFixed(2)}</p>
+                <p className="text-xl font-bold text-purple-600">
+                  £{order.total_amount.toFixed(2)}
+                </p>
               </div>
             </div>
           </CardContent>
         </Card>
 
         {/* Feedback Section */}
-        {order.order_status === 'COMPLETED' && !showFeedback && (
+        {order.order_status === "COMPLETED" && !showFeedback && (
           <Card className="shadow-lg">
             <CardContent className="p-6">
               <div className="text-center">
                 <Star className="h-12 w-12 text-yellow-400 mx-auto mb-4" />
-                <h3 className="text-lg font-semibold text-gray-900 mb-2">How was your experience?</h3>
+                <h3 className="text-lg font-semibold text-gray-900 mb-2">
+                  How was your experience?
+                </h3>
                 <p className="text-gray-600 mb-4">We'd love to hear your feedback!</p>
-                <Button onClick={() => setShowFeedback(true)} className="bg-gradient-to-r from-purple-600 to-pink-600">
+                <Button
+                  onClick={() => setShowFeedback(true)}
+                  className="bg-gradient-to-r from-purple-600 to-pink-600"
+                >
                   Leave Feedback
                 </Button>
               </div>
@@ -218,22 +224,25 @@ export default function OrderDetailsPage() {
               {feedback.feedbackQuestions.map((question) => (
                 <div key={question.id}>
                   <Label className="text-sm font-medium">{question.prompt}</Label>
-                  {question.type === 'stars' && (
+                  {question.type === "stars" && (
                     <div className="flex gap-2 mt-2">
                       {[1, 2, 3, 4, 5].map((star) => (
                         <button
                           key={star}
-                          onClick={() => feedback.updateFeedbackResponse(question.id, {
-                            answer_stars: star,
-                            type: 'stars'
-                          })}
+                          onClick={() =>
+                            feedback.updateFeedbackResponse(question.id, {
+                              answer_stars: star,
+                              type: "stars",
+                            })
+                          }
                           className="text-2xl"
                         >
                           <Star
                             className={`${
-                              (feedback.feedbackResponses.find(r => r.question_id === question.id)?.answer_stars ?? 0) >= star
-                                ? 'text-yellow-400 fill-yellow-400'
-                                : 'text-gray-300'
+                              (feedback.feedbackResponses.find((r) => r.question_id === question.id)
+                                ?.answer_stars ?? 0) >= star
+                                ? "text-yellow-400 fill-yellow-400"
+                                : "text-gray-300"
                             }`}
                           />
                         </button>
@@ -254,7 +263,7 @@ export default function OrderDetailsPage() {
                     Submitting...
                   </>
                 ) : (
-                  'Submit Feedback'
+                  "Submit Feedback"
                 )}
               </Button>
             </CardContent>

@@ -7,9 +7,9 @@ export default async function VenuePage({ params }: { params: Promise<{ venueId:
   const { venueId } = await params;
 
   // Fetch initial dashboard data on server WITHOUT auth (use admin client)
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+
   let initialCounts: any = null;
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+
   let initialStats: any = null;
 
   try {
@@ -26,7 +26,9 @@ export default async function VenuePage({ params }: { params: Promise<{ venueId:
       })
       .single();
 
-    if (countsError) { /* Empty */ } else {
+    if (countsError) {
+      /* Empty */
+    } else {
       initialCounts = countsData;
     }
 
@@ -38,8 +40,9 @@ export default async function VenuePage({ params }: { params: Promise<{ venueId:
       .select("id, is_active")
       .eq("venue_id", venueId);
 
-    if (tablesError) { /* Empty */ } else {
-
+    if (tablesError) {
+      /* Empty */
+    } else {
       // Get active table sessions (currently occupied)
       const { data: activeSessions, error: sessionsError } = await supabase
         .from("table_sessions")
@@ -48,9 +51,11 @@ export default async function VenuePage({ params }: { params: Promise<{ venueId:
         .eq("status", "OCCUPIED")
         .is("closed_at", null);
 
-      if (sessionsError) { /* Empty */ } else {
-      // Intentionally empty
-    }
+      if (sessionsError) {
+        /* Empty */
+      } else {
+        // Intentionally empty
+      }
 
       // Get current reservations
       const now = new Date();
@@ -62,9 +67,11 @@ export default async function VenuePage({ params }: { params: Promise<{ venueId:
         .lte("start_time", now.toISOString())
         .gte("end_time", now.toISOString());
 
-      if (reservationsError) { /* Empty */ } else {
-      // Intentionally empty
-    }
+      if (reservationsError) {
+        /* Empty */
+      } else {
+        // Intentionally empty
+      }
 
       // Merge real counts into initialCounts
       if (initialCounts) {
@@ -88,7 +95,9 @@ export default async function VenuePage({ params }: { params: Promise<{ venueId:
       .lt("created_at", window.endUtcISO)
       .neq("order_status", "CANCELLED");
 
-    if (ordersError) { /* Empty */ } else {
+    if (ordersError) {
+      /* Empty */
+    } else {
       // Intentionally empty
     }
 
@@ -98,7 +107,9 @@ export default async function VenuePage({ params }: { params: Promise<{ venueId:
       .eq("venue_id", venueId)
       .eq("is_available", true);
 
-    if (menuError) { /* Empty */ } else {
+    if (menuError) {
+      /* Empty */
+    } else {
       // Intentionally empty
     }
 
@@ -110,7 +121,6 @@ export default async function VenuePage({ params }: { params: Promise<{ venueId:
       menuItems: menuItems?.length || 0,
       unpaid,
     };
-
   } catch (_error) {
     // Continue without initial data - client will load it
   }

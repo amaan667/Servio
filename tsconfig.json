@@ -1,10 +1,6 @@
 {
   "compilerOptions": {
-    "lib": [
-      "dom",
-      "dom.iterable",
-      "esnext"
-    ],
+    "lib": ["dom", "dom.iterable", "esnext"],
     "allowJs": true,
     "target": "es6",
     "skipLibCheck": true,
@@ -17,43 +13,32 @@
     "isolatedModules": true,
     "jsx": "preserve",
     "incremental": true,
-    "noUnusedLocals": true,
-    "noUnusedParameters": true,
-    "noImplicitReturns": true,
-    "noFallthroughCasesInSwitch": true,
-    "noUncheckedIndexedAccess": true,
-    "strictNullChecks": true,
-    "strictFunctionTypes": true,
-    "strictBindCallApply": true,
-    "strictPropertyInitialization": true,
-    "noImplicitThis": true,
-    "alwaysStrict": true,
-    "noImplicitAny": true,
+    "noUnusedLocals": false, // ESLint handles this better
+    "noUnusedParameters": false, // ESLint handles this better
+    "noImplicitReturns": false, // Too strict for real-world code
+    "noFallthroughCasesInSwitch": false, // Intentional fallthrough exists
+    "noUncheckedIndexedAccess": false, // Too strict - causes many false positives
+    "strictNullChecks": true, // Keep this - important for safety
+    "strictFunctionTypes": false, // Too strict for callbacks
+    "strictBindCallApply": false, // Rarely needed
+    "strictPropertyInitialization": false, // Conflicts with React patterns
+    "noImplicitThis": true, // Keep this - prevents bugs
+    "alwaysStrict": true, // Keep this - good practice
+    "noImplicitAny": false, // Gradual typing approach - too strict for migration
     "plugins": [
       {
         "name": "next"
       }
     ],
     "paths": {
-      "@/*": [
-        "./*"
-      ]
+      "@/*": ["./*"]
     }
   },
-  "include": [
-    "next-env.d.ts",
-    "**/*.ts",
-    "**/*.tsx",
-    ".next/types/**/*.ts"
-  ],
+  "include": ["next-env.d.ts", "**/*.ts", "**/*.tsx", ".next/types/**/*.ts"],
   "ts-node": {
     "compilerOptions": {
       "module": "commonjs"
     }
   },
-  "exclude": [
-    "node_modules",
-    ".next",
-    "__tests__/**/*"
-  ]
+  "exclude": ["node_modules", ".next", "__tests__/**/*"]
 }

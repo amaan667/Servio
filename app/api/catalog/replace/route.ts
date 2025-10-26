@@ -32,7 +32,6 @@ export async function POST(req: NextRequest) {
   const requestId = Math.random().toString(36).substring(7);
 
   try {
-
     const formData = await req.formData();
     const file = formData.get("file") as File;
     const venueId = formData.get("venue_id") as string;
@@ -165,7 +164,6 @@ export async function POST(req: NextRequest) {
     // Extract from PDF using Vision AI
     logger.info(`[MENU IMPORT ${requestId}] Extracting from PDF with Vision AI...`);
     for (let pageIndex = 0; pageIndex < pdfImages.length; pageIndex++) {
-
       // Get item data from Vision
       const extractedItems = await extractMenuFromImage(pdfImages[pageIndex]);
       // Don't add 'page' to items - track it separately
@@ -424,7 +422,7 @@ export async function POST(req: NextRequest) {
 
     // Step 6: Insert new items and hotspots
     if (menuItems.length > 0) {
-      const { error: insertItemsError, data: insertedItems } = await supabase
+      const { error: insertItemsError, data: _insertedItems } = await supabase
         .from("menu_items")
         .insert(menuItems)
         .select();
@@ -434,7 +432,7 @@ export async function POST(req: NextRequest) {
     }
 
     if (hotspots.length > 0) {
-      const { error: insertHotspotsError, data: insertedHotspots } = await supabase
+      const { error: insertHotspotsError, data: _insertedHotspots } = await supabase
         .from("menu_hotspots")
         .insert(hotspots)
         .select();

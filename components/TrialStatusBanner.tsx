@@ -20,21 +20,64 @@ interface TrialStatusBannerProps {
 
 export default function TrialStatusBanner({ userRole }: TrialStatusBannerProps) {
   const { user } = useAuth();
-  
+
   // Cache trial status to prevent flicker
   const getCachedTrialStatus = () => {
-    if (typeof window === 'undefined' || !user?.id) return null;
+    if (typeof window === "undefined" || !user?.id) return null;
     const cached = sessionStorage.getItem(`trial_status_${user.id}`);
     return cached ? JSON.parse(cached) : null;
   };
-  
+
   const [trialStatus, setTrialStatus] = useState<TrialStatus | null>(getCachedTrialStatus());
   const [loading, setLoading] = useState(false);
 
-  // Only show trial status banner for owners
-  if (userRole && userRole !== "owner") {
-    return null;
-  }
+  // Helper function to process trial status (defined before hooks that use it)
+  const processTrialStatus = useCallback(
+    (org: unknown) => {
+      const subscriptionStatus = org.subscription_status || "basic";
+      const tier = org.subscription_tier || "basic";
+      const trialEndsAt = org.trial_ends_at;
+
+      // Processing trial status
+
+      // Check if trial has expired
+      let isTrialing = false;
+      let daysRemaining = null;
+
+      if (trialEndsAt) {
+        const endDate = new Date(trialEndsAt);
+        const now = new Date();
+
+        // Date calculation
+
+        // Set both dates to start of day for accurate day counting
+        const endDateStart = new Date(endDate.getFullYear(), endDate.getMonth(), endDate.getDate());
+        const nowStart = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+
+        const diffTime = endDateStart.getTime() - nowStart.getTime();
+        daysRemaining = Math.floor(diffTime / (1000 * 60 * 60 * 24));
+
+        // Days calculation
+
+        // Trial is active if we have days remaining and status is trialing
+        isTrialing = subscriptionStatus === "trialing" && daysRemaining > 0;
+      }
+
+      // Final trial status calculated
+      const _status = {
+        isTrialing,
+        subscriptionStatus,
+        tier,
+        trialEndsAt,
+        daysRemaining,
+      };
+      setTrialStatus(_status);
+      if (typeof window !== "undefined" && user?.id) {
+        sessionStorage.setItem(`trial_status_${user.id}`, JSON.stringify(_status));
+      }
+    },
+    [user]
+  );
 
   const fetchTrialStatus = useCallback(async () => {
     if (!user) {
@@ -73,7 +116,7 @@ export default function TrialStatusBanner({ userRole }: TrialStatusBannerProps) 
           daysRemaining,
         };
         setTrialStatus(defaultStatus);
-        if (typeof window !== 'undefined') {
+        if (typeof window !== "undefined") {
           sessionStorage.setItem(`trial_status_${user.id}`, JSON.stringify(defaultStatus));
         }
         setLoading(false);
@@ -111,7 +154,7 @@ export default function TrialStatusBanner({ userRole }: TrialStatusBannerProps) 
           daysRemaining,
         };
         setTrialStatus(status);
-        if (typeof window !== 'undefined') {
+        if (typeof window !== "undefined") {
           sessionStorage.setItem(`trial_status_${user.id}`, JSON.stringify(status));
         }
       }
@@ -132,57 +175,13 @@ export default function TrialStatusBanner({ userRole }: TrialStatusBannerProps) 
         daysRemaining,
       };
       setTrialStatus(status);
-      if (typeof window !== 'undefined') {
+      if (typeof window !== "undefined") {
         sessionStorage.setItem(`trial_status_${user.id}`, JSON.stringify(status));
       }
     } finally {
       setLoading(false);
     }
-  }, [user]);
-
-  const processTrialStatus = (org: unknown) => {
-    const subscriptionStatus = org.subscription_status || "basic";
-    const tier = org.subscription_tier || "basic";
-    const trialEndsAt = org.trial_ends_at;
-
-    // Processing trial status
-
-    // Check if trial has expired
-    let isTrialing = false;
-    let daysRemaining = null;
-
-    if (trialEndsAt) {
-      const endDate = new Date(trialEndsAt);
-      const now = new Date();
-
-      // Date calculation
-
-      // Set both dates to start of day for accurate day counting
-      const endDateStart = new Date(endDate.getFullYear(), endDate.getMonth(), endDate.getDate());
-      const nowStart = new Date(now.getFullYear(), now.getMonth(), now.getDate());
-
-      const diffTime = endDateStart.getTime() - nowStart.getTime();
-      daysRemaining = Math.floor(diffTime / (1000 * 60 * 60 * 24));
-
-      // Days calculation
-
-      // Trial is active if we have days remaining and status is trialing
-      isTrialing = subscriptionStatus === "trialing" && daysRemaining > 0;
-    }
-
-    // Final trial status calculated
-    const status = {
-      isTrialing,
-      subscriptionStatus,
-      tier,
-      trialEndsAt,
-      daysRemaining,
-    };
-    setTrialStatus(status);
-    if (typeof window !== 'undefined' && user?.id) {
-      sessionStorage.setItem(`trial_status_${user.id}`, JSON.stringify(status));
-    }
-  };
+  }, [user, processTrialStatus]);
 
   useEffect(() => {
     if (user) {
@@ -285,10 +284,21 @@ export default function TrialStatusBanner({ userRole }: TrialStatusBannerProps) 
       setTimeout(() => {
         const url = new URL(window.location.href);
         url.searchParams.delete("upgrade");
-        window.history.replaceState({ /* Empty */ }, document.title, url.toString());
+        window.history.replaceState(
+          {
+            /* Empty */
+          },
+          document.title,
+          url.toString()
+        );
       }, 3000);
     }
   }, []);
+
+  // Only show trial status banner for owners
+  if (userRole && userRole !== "owner") {
+    return null;
+  }
 
   // Show banner for trialing, active subscriptions, or expired trials
   if (loading || !trialStatus) {
@@ -390,7 +400,9 @@ export default function TrialStatusBanner({ userRole }: TrialStatusBannerProps) 
 
   // Render plan status banner (active subscription or expired trial)
   // Treat "basic", "standard", "premium", and "active" as active subscriptions
-  const isActiveSubscription = ["active", "basic", "standard", "premium"].includes(trialStatus.subscriptionStatus);
+  const isActiveSubscription = ["active", "basic", "standard", "premium"].includes(
+    trialStatus.subscriptionStatus
+  );
   const isPaid = isActiveSubscription && !trialStatus.isTrialing;
 
   return (
@@ -428,8 +440,8 @@ export default function TrialStatusBanner({ userRole }: TrialStatusBannerProps) 
         {isPaid
           ? `Your ${getTierDisplayName(trialStatus.tier)} plan is active. Stripe is handling your billing automatically.`
           : isActiveSubscription
-          ? `Your ${getTierDisplayName(trialStatus.tier)} subscription is active`
-          : `Your ${getTierDisplayName(trialStatus.tier)} trial has expired. Upgrade to continue using all features.`}
+            ? `Your ${getTierDisplayName(trialStatus.tier)} subscription is active`
+            : `Your ${getTierDisplayName(trialStatus.tier)} trial has expired. Upgrade to continue using all features.`}
       </div>
     </div>
   );

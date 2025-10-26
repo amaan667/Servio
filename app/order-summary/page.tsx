@@ -29,13 +29,13 @@ export default function OrderSummaryPage() {
   const orderId = searchParams?.get("orderId");
   const sessionId = searchParams?.get("sessionId");
 
+  // PRE-PAYMENT: Show the cart summary before payment
+  const { orderData, loading, isCreatingOrder, orderPlaced, handlePayNow } = useOrderSummary();
+
   // POST-PAYMENT: If orderId or sessionId exists, show the confirmation page
   if (orderId || sessionId) {
     return <OrderSummary orderId={orderId || undefined} sessionId={sessionId || undefined} />;
   }
-
-  // PRE-PAYMENT: Show the cart summary before payment
-  const { orderData, loading, isCreatingOrder, orderPlaced, handlePayNow } = useOrderSummary();
 
   if (loading) {
     return (

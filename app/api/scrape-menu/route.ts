@@ -11,7 +11,7 @@ export const dynamic = "force-dynamic";
 /**
  * Browser instance cache for reuse across requests
  */
-// eslint-disable-next-line @typescript-eslint/no-explicit-any
+
 let browserInstance: any = null;
 
 /**
@@ -36,9 +36,7 @@ async function getBrowser() {
         ],
         timeout: 30000, // 30s timeout for launch
       });
-
     } catch (launchError) {
-
       // Don't crash - throw error to be caught by API handler
       throw new Error(
         `Playwright browser failed to launch. This usually means:\n` +
@@ -96,7 +94,6 @@ async function detectJSHeavySite(url: string): Promise<boolean> {
  * Uses the right strategy based on site type
  */
 async function scrapeWithPlaywright(url: string, waitForNetworkIdle: boolean = false) {
-
   let browser;
   let context;
   let page;
@@ -138,14 +135,18 @@ async function scrapeWithPlaywright(url: string, waitForNetworkIdle: boolean = f
       return null;
     });
 
-    if (embeddedData) { /* Empty */ }
+    if (embeddedData) {
+      /* Empty */
+    }
 
     // Strategy 2: FAST extraction - no waiting!
 
     // Quick cookie dismissal (don't wait)
     await page
       .click('button:has-text("Accept"), button:has-text("Agree")', { timeout: 1000 })
-      .catch(() => { /* Empty */ });
+      .catch(() => {
+        /* Empty */
+      });
 
     // Single scroll to trigger lazy content (no waiting)
     await page.evaluate(() => window.scrollTo(0, document.body.scrollHeight));
@@ -182,8 +183,14 @@ async function scrapeWithPlaywright(url: string, waitForNetworkIdle: boolean = f
   } catch (scrapeError) {
     throw scrapeError;
   } finally {
-    if (page) await page.close().catch(() => { /* Empty */ });
-    if (context) await context.close().catch(() => { /* Empty */ });
+    if (page)
+      await page.close().catch(() => {
+        /* Empty */
+      });
+    if (context)
+      await context.close().catch(() => {
+        /* Empty */
+      });
   }
 }
 
@@ -209,7 +216,9 @@ export async function POST(req: NextRequest) {
     // Smart detection: Determine site type FIRST (saves 20s for JS sites!)
     const isJSHeavy = await detectJSHeavySite(url);
 
-    if (isJSHeavy) { /* Empty */ } else {
+    if (isJSHeavy) {
+      /* Empty */
+    } else {
       // Intentionally empty
     }
 
@@ -291,15 +300,18 @@ Return ONLY valid JSON:
       const parsed = JSON.parse(aiContent);
       menuItems = parsed.items || [];
 
-      if (menuItems.length === 0) { /* Empty */ } else {
-
+      if (menuItems.length === 0) {
+        /* Empty */
+      } else {
         // Log first 10 items in detail
         const itemsToShow = Math.min(10, menuItems.length);
         for (let i = 0; i < itemsToShow; i++) {
           const item = menuItems[i];
         }
 
-        if (menuItems.length > 10) { /* Empty */ }
+        if (menuItems.length > 10) {
+          /* Empty */
+        }
 
         const categories = Array.from(new Set(menuItems.map((i) => i.category)));
       }
