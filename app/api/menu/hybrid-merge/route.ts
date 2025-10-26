@@ -209,7 +209,7 @@ Be smart about matching:
       if (!Array.isArray(mergedItems)) {
         mergedItems = [mergedItems];
       }
-    } catch (parseError) {
+    } catch (_parseError) {
       throw new Error("AI returned invalid JSON");
     }
 

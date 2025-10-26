@@ -244,7 +244,7 @@ export async function POST(req: NextRequest) {
       if (insertError) throw new Error(`Insert hotspots failed: ${insertError.message}`);
     }
 
-    const duration = Date.now() - startTime;
+    const _duration = Date.now() - startTime;
 
     return NextResponse.json({
       ok: true,
@@ -255,7 +255,7 @@ export async function POST(req: NextRequest) {
       },
     });
   } catch (_err) {
-    const duration = Date.now() - startTime;
+    const _duration = Date.now() - startTime;
     const errorMessage = err instanceof Error ? err.message : "Processing failed";
     logger.error(`[REPROCESS ${requestId}] Error:`, { error: errorMessage });
     return NextResponse.json({ ok: false, error: errorMessage }, { status: 500 });

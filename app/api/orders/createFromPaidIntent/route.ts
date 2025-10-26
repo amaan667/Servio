@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import Stripe from 'stripe';
-import { ENV } from '@/lib/env';
+import { ENV as _ENV } from '@/lib/env';
 import { v4 as uuidv4 } from 'uuid';
 import { stripe } from '@/lib/stripe-client';
 import { createAdminClient } from '@/lib/supabase';

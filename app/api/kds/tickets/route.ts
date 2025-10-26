@@ -165,14 +165,14 @@ export async function GET(req: Request) {
       return NextResponse.json({ ok: false, error: finalError.message }, { status: 500 });
     }
 
-    const duration = Date.now() - startTime;
+    const _duration = Date.now() - startTime;
 
     return NextResponse.json({
       ok: true,
       tickets: finalTickets || [],
     });
   } catch (_error) {
-    const duration = Date.now() - startTime;
+    const _duration = Date.now() - startTime;
 
     logger.error("[KDS] Unexpected error:", {
       error: error instanceof Error ? error.message : "Unknown error",

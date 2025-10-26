@@ -34,7 +34,7 @@ export async function GET(
     
     if (cachedMenu) {
       logger.debug('[MENU API] Cache hit for:', { value: venueId });
-      const duration = Date.now() - startTime;
+      const _duration = Date.now() - startTime;
       return NextResponse.json(cachedMenu);
     }
     
@@ -109,12 +109,12 @@ export async function GET(
     // Cache the response for 5 minutes
     await cache.set(cacheKey, response, { ttl: cacheTTL.medium });
     
-    const duration = Date.now() - startTime;
+    const _duration = Date.now() - startTime;
     
     return NextResponse.json(response);
 
   } catch (_error) {
-    const duration = Date.now() - startTime;
+    const _duration = Date.now() - startTime;
     
     logger.error('[MENU API] Unexpected error:', { 
       error: error instanceof Error ? error.message : 'Unknown error',
