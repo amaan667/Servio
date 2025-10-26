@@ -75,7 +75,7 @@ export async function GET(req: Request) {
           ...table,
           table_id: (table as any).id, // Add table_id field for consistency with TableRuntimeState interface
           merged_with_table_id: (table as any).merged_with_table_id || null, // Include merge relationship
-          session_id: session?.id || null,
+          session_id: (session as any)?.id || null,
           status: session?.status || "FREE",
           order_id: session?.order_id || null,
           opened_at: session?.opened_at || null,

@@ -20,17 +20,17 @@ export default function GlobalNav() {
   const getInitialAuthState = () => {
     if (typeof window === "undefined") return false;
     // Check for auth cookies or session storage - more comprehensive
-    const cookies = document.cookie.split(';');
-    const hasAuthCookie = cookies.some(cookie => 
-      cookie.trim().startsWith('sb-') && cookie.includes('auth-token')
+    const cookies = document.cookie.split(";");
+    const hasAuthCookie = cookies.some(
+      (cookie) => cookie.trim().startsWith("sb-") && cookie.includes("auth-token")
     );
-    
+
     // Check multiple possible session storage keys
-    const hasSessionAuth = 
-      sessionStorage.getItem('supabase.auth.token') !== null ||
-      localStorage.getItem('supabase.auth.token') !== null ||
-      Object.keys(localStorage).some(key => key.includes('supabase'));
-    
+    const hasSessionAuth =
+      sessionStorage.getItem("supabase.auth.token") !== null ||
+      localStorage.getItem("supabase.auth.token") !== null ||
+      Object.keys(localStorage).some((key) => key.includes("supabase"));
+
     return hasAuthCookie || hasSessionAuth;
   };
 
@@ -44,12 +44,12 @@ export default function GlobalNav() {
     }
     // Try to get cached data from any existing session
     const keys = Object.keys(sessionStorage);
-    const roleKey = keys.find(k => k.startsWith('user_role_'));
-    const venueKey = keys.find(k => k.startsWith('venue_id_'));
-    
+    const roleKey = keys.find((k) => k.startsWith("user_role_"));
+    const venueKey = keys.find((k) => k.startsWith("venue_id_"));
+
     const cachedRole = roleKey ? sessionStorage.getItem(roleKey) : null;
     const cachedVenueId = venueKey ? sessionStorage.getItem(venueKey) : null;
-    
+
     return {
       primaryVenueId: cachedVenueId,
       userRole: cachedRole,
@@ -151,8 +151,8 @@ export default function GlobalNav() {
             sessionStorage.setItem(`venue_id_${session.user.id}`, staffResult.data.venue_id);
           }
         } catch (_error) {
-      // Error handled silently
-    }
+          // Error handled silently
+        }
       } else if (!initiallyAuthenticated) {
         // Only clear if we're definitely not authenticated
         setPrimaryVenueId(null);
@@ -519,21 +519,21 @@ export default function GlobalNav() {
               <>
                 <Link
                   href="/"
-                  className="block px-4 py-3 text-base font-semibold text-gray-900 hover:text-servio-purple hover:bg-servio-purple/5 rounded-xl transition-all duration-200 min-h-[48px] flex items-center"
+                  className="px-4 py-3 text-base font-semibold text-gray-900 hover:text-servio-purple hover:bg-servio-purple/5 rounded-xl transition-all duration-200 min-h-[48px] flex items-center"
                   onClick={() => setMobileMenuOpen(false)}
                 >
                   Home
                 </Link>
                 <Link
                   href="#features"
-                  className="block px-4 py-3 text-base font-semibold text-gray-900 hover:text-servio-purple hover:bg-servio-purple/5 rounded-xl transition-all duration-200 min-h-[48px] flex items-center"
+                  className="px-4 py-3 text-base font-semibold text-gray-900 hover:text-servio-purple hover:bg-servio-purple/5 rounded-xl transition-all duration-200 min-h-[48px] flex items-center"
                   onClick={() => setMobileMenuOpen(false)}
                 >
                   Features
                 </Link>
                 <Link
                   href="#pricing"
-                  className="block px-4 py-3 text-base font-semibold text-gray-900 hover:text-servio-purple hover:bg-servio-purple/5 rounded-xl transition-all duration-200 min-h-[48px] flex items-center"
+                  className="px-4 py-3 text-base font-semibold text-gray-900 hover:text-servio-purple hover:bg-servio-purple/5 rounded-xl transition-all duration-200 min-h-[48px] flex items-center"
                   onClick={() => setMobileMenuOpen(false)}
                 >
                   Pricing

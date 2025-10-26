@@ -590,7 +590,7 @@ export async function handleMergeTable(
 export async function handleUnmergeTable(supabase: unknown, table_id: string) {
   try {
     // Get the current table info to understand its state
-    const { data: currentTable, error: currentTableError } = await supabase
+    const { data: currentTable, error: currentTableError } = await (supabase as any)
       .from("tables")
       .select("id, label, seat_count, merged_with_table_id, venue_id")
       .eq("id", table_id)
@@ -624,7 +624,7 @@ export async function handleUnmergeTable(supabase: unknown, table_id: string) {
     }
 
     // If this is a primary table, look for the secondary table
-    const { data: secondaryTable, error: findError } = await supabase
+    const { data: secondaryTable, error: findError } = await (supabase as any)
       .from("tables")
       .select("id, label, seat_count, merged_with_table_id, venue_id")
       .eq("merged_with_table_id", table_id)
@@ -672,7 +672,7 @@ export async function handleCancelReservation(
 ) {
   try {
     // First, cancel the reservation in the reservations table (if it exists)
-    const { error: reservationError } = await supabase
+    const { error: reservationError } = await (supabase as any)
       .from("reservations")
       .update({
         status: "CANCELLED",
@@ -685,7 +685,7 @@ export async function handleCancelReservation(
     }
 
     // Get the current table session
-    const { data: currentSession, error: sessionError } = await supabase
+    const { data: currentSession, error: sessionError } = await (supabase as any)
       .from("table_sessions")
       .select("*")
       .eq("table_id", table_id)
@@ -703,7 +703,7 @@ export async function handleCancelReservation(
     }
 
     // Close the current session
-    const { error: closeError } = await supabase
+    const { error: closeError } = await (supabase as any)
       .from("table_sessions")
       .update({
         closed_at: new Date().toISOString(),
@@ -717,7 +717,7 @@ export async function handleCancelReservation(
     }
 
     // Create a new FREE session for the table
-    const { data: newSessionData, error: newSessionError } = await supabase
+    const { data: newSessionData, error: newSessionError } = await (supabase as any)
       .from("table_sessions")
       .insert({
         table_id: table_id,

@@ -61,7 +61,7 @@ export async function GET(_request: NextRequest) {
       },
     });
   } catch (_error) {
-    apiLogger._error("[DEMO RESET CRON] Error:", {
+    apiLogger.error("[DEMO RESET CRON] Error:", {
       error: _error instanceof Error ? _error.message : "Unknown _error",
     });
     return NextResponse.json(

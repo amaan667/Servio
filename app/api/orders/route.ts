@@ -1,6 +1,5 @@
 import { NextResponse } from "next/server";
-import { createClient as createSupabaseClient } from "@/lib/supabase";
-import { createClient } from "@supabase/supabase-js";
+import { createClient, type SupabaseClient } from "@supabase/supabase-js";
 import { apiLogger, logger } from "@/lib/logger";
 
 export const runtime = "nodejs";
@@ -95,7 +94,7 @@ function bad(msg: string, status = 400) {
 
 // Function to create KDS tickets for an order
 async function createKDSTickets(
-  supabase: Awaited<ReturnType<typeof createSupabaseClient>>,
+  supabase: SupabaseClient,
   order: { id: string; venue_id: string; items?: Array<Record<string, unknown>> }
 ) {
   try {

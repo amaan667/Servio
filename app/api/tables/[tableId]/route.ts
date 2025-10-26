@@ -18,7 +18,13 @@ export async function PUT(req: NextRequest, context: { params: Promise<{ tableId
     const { supabase } = auth;
 
     // Update table
-    const updateData: unknown = {
+    const updateData: {
+      label?: string;
+      seat_count?: number;
+      is_active?: boolean;
+      updated_at: string;
+      qr_version?: number;
+    } = {
       label: label?.trim(),
       seat_count,
       is_active,
@@ -26,10 +32,10 @@ export async function PUT(req: NextRequest, context: { params: Promise<{ tableId
     };
 
     if (qr_version !== undefined) {
-      (updateData as any).qr_version = qr_version;
+      updateData.qr_version = qr_version;
     }
 
-    const { data: table, error } = await supabase
+    const { data: table, error } = await (supabase as any)
       .from("tables")
       .update(updateData)
       .eq("id", tableId)
@@ -75,13 +81,16 @@ export async function DELETE(req: NextRequest, context: { params: Promise<{ tabl
       .eq("id", tableId)
       .single();
 
-    if (checkError) {
+    if (checkError || !existingTable) {
       logger.error("[TABLES API] Error checking table existence:", { value: checkError });
       return NextResponse.json({ error: "Table not found" }, { status: 404 });
     }
 
+    // Type assertion for TypeScript - we've already checked for null above
+    const table = existingTable as { id: string; label: string; venue_id: string };
+
     // Verify venue ownership
-    const access = await verifyVenueAccess(supabase, user.id, existingTable.venue_id);
+    const access = await verifyVenueAccess(supabase, user.id, table.venue_id);
     if (!access.hasAccess) {
       return NextResponse.json(
         { error: "Forbidden - you don't have access to this venue" },
@@ -99,16 +108,16 @@ export async function DELETE(req: NextRequest, context: { params: Promise<{ tabl
         .from("orders")
         .select("id")
         .eq("table_id", tableId)
-        .eq("venue_id", existingTable.venue_id)
+        .eq("venue_id", table.venue_id)
         .in("order_status", ["PLACED", "ACCEPTED", "IN_PREP", "READY", "SERVING"]);
 
       activeOrders = ordersResult.data || [];
       ordersError = ordersResult.error;
     } catch (_error) {
       logger.error("[TABLES API] Exception during active orders check:", {
-        error: error instanceof Error ? error.message : "Unknown error",
+        error: _error instanceof Error ? _error.message : "Unknown error",
       });
-      ordersError = error;
+      ordersError = _error;
     }
 
     if (ordersError) {
@@ -147,16 +156,16 @@ export async function DELETE(req: NextRequest, context: { params: Promise<{ tabl
         .from("reservations")
         .select("id")
         .eq("table_id", tableId)
-        .eq("venue_id", existingTable.venue_id)
+        .eq("venue_id", table.venue_id)
         .eq("status", "BOOKED");
 
       activeReservations = reservationsResult.data || [];
       reservationsError = reservationsResult.error;
     } catch (_error) {
       logger.error("[TABLES API] Exception during active reservations check:", {
-        error: error instanceof Error ? error.message : "Unknown error",
+        error: _error instanceof Error ? _error.message : "Unknown error",
       });
-      reservationsError = error;
+      reservationsError = _error;
     }
 
     if (reservationsError) {
@@ -180,14 +189,14 @@ export async function DELETE(req: NextRequest, context: { params: Promise<{ tabl
 
       if (!ordersError && activeOrders && activeOrders.length > 0) {
         logger.info(`[TABLES API] Force completing ${activeOrders.length} active orders`);
-        const { error: completeOrdersError } = await supabase
+        const { error: completeOrdersError } = await (supabase as any)
           .from("orders")
           .update({
             order_status: "COMPLETED",
             updated_at: new Date().toISOString(),
           })
           .eq("table_id", tableId)
-          .eq("venue_id", existingTable.venue_id)
+          .eq("venue_id", table.venue_id)
           .in("order_status", ["PLACED", "ACCEPTED", "IN_PREP", "READY", "SERVING"]);
 
         if (completeOrdersError) {
@@ -203,14 +212,14 @@ export async function DELETE(req: NextRequest, context: { params: Promise<{ tabl
         logger.info(
           `[TABLES API] Force canceling ${activeReservations.length} active reservations`
         );
-        const { error: cancelReservationsError } = await supabase
+        const { error: cancelReservationsError } = await (supabase as any)
           .from("reservations")
           .update({
             status: "CANCELLED",
             updated_at: new Date().toISOString(),
           })
           .eq("table_id", tableId)
-          .eq("venue_id", existingTable.venue_id)
+          .eq("venue_id", table.venue_id)
           .eq("status", "BOOKED");
 
         if (cancelReservationsError) {
@@ -254,11 +263,11 @@ export async function DELETE(req: NextRequest, context: { params: Promise<{ tabl
     }
 
     // Clear table_id references in orders to avoid foreign key constraint issues
-    const { error: clearTableRefsError } = await supabase
+    const { error: clearTableRefsError } = await (supabase as any)
       .from("orders")
       .update({ table_id: null })
       .eq("table_id", tableId)
-      .eq("venue_id", existingTable.venue_id);
+      .eq("venue_id", table.venue_id);
 
     if (clearTableRefsError) {
       logger.error("[TABLES API] Error clearing table references in orders:", {
@@ -275,7 +284,7 @@ export async function DELETE(req: NextRequest, context: { params: Promise<{ tabl
       .from("table_sessions")
       .delete()
       .eq("table_id", tableId)
-      .eq("venue_id", existingTable.venue_id);
+      .eq("venue_id", table.venue_id);
 
     if (deleteSessionsError) {
       logger.error("[TABLES API] Error deleting table sessions:", { value: deleteSessionsError });
@@ -290,8 +299,8 @@ export async function DELETE(req: NextRequest, context: { params: Promise<{ tabl
     const { error: deleteGroupSessionError } = await supabase
       .from("table_group_sessions")
       .delete()
-      .eq("table_number", existingTable.label) // Use table label/number to match group sessions
-      .eq("venue_id", existingTable.venue_id);
+      .eq("table_number", table.label) // Use table label/number to match group sessions
+      .eq("venue_id", table.venue_id);
 
     if (deleteGroupSessionError) {
       logger.error("[TABLES API] Error deleting group sessions:", {
@@ -309,7 +318,7 @@ export async function DELETE(req: NextRequest, context: { params: Promise<{ tabl
       .from("tables")
       .delete()
       .eq("id", tableId)
-      .eq("venue_id", existingTable.venue_id);
+      .eq("venue_id", table.venue_id);
 
     if (error) {
       logger.error("[TABLES API] Error deleting table:", {
@@ -324,7 +333,7 @@ export async function DELETE(req: NextRequest, context: { params: Promise<{ tabl
       return NextResponse.json({ error: "Failed to delete table" }, { status: 500 });
     }
 
-    return NextResponse.json({ success: true, deletedTable: existingTable });
+    return NextResponse.json({ success: true, deletedTable: table });
   } catch (_error) {
     logger.error("[TABLES API] Unexpected error:", {
       error: _error instanceof Error ? _error.message : "Unknown _error",
