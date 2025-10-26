@@ -3,20 +3,20 @@
  * Provides Single Sign-On integration with SAML and OAuth providers
  */
 
-import React, { useState } from 'react';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { Button } from '@/components/ui/button';
-import { Input } from '@/components/ui/input';
-import { Label } from '@/components/ui/label';
-import { Switch } from '@/components/ui/switch';
-import { Badge } from '@/components/ui/badge';
-import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { Shield, Key, Users, Settings } from 'lucide-react';
+import React, { useState } from "react";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { Switch } from "@/components/ui/switch";
+import { Badge } from "@/components/ui/badge";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { Shield, Key, Users, Settings } from "lucide-react";
 
 interface SSOProvider {
   id: string;
   name: string;
-  type: 'saml' | 'oauth' | 'oidc';
+  type: "saml" | "oauth" | "oidc";
   enabled: boolean;
   config: unknown;
 }
@@ -24,65 +24,75 @@ interface SSOProvider {
 export const SSOIntegration: React.FC = () => {
   const [providers, setProviders] = useState<SSOProvider[]>([
     {
-      id: 'google',
-      name: 'Google Workspace',
-      type: 'oauth',
+      id: "google",
+      name: "Google Workspace",
+      type: "oauth",
       enabled: false,
-      config: { /* Empty */ }
+      config: {
+        /* Empty */
+      },
     },
     {
-      id: 'microsoft',
-      name: 'Microsoft Azure AD',
-      type: 'oidc',
+      id: "microsoft",
+      name: "Microsoft Azure AD",
+      type: "oidc",
       enabled: false,
-      config: { /* Empty */ }
+      config: {
+        /* Empty */
+      },
     },
     {
-      id: 'okta',
-      name: 'Okta',
-      type: 'saml',
+      id: "okta",
+      name: "Okta",
+      type: "saml",
       enabled: false,
-      config: { /* Empty */ }
+      config: {
+        /* Empty */
+      },
     },
     {
-      id: 'auth0',
-      name: 'Auth0',
-      type: 'oidc',
+      id: "auth0",
+      name: "Auth0",
+      type: "oidc",
       enabled: false,
-      config: { /* Empty */ }
-    }
+      config: {
+        /* Empty */
+      },
+    },
   ]);
 
   const [activeProvider, setActiveProvider] = useState<string | null>(null);
 
   const handleProviderToggle = (providerId: string, enabled: boolean) => {
-    setProviders(prev => prev.map(p => 
-      p.id === providerId ? { ...p, enabled } : p
-    ));
+    setProviders((prev) => prev.map((p) => (p.id === providerId ? { ...p, enabled } : p)));
   };
 
   const handleConfigUpdate = (providerId: string, config: unknown) => {
-    setProviders(prev => prev.map(p => 
-      p.id === providerId ? { ...p, config: { ...p.config, ...config } } : p
-    ));
+    setProviders((prev) =>
+      prev.map((p) => (p.id === providerId ? { ...p, config: { ...p.config, ...config } } : p))
+    );
   };
 
   const getProviderIcon = (type: string) => {
     switch (type) {
-      case 'saml': return <Shield className="h-4 w-4" />;
-      case 'oauth': return <Key className="h-4 w-4" />;
-      case 'oidc': return <Users className="h-4 w-4" />;
-      default: return <Settings className="h-4 w-4" />;
+      case "saml":
+        return <Shield className="h-4 w-4" />;
+      case "oauth":
+        return <Key className="h-4 w-4" />;
+      case "oidc":
+        return <Users className="h-4 w-4" />;
+      default:
+        return <Settings className="h-4 w-4" />;
     }
   };
 
   const getProviderBadge = (type: string) => {
     const colors = {
-      saml: 'bg-blue-100 text-blue-800',
-      oauth: 'bg-green-100 text-green-800',
-      oidc: 'bg-purple-100 text-purple-800'
+      saml: "bg-blue-100 text-blue-800",
+      oauth: "bg-green-100 text-green-800",
+      oidc: "bg-purple-100 text-purple-800",
     };
-    return colors[type as keyof typeof colors] || 'bg-gray-100 text-gray-800';
+    return colors[type as keyof typeof colors] || "bg-gray-100 text-gray-800";
   };
 
   return (
@@ -92,9 +102,7 @@ export const SSOIntegration: React.FC = () => {
           <h2 className="text-2xl font-bold">SSO Integration</h2>
           <p className="text-gray-600">Configure Single Sign-On providers for your organization</p>
         </div>
-        <Button onClick={() => setActiveProvider(null)}>
-          Add New Provider
-        </Button>
+        <Button onClick={() => setActiveProvider(null)}>Add New Provider</Button>
       </div>
 
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
@@ -125,9 +133,9 @@ export const SSOIntegration: React.FC = () => {
             <CardContent>
               <div className="space-y-3">
                 <p className="text-sm text-gray-600">
-                  {provider.type === 'saml' && 'SAML 2.0 authentication provider'}
-                  {provider.type === 'oauth' && 'OAuth 2.0 authentication provider'}
-                  {provider.type === 'oidc' && 'OpenID Connect authentication provider'}
+                  {provider.type === "saml" && "SAML 2.0 authentication provider"}
+                  {provider.type === "oauth" && "OAuth 2.0 authentication provider"}
+                  {provider.type === "oidc" && "OpenID Connect authentication provider"}
                 </p>
                 <Button
                   variant="outline"
@@ -147,9 +155,7 @@ export const SSOIntegration: React.FC = () => {
       {activeProvider && (
         <Card>
           <CardHeader>
-            <CardTitle>
-              Configure {providers.find(p => p.id === activeProvider)?.name}
-            </CardTitle>
+            <CardTitle>Configure {providers.find((p) => p.id === activeProvider)?.name}</CardTitle>
           </CardHeader>
           <CardContent>
             <Tabs defaultValue="general" className="space-y-4">
@@ -166,8 +172,13 @@ export const SSOIntegration: React.FC = () => {
                     <Input
                       id="clientId"
                       placeholder="Enter client ID"
-                      value={providers.find(p => p.id === activeProvider)?.config.clientId || ''}
-                      onChange={(e) => handleConfigUpdate(activeProvider, { clientId: e.target.value })}
+                      value={
+                        providers.find((p) => p.id === activeProvider)?.(config as any).clientId ||
+                        ""
+                      }
+                      onChange={(e) =>
+                        handleConfigUpdate(activeProvider, { clientId: e.target.value })
+                      }
                     />
                   </div>
                   <div className="space-y-2">
@@ -176,8 +187,13 @@ export const SSOIntegration: React.FC = () => {
                       id="clientSecret"
                       type="password"
                       placeholder="Enter client secret"
-                      value={providers.find(p => p.id === activeProvider)?.config.clientSecret || ''}
-                      onChange={(e) => handleConfigUpdate(activeProvider, { clientSecret: e.target.value })}
+                      value={
+                        providers.find((p) => p.id === activeProvider)?.(config as any)
+                          .clientSecret || ""
+                      }
+                      onChange={(e) =>
+                        handleConfigUpdate(activeProvider, { clientSecret: e.target.value })
+                      }
                     />
                   </div>
                   <div className="space-y-2">
@@ -185,8 +201,13 @@ export const SSOIntegration: React.FC = () => {
                     <Input
                       id="redirectUri"
                       placeholder="https://yourdomain.com/auth/callback"
-                      value={providers.find(p => p.id === activeProvider)?.config.redirectUri || ''}
-                      onChange={(e) => handleConfigUpdate(activeProvider, { redirectUri: e.target.value })}
+                      value={
+                        providers.find((p) => p.id === activeProvider)?.(config as any)
+                          .redirectUri || ""
+                      }
+                      onChange={(e) =>
+                        handleConfigUpdate(activeProvider, { redirectUri: e.target.value })
+                      }
                     />
                   </div>
                   <div className="space-y-2">
@@ -194,8 +215,12 @@ export const SSOIntegration: React.FC = () => {
                     <Input
                       id="scope"
                       placeholder="openid profile email"
-                      value={providers.find(p => p.id === activeProvider)?.config.scope || ''}
-                      onChange={(e) => handleConfigUpdate(activeProvider, { scope: e.target.value })}
+                      value={
+                        providers.find((p) => p.id === activeProvider)?.(config as any).scope || ""
+                      }
+                      onChange={(e) =>
+                        handleConfigUpdate(activeProvider, { scope: e.target.value })
+                      }
                     />
                   </div>
                 </div>
@@ -208,8 +233,12 @@ export const SSOIntegration: React.FC = () => {
                     <Input
                       id="issuer"
                       placeholder="https://your-provider.com"
-                      value={providers.find(p => p.id === activeProvider)?.config.issuer || ''}
-                      onChange={(e) => handleConfigUpdate(activeProvider, { issuer: e.target.value })}
+                      value={
+                        providers.find((p) => p.id === activeProvider)?.(config as any).issuer || ""
+                      }
+                      onChange={(e) =>
+                        handleConfigUpdate(activeProvider, { issuer: e.target.value })
+                      }
                     />
                   </div>
                   <div className="space-y-2">
@@ -217,8 +246,13 @@ export const SSOIntegration: React.FC = () => {
                     <Input
                       id="authorizationUrl"
                       placeholder="https://your-provider.com/oauth/authorize"
-                      value={providers.find(p => p.id === activeProvider)?.config.authorizationUrl || ''}
-                      onChange={(e) => handleConfigUpdate(activeProvider, { authorizationUrl: e.target.value })}
+                      value={
+                        providers.find((p) => p.id === activeProvider)?.(config as any)
+                          .authorizationUrl || ""
+                      }
+                      onChange={(e) =>
+                        handleConfigUpdate(activeProvider, { authorizationUrl: e.target.value })
+                      }
                     />
                   </div>
                   <div className="space-y-2">
@@ -226,8 +260,13 @@ export const SSOIntegration: React.FC = () => {
                     <Input
                       id="tokenUrl"
                       placeholder="https://your-provider.com/oauth/token"
-                      value={providers.find(p => p.id === activeProvider)?.config.tokenUrl || ''}
-                      onChange={(e) => handleConfigUpdate(activeProvider, { tokenUrl: e.target.value })}
+                      value={
+                        providers.find((p) => p.id === activeProvider)?.(config as any).tokenUrl ||
+                        ""
+                      }
+                      onChange={(e) =>
+                        handleConfigUpdate(activeProvider, { tokenUrl: e.target.value })
+                      }
                     />
                   </div>
                 </div>
@@ -240,8 +279,13 @@ export const SSOIntegration: React.FC = () => {
                     <Input
                       id="emailField"
                       placeholder="email"
-                      value={providers.find(p => p.id === activeProvider)?.config.emailField || ''}
-                      onChange={(e) => handleConfigUpdate(activeProvider, { emailField: e.target.value })}
+                      value={
+                        providers.find((p) => p.id === activeProvider)?.(config as any)
+                          .emailField || ""
+                      }
+                      onChange={(e) =>
+                        handleConfigUpdate(activeProvider, { emailField: e.target.value })
+                      }
                     />
                   </div>
                   <div className="space-y-2">
@@ -249,8 +293,13 @@ export const SSOIntegration: React.FC = () => {
                     <Input
                       id="nameField"
                       placeholder="name"
-                      value={providers.find(p => p.id === activeProvider)?.config.nameField || ''}
-                      onChange={(e) => handleConfigUpdate(activeProvider, { nameField: e.target.value })}
+                      value={
+                        providers.find((p) => p.id === activeProvider)?.(config as any).nameField ||
+                        ""
+                      }
+                      onChange={(e) =>
+                        handleConfigUpdate(activeProvider, { nameField: e.target.value })
+                      }
                     />
                   </div>
                   <div className="space-y-2">
@@ -258,8 +307,13 @@ export const SSOIntegration: React.FC = () => {
                     <Input
                       id="roleField"
                       placeholder="role"
-                      value={providers.find(p => p.id === activeProvider)?.config.roleField || ''}
-                      onChange={(e) => handleConfigUpdate(activeProvider, { roleField: e.target.value })}
+                      value={
+                        providers.find((p) => p.id === activeProvider)?.(config as any).roleField ||
+                        ""
+                      }
+                      onChange={(e) =>
+                        handleConfigUpdate(activeProvider, { roleField: e.target.value })
+                      }
                     />
                   </div>
                 </div>
@@ -270,9 +324,7 @@ export const SSOIntegration: React.FC = () => {
               <Button variant="outline" onClick={() => setActiveProvider(null)}>
                 Cancel
               </Button>
-              <Button onClick={() => setActiveProvider(null)}>
-                Save Configuration
-              </Button>
+              <Button onClick={() => setActiveProvider(null)}>Save Configuration</Button>
             </div>
           </CardContent>
         </Card>

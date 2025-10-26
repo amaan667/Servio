@@ -91,14 +91,20 @@ export function QRCodeGenerator({
               </SelectTrigger>
               <SelectContent>
                 {items.map((item: TableItem | CounterItem) => {
-                  const key = String(item.id || item.counter_id || item.table_id || Math.random());
+                  const key = String(
+                    item.id || (item as any).counter_id || (item as any).table_id || Math.random()
+                  );
 
                   // Get display value - handle both table and counter naming variations
                   let displayValue = "";
                   if (qrCodeType === "tables") {
-                    displayValue = String(item.label || item.table_number || item.name || "");
+                    displayValue = String(
+                      item.label || (item as any).table_number || (item as any).name || ""
+                    );
                   } else {
-                    displayValue = String(item.counter_name || item.label || item.name || "");
+                    displayValue = String(
+                      (item as any).counter_name || item.label || (item as any).name || ""
+                    );
                   }
 
                   // Skip items without a valid display value

@@ -155,7 +155,7 @@ export async function uploadImageToStorage(
   path: string,
   imageBlob: Blob
 ): Promise<string> {
-  const { data, error } = await supabase.storage.from(bucket).upload(path, imageBlob, {
+  const { data, error } = await (supabase as any).storage.from(bucket).upload(path, imageBlob, {
     contentType: imageBlob.type,
     upsert: true,
   });
@@ -164,7 +164,7 @@ export async function uploadImageToStorage(
     throw new Error(`Failed to upload image: ${error.message}`);
   }
 
-  const { data: urlData } = supabase.storage.from(bucket).getPublicUrl(path);
+  const { data: urlData } = (supabase as any).storage.from(bucket).getPublicUrl(path);
 
   return urlData.publicUrl;
 }

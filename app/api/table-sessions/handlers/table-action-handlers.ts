@@ -603,7 +603,7 @@ export async function handleUnmergeTable(supabase: unknown, table_id: string) {
 
     // Check if this table has a merged_with_table_id (it's a secondary table)
     if (currentTable.merged_with_table_id) {
-      const { data, error } = await supabase.rpc("api_unmerge_table", {
+      const { data, error } = await (supabase as any).rpc("api_unmerge_table", {
         p_secondary_table_id: table_id,
       });
 
@@ -636,7 +636,7 @@ export async function handleUnmergeTable(supabase: unknown, table_id: string) {
     }
 
     if (secondaryTable) {
-      const { data, error } = await supabase.rpc("api_unmerge_table", {
+      const { data, error } = await (supabase as any).rpc("api_unmerge_table", {
         p_secondary_table_id: secondaryTable.id,
       });
 

@@ -3,8 +3,8 @@
  * Handles all order-related business logic
  */
 
-import { BaseService } from './BaseService';
-import { createSupabaseClient } from '@/lib/supabase';
+import { BaseService } from "./BaseService";
+import { createSupabaseClient } from "@/lib/supabase";
 
 export interface OrderItem {
   menu_item_id: string;
@@ -49,82 +49,94 @@ export class OrderService extends BaseService {
    * Get orders with caching
    */
   async getOrders(venueId: string, filters?: OrderFilters): Promise<Order[]> {
-    const cacheKey = this.getCacheKey('orders:list', venueId, JSON.stringify(filters));
-    
-    return this.withCache(cacheKey, async () => {
-      const supabase = await createSupabaseClient();
-      let query = supabase
-        .from('orders')
-        .select(`
+    const cacheKey = this.getCacheKey("orders:list", venueId, JSON.stringify(filters));
+
+    return this.withCache(
+      cacheKey,
+      async () => {
+        const supabase = await createSupabaseClient();
+        let query = supabase
+          .from("orders")
+          .select(
+            `
           *,
           tables!left (
             id,
             label,
             area
           )
-        `)
-        .eq('venue_id', venueId)
-        .order('created_at', { ascending: false });
+        `
+          )
+          .eq("venue_id", venueId)
+          .order("created_at", { ascending: false });
 
-      if (filters?.status) {
-        query = query.eq('order_status', filters.status);
-      }
+        if (filters?.status) {
+          query = query.eq("order_status", filters.status);
+        }
 
-      if (filters?.paymentStatus && filters.paymentStatus.length > 0) {
-        query = query.in('payment_status', filters.paymentStatus);
-      }
+        if (filters?.paymentStatus && filters.paymentStatus.length > 0) {
+          query = query.in("payment_status", filters.paymentStatus);
+        }
 
-      if (filters?.tableId) {
-        query = query.eq('table_id', filters.tableId);
-      }
+        if (filters?.tableId) {
+          query = query.eq("table_id", filters.tableId);
+        }
 
-      if (filters?.sessionId) {
-        query = query.eq('session_id', filters.sessionId);
-      }
+        if (filters?.sessionId) {
+          query = query.eq("session_id", filters.sessionId);
+        }
 
-      if (filters?.startDate) {
-        query = query.gte('created_at', filters.startDate);
-      }
+        if (filters?.startDate) {
+          query = query.gte("created_at", filters.startDate);
+        }
 
-      if (filters?.endDate) {
-        query = query.lte('created_at', filters.endDate);
-      }
+        if (filters?.endDate) {
+          query = query.lte("created_at", filters.endDate);
+        }
 
-      if (filters?.limit) {
-        query = query.limit(filters.limit);
-      }
+        if (filters?.limit) {
+          query = query.limit(filters.limit);
+        }
 
-      const { data, error } = await query;
-      if (error) throw error;
-      return data || [];
-    }, 60); // 1 minute cache for orders
+        const { data, error } = await query;
+        if (error) throw error;
+        return data || [];
+      },
+      60
+    ); // 1 minute cache for orders
   }
 
   /**
    * Get order by ID
    */
   async getOrder(orderId: string, venueId: string): Promise<Order | null> {
-    const cacheKey = this.getCacheKey('orders:item', venueId, orderId);
-    
-    return this.withCache(cacheKey, async () => {
-      const supabase = await createSupabaseClient();
-      const { data, error } = await supabase
-        .from('orders')
-        .select(`
+    const cacheKey = this.getCacheKey("orders:item", venueId, orderId);
+
+    return this.withCache(
+      cacheKey,
+      async () => {
+        const supabase = await createSupabaseClient();
+        const { data, error } = await supabase
+          .from("orders")
+          .select(
+            `
           *,
           tables!left (
             id,
             label,
             area
           )
-        `)
-        .eq('id', orderId)
-        .eq('venue_id', venueId)
-        .single();
+        `
+          )
+          .eq("id", orderId)
+          .eq("venue_id", venueId)
+          .single();
 
-      if (error) throw error;
-      return data;
-    }, 60);
+        if (error) throw error;
+        return data;
+      },
+      60
+    );
   }
 
   /**
@@ -132,16 +144,19 @@ export class OrderService extends BaseService {
    */
   async createOrder(
     venueId: string,
-    orderData: Omit<Order, 'id' | 'venue_id' | 'created_at' | 'updated_at' | 'order_status' | 'payment_status'>
+    orderData: Omit<
+      Order,
+      "id" | "venue_id" | "created_at" | "updated_at" | "order_status" | "payment_status"
+    >
   ): Promise<Order> {
     const supabase = await createSupabaseClient();
     const { data, error } = await supabase
-      .from('orders')
+      .from("orders")
       .insert({
         ...orderData,
         venue_id: venueId,
-        order_status: 'PLACED',
-        payment_status: 'UNPAID',
+        order_status: "PLACED",
+        payment_status: "UNPAID",
       })
       .select()
       .single();
@@ -157,17 +172,13 @@ export class OrderService extends BaseService {
   /**
    * Update order status
    */
-  async updateOrderStatus(
-    orderId: string,
-    venueId: string,
-    status: string
-  ): Promise<Order> {
+  async updateOrderStatus(orderId: string, venueId: string, status: string): Promise<Order> {
     const supabase = await createSupabaseClient();
     const { data, error } = await supabase
-      .from('orders')
+      .from("orders")
       .update({ order_status: status })
-      .eq('id', orderId)
-      .eq('venue_id', venueId)
+      .eq("id", orderId)
+      .eq("venue_id", venueId)
       .select()
       .single();
 
@@ -191,14 +202,14 @@ export class OrderService extends BaseService {
     const supabase = await createSupabaseClient();
     const updates: unknown = { payment_status: paymentStatus };
     if (paymentMethod) {
-      updates.payment_method = paymentMethod;
+      (updates as any).payment_method = paymentMethod;
     }
 
     const { data, error } = await supabase
-      .from('orders')
+      .from("orders")
       .update(updates)
-      .eq('id', orderId)
-      .eq('venue_id', venueId)
+      .eq("id", orderId)
+      .eq("venue_id", venueId)
       .select()
       .single();
 
@@ -214,21 +225,21 @@ export class OrderService extends BaseService {
    * Mark order as served
    */
   async markServed(orderId: string, venueId: string): Promise<Order> {
-    return this.updateOrderStatus(orderId, venueId, 'SERVED');
+    return this.updateOrderStatus(orderId, venueId, "SERVED");
   }
 
   /**
    * Mark order as completed
    */
   async markCompleted(orderId: string, venueId: string): Promise<Order> {
-    return this.updateOrderStatus(orderId, venueId, 'COMPLETED');
+    return this.updateOrderStatus(orderId, venueId, "COMPLETED");
   }
 
   /**
    * Cancel order
    */
   async cancelOrder(orderId: string, venueId: string): Promise<Order> {
-    return this.updateOrderStatus(orderId, venueId, 'CANCELLED');
+    return this.updateOrderStatus(orderId, venueId, "CANCELLED");
   }
 
   /**
@@ -237,10 +248,10 @@ export class OrderService extends BaseService {
   async bulkCompleteOrders(orderIds: string[], venueId: string): Promise<void> {
     const supabase = await createSupabaseClient();
     const { error } = await supabase
-      .from('orders')
-      .update({ order_status: 'COMPLETED' })
-      .in('id', orderIds)
-      .eq('venue_id', venueId);
+      .from("orders")
+      .update({ order_status: "COMPLETED" })
+      .in("id", orderIds)
+      .eq("venue_id", venueId);
 
     if (error) throw error;
 
@@ -274,4 +285,3 @@ export class OrderService extends BaseService {
 
 // Export singleton instance
 export const orderService = new OrderService();
-

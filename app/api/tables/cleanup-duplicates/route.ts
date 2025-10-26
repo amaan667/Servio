@@ -65,7 +65,8 @@ export async function POST(req: Request) {
       if (tablesWithSameLabel.length > 1) {
         // Sort by created_at, keep the oldest
         const sorted = tablesWithSameLabel.sort(
-          (a, b) => new Date(a.created_at).getTime() - new Date(b.created_at).getTime()
+          (a, b) =>
+            new Date((a as any).created_at).getTime() - new Date((b as any).created_at).getTime()
         );
 
         // Mark all but the first (oldest) for removal

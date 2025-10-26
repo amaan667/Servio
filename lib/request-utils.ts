@@ -64,7 +64,7 @@ export async function fetchWithTimeout(
 
       // Combine signals if both provided
       const combinedSignal = signal
-        ? AbortSignal.unknown([signal, timeoutController.signal])
+        ? (AbortSignal as any).unknown([signal, timeoutController.signal])
         : timeoutController.signal;
 
       const response = await fetch(url, {

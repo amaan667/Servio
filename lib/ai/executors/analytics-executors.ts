@@ -71,8 +71,9 @@ export async function executeAnalyticsGetInsights(
     const totalRevenue =
       orderItems?.reduce((sum, item) => sum + item.price * item.quantity, 0) || 0;
     const totalQuantity = orderItems?.reduce((sum, item) => sum + item.quantity, 0) || 0;
-    const orderCount = new Set(orderItems?.map((item: Record<string, unknown>) => item.orders.id))
-      .size;
+    const orderCount = new Set(
+      orderItems?.map((item: Record<string, unknown>) => (item.orders as any).id)
+    ).size;
 
     const insights = {
       itemName: params.itemName || "Unknown Item",
@@ -164,7 +165,7 @@ export async function executeAnalyticsGetStats(
       impact: {
         itemsAffected: 0,
         estimatedRevenue: 0,
-        description: `Will generate ${params.metric} statistics for ${params.timeRange}${itemContext}`,
+        description: `Will generate ${(params as any).metric} statistics for ${params.timeRange}${itemContext}`,
       },
     };
   }
@@ -199,8 +200,9 @@ export async function executeAnalyticsGetStats(
       const totalRevenue =
         orderItems?.reduce((sum, item) => sum + item.price * item.quantity, 0) || 0;
       const totalQuantity = orderItems?.reduce((sum, item) => sum + item.quantity, 0) || 0;
-      const orderCount = new Set(orderItems?.map((item: Record<string, unknown>) => item.orders.id))
-        .size;
+      const orderCount = new Set(
+        orderItems?.map((item: Record<string, unknown>) => (item.orders as any).id)
+      ).size;
 
       stats = {
         itemName: params.itemName || "Unknown Item",
@@ -219,7 +221,7 @@ export async function executeAnalyticsGetStats(
         .eq("venue_id", venueId)
         .gte("created_at", timeStart);
 
-      switch (params.metric) {
+      switch ((params as any).metric) {
         case "revenue": {
           const totalRevenue =
             orders?.reduce((sum, order) => sum + (order.total_amount || 0), 0) || 0;
@@ -257,7 +259,7 @@ export async function executeAnalyticsGetStats(
           const itemSales = new Map();
           topItems?.forEach((item: Record<string, unknown>) => {
             const existing = itemSales.get(item.menu_item_id) || {
-              name: item.menu_items.name,
+              name: (item.menu_items as any).name,
               quantity: 0,
               revenue: 0,
             };
@@ -281,7 +283,7 @@ export async function executeAnalyticsGetStats(
         }
         default:
           stats = {
-            message: `${params.metric} analysis for ${params.timeRange}`,
+            message: `${(params as any).metric} analysis for ${params.timeRange}`,
             timeRange: params.timeRange,
           };
       }

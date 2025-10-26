@@ -95,7 +95,7 @@ export class EnhancedErrorTracker {
    * Start a transaction for performance monitoring
    */
   static startTransaction(name: string, operation: string, data?: Record<string, unknown>) {
-    return Sentry.startTransaction({
+    return (Sentry as any).startTransaction({
       name,
       op: operation,
       data,

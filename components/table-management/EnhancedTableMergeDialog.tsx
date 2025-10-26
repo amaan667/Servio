@@ -1,8 +1,8 @@
-'use client';
+"use client";
 
-import { useState, useEffect } from 'react';
-import { Button } from '@/components/ui/button';
-import type { TableWithState } from '@/types/table-types';
+import { useState, useEffect } from "react";
+import { Button } from "@/components/ui/button";
+import type { TableWithState } from "@/types/table-types";
 import {
   Dialog,
   DialogContent,
@@ -10,37 +10,32 @@ import {
   DialogFooter,
   DialogHeader,
   DialogTitle,
-} from '@/components/ui/dialog';
-import { Badge } from '@/components/ui/badge';
-import { Switch } from '@/components/ui/switch';
-import { Label } from '@/components/ui/label';
+} from "@/components/ui/dialog";
+import { Badge } from "@/components/ui/badge";
+import { Switch } from "@/components/ui/switch";
+import { Label } from "@/components/ui/label";
 
-import { 
-  Users, 
-  Clock, 
-  CheckCircle2, 
+import {
+  Users,
+  Clock,
+  CheckCircle2,
   Calendar,
   XCircle,
   Sparkles,
   AlertTriangle,
   Info,
-  Circle
-} from 'lucide-react';
+  Circle,
+} from "lucide-react";
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 import {
-  Tooltip,
-  TooltipContent,
-  TooltipProvider,
-  TooltipTrigger,
-} from '@/components/ui/tooltip';
-import { 
-  getTableState, 
-  getMergeScenario, 
+  getTableState,
+  getMergeScenario,
   getMergeableTables,
   getStateDisplayLabel,
   getStateColorClass,
   getStateIcon,
-  type TableState
-} from '@/lib/table-states';
+  type TableState,
+} from "@/lib/table-states";
 
 interface Table {
   id: string;
@@ -68,7 +63,11 @@ interface EnhancedTableMergeDialogProps {
   venueId: string;
   availableTables: Table[];
   onActionComplete?: () => void;
-  onMergeConfirm: (sourceTableId: string, targetTableId: string, requiresConfirmation: boolean) => Promise<void>;
+  onMergeConfirm: (
+    sourceTableId: string,
+    targetTableId: string,
+    requiresConfirmation: boolean
+  ) => Promise<void>;
 }
 
 export function EnhancedTableMergeDialog({
@@ -78,9 +77,9 @@ export function EnhancedTableMergeDialog({
   venueId,
   availableTables,
   onActionComplete,
-  onMergeConfirm
+  onMergeConfirm,
 }: EnhancedTableMergeDialogProps) {
-  const [selectedTableId, setSelectedTableId] = useState<string>('');
+  const [selectedTableId, setSelectedTableId] = useState<string>("");
   const [isLoading, setIsLoading] = useState(false);
   const [showAllTables, setShowAllTables] = useState(false);
   const [mergeableTables, setMergeableTables] = useState<Table[]>([]);
@@ -90,7 +89,7 @@ export function EnhancedTableMergeDialog({
     if (isOpen) {
       const tables = getMergeableTables(sourceTable, availableTables, showAllTables);
       setMergeableTables(tables);
-      setSelectedTableId(''); // Reset selection
+      setSelectedTableId(""); // Reset selection
     }
   }, [isOpen, sourceTable, availableTables, showAllTables]);
 
@@ -99,14 +98,18 @@ export function EnhancedTableMergeDialog({
       return;
     }
 
-    const selectedTable = mergeableTables.find(t => t.id === selectedTableId);
+    const selectedTable = mergeableTables.find((t) => t.id === selectedTableId);
     if (!selectedTable) {
       return;
     }
 
     try {
       setIsLoading(true);
-      await onMergeConfirm(sourceTable.id, selectedTableId, selectedTable.requiresConfirmation);
+      await onMergeConfirm(
+        sourceTable.id,
+        selectedTableId,
+        (selectedTable as any).requiresConfirmation
+      );
       onActionComplete?.();
       onClose();
     } catch (_error) {
@@ -117,25 +120,31 @@ export function EnhancedTableMergeDialog({
   };
 
   const formatTime = (dateString: string) => {
-    return new Date(dateString).toLocaleTimeString([], { 
-      hour: '2-digit', 
-      minute: '2-digit' 
+    return new Date(dateString).toLocaleTimeString([], {
+      hour: "2-digit",
+      minute: "2-digit",
     });
   };
 
   const getStateIconComponent = (state: TableState) => {
     switch (state) {
-      case 'FREE': return <CheckCircle2 className="h-3 w-3" />;
-      case 'OCCUPIED': return <Users className="h-3 w-3" />;
-      case 'RESERVED': return <Calendar className="h-3 w-3" />;
-      case 'BLOCKED': return <XCircle className="h-3 w-3" />;
-      case 'CLEANING': return <Sparkles className="h-3 w-3" />;
-      default: return <Circle className="h-3 w-3" />;
+      case "FREE":
+        return <CheckCircle2 className="h-3 w-3" />;
+      case "OCCUPIED":
+        return <Users className="h-3 w-3" />;
+      case "RESERVED":
+        return <Calendar className="h-3 w-3" />;
+      case "BLOCKED":
+        return <XCircle className="h-3 w-3" />;
+      case "CLEANING":
+        return <Sparkles className="h-3 w-3" />;
+      default:
+        return <Circle className="h-3 w-3" />;
     }
   };
 
   const sourceState = getTableState(sourceTable);
-  const selectedTable = mergeableTables.find(t => t.id === selectedTableId);
+  const selectedTable = mergeableTables.find((t) => t.id === selectedTableId);
   const mergeScenario = selectedTable?.mergeScenario;
 
   return (
@@ -147,7 +156,8 @@ export function EnhancedTableMergeDialog({
             Merge Table: {sourceTable.label}
           </DialogTitle>
           <DialogDescription>
-            Select a table to merge with {sourceTable.label}. By default, only free tables are shown for safety.
+            Select a table to merge with {sourceTable.label}. By default, only free tables are shown
+            for safety.
           </DialogDescription>
         </DialogHeader>
 
@@ -179,10 +189,14 @@ export function EnhancedTableMergeDialog({
             )}
             {(sourceTable.reserved_now_id || sourceTable.reserved_later_id) && (
               <div className="mt-2 text-sm text-gray-900">
-                <span>Reserved for: {sourceTable.reserved_now_name || sourceTable.reserved_later_name}</span>
+                <span>
+                  Reserved for: {sourceTable.reserved_now_name || sourceTable.reserved_later_name}
+                </span>
                 {(sourceTable.reserved_now_start || sourceTable.reserved_later_start) && (
                   <span className="ml-2">
-                    {formatTime(sourceTable.reserved_now_start || sourceTable.reserved_later_start!)}
+                    {formatTime(
+                      sourceTable.reserved_now_start || sourceTable.reserved_later_start!
+                    )}
                   </span>
                 )}
               </div>
@@ -205,7 +219,10 @@ export function EnhancedTableMergeDialog({
                   <Info className="h-4 w-4 text-blue-500" />
                 </TooltipTrigger>
                 <TooltipContent>
-                  <p>By default, only free tables are shown for safety. Enable this to see all tables including occupied and reserved ones.</p>
+                  <p>
+                    By default, only free tables are shown for safety. Enable this to see all tables
+                    including occupied and reserved ones.
+                  </p>
                 </TooltipContent>
               </Tooltip>
             </TooltipProvider>
@@ -227,28 +244,27 @@ export function EnhancedTableMergeDialog({
           {/* Available Tables */}
           <div className="flex-1 overflow-hidden flex flex-col">
             <h4 className="font-medium text-sm text-gray-700 mb-3">
-              {showAllTables ? 'All Tables:' : 'Available Tables:'}
+              {showAllTables ? "All Tables:" : "Available Tables:"}
             </h4>
             <div className="flex-1 overflow-y-auto space-y-2">
               {mergeableTables.length === 0 ? (
                 <p className="text-sm text-gray-900 text-center py-4">
-                  {showAllTables 
-                    ? 'No other tables available for merging'
-                    : 'No free tables available for merging'
-                  }
+                  {showAllTables
+                    ? "No other tables available for merging"
+                    : "No free tables available for merging"}
                 </p>
               ) : (
                 mergeableTables.map((table) => (
                   <div
                     key={table.id}
                     className={`p-3 border rounded-lg transition-colors ${
-                      !table.selectable
-                        ? 'border-gray-200 bg-gray-50 opacity-60 cursor-not-allowed'
+                      !(table as any).selectable
+                        ? "border-gray-200 bg-gray-50 opacity-60 cursor-not-allowed"
                         : selectedTableId === table.id
-                        ? 'border-blue-500 bg-blue-50'
-                        : 'border-gray-200 hover:border-gray-300 cursor-pointer'
+                          ? "border-blue-500 bg-blue-50"
+                          : "border-gray-200 hover:border-gray-300 cursor-pointer"
                     }`}
-                    onClick={() => table.selectable && setSelectedTableId(table.id)}
+                    onClick={() => (table as any).selectable && setSelectedTableId(table.id)}
                   >
                     <div className="flex items-center justify-between">
                       <div className="flex items-center gap-2">
@@ -257,36 +273,39 @@ export function EnhancedTableMergeDialog({
                           <Users className="h-3 w-3 mr-1" />
                           {table.seat_count} seats
                         </Badge>
-                        <Badge className={`text-xs ${getStateColorClass(table.state)}`}>
-                          {getStateIconComponent(table.state)}
-                          <span className="ml-1">{getStateDisplayLabel(table.state)}</span>
+                        <Badge className={`text-xs ${getStateColorClass((table as any).state)}`}>
+                          {getStateIconComponent((table as any).state)}
+                          <span className="ml-1">{getStateDisplayLabel((table as any).state)}</span>
                         </Badge>
-                        {table.requiresConfirmation && (
+                        {(table as any).requiresConfirmation && (
                           <Badge variant="destructive" className="text-xs">
                             <AlertTriangle className="h-3 w-3 mr-1" />
                             Confirmation Required
                           </Badge>
                         )}
                       </div>
-                      {table.selectable && selectedTableId === table.id && (
+                      {(table as any).selectable && selectedTableId === table.id && (
                         <div className="w-4 h-4 bg-blue-500 rounded-full flex items-center justify-center">
                           <div className="w-2 h-2 bg-white rounded-full"></div>
                         </div>
                       )}
-                      {!table.selectable && (
+                      {!(table as any).selectable && (
                         <TooltipProvider>
                           <Tooltip>
                             <TooltipTrigger>
                               <XCircle className="h-4 w-4 text-gray-700" />
                             </TooltipTrigger>
                             <TooltipContent>
-                              <p>{table.mergeScenario?.description || 'Cannot merge with this table'}</p>
+                              <p>
+                                {(table as any).mergeScenario?.description ||
+                                  "Cannot merge with this table"}
+                              </p>
                             </TooltipContent>
                           </Tooltip>
                         </TooltipProvider>
                       )}
                     </div>
-                    
+
                     {/* Table Details */}
                     <div className="mt-2 text-sm text-gray-900 space-y-1">
                       {table.order_id && (
@@ -295,15 +314,15 @@ export function EnhancedTableMergeDialog({
                           {table.total_amount && (
                             <span>£{(table.total_amount / 100).toFixed(2)}</span>
                           )}
-                          {table.customer_name && (
-                            <span>• {table.customer_name}</span>
-                          )}
+                          {table.customer_name && <span>• {table.customer_name}</span>}
                         </div>
                       )}
-                      
+
                       {(table.reserved_now_id || table.reserved_later_id) && (
                         <div className="flex items-center gap-2">
-                          <span>Reserved for: {table.reserved_now_name || table.reserved_later_name}</span>
+                          <span>
+                            Reserved for: {table.reserved_now_name || table.reserved_later_name}
+                          </span>
                           {(table.reserved_now_start || table.reserved_later_start) && (
                             <span>
                               {formatTime(table.reserved_now_start || table.reserved_later_start!)}
@@ -311,7 +330,7 @@ export function EnhancedTableMergeDialog({
                           )}
                         </div>
                       )}
-                      
+
                       {table.opened_at && (
                         <div className="flex items-center gap-1 text-xs text-gray-900">
                           <Clock className="h-3 w-3" />
@@ -321,9 +340,9 @@ export function EnhancedTableMergeDialog({
                     </div>
 
                     {/* Merge Scenario Description */}
-                    {table.mergeScenario && (
+                    {(table as any).mergeScenario && (
                       <div className="mt-2 text-xs text-gray-900 italic">
-                        {table.mergeScenario.description}
+                        {(table as any).mergeScenario.description}
                       </div>
                     )}
                   </div>
@@ -337,8 +356,8 @@ export function EnhancedTableMergeDialog({
           <Button variant="outline" onClick={onClose} disabled={isLoading}>
             Cancel
           </Button>
-          <Button 
-            onClick={handleConfirm} 
+          <Button
+            onClick={handleConfirm}
             disabled={!selectedTableId || !selectedTable?.selectable || isLoading}
             className="bg-blue-600 hover:bg-blue-700"
           >
@@ -350,7 +369,7 @@ export function EnhancedTableMergeDialog({
             ) : (
               <>
                 <Users className="h-4 w-4 mr-2" />
-                {mergeScenario?.requiresConfirmation ? 'Confirm Merge' : 'Merge Tables'}
+                {mergeScenario?.requiresConfirmation ? "Confirm Merge" : "Merge Tables"}
               </>
             )}
           </Button>

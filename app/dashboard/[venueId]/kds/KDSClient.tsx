@@ -53,18 +53,18 @@ interface KDSClientProps {
 export default function KDSClient({ venueId, initialTickets, initialStations }: KDSClientProps) {
   // Cache KDS stations to prevent flicker
   const getCachedStations = () => {
-    if (typeof window === 'undefined') return [];
+    if (typeof window === "undefined") return [];
     const cached = sessionStorage.getItem(`kds_stations_${venueId}`);
     return cached ? JSON.parse(cached) : [];
   };
 
   const getCachedSelectedStation = () => {
-    if (typeof window === 'undefined') return null;
+    if (typeof window === "undefined") return null;
     return sessionStorage.getItem(`kds_selected_station_${venueId}`);
   };
 
   const getCachedTickets = () => {
-    if (typeof window === 'undefined') return [];
+    if (typeof window === "undefined") return [];
     const cached = sessionStorage.getItem(`kds_tickets_${venueId}`);
     return cached ? JSON.parse(cached) : [];
   };
@@ -93,14 +93,14 @@ export default function KDSClient({ venueId, initialTickets, initialStations }: 
         const fetchedStations = data.stations || [];
         setStations(fetchedStations);
         // Cache stations to prevent flicker
-        if (typeof window !== 'undefined') {
+        if (typeof window !== "undefined") {
           sessionStorage.setItem(`kds_stations_${venueId}`, JSON.stringify(fetchedStations));
         }
         // Auto-select first station if none selected
         if (!selectedStation && fetchedStations.length > 0) {
           const firstStationId = fetchedStations[0].id;
           setSelectedStation(firstStationId);
-          if (typeof window !== 'undefined') {
+          if (typeof window !== "undefined") {
             sessionStorage.setItem(`kds_selected_station_${venueId}`, firstStationId);
           }
         }
@@ -117,14 +117,21 @@ export default function KDSClient({ venueId, initialTickets, initialStations }: 
     try {
       const { apiClient } = await import("@/lib/api-client");
       const response = await apiClient.get("/api/kds/tickets", {
-        params: { venueId, ...(selectedStation ? { stationId: selectedStation } : { /* Empty */ }) },
+        params: {
+          venueId,
+          ...(selectedStation
+            ? { stationId: selectedStation }
+            : {
+                /* Empty */
+              }),
+        },
       });
       const data = await response.json();
 
       if (data.ok) {
         setTickets(data.tickets || []);
         // Cache tickets
-        if (typeof window !== 'undefined') {
+        if (typeof window !== "undefined") {
           sessionStorage.setItem(`kds_tickets_${venueId}`, JSON.stringify(data.tickets || []));
         }
       } else {
@@ -169,8 +176,8 @@ export default function KDSClient({ venueId, initialTickets, initialStations }: 
         // REMOVE bumped tickets from KDS entirely
         setTickets((prev) => prev.filter((t) => t.order_id !== orderId));
       } else {
-      // Intentionally empty
-    }
+        // Intentionally empty
+      }
     } catch (_error) {
       // Error handled silently
     }
@@ -231,7 +238,11 @@ export default function KDSClient({ venueId, initialTickets, initialStations }: 
           table: "kds_tickets",
           filter: `venue_id=eq.${venueId}`,
         },
-        (payload: { eventType: string; new?: Record<string, unknown>; old?: Record<string, unknown> }) => {
+        (payload: {
+          eventType: string;
+          new?: Record<string, unknown>;
+          old?: Record<string, unknown>;
+        }) => {
           if (payload.eventType === "INSERT") {
             fetchTickets();
           } else if (payload.eventType === "UPDATE") {
@@ -273,9 +284,9 @@ export default function KDSClient({ venueId, initialTickets, initialStations }: 
   // Sort tickets: non-bumped first (by created_at), then bumped at bottom
   const sortedTickets = [...tickets].sort((a, b) => {
     // Bumped tickets always go to bottom
-    if (a.ticket_status === "bumped" && b.ticket_status !== "bumped") return 1;
-    if (a.ticket_status !== "bumped" && b.ticket_status === "bumped") return -1;
-    
+    if ((a as any).ticket_status === "bumped" && (b as any).ticket_status !== "bumped") return 1;
+    if ((a as any).ticket_status !== "bumped" && (b as any).ticket_status === "bumped") return -1;
+
     // For non-bumped tickets, sort by created_at (oldest first for priority)
     return new Date(a.created_at).getTime() - new Date(b.created_at).getTime();
   });

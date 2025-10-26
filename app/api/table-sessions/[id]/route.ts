@@ -17,11 +17,11 @@ export async function PUT(req: NextRequest, context: { params: Promise<{ id: str
     };
 
     if (order_id !== undefined) {
-      updateData.order_id = order_id;
+      (updateData as any).order_id = order_id;
     }
 
     if (closed_at !== undefined) {
-      updateData.closed_at = closed_at;
+      (updateData as any).closed_at = closed_at;
     }
 
     const { data: session, error } = await supabase

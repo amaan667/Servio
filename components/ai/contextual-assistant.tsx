@@ -49,11 +49,7 @@ const PAGE_SUGGESTIONS: Record<string, string[]> = {
   ],
 };
 
-export function ContextualAssistant({
-  venueId,
-  page,
-  dataSummary,
-}: ContextualAssistantProps) {
+export function ContextualAssistant({ venueId, page, dataSummary }: ContextualAssistantProps) {
   const [showPalette, setShowPalette] = useState(false);
   const [selectedPrompt, setSelectedPrompt] = useState("");
   const [insights, setInsights] = useState<string[]>([]);
@@ -67,24 +63,24 @@ export function ContextualAssistant({
     const newInsights: string[] = [];
 
     // Inventory-specific insights
-    if (page === "inventory" && dataSummary.lowStock?.length > 0) {
-      newInsights.push(`${dataSummary.lowStock.length} items below reorder level`);
+    if (page === "inventory" && (dataSummary as any).lowStock?.length > 0) {
+      newInsights.push(`${(dataSummary as any).lowStock.length} items below reorder level`);
     }
 
     // Menu-specific insights
-    if (page === "menu" && dataSummary.topSellers?.length > 0) {
-      const top = dataSummary.topSellers[0];
+    if (page === "menu" && (dataSummary as any).topSellers?.length > 0) {
+      const top = (dataSummary as any).topSellers[0];
       newInsights.push(`${top.name} is your top seller (${top.sales7d} sales)`);
     }
 
     // Orders-specific insights
-    if (page === "orders" && dataSummary.overdueTickets?.length > 0) {
-      newInsights.push(`${dataSummary.overdueTickets.length} tickets overdue`);
+    if (page === "orders" && (dataSummary as any).overdueTickets?.length > 0) {
+      newInsights.push(`${(dataSummary as any).overdueTickets.length} tickets overdue`);
     }
 
     // KDS-specific insights
-    if (page === "kds" && dataSummary.bottlenecks?.length > 0) {
-      const bottleneck = dataSummary.bottlenecks[0];
+    if (page === "kds" && (dataSummary as any).bottlenecks?.length > 0) {
+      const bottleneck = (dataSummary as any).bottlenecks[0];
       newInsights.push(`${bottleneck.station} has ${bottleneck.avgWaitTime}min avg wait`);
     }
 
@@ -105,17 +101,11 @@ export function ContextualAssistant({
               <Sparkles className="h-5 w-5 text-purple-500" />
               <CardTitle className="text-base">AI Assistant</CardTitle>
             </div>
-            <Button
-              size="sm"
-              variant="outline"
-              onClick={() => setShowPalette(true)}
-            >
+            <Button size="sm" variant="outline" onClick={() => setShowPalette(true)}>
               Ask AI
             </Button>
           </div>
-          <CardDescription>
-            Quick actions and insights for this page
-          </CardDescription>
+          <CardDescription>Quick actions and insights for this page</CardDescription>
         </CardHeader>
         <CardContent className="space-y-3">
           {/* Insights */}
@@ -157,13 +147,8 @@ export function ContextualAssistant({
 
       {/* Command Palette */}
       {showPalette && (
-        <AssistantCommandPalette
-          venueId={venueId}
-          page={page}
-          suggestions={suggestions}
-        />
+        <AssistantCommandPalette venueId={venueId} page={page} suggestions={suggestions} />
       )}
     </>
   );
 }
-

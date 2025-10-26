@@ -1,8 +1,8 @@
-'use client';
+"use client";
 
-import { createContext, useContext, useEffect, useMemo, useState } from 'react';
-import type { Session, User } from '@supabase/supabase-js';
-import { supabaseBrowser } from '@/lib/supabase';
+import { createContext, useContext, useEffect, useMemo, useState } from "react";
+import type { Session, User } from "@supabase/supabase-js";
+import { supabaseBrowser } from "@/lib/supabase";
 
 type AuthValue = {
   session: Session | null;
@@ -15,7 +15,9 @@ const AuthCtx = createContext<AuthValue>({
   session: null,
   user: null,
   loading: true,
-  signOut: async () => { /* Empty */ },
+  signOut: async () => {
+    /* Empty */
+  },
 });
 
 export function useAuth() {
@@ -32,11 +34,11 @@ export default function AuthProvider({
   // Get initial session from server OR from stored auth
   const getInitialSession = () => {
     if (initialSession) return initialSession;
-    
+
     // Check for stored session to prevent flicker
-    if (typeof window !== 'undefined') {
+    if (typeof window !== "undefined") {
       try {
-        const stored = localStorage.getItem('sb-auth-session');
+        const stored = localStorage.getItem("sb-auth-session");
         if (stored) {
           const parsed = JSON.parse(stored);
           return parsed;
@@ -62,7 +64,7 @@ export default function AuthProvider({
       setLoading(false);
       return;
     }
-    
+
     // Get initial session quickly - only if we don't have one already
     const getInitialSession = async () => {
       if (initialSession) {
@@ -71,7 +73,9 @@ export default function AuthProvider({
       }
 
       try {
-        const { data: { session: currentSession } } = await supabase.auth.getSession();
+        const {
+          data: { session: currentSession },
+        } = await supabase.auth.getSession();
         setSession(currentSession);
         setUser(currentSession?.user || null);
         setLoading(false);
@@ -81,61 +85,63 @@ export default function AuthProvider({
         setLoading(false);
       }
     };
-    
+
     // Get initial session immediately
     getInitialSession();
-    
+
     // Handle auth state changes
     let subscription: unknown;
     try {
-      const { data } = supabase.auth.onAuthStateChange(async (event: unknown, newSession: unknown) => {
-        switch (event) {
-          case 'SIGNED_IN':
-            setSession(newSession);
-            setUser(newSession?.user ?? null);
-            // Store session to prevent flicker on reload
-            if (typeof window !== 'undefined' && newSession) {
-              localStorage.setItem('sb-auth-session', JSON.stringify(newSession));
-            }
-            setLoading(false);
-            break;
-          case 'SIGNED_OUT':
-            setSession(null);
-            setUser(null);
-            // Clear stored session
-            if (typeof window !== 'undefined') {
-              localStorage.removeItem('sb-auth-session');
-            }
-            setLoading(false);
-            break;
-          case 'TOKEN_REFRESHED':
-            setSession(newSession);
-            setUser(newSession?.user ?? null);
-            // Update stored session
-            if (typeof window !== 'undefined' && newSession) {
-              localStorage.setItem('sb-auth-session', JSON.stringify(newSession));
-            }
-            break;
-          case 'USER_UPDATED':
-            setSession(newSession);
-            setUser(newSession?.user ?? null);
-            break;
-          default:
-            if (newSession) {
+      const { data } = supabase.auth.onAuthStateChange(
+        async (event: unknown, newSession: unknown) => {
+          switch (event) {
+            case "SIGNED_IN":
               setSession(newSession);
               setUser(newSession?.user ?? null);
-            }
-            setLoading(false);
+              // Store session to prevent flicker on reload
+              if (typeof window !== "undefined" && newSession) {
+                localStorage.setItem("sb-auth-session", JSON.stringify(newSession));
+              }
+              setLoading(false);
+              break;
+            case "SIGNED_OUT":
+              setSession(null);
+              setUser(null);
+              // Clear stored session
+              if (typeof window !== "undefined") {
+                localStorage.removeItem("sb-auth-session");
+              }
+              setLoading(false);
+              break;
+            case "TOKEN_REFRESHED":
+              setSession(newSession);
+              setUser(newSession?.user ?? null);
+              // Update stored session
+              if (typeof window !== "undefined" && newSession) {
+                localStorage.setItem("sb-auth-session", JSON.stringify(newSession));
+              }
+              break;
+            case "USER_UPDATED":
+              setSession(newSession);
+              setUser(newSession?.user ?? null);
+              break;
+            default:
+              if (newSession) {
+                setSession(newSession);
+                setUser(newSession?.user ?? null);
+              }
+              setLoading(false);
+          }
         }
-      });
+      );
       subscription = data?.subscription;
     } catch {
       setLoading(false);
     }
-    
+
     return () => {
       if (subscription) {
-        subscription.unsubscribe();
+        (subscription as any).unsubscribe();
       }
     };
   }, [initialSession]);
@@ -144,7 +150,7 @@ export default function AuthProvider({
     try {
       const supabase = supabaseBrowser();
       await supabase.auth.signOut();
-      
+
       // Clear local state immediately
       setSession(null);
       setUser(null);

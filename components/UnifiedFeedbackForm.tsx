@@ -180,9 +180,9 @@ export default function UnifiedFeedbackForm({
             case "stars":
               return answer.answer_stars > 0;
             case "multiple_choice":
-              return answer.answer_choice.trim() !== "";
+              return (answer.answer_choice as any).trim() !== "";
             case "paragraph":
-              return answer.answer_text.trim() !== "";
+              return (answer.answer_text as any).trim() !== "";
             default:
               return false;
           }

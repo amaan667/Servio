@@ -12,18 +12,18 @@ import {
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { AlertTriangle, Sparkles, History } from "lucide-react";
-import { ChatInterfaceProps } from './types';
+import { ChatInterfaceProps } from "./types";
 
 // Hooks
-import { useChatConversations } from './hooks/useChatConversations';
-import { useChatMessages } from './hooks/useChatMessages';
-import { useChatActions } from './hooks/useChatActions';
+import { useChatConversations } from "./hooks/useChatConversations";
+import { useChatMessages } from "./hooks/useChatMessages";
+import { useChatActions } from "./hooks/useChatActions";
 
 // Components
-import { ConversationList } from './components/ConversationList';
-import { MessageList } from './components/MessageList';
-import { PlanPreview } from './components/PlanPreview';
-import { ChatInput } from './components/ChatInput';
+import { ConversationList } from "./components/ConversationList";
+import { MessageList } from "./components/MessageList";
+import { PlanPreview } from "./components/PlanPreview";
+import { ChatInput } from "./components/ChatInput";
 
 export function ChatInterface({ venueId, isOpen, onClose, initialPrompt }: ChatInterfaceProps) {
   const router = useRouter();
@@ -44,13 +44,7 @@ export function ChatInterface({ venueId, isOpen, onClose, initialPrompt }: ChatI
     deleteConversation,
   } = useChatConversations(venueId, isOpen);
 
-  const {
-    messages,
-    loadMessages,
-    addMessage,
-    updateMessage,
-    clearMessages,
-  } = useChatMessages();
+  const { messages, loadMessages, addMessage, updateMessage, clearMessages } = useChatMessages();
 
   const {
     loading,
@@ -99,7 +93,7 @@ export function ChatInterface({ venueId, isOpen, onClose, initialPrompt }: ChatI
   // Handle conversation selection
   const handleSelectConversation = async (conversation: unknown) => {
     setCurrentConversation(conversation);
-    await loadMessages(conversation.id);
+    await loadMessages((conversation as any).id);
     setActiveTab("chat");
   };
 
@@ -111,7 +105,7 @@ export function ChatInterface({ venueId, isOpen, onClose, initialPrompt }: ChatI
       setActiveTab("chat");
       setInput("");
     } catch (_error) {
-      setError(error.message);
+      setError((error as any).message);
     }
   };
 
@@ -120,12 +114,12 @@ export function ChatInterface({ venueId, isOpen, onClose, initialPrompt }: ChatI
     if (!window.confirm("Are you sure you want to delete this conversation?")) {
       return;
     }
-    
+
     try {
       await deleteConversation(conversationId);
       setActiveTab("chat");
     } catch (_error) {
-      setError(error.message);
+      setError((error as any).message);
     }
   };
 
@@ -142,7 +136,7 @@ export function ChatInterface({ venueId, isOpen, onClose, initialPrompt }: ChatI
       try {
         conv = await createNewConversation();
       } catch (_error) {
-        setError(error.message);
+        setError((error as any).message);
         return;
       }
     }
@@ -161,7 +155,7 @@ export function ChatInterface({ venueId, isOpen, onClose, initialPrompt }: ChatI
     try {
       await sendMessage(conv.id, messageText);
     } catch (_error) {
-      setError(error.message);
+      setError((error as any).message);
     }
   };
 
@@ -171,7 +165,7 @@ export function ChatInterface({ venueId, isOpen, onClose, initialPrompt }: ChatI
 
     try {
       await executePlan(currentConversation.id);
-      
+
       // Add assistant message with execution result
       const assistantMessage = {
         id: `temp-${Date.now()}`,
@@ -183,7 +177,7 @@ export function ChatInterface({ venueId, isOpen, onClose, initialPrompt }: ChatI
       };
       addMessage(assistantMessage);
     } catch (_error) {
-      setError(error.message);
+      setError((error as any).message);
     }
   };
 
@@ -191,14 +185,14 @@ export function ChatInterface({ venueId, isOpen, onClose, initialPrompt }: ChatI
   const handleUndo = async (messageId: string, auditId: string) => {
     try {
       await undoAction(messageId, auditId);
-      
+
       // Update message to mark as undone
       updateMessage(messageId, {
         executionResult: null,
         canUndo: false,
       });
     } catch (_error) {
-      setError(error.message);
+      setError((error as any).message);
     }
   };
 
@@ -226,7 +220,11 @@ export function ChatInterface({ venueId, isOpen, onClose, initialPrompt }: ChatI
           </DialogDescription>
         </DialogHeader>
 
-        <Tabs value={activeTab} onValueChange={(v) => setActiveTab(v as unknown)} className="flex-1 flex flex-col overflow-hidden">
+        <Tabs
+          value={activeTab}
+          onValueChange={(v) => setActiveTab(v as unknown)}
+          className="flex-1 flex flex-col overflow-hidden"
+        >
           <TabsList className="mx-6 mt-4">
             <TabsTrigger value="chat" className="flex items-center space-x-2">
               <Sparkles className="h-4 w-4" />
@@ -246,11 +244,7 @@ export function ChatInterface({ venueId, isOpen, onClose, initialPrompt }: ChatI
               </Alert>
             )}
 
-            <MessageList
-              messages={messages}
-              undoing={undoing || ""}
-              onUndo={handleUndo}
-            />
+            <MessageList messages={messages} undoing={undoing || ""} onUndo={handleUndo} />
 
             <div ref={messagesEndRef} />
 

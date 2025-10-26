@@ -84,10 +84,12 @@ export function useTableGrid(venueId: string, leadTimeMinutes: number = 30) {
       // Transform the data to match the expected TableGridItem interface
       return tableData.map((item: Record<string, unknown>) => {
         // Find active table session for this table
-        const activeSession = tableSessions.find((s: unknown) => s.table_id === item.id);
+        const activeSession = tableSessions.find((s: unknown) => (s as any).table_id === item.id);
 
         // Find reservations for this table
-        const tableReservations = reservations.filter((r: unknown) => r.table_id === item.id);
+        const tableReservations = reservations.filter(
+          (r: unknown) => (r as any).table_id === item.id
+        );
 
         let reservationStatus = "NONE";
 

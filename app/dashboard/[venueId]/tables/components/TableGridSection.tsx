@@ -19,8 +19,8 @@ export function TableGridSection({
     const query = searchQuery.toLowerCase();
     return (
       table.label?.toLowerCase().includes(query) ||
-      table.table_number?.toString().includes(query) ||
-      table.session_status?.toLowerCase().includes(query)
+      (table as any).table_number?.toString().includes(query) ||
+      (table as any).session_status?.toLowerCase().includes(query)
     );
   });
 
@@ -36,7 +36,7 @@ export function TableGridSection({
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
         {filteredTables.map((table) => (
           <TableCardNew
-            key={table.id}
+            key={(table as any).id}
             table={table}
             venueId={venueId}
             onTableActionComplete={onTableActionComplete}

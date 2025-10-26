@@ -248,7 +248,7 @@ async function expandOccupiedTable(
     }
 
     // Update occupied table label to include the free table
-    const newLabel = `${occupiedTable.label} + ${freeTable.label}`;
+    const newLabel = `${(occupiedTable as any).label} + ${(freeTable as any).label}`;
     const { error: labelError } = await supabase
       .from("tables")
       .update({
@@ -306,7 +306,7 @@ async function expandReservedTable(
     const reservedTable = sourceIsFree ? targetTable : sourceTable;
 
     // Update reserved table label to include the free table
-    const newLabel = `${reservedTable.label} + ${freeTable.label}`;
+    const newLabel = `${(reservedTable as any).label} + ${(freeTable as any).label}`;
     const { error: labelError } = await supabase
       .from("tables")
       .update({
@@ -369,8 +369,8 @@ async function mergeOccupiedTables(
       return { error: "Could not find both active sessions" };
     }
 
-    const sourceSession = sessions.find((s: unknown) => s.table_id === sourceTable.id);
-    const targetSession = sessions.find((s: unknown) => s.table_id === targetTable.id);
+    const sourceSession = sessions.find((s: unknown) => (s as any).table_id === sourceTable.id);
+    const targetSession = sessions.find((s: unknown) => (s as any).table_id === targetTable.id);
 
     if (!sourceSession || !targetSession) {
       return { error: "Could not find both active sessions" };
@@ -410,7 +410,7 @@ async function mergeOccupiedTables(
     }
 
     // Update table labels
-    const combinedLabel = `${sourceTable.label} + ${targetTable.label}`;
+    const combinedLabel = `${(sourceTable as any).label} + ${(targetTable as any).label}`;
 
     const { error: sourceLabelError } = await supabase
       .from("tables")
@@ -465,7 +465,7 @@ async function mergeReservedTables(
 ) {
   try {
     // Update table labels
-    const combinedLabel = `${sourceTable.label} + ${targetTable.label}`;
+    const combinedLabel = `${(sourceTable as any).label} + ${(targetTable as any).label}`;
 
     const { error: sourceLabelError } = await supabase
       .from("tables")

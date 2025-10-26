@@ -139,9 +139,9 @@ export function EnhancedFeedbackSystem({ venueId }: FeedbackSystemProps) {
       if (searchQuery.trim()) {
         filteredFeedback = filteredFeedback.filter(
           (f: unknown) =>
-            f.customer_name.toLowerCase().includes(searchQuery.toLowerCase()) ||
-            f.comment.toLowerCase().includes(searchQuery.toLowerCase()) ||
-            f.category?.toLowerCase().includes(searchQuery.toLowerCase())
+            (f as any).customer_name.toLowerCase().includes(searchQuery.toLowerCase()) ||
+            (f as any).comment.toLowerCase().includes(searchQuery.toLowerCase()) ||
+            (f as any).category?.toLowerCase().includes(searchQuery.toLowerCase())
         );
       }
 
@@ -450,7 +450,7 @@ export function EnhancedFeedbackSystem({ venueId }: FeedbackSystemProps) {
                     <div className="space-y-4">
                       {questions.map((question, index) => (
                         <div
-                          key={question.id}
+                          key={(question as any).id}
                           className="flex items-center justify-between p-4 border rounded-lg"
                         >
                           <div className="flex-1">
@@ -458,11 +458,15 @@ export function EnhancedFeedbackSystem({ venueId }: FeedbackSystemProps) {
                               <span className="text-sm font-medium text-gray-900">
                                 #{index + 1}
                               </span>
-                              <span className="font-medium">{question.prompt}</span>
-                              <Badge variant={question.is_active ? "default" : "secondary"}>
-                                {question.type}
+                              <span className="font-medium">{(question as any).prompt}</span>
+                              <Badge
+                                variant={(question as any).is_active ? "default" : "secondary"}
+                              >
+                                {(question as any).type}
                               </Badge>
-                              {!question.is_active && <Badge variant="outline">Inactive</Badge>}
+                              {!(question as any).is_active && (
+                                <Badge variant="outline">Inactive</Badge>
+                              )}
                             </div>
                           </div>
                         </div>

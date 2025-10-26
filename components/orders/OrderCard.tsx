@@ -161,7 +161,7 @@ export function OrderCard({
     const isPaid = order.payment.status === "paid";
     const isCompleted = (order.order_status || "").toUpperCase() === "COMPLETED";
     const orderStatus = (order.order_status || "").toUpperCase();
-    const paymentMode = order.payment_mode; // "online", "pay_at_till", "pay_later"
+    const paymentMode = (order as any).payment_mode; // "online", "pay_at_till", "pay_later"
 
     // If already completed, no actions needed
     if (isCompleted) {
@@ -394,7 +394,7 @@ export function OrderCard({
           onOpenChange={setShowPaymentDialog}
           orderId={order.id}
           orderNumber={order.short_id}
-          customerName={order.customer_name || "Customer"}
+          customerName={(order as any).customer_name || "Customer"}
           totalAmount={order.total_amount}
           venueId={venueId}
           items={

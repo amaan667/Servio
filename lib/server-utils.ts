@@ -8,7 +8,7 @@
  * This helps prevent unnecessary auth calls on requests that obviously won't have a session
  */
 export function hasSbAuthCookie(cookies: unknown) {
-  return cookies.getAll().some((c: unknown) => c.name.includes('-auth-token'))
+  return (cookies as any).getAll().some((c: unknown) => (c as any).name.includes("-auth-token"));
 }
 
 /**
@@ -16,9 +16,9 @@ export function hasSbAuthCookie(cookies: unknown) {
  * Use this before making auth calls in server components
  */
 export async function hasServerAuthCookie() {
-  const { cookies } = await import('next/headers');
+  const { cookies } = await import("next/headers");
   const cookieStore = await cookies();
-  return cookieStore.getAll().some((c: unknown) => c.name.includes('-auth-token'));
+  return cookieStore.getAll().some((c: unknown) => (c as any).name.includes("-auth-token"));
 }
 
 /**
@@ -30,8 +30,8 @@ export async function safeGetUser() {
   if (!hasAuthCookie) {
     return { user: null, error: null };
   }
-  
-  const { createServerSupabase } = await import('@/lib/supabase');
+
+  const { createServerSupabase } = await import("@/lib/supabase");
   const supabase = await createServerSupabase();
   return await supabase.auth.getSession();
 }

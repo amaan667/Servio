@@ -1,7 +1,7 @@
-'use client';
+"use client";
 
-import { useState } from 'react';
-import { Button } from '@/components/ui/button';
+import { useState } from "react";
+import { Button } from "@/components/ui/button";
 import {
   Dialog,
   DialogContent,
@@ -10,13 +10,13 @@ import {
   DialogHeader,
   DialogTitle,
   DialogTrigger,
-} from '@/components/ui/dialog';
-import { Input } from '@/components/ui/input';
-import { Label } from '@/components/ui/label';
-import { Alert, AlertDescription } from '@/components/ui/alert';
-import { Plus, AlertTriangle } from 'lucide-react';
-import { useTableManagement } from '@/hooks/useTableManagement';
-import { toast } from '@/hooks/use-toast';
+} from "@/components/ui/dialog";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { Alert, AlertDescription } from "@/components/ui/alert";
+import { Plus, AlertTriangle } from "lucide-react";
+import { useTableManagement } from "@/hooks/useTableManagement";
+import { toast } from "@/hooks/use-toast";
 
 interface AddTableDialogProps {
   venueId: string;
@@ -25,14 +25,14 @@ interface AddTableDialogProps {
 
 export function AddTableDialog({ venueId, onTableAdded }: AddTableDialogProps) {
   const [open, setOpen] = useState(false);
-  const [label, setLabel] = useState('');
+  const [label, setLabel] = useState("");
   const [seatCount, setSeatCount] = useState(2);
   const [error, setError] = useState<string | null>(null);
   const { createTable, loading } = useTableManagement();
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    
+
     if (!label.trim()) return;
 
     setError(null); // Clear unknown previous errors
@@ -45,24 +45,28 @@ export function AddTableDialog({ venueId, onTableAdded }: AddTableDialogProps) {
 
     try {
       const result = await createTable(tableData);
-      
+
       // Show success toast
       toast({
         title: "Table Created Successfully",
         description: `Table "${label.trim()}" has been created with ${seatCount} seats.`,
       });
-      
-      setLabel('');
+
+      setLabel("");
       setSeatCount(2);
       setOpen(false);
       onTableAdded?.();
     } catch (_error) {
-
       // Handle specific constraint error
-      if (error.message?.includes('CONSTRAINT_ERROR') || error.message?.includes('temporarily unavailable')) {
-        setError('Table creation is temporarily unavailable due to a database constraint issue. Please try again in a few moments.');
+      if (
+        (error as any).message?.includes("CONSTRAINT_ERROR") ||
+        (error as any).message?.includes("temporarily unavailable")
+      ) {
+        setError(
+          "Table creation is temporarily unavailable due to a database constraint issue. Please try again in a few moments."
+        );
       } else {
-        setError(error.message || 'Failed to create table. Please try again.');
+        setError((error as any).message || "Failed to create table. Please try again.");
       }
     }
   };
@@ -123,7 +127,7 @@ export function AddTableDialog({ venueId, onTableAdded }: AddTableDialogProps) {
               Cancel
             </Button>
             <Button type="submit" disabled={loading || !label.trim()}>
-              {loading ? 'Creating...' : 'Create Table'}
+              {loading ? "Creating..." : "Create Table"}
             </Button>
           </DialogFooter>
         </form>

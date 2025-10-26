@@ -34,9 +34,9 @@ export default function TrialStatusBanner({ userRole }: TrialStatusBannerProps) 
   // Helper function to process trial status (defined before hooks that use it)
   const processTrialStatus = useCallback(
     (org: unknown) => {
-      const subscriptionStatus = org.subscription_status || "basic";
-      const tier = org.subscription_tier || "basic";
-      const trialEndsAt = org.trial_ends_at;
+      const subscriptionStatus = (org as any).subscription_status || "basic";
+      const tier = (org as any).subscription_tier || "basic";
+      const trialEndsAt = (org as any).trial_ends_at;
 
       // Processing trial status
 

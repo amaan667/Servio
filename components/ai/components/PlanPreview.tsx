@@ -2,7 +2,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Loader2, Check, AlertTriangle } from "lucide-react";
-import { AIPlanResponse, AIPreviewDiff } from '@/types/ai-assistant';
+import { AIPlanResponse, AIPreviewDiff } from "@/types/ai-assistant";
 
 interface PlanPreviewProps {
   plan: AIPlanResponse | null;
@@ -23,8 +23,10 @@ export function PlanPreview({ plan, previews, executing, onExecute }: PlanPrevie
         <div>
           <h4 className="font-semibold mb-2">Steps:</h4>
           <ol className="list-decimal list-inside space-y-1">
-            {plan.steps.map((step: string, idx: number) => (
-              <li key={idx} className="text-sm">{step}</li>
+            {(plan as any).steps.map((step: string, idx: number) => (
+              <li key={idx} className="text-sm">
+                {step}
+              </li>
             ))}
           </ol>
         </div>
@@ -35,19 +37,17 @@ export function PlanPreview({ plan, previews, executing, onExecute }: PlanPrevie
             <div className="space-y-2">
               {previews.map((preview: unknown, idx: number) => (
                 <div key={idx} className="p-2 bg-gray-50 dark:bg-gray-800 rounded">
-                  <Badge>{preview.type || 'Change'}</Badge>
-                  <p className="text-xs mt-1">{preview.description || preview.summary || 'No description'}</p>
+                  <Badge>{(preview as any).type || "Change"}</Badge>
+                  <p className="text-xs mt-1">
+                    {(preview as any).description || (preview as any).summary || "No description"}
+                  </p>
                 </div>
               ))}
             </div>
           </div>
         )}
 
-        <Button
-          onClick={onExecute}
-          disabled={executing}
-          className="w-full"
-        >
+        <Button onClick={onExecute} disabled={executing} className="w-full">
           {executing ? (
             <>
               <Loader2 className="mr-2 h-4 w-4 animate-spin" />
@@ -64,4 +64,3 @@ export function PlanPreview({ plan, previews, executing, onExecute }: PlanPrevie
     </Card>
   );
 }
-

@@ -26,11 +26,9 @@ export function AIActivityLog({ venueId, limit = 20 }: ActivityLogProps) {
 
   const fetchActivities = async () => {
     try {
-      const response = await fetch(
-        `/api/ai-assistant/activity?venueId=${venueId}&limit=${limit}`
-      );
+      const response = await fetch(`/api/ai-assistant/activity?venueId=${venueId}&limit=${limit}`);
       const data = await response.json();
-      
+
       if (response.ok) {
         setActivities(data.activities || []);
       }
@@ -59,7 +57,11 @@ export function AIActivityLog({ venueId, limit = 20 }: ActivityLogProps) {
       return <Badge variant="destructive">Failed</Badge>;
     }
     if (activity.executed) {
-      return <Badge variant="default" className="bg-green-500">Executed</Badge>;
+      return (
+        <Badge variant="default" className="bg-green-500">
+          Executed
+        </Badge>
+      );
     }
     if (activity.preview) {
       return <Badge variant="secondary">Preview</Badge>;
@@ -88,9 +90,7 @@ export function AIActivityLog({ venueId, limit = 20 }: ActivityLogProps) {
           <Sparkles className="h-5 w-5 text-purple-500" />
           <CardTitle>AI Assistant Activity</CardTitle>
         </div>
-        <CardDescription>
-          Recent AI-powered actions and their outcomes
-        </CardDescription>
+        <CardDescription>Recent AI-powered actions and their outcomes</CardDescription>
       </CardHeader>
       <CardContent>
         <ScrollArea className="h-[400px] pr-4">
@@ -103,7 +103,9 @@ export function AIActivityLog({ venueId, limit = 20 }: ActivityLogProps) {
               <p className="text-sm font-medium mb-2">No AI assistant activity yet</p>
               <div className="flex items-center justify-center gap-2 text-sm text-muted-foreground">
                 <span>Press</span>
-                <kbd className="px-2 py-1 bg-purple-100 dark:bg-purple-900/30 text-purple-700 dark:text-purple-300 rounded font-mono text-xs border border-purple-200 dark:border-purple-800">⌘K</kbd>
+                <kbd className="px-2 py-1 bg-purple-100 dark:bg-purple-900/30 text-purple-700 dark:text-purple-300 rounded font-mono text-xs border border-purple-200 dark:border-purple-800">
+                  ⌘K
+                </kbd>
                 <span>or click the floating</span>
                 <Sparkles className="h-4 w-4 text-purple-500" />
                 <span>button</span>
@@ -119,15 +121,11 @@ export function AIActivityLog({ venueId, limit = 20 }: ActivityLogProps) {
                   {getStatusIcon(activity)}
                   <div className="flex-1 min-w-0">
                     <div className="flex items-center justify-between gap-2 mb-1">
-                      <p className="text-sm font-medium truncate">
-                        {activity.userPrompt}
-                      </p>
+                      <p className="text-sm font-medium truncate">{activity.userPrompt}</p>
                       {getStatusBadge(activity)}
                     </div>
                     <div className="flex items-center gap-2 text-xs text-muted-foreground">
-                      <span className="capitalize">
-                        {activity.toolName.replace(/\./g, " → ")}
-                      </span>
+                      <span className="capitalize">{activity.toolName.replace(/\./g, " → ")}</span>
                       <span>•</span>
                       <span>
                         {formatDistanceToNow(new Date(activity.createdAt), {
@@ -142,16 +140,16 @@ export function AIActivityLog({ venueId, limit = 20 }: ActivityLogProps) {
                       )}
                     </div>
                     {activity.error && (
-                      <p className="text-xs text-destructive mt-1">
-                        {activity.error}
-                      </p>
+                      <p className="text-xs text-destructive mt-1">{activity.error}</p>
                     )}
                     {activity.result && (
                       <div className="text-xs text-muted-foreground mt-1">
                         {typeof activity.result === "object" && (
                           <span>
-                            {activity.result.updatedCount && `${activity.result.updatedCount} items affected`}
-                            {activity.result.revenue && ` • Revenue: £${activity.result.revenue.toFixed(2)}`}
+                            {(activity.result as any).updatedCount &&
+                              `${(activity.result as any).updatedCount} items affected`}
+                            {(activity.result as any).revenue &&
+                              ` • Revenue: £${(activity.result as any).revenue.toFixed(2)}`}
                           </span>
                         )}
                       </div>
@@ -166,4 +164,3 @@ export function AIActivityLog({ venueId, limit = 20 }: ActivityLogProps) {
     </Card>
   );
 }
-

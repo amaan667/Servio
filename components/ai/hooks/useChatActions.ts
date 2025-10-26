@@ -1,6 +1,6 @@
-import { useState } from 'react';
-import { ChatMessage } from '../types';
-import { AIPlanResponse, AIPreviewDiff } from '@/types/ai-assistant';
+import { useState } from "react";
+import { ChatMessage } from "../types";
+import { AIPlanResponse, AIPreviewDiff } from "@/types/ai-assistant";
 
 export function useChatActions(venueId: string) {
   const [loading, setLoading] = useState(false);
@@ -21,9 +21,9 @@ export function useChatActions(venueId: string) {
     setExecutionResults([]);
 
     try {
-      const response = await fetch('/api/ai-assistant/plan', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+      const response = await fetch("/api/ai-assistant/plan", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           conversationId,
           message,
@@ -40,8 +40,7 @@ export function useChatActions(venueId: string) {
       setPreviews(data.previews || []);
       setSuccess(true);
     } catch (error: unknown) {
-
-      setError(error.message || "Failed to send message");
+      setError((error as any).message || "Failed to send message");
     } finally {
       setLoading(false);
     }
@@ -55,9 +54,9 @@ export function useChatActions(venueId: string) {
     setSuccess(false);
 
     try {
-      const response = await fetch('/api/ai-assistant/execute', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+      const response = await fetch("/api/ai-assistant/execute", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           conversationId,
           plan,
@@ -73,8 +72,7 @@ export function useChatActions(venueId: string) {
       setExecutionResults(data.results || []);
       setSuccess(true);
     } catch (error: unknown) {
-
-      setError(error.message || "Failed to execute plan");
+      setError((error as any).message || "Failed to execute plan");
     } finally {
       setExecuting(false);
     }
@@ -85,9 +83,9 @@ export function useChatActions(venueId: string) {
     setError(null);
 
     try {
-      const response = await fetch('/api/ai-assistant/undo', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+      const response = await fetch("/api/ai-assistant/undo", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           auditId,
           venueId,
@@ -100,8 +98,7 @@ export function useChatActions(venueId: string) {
 
       setSuccess(true);
     } catch (error: unknown) {
-
-      setError(error.message || "Failed to undo action");
+      setError((error as any).message || "Failed to undo action");
     } finally {
       setUndoing(null);
     }
@@ -123,4 +120,3 @@ export function useChatActions(venueId: string) {
     setSuccess,
   };
 }
-

@@ -26,7 +26,7 @@ export async function PUT(req: NextRequest, context: { params: Promise<{ tableId
     };
 
     if (qr_version !== undefined) {
-      updateData.qr_version = qr_version;
+      (updateData as any).qr_version = qr_version;
     }
 
     const { data: table, error } = await supabase

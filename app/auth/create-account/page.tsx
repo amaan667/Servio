@@ -63,14 +63,14 @@ export default function CreateAccountPage() {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
-          email: sessionData.customer_email,
+          email: (sessionData as any).customer_email,
           password: formData.password,
-          fullName: sessionData.metadata.full_name,
+          fullName: (sessionData as any).metadata.full_name,
           venueName: formData.venueName,
           venueType: formData.businessType,
           serviceType: formData.serviceType,
-          tier: sessionData.metadata.tier,
-          stripeSessionId: sessionData.id,
+          tier: (sessionData as any).metadata.tier,
+          stripeSessionId: (sessionData as any).id,
         }),
       });
 
@@ -132,7 +132,7 @@ export default function CreateAccountPage() {
                 <Input
                   id="email"
                   type="email"
-                  value={sessionData.customer_email}
+                  value={(sessionData as any).customer_email}
                   disabled
                   className="bg-gray-100"
                 />

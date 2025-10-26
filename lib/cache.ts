@@ -29,7 +29,7 @@ class CacheService {
     try {
       // Try Redis first (if available)
       if (this.redisClient) {
-        const cached = await this.redisClient.get(key);
+        const cached = await (this.redisClient as any).get(key);
         if (cached) {
           return JSON.parse(cached);
         }
@@ -55,14 +55,20 @@ class CacheService {
   /**
    * Set value in cache
    */
-  async set<T>(key: string, value: T, config: CacheConfig = { /* Empty */ }): Promise<void> {
+  async set<T>(
+    key: string,
+    value: T,
+    config: CacheConfig = {
+      /* Empty */
+    }
+  ): Promise<void> {
     try {
       const ttl = config.ttl || 3600; // Default 1 hour
       const expires = Date.now() + ttl * 1000;
 
       // Try Redis first (if available)
       if (this.redisClient) {
-        await this.redisClient.setex(key, ttl, JSON.stringify(value));
+        await (this.redisClient as any).setex(key, ttl, JSON.stringify(value));
         return;
       }
 
@@ -79,7 +85,7 @@ class CacheService {
   async delete(key: string): Promise<void> {
     try {
       if (this.redisClient) {
-        await this.redisClient.del(key);
+        await (this.redisClient as any).del(key);
       } else {
         this.memoryCache.delete(key);
       }
@@ -94,9 +100,9 @@ class CacheService {
   async invalidatePattern(pattern: string): Promise<void> {
     try {
       if (this.redisClient) {
-        const keys = await this.redisClient.keys(pattern);
+        const keys = await (this.redisClient as any).keys(pattern);
         if (keys.length > 0) {
-          await this.redisClient.del(...keys);
+          await (this.redisClient as any).del(...keys);
         }
       } else {
         // Memory cache pattern matching
@@ -118,7 +124,7 @@ class CacheService {
   async clear(): Promise<void> {
     try {
       if (this.redisClient) {
-        await this.redisClient.flushdb();
+        await (this.redisClient as any).flushdb();
       } else {
         this.memoryCache.clear();
       }

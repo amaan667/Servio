@@ -1,12 +1,11 @@
-
 /**
  * Unified Cache Interface
  * Single source of truth for all caching in the application
  * Supports both Redis and in-memory caching with automatic fallback
  */
 
-import { redisCache } from './redis';
-import { logger } from '@/lib/logger';
+import { redisCache } from "./redis";
+import { logger } from "@/lib/logger";
 
 interface CacheOptions {
   ttl?: number; // Time to live in seconds
@@ -51,7 +50,13 @@ class Cache {
   /**
    * Set value in cache
    */
-  async set<T>(key: string, value: T, options: CacheOptions = { /* Empty */ }): Promise<boolean> {
+  async set<T>(
+    key: string,
+    value: T,
+    options: CacheOptions = {
+      /* Empty */
+    }
+  ): Promise<boolean> {
     const { ttl = 300 } = options; // Default 5 minutes
 
     try {
@@ -66,7 +71,7 @@ class Cache {
       this.memoryCache.set(key, { value, expires });
       return true;
     } catch (_error) {
-      logger.error('[CACHE] Error setting cache:', { error, key });
+      logger.error("[CACHE] Error setting cache:", { error, key });
       return false;
     }
   }
@@ -85,7 +90,7 @@ class Cache {
       this.memoryCache.delete(key);
       return true;
     } catch (_error) {
-      logger.error('[CACHE] Error deleting cache:', { error, key });
+      logger.error("[CACHE] Error deleting cache:", { error, key });
       return false;
     }
   }
@@ -97,11 +102,11 @@ class Cache {
     try {
       // Try Redis first if available
       if (this.useRedis) {
-        await redisCache.invalidate(pattern);
+        await (redisCache as any).invalidate(pattern);
       }
 
       // Also clear matching memory cache entries
-      const regex = new RegExp(pattern.replace('*', '.*'));
+      const regex = new RegExp(pattern.replace("*", ".*"));
       for (const key of this.memoryCache.keys()) {
         if (regex.test(key)) {
           this.memoryCache.delete(key);
@@ -109,7 +114,7 @@ class Cache {
       }
       return true;
     } catch (_error) {
-      logger.error('[CACHE] Error invalidating cache:', { error, pattern });
+      logger.error("[CACHE] Error invalidating cache:", { error, pattern });
       return false;
     }
   }
@@ -126,21 +131,26 @@ class Cache {
    * Get multiple values from cache
    */
   async mget<T>(keys: string[]): Promise<(T | null)[]> {
-    const results = await Promise.all(keys.map(key => this.get<T>(key)));
+    const results = await Promise.all(keys.map((key) => this.get<T>(key)));
     return results;
   }
 
   /**
    * Set multiple values in cache
    */
-  async mset<T>(keyValues: Record<string, T>, options: CacheOptions = { /* Empty */ }): Promise<boolean> {
+  async mset<T>(
+    keyValues: Record<string, T>,
+    options: CacheOptions = {
+      /* Empty */
+    }
+  ): Promise<boolean> {
     try {
       await Promise.all(
         Object.entries(keyValues).map(([key, value]) => this.set(key, value, options))
       );
       return true;
     } catch (_error) {
-      logger.error('[CACHE] Error setting multiple cache values:', { error });
+      logger.error("[CACHE] Error setting multiple cache values:", { error });
       return false;
     }
   }
@@ -156,7 +166,7 @@ class Cache {
       this.memoryCache.clear();
       return true;
     } catch (_error) {
-      logger.error('[CACHE] Error clearing cache:', { error });
+      logger.error("[CACHE] Error clearing cache:", { error });
       return false;
     }
   }

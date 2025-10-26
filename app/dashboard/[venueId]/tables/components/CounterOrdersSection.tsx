@@ -1,5 +1,5 @@
-import { OrderCard } from '@/components/orders/OrderCard';
-import { mapCounterOrderToCardData } from '@/lib/orders/mapCounterOrderToCardData';
+import { OrderCard } from "@/components/orders/OrderCard";
+import { mapCounterOrderToCardData } from "@/lib/orders/mapCounterOrderToCardData";
 
 interface CounterOrdersSectionProps {
   counterOrders: unknown[];
@@ -18,17 +18,18 @@ export function CounterOrdersSection({ counterOrders }: CounterOrdersSectionProp
           Fast-moving orders from counter service - work FIFO ({counterOrders.length} active)
         </p>
       </div>
-      
+
       <div className="overflow-x-auto pb-4">
         <div className="flex gap-4 min-w-max">
           {counterOrders
-            .sort((a, b) => new Date(a.created_at).getTime() - new Date(b.created_at).getTime())
+            .sort(
+              (a, b) =>
+                new Date((a as any).created_at).getTime() -
+                new Date((b as any).created_at).getTime()
+            )
             .map((order) => (
-              <div key={order.id} className="flex-shrink-0 w-80">
-                <OrderCard
-                  order={mapCounterOrderToCardData(order)}
-                  variant="counter"
-                />
+              <div key={(order as any).id} className="flex-shrink-0 w-80">
+                <OrderCard order={mapCounterOrderToCardData(order)} variant="counter" />
               </div>
             ))}
         </div>
@@ -36,4 +37,3 @@ export function CounterOrdersSection({ counterOrders }: CounterOrdersSectionProp
     </section>
   );
 }
-

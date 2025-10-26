@@ -3,7 +3,7 @@
  * Provides common functionality for all services
  */
 
-import { cache } from '@/lib/cache';
+import { cache } from "@/lib/cache";
 
 export abstract class BaseService {
   protected cache = cache;
@@ -12,7 +12,7 @@ export abstract class BaseService {
    * Get cache key with prefix
    */
   protected getCacheKey(prefix: string, ...parts: (string | number)[]): string {
-    return `${prefix}:${parts.join(':')}`;
+    return `${prefix}:${parts.join(":")}`;
   }
 
   /**
@@ -25,7 +25,7 @@ export abstract class BaseService {
     ttl: number = 300
   ): Promise<T> {
     // Skip caching in test mode
-    if (process.env.NODE_ENV === 'test') {
+    if (process.env.NODE_ENV === "test") {
       return callback();
     }
 
@@ -45,7 +45,7 @@ export abstract class BaseService {
    * Invalidate cache
    */
   protected async invalidateCache(key: string): Promise<void> {
-    if (process.env.NODE_ENV === 'test') return;
+    if (process.env.NODE_ENV === "test") return;
     await this.cache.delete(key);
   }
 
@@ -53,8 +53,7 @@ export abstract class BaseService {
    * Invalidate cache pattern
    */
   protected async invalidateCachePattern(pattern: string): Promise<void> {
-    if (process.env.NODE_ENV === 'test') return;
-    await this.cache.invalidate(pattern);
+    if (process.env.NODE_ENV === "test") return;
+    await (this.cache as any).invalidate(pattern);
   }
 }
-

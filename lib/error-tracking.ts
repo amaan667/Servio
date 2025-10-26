@@ -50,7 +50,7 @@ class ErrorTracker {
           tracesSampleRate: 0.1,
           replaysSessionSampleRate: 0.1,
           replaysOnErrorSampleRate: 1.0,
-          integrations: [new Sentry.BrowserTracing(), new Sentry.Replay()],
+          integrations: [new (Sentry as any).BrowserTracing(), new (Sentry as any).Replay()],
           beforeSend(event) {
             // Filter out development errors
             if (this.environment === "development") {
@@ -60,7 +60,9 @@ class ErrorTracker {
           },
         });
       })
-      .catch((error) => { /* Empty */ });
+      .catch((error) => {
+        /* Empty */
+      });
   }
 
   public captureError(error: Error, context?: Partial<ErrorContext>) {

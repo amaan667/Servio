@@ -71,12 +71,12 @@ class PerformanceMonitor {
 
     // First Input Delay (FID)
     this.observeMetric("FID", (entry) => {
-      this.recordWebVital("FID", entry.processingStart - entry.startTime);
+      this.recordWebVital("FID", (entry as any).processingStart - entry.startTime);
     });
 
     // Cumulative Layout Shift (CLS)
     this.observeMetric("CLS", (entry) => {
-      this.recordWebVital("CLS", entry.value);
+      this.recordWebVital("CLS", (entry as any).value);
     });
 
     // Time to First Byte (TTFB)

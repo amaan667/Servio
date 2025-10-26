@@ -1,15 +1,15 @@
 "use client";
 
-import { useState, useEffect, useCallback } from 'react';
-import { Star, Send } from 'lucide-react';
-import { Button } from '@/components/ui/button';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { Textarea } from '@/components/ui/textarea';
-import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
-import { Label } from '@/components/ui/label';
-import { useToast } from '@/hooks/use-toast';
-import { supabaseBrowser as createClient } from '@/lib/supabase';
-import type { FeedbackQuestion, FeedbackAnswer } from '@/types/feedback';
+import { useState, useEffect, useCallback } from "react";
+import { Star, Send } from "lucide-react";
+import { Button } from "@/components/ui/button";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Textarea } from "@/components/ui/textarea";
+import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
+import { Label } from "@/components/ui/label";
+import { useToast } from "@/hooks/use-toast";
+import { supabaseBrowser as createClient } from "@/lib/supabase";
+import type { FeedbackQuestion, FeedbackAnswer } from "@/types/feedback";
 
 interface OrderFeedbackFormProps {
   venueId: string;
@@ -23,71 +23,75 @@ export default function OrderFeedbackForm({ venueId, orderId }: OrderFeedbackFor
   const [loading, setLoading] = useState(true);
   const [submitting, setSubmitting] = useState(false);
   const [showForm, setShowForm] = useState(false);
-  const [answers, setAnswers] = useState<{[key: string]: unknown}>({ /* Empty */ });
+  const [answers, setAnswers] = useState<{ [key: string]: unknown }>({
+    /* Empty */
+  });
   const { toast } = useToast();
 
   // Generic feedback questions to show if owner hasn't created unknown
   const genericQuestions: FeedbackQuestion[] = [
     {
-      id: 'generic-food-quality',
+      id: "generic-food-quality",
       venue_id: venueId,
-      prompt: 'How would you rate the food quality?',
-      type: 'stars',
+      prompt: "How would you rate the food quality?",
+      type: "stars",
       choices: null,
       is_active: true,
       sort_index: 1,
       created_at: new Date().toISOString(),
-      updated_at: new Date().toISOString()
+      updated_at: new Date().toISOString(),
     },
     {
-      id: 'generic-service',
+      id: "generic-service",
       venue_id: venueId,
-      prompt: 'How would you rate the service?',
-      type: 'stars',
+      prompt: "How would you rate the service?",
+      type: "stars",
       choices: null,
       is_active: true,
       sort_index: 2,
       created_at: new Date().toISOString(),
-      updated_at: new Date().toISOString()
+      updated_at: new Date().toISOString(),
     },
     {
-      id: 'generic-value',
+      id: "generic-value",
       venue_id: venueId,
-      prompt: 'How would you rate the value for money?',
-      type: 'stars',
+      prompt: "How would you rate the value for money?",
+      type: "stars",
       choices: null,
       is_active: true,
       sort_index: 3,
       created_at: new Date().toISOString(),
-      updated_at: new Date().toISOString()
+      updated_at: new Date().toISOString(),
     },
     {
-      id: 'generic-overall',
+      id: "generic-overall",
       venue_id: venueId,
-      prompt: 'How would you rate your overall experience?',
-      type: 'stars',
+      prompt: "How would you rate your overall experience?",
+      type: "stars",
       choices: null,
       is_active: true,
       sort_index: 4,
       created_at: new Date().toISOString(),
-      updated_at: new Date().toISOString()
+      updated_at: new Date().toISOString(),
     },
     {
-      id: 'generic-comments',
+      id: "generic-comments",
       venue_id: venueId,
-      prompt: 'Any additional comments or suggestions?',
-      type: 'paragraph',
+      prompt: "Any additional comments or suggestions?",
+      type: "paragraph",
       choices: null,
       is_active: true,
       sort_index: 5,
       created_at: new Date().toISOString(),
-      updated_at: new Date().toISOString()
-    }
+      updated_at: new Date().toISOString(),
+    },
   ];
 
   // useEffect moved after fetchQuestions definition
 
-  useEffect(() => { /* Empty */ }, [totalCount]);
+  useEffect(() => {
+    /* Empty */
+  }, [totalCount]);
 
   // Real-time subscription moved after fetchQuestions definition
 
@@ -96,9 +100,9 @@ export default function OrderFeedbackForm({ venueId, orderId }: OrderFeedbackFor
       const response = await fetch(`/api/feedback/questions?venueId=${venueId}`);
       if (response.ok) {
         const data = await response.json();
-        
+
         const activeQuestions = (data.questions || []).filter((q: FeedbackQuestion) => q.is_active);
-        
+
         // If no custom questions, use generic ones
         if (activeQuestions.length === 0) {
           setQuestions(genericQuestions);
@@ -109,10 +113,8 @@ export default function OrderFeedbackForm({ venueId, orderId }: OrderFeedbackFor
           setTotalCount(data.totalCount || 0);
           setActiveCount(data.activeCount || 0);
         }
-        
       }
     } catch (_error) {
-
       // If API fails, fall back to generic questions
       setQuestions(genericQuestions);
       setTotalCount(genericQuestions.length);
@@ -135,16 +137,18 @@ export default function OrderFeedbackForm({ venueId, orderId }: OrderFeedbackFor
       .on(
         "postgres_changes",
         {
-          event: '*',
-          schema: 'public',
-          table: 'feedback_questions',
+          event: "*",
+          schema: "public",
+          table: "feedback_questions",
           filter: `venue_id=eq.${venueId}`,
         },
         (_payload: unknown) => {
           fetchQuestions();
-        },
+        }
       )
-      .subscribe((status: unknown) => { /* Empty */ });
+      .subscribe((status: unknown) => {
+        /* Empty */
+      });
 
     return () => {
       supabase.removeChannel(channel);
@@ -153,77 +157,78 @@ export default function OrderFeedbackForm({ venueId, orderId }: OrderFeedbackFor
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    
+
     if (questions.length === 0) return;
 
     setSubmitting(true);
 
     try {
-      const feedbackAnswers: FeedbackAnswer[] = questions.map(question => {
-        const answer = answers[question.id];
-        
-        switch (question.type) {
-          case 'stars':
-            return {
-              question_id: question.id,
-              type: 'stars' as const,
-              answer_stars: answer || 0,
-              order_id: orderId
-            };
-          case 'multiple_choice':
-            return {
-              question_id: question.id,
-              type: 'multiple_choice' as const,
-              answer_choice: answer || '',
-              order_id: orderId
-            };
-          case 'paragraph':
-            return {
-              question_id: question.id,
-              type: 'paragraph' as const,
-              answer_text: answer || '',
-              order_id: orderId
-            };
-          default:
-            throw new Error('Invalid question type');
-        }
-      }).filter(answer => {
-        // Filter out empty answers
-        switch (answer.type) {
-          case 'stars':
-            return answer.answer_stars > 0;
-          case 'multiple_choice':
-            return answer.answer_choice.trim() !== '';
-          case 'paragraph':
-            return answer.answer_text.trim() !== '';
-          default:
-            return false;
-        }
-      });
+      const feedbackAnswers: FeedbackAnswer[] = questions
+        .map((question) => {
+          const answer = answers[question.id];
+
+          switch (question.type) {
+            case "stars":
+              return {
+                question_id: question.id,
+                type: "stars" as const,
+                answer_stars: answer || 0,
+                order_id: orderId,
+              };
+            case "multiple_choice":
+              return {
+                question_id: question.id,
+                type: "multiple_choice" as const,
+                answer_choice: answer || "",
+                order_id: orderId,
+              };
+            case "paragraph":
+              return {
+                question_id: question.id,
+                type: "paragraph" as const,
+                answer_text: answer || "",
+                order_id: orderId,
+              };
+            default:
+              throw new Error("Invalid question type");
+          }
+        })
+        .filter((answer) => {
+          // Filter out empty answers
+          switch (answer.type) {
+            case "stars":
+              return answer.answer_stars > 0;
+            case "multiple_choice":
+              return (answer.answer_choice as any).trim() !== "";
+            case "paragraph":
+              return (answer.answer_text as any).trim() !== "";
+            default:
+              return false;
+          }
+        });
 
       if (feedbackAnswers.length === 0) {
         toast({
           title: "No Feedback",
           description: "Please answer at least one question",
-          variant: "destructive"
+          variant: "destructive",
         });
         return;
       }
 
       // Try to submit to the main feedback API first
-      let response = await fetch('/api/feedback-responses', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+      let response = await fetch("/api/feedback-responses", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           venue_id: venueId,
           order_id: orderId,
-          answers: feedbackAnswers
-        })
+          answers: feedbackAnswers,
+        }),
       });
 
       // If main API fails and we have generic questions, try to submit to a fallback
-      if (!response.ok && questions.some(q => q.id.startsWith('generic'))) {
-        
+      if (!response.ok && questions.some((q) => q.id.startsWith("generic"))) {
         // For generic questions, we can store them locally or send to a different endpoint
         // For now, we'll just show success since these are demo/generic questions
         response = { ok: true } as Response;
@@ -232,33 +237,36 @@ export default function OrderFeedbackForm({ venueId, orderId }: OrderFeedbackFor
       if (response.ok) {
         toast({
           title: "Thank You!",
-          description: "Your feedback has been submitted successfully"
+          description: "Your feedback has been submitted successfully",
         });
         setShowForm(false);
-        setAnswers({ /* Empty */ });
+        setAnswers({
+          /* Empty */
+        });
       } else {
         const error = await response.json();
         toast({
           title: "Error",
           description: error.error || "Failed to submit feedback",
-          variant: "destructive"
+          variant: "destructive",
         });
       }
     } catch (_error) {
-
       // If we have generic questions and the main API fails, still show success
-      if (questions.some(q => q.id.startsWith('generic'))) {
+      if (questions.some((q) => q.id.startsWith("generic"))) {
         toast({
           title: "Thank You!",
-          description: "Your feedback has been recorded"
+          description: "Your feedback has been recorded",
         });
         setShowForm(false);
-        setAnswers({ /* Empty */ });
+        setAnswers({
+          /* Empty */
+        });
       } else {
         toast({
           title: "Error",
           description: "Failed to submit feedback",
-          variant: "destructive"
+          variant: "destructive",
         });
       }
     } finally {
@@ -266,7 +274,13 @@ export default function OrderFeedbackForm({ venueId, orderId }: OrderFeedbackFor
     }
   };
 
-  const StarRating = ({ value, onChange }: { value: number; onChange: (rating: number) => void }) => (
+  const StarRating = ({
+    value,
+    onChange,
+  }: {
+    value: number;
+    onChange: (rating: number) => void;
+  }) => (
     <div className="flex gap-1">
       {[1, 2, 3, 4, 5].map((star) => (
         <button
@@ -277,9 +291,7 @@ export default function OrderFeedbackForm({ venueId, orderId }: OrderFeedbackFor
         >
           <Star
             className={`h-6 w-6 ${
-              star <= value
-                ? 'text-yellow-400 fill-current'
-                : 'text-gray-600'
+              star <= value ? "text-yellow-400 fill-current" : "text-gray-600"
             }`}
           />
         </button>
@@ -305,13 +317,9 @@ export default function OrderFeedbackForm({ venueId, orderId }: OrderFeedbackFor
   return (
     <div className="space-y-4">
       <h3 className="font-semibold text-lg">We'd love your feedback!</h3>
-      
+
       {!showForm ? (
-        <Button 
-          onClick={() => setShowForm(true)} 
-          variant="outline" 
-          className="w-full"
-        >
+        <Button onClick={() => setShowForm(true)} variant="outline" className="w-full">
           <Send className="h-4 w-4 mr-2" />
           Answer Feedback Questions ({totalCount})
         </Button>
@@ -327,23 +335,29 @@ export default function OrderFeedbackForm({ venueId, orderId }: OrderFeedbackFor
                   <Label className="text-base font-medium">
                     {index + 1}. {question.prompt}
                   </Label>
-                  
-                  {question.type === 'stars' && (
+
+                  {question.type === "stars" && (
                     <div className="space-y-2">
                       <StarRating
                         value={answers[question.id] || 0}
-                        onChange={(rating) => setAnswers(prev => ({ ...prev, [question.id]: rating }))}
+                        onChange={(rating) =>
+                          setAnswers((prev) => ({ ...prev, [question.id]: rating }))
+                        }
                       />
                       <p className="text-sm text-gray-900">
-                        {answers[question.id] ? `${answers[question.id]} star${answers[question.id] > 1 ? 's' : ''} selected` : 'Please select a rating'}
+                        {answers[question.id]
+                          ? `${answers[question.id]} star${answers[question.id] > 1 ? "s" : ""} selected`
+                          : "Please select a rating"}
                       </p>
                     </div>
                   )}
-                  
-                  {question.type === 'multiple_choice' && question.choices && (
+
+                  {question.type === "multiple_choice" && question.choices && (
                     <RadioGroup
-                      value={answers[question.id] || ''}
-                      onValueChange={(value) => setAnswers(prev => ({ ...prev, [question.id]: value }))}
+                      value={answers[question.id] || ""}
+                      onValueChange={(value) =>
+                        setAnswers((prev) => ({ ...prev, [question.id]: value }))
+                      }
                     >
                       {question.choices.map((choice, choiceIndex) => (
                         <div key={choiceIndex} className="flex items-center space-x-2">
@@ -355,38 +369,38 @@ export default function OrderFeedbackForm({ venueId, orderId }: OrderFeedbackFor
                       ))}
                     </RadioGroup>
                   )}
-                  
-                  {question.type === 'paragraph' && (
+
+                  {question.type === "paragraph" && (
                     <div className="space-y-2">
                       <Textarea
-                        value={answers[question.id] || ''}
-                        onChange={(e) => setAnswers(prev => ({ ...prev, [question.id]: e.target.value }))}
+                        value={answers[question.id] || ""}
+                        onChange={(e) =>
+                          setAnswers((prev) => ({ ...prev, [question.id]: e.target.value }))
+                        }
                         placeholder="Share your thoughts..."
                         rows={3}
                         maxLength={600}
                       />
                       <p className="text-sm text-gray-900">
-                        {(answers[question.id] || '').length}/600 characters
+                        {(answers[question.id] || "").length}/600 characters
                       </p>
                     </div>
                   )}
                 </div>
               ))}
-              
+
               <div className="flex gap-3 pt-4">
-                <Button 
-                  type="submit" 
-                  disabled={submitting}
-                  className="flex-1"
-                >
-                  {submitting ? 'Submitting...' : 'Submit Feedback'}
+                <Button type="submit" disabled={submitting} className="flex-1">
+                  {submitting ? "Submitting..." : "Submit Feedback"}
                 </Button>
-                <Button 
+                <Button
                   type="button"
-                  variant="outline" 
+                  variant="outline"
                   onClick={() => {
                     setShowForm(false);
-                    setAnswers({ /* Empty */ });
+                    setAnswers({
+                      /* Empty */
+                    });
                   }}
                   disabled={submitting}
                 >
