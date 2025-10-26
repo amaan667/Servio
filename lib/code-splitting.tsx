@@ -65,7 +65,7 @@ export function lazyWithRetry<P extends object>(
         return await importFn();
       } catch (_error) {
         lastError = _error as Error;
-        logger._error(
+        logger.error(
           `Failed to load component (attempt ${i + 1}/${retries}):`,
           errorToContext(_error)
         );

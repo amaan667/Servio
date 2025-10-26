@@ -23,7 +23,7 @@ export function useInventoryAlerts(venueId: string | null) {
           setAlerts(result.data);
         }
       } catch (_error) {
-        logger._error("Error fetching inventory alerts:", errorToContext(_error));
+        logger.error("Error fetching inventory alerts:", errorToContext(_error));
       } finally {
         setLoading(false);
       }

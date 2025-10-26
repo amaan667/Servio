@@ -86,7 +86,7 @@ export async function POST(_request: NextRequest) {
           }
         }
       } catch (_error) {
-        logger.warn(`[CATEGORIES DELETE] Warning processing ${table}:`, { table, error });
+        logger.warn(`[CATEGORIES DELETE] Warning processing ${table}:`, { table, _error });
       }
     }
 

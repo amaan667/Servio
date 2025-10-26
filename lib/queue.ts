@@ -66,7 +66,7 @@ export const pdfWorker =
               imageCount: images.length,
             };
           } catch (_error) {
-            logger._error("PDF processing job failed", _error, {
+            logger.error("PDF processing job failed", _error, {
               jobId: job.id,
               venueId,
               uploadId,

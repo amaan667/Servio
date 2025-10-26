@@ -346,10 +346,7 @@ OUTPUT FORMAT:
         };
       }
     } catch (_error) {
-      logger._error(
-        "[AI ASSISTANT] Preview translation failed:",
-        _error as Record<string, unknown>
-      );
+      logger.error("[AI ASSISTANT] Preview translation failed:", _error as Record<string, unknown>);
     }
 
     return {
@@ -567,7 +564,7 @@ OUTPUT FORMAT:
       auditId: "",
     };
   } catch (_error) {
-    logger._error("[AI ASSISTANT] Translation error:", _error as Record<string, unknown>);
+    logger.error("[AI ASSISTANT] Translation error:", _error as Record<string, unknown>);
     throw new AIAssistantError(`Translation failed: ${_error.message}`, "EXECUTION_FAILED", _error);
   }
 }

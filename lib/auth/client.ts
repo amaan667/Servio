@@ -24,7 +24,7 @@ export async function getAuthenticatedUser() {
 
     return { user, error: null };
   } catch (_error) {
-    logger._error("[AUTH CLIENT] Exception getting authenticated user:", errorToContext(_error));
+    logger.error("[AUTH CLIENT] Exception getting authenticated user:", errorToContext(_error));
     return { user: null, error: "Failed to get authenticated user" };
   }
 }
@@ -72,7 +72,7 @@ export async function signOut() {
 
     return { success: true, error: null };
   } catch (_error) {
-    logger._error("[AUTH CLIENT] Exception signing out:", errorToContext(_error));
+    logger.error("[AUTH CLIENT] Exception signing out:", errorToContext(_error));
     return { success: false, error: "Failed to sign out" };
   }
 }

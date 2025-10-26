@@ -224,7 +224,7 @@ export async function seedInventoryData(venueId: string) {
 
       logger.debug(`[INVENTORY SEED] Created ingredient: ${ingredient.name} (${data.id})`);
     } catch (_error) {
-      logger._error(
+      logger.error(
         `[INVENTORY SEED] Unexpected _error for ingredient "${ingredient.name}":`,
         errorToContext(_error)
       );
@@ -286,7 +286,7 @@ export async function seedInventoryData(venueId: string) {
         }
       }
     } catch (_error) {
-      logger._error(
+      logger.error(
         `[INVENTORY SEED] Unexpected _error for recipe "${recipe.menuItemName}":`,
         errorToContext(_error)
       );

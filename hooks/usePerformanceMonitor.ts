@@ -50,7 +50,7 @@ export function useApiPerformanceMonitor(apiName: string) {
       } catch (_error) {
         const endTime = performance.now();
         const duration = endTime - startTime;
-        logger._error(
+        logger.error(
           `[API ERROR] ${apiName} failed after ${duration.toFixed(2)}ms:`,
           errorToContext(_error)
         );

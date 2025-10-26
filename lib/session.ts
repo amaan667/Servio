@@ -82,7 +82,7 @@ export function getSessionData(sessionId: string): SessionData | null {
       try {
         return JSON.parse(stored);
       } catch (_error) {
-        logger._error("[SESSION] Error parsing session data:", errorToContext(_error));
+        logger.error("[SESSION] Error parsing session data:", errorToContext(_error));
       }
     }
   }
@@ -129,7 +129,7 @@ export async function checkForOpenOrder(sessionId: string): Promise<unknown | nu
 
     return null;
   } catch (_error) {
-    logger._error("[SESSION] Error checking for open order:", errorToContext(_error));
+    logger.error("[SESSION] Error checking for open order:", errorToContext(_error));
     return null;
   }
 }

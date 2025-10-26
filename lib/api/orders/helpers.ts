@@ -123,7 +123,7 @@ export async function createKDSTickets(supabase: SupabaseClient, order: Order): 
       data: { count: items.length, orderId: order.id },
     });
   } catch (_error) {
-    logger._error("[KDS TICKETS] Error creating KDS tickets:", {
+    logger.error("[KDS TICKETS] Error creating KDS tickets:", {
       error: _error instanceof Error ? _error.message : "Unknown _error",
     });
     throw _error;
