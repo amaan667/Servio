@@ -255,9 +255,18 @@ export function OrderCard({
     // SERVING: Show "Complete" button
     const orderStatus = (order.order_status || "").toUpperCase();
 
+    console.info("[ORDER CARD] Rendering actions for order:", {
+      orderId: order.id,
+      rawStatus: order.order_status,
+      upperStatus: orderStatus,
+      isPaid,
+      isCompleted,
+    });
+
     if (!isCompleted) {
-      // If order is IN_PREP, show preparing message (not clickable)
-      if (orderStatus === "IN_PREP") {
+      // If order is IN_PREP or PREPARING, show preparing message (not clickable)
+      if (orderStatus === "IN_PREP" || orderStatus === "PREPARING") {
+        console.info("[ORDER CARD] Showing 'Preparing in Kitchen...' label");
         return (
           <div className="mt-4 pt-4 border-t border-slate-200">
             <div className="flex items-center justify-center gap-2 p-3 bg-blue-50 rounded-lg">
@@ -287,6 +296,7 @@ export function OrderCard({
           case "SERVING":
             return "Mark Completed";
           default:
+            console.warn("[ORDER CARD] Unknown status, defaulting to Mark Completed:", orderStatus);
             return "Mark Completed";
         }
       };
@@ -313,6 +323,15 @@ export function OrderCard({
         }
       };
 
+      const nextStatus = getNextStatus();
+      const statusLabel = getStatusLabel();
+
+      console.info("[ORDER CARD] Showing action button:", {
+        currentStatus: orderStatus,
+        nextStatus,
+        buttonLabel: statusLabel,
+      });
+
       return (
         <div className="mt-4 pt-4 border-t border-slate-200">
           <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3">
@@ -321,12 +340,12 @@ export function OrderCard({
             </div>
             <Button
               size="sm"
-              onClick={() => handleStatusUpdate(getNextStatus())}
+              onClick={() => handleStatusUpdate(nextStatus)}
               disabled={isProcessing}
               className="bg-blue-600 hover:bg-blue-700"
             >
               {getStatusIcon()}
-              {getStatusLabel()}
+              {statusLabel}
             </Button>
           </div>
         </div>
