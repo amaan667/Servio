@@ -1,19 +1,19 @@
-import { NextResponse } from 'next/server';
-import { createClient as createSupabaseClient } from '@/lib/supabase';
-import { createClient } from '@supabase/supabase-js';
-import { apiLogger, logger } from '@/lib/logger';
+import { NextResponse } from "next/server";
+import { createClient as createSupabaseClient } from "@/lib/supabase";
+import { createClient } from "@supabase/supabase-js";
+import { apiLogger, logger } from "@/lib/logger";
 
-export const runtime = 'nodejs';
+export const runtime = "nodejs";
 
 // GET handler for orders
 export async function GET(req: Request) {
   try {
     const { searchParams } = new URL(req.url);
-    const venueId = searchParams.get('venueId');
-    const status = searchParams.get('status');
-    
+    const venueId = searchParams.get("venueId");
+    const status = searchParams.get("status");
+
     if (!venueId) {
-      return NextResponse.json({ ok: false, error: 'venueId is required' }, { status: 400 });
+      return NextResponse.json({ ok: false, error: "venueId is required" }, { status: 400 });
     }
 
     const supabase = createClient(
@@ -22,32 +22,32 @@ export async function GET(req: Request) {
       {
         auth: {
           autoRefreshToken: false,
-          persistSession: false
-        }
+          persistSession: false,
+        },
       }
     );
 
     let query = supabase
-      .from('orders')
-      .select('*')
-      .eq('venue_id', venueId)
-      .order('created_at', { ascending: false });
+      .from("orders")
+      .select("*")
+      .eq("venue_id", venueId)
+      .order("created_at", { ascending: false });
 
     if (status) {
-      query = query.eq('order_status', status);
+      query = query.eq("order_status", status);
     }
 
     const { data: orders, error } = await query;
 
     if (error) {
-      apiLogger.error('Error fetching orders:', error);
+      apiLogger.error("Error fetching orders:", error);
       return NextResponse.json({ ok: false, error: error.message }, { status: 500 });
     }
 
     return NextResponse.json({ ok: true, orders: orders || [] });
   } catch (e: unknown) {
-    const msg = e instanceof Error ? e.message : 'Unknown server error';
-    apiLogger.error('GET orders error:', { error: e });
+    const msg = e instanceof Error ? e.message : "Unknown server error";
+    apiLogger.error("GET orders error:", { error: e });
     return NextResponse.json({ ok: false, error: msg }, { status: 500 });
   }
 }
@@ -69,10 +69,19 @@ type OrderPayload = {
   items: OrderItem[];
   total_amount: number;
   notes?: string | null;
-  order_status?: "PLACED" | "ACCEPTED" | "IN_PREP" | "READY" | "SERVING" | "COMPLETED" | "CANCELLED" | "REFUNDED";
+  order_status?:
+    | "PLACED"
+    | "ACCEPTED"
+    | "IN_PREP"
+    | "READY"
+    | "SERVING"
+    | "COMPLETED"
+    | "CANCELLED"
+    | "REFUNDED";
   payment_status?: "UNPAID" | "PAID" | "TILL" | "REFUNDED";
   payment_mode?: "online" | "pay_later" | "pay_at_till";
   payment_method?: "demo" | "stripe" | "till" | null;
+  session_id?: string | null; // Session ID for tracking and re-scanning
   source?: "qr" | "counter"; // Order source - qr for table orders, counter for counter orders
   stripe_session_id?: string | null;
   stripe_payment_intent_id?: string | null;
@@ -85,102 +94,124 @@ function bad(msg: string, status = 400) {
 }
 
 // Function to create KDS tickets for an order
-async function createKDSTickets(supabase: Awaited<ReturnType<typeof createSupabaseClient>>, order: { id: string; venue_id: string; items?: Array<Record<string, unknown>> }) {
+async function createKDSTickets(
+  supabase: Awaited<ReturnType<typeof createSupabaseClient>>,
+  order: { id: string; venue_id: string; items?: Array<Record<string, unknown>> }
+) {
   try {
-    logger.debug('[KDS TICKETS] Creating KDS tickets for order:', { orderId: order.id });
-    
+    logger.debug("[KDS TICKETS] Creating KDS tickets for order:", { orderId: order.id });
+
     // First, ensure KDS stations exist for this venue
     const { data: existingStations } = await supabase
-      .from('kds_stations')
-      .select('id, station_type')
-      .eq('venue_id', order.venue_id)
-      .eq('is_active', true);
-    
+      .from("kds_stations")
+      .select("id, station_type")
+      .eq("venue_id", order.venue_id)
+      .eq("is_active", true);
+
     if (!existingStations || existingStations.length === 0) {
-      logger.debug('[KDS TICKETS] No stations found, creating default stations for venue', { extra: { venueId: order.venue_id } });
-      
+      logger.debug("[KDS TICKETS] No stations found, creating default stations for venue", {
+        extra: { venueId: order.venue_id },
+      });
+
       // Create default stations
       const defaultStations = [
-        { name: 'Expo', type: 'expo', order: 0, color: '#3b82f6' },
-        { name: 'Grill', type: 'grill', order: 1, color: '#ef4444' },
-        { name: 'Fryer', type: 'fryer', order: 2, color: '#f59e0b' },
-        { name: 'Barista', type: 'barista', order: 3, color: '#8b5cf6' },
-        { name: 'Cold Prep', type: 'cold', order: 4, color: '#06b6d4' }
+        { name: "Expo", type: "expo", order: 0, color: "#3b82f6" },
+        { name: "Grill", type: "grill", order: 1, color: "#ef4444" },
+        { name: "Fryer", type: "fryer", order: 2, color: "#f59e0b" },
+        { name: "Barista", type: "barista", order: 3, color: "#8b5cf6" },
+        { name: "Cold Prep", type: "cold", order: 4, color: "#06b6d4" },
       ];
-      
+
       for (const station of defaultStations) {
-        await supabase
-          .from('kds_stations')
-          .upsert({
+        await supabase.from("kds_stations").upsert(
+          {
             venue_id: order.venue_id,
             station_name: station.name,
             station_type: station.type,
             display_order: station.order,
             color_code: station.color,
-            is_active: true
-          }, {
-            onConflict: 'venue_id,station_name'
-          });
+            is_active: true,
+          },
+          {
+            onConflict: "venue_id,station_name",
+          }
+        );
       }
-      
+
       // Fetch stations again
       const { data: stations } = await supabase
-        .from('kds_stations')
-        .select('id, station_type')
-        .eq('venue_id', order.venue_id)
-        .eq('is_active', true);
-      
+        .from("kds_stations")
+        .select("id, station_type")
+        .eq("venue_id", order.venue_id)
+        .eq("is_active", true);
+
       if (!stations || stations.length === 0) {
-        throw new Error('Failed to create KDS stations');
+        throw new Error("Failed to create KDS stations");
       }
-      
+
       if (existingStations) {
         existingStations.push(...stations);
       }
     }
-    
+
     // Get the expo station (default for all items)
     if (!existingStations || existingStations.length === 0) {
-      throw new Error('No KDS stations available');
+      throw new Error("No KDS stations available");
     }
-    
-    const expoStation = existingStations.find((s: Record<string, unknown>) => (s as { station_type?: string }).station_type === 'expo') || existingStations[0];
-    
+
+    const expoStation =
+      existingStations.find(
+        (s: Record<string, unknown>) => (s as { station_type?: string }).station_type === "expo"
+      ) || existingStations[0];
+
     if (!expoStation) {
-      throw new Error('No KDS station available');
+      throw new Error("No KDS station available");
     }
-    
+
     // Create tickets for each order item
-    const items = Array.isArray(order.items) ? order.items as Array<Record<string, unknown>> : [];
-    
+    const items = Array.isArray(order.items) ? (order.items as Array<Record<string, unknown>>) : [];
+
     for (const item of items) {
-      const itemData = item as { item_name?: string; quantity?: string | number; specialInstructions?: string };
+      const itemData = item as {
+        item_name?: string;
+        quantity?: string | number;
+        specialInstructions?: string;
+      };
       const ticketData = {
         venue_id: order.venue_id,
         order_id: order.id,
         station_id: (expoStation as { id: string }).id,
-        item_name: itemData.item_name || 'Unknown Item',
-        quantity: typeof itemData.quantity === 'string' ? parseInt(itemData.quantity) : (itemData.quantity || 1),
+        item_name: itemData.item_name || "Unknown Item",
+        quantity:
+          typeof itemData.quantity === "string"
+            ? parseInt(itemData.quantity)
+            : itemData.quantity || 1,
         special_instructions: itemData.specialInstructions || null,
         table_number: (order as Record<string, unknown>).table_number as number | null,
-        table_label: ((order as Record<string, unknown>).table_id as string) || ((order as Record<string, unknown>).table_number as number | undefined)?.toString() || 'Unknown',
-        status: 'new'
+        table_label:
+          ((order as Record<string, unknown>).table_id as string) ||
+          ((order as Record<string, unknown>).table_number as number | undefined)?.toString() ||
+          "Unknown",
+        status: "new",
       };
-      
-      const { error: ticketError } = await supabase
-        .from('kds_tickets')
-        .insert(ticketData);
-      
+
+      const { error: ticketError } = await supabase.from("kds_tickets").insert(ticketData);
+
       if (ticketError) {
-        logger.error('[KDS TICKETS] Failed to create ticket for item:', { error: { item, context: ticketError } });
+        logger.error("[KDS TICKETS] Failed to create ticket for item:", {
+          error: { item, context: ticketError },
+        });
         throw ticketError;
       }
     }
-    
-    logger.debug('[KDS TICKETS] Successfully created KDS tickets', { data: { count: items.length, orderId: order.id } });
-    
+
+    logger.debug("[KDS TICKETS] Successfully created KDS tickets", {
+      data: { count: items.length, orderId: order.id },
+    });
   } catch (error) {
-    logger.error('[KDS TICKETS] Error creating KDS tickets:', { error: error instanceof Error ? error.message : 'Unknown error' });
+    logger.error("[KDS TICKETS] Error creating KDS tickets:", {
+      error: error instanceof Error ? error.message : "Unknown error",
+    });
     throw error;
   }
 }
@@ -188,17 +219,19 @@ async function createKDSTickets(supabase: Awaited<ReturnType<typeof createSupaba
 export async function POST(req: Request) {
   const requestId = Math.random().toString(36).substring(7);
   const startTime = Date.now();
-  
+
   // Use console.info (not console.log - that's stripped in production!)
   console.info(`🎯 [ORDERS API ${requestId}] ========================================`);
   console.info(`🎯 [ORDERS API ${requestId}] NEW ORDER SUBMISSION`);
   console.info(`🎯 [ORDERS API ${requestId}] Timestamp:`, new Date().toISOString());
-  
-  logger.info(`🎯🎯🎯 [ORDERS API ${requestId}] NEW ORDER SUBMISSION at ${new Date().toISOString()} 🎯🎯🎯`);
-  
+
+  logger.info(
+    `🎯🎯🎯 [ORDERS API ${requestId}] NEW ORDER SUBMISSION at ${new Date().toISOString()} 🎯🎯🎯`
+  );
+
   try {
-    logger.info('===== ORDER CREATION STARTED =====');
-    
+    logger.info("===== ORDER CREATION STARTED =====");
+
     console.info(`📥 [ORDERS API ${requestId}] Parsing request body...`);
     const body = (await req.json()) as Partial<OrderPayload>;
     console.info(`✅ [ORDERS API ${requestId}] Body parsed successfully`);
@@ -208,57 +241,56 @@ export async function POST(req: Request) {
     console.info(`📋 [ORDERS API ${requestId}] Table:`, body.table_number);
     console.info(`📋 [ORDERS API ${requestId}] Items:`, body.items?.length);
     console.info(`📋 [ORDERS API ${requestId}] Total:`, body.total_amount);
-    
-    logger.info('📥📥📥 REQUEST RECEIVED 📥📥📥', { 
+
+    logger.info("📥📥📥 REQUEST RECEIVED 📥📥📥", {
       customer: body.customer_name,
       venue: body.venue_id,
       table: body.table_number,
       items: body.items?.length,
       total: body.total_amount,
-      requestId
+      requestId,
     });
 
     console.info(`🔍 [ORDERS API ${requestId}] Starting validation...`);
-    
-    if (!body.venue_id || typeof body.venue_id !== 'string') {
+
+    if (!body.venue_id || typeof body.venue_id !== "string") {
       console.error(`❌ [ORDERS API ${requestId}] Validation failed: venue_id required`);
-      return bad('venue_id is required');
+      return bad("venue_id is required");
     }
     console.info(`✅ [ORDERS API ${requestId}] Venue ID valid`);
-    
+
     if (!body.customer_name || !body.customer_name.trim()) {
       console.error(`❌ [ORDERS API ${requestId}] Validation failed: customer_name required`);
-      return bad('customer_name is required');
+      return bad("customer_name is required");
     }
     console.info(`✅ [ORDERS API ${requestId}] Customer name valid`);
-    
+
     if (!body.customer_phone || !body.customer_phone.trim()) {
       console.error(`❌ [ORDERS API ${requestId}] Validation failed: customer_phone required`);
-      return bad('customer_phone is required');
+      return bad("customer_phone is required");
     }
     console.info(`✅ [ORDERS API ${requestId}] Customer phone valid`);
-    
+
     if (!Array.isArray(body.items) || body.items.length === 0) {
       console.error(`❌ [ORDERS API ${requestId}] Validation failed: items array empty`);
-      return bad('items must be a non-empty array');
+      return bad("items must be a non-empty array");
     }
     console.info(`✅ [ORDERS API ${requestId}] Items valid (${body.items.length} items)`);
-    
-    if (typeof body.total_amount !== 'number' || isNaN(body.total_amount)) {
+
+    if (typeof body.total_amount !== "number" || isNaN(body.total_amount)) {
       console.error(`❌ [ORDERS API ${requestId}] Validation failed: invalid total_amount`);
-      return bad('total_amount must be a number');
+      return bad("total_amount must be a number");
     }
     console.info(`✅ [ORDERS API ${requestId}] Total amount valid: ${body.total_amount}`);
     console.info(`✅ [ORDERS API ${requestId}] All validations passed!`);
-    
-    logger.info('✅✅✅ ALL VALIDATIONS PASSED ✅✅✅', {
+
+    logger.info("✅✅✅ ALL VALIDATIONS PASSED ✅✅✅", {
       customer: body.customer_name,
       venue: body.venue_id,
       items: body.items?.length,
       total: body.total_amount,
-      requestId
+      requestId,
     });
-    
 
     const tn = body.table_number;
     const table_number = tn === null || tn === undefined ? null : Number.isFinite(tn) ? tn : null;
@@ -266,7 +298,7 @@ export async function POST(req: Request) {
     const url = process.env.NEXT_PUBLIC_SUPABASE_URL!;
     const serviceKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
     if (!url || !serviceKey) {
-      return bad('Server misconfigured: missing SUPABASE_SERVICE_ROLE_KEY', 500);
+      return bad("Server misconfigured: missing SUPABASE_SERVICE_ROLE_KEY", 500);
     }
     // Try using the direct Supabase client with service role key
     const supabase = createClient(
@@ -275,37 +307,37 @@ export async function POST(req: Request) {
       {
         auth: {
           autoRefreshToken: false,
-          persistSession: false
-        }
+          persistSession: false,
+        },
       }
     );
 
     // Verify venue exists, create if it doesn't (for demo purposes)
     const { data: venue, error: venueErr } = await supabase
-      .from('venues')
-      .select('venue_id')
-      .eq('venue_id', body.venue_id)
+      .from("venues")
+      .select("venue_id")
+      .eq("venue_id", body.venue_id)
       .maybeSingle();
 
     if (venueErr) {
       return bad(`Failed to verify venue: ${venueErr.message}`, 500);
     }
-    
+
     if (!venue) {
       // Create a default venue for demo purposes
       const { error: createErr } = await supabase
-        .from('venues')
+        .from("venues")
         .insert({
           venue_id: body.venue_id,
-          name: 'Demo Restaurant',
-          business_type: 'restaurant',
+          name: "Demo Restaurant",
+          business_type: "restaurant",
           owner_user_id: null, // No owner for demo venue
           created_at: new Date().toISOString(),
-          updated_at: new Date().toISOString()
+          updated_at: new Date().toISOString(),
         })
-        .select('venue_id')
+        .select("venue_id")
         .single();
-        
+
       if (createErr) {
         return bad(`Failed to create demo venue: ${createErr.message}`, 500);
       }
@@ -314,14 +346,13 @@ export async function POST(req: Request) {
     // Auto-create table if it doesn't exist (for QR code scenarios)
     let tableId = null;
     if (body.table_number) {
-      
       // Check if table exists - first try to find by table number directly
       const { data: existingTable, error: lookupError } = await supabase
-        .from('tables')
-        .select('id, label')
-        .eq('venue_id', body.venue_id)
-        .eq('label', body.table_number.toString())
-        .eq('is_active', true)
+        .from("tables")
+        .select("id, label")
+        .eq("venue_id", body.venue_id)
+        .eq("label", body.table_number.toString())
+        .eq("is_active", true)
         .maybeSingle();
 
       if (lookupError) {
@@ -331,52 +362,51 @@ export async function POST(req: Request) {
       if (existingTable) {
         tableId = existingTable.id;
       } else {
-        
         // Get group size from group session to determine seat count
         let seatCount = 4; // Default fallback
         try {
           const { data: groupSession } = await supabase
-            .from('table_group_sessions')
-            .select('total_group_size')
-            .eq('venue_id', body.venue_id)
-            .eq('table_number', body.table_number)
-            .eq('is_active', true)
-            .order('created_at', { ascending: false })
+            .from("table_group_sessions")
+            .select("total_group_size")
+            .eq("venue_id", body.venue_id)
+            .eq("table_number", body.table_number)
+            .eq("is_active", true)
+            .order("created_at", { ascending: false })
             .limit(1)
             .maybeSingle();
-          
+
           if (groupSession && groupSession.total_group_size) {
             seatCount = groupSession.total_group_size;
           }
         } catch (groupError) {
-          logger.debug('[ORDERS] No group session found:', { error: groupError });
+          logger.debug("[ORDERS] No group session found:", { error: groupError });
         }
-        
+
         // Insert new table. Avoid UPSERT because the database may not have
         // a unique constraint on (venue_id, label) in some environments.
         const { data: newTable, error: tableCreateErr } = await supabase
-          .from('tables')
+          .from("tables")
           .insert({
             venue_id: body.venue_id,
             label: body.table_number.toString(),
             seat_count: seatCount,
             area: null,
-            is_active: true
+            is_active: true,
           })
-          .select('id, label')
+          .select("id, label")
           .single();
 
         if (tableCreateErr) {
           // If it's a duplicate key error, try to fetch the existing table
-          if (tableCreateErr.code === '23505') {
+          if (tableCreateErr.code === "23505") {
             const { data: existingTableAfterError } = await supabase
-              .from('tables')
-              .select('id, label')
-              .eq('venue_id', body.venue_id)
-              .eq('label', body.table_number.toString())
-              .eq('is_active', true)
+              .from("tables")
+              .select("id, label")
+              .eq("venue_id", body.venue_id)
+              .eq("label", body.table_number.toString())
+              .eq("is_active", true)
               .single();
-            
+
             if (existingTableAfterError) {
               tableId = existingTableAfterError.id;
             } else {
@@ -393,23 +423,21 @@ export async function POST(req: Request) {
         if (tableId) {
           // Check if session already exists to prevent duplicates
           const { data: existingSession } = await supabase
-            .from('table_sessions')
-            .select('id')
-            .eq('venue_id', body.venue_id)
-            .eq('table_id', tableId)
-            .is('closed_at', null)
+            .from("table_sessions")
+            .select("id")
+            .eq("venue_id", body.venue_id)
+            .eq("table_id", tableId)
+            .is("closed_at", null)
             .maybeSingle();
 
           if (!existingSession) {
-            const { error: sessionErr } = await supabase
-              .from('table_sessions')
-              .insert({
-                venue_id: body.venue_id,
-                table_id: tableId,
-                status: 'FREE',
-                opened_at: new Date().toISOString(),
-                closed_at: null
-              });
+            const { error: sessionErr } = await supabase.from("table_sessions").insert({
+              venue_id: body.venue_id,
+              table_id: tableId,
+              status: "FREE",
+              opened_at: new Date().toISOString(),
+              closed_at: null,
+            });
 
             if (sessionErr) {
               // Don't fail the request if session creation fails
@@ -425,20 +453,25 @@ export async function POST(req: Request) {
       const price = Number(it.price) || 0;
       return sum + qty * price;
     }, 0);
-    const finalTotal = Math.abs(computedTotal - (body.total_amount || 0)) < 0.01 ? body.total_amount! : computedTotal;
+    const finalTotal =
+      Math.abs(computedTotal - (body.total_amount || 0)) < 0.01
+        ? body.total_amount!
+        : computedTotal;
 
     const safeItems = body.items.map((it) => ({
       menu_item_id: it.menu_item_id ?? null,
       quantity: Number(it.quantity) || 0,
       price: Number(it.price) || 0, // Use 'price' field directly
       item_name: it.item_name,
-      specialInstructions: (it as Record<string, unknown>).special_instructions as string ?? (it as { specialInstructions?: string }).specialInstructions ?? null,
+      specialInstructions:
+        ((it as Record<string, unknown>).special_instructions as string) ??
+        (it as { specialInstructions?: string }).specialInstructions ??
+        null,
     }));
 
     // Use the source provided by the client (determined from URL parameters)
     // The client already determines this based on whether the QR code URL contains ?table=X or ?counter=X
-    const orderSource = body.source || 'qr'; // Default to 'qr' if not provided
-    
+    const orderSource = body.source || "qr"; // Default to 'qr' if not provided
 
     const payload: OrderPayload = {
       venue_id: body.venue_id,
@@ -449,10 +482,11 @@ export async function POST(req: Request) {
       items: safeItems,
       total_amount: finalTotal,
       notes: body.notes ?? null,
-      order_status: body.order_status || 'IN_PREP', // Default to IN_PREP so it shows in Live Orders immediately
-      payment_status: body.payment_status || 'UNPAID', // Use provided status or default to 'UNPAID'
-      payment_mode: body.payment_mode || 'online', // New field for payment mode
+      order_status: body.order_status || "IN_PREP", // Default to IN_PREP so it shows in Live Orders immediately
+      payment_status: body.payment_status || "UNPAID", // Use provided status or default to 'UNPAID'
+      payment_mode: body.payment_mode || "online", // New field for payment mode
       payment_method: body.payment_method || null,
+      session_id: body.session_id || null, // Session ID for tracking
       source: orderSource, // Use source from client (based on QR code URL: ?table=X -> 'qr', ?counter=X -> 'counter')
     };
 
@@ -460,243 +494,272 @@ export async function POST(req: Request) {
     // Look for orders with same customer, table, venue, and recent timestamp (within 5 minutes)
     const fiveMinutesAgo = new Date(Date.now() - 5 * 60 * 1000).toISOString();
     const { data: existingOrder, error: duplicateCheckError } = await supabase
-      .from('orders')
-      .select('id, created_at, order_status, payment_status')
-      .eq('venue_id', payload.venue_id)
-      .eq('customer_name', payload.customer_name)
-      .eq('customer_phone', payload.customer_phone)
-      .eq('table_number', payload.table_number)
-      .gte('created_at', fiveMinutesAgo)
-      .order('created_at', { ascending: false })
+      .from("orders")
+      .select("id, created_at, order_status, payment_status")
+      .eq("venue_id", payload.venue_id)
+      .eq("customer_name", payload.customer_name)
+      .eq("customer_phone", payload.customer_phone)
+      .eq("table_number", payload.table_number)
+      .gte("created_at", fiveMinutesAgo)
+      .order("created_at", { ascending: false })
       .limit(1)
       .maybeSingle();
 
     if (duplicateCheckError) {
-      logger.warn('[ORDER API] Duplicate check failed:', { value: duplicateCheckError });
+      logger.warn("[ORDER API] Duplicate check failed:", { value: duplicateCheckError });
     }
 
     // If we found a recent duplicate, return it instead of creating a new one
     if (existingOrder) {
-      logger.debug('[ORDER API] Found duplicate order, returning existing', { data: (existingOrder as Record<string, unknown>)?.id });
-      return NextResponse.json({ 
-        ok: true, 
+      logger.debug("[ORDER API] Found duplicate order, returning existing", {
+        data: (existingOrder as Record<string, unknown>)?.id,
+      });
+      return NextResponse.json({
+        ok: true,
         order: existingOrder,
         table_auto_created: tableId !== null,
         table_id: tableId,
-        session_id: (body as Record<string, unknown>).session_id as string || null,
+        session_id: ((body as Record<string, unknown>).session_id as string) || null,
         source: orderSource,
-        display_name: orderSource === 'counter' ? `Counter ${table_number}` : `Table ${table_number}`,
-        duplicate: true
+        display_name:
+          orderSource === "counter" ? `Counter ${table_number}` : `Table ${table_number}`,
+        duplicate: true,
       });
     }
 
     // Final validation before insertion
-    logger.debug('[ORDER CREATION DEBUG] ===== CREATING NEW ORDER =====');
-    logger.debug('[ORDER CREATION DEBUG] Order details:', { data: { customer: payload.customer_name, table: payload.table_number, venueId: payload.venue_id } });
-    logger.debug('[ORDER CREATION DEBUG] Payment details:', { data: { status: payload.payment_status, method: payload.payment_method, source: payload.source, total: payload.total_amount, itemsCount: payload.items?.length || 0 } });
-    
+    logger.debug("[ORDER CREATION DEBUG] ===== CREATING NEW ORDER =====");
+    logger.debug("[ORDER CREATION DEBUG] Order details:", {
+      data: {
+        customer: payload.customer_name,
+        table: payload.table_number,
+        venueId: payload.venue_id,
+      },
+    });
+    logger.debug("[ORDER CREATION DEBUG] Payment details:", {
+      data: {
+        status: payload.payment_status,
+        method: payload.payment_method,
+        source: payload.source,
+        total: payload.total_amount,
+        itemsCount: payload.items?.length || 0,
+      },
+    });
+
     console.info(`💾 [ORDERS API ${requestId}] Inserting order into database...`);
     const { data: inserted, error: insertErr } = await supabase
-      .from('orders')
+      .from("orders")
       .insert(payload)
-      .select('*');
-    
+      .select("*");
+
     console.info(`📊 [ORDERS API ${requestId}] Insert result:`);
     console.info(`📊 [ORDERS API ${requestId}] - Success:`, !insertErr);
     console.info(`📊 [ORDERS API ${requestId}] - Inserted data:`, inserted);
     console.info(`📊 [ORDERS API ${requestId}] - Insert error:`, insertErr);
 
-    logger.debug('[ORDER CREATION DEBUG] Insert result:');
-    logger.debug('[ORDER CREATION DEBUG] - Inserted data:', { value: inserted });
-    logger.debug('[ORDER CREATION DEBUG] - Insert error:', { value: insertErr });
+    logger.debug("[ORDER CREATION DEBUG] Insert result:");
+    logger.debug("[ORDER CREATION DEBUG] - Inserted data:", { value: inserted });
+    logger.debug("[ORDER CREATION DEBUG] - Insert error:", { value: insertErr });
 
     if (insertErr) {
       console.error(`❌ [ORDERS API ${requestId}] Database insert FAILED`);
       console.error(`❌ [ORDERS API ${requestId}] Error code:`, insertErr.code);
       console.error(`❌ [ORDERS API ${requestId}] Error message:`, insertErr.message);
       console.error(`❌ [ORDERS API ${requestId}] Error details:`, insertErr);
-      
-      logger.error('[ORDER CREATION DEBUG] ===== INSERT FAILED =====');
-      logger.error('[ORDER CREATION DEBUG] Error details:', { value: insertErr });
-      
+
+      logger.error("[ORDER CREATION DEBUG] ===== INSERT FAILED =====");
+      logger.error("[ORDER CREATION DEBUG] Error details:", { value: insertErr });
+
       // Try to provide more specific error messages
       let errorMessage = insertErr.message;
-      if (insertErr.code === '23505') {
-        errorMessage = 'Order already exists with this ID';
-      } else if (insertErr.code === '23503') {
-        errorMessage = 'Referenced venue or table does not exist';
-      } else if (insertErr.code === '23514') {
-        errorMessage = 'Data validation failed - check required fields';
+      if (insertErr.code === "23505") {
+        errorMessage = "Order already exists with this ID";
+      } else if (insertErr.code === "23503") {
+        errorMessage = "Referenced venue or table does not exist";
+      } else if (insertErr.code === "23514") {
+        errorMessage = "Data validation failed - check required fields";
       }
-      
+
       return bad(`Insert failed: ${errorMessage}`, 400);
     }
     console.info(`✅ [ORDERS API ${requestId}] Database insert successful!`);
-    logger.info('💾💾💾 DATABASE INSERT SUCCESSFUL 💾💾💾', { requestId });
+    logger.info("💾💾💾 DATABASE INSERT SUCCESSFUL 💾💾💾", { requestId });
 
     if (!inserted || inserted.length === 0) {
       console.error(`❌ [ORDERS API ${requestId}] No data returned from insert`);
-      logger.error('❌❌❌ NO DATA RETURNED FROM INSERT ❌❌❌', { requestId });
-      return bad('Order creation failed - no data returned', 500);
+      logger.error("❌❌❌ NO DATA RETURNED FROM INSERT ❌❌❌", { requestId });
+      return bad("Order creation failed - no data returned", 500);
     }
     console.info(`✅ [ORDERS API ${requestId}] Order created - ID:`, inserted[0].id);
-    logger.info('🎉🎉🎉 ORDER CREATED IN DATABASE 🎉🎉🎉', { 
+    logger.info("🎉🎉🎉 ORDER CREATED IN DATABASE 🎉🎉🎉", {
       orderId: inserted[0].id,
       customer: inserted[0].customer_name,
       table: inserted[0].table_number,
-      requestId
+      requestId,
     });
 
-    logger.debug('[ORDER CREATION DEBUG] ===== ORDER CREATED SUCCESSFULLY =====');
-    logger.debug('[ORDER CREATION DEBUG] Order ID:', inserted[0].id);
-    logger.debug('[ORDER CREATION DEBUG] Created order details:', {
+    logger.debug("[ORDER CREATION DEBUG] ===== ORDER CREATED SUCCESSFULLY =====");
+    logger.debug("[ORDER CREATION DEBUG] Order ID:", inserted[0].id);
+    logger.debug("[ORDER CREATION DEBUG] Created order details:", {
       id: inserted[0].id,
       customer_name: inserted[0].customer_name,
       table_number: inserted[0].table_number,
       payment_status: inserted[0].payment_status,
       payment_method: inserted[0].payment_method,
-      venue_id: inserted[0].venue_id
+      venue_id: inserted[0].venue_id,
     });
-    
 
     // Note: items are embedded in orders payload in this schema; if you also mirror rows in order_items elsewhere, log success after that insert
-    
+
     // Create or update table session to show table as occupied if we have a table
     if (tableId && inserted?.[0]?.id) {
-      
       // First, check if there's an existing open session
       const { data: existingSession, error: checkError } = await supabase
-        .from('table_sessions')
-        .select('id, status')
-        .eq('table_id', tableId)
-        .is('closed_at', null)
+        .from("table_sessions")
+        .select("id, status")
+        .eq("table_id", tableId)
+        .is("closed_at", null)
         .maybeSingle();
 
       if (checkError) {
-        logger.debug('[ORDERS] Error checking existing session:', { error: checkError });
+        logger.debug("[ORDERS] Error checking existing session:", { error: checkError });
       }
 
       if (existingSession) {
         // Update existing session to ORDERING status
         const { error: sessionUpdateError } = await supabase
-          .from('table_sessions')
-          .update({ 
-            status: 'ORDERING',
+          .from("table_sessions")
+          .update({
+            status: "ORDERING",
             order_id: inserted[0].id,
-            updated_at: new Date().toISOString()
+            updated_at: new Date().toISOString(),
           })
-          .eq('id', existingSession.id);
+          .eq("id", existingSession.id);
 
         if (sessionUpdateError) {
-          logger.error('[ORDERS] Error updating session status:', { error: sessionUpdateError });
+          logger.error("[ORDERS] Error updating session status:", { error: sessionUpdateError });
         }
       } else {
         // Create new session with ORDERING status
-        const { error: sessionCreateError } = await supabase
-          .from('table_sessions')
-          .insert({
-            table_id: tableId,
-            venue_id: body.venue_id,
-            status: 'ORDERING',
-            order_id: inserted[0].id,
-            opened_at: new Date().toISOString()
-          });
+        const { error: sessionCreateError } = await supabase.from("table_sessions").insert({
+          table_id: tableId,
+          venue_id: body.venue_id,
+          status: "ORDERING",
+          order_id: inserted[0].id,
+          opened_at: new Date().toISOString(),
+        });
 
         if (sessionCreateError) {
-          logger.error('[ORDERS] Error creating table session:', { error: sessionCreateError });
+          logger.error("[ORDERS] Error creating table session:", { error: sessionCreateError });
         }
       }
     }
-    
+
     // Ensure we have a valid order object
     let createdOrder;
     if (!inserted || inserted.length === 0 || !inserted[0]) {
-      
       // Try to fetch the order we just created by querying the database
-      
+
       const { data: fetchedOrder, error: fetchError } = await supabase
-        .from('orders')
-        .select('*')
-        .eq('venue_id', payload.venue_id)
-        .eq('customer_name', payload.customer_name)
-        .eq('total_amount', payload.total_amount)
-        .order('created_at', { ascending: false })
+        .from("orders")
+        .select("*")
+        .eq("venue_id", payload.venue_id)
+        .eq("customer_name", payload.customer_name)
+        .eq("total_amount", payload.total_amount)
+        .order("created_at", { ascending: false })
         .limit(1)
         .single();
-      
+
       if (fetchError || !fetchedOrder) {
-        return bad('Order creation failed: No order data returned from database', 500);
+        return bad("Order creation failed: No order data returned from database", 500);
       }
-      
+
       createdOrder = fetchedOrder;
     } else {
       createdOrder = inserted[0];
     }
 
-    const response = { 
-      ok: true, 
+    const response = {
+      ok: true,
       order: createdOrder,
       table_auto_created: tableId !== null, // True if we auto-created a table
       table_id: tableId,
-      session_id: (body as Record<string, unknown>).session_id as string || null, // Include session_id in response for client-side storage
+      session_id: ((body as Record<string, unknown>).session_id as string) || null, // Include session_id in response for client-side storage
       source: orderSource, // Include the correctly determined source
-      display_name: orderSource === 'counter' ? `Counter ${table_number}` : `Table ${table_number}` // Include display name for UI
+      display_name: orderSource === "counter" ? `Counter ${table_number}` : `Table ${table_number}`, // Include display name for UI
     };
-    
-    logger.debug('[ORDER CREATION DEBUG] ===== RETURNING RESPONSE =====');
-    logger.debug('[ORDER CREATION DEBUG] Response data:', { data: JSON.stringify(response, null, 2) });
-    
+
+    logger.debug("[ORDER CREATION DEBUG] ===== RETURNING RESPONSE =====");
+    logger.debug("[ORDER CREATION DEBUG] Response data:", {
+      data: JSON.stringify(response, null, 2),
+    });
+
     // Create KDS tickets for the order
     console.info(`🍳 [ORDERS API ${requestId}] Creating KDS tickets...`);
     try {
       await createKDSTickets(supabase, inserted[0]);
       console.info(`✅ [ORDERS API ${requestId}] KDS tickets created successfully`);
     } catch (kdsError) {
-      console.warn(`⚠️ [ORDERS API ${requestId}] KDS ticket creation failed (non-critical):`, kdsError);
-      logger.warn('[ORDER CREATION DEBUG] KDS ticket creation failed (non-critical):', { value: kdsError });
+      console.warn(
+        `⚠️ [ORDERS API ${requestId}] KDS ticket creation failed (non-critical):`,
+        kdsError
+      );
+      logger.warn("[ORDER CREATION DEBUG] KDS ticket creation failed (non-critical):", {
+        value: kdsError,
+      });
       // Don't fail the order creation if KDS tickets fail
     }
-    
+
     const duration = Date.now() - startTime;
     console.info(`✅✅✅ [ORDERS API ${requestId}] ORDER CREATED SUCCESSFULLY ✅✅✅`);
     console.info(`✅ [ORDERS API ${requestId}] Order ID:`, inserted[0].id);
-    console.info(`✅ [ORDERS API ${requestId}] Duration:`, duration, 'ms');
+    console.info(`✅ [ORDERS API ${requestId}] Duration:`, duration, "ms");
     console.info(`✅ [ORDERS API ${requestId}] Returning response...`);
     console.info(`✅ [ORDERS API ${requestId}] Response:`, response);
     console.info(`✅ [ORDERS API ${requestId}] ========================================`);
-    
-    logger.info('✅✅✅ ORDER CREATED SUCCESSFULLY ✅✅✅', {
+
+    logger.info("✅✅✅ ORDER CREATED SUCCESSFULLY ✅✅✅", {
       orderId: inserted[0].id,
       customer: inserted[0].customer_name,
       venue: inserted[0].venue_id,
       table: inserted[0].table_number,
       total: inserted[0].total_amount,
       duration: `${duration}ms`,
-      requestId
+      requestId,
     });
-    
+
     return NextResponse.json(response);
   } catch (e: unknown) {
     const error = e as Error;
     const duration = Date.now() - startTime;
-    
+
     console.error(`❌❌❌ [ORDERS API ${requestId}] UNEXPECTED ERROR ❌❌❌`);
     console.error(`❌ [ORDERS API ${requestId}] Error type:`, typeof error);
     console.error(`❌ [ORDERS API ${requestId}] Error:`, error);
-    console.error(`❌ [ORDERS API ${requestId}] Message:`, error instanceof Error ? error.message : String(error));
-    console.error(`❌ [ORDERS API ${requestId}] Stack:`, error instanceof Error ? error.stack : 'No stack');
-    console.error(`❌ [ORDERS API ${requestId}] Duration:`, duration, 'ms');
+    console.error(
+      `❌ [ORDERS API ${requestId}] Message:`,
+      error instanceof Error ? error.message : String(error)
+    );
+    console.error(
+      `❌ [ORDERS API ${requestId}] Stack:`,
+      error instanceof Error ? error.stack : "No stack"
+    );
+    console.error(`❌ [ORDERS API ${requestId}] Duration:`, duration, "ms");
     console.error(`❌ [ORDERS API ${requestId}] ========================================`);
-    
-    logger.error('❌❌❌ ORDER CREATION FAILED ❌❌❌', {
+
+    logger.error("❌❌❌ ORDER CREATION FAILED ❌❌❌", {
       error: error instanceof Error ? error.message : String(error),
-      stack: error instanceof Error ? error.stack : 'No stack',
+      stack: error instanceof Error ? error.stack : "No stack",
       duration: `${duration}ms`,
-      requestId
+      requestId,
     });
-    
-    const msg = error instanceof Error ? error.message : (typeof error === 'string' ? error : 'Unknown server error');
+
+    const msg =
+      error instanceof Error
+        ? error.message
+        : typeof error === "string"
+          ? error
+          : "Unknown server error";
     return bad(`Server error: ${msg}`, 500);
   }
 }
-
