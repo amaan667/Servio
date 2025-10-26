@@ -1,103 +1,90 @@
-import { NextResponse } from 'next/server';
-import { createClient, getAuthenticatedUser } from '@/lib/supabase';
-import { cleanupTableOnOrderCompletion } from '@/lib/table-cleanup';
-import { logger } from '@/lib/logger';
+import { NextResponse } from "next/server";
+import { createAdminClient } from "@/lib/supabase";
+import { cleanupTableOnOrderCompletion } from "@/lib/table-cleanup";
+import { logger } from "@/lib/logger";
 
-export const runtime = 'nodejs';
+export const runtime = "nodejs";
 
 export async function POST(req: Request) {
   try {
-    
     const { venueId, orderIds } = await req.json();
-    
+
     if (!venueId) {
-      return NextResponse.json({ error: 'Venue ID is required' }, { status: 400 });
+      return NextResponse.json({ error: "Venue ID is required" }, { status: 400 });
     }
 
-    const { user } = await getAuthenticatedUser();
-    if (!user) return NextResponse.json({ ok: false, error: 'Not authenticated' }, { status: 401 });
-    
-    const supabase = await createClient();
-    
+    // Use admin client - no authentication required for Live Orders feature
+    const supabase = createAdminClient();
+
     // If no specific order IDs provided, get all active orders for the venue
     let targetOrderIds = orderIds;
     if (!targetOrderIds || targetOrderIds.length === 0) {
       const { data: activeOrders, error: fetchError } = await supabase
-        .from('orders')
-        .select('id')
-        .eq('venue_id', venueId)
-        .in('order_status', ['PLACED', 'IN_PREP', 'READY', 'SERVING']);
-      
+        .from("orders")
+        .select("id")
+        .eq("venue_id", venueId)
+        .in("order_status", ["PLACED", "IN_PREP", "READY", "SERVING"]);
+
       if (fetchError) {
-        logger.error('[BULK COMPLETE] Error fetching active orders:', { value: fetchError });
-        return NextResponse.json({ error: 'Failed to fetch active orders' }, { status: 500 });
+        logger.error("[BULK COMPLETE] Error fetching active orders:", { value: fetchError });
+        return NextResponse.json({ error: "Failed to fetch active orders" }, { status: 500 });
       }
-      
-      targetOrderIds = activeOrders?.map(order => order.id) || [];
+
+      targetOrderIds = activeOrders?.map((order) => order.id) || [];
     }
-    
+
     if (targetOrderIds.length === 0) {
-      return NextResponse.json({ 
-        success: true, 
+      return NextResponse.json({
+        success: true,
         completedCount: 0,
-        message: 'No active orders to complete'
+        message: "No active orders to complete",
       });
     }
-    
-    
-    // Get order details before updating to handle table cleanup
-    const { data: ordersToComplete, error: fetchOrdersError } = await supabase
-      .from('orders')
-      .select('id, table_id, table_number, source, venue_id')
-      .in('id', targetOrderIds)
-      .eq('venue_id', venueId);
-    
-    if (fetchOrdersError) {
-      logger.error('[BULK COMPLETE] Error fetching order details:', { value: fetchOrdersError });
-      return NextResponse.json({ error: 'Failed to fetch order details' }, { status: 500 });
-    }
-    
+
     // Update all orders to COMPLETED status
     const { data: updatedOrders, error: updateError } = await supabase
-      .from('orders')
-      .update({ 
-        order_status: 'COMPLETED',
-        updated_at: new Date().toISOString()
+      .from("orders")
+      .update({
+        order_status: "COMPLETED",
+        updated_at: new Date().toISOString(),
       })
-      .in('id', targetOrderIds)
-      .eq('venue_id', venueId)
-      .select('id, table_id, table_number, source');
+      .in("id", targetOrderIds)
+      .eq("venue_id", venueId)
+      .select("id, table_id, table_number, source");
 
     if (updateError) {
-      logger.error('[BULK COMPLETE] Error updating orders:', { value: updateError });
-      return NextResponse.json({ error: 'Failed to update orders' }, { status: 500 });
+      logger.error("[BULK COMPLETE] Error updating orders:", { value: updateError });
+      return NextResponse.json({ error: "Failed to update orders" }, { status: 500 });
     }
 
     // Handle table cleanup for completed orders
     if (updatedOrders && updatedOrders.length > 0) {
       // Get all unique table identifiers from completed orders
       const tableCleanupTasks = [];
-      
+
       for (const order of updatedOrders) {
         if (order.table_id || order.table_number) {
           tableCleanupTasks.push(
             cleanupTableOnOrderCompletion({
               venueId: venueId, // Use the venueId from the request parameter
               tableId: order.table_id,
-              tableNumber: order.table_number
+              tableNumber: order.table_number,
             })
           );
         }
       }
-      
+
       // Execute all cleanup tasks in parallel
       const cleanupResults = await Promise.allSettled(tableCleanupTasks);
-      
+
       // Log results
       cleanupResults.forEach((result, index) => {
-        if (result.status === 'fulfilled') {
+        if (result.status === "fulfilled") {
           if (result.value.success) {
-            logger.debug(`[BULK COMPLETE] Table cleanup ${index + 1} successful:`, result.value.details);
+            logger.debug(
+              `[BULK COMPLETE] Table cleanup ${index + 1} successful:`,
+              result.value.details
+            );
           } else {
             logger.error(`[BULK COMPLETE] Table cleanup ${index + 1} failed:`, result.value.error);
           }
@@ -105,7 +92,7 @@ export async function POST(req: Request) {
           logger.error(`[BULK COMPLETE] Table cleanup ${index + 1} rejected:`, result.reason);
         }
       });
-      
+
       // Legacy table deletion logic (commented out - use cleanup instead)
       /*
       const tableIds = [...new Set(updatedOrders
@@ -206,14 +193,15 @@ export async function POST(req: Request) {
       */
     }
 
-    return NextResponse.json({ 
-      success: true, 
+    return NextResponse.json({
+      success: true,
       completedCount: updatedOrders?.length || 0,
-      message: `Successfully completed ${updatedOrders?.length || 0} orders and cleaned up tables`
+      message: `Successfully completed ${updatedOrders?.length || 0} orders and cleaned up tables`,
     });
-
   } catch (error) {
-    logger.error('[BULK COMPLETE] Unexpected error:', { error: error instanceof Error ? error.message : 'Unknown error' });
-    return NextResponse.json({ error: 'Internal server error' }, { status: 500 });
+    logger.error("[BULK COMPLETE] Unexpected error:", {
+      error: error instanceof Error ? error.message : "Unknown error",
+    });
+    return NextResponse.json({ error: "Internal server error" }, { status: 500 });
   }
 }

@@ -4,7 +4,7 @@ import { useState } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { Calendar, Clock, Users, Phone, X, UserCheck, Timer, Plus } from "lucide-react";
+import { Calendar, Clock, Users, Phone, X, UserCheck, Timer } from "lucide-react";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -21,14 +21,9 @@ import {
 interface ReservationsPanelProps {
   reservations: Reservation[];
   onActionComplete?: () => void;
-  onAddReservation?: () => void;
 }
 
-export function ReservationsPanel({
-  reservations,
-  onActionComplete,
-  onAddReservation,
-}: ReservationsPanelProps) {
+export function ReservationsPanel({ reservations, onActionComplete }: ReservationsPanelProps) {
   const [isLoading, setIsLoading] = useState<string | null>(null);
   const checkInReservation = useCheckInReservation();
   const cancelReservation = useCancelReservation();
@@ -122,23 +117,10 @@ export function ReservationsPanel({
     return (
       <Card>
         <CardHeader>
-          <div className="flex items-center justify-between">
-            <CardTitle className="flex items-center gap-2">
-              <Calendar className="h-5 w-5" />
-              Reservations
-            </CardTitle>
-            {onAddReservation && (
-              <Button
-                variant="outline"
-                size="sm"
-                onClick={onAddReservation}
-                className="flex items-center gap-1"
-              >
-                <Plus className="h-4 w-4" />
-                Add Reservation
-              </Button>
-            )}
-          </div>
+          <CardTitle className="flex items-center gap-2">
+            <Calendar className="h-5 w-5" />
+            Reservations
+          </CardTitle>
         </CardHeader>
         <CardContent>
           <div className="text-center py-8">
@@ -153,23 +135,10 @@ export function ReservationsPanel({
   return (
     <Card>
       <CardHeader>
-        <div className="flex items-center justify-between">
-          <CardTitle className="flex items-center gap-2">
-            <Calendar className="h-5 w-5" />
-            Reservations ({activeReservations.length})
-          </CardTitle>
-          {onAddReservation && (
-            <Button
-              variant="outline"
-              size="sm"
-              onClick={onAddReservation}
-              className="flex items-center gap-1"
-            >
-              <Plus className="h-4 w-4" />
-              Add Reservation
-            </Button>
-          )}
-        </div>
+        <CardTitle className="flex items-center gap-2">
+          <Calendar className="h-5 w-5" />
+          Reservations ({activeReservations.length})
+        </CardTitle>
       </CardHeader>
       <CardContent className="space-y-3">
         {activeReservations.map((reservation) => (
