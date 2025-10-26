@@ -81,7 +81,7 @@ export async function GET(req: Request) {
 
     return NextResponse.json({ paid: false }, { status: 200 });
   } catch (_e) {
-    logger.error("verify error", { error: e instanceof Error ? e.message : 'Unknown error' });
+    logger.error("verify error", { error: _e instanceof Error ? _e.message : 'Unknown error' });
     return NextResponse.json({ error: e instanceof Error ? e.message : "verify failed" }, { status: 500 });
   }
 }

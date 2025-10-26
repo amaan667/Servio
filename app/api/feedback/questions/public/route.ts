@@ -35,7 +35,7 @@ export async function GET(req: Request) {
     });
 
   } catch (_error) {
-    logger.error('[FEEDBACK:PUBLIC] Exception:', { error: error instanceof Error ? error.message : 'Unknown error' });
+    logger._error('[FEEDBACK:PUBLIC] Exception:', { error: _error instanceof Error ? _error.message : 'Unknown _error' });
     return NextResponse.json({ error: 'Internal server error' }, { status: 500 });
   }
 }

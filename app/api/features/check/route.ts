@@ -28,7 +28,7 @@ export async function GET(_request: NextRequest) {
 
     return NextResponse.json(access);
   } catch (_error) {
-    logger.error('[FEATURE CHECK API] Error:', { error: error instanceof Error ? error.message : 'Unknown error' });
+    logger._error('[FEATURE CHECK API] Error:', { error: _error instanceof Error ? _error.message : 'Unknown _error' });
     return NextResponse.json(
       { error: 'Internal server error' },
       { status: 500 }

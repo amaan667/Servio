@@ -52,7 +52,7 @@ export async function GET(req: Request) {
     });
 
   } catch (_error) {
-    logger.error('[RESERVATIONS UNASSIGNED] Unexpected error:', { error: error instanceof Error ? error.message : 'Unknown error' });
+    logger._error('[RESERVATIONS UNASSIGNED] Unexpected error:', { error: _error instanceof Error ? _error.message : 'Unknown _error' });
     return NextResponse.json({ ok: false, error: 'Internal server error' }, { status: 500 });
   }
 }

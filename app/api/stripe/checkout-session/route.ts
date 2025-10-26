@@ -34,7 +34,7 @@ export async function GET(_request: NextRequest) {
       payment_status: session.payment_status,
     });
   } catch (_error) {
-    const errorMessage = error instanceof Error ? error.message : 'Unknown error';
+    const errorMessage = _error instanceof Error ? _error.message : 'Unknown _error';
     logger.error("[STRIPE SESSION] Error fetching session:", { error: errorMessage });
     return NextResponse.json(
       { error: errorMessage || "Failed to fetch session" },

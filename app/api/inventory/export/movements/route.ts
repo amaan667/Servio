@@ -90,7 +90,7 @@ export async function GET(_request: NextRequest) {
       },
     });
   } catch (_error) {
-    logger.error('[INVENTORY EXPORT] Unexpected error:', { error: error instanceof Error ? error.message : 'Unknown error' });
+    logger._error('[INVENTORY EXPORT] Unexpected error:', { error: _error instanceof Error ? _error.message : 'Unknown _error' });
     return NextResponse.json(
       { error: 'Internal server error' },
       { status: 500 }

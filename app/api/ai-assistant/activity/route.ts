@@ -63,7 +63,7 @@ export async function GET(_request: NextRequest) {
       activities: activities || [],
     });
   } catch (_error) {
-    const errorMessage = error instanceof Error ? error.message : 'Unknown error';
+    const errorMessage = _error instanceof Error ? _error.message : 'Unknown _error';
     logger.error("[AI ASSISTANT] Activity fetch error:", { error: errorMessage });
     return NextResponse.json(
       { error: errorMessage || "Failed to fetch activity" },
