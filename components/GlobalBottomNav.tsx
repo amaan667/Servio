@@ -5,6 +5,7 @@ import { useRouter, usePathname } from "next/navigation";
 import { Home, Clock, ShoppingBag, QrCode, LayoutDashboard } from "lucide-react";
 import { useIsMobile } from "@/hooks/use-mobile";
 import { supabaseBrowser as createClient } from "@/lib/supabase";
+import { logger } from "@/lib/logger";
 
 interface GlobalBottomNavProps {
   venueId?: string;
@@ -23,7 +24,12 @@ interface NavItem {
   isActive?: boolean;
 }
 
-export default function GlobalBottomNav({ venueId, counts = { /* Empty */ } }: GlobalBottomNavProps) {
+export default function GlobalBottomNav({
+  venueId,
+  counts = {
+    /* Empty */
+  },
+}: GlobalBottomNavProps) {
   const [isVisible, setIsVisible] = useState(true);
   const [liveOrdersCount, setLiveOrdersCount] = useState(counts.live_orders || 0);
   const router = useRouter();

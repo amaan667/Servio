@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
+import { logger } from "@/lib/logger";
 
 // Switch to nodejs runtime - edge runtime causes socket errors on Railway
 export const runtime = "nodejs";
