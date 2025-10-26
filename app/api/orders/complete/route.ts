@@ -56,6 +56,24 @@ export async function POST(req: Request) {
       );
     }
 
+    // CRITICAL: Only allow completing orders that have been PAID
+    const paymentStatus = (orderData.payment_status || "").toString().toUpperCase();
+    if (paymentStatus !== "PAID") {
+      logger.warn("[ORDERS COMPLETE] Refusing complete due to unpaid status", {
+        orderId,
+        paymentStatus,
+        paymentMode: orderData.payment_mode,
+      });
+      return NextResponse.json(
+        {
+          error: "Payment must be collected before marking order as COMPLETED",
+          payment_status: paymentStatus,
+          payment_mode: orderData.payment_mode,
+        },
+        { status: 400 }
+      );
+    }
+
     const venueId = orderData.venue_id as string;
     if (!venueId) {
       return NextResponse.json({ error: "Order missing venue_id" }, { status: 400 });

@@ -4,7 +4,7 @@ import { useState } from "react";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { Clock, User, Hash, MapPin, CreditCard, CheckCircle, X, Split } from "lucide-react";
+import { Clock, User, Hash, MapPin, CreditCard, CheckCircle, X, QrCode } from "lucide-react";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 
 import { OrderForCard } from "@/types/orders";
@@ -12,6 +12,7 @@ import { deriveEntityKind, shouldShowUnpaidChip } from "@/lib/orders/entity-type
 import { OrderStatusChip, PaymentStatusChip } from "@/components/ui/chips";
 import { formatCurrency, formatOrderTime } from "@/lib/orders/mapOrderToCardData";
 import { supabaseBrowser as createClient } from "@/lib/supabase";
+import { PaymentCollectionDialog } from "./PaymentCollectionDialog";
 
 interface OrderCardProps {
   order: OrderForCard;
@@ -32,6 +33,7 @@ export function OrderCard({
 }: OrderCardProps) {
   const [showHoverRemove, setShowHoverRemove] = useState(false);
   const [isProcessing, setIsProcessing] = useState(false);
+  const [showPaymentDialog, setShowPaymentDialog] = useState(false);
 
   // Determine variant automatically if not specified
   const finalVariant =
@@ -81,32 +83,6 @@ export function OrderCard({
       });
 
       if (!response.ok) throw new Error("Failed to delete order");
-      onActionComplete?.();
-    } catch {
-      // Error silently handled
-    } finally {
-      setIsProcessing(false);
-    }
-  };
-
-  const handlePayment = async (paymentMethod: "till" | "card") => {
-    if (!venueId) return;
-
-    try {
-      setIsProcessing(true);
-      const response = await fetch("/api/orders/payment", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        credentials: "include",
-        body: JSON.stringify({
-          orderId: order.id,
-          venue_id: venueId,
-          payment_method: paymentMethod,
-          payment_status: "PAID",
-        }),
-      });
-
-      if (!response.ok) throw new Error("Failed to process payment");
       onActionComplete?.();
     } catch {
       // Error silently handled
@@ -198,160 +174,137 @@ export function OrderCard({
 
     const isPaid = order.payment.status === "paid";
     const isCompleted = (order.order_status || "").toUpperCase() === "COMPLETED";
-    const showUnpaid = shouldShowUnpaidChip(order);
+    const orderStatus = (order.order_status || "").toUpperCase();
+    const paymentMode = order.payment_mode; // "online", "pay_at_till", "pay_later"
 
-    if (showUnpaid && !isPaid) {
-      // Show payment actions for till/later orders
+    console.info("[ORDER CARD] Rendering actions for order:", {
+      orderId: order.id,
+      rawStatus: order.order_status,
+      orderStatus,
+      isPaid,
+      isCompleted,
+      paymentMode,
+    });
+
+    // If already completed, no actions needed
+    if (isCompleted) {
+      return null;
+    }
+
+    // If order is IN_PREP or PREPARING, show preparing message (not clickable)
+    if (orderStatus === "IN_PREP" || orderStatus === "PREPARING") {
+      console.info("[ORDER CARD] Showing 'Preparing in Kitchen...' label");
       return (
         <div className="mt-4 pt-4 border-t border-slate-200">
-          <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3">
-            <div className="text-sm text-slate-600">
-              <span className="font-medium">Payment Required:</span>{" "}
-              {formatCurrency(order.total_amount, order.currency)}
-            </div>
-            <div className="flex gap-2 flex-wrap">
-              <Button
-                size="sm"
-                variant="outline"
-                onClick={() => handlePayment("till")}
-                disabled={isProcessing}
-                className="text-green-600 border-green-200 hover:bg-green-50"
-              >
-                <CheckCircle className="h-4 w-4 mr-1" />
-                Till Payment
-              </Button>
-              <Button
-                size="sm"
-                onClick={() => handlePayment("card")}
-                disabled={isProcessing}
-                className="bg-blue-600 hover:bg-blue-700"
-              >
-                <CreditCard className="h-4 w-4 mr-1" />
-                Card Payment
-              </Button>
-              {isTableVariant && (
-                <Button
-                  size="sm"
-                  variant="outline"
-                  onClick={() => {
-                    /* Bill splitting feature coming soon */
-                  }}
-                  disabled={isProcessing}
-                  className="text-purple-600 border-purple-200 hover:bg-purple-50"
-                >
-                  <Split className="h-4 w-4 mr-1" />
-                  Split Bill
-                </Button>
-              )}
-            </div>
+          <div className="flex items-center justify-center gap-2 p-3 bg-blue-50 rounded-lg">
+            <Clock className="h-4 w-4 text-blue-600 animate-pulse" />
+            <span className="text-sm font-medium text-blue-700">Preparing in Kitchen...</span>
           </div>
         </div>
       );
     }
 
-    // Show status update actions for FOH (Live Orders)
-    // IN_PREP: Show "Preparing" message (not clickable - waiting for KDS)
-    // READY: Show "Mark Served" button
-    // SERVING: Show "Complete" button
-    const orderStatus = (order.order_status || "").toUpperCase();
-
-    console.info("[ORDER CARD] Rendering actions for order:", {
-      orderId: order.id,
-      rawStatus: order.order_status,
-      upperStatus: orderStatus,
-      isPaid,
-      isCompleted,
-    });
-
-    if (!isCompleted) {
-      // If order is IN_PREP or PREPARING, show preparing message (not clickable)
-      if (orderStatus === "IN_PREP" || orderStatus === "PREPARING") {
-        console.info("[ORDER CARD] Showing 'Preparing in Kitchen...' label");
-        return (
-          <div className="mt-4 pt-4 border-t border-slate-200">
-            <div className="flex items-center justify-center gap-2 p-3 bg-blue-50 rounded-lg">
-              <Clock className="h-4 w-4 text-blue-600 animate-pulse" />
-              <span className="text-sm font-medium text-blue-700">Preparing in Kitchen...</span>
-            </div>
-          </div>
-        );
-      }
-
-      // For READY and SERVING, show action buttons
-      const getNextStatus = () => {
-        switch (orderStatus) {
-          case "READY":
-            return "SERVING";
-          case "SERVING":
-            return "COMPLETED";
-          default:
-            return "COMPLETED";
-        }
-      };
-
-      const getStatusLabel = () => {
-        switch (orderStatus) {
-          case "READY":
-            return "Mark Served";
-          case "SERVING":
-            return "Mark Completed";
-          default:
-            console.warn("[ORDER CARD] Unknown status, defaulting to Mark Completed:", orderStatus);
-            return "Mark Completed";
-        }
-      };
-
-      const getStatusIcon = () => {
-        switch (orderStatus) {
-          case "READY":
-            return <CheckCircle className="h-4 w-4 mr-1" />;
-          case "SERVING":
-            return <CheckCircle className="h-4 w-4 mr-1" />;
-          default:
-            return <CheckCircle className="h-4 w-4 mr-1" />;
-        }
-      };
-
-      const getStatusMessage = () => {
-        switch (orderStatus) {
-          case "READY":
-            return "Kitchen Ready - Mark as Served";
-          case "SERVING":
-            return "Served - Mark as Completed";
-          default:
-            return "Order Management - Update Status";
-        }
-      };
-
-      const nextStatus = getNextStatus();
-      const statusLabel = getStatusLabel();
-
-      console.info("[ORDER CARD] Showing action button:", {
-        currentStatus: orderStatus,
-        nextStatus,
-        buttonLabel: statusLabel,
-      });
-
+    // If order is READY, show "Mark Served" button
+    if (orderStatus === "READY") {
       return (
         <div className="mt-4 pt-4 border-t border-slate-200">
           <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3">
-            <div className={`text-sm ${isPaid ? "text-blue-600" : "text-orange-600"}`}>
-              <span className="font-medium">{getStatusMessage()}</span>
+            <div className="text-sm text-blue-600">
+              <span className="font-medium">Kitchen Ready - Mark as Served</span>
             </div>
             <Button
               size="sm"
-              onClick={() => handleStatusUpdate(nextStatus)}
+              onClick={() => handleStatusUpdate("SERVING")}
               disabled={isProcessing}
               className="bg-blue-600 hover:bg-blue-700"
             >
-              {getStatusIcon()}
-              {statusLabel}
+              <CheckCircle className="h-4 w-4 mr-1" />
+              Mark Served
             </Button>
           </div>
         </div>
       );
     }
 
+    // If order is SERVING, check payment status before allowing completion
+    if (orderStatus === "SERVING") {
+      // CASE 1: Already paid (online/stripe) - can mark completed immediately
+      if (isPaid) {
+        return (
+          <div className="mt-4 pt-4 border-t border-slate-200">
+            <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3">
+              <div className="text-sm text-green-600">
+                <span className="font-medium">✓ Paid - Ready to Complete</span>
+              </div>
+              <Button
+                size="sm"
+                onClick={() => handleStatusUpdate("COMPLETED")}
+                disabled={isProcessing}
+                className="bg-green-600 hover:bg-green-700"
+              >
+                <CheckCircle className="h-4 w-4 mr-1" />
+                Mark Completed
+              </Button>
+            </div>
+          </div>
+        );
+      }
+
+      // CASE 2: Pay at Till - staff must collect payment
+      if (paymentMode === "pay_at_till") {
+        return (
+          <div className="mt-4 pt-4 border-t border-slate-200">
+            <div className="flex flex-col gap-3">
+              <div className="flex items-center justify-between">
+                <div className="text-sm text-orange-600">
+                  <span className="font-medium">⚠️ Payment Required at Till</span>
+                </div>
+                <Badge variant="outline" className="bg-orange-50 text-orange-700 border-orange-200">
+                  Unpaid - {formatCurrency(order.total_amount, order.currency)}
+                </Badge>
+              </div>
+              <Button
+                size="sm"
+                onClick={() => setShowPaymentDialog(true)}
+                disabled={isProcessing}
+                className="bg-purple-600 hover:bg-purple-700 w-full sm:w-auto"
+              >
+                <CreditCard className="h-4 w-4 mr-2" />
+                Collect Payment at Till
+              </Button>
+            </div>
+          </div>
+        );
+      }
+
+      // CASE 3: Pay Later - customer must rescan QR and pay
+      if (paymentMode === "pay_later") {
+        const payLaterUrl = `${window.location.origin}/pay-later/${order.id}`;
+        return (
+          <div className="mt-4 pt-4 border-t border-slate-200">
+            <div className="flex flex-col gap-3">
+              <div className="flex items-center justify-between">
+                <div className="text-sm text-blue-600">
+                  <span className="font-medium">⏳ Awaiting Customer Payment</span>
+                </div>
+                <Badge variant="outline" className="bg-blue-50 text-blue-700 border-blue-200">
+                  Pay Later - {formatCurrency(order.total_amount, order.currency)}
+                </Badge>
+              </div>
+              <div className="bg-blue-50 rounded-lg p-3 text-sm text-gray-700">
+                <p className="font-medium mb-1 flex items-center gap-2">
+                  <QrCode className="h-4 w-4" />
+                  Customer can rescan QR code to pay
+                </p>
+                <p className="text-xs text-gray-600">Payment link: {payLaterUrl}</p>
+              </div>
+            </div>
+          </div>
+        );
+      }
+    }
+
+    // Default: no actions
     return null;
   };
 
@@ -457,6 +410,30 @@ export function OrderCard({
         {/* Action Section */}
         {renderActions()}
       </CardContent>
+
+      {/* Payment Collection Dialog (for pay_at_till orders) */}
+      {venueId && (
+        <PaymentCollectionDialog
+          open={showPaymentDialog}
+          onOpenChange={setShowPaymentDialog}
+          orderId={order.id}
+          orderNumber={order.short_id}
+          customerName={order.customer_name || "Customer"}
+          totalAmount={order.total_amount}
+          venueId={venueId}
+          items={
+            order.items?.map((item: Record<string, unknown>) => ({
+              item_name: (item.item_name as string) || (item.name as string) || "Item",
+              quantity: (item.quantity as number) || (item.qty as number) || 1,
+              price: (item.price as number) || (item.unit_price as number) || 0,
+            })) || []
+          }
+          onSuccess={() => {
+            setShowPaymentDialog(false);
+            onActionComplete?.();
+          }}
+        />
+      )}
     </Card>
   );
 }
