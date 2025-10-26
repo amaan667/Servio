@@ -4,7 +4,7 @@ import { logger } from '@/lib/logger';
 
 export async function GET(_request: NextRequest) {
   try {
-    const { searchParams } = new URL(request.url);
+    const { searchParams } = new URL(_request.url);
     const venueId = searchParams.get('venue_id');
 
     if (!venueId) {
@@ -71,7 +71,7 @@ export async function GET(_request: NextRequest) {
     });
 
   } catch (_error) {
-    logger._error('Error in tables-runtime API:', { error: _error instanceof Error ? _error.message : 'Unknown _error' });
+    logger.error('Error in tables-runtime API:', { error: _error instanceof Error ? _error.message : 'Unknown error' });
     return NextResponse.json(
       { error: 'Internal server error' },
       { status: 500 }

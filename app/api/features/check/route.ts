@@ -5,7 +5,7 @@ import { logger } from '@/lib/logger';
 // GET /api/features/check?venue_id=xxx&feature=INVENTORY
 export async function GET(_request: NextRequest) {
   try {
-    const { searchParams } = new URL(request.url);
+    const { searchParams } = new URL(_request.url);
     const venueId = searchParams.get('venue_id');
     const feature = searchParams.get('feature') as keyof typeof PREMIUM_FEATURES;
 
@@ -28,7 +28,7 @@ export async function GET(_request: NextRequest) {
 
     return NextResponse.json(access);
   } catch (_error) {
-    logger._error('[FEATURE CHECK API] Error:', { error: _error instanceof Error ? _error.message : 'Unknown _error' });
+    logger.error('[FEATURE CHECK API] Error:', { error: _error instanceof Error ? _error.message : 'Unknown error' });
     return NextResponse.json(
       { error: 'Internal server error' },
       { status: 500 }

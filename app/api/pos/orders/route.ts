@@ -93,7 +93,7 @@ export async function GET(req: NextRequest) {
 
     return NextResponse.json(response);
   } catch (_error) {
-    logger._error('[POS ORDERS] Unexpected error:', { error: _error instanceof Error ? _error.message : 'Unknown _error' });
+    logger.error('[POS ORDERS] Unexpected error:', { error: _error instanceof Error ? _error.message : 'Unknown error' });
     return NextResponse.json({ error: 'Internal server error' }, { status: 500 });
   }
 }

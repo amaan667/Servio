@@ -6,7 +6,7 @@ import { logger } from '@/lib/logger';
 export async function GET(_request: NextRequest) {
   try {
     const supabase = await createClient();
-    const { searchParams } = new URL(request.url);
+    const { searchParams } = new URL(_request.url);
     const venue_id = searchParams.get('venue_id');
 
     if (!venue_id) {
@@ -68,7 +68,7 @@ export async function GET(_request: NextRequest) {
       },
     });
   } catch (_error) {
-    logger._error('[INVENTORY API] Unexpected error:', { error: _error instanceof Error ? _error.message : 'Unknown _error' });
+    logger.error('[INVENTORY API] Unexpected error:', { error: _error instanceof Error ? _error.message : 'Unknown error' });
     return NextResponse.json(
       { error: 'Internal server error' },
       { status: 500 }

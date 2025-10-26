@@ -57,7 +57,7 @@ export async function GET(req: Request) {
     });
 
   } catch (_error) {
-    logger._error('[TABLES SECONDARY GET] Unexpected error:', { error: _error instanceof Error ? _error.message : 'Unknown _error' });
+    logger.error('[TABLES SECONDARY GET] Unexpected error:', { error: _error instanceof Error ? _error.message : 'Unknown error' });
     return NextResponse.json({ ok: false, error: 'Internal server error' }, { status: 500 });
   }
 }

@@ -124,7 +124,7 @@ export async function GET(req: Request) {
     });
   } catch (_e) {
     return NextResponse.json(
-      { ok: false, error: e instanceof Error ? e.message : "Unknown error" },
+      { ok: false, error: _e instanceof Error ? _e.message : "Unknown error" },
       { status: 500 }
     );
   }
