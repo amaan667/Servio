@@ -210,8 +210,8 @@ importers:
         specifier: ^5.8.1
         version: 5.8.1
       jsonrepair:
-        specifier: ^3.13.0
-        version: 3.13.0
+        specifier: ^3.13.1
+        version: 3.13.1
       jspdf:
         specifier: ^3.0.3
         version: 3.0.3
@@ -6192,8 +6192,8 @@ packages:
   jsonfile@6.2.0:
     resolution: {integrity: sha512-FGuPw30AdOIUTRMC2OMRtQV+jkVj2cfPqSeWXv1NEAJ1qZ5zb1X6z1mFhbfOB/iy3ssJCD+3KuZ8r8C3uVFlAg==}
 
-  jsonrepair@3.13.0:
-    resolution: {integrity: sha512-5YRzlAQ7tuzV1nAJu3LvDlrKtBFIALHN2+a+I1MGJCt3ldRDBF/bZuvIPzae8Epot6KBXd0awRZZcuoeAsZ/mw==}
+  jsonrepair@3.13.1:
+    resolution: {integrity: sha512-WJeiE0jGfxYmtLwBTEk8+y/mYcaleyLXWaqp5bJu0/ZTSeG0KQq/wWQ8pmnkKenEdN6pdnn6QtcoSUkbqDHWNw==}
     hasBin: true
 
   jspdf@3.0.3:
@@ -15996,7 +15996,7 @@ snapshots:
     optionalDependencies:
       graceful-fs: 4.2.11
 
-  jsonrepair@3.13.0: {}
+  jsonrepair@3.13.1: {}
 
   jspdf@3.0.3:
     dependencies:

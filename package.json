@@ -105,7 +105,7 @@
     "framer-motion": "^12.23.22",
     "input-otp": "1.4.1",
     "ioredis": "^5.8.1",
-    "jsonrepair": "^3.13.0",
+    "jsonrepair": "^3.13.1",
     "jspdf": "^3.0.3",
     "lucide-react": "^0.454.0",
     "luxon": "^3.7.1",
