@@ -74,11 +74,12 @@ export function useDashboardData(
 
         const { data: orders } = await supabase
           .from("orders")
-          .select("total_amount, order_status")
+          .select("total_amount, order_status, payment_status")
           .eq("venue_id", venueId)
           .gte("created_at", window.startUtcISO)
           .lt("created_at", window.endUtcISO)
-          .neq("order_status", "CANCELLED");
+          .neq("order_status", "CANCELLED")
+          .neq("order_status", "REFUNDED");
 
         const { data: menuItems } = await supabase
           .from("menu_items")
@@ -86,8 +87,12 @@ export function useDashboardData(
           .eq("venue_id", venueId)
           .eq("is_available", true);
 
+        // Calculate revenue from all non-cancelled orders (regardless of payment status)
         const revenue = orders?.reduce((sum, order) => sum + (order.total_amount || 0), 0) || 0;
-        const unpaid = orders?.filter((o) => o.order_status === "UNPAID").length || 0;
+        // Count unpaid orders based on payment_status, not order_status
+        const unpaid =
+          orders?.filter((o) => o.payment_status === "UNPAID" || o.payment_status === "PAY_LATER")
+            .length || 0;
 
         const newStats = {
           revenue,

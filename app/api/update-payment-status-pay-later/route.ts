@@ -81,42 +81,42 @@ export async function POST() {
           today_end := today_start + INTERVAL '1 day' - INTERVAL '1 second';
           live_cutoff := NOW() - (p_live_window_mins || ' minutes')::interval;
           
-          -- Count live orders (today within live window) - include PAID, PAY_LATER, and TILL
+          -- Count live orders (today within live window) - include ALL orders except CANCELLED/REFUNDED
           SELECT COUNT(*) INTO live_count_val
           FROM orders 
           WHERE venue_id = p_venue_id
             AND created_at >= live_cutoff
             AND created_at >= today_start
             AND created_at <= today_end
-            AND payment_status IN ('PAID', 'PAY_LATER', 'TILL');
+            AND order_status NOT IN ('CANCELLED', 'REFUNDED');
           
-          -- Count earlier today orders (today but before live window) - include PAID, PAY_LATER, and TILL
+          -- Count earlier today orders (today but before live window) - include ALL orders except CANCELLED/REFUNDED
           SELECT COUNT(*) INTO earlier_today_count_val
           FROM orders 
           WHERE venue_id = p_venue_id
             AND created_at < live_cutoff
             AND created_at >= today_start
             AND created_at <= today_end
-            AND payment_status IN ('PAID', 'PAY_LATER', 'TILL');
+            AND order_status NOT IN ('CANCELLED', 'REFUNDED');
           
-          -- Count history orders (before today) - include PAID, PAY_LATER, and TILL
+          -- Count history orders (before today) - include ALL orders except CANCELLED/REFUNDED
           SELECT COUNT(*) INTO history_count_val
           FROM orders 
           WHERE venue_id = p_venue_id
             AND created_at < today_start
-            AND payment_status IN ('PAID', 'PAY_LATER', 'TILL');
+            AND order_status NOT IN ('CANCELLED', 'REFUNDED');
           
           -- Count total today's orders = live + earlier today (for consistency)
           -- This ensures today_orders_count always equals live_count + earlier_today_count
           today_orders_count_val := live_count_val + earlier_today_count_val;
           
-          -- Count active tables (tables with current orders) - include PAID, PAY_LATER, and TILL
+          -- Count active tables (tables with current orders) - include ALL active orders
           SELECT COUNT(DISTINCT table_number) INTO active_tables_count_val
           FROM orders 
           WHERE venue_id = p_venue_id
             AND created_at >= today_start
             AND created_at <= today_end
-            AND payment_status IN ('PAID', 'PAY_LATER', 'TILL')
+            AND order_status NOT IN ('CANCELLED', 'REFUNDED', 'COMPLETED', 'SERVED')
             AND order_status IN ('PLACED', 'ACCEPTED', 'IN_PREP', 'READY', 'OUT_FOR_DELIVERY', 'SERVING');
           
           -- Count tables set up (from table_runtime_state) - FREE tables

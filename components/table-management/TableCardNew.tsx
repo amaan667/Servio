@@ -266,12 +266,12 @@ export function TableCardNew({
 
                     let targetTab = "live"; // fallback
 
-                    if (orderCreatedAt > thirtyMinutesAgo) {
-                      // Recent order (within 30 minutes) - go to live tab
-                      targetTab = "live";
-                    } else if (orderCreatedAt >= startOfToday) {
-                      // Today's order (but not recent) - go to all tab
-                      targetTab = "all";
+                    // Always search through all of today's orders first
+                    // Check if order is from today (regardless of how recent)
+                    if (orderCreatedAt >= startOfToday) {
+                      // Today's order - search in both live and all tabs
+                      // Try live tab first, then all tab if not found there
+                      targetTab = orderCreatedAt > thirtyMinutesAgo ? "live" : "all";
                     } else {
                       // Historical order - go to history tab
                       targetTab = "history";

@@ -78,6 +78,32 @@ export default function LiveOrdersClient({
     }
   }, [tabParam]);
 
+  // Auto-switch tab if filtered order not found in current tab
+  useEffect(() => {
+    if (!parsedTableFilter || !tabParam) return;
+
+    // Check if order exists in current tab's orders
+    const currentTabOrders =
+      tabParam === "live" ? orders : tabParam === "all" ? allTodayOrders : [];
+    const orderFound = currentTabOrders.some(
+      (order) => (order as any).table_number?.toString() === parsedTableFilter
+    );
+
+    // If not found and we're in live tab, check all tab
+    if (!orderFound && tabParam === "live") {
+      const orderInAllTab = allTodayOrders.some(
+        (order) => (order as any).table_number?.toString() === parsedTableFilter
+      );
+      if (orderInAllTab) {
+        setActiveTab("all");
+        // Update URL without reload
+        const url = new URL(window.location.href);
+        url.searchParams.set("tab", "all");
+        window.history.replaceState({}, "", url.toString());
+      }
+    }
+  }, [parsedTableFilter, tabParam, orders, allTodayOrders]);
+
   // Load venue name
   useEffect(() => {
     if (!venueNameProp) {
@@ -231,6 +257,8 @@ export default function LiveOrdersClient({
       (order) => !parsedTableFilter || (order as any).table_number?.toString() === parsedTableFilter
     );
 
+    // If we have a table filter but no orders in this section, return null
+    // This allows the order to appear in the correct tab (live or all)
     if (filteredOrders.length === 0) return null;
 
     return (

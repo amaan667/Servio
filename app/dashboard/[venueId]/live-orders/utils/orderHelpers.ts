@@ -2,13 +2,28 @@ import { Order } from "../types";
 import { LIVE_TABLE_ORDER_STATUSES, ACTIVE_TABLE_ORDER_STATUSES } from "../constants";
 
 export const isCounterOrder = (order: Order) => {
-  return order.source === 'counter';
+  // Use source field first, but fallback to table_id check for accuracy
+  if (order.source === "counter") {
+    return true;
+  }
+  if (order.source === "qr") {
+    return false;
+  }
+  // If source is not set, check if it has a table_id (indicates table order)
+  if (order.table_id) {
+    return false; // Has table_id means it's a table order
+  }
+  // Default: if no source and no table_id, it might be misclassified
+  // Check if table_number exists but no counter indicator
+  return false; // Default to table order if ambiguous
 };
 
 export const groupOrdersByTable = (orders: Order[]) => {
-  const tableGroups: { [tableNumber: number]: Order[] } = { /* Empty */ };
-  
-  orders.forEach(order => {
+  const tableGroups: { [tableNumber: number]: Order[] } = {
+    /* Empty */
+  };
+
+  orders.forEach((order) => {
     const tableNum = order.table_number || 0;
     if (!tableGroups[tableNum]) {
       tableGroups[tableNum] = [];
@@ -16,35 +31,38 @@ export const groupOrdersByTable = (orders: Order[]) => {
     tableGroups[tableNum].push(order);
   });
 
-  const filteredGroups: { [tableNumber: number]: Order[] } = { /* Empty */ };
-  
-  Object.keys(tableGroups).forEach(tableNum => {
+  const filteredGroups: { [tableNumber: number]: Order[] } = {
+    /* Empty */
+  };
+
+  Object.keys(tableGroups).forEach((tableNum) => {
     const orders = tableGroups[Number(tableNum)];
-    
+
     if (orders.length === 1) {
       filteredGroups[Number(tableNum)] = orders;
       return;
     }
-    
+
     orders.sort((a, b) => {
       const dateA = new Date(a.created_at);
       const dateB = new Date(b.created_at);
       return dateA.getTime() - dateB.getTime();
     });
-    
+
     const shouldGroup = orders.every((order, index) => {
       if (index === 0) return true;
-      
+
       const prevOrder = orders[index - 1];
-      const timeDiff = new Date(order.created_at).getTime() - new Date(prevOrder.created_at).getTime();
+      const timeDiff =
+        new Date(order.created_at).getTime() - new Date(prevOrder.created_at).getTime();
       const timeDiffMinutes = timeDiff / (1000 * 60);
-      
+
       const sameCustomer = order.customer_name === prevOrder.customer_name;
       const withinTimeWindow = timeDiffMinutes <= 30;
-      
+
       return sameCustomer && withinTimeWindow;
     });
-    
+
     if (shouldGroup) {
       filteredGroups[Number(tableNum)] = orders;
     }
@@ -54,17 +72,17 @@ export const groupOrdersByTable = (orders: Order[]) => {
 };
 
 export const formatTime = (dateString: string) => {
-  return new Date(dateString).toLocaleTimeString('en-GB', { 
-    hour: '2-digit', 
-    minute: '2-digit' 
+  return new Date(dateString).toLocaleTimeString("en-GB", {
+    hour: "2-digit",
+    minute: "2-digit",
   });
 };
 
 export const formatDate = (dateString: string) => {
-  return new Date(dateString).toLocaleDateString('en-GB', {
-    day: '2-digit',
-    month: 'short',
-    year: 'numeric'
+  return new Date(dateString).toLocaleDateString("en-GB", {
+    day: "2-digit",
+    month: "short",
+    year: "numeric",
   });
 };
 
@@ -74,26 +92,40 @@ export const getShortOrderNumber = (orderId: string) => {
 
 export const getStatusColor = (status: string) => {
   switch (status) {
-    case 'PLACED': return 'bg-yellow-100 text-yellow-800';
-    case 'IN_PREP': return 'bg-blue-100 text-blue-800';
-    case 'READY': return 'bg-green-100 text-green-800';
-    case 'COMPLETED': return 'bg-green-100 text-green-800';
-    case 'MIXED': return 'bg-purple-100 text-purple-800';
-    case 'MIXED_READY': return 'bg-emerald-100 text-emerald-800';
-    case 'MIXED_PREP': return 'bg-indigo-100 text-indigo-800';
-    default: return 'bg-gray-100 text-gray-800';
+    case "PLACED":
+      return "bg-yellow-100 text-yellow-800";
+    case "IN_PREP":
+      return "bg-blue-100 text-blue-800";
+    case "READY":
+      return "bg-green-100 text-green-800";
+    case "COMPLETED":
+      return "bg-green-100 text-green-800";
+    case "MIXED":
+      return "bg-purple-100 text-purple-800";
+    case "MIXED_READY":
+      return "bg-emerald-100 text-emerald-800";
+    case "MIXED_PREP":
+      return "bg-indigo-100 text-indigo-800";
+    default:
+      return "bg-gray-100 text-gray-800";
   }
 };
 
 export const getPaymentStatusColor = (paymentStatus: string) => {
   switch (paymentStatus) {
-    case 'PAID': return 'bg-green-100 text-green-800';
-    case 'UNPAID': return 'bg-red-100 text-red-800';
-    case 'PAY_LATER': return 'bg-blue-100 text-blue-800';
-    case 'IN_PROGRESS': return 'bg-blue-100 text-blue-800';
-    case 'REFUNDED': return 'bg-red-100 text-red-800';
-    case 'MIXED': return 'bg-amber-100 text-amber-800';
-    default: return 'bg-gray-100 text-gray-800';
+    case "PAID":
+      return "bg-green-100 text-green-800";
+    case "UNPAID":
+      return "bg-red-100 text-red-800";
+    case "PAY_LATER":
+      return "bg-blue-100 text-blue-800";
+    case "IN_PROGRESS":
+      return "bg-blue-100 text-blue-800";
+    case "REFUNDED":
+      return "bg-red-100 text-red-800";
+    case "MIXED":
+      return "bg-amber-100 text-amber-800";
+    default:
+      return "bg-gray-100 text-gray-800";
   }
 };
-

@@ -50,35 +50,30 @@ export function useDashboardRealtime({
           filter: `venue_id=eq.${venueId}`,
         },
         async (payload: RealtimePayload) => {
-          const orderCreatedAt = payload.new?.created_at || payload.old?.created_at;
-          if (!orderCreatedAt) {
-            return;
+          // Always refresh counts and stats for ANY order change - don't filter by date window
+          // This ensures instant updates regardless of when the order was created
+          await refreshCounts();
+
+          // Always reload stats to ensure accuracy
+          const venueIdForStats =
+            venue && typeof venue === "object" && "venue_id" in venue
+              ? (venue as { venue_id?: string }).venue_id
+              : venueId;
+          if (venueIdForStats && todayWindow) {
+            await loadStats(venueIdForStats, todayWindow);
           }
 
-          const isInTodayWindow =
-            todayWindow &&
-            orderCreatedAt >= todayWindow.startUtcISO &&
-            orderCreatedAt < todayWindow.endUtcISO;
-
-          if (isInTodayWindow) {
-            await refreshCounts();
-
-            if (payload.eventType === "INSERT" && payload.new) {
-              const order = payload.new as { order_status: string; total_amount?: number };
+          if (payload.eventType === "INSERT" && payload.new) {
+            const order = payload.new as { order_status: string; total_amount?: number };
+            const orderCreatedAt = payload.new?.created_at as string | undefined;
+            // Only incrementally update if order is from today's window
+            if (
+              orderCreatedAt &&
+              todayWindow &&
+              orderCreatedAt >= todayWindow.startUtcISO &&
+              orderCreatedAt < todayWindow.endUtcISO
+            ) {
               updateRevenueIncrementally(order);
-            } else if (payload.eventType === "UPDATE" && payload.new) {
-              if (
-                payload.new.order_status === "CANCELLED" ||
-                payload.new.order_status === "REFUNDED"
-              ) {
-                const venueIdForStats =
-                  venue && typeof venue === "object" && "venue_id" in venue
-                    ? (venue as { venue_id?: string }).venue_id
-                    : venueId;
-                if (venueIdForStats) {
-                  await loadStats(venueIdForStats, todayWindow);
-                }
-              }
             }
           }
         }

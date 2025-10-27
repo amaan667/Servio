@@ -89,11 +89,12 @@ export default async function VenuePage({ params }: { params: Promise<{ venueId:
     // Fetch stats (revenue, menu items)
     const { data: orders, error: ordersError } = await supabase
       .from("orders")
-      .select("total_amount, order_status")
+      .select("total_amount, order_status, payment_status")
       .eq("venue_id", venueId)
       .gte("created_at", window.startUtcISO)
       .lt("created_at", window.endUtcISO)
-      .neq("order_status", "CANCELLED");
+      .neq("order_status", "CANCELLED")
+      .neq("order_status", "REFUNDED");
 
     if (ordersError) {
       /* Empty */
