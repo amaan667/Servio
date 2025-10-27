@@ -18,7 +18,8 @@ export default function GlobalNav() {
 
   // Use session from auth context immediately - already initialized on server
   // This prevents flicker because AuthProvider uses server-provided initialSession
-  const isAuthenticated = !!session?.user;
+  // Use strict check to avoid any falsy values causing flicker
+  const isAuthenticated = !!(session?.user && session?.access_token);
 
   // Initialize with cached data SYNCHRONOUSLY for instant render
   const getCachedData = () => {

@@ -51,16 +51,22 @@ export default function AuthProvider({
   };
 
   // Use initialSession directly - this is set on server, prevents flicker
+  // IMPORTANT: Set state from initialSession immediately, no conditional checks
   const [session, setSession] = useState<Session | null>(initialSession);
   const [user, setUser] = useState<User | null>(initialSession?.user ?? null);
-  // Start with loading=false if we have initialSession, true otherwise
-  const [loading, setLoading] = useState(!initialSession);
+  // Never show loading if we have initialSession - prevents flicker
+  const [loading, setLoading] = useState(false);
 
   useEffect(() => {
     // If we have initialSession from server, use it immediately and skip client fetch
     if (initialSession) {
-      setSession(initialSession);
-      setUser(initialSession.user);
+      // Ensure state is set (in case of hydration mismatch)
+      if (session !== initialSession) {
+        setSession(initialSession);
+      }
+      if (user !== initialSession.user) {
+        setUser(initialSession.user);
+      }
       setLoading(false);
 
       // Still set up auth state change listener for future updates
@@ -125,35 +131,37 @@ export default function AuthProvider({
       };
     }
 
-    // No initialSession - fetch on client
-    let supabase;
-    try {
-      supabase = supabaseBrowser();
-    } catch {
-      setSession(null);
-      setUser(null);
-      setLoading(false);
-      return;
-    }
-
-    // Fetch session from client
-    const getInitialSession = async () => {
-      setLoading(true);
+    // No initialSession - fetch on client (only if no initialSession provided)
+    if (!initialSession) {
+      let supabase;
       try {
-        const {
-          data: { session: currentSession },
-        } = await supabase.auth.getSession();
-        setSession(currentSession);
-        setUser(currentSession?.user || null);
+        supabase = supabaseBrowser();
       } catch {
         setSession(null);
         setUser(null);
-      } finally {
         setLoading(false);
+        return;
       }
-    };
 
-    getInitialSession();
+      // Fetch session from client
+      const getInitialSession = async () => {
+        setLoading(true);
+        try {
+          const {
+            data: { session: currentSession },
+          } = await supabase.auth.getSession();
+          setSession(currentSession);
+          setUser(currentSession?.user || null);
+        } catch {
+          setSession(null);
+          setUser(null);
+        } finally {
+          setLoading(false);
+        }
+      };
+
+      getInitialSession();
+    }
 
     // Handle auth state changes
     let subscription: unknown;
