@@ -11,31 +11,14 @@ import { useRouter, usePathname } from "next/navigation";
 
 export default function GlobalNav() {
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
-  const { session, signOut } = useAuth(); // Don't use loading state
+  const { session, signOut } = useAuth();
   const router = useRouter();
   const pathname = usePathname();
   const supabase = createClient();
 
-  // Check for initial auth state SYNCHRONOUSLY before first render
-  const getInitialAuthState = () => {
-    if (typeof window === "undefined") return false;
-    // Check for auth cookies or session storage - more comprehensive
-    const cookies = document.cookie.split(";");
-    const hasAuthCookie = cookies.some(
-      (cookie) => cookie.trim().startsWith("sb-") && cookie.includes("auth-token")
-    );
-
-    // Check multiple possible session storage keys
-    const hasSessionAuth =
-      sessionStorage.getItem("supabase.auth.token") !== null ||
-      localStorage.getItem("supabase.auth.token") !== null ||
-      Object.keys(localStorage).some((key) => key.includes("supabase"));
-
-    return hasAuthCookie || hasSessionAuth;
-  };
-
-  // Initialize with synced auth state to prevent flicker - memoize to never change
-  const [initiallyAuthenticated] = useState(getInitialAuthState);
+  // Use session from auth context immediately - already initialized on server
+  // This prevents flicker because AuthProvider uses server-provided initialSession
+  const isAuthenticated = !!session?.user;
 
   // Initialize with cached data SYNCHRONOUSLY for instant render
   const getCachedData = () => {
