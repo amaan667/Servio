@@ -123,8 +123,13 @@ export function useDashboardRealtime({
           async (payload: RealtimePayload) => {
             if (!isMountedRef.current) return;
 
-            // Use debounced refresh to prevent excessive calls from multiple devices
-            debouncedRefresh();
+            // For INSERT (new orders), refresh immediately to show new data
+            // For UPDATE/DELETE, use debounced refresh
+            if (payload.eventType === "INSERT") {
+              immediateRefresh();
+            } else {
+              debouncedRefresh();
+            }
             debouncedLoadStats();
 
             if (payload.eventType === "INSERT" && payload.new) {
