@@ -1,44 +1,70 @@
 // Entity type definitions and derivation logic for orders
 
-export type EntityKind = 'table' | 'counter' | 'unassigned';
+export type EntityKind = "table" | "counter" | "unassigned";
 
 export interface OrderForEntityKind {
   table_id: string | null;
   table?: { is_configured: boolean } | null;
-  source?: 'qr_table' | 'qr_counter' | 'qr' | 'counter' | 'pos' | 'manual' | 'unknown';
+  source?: "qr_table" | "qr_counter" | "qr" | "counter" | "pos" | "manual" | "unknown";
 }
 
 /**
  * Pure function to determine entity type based on order data
- * 
+ *
  * Rules:
  * - TABLE: table_id != null OR source is 'qr' (QR table orders)
  * - COUNTER: source is 'counter' OR no table_id and not QR source
  * - Never infer from UI route; only from data
  */
-export function deriveEntityKind(order: OrderForEntityKind): EntityKind {
+export function deriveEntityKind(
+  order: OrderForEntityKind & {
+    table_number?: number | null;
+    table_label?: string | null;
+    counter_label?: string | null;
+  }
+): EntityKind {
+  // If we have an explicit counter_label and no table_label, it's a counter order
+  if (order.counter_label && !order.table_label) {
+    return "counter";
+  }
+
+  // If we have an explicit table_label, it's a table order
+  if (order.table_label) {
+    return "table";
+  }
+
   // Primary rule: if source is explicitly 'qr', it's a table order
-  if (order.source === 'qr_table' || order.source === 'qr') {
-    return 'table';
+  if (order.source === "qr_table" || order.source === "qr") {
+    return "table";
   }
 
   // If source is explicitly 'counter', it's a counter order
-  if (order.source === 'qr_counter' || order.source === 'counter') {
-    return 'counter';
+  if (order.source === "qr_counter" || order.source === "counter") {
+    return "counter";
   }
 
   // If we have a table_id, it's likely a table order
   if (order.table_id) {
-    return 'table';
+    return "table";
+  }
+
+  // If we have a table_number (not null), it's likely a table order (unless explicitly counter)
+  if (order.table_number !== null && order.table_number !== undefined) {
+    // Check if source indicates counter - if so, it's counter
+    if (order.source === "counter") {
+      return "counter";
+    }
+    // Otherwise, assume table order
+    return "table";
   }
 
   // If table is configured, it's a table order
   if (order.table?.is_configured === true) {
-    return 'table';
+    return "table";
   }
 
   // Default to counter for unassigned orders
-  return 'counter';
+  return "counter";
 }
 
 /**
@@ -47,12 +73,12 @@ export function deriveEntityKind(order: OrderForEntityKind): EntityKind {
  */
 export function shouldShowUnpaidChip(order: {
   payment: {
-    mode: 'online' | 'pay_at_till' | 'pay_later';
-    status: 'paid' | 'unpaid' | 'failed' | 'refunded';
+    mode: "online" | "pay_at_till" | "pay_later";
+    status: "paid" | "unpaid" | "failed" | "refunded";
   };
 }): boolean {
   return (
-    order.payment.mode === 'pay_at_till' || 
-    order.payment.mode === 'pay_later'
-  ) && order.payment.status === 'unpaid';
+    (order.payment.mode === "pay_at_till" || order.payment.mode === "pay_later") &&
+    order.payment.status === "unpaid"
+  );
 }

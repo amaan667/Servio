@@ -44,9 +44,13 @@ export function OrderCard({
   // Get appropriate label and icon
   const getEntityDisplay = () => {
     if (isTableVariant) {
-      const label = order.table_label || "Table Order";
-      if (!order.table_label) {
-        // Empty block
+      // For table orders, prioritize table_label, then generate from table_number
+      let label = order.table_label;
+      if (!label && (order as any).table_number) {
+        label = `Table ${(order as any).table_number}`;
+      }
+      if (!label) {
+        label = "Table Order";
       }
       return {
         icon: <MapPin className="h-4 w-4" />,
@@ -158,10 +162,14 @@ export function OrderCard({
   const renderActions = () => {
     if (!showActions || !venueId) return null;
 
-    const isPaid = order.payment.status === "paid";
+    // Check payment status - handle both nested payment object and flat payment_status
+    const paymentStatus = order.payment?.status || (order as any).payment_status || "unpaid";
+    const isPaid = paymentStatus.toLowerCase() === "paid";
     const isCompleted = (order.order_status || "").toUpperCase() === "COMPLETED";
-    const orderStatus = (order.order_status || "").toUpperCase();
-    const paymentMode = (order as any).payment_mode; // "online", "pay_at_till", "pay_later"
+    // Normalize order status - handle both uppercase and lowercase, and "served" vs "serving"
+    const rawStatus = (order.order_status || "").toString();
+    const orderStatus = rawStatus.toUpperCase();
+    const paymentMode = order.payment?.mode || (order as any).payment_mode; // "online", "pay_at_till", "pay_later"
 
     // If already completed, no actions needed
     if (isCompleted) {
@@ -202,8 +210,10 @@ export function OrderCard({
       );
     }
 
-    // If order is SERVING or SERVED, check payment status before allowing completion
-    if (orderStatus === "SERVING" || orderStatus === "SERVED") {
+    // If order is SERVING, SERVED, or lowercase "served", check payment status before allowing completion
+    const isServed =
+      orderStatus === "SERVING" || orderStatus === "SERVED" || rawStatus.toLowerCase() === "served";
+    if (isServed) {
       // CASE 1: Already paid (online/stripe) - can mark completed immediately
       if (isPaid) {
         return (

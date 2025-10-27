@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 export const runtime = "nodejs";
 import { createAdminClient } from "@/lib/supabase";
 import { apiLogger as logger } from "@/lib/logger";
+import { cleanupTableOnOrderCompletion } from "@/lib/table-cleanup";
 
 export async function POST(req: Request) {
   try {
@@ -102,9 +103,9 @@ export async function POST(req: Request) {
       data: { orderId, extra: venueId },
     });
 
-    // Clear table session for ALL orders with tables - free up the table (regardless of payment status)
+    // Clear table session and runtime state for ALL orders with tables - free up the table
     if (orderData.table_id || orderData.table_number) {
-      logger.debug("[ORDERS COMPLETE] Clearing table session for order", {
+      logger.debug("[ORDERS COMPLETE] Clearing table session and runtime state for order", {
         data: {
           orderId,
           tableId: orderData.table_id,
@@ -114,55 +115,25 @@ export async function POST(req: Request) {
         },
       });
 
-      try {
-        // Close the table session by order_id
-        const { error: sessionError } = await admin
-          .from("table_sessions")
-          .update({
-            status: "FREE",
-            order_id: null,
-            closed_at: new Date().toISOString(),
-            updated_at: new Date().toISOString(),
-          })
-          .eq("order_id", orderId)
-          .eq("venue_id", venueId);
+      // Use centralized cleanup function that handles both table_sessions and table_runtime_state
+      const cleanupResult = await cleanupTableOnOrderCompletion({
+        venueId,
+        tableId: orderData.table_id || undefined,
+        tableNumber: orderData.table_number?.toString() || undefined,
+        orderId,
+      });
 
-        if (sessionError) {
-          logger.warn("[ORDERS COMPLETE] Failed to clear table session by order_id", {
-            error: sessionError,
-          });
-
-          // Fallback: Try clearing by table_id if we have it
-          if (orderData.table_id) {
-            const { error: fallbackError } = await admin
-              .from("table_sessions")
-              .update({
-                status: "FREE",
-                order_id: null,
-                closed_at: new Date().toISOString(),
-                updated_at: new Date().toISOString(),
-              })
-              .eq("table_id", orderData.table_id)
-              .eq("venue_id", venueId)
-              .is("closed_at", null);
-
-            if (fallbackError) {
-              logger.warn("[ORDERS COMPLETE] Fallback table clear also failed", {
-                error: fallbackError,
-              });
-            } else {
-              logger.debug("[ORDERS COMPLETE] Table cleared via fallback (table_id)");
-            }
-          }
-        } else {
-          logger.debug("[ORDERS COMPLETE] Table session cleared successfully");
-        }
-      } catch (sessionErr) {
-        // Best-effort; don't fail the request if table cleanup fails
-        logger.warn("[ORDERS COMPLETE] Table session cleanup error", {
+      if (!cleanupResult.success) {
+        logger.warn("[ORDERS COMPLETE] Table cleanup failed", {
           orderId,
           venueId,
-          error: sessionErr,
+          error: cleanupResult.error,
+        });
+      } else {
+        logger.debug("[ORDERS COMPLETE] Table cleanup successful", {
+          orderId,
+          venueId,
+          details: cleanupResult.details,
         });
       }
     }
