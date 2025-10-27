@@ -15,7 +15,22 @@ export default function ConditionalHeader() {
     const isOrderSummaryPage = pathname?.startsWith("/order-summary");
     const isOrderTrackingPage = pathname?.startsWith("/order-tracking");
 
-    return !isCustomerOrderPage && !isPaymentPage && !isOrderSummaryPage && !isOrderTrackingPage;
+    // Don't show header on auth/onboarding pages
+    const isAuthPage = pathname?.startsWith("/auth");
+    const isSignUpPage = pathname?.startsWith("/sign-up");
+    const isSignInPage = pathname?.startsWith("/sign-in");
+    const isCompleteProfilePage = pathname?.startsWith("/complete-profile");
+
+    return (
+      !isCustomerOrderPage &&
+      !isPaymentPage &&
+      !isOrderSummaryPage &&
+      !isOrderTrackingPage &&
+      !isAuthPage &&
+      !isSignUpPage &&
+      !isSignInPage &&
+      !isCompleteProfilePage
+    );
   }, [pathname]);
 
   if (!shouldShowHeader) {

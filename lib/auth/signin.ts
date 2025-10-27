@@ -90,12 +90,6 @@ export async function signInWithGoogle() {
   });
 
   if (error) {
-    logger.error("[AUTH DEBUG] OAuth error details:", {
-      message: error.message,
-      status: error.status,
-      name: error.name,
-      stack: error.stack,
-    });
     throw error;
   }
 
@@ -109,8 +103,6 @@ export async function signInWithGoogle() {
     // Redirect immediately - no artificial delay
     window.location.href = data.url;
   } else {
-    logger.error("[AUTH DEBUG] No OAuth URL received from Supabase");
-    logger.error("[AUTH DEBUG] Full OAuth response data:", data);
     throw new Error("No OAuth URL received");
   }
 

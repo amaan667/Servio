@@ -23,16 +23,13 @@ export default function GlobalNav() {
 
   // Initialize with cached data SYNCHRONOUSLY for instant render
   const getCachedData = () => {
-    if (typeof window === "undefined") {
+    if (typeof window === "undefined" || !session?.user?.id) {
       return { primaryVenueId: null, userRole: null };
     }
-    // Try to get cached data from any existing session
-    const keys = Object.keys(sessionStorage);
-    const roleKey = keys.find((k) => k.startsWith("user_role_"));
-    const venueKey = keys.find((k) => k.startsWith("venue_id_"));
-
-    const cachedRole = roleKey ? sessionStorage.getItem(roleKey) : null;
-    const cachedVenueId = venueKey ? sessionStorage.getItem(venueKey) : null;
+    // Only get cached data for the current authenticated user
+    const userId = session.user.id;
+    const cachedRole = sessionStorage.getItem(`user_role_${userId}`);
+    const cachedVenueId = sessionStorage.getItem(`venue_id_${userId}`);
 
     return {
       primaryVenueId: cachedVenueId,
@@ -132,9 +129,18 @@ export default function GlobalNav() {
           // Error handled silently
         }
       } else if (!isAuthenticated) {
-        // Only clear if we're definitely not authenticated
+        // Clear state and cached data when not authenticated
         setPrimaryVenueId(null);
         setUserRole(null);
+        // Clear all cached user data from session storage
+        if (typeof window !== "undefined") {
+          const keys = Object.keys(sessionStorage);
+          keys.forEach((key) => {
+            if (key.startsWith("user_role_") || key.startsWith("venue_id_")) {
+              sessionStorage.removeItem(key);
+            }
+          });
+        }
       }
     };
 

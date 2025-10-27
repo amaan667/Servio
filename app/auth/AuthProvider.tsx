@@ -228,10 +228,30 @@ export default function AuthProvider({
       // Clear local state immediately
       setSession(null);
       setUser(null);
+
+      // Clear all cached user data from session storage
+      if (typeof window !== "undefined") {
+        const keys = Object.keys(sessionStorage);
+        keys.forEach((key) => {
+          if (key.startsWith("user_role_") || key.startsWith("venue_id_")) {
+            sessionStorage.removeItem(key);
+          }
+        });
+      }
     } catch {
       // Clear local state even if there's an error
       setSession(null);
       setUser(null);
+
+      // Clear all cached user data from session storage even on error
+      if (typeof window !== "undefined") {
+        const keys = Object.keys(sessionStorage);
+        keys.forEach((key) => {
+          if (key.startsWith("user_role_") || key.startsWith("venue_id_")) {
+            sessionStorage.removeItem(key);
+          }
+        });
+      }
     }
   };
 
