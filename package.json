@@ -25,7 +25,7 @@
     "test:integration": "vitest run --config vitest.integration.config.ts",
     "storybook": "storybook dev -p 6006",
     "build-storybook": "storybook build",
-    "docs:api": "swagger-jsdoc -d swagger.config.js -o api-docs.json",
+    "docs:api": "swagger-jsdoc -d docs/swagger.config.js -o api-docs.json",
     "prepare": "husky install",
     "validate": "pnpm run format:check && pnpm run lint && pnpm run typecheck && pnpm run test"
   },

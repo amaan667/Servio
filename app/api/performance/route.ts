@@ -1,62 +1,42 @@
-import { NextRequest, NextResponse } from "next/server";
-import { logger } from "@/lib/logger";
+/**
+ * Performance Metrics API
+ * Returns real-time performance metrics
+ */
 
-interface PerformanceMetric {
-  name: string;
-  value: number;
-  delta: number;
-  id: string;
-  navigationType: string;
-  url: string;
-  timestamp: number;
-  userAgent: string;
-  connection: string;
-  deviceMemory?: number;
-  hardwareConcurrency?: number;
-}
-
-export async function POST(_request: NextRequest) {
-  try {
-    const metric: PerformanceMetric = await _request.json();
-
-    // Log performance metric
-    logger.info("[PERFORMANCE] Metric received:", {
-      name: metric.name,
-      value: metric.value,
-      url: metric.url,
-      connection: metric.connection,
-      deviceMemory: metric.deviceMemory,
-      hardwareConcurrency: metric.hardwareConcurrency,
-    });
-
-    // Store in database or send to analytics service
-    // For now, we'll just log it
-    // In production, you might want to store this in a database
-    // or send it to a service like Google Analytics, Mixpanel, etc.
-
-    // Example: Store in Supabase
-    // const supabase = createServerSupabase();
-    // await supabase.from('performance_metrics').insert({
-    //   name: metric.name,
-    //   value: metric.value,
-    //   url: metric.url,
-    //   user_agent: metric.userAgent,
-    //   connection_type: metric.connection,
-    //   device_memory: metric.deviceMemory,
-    //   hardware_concurrency: metric.hardwareConcurrency,
-    //   created_at: new Date().toISOString(),
-    // });
-
-    return NextResponse.json({ success: true });
-  } catch (_error) {
-    logger.error("[PERFORMANCE] Error processing metric:", _error as Record<string, unknown>);
-    return NextResponse.json({ error: "Failed to process performance metric" }, { status: 500 });
-  }
-}
+import { NextResponse } from "next/server";
+import { performanceMonitor } from "@/lib/monitoring/performance";
 
 export async function GET() {
-  return NextResponse.json({
-    message: "Performance monitoring endpoint",
-    status: "active",
-  });
+  try {
+    const summary = performanceMonitor.getSummary();
+
+    // Calculate metrics
+    const endpoints = Object.entries(summary).map(([endpoint, stats]) => ({
+      endpoint,
+      avgTime: Math.round(stats.avg),
+      count: stats.count,
+      errorRate: stats.count > 0 ? (stats.errors / stats.count) * 100 : 0,
+    }));
+
+    // Calculate overall response times
+    const allTimes = Object.values(summary).flatMap((s) => s.times || []);
+    const sortedTimes = allTimes.sort((a, b) => a - b);
+    const p50 = sortedTimes[Math.floor(sortedTimes.length * 0.5)] || 0;
+    const p95 = sortedTimes[Math.floor(sortedTimes.length * 0.95)] || 0;
+    const p99 = sortedTimes[Math.floor(sortedTimes.length * 0.99)] || 0;
+
+    const totalRequests = Object.values(summary).reduce((sum, s) => sum + s.count, 0);
+    const totalErrors = Object.values(summary).reduce((sum, s) => sum + s.errors, 0);
+    const errorRate = totalRequests > 0 ? (totalErrors / totalRequests) * 100 : 0;
+
+    return NextResponse.json({
+      apiResponseTime: { p50, p95, p99 },
+      errorRate,
+      requestCount: totalRequests,
+      endpointStats: endpoints,
+      timestamp: new Date().toISOString(),
+    });
+  } catch (_error) {
+    return NextResponse.json({ error: "Failed to fetch performance metrics" }, { status: 500 });
+  }
 }
