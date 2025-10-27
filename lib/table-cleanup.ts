@@ -40,11 +40,12 @@ export async function cleanupTableOnOrderCompletion(params: TableCleanupParams):
     const supabase = await createClient();
 
     // First, check if there are unknown other active orders for this table
+    // Active orders include all statuses except COMPLETED, CANCELLED, REFUNDED, EXPIRED
     let activeOrdersQuery = supabase
       .from("orders")
       .select("id, order_status, table_id, table_number")
       .eq("venue_id", venueId)
-      .in("order_status", ["PLACED", "ACCEPTED", "IN_PREP", "READY", "SERVING"]);
+      .in("order_status", ["PLACED", "ACCEPTED", "IN_PREP", "READY", "SERVING", "SERVED"]);
 
     // Exclude the current order if provided
     if (orderId) {
