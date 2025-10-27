@@ -93,7 +93,7 @@ async function detectJSHeavySite(url: string): Promise<boolean> {
  * Smart scrape with Playwright
  * Uses the right strategy based on site type
  */
-async function scrapeWithPlaywright(url: string, waitForNetworkIdle: boolean = false) {
+async function scrapeWithPlaywright(url: string, _waitForNetworkIdle: boolean = false) {
   let browser;
   let context;
   let page;
@@ -108,57 +108,62 @@ async function scrapeWithPlaywright(url: string, waitForNetworkIdle: boolean = f
 
     page = await context.newPage();
 
-    // Navigate
+    // Navigate with smart wait strategy
     await page.goto(url, {
-      waitUntil: waitForNetworkIdle ? "networkidle" : "domcontentloaded",
-      timeout: waitForNetworkIdle ? 30000 : 20000,
+      waitUntil: "domcontentloaded", // Don't wait for networkidle - causes timeouts
+      timeout: 15000, // Shorter timeout
     });
 
-    // SMART STRATEGY: Multi-approach content loading
-
-    // Strategy 1: Check for Next.js embedded data (instant - no waiting!)
-    const embeddedData = await page.evaluate(() => {
-      // Check Next.js data
-      const nextScript = document.getElementById("__NEXT_DATA__");
-      if (nextScript?.textContent) {
-        return { type: "NEXT_DATA", data: nextScript.textContent };
-      }
-
-      // Check for any JSON data in script tags
-      const scripts = Array.from(document.querySelectorAll('script[type="application/json"]'));
-      for (const script of scripts) {
-        if (script.textContent && script.textContent.includes("menu")) {
-          return { type: "JSON_SCRIPT", data: script.textContent };
-        }
-      }
-
-      return null;
-    });
-
-    if (embeddedData) {
-      /* Empty */
-    }
-
-    // Strategy 2: FAST extraction - no waiting!
-
-    // Quick cookie dismissal (don't wait)
+    // Quick cookie dismissal (non-blocking)
     await page
-      .click('button:has-text("Accept"), button:has-text("Agree")', { timeout: 1000 })
+      .click('button:has-text("Accept"), button:has-text("Agree"), button:has-text("OK")', {
+        timeout: 2000,
+      })
       .catch(() => {
-        /* Empty */
+        /* Ignore - cookies already dismissed or not present */
       });
 
-    // Single scroll to trigger lazy content (no waiting)
-    await page.evaluate(() => window.scrollTo(0, document.body.scrollHeight));
+    // Wait for actual content to appear (menu items visible)
+    try {
+      await page.waitForSelector(
+        'main, article, [role="main"], .menu, .menu-item, [class*="menu"], [id*="menu"], h1, h2',
+        { timeout: 5000 }
+      );
+    } catch {
+      // Content might be there but selector doesn't match - continue anyway
+    }
+
+    // Check if content is already loaded (don't scroll unnecessarily)
+    const hasMenuContent = await page.evaluate(() => {
+      const bodyText = document.body.innerText || "";
+      const hasPrices = /\$|\£|€|\d+\.\d{2}/.test(bodyText);
+      const hasFoodWords = /menu|item|dish|food|breakfast|lunch|dinner|price|£/i.test(bodyText);
+      return hasPrices && hasFoodWords && bodyText.length > 100;
+    });
+
+    // Only scroll if content isn't visible yet
+    if (!hasMenuContent) {
+      // Quick scroll to trigger lazy loading (if needed)
+      await page.evaluate(() => {
+        window.scrollTo(0, document.body.scrollHeight);
+      });
+      // Small wait for lazy-loaded content
+      await page.waitForTimeout(1000);
+    }
 
     // Get HTML
     const html = await page.content();
 
-    // Extract text (remove scripts/styles)
+    // Extract text (remove scripts/styles/nav/footer for cleaner extraction)
     const text = await page.evaluate(() => {
       const clone = document.body.cloneNode(true) as HTMLElement;
-      clone.querySelectorAll("script, style, noscript").forEach((el) => el.remove());
-      return clone.innerText;
+      // Remove non-content elements
+      clone
+        .querySelectorAll("script, style, noscript, nav, footer, header, .nav, .footer, .header")
+        .forEach((el) => el.remove());
+      const mainContent =
+        clone.querySelector("main, article, [role='main'], .content, .main-content") || clone;
+      return mainContent.innerText || clone.innerText;
     });
 
     // Extract images
@@ -222,8 +227,9 @@ export async function POST(req: NextRequest) {
       // Intentionally empty
     }
 
-    // Scrape with the right strategy from the start
-    const { text: finalText, images: imageUrls } = await scrapeWithPlaywright(url, isJSHeavy);
+    // Scrape with optimized strategy
+    // For sites like Cafe Nur, content is immediately visible - no need for networkidle
+    const { text: finalText, images: imageUrls } = await scrapeWithPlaywright(url, false);
 
     if (!finalText || finalText.length < 50) {
       const errorResponse = {
