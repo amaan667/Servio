@@ -3,6 +3,8 @@
  * Helper functions for API versioning
  */
 
+import { NextResponse } from "next/server";
+
 export const API_VERSION = "v1";
 export const LATEST_VERSION = "v1";
 
