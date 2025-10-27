@@ -21,7 +21,7 @@ interface PerformanceMetrics {
   }>;
 }
 
-export function PerformanceDashboardClient({ venueId }: { venueId: string }) {
+export function PerformanceDashboardClient({ venueId: _venueId }: { venueId: string }) {
   const [metrics, setMetrics] = useState<PerformanceMetrics | null>(null);
   const [loading, setLoading] = useState(true);
 
