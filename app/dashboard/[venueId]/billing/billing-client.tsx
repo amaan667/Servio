@@ -77,6 +77,7 @@ export default function BillingClient({ venueId }: BillingClientProps) {
 
   useEffect(() => {
     const fetchBillingData = async () => {
+      setLoadingPortal(true);
       try {
         // Fetch organization and usage data
         const [orgRes, usageRes] = await Promise.all([
@@ -94,9 +95,9 @@ export default function BillingClient({ venueId }: BillingClientProps) {
           setUsage(usageData.usage || usageData);
         }
       } catch (_error) {
-      // Error handled silently
-    } finally {
-        setLoading(false);
+        // Error handled silently
+      } finally {
+        setLoadingPortal(false);
       }
     };
 
@@ -377,7 +378,7 @@ export default function BillingClient({ venueId }: BillingClientProps) {
         open={showUpgradeModal}
         onOpenChange={setShowUpgradeModal}
         currentTier={tier}
-        organizationId={organization?.id}
+        organizationId={organization?.id || ""}
       />
     </div>
   );

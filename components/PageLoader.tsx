@@ -1,7 +1,7 @@
-'use client';
+"use client";
 
-import { useEffect, useState } from 'react';
-import { usePathname, useSearchParams } from 'next/navigation';
+import { useEffect, useState } from "react";
+import { usePathname, useSearchParams } from "next/navigation";
 
 export function PageLoader() {
   const pathname = usePathname();
@@ -18,10 +18,13 @@ export function PageLoader() {
 
   return (
     <div className="fixed top-0 left-0 right-0 z-50">
-      <div className="h-1 bg-purple-600 animate-pulse" style={{
-        animation: 'loading 1s ease-in-out infinite',
-      }} />
-      <style jsx>{`
+      <div
+        className="h-1 bg-purple-600 animate-pulse"
+        style={{
+          animation: "loading 1s ease-in-out infinite",
+        }}
+      />
+      <style>{`
         @keyframes loading {
           0% { width: 0%; }
           50% { width: 70%; }
@@ -31,4 +34,3 @@ export function PageLoader() {
     </div>
   );
 }
-

@@ -145,46 +145,58 @@ export default function OrderTrackingPage() {
     // Set up real-time subscription for order updates
     if (!supabase || !orderId) return;
 
-    const channel = supabase
-      .channel(`order-tracking-${orderId}`)
-      .on(
-        "postgres_changes",
-        {
-          event: "*",
-          schema: "public",
-          table: "orders",
-          filter: `id=eq.${orderId}`,
-        },
-        (payload: {
-          eventType: string;
-          new?: Record<string, unknown>;
-          old?: Record<string, unknown>;
-        }) => {
-          if (payload.eventType === "UPDATE") {
-            // Update the order with new data
-            setOrder((prevOrder) => {
-              if (!prevOrder) return null;
+    const setupChannel = async () => {
+      const supabaseClient = await supabase;
+      const channel = supabaseClient
+        .channel(`order-tracking-${orderId}`)
+        .on(
+          "postgres_changes",
+          {
+            event: "*",
+            schema: "public",
+            table: "orders",
+            filter: `id=eq.${orderId}`,
+          },
+          (payload: {
+            eventType: string;
+            new?: Record<string, unknown>;
+            old?: Record<string, unknown>;
+          }) => {
+            if (payload.eventType === "UPDATE") {
+              // Update the order with new data
+              setOrder((prevOrder) => {
+                if (!prevOrder) return null;
 
-              const updatedOrder = { ...prevOrder, ...payload.new };
-              return updatedOrder;
-            });
+                const updatedOrder = { ...prevOrder, ...payload.new };
+                return updatedOrder;
+              });
 
-            setLastUpdate(new Date());
-          } else if (payload.eventType === "DELETE") {
-            setError("This order has been cancelled or deleted");
+              setLastUpdate(new Date());
+            } else if (payload.eventType === "DELETE") {
+              setError("This order has been cancelled or deleted");
+            }
           }
-        }
-      )
-      .subscribe((status: unknown) => {
-        if (status === "SUBSCRIBED") {
-          // Empty block
-        } else if (status === "CHANNEL_ERROR") {
-          // Empty block
-        }
-      });
+        )
+        .subscribe((status: unknown) => {
+          if (status === "SUBSCRIBED") {
+            // Empty block
+          } else if (status === "CHANNEL_ERROR") {
+            // Empty block
+          }
+        });
+
+      return () => {
+        supabaseClient.removeChannel(channel);
+      };
+    };
+
+    let cleanup: (() => void) | undefined;
+    setupChannel().then((fn) => {
+      cleanup = fn;
+    });
 
     return () => {
-      (supabase as any).removeChannel(channel);
+      cleanup?.();
     };
   }, [orderId, supabase]);
 

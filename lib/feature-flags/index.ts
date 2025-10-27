@@ -3,8 +3,8 @@
  * @module lib/feature-flags
  */
 
-import { logger } from '@/lib/logger';
-import { redisCache } from '@/lib/cache/redis-cache';
+import { logger } from "@/lib/logger";
+import { redisCache } from "@/lib/cache/redis-cache";
 
 export interface FeatureFlag {
   key: string;
@@ -26,7 +26,7 @@ export interface FeatureFlag {
  */
 export class FeatureFlagsManager {
   private static flags: Map<string, FeatureFlag> = new Map();
-  private static readonly CACHE_KEY = 'feature-flags';
+  private static readonly CACHE_KEY = "feature-flags";
   private static readonly CACHE_TTL = 300; // 5 minutes
 
   /**
@@ -37,17 +37,17 @@ export class FeatureFlagsManager {
     const cached = await redisCache.get<FeatureFlag[]>(this.CACHE_KEY);
     if (cached) {
       cached.forEach((flag) => this.flags.set(flag.key, flag));
-      logger.debug('[FEATURE_FLAGS] Loaded from cache', { data: { count: cached.length } });
+      logger.debug("[FEATURE_FLAGS] Loaded from cache", { data: { count: cached.length } });
       return;
     }
 
     // Load default flags
     this.setDefaultFlags();
-    
+
     // Cache the flags
-    await redisCache.set(this.CACHE_KEY, Array.from(this.flags.values()), this.CACHE_TTL);
-    
-    logger.debug('[FEATURE_FLAGS] Initialized with defaults', { data: { count: this.flags.size } });
+    await redisCache.set(this.CACHE_KEY, Array.from(this.flags.values()), { ttl: this.CACHE_TTL });
+
+    logger.debug("[FEATURE_FLAGS] Initialized with defaults", { data: { count: this.flags.size } });
   }
 
   /**
@@ -56,82 +56,98 @@ export class FeatureFlagsManager {
   private static setDefaultFlags() {
     const defaults: FeatureFlag[] = [
       {
-        key: 'ai_assistant',
-        name: 'AI Assistant',
-        description: 'Enable AI-powered restaurant management assistant',
+        key: "ai_assistant",
+        name: "AI Assistant",
+        description: "Enable AI-powered restaurant management assistant",
         enabled: true,
         rolloutPercentage: 100,
-        enabledFor: { /* Empty */ },
+        enabledFor: {
+          /* Empty */
+        },
         createdAt: new Date().toISOString(),
         updatedAt: new Date().toISOString(),
       },
       {
-        key: 'advanced_analytics',
-        name: 'Advanced Analytics',
-        description: 'Enable advanced analytics dashboard with predictive insights',
+        key: "advanced_analytics",
+        name: "Advanced Analytics",
+        description: "Enable advanced analytics dashboard with predictive insights",
         enabled: false,
         rolloutPercentage: 0,
-        enabledFor: { /* Empty */ },
+        enabledFor: {
+          /* Empty */
+        },
         createdAt: new Date().toISOString(),
         updatedAt: new Date().toISOString(),
       },
       {
-        key: 'inventory_forecasting',
-        name: 'Inventory Forecasting',
-        description: 'AI-powered inventory forecasting and auto-ordering',
+        key: "inventory_forecasting",
+        name: "Inventory Forecasting",
+        description: "AI-powered inventory forecasting and auto-ordering",
         enabled: false,
         rolloutPercentage: 10,
-        enabledFor: { /* Empty */ },
+        enabledFor: {
+          /* Empty */
+        },
         createdAt: new Date().toISOString(),
         updatedAt: new Date().toISOString(),
       },
       {
-        key: 'multi_location',
-        name: 'Multi-Location Support',
-        description: 'Manage multiple restaurant locations from one account',
+        key: "multi_location",
+        name: "Multi-Location Support",
+        description: "Manage multiple restaurant locations from one account",
         enabled: true,
         rolloutPercentage: 100,
-        enabledFor: { /* Empty */ },
+        enabledFor: {
+          /* Empty */
+        },
         createdAt: new Date().toISOString(),
         updatedAt: new Date().toISOString(),
       },
       {
-        key: 'customer_loyalty',
-        name: 'Customer Loyalty Program',
-        description: 'Built-in customer loyalty and rewards system',
+        key: "customer_loyalty",
+        name: "Customer Loyalty Program",
+        description: "Built-in customer loyalty and rewards system",
         enabled: false,
         rolloutPercentage: 0,
-        enabledFor: { /* Empty */ },
+        enabledFor: {
+          /* Empty */
+        },
         createdAt: new Date().toISOString(),
         updatedAt: new Date().toISOString(),
       },
       {
-        key: 'online_ordering',
-        name: 'Online Ordering',
-        description: 'Direct online ordering without QR codes',
+        key: "online_ordering",
+        name: "Online Ordering",
+        description: "Direct online ordering without QR codes",
         enabled: true,
         rolloutPercentage: 100,
-        enabledFor: { /* Empty */ },
+        enabledFor: {
+          /* Empty */
+        },
         createdAt: new Date().toISOString(),
         updatedAt: new Date().toISOString(),
       },
       {
-        key: 'table_reservations',
-        name: 'Table Reservations',
-        description: 'Online table reservation system',
+        key: "table_reservations",
+        name: "Table Reservations",
+        description: "Online table reservation system",
         enabled: true,
         rolloutPercentage: 100,
-        enabledFor: { /* Empty */ },
+        enabledFor: {
+          /* Empty */
+        },
         createdAt: new Date().toISOString(),
         updatedAt: new Date().toISOString(),
       },
       {
-        key: 'kitchen_display',
-        name: 'Kitchen Display System',
-        description: 'Real-time kitchen display for order management',
+        key: "kitchen_display",
+        name: "Kitchen Display System",
+        description: "Real-time kitchen display for order management",
         enabled: true,
         rolloutPercentage: 100,
-        enabledFor: { /* Empty */ },
+        enabledFor: {
+          /* Empty */
+        },
         createdAt: new Date().toISOString(),
         updatedAt: new Date().toISOString(),
       },
@@ -152,7 +168,7 @@ export class FeatureFlagsManager {
     }
   ): boolean {
     const flag = this.flags.get(flagKey);
-    
+
     if (!flag) {
       logger.debug(`[FEATURE_FLAGS] Flag not found: ${flagKey}`);
       return false;
@@ -186,10 +202,10 @@ export class FeatureFlagsManager {
     }
 
     // Consistent hash-based rollout
-    const identifier = context?.userId || context?.venueId || context?.email || 'anonymous';
+    const identifier = context?.userId || context?.venueId || context?.email || "anonymous";
     const hash = this.simpleHash(identifier + flagKey);
     const bucket = hash % 100;
-    
+
     return bucket < flag.rolloutPercentage;
   }
 
@@ -235,7 +251,7 @@ export class FeatureFlagsManager {
     this.flags.set(flagKey, updated);
 
     // Update cache
-    await redisCache.set(this.CACHE_KEY, Array.from(this.flags.values()), this.CACHE_TTL);
+    await redisCache.set(this.CACHE_KEY, Array.from(this.flags.values()), { ttl: this.CACHE_TTL });
 
     logger.debug(`[FEATURE_FLAGS] Updated flag: ${flagKey}`, { data: updates });
 
@@ -258,7 +274,7 @@ export class FeatureFlagsManager {
   /**
    * Create a new feature flag
    */
-  static async createFlag(flag: Omit<FeatureFlag, 'createdAt' | 'updatedAt'>): Promise<void> {
+  static async createFlag(flag: Omit<FeatureFlag, "createdAt" | "updatedAt">): Promise<void> {
     const now = new Date().toISOString();
     const newFlag: FeatureFlag = {
       ...flag,
@@ -269,7 +285,7 @@ export class FeatureFlagsManager {
     this.flags.set(flag.key, newFlag);
 
     // Update cache
-    await redisCache.set(this.CACHE_KEY, Array.from(this.flags.values()), this.CACHE_TTL);
+    await redisCache.set(this.CACHE_KEY, Array.from(this.flags.values()), { ttl: this.CACHE_TTL });
 
     logger.debug(`[FEATURE_FLAGS] Created flag: ${flag.key}`);
   }
@@ -282,7 +298,9 @@ export class FeatureFlagsManager {
 
     if (deleted) {
       // Update cache
-      await redisCache.set(this.CACHE_KEY, Array.from(this.flags.values()), this.CACHE_TTL);
+      await redisCache.set(this.CACHE_KEY, Array.from(this.flags.values()), {
+        ttl: this.CACHE_TTL,
+      });
       logger.debug(`[FEATURE_FLAGS] Deleted flag: ${flagKey}`);
     }
 
@@ -291,13 +309,14 @@ export class FeatureFlagsManager {
 }
 
 // Initialize on import
-if (typeof window === 'undefined') {
+if (typeof window === "undefined") {
   FeatureFlagsManager.initialize().catch((error) => {
-    logger.error('[FEATURE_FLAGS] Failed to initialize', { error });
+    logger.error("[FEATURE_FLAGS] Failed to initialize", { error });
   });
 }
 
 // Export convenience function
-export const isFeatureEnabled = (flagKey: string, context?: { userId?: string; venueId?: string; email?: string }) =>
-  FeatureFlagsManager.isEnabled(flagKey, context);
-
+export const isFeatureEnabled = (
+  flagKey: string,
+  context?: { userId?: string; venueId?: string; email?: string }
+) => FeatureFlagsManager.isEnabled(flagKey, context);

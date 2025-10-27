@@ -1,9 +1,9 @@
-import { useState, useEffect } from 'react';
-import { useRouter, useSearchParams } from 'next/navigation';
-import { supabase } from '@/lib/supabase';
-import { retrySupabaseQuery } from '@/lib/supabase-retry';
-import { logger } from '@/lib/logger';
-import { CustomerInfo, OrderParams } from '../types';
+import { useState, useEffect } from "react";
+import { useRouter, useSearchParams } from "next/navigation";
+import { supabase } from "@/lib/supabase";
+import { retrySupabaseQuery } from "@/lib/supabase-retry";
+import { logger } from "@/lib/logger";
+import { CustomerInfo, OrderParams } from "../types";
 
 export function useOrderSession(orderParams: OrderParams) {
   const router = useRouter();
@@ -15,21 +15,21 @@ export function useOrderSession(orderParams: OrderParams) {
   });
   const [showCheckout, setShowCheckout] = useState(false);
 
-  const updateCustomerInfo = (field: 'name' | 'phone', value: string) => {
-    setCustomerInfo(prev => ({ ...prev, [field]: value }));
+  const updateCustomerInfo = (field: "name" | "phone", value: string) => {
+    setCustomerInfo((prev) => ({ ...prev, [field]: value }));
   };
 
   useEffect(() => {
-    logger.info('📱 [ORDER SESSION] Session check initialized', {
+    logger.info("📱 [ORDER SESSION] Session check initialized", {
       venueSlug: orderParams.venueSlug,
       tableNumber: orderParams.tableNumber,
-      orderType: orderParams.orderType
+      orderType: orderParams.orderType,
     });
 
     // Log order access
-    fetch('/api/log-order-access', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
+    fetch("/api/log-order-access", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
       body: JSON.stringify({
         venueSlug: orderParams.venueSlug,
         tableNumber: orderParams.tableNumber,
@@ -37,59 +37,71 @@ export function useOrderSession(orderParams: OrderParams) {
         orderType: orderParams.orderType,
         orderLocation: orderParams.orderLocation,
         isDemo: orderParams.isDemo,
-        url: window.location.href
-      })
-    }).catch(() => { /* Empty */ });
+        url: window.location.href,
+      }),
+    }).catch(() => {
+      /* Empty */
+    });
 
     checkForExistingOrder();
   }, [orderParams, searchParams]);
 
   const checkForExistingOrder = async () => {
     try {
-      const sessionParam = searchParams?.get('session');
-      
+      const sessionParam = searchParams?.get("session");
+
       if (sessionParam) {
         const storedOrderData = localStorage.getItem(`servio-order-${sessionParam}`);
         if (storedOrderData) {
           const orderData = JSON.parse(storedOrderData);
-          
-          logger.info('🔍 [ORDER SESSION] Checking existing order in DB', {
+
+          logger.info("🔍 [ORDER SESSION] Checking existing order in DB", {
             orderId: orderData.orderId,
-            venueId: orderParams.venueSlug
+            venueId: orderParams.venueSlug,
           });
 
           const { data: orderInDb, error: orderError } = await retrySupabaseQuery(
-            () => supabase
-              .from('orders')
-              .select('*')
-              .eq('id', orderData.orderId)
-              .eq('venue_id', orderParams.venueSlug)
-              .in('order_status', ['PLACED', 'ACCEPTED', 'IN_PREP', 'READY', 'OUT_FOR_DELIVERY', 'SERVING'])
-              .in('payment_status', ['UNPAID', 'PAY_LATER', 'IN_PROGRESS'])
-              .single(),
-            { maxRetries: 5, delayMs: 500, logContext: 'Check Existing Order' }
+            async () => {
+              const result = await supabase
+                .from("orders")
+                .select("*")
+                .eq("id", orderData.orderId)
+                .eq("venue_id", orderParams.venueSlug)
+                .in("order_status", [
+                  "PLACED",
+                  "ACCEPTED",
+                  "IN_PREP",
+                  "READY",
+                  "OUT_FOR_DELIVERY",
+                  "SERVING",
+                ])
+                .in("payment_status", ["UNPAID", "PAY_LATER", "IN_PROGRESS"])
+                .single();
+              return { data: result.data, error: result.error };
+            },
+            { maxRetries: 5, delayMs: 500, logContext: "Check Existing Order" }
           );
 
           if (orderError) {
-            logger.error('❌ [ORDER SESSION] Failed to query order after retries', {
+            logger.error("❌ [ORDER SESSION] Failed to query order after retries", {
               orderId: orderData.orderId,
-              error: orderError instanceof Error ? orderError.message : String(orderError)
+              error: orderError instanceof Error ? orderError.message : String(orderError),
             });
           }
 
-          logger.info('📊 [ORDER SESSION] DB query result', {
+          logger.info("📊 [ORDER SESSION] DB query result", {
             found: !!orderInDb,
             orderId: orderData.orderId,
-            hadError: !!orderError
+            hadError: !!orderError,
           });
 
           if (orderInDb) {
-            logger.info('✅ [ORDER SESSION] Redirecting to payment', {
-              orderId: orderData.orderId
+            logger.info("✅ [ORDER SESSION] Redirecting to payment", {
+              orderId: orderData.orderId,
             });
             const checkoutData = {
               venueId: orderData.venueId,
-              venueName: 'Restaurant',
+              venueName: "Restaurant",
               tableNumber: orderData.tableNumber,
               customerName: orderData.customerName,
               customerPhone: orderData.customerPhone,
@@ -100,45 +112,58 @@ export function useOrderSession(orderParams: OrderParams) {
               sessionId: sessionParam,
               isDemo: orderParams.isDemo,
             };
-            
-            localStorage.setItem('servio-checkout-data', JSON.stringify(checkoutData));
-            window.location.href = '/payment';
+
+            localStorage.setItem("servio-checkout-data", JSON.stringify(checkoutData));
+            window.location.href = "/payment";
             return;
           } else {
             localStorage.removeItem(`servio-order-${sessionParam}`);
           }
         }
       }
-      
-      const storedSession = localStorage.getItem('servio-current-session');
+
+      const storedSession = localStorage.getItem("servio-current-session");
       if (storedSession && !sessionParam) {
         const storedOrderData = localStorage.getItem(`servio-order-${storedSession}`);
         if (storedOrderData) {
           const orderData = JSON.parse(storedOrderData);
-          
+
           const { data: sessionOrderInDb, error: sessionOrderError } = await retrySupabaseQuery(
-            () => supabase
-              .from('orders')
-              .select('*')
-              .eq('id', orderData.orderId)
-              .eq('venue_id', orderParams.venueSlug)
-              .in('order_status', ['PLACED', 'ACCEPTED', 'IN_PREP', 'READY', 'OUT_FOR_DELIVERY', 'SERVING'])
-              .in('payment_status', ['UNPAID', 'PAY_LATER', 'IN_PROGRESS'])
-              .single(),
-            { maxRetries: 5, delayMs: 500, logContext: 'Check Session Order' }
+            async () => {
+              const result = await supabase
+                .from("orders")
+                .select("*")
+                .eq("id", orderData.orderId)
+                .eq("venue_id", orderParams.venueSlug)
+                .in("order_status", [
+                  "PLACED",
+                  "ACCEPTED",
+                  "IN_PREP",
+                  "READY",
+                  "OUT_FOR_DELIVERY",
+                  "SERVING",
+                ])
+                .in("payment_status", ["UNPAID", "PAY_LATER", "IN_PROGRESS"])
+                .single();
+              return { data: result.data, error: result.error };
+            },
+            { maxRetries: 5, delayMs: 500, logContext: "Check Session Order" }
           );
 
           if (sessionOrderError) {
-            logger.error('❌ [ORDER SESSION] Failed to query session order', {
+            logger.error("❌ [ORDER SESSION] Failed to query session order", {
               orderId: orderData.orderId,
-              error: sessionOrderError instanceof Error ? sessionOrderError.message : String(sessionOrderError)
+              error:
+                sessionOrderError instanceof Error
+                  ? sessionOrderError.message
+                  : String(sessionOrderError),
             });
           }
 
           if (sessionOrderInDb) {
             const checkoutData = {
               venueId: orderData.venueId,
-              venueName: 'Restaurant',
+              venueName: "Restaurant",
               tableNumber: orderData.tableNumber,
               customerName: orderData.customerName,
               customerPhone: orderData.customerPhone,
@@ -149,13 +174,13 @@ export function useOrderSession(orderParams: OrderParams) {
               sessionId: storedSession,
               isDemo: orderParams.isDemo,
             };
-            
-            localStorage.setItem('servio-checkout-data', JSON.stringify(checkoutData));
-            window.location.href = '/payment';
+
+            localStorage.setItem("servio-checkout-data", JSON.stringify(checkoutData));
+            window.location.href = "/payment";
             return;
           } else {
             localStorage.removeItem(`servio-order-${storedSession}`);
-            localStorage.removeItem('servio-current-session');
+            localStorage.removeItem("servio-current-session");
           }
         }
       }
@@ -166,7 +191,9 @@ export function useOrderSession(orderParams: OrderParams) {
 
   useEffect(() => {
     const checkUser = async () => {
-      const { data: { session } } = await supabase.auth.getSession();
+      const {
+        data: { session },
+      } = await supabase.auth.getSession();
       const user = session?.user;
       setSession(user ? { user } : null);
     };
@@ -174,9 +201,9 @@ export function useOrderSession(orderParams: OrderParams) {
 
     const checkUnpaidOrders = async () => {
       try {
-        logger.info('🔍 [ORDER SESSION] Checking for active unpaid orders via API', {
+        logger.info("🔍 [ORDER SESSION] Checking for active unpaid orders via API", {
           venueSlug: orderParams.venueSlug,
-          tableNumber: orderParams.tableNumber
+          tableNumber: orderParams.tableNumber,
         });
 
         // Use API endpoint instead of direct Supabase query
@@ -186,9 +213,9 @@ export function useOrderSession(orderParams: OrderParams) {
         );
 
         if (!response.ok) {
-          logger.error('❌ [ORDER SESSION] API request failed', {
+          logger.error("❌ [ORDER SESSION] API request failed", {
             status: response.status,
-            statusText: response.statusText
+            statusText: response.statusText,
           });
           return;
         }
@@ -196,54 +223,58 @@ export function useOrderSession(orderParams: OrderParams) {
         const result = await response.json();
         const activeOrders = result.ok ? result.orders : null;
 
-        logger.info('✅ [ORDER SESSION] Active orders check complete', {
+        logger.info("✅ [ORDER SESSION] Active orders check complete", {
           count: activeOrders?.length || 0,
           venueSlug: orderParams.venueSlug,
-          tableNumber: orderParams.tableNumber
+          tableNumber: orderParams.tableNumber,
         });
 
         if (activeOrders && activeOrders.length > 0) {
           const tableSessionKey = `servio-session-${orderParams.tableNumber}`;
           const tableSessionData = localStorage.getItem(tableSessionKey);
-          
-          const sessionId = searchParams?.get('sessionId');
+
+          const sessionId = searchParams?.get("sessionId");
           const sessionSessionKey = sessionId ? `servio-session-${sessionId}` : null;
-          const sessionSessionData = sessionSessionKey ? localStorage.getItem(sessionSessionKey) : null;
-          
+          const sessionSessionData = sessionSessionKey
+            ? localStorage.getItem(sessionSessionKey)
+            : null;
+
           const sessionData = tableSessionData || sessionSessionData;
-          
+
           if (sessionData) {
             try {
               const session = JSON.parse(sessionData);
-              
-              if (session.paymentStatus === 'unpaid' || session.paymentStatus === 'till') {
-                localStorage.setItem('servio-unpaid-order', JSON.stringify(session));
-                router.push(`/order-summary?${orderParams.isCounterOrder ? 'counter' : 'table'}=${orderParams.orderLocation}&session=${session.orderId}`);
+
+              if (session.paymentStatus === "unpaid" || session.paymentStatus === "till") {
+                localStorage.setItem("servio-unpaid-order", JSON.stringify(session));
+                router.push(
+                  `/order-summary?${orderParams.isCounterOrder ? "counter" : "table"}=${orderParams.orderLocation}&session=${session.orderId}`
+                );
                 return;
               }
-              
+
               setShowCheckout(true);
               setCustomerInfo({
                 name: session.customerName,
-                phone: session.customerPhone
+                phone: session.customerPhone,
               });
             } catch (_error) {
-      // Error silently handled
-    }
+              // Error silently handled
+            }
           }
         } else {
           const tableSessionKey = `servio-session-${orderParams.tableNumber}`;
           localStorage.removeItem(tableSessionKey);
-          
-          const sessionId = searchParams?.get('sessionId');
+
+          const sessionId = searchParams?.get("sessionId");
           if (sessionId) {
             const sessionSessionKey = `servio-session-${sessionId}`;
             localStorage.removeItem(sessionSessionKey);
           }
         }
       } catch (_error) {
-      // Error silently handled
-    }
+        // Error silently handled
+      }
     };
 
     checkUnpaidOrders();
@@ -255,16 +286,21 @@ export function useOrderSession(orderParams: OrderParams) {
         });
         return () => {
           try {
-            (result as unknown)?.data?.subscription?.unsubscribe?.();
+            const subscription = (
+              result as { data?: { subscription?: { unsubscribe?: () => void } } }
+            )?.data?.subscription;
+            subscription?.unsubscribe?.();
           } catch {
-      // Error handled silently
-    }
+            // Error handled silently
+          }
         };
       }
     } catch (_err) {
       // Auth state change setup failed
     }
-    return () => { /* Empty */ };
+    return () => {
+      /* Empty */
+    };
   }, [orderParams, router, searchParams]);
 
   return {
@@ -275,4 +311,3 @@ export function useOrderSession(orderParams: OrderParams) {
     updateCustomerInfo,
   };
 }
-

@@ -17,6 +17,7 @@ import { supabaseBrowser as createClient } from "@/lib/supabase";
 import { useTabCounts } from "@/hooks/use-tab-counts";
 import { OrderCard } from "@/components/orders/OrderCard";
 import { mapOrderToCardData } from "@/lib/orders/mapOrderToCardData";
+import type { LegacyOrder } from "@/types/orders";
 import MobileNav from "@/components/MobileNav";
 
 // Hooks
@@ -187,16 +188,29 @@ export default function LiveOrdersClient({
 
   const renderOrderCard = (order: unknown, showActions: boolean = true) => {
     const orderData = order as {
+      id?: string;
       table_number?: string | number;
       customer_name?: string;
+      customer_phone?: string;
+      customer_email?: string;
+      order_status?: string;
+      total_amount?: number;
+      items?: Array<unknown>;
+      created_at?: string;
+      venue_id?: string;
       [key: string]: unknown;
     };
-    const legacyOrder = {
-      ...orderData,
-      table_number: orderData.table_number,
-      customer_name: orderData.customer_name || "",
-      customer_phone: (order as any).customer_phone || undefined,
-      customer_email: (order as any).customer_email || undefined,
+    const legacyOrder: LegacyOrder = {
+      id: orderData.id || "",
+      venue_id: orderData.venue_id || "",
+      table_number: typeof orderData.table_number === "number" ? orderData.table_number : null,
+      customer_name: orderData.customer_name || null,
+      customer_phone: orderData.customer_phone || undefined,
+      customer_email: orderData.customer_email || undefined,
+      order_status: orderData.order_status || "PLACED",
+      total_amount: orderData.total_amount || 0,
+      items: (orderData.items as LegacyOrder["items"]) || [],
+      created_at: orderData.created_at || new Date().toISOString(),
     };
     const orderForCard = mapOrderToCardData(legacyOrder, "GBP");
 

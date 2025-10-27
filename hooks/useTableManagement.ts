@@ -38,8 +38,8 @@ export function useTableManagement() {
 
         // Create a more detailed error object
         const error = new Error(errorMessage);
-        (error as unknown).details = errorDetails;
-        (error as unknown).code = errorCode;
+        (error as unknown as Record<string, unknown>).details = errorDetails;
+        (error as unknown as Record<string, unknown>).code = errorCode;
 
         throw error;
       }

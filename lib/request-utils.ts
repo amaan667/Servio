@@ -179,7 +179,7 @@ export function createCancellableDebounce<T extends (...args: unknown[]) => unkn
       timeoutId = setTimeout(async () => {
         try {
           const result = await func(...args);
-          resolve(result);
+          resolve(result as ReturnType<T>);
         } catch (_error) {
           if ((_error as Error).name !== "RequestCancelledError") {
             reject(_error);

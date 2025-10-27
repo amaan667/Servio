@@ -11,12 +11,12 @@ interface MenuItemImageProps {
   showLoadingState?: boolean;
 }
 
-const MenuItemImage = memo(function MenuItemImage({ 
-  src, 
-  alt, 
+const MenuItemImage = memo(function MenuItemImage({
+  src,
+  alt,
   className = "w-20 h-20 rounded-lg object-cover border border-gray-200",
-  fallbackIcon = <UtensilsCrossed className="w-8 w-8 text-gray-700" />,
-  showLoadingState = true
+  fallbackIcon: _fallbackIcon = <UtensilsCrossed className="w-8 h-8 text-gray-700" />,
+  showLoadingState = true,
 }: MenuItemImageProps) {
   const [hasError, setHasError] = useState(false);
   const [isLoading, setIsLoading] = useState(true);
@@ -60,9 +60,9 @@ const MenuItemImage = memo(function MenuItemImage({
       onLoad={handleImageLoad}
       onError={handleImageError}
       loading="lazy"
-      style={{ 
-        transition: 'opacity 0.2s ease-in-out',
-        opacity: isLoading ? 0 : 1 
+      style={{
+        transition: "opacity 0.2s ease-in-out",
+        opacity: isLoading ? 0 : 1,
       }}
     />
   );

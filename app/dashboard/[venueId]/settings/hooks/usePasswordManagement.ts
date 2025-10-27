@@ -89,10 +89,10 @@ export function usePasswordManagement(user: User) {
         }, 2500);
       }
     } catch (_err) {
-      setError(_err.message || "Failed to update password");
+      setError(_err instanceof Error ? _err.message : "Failed to update password");
       toast({
         title: "Error",
-        description: _err.message || "Failed to update password",
+        description: _err instanceof Error ? _err.message : "Failed to update password",
         variant: "destructive",
       });
     } finally {

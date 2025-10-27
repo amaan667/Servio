@@ -57,7 +57,10 @@ export async function POST(req: NextRequest) {
       pdfImages = await convertPDFToImages(pdfBuffer);
       logger.info(`[MENU IMPORT ${requestId}] Converted to images:`, { count: pdfImages.length });
     } catch (conversionError) {
-      logger.error(`[MENU IMPORT ${requestId}] Conversion error:`, conversionError);
+      logger.error(
+        `[MENU IMPORT ${requestId}] Conversion error:`,
+        conversionError instanceof Error ? conversionError : { error: String(conversionError) }
+      );
       throw new Error("PDF to image conversion failed - please check Railway logs");
     }
 

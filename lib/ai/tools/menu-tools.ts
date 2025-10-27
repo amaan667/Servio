@@ -2,7 +2,7 @@
 // Handles menu-related operations
 
 import { createClient } from "@/lib/supabase";
-import { aiLogger } from '@/lib/logger';
+import { aiLogger } from "@/lib/logger";
 import {
   MenuUpdatePricesParams,
   MenuToggleAvailabilityParams,
@@ -17,7 +17,7 @@ import {
 export async function executeMenuUpdatePrices(
   params: MenuUpdatePricesParams,
   venueId: string,
-  userId: string,
+  _userId: string,
   preview: boolean
 ): Promise<AIPreviewDiff | AIExecutionResult> {
   const supabase = await createClient();
@@ -41,7 +41,9 @@ export async function executeMenuUpdatePrices(
 
   if (fetchError) {
     aiLogger.error("[AI ASSISTANT] Error fetching menu items:", fetchError);
-    throw new AIAssistantError("Failed to fetch menu items", "EXECUTION_FAILED", fetchError);
+    throw new AIAssistantError("Failed to fetch menu items", "EXECUTION_FAILED", {
+      error: fetchError,
+    });
   }
 
   if (!currentItems || currentItems.length === 0) {
@@ -51,20 +53,23 @@ export async function executeMenuUpdatePrices(
   aiLogger.debug(`[AI ASSISTANT] Found ${currentItems.length} items in database`);
 
   // Validate all item IDs exist
-  const foundIds = new Set(currentItems.map(i => i.id));
-  const missingIds = params.items.filter(i => !foundIds.has(i.id));
+  const foundIds = new Set(currentItems.map((i) => i.id));
+  const missingIds = params.items.filter((i) => !foundIds.has(i.id));
   if (missingIds.length > 0) {
-    aiLogger.error("[AI ASSISTANT] Missing item IDs:", missingIds.map(i => i.id));
+    aiLogger.error(
+      "[AI ASSISTANT] Missing item IDs:",
+      missingIds.map((i) => i.id)
+    );
     throw new AIAssistantError(
       `Some items not found: ${missingIds.length} items do not exist`,
       "INVALID_PARAMS",
-      { missingIds: missingIds.map(i => i.id) }
+      { missingIds: missingIds.map((i) => i.id) }
     );
   }
 
   // Check price change guardrail (±20%)
   const maxChangePercent = DEFAULT_GUARDRAILS["menu.update_prices"].maxPriceChangePercent || 20;
-  
+
   for (const item of params.items) {
     const current = currentItems.find((i) => i.id === item.id);
     if (!current) continue;
@@ -79,13 +84,20 @@ export async function executeMenuUpdatePrices(
     }
 
     const changePercent = Math.abs(((item.newPrice - current.price) / current.price) * 100);
-    aiLogger.debug(`[AI ASSISTANT] ${current.name}: ${current.price} → ${item.newPrice} (${changePercent.toFixed(1)}% change)`);
-    
+    aiLogger.debug(
+      `[AI ASSISTANT] ${current.name}: ${current.price} → ${item.newPrice} (${changePercent.toFixed(1)}% change)`
+    );
+
     if (changePercent > maxChangePercent) {
       throw new AIAssistantError(
         `Price change of ${changePercent.toFixed(1)}% for "${current.name}" exceeds limit of ${maxChangePercent}%`,
         "GUARDRAIL_VIOLATION",
-        { itemId: item.id, itemName: current.name, currentPrice: current.price, newPrice: item.newPrice }
+        {
+          itemId: item.id,
+          itemName: current.name,
+          currentPrice: current.price,
+          newPrice: item.newPrice,
+        }
       );
     }
   }
@@ -112,7 +124,7 @@ export async function executeMenuUpdatePrices(
       impact: {
         itemsAffected: params.items.length,
         estimatedRevenue: newRevenue - oldRevenue,
-        description: `${params.items.length} items will be updated. Estimated revenue impact: ${((newRevenue - oldRevenue) / oldRevenue * 100).toFixed(1)}%`,
+        description: `${params.items.length} items will be updated. Estimated revenue impact: ${(((newRevenue - oldRevenue) / oldRevenue) * 100).toFixed(1)}%`,
       },
     };
   }
@@ -121,16 +133,16 @@ export async function executeMenuUpdatePrices(
   aiLogger.debug(`[AI ASSISTANT] Executing price updates for ${params.items.length} items`);
   let updatedCount = 0;
   const failedUpdates: Array<{ id: string; name: string; error: string }> = [];
-  
+
   for (const item of params.items) {
-    const currentItem = currentItems.find(i => i.id === item.id);
+    const currentItem = currentItems.find((i) => i.id === item.id);
     const itemName = currentItem?.name || item.id;
-    
+
     const { data, error } = await supabase
       .from("menu_items")
-      .update({ 
+      .update({
         price: item.newPrice,
-        updated_at: new Date().toISOString()
+        updated_at: new Date().toISOString(),
       })
       .eq("id", item.id)
       .eq("venue_id", venueId)
@@ -157,14 +169,16 @@ export async function executeMenuUpdatePrices(
     );
   }
 
-  aiLogger.debug(`[AI ASSISTANT] Price update complete: ${updatedCount} items updated successfully`);
+  aiLogger.debug(
+    `[AI ASSISTANT] Price update complete: ${updatedCount} items updated successfully`
+  );
 
   return {
     success: true,
     toolName: "menu.update_prices",
-    result: { 
+    result: {
       updatedCount,
-      message: `Successfully updated ${updatedCount} item${updatedCount !== 1 ? 's' : ''}`
+      message: `Successfully updated ${updatedCount} item${updatedCount !== 1 ? "s" : ""}`,
     },
     auditId: "",
   };
@@ -173,7 +187,7 @@ export async function executeMenuUpdatePrices(
 export async function executeMenuToggleAvailability(
   params: MenuToggleAvailabilityParams,
   venueId: string,
-  userId: string,
+  _userId: string,
   preview: boolean
 ): Promise<AIPreviewDiff | AIExecutionResult> {
   const supabase = await createClient();
@@ -206,7 +220,7 @@ export async function executeMenuToggleAvailability(
     .in("id", params.itemIds);
 
   if (error) {
-    throw new AIAssistantError("Failed to toggle availability", "EXECUTION_FAILED", error);
+    throw new AIAssistantError("Failed to toggle availability", "EXECUTION_FAILED", { error });
   }
 
   return {
@@ -230,14 +244,16 @@ export async function executeMenuCreateItem(
     return {
       toolName: "menu.create_item",
       before: [],
-      after: [{
-        id: "new-item",
-        name: params.name,
-        price: params.price,
-        description: params.description,
-        categoryId: params.categoryId,
-        available: params.available,
-      }],
+      after: [
+        {
+          id: "new-item",
+          name: params.name,
+          price: params.price,
+          description: params.description,
+          categoryId: params.categoryId,
+          available: params.available,
+        },
+      ],
       impact: {
         itemsAffected: 1,
         estimatedRevenue: 0,
@@ -264,7 +280,7 @@ export async function executeMenuCreateItem(
     .single();
 
   if (error) {
-    throw new AIAssistantError("Failed to create menu item", "EXECUTION_FAILED", error);
+    throw new AIAssistantError("Failed to create menu item", "EXECUTION_FAILED", { error });
   }
 
   return {
@@ -278,7 +294,7 @@ export async function executeMenuCreateItem(
 export async function executeMenuDeleteItem(
   params: MenuDeleteItemParams,
   venueId: string,
-  userId: string,
+  _userId: string,
   preview: boolean
 ): Promise<AIPreviewDiff | AIExecutionResult> {
   const supabase = await createClient();
@@ -317,7 +333,7 @@ export async function executeMenuDeleteItem(
     .eq("venue_id", venueId);
 
   if (error) {
-    throw new AIAssistantError("Failed to delete menu item", "EXECUTION_FAILED", error);
+    throw new AIAssistantError("Failed to delete menu item", "EXECUTION_FAILED", { error });
   }
 
   return {
@@ -327,4 +343,3 @@ export async function executeMenuDeleteItem(
     auditId: "",
   };
 }
-

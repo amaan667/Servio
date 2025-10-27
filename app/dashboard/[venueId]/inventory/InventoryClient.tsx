@@ -1,10 +1,10 @@
-'use client';
+"use client";
 
-import { useState } from 'react';
-import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { InventoryOverview } from '@/components/inventory/InventoryOverview';
-import { InventoryMovements } from '@/components/inventory/InventoryMovements';
-import { Package, History } from 'lucide-react';
+import { useState } from "react";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { InventoryOverview } from "@/components/inventory/InventoryOverview";
+import { InventoryMovements } from "@/components/inventory/InventoryMovements";
+import { Package, History } from "lucide-react";
 
 interface InventoryClientProps {
   venueId: string;
@@ -12,8 +12,12 @@ interface InventoryClientProps {
   canEdit?: boolean;
 }
 
-export default function InventoryClient({ venueId, venueName, canEdit = true }: InventoryClientProps) {
-  const [activeTab, setActiveTab] = useState('overview');
+export default function InventoryClient({
+  venueId,
+  venueName: _venueName,
+  canEdit = true,
+}: InventoryClientProps) {
+  const [activeTab, setActiveTab] = useState("overview");
 
   return (
     <div className="space-y-6">
@@ -40,4 +44,3 @@ export default function InventoryClient({ venueId, venueName, canEdit = true }: 
     </div>
   );
 }
-

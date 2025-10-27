@@ -3,7 +3,7 @@
  * Provides memoization and optimization helpers
  */
 
-import { memo, useMemo, useCallback, ComponentType } from 'react';
+import { memo, useMemo, useCallback, ComponentType } from "react";
 
 /**
  * Create a memoized component with comparison function
@@ -18,10 +18,7 @@ export function createMemoizedComponent<P extends object>(
 /**
  * Memoize expensive calculations
  */
-export function useExpensiveCalculation<T>(
-  factory: () => T,
-  deps: React.DependencyList
-): T {
+export function useExpensiveCalculation<T>(factory: () => T, deps: React.DependencyList): T {
   return useMemo(factory, deps);
 }
 
@@ -75,7 +72,7 @@ export function shallowEqual<T extends object>(a: T, b: T): boolean {
 export function deepEqual(a: unknown, b: unknown): boolean {
   if (a === b) return true;
   if (a == null || b == null) return false;
-  if (typeof a !== 'object' || typeof b !== 'object') return false;
+  if (typeof a !== "object" || typeof b !== "object") return false;
 
   const keysA = Object.keys(a);
   const keysB = Object.keys(b);
@@ -84,7 +81,9 @@ export function deepEqual(a: unknown, b: unknown): boolean {
 
   for (const key of keysA) {
     if (!keysB.includes(key)) return false;
-    if (!deepEqual(a[key], b[key])) return false;
+    const aObj = a as Record<string, unknown>;
+    const bObj = b as Record<string, unknown>;
+    if (!deepEqual(aObj[key], bObj[key])) return false;
   }
 
   return true;
@@ -107,4 +106,3 @@ export function createShallowMemoizedComponent<P extends object>(
 ): ComponentType<P> {
   return memo(Component, shallowEqual) as unknown as ComponentType<P>;
 }
-

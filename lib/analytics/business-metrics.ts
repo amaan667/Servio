@@ -71,7 +71,7 @@ export class BusinessMetricsService {
         staffMetrics,
       ] = await Promise.all([
         this.getRevenueMetrics(supabase, venueId, dateRange),
-        this.getOrderMetrics(supabase, venueId, dateRange),
+        this.getOrderMetrics(supabase, venueId),
         this.getCustomerMetrics(supabase, venueId, dateRange),
         this.getPerformanceMetrics(supabase, venueId, dateRange),
         this.getMenuMetrics(supabase, venueId, dateRange),
@@ -112,7 +112,11 @@ export class BusinessMetricsService {
       .gte("created_at", dateRange.start.toISOString())
       .lte("created_at", dateRange.end.toISOString());
 
-    const totalRevenue = orders?.reduce((sum, order) => sum + order.total_amount, 0) || 0;
+    const totalRevenue =
+      orders?.reduce(
+        (sum: number, order: { total_amount: number }) => sum + order.total_amount,
+        0
+      ) || 0;
     const averageOrderValue = orders?.length ? totalRevenue / orders.length : 0;
 
     // Calculate growth (compare with previous period)
@@ -131,7 +135,10 @@ export class BusinessMetricsService {
       .lte("created_at", previousEnd.toISOString());
 
     const previousRevenue =
-      previousOrders?.reduce((sum, order) => sum + order.total_amount, 0) || 0;
+      previousOrders?.reduce(
+        (sum: number, order: { total_amount: number }) => sum + order.total_amount,
+        0
+      ) || 0;
     const revenueGrowth =
       previousRevenue > 0 ? ((totalRevenue - previousRevenue) / previousRevenue) * 100 : 0;
 
@@ -231,7 +238,9 @@ export class BusinessMetricsService {
       .gte("created_at", dateRange.start.toISOString())
       .lte("created_at", dateRange.end.toISOString());
 
-    const uniqueCustomers = new Set(customers?.map((order) => order.customer_name) || []);
+    const uniqueCustomers = new Set(
+      customers?.map((order: { customer_name: string }) => order.customer_name) || []
+    );
     const totalCustomers = uniqueCustomers.size;
 
     // New customers (first order in this period)
@@ -241,8 +250,8 @@ export class BusinessMetricsService {
       .eq("venue_id", venueId)
       .order("created_at", { ascending: true });
 
-    const customerFirstOrders = new Map();
-    allCustomerOrders?.forEach((order) => {
+    const customerFirstOrders = new Map<string, string>();
+    allCustomerOrders?.forEach((order: { customer_name: string; created_at: string }) => {
       if (!customerFirstOrders.has(order.customer_name)) {
         customerFirstOrders.set(order.customer_name, order.created_at);
       }
@@ -281,21 +290,25 @@ export class BusinessMetricsService {
       .lte("created_at", dateRange.end.toISOString());
 
     // Calculate average order time
-    const completedOrders = orders?.filter((order) => order.status === "served") || [];
+    const completedOrders =
+      orders?.filter((order: { status: string }) => order.status === "served") || [];
     const averageOrderTime =
       completedOrders.length > 0
-        ? completedOrders.reduce((sum, order) => {
-            const created = new Date(order.created_at);
-            const updated = new Date(order.updated_at);
-            return sum + (updated.getTime() - created.getTime());
-          }, 0) /
+        ? completedOrders.reduce(
+            (sum: number, order: { created_at: string; updated_at: string }) => {
+              const created = new Date(order.created_at);
+              const updated = new Date(order.updated_at);
+              return sum + (updated.getTime() - created.getTime());
+            },
+            0
+          ) /
           completedOrders.length /
           (1000 * 60) // Convert to minutes
         : 0;
 
     // Find peak hours
     const hourCounts = new Map<number, number>();
-    orders?.forEach((order) => {
+    orders?.forEach((order: { created_at: string }) => {
       const hour = new Date(order.created_at).getHours();
       hourCounts.set(hour, (hourCounts.get(hour) || 0) + 1);
     });
@@ -307,7 +320,7 @@ export class BusinessMetricsService {
 
     // Find busiest day
     const dayCounts = new Map<string, number>();
-    orders?.forEach((order) => {
+    orders?.forEach((order: { created_at: string }) => {
       const day = new Date(order.created_at).toLocaleDateString("en-US", { weekday: "long" });
       dayCounts.set(day, (dayCounts.get(day) || 0) + 1);
     });
@@ -347,14 +360,16 @@ export class BusinessMetricsService {
 
     const itemStats = new Map<string, { quantity: number; revenue: number }>();
 
-    orderItems?.forEach((item) => {
-      const name = item.menu_items?.name || "Unknown";
-      const existing = itemStats.get(name) || { quantity: 0, revenue: 0 };
-      itemStats.set(name, {
-        quantity: existing.quantity + item.quantity,
-        revenue: existing.revenue + item.quantity * item.price,
-      });
-    });
+    orderItems?.forEach(
+      (item: { menu_items?: { name: string }; quantity: number; price: number }) => {
+        const name = item.menu_items?.name || "Unknown";
+        const existing = itemStats.get(name) || { quantity: 0, revenue: 0 };
+        itemStats.set(name, {
+          quantity: existing.quantity + item.quantity,
+          revenue: existing.revenue + item.quantity * item.price,
+        });
+      }
+    );
 
     const sortedItems = Array.from(itemStats.entries())
       .map(([name, stats]) => ({ name, ...stats }))
@@ -390,7 +405,11 @@ export class BusinessMetricsService {
       .lte("created_at", dateRange.end.toISOString());
 
     // const totalSeats = tables?.reduce((sum, table) => sum + table.seat_count, 0) || 0;
-    const usedTables = new Set(orders?.map((order) => order.table_id) || []);
+    const usedTables = new Set(
+      orders
+        ?.map((order: { table_id: string | null }) => order.table_id)
+        .filter((id: string | null): id is string => id !== null) || []
+    );
     const tableUtilization = tables?.length ? (usedTables.size / tables.length) * 100 : 0;
 
     // Calculate average table turnover (orders per table per day)

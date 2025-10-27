@@ -1,5 +1,6 @@
 import { OrderCard } from "@/components/orders/OrderCard";
 import { mapCounterOrderToCardData } from "@/lib/orders/mapCounterOrderToCardData";
+import type { CounterOrder } from "@/hooks/useCounterOrders";
 
 interface CounterOrdersSectionProps {
   counterOrders: unknown[];
@@ -29,7 +30,10 @@ export function CounterOrdersSection({ counterOrders }: CounterOrdersSectionProp
             )
             .map((order) => (
               <div key={(order as any).id} className="flex-shrink-0 w-80">
-                <OrderCard order={mapCounterOrderToCardData(order)} variant="counter" />
+                <OrderCard
+                  order={mapCounterOrderToCardData(order as unknown as CounterOrder)}
+                  variant="counter"
+                />
               </div>
             ))}
         </div>

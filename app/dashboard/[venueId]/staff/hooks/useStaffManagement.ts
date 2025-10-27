@@ -28,7 +28,7 @@ export interface StaffCounts {
 export function useStaffManagement(
   venueId: string,
   initialStaff?: StaffRow[],
-  initialCounts?: StaffCounts
+  _initialCounts?: StaffCounts
 ) {
   // Use initialStaff directly, no empty array fallback to prevent flicker
   const [staff, setStaff] = useState<StaffRow[]>(initialStaff || []);
@@ -112,7 +112,7 @@ export function useStaffManagement(
       setName("");
       setRole("Server");
     } catch (_err) {
-      setError(_err.message);
+      setError(_err instanceof Error ? _err.message : "Failed to perform action");
     } finally {
       setAdding(false);
     }

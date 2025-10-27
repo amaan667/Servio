@@ -22,8 +22,8 @@ interface UnifiedFeedbackFormProps {
 export default function UnifiedFeedbackForm({
   venueId,
   orderId,
-  customerName = "Customer",
-  customerPhone,
+  customerName: _customerName = "Customer",
+  customerPhone: _customerPhone,
   onSubmit,
 }: UnifiedFeedbackFormProps) {
   const [questions, setQuestions] = useState<FeedbackQuestion[]>([]);
@@ -153,21 +153,21 @@ export default function UnifiedFeedbackForm({
               return {
                 question_id: question.id,
                 type: "stars" as const,
-                answer_stars: answer || 0,
+                answer_stars: typeof answer === "number" ? answer : 0,
                 order_id: orderId,
               };
             case "multiple_choice":
               return {
                 question_id: question.id,
                 type: "multiple_choice" as const,
-                answer_choice: answer || "",
+                answer_choice: typeof answer === "string" ? answer : "",
                 order_id: orderId,
               };
             case "paragraph":
               return {
                 question_id: question.id,
                 type: "paragraph" as const,
-                answer_text: answer || "",
+                answer_text: typeof answer === "string" ? answer : "",
                 order_id: orderId,
               };
             default:
@@ -178,9 +178,9 @@ export default function UnifiedFeedbackForm({
           // Filter out empty answers
           switch (answer.type) {
             case "stars":
-              return answer.answer_stars > 0;
+              return typeof answer.answer_stars === "number" && answer.answer_stars > 0;
             case "multiple_choice":
-              return (answer.answer_choice as any).trim() !== "";
+              return typeof answer.answer_choice === "string" && answer.answer_choice.trim() !== "";
             case "paragraph":
               return (answer.answer_text as any).trim() !== "";
             default:
@@ -304,8 +304,10 @@ export default function UnifiedFeedbackForm({
             <div key={question.id} className="space-y-3">
               {question.type === "stars" && (
                 <StarRating
-                  value={answers[question.id] || 0}
-                  onChange={(rating) => handleAnswerChange(question.id, rating)}
+                  value={
+                    typeof answers[question.id] === "number" ? (answers[question.id] as number) : 0
+                  }
+                  onChange={(rating: number) => handleAnswerChange(question.id, rating)}
                   label={question.prompt}
                 />
               )}
@@ -314,8 +316,12 @@ export default function UnifiedFeedbackForm({
                 <div className="space-y-2">
                   <Label className="text-sm font-medium text-gray-700">{question.prompt}</Label>
                   <RadioGroup
-                    value={answers[question.id] || ""}
-                    onValueChange={(value) => handleAnswerChange(question.id, value)}
+                    value={
+                      typeof answers[question.id] === "string"
+                        ? (answers[question.id] as string)
+                        : ""
+                    }
+                    onValueChange={(value: string) => handleAnswerChange(question.id, value)}
                   >
                     {question.choices?.map((choice, index) => (
                       <div key={index} className="flex items-center space-x-2">
@@ -336,15 +342,27 @@ export default function UnifiedFeedbackForm({
                 <div className="space-y-2">
                   <Label className="text-sm font-medium text-gray-700">{question.prompt}</Label>
                   <Textarea
-                    value={answers[question.id] || ""}
-                    onChange={(e) => handleAnswerChange(question.id, e.target.value)}
+                    value={
+                      typeof answers[question.id] === "string"
+                        ? (answers[question.id] as string)
+                        : ""
+                    }
+                    onChange={(e: React.ChangeEvent<HTMLTextAreaElement>) =>
+                      handleAnswerChange(question.id, e.target.value)
+                    }
                     placeholder="Share your thoughts..."
                     rows={3}
                     maxLength={600}
                     className="resize-none"
                   />
                   <p className="text-xs text-gray-900">
-                    {(answers[question.id] || "").length}/600 characters
+                    {
+                      (typeof answers[question.id] === "string"
+                        ? (answers[question.id] as string)
+                        : ""
+                      ).length
+                    }
+                    /600 characters
                   </p>
                 </div>
               )}

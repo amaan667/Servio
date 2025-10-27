@@ -12,7 +12,7 @@ import {
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { AlertTriangle, Sparkles, History } from "lucide-react";
-import { ChatInterfaceProps } from "./types";
+import { ChatInterfaceProps, ChatConversation } from "./types";
 
 // Hooks
 import { useChatConversations } from "./hooks/useChatConversations";
@@ -92,7 +92,7 @@ export function ChatInterface({ venueId, isOpen, onClose, initialPrompt }: ChatI
 
   // Handle conversation selection
   const handleSelectConversation = async (conversation: unknown) => {
-    setCurrentConversation(conversation);
+    setCurrentConversation(conversation as ChatConversation | null);
     await loadMessages((conversation as any).id);
     setActiveTab("chat");
   };
@@ -153,6 +153,7 @@ export function ChatInterface({ venueId, isOpen, onClose, initialPrompt }: ChatI
 
     // Send to AI
     try {
+      if (!conv) return;
       await sendMessage(conv.id, messageText);
     } catch (_error) {
       setError((error as any).message);
@@ -222,7 +223,7 @@ export function ChatInterface({ venueId, isOpen, onClose, initialPrompt }: ChatI
 
         <Tabs
           value={activeTab}
-          onValueChange={(v) => setActiveTab(v as unknown)}
+          onValueChange={(v) => setActiveTab(v as "history" | "chat")}
           className="flex-1 flex flex-col overflow-hidden"
         >
           <TabsList className="mx-6 mt-4">

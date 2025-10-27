@@ -13,7 +13,10 @@ export function useOrderManagement(venueId: string) {
   const cachedAllToday = PersistentCache.get<Order[]>(`all_today_orders_${venueId}`) || [];
   const cachedHistory = PersistentCache.get<Order[]>(`history_orders_${venueId}`) || [];
   const cachedGroupedHistory =
-    PersistentCache.get<Record<string, Order[]>>(`grouped_history_${venueId}`) || { /* Empty */ };
+    PersistentCache.get<Record<string, Order[]>>(`grouped_history_${venueId}`) ||
+    {
+      /* Empty */
+    };
 
   const [orders, setOrders] = useState<Order[]>(cachedLiveOrders);
   const [allTodayOrders, setAllTodayOrders] = useState<Order[]>(cachedAllToday);
@@ -93,16 +96,21 @@ export function useOrderManagement(venueId: string) {
         // ANTI-FLICKER: Cache history orders
         PersistentCache.set(`history_orders_${venueId}`, processedHistory, 10 * 60 * 1000); // 10 min TTL
 
-        const grouped = processedHistory.reduce((acc: Record<string, Order[]>, order) => {
-          const date = new Date(order.created_at).toLocaleDateString("en-GB", {
-            day: "2-digit",
-            month: "short",
-            year: "numeric",
-          });
-          if (!acc[date]) acc[date] = [];
-          acc[date].push(order);
-          return acc;
-        }, { /* Empty */ });
+        const grouped = processedHistory.reduce(
+          (acc: Record<string, Order[]>, order) => {
+            const date = new Date(order.created_at).toLocaleDateString("en-GB", {
+              day: "2-digit",
+              month: "short",
+              year: "numeric",
+            });
+            if (!acc[date]) acc[date] = [];
+            acc[date].push(order);
+            return acc;
+          },
+          {
+            /* Empty */
+          }
+        );
         setGroupedHistoryOrders(grouped);
         // ANTI-FLICKER: Cache grouped history
         PersistentCache.set(`grouped_history_${venueId}`, grouped, 10 * 60 * 1000); // 10 min TTL
@@ -129,14 +137,14 @@ export function useOrderManagement(venueId: string) {
           new?: Record<string, unknown>;
           old?: Record<string, unknown>;
         }) => {
-          const newOrder = payload.new as Order;
-          const oldOrder = payload.old as Order;
+          const newOrder = payload.new ? (payload.new as unknown as Order) : undefined;
+          const oldOrder = payload.old ? (payload.old as unknown as Order) : undefined;
 
-          if (payload.eventType === "INSERT") {
+          if (payload.eventType === "INSERT" && newOrder) {
             handleOrderInsert(newOrder);
-          } else if (payload.eventType === "UPDATE") {
+          } else if (payload.eventType === "UPDATE" && newOrder) {
             handleOrderUpdate(newOrder);
-          } else if (payload.eventType === "DELETE") {
+          } else if (payload.eventType === "DELETE" && oldOrder) {
             handleOrderDelete(oldOrder);
           }
         }
@@ -146,7 +154,6 @@ export function useOrderManagement(venueId: string) {
     return () => {
       createClient().removeChannel(channel);
     };
-     
   }, [venueId]);
 
   const handleOrderInsert = (order: Order) => {

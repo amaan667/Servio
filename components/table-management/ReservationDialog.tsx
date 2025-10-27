@@ -1,7 +1,7 @@
-'use client';
+"use client";
 
-import { useState, useEffect } from 'react';
-import { Button } from '@/components/ui/button';
+import { useState, useEffect } from "react";
+import { Button } from "@/components/ui/button";
 import {
   Dialog,
   DialogContent,
@@ -9,11 +9,11 @@ import {
   DialogFooter,
   DialogHeader,
   DialogTitle,
-} from '@/components/ui/dialog';
-import { Input } from '@/components/ui/input';
-import { Label } from '@/components/ui/label';
-import { Calendar, Clock, User } from 'lucide-react';
-import { useReserveTable, useModifyReservation } from '@/hooks/useTableReservations';
+} from "@/components/ui/dialog";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { Calendar, Clock, User } from "lucide-react";
+import { useReserveTable, useModifyReservation } from "@/hooks/useTableReservations";
 
 interface ReservationDialogProps {
   isOpen: boolean;
@@ -46,14 +46,14 @@ export function ReservationDialog({
   tableStatus,
   onReservationComplete,
   isModifyMode = false,
-  existingReservation
+  existingReservation,
 }: ReservationDialogProps) {
-  const [customerName, setCustomerName] = useState('');
-  const [reservationTime, setReservationTime] = useState('');
+  const [customerName, setCustomerName] = useState("");
+  const [reservationTime, setReservationTime] = useState("");
   const [reservationDuration, setReservationDuration] = useState(60); // Default to 60 minutes
-  const [customerPhone, setCustomerPhone] = useState('');
+  const [customerPhone, setCustomerPhone] = useState("");
   const [error, setError] = useState<string | null>(null);
-  
+
   const reserveTable = useReserveTable();
   const modifyReservation = useModifyReservation();
 
@@ -62,21 +62,21 @@ export function ReservationDialog({
     if (isOpen) {
       if (isModifyMode && existingReservation) {
         // Populate form with existing reservation data
-        setCustomerName(existingReservation.customer_name || '');
-        setCustomerPhone(existingReservation.customer_phone || '');
-        
+        setCustomerName(existingReservation.customer_name || "");
+        setCustomerPhone(existingReservation.customer_phone || "");
+
         // Convert UTC times to local datetime-local format
         const startTime = new Date(existingReservation.start_at);
         const endTime = new Date(existingReservation.end_at);
-        
+
         // Format for datetime-local input
         const year = startTime.getFullYear();
-        const month = String(startTime.getMonth() + 1).padStart(2, '0');
-        const day = String(startTime.getDate()).padStart(2, '0');
-        const hours = String(startTime.getHours()).padStart(2, '0');
-        const minutes = String(startTime.getMinutes()).padStart(2, '0');
+        const month = String(startTime.getMonth() + 1).padStart(2, "0");
+        const day = String(startTime.getDate()).padStart(2, "0");
+        const hours = String(startTime.getHours()).padStart(2, "0");
+        const minutes = String(startTime.getMinutes()).padStart(2, "0");
         setReservationTime(`${year}-${month}-${day}T${hours}:${minutes}`);
-        
+
         // Calculate duration in minutes
         const durationMs = endTime.getTime() - startTime.getTime();
         const durationMinutes = Math.round(durationMs / (1000 * 60));
@@ -84,8 +84,8 @@ export function ReservationDialog({
       } else if (!reservationTime) {
         // Default to current time for new reservations
         setReservationTime(getDefaultTime());
-        setCustomerName('');
-        setCustomerPhone('');
+        setCustomerName("");
+        setCustomerPhone("");
         setReservationDuration(60);
       }
     }
@@ -96,21 +96,21 @@ export function ReservationDialog({
     const now = new Date();
     // Format as YYYY-MM-DDTHH:MM for datetime-local input
     const year = now.getFullYear();
-    const month = String(now.getMonth() + 1).padStart(2, '0');
-    const day = String(now.getDate()).padStart(2, '0');
-    const hours = String(now.getHours()).padStart(2, '0');
-    const minutes = String(now.getMinutes()).padStart(2, '0');
+    const month = String(now.getMonth() + 1).padStart(2, "0");
+    const day = String(now.getDate()).padStart(2, "0");
+    const hours = String(now.getHours()).padStart(2, "0");
+    const minutes = String(now.getMinutes()).padStart(2, "0");
     return `${year}-${month}-${day}T${hours}:${minutes}`;
   };
 
   const handleSubmit = async () => {
     if (!customerName.trim()) {
-      setError('Customer name is required');
+      setError("Customer name is required");
       return;
     }
 
     if (!reservationTime) {
-      setError('Reservation time is required');
+      setError("Reservation time is required");
       return;
     }
 
@@ -118,9 +118,9 @@ export function ReservationDialog({
     const selectedTime = new Date(reservationTime);
     const now = new Date();
     const fiveMinutesAgo = new Date(now.getTime() - 5 * 60 * 1000); // 5 minutes ago
-    
+
     if (selectedTime < fiveMinutesAgo) {
-      setError('Reservation time cannot be more than 5 minutes in the past');
+      setError("Reservation time cannot be more than 5 minutes in the past");
       return;
     }
 
@@ -129,7 +129,9 @@ export function ReservationDialog({
 
       // Convert local time to UTC for server
       const startAt = new Date(reservationTime).toISOString();
-      const endAt = new Date(new Date(reservationTime).getTime() + (reservationDuration * 60 * 1000)).toISOString();
+      const endAt = new Date(
+        new Date(reservationTime).getTime() + reservationDuration * 60 * 1000
+      ).toISOString();
 
       if (isModifyMode && existingReservation) {
         // Modify existing reservation
@@ -139,7 +141,7 @@ export function ReservationDialog({
           startAt,
           endAt,
           partySize: tableSeatCount,
-          customerPhone: customerPhone.trim() || undefined
+          customerPhone: customerPhone.trim() || undefined,
         });
       } else {
         // Create new reservation
@@ -150,24 +152,27 @@ export function ReservationDialog({
           endAt,
           partySize: tableSeatCount,
           name: customerName.trim(),
-          phone: customerPhone.trim() || ''
+          phone: customerPhone.trim() || "",
         });
       }
 
       onReservationComplete?.();
       onClose();
       handleClose();
-    } catch (_error) {
-
-      setError(error instanceof Error ? error.message : `Failed to ${isModifyMode ? 'modify' : 'create'} reservation`);
+    } catch (err) {
+      setError(
+        err instanceof Error
+          ? err.message
+          : `Failed to ${isModifyMode ? "modify" : "create"} reservation`
+      );
     }
   };
 
   const handleClose = () => {
-    setCustomerName('');
-    setReservationTime('');
+    setCustomerName("");
+    setReservationTime("");
     setReservationDuration(60);
-    setCustomerPhone('');
+    setCustomerPhone("");
     setError(null);
     onClose();
   };
@@ -180,21 +185,20 @@ export function ReservationDialog({
             <Calendar className="h-5 w-5" />
             Modify Reservation
           </DialogTitle>
-          <DialogDescription>
-            Update the reservation for {tableLabel}
-          </DialogDescription>
+          <DialogDescription>Update the reservation for {tableLabel}</DialogDescription>
         </DialogHeader>
 
         <div className="space-y-4">
           {/* Info message for modifying existing reservation */}
-          {tableStatus === 'RESERVED' && (
+          {tableStatus === "RESERVED" && (
             <div className="p-3 bg-blue-50 border border-blue-200 rounded-md">
               <p className="text-sm text-blue-700">
-                ℹ️ This table has an existing reservation. You are modifying the current reservation details.
+                ℹ️ This table has an existing reservation. You are modifying the current reservation
+                details.
               </p>
             </div>
           )}
-          
+
           <div className="space-y-2">
             <Label htmlFor="customerName" className="flex items-center gap-2">
               <User className="h-4 w-4" />
@@ -266,21 +270,32 @@ export function ReservationDialog({
         </div>
 
         <DialogFooter>
-          <Button variant="outline" onClick={handleClose} disabled={reserveTable.isPending || modifyReservation.isPending}>
+          <Button
+            variant="outline"
+            onClick={handleClose}
+            disabled={reserveTable.isPending || modifyReservation.isPending}
+          >
             Cancel
           </Button>
-          <Button 
-            onClick={handleSubmit} 
-            disabled={reserveTable.isPending || modifyReservation.isPending || !customerName.trim() || !reservationTime}
+          <Button
+            onClick={handleSubmit}
+            disabled={
+              reserveTable.isPending ||
+              modifyReservation.isPending ||
+              !customerName.trim() ||
+              !reservationTime
+            }
             className="bg-blue-600 hover:bg-blue-700"
           >
-            {(reserveTable.isPending || modifyReservation.isPending) ? (
+            {reserveTable.isPending || modifyReservation.isPending ? (
               <>
                 <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white mr-2"></div>
-                {isModifyMode ? 'Updating...' : 'Creating...'}
+                {isModifyMode ? "Updating..." : "Creating..."}
               </>
+            ) : isModifyMode ? (
+              "Update Reservation"
             ) : (
-              isModifyMode ? 'Update Reservation' : 'Create Reservation'
+              "Create Reservation"
             )}
           </Button>
         </DialogFooter>

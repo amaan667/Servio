@@ -3,9 +3,9 @@
  * Eliminates 32+ duplicate venue ownership checks across the codebase
  */
 
-import { NextRequest, NextResponse } from 'next/server';
-import { createSupabaseClient } from '@/lib/supabase';
-import { logger } from '@/lib/logger';
+import { NextRequest, NextResponse } from "next/server";
+import { createSupabaseClient } from "@/lib/supabase";
+import { logger } from "@/lib/logger";
 
 export interface Venue {
   venue_id: string;
@@ -50,18 +50,18 @@ export async function verifyVenueAccess(
 
     // First check if user has a role in user_venue_roles
     const { data: roleData, error: roleError } = await supabase
-      .from('user_venue_roles')
-      .select('role')
-      .eq('venue_id', venueId)
-      .eq('user_id', userId)
+      .from("user_venue_roles")
+      .select("role")
+      .eq("venue_id", venueId)
+      .eq("user_id", userId)
       .maybeSingle();
 
     if (!roleError && roleData?.role) {
       // User has a role, get venue details
       const { data: venue, error: venueFetchError } = await supabase
-        .from('venues')
-        .select('*')
-        .eq('venue_id', venueId)
+        .from("venues")
+        .select("*")
+        .eq("venue_id", venueId)
         .single();
 
       if (venue && !venueFetchError) {
@@ -75,24 +75,24 @@ export async function verifyVenueAccess(
 
     // Fallback: Check if user owns the venue
     const { data: venue, error: venueError } = await supabase
-      .from('venues')
-      .select('*')
-      .eq('venue_id', venueId)
-      .eq('owner_user_id', userId)
+      .from("venues")
+      .select("*")
+      .eq("venue_id", venueId)
+      .eq("owner_user_id", userId)
       .maybeSingle();
 
     if (venueError || !venue) {
-      logger.warn('Venue access denied', { venueId, userId, error: venueError?.message });
+      logger.warn("Venue access denied", { venueId, userId, error: venueError?.message });
       return null;
     }
 
     return {
       venue,
       user: { id: userId },
-      role: 'owner',
+      role: "owner",
     };
   } catch (_error) {
-    logger.error('Error verifying venue access', { venueId, userId, error });
+    logger.error("Error verifying venue access", { venueId, userId, error: _error });
     return null;
   }
 }
@@ -103,16 +103,17 @@ export async function verifyVenueAccess(
 export async function getAuthenticatedUser() {
   try {
     const supabase = await createSupabaseClient();
-    const { data: { user }, error } = await supabase.auth.getSession();
+    const { data, error } = await supabase.auth.getSession();
+    const user = data?.session?.user;
 
     if (error || !user) {
-      return { user: null, error: error?.message || 'Not authenticated' };
+      return { user: null, error: error?.message || "Not authenticated" };
     }
 
     return { user, error: null };
   } catch (_error) {
-    logger.error('Error getting authenticated user', { error });
-    return { user: null, error: 'Authentication failed' };
+    logger.error("Error getting authenticated user", { error: _error });
+    return { user: null, error: "Authentication failed" };
   }
 }
 
@@ -134,18 +135,15 @@ export function withAuthorization(
       const { user, error: authError } = await getAuthenticatedUser();
 
       if (authError || !user) {
-        return NextResponse.json(
-          { error: 'Unauthorized', message: authError },
-          { status: 401 }
-        );
+        return NextResponse.json({ error: "Unauthorized", message: authError }, { status: 401 });
       }
 
       // Extract venueId from params or query
-      const venueId = params?.venueId || new URL(req.url).searchParams.get('venueId');
+      const venueId = params?.venueId || new URL(req.url).searchParams.get("venueId");
 
       if (!venueId) {
         return NextResponse.json(
-          { error: 'Bad Request', message: 'venueId is required' },
+          { error: "Bad Request", message: "venueId is required" },
           { status: 400 }
         );
       }
@@ -155,7 +153,7 @@ export function withAuthorization(
 
       if (!access) {
         return NextResponse.json(
-          { error: 'Forbidden', message: 'Access denied to this venue' },
+          { error: "Forbidden", message: "Access denied to this venue" },
           { status: 403 }
         );
       }
@@ -168,9 +166,9 @@ export function withAuthorization(
         venueId,
       });
     } catch (_error) {
-      logger.error('Authorization middleware error', { error });
+      logger.error("Authorization middleware error", { error: _error });
       return NextResponse.json(
-        { error: 'Internal Server Error', message: 'Authorization failed' },
+        { error: "Internal Server Error", message: "Authorization failed" },
         { status: 500 }
       );
     }
@@ -194,7 +192,7 @@ export function withOptionalAuth(
       }
 
       // Extract venueId
-      const venueId = params?.venueId || new URL(req.url).searchParams.get('venueId');
+      const venueId = params?.venueId || new URL(req.url).searchParams.get("venueId");
 
       if (!venueId) {
         return await handler(req, null);
@@ -215,7 +213,7 @@ export function withOptionalAuth(
         venueId,
       });
     } catch (_error) {
-      logger.error('Optional auth middleware error', { error });
+      logger.error("Optional auth middleware error", { error: _error });
       return await handler(req, null);
     }
   };
@@ -234,13 +232,12 @@ export function requireRole(allowedRoles: string[]) {
  * Owner-only authorization
  */
 export function requireOwner(context: AuthorizedContext): boolean {
-  return context.role === 'owner';
+  return context.role === "owner";
 }
 
 /**
  * Staff or owner authorization
  */
 export function requireStaffOrOwner(context: AuthorizedContext): boolean {
-  return ['owner', 'manager', 'staff'].includes(context.role);
+  return ["owner", "manager", "staff"].includes(context.role);
 }
-

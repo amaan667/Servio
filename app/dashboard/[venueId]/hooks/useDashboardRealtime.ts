@@ -9,10 +9,10 @@ interface RealtimePayload {
 
 interface UseDashboardRealtimeProps {
   venueId: string;
-  todayWindow: unknown;
+  todayWindow: { startUtcISO: string; endUtcISO: string } | null | undefined;
   refreshCounts: () => Promise<void>;
-  loadStats: (venueId: string, window: unknown) => Promise<void>;
-  updateRevenueIncrementally: (order: Record<string, unknown>) => void;
+  loadStats: (venueId: string, window: { startUtcISO: string; endUtcISO: string }) => Promise<void>;
+  updateRevenueIncrementally: (order: { order_status: string; total_amount?: number }) => void;
   venue: unknown;
 }
 
@@ -25,7 +25,15 @@ export function useDashboardRealtime({
   venue,
 }: UseDashboardRealtimeProps) {
   useEffect(() => {
-    if (!venue?.venue_id || !todayWindow?.startUtcISO) {
+    if (!todayWindow || !todayWindow.startUtcISO || !todayWindow.endUtcISO) {
+      return;
+    }
+
+    const venueId_check =
+      venue && typeof venue === "object" && "venue_id" in venue
+        ? (venue as { venue_id?: string }).venue_id
+        : undefined;
+    if (!venueId_check) {
       return;
     }
 
@@ -48,20 +56,28 @@ export function useDashboardRealtime({
           }
 
           const isInTodayWindow =
-            orderCreatedAt >= (todayWindow as any).startUtcISO &&
-            orderCreatedAt < (todayWindow as any).endUtcISO;
+            todayWindow &&
+            orderCreatedAt >= todayWindow.startUtcISO &&
+            orderCreatedAt < todayWindow.endUtcISO;
 
           if (isInTodayWindow) {
             await refreshCounts();
 
             if (payload.eventType === "INSERT" && payload.new) {
-              updateRevenueIncrementally(payload.new);
+              const order = payload.new as { order_status: string; total_amount?: number };
+              updateRevenueIncrementally(order);
             } else if (payload.eventType === "UPDATE" && payload.new) {
               if (
                 payload.new.order_status === "CANCELLED" ||
                 payload.new.order_status === "REFUNDED"
               ) {
-                await loadStats((venue as any).venue_id, todayWindow);
+                const venueIdForStats =
+                  venue && typeof venue === "object" && "venue_id" in venue
+                    ? (venue as { venue_id?: string }).venue_id
+                    : venueId;
+                if (venueIdForStats) {
+                  await loadStats(venueIdForStats, todayWindow);
+                }
               }
             }
           }
@@ -75,7 +91,7 @@ export function useDashboardRealtime({
           table: "tables",
           filter: `venue_id=eq.${venueId}`,
         },
-        async (payload: RealtimePayload) => {
+        async (_payload: RealtimePayload) => {
           await refreshCounts();
         }
       )
@@ -87,7 +103,7 @@ export function useDashboardRealtime({
           table: "table_sessions",
           filter: `venue_id=eq.${venueId}`,
         },
-        async (payload: RealtimePayload) => {
+        async (_payload: RealtimePayload) => {
           await refreshCounts();
         }
       )
@@ -139,12 +155,5 @@ export function useDashboardRealtime({
       supabase.removeChannel(channel);
       window.removeEventListener("orderCreated", handleOrderCreated as EventListener);
     };
-  }, [
-    venueId,
-    venue?.venue_id,
-    todayWindow?.startUtcISO,
-    refreshCounts,
-    loadStats,
-    updateRevenueIncrementally,
-  ]);
+  }, [venueId, venue, todayWindow, refreshCounts, loadStats, updateRevenueIncrementally]);
 }

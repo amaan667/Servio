@@ -151,12 +151,13 @@ export async function getMenuSummary(venueId: string, useCache = true): Promise<
   // Calculate category counts
   const categoryMap = new Map<string, { name: string; count: number }>();
   items.forEach((item: Record<string, unknown>) => {
-    if (item.category) {
-      const existing = categoryMap.get(item.category) || {
-        name: item.category,
+    const category = item.category as string | undefined;
+    if (category) {
+      const existing = categoryMap.get(category) || {
+        name: category,
         count: 0,
       };
-      categoryMap.set(item.category, {
+      categoryMap.set(category, {
         ...existing,
         count: existing.count + 1,
       });
@@ -177,11 +178,11 @@ export async function getMenuSummary(venueId: string, useCache = true): Promise<
 
   // Create list of all items for AI to reference
   const allItems = items.map((item: Record<string, unknown>) => ({
-    id: item.id,
-    name: item.name,
-    price: item.price,
-    categoryId: item.category, // Use category name as ID since there's no separate categories table
-    categoryName: item.category || "Uncategorized",
+    id: item.id as string,
+    name: item.name as string,
+    price: item.price as number,
+    categoryId: (item.category as string) || "", // Use category name as ID since there's no separate categories table
+    categoryName: (item.category as string) || "Uncategorized",
   }));
 
   const summary: MenuSummary = {
@@ -194,7 +195,7 @@ export async function getMenuSummary(venueId: string, useCache = true): Promise<
   };
 
   // Cache for 1 minute
-  await cacheContext(venueId, "menu_summary", summary);
+  await cacheContext(venueId, "menu_summary", summary as unknown as Record<string, unknown>);
 
   return summary;
 }
@@ -257,7 +258,7 @@ export async function getInventorySummary(
     reorderNeeded: lowStock.length > 0,
   };
 
-  await cacheContext(venueId, "inventory_summary", summary);
+  await cacheContext(venueId, "inventory_summary", summary as unknown as Record<string, unknown>);
 
   return summary;
 }
@@ -374,7 +375,7 @@ export async function getOrdersSummary(venueId: string, useCache = true): Promis
     bottlenecks,
   };
 
-  await cacheContext(venueId, "orders_summary", summary);
+  await cacheContext(venueId, "orders_summary", summary as unknown as Record<string, unknown>);
 
   return summary;
 }
@@ -423,9 +424,10 @@ export async function getAnalyticsSummary(
   // Count by item
   const itemCounts = new Map<string, { name: string; count: number }>();
   recentItems?.forEach((item: Record<string, unknown>) => {
-    const name = item.menu_items?.name || "Unknown";
+    const name = (item.menu_items as { name?: string })?.name || "Unknown";
     const existing = itemCounts.get(name) || { name, count: 0 };
-    itemCounts.set(name, { name, count: existing.count + item.quantity });
+    const quantity = typeof item.quantity === "number" ? item.quantity : 0;
+    itemCounts.set(name, { name, count: existing.count + quantity });
   });
 
   const topItems = Array.from(itemCounts.values())
@@ -438,8 +440,9 @@ export async function getAnalyticsSummary(
     /* Empty */
   };
   recentItems?.forEach((item: Record<string, unknown>) => {
-    const categoryName = item.menu_items?.category || "Uncategorized";
-    categoryPerformance[categoryName] = (categoryPerformance[categoryName] || 0) + item.quantity;
+    const categoryName = (item.menu_items as { category?: string })?.category || "Uncategorized";
+    const quantity = typeof item.quantity === "number" ? item.quantity : 0;
+    categoryPerformance[categoryName] = (categoryPerformance[categoryName] || 0) + quantity;
   });
 
   const summary: AnalyticsSummary = {
@@ -454,7 +457,7 @@ export async function getAnalyticsSummary(
     },
   };
 
-  await cacheContext(venueId, "analytics_summary", summary);
+  await cacheContext(venueId, "analytics_summary", summary as unknown as Record<string, unknown>);
 
   return summary;
 }

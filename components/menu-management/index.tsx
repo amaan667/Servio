@@ -5,22 +5,26 @@ import { Alert, AlertDescription } from "@/components/ui/alert";
 import { AlertTriangle } from "lucide-react";
 import { supabaseBrowser as createClient } from "@/lib/supabase";
 import { RecipeDialog } from "@/components/inventory/RecipeDialog";
-import { MenuManagementProps, NewItem, MenuItem } from './types';
+import { MenuManagementProps, NewItem, MenuItem } from "./types";
 
 // Hooks
-import { useMenuData } from './hooks/useMenuData';
-import { useMenuItemActions } from './hooks/useMenuItemActions';
-import { useBatchOperations } from './hooks/useBatchOperations';
+import { useMenuData } from "./hooks/useMenuData";
+import { useMenuItemActions } from "./hooks/useMenuItemActions";
+import { useBatchOperations } from "./hooks/useBatchOperations";
 
 // Components
-import { MenuUploadSection } from './components/MenuUploadSection';
-import { CategoriesManagementSection } from './components/CategoriesManagementSection';
-import { MenuItemList } from './components/MenuItemList';
-import { AddMenuItemSection } from './components/AddMenuItemSection';
-import { BatchActionBar } from './components/BatchActionBar';
-import { BatchActionDialog } from './components/BatchActionDialog';
+import { MenuUploadSection } from "./components/MenuUploadSection";
+import { CategoriesManagementSection } from "./components/CategoriesManagementSection";
+import { MenuItemList } from "./components/MenuItemList";
+import { AddMenuItemSection } from "./components/AddMenuItemSection";
+import { BatchActionBar } from "./components/BatchActionBar";
+import { BatchActionDialog } from "./components/BatchActionDialog";
 
-export function MenuManagement({ venueId, session, refreshTrigger }: MenuManagementProps) {
+export function MenuManagement({
+  venueId,
+  session: _session,
+  refreshTrigger,
+}: MenuManagementProps) {
   const [newItem, setNewItem] = useState<NewItem>({
     name: "",
     description: "",
@@ -34,14 +38,10 @@ export function MenuManagement({ venueId, session, refreshTrigger }: MenuManagem
   const [recipeDialogOpen, setRecipeDialogOpen] = useState(false);
   const [selectedMenuItem, setSelectedMenuItem] = useState<MenuItem | null>(null);
 
-  const {
-    menuItems,
-    setMenuItems,
-    loading,
-    error,
-    categoryOrder,
-    fetchMenu,
-  } = useMenuData(venueId, refreshTrigger);
+  const { menuItems, setMenuItems, loading, error, categoryOrder, fetchMenu } = useMenuData(
+    venueId,
+    refreshTrigger
+  );
 
   const {
     saving,
@@ -73,21 +73,21 @@ export function MenuManagement({ venueId, session, refreshTrigger }: MenuManagem
   const supabase = createClient();
 
   const getCategories = () => {
-    const categories = Array.from(new Set(menuItems.map(item => item.category)));
+    const categories = Array.from(new Set(menuItems.map((item) => item.category)));
     if (categoryOrder) {
-      return categoryOrder.filter(cat => categories.includes(cat));
+      return categoryOrder.filter((cat) => categories.includes(cat));
     }
     return categories.sort();
   };
 
   const getItemsByCategory = (category: string) => {
     return menuItems
-      .filter(item => item.category === category)
+      .filter((item) => item.category === category)
       .sort((a, b) => (a.position || 0) - (b.position || 0));
   };
 
   const toggleCategoryExpansion = (categoryName: string) => {
-    setExpandedCategories(prev => {
+    setExpandedCategories((prev) => {
       const newSet = new Set(prev);
       if (newSet.has(categoryName)) {
         newSet.delete(categoryName);
@@ -111,17 +111,15 @@ export function MenuManagement({ venueId, session, refreshTrigger }: MenuManagem
   };
 
   const handleUpdateItemWrapper = async (itemId: string, updates: Partial<MenuItem>) => {
-    setMenuItems(prevItems => 
-      prevItems.map(item => 
-        item.id === itemId ? { ...item, ...updates } : item
-      )
+    setMenuItems((prevItems) =>
+      prevItems.map((item) => (item.id === itemId ? { ...item, ...updates } : item))
     );
     await handleUpdateItem(itemId, updates);
     await fetchMenu();
   };
 
   const handleDeleteItemWrapper = async (itemId: string) => {
-    setMenuItems(prevItems => prevItems.filter(item => item.id !== itemId));
+    setMenuItems((prevItems) => prevItems.filter((item) => item.id !== itemId));
     await handleDeleteItem(itemId);
     await fetchMenu();
   };
@@ -146,8 +144,8 @@ export function MenuManagement({ venueId, session, refreshTrigger }: MenuManagem
       <MenuUploadSection venueId={venueId} onSuccess={fetchMenu} />
 
       {menuItems.length > 0 && (
-        <CategoriesManagementSection 
-          venueId={venueId} 
+        <CategoriesManagementSection
+          venueId={venueId}
           menuItemsCount={menuItems.length}
           onRefresh={fetchMenu}
         />
@@ -201,7 +199,7 @@ export function MenuManagement({ venueId, session, refreshTrigger }: MenuManagem
         onConfirm={confirmBatchEdit}
         saving={saving}
       />
-      
+
       {selectedMenuItem && (
         <RecipeDialog
           open={recipeDialogOpen}
@@ -214,4 +212,3 @@ export function MenuManagement({ venueId, session, refreshTrigger }: MenuManagem
     </div>
   );
 }
-

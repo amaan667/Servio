@@ -18,7 +18,6 @@ class RedisCache {
     try {
       if (process.env.REDIS_URL) {
         this.redis = new Redis(process.env.REDIS_URL, {
-          retryDelayOnFailover: 100,
           maxRetriesPerRequest: 3,
           lazyConnect: true,
         });
@@ -30,7 +29,10 @@ class RedisCache {
 
         this.redis.on("error", (error) => {
           this.isConnected = false;
-          logger.warn("[REDIS] Cache connection error:", error as Record<string, unknown>);
+          logger.warn(
+            "[REDIS] Cache connection error:",
+            error as unknown as Record<string, unknown>
+          );
         });
 
         await this.redis.connect();
@@ -224,7 +226,13 @@ export function cached(ttl: number = 3600, tags: string[] = []) {
     const method = descriptor.value;
 
     descriptor.value = async function (...args: unknown[]) {
-      const cacheKey = `${target.constructor.name}:${propertyName}:${JSON.stringify(args)}`;
+      const targetName =
+        (target &&
+          typeof target === "object" &&
+          "constructor" in target &&
+          target.constructor?.name) ||
+        "Unknown";
+      const cacheKey = `${targetName}:${propertyName}:${JSON.stringify(args)}`;
 
       // Try to get from cache
       const cached = await redisCache.get(cacheKey);

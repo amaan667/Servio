@@ -75,9 +75,12 @@ export class OrderRepository extends BaseRepository<Order> {
       }
 
       return (data as Order[]) || [];
-    } catch (_error) {
-      logger.error("[ORDER_REPO] Unexpected error finding orders by venue", { error, venueId });
-      throw _error;
+    } catch (err) {
+      logger.error("[ORDER_REPO] Unexpected error finding orders by venue", {
+        error: err,
+        venueId,
+      });
+      throw err;
     }
   }
 
@@ -132,7 +135,10 @@ export class OrderRepository extends BaseRepository<Order> {
 
       return (data as Order[]) || [];
     } catch (_error) {
-      logger.error("[ORDER_REPO] Unexpected error finding recent orders", { error, venueId });
+      logger.error("[ORDER_REPO] Unexpected error finding recent orders", {
+        error: _error,
+        venueId,
+      });
       throw _error;
     }
   }
@@ -143,7 +149,7 @@ export class OrderRepository extends BaseRepository<Order> {
   async updateStatus(
     orderId: string,
     status: Order["status"],
-    notes?: string
+    _notes?: string
   ): Promise<Order | null> {
     const updateData: Partial<Order> = {
       status,
@@ -207,7 +213,7 @@ export class OrderRepository extends BaseRepository<Order> {
         byStatus,
       };
     } catch (_error) {
-      logger.error("[ORDER_REPO] Unexpected error getting order stats", { error, venueId });
+      logger.error("[ORDER_REPO] Unexpected error getting order stats", { error: _error, venueId });
       throw _error;
     }
   }
@@ -233,7 +239,10 @@ export class OrderRepository extends BaseRepository<Order> {
 
       return (data as Order[]) || [];
     } catch (_error) {
-      logger.error("[ORDER_REPO] Unexpected error bulk updating order status", { error, orderIds });
+      logger.error("[ORDER_REPO] Unexpected error bulk updating order status", {
+        error: _error,
+        orderIds,
+      });
       throw _error;
     }
   }
@@ -258,7 +267,11 @@ export class OrderRepository extends BaseRepository<Order> {
 
       return (data as Order[]) || [];
     } catch (_error) {
-      logger.error("[ORDER_REPO] Unexpected error searching orders", { error, venueId, query });
+      logger.error("[ORDER_REPO] Unexpected error searching orders", {
+        error: _error,
+        venueId,
+        query,
+      });
       throw _error;
     }
   }

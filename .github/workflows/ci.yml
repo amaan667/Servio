@@ -90,11 +90,13 @@ jobs:
       - name: Install dependencies
         run: pnpm install --frozen-lockfile
       
+      - name: Set environment variables
+        run: |
+          echo "NEXT_PUBLIC_SUPABASE_URL=${{ secrets.NEXT_PUBLIC_SUPABASE_URL }}" >> $GITHUB_ENV
+          echo "NEXT_PUBLIC_SUPABASE_ANON_KEY=${{ secrets.NEXT_PUBLIC_SUPABASE_ANON_KEY }}" >> $GITHUB_ENV
+      
       - name: Build application
         run: pnpm run build
-        env:
-          NEXT_PUBLIC_SUPABASE_URL: ${{ secrets.NEXT_PUBLIC_SUPABASE_URL }}
-          NEXT_PUBLIC_SUPABASE_ANON_KEY: ${{ secrets.NEXT_PUBLIC_SUPABASE_ANON_KEY }}
       
       - name: Check build output
         run: ls -la .next
@@ -120,12 +122,14 @@ jobs:
       - name: Install Playwright browsers
         run: npx playwright install --with-deps
       
+      - name: Set environment variables
+        run: |
+          echo "NEXT_PUBLIC_SUPABASE_URL=${{ secrets.NEXT_PUBLIC_SUPABASE_URL }}" >> $GITHUB_ENV
+          echo "NEXT_PUBLIC_SUPABASE_ANON_KEY=${{ secrets.NEXT_PUBLIC_SUPABASE_ANON_KEY }}" >> $GITHUB_ENV
+      
       - name: Run E2E tests
         run: pnpm run test:e2e
         continue-on-error: true
-        env:
-          NEXT_PUBLIC_SUPABASE_URL: ${{ secrets.NEXT_PUBLIC_SUPABASE_URL }}
-          NEXT_PUBLIC_SUPABASE_ANON_KEY: ${{ secrets.NEXT_PUBLIC_SUPABASE_ANON_KEY }}
       
       - name: Upload Playwright report
         uses: actions/upload-artifact@v4

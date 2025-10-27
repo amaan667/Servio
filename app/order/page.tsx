@@ -8,20 +8,21 @@ import { Loader2 } from "lucide-react";
 import { EnhancedPDFMenuDisplay } from "@/components/EnhancedPDFMenuDisplay";
 
 // Hooks
-import { useOrderCart } from './hooks/useOrderCart';
-import { useOrderMenu } from './hooks/useOrderMenu';
-import { useOrderSubmission } from './hooks/useOrderSubmission';
-import { useOrderSession } from './hooks/useOrderSession';
-import { useGroupSession } from './hooks/useGroupSession';
+import { useOrderCart } from "./hooks/useOrderCart";
+import { useOrderMenu } from "./hooks/useOrderMenu";
+import { useOrderSubmission } from "./hooks/useOrderSubmission";
+import { useOrderSession } from "./hooks/useOrderSession";
+import type { OrderParams } from "./types";
+import { useGroupSession } from "./hooks/useGroupSession";
 
 // Components
-import { DemoBanner } from './components/DemoBanner';
-import { OrderHeader } from './components/OrderHeader';
-import { DesktopCart } from './components/DesktopCart';
-import { MobileCart } from './components/MobileCart';
-import { MobileCartButton } from './components/MobileCartButton';
-import { CheckoutModal } from './components/CheckoutModal';
-import { GroupSizeModal } from './components/GroupSizeModal';
+import { DemoBanner } from "./components/DemoBanner";
+import { OrderHeader } from "./components/OrderHeader";
+import { DesktopCart } from "./components/DesktopCart";
+import { MobileCart } from "./components/MobileCart";
+import { MobileCartButton } from "./components/MobileCartButton";
+import { CheckoutModal } from "./components/CheckoutModal";
+import { GroupSizeModal } from "./components/GroupSizeModal";
 
 export default function CustomerOrderPage() {
   const searchParams = useSearchParams();
@@ -29,7 +30,7 @@ export default function CustomerOrderPage() {
   const tableNumber = searchParams?.get("table") || "1";
   const counterNumber = searchParams?.get("counter") || "";
   const isDemo = searchParams?.get("demo") === "1";
-  
+
   const isCounterOrder = !!counterNumber;
   const orderLocation = isCounterOrder ? counterNumber : tableNumber;
   const orderType = isCounterOrder ? "counter" : "table";
@@ -38,7 +39,7 @@ export default function CustomerOrderPage() {
   useEffect(() => {
     const fetchTier = async () => {
       if (isDemo) {
-        setSubscriptionTier('premium');
+        setSubscriptionTier("premium");
         setLoadingTier(false);
         return;
       }
@@ -47,11 +48,11 @@ export default function CustomerOrderPage() {
         const response = await fetch(`/api/venue/${venueSlug}/tier`);
         if (response.ok) {
           const data = await response.json();
-          setSubscriptionTier(data.tier || 'basic');
+          setSubscriptionTier(data.tier || "basic");
         }
       } catch (_error) {
-        logger.error('Failed to fetch venue tier', { error });
-        setSubscriptionTier('basic');
+        logger.error("Failed to fetch venue tier", { error: _error });
+        setSubscriptionTier("basic");
       } finally {
         setLoadingTier(false);
       }
@@ -68,35 +69,35 @@ export default function CustomerOrderPage() {
       counterNumber,
       orderType,
       isDemo,
-      url: typeof window !== 'undefined' ? window.location.href : 'unknown',
-      userAgent: typeof window !== 'undefined' ? navigator.userAgent : 'unknown',
-      timestamp: new Date().toISOString()
+      url: typeof window !== "undefined" ? window.location.href : "unknown",
+      userAgent: typeof window !== "undefined" ? navigator.userAgent : "unknown",
+      timestamp: new Date().toISOString(),
     };
 
     // Log to server (will appear in Railway logs)
-    fetch('/api/log-qr-scan', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify(logData)
+    fetch("/api/log-qr-scan", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(logData),
     }).catch((err) => {
       // Fallback to client log if server fails
-      logger.error('Failed to log QR scan to server', {
-        error: err instanceof Error ? err.message : String(err)
+      logger.error("Failed to log QR scan to server", {
+        error: err instanceof Error ? err.message : String(err),
       });
     });
 
     // Also log client-side for development
-    logger.info('🔍 [QR SCAN - CLIENT] Order page accessed', logData);
+    logger.info("🔍 [QR SCAN - CLIENT] Order page accessed", logData);
   }, [venueSlug, tableNumber, counterNumber, orderType, isDemo]);
 
-  const orderParams = {
+  const orderParams: OrderParams = {
     venueSlug,
     tableNumber,
     counterNumber,
     isDemo,
     isCounterOrder,
     orderLocation,
-    orderType,
+    orderType: orderType as "counter" | "table",
   };
 
   // Use custom hooks
@@ -111,23 +112,15 @@ export default function CustomerOrderPage() {
     resetCart,
   } = useOrderCart();
 
-  const {
-    menuItems,
-    loadingMenu,
-    menuError,
-    categoryOrder,
-    venueName,
-  } = useOrderMenu(venueSlug, isDemo);
+  const { menuItems, loadingMenu, menuError, categoryOrder, venueName } = useOrderMenu(
+    venueSlug,
+    isDemo
+  );
 
   const { isSubmitting, submitOrder } = useOrderSubmission();
 
-  const {
-    session,
-    customerInfo,
-    showCheckout,
-    setShowCheckout,
-    updateCustomerInfo,
-  } = useOrderSession(orderParams);
+  const { session, customerInfo, showCheckout, setShowCheckout, updateCustomerInfo } =
+    useOrderSession(orderParams);
 
   const {
     showGroupSizeModal,
@@ -146,16 +139,19 @@ export default function CustomerOrderPage() {
   } = useGroupSession(venueSlug, tableNumber, isCounterOrder);
 
   const [showMobileCart, setShowMobileCart] = useState(false);
-  const [subscriptionTier, setSubscriptionTier] = useState<'basic' | 'standard' | 'premium'>('basic');
+  const [subscriptionTier, setSubscriptionTier] = useState<"basic" | "standard" | "premium">(
+    "basic"
+  );
   const [loadingTier, setLoadingTier] = useState(true);
 
   // Log menu loading for debugging
   useEffect(() => {
-    if (!loadingMenu) { /* Empty */ }
+    if (!loadingMenu) {
+      /* Empty */
+    }
   }, [loadingMenu, menuItems.length, menuError, venueName, venueSlug]);
 
   const handleSubmitOrder = () => {
-    
     submitOrder({
       cart,
       customerInfo,
@@ -223,10 +219,7 @@ export default function CustomerOrderPage() {
         </div>
 
         {/* Mobile Cart Button */}
-        <MobileCartButton
-          totalItems={getTotalItems()}
-          onClick={() => setShowMobileCart(true)}
-        />
+        <MobileCartButton totalItems={getTotalItems()} onClick={() => setShowMobileCart(true)} />
 
         {/* Mobile Cart Modal */}
         <MobileCart
@@ -265,14 +258,14 @@ export default function CustomerOrderPage() {
         onClose={() => {
           setShowGroupSizeModal(false);
           setShowCustomGroupSize(false);
-          setCustomGroupSize('');
+          setCustomGroupSize("");
         }}
         onSetGroupSize={setGroupSize}
         onShowCustomGroupSize={() => setShowCustomGroupSize(true)}
         onSetCustomGroupSize={setCustomGroupSize}
         onHideCustomGroupSize={() => {
           setShowCustomGroupSize(false);
-          setCustomGroupSize('');
+          setCustomGroupSize("");
         }}
         onSubmit={handleGroupSizeSubmit}
         mode="initial"
@@ -286,14 +279,14 @@ export default function CustomerOrderPage() {
         onClose={() => {
           setShowGroupSizePopup(false);
           setShowCustomGroupSize(false);
-          setCustomGroupSize('');
+          setCustomGroupSize("");
         }}
         onSetGroupSize={setGroupSize}
         onShowCustomGroupSize={() => setShowCustomGroupSize(true)}
         onSetCustomGroupSize={setCustomGroupSize}
         onHideCustomGroupSize={() => {
           setShowCustomGroupSize(false);
-          setCustomGroupSize('');
+          setCustomGroupSize("");
         }}
         onSubmit={handleGroupSizeUpdate}
         mode="update"

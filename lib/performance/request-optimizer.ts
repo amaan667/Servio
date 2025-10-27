@@ -15,7 +15,7 @@ class RequestDeduplicator {
 
     // Return existing request if within dedup window
     if (pending && now - pending.timestamp < this.dedupWindow) {
-      return pending.promise;
+      return pending.promise as Promise<T>;
     }
 
     // Create new request

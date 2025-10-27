@@ -3,12 +3,13 @@
 import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import { supabaseBrowser } from "@/lib/supabase";
+import type { UserRole } from "@/lib/permissions";
 
 interface UsePageAuthOptions {
   venueId: string;
   pageName: string;
   redirectPath?: string;
-  requiredRoles?: string[];
+  requiredRoles?: UserRole[];
 }
 
 interface UsePageAuthReturn {
@@ -17,11 +18,17 @@ interface UsePageAuthReturn {
     user_metadata?: { full_name?: string };
     email?: string;
   } | null;
-  userRole: string | null;
+  userRole: UserRole | null;
   venueName: string;
   loading: boolean;
   authError: string | null;
   hasAccess: boolean;
+}
+
+// Type guard to check if a string is a valid UserRole
+function isValidUserRole(role: string | null | undefined): role is UserRole {
+  const validRoles: UserRole[] = ["owner", "manager", "staff", "kitchen", "server", "cashier"];
+  return role !== null && role !== undefined && validRoles.includes(role as UserRole);
 }
 
 /**
@@ -40,7 +47,7 @@ export function usePageAuth({
     user_metadata?: { full_name?: string };
     email?: string;
   } | null>(null);
-  const [userRole, setUserRole] = useState<string | null>(null);
+  const [userRole, setUserRole] = useState<UserRole | null>(null);
   const [venueName, setVenueName] = useState<string>("Your Venue");
   const [loading, setLoading] = useState(true);
   const [authError, setAuthError] = useState<string | null>(null);
@@ -104,7 +111,12 @@ export function usePageAuth({
         }
 
         // Owner role always takes precedence
-        const finalRole = isOwner ? "owner" : roleData?.role || "staff";
+        const roleFromDb = roleData?.role as string | null;
+        const finalRole: UserRole = isOwner
+          ? "owner"
+          : isValidUserRole(roleFromDb)
+            ? roleFromDb
+            : "staff";
         setUserRole(finalRole);
 
         // Check role-based access if required roles are specified

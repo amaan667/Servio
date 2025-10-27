@@ -5,8 +5,8 @@ export function usePaymentProcessing() {
   const processPayment = async (
     action: PaymentAction,
     checkoutData: unknown,
-    setOrderNumber: (orderNumber: string) => void,
-    setPaymentComplete: (complete: boolean) => void,
+    _setOrderNumber: (orderNumber: string) => void,
+    _setPaymentComplete: (complete: boolean) => void,
     setIsProcessing: (processing: boolean) => void,
     setError: (error: string | null) => void
   ) => {
@@ -185,7 +185,7 @@ export function usePaymentProcessing() {
             customerPhone: (checkoutData as any).customerPhone,
             cart: (checkoutData as any).cart,
             total: (checkoutData as any).total,
-            orderNumber: result.order_number || orderNumber,
+            orderNumber: result.order_number || "",
           })
         );
 
@@ -193,10 +193,10 @@ export function usePaymentProcessing() {
         window.location.href = `/order-summary?orderId=${orderId}`;
       }
     } catch (_err) {
-      setError(_err.message || "Payment failed. Please try again.");
+      setError(_err instanceof Error ? _err.message : "Payment failed. Please try again.");
       toast({
         title: "Payment Error",
-        description: _err.message || "Payment failed. Please try again.",
+        description: _err instanceof Error ? _err.message : "Payment failed. Please try again.",
         variant: "destructive",
       });
     } finally {

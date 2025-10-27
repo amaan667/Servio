@@ -322,7 +322,10 @@ Be smart about matching:
       },
     });
   } catch (_error) {
-    logger.error("[HYBRID MERGE] Unexpected error:", _error);
+    logger.error(
+      "[HYBRID MERGE] Unexpected error:",
+      _error instanceof Error ? _error : { error: String(_error) }
+    );
 
     return NextResponse.json(
       {

@@ -93,7 +93,7 @@ export function useDesignSettings(venueId: string) {
     } catch (_error) {
       toast({
         title: "Save failed",
-        description: _error.message || "Failed to save design settings.",
+        description: _error instanceof Error ? _error.message : "Failed to save design settings.",
         variant: "destructive",
       });
     } finally {

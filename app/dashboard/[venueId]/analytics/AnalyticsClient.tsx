@@ -5,35 +5,47 @@ import Link from "next/link";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { BarChart } from "lucide-react";
-import { useToast } from '@/hooks/use-toast';
-import { useCsvDownload } from '@/hooks/useCsvDownload';
+import { useToast } from "@/hooks/use-toast";
+import { useCsvDownload } from "@/hooks/useCsvDownload";
 
 // Hooks
-import { useAnalyticsData, TimePeriod } from './hooks/useAnalyticsData';
+import { useAnalyticsData, TimePeriod } from "./hooks/useAnalyticsData";
 
 // Components
-import { StatCard } from './components/StatCard';
-import { RevenueChart } from './components/RevenueChart';
-import { TopSellingItemsChart } from './components/TopSellingItemsChart';
-import { TimePeriodSelector } from './components/TimePeriodSelector';
+import { StatCard } from "./components/StatCard";
+import { RevenueChart } from "./components/RevenueChart";
+import { TopSellingItemsChart } from "./components/TopSellingItemsChart";
+import { TimePeriodSelector } from "./components/TimePeriodSelector";
 
 // Utils
-import { prepareCSVData, generateCSV, getCSVFilename } from './utils/csvExport';
+import { prepareCSVData, generateCSV, getCSVFilename } from "./utils/csvExport";
 import { Clock, DollarSign, ShoppingBag } from "lucide-react";
 
 /**
  * Analytics Client Component
  * Displays venue analytics including revenue, orders, and top-selling items
- * 
+ *
  * Refactored: Extracted hooks, components, and utilities for better organization
  * Original: 868 lines → Now: ~150 lines
  */
 
-export default function AnalyticsClient({ venueId, venueName }: { venueId: string; venueName: string }) {
-  const [timePeriod, setTimePeriod] = useState<TimePeriod>('30d');
-  const [customDateRange, setCustomDateRange] = useState<{ start: string; end: string } | null>(null);
-  
-  const { loading, error, analyticsData, filteredOrders, refetch } = useAnalyticsData(venueId, timePeriod, customDateRange);
+export default function AnalyticsClient({
+  venueId,
+  venueName: _venueName,
+}: {
+  venueId: string;
+  venueName: string;
+}) {
+  const [timePeriod, setTimePeriod] = useState<TimePeriod>("30d");
+  const [customDateRange, setCustomDateRange] = useState<{ start: string; end: string } | null>(
+    null
+  );
+
+  const { loading, error, analyticsData, filteredOrders, refetch } = useAnalyticsData(
+    venueId,
+    timePeriod,
+    customDateRange
+  );
   const { toast } = useToast();
   const { downloadCSV, isDownloading } = useCsvDownload();
 
@@ -42,7 +54,7 @@ export default function AnalyticsClient({ venueId, venueName }: { venueId: strin
       toast({
         title: "No Data to Export",
         description: "No data to export for the selected date range.",
-        variant: "default"
+        variant: "default",
       });
       return;
     }
@@ -57,14 +69,13 @@ export default function AnalyticsClient({ venueId, venueName }: { venueId: strin
       toast({
         title: "CSV Downloaded",
         description: `Analytics data exported successfully (${csvRows.length} rows).`,
-        variant: "default"
+        variant: "default",
       });
     } catch (_error) {
-
       toast({
         title: "Export Failed",
         description: "Failed to export analytics data. Please try again.",
-        variant: "destructive"
+        variant: "destructive",
       });
     }
   }, [filteredOrders, downloadCSV, toast]);
@@ -135,8 +146,8 @@ export default function AnalyticsClient({ venueId, venueName }: { venueId: strin
             <BarChart className="h-16 w-16 text-gray-700 mx-auto mb-6" />
             <h3 className="text-xl font-semibold text-gray-900 mb-2">No Analytics Data Yet</h3>
             <p className="text-gray-900 mb-6 max-w-md mx-auto">
-              Analytics will appear here once you start receiving orders. 
-              Generate QR codes and start taking orders to see your business insights.
+              Analytics will appear here once you start receiving orders. Generate QR codes and
+              start taking orders to see your business insights.
             </p>
             <div className="flex justify-center space-x-4">
               <Button asChild>

@@ -61,7 +61,7 @@ import { MenuItem, ActiveTab, PreviewMode } from "./types";
 
 export default function MenuManagementClient({
   venueId,
-  canEdit = true,
+  canEdit: _canEdit = true,
 }: {
   venueId: string;
   canEdit?: boolean;
@@ -160,7 +160,7 @@ export default function MenuManagementClient({
     } catch (_error) {
       toast({
         title: "Error",
-        description: _error.message || "Failed to save menu item",
+        description: _error instanceof Error ? _error.message : "Failed to save menu item",
         variant: "destructive",
       });
     }
@@ -188,7 +188,7 @@ export default function MenuManagementClient({
     } catch (_error) {
       toast({
         title: "Error",
-        description: _error.message || "Failed to delete menu item",
+        description: _error instanceof Error ? _error.message : "Failed to delete menu item",
         variant: "destructive",
       });
     }
@@ -272,7 +272,7 @@ export default function MenuManagementClient({
     } catch (_error) {
       toast({
         title: "Error",
-        description: _error.message || "Failed to clear menu",
+        description: _error instanceof Error ? _error.message : "Failed to clear menu",
         variant: "destructive",
       });
     } finally {
@@ -615,7 +615,11 @@ export default function MenuManagementClient({
               isOrdering={false}
             />
           ) : previewMode === "styled" ? (
-            <MenuPreview venueId={venueId} menuItems={menuItems} categoryOrder={categoryOrder} />
+            <MenuPreview
+              venueId={venueId}
+              menuItems={menuItems as any}
+              categoryOrder={categoryOrder}
+            />
           ) : (
             <Card>
               <CardContent className="p-6">

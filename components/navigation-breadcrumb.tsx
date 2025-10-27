@@ -3,8 +3,8 @@
 import { useRouter, usePathname, useParams } from "next/navigation";
 import { Button } from "@/components/ui/button";
 import { Home, ArrowLeft, LayoutDashboard } from "lucide-react";
-import Link from 'next/link';
-import { useMemo } from 'react';
+import Link from "next/link";
+import { useMemo } from "react";
 
 interface NavigationBreadcrumbProps {
   customBackPath?: string;
@@ -21,27 +21,27 @@ function extractVenueId(pathname: string | null) {
 }
 
 export default function NavigationBreadcrumb({
-  customBackPath,
-  customBackLabel,
+  customBackPath: _customBackPath,
+  customBackLabel: _customBackLabel,
   showBackButton = true,
   venueId: propVenueId,
   isDemo = false,
 }: NavigationBreadcrumbProps) {
   const pathnameRaw = usePathname();
-  const pathname = pathnameRaw || '';
+  const pathname = pathnameRaw || "";
   const params = useParams() as { venueId?: string };
-  
+
   // [NAV] Extract venueId from params or pathname, fallback to prop
   const venueId = useMemo(
     () => params?.venueId ?? extractVenueId(pathname) ?? propVenueId,
     [params?.venueId, pathname, propVenueId]
   );
-  
+
   // [NAV] Determine home link - always route to actual home page
-  const homeLink = '/';
-  
+  const homeLink = "/";
+
   // [NAV] Determine dashboard link - route to dashboard if we have a venueId
-  const dashboardLink = venueId ? `/dashboard/${venueId}` : '/';
+  const dashboardLink = venueId ? `/dashboard/${venueId}` : "/";
 
   const getPageTitle = () => {
     if (pathname.includes("/dashboard")) {
@@ -79,7 +79,12 @@ export default function NavigationBreadcrumb({
       <nav aria-label="Breadcrumb" className="mb-4">
         <ol className="flex items-center gap-2 text-sm">
           <li>
-            <Button asChild variant="ghost" size="sm" className="flex items-center gap-1 text-foreground hover:text-foreground font-medium">
+            <Button
+              asChild
+              variant="ghost"
+              size="sm"
+              className="flex items-center gap-1 text-foreground hover:text-foreground font-medium"
+            >
               <Link href={homeLink}>
                 <>
                   <Home className="h-4 w-4" />
@@ -101,7 +106,12 @@ export default function NavigationBreadcrumb({
       <nav aria-label="Breadcrumb" className="mb-4">
         <ol className="flex items-center gap-2 text-sm">
           <li>
-            <Button asChild variant="ghost" size="sm" className="flex items-center gap-1 text-foreground hover:text-foreground font-medium">
+            <Button
+              asChild
+              variant="ghost"
+              size="sm"
+              className="flex items-center gap-1 text-foreground hover:text-foreground font-medium"
+            >
               <Link href={homeLink}>
                 <>
                   <Home className="h-4 w-4" />
@@ -123,7 +133,12 @@ export default function NavigationBreadcrumb({
       <nav aria-label="Breadcrumb" className="mb-4">
         <ol className="flex items-center gap-2 text-sm">
           <li>
-            <Button asChild variant="ghost" size="sm" className="flex items-center gap-1 text-foreground hover:text-foreground font-medium">
+            <Button
+              asChild
+              variant="ghost"
+              size="sm"
+              className="flex items-center gap-1 text-foreground hover:text-foreground font-medium"
+            >
               <Link href={homeLink}>
                 <>
                   <Home className="h-4 w-4" />
@@ -145,7 +160,12 @@ export default function NavigationBreadcrumb({
       <nav aria-label="Breadcrumb" className="mb-4">
         <ol className="flex items-center gap-2 text-sm">
           <li>
-            <Button asChild variant="ghost" size="sm" className="flex items-center gap-1 text-foreground hover:text-foreground font-medium">
+            <Button
+              asChild
+              variant="ghost"
+              size="sm"
+              className="flex items-center gap-1 text-foreground hover:text-foreground font-medium"
+            >
               <Link href={homeLink}>
                 <>
                   <Home className="h-4 w-4" />
@@ -156,7 +176,12 @@ export default function NavigationBreadcrumb({
           </li>
           <li className="text-foreground/60">←</li>
           <li>
-            <Button asChild variant="ghost" size="sm" className="flex items-center gap-1 text-foreground hover:text-foreground font-medium">
+            <Button
+              asChild
+              variant="ghost"
+              size="sm"
+              className="flex items-center gap-1 text-foreground hover:text-foreground font-medium"
+            >
               <Link href={dashboardLink}>
                 <>
                   <LayoutDashboard className="h-4 w-4" />
@@ -177,7 +202,12 @@ export default function NavigationBreadcrumb({
     <nav aria-label="Breadcrumb" className="mb-4">
       <ol className="flex items-center gap-2 text-sm">
         <li>
-          <Button asChild variant="ghost" size="sm" className="flex items-center gap-1 text-foreground hover:text-foreground font-medium">
+          <Button
+            asChild
+            variant="ghost"
+            size="sm"
+            className="flex items-center gap-1 text-foreground hover:text-foreground font-medium"
+          >
             <Link href={homeLink}>
               <>
                 <Home className="h-4 w-4" />
@@ -188,7 +218,12 @@ export default function NavigationBreadcrumb({
         </li>
         <li className="text-foreground/40">←</li>
         <li>
-          <Button asChild variant="ghost" size="sm" className="flex items-center gap-1 text-foreground hover:text-foreground font-medium">
+          <Button
+            asChild
+            variant="ghost"
+            size="sm"
+            className="flex items-center gap-1 text-foreground hover:text-foreground font-medium"
+          >
             <Link href={dashboardLink}>
               <>
                 <LayoutDashboard className="h-4 w-4" />

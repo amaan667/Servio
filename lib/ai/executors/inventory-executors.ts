@@ -60,15 +60,15 @@ export async function executeInventoryAdjustStock(
     change_type: params.reason,
     quantity_change: adj.delta,
     notes: adj.notes || `AI Assistant: ${params.reason}`,
-    created_by: userId,
+    created_by: _userId as string,
   }));
 
-  const { error: ledgerError } = await supabase
-    .from("stock_ledgers")
-    .insert(ledgerEntries);
+  const { error: ledgerError } = await supabase.from("stock_ledgers").insert(ledgerEntries);
 
   if (ledgerError) {
-    throw new AIAssistantError("Failed to create stock ledger entries", "EXECUTION_FAILED", ledgerError);
+    throw new AIAssistantError("Failed to create stock ledger entries", "EXECUTION_FAILED", {
+      error: ledgerError,
+    });
   }
 
   for (const adj of params.adjustments) {
@@ -78,7 +78,7 @@ export async function executeInventoryAdjustStock(
     });
 
     if (error) {
-      throw new AIAssistantError("Failed to adjust stock", "EXECUTION_FAILED", error);
+      throw new AIAssistantError("Failed to adjust stock", "EXECUTION_FAILED", { error });
     }
   }
 
@@ -96,7 +96,7 @@ export async function executeInventorySetParLevels(
   _userId: string,
   preview: boolean
 ): Promise<AIPreviewDiff | AIExecutionResult> {
-  const typedParams = params as { strategy: string; bufferPercentage: number };
+  const typedParams = _params as { strategy: string; bufferPercentage: number };
   const supabase = await createClient();
 
   const { data: ingredients } = await supabase
@@ -108,7 +108,7 @@ export async function executeInventorySetParLevels(
     throw new AIAssistantError("No ingredients found", "INVALID_PARAMS");
   }
 
-  const updates = ingredients.map(ing => {
+  const updates = ingredients.map((ing) => {
     let parLevel = ing.on_hand;
     if (typedParams.strategy === "last_7_days" || typedParams.strategy === "last_30_days") {
       parLevel = Math.ceil(ing.on_hand * (1 + typedParams.bufferPercentage / 100));
@@ -119,8 +119,8 @@ export async function executeInventorySetParLevels(
   if (preview) {
     return {
       toolName: "inventory.set_par_levels",
-      before: updates.map(u => ({ id: u.id, name: u.name, parLevel: u.currentPar })),
-      after: updates.map(u => ({ id: u.id, name: u.name, parLevel: u.newPar })),
+      before: updates.map((u) => ({ id: u.id, name: u.name, parLevel: u.currentPar })),
+      after: updates.map((u) => ({ id: u.id, name: u.name, parLevel: u.newPar })),
       impact: {
         itemsAffected: updates.length,
         description: `Par levels will be set based on ${typedParams.strategy} with ${typedParams.bufferPercentage}% buffer`,
@@ -129,10 +129,7 @@ export async function executeInventorySetParLevels(
   }
 
   for (const update of updates) {
-    await supabase
-      .from("ingredients")
-      .update({ par_level: update.newPar })
-      .eq("id", update.id);
+    await supabase.from("ingredients").update({ par_level: update.newPar }).eq("id", update.id);
   }
 
   return {
@@ -149,11 +146,11 @@ export async function executeInventoryGeneratePurchaseOrder(
   _userId: string,
   preview: boolean
 ): Promise<AIPreviewDiff | AIExecutionResult> {
-  const typedParams = params as { threshold: string; format: string };
+  const typedParams = _params as { threshold: string; format: string };
   const supabase = await createClient();
 
   const thresholdField = typedParams.threshold === "par_level" ? "par_level" : "reorder_level";
-  
+
   const { data: lowStock } = await supabase
     .from("v_stock_levels")
     .select("*")
@@ -169,7 +166,7 @@ export async function executeInventoryGeneratePurchaseOrder(
     };
   }
 
-  const poItems = lowStock.map(item => ({
+  const poItems = lowStock.map((item) => ({
     ingredient: item.name,
     currentStock: item.on_hand,
     orderQty: Math.max(0, (item[thresholdField] || 0) - item.on_hand),
@@ -196,4 +193,3 @@ export async function executeInventoryGeneratePurchaseOrder(
     auditId: "",
   };
 }
-

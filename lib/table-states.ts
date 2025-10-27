@@ -3,7 +3,7 @@
  * Implements the comprehensive table merge logic as specified
  */
 
-export type TableState = 'FREE' | 'OCCUPIED' | 'RESERVED' | 'BLOCKED' | 'CLEANING';
+export type TableState = "FREE" | "OCCUPIED" | "RESERVED" | "BLOCKED" | "CLEANING";
 
 export interface TableStateInfo {
   state: TableState;
@@ -19,7 +19,15 @@ export interface TableStateInfo {
 }
 
 export interface MergeScenario {
-  type: 'FREE_FREE' | 'FREE_OCCUPIED' | 'FREE_RESERVED' | 'OCCUPIED_OCCUPIED' | 'RESERVED_RESERVED' | 'RESERVED_OCCUPIED' | 'BLOCKED' | 'INVALID';
+  type:
+    | "FREE_FREE"
+    | "FREE_OCCUPIED"
+    | "FREE_RESERVED"
+    | "OCCUPIED_OCCUPIED"
+    | "RESERVED_RESERVED"
+    | "RESERVED_OCCUPIED"
+    | "BLOCKED"
+    | "INVALID";
   allowed: boolean;
   requiresConfirmation: boolean;
   warning?: string;
@@ -39,81 +47,85 @@ interface TableData {
  * Determines the current state of a table based on its session and reservation data
  */
 export function getTableState(table: TableData): TableStateInfo {
-  const hasSession = !!table.session_id && table.status !== 'FREE';
+  const hasSession = !!table.session_id && table.status !== "FREE";
   const hasActiveOrder = !!table.order_id;
   const hasReservation = !!(table.reserved_now_id || table.reserved_later_id);
   const sessionStatus = table.status;
 
   // Priority order: BLOCKED > OCCUPIED > RESERVED > FREE
-  
-  // Check if table is blocked/cleaning (manual status)
-  if (sessionStatus === 'CLEANING' || sessionStatus === 'BLOCKED') {
-    return {
-      state: 'BLOCKED',
-      reason: 'Table is blocked or being cleaned',
-      details: {
-        hasSession,
-        hasActiveOrder,
-        hasReservation,
-        sessionStatus
-      }
-    };
-  }
 
-  // Check if table is occupied (has live session OR active order)
-  if (hasSession && ['ORDERING', 'IN_PREP', 'READY', 'SERVED', 'AWAITING_BILL'].includes(sessionStatus)) {
+  // Check if table is blocked/cleaning (manual status)
+  if (sessionStatus === "CLEANING" || sessionStatus === "BLOCKED") {
     return {
-      state: 'OCCUPIED',
-      reason: `Table has active session (${sessionStatus})`,
+      state: "BLOCKED",
+      reason: "Table is blocked or being cleaned",
       details: {
         hasSession,
         hasActiveOrder,
         hasReservation,
         sessionStatus,
-        orderStatus: table.order_status
-      }
+      },
+    };
+  }
+
+  // Check if table is occupied (has live session OR active order)
+  if (
+    hasSession &&
+    sessionStatus &&
+    ["ORDERING", "IN_PREP", "READY", "SERVED", "AWAITING_BILL"].includes(sessionStatus)
+  ) {
+    return {
+      state: "OCCUPIED",
+      reason: `Table has active session (${sessionStatus})`,
+      details: {
+        hasSession,
+        hasActiveOrder,
+        hasReservation,
+        sessionStatus: sessionStatus || undefined,
+        orderStatus: table.order_status || undefined,
+      },
     };
   }
 
   // Check if table has active order even without session
   if (hasActiveOrder) {
     return {
-      state: 'OCCUPIED',
-      reason: 'Table has active order',
+      state: "OCCUPIED",
+      reason: "Table has active order",
       details: {
         hasSession,
         hasActiveOrder,
         hasReservation,
-        orderStatus: table.order_status
-      }
+        orderStatus: table.order_status || undefined,
+      },
     };
   }
 
   // Check if table is reserved
-  if (hasReservation || sessionStatus === 'RESERVED') {
+  if (hasReservation || sessionStatus === "RESERVED") {
     return {
-      state: 'RESERVED',
-      reason: 'Table has active reservation',
+      state: "RESERVED",
+      reason: "Table has active reservation",
       details: {
         hasSession,
         hasActiveOrder,
         hasReservation,
-        sessionStatus,
-        reservationStatus: hasReservation ? 'ACTIVE' : undefined
-      }
+        sessionStatus: sessionStatus || undefined,
+        reservationStatus: hasReservation ? "ACTIVE" : undefined,
+      },
     };
   }
 
   // Default to FREE
   return {
-    state: 'FREE',
-    reason: 'Table is available for seating',
+    state: "FREE",
+    reason: "Table is available for seating",
     details: {
       hasSession,
       hasActiveOrder,
       hasReservation,
-      sessionStatus
-    }
+      sessionStatus: sessionStatus || undefined,
+    },
   };
 }
 
@@ -125,162 +137,174 @@ export function getMergeScenario(sourceTable: TableData, targetTable: TableData)
   const targetState = getTableState(targetTable);
 
   // Blocked tables are never eligible for merging
-  if (sourceState.state === 'BLOCKED' || targetState.state === 'BLOCKED') {
+  if (sourceState.state === "BLOCKED" || targetState.state === "BLOCKED") {
     return {
-      type: 'BLOCKED',
+      type: "BLOCKED",
       allowed: false,
       requiresConfirmation: false,
-      description: 'Blocked tables cannot be merged'
+      description: "Blocked tables cannot be merged",
     };
   }
 
   // Check if tables are already merged (same session)
-  if (sourceTable.session_id && targetTable.session_id && sourceTable.session_id === targetTable.session_id) {
+  if (
+    sourceTable.session_id &&
+    targetTable.session_id &&
+    sourceTable.session_id === targetTable.session_id
+  ) {
     return {
-      type: 'INVALID',
+      type: "INVALID",
       allowed: false,
       requiresConfirmation: false,
-      description: 'Tables are already merged'
+      description: "Tables are already merged",
     };
   }
 
   // Scenario 1: Free + Free ✅ (always allowed)
-  if (sourceState.state === 'FREE' && targetState.state === 'FREE') {
+  if (sourceState.state === "FREE" && targetState.state === "FREE") {
     return {
-      type: 'FREE_FREE',
+      type: "FREE_FREE",
       allowed: true,
       requiresConfirmation: false,
-      description: 'Combine two empty tables for a bigger party'
+      description: "Combine two empty tables for a bigger party",
     };
   }
 
   // Scenario 2: Free + Occupied ✅ (Expansion)
-  if (sourceState.state === 'FREE' && targetState.state === 'OCCUPIED') {
+  if (sourceState.state === "FREE" && targetState.state === "OCCUPIED") {
     return {
-      type: 'FREE_OCCUPIED',
+      type: "FREE_OCCUPIED",
       allowed: true,
       requiresConfirmation: false,
-      description: 'Add free table to occupied table for expansion'
+      description: "Add free table to occupied table for expansion",
     };
   }
 
   // Scenario 3: Occupied + Free ✅ (Expansion)
-  if (sourceState.state === 'OCCUPIED' && targetState.state === 'FREE') {
+  if (sourceState.state === "OCCUPIED" && targetState.state === "FREE") {
     return {
-      type: 'FREE_OCCUPIED',
+      type: "FREE_OCCUPIED",
       allowed: true,
       requiresConfirmation: false,
-      description: 'Add free table to occupied table for expansion'
+      description: "Add free table to occupied table for expansion",
     };
   }
 
   // Scenario 4: Free + Reserved ⚠️ (Expansion of reservation)
-  if (sourceState.state === 'FREE' && targetState.state === 'RESERVED') {
+  if (sourceState.state === "FREE" && targetState.state === "RESERVED") {
     return {
-      type: 'FREE_RESERVED',
+      type: "FREE_RESERVED",
       allowed: true,
       requiresConfirmation: false,
-      description: 'Add free table to reservation for larger party'
+      description: "Add free table to reservation for larger party",
     };
   }
 
   // Scenario 5: Reserved + Free ⚠️ (Expansion of reservation)
-  if (sourceState.state === 'RESERVED' && targetState.state === 'FREE') {
+  if (sourceState.state === "RESERVED" && targetState.state === "FREE") {
     return {
-      type: 'FREE_RESERVED',
+      type: "FREE_RESERVED",
       allowed: true,
       requiresConfirmation: false,
-      description: 'Add free table to reservation for larger party'
+      description: "Add free table to reservation for larger party",
     };
   }
 
   // Scenario 6: Occupied + Occupied ⚠️ (Merge sessions)
-  if (sourceState.state === 'OCCUPIED' && targetState.state === 'OCCUPIED') {
+  if (sourceState.state === "OCCUPIED" && targetState.state === "OCCUPIED") {
     return {
-      type: 'OCCUPIED_OCCUPIED',
+      type: "OCCUPIED_OCCUPIED",
       allowed: true,
       requiresConfirmation: true,
-      warning: 'This will merge two active bills into one. Outstanding unpaid balances will be combined.',
-      description: 'Merge two active sessions (requires confirmation)'
+      warning:
+        "This will merge two active bills into one. Outstanding unpaid balances will be combined.",
+      description: "Merge two active sessions (requires confirmation)",
     };
   }
 
   // Scenario 7: Reserved + Reserved ⚠️ (Same reservation only)
-  if (sourceState.state === 'RESERVED' && targetState.state === 'RESERVED') {
+  if (sourceState.state === "RESERVED" && targetState.state === "RESERVED") {
     // Check if it's the same reservation
-    const sameReservation = (
-      (sourceTable.reserved_now_id && sourceTable.reserved_now_id === targetTable.reserved_now_id) ||
-      (sourceTable.reserved_later_id && sourceTable.reserved_later_id === targetTable.reserved_later_id)
-    );
+    const sameReservation =
+      (sourceTable.reserved_now_id &&
+        sourceTable.reserved_now_id === targetTable.reserved_now_id) ||
+      (sourceTable.reserved_later_id &&
+        sourceTable.reserved_later_id === targetTable.reserved_later_id);
 
     if (sameReservation) {
       return {
-        type: 'RESERVED_RESERVED',
+        type: "RESERVED_RESERVED",
         allowed: true,
         requiresConfirmation: true,
-        warning: 'This will merge two tables for the same reservation.',
-        description: 'Merge tables for the same reservation'
+        warning: "This will merge two tables for the same reservation.",
+        description: "Merge tables for the same reservation",
       };
     } else {
       return {
-        type: 'RESERVED_RESERVED',
+        type: "RESERVED_RESERVED",
         allowed: false,
         requiresConfirmation: false,
-        warning: 'Cannot merge tables with different reservations (would mix different parties).',
-        description: 'Different reservations cannot be merged'
+        warning: "Cannot merge tables with different reservations (would mix different parties).",
+        description: "Different reservations cannot be merged",
       };
     }
   }
 
   // Scenario 8: Reserved + Occupied ❌ (different parties)
-  if ((sourceState.state === 'RESERVED' && targetState.state === 'OCCUPIED') ||
-      (sourceState.state === 'OCCUPIED' && targetState.state === 'RESERVED')) {
+  if (
+    (sourceState.state === "RESERVED" && targetState.state === "OCCUPIED") ||
+    (sourceState.state === "OCCUPIED" && targetState.state === "RESERVED")
+  ) {
     return {
-      type: 'RESERVED_OCCUPIED',
+      type: "RESERVED_OCCUPIED",
       allowed: false,
       requiresConfirmation: false,
-      warning: 'Cannot merge a future reservation with a current live party.',
-      description: 'Cannot merge reservation with occupied table'
+      warning: "Cannot merge a future reservation with a current live party.",
+      description: "Cannot merge reservation with occupied table",
     };
   }
 
   // Default case
   return {
-    type: 'INVALID',
+    type: "INVALID",
     allowed: false,
     requiresConfirmation: false,
-    description: 'Invalid merge scenario'
+    description: "Invalid merge scenario",
   };
 }
 
 /**
  * Filters tables for merge selection based on source table state
  */
-export function getMergeableTables(sourceTable: Record<string, unknown>, availableTables: Record<string, unknown>[], showAllTables: boolean = false) {
+export function getMergeableTables(
+  sourceTable: Record<string, unknown>,
+  availableTables: Record<string, unknown>[],
+  showAllTables: boolean = false
+) {
   const sourceState = getTableState(sourceTable);
-  
+
   return availableTables
-    .filter(table => table.id !== sourceTable.id) // Exclude source table
-    .map(table => {
+    .filter((table) => table.id !== sourceTable.id) // Exclude source table
+    .map((table) => {
       const state = getTableState(table);
       const scenario = getMergeScenario(sourceTable, table);
-      
+
       return {
         ...table,
         state: state.state,
         stateInfo: state,
         mergeScenario: scenario,
         selectable: scenario.allowed,
-        requiresConfirmation: scenario.requiresConfirmation
+        requiresConfirmation: scenario.requiresConfirmation,
       };
     })
-    .filter(table => {
+    .filter((table) => {
       if (showAllTables) {
         // Show all tables, but mark ineligible ones
         return true;
       } else {
         // Default: only show FREE tables (safe, most common case)
-        return table.state === 'FREE';
+        return table.state === "FREE";
       }
     });
 }
@@ -290,12 +314,18 @@ export function getMergeableTables(sourceTable: Record<string, unknown>, availab
  */
 export function getStateDisplayLabel(state: TableState): string {
   switch (state) {
-    case 'FREE': return 'Free';
-    case 'OCCUPIED': return 'Occupied';
-    case 'RESERVED': return 'Reserved';
-    case 'BLOCKED': return 'Blocked';
-    case 'CLEANING': return 'Cleaning';
-    default: return 'Unknown';
+    case "FREE":
+      return "Free";
+    case "OCCUPIED":
+      return "Occupied";
+    case "RESERVED":
+      return "Reserved";
+    case "BLOCKED":
+      return "Blocked";
+    case "CLEANING":
+      return "Cleaning";
+    default:
+      return "Unknown";
   }
 }
 
@@ -304,12 +334,18 @@ export function getStateDisplayLabel(state: TableState): string {
  */
 export function getStateColorClass(state: TableState): string {
   switch (state) {
-    case 'FREE': return 'bg-green-100 text-green-800 border-green-200';
-    case 'OCCUPIED': return 'bg-yellow-100 text-yellow-800 border-yellow-200';
-    case 'RESERVED': return 'bg-blue-100 text-blue-800 border-blue-200';
-    case 'BLOCKED': return 'bg-red-100 text-red-800 border-red-200';
-    case 'CLEANING': return 'bg-gray-100 text-gray-800 border-gray-200';
-    default: return 'bg-gray-100 text-gray-800 border-gray-200';
+    case "FREE":
+      return "bg-green-100 text-green-800 border-green-200";
+    case "OCCUPIED":
+      return "bg-yellow-100 text-yellow-800 border-yellow-200";
+    case "RESERVED":
+      return "bg-blue-100 text-blue-800 border-blue-200";
+    case "BLOCKED":
+      return "bg-red-100 text-red-800 border-red-200";
+    case "CLEANING":
+      return "bg-gray-100 text-gray-800 border-gray-200";
+    default:
+      return "bg-gray-100 text-gray-800 border-gray-200";
   }
 }
 
@@ -319,11 +355,17 @@ export function getStateColorClass(state: TableState): string {
 export function getStateIcon(state: TableState) {
   // This will be imported from lucide-react in the component
   switch (state) {
-    case 'FREE': return 'CheckCircle2';
-    case 'OCCUPIED': return 'Users';
-    case 'RESERVED': return 'Calendar';
-    case 'BLOCKED': return 'XCircle';
-    case 'CLEANING': return 'Sparkles';
-    default: return 'Circle';
+    case "FREE":
+      return "CheckCircle2";
+    case "OCCUPIED":
+      return "Users";
+    case "RESERVED":
+      return "Calendar";
+    case "BLOCKED":
+      return "XCircle";
+    case "CLEANING":
+      return "Sparkles";
+    default:
+      return "Circle";
   }
 }

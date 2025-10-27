@@ -146,7 +146,7 @@ export default function OrderFeedbackForm({ venueId, orderId }: OrderFeedbackFor
           fetchQuestions();
         }
       )
-      .subscribe((status: unknown) => {
+      .subscribe((_status: unknown) => {
         /* Empty */
       });
 
@@ -172,21 +172,21 @@ export default function OrderFeedbackForm({ venueId, orderId }: OrderFeedbackFor
               return {
                 question_id: question.id,
                 type: "stars" as const,
-                answer_stars: answer || 0,
+                answer_stars: typeof answer === "number" ? answer : 0,
                 order_id: orderId,
               };
             case "multiple_choice":
               return {
                 question_id: question.id,
                 type: "multiple_choice" as const,
-                answer_choice: answer || "",
+                answer_choice: typeof answer === "string" ? answer : "",
                 order_id: orderId,
               };
             case "paragraph":
               return {
                 question_id: question.id,
                 type: "paragraph" as const,
-                answer_text: answer || "",
+                answer_text: typeof answer === "string" ? answer : "",
                 order_id: orderId,
               };
             default:
@@ -197,9 +197,9 @@ export default function OrderFeedbackForm({ venueId, orderId }: OrderFeedbackFor
           // Filter out empty answers
           switch (answer.type) {
             case "stars":
-              return answer.answer_stars > 0;
+              return typeof answer.answer_stars === "number" && answer.answer_stars > 0;
             case "multiple_choice":
-              return (answer.answer_choice as any).trim() !== "";
+              return typeof answer.answer_choice === "string" && answer.answer_choice.trim() !== "";
             case "paragraph":
               return (answer.answer_text as any).trim() !== "";
             default:
@@ -339,14 +339,18 @@ export default function OrderFeedbackForm({ venueId, orderId }: OrderFeedbackFor
                   {question.type === "stars" && (
                     <div className="space-y-2">
                       <StarRating
-                        value={answers[question.id] || 0}
-                        onChange={(rating) =>
+                        value={
+                          typeof answers[question.id] === "number"
+                            ? (answers[question.id] as number)
+                            : 0
+                        }
+                        onChange={(rating: number) =>
                           setAnswers((prev) => ({ ...prev, [question.id]: rating }))
                         }
                       />
                       <p className="text-sm text-gray-900">
-                        {answers[question.id]
-                          ? `${answers[question.id]} star${answers[question.id] > 1 ? "s" : ""} selected`
+                        {answers[question.id] && typeof answers[question.id] === "number"
+                          ? `${answers[question.id] as number} star${(answers[question.id] as number) > 1 ? "s" : ""} selected`
                           : "Please select a rating"}
                       </p>
                     </div>
@@ -354,8 +358,12 @@ export default function OrderFeedbackForm({ venueId, orderId }: OrderFeedbackFor
 
                   {question.type === "multiple_choice" && question.choices && (
                     <RadioGroup
-                      value={answers[question.id] || ""}
-                      onValueChange={(value) =>
+                      value={
+                        typeof answers[question.id] === "string"
+                          ? (answers[question.id] as string)
+                          : ""
+                      }
+                      onValueChange={(value: string) =>
                         setAnswers((prev) => ({ ...prev, [question.id]: value }))
                       }
                     >
@@ -373,8 +381,12 @@ export default function OrderFeedbackForm({ venueId, orderId }: OrderFeedbackFor
                   {question.type === "paragraph" && (
                     <div className="space-y-2">
                       <Textarea
-                        value={answers[question.id] || ""}
-                        onChange={(e) =>
+                        value={
+                          typeof answers[question.id] === "string"
+                            ? (answers[question.id] as string)
+                            : ""
+                        }
+                        onChange={(e: React.ChangeEvent<HTMLTextAreaElement>) =>
                           setAnswers((prev) => ({ ...prev, [question.id]: e.target.value }))
                         }
                         placeholder="Share your thoughts..."
@@ -382,7 +394,13 @@ export default function OrderFeedbackForm({ venueId, orderId }: OrderFeedbackFor
                         maxLength={600}
                       />
                       <p className="text-sm text-gray-900">
-                        {(answers[question.id] || "").length}/600 characters
+                        {
+                          (typeof answers[question.id] === "string"
+                            ? (answers[question.id] as string)
+                            : ""
+                          ).length
+                        }
+                        /600 characters
                       </p>
                     </div>
                   )}

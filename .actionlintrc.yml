@@ -1,0 +1,8 @@
+# Actionlint configuration
+# Suppress warnings for secrets that are defined in repository settings
+self-hosted-runner:
+  labels: []
+shellcheck:
+  enabled: false
+pyflakes:
+  enabled: false

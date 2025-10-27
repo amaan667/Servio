@@ -1,14 +1,14 @@
-'use client';
+"use client";
 
-import { useState, useEffect } from 'react';
-import { useRouter } from 'next/navigation';
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
-import { Button } from '@/components/ui/button';
-import { CheckCircle, ExternalLink, Sparkles, Users } from 'lucide-react';
-import OnboardingProgress from '@/components/onboarding-progress';
-import { createClient } from '@/lib/supabase';
-import Confetti from 'react-confetti';
-import { useWindowSize } from '@/hooks/use-mobile';
+import { useState, useEffect } from "react";
+import { useRouter } from "next/navigation";
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import { Button } from "@/components/ui/button";
+import { CheckCircle, ExternalLink, Sparkles, Users } from "lucide-react";
+import OnboardingProgress from "@/components/onboarding-progress";
+import { createClient } from "@/lib/supabase";
+import Confetti from "react-confetti";
+import { useWindowSize } from "@/hooks/use-mobile";
 
 export default function OnboardingTestOrderPage() {
   const router = useRouter();
@@ -25,7 +25,10 @@ export default function OnboardingTestOrderPage() {
   const checkAuth = async () => {
     try {
       const supabase = await createClient();
-      const { data: { user } } = await supabase.auth.getSession();
+      const {
+        data: { session },
+      } = await supabase.auth.getSession();
+      const user = session?.user;
 
       if (!user) {
         setLoading(false);
@@ -34,9 +37,9 @@ export default function OnboardingTestOrderPage() {
 
       // Get venue
       const { data: venues } = await supabase
-        .from('venues')
-        .select('venue_id, name')
-        .eq('owner_user_id', user.id)
+        .from("venues")
+        .select("venue_id, name")
+        .eq("owner_user_id", user.id)
         .limit(1);
 
       if (!venues || venues.length === 0) {
@@ -47,7 +50,6 @@ export default function OnboardingTestOrderPage() {
       setVenueId(venues[0]?.venue_id);
       setLoading(false);
     } catch (_error) {
-
       setLoading(false);
     }
   };
@@ -55,19 +57,19 @@ export default function OnboardingTestOrderPage() {
   const handleOpenCustomerView = () => {
     if (!venueId) return;
 
-    const baseUrl = process.env.NEXT_PUBLIC_SITE_URL || 'https://servio-production.up.railway.app';
+    const baseUrl = process.env.NEXT_PUBLIC_SITE_URL || "https://servio-production.up.railway.app";
     const orderUrl = `${baseUrl}/order?venue=${venueId}&table=1`;
 
     // Open in new tab
-    window.open(orderUrl, '_blank');
+    window.open(orderUrl, "_blank");
 
     // Simulate order completion (in real scenario, this would be tracked via orders table)
     setTimeout(() => {
       setOrderCompleted(true);
       setShowConfetti(true);
       // Store completion
-      localStorage.setItem('onboarding_complete', 'true');
-      localStorage.setItem('onboarding_step', '3');
+      localStorage.setItem("onboarding_complete", "true");
+      localStorage.setItem("onboarding_step", "3");
 
       // Stop confetti after 5 seconds
       setTimeout(() => setShowConfetti(false), 5000);
@@ -75,20 +77,20 @@ export default function OnboardingTestOrderPage() {
   };
 
   const handleCompleteLater = () => {
-    localStorage.setItem('onboarding_step', '3');
+    localStorage.setItem("onboarding_step", "3");
     if (venueId) {
       router.push(`/dashboard/${venueId}`);
     } else {
-      router.push('/');
+      router.push("/");
     }
   };
 
   const handleGoToDashboard = () => {
-    localStorage.setItem('onboarding_complete', 'true');
+    localStorage.setItem("onboarding_complete", "true");
     if (venueId) {
       router.push(`/dashboard/${venueId}`);
     } else {
-      router.push('/');
+      router.push("/");
     }
   };
 
@@ -161,9 +163,15 @@ export default function OnboardingTestOrderPage() {
             <div className="bg-green-50 border border-green-200 rounded-lg p-4">
               <h4 className="font-semibold text-green-900 mb-2">💳 Test Card Details:</h4>
               <div className="text-sm text-green-800 space-y-1">
-                <p><strong>Card Number:</strong> 4242 4242 4242 4242</p>
-                <p><strong>Expiry:</strong> Any future date</p>
-                <p><strong>CVC:</strong> Any 3 digits</p>
+                <p>
+                  <strong>Card Number:</strong> 4242 4242 4242 4242
+                </p>
+                <p>
+                  <strong>Expiry:</strong> Any future date
+                </p>
+                <p>
+                  <strong>CVC:</strong> Any 3 digits
+                </p>
                 <p className="text-xs mt-2 text-green-700">
                   This is Stripe's test card - no real charges will be made
                 </p>
@@ -172,11 +180,7 @@ export default function OnboardingTestOrderPage() {
 
             {/* Skip Button */}
             <div className="pt-4 border-t">
-              <Button
-                variant="ghost"
-                onClick={handleCompleteLater}
-                className="w-full"
-              >
+              <Button variant="ghost" onClick={handleCompleteLater} className="w-full">
                 I'll Test This Later
               </Button>
             </div>
@@ -258,14 +262,18 @@ export default function OnboardingTestOrderPage() {
               <div className="grid grid-cols-2 gap-3">
                 <Button
                   variant="outline"
-                  onClick={() => router.push(venueId ? `/dashboard/${venueId}/analytics` : '/dashboard')}
+                  onClick={() =>
+                    router.push(venueId ? `/dashboard/${venueId}/analytics` : "/dashboard")
+                  }
                   className="w-full"
                 >
                   📊 View Analytics
                 </Button>
                 <Button
                   variant="outline"
-                  onClick={() => router.push(venueId ? `/dashboard/${venueId}/settings/staff` : '/dashboard')}
+                  onClick={() =>
+                    router.push(venueId ? `/dashboard/${venueId}/settings/staff` : "/dashboard")
+                  }
                   className="w-full"
                 >
                   <Users className="w-4 h-4 mr-2" />
@@ -279,4 +287,3 @@ export default function OnboardingTestOrderPage() {
     </div>
   );
 }
-

@@ -5,16 +5,17 @@ import { useAuth } from "@/app/auth/AuthProvider";
 import { supabaseBrowser } from "@/lib/supabase";
 import AnalyticsClient from "./AnalyticsClient";
 import RoleBasedNavigation from "@/components/RoleBasedNavigation";
+import { UserRole } from "@/lib/permissions";
 
 export default function AnalyticsClientPage({ venueId }: { venueId: string }) {
   const { user } = useAuth();
-  
+
   // Cache user role to prevent flicker
   const getCachedRole = () => {
-    if (typeof window === 'undefined' || !user?.id) return null;
+    if (typeof window === "undefined" || !user?.id) return null;
     return sessionStorage.getItem(`user_role_${user.id}_${venueId}`);
   };
-  
+
   const [userRole, setUserRole] = useState<string | null>(getCachedRole());
 
   useEffect(() => {
@@ -67,7 +68,7 @@ export default function AnalyticsClientPage({ venueId }: { venueId: string }) {
         {user && userRole && (
           <RoleBasedNavigation
             venueId={venueId}
-            userRole={userRole as unknown}
+            userRole={userRole as UserRole}
             userName={user.user_metadata?.full_name || user.email?.split("@")[0] || "User"}
           />
         )}
@@ -79,7 +80,7 @@ export default function AnalyticsClientPage({ venueId }: { venueId: string }) {
           </p>
         </div>
 
-        <AnalyticsClient venueId={venueId} />
+        <AnalyticsClient venueId={venueId} venueName="" />
       </div>
     </div>
   );

@@ -19,7 +19,7 @@ export function createLazyComponent<P extends object>(
 
   const WrappedComponent = (props: P) => (
     <Suspense fallback={FallbackComponent ? <FallbackComponent /> : <div>Loading...</div>}>
-      <LazyComponent {...(props as unknown)} />
+      <LazyComponent {...(props as any)} />
     </Suspense>
   );
 

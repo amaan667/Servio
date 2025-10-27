@@ -38,7 +38,7 @@ interface FeatureSectionsProps {
 }
 
 export function FeatureSections({ venueId, userRole }: FeatureSectionsProps) {
-  const handleFeatureClick = (feature: Feature, section: string) => {
+  const handleFeatureClick = (_feature: Feature, _section: string) => {
     // Feature click tracking removed - add analytics if needed
   };
 

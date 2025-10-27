@@ -215,7 +215,7 @@ export function MenuUploadCard({ venueId, onSuccess }: MenuUploadCardProps) {
     } catch (_error) {
       toast({
         title: "Upload failed",
-        description: _error.message,
+        description: _error instanceof Error ? _error.message : "Upload failed",
         variant: "destructive",
       });
     } finally {

@@ -148,7 +148,7 @@ export function EnhancedFeedbackSystem({ venueId }: FeedbackSystemProps) {
       setFeedback(filteredFeedback);
       calculateStats(filteredFeedback);
     } catch (_err) {
-      setError(_err.message);
+      setError(_err instanceof Error ? _err.message : "Failed to submit feedback");
     } finally {
       setLoading(false);
     }

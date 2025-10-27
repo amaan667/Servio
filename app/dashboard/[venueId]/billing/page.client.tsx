@@ -5,6 +5,7 @@ import { useAuth } from "@/app/auth/AuthProvider";
 import { supabaseBrowser } from "@/lib/supabase";
 import BillingClient from "./billing-client";
 import RoleBasedNavigation from "@/components/RoleBasedNavigation";
+import { UserRole } from "@/lib/permissions";
 
 export default function BillingClientPage({ venueId }: { venueId: string }) {
   const { user } = useAuth();
@@ -60,7 +61,7 @@ export default function BillingClientPage({ venueId }: { venueId: string }) {
         {user && userRole && (
           <RoleBasedNavigation
             venueId={venueId}
-            userRole={userRole as unknown}
+            userRole={userRole as UserRole}
             userName={user.user_metadata?.full_name || user.email?.split("@")[0] || "User"}
           />
         )}

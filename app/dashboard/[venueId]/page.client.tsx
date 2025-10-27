@@ -14,7 +14,11 @@ import TrialStatusBanner from "@/components/TrialStatusBanner";
 // Removed PullToRefresh - not needed, causes build issues
 
 // Hooks
-import { useDashboardData } from "./hooks/useDashboardData";
+import {
+  useDashboardData,
+  type DashboardCounts,
+  type DashboardStats,
+} from "./hooks/useDashboardData";
 import { useDashboardRealtime } from "./hooks/useDashboardRealtime";
 import { useAnalyticsData } from "./hooks/useAnalyticsData";
 
@@ -44,8 +48,8 @@ const DashboardClient = React.memo(function DashboardClient({
   initialStats,
 }: {
   venueId: string;
-  initialCounts?: unknown;
-  initialStats?: unknown;
+  initialCounts?: DashboardCounts;
+  initialStats?: DashboardStats;
 }) {
   const router = useRouter();
 
@@ -88,7 +92,7 @@ const DashboardClient = React.memo(function DashboardClient({
     refreshCounts: dashboardData.refreshCounts,
     loadStats: dashboardData.loadStats,
     updateRevenueIncrementally: dashboardData.updateRevenueIncrementally,
-    venue: dashboardData.venue,
+    venue: dashboardData.venue as { venue_id?: string } | null | undefined,
   });
 
   // Fetch live analytics data for charts
@@ -118,7 +122,13 @@ const DashboardClient = React.memo(function DashboardClient({
         handleRefresh();
         const url = new URL(window.location.href);
         url.searchParams.delete("upgrade");
-        window.history.replaceState({ /* Empty */ }, document.title, url.toString());
+        window.history.replaceState(
+          {
+            /* Empty */
+          },
+          document.title,
+          url.toString()
+        );
       }, 1000);
     }
   }, [handleRefresh]);
@@ -247,7 +257,6 @@ const DashboardClient = React.memo(function DashboardClient({
     }
 
     checkAuth();
-     
   }, [venueId]);
 
   // NO AUTH REDIRECTS - User requested ZERO sign-in redirects
@@ -259,10 +268,10 @@ const DashboardClient = React.memo(function DashboardClient({
   return (
     <div className="min-h-screen bg-gray-50/50">
       {/* Trial Status Banner - Only for owners */}
-      <TrialStatusBanner userRole={userRole} />
+      <TrialStatusBanner userRole={userRole || undefined} />
 
       {/* Quick Actions Toolbar */}
-      <QuickActionsToolbar venueId={venueId} userRole={userRole} />
+      <QuickActionsToolbar venueId={venueId} userRole={userRole || undefined} />
 
       {/* Main Content */}
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 space-y-8">
@@ -388,7 +397,7 @@ const DashboardClient = React.memo(function DashboardClient({
           }}
           topSellingItems={analyticsData.data?.topSellingItems}
           yesterdayComparison={analyticsData.data?.yesterdayComparison}
-          userRole={userRole}
+          userRole={userRole || undefined}
         />
 
         {/* Today at a Glance */}
@@ -400,7 +409,7 @@ const DashboardClient = React.memo(function DashboardClient({
         />
 
         {/* Feature Sections */}
-        <FeatureSections venueId={venueId} userRole={userRole} />
+        <FeatureSections venueId={venueId} userRole={userRole || undefined} />
       </div>
 
       {/* Footer Modals */}

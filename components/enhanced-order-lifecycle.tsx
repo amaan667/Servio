@@ -6,19 +6,19 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { Progress } from "@/components/ui/progress";
-import { 
-  Clock, 
-  CheckCircle, 
-  XCircle, 
-  AlertTriangle, 
-  User, 
+import {
+  Clock,
+  CheckCircle,
+  XCircle,
+  AlertTriangle,
+  User,
   Hash,
   Play,
   Pause,
   SkipForward,
   RotateCcw,
   Timer,
-  Zap
+  Zap,
 } from "lucide-react";
 import { supabaseBrowser as createClient } from "@/lib/supabase";
 import { logger } from "@/lib/logger";
@@ -46,7 +46,7 @@ interface Order {
   scheduled_for?: string;
   prep_lead_minutes?: number;
   estimated_prep_time?: number;
-  source?: 'qr' | 'counter'; // Order source - qr for table orders, counter for counter orders
+  source?: "qr" | "counter"; // Order source - qr for table orders, counter for counter orders
   items: OrderItem[];
   created_at: string;
   updated_at: string;
@@ -61,104 +61,108 @@ interface OrderLifecycleProps {
 // Enhanced order status definitions with timing and automation rules
 const ORDER_STATUSES = {
   PLACED: {
-    label: 'Order Placed',
+    label: "Order Placed",
     icon: Clock,
-    color: 'bg-yellow-100 text-yellow-800',
-    nextStatuses: ['ACCEPTED', 'CANCELLED'],
+    color: "bg-yellow-100 text-yellow-800",
+    nextStatuses: ["ACCEPTED", "CANCELLED"],
     autoTransition: false,
     estimatedTime: 0,
-    description: 'Order received, waiting for confirmation'
+    description: "Order received, waiting for confirmation",
   },
   ACCEPTED: {
-    label: 'Order Accepted',
+    label: "Order Accepted",
     icon: CheckCircle,
-    color: 'bg-blue-100 text-blue-800',
-    nextStatuses: ['IN_PREP', 'CANCELLED'],
+    color: "bg-blue-100 text-blue-800",
+    nextStatuses: ["IN_PREP", "CANCELLED"],
     autoTransition: false,
     estimatedTime: 0,
-    description: 'Order confirmed, ready to start preparation'
+    description: "Order confirmed, ready to start preparation",
   },
   IN_PREP: {
-    label: 'In Preparation',
+    label: "In Preparation",
     icon: Play,
-    color: 'bg-orange-100 text-orange-800',
-    nextStatuses: ['READY', 'CANCELLED'],
+    color: "bg-orange-100 text-orange-800",
+    nextStatuses: ["READY", "CANCELLED"],
     autoTransition: true,
     estimatedTime: 15, // minutes
-    description: 'Kitchen is preparing the order'
+    description: "Kitchen is preparing the order",
   },
   READY: {
-    label: 'Ready for Pickup',
+    label: "Ready for Pickup",
     icon: CheckCircle,
-    color: 'bg-green-100 text-green-800',
-    nextStatuses: ['COMPLETED', 'CANCELLED'], // Updated to go directly to COMPLETED
+    color: "bg-green-100 text-green-800",
+    nextStatuses: ["COMPLETED", "CANCELLED"], // Updated to go directly to COMPLETED
     autoTransition: false,
     estimatedTime: 0,
-    description: 'Order is ready to be served'
+    description: "Order is ready to be served",
   },
   SERVING: {
-    label: 'Being Served',
+    label: "Being Served",
     icon: User,
-    color: 'bg-purple-100 text-purple-800',
-    nextStatuses: ['COMPLETED', 'CANCELLED'],
+    color: "bg-purple-100 text-purple-800",
+    nextStatuses: ["COMPLETED", "CANCELLED"],
     autoTransition: true,
     estimatedTime: 5, // minutes
-    description: 'Order is being delivered to customer'
+    description: "Order is being delivered to customer",
   },
   COMPLETED: {
-    label: 'Completed',
+    label: "Completed",
     icon: CheckCircle,
-    color: 'bg-green-100 text-green-800',
+    color: "bg-green-100 text-green-800",
     nextStatuses: [],
     autoTransition: false,
     estimatedTime: 0,
-    description: 'Order has been successfully completed'
+    description: "Order has been successfully completed",
   },
   CANCELLED: {
-    label: 'Cancelled',
+    label: "Cancelled",
     icon: XCircle,
-    color: 'bg-red-100 text-red-800',
+    color: "bg-red-100 text-red-800",
     nextStatuses: [],
     autoTransition: false,
     estimatedTime: 0,
-    description: 'Order has been cancelled'
+    description: "Order has been cancelled",
   },
   REFUNDED: {
-    label: 'Refunded',
+    label: "Refunded",
     icon: RotateCcw,
-    color: 'bg-gray-100 text-gray-800',
+    color: "bg-gray-100 text-gray-800",
     nextStatuses: [],
     autoTransition: false,
     estimatedTime: 0,
-    description: 'Order has been refunded'
+    description: "Order has been refunded",
   },
   EXPIRED: {
-    label: 'Expired',
+    label: "Expired",
     icon: AlertTriangle,
-    color: 'bg-gray-100 text-gray-800',
+    color: "bg-gray-100 text-gray-800",
     nextStatuses: [],
     autoTransition: false,
     estimatedTime: 0,
-    description: 'Order has expired'
-  }
+    description: "Order has expired",
+  },
 };
 
 // Helper function to get button label based on order source
 const getButtonLabel = (status: string, orderSource?: string) => {
   switch (status) {
-    case 'READY':
-      return orderSource === 'counter' ? 'Mark as Ready for Pickup' : 'Mark as Served';
-    case 'COMPLETED':
-      return 'Complete Order';
+    case "READY":
+      return orderSource === "counter" ? "Mark as Ready for Pickup" : "Mark as Served";
+    case "COMPLETED":
+      return "Complete Order";
     default:
       return ORDER_STATUSES[status as keyof typeof ORDER_STATUSES]?.label || status;
   }
 };
 
-export function EnhancedOrderLifecycle({ venueId, order, onUpdate }: OrderLifecycleProps) {
+export function EnhancedOrderLifecycle({
+  venueId: _venueId,
+  order,
+  onUpdate,
+}: OrderLifecycleProps) {
   // Determine if it's a counter order
   const isCounterOrder = (order: Order) => {
-    return order.source === 'counter' || (order.table_number !== null && order.table_number >= 10);
+    return order.source === "counter" || (order.table_number !== null && order.table_number >= 10);
   };
   const [updating, setUpdating] = useState(false);
   const [autoTransitionTimer, setAutoTransitionTimer] = useState<NodeJS.Timeout | null>(null);
@@ -188,23 +192,24 @@ export function EnhancedOrderLifecycle({ venueId, order, onUpdate }: OrderLifecy
     if (!currentStatus?.autoTransition || !currentStatus.estimatedTime) return;
 
     const timeUntilTransition = Math.max(0, currentStatus.estimatedTime - timeInCurrentStatus);
-    
+
     if (timeUntilTransition <= 0) {
       // Auto-advance to next logical status
       const nextStatus = getNextLogicalStatus(order.order_status);
       if (nextStatus) {
-
         updateOrderStatus(nextStatus);
       }
     } else {
       // Set timer for auto-transition
-      const timer = setTimeout(() => {
-        const nextStatus = getNextLogicalStatus(order.order_status);
-        if (nextStatus) {
-
-          updateOrderStatus(nextStatus);
-        }
-      }, Math.min(timeUntilTransition * 60 * 1000, 15000)); // Cap at 15 seconds max
+      const timer = setTimeout(
+        () => {
+          const nextStatus = getNextLogicalStatus(order.order_status);
+          if (nextStatus) {
+            updateOrderStatus(nextStatus);
+          }
+        },
+        Math.min(timeUntilTransition * 60 * 1000, 15000)
+      ); // Cap at 15 seconds max
 
       setAutoTransitionTimer(timer);
     }
@@ -218,10 +223,10 @@ export function EnhancedOrderLifecycle({ venueId, order, onUpdate }: OrderLifecy
 
   const getNextLogicalStatus = (currentStatus: string): string | null => {
     switch (currentStatus) {
-      case 'IN_PREP':
-        return 'READY';
-      case 'SERVING':
-        return 'COMPLETED';
+      case "IN_PREP":
+        return "READY";
+      case "SERVING":
+        return "COMPLETED";
       default:
         return null;
     }
@@ -234,15 +239,15 @@ export function EnhancedOrderLifecycle({ venueId, order, onUpdate }: OrderLifecy
 
     try {
       const supabase = createClient();
-      if (!supabase) throw new Error('Supabase client not available');
+      if (!supabase) throw new Error("Supabase client not available");
 
       const { error } = await supabase
-        .from('orders')
-        .update({ 
+        .from("orders")
+        .update({
           order_status: newStatus,
-          updated_at: new Date().toISOString()
+          updated_at: new Date().toISOString(),
         })
-        .eq('id', order.id);
+        .eq("id", order.id);
 
       if (error) {
         throw new Error(error.message);
@@ -257,15 +262,15 @@ export function EnhancedOrderLifecycle({ venueId, order, onUpdate }: OrderLifecy
   };
 
   const getStatusProgress = () => {
-    const statusOrder = ['PLACED', 'ACCEPTED', 'IN_PREP', 'READY', 'SERVING', 'COMPLETED'];
+    const statusOrder = ["PLACED", "ACCEPTED", "IN_PREP", "READY", "SERVING", "COMPLETED"];
     const currentIndex = statusOrder.indexOf(order.order_status);
     return currentIndex >= 0 ? ((currentIndex + 1) / statusOrder.length) * 100 : 0;
   };
 
   const getEstimatedCompletionTime = () => {
-    if (order.order_status === 'COMPLETED') return 0;
-    
-    const statusOrder = ['PLACED', 'ACCEPTED', 'IN_PREP', 'READY', 'SERVING', 'COMPLETED'];
+    if (order.order_status === "COMPLETED") return 0;
+
+    const statusOrder = ["PLACED", "ACCEPTED", "IN_PREP", "READY", "SERVING", "COMPLETED"];
     const currentIndex = statusOrder.indexOf(order.order_status);
     if (currentIndex < 0) return 0;
 
@@ -287,28 +292,28 @@ export function EnhancedOrderLifecycle({ venueId, order, onUpdate }: OrderLifecy
   };
 
   const getUrgencyLevel = () => {
-    if (order.order_status === 'COMPLETED' || order.order_status === 'CANCELLED') return 'none';
-    
+    if (order.order_status === "COMPLETED" || order.order_status === "CANCELLED") return "none";
+
     const timeInStatus = timeInCurrentStatus;
     const estimatedTime = currentStatus?.estimatedTime || 0;
-    
-    if (timeInStatus > estimatedTime * 1.5) return 'critical';
-    if (timeInStatus > estimatedTime * 1.2) return 'warning';
-    return 'normal';
+
+    if (timeInStatus > estimatedTime * 1.5) return "critical";
+    if (timeInStatus > estimatedTime * 1.2) return "warning";
+    return "normal";
   };
 
   const urgencyColors = {
-    normal: 'text-green-600',
-    warning: 'text-orange-600',
-    critical: 'text-red-600',
-    none: 'text-gray-900'
+    normal: "text-green-600",
+    warning: "text-orange-600",
+    critical: "text-red-600",
+    none: "text-gray-900",
   };
 
   const urgencyIcons = {
     normal: Clock,
     warning: AlertTriangle,
     critical: Zap,
-    none: Clock
+    none: Clock,
   };
 
   const UrgencyIcon = urgencyIcons[getUrgencyLevel() as keyof typeof urgencyIcons];
@@ -318,14 +323,12 @@ export function EnhancedOrderLifecycle({ venueId, order, onUpdate }: OrderLifecy
       <CardHeader>
         <CardTitle className="flex items-center justify-between">
           <span>Order #{order.id.slice(-6).toUpperCase()}</span>
-          <Badge className={currentStatus?.color || 'bg-gray-100 text-gray-800'}>
+          <Badge className={currentStatus?.color || "bg-gray-100 text-gray-800"}>
             {currentStatus?.icon && <currentStatus.icon className="h-3 w-3 mr-1" />}
             {currentStatus?.label || order.order_status}
           </Badge>
         </CardTitle>
-        <CardDescription>
-          {currentStatus?.description || 'Order management'}
-        </CardDescription>
+        <CardDescription>{currentStatus?.description || "Order management"}</CardDescription>
       </CardHeader>
       <CardContent className="space-y-4">
         {/* Order Progress */}
@@ -335,20 +338,32 @@ export function EnhancedOrderLifecycle({ venueId, order, onUpdate }: OrderLifecy
             <span className="text-gray-900">{Math.round(getStatusProgress())}%</span>
           </div>
           <Progress value={getStatusProgress()} className="h-2" />
-          
+
           {/* Status Timeline */}
           <div className="flex justify-between text-xs text-gray-900 mt-2">
-            {['PLACED', 'ACCEPTED', 'IN_PREP', 'READY', 'SERVING', 'COMPLETED'].map((status, index) => {
-              const isActive = status === order.order_status;
-              const isCompleted = ['PLACED', 'ACCEPTED', 'IN_PREP', 'READY', 'SERVING', 'COMPLETED'].indexOf(order.order_status) >= index;
-              
-              return (
-                <div key={status} className={`flex flex-col items-center ${isActive ? 'text-blue-600' : isCompleted ? 'text-green-600' : 'text-gray-700'}`}>
-                  <div className={`w-2 h-2 rounded-full mb-1 ${isActive ? 'bg-blue-600' : isCompleted ? 'bg-green-600' : 'bg-gray-300'}`} />
-                  <span className="text-center">{ORDER_STATUSES[status as keyof typeof ORDER_STATUSES]?.label || status}</span>
-                </div>
-              );
-            })}
+            {["PLACED", "ACCEPTED", "IN_PREP", "READY", "SERVING", "COMPLETED"].map(
+              (status, index) => {
+                const isActive = status === order.order_status;
+                const isCompleted =
+                  ["PLACED", "ACCEPTED", "IN_PREP", "READY", "SERVING", "COMPLETED"].indexOf(
+                    order.order_status
+                  ) >= index;
+
+                return (
+                  <div
+                    key={status}
+                    className={`flex flex-col items-center ${isActive ? "text-blue-600" : isCompleted ? "text-green-600" : "text-gray-700"}`}
+                  >
+                    <div
+                      className={`w-2 h-2 rounded-full mb-1 ${isActive ? "bg-blue-600" : isCompleted ? "bg-green-600" : "bg-gray-300"}`}
+                    />
+                    <span className="text-center">
+                      {ORDER_STATUSES[status as keyof typeof ORDER_STATUSES]?.label || status}
+                    </span>
+                  </div>
+                );
+              }
+            )}
           </div>
         </div>
 
@@ -361,7 +376,7 @@ export function EnhancedOrderLifecycle({ venueId, order, onUpdate }: OrderLifecy
           <div>
             <div className="text-sm text-gray-900">Estimated Time</div>
             <div className="font-semibold">
-              {currentStatus?.estimatedTime ? formatTime(currentStatus.estimatedTime) : 'N/A'}
+              {currentStatus?.estimatedTime ? formatTime(currentStatus.estimatedTime) : "N/A"}
             </div>
           </div>
           <div>
@@ -370,7 +385,9 @@ export function EnhancedOrderLifecycle({ venueId, order, onUpdate }: OrderLifecy
           </div>
           <div>
             <div className="text-sm text-gray-900">Urgency</div>
-            <div className={`flex items-center ${urgencyColors[getUrgencyLevel() as keyof typeof urgencyColors]}`}>
+            <div
+              className={`flex items-center ${urgencyColors[getUrgencyLevel() as keyof typeof urgencyColors]}`}
+            >
               <UrgencyIcon className="h-4 w-4 mr-1" />
               <span className="capitalize">{getUrgencyLevel()}</span>
             </div>
@@ -386,7 +403,7 @@ export function EnhancedOrderLifecycle({ venueId, order, onUpdate }: OrderLifecy
                 key={nextStatus}
                 onClick={() => updateOrderStatus(nextStatus)}
                 disabled={updating}
-                variant={nextStatus === 'CANCELLED' ? 'destructive' : 'default'}
+                variant={nextStatus === "CANCELLED" ? "destructive" : "default"}
                 size="sm"
                 className="flex items-center gap-2"
               >
@@ -405,13 +422,13 @@ export function EnhancedOrderLifecycle({ venueId, order, onUpdate }: OrderLifecy
             onClick={() => setShowAdvancedOptions(!showAdvancedOptions)}
             className="w-full"
           >
-            {showAdvancedOptions ? 'Hide' : 'Show'} Advanced Options
+            {showAdvancedOptions ? "Hide" : "Show"} Advanced Options
           </Button>
-          
+
           {showAdvancedOptions && (
             <div className="space-y-2 p-3 border rounded-lg bg-gray-50">
               <div className="text-sm font-medium">Manual Overrides</div>
-              
+
               {/* Skip Status */}
               <div className="flex gap-2">
                 <Button
@@ -427,12 +444,12 @@ export function EnhancedOrderLifecycle({ venueId, order, onUpdate }: OrderLifecy
                   <SkipForward className="h-4 w-4 mr-1" />
                   Skip to Next
                 </Button>
-                
+
                 <Button
                   variant="outline"
                   size="sm"
-                  onClick={() => updateOrderStatus('COMPLETED')}
-                  disabled={updating || order.order_status === 'COMPLETED'}
+                  onClick={() => updateOrderStatus("COMPLETED")}
+                  disabled={updating || order.order_status === "COMPLETED"}
                   className="flex-1"
                 >
                   <CheckCircle className="h-4 w-4 mr-1" />
@@ -450,14 +467,13 @@ export function EnhancedOrderLifecycle({ venueId, order, onUpdate }: OrderLifecy
                     const newTime = new Date();
                     newTime.setMinutes(newTime.getMinutes() - 5);
                     // This would need a custom API endpoint to update the updated_at timestamp
-
                   }}
                   disabled={updating}
                 >
                   <Timer className="h-4 w-4 mr-1" />
                   -5 min
                 </Button>
-                
+
                 <Button
                   variant="outline"
                   size="sm"
@@ -466,7 +482,6 @@ export function EnhancedOrderLifecycle({ venueId, order, onUpdate }: OrderLifecy
                     const newTime = new Date();
                     newTime.setMinutes(newTime.getMinutes() + 5);
                     // This would need a custom API endpoint to update the updated_at timestamp
-
                   }}
                   disabled={updating}
                 >
@@ -483,7 +498,7 @@ export function EnhancedOrderLifecycle({ venueId, order, onUpdate }: OrderLifecy
           <div className="text-sm font-medium">Order Details</div>
           <div className="grid grid-cols-2 gap-4 text-sm">
             <div>
-              <span className="text-gray-900">{isCounterOrder(order) ? 'Counter' : 'Table'}:</span>
+              <span className="text-gray-900">{isCounterOrder(order) ? "Counter" : "Table"}:</span>
               <span className="ml-2 font-medium">{order.table_number}</span>
             </div>
             <div>
@@ -492,7 +507,9 @@ export function EnhancedOrderLifecycle({ venueId, order, onUpdate }: OrderLifecy
             </div>
             <div>
               <span className="text-gray-900">Total:</span>
-              <span className="ml-2 font-medium text-green-600">£{order.total_amount.toFixed(2)}</span>
+              <span className="ml-2 font-medium text-green-600">
+                £{order.total_amount.toFixed(2)}
+              </span>
             </div>
             <div>
               <span className="text-gray-900">Items:</span>
@@ -506,7 +523,7 @@ export function EnhancedOrderLifecycle({ venueId, order, onUpdate }: OrderLifecy
           <Alert>
             <Timer className="h-4 w-4" />
             <AlertDescription>
-              This order will automatically advance to the next status in{' '}
+              This order will automatically advance to the next status in{" "}
               <span className="font-medium">
                 {Math.max(0, (currentStatus.estimatedTime || 0) - timeInCurrentStatus)} minutes
               </span>

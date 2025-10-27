@@ -67,7 +67,7 @@ Rules:
       throw new Error("No response from Vision AI");
     }
 
-    logger.info("[VISION] Item extraction response length:", text.length);
+    logger.info("[VISION] Item extraction response length:", { length: text.length });
 
     // Extract JSON from response (might be wrapped in markdown)
     const jsonMatch = text.match(/\[[\s\S]*\]/);
@@ -82,7 +82,7 @@ Rules:
       return [];
     }
 
-    logger.info("[VISION] Extracted items:", json.length);
+    logger.info("[VISION] Extracted items:", { count: json.length });
     return json;
   } catch (_err) {
     logger.error("Failed to parse item extraction JSON:", text);
@@ -160,7 +160,7 @@ Return ONLY the JSON array, no explanation.
       throw new Error("No response from Vision AI");
     }
 
-    logger.info("[VISION] Raw response length:", text.length);
+    logger.info("[VISION] Raw response length:", { length: text.length });
     logger.info("[VISION] First 200 chars:", text.substring(0, 200));
 
     // Extract JSON from response (might be wrapped in markdown or have explanation text)
@@ -178,12 +178,12 @@ Return ONLY the JSON array, no explanation.
       return [];
     }
 
-    logger.info("[VISION] Parsed positions:", positions.length);
+    logger.info("[VISION] Parsed positions:", { count: positions.length });
 
     // Log first few positions for debugging
 
     // Validate positions
-    positions.forEach((pos: any, index: number) => {
+    positions.forEach((pos: any, _index: number) => {
       if (!pos.name || !pos.x1 || !pos.y1 || !pos.x2 || !pos.y2) {
         /* Empty */
       }

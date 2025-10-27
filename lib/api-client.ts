@@ -13,7 +13,12 @@ export interface FetchOptions extends RequestInit {
 /**
  * Authenticated fetch - automatically includes auth token
  */
-export async function fetchWithAuth(url: string, options: FetchOptions = { /* Empty */ }): Promise<Response> {
+export async function fetchWithAuth(
+  url: string,
+  options: FetchOptions = {
+    /* Empty */
+  }
+): Promise<Response> {
   const supabase = supabaseBrowser();
 
   // Get the current session
@@ -22,9 +27,9 @@ export async function fetchWithAuth(url: string, options: FetchOptions = { /* Em
   } = await supabase.auth.getSession();
 
   // Build headers
-  const headers: HeadersInit = {
+  const headers: Record<string, string> = {
     "Content-Type": "application/json",
-    ...options.headers,
+    ...(options.headers as Record<string, string>),
   };
 
   // Add auth token if available

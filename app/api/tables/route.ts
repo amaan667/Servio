@@ -117,8 +117,8 @@ export async function GET(req: Request) {
 
     if (tablesWithoutSessions.length > 0) {
       for (const table of tablesWithoutSessions) {
-        const tableId =
-          (table as { table_id?: string; id?: string }).table_id || (table as { id: string }).id;
+        const tableWithId = table as { table_id?: string; id?: string };
+        const tableId = tableWithId.table_id || tableWithId.id;
         const { error: sessionError } = await (adminSupabase as any).from("table_sessions").insert({
           venue_id: venueId,
           table_id: tableId,
@@ -146,15 +146,15 @@ export async function GET(req: Request) {
       // Update the tables with the new sessions
       tablesWithSessions.forEach((table) => {
         if (!table.session_id) {
-          const tableId =
-            (table as { table_id?: string; id?: string }).table_id || (table as { id: string }).id;
+          const tableWithId = table as { table_id?: string; id?: string };
+          const tableId = tableWithId.table_id || tableWithId.id;
           const newSession = updatedSessions?.find(
             (s: Record<string, unknown>) => (s.table_id as string) === tableId
           ) as Record<string, unknown> | undefined;
           if (newSession) {
-            table.session_id = newSession.id;
-            table.status = newSession.status;
-            table.opened_at = newSession.opened_at;
+            table.session_id = newSession.id as string | null;
+            table.status = newSession.status as string;
+            table.opened_at = newSession.opened_at as string | null;
           }
         }
       });

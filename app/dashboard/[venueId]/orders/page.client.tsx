@@ -5,17 +5,20 @@ import { useAuth } from "@/app/auth/AuthProvider";
 import { supabaseBrowser } from "@/lib/supabase";
 import OrdersClient from "./OrdersClient";
 import RoleBasedNavigation from "@/components/RoleBasedNavigation";
+import type { UserRole } from "@/lib/permissions";
+import { isValidUserRole } from "@/lib/utils/userRole";
 
 export default function OrdersClientPage({ venueId }: { venueId: string }) {
   const { user } = useAuth();
-  
+
   // Cache user role to prevent flicker
-  const getCachedRole = () => {
-    if (typeof window === 'undefined' || !user?.id) return null;
-    return sessionStorage.getItem(`user_role_${user.id}_${venueId}`);
+  const getCachedRole = (): UserRole | null => {
+    if (typeof window === "undefined" || !user?.id) return null;
+    const cached = sessionStorage.getItem(`user_role_${user.id}_${venueId}`);
+    return cached && isValidUserRole(cached) ? cached : null;
   };
-  
-  const [userRole, setUserRole] = useState<string | null>(getCachedRole());
+
+  const [userRole, setUserRole] = useState<UserRole | null>(getCachedRole());
 
   useEffect(() => {
     const fetchUserRole = async () => {
@@ -25,7 +28,7 @@ export default function OrdersClientPage({ venueId }: { venueId: string }) {
 
       // Check cached role first
       const cachedRole = sessionStorage.getItem(`user_role_${user.id}`);
-      if (cachedRole) {
+      if (cachedRole && isValidUserRole(cachedRole)) {
         setUserRole(cachedRole);
         return;
       }
@@ -50,7 +53,7 @@ export default function OrdersClientPage({ venueId }: { venueId: string }) {
           .eq("venue_id", venueId)
           .single();
 
-        if (staffRole) {
+        if (staffRole && isValidUserRole(staffRole.role)) {
           setUserRole(staffRole.role);
           sessionStorage.setItem(`user_role_${user.id}_${venueId}`, staffRole.role);
         }
@@ -67,7 +70,7 @@ export default function OrdersClientPage({ venueId }: { venueId: string }) {
         {user && userRole && (
           <RoleBasedNavigation
             venueId={venueId}
-            userRole={userRole as unknown}
+            userRole={userRole}
             userName={user.user_metadata?.full_name || user.email?.split("@")[0] || "User"}
           />
         )}

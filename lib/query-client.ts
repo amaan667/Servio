@@ -15,7 +15,7 @@ export const createQueryClient = () =>
     defaultOptions: {
       queries: {
         // CRITICAL: Keep previous data while fetching (eliminates flicker)
-        placeholderData: (previousData) => previousData,
+        placeholderData: (previousData: unknown) => previousData,
 
         // Don't refetch on window focus (too aggressive)
         refetchOnWindowFocus: false,

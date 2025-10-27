@@ -34,8 +34,7 @@ export default function CompleteProfilePage() {
 
         // Check if user is a Google OAuth user (new sign-up)
         const isOAuthUser = user.identities?.some(
-          (identity: Record<string, unknown>) =>
-            identity.provider === "google" || identity.provider === "oauth"
+          (identity) => identity.provider === "google" || identity.provider === "oauth"
         );
 
         // Only show complete profile form for new Google OAuth users

@@ -164,7 +164,8 @@ export default function OrderSummary({ orderId, sessionId, orderData }: OrderSum
 
   // Set up real-time subscription for order updates
   useEffect(() => {
-    if (!order?.id) return;
+    const orderObj = order as { id?: string } | null | undefined;
+    if (!orderObj?.id) return;
 
     const supabase = createClient();
     if (!supabase) return;
@@ -199,23 +200,25 @@ export default function OrderSummary({ orderId, sessionId, orderData }: OrderSum
     return () => {
       supabase.removeChannel(channel);
     };
-  }, [order?.id]);
+  }, [(order as { id?: string } | null | undefined)?.id]);
 
   // Generate timeline items
   const getTimelineItems = (): OrderTimelineItem[] => {
     const statusOrder = ["PLACED", "ACCEPTED", "IN_PREP", "READY", "SERVING", "COMPLETED"];
-    const currentStatus = order?.order_status || "PLACED";
+    const orderObj = order as { order_status?: string } | null | undefined;
+    const currentStatus = orderObj?.order_status || "PLACED";
     const currentIndex = statusOrder.indexOf(currentStatus);
 
     return statusOrder.map((status, index) => {
       const statusInfo = ORDER_STATUSES[status as keyof typeof ORDER_STATUSES];
       const completed = index <= currentIndex;
+      const Icon = statusInfo?.icon as React.ComponentType<{ className?: string }> | undefined;
       const current = index === currentIndex;
 
       return {
         status,
         label: statusInfo.label,
-        icon: statusInfo.icon,
+        icon: statusInfo.icon as React.ComponentType<{ className?: string }>,
         completed,
         current,
       };
@@ -382,7 +385,7 @@ export default function OrderSummary({ orderId, sessionId, orderData }: OrderSum
           <CardContent>
             <div className="space-y-4">
               {timelineItems.map((item) => {
-                const Icon = item.icon;
+                const Icon = item.icon as React.ComponentType<{ className?: string }> | undefined;
                 return (
                   <div key={item.status} className="flex items-center gap-4">
                     <div
@@ -394,7 +397,7 @@ export default function OrderSummary({ orderId, sessionId, orderData }: OrderSum
                             : "bg-gray-100 text-gray-700"
                       }`}
                     >
-                      <Icon className="h-5 w-5" />
+                      {Icon && <Icon className="h-5 w-5" />}
                     </div>
                     <div className="flex-1">
                       <p
@@ -475,7 +478,11 @@ export default function OrderSummary({ orderId, sessionId, orderData }: OrderSum
         <div className="flex gap-4">
           <Button
             onClick={() => {
-              window.location.href = `/order?venue=${order?.venue_id || "demo-cafe"}&table=${order?.table_number || 1}`;
+              const orderObj = order as
+                | { venue_id?: string; table_number?: number }
+                | null
+                | undefined;
+              window.location.href = `/order?venue=${orderObj?.venue_id || "demo-cafe"}&table=${orderObj?.table_number || 1}`;
             }}
             variant="outline"
             className="flex-1"

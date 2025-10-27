@@ -11,7 +11,7 @@ function cleanStr(s: unknown) {
 
 export function normalizeForInsert(payload: MenuPayloadT) {
   // sanitize first
-  const items = (payload.items ?? []).map((it, idx) => {
+  const items = (payload.items ?? []).map((it, _idx) => {
     const name = cleanStr(it.name).slice(0, MAX_NAME);
     const descriptionRaw = it.description == null ? null : cleanStr(it.description);
     const description = descriptionRaw ? descriptionRaw.slice(0, MAX_DESC) : null;
@@ -33,9 +33,7 @@ export function normalizeForInsert(payload: MenuPayloadT) {
     };
   });
 
-  const categories = (payload.categories ?? [])
-    .map((c) => cleanStr(c))
-    .filter(Boolean);
+  const categories = (payload.categories ?? []).map((c) => cleanStr(c)).filter(Boolean);
 
   return { items, categories };
 }

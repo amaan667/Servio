@@ -93,6 +93,9 @@ export async function POST(_request: NextRequest) {
     logger.error("[TIER CHECK] Error:", {
       error: _error instanceof Error ? _error.message : "Unknown _error",
     });
-    return NextResponse.json({ error: _error.message || "Tier check failed" }, { status: 500 });
+    return NextResponse.json(
+      { error: _error instanceof Error ? _error.message : "Tier check failed" },
+      { status: 500 }
+    );
   }
 }

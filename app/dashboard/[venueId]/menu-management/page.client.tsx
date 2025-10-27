@@ -5,10 +5,12 @@ import { useAuth } from "@/app/auth/AuthProvider";
 import { supabaseBrowser } from "@/lib/supabase";
 import MenuManagementClient from "./MenuManagementClient";
 import RoleBasedNavigation from "@/components/RoleBasedNavigation";
+import type { UserRole } from "@/lib/permissions";
+import { isValidUserRole } from "@/lib/utils/userRole";
 
 export default function MenuManagementClientPage({ venueId }: { venueId: string }) {
   const { user } = useAuth();
-  const [userRole, setUserRole] = useState<string | null>(null);
+  const [userRole, setUserRole] = useState<UserRole | null>(null);
 
   useEffect(() => {
     const fetchUserRole = async () => {
@@ -18,7 +20,7 @@ export default function MenuManagementClientPage({ venueId }: { venueId: string 
 
       // Check cached role first
       const cachedRole = sessionStorage.getItem(`user_role_${user.id}`);
-      if (cachedRole) {
+      if (cachedRole && isValidUserRole(cachedRole)) {
         setUserRole(cachedRole);
         return;
       }
@@ -43,7 +45,7 @@ export default function MenuManagementClientPage({ venueId }: { venueId: string 
           .eq("venue_id", venueId)
           .single();
 
-        if (staffRole) {
+        if (staffRole && isValidUserRole(staffRole.role)) {
           setUserRole(staffRole.role);
           sessionStorage.setItem(`user_role_${user.id}`, staffRole.role);
         }
@@ -60,7 +62,7 @@ export default function MenuManagementClientPage({ venueId }: { venueId: string 
         {user && userRole && (
           <RoleBasedNavigation
             venueId={venueId}
-            userRole={userRole as unknown}
+            userRole={userRole}
             userName={user.user_metadata?.full_name || user.email?.split("@")[0] || "User"}
           />
         )}

@@ -1,22 +1,28 @@
 "use client";
 
-import { useState, useEffect } from 'react';
-import { Plus, Edit, Trash2, Eye, EyeOff, MessageSquare, Star, BarChart3 } from 'lucide-react';
-import { Button } from '@/components/ui/button';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { Input } from '@/components/ui/input';
-import { Label } from '@/components/ui/label';
-import { Textarea } from '@/components/ui/textarea';
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { Switch } from '@/components/ui/switch';
-import { Badge } from '@/components/ui/badge';
-import { useToast } from '@/hooks/use-toast';
-import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import { useState, useEffect } from "react";
+import { Plus, Edit, Trash2, Eye, EyeOff, MessageSquare, Star, BarChart3 } from "lucide-react";
+import { Button } from "@/components/ui/button";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { Textarea } from "@/components/ui/textarea";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
+import { Switch } from "@/components/ui/switch";
+import { Badge } from "@/components/ui/badge";
+import { useToast } from "@/hooks/use-toast";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 
 interface FeedbackQuestion {
   id: string;
   prompt: string;
-  type: 'stars' | 'multiple_choice' | 'paragraph';
+  type: "stars" | "multiple_choice" | "paragraph";
   choices?: string[];
   is_active: boolean;
   sort_index: number;
@@ -32,23 +38,23 @@ export default function SimpleFeedbackClient({ venueId }: SimpleFeedbackClientPr
   const [loading, setLoading] = useState(false);
   const [showAddForm, setShowAddForm] = useState(false);
   const [editingId, setEditingId] = useState<string | null>(null);
-  const [activeTab, setActiveTab] = useState<'overview' | 'feedback' | 'create'>('overview');
+  const [activeTab, setActiveTab] = useState<"overview" | "feedback" | "create">("overview");
   const { toast } = useToast();
 
   // Form state
   const [formData, setFormData] = useState({
-    prompt: '',
-    type: 'stars' as 'stars' | 'multiple_choice' | 'paragraph',
-    choices: ['', ''],
-    is_active: true
+    prompt: "",
+    type: "stars" as "stars" | "multiple_choice" | "paragraph",
+    choices: ["", ""],
+    is_active: true,
   });
 
   const resetForm = () => {
     setFormData({
-      prompt: '',
-      type: 'stars',
-      choices: ['', ''],
-      is_active: true
+      prompt: "",
+      type: "stars",
+      choices: ["", ""],
+      is_active: true,
     });
     setEditingId(null);
     setShowAddForm(false);
@@ -57,7 +63,7 @@ export default function SimpleFeedbackClient({ venueId }: SimpleFeedbackClientPr
   const fetchQuestions = async () => {
     try {
       const response = await fetch(`/api/feedback/questions?venueId=${venueId}`);
-      
+
       if (response.ok) {
         const data = await response.json();
         setQuestions(data.questions || []);
@@ -66,14 +72,14 @@ export default function SimpleFeedbackClient({ venueId }: SimpleFeedbackClientPr
         toast({
           title: "Error",
           description: "Couldn't load questions",
-          variant: "destructive"
+          variant: "destructive",
         });
       }
     } catch (_error) {
       toast({
         title: "Error",
         description: "Couldn't load questions",
-        variant: "destructive"
+        variant: "destructive",
       });
     }
   };
@@ -85,42 +91,43 @@ export default function SimpleFeedbackClient({ venueId }: SimpleFeedbackClientPr
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    
+
     if (!formData.prompt.trim()) {
       toast({
         title: "Error",
         description: "Please enter a question prompt",
-        variant: "destructive"
+        variant: "destructive",
       });
       return;
     }
 
     setLoading(true);
     try {
-      const url = editingId 
-        ? `/api/feedback/questions/${editingId}` 
-        : '/api/feedback/questions';
-      
-      const method = editingId ? 'PUT' : 'POST';
-      
+      const url = editingId ? `/api/feedback/questions/${editingId}` : "/api/feedback/questions";
+
+      const method = editingId ? "PUT" : "POST";
+
       const payload = {
         prompt: formData.prompt.trim(),
         type: formData.type,
-        choices: formData.type === 'multiple_choice' ? formData.choices.filter(c => c.trim()) : undefined,
+        choices:
+          formData.type === "multiple_choice"
+            ? formData.choices.filter((c) => c.trim())
+            : undefined,
         is_active: formData.is_active,
-        venue_id: venueId
+        venue_id: venueId,
       };
 
       const response = await fetch(url, {
         method,
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(payload)
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(payload),
       });
 
       if (response.ok) {
         toast({
           title: "Success",
-          description: editingId ? "Question updated" : "Question created"
+          description: editingId ? "Question updated" : "Question created",
         });
         resetForm();
         fetchQuestions();
@@ -129,14 +136,14 @@ export default function SimpleFeedbackClient({ venueId }: SimpleFeedbackClientPr
         toast({
           title: "Error",
           description: error || "Failed to save question",
-          variant: "destructive"
+          variant: "destructive",
         });
       }
     } catch (_error) {
       toast({
         title: "Error",
         description: "Failed to save question",
-        variant: "destructive"
+        variant: "destructive",
       });
     } finally {
       setLoading(false);
@@ -147,41 +154,41 @@ export default function SimpleFeedbackClient({ venueId }: SimpleFeedbackClientPr
     setFormData({
       prompt: question.prompt,
       type: question.type,
-      choices: question.choices || ['', ''],
-      is_active: question.is_active
+      choices: question.choices || ["", ""],
+      is_active: question.is_active,
     });
     setEditingId(question.id);
     setShowAddForm(true);
-    setActiveTab('create');
+    setActiveTab("create");
   };
 
   const handleDelete = async (questionId: string) => {
-    if (!confirm('Are you sure you want to delete this question?')) return;
+    if (!confirm("Are you sure you want to delete this question?")) return;
 
     setLoading(true);
     try {
       const response = await fetch(`/api/feedback/questions/${questionId}`, {
-        method: 'DELETE'
+        method: "DELETE",
       });
 
       if (response.ok) {
         toast({
           title: "Success",
-          description: "Question deleted"
+          description: "Question deleted",
         });
         fetchQuestions();
       } else {
         toast({
           title: "Error",
           description: "Failed to delete question",
-          variant: "destructive"
+          variant: "destructive",
         });
       }
     } catch (_error) {
       toast({
         title: "Error",
         description: "Failed to delete question",
-        variant: "destructive"
+        variant: "destructive",
       });
     } finally {
       setLoading(false);
@@ -192,40 +199,40 @@ export default function SimpleFeedbackClient({ venueId }: SimpleFeedbackClientPr
     setLoading(true);
     try {
       const response = await fetch(`/api/feedback/questions/${questionId}`, {
-        method: 'PUT',
-        headers: { 'Content-Type': 'application/json' },
+        method: "PUT",
+        headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           is_active: !currentStatus,
-          venue_id: venueId
-        })
+          venue_id: venueId,
+        }),
       });
 
       if (response.ok) {
         toast({
           title: "Success",
-          description: `Question ${!currentStatus ? 'activated' : 'deactivated'}`
+          description: `Question ${!currentStatus ? "activated" : "deactivated"}`,
         });
         fetchQuestions();
       } else {
         toast({
           title: "Error",
           description: "Failed to update question",
-          variant: "destructive"
+          variant: "destructive",
         });
       }
     } catch (_error) {
       toast({
         title: "Error",
         description: "Failed to update question",
-        variant: "destructive"
+        variant: "destructive",
       });
     } finally {
       setLoading(false);
     }
   };
 
-  const activeQuestions = questions.filter(q => q.is_active);
-  const inactiveQuestions = questions.filter(q => !q.is_active);
+  const activeQuestions = questions.filter((q) => q.is_active);
+  const inactiveQuestions = questions.filter((q) => !q.is_active);
 
   return (
     <div className="space-y-6">
@@ -267,7 +274,10 @@ export default function SimpleFeedbackClient({ venueId }: SimpleFeedbackClientPr
       </div>
 
       {/* Tabs */}
-      <Tabs value={activeTab} onValueChange={(value) => setActiveTab(value as unknown)}>
+      <Tabs
+        value={activeTab}
+        onValueChange={(value) => setActiveTab(value as "feedback" | "create" | "overview")}
+      >
         <TabsList className="grid w-full grid-cols-3">
           <TabsTrigger value="overview">Overview</TabsTrigger>
           <TabsTrigger value="feedback">All Questions</TabsTrigger>
@@ -285,11 +295,17 @@ export default function SimpleFeedbackClient({ venueId }: SimpleFeedbackClientPr
                   <h4 className="font-medium mb-2">Active Questions ({activeQuestions.length})</h4>
                   <div className="space-y-2">
                     {activeQuestions.slice(0, 3).map((question) => (
-                      <div key={question.id} className="flex items-center justify-between p-2 bg-green-50 rounded">
+                      <div
+                        key={question.id}
+                        className="flex items-center justify-between p-2 bg-green-50 rounded"
+                      >
                         <span className="text-sm">{question.prompt}</span>
                         <Badge variant="secondary" className="text-xs">
-                          {question.type === 'stars' ? 'Star Rating' : 
-                           question.type === 'multiple_choice' ? 'Multiple Choice' : 'Text'}
+                          {question.type === "stars"
+                            ? "Star Rating"
+                            : question.type === "multiple_choice"
+                              ? "Multiple Choice"
+                              : "Text"}
                         </Badge>
                       </div>
                     ))}
@@ -315,10 +331,10 @@ export default function SimpleFeedbackClient({ venueId }: SimpleFeedbackClientPr
           <Card>
             <CardHeader className="flex flex-row items-center justify-between">
               <CardTitle>All Questions</CardTitle>
-              <Button 
+              <Button
                 onClick={() => {
                   setShowAddForm(true);
-                  setActiveTab('create');
+                  setActiveTab("create");
                 }}
                 size="sm"
               >
@@ -331,23 +347,27 @@ export default function SimpleFeedbackClient({ venueId }: SimpleFeedbackClientPr
                 <div className="text-center py-8">
                   <MessageSquare className="h-12 w-12 mx-auto mb-4 text-gray-400" />
                   <p className="text-gray-500 mb-4">No feedback questions yet</p>
-                  <Button onClick={() => setActiveTab('create')}>
-                    Create Your First Question
-                  </Button>
+                  <Button onClick={() => setActiveTab("create")}>Create Your First Question</Button>
                 </div>
               ) : (
                 <div className="space-y-4">
                   {questions.map((question) => (
-                    <div key={question.id} className="flex items-center justify-between p-4 border rounded-lg">
+                    <div
+                      key={question.id}
+                      className="flex items-center justify-between p-4 border rounded-lg"
+                    >
                       <div className="flex-1">
                         <h4 className="font-medium">{question.prompt}</h4>
                         <div className="flex items-center space-x-2 mt-1">
                           <Badge variant={question.is_active ? "default" : "secondary"}>
-                            {question.is_active ? 'Active' : 'Inactive'}
+                            {question.is_active ? "Active" : "Inactive"}
                           </Badge>
                           <Badge variant="outline" className="text-xs">
-                            {question.type === 'stars' ? 'Star Rating' : 
-                             question.type === 'multiple_choice' ? 'Multiple Choice' : 'Text'}
+                            {question.type === "stars"
+                              ? "Star Rating"
+                              : question.type === "multiple_choice"
+                                ? "Multiple Choice"
+                                : "Text"}
                           </Badge>
                         </div>
                       </div>
@@ -358,13 +378,13 @@ export default function SimpleFeedbackClient({ venueId }: SimpleFeedbackClientPr
                           onClick={() => toggleActive(question.id, question.is_active)}
                           disabled={loading}
                         >
-                          {question.is_active ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
+                          {question.is_active ? (
+                            <EyeOff className="h-4 w-4" />
+                          ) : (
+                            <Eye className="h-4 w-4" />
+                          )}
                         </Button>
-                        <Button
-                          variant="ghost"
-                          size="sm"
-                          onClick={() => handleEdit(question)}
-                        >
+                        <Button variant="ghost" size="sm" onClick={() => handleEdit(question)}>
                           <Edit className="h-4 w-4" />
                         </Button>
                         <Button
@@ -387,9 +407,7 @@ export default function SimpleFeedbackClient({ venueId }: SimpleFeedbackClientPr
         <TabsContent value="create" className="space-y-4">
           <Card>
             <CardHeader>
-              <CardTitle>
-                {editingId ? 'Edit Question' : 'Create New Question'}
-              </CardTitle>
+              <CardTitle>{editingId ? "Edit Question" : "Create New Question"}</CardTitle>
             </CardHeader>
             <CardContent>
               <form onSubmit={handleSubmit} className="space-y-4">
@@ -408,7 +426,12 @@ export default function SimpleFeedbackClient({ venueId }: SimpleFeedbackClientPr
                   <Label htmlFor="type">Question Type</Label>
                   <Select
                     value={formData.type}
-                    onValueChange={(value: unknown) => setFormData({ ...formData, type: value })}
+                    onValueChange={(value: string) =>
+                      setFormData({
+                        ...formData,
+                        type: value as "stars" | "multiple_choice" | "paragraph",
+                      })
+                    }
                   >
                     <SelectTrigger>
                       <SelectValue />
@@ -421,7 +444,7 @@ export default function SimpleFeedbackClient({ venueId }: SimpleFeedbackClientPr
                   </Select>
                 </div>
 
-                {formData.type === 'multiple_choice' && (
+                {formData.type === "multiple_choice" && (
                   <div>
                     <Label>Answer Choices</Label>
                     <div className="space-y-2">
@@ -441,10 +464,12 @@ export default function SimpleFeedbackClient({ venueId }: SimpleFeedbackClientPr
                         type="button"
                         variant="outline"
                         size="sm"
-                        onClick={() => setFormData({ 
-                          ...formData, 
-                          choices: [...formData.choices, ''] 
-                        })}
+                        onClick={() =>
+                          setFormData({
+                            ...formData,
+                            choices: [...formData.choices, ""],
+                          })
+                        }
                       >
                         Add Choice
                       </Button>
@@ -463,7 +488,7 @@ export default function SimpleFeedbackClient({ venueId }: SimpleFeedbackClientPr
 
                 <div className="flex space-x-2">
                   <Button type="submit" disabled={loading}>
-                    {loading ? 'Saving...' : editingId ? 'Update Question' : 'Create Question'}
+                    {loading ? "Saving..." : editingId ? "Update Question" : "Create Question"}
                   </Button>
                   <Button type="button" variant="outline" onClick={resetForm}>
                     Cancel

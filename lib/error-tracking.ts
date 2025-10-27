@@ -3,6 +3,8 @@
  * Integrates with Sentry for comprehensive error tracking
  */
 
+import React from "react";
+
 interface ErrorContext {
   userId?: string;
   venueId?: string;
@@ -45,7 +47,7 @@ class ErrorTracker {
     import("@sentry/nextjs")
       .then((Sentry) => {
         Sentry.init({
-          dsn: this.sentryDsn,
+          dsn: this.sentryDsn || undefined,
           environment: this.environment,
           tracesSampleRate: 0.1,
           replaysSessionSampleRate: 0.1,
@@ -60,8 +62,8 @@ class ErrorTracker {
           },
         });
       })
-      .catch((error) => {
-        /* Empty */
+      .catch((_error) => {
+        // Ignore Sentry initialization errors
       });
   }
 
@@ -139,7 +141,8 @@ class ErrorTracker {
     if (this.sentryDsn) {
       import("@sentry/nextjs")
         .then((Sentry) => {
-          Sentry.setContext(key, value);
+          const contextValue = value as Record<string, unknown> | null;
+          Sentry.setContext(key, contextValue);
         })
         .catch(() => {
           // Sentry not available

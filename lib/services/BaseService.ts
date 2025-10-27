@@ -37,7 +37,7 @@ export abstract class BaseService {
 
     // Execute callback and cache result
     const value = await callback();
-    await this.cache.set(key, value, ttl);
+    await this.cache.set(key, value, { ttl });
     return value;
   }
 

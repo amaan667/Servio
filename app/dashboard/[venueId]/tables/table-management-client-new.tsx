@@ -72,7 +72,9 @@ export function TableManagementClientNew({ venueId }: TableManagementClientNewPr
 
   // Group table orders by table
   const groupedTableOrders = useMemo(() => {
-    const groups: { [key: string]: unknown[] } = { /* Empty */ };
+    const groups: { [key: string]: unknown[] } = {
+      /* Empty */
+    };
 
     const uniqueOrders = state.tableOrders.filter(
       (order, index, self) => index === self.findIndex((o) => o.id === order.id)
@@ -151,7 +153,7 @@ export function TableManagementClientNew({ venueId }: TableManagementClientNewPr
 
       {/* Table Grid Section */}
       <TableGridSection
-        tables={state.tables}
+        tables={state.tables as any}
         searchQuery={state.searchQuery}
         venueId={venueId}
         onTableActionComplete={handleTableActionComplete}

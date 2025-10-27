@@ -102,15 +102,13 @@ export default function EnhancedShiftSchedule({
       switch (viewMode) {
         case "day":
           return shiftDate.toDateString() === currentDate.toDateString();
-        case "week":
-          {
-            const weekStart = new Date(currentDate);
-            weekStart.setDate(currentDate.getDate() - currentDate.getDay());
-            const weekEnd = new Date(weekStart);
-            weekEnd.setDate(weekStart.getDate() + 6);
-            return shiftDate >= weekStart && shiftDate <= weekEnd;
-          }
+        case "week": {
+          const weekStart = new Date(currentDate);
+          weekStart.setDate(currentDate.getDate() - currentDate.getDay());
+          const weekEnd = new Date(weekStart);
+          weekEnd.setDate(weekStart.getDate() + 6);
           return shiftDate >= weekStart && shiftDate <= weekEnd;
+        }
         case "month":
           return (
             shiftDate.getMonth() === currentDate.getMonth() &&
@@ -151,15 +149,17 @@ export default function EnhancedShiftSchedule({
           month: "long",
           day: "numeric",
         });
-      case "week":
-        {
-          const weekStart = new Date(currentDate);
-          weekStart.setDate(currentDate.getDate() - currentDate.getDay());
-          const weekEnd = new Date(weekStart);
-          weekEnd.setDate(weekStart.getDate() + 6);
-          return `${weekStart.toLocaleDateString("en-US", { month: "short", day: "numeric" })} - ${weekEnd.toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" })}`;
-        }
-        return `${weekStart.toLocaleDateString("en-US", { month: "short", day: "numeric" })} - ${weekEnd.toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" })}`;
+      case "week": {
+        const weekStart = new Date(currentDate);
+        weekStart.setDate(currentDate.getDate() - currentDate.getDay());
+        const weekEnd = new Date(weekStart);
+        weekEnd.setDate(weekStart.getDate() + 6);
+        const weekStartLabel = new Date(currentDate);
+        weekStartLabel.setDate(currentDate.getDate() - currentDate.getDay());
+        const weekEndLabel = new Date(weekStartLabel);
+        weekEndLabel.setDate(weekStartLabel.getDate() + 6);
+        return `${weekStartLabel.toLocaleDateString("en-US", { month: "short", day: "numeric" })} - ${weekEndLabel.toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" })}`;
+      }
       case "month":
         return currentDate.toLocaleDateString("en-US", {
           year: "numeric",
@@ -237,7 +237,7 @@ export default function EnhancedShiftSchedule({
   };
 
   // Render shift display based on crowding
-  const renderShiftDisplay = (shifts: Shift[], date: string) => {
+  const renderShiftDisplay = (shifts: Shift[], _date: string) => {
     const sortedShifts = shifts.sort(
       (a, b) => new Date(a.start_time).getTime() - new Date(b.start_time).getTime()
     );

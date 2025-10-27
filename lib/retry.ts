@@ -110,7 +110,7 @@ export async function withSupabaseRetry<T>(
 ): Promise<{ data: T | null; error: unknown }> {
   try {
     return await withRetry(operation, options);
-  } catch (_error) {
+  } catch (error) {
     return { data: null, error };
   }
 }

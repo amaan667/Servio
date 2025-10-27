@@ -35,9 +35,11 @@ import {
   getStateColorClass,
   getStateIcon,
   type TableState,
+  type TableStateInfo,
+  type MergeScenario,
 } from "@/lib/table-states";
 
-interface Table {
+interface Table extends Record<string, unknown> {
   id: string;
   label: string;
   seat_count: number;
@@ -54,6 +56,11 @@ interface Table {
   reserved_later_id?: string | null;
   reserved_later_start?: string | null;
   reserved_later_name?: string | null;
+  state?: TableState;
+  stateInfo?: TableStateInfo;
+  mergeScenario?: MergeScenario;
+  selectable?: boolean;
+  requiresConfirmation?: boolean;
 }
 
 interface EnhancedTableMergeDialogProps {
@@ -74,7 +81,7 @@ export function EnhancedTableMergeDialog({
   isOpen,
   onClose,
   sourceTable,
-  venueId,
+  venueId: _venueId,
   availableTables,
   onActionComplete,
   onMergeConfirm,
@@ -87,8 +94,12 @@ export function EnhancedTableMergeDialog({
   // Update mergeable tables when dialog opens or settings change
   useEffect(() => {
     if (isOpen) {
-      const tables = getMergeableTables(sourceTable, availableTables, showAllTables);
-      setMergeableTables(tables);
+      const tables = getMergeableTables(
+        sourceTable as Record<string, unknown>,
+        availableTables as Record<string, unknown>[],
+        showAllTables
+      );
+      setMergeableTables(tables as Table[]);
       setSelectedTableId(""); // Reset selection
     }
   }, [isOpen, sourceTable, availableTables, showAllTables]);

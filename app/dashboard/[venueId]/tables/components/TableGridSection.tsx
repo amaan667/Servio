@@ -37,9 +37,9 @@ export function TableGridSection({
         {filteredTables.map((table) => (
           <TableCardNew
             key={(table as any).id}
-            table={table}
+            table={table as any}
             venueId={venueId}
-            onTableActionComplete={onTableActionComplete}
+            onActionComplete={onTableActionComplete}
           />
         ))}
       </div>

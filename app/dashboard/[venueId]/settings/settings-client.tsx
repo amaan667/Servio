@@ -8,14 +8,14 @@ import RoleBasedNavigation from "@/components/RoleBasedNavigation";
 
 export default function SettingsPageClient({ venueId }: { venueId: string }) {
   const router = useRouter();
-  
+
   // Check cache to prevent flicker
   const getCachedData = () => {
-    if (typeof window === 'undefined') return null;
+    if (typeof window === "undefined") return null;
     const cached = sessionStorage.getItem(`settings_data_${venueId}`);
     return cached ? JSON.parse(cached) : null;
   };
-  
+
   const [loading, setLoading] = useState(false);
   const [data, setData] = useState<{
     user: { id: string; email?: string; user_metadata?: Record<string, unknown> };
@@ -108,14 +108,14 @@ export default function SettingsPageClient({ venueId }: { venueId: string }) {
           isManager,
           userRole: userRole?.role || (isOwner ? "owner" : "staff"),
         };
-        
+
         setData(settingsData);
-        
+
         // Cache settings data to prevent flicker
-        if (typeof window !== 'undefined') {
+        if (typeof window !== "undefined") {
           sessionStorage.setItem(`settings_data_${venueId}`, JSON.stringify(settingsData));
         }
-        
+
         setLoading(false);
       } catch (_error) {
         setLoading(false);
@@ -164,7 +164,13 @@ export default function SettingsPageClient({ venueId }: { venueId: string }) {
         <RoleBasedNavigation
           venueId={venueId}
           userRole={data.userRole as "owner" | "manager" | "staff"}
-          userName={data.user.user_metadata?.full_name || data.user.email?.split("@")[0] || "User"}
+          userName={
+            (typeof data.user.user_metadata?.full_name === "string"
+              ? data.user.user_metadata.full_name
+              : null) ||
+            data.user.email?.split("@")[0] ||
+            "User"
+          }
         />
 
         <div className="mb-8">
@@ -174,10 +180,10 @@ export default function SettingsPageClient({ venueId }: { venueId: string }) {
 
         {canAccessSettings ? (
           <VenueSettingsClient
-            user={data.user}
-            venue={data.venue}
-            venues={data.venues}
-            organization={data.organization}
+            user={data.user as any}
+            venue={data.venue as any}
+            venues={data.venues as any}
+            organization={data.organization as any}
             isOwner={data.isOwner}
           />
         ) : (

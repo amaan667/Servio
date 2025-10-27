@@ -65,7 +65,7 @@ export function useDragAndDrop<T extends MenuItem>(
           logger.error("Failed to reorder items", { error: result.error });
           throw result.error;
         }
-      } catch (_error) {
+      } catch (error) {
         logger.error("Error reordering items", { error });
         // Could show toast notification here
       } finally {

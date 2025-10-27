@@ -4,7 +4,7 @@
  */
 
 import { logger } from "@/lib/logger";
-import type { Database } from "@/types/supabase";
+import type { Database } from "@/types/database";
 
 type SupabaseClient = Awaited<ReturnType<typeof import("@/lib/supabase").createClient>>;
 
@@ -60,7 +60,7 @@ export async function createKDSTickets(supabase: SupabaseClient, order: Order): 
             display_order: station.order,
             color_code: station.color,
             is_active: true,
-          } as Database["public"]["Tables"]["kds_stations"]["Insert"],
+          } as unknown as any,
           {
             onConflict: "venue_id,station_name",
           }
@@ -78,7 +78,9 @@ export async function createKDSTickets(supabase: SupabaseClient, order: Order): 
         throw new Error("Failed to create KDS stations");
       }
 
-      existingStations.push(...stations);
+      if (existingStations) {
+        existingStations.push(...stations);
+      }
     }
 
     // Get the expo station (default for all items)
@@ -97,7 +99,7 @@ export async function createKDSTickets(supabase: SupabaseClient, order: Order): 
     const items = Array.isArray(order.items) ? order.items : [];
 
     for (const item of items) {
-      const ticketData: Database["public"]["Tables"]["kds_tickets"]["Insert"] = {
+      const ticketData = {
         venue_id: order.venue_id,
         order_id: order.id,
         station_id: expoStation.id,
@@ -160,7 +162,7 @@ export async function ensureTableExists(
       capacity: 4,
       is_active: true,
       status: "available",
-    } as Database["public"]["Tables"]["tables"]["Insert"])
+    } as unknown as any)
     .select("id")
     .single();
 

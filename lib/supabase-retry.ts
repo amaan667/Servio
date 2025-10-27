@@ -86,7 +86,7 @@ export async function retrySupabaseQuery<T>(
       lastError = _error;
 
       if (attempt === maxRetries) {
-        return { data: null, error };
+        return { data: null, error: lastError };
       }
 
       // Wait before retrying

@@ -119,8 +119,8 @@ export async function executeAnalyticsGetInsights(
 }
 
 export async function executeAnalyticsExport(
-  params: AnalyticsExportParams,
-  venueId: string,
+  params: { timeRange: string; format: string; type?: string },
+  _venueId: string,
   _userId: string,
   preview: boolean
 ): Promise<AIPreviewDiff | AIExecutionResult> {
@@ -131,7 +131,7 @@ export async function executeAnalyticsExport(
       after: [],
       impact: {
         itemsAffected: 0,
-        description: `Will export ${params.type} data in ${params.format} format`,
+        description: `Will export ${params.type || "analytics"} data in ${params.format} format`,
       },
     };
   }
@@ -141,7 +141,7 @@ export async function executeAnalyticsExport(
     toolName: "analytics.export",
     result: {
       message: "Export functionality requires file generation service",
-      type: params.type,
+      type: params.type || "analytics",
       format: params.format,
     },
     auditId: "",
@@ -266,7 +266,10 @@ export async function executeAnalyticsGetStats(
             itemSales.set(item.menu_item_id, {
               name: existing.name,
               quantity: existing.quantity + item.quantity,
-              revenue: existing.revenue + item.price * item.quantity,
+              revenue:
+                existing.revenue +
+                (typeof item.price === "number" ? item.price : 0) *
+                  (typeof item.quantity === "number" ? item.quantity : 0),
             });
           });
 
@@ -289,7 +292,11 @@ export async function executeAnalyticsGetStats(
       }
     }
   } catch (_error) {
-    throw new AIAssistantError("Failed to get analytics data", "EXECUTION_FAILED", _error);
+    const errorDetails =
+      _error instanceof Error
+        ? { message: _error.message, stack: _error.stack }
+        : { error: String(_error) };
+    throw new AIAssistantError("Failed to get analytics data", "EXECUTION_FAILED", errorDetails);
   }
 
   return {
@@ -306,7 +313,7 @@ export async function executeAnalyticsCreateReport(
   _userId: string,
   preview: boolean
 ): Promise<AIPreviewDiff | AIExecutionResult> {
-  const typedParams = params as {
+  const typedParams = _params as {
     name: string;
     metrics: unknown[];
     timeRange: string;
@@ -349,21 +356,15 @@ function getTimeRangeStart(timeRange: string): string {
   switch (timeRange) {
     case "today":
       return new Date(now.getFullYear(), now.getMonth(), now.getDate()).toISOString();
-    case "yesterday":
-      {
-        const yesterday = new Date(now);
-        yesterday.setDate(yesterday.getDate() - 1);
-        return new Date(
-          yesterday.getFullYear(),
-          yesterday.getMonth(),
-          yesterday.getDate()
-        ).toISOString();
-      }
+    case "yesterday": {
+      const yesterday = new Date(now);
+      yesterday.setDate(yesterday.getDate() - 1);
       return new Date(
         yesterday.getFullYear(),
         yesterday.getMonth(),
         yesterday.getDate()
       ).toISOString();
+    }
     case "week":
       return new Date(now.getTime() - 7 * 24 * 60 * 60 * 1000).toISOString();
     case "month":

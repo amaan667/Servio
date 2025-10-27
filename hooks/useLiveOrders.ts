@@ -35,8 +35,17 @@ const LIVE_STATUSES = [
   "SERVING",
 ] as const;
 
+const ORDER_STATUS_LABELS: Record<string, string> = {
+  PLACED: "Placed",
+  ACCEPTED: "Accepted",
+  IN_PREP: "In Prep",
+  READY: "Ready",
+  SERVED: "Served",
+  COMPLETED: "Completed",
+};
+
 // Optional: add a 4s safety timeout (never spin forever)
-async function withTimeout<T>(p: Promise<T>, ms = 4000): Promise<T> {
+async function withTimeout<T>(p: Promise<T>, _ms = 4000): Promise<T> {
   // Remove artificial timeout - let real promises handle timing
   return await p;
 }
@@ -84,26 +93,37 @@ export function useLiveOrders(venueId: string) {
         .limit(100) // avoid accidental infinite loading
         .throwOnError();
 
-      const { data, error } = (await withTimeout(queryPromise)) as unknown;
+      const result = await withTimeout(
+        queryPromise as unknown as Promise<{ data: unknown; error: unknown }>
+      );
+      const { data, error } = result;
 
       if (error) {
         throw error;
       }
 
       // Transform orders to include table_label
-      const transformedOrders = (data ?? []).map((order: Record<string, unknown>) => ({
-        ...order,
-        table_label:
-          (order.tables as unknown)?.label ||
-          (order.source === "counter"
-            ? `Counter ${order.table_number}`
-            : `Table ${order.table_number}`),
-      }));
+      const dataArray = Array.isArray(data) ? data : [];
+      const transformedOrders = dataArray.map((order: Record<string, unknown>) => {
+        const tables = order.tables as { label?: string } | undefined;
+        const orderStatus = order.order_status as string;
+        const statusLabel =
+          ORDER_STATUS_LABELS[orderStatus as keyof typeof ORDER_STATUS_LABELS] || orderStatus;
+        return {
+          ...order,
+          table_label:
+            tables?.label ||
+            (order.source === "counter"
+              ? `Counter ${order.table_number}`
+              : `Table ${order.table_number}`),
+          status_label: statusLabel,
+        };
+      });
 
-      setData(transformedOrders);
-    } catch (_err) {
+      setData(transformedOrders as any);
+    } catch (err) {
       setIsError(true);
-      setError(_err.message || "Failed to load orders");
+      setError((err as Error)?.message || "Failed to load orders");
     } finally {
       setIsLoading(false);
     }

@@ -150,10 +150,10 @@ export function useVenueSettings(venue: Venue) {
         router.refresh();
       }, 1500);
     } catch (_err) {
-      setError(_err.message || "Failed to update venue settings");
+      setError(_err instanceof Error ? _err.message : "Failed to update venue settings");
       toast({
         title: "Error",
-        description: _err.message || "Failed to update venue settings",
+        description: _err instanceof Error ? _err.message : "Failed to update venue settings",
         variant: "destructive",
       });
     } finally {

@@ -194,7 +194,7 @@ export function AssistantCommandPalette({
         setPreviews(previewResults.map((r) => r.preview).filter(Boolean));
       }
     } catch (_err) {
-      setError(_err.message || "Failed to plan action");
+      setError(_err instanceof Error ? _err.message : "Failed to plan action");
     } finally {
       setLoading(false);
     }
@@ -247,8 +247,15 @@ export function AssistantCommandPalette({
 
           // Find the navigation tool result
           const navResult = results.find((r) => (r as any).tool === "navigation.go_to_page");
-          if (navResult?.result?.route) {
-            router.push((navResult as any).result.route);
+          if (
+            navResult &&
+            typeof navResult === "object" &&
+            "result" in navResult &&
+            navResult.result &&
+            typeof navResult.result === "object" &&
+            "route" in navResult.result
+          ) {
+            router.push((navResult.result as { route: string }).route);
           }
         }, 1500);
       } else if (!hasAnalytics) {
@@ -260,7 +267,7 @@ export function AssistantCommandPalette({
       }
       // For analytics, keep modal open so user can see results
     } catch (_err) {
-      setError(_err.message || "Failed to execute action");
+      setError(_err instanceof Error ? _err.message : "Failed to execute action");
     } finally {
       setExecuting(false);
     }

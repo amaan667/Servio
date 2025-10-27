@@ -57,7 +57,7 @@ export function createApiHandler<TRequest, TResponse>(
       });
     } catch (_error) {
       logger.error("API handler error", {
-        error,
+        error: _error,
         path: req.url,
       });
 
@@ -99,7 +99,7 @@ export function createGetHandler<TResponse>(handler: (req: NextRequest) => Promi
       });
     } catch (_error) {
       logger.error("GET handler error", {
-        error,
+        error: _error,
         path: req.url,
       });
 

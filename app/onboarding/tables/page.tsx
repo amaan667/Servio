@@ -32,8 +32,9 @@ export default function OnboardingTablesPage() {
     try {
       const supabase = await createClient();
       const {
-        data: { user },
+        data: { session },
       } = await supabase.auth.getSession();
+      const user = session?.user;
 
       if (!user) {
         setLoading(false);
@@ -140,7 +141,7 @@ export default function OnboardingTablesPage() {
     } catch (_error) {
       toast({
         title: "Failed to create tables",
-        description: _error.message || "Please try again.",
+        description: _error instanceof Error ? _error.message : "Please try again.",
         variant: "destructive",
       });
     } finally {

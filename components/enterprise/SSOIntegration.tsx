@@ -69,7 +69,14 @@ export const SSOIntegration: React.FC = () => {
 
   const handleConfigUpdate = (providerId: string, config: unknown) => {
     setProviders((prev) =>
-      prev.map((p) => (p.id === providerId ? { ...p, config: { ...p.config, ...config } } : p))
+      prev.map((p) => {
+        if (p.id === providerId) {
+          const currentConfig = (p.config as Record<string, unknown>) || {};
+          const newConfig = (config as Record<string, unknown>) || {};
+          return { ...p, config: { ...currentConfig, ...newConfig } };
+        }
+        return p;
+      })
     );
   };
 
@@ -173,8 +180,11 @@ export const SSOIntegration: React.FC = () => {
                       id="clientId"
                       placeholder="Enter client ID"
                       value={
-                        providers.find((p) => p.id === activeProvider)?.(config as any).clientId ||
-                        ""
+                        (
+                          providers.find((p) => p.id === activeProvider)?.config as {
+                            clientId?: string;
+                          }
+                        )?.clientId || ""
                       }
                       onChange={(e) =>
                         handleConfigUpdate(activeProvider, { clientId: e.target.value })
@@ -188,8 +198,11 @@ export const SSOIntegration: React.FC = () => {
                       type="password"
                       placeholder="Enter client secret"
                       value={
-                        providers.find((p) => p.id === activeProvider)?.(config as any)
-                          .clientSecret || ""
+                        (
+                          providers.find((p) => p.id === activeProvider)?.config as {
+                            clientSecret?: string;
+                          }
+                        )?.clientSecret || ""
                       }
                       onChange={(e) =>
                         handleConfigUpdate(activeProvider, { clientSecret: e.target.value })
@@ -202,8 +215,11 @@ export const SSOIntegration: React.FC = () => {
                       id="redirectUri"
                       placeholder="https://yourdomain.com/auth/callback"
                       value={
-                        providers.find((p) => p.id === activeProvider)?.(config as any)
-                          .redirectUri || ""
+                        (
+                          providers.find((p) => p.id === activeProvider)?.config as {
+                            redirectUri?: string;
+                          }
+                        )?.redirectUri || ""
                       }
                       onChange={(e) =>
                         handleConfigUpdate(activeProvider, { redirectUri: e.target.value })
@@ -216,7 +232,11 @@ export const SSOIntegration: React.FC = () => {
                       id="scope"
                       placeholder="openid profile email"
                       value={
-                        providers.find((p) => p.id === activeProvider)?.(config as any).scope || ""
+                        (
+                          providers.find((p) => p.id === activeProvider)?.config as {
+                            scope?: string;
+                          }
+                        )?.scope || ""
                       }
                       onChange={(e) =>
                         handleConfigUpdate(activeProvider, { scope: e.target.value })
@@ -234,7 +254,11 @@ export const SSOIntegration: React.FC = () => {
                       id="issuer"
                       placeholder="https://your-provider.com"
                       value={
-                        providers.find((p) => p.id === activeProvider)?.(config as any).issuer || ""
+                        (
+                          providers.find((p) => p.id === activeProvider)?.config as {
+                            issuer?: string;
+                          }
+                        )?.issuer || ""
                       }
                       onChange={(e) =>
                         handleConfigUpdate(activeProvider, { issuer: e.target.value })
@@ -247,8 +271,11 @@ export const SSOIntegration: React.FC = () => {
                       id="authorizationUrl"
                       placeholder="https://your-provider.com/oauth/authorize"
                       value={
-                        providers.find((p) => p.id === activeProvider)?.(config as any)
-                          .authorizationUrl || ""
+                        (
+                          providers.find((p) => p.id === activeProvider)?.config as {
+                            authorizationUrl?: string;
+                          }
+                        )?.authorizationUrl || ""
                       }
                       onChange={(e) =>
                         handleConfigUpdate(activeProvider, { authorizationUrl: e.target.value })
@@ -261,8 +288,11 @@ export const SSOIntegration: React.FC = () => {
                       id="tokenUrl"
                       placeholder="https://your-provider.com/oauth/token"
                       value={
-                        providers.find((p) => p.id === activeProvider)?.(config as any).tokenUrl ||
-                        ""
+                        (
+                          providers.find((p) => p.id === activeProvider)?.config as {
+                            tokenUrl?: string;
+                          }
+                        )?.tokenUrl || ""
                       }
                       onChange={(e) =>
                         handleConfigUpdate(activeProvider, { tokenUrl: e.target.value })
@@ -280,8 +310,11 @@ export const SSOIntegration: React.FC = () => {
                       id="emailField"
                       placeholder="email"
                       value={
-                        providers.find((p) => p.id === activeProvider)?.(config as any)
-                          .emailField || ""
+                        (
+                          providers.find((p) => p.id === activeProvider)?.config as {
+                            emailField?: string;
+                          }
+                        )?.emailField || ""
                       }
                       onChange={(e) =>
                         handleConfigUpdate(activeProvider, { emailField: e.target.value })
@@ -294,8 +327,11 @@ export const SSOIntegration: React.FC = () => {
                       id="nameField"
                       placeholder="name"
                       value={
-                        providers.find((p) => p.id === activeProvider)?.(config as any).nameField ||
-                        ""
+                        (
+                          providers.find((p) => p.id === activeProvider)?.config as {
+                            nameField?: string;
+                          }
+                        )?.nameField || ""
                       }
                       onChange={(e) =>
                         handleConfigUpdate(activeProvider, { nameField: e.target.value })
@@ -308,8 +344,11 @@ export const SSOIntegration: React.FC = () => {
                       id="roleField"
                       placeholder="role"
                       value={
-                        providers.find((p) => p.id === activeProvider)?.(config as any).roleField ||
-                        ""
+                        (
+                          providers.find((p) => p.id === activeProvider)?.config as {
+                            roleField?: string;
+                          }
+                        )?.roleField || ""
                       }
                       onChange={(e) =>
                         handleConfigUpdate(activeProvider, { roleField: e.target.value })

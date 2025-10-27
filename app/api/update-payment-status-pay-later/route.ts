@@ -106,13 +106,9 @@ export async function POST() {
             AND created_at < today_start
             AND payment_status IN ('PAID', 'PAY_LATER', 'TILL');
           
-          -- Count total today's orders - include PAID, PAY_LATER, and TILL
-          SELECT COUNT(*) INTO today_orders_count_val
-          FROM orders 
-          WHERE venue_id = p_venue_id
-            AND created_at >= today_start
-            AND created_at <= today_end
-            AND payment_status IN ('PAID', 'PAY_LATER', 'TILL');
+          -- Count total today's orders = live + earlier today (for consistency)
+          -- This ensures today_orders_count always equals live_count + earlier_today_count
+          today_orders_count_val := live_count_val + earlier_today_count_val;
           
           -- Count active tables (tables with current orders) - include PAID, PAY_LATER, and TILL
           SELECT COUNT(DISTINCT table_number) INTO active_tables_count_val

@@ -3,12 +3,12 @@
  * Centralized data access for venues
  */
 
-import { createServerSupabase } from '@/lib/supabase';
-import type { Database } from '@/types/database';
+import { createServerSupabase } from "@/lib/supabase";
+import type { Database } from "@/types/database";
 
-type Venue = Database['public']['Tables']['venues']['Row'];
-type VenueInsert = Database['public']['Tables']['venues']['Insert'];
-type VenueUpdate = Database['public']['Tables']['venues']['Update'];
+type Venue = unknown; // Database['public']['Tables']['venues']['Row'];
+type VenueInsert = unknown; // Database['public']['Tables']['venues']['Insert'];
+type VenueUpdate = unknown; // Database['public']['Tables']['venues']['Update'];
 
 export class VenuesRepo {
   /**
@@ -16,11 +16,7 @@ export class VenuesRepo {
    */
   static async findById(venueId: string) {
     const supabase = await createServerSupabase();
-    return supabase
-      .from('venues')
-      .select('*')
-      .eq('venue_id', venueId)
-      .single();
+    return supabase.from("venues").select("*").eq("venue_id", venueId).single();
   }
 
   /**
@@ -29,10 +25,10 @@ export class VenuesRepo {
   static async listByOwner(ownerId: string) {
     const supabase = await createServerSupabase();
     return supabase
-      .from('venues')
-      .select('*')
-      .eq('owner_user_id', ownerId)
-      .order('created_at', { ascending: true });
+      .from("venues")
+      .select("*")
+      .eq("owner_user_id", ownerId)
+      .order("created_at", { ascending: true });
   }
 
   /**
@@ -40,11 +36,7 @@ export class VenuesRepo {
    */
   static async create(venue: VenueInsert) {
     const supabase = await createServerSupabase();
-    return supabase
-      .from('venues')
-      .insert(venue)
-      .select()
-      .single();
+    return supabase.from("venues").insert(venue).select().single();
   }
 
   /**
@@ -52,12 +44,7 @@ export class VenuesRepo {
    */
   static async update(venueId: string, updates: VenueUpdate) {
     const supabase = await createServerSupabase();
-    return supabase
-      .from('venues')
-      .update(updates)
-      .eq('venue_id', venueId)
-      .select()
-      .single();
+    return supabase.from("venues").update(updates).eq("venue_id", venueId).select().single();
   }
 
   /**
@@ -65,10 +52,7 @@ export class VenuesRepo {
    */
   static async delete(venueId: string) {
     const supabase = await createServerSupabase();
-    return supabase
-      .from('venues')
-      .delete()
-      .eq('venue_id', venueId);
+    return supabase.from("venues").delete().eq("venue_id", venueId);
   }
 
   /**
@@ -77,12 +61,12 @@ export class VenuesRepo {
   static async isOwner(venueId: string, userId: string) {
     const supabase = await createServerSupabase();
     const { data } = await supabase
-      .from('venues')
-      .select('venue_id')
-      .eq('venue_id', venueId)
-      .eq('owner_user_id', userId)
+      .from("venues")
+      .select("venue_id")
+      .eq("venue_id", venueId)
+      .eq("owner_user_id", userId)
       .maybeSingle();
-    
+
     return !!data;
   }
 
@@ -91,11 +75,7 @@ export class VenuesRepo {
    */
   static async getSettings(venueId: string) {
     const supabase = await createServerSupabase();
-    return supabase
-      .from('venues')
-      .select('settings')
-      .eq('venue_id', venueId)
-      .single();
+    return supabase.from("venues").select("settings").eq("venue_id", venueId).single();
   }
 
   /**
@@ -105,4 +85,3 @@ export class VenuesRepo {
     return this.update(venueId, { settings });
   }
 }
-

@@ -44,8 +44,9 @@ export function getPlatformRedirectUrl(baseUrl: string, userAgent: string): stri
 
 // Handle authentication errors consistently
 export function handleAuthError(error: unknown): { message: string; code: string } {
-  const errorMessage = error?.message || "Unknown authentication error";
-  const errorCode = error?.code || "unknown_error";
+  const errorObj = error as { message?: string; code?: string };
+  const errorMessage = errorObj?.message || "Unknown authentication error";
+  const errorCode = errorObj?.code || "unknown_error";
 
   // Map common Supabase auth errors to user-friendly messages
   switch (errorCode) {

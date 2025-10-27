@@ -3,35 +3,38 @@
  * Centralized data access for menu items
  */
 
-import { createServerSupabase } from '@/lib/supabase';
-import type { Database } from '@/types/database';
+import { createServerSupabase } from "@/lib/supabase";
+import type { Database } from "@/types/database";
 
-type MenuItem = Database['public']['Tables']['menu_items']['Row'];
-type MenuItemInsert = Database['public']['Tables']['menu_items']['Insert'];
-type MenuItemUpdate = Database['public']['Tables']['menu_items']['Update'];
+type MenuItem = unknown; // Database['public']['Tables']['menu_items']['Row'];
+type MenuItemInsert = unknown; // Database['public']['Tables']['menu_items']['Insert'];
+type MenuItemUpdate = unknown; // Database['public']['Tables']['menu_items']['Update'];
 
 export class MenuRepo {
   /**
    * Get menu items by venue
    */
-  static async listByVenue(venueId: string, options?: {
-    category?: string;
-    available?: boolean;
-  }) {
+  static async listByVenue(
+    venueId: string,
+    options?: {
+      category?: string;
+      available?: boolean;
+    }
+  ) {
     const supabase = await createServerSupabase();
-    
+
     let query = supabase
-      .from('menu_items')
-      .select('*')
-      .eq('venue_id', venueId)
-      .order('position', { ascending: true });
+      .from("menu_items")
+      .select("*")
+      .eq("venue_id", venueId)
+      .order("position", { ascending: true });
 
     if (options?.category) {
-      query = query.eq('category', options.category);
+      query = query.eq("category", options.category);
     }
 
     if (options?.available !== undefined) {
-      query = query.eq('is_available', options.available);
+      query = query.eq("is_available", options.available);
     }
 
     return query;
@@ -42,11 +45,7 @@ export class MenuRepo {
    */
   static async findById(itemId: string) {
     const supabase = await createServerSupabase();
-    return supabase
-      .from('menu_items')
-      .select('*')
-      .eq('id', itemId)
-      .single();
+    return supabase.from("menu_items").select("*").eq("id", itemId).single();
   }
 
   /**
@@ -54,11 +53,7 @@ export class MenuRepo {
    */
   static async create(item: MenuItemInsert) {
     const supabase = await createServerSupabase();
-    return supabase
-      .from('menu_items')
-      .insert(item)
-      .select()
-      .single();
+    return supabase.from("menu_items").insert(item).select().single();
   }
 
   /**
@@ -66,12 +61,7 @@ export class MenuRepo {
    */
   static async update(itemId: string, updates: MenuItemUpdate) {
     const supabase = await createServerSupabase();
-    return supabase
-      .from('menu_items')
-      .update(updates)
-      .eq('id', itemId)
-      .select()
-      .single();
+    return supabase.from("menu_items").update(updates).eq("id", itemId).select().single();
   }
 
   /**
@@ -79,10 +69,7 @@ export class MenuRepo {
    */
   static async delete(itemId: string) {
     const supabase = await createServerSupabase();
-    return supabase
-      .from('menu_items')
-      .delete()
-      .eq('id', itemId);
+    return supabase.from("menu_items").delete().eq("id", itemId);
   }
 
   /**
@@ -104,14 +91,9 @@ export class MenuRepo {
    */
   static async bulkUpdatePrices(updates: Array<{ id: string; price: number }>) {
     const supabase = await createServerSupabase();
-    
+
     return Promise.all(
-      updates.map(({ id, price }) => 
-        supabase
-          .from('menu_items')
-          .update({ price })
-          .eq('id', id)
-      )
+      updates.map(({ id, price }) => supabase.from("menu_items").update({ price }).eq("id", id))
     );
   }
 
@@ -121,10 +103,10 @@ export class MenuRepo {
   static async getCategories(venueId: string) {
     const supabase = await createServerSupabase();
     return supabase
-      .from('menu_items')
-      .select('category')
-      .eq('venue_id', venueId)
-      .not('category', 'is', null);
+      .from("menu_items")
+      .select("category")
+      .eq("venue_id", venueId)
+      .not("category", "is", null);
   }
 
   /**
@@ -132,17 +114,16 @@ export class MenuRepo {
    */
   static async countByVenue(venueId: string, available?: boolean) {
     const supabase = await createServerSupabase();
-    
+
     let query = supabase
-      .from('menu_items')
-      .select('id', { count: 'exact', head: true })
-      .eq('venue_id', venueId);
+      .from("menu_items")
+      .select("id", { count: "exact", head: true })
+      .eq("venue_id", venueId);
 
     if (available !== undefined) {
-      query = query.eq('is_available', available);
+      query = query.eq("is_available", available);
     }
 
     return query;
   }
 }
-

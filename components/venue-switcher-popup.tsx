@@ -76,15 +76,14 @@ export default function VenueSwitcherPopup({
       const supabase = createClient();
 
       // Get current user first
-      const {
-        data: { user },
-      } = await supabase.auth.getSession();
+      const { data: sessionData } = await supabase.auth.getSession();
+      const user = sessionData?.session?.user ?? null;
       if (!user) {
         return;
       }
 
       // Only load venues owned by the current user
-      const { data, error } = await supabase
+      const { data: venuesData, error } = await supabase
         .from("venues")
         .select("*")
         .eq("owner_user_id", user.id)
@@ -92,7 +91,7 @@ export default function VenueSwitcherPopup({
         .order("created_at", { ascending: true });
 
       if (error) throw error;
-      setVenues(data || []);
+      setVenues(venuesData || []);
     } catch (_error) {
       toast({
         title: "Error",
@@ -117,9 +116,8 @@ export default function VenueSwitcherPopup({
       const supabase = createClient();
 
       // Get current user
-      const {
-        data: { user },
-      } = await supabase.auth.getSession();
+      const { data: userSessionData } = await supabase.auth.getSession();
+      const user = userSessionData?.session?.user ?? null;
       if (!user) throw new Error("User not authenticated");
 
       // Get organization_id from current venue
@@ -132,7 +130,7 @@ export default function VenueSwitcherPopup({
       // Generate a unique venue_id
       const venueId = `venue-${crypto.randomUUID().replace(/-/g, "")}`;
 
-      const { data, error } = await supabase
+      const { data: insertData, error } = await supabase
         .from("venues")
         .insert({
           venue_id: venueId,
@@ -162,15 +160,16 @@ export default function VenueSwitcherPopup({
       await loadVenues();
 
       // Automatically switch to the newly added venue
-
-      onVenueChange(data.venue_id);
+      if (insertData && "venue_id" in insertData) {
+        onVenueChange((insertData as { venue_id: string }).venue_id);
+      }
 
       // Close the main modal
       setOpen(false);
     } catch (_error) {
       toast({
         title: "Error",
-        description: _error.message || "Failed to add venue",
+        description: _error instanceof Error ? _error.message : "Failed to add venue",
         variant: "destructive",
       });
     } finally {
@@ -216,7 +215,7 @@ export default function VenueSwitcherPopup({
     } catch (_error) {
       toast({
         title: "Error",
-        description: _error.message || "Failed to update venue",
+        description: _error instanceof Error ? _error.message : "Failed to update venue",
         variant: "destructive",
       });
     } finally {
@@ -246,7 +245,7 @@ export default function VenueSwitcherPopup({
     } catch (_error) {
       toast({
         title: "Error",
-        description: _error.message || "Failed to delete venue",
+        description: _error instanceof Error ? _error.message : "Failed to delete venue",
         variant: "destructive",
       });
     } finally {

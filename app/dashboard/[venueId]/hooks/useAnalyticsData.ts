@@ -104,10 +104,25 @@ export function useAnalyticsData(venueId: string) {
           order.items.forEach((item: Record<string, unknown>) => {
             // Get category from menu items database, not from order item
             const menuItemId = item.menu_item_id as string;
-            const category = menuItemCategories.get(menuItemId) || item.category || "Other";
-            const price = parseFloat((item.unit_price as string) || (item.price as string) || "0");
-            const qty = parseInt((item.quantity as string) || (item.qty as string) || "1");
-            categoryRevenue[category] = (categoryRevenue[category] || 0) + price * qty;
+            const category =
+              menuItemCategories.get(menuItemId) ||
+              (typeof item.category === "string" ? item.category : "Other");
+            const price = parseFloat(
+              typeof item.unit_price === "string"
+                ? item.unit_price
+                : typeof item.price === "string"
+                  ? item.price
+                  : "0"
+            );
+            const qty = parseInt(
+              typeof item.quantity === "string"
+                ? item.quantity
+                : typeof item.qty === "string"
+                  ? item.qty
+                  : "1"
+            );
+            const categoryKey = String(category);
+            categoryRevenue[categoryKey] = (categoryRevenue[categoryKey] || 0) + price * qty;
           });
         }
       });

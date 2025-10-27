@@ -8,11 +8,11 @@ export async function executeDiscountsCreate(
   userId: string,
   preview: boolean
 ): Promise<AIPreviewDiff | AIExecutionResult> {
-  const typedParams = params as { 
-    name: string; 
-    scope: string; 
-    amountPct: number; 
-    startsAt: string; 
+  const typedParams = _params as {
+    name: string;
+    scope: string;
+    amountPct: number;
+    startsAt: string;
     endsAt?: string;
     scopeId?: string;
   };
@@ -22,13 +22,15 @@ export async function executeDiscountsCreate(
     return {
       toolName: "discounts.create",
       before: [],
-      after: [{
-        name: typedParams.name,
-        scope: typedParams.scope,
-        discount: `${typedParams.amountPct}%`,
-        startsAt: typedParams.startsAt,
-        endsAt: typedParams.endsAt || "No end date",
-      }],
+      after: [
+        {
+          name: typedParams.name,
+          scope: typedParams.scope,
+          discount: `${typedParams.amountPct}%`,
+          startsAt: typedParams.startsAt,
+          endsAt: typedParams.endsAt || "No end date",
+        },
+      ],
       impact: {
         itemsAffected: 1,
         description: `Discount "${typedParams.name}" (${typedParams.amountPct}% off) will be created`,
@@ -36,20 +38,18 @@ export async function executeDiscountsCreate(
     };
   }
 
-  const { error } = await supabase
-    .from("discounts")
-    .insert({
-      venue_id: venueId,
-      name: typedParams.name,
-      scope: typedParams.scope,
-      scope_id: typedParams.scopeId,
-      amount_pct: typedParams.amountPct,
-      starts_at: typedParams.startsAt,
-      ends_at: typedParams.endsAt,
-      created_by: userId,
-    });
+  const { error } = await supabase.from("discounts").insert({
+    venue_id: venueId,
+    name: typedParams.name,
+    scope: typedParams.scope,
+    scope_id: typedParams.scopeId,
+    amount_pct: typedParams.amountPct,
+    starts_at: typedParams.startsAt,
+    ends_at: typedParams.endsAt,
+    created_by: userId,
+  });
 
-  if (error) throw new AIAssistantError("Failed to create discount", "EXECUTION_FAILED", error);
+  if (error) throw new AIAssistantError("Failed to create discount", "EXECUTION_FAILED", { error });
 
   return {
     success: true,
@@ -63,9 +63,9 @@ export async function executeKDSGetOverdue(
   _params: unknown,
   venueId: string,
   _userId: string,
-  preview: boolean
+  _preview: boolean
 ): Promise<AIPreviewDiff | AIExecutionResult> {
-  const typedParams = params as { station?: string; thresholdMinutes: number };
+  const typedParams = _params as { station?: string; thresholdMinutes: number };
   const supabase = await createClient();
 
   const query = supabase
@@ -81,11 +81,12 @@ export async function executeKDSGetOverdue(
   const { data: tickets } = await query;
 
   const now = new Date();
-  const overdueTickets = tickets?.filter(ticket => {
-    if (!ticket.started_at) return false;
-    const elapsed = (now.getTime() - new Date(ticket.started_at).getTime()) / 1000 / 60;
-    return elapsed > typedParams.thresholdMinutes;
-  }) || [];
+  const overdueTickets =
+    tickets?.filter((ticket) => {
+      if (!ticket.started_at) return false;
+      const elapsed = (now.getTime() - new Date(ticket.started_at).getTime()) / 1000 / 60;
+      return elapsed > typedParams.thresholdMinutes;
+    }) || [];
 
   return {
     success: true,
@@ -97,9 +98,9 @@ export async function executeKDSGetOverdue(
 
 export async function executeKDSSuggestOptimization(
   _params: unknown,
-  venueId: string,
-  userId: string,
-  preview: boolean
+  _venueId: string,
+  _userId: string,
+  _preview: boolean
 ): Promise<AIPreviewDiff | AIExecutionResult> {
   return {
     success: true,
@@ -118,34 +119,34 @@ export async function executeKDSSuggestOptimization(
 export async function executeNavigationGoToPage(
   params: NavigationGoToPageParams,
   venueId: string,
-  userId: string,
-  preview: boolean
+  _userId: string,
+  _preview: boolean
 ): Promise<AIPreviewDiff | AIExecutionResult> {
   const { page } = params;
-  
+
   const routeMap: Record<string, string> = {
-    "dashboard": `/dashboard/${venueId}`,
-    "menu": `/dashboard/${venueId}/menu-management`,
-    "inventory": `/dashboard/${venueId}/inventory`,
-    "orders": `/dashboard/${venueId}/orders`,
+    dashboard: `/dashboard/${venueId}`,
+    menu: `/dashboard/${venueId}/menu-management`,
+    inventory: `/dashboard/${venueId}/inventory`,
+    orders: `/dashboard/${venueId}/orders`,
     "live-orders": `/dashboard/${venueId}/live-orders`,
-    "kds": `/dashboard/${venueId}/kds`,
+    kds: `/dashboard/${venueId}/kds`,
     "kitchen-display": `/dashboard/${venueId}/kds`,
     "qr-codes": `/dashboard/${venueId}/qr-codes`,
-    "analytics": `/dashboard/${venueId}/analytics`,
-    "settings": `/dashboard/${venueId}/settings`,
-    "staff": `/dashboard/${venueId}/staff`,
-    "tables": `/dashboard/${venueId}/tables`,
-    "feedback": `/dashboard/${venueId}/feedback`,
+    analytics: `/dashboard/${venueId}/analytics`,
+    settings: `/dashboard/${venueId}/settings`,
+    staff: `/dashboard/${venueId}/staff`,
+    tables: `/dashboard/${venueId}/tables`,
+    feedback: `/dashboard/${venueId}/feedback`,
   };
 
   const targetRoute = routeMap[page];
-  
+
   if (!targetRoute) {
     throw new AIAssistantError(`Unknown page: ${page}`, "INVALID_PARAMS");
   }
 
-  if (preview) {
+  if (_preview) {
     return {
       toolName: "navigation.go_to_page",
       before: [],
@@ -170,4 +171,3 @@ export async function executeNavigationGoToPage(
     auditId: "",
   };
 }
-

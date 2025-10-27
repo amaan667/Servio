@@ -88,7 +88,7 @@ export function ImportCSVDialog({ open, onOpenChange, venueId, onSuccess }: Impo
               </p>
             </div>
 
-            {result && (
+            {result ? (
               <Alert
                 variant={
                   (result as any).success && (result as any).error_count === 0
@@ -113,9 +113,13 @@ export function ImportCSVDialog({ open, onOpenChange, venueId, onSuccess }: Impo
                   )}
                 </AlertDescription>
               </Alert>
-            )}
+            ) : null}
 
-            {result?.errors && (result as any).errors.length > 0 && (
+            {result &&
+            typeof result === "object" &&
+            "errors" in result &&
+            Array.isArray((result as any).errors) &&
+            (result as any).errors.length > 0 ? (
               <div className="max-h-32 overflow-y-auto text-sm">
                 <p className="font-medium mb-1">Errors:</p>
                 {(result as any).errors.map((err: unknown, i: number) => (
@@ -124,7 +128,7 @@ export function ImportCSVDialog({ open, onOpenChange, venueId, onSuccess }: Impo
                   </p>
                 ))}
               </div>
-            )}
+            ) : null}
           </div>
           <DialogFooter>
             <Button type="button" variant="outline" onClick={() => onOpenChange(false)}>

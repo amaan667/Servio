@@ -51,7 +51,7 @@ export const pdfWorker =
 
           try {
             // Convert PDF to images
-            const images = await convertPDFToImages(pdfBytes, venueId);
+            const images = await convertPDFToImages(pdfBytes);
 
             logger.info("PDF processing job completed", {
               jobId: job.id,
@@ -66,7 +66,8 @@ export const pdfWorker =
               imageCount: images.length,
             };
           } catch (_error) {
-            logger.error("PDF processing job failed", _error, {
+            logger.error("PDF processing job failed", {
+              error: _error,
               jobId: job.id,
               venueId,
               uploadId,
@@ -91,7 +92,7 @@ if (pdfQueueEvents) {
   });
 
   pdfQueueEvents.on("failed", ({ jobId, failedReason }) => {
-    logger.error("PDF job failed", new Error(failedReason), { jobId });
+    logger.error("PDF job failed", { error: new Error(failedReason), jobId });
   });
 }
 

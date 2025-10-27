@@ -1,6 +1,7 @@
 // Middleware helpers for enforcing tier limits in API routes
 import { NextResponse } from "next/server";
 import { checkLimit, checkFeatureAccess } from "./tier-restrictions";
+import { createClient } from "./supabase";
 
 interface TierCheckResult {
   allowed: boolean;
@@ -14,7 +15,7 @@ interface TierCheckResult {
  */
 export async function enforceResourceLimit(
   userId: string,
-  venueId: string,
+  _venueId: string,
   resourceType: "maxMenuItems" | "maxTables" | "maxStaff" | "maxVenues",
   currentCount: number
 ): Promise<TierCheckResult> {
@@ -48,7 +49,7 @@ export async function enforceResourceLimit(
  */
 export async function enforceFeatureAccess(
   userId: string,
-  venueId: string,
+  _venueId: string,
   feature: "kds" | "inventory" | "analytics" | "aiAssistant" | "multiVenue"
 ): Promise<TierCheckResult> {
   // Check feature access

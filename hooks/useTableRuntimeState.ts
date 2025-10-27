@@ -1,6 +1,6 @@
-import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
-import { supabaseBrowser as createClient } from '@/lib/supabase';
-import { logger } from '@/lib/logger';
+import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
+import { supabaseBrowser as createClient } from "@/lib/supabase";
+import { logger } from "@/lib/logger";
 
 const supabase = createClient();
 
@@ -11,14 +11,14 @@ export interface TableRuntimeState {
   seat_count: number;
   is_active: boolean;
   session_id: string | null;
-  
+
   // PRIMARY STATE: FREE (available for seating) or OCCUPIED (currently seated)
-  primary_status: 'FREE' | 'OCCUPIED' | null;
+  primary_status: "FREE" | "OCCUPIED" | null;
   opened_at: string | null;
   server_id: string | null;
-  
+
   // SECONDARY LAYER: Reservation status underneath the primary state
-  reservation_status: 'RESERVED_NOW' | 'RESERVED_LATER' | 'NONE';
+  reservation_status: "RESERVED_NOW" | "RESERVED_LATER" | "NONE";
   reserved_now_id: string | null;
   reserved_now_start: string | null;
   reserved_now_end: string | null;
@@ -50,69 +50,69 @@ export interface UnassignedReservation {
   party_size: number;
   name: string | null;
   phone: string | null;
-  status: 'BOOKED' | 'CHECKED_IN' | 'CANCELLED' | 'NO_SHOW';
+  status: "BOOKED" | "CHECKED_IN" | "CANCELLED" | "NO_SHOW";
   created_at: string;
 }
 
 // Get table runtime state (layered state)
 export function useTableRuntimeState(venueId: string) {
   return useQuery({
-    queryKey: ['tables', 'runtime-state', venueId],
+    queryKey: ["tables", "runtime-state", venueId],
     queryFn: async () => {
       const { data, error } = await supabase
-        .from('table_runtime_state')
-        .select('*')
-        .eq('venue_id', venueId)
-        .order('label');
+        .from("table_runtime_state")
+        .select("*")
+        .eq("venue_id", venueId)
+        .order("label");
       if (error) throw error;
       return data as TableRuntimeState[];
     },
-    enabled: !!venueId
+    enabled: !!venueId,
   });
 }
 
 // Get table counters with new logic
 export function useTableCounters(venueId: string) {
   return useQuery({
-    queryKey: ['tables', 'counters', venueId],
+    queryKey: ["tables", "counters", venueId],
     queryFn: async () => {
-      const { data, error } = await supabase.rpc('api_table_counters', { 
-        p_venue_id: venueId 
+      const { data, error } = await supabase.rpc("api_table_counters", {
+        p_venue_id: venueId,
       });
       if (error) {
-        logger.error('[TABLE COUNTERS] Error:', error);
+        logger.error("[TABLE COUNTERS] Error:", error);
         throw error;
       }
-      
+
       // The function returns a single JSON object, not an array
       const result = Array.isArray(data) ? data[0] : data;
-      logger.debug('[TABLE_RUNTIME_STATE] Fetched table counts:', {
+      logger.debug("[TABLE_RUNTIME_STATE] Fetched table counts:", {
         total_tables: result?.total_tables,
         available: result?.available,
         occupied: result?.occupied,
         reserved_now: result?.reserved_now,
-        reserved_later: result?.reserved_later
+        reserved_later: result?.reserved_later,
       });
       return result;
     },
-    enabled: !!venueId
+    enabled: !!venueId,
   });
 }
 
 // Get unassigned reservations
 export function useUnassignedReservations(venueId: string) {
   return useQuery({
-    queryKey: ['reservations', 'unassigned', venueId],
+    queryKey: ["reservations", "unassigned", venueId],
     queryFn: async () => {
       const { data, error } = await supabase
-        .from('unassigned_reservations')
-        .select('*')
-        .eq('venue_id', venueId);
+        .from("unassigned_reservations")
+        .select("*")
+        .eq("venue_id", venueId);
       if (error) throw error;
       return data as UnassignedReservation[];
     },
     refetchInterval: 15000,
-    enabled: !!venueId
+    enabled: !!venueId,
   });
 }
 
@@ -120,33 +120,33 @@ export function useUnassignedReservations(venueId: string) {
 export function useSeatParty() {
   const qc = useQueryClient();
   return useMutation({
-    mutationFn: async ({ 
-      tableId, 
+    mutationFn: async ({
+      tableId,
       venueId,
-      reservationId, 
-      serverId 
-    }: { 
-      tableId: string; 
+      reservationId,
+      serverId,
+    }: {
+      tableId: string;
       venueId: string;
-      reservationId?: string; 
-      serverId?: string; 
+      reservationId?: string;
+      serverId?: string;
     }) => {
-      const { error } = await supabase.rpc('api_seat_party', {
+      const { error } = await supabase.rpc("api_seat_party", {
         p_table_id: tableId,
         p_venue_id: venueId,
         p_reservation_id: reservationId || null,
-        p_server_id: serverId || null
+        p_server_id: serverId || null,
       });
       if (error) {
-        logger.error('[TABLE HOOK] api_seat_party error:', error);
+        logger.error("[TABLE HOOK] api_seat_party error:", error);
         throw error;
       }
     },
-    onSuccess: (_, { tableId }) => {
+    onSuccess: (_, { tableId: _tableId }) => {
       // Invalidate all table-related queries
-      qc.invalidateQueries({ queryKey: ['tables'] });
-      qc.invalidateQueries({ queryKey: ['reservations'] });
-    }
+      qc.invalidateQueries({ queryKey: ["tables"] });
+      qc.invalidateQueries({ queryKey: ["reservations"] });
+    },
   });
 }
 
@@ -155,18 +155,18 @@ export function useCloseTable() {
   const qc = useQueryClient();
   return useMutation({
     mutationFn: async ({ tableId, venueId }: { tableId: string; venueId: string }) => {
-      const { error } = await supabase.rpc('api_close_table', { 
+      const { error } = await supabase.rpc("api_close_table", {
         p_table_id: tableId,
-        p_venue_id: venueId
+        p_venue_id: venueId,
       });
       if (error) {
-        logger.error('[TABLE HOOK] api_close_table error:', error);
+        logger.error("[TABLE HOOK] api_close_table error:", error);
         throw error;
       }
     },
     onSuccess: () => {
-      qc.invalidateQueries({ queryKey: ['tables'] });
-    }
+      qc.invalidateQueries({ queryKey: ["tables"] });
+    },
   });
 }
 
@@ -174,23 +174,17 @@ export function useCloseTable() {
 export function useAssignReservation() {
   const qc = useQueryClient();
   return useMutation({
-    mutationFn: async ({ 
-      reservationId, 
-      tableId 
-    }: { 
-      reservationId: string; 
-      tableId: string; 
-    }) => {
-      const { error } = await supabase.rpc('api_assign_reservation', {
+    mutationFn: async ({ reservationId, tableId }: { reservationId: string; tableId: string }) => {
+      const { error } = await supabase.rpc("api_assign_reservation", {
         p_reservation_id: reservationId,
-        p_table_id: tableId
+        p_table_id: tableId,
       });
       if (error) throw error;
     },
     onSuccess: () => {
-      qc.invalidateQueries({ queryKey: ['tables'] });
-      qc.invalidateQueries({ queryKey: ['reservations'] });
-    }
+      qc.invalidateQueries({ queryKey: ["tables"] });
+      qc.invalidateQueries({ queryKey: ["reservations"] });
+    },
   });
 }
 
@@ -199,15 +193,15 @@ export function useCancelReservation() {
   const qc = useQueryClient();
   return useMutation({
     mutationFn: async ({ reservationId }: { reservationId: string }) => {
-      const { error } = await supabase.rpc('api_cancel_reservation', {
-        p_reservation_id: reservationId
+      const { error } = await supabase.rpc("api_cancel_reservation", {
+        p_reservation_id: reservationId,
       });
       if (error) throw error;
     },
     onSuccess: () => {
-      qc.invalidateQueries({ queryKey: ['tables'] });
-      qc.invalidateQueries({ queryKey: ['reservations'] });
-    }
+      qc.invalidateQueries({ queryKey: ["tables"] });
+      qc.invalidateQueries({ queryKey: ["reservations"] });
+    },
   });
 }
 
@@ -216,15 +210,15 @@ export function useNoShowReservation() {
   const qc = useQueryClient();
   return useMutation({
     mutationFn: async ({ reservationId }: { reservationId: string }) => {
-      const { error } = await supabase.rpc('api_no_show_reservation', {
-        p_reservation_id: reservationId
+      const { error } = await supabase.rpc("api_no_show_reservation", {
+        p_reservation_id: reservationId,
       });
       if (error) throw error;
     },
     onSuccess: () => {
-      qc.invalidateQueries({ queryKey: ['tables'] });
-      qc.invalidateQueries({ queryKey: ['reservations'] });
-    }
+      qc.invalidateQueries({ queryKey: ["tables"] });
+      qc.invalidateQueries({ queryKey: ["reservations"] });
+    },
   });
 }
 
@@ -232,34 +226,32 @@ export function useNoShowReservation() {
 export function useRemoveTable() {
   const qc = useQueryClient();
   return useMutation({
-    mutationFn: async ({ tableId, venueId }: { tableId: string; venueId: string }) => {
-      
+    mutationFn: async ({ tableId, venueId: _venueId }: { tableId: string; venueId: string }) => {
       const response = await fetch(`/api/tables/${tableId}`, {
-        method: 'DELETE',
+        method: "DELETE",
         headers: {
-          'Content-Type': 'application/json',
+          "Content-Type": "application/json",
         },
       });
 
-
       if (!response.ok) {
         const errorData = await response.json();
-        logger.error('[TABLE HOOK] Delete table error:', errorData);
-        throw new Error(errorData.error || 'Failed to delete table');
+        logger.error("[TABLE HOOK] Delete table error:", errorData);
+        throw new Error(errorData.error || "Failed to delete table");
       }
 
       const responseData = await response.json();
     },
-    onSuccess: (data, variables) => {
-      qc.invalidateQueries({ queryKey: ['tables'] });
-      qc.invalidateQueries({ queryKey: ['tables', 'runtime-state'] });
-      qc.invalidateQueries({ queryKey: ['tables', 'counters'] });
-      qc.invalidateQueries({ queryKey: ['tables', 'runtime-state', variables.venueId] });
-      qc.invalidateQueries({ queryKey: ['tables', 'counters', variables.venueId] });
+    onSuccess: (_data, variables) => {
+      qc.invalidateQueries({ queryKey: ["tables"] });
+      qc.invalidateQueries({ queryKey: ["tables", "runtime-state"] });
+      qc.invalidateQueries({ queryKey: ["tables", "counters"] });
+      qc.invalidateQueries({ queryKey: ["tables", "runtime-state", variables.venueId] });
+      qc.invalidateQueries({ queryKey: ["tables", "counters", variables.venueId] });
     },
     onError: (error) => {
-      logger.error('[TABLE HOOK] onError called:', error);
-    }
+      logger.error("[TABLE HOOK] onError called:", error);
+    },
   });
 }
 
@@ -268,32 +260,31 @@ export function useClearAllTables() {
   const qc = useQueryClient();
   return useMutation({
     mutationFn: async ({ venueId }: { venueId: string }) => {
-      
-      const response = await fetch('/api/tables/clear', {
-        method: 'POST',
+      const response = await fetch("/api/tables/clear", {
+        method: "POST",
         headers: {
-          'Content-Type': 'application/json',
+          "Content-Type": "application/json",
         },
         body: JSON.stringify({ venue_id: venueId }),
       });
 
       if (!response.ok) {
         const errorData = await response.json();
-        logger.error('[TABLE HOOK] Clear tables error:', errorData);
-        throw new Error(errorData.error || 'Failed to clear table runtime state');
+        logger.error("[TABLE HOOK] Clear tables error:", errorData);
+        throw new Error(errorData.error || "Failed to clear table runtime state");
       }
 
       const responseData = await response.json();
     },
-    onSuccess: (data, variables) => {
-      qc.invalidateQueries({ queryKey: ['tables'] });
-      qc.invalidateQueries({ queryKey: ['tables', 'runtime-state'] });
-      qc.invalidateQueries({ queryKey: ['tables', 'counters'] });
-      qc.invalidateQueries({ queryKey: ['tables', 'runtime-state', variables.venueId] });
-      qc.invalidateQueries({ queryKey: ['tables', 'counters', variables.venueId] });
+    onSuccess: (_data, variables) => {
+      qc.invalidateQueries({ queryKey: ["tables"] });
+      qc.invalidateQueries({ queryKey: ["tables", "runtime-state"] });
+      qc.invalidateQueries({ queryKey: ["tables", "counters"] });
+      qc.invalidateQueries({ queryKey: ["tables", "runtime-state", variables.venueId] });
+      qc.invalidateQueries({ queryKey: ["tables", "counters", variables.venueId] });
     },
     onError: (error) => {
-      logger.error('[TABLE HOOK] Clear tables onError called:', error);
-    }
+      logger.error("[TABLE HOOK] Clear tables onError called:", error);
+    },
   });
 }

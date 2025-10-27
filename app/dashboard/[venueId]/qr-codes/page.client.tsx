@@ -5,11 +5,13 @@ import { useAuth } from "@/app/auth/AuthProvider";
 import { supabaseBrowser } from "@/lib/supabase";
 import QRCodeClient from "./QRCodeClient";
 import RoleBasedNavigation from "@/components/RoleBasedNavigation";
+import type { UserRole } from "@/lib/permissions";
+import { isValidUserRole, toUserRole } from "@/lib/utils/userRole";
 
 export default function QRCodeClientPage({ venueId }: { venueId: string }) {
   const { user } = useAuth();
   const [venueName, setVenueName] = useState<string>("My Venue");
-  const [userRole, setUserRole] = useState<string | null>(null);
+  const [userRole, setUserRole] = useState<UserRole | null>(null);
 
   useEffect(() => {
     const fetchVenueData = async () => {
@@ -30,7 +32,7 @@ export default function QRCodeClientPage({ venueId }: { venueId: string }) {
 
       // Fetch user role
       const cachedRole = sessionStorage.getItem(`user_role_${user.id}`);
-      if (cachedRole) {
+      if (cachedRole && isValidUserRole(cachedRole)) {
         setUserRole(cachedRole);
       } else {
         // Check if owner
@@ -53,7 +55,7 @@ export default function QRCodeClientPage({ venueId }: { venueId: string }) {
             .eq("venue_id", venueId)
             .single();
 
-          if (staffRole) {
+          if (staffRole && isValidUserRole(staffRole.role)) {
             setUserRole(staffRole.role);
             sessionStorage.setItem(`user_role_${user.id}`, staffRole.role);
           }
@@ -75,7 +77,7 @@ export default function QRCodeClientPage({ venueId }: { venueId: string }) {
         {venueId && (
           <RoleBasedNavigation
             venueId={venueId}
-            userRole={(userRole || "staff") as unknown}
+            userRole={userRole || toUserRole(null, "staff")}
             userName={user?.user_metadata?.full_name || user?.email?.split("@")[0] || "User"}
           />
         )}

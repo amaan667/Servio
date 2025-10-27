@@ -157,7 +157,7 @@ export async function POST(
             })
             .eq("id", conversationId);
           logger.debug("[AI CHAT] Updated conversation title to:", { title: aiTitle });
-        } catch (_error) {
+        } catch (error) {
           logger.error("[AI CHAT] Failed to generate title:", {
             error: error instanceof Error ? error.message : "Unknown error",
           });

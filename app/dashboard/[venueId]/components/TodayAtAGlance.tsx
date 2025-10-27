@@ -1,9 +1,22 @@
 "use client";
 
-import React from 'react';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { TrendingUp, Users, DollarSign } from 'lucide-react';
-import { LineChart, Line, AreaChart, Area, PieChart, Pie, Cell, ResponsiveContainer, XAxis, YAxis, Tooltip, Legend } from 'recharts';
+import React from "react";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { TrendingUp, Users, DollarSign } from "lucide-react";
+import {
+  LineChart,
+  Line,
+  AreaChart,
+  Area,
+  PieChart,
+  Pie,
+  Cell,
+  ResponsiveContainer,
+  XAxis,
+  YAxis,
+  Tooltip,
+  Legend,
+} from "recharts";
 
 interface TodayAtAGlanceProps {
   ordersByHour: Array<{ hour: string; orders: number }>;
@@ -12,22 +25,31 @@ interface TodayAtAGlanceProps {
   loading?: boolean;
 }
 
-export function TodayAtAGlance({ ordersByHour, tableUtilization, revenueByCategory, loading = false }: TodayAtAGlanceProps) {
-  const COLORS = ['#5B21B6', '#22C55E', '#F59E0B', '#EF4444', '#8B5CF6', '#06B6D4'];
-  
+export function TodayAtAGlance({
+  ordersByHour,
+  tableUtilization: _tableUtilization,
+  revenueByCategory,
+  loading = false,
+}: TodayAtAGlanceProps) {
+  const COLORS = ["#5B21B6", "#22C55E", "#F59E0B", "#EF4444", "#8B5CF6", "#06B6D4"];
+
   // Never show loading state - render immediately with data
   const isLoading = false;
 
   // Custom tooltip for orders by hour
-  const CustomTooltip = ({ active, payload }: unknown) => {
+  const CustomTooltip = ({
+    active,
+    payload,
+  }: {
+    active?: boolean;
+    payload?: Array<{ payload: { hour: string }; value: number }>;
+  }) => {
     if (active && payload && payload.length) {
       return (
         <div className="bg-white p-3 rounded-lg shadow-lg border border-gray-200">
-          <p className="text-sm font-semibold text-gray-900">
-            {payload[0].payload.hour}
-          </p>
+          <p className="text-sm font-semibold text-gray-900">{payload[0].payload.hour}</p>
           <p className="text-sm text-blue-600">
-            {payload[0].value} {payload[0].value === 1 ? 'order' : 'orders'}
+            {payload[0].value} {payload[0].value === 1 ? "order" : "orders"}
           </p>
         </div>
       );
@@ -36,16 +58,18 @@ export function TodayAtAGlance({ ordersByHour, tableUtilization, revenueByCatego
   };
 
   // Custom tooltip for revenue by category
-  const CategoryTooltip = ({ active, payload }: unknown) => {
+  const CategoryTooltip = ({
+    active,
+    payload,
+  }: {
+    active?: boolean;
+    payload?: Array<{ name: string; value: number }>;
+  }) => {
     if (active && payload && payload.length) {
       return (
         <div className="bg-white p-3 rounded-lg shadow-lg border border-gray-200">
-          <p className="text-sm font-semibold text-gray-900">
-            {payload[0].name}
-          </p>
-          <p className="text-sm text-green-600 font-medium">
-            £{payload[0].value.toFixed(2)}
-          </p>
+          <p className="text-sm font-semibold text-gray-900">{payload[0].name}</p>
+          <p className="text-sm text-green-600 font-medium">£{payload[0].value.toFixed(2)}</p>
         </div>
       );
     }
@@ -79,25 +103,25 @@ export function TodayAtAGlance({ ordersByHour, tableUtilization, revenueByCatego
                   <AreaChart data={ordersByHour}>
                     <defs>
                       <linearGradient id="colorOrders" x1="0" y1="0" x2="0" y2="1">
-                        <stop offset="5%" stopColor="#3b82f6" stopOpacity={0.8}/>
-                        <stop offset="95%" stopColor="#3b82f6" stopOpacity={0}/>
+                        <stop offset="5%" stopColor="#3b82f6" stopOpacity={0.8} />
+                        <stop offset="95%" stopColor="#3b82f6" stopOpacity={0} />
                       </linearGradient>
                     </defs>
-                    <XAxis 
-                      dataKey="hour" 
-                      tick={{ fontSize: 11, fill: '#6b7280' }}
+                    <XAxis
+                      dataKey="hour"
+                      tick={{ fontSize: 11, fill: "#6b7280" }}
                       axisLine={false}
                       tickLine={false}
                       interval="preserveStartEnd"
                     />
                     <YAxis hide />
                     <Tooltip content={<CustomTooltip />} />
-                    <Area 
-                      type="monotone" 
-                      dataKey="orders" 
-                      stroke="#3b82f6" 
+                    <Area
+                      type="monotone"
+                      dataKey="orders"
+                      stroke="#3b82f6"
                       strokeWidth={2}
-                      fillOpacity={1} 
+                      fillOpacity={1}
                       fill="url(#colorOrders)"
                       animationDuration={1000}
                     />

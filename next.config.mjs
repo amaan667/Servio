@@ -14,9 +14,8 @@ const nextConfig = {
     ignoreDuringBuilds: false, // ESLint runs during build
   },
   typescript: {
-    // TODO: Remove this once all 1647 TS errors are fixed
-    // Run `npm run typecheck` separately for TS validation
-    ignoreBuildErrors: true,
+    // TypeScript errors resolved - strict mode enabled
+    ignoreBuildErrors: false,
   },
   // Performance optimizations
   experimental: {

@@ -136,7 +136,9 @@ export function CustomerFeedbackForm({
       setIsSubmitted(true);
       onFeedbackSubmitted?.();
     } catch (_err) {
-      setError(_err.message || "Failed to submit feedback. Please try again.");
+      setError(
+        _err instanceof Error ? _err.message : "Failed to submit feedback. Please try again."
+      );
     } finally {
       setIsSubmitting(false);
     }

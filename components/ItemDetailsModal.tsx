@@ -1,10 +1,10 @@
-'use client';
+"use client";
 
-import React from 'react';
-import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
-import { Button } from '@/components/ui/button';
-import { Plus, Minus, ShoppingCart } from 'lucide-react';
-import { formatPriceWithCurrency } from '@/lib/pricing-utils';
+import React from "react";
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+import { Button } from "@/components/ui/button";
+import { Plus, Minus, ShoppingCart } from "lucide-react";
+import { formatPriceWithCurrency } from "@/lib/pricing-utils";
 
 interface MenuItem {
   id: string;
@@ -32,9 +32,9 @@ export function ItemDetailsModal({
   item,
   isOpen,
   onClose,
-  onAddToCart,
+  onAddToCart: _onAddToCart,
   onUpdateQuantity,
-  quantity
+  quantity,
 }: ItemDetailsModalProps) {
   if (!item) return null;
 
@@ -60,7 +60,7 @@ export function ItemDetailsModal({
         <DialogHeader>
           <DialogTitle className="text-2xl">{item.name}</DialogTitle>
         </DialogHeader>
-        
+
         <div className="space-y-4">
           {/* Category */}
           <div className="flex items-center">
@@ -71,24 +71,20 @@ export function ItemDetailsModal({
 
           {/* Description */}
           {item.description && (
-            <p className="text-sm text-muted-foreground leading-relaxed">
-              {item.description}
-            </p>
+            <p className="text-sm text-muted-foreground leading-relaxed">{item.description}</p>
           )}
 
           {/* Price */}
           <div className="flex items-center justify-between pt-2">
             <span className="text-lg font-bold text-primary">
-              {formatPriceWithCurrency(item.price, '£')}
+              {formatPriceWithCurrency(item.price, "£")}
             </span>
           </div>
 
           {/* Availability Status */}
           {!item.is_available && (
             <div className="bg-red-50 border border-red-200 rounded-lg p-3">
-              <p className="text-sm text-red-700 font-medium">
-                Currently unavailable
-              </p>
+              <p className="text-sm text-red-700 font-medium">Currently unavailable</p>
             </div>
           )}
 
@@ -107,9 +103,7 @@ export function ItemDetailsModal({
                   >
                     <Minus className="h-4 w-4" />
                   </Button>
-                  <span className="text-lg font-bold min-w-[2rem] text-center">
-                    {quantity}
-                  </span>
+                  <span className="text-lg font-bold min-w-[2rem] text-center">{quantity}</span>
                   <Button
                     onClick={handleIncrement}
                     variant="ghost"
@@ -124,7 +118,7 @@ export function ItemDetailsModal({
               <div className="flex-1 text-right">
                 <p className="text-sm text-muted-foreground">Total</p>
                 <p className="text-lg font-bold text-primary">
-                  {formatPriceWithCurrency(item.price * quantity, '£')}
+                  {formatPriceWithCurrency(item.price * quantity, "£")}
                 </p>
               </div>
             </div>
@@ -147,4 +141,3 @@ export function ItemDetailsModal({
     </Dialog>
   );
 }
-

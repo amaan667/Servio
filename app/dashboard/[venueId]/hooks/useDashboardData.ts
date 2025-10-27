@@ -62,7 +62,9 @@ export function useDashboardData(
   const [stats, setStats] = useState<DashboardStats>(
     initialStats || getCachedStats() || { revenue: 0, menuItems: 0, unpaid: 0 }
   );
-  const [todayWindow, setTodayWindow] = useState<unknown>(null);
+  const [todayWindow, setTodayWindow] = useState<{ startUtcISO: string; endUtcISO: string } | null>(
+    null
+  );
   const [error, setError] = useState<string | null>(null);
 
   const loadStats = useCallback(
@@ -98,8 +100,8 @@ export function useDashboardData(
           sessionStorage.setItem(`dashboard_stats_${venueId}`, JSON.stringify(newStats));
         }
       } catch (_error) {
-      // Error handled silently
-    }
+        // Error handled silently
+      }
     },
     []
   );
@@ -109,14 +111,15 @@ export function useDashboardData(
       setError(null);
       const supabase = createClient();
 
-      const { data: newCounts, error } = await withSupabaseRetry(() =>
-        supabase
-          .rpc("dashboard_counts", {
-            p_venue_id: venueId,
-            p_tz: venueTz,
-            p_live_window_mins: 30,
-          })
-          .single()
+      const { data: newCounts, error } = await withSupabaseRetry(
+        async () =>
+          await supabase
+            .rpc("dashboard_counts", {
+              p_venue_id: venueId,
+              p_tz: venueTz,
+              p_live_window_mins: 30,
+            })
+            .single()
       );
 
       if (error) {
@@ -125,28 +128,30 @@ export function useDashboardData(
       }
 
       // Fetch REAL table counts directly (no RPC, no caching)
-      const { data: allTables } = await withSupabaseRetry(() =>
-        supabase.from("tables").select("id, is_active").eq("venue_id", venueId)
+      const { data: allTables } = await withSupabaseRetry(
+        async () => await supabase.from("tables").select("id, is_active").eq("venue_id", venueId)
       );
 
-      const { data: activeSessions } = await withSupabaseRetry(() =>
-        supabase
-          .from("table_sessions")
-          .select("id")
-          .eq("venue_id", venueId)
-          .eq("status", "OCCUPIED")
-          .is("closed_at", null)
+      const { data: activeSessions } = await withSupabaseRetry(
+        async () =>
+          await supabase
+            .from("table_sessions")
+            .select("id")
+            .eq("venue_id", venueId)
+            .eq("status", "OCCUPIED")
+            .is("closed_at", null)
       );
 
       const now = new Date();
-      const { data: currentReservations } = await withSupabaseRetry(() =>
-        supabase
-          .from("reservations")
-          .select("id")
-          .eq("venue_id", venueId)
-          .eq("status", "BOOKED")
-          .lte("start_time", now.toISOString())
-          .gte("end_time", now.toISOString())
+      const { data: currentReservations } = await withSupabaseRetry(
+        async () =>
+          await supabase
+            .from("reservations")
+            .select("id")
+            .eq("venue_id", venueId)
+            .eq("status", "BOOKED")
+            .lte("start_time", now.toISOString())
+            .gte("end_time", now.toISOString())
       );
 
       if (newCounts && typeof newCounts === "object") {
@@ -175,10 +180,11 @@ export function useDashboardData(
 
   const updateRevenueIncrementally = useCallback(
     (order: { order_status: string; total_amount?: number }) => {
-      if (order.order_status !== "CANCELLED" && order.total_amount) {
+      const totalAmount = typeof order.total_amount === "number" ? order.total_amount : 0;
+      if (order.order_status !== "CANCELLED" && totalAmount > 0) {
         setStats((prev) => ({
           ...prev,
-          revenue: prev.revenue + order.total_amount,
+          revenue: prev.revenue + totalAmount,
         }));
       }
     },
@@ -189,7 +195,10 @@ export function useDashboardData(
     if (!venue) return;
 
     const window = todayWindowForTZ(venueTz);
-    setTodayWindow(window);
+    setTodayWindow({
+      startUtcISO: window.startUtcISO || "",
+      endUtcISO: window.endUtcISO || "",
+    });
 
     // If we have initial data from server, use it and DON'T fetch
     if (initialCounts && initialStats) {
@@ -200,13 +209,17 @@ export function useDashboardData(
     // No initial data - fetch immediately
     const fetchData = async () => {
       await refreshCounts();
-      await loadStats((venue as { venue_id: string }).venue_id, window);
+      const venue_id =
+        venue && typeof venue === "object" && "venue_id" in venue
+          ? (venue as { venue_id: string }).venue_id
+          : venueId;
+      if (window.startUtcISO && window.endUtcISO) {
+        await loadStats(venue_id, { startUtcISO: window.startUtcISO, endUtcISO: window.endUtcISO });
+      }
       setLoading(false);
     };
 
     fetchData();
-
-     
   }, [venue]);
 
   return {

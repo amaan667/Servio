@@ -116,7 +116,7 @@ export default function SignUpForm({ onGoogleSignIn, isSigningUp = false }: Sign
       // Redirect to Stripe checkout FIRST
       window.location.href = data.url;
     } catch (_err) {
-      setError(_err.message || "Sign-up failed. Please try again.");
+      setError(_err instanceof Error ? _err.message : "Sign-up failed. Please try again.");
       localStorage.removeItem("signup_data");
       setLoading(false);
     }
@@ -130,7 +130,7 @@ export default function SignUpForm({ onGoogleSignIn, isSigningUp = false }: Sign
       await onGoogleSignIn();
       // The redirect will happen automatically
     } catch (_err) {
-      setError(_err.message || "Google sign-up failed. Please try again.");
+      setError(_err instanceof Error ? _err.message : "Google sign-up failed. Please try again.");
       setLoading(false);
     }
   };
@@ -268,7 +268,9 @@ export default function SignUpForm({ onGoogleSignIn, isSigningUp = false }: Sign
                     window.location.href = data.url;
                   } catch (_err) {
                     setError(
-                      _err.message || "Failed to create checkout session. Please try again."
+                      _err instanceof Error
+                        ? _err.message
+                        : "Failed to create checkout session. Please try again."
                     );
                     setLoading(false);
                   }

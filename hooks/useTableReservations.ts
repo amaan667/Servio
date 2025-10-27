@@ -48,7 +48,7 @@ export function useTableGrid(venueId: string, leadTimeMinutes: number = 30) {
     queryKey: ["tables", "grid", venueId, leadTimeMinutes],
     // ANTI-FLICKER: Use cached data as placeholder
     placeholderData: () =>
-      getCachedQueryData<TableGridItem[]>(["tables", "grid", venueId, leadTimeMinutes]),
+      getCachedQueryData<TableGridItem[]>(["tables", "grid", venueId, String(leadTimeMinutes)]),
     queryFn: async () => {
       // First, get the table data from the main tables table (which has merged_with_table_id)
       const { data: tableData, error: tableError } = await supabase
@@ -92,11 +92,13 @@ export function useTableGrid(venueId: string, leadTimeMinutes: number = 30) {
         );
 
         let reservationStatus = "NONE";
+        let activeReservation: unknown = null;
 
         // Check for active reservations based on time and status
         for (const reservation of tableReservations) {
-          const startTime = new Date(reservation.start_at);
-          const endTime = new Date(reservation.end_at);
+          const res = reservation as { start_at: string; end_at: string; status?: string };
+          const startTime = new Date(res.start_at);
+          const endTime = new Date(res.end_at);
           const leadTime = new Date(startTime.getTime() - leadTimeMinutes * 60 * 1000);
 
           // Reservation is active if:
@@ -185,7 +187,11 @@ export function useTableGrid(venueId: string, leadTimeMinutes: number = 30) {
   // ANTI-FLICKER: Cache query data when it changes
   useEffect(() => {
     if (query.data) {
-      setCachedQueryData(["tables", "grid", venueId, leadTimeMinutes], query.data, 5 * 60 * 1000);
+      setCachedQueryData(
+        ["tables", "grid", venueId, String(leadTimeMinutes)],
+        query.data,
+        5 * 60 * 1000
+      );
     }
   }, [query.data, venueId, leadTimeMinutes]);
 

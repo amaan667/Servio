@@ -121,7 +121,7 @@ export async function handleUserMessage({
   venueId,
   conversationId,
   userText,
-  userId,
+  userId: _userId,
 }: {
   venueId: string;
   conversationId: string;
@@ -166,12 +166,16 @@ export async function handleUserMessage({
 
     // 4) Handle tool calls
     if (toolCalls.length > 0) {
-      const toolMessages = [...openaiMessages, message];
+      const toolMessages: OpenAI.Chat.Completions.ChatCompletionMessageParam[] = [
+        ...openaiMessages,
+        message,
+      ];
 
       for (const toolCall of toolCalls) {
         // Access the function property and extract details
         const callId = toolCall.id;
-        const functionCall = (toolCall as unknown).function;
+        if (toolCall.type !== "function") continue;
+        const functionCall = toolCall.function;
         const name = functionCall.name;
         const args = functionCall.arguments;
         const parsedArgs = JSON.parse(args);
@@ -216,16 +220,18 @@ export async function handleUserMessage({
 
           // Add tool result to messages for final response
           toolMessages.push({
-            role: "tool",
+            role: "tool" as const,
             content: JSON.stringify(toolResult),
             tool_call_id: callId,
-          } as unknown);
+          });
         } catch (_error) {
           logger.error(
             `[AI] Tool execution _error for ${name}:`,
             _error as Record<string, unknown>
           );
-          toolResult = { error: `Tool execution failed: ${_error?.message || "Unknown _error"}` };
+          toolResult = {
+            error: `Tool execution failed: ${_error instanceof Error ? _error.message : "Unknown error"}`,
+          };
 
           await supabase.from("ai_messages").insert({
             conversation_id: conversationId,
@@ -239,10 +245,10 @@ export async function handleUserMessage({
 
           // Add error result to messages
           toolMessages.push({
-            role: "tool",
+            role: "tool" as const,
             content: JSON.stringify(toolResult),
             tool_call_id: callId,
-          } as unknown);
+          });
         }
       }
 
@@ -285,7 +291,9 @@ export async function handleUserMessage({
     }
   } catch (_error) {
     logger.error("[AI] OpenAI service error:", _error as Record<string, unknown>);
-    throw new Error(`AI service error: ${_error?.message || "Unknown _error"}`);
+    throw new Error(
+      `AI service error: ${_error instanceof Error ? _error.message : "Unknown error"}`
+    );
   }
 }
 

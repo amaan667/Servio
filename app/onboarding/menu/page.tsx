@@ -28,8 +28,9 @@ export default function OnboardingMenuPage() {
     try {
       const supabase = await createClient();
       const {
-        data: { user },
+        data: { session },
       } = await supabase.auth.getSession();
+      const user = session?.user;
 
       if (!user) {
         setLoading(false);
@@ -91,7 +92,8 @@ export default function OnboardingMenuPage() {
     } catch (_error) {
       toast({
         title: "Upload failed",
-        description: _error.message || "Failed to upload menu. Please try again.",
+        description:
+          _error instanceof Error ? _error.message : "Failed to upload menu. Please try again.",
         variant: "destructive",
       });
     } finally {
@@ -147,7 +149,7 @@ export default function OnboardingMenuPage() {
     } catch (_error) {
       toast({
         title: "Failed to create items",
-        description: _error.message || "Please try again.",
+        description: _error instanceof Error ? _error.message : "Please try again.",
         variant: "destructive",
       });
     } finally {

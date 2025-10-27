@@ -167,9 +167,10 @@ export async function sendEmail(template: EmailTemplate): Promise<boolean> {
     if (process.env.SENDGRID_API_KEY) {
       try {
         const sgMail = await import("@sendgrid/mail");
-        (sgMail as unknown).default.setApiKey(process.env.SENDGRID_API_KEY);
+        const sendgrid = sgMail as any;
+        sendgrid.default.setApiKey(process.env.SENDGRID_API_KEY);
 
-        await (sgMail as unknown).default.send({
+        await sendgrid.default.send({
           to: template.to,
           from: "noreply@servio.app",
           subject: template.subject,
@@ -192,7 +193,7 @@ export async function sendEmail(template: EmailTemplate): Promise<boolean> {
       try {
         const nodemailer = await import("nodemailer");
 
-        const transporter = (nodemailer as unknown).default.createTransporter({
+        const transporter = (nodemailer as any).default.createTransporter({
           host: process.env.SMTP_HOST,
           port: parseInt(process.env.SMTP_PORT || "587"),
           secure: process.env.SMTP_PORT === "465",

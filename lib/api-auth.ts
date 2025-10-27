@@ -73,7 +73,7 @@ export async function authenticateRequest(req: Request): Promise<AuthResult> {
     return {
       success: true,
       user,
-      supabase,
+      supabase: supabase as any,
     };
   } catch (_error) {
     return {

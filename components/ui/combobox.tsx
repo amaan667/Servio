@@ -13,11 +13,7 @@ import {
   CommandItem,
   CommandList,
 } from "@/components/ui/command";
-import {
-  Popover,
-  PopoverContent,
-  PopoverTrigger,
-} from "@/components/ui/popover";
+import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 
 export interface ComboboxOption {
   value: string;
@@ -39,12 +35,12 @@ export function Combobox({
   onChange,
   placeholder = "Select category...",
   searchPlaceholder = "Search or create...",
-  emptyPlaceholder = "No category found.",
+  emptyPlaceholder: _emptyPlaceholder = "No category found.",
 }: ComboboxProps) {
   const [open, setOpen] = React.useState(false);
 
   const selectedOption = options.find(
-    (option) => option.value.toLowerCase() === value?.toLowerCase(),
+    (option) => option.value.toLowerCase() === value?.toLowerCase()
   );
 
   return (
@@ -56,26 +52,16 @@ export function Combobox({
           aria-expanded={open}
           className="w-full justify-between font-normal bg-transparent"
         >
-          {value
-            ? selectedOption
-              ? selectedOption.label
-              : value
-            : placeholder}
+          {value ? (selectedOption ? selectedOption.label : value) : placeholder}
           <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
         </Button>
       </PopoverTrigger>
       <PopoverContent className="w-[--radix-popover-trigger-width] p-0">
         <Command>
-          <CommandInput
-            placeholder={searchPlaceholder}
-            value={value}
-            onValueChange={onChange}
-          />
+          <CommandInput placeholder={searchPlaceholder} value={value} onValueChange={onChange} />
           <CommandList>
             <CommandEmpty>
-              <div className="p-4 text-sm">
-                No category found. Type to create a new one.
-              </div>
+              <div className="p-4 text-sm">No category found. Type to create a new one.</div>
             </CommandEmpty>
             <CommandGroup>
               {options.map((option) => (
@@ -84,11 +70,8 @@ export function Combobox({
                   value={option.value}
                   onSelect={(currentValue) => {
                     const newValue =
-                      options.find(
-                        (opt) =>
-                          opt.value.toLowerCase() ===
-                          currentValue.toLowerCase(),
-                      )?.value || currentValue;
+                      options.find((opt) => opt.value.toLowerCase() === currentValue.toLowerCase())
+                        ?.value || currentValue;
                     onChange(newValue === value ? "" : newValue);
                     setOpen(false);
                   }}
@@ -98,7 +81,7 @@ export function Combobox({
                       "mr-2 h-4 w-4",
                       value?.toLowerCase() === option.value.toLowerCase()
                         ? "opacity-100"
-                        : "opacity-0",
+                        : "opacity-0"
                     )}
                   />
                   {option.label}

@@ -1,10 +1,10 @@
 "use client";
 
-import { useState } from 'react';
-import { Star, Send } from 'lucide-react';
-import { Button } from '@/components/ui/button';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { Textarea } from '@/components/ui/textarea';
+import { useState } from "react";
+import { Star, Send } from "lucide-react";
+import { Button } from "@/components/ui/button";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Textarea } from "@/components/ui/textarea";
 
 interface SimpleFeedbackFormProps {
   venueId: string;
@@ -12,18 +12,22 @@ interface SimpleFeedbackFormProps {
   onSubmit?: () => void;
 }
 
-export default function SimpleFeedbackForm({ venueId, orderId, onSubmit }: SimpleFeedbackFormProps) {
+export default function SimpleFeedbackForm({
+  venueId: _venueId,
+  orderId: _orderId,
+  onSubmit,
+}: SimpleFeedbackFormProps) {
   const [ratings, setRatings] = useState({
     foodQuality: 0,
     service: 0,
     value: 0,
-    overall: 0
+    overall: 0,
   });
-  const [comments, setComments] = useState('');
+  const [comments, setComments] = useState("");
   const [submitting, setSubmitting] = useState(false);
 
   const handleRatingChange = (category: keyof typeof ratings, rating: number) => {
-    setRatings(prev => ({ ...prev, [category]: rating }));
+    setRatings((prev) => ({ ...prev, [category]: rating }));
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -32,23 +36,30 @@ export default function SimpleFeedbackForm({ venueId, orderId, onSubmit }: Simpl
 
     try {
       // Remove artificial delay - submit immediately
-      
+
       // Show success message
-      alert('Thank you for your feedback!');
-      
+      alert("Thank you for your feedback!");
+
       // Call onSubmit callback if provided
       if (onSubmit) {
         onSubmit();
       }
     } catch (_error) {
-
-      alert('Failed to submit feedback. Please try again.');
+      alert("Failed to submit feedback. Please try again.");
     } finally {
       setSubmitting(false);
     }
   };
 
-  const StarRating = ({ value, onChange, label }: { value: number; onChange: (rating: number) => void; label: string }) => (
+  const StarRating = ({
+    value,
+    onChange,
+    label,
+  }: {
+    value: number;
+    onChange: (rating: number) => void;
+    label: string;
+  }) => (
     <div className="space-y-2">
       <label className="block text-sm font-medium text-gray-700">{label}</label>
       <div className="flex gap-1">
@@ -61,9 +72,7 @@ export default function SimpleFeedbackForm({ venueId, orderId, onSubmit }: Simpl
           >
             <Star
               className={`h-6 w-6 ${
-                star <= value
-                  ? 'text-yellow-400 fill-current'
-                  : 'text-gray-600'
+                star <= value ? "text-yellow-400 fill-current" : "text-gray-600"
               }`}
             />
           </button>
@@ -71,7 +80,7 @@ export default function SimpleFeedbackForm({ venueId, orderId, onSubmit }: Simpl
       </div>
       {value > 0 && (
         <p className="text-sm text-gray-900">
-          {value} star{value > 1 ? 's' : ''} selected
+          {value} star{value > 1 ? "s" : ""} selected
         </p>
       )}
     </div>
@@ -86,28 +95,28 @@ export default function SimpleFeedbackForm({ venueId, orderId, onSubmit }: Simpl
         <form onSubmit={handleSubmit} className="space-y-6">
           <StarRating
             value={ratings.foodQuality}
-            onChange={(rating) => handleRatingChange('foodQuality', rating)}
+            onChange={(rating) => handleRatingChange("foodQuality", rating)}
             label="How would you rate the food quality?"
           />
-          
+
           <StarRating
             value={ratings.service}
-            onChange={(rating) => handleRatingChange('service', rating)}
+            onChange={(rating) => handleRatingChange("service", rating)}
             label="How would you rate the service?"
           />
-          
+
           <StarRating
             value={ratings.value}
-            onChange={(rating) => handleRatingChange('value', rating)}
+            onChange={(rating) => handleRatingChange("value", rating)}
             label="How would you rate the value for money?"
           />
-          
+
           <StarRating
             value={ratings.overall}
-            onChange={(rating) => handleRatingChange('overall', rating)}
+            onChange={(rating) => handleRatingChange("overall", rating)}
             label="How would you rate your overall experience?"
           />
-          
+
           <div className="space-y-2">
             <label className="block text-sm font-medium text-gray-700">
               Any additional comments or suggestions?
@@ -119,25 +128,18 @@ export default function SimpleFeedbackForm({ venueId, orderId, onSubmit }: Simpl
               rows={3}
               maxLength={600}
             />
-            <p className="text-sm text-gray-900">
-              {comments.length}/600 characters
-            </p>
+            <p className="text-sm text-gray-900">{comments.length}/600 characters</p>
           </div>
-          
+
           <div className="flex gap-3 pt-4">
-            <Button 
-              type="submit" 
-              disabled={submitting || Object.values(ratings).every(r => r === 0)}
+            <Button
+              type="submit"
+              disabled={submitting || Object.values(ratings).every((r) => r === 0)}
               className="flex-1"
             >
-              {submitting ? 'Submitting...' : 'Submit Feedback'}
+              {submitting ? "Submitting..." : "Submit Feedback"}
             </Button>
-            <Button 
-              type="button"
-              variant="outline" 
-              onClick={onSubmit}
-              disabled={submitting}
-            >
+            <Button type="button" variant="outline" onClick={onSubmit} disabled={submitting}>
               Skip
             </Button>
           </div>

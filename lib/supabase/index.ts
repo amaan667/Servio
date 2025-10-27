@@ -69,14 +69,24 @@ export function supabaseBrowser() {
       },
       cookies: {
         // Ensure cookies are also set for server-side access
-        get(name) {
+        get(name: string) {
           if (typeof document === "undefined") return undefined;
           const value = `; ${document.cookie}`;
           const parts = value.split(`; ${name}=`);
           if (parts.length === 2) return parts.pop()?.split(";").shift();
           return undefined;
         },
-        set(name, value, options) {
+        set(
+          name: string,
+          value: string,
+          options?: {
+            maxAge?: number;
+            path?: string;
+            domain?: string;
+            sameSite?: string;
+            secure?: boolean;
+          }
+        ) {
           if (typeof document === "undefined") return;
           let cookie = `${name}=${value}`;
           if (options?.maxAge) cookie += `; max-age=${options.maxAge}`;
@@ -86,12 +96,21 @@ export function supabaseBrowser() {
           if (options?.secure) cookie += "; secure";
           document.cookie = cookie;
         },
-        remove(name, options) {
+        remove(
+          name: string,
+          options?: {
+            maxAge?: number;
+            path?: string;
+            domain?: string;
+            sameSite?: string;
+            secure?: boolean;
+          }
+        ) {
           if (typeof document === "undefined") return;
           this.set(name, "", { ...options, maxAge: 0 });
         },
       },
-    });
+    } as any);
 
     // Still override getSession to gracefully handle edge cases where refresh fails
     const originalGetSession = browserClient.auth.getSession.bind(browserClient.auth);

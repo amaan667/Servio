@@ -79,7 +79,7 @@ class AnalyticsService {
    * Generate revenue forecasts
    */
   async generateForecasts(
-    venueId: string,
+    _venueId: string,
     days: number = 30
   ): Promise<{
     revenue: number[];
@@ -101,7 +101,7 @@ class AnalyticsService {
   /**
    * Calculate advanced KPIs
    */
-  async calculateKPIs(venueId: string, period: string): Promise<AnalyticsMetric[]> {
+  async calculateKPIs(_venueId: string, period: string): Promise<AnalyticsMetric[]> {
     // Mock KPIs - implement real calculations with venue data in production
     const kpis: AnalyticsMetric[] = [
       {

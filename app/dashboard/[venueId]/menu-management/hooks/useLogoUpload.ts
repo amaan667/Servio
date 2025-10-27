@@ -95,7 +95,7 @@ export function useLogoUpload(
     } catch (_error) {
       toast({
         title: "Upload failed",
-        description: _error.message || "Failed to upload logo",
+        description: _error instanceof Error ? _error.message : "Failed to upload logo",
         variant: "destructive",
       });
     } finally {

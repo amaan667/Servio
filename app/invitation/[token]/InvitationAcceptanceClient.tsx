@@ -126,7 +126,7 @@ export default function InvitationAcceptanceClient({
         router.push(`/dashboard/${invitation.venue_id}`);
       }, 2000);
     } catch (_err) {
-      setError(_err.message || "Failed to accept invitation");
+      setError(_err instanceof Error ? _err.message : "Failed to accept invitation");
     } finally {
       setLoading(false);
     }

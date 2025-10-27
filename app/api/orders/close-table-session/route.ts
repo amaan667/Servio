@@ -75,7 +75,10 @@ export async function POST(req: NextRequest) {
       message: "Table session closed successfully",
     });
   } catch (_error) {
-    logger.error("[CLOSE TABLE SESSION] Unexpected error:", _error);
+    logger.error(
+      "[CLOSE TABLE SESSION] Unexpected error:",
+      _error instanceof Error ? _error : { error: String(_error) }
+    );
     return NextResponse.json({ error: "Internal server error" }, { status: 500 });
   }
 }

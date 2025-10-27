@@ -1,9 +1,9 @@
-'use client';
+"use client";
 
-import { useState, useEffect } from 'react';
-import { Button } from '@/components/ui/button';
-import { Input } from '@/components/ui/input';
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
+import { useState, useEffect } from "react";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import {
   Table,
   TableBody,
@@ -11,31 +11,31 @@ import {
   TableHead,
   TableHeader,
   TableRow,
-} from '@/components/ui/table';
+} from "@/components/ui/table";
 import {
   DropdownMenu,
   DropdownMenuContent,
   DropdownMenuItem,
   DropdownMenuTrigger,
-} from '@/components/ui/dropdown-menu';
-import { Badge } from '@/components/ui/badge';
-import { Plus, MoreVertical, Download, Upload, Search, AlertTriangle } from 'lucide-react';
-import type { StockLevel } from '@/types/inventory';
-import { AddIngredientDialog } from './AddIngredientDialog';
-import { StockAdjustmentDialog } from './StockAdjustmentDialog';
-import { StocktakeDialog } from './StocktakeDialog';
-import { ImportCSVDialog } from './ImportCSVDialog';
-import { ReceiveStockDialog } from './ReceiveStockDialog';
+} from "@/components/ui/dropdown-menu";
+import { Badge } from "@/components/ui/badge";
+import { Plus, MoreVertical, Download, Upload, Search, AlertTriangle } from "lucide-react";
+import type { StockLevel } from "@/types/inventory";
+import { AddIngredientDialog } from "./AddIngredientDialog";
+import { StockAdjustmentDialog } from "./StockAdjustmentDialog";
+import { StocktakeDialog } from "./StocktakeDialog";
+import { ImportCSVDialog } from "./ImportCSVDialog";
+import { ReceiveStockDialog } from "./ReceiveStockDialog";
 
 interface InventoryOverviewProps {
   venueId: string;
   canEdit?: boolean;
 }
 
-export function InventoryOverview({ venueId, canEdit = true }: InventoryOverviewProps) {
+export function InventoryOverview({ venueId, canEdit: _canEdit = true }: InventoryOverviewProps) {
   const [ingredients, setIngredients] = useState<StockLevel[]>([]);
   const [loading, setLoading] = useState(true);
-  const [searchQuery, setSearchQuery] = useState('');
+  const [searchQuery, setSearchQuery] = useState("");
   const [showAddDialog, setShowAddDialog] = useState(false);
   const [showReceiveDialog, setShowReceiveDialog] = useState(false);
   const [showAdjustDialog, setShowAdjustDialog] = useState(false);
@@ -66,9 +66,9 @@ export function InventoryOverview({ venueId, canEdit = true }: InventoryOverview
       const response = await fetch(`/api/inventory/export/csv?venue_id=${venueId}`);
       const blob = await response.blob();
       const url = window.URL.createObjectURL(blob);
-      const a = document.createElement('a');
+      const a = document.createElement("a");
       a.href = url;
-      a.download = `inventory-${venueId}-${new Date().toISOString().split('T')[0]}.csv`;
+      a.download = `inventory-${venueId}-${new Date().toISOString().split("T")[0]}.csv`;
       document.body.appendChild(a);
       a.click();
       document.body.removeChild(a);
@@ -83,7 +83,7 @@ export function InventoryOverview({ venueId, canEdit = true }: InventoryOverview
     setShowReceiveDialog(true);
   };
 
-  const handleAdjustStock = (ingredient: StockLevel, reason: 'adjust' | 'waste') => {
+  const handleAdjustStock = (ingredient: StockLevel, _reason: "adjust" | "waste") => {
     setSelectedIngredient(ingredient);
     setShowAdjustDialog(true);
   };
@@ -94,11 +94,11 @@ export function InventoryOverview({ venueId, canEdit = true }: InventoryOverview
   };
 
   const handleDelete = async (ingredientId: string) => {
-    if (!confirm('Are you sure you want to delete this ingredient?')) return;
+    if (!confirm("Are you sure you want to delete this ingredient?")) return;
 
     try {
       const response = await fetch(`/api/inventory/ingredients/${ingredientId}`, {
-        method: 'DELETE',
+        method: "DELETE",
       });
 
       if (response.ok) {
@@ -109,9 +109,10 @@ export function InventoryOverview({ venueId, canEdit = true }: InventoryOverview
     }
   };
 
-  const filteredIngredients = ingredients.filter((ing) =>
-    ing.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
-    ing.sku?.toLowerCase().includes(searchQuery.toLowerCase())
+  const filteredIngredients = ingredients.filter(
+    (ing) =>
+      ing.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
+      ing.sku?.toLowerCase().includes(searchQuery.toLowerCase())
   );
 
   const lowStockCount = ingredients.filter(
@@ -125,12 +126,10 @@ export function InventoryOverview({ venueId, canEdit = true }: InventoryOverview
           <CardHeader className="pb-3">
             <div className="flex items-center gap-2">
               <AlertTriangle className="h-5 w-5 text-amber-600" />
-              <CardTitle className="text-amber-900 dark:text-amber-100">
-                Low Stock Alert
-              </CardTitle>
+              <CardTitle className="text-amber-900 dark:text-amber-100">Low Stock Alert</CardTitle>
             </div>
             <CardDescription className="text-amber-800 dark:text-amber-200">
-              {lowStockCount} ingredient{lowStockCount > 1 ? 's' : ''} at or below reorder level
+              {lowStockCount} ingredient{lowStockCount > 1 ? "s" : ""} at or below reorder level
             </CardDescription>
           </CardHeader>
         </Card>
@@ -195,22 +194,48 @@ export function InventoryOverview({ venueId, canEdit = true }: InventoryOverview
                 </TableHeader>
                 <TableBody>
                   {filteredIngredients.map((ingredient) => {
-                    const isLowStock = ingredient.on_hand <= ingredient.reorder_level && ingredient.reorder_level > 0;
+                    const isLowStock =
+                      ingredient.on_hand <= ingredient.reorder_level &&
+                      ingredient.reorder_level > 0;
                     const isOutOfStock = ingredient.on_hand <= 0;
 
                     return (
-                      <TableRow key={ingredient.ingredient_id} className={isOutOfStock ? 'bg-red-50 dark:bg-red-950' : isLowStock ? 'bg-amber-50 dark:bg-amber-950' : ''}>
+                      <TableRow
+                        key={ingredient.ingredient_id}
+                        className={
+                          isOutOfStock
+                            ? "bg-red-50 dark:bg-red-950"
+                            : isLowStock
+                              ? "bg-amber-50 dark:bg-amber-950"
+                              : ""
+                        }
+                      >
                         <TableCell className="font-medium">
                           {ingredient.name}
                           {isOutOfStock && (
-                            <Badge variant="destructive" className="ml-2">Out</Badge>
+                            <Badge variant="destructive" className="ml-2">
+                              Out
+                            </Badge>
                           )}
                           {isLowStock && !isOutOfStock && (
-                            <Badge variant="outline" className="ml-2 border-amber-500 text-amber-700">Low</Badge>
+                            <Badge
+                              variant="outline"
+                              className="ml-2 border-amber-500 text-amber-700"
+                            >
+                              Low
+                            </Badge>
                           )}
                         </TableCell>
-                        <TableCell>{ingredient.sku || '-'}</TableCell>
-                        <TableCell className={isOutOfStock ? 'font-bold text-red-600' : isLowStock ? 'font-bold text-amber-600' : ''}>
+                        <TableCell>{ingredient.sku || "-"}</TableCell>
+                        <TableCell
+                          className={
+                            isOutOfStock
+                              ? "font-bold text-red-600"
+                              : isLowStock
+                                ? "font-bold text-amber-600"
+                                : ""
+                          }
+                        >
                           {ingredient.on_hand}
                         </TableCell>
                         <TableCell>{ingredient.unit}</TableCell>
@@ -228,16 +253,22 @@ export function InventoryOverview({ venueId, canEdit = true }: InventoryOverview
                               <DropdownMenuItem onClick={() => handleReceiveStock(ingredient)}>
                                 Receive (+)
                               </DropdownMenuItem>
-                              <DropdownMenuItem onClick={() => handleAdjustStock(ingredient, 'adjust')}>
+                              <DropdownMenuItem
+                                onClick={() => handleAdjustStock(ingredient, "adjust")}
+                              >
                                 Adjust (±)
                               </DropdownMenuItem>
-                              <DropdownMenuItem onClick={() => handleAdjustStock(ingredient, 'waste')}>
+                              <DropdownMenuItem
+                                onClick={() => handleAdjustStock(ingredient, "waste")}
+                              >
                                 Waste (-)
                               </DropdownMenuItem>
                               <DropdownMenuItem onClick={() => handleStocktake(ingredient)}>
                                 Stocktake
                               </DropdownMenuItem>
-                              <DropdownMenuItem onClick={() => handleDelete(ingredient.ingredient_id)}>
+                              <DropdownMenuItem
+                                onClick={() => handleDelete(ingredient.ingredient_id)}
+                              >
                                 Delete
                               </DropdownMenuItem>
                             </DropdownMenuContent>
@@ -294,4 +325,3 @@ export function InventoryOverview({ venueId, canEdit = true }: InventoryOverview
     </div>
   );
 }
-

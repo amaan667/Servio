@@ -41,7 +41,11 @@ export const OrderItemSchema = z.object({
 
 export const CreateOrderSchema = z.object({
   venue_id: VenueIdSchema,
-  customer_name: z.string().min(1).max(255).transform(sanitizeString),
+  customer_name: z
+    .string()
+    .min(1)
+    .max(255)
+    .transform((val) => sanitizeString(val, 255)),
   customer_phone: PhoneSchema,
   customer_email: EmailSchema.optional().nullable(),
   table_number: z.number().int().min(1).max(9999).optional().nullable(),
@@ -134,11 +138,11 @@ export const PaginationSchema = z.object({
  * Validate and sanitize request body
  */
 export async function validateRequest<T>(
-  __request: Request,
+  request: Request,
   schema: z.ZodSchema<T>
 ): Promise<{ success: true; data: T } | { success: false; error: string; details?: unknown }> {
   try {
-    const body = await _request.json();
+    const body = await request.json();
     const validated = schema.parse(body);
     return { success: true, data: validated };
   } catch (_error) {

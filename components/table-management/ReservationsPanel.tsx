@@ -180,7 +180,8 @@ export function ReservationsPanel({ reservations, onActionComplete }: Reservatio
                     <Calendar className="h-3 w-3" />
                     {(() => {
                       const tableLabel =
-                        (reservation as unknown).table?.label || reservation.table_id;
+                        (reservation as { table?: { label?: string } }).table?.label ||
+                        reservation.table_id;
                       // If the label already starts with "table", don't add "Table" prefix
                       if (tableLabel.toLowerCase().startsWith("table")) {
                         return tableLabel;

@@ -37,10 +37,9 @@ export function VenueSwitcher({ currentVenueId }: VenueSwitcherProps) {
   const loadVenues = async () => {
     try {
       const supabase = createClient();
-      
-      const {
-        data: { user },
-      } = await supabase.auth.getSession();
+
+      const { data } = await supabase.auth.getSession();
+      const user = data?.session?.user ?? null;
 
       if (!user) {
         setLoading(false);
@@ -48,14 +47,14 @@ export function VenueSwitcher({ currentVenueId }: VenueSwitcherProps) {
       }
 
       // Get user's venues using the RPC function
-      const { data, error } = await supabase.rpc("get_user_venues", {
+      const { data: venuesData, error } = await supabase.rpc("get_user_venues", {
         p_user_id: user.id,
       });
 
       if (error) {
-      // Empty block
-    } else {
-        setVenues(data || []);
+        // Empty block
+      } else {
+        setVenues(venuesData || []);
       }
     } catch (_error) {
       // Error silently handled
@@ -72,10 +71,7 @@ export function VenueSwitcher({ currentVenueId }: VenueSwitcherProps) {
 
     // Replace the venueId in the current path
     if (pathname && currentVenueId) {
-      const newPath = pathname.replace(
-        `/dashboard/${currentVenueId}`,
-        `/dashboard/${venueId}`
-      );
+      const newPath = pathname.replace(`/dashboard/${currentVenueId}`, `/dashboard/${venueId}`);
       router.push(newPath);
     } else {
       router.push(`/dashboard/${venueId}`);
@@ -83,9 +79,7 @@ export function VenueSwitcher({ currentVenueId }: VenueSwitcherProps) {
   };
 
   if (loading) {
-    return (
-      <div className="w-[200px] h-10 bg-muted animate-pulse rounded-md" />
-    );
+    return <div className="w-[200px] h-10 bg-muted animate-pulse rounded-md" />;
   }
 
   if (venues.length === 0) {
@@ -105,10 +99,7 @@ export function VenueSwitcher({ currentVenueId }: VenueSwitcherProps) {
   const currentVenue = venues.find((v) => v.venue_id === currentVenueId);
 
   return (
-    <Select
-      value={currentVenueId || venues[0]?.venue_id}
-      onValueChange={handleVenueChange}
-    >
+    <Select value={currentVenueId || venues[0]?.venue_id} onValueChange={handleVenueChange}>
       <SelectTrigger className="w-[200px]">
         <SelectValue>
           <div className="flex items-center gap-2">
@@ -142,4 +133,3 @@ export function VenueSwitcher({ currentVenueId }: VenueSwitcherProps) {
     </Select>
   );
 }
-

@@ -245,7 +245,7 @@ export function supportsWebP(): boolean {
  * @returns Promise<string> - Image URL when loaded
  */
 export async function lazyLoadImage(imageUrl: string, element: HTMLElement): Promise<string> {
-  return new Promise((resolve, reject) => {
+  return new Promise((resolve, _reject) => {
     const observer = new IntersectionObserver(
       (entries) => {
         entries.forEach((entry) => {

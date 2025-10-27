@@ -368,15 +368,16 @@ export async function planAssistantAction(
     const message = completion.choices[0].message;
 
     // Try to get parsed response (available when using zodResponseFormat)
-    const parsed = (message as unknown).parsed;
+    const parsed = (message as { parsed?: unknown }).parsed;
 
     if (parsed) {
       // Response was successfully parsed and validated by zodResponseFormat
+      const typedParsed = parsed as AIPlanResponse;
       return {
-        intent: parsed.intent,
-        tools: parsed.tools,
-        reasoning: parsed.reasoning,
-        warnings: parsed.warnings,
+        intent: typedParsed.intent,
+        tools: typedParsed.tools,
+        reasoning: typedParsed.reasoning,
+        warnings: typedParsed.warnings,
         modelUsed: selectedModel,
       };
     }
@@ -417,14 +418,15 @@ export async function planAssistantAction(
         });
 
         const message = completion.choices[0].message;
-        const parsed = (message as unknown).parsed;
+        const parsed = (message as { parsed?: unknown }).parsed;
 
         if (parsed) {
+          const typedParsed = parsed as AIPlanResponse;
           return {
-            intent: parsed.intent,
-            tools: parsed.tools,
-            reasoning: parsed.reasoning,
-            warnings: parsed.warnings,
+            intent: typedParsed.intent,
+            tools: typedParsed.tools,
+            reasoning: typedParsed.reasoning,
+            warnings: typedParsed.warnings,
             modelUsed: `${selectedModel} (fallback)`,
           };
         }
@@ -479,7 +481,7 @@ Be concise (1-2 sentences). Focus on what will change and potential impact.`;
 
   const userPrompt = `Explain this action:
 Tool: ${toolName}
-Parameters: ${JSON.stringify(params, null, 2)}
+Parameters: ${JSON.stringify(_params || {}, null, 2)}
 User Role: ${context.userRole}`;
 
   try {

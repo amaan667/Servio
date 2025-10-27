@@ -169,11 +169,13 @@ async function handleCheckoutWithOrg(
 
   if (!trialEndsAt) {
     // If no existing trial end date, use the user's creation date + 14 days
-    const userCreatedAt = new Date(existingOrg.created_at || Date.now());
+    const createdAt = existingOrg.created_at;
+    const userCreatedAt = new Date(
+      typeof createdAt === "string" || typeof createdAt === "number" ? createdAt : Date.now()
+    );
     trialEndsAt = new Date(userCreatedAt.getTime() + 14 * 24 * 60 * 60 * 1000).toISOString();
   }
 
-  // @ts-expect-error - Supabase type inference issue
   const updateData = {
     stripe_subscription_id: session.subscription as string,
     stripe_customer_id: session.customer as string,
@@ -217,7 +219,7 @@ async function handleCheckoutWithOrg(
   } catch (historyError) {
     apiLogger.warn(
       "[STRIPE WEBHOOK] ⚠️ Failed to log subscription history (non-critical):",
-      historyError
+      historyError instanceof Error ? historyError : { error: String(historyError) }
     );
   }
 

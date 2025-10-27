@@ -166,7 +166,7 @@ export function useGestures(
   );
 
   const handleTouchEnd = useCallback(
-    (e: TouchEvent) => {
+    (_e: TouchEvent) => {
       if (!gestureState.isDragging) return;
 
       const { deltaX, deltaY, direction, velocity } = gestureState;

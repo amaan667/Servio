@@ -5,6 +5,7 @@
 
 import { NextRequest } from "next/server";
 import { createHash, randomBytes } from "crypto";
+import { logger } from "@/lib/logger";
 
 interface RateLimitConfig {
   windowMs: number;
@@ -98,16 +99,14 @@ class SecurityService {
     }
 
     if (typeof input === "object" && input !== null) {
-      const sanitized: unknown = {
-        /* Empty */
-      };
+      const sanitized: Record<string, unknown> = {};
       for (const [key, value] of Object.entries(input)) {
         sanitized[key] = this.sanitizeInput(value);
       }
       return sanitized;
     }
 
-    return input;
+    return input as string | number | boolean | Record<string, unknown> | unknown[] | null;
   }
 
   /**

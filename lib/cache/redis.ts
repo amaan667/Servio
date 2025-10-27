@@ -72,7 +72,7 @@ export class RedisCache {
       }
       return JSON.parse(value) as T;
     } catch (_error) {
-      logger.error("[REDIS] Error getting key:", key, _error as Record<string, unknown>);
+      logger.error("[REDIS] Error getting key:", { key, error: _error });
       return null;
     }
   }
@@ -89,7 +89,7 @@ export class RedisCache {
       await this.client.setex(key, ttlSeconds, JSON.stringify(value));
       return true;
     } catch (_error) {
-      logger.error("[REDIS] Error setting key:", key, _error as Record<string, unknown>);
+      logger.error("[REDIS] Error setting key:", { key, error: _error });
       return false;
     }
   }
@@ -106,7 +106,7 @@ export class RedisCache {
       await this.client.del(key);
       return true;
     } catch (_error) {
-      logger.error("[REDIS] Error deleting key:", key, _error as Record<string, unknown>);
+      logger.error("[REDIS] Error deleting key:", { key, error: _error });
       return false;
     }
   }
@@ -126,7 +126,7 @@ export class RedisCache {
       }
       return true;
     } catch (_error) {
-      logger.error("[REDIS] Error deleting pattern:", pattern, _error as Record<string, unknown>);
+      logger.error("[REDIS] Error deleting pattern:", { pattern, error: _error });
       return false;
     }
   }
@@ -143,7 +143,7 @@ export class RedisCache {
       const result = await this.client.exists(key);
       return result === 1;
     } catch (_error) {
-      logger.error("[REDIS] Error checking existence:", key, _error as Record<string, unknown>);
+      logger.error("[REDIS] Error checking existence:", { key, error: _error });
       return false;
     }
   }
@@ -159,7 +159,7 @@ export class RedisCache {
     try {
       return await this.client.ttl(key);
     } catch (_error) {
-      logger.error("[REDIS] Error getting TTL:", key, _error as Record<string, unknown>);
+      logger.error("[REDIS] Error getting TTL:", { key, error: _error });
       return -1;
     }
   }
@@ -175,7 +175,7 @@ export class RedisCache {
     try {
       return await this.client.incrby(key, by);
     } catch (_error) {
-      logger.error("[REDIS] Error incrementing:", key, _error as Record<string, unknown>);
+      logger.error("[REDIS] Error incrementing:", { key, error: _error });
       return 0;
     }
   }

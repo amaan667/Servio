@@ -71,7 +71,7 @@ class Cache {
       this.memoryCache.set(key, { value, expires });
       return true;
     } catch (_error) {
-      logger.error("[CACHE] Error setting cache:", { error, key });
+      logger.error("[CACHE] Error setting cache:", { error: _error, key });
       return false;
     }
   }
@@ -90,7 +90,7 @@ class Cache {
       this.memoryCache.delete(key);
       return true;
     } catch (_error) {
-      logger.error("[CACHE] Error deleting cache:", { error, key });
+      logger.error("[CACHE] Error deleting cache:", { error: _error, key });
       return false;
     }
   }
@@ -114,7 +114,7 @@ class Cache {
       }
       return true;
     } catch (_error) {
-      logger.error("[CACHE] Error invalidating cache:", { error, pattern });
+      logger.error("[CACHE] Error invalidating cache:", { error: _error, pattern });
       return false;
     }
   }
@@ -150,7 +150,7 @@ class Cache {
       );
       return true;
     } catch (_error) {
-      logger.error("[CACHE] Error setting multiple cache values:", { error });
+      logger.error("[CACHE] Error setting multiple cache values:", { error: _error });
       return false;
     }
   }
@@ -166,7 +166,7 @@ class Cache {
       this.memoryCache.clear();
       return true;
     } catch (_error) {
-      logger.error("[CACHE] Error clearing cache:", { error });
+      logger.error("[CACHE] Error clearing cache:", { error: _error });
       return false;
     }
   }

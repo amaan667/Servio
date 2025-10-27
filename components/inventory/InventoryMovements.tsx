@@ -1,7 +1,7 @@
-'use client';
+"use client";
 
-import { useState, useEffect } from 'react';
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
+import { useState, useEffect } from "react";
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import {
   Table,
   TableBody,
@@ -9,20 +9,20 @@ import {
   TableHead,
   TableHeader,
   TableRow,
-} from '@/components/ui/table';
-import { Badge } from '@/components/ui/badge';
-import { Button } from '@/components/ui/button';
+} from "@/components/ui/table";
+import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
 import {
   Select,
   SelectContent,
   SelectItem,
   SelectTrigger,
   SelectValue,
-} from '@/components/ui/select';
-import { Input } from '@/components/ui/input';
-import { Label } from '@/components/ui/label';
-import { ArrowUp, ArrowDown, ChevronLeft, ChevronRight, Download, Calendar } from 'lucide-react';
-import type { StockLedger } from '@/types/inventory';
+} from "@/components/ui/select";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { ArrowUp, ArrowDown, ChevronLeft, ChevronRight, Download, Calendar } from "lucide-react";
+import type { StockLedger } from "@/types/inventory";
 
 interface InventoryMovementsProps {
   venueId: string;
@@ -39,14 +39,14 @@ interface LedgerWithIngredient extends StockLedger {
   };
 }
 
-export function InventoryMovements({ venueId, canEdit = true }: InventoryMovementsProps) {
+export function InventoryMovements({ venueId, canEdit: _canEdit = true }: InventoryMovementsProps) {
   const [movements, setMovements] = useState<LedgerWithIngredient[]>([]);
   const [loading, setLoading] = useState(true);
-  const [reasonFilter, setReasonFilter] = useState<string>('all');
+  const [reasonFilter, setReasonFilter] = useState<string>("all");
   const [page, setPage] = useState(0);
   const [hasMore, setHasMore] = useState(true);
-  const [dateFrom, setDateFrom] = useState('');
-  const [dateTo, setDateTo] = useState('');
+  const [dateFrom, setDateFrom] = useState("");
+  const [dateTo, setDateTo] = useState("");
   const limit = 50;
 
   const fetchMovements = async () => {
@@ -58,21 +58,21 @@ export function InventoryMovements({ venueId, canEdit = true }: InventoryMovemen
         offset: (page * limit).toString(),
       });
 
-      if (reasonFilter !== 'all') {
-        params.append('reason', reasonFilter);
+      if (reasonFilter !== "all") {
+        params.append("reason", reasonFilter);
       }
 
       if (dateFrom) {
-        params.append('from', new Date(dateFrom).toISOString());
+        params.append("from", new Date(dateFrom).toISOString());
       }
 
       if (dateTo) {
-        params.append('to', new Date(dateTo + 'T23:59:59').toISOString());
+        params.append("to", new Date(dateTo + "T23:59:59").toISOString());
       }
 
       const response = await fetch(`/api/inventory/stock/movements?${params}`);
       const result = await response.json();
-      
+
       if (result.data) {
         setMovements(result.data);
         setHasMore(result.data.length === limit);
@@ -94,24 +94,24 @@ export function InventoryMovements({ venueId, canEdit = true }: InventoryMovemen
         venue_id: venueId,
       });
 
-      if (reasonFilter !== 'all') {
-        params.append('reason', reasonFilter);
+      if (reasonFilter !== "all") {
+        params.append("reason", reasonFilter);
       }
 
       if (dateFrom) {
-        params.append('from', new Date(dateFrom).toISOString());
+        params.append("from", new Date(dateFrom).toISOString());
       }
 
       if (dateTo) {
-        params.append('to', new Date(dateTo + 'T23:59:59').toISOString());
+        params.append("to", new Date(dateTo + "T23:59:59").toISOString());
       }
 
       const response = await fetch(`/api/inventory/export/movements?${params}`);
       const blob = await response.blob();
       const url = window.URL.createObjectURL(blob);
-      const a = document.createElement('a');
+      const a = document.createElement("a");
       a.href = url;
-      a.download = `movements-${venueId}-${new Date().toISOString().split('T')[0]}.csv`;
+      a.download = `movements-${venueId}-${new Date().toISOString().split("T")[0]}.csv`;
       document.body.appendChild(a);
       a.click();
       document.body.removeChild(a);
@@ -123,17 +123,21 @@ export function InventoryMovements({ venueId, canEdit = true }: InventoryMovemen
 
   const getReasonBadge = (reason: string) => {
     switch (reason) {
-      case 'sale':
+      case "sale":
         return <Badge variant="destructive">Sale</Badge>;
-      case 'receive':
-        return <Badge variant="default" className="bg-green-600">Receive</Badge>;
-      case 'adjust':
+      case "receive":
+        return (
+          <Badge variant="default" className="bg-green-600">
+            Receive
+          </Badge>
+        );
+      case "adjust":
         return <Badge variant="outline">Adjust</Badge>;
-      case 'waste':
+      case "waste":
         return <Badge variant="destructive">Waste</Badge>;
-      case 'stocktake':
+      case "stocktake":
         return <Badge variant="secondary">Stocktake</Badge>;
-      case 'return':
+      case "return":
         return <Badge variant="outline">Return</Badge>;
       default:
         return <Badge>{reason}</Badge>;
@@ -142,12 +146,12 @@ export function InventoryMovements({ venueId, canEdit = true }: InventoryMovemen
 
   const formatDate = (dateString: string) => {
     const date = new Date(dateString);
-    return new Intl.DateTimeFormat('en-US', {
-      month: 'short',
-      day: 'numeric',
-      year: 'numeric',
-      hour: 'numeric',
-      minute: 'numeric',
+    return new Intl.DateTimeFormat("en-US", {
+      month: "short",
+      day: "numeric",
+      year: "numeric",
+      hour: "numeric",
+      minute: "numeric",
     }).format(date);
   };
 
@@ -165,15 +169,18 @@ export function InventoryMovements({ venueId, canEdit = true }: InventoryMovemen
               Export CSV
             </Button>
           </div>
-          
+
           {/* Filters */}
           <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
             <div className="space-y-2">
               <Label className="text-sm">Reason</Label>
-              <Select value={reasonFilter} onValueChange={(value) => {
-                setReasonFilter(value);
-                setPage(0);
-              }}>
+              <Select
+                value={reasonFilter}
+                onValueChange={(value) => {
+                  setReasonFilter(value);
+                  setPage(0);
+                }}
+              >
                 <SelectTrigger>
                   <SelectValue placeholder="Filter by reason" />
                 </SelectTrigger>
@@ -188,7 +195,7 @@ export function InventoryMovements({ venueId, canEdit = true }: InventoryMovemen
                 </SelectContent>
               </Select>
             </div>
-            
+
             <div className="space-y-2">
               <Label className="text-sm">From Date</Label>
               <Input
@@ -200,7 +207,7 @@ export function InventoryMovements({ venueId, canEdit = true }: InventoryMovemen
                 }}
               />
             </div>
-            
+
             <div className="space-y-2">
               <Label className="text-sm">To Date</Label>
               <Input
@@ -219,9 +226,7 @@ export function InventoryMovements({ venueId, canEdit = true }: InventoryMovemen
         {loading ? (
           <div className="text-center py-8">Loading movements...</div>
         ) : movements.length === 0 ? (
-          <div className="text-center py-8 text-muted-foreground">
-            No stock movements found.
-          </div>
+          <div className="text-center py-8 text-muted-foreground">No stock movements found.</div>
         ) : (
           <>
             <div className="rounded-md border overflow-x-auto">
@@ -243,7 +248,7 @@ export function InventoryMovements({ venueId, canEdit = true }: InventoryMovemen
                         {formatDate(movement.created_at)}
                       </TableCell>
                       <TableCell className="font-medium">
-                        {movement.ingredient?.name || 'Unknown'}
+                        {movement.ingredient?.name || "Unknown"}
                       </TableCell>
                       <TableCell>{getReasonBadge(movement.reason)}</TableCell>
                       <TableCell>
@@ -253,16 +258,17 @@ export function InventoryMovements({ venueId, canEdit = true }: InventoryMovemen
                           ) : (
                             <ArrowDown className="h-4 w-4 text-red-600" />
                           )}
-                          <span className={movement.delta > 0 ? 'text-green-600' : 'text-red-600'}>
-                            {movement.delta > 0 ? '+' : ''}{movement.delta} {movement.ingredient?.unit}
+                          <span className={movement.delta > 0 ? "text-green-600" : "text-red-600"}>
+                            {movement.delta > 0 ? "+" : ""}
+                            {movement.delta} {movement.ingredient?.unit}
                           </span>
                         </div>
                       </TableCell>
                       <TableCell className="text-sm text-muted-foreground max-w-xs truncate">
-                        {movement.note || '-'}
+                        {movement.note || "-"}
                       </TableCell>
                       <TableCell className="text-sm text-muted-foreground">
-                        {movement.user?.email ? movement.user.email.split('@')[0] : 'Auto'}
+                        {movement.user?.email ? movement.user.email.split("@")[0] : "Auto"}
                       </TableCell>
                     </TableRow>
                   ))}
@@ -280,9 +286,7 @@ export function InventoryMovements({ venueId, canEdit = true }: InventoryMovemen
                 <ChevronLeft className="h-4 w-4 mr-2" />
                 Previous
               </Button>
-              <span className="text-sm text-muted-foreground">
-                Page {page + 1}
-              </span>
+              <span className="text-sm text-muted-foreground">Page {page + 1}</span>
               <Button
                 variant="outline"
                 size="sm"
@@ -299,4 +303,3 @@ export function InventoryMovements({ venueId, canEdit = true }: InventoryMovemen
     </Card>
   );
 }
-

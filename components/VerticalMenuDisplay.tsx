@@ -1,9 +1,9 @@
-'use client';
+"use client";
 
-import { useState, useRef, useEffect } from 'react';
-import { Button } from '@/components/ui/button';
-import { Plus, Minus, Search, Menu } from 'lucide-react';
-import { Input } from '@/components/ui/input';
+import { useState, useRef, useEffect } from "react";
+import { Button } from "@/components/ui/button";
+import { Plus, Minus, Search, Menu } from "lucide-react";
+import { Input } from "@/components/ui/input";
 
 interface MenuItem {
   id: string;
@@ -30,39 +30,52 @@ export function VerticalMenuDisplay({
   categoryOrder,
   onAddToCart,
   cart,
-  onRemoveFromCart,
-  onUpdateQuantity
+  onRemoveFromCart: _onRemoveFromCart,
+  onUpdateQuantity,
 }: VerticalMenuDisplayProps) {
   const [selectedCategory, setSelectedCategory] = useState<string | null>(null);
-  const [searchQuery, setSearchQuery] = useState('');
+  const [searchQuery, setSearchQuery] = useState("");
   const [sidebarOpen, setSidebarOpen] = useState(false);
-  const categoryRefs = useRef<Record<string, HTMLDivElement | null>>({ /* Empty */ });
+  const categoryRefs = useRef<Record<string, HTMLDivElement | null>>({
+    /* Empty */
+  });
 
   // Group items by category
-  const groupedItems = menuItems.reduce((acc, item) => {
-    if (!acc[item.category]) {
-      acc[item.category] = [];
-    }
-    acc[item.category].push(item);
-    return acc;
-  }, { /* Empty */ } as Record<string, MenuItem[]>);
+  const groupedItems = menuItems.reduce(
+    (acc, item) => {
+      if (!acc[item.category]) {
+        acc[item.category] = [];
+      }
+      acc[item.category].push(item);
+      return acc;
+    },
+    {
+      /* Empty */
+    } as Record<string, MenuItem[]>
+  );
 
   const categories = categoryOrder || Object.keys(groupedItems).sort();
 
   // Filter items by search
-  const filteredItems = menuItems.filter(item =>
-    item.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
-    item.description?.toLowerCase().includes(searchQuery.toLowerCase())
+  const filteredItems = menuItems.filter(
+    (item) =>
+      item.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
+      item.description?.toLowerCase().includes(searchQuery.toLowerCase())
   );
 
   const filteredGroupedItems = searchQuery
-    ? filteredItems.reduce((acc, item) => {
-        if (!acc[item.category]) {
-          acc[item.category] = [];
-        }
-        acc[item.category].push(item);
-        return acc;
-      }, { /* Empty */ } as Record<string, MenuItem[]>)
+    ? filteredItems.reduce(
+        (acc, item) => {
+          if (!acc[item.category]) {
+            acc[item.category] = [];
+          }
+          acc[item.category].push(item);
+          return acc;
+        },
+        {
+          /* Empty */
+        } as Record<string, MenuItem[]>
+      )
     : groupedItems;
 
   // Scroll to category
@@ -72,10 +85,10 @@ export function VerticalMenuDisplay({
       const offset = 120; // Account for sticky header
       const elementPosition = element.getBoundingClientRect().top;
       const offsetPosition = elementPosition + window.pageYOffset - offset;
-      
+
       window.scrollTo({
         top: offsetPosition,
-        behavior: 'smooth'
+        behavior: "smooth",
       });
       setSelectedCategory(category);
       setSidebarOpen(false);
@@ -86,7 +99,7 @@ export function VerticalMenuDisplay({
   useEffect(() => {
     const handleScroll = () => {
       const scrollPosition = window.scrollY + 200;
-      
+
       for (const category of categories) {
         const element = categoryRefs.current[category];
         if (element) {
@@ -99,8 +112,8 @@ export function VerticalMenuDisplay({
       }
     };
 
-    window.addEventListener('scroll', handleScroll);
-    return () => window.removeEventListener('scroll', handleScroll);
+    window.addEventListener("scroll", handleScroll);
+    return () => window.removeEventListener("scroll", handleScroll);
   }, [categories]);
 
   return (
@@ -118,7 +131,7 @@ export function VerticalMenuDisplay({
         className={`
           fixed lg:sticky top-0 left-0 h-screen w-64 bg-white border-r border-gray-200
           transform transition-transform duration-300 ease-in-out z-40
-          ${sidebarOpen ? 'translate-x-0' : '-translate-x-full lg:translate-x-0'}
+          ${sidebarOpen ? "translate-x-0" : "-translate-x-full lg:translate-x-0"}
         `}
       >
         <div className="h-full flex flex-col">
@@ -144,9 +157,10 @@ export function VerticalMenuDisplay({
                 onClick={() => scrollToCategory(category)}
                 className={`
                   w-full text-left px-6 py-3 text-sm font-medium transition-colors
-                  ${selectedCategory === category
-                    ? 'bg-black text-white'
-                    : 'text-gray-700 hover:bg-gray-100'
+                  ${
+                    selectedCategory === category
+                      ? "bg-black text-white"
+                      : "text-gray-700 hover:bg-gray-100"
                   }
                 `}
               >
@@ -175,7 +189,9 @@ export function VerticalMenuDisplay({
             return (
               <div
                 key={category}
-                ref={(el) => { categoryRefs.current[category] = el; }}
+                ref={(el) => {
+                  categoryRefs.current[category] = el;
+                }}
                 className="mb-12"
               >
                 {/* Category Title */}
@@ -186,9 +202,9 @@ export function VerticalMenuDisplay({
                 {/* Items Grid */}
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                   {items
-                    .filter(item => item.is_available)
+                    .filter((item) => item.is_available)
                     .map((item) => {
-                      const cartItem = cart.find(c => c.id === item.id);
+                      const cartItem = cart.find((c) => c.id === item.id);
                       const quantity = cartItem?.quantity || 0;
 
                       return (
@@ -280,4 +296,3 @@ export function VerticalMenuDisplay({
     </div>
   );
 }
-

@@ -73,7 +73,7 @@ export function withErrorHandling<TRequest = unknown, TResponse = unknown>(
       }
 
       // Return success response
-      return ok(result);
+      return ok(result) as NextResponse<ApiResponse<TResponse>>;
     } catch (_error) {
       const duration = Date.now() - startTime;
 
@@ -87,28 +87,35 @@ export function withErrorHandling<TRequest = unknown, TResponse = unknown>(
 
       // Handle Zod validation errors
       if (_error instanceof ZodError) {
-        return handleZodError(_error);
+        return handleZodError(_error) as NextResponse<ApiResponse<TResponse>>;
       }
 
       // Handle known error types
       if (_error instanceof Error) {
         // Check for specific error types
         if (_error.name === "UnauthorizedError") {
-          return fail(_error.message, 401);
+          return fail(_error.message, 401) as NextResponse<ApiResponse<TResponse>>;
         }
         if (_error.name === "ForbiddenError") {
-          return fail(_error.message, 403);
+          return fail(_error.message, 403) as NextResponse<ApiResponse<TResponse>>;
         }
         if (_error.name === "NotFoundError") {
-          return fail(_error.message, 404);
+          return fail(_error.message, 404) as NextResponse<ApiResponse<TResponse>>;
         }
         if (_error.name === "ValidationError") {
-          return fail(_error.message, 400);
+          return fail(_error.message, 400) as NextResponse<ApiResponse<TResponse>>;
         }
       }
 
       // Return generic server error
-      return serverError("Internal server _error", getErrorDetails(_error));
+      const errorDetails = getErrorDetails(_error);
+      const detailsRecord =
+        typeof errorDetails === "object" && errorDetails !== null
+          ? (errorDetails as unknown as Record<string, unknown>)
+          : { error: errorDetails };
+      return serverError("Internal server error", detailsRecord) as NextResponse<
+        ApiResponse<TResponse>
+      >;
     }
   };
 }

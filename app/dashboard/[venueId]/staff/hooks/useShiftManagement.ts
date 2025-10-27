@@ -1,8 +1,8 @@
-import { useState, useEffect } from 'react';
-import { buildIsoFromLocal, addDaysISO } from '@/lib/time';
-import { LegacyShift } from './useStaffManagement';
+import { useState, useEffect } from "react";
+import { buildIsoFromLocal, addDaysISO } from "@/lib/time";
+import { LegacyShift } from "./useStaffManagement";
 
-export function useShiftManagement(venueId: string, staff: unknown[]) {
+export function useShiftManagement(venueId: string, _staff: unknown[]) {
   const [allShifts, setAllShifts] = useState<LegacyShift[]>([]);
   const [shiftsLoaded, setShiftsLoaded] = useState(false);
   const [editingShiftFor, setEditingShiftFor] = useState<string | null>(null);
@@ -11,7 +11,9 @@ export function useShiftManagement(venueId: string, staff: unknown[]) {
   useEffect(() => {
     const loadShifts = async () => {
       const res = await fetch(`/api/staff/shifts/list?venue_id=${encodeURIComponent(venueId)}`);
-      const j = await res.json().catch(() => ({ /* Empty */ }));
+      const j = await res.json().catch(() => ({
+        /* Empty */
+      }));
       if (res.ok && !j?.error) {
         const shifts = j.shifts || [];
         setAllShifts(shifts);
@@ -26,24 +28,24 @@ export function useShiftManagement(venueId: string, staff: unknown[]) {
 
   const addShift = async (staffId: string, startTime: string, endTime: string, area?: string) => {
     try {
-      const res = await fetch('/api/staff/shifts/add', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+      const res = await fetch("/api/staff/shifts/add", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           venue_id: venueId,
           staff_id: staffId,
           start_time: startTime,
           end_time: endTime,
-          area: area || null
+          area: area || null,
         }),
       });
 
       if (!res.ok) {
-        throw new Error('Failed to add shift');
+        throw new Error("Failed to add shift");
       }
 
       const data = await res.json();
-      setAllShifts(prev => [...prev, data.shift]);
+      setAllShifts((prev) => [...prev, data.shift]);
       setEditingShiftFor(null);
     } catch (_err) {
       // Error silently handled
@@ -52,17 +54,17 @@ export function useShiftManagement(venueId: string, staff: unknown[]) {
 
   const deleteShift = async (shiftId: string) => {
     try {
-      const res = await fetch('/api/staff/shifts/delete', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+      const res = await fetch("/api/staff/shifts/delete", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ shift_id: shiftId }),
       });
 
       if (!res.ok) {
-        throw new Error('Failed to delete shift');
+        throw new Error("Failed to delete shift");
       }
 
-      setAllShifts(prev => prev.filter(s => s.id !== shiftId));
+      setAllShifts((prev) => prev.filter((s) => s.id !== shiftId));
     } catch (_err) {
       // Error silently handled
     }
@@ -75,7 +77,6 @@ export function useShiftManagement(venueId: string, staff: unknown[]) {
     editingShiftFor,
     setEditingShiftFor,
     addShift,
-    deleteShift
+    deleteShift,
   };
 }
-

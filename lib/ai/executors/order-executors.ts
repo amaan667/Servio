@@ -57,7 +57,9 @@ export async function executeOrdersMarkServed(
     .eq("id", params.orderId);
 
   if (orderError) {
-    throw new AIAssistantError("Failed to mark order as served", "EXECUTION_FAILED", orderError);
+    throw new AIAssistantError("Failed to mark order as served", "EXECUTION_FAILED", {
+      error: orderError,
+    });
   }
 
   return {
@@ -114,7 +116,7 @@ export async function executeOrdersComplete(
     .eq("id", params.orderId);
 
   if (error) {
-    throw new AIAssistantError("Failed to complete order", "EXECUTION_FAILED", error);
+    throw new AIAssistantError("Failed to complete order", "EXECUTION_FAILED", { error });
   }
 
   return {
@@ -124,4 +126,3 @@ export async function executeOrdersComplete(
     auditId: "",
   };
 }
-

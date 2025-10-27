@@ -44,7 +44,7 @@ export function useTabCounts(venueId: string, tz: string, liveWindowMins = 30) {
         return;
       }
 
-      setData(result);
+      setData(result as TabCounts | null);
     } catch (_err) {
       logger.error("[TAB_COUNTS] Fetch error:", errorToContext(_err));
       setError(_err instanceof Error ? _err.message : "Unknown error");

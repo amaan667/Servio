@@ -233,7 +233,7 @@ export async function executeMenuTranslate(
   _userId: string,
   preview: boolean
 ): Promise<AIPreviewDiff | AIExecutionResult> {
-  const typedParams = params as { targetLanguage: string; includeDescriptions?: boolean };
+  const typedParams = _params as { targetLanguage: string; includeDescriptions?: boolean };
   const supabase = await createClient();
 
   const { data: items } = await supabase
@@ -564,7 +564,18 @@ OUTPUT FORMAT:
       auditId: "",
     };
   } catch (_error) {
-    logger.error("[AI ASSISTANT] Translation error:", _error as Record<string, unknown>);
-    throw new AIAssistantError(`Translation failed: ${_error.message}`, "EXECUTION_FAILED", _error);
+    logger.error(
+      "[AI ASSISTANT] Translation error:",
+      _error instanceof Error ? _error : { error: String(_error) }
+    );
+    const errorDetails =
+      _error instanceof Error
+        ? { message: _error.message, stack: _error.stack }
+        : { error: String(_error) };
+    throw new AIAssistantError(
+      `Translation failed: ${_error instanceof Error ? _error.message : "Unknown error"}`,
+      "EXECUTION_FAILED",
+      errorDetails
+    );
   }
 }

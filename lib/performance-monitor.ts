@@ -3,6 +3,8 @@
  * and Core Web Vitals tracking
  */
 
+import React from "react";
+
 interface PerformanceMetric {
   name: string;
   value: number;
@@ -132,7 +134,7 @@ class PerformanceMonitor {
     // Monitor React component render times
     if (typeof window !== "undefined" && window.React) {
       const originalCreateElement = window.React.createElement;
-      window.React.createElement = (...args) => {
+      window.React.createElement = ((...args: Parameters<typeof originalCreateElement>) => {
         const start = performance.now();
         const result = originalCreateElement.apply(window.React, args);
         const end = performance.now();
@@ -142,7 +144,7 @@ class PerformanceMonitor {
         });
 
         return result;
-      };
+      }) as any;
     }
   }
 
@@ -311,7 +313,7 @@ class PerformanceMonitor {
         deviceMemory: (navigator as { deviceMemory?: number }).deviceMemory,
         hardwareConcurrency: navigator.hardwareConcurrency,
       }),
-    }).catch((error) => {
+    }).catch((_error) => {
       /* Empty */
     });
   }

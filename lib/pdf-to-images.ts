@@ -19,15 +19,15 @@ export async function convertPDFToImages(pdfBuffer: Buffer): Promise<string[]> {
       const context = canvas.getContext("2d");
 
       await page.render({
-        canvasContext: context,
+        canvasContext: context as any,
         viewport: viewport,
-      }).promise;
+      } as any).promise;
 
       const imageDataUrl = canvas.toDataURL("image/png");
       imageUrls.push(imageDataUrl);
     }
 
-    logger.info("[PDF-TO-IMAGES] Converted pages:", imageUrls.length);
+    logger.info("[PDF-TO-IMAGES] Converted pages:", { count: imageUrls.length });
     return imageUrls;
   } catch (_error) {
     logger.error("[PDF-TO-IMAGES] Error:", _error);

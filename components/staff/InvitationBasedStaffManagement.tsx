@@ -122,7 +122,7 @@ const ROLES = [
 
 export default function InvitationBasedStaffManagement({
   venueId,
-  venueName,
+  venueName: _venueName,
 }: InvitationBasedStaffManagementProps) {
   const supabase = createClient();
   const [staff, setStaff] = useState<StaffMember[]>([]);
@@ -201,9 +201,8 @@ export default function InvitationBasedStaffManagement({
     }
 
     // Get current user's email
-    const {
-      data: { user },
-    } = await supabase.auth.getSession();
+    const { data } = await supabase.auth.getSession();
+    const user = data?.session?.user ?? null;
 
     // Prevent inviting yourself
     if (user?.email?.toLowerCase() === inviteEmail.trim().toLowerCase()) {
@@ -261,7 +260,7 @@ export default function InvitationBasedStaffManagement({
       setActiveTab("invitations");
       loadData(); // Reload to show new invitation
     } catch (_err) {
-      setError(_err.message || "Failed to send invitation");
+      setError(_err instanceof Error ? _err.message : "Failed to send invitation");
     } finally {
       setInviteLoading(false);
     }
@@ -302,7 +301,7 @@ export default function InvitationBasedStaffManagement({
     } catch (_err) {
       toast({
         title: "Error",
-        description: _err.message || "Failed to remove invitation",
+        description: _err instanceof Error ? _err.message : "Failed to remove invitation",
         variant: "destructive",
       });
     }
@@ -347,7 +346,7 @@ export default function InvitationBasedStaffManagement({
   // Shift management component
   const StaffRowItem = memo(function StaffRowItem({
     row,
-    onDeleteRow,
+    onDeleteRow: _onDeleteRow,
     onShiftsChanged,
     embedded = false,
     onClose,

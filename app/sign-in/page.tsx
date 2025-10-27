@@ -1,11 +1,11 @@
-'use client';
+"use client";
 
-import { useEffect, Suspense, useState } from 'react';
-import { useRouter } from 'next/navigation';
-import { supabaseBrowser } from '@/lib/supabase';
-import { getAuthRedirectUrl } from '@/lib/auth';
-import { useAuth } from '@/app/auth/AuthProvider';
-import SignInForm from './signin-form';
+import { useEffect, Suspense, useState } from "react";
+import { useRouter } from "next/navigation";
+import { supabaseBrowser } from "@/lib/supabase";
+import { getAuthRedirectUrl } from "@/lib/auth";
+import { useAuth } from "@/app/auth/AuthProvider";
+import SignInForm from "./signin-form";
 
 function SignInPageContent() {
   const router = useRouter();
@@ -16,22 +16,24 @@ function SignInPageContent() {
   useEffect(() => {
     // Check for error and message parameters in URL
     const urlParams = new URLSearchParams(window.location.search);
-    const errorParam = urlParams.get('error');
-    const messageParam = urlParams.get('message');
-    const nextParam = urlParams.get('next');
+    const errorParam = urlParams.get("error");
+    const messageParam = urlParams.get("message");
+    const nextParam = urlParams.get("next");
 
     if (messageParam) {
       setError(messageParam);
     } else if (errorParam) {
       switch (errorParam) {
-        case 'pkce_error':
-          setError('Authentication failed due to security verification. Please try signing in again.');
+        case "pkce_error":
+          setError(
+            "Authentication failed due to security verification. Please try signing in again."
+          );
           break;
-        case 'refresh_token_error':
-          setError('Your session has expired. Please sign in again.');
+        case "refresh_token_error":
+          setError("Your session has expired. Please sign in again.");
           break;
         default:
-          setError('Authentication failed. Please try again.');
+          setError("Authentication failed. Please try again.");
       }
     }
 
@@ -40,21 +42,21 @@ function SignInPageContent() {
       const fetchVenueAndRedirect = async () => {
         const supabase = supabaseBrowser();
         const { data: venues } = await supabase
-          .from('venues')
-          .select('venue_id')
-          .eq('owner_user_id', session.user.id)
-          .order('created_at', { ascending: false })
+          .from("venues")
+          .select("venue_id")
+          .eq("owner_user_id", session.user.id)
+          .order("created_at", { ascending: false })
           .limit(1);
-        
+
         if (nextParam) {
           router.push(nextParam);
         } else if (venues && venues.length > 0) {
           router.push(`/dashboard/${venues[0]?.venue_id}`);
         } else {
-          router.push('/complete-profile');
+          router.push("/complete-profile");
         }
       };
-      
+
       fetchVenueAndRedirect();
     }
   }, [session, loading, router]);
@@ -63,44 +65,42 @@ function SignInPageContent() {
     if (isSigningIn) {
       return;
     }
-    
+
     try {
       setIsSigningIn(true);
 
       // Use stable redirect URL helper
-      const redirectTo = getAuthRedirectUrl('/auth/callback');
+      const redirectTo = getAuthRedirectUrl("/auth/callback");
 
       const { data, error } = await supabaseBrowser().auth.signInWithOAuth({
-        provider: 'google',
+        provider: "google",
         options: {
           redirectTo,
-          queryParams: { 
-            access_type: 'offline',
-            prompt: 'consent',
-            include_granted_scopes: 'true',
+          queryParams: {
+            access_type: "offline",
+            prompt: "consent",
+            include_granted_scopes: "true",
           },
-          // Enable PKCE for better security
-          flowType: 'pkce',
+          // PKCE is enabled by default in Supabase v2
         },
       });
-      
-      if (error) {
 
-        const msg = error?.message || 'Sign in failed.';
+      if (error) {
+        const msg = error?.message || "Sign in failed.";
         // If rate limited, display a friendlier message with longer wait time
         if (/rate limit/i.test(msg)) {
-          alert('Too many sign-in attempts. Please wait 1 minute and try again.');
+          alert("Too many sign-in attempts. Please wait 1 minute and try again.");
         } else if (/network|connection|timeout/i.test(msg)) {
-          alert('Connection issue. Please check your internet and try again.');
+          alert("Connection issue. Please check your internet and try again.");
         } else if (/invalid.*credentials/i.test(msg)) {
-          alert('Invalid email or password. Please check and try again.');
+          alert("Invalid email or password. Please check and try again.");
         } else {
           alert(`Sign in failed: ${msg}`);
         }
         setIsSigningIn(false);
         return;
       }
-      
+
       // The redirect should happen automatically, but if it doesn't, we'll handle it
       if (data.url) {
         // For both mobile and desktop, use window.location.href for full page redirect
@@ -108,7 +108,7 @@ function SignInPageContent() {
         window.location.href = data.url;
       }
     } catch {
-      alert('Sign in failed. Please try again.');
+      alert("Sign in failed. Please try again.");
       setIsSigningIn(false);
     }
   };
@@ -116,7 +116,7 @@ function SignInPageContent() {
   return (
     <div className="min-h-screen w-full bg-gradient-to-br from-purple-50 to-indigo-100 flex items-center justify-center p-4 sm:p-6 lg:p-8">
       <div className="w-full max-w-md mx-auto">
-        <SignInForm 
+        <SignInForm
           onGoogleSignIn={signInWithGoogle}
           isLoading={isSigningIn}
           error={error}

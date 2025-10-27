@@ -8,17 +8,21 @@ export function getStripeClient() {
     if (!process.env.STRIPE_SECRET_KEY) {
       throw new Error("STRIPE_SECRET_KEY environment variable is not set");
     }
-    stripeInstance = new Stripe(process.env.STRIPE_SECRET_KEY, { 
-      apiVersion: "2025-08-27.basil" 
+    stripeInstance = new Stripe(process.env.STRIPE_SECRET_KEY, {
+      apiVersion: "2025-08-27.basil",
     });
   }
   return stripeInstance;
 }
 
 // Export for backward compatibility with direct usage
-export const stripe = new Proxy({ /* Empty */ } as Stripe, {
-  get(target, prop) {
-    return getStripeClient()[prop as keyof Stripe];
+export const stripe = new Proxy(
+  {
+    /* Empty */
+  } as Stripe,
+  {
+    get(_target, prop) {
+      return getStripeClient()[prop as keyof Stripe];
+    },
   }
-});
-
+);

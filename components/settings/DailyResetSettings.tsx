@@ -66,7 +66,7 @@ export function DailyResetSettings({
       setSaveStatus("success");
       setTimeout(() => setSaveStatus("idle"), 3000);
     } catch (_err) {
-      setError(_err.message || "Failed to update reset time");
+      setError(_err instanceof Error ? _err.message : "Failed to update reset time");
       setSaveStatus("error");
     } finally {
       setIsSaving(false);

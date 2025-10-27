@@ -435,7 +435,20 @@ export function TableCardNew({
 
         <div className="space-y-2">
           <div className="flex items-center gap-2">
-            <StatusPill status={table.session_status as unknown} />
+            <StatusPill
+              status={
+                table.session_status as
+                  | "IN_PREP"
+                  | "READY"
+                  | "FREE"
+                  | "SERVED"
+                  | "ORDERING"
+                  | "CLOSED"
+                  | "OCCUPIED"
+                  | "RESERVED"
+                  | "AWAITING_BILL"
+              }
+            />
           </div>
 
           {table.order_id && (

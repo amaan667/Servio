@@ -1,6 +1,6 @@
-import { useState, useEffect } from 'react';
-import { supabaseBrowser as createClient } from '@/lib/supabase';
-import { MenuItem } from '../types';
+import { useState, useEffect } from "react";
+import { supabaseBrowser as createClient } from "@/lib/supabase";
+import { MenuItem } from "../types";
 
 export function useMenuData(venueId: string, refreshTrigger?: number) {
   const [menuItems, setMenuItems] = useState<MenuItem[]>([]);
@@ -8,7 +8,7 @@ export function useMenuData(venueId: string, refreshTrigger?: number) {
   const [error, setError] = useState<string | null>(null);
   const [categoryOrder, setCategoryOrder] = useState<string[] | null>(null);
 
-  const venueUuid = venueId.startsWith('venue-') ? venueId : `venue-${venueId}`;
+  const venueUuid = venueId.startsWith("venue-") ? venueId : `venue-${venueId}`;
   const originalVenueId = venueId;
   const supabase = createClient();
 
@@ -34,7 +34,7 @@ export function useMenuData(venueId: string, refreshTrigger?: number) {
           .eq("venue_id", originalVenueId)
           .order("category", { ascending: true })
           .order("name", { ascending: true });
-        
+
         if (fallbackData && fallbackData.length > 0) {
           data = fallbackData;
         }
@@ -56,7 +56,7 @@ export function useMenuData(venueId: string, refreshTrigger?: number) {
           .order("created_at", { ascending: false })
           .limit(1)
           .maybeSingle();
-        
+
         if (fallbackUploadData) {
           uploadData = fallbackUploadData;
         }
@@ -75,7 +75,7 @@ export function useMenuData(venueId: string, refreshTrigger?: number) {
       }
     } catch {
       setError("An unexpected error occurred.");
-    } finally{
+    } finally {
       setLoading(false);
     }
   };
@@ -96,14 +96,14 @@ export function useMenuData(venueId: string, refreshTrigger?: number) {
           filter: `venue_id=eq.${venueUuid}`,
         },
         (_payload: unknown) => {
-
           fetchMenu();
-        },
+        }
       )
-      .subscribe((status: unknown) => { /* Empty */ });
+      .subscribe((_status: unknown) => {
+        /* Empty */
+      });
 
     return () => {
-
       if (supabase) {
         createClient().removeChannel(channel);
       }
@@ -125,4 +125,3 @@ export function useMenuData(venueId: string, refreshTrigger?: number) {
     fetchMenu,
   };
 }
-

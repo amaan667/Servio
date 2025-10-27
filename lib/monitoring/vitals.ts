@@ -3,13 +3,14 @@
  * Tracks Core Web Vitals: LCP, FID, CLS, FCP, TTFB
  */
 
-import type { Metric } from 'web-vitals';
+import type { Metric } from "web-vitals";
+import { logger } from "@/lib/logger";
 
-const vitalsUrl = '/api/vitals';
+const vitalsUrl = "/api/vitals";
 
 function sendToAnalytics(metric: Metric) {
-  if (typeof window === 'undefined') return;
-  
+  if (typeof window === "undefined") return;
+
   const body = JSON.stringify({
     name: metric.name,
     value: metric.value,
@@ -27,8 +28,8 @@ function sendToAnalytics(metric: Metric) {
   } else {
     fetch(vitalsUrl, {
       body,
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
       keepalive: true,
     }).catch(console.error);
   }
@@ -36,13 +37,12 @@ function sendToAnalytics(metric: Metric) {
 
 export function reportWebVitals(metric: Metric) {
   // Log to console in development
-  if (process.env.NODE_ENV === 'development') {
+  if (process.env.NODE_ENV === "development") {
     logger.debug("[VITALS]", metric);
   }
-  
+
   // Send to analytics in production
-  if (process.env.NODE_ENV === 'production') {
+  if (process.env.NODE_ENV === "production") {
     sendToAnalytics(metric);
   }
 }
-

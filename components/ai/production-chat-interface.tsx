@@ -78,7 +78,10 @@ export function ProductionChatInterface({ isOpen, onClose, venueId }: ChatInterf
         setError(errorData.error || "Failed to load conversations");
       }
     } catch (_err) {
-      logger.error("[AI CHAT] Failed to load conversations:", _err);
+      logger.error(
+        "[AI CHAT] Failed to load conversations:",
+        _err instanceof Error ? _err : { error: String(_err) }
+      );
       setError("Failed to load conversations");
     }
   };
@@ -95,7 +98,10 @@ export function ProductionChatInterface({ isOpen, onClose, venueId }: ChatInterf
         setError(errorData.error || "Failed to load messages");
       }
     } catch (_err) {
-      logger.error("[AI CHAT] Failed to load messages:", _err);
+      logger.error(
+        "[AI CHAT] Failed to load messages:",
+        _err instanceof Error ? _err : { error: String(_err) }
+      );
       setError("Failed to load messages");
     }
   };
@@ -164,7 +170,10 @@ export function ProductionChatInterface({ isOpen, onClose, venueId }: ChatInterf
         setError(errorData.error || "Failed to send message");
       }
     } catch (_err) {
-      logger.error("[AI CHAT] Failed to send message:", _err);
+      logger.error(
+        "[AI CHAT] Failed to send message:",
+        _err instanceof Error ? _err : { error: String(_err) }
+      );
       setError("Failed to send message");
     } finally {
       setLoading(false);

@@ -142,18 +142,22 @@ export function AIActivityLog({ venueId, limit = 20 }: ActivityLogProps) {
                     {activity.error && (
                       <p className="text-xs text-destructive mt-1">{activity.error}</p>
                     )}
-                    {activity.result && (
-                      <div className="text-xs text-muted-foreground mt-1">
-                        {typeof activity.result === "object" && (
-                          <span>
-                            {(activity.result as any).updatedCount &&
-                              `${(activity.result as any).updatedCount} items affected`}
-                            {(activity.result as any).revenue &&
-                              ` • Revenue: £${(activity.result as any).revenue.toFixed(2)}`}
-                          </span>
-                        )}
-                      </div>
-                    )}
+                    {
+                      (activity.result && (
+                        <div className="text-xs text-muted-foreground mt-1">
+                          {typeof activity.result === "object" && activity.result !== null ? (
+                            <span>
+                              {(activity.result as any).updatedCount &&
+                                `${(activity.result as any).updatedCount} items affected`}
+                              {(activity.result as any).revenue &&
+                                ` • Revenue: £${(activity.result as any).revenue.toFixed(2)}`}
+                            </span>
+                          ) : (
+                            <span>{String(activity.result)}</span>
+                          )}
+                        </div>
+                      )) as React.ReactNode
+                    }
                   </div>
                 </div>
               ))}

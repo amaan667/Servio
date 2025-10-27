@@ -1,2 +1,5 @@
-# TypeScript check disabled - build handles this
-# npx tsc --noEmit
+#!/usr/bin/env sh
+. "$(dirname -- "$0")/_/husky.sh"
+
+# Run typecheck before push
+pnpm typecheck || exit 1

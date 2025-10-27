@@ -17,7 +17,7 @@ import {
 import { UpgradeModal } from "@/components/upgrade-modal";
 
 interface BillingSectionProps {
-  user: {
+  user?: {
     id: string;
     email: string;
   };
@@ -28,6 +28,8 @@ interface BillingSectionProps {
     subscription_status?: string;
     trial_ends_at?: string;
   };
+  venues?: unknown[];
+  isOwner?: boolean;
 }
 
 export default function BillingSection({ organization }: BillingSectionProps) {
@@ -317,7 +319,7 @@ export default function BillingSection({ organization }: BillingSectionProps) {
         open={showUpgradeModal}
         onOpenChange={setShowUpgradeModal}
         currentTier={tier}
-        organizationId={organization?.id}
+        organizationId={organization?.id || ""}
       />
     </div>
   );

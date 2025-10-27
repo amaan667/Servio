@@ -1,21 +1,17 @@
-'use client';
+"use client";
 
-import { useState } from 'react';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { Button } from '@/components/ui/button';
-import { Badge } from '@/components/ui/badge';
-import { 
-  Users, 
-  Clock, 
-  Phone, 
-  UserCheck, 
-  XCircle,
-  AlertCircle,
-  Calendar
-} from 'lucide-react';
-import { UnassignedReservation, TableRuntimeState } from '@/hooks/useTableRuntimeState';
-import { useAssignReservation, useCancelReservation, useNoShowReservation } from '@/hooks/useTableRuntimeState';
-import { formatDistanceToNow } from 'date-fns';
+import { useState } from "react";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Button } from "@/components/ui/button";
+import { Badge } from "@/components/ui/badge";
+import { Users, Clock, Phone, UserCheck, XCircle, AlertCircle, Calendar } from "lucide-react";
+import { UnassignedReservation, TableRuntimeState } from "@/hooks/useTableRuntimeState";
+import {
+  useAssignReservation,
+  useCancelReservation,
+  useNoShowReservation,
+} from "@/hooks/useTableRuntimeState";
+import { formatDistanceToNow } from "date-fns";
 
 interface UnassignedReservationsPanelProps {
   venueId: string;
@@ -24,14 +20,14 @@ interface UnassignedReservationsPanelProps {
   availableTables: TableRuntimeState[];
 }
 
-export function UnassignedReservationsPanel({ 
-  venueId, 
-  reservations, 
-  onActionComplete, 
-  availableTables 
+export function UnassignedReservationsPanel({
+  venueId: _venueId,
+  reservations,
+  onActionComplete,
+  availableTables,
 }: UnassignedReservationsPanelProps) {
   const [isLoading, setIsLoading] = useState<string | null>(null);
-  
+
   const assignReservation = useAssignReservation();
   const cancelReservation = useCancelReservation();
   const noShowReservation = useNoShowReservation();
@@ -40,18 +36,18 @@ export function UnassignedReservationsPanel({
     setIsLoading(reservationId);
     try {
       switch (action) {
-        case 'assign':
+        case "assign":
           if (tableId) {
-            await assignReservation.mutateAsync({ 
-              reservationId, 
-              tableId 
+            await assignReservation.mutateAsync({
+              reservationId,
+              tableId,
             });
           }
           break;
-        case 'cancel':
+        case "cancel":
           await cancelReservation.mutateAsync({ reservationId });
           break;
-        case 'no-show':
+        case "no-show":
           await noShowReservation.mutateAsync({ reservationId });
           break;
       }
@@ -65,7 +61,7 @@ export function UnassignedReservationsPanel({
 
   const getSuggestedTable = (partySize: number) => {
     // Find the smallest available table that can accommodate the party
-    const suitableTables = availableTables.filter(table => table.seat_count >= partySize);
+    const suitableTables = availableTables.filter((table) => table.seat_count >= partySize);
     return suitableTables.sort((a, b) => a.seat_count - b.seat_count)[0];
   };
 
@@ -76,11 +72,11 @@ export function UnassignedReservationsPanel({
     const minutesDiff = Math.floor(timeDiff / (1000 * 60));
 
     if (minutesDiff < 0) {
-      return { status: 'overdue', label: 'Overdue', color: 'destructive' as const };
+      return { status: "overdue", label: "Overdue", color: "destructive" as const };
     } else if (minutesDiff <= 15) {
-      return { status: 'due', label: 'Due Soon', color: 'default' as const };
+      return { status: "due", label: "Due Soon", color: "default" as const };
     } else {
-      return { status: 'upcoming', label: 'Upcoming', color: 'secondary' as const };
+      return { status: "upcoming", label: "Upcoming", color: "secondary" as const };
     }
   };
 
@@ -109,10 +105,8 @@ export function UnassignedReservationsPanel({
                   {/* Header */}
                   <div className="flex items-center justify-between mb-3">
                     <div className="flex items-center gap-2">
-                      <Badge variant={status.color}>
-                        {status.label}
-                      </Badge>
-                      {status.status === 'overdue' && (
+                      <Badge variant={status.color}>{status.label}</Badge>
+                      {status.status === "overdue" && (
                         <AlertCircle className="h-4 w-4 text-red-500" />
                       )}
                     </div>
@@ -137,9 +131,9 @@ export function UnassignedReservationsPanel({
                     )}
                     <div className="flex items-center gap-2 text-sm text-gray-900">
                       <Clock className="h-4 w-4 text-gray-700" />
-                      {new Date(reservation.start_at).toLocaleTimeString([], { 
-                        hour: '2-digit', 
-                        minute: '2-digit' 
+                      {new Date(reservation.start_at).toLocaleTimeString([], {
+                        hour: "2-digit",
+                        minute: "2-digit",
                       })}
                     </div>
                   </div>
@@ -166,7 +160,9 @@ export function UnassignedReservationsPanel({
                         variant="default"
                         size="sm"
                         className="w-full"
-                        onClick={() => handleAction('assign', reservation.id, suggestedTable.table_id)}
+                        onClick={() =>
+                          handleAction("assign", reservation.id, suggestedTable.table_id)
+                        }
                         disabled={isActionLoading}
                       >
                         Assign to {suggestedTable.label}
@@ -177,7 +173,7 @@ export function UnassignedReservationsPanel({
                         variant="outline"
                         size="sm"
                         className="flex-1"
-                        onClick={() => handleAction('cancel', reservation.id)}
+                        onClick={() => handleAction("cancel", reservation.id)}
                         disabled={isActionLoading}
                       >
                         <XCircle className="h-4 w-4 mr-1" />
@@ -187,7 +183,7 @@ export function UnassignedReservationsPanel({
                         variant="outline"
                         size="sm"
                         className="flex-1"
-                        onClick={() => handleAction('no-show', reservation.id)}
+                        onClick={() => handleAction("no-show", reservation.id)}
                         disabled={isActionLoading}
                       >
                         No Show

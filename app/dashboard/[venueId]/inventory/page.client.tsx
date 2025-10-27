@@ -5,10 +5,13 @@ import { useAuth } from "@/app/auth/AuthProvider";
 import { supabaseBrowser } from "@/lib/supabase";
 import InventoryClient from "./InventoryClient";
 import RoleBasedNavigation from "@/components/RoleBasedNavigation";
+import type { UserRole } from "@/lib/permissions";
+import { isValidUserRole } from "@/lib/utils/userRole";
 
 export default function InventoryClientPage({ venueId }: { venueId: string }) {
   const { user } = useAuth();
-  const [userRole, setUserRole] = useState<string | null>(null);
+  const [userRole, setUserRole] = useState<UserRole | null>(null);
+  const [venueName, setVenueName] = useState<string>("Your Venue");
 
   useEffect(() => {
     const fetchUserRole = async () => {
@@ -18,7 +21,7 @@ export default function InventoryClientPage({ venueId }: { venueId: string }) {
 
       // Check cached role first
       const cachedRole = sessionStorage.getItem(`user_role_${user.id}`);
-      if (cachedRole) {
+      if (cachedRole && isValidUserRole(cachedRole)) {
         setUserRole(cachedRole);
         return;
       }
@@ -34,6 +37,15 @@ export default function InventoryClientPage({ venueId }: { venueId: string }) {
       if (ownerVenue) {
         setUserRole("owner");
         sessionStorage.setItem(`user_role_${user.id}`, "owner");
+        // Fetch venue name
+        const { data: venue } = await supabase
+          .from("venues")
+          .select("venue_name")
+          .eq("venue_id", venueId)
+          .single();
+        if (venue?.venue_name) {
+          setVenueName(venue.venue_name);
+        }
       } else {
         // Check staff role
         const { data: staffRole } = await supabase
@@ -44,8 +56,19 @@ export default function InventoryClientPage({ venueId }: { venueId: string }) {
           .single();
 
         if (staffRole) {
-          setUserRole(staffRole.role);
-          sessionStorage.setItem(`user_role_${user.id}`, staffRole.role);
+          const role = staffRole.role as UserRole;
+          setUserRole(role);
+          sessionStorage.setItem(`user_role_${user.id}`, role);
+        }
+
+        // Fetch venue name
+        const { data: venue } = await supabase
+          .from("venues")
+          .select("venue_name")
+          .eq("venue_id", venueId)
+          .single();
+        if (venue?.venue_name) {
+          setVenueName(venue.venue_name);
         }
       }
     };
@@ -60,7 +83,7 @@ export default function InventoryClientPage({ venueId }: { venueId: string }) {
         {user && userRole && (
           <RoleBasedNavigation
             venueId={venueId}
-            userRole={userRole as unknown}
+            userRole={userRole}
             userName={user.user_metadata?.full_name || user.email?.split("@")[0] || "User"}
           />
         )}
@@ -72,7 +95,7 @@ export default function InventoryClientPage({ venueId }: { venueId: string }) {
           <p className="text-lg text-foreground mt-2">Track and manage your inventory</p>
         </div>
 
-        <InventoryClient venueId={venueId} />
+        <InventoryClient venueId={venueId} venueName={venueName} />
       </div>
     </div>
   );

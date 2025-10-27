@@ -61,10 +61,10 @@ export function useAccountDeletion(user: User) {
         description: "Your account has been permanently deleted.",
       });
     } catch (_err) {
-      setError(_err.message || "Failed to delete account");
+      setError(_err instanceof Error ? _err.message : "Failed to delete account");
       toast({
         title: "Error",
-        description: _err.message || "Failed to delete account",
+        description: _err instanceof Error ? _err.message : "Failed to delete account",
         variant: "destructive",
       });
     } finally {

@@ -329,7 +329,10 @@ Return ONLY valid JSON:
 
     return NextResponse.json(successResponse);
   } catch (_error) {
-    logger.error("[MENU SCRAPE] Error:", _error);
+    logger.error(
+      "[MENU SCRAPE] Error:",
+      _error instanceof Error ? _error : { error: String(_error) }
+    );
 
     const errorResponse = {
       ok: false,

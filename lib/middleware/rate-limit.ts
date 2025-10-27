@@ -3,9 +3,9 @@
  * Protects API endpoints from abuse
  */
 
-import { NextRequest } from 'next/server';
-import { Redis } from 'ioredis';
-import { logger } from '@/lib/logger';
+import { NextRequest } from "next/server";
+import { Redis } from "ioredis";
+import { logger } from "@/lib/logger";
 
 // Singleton Redis client (reuse from cache)
 let redisClient: Redis | null = null;
@@ -15,7 +15,7 @@ function getRedisClient(): Redis | null {
 
   const redisUrl = process.env.REDIS_URL;
   if (!redisUrl) {
-    logger.warn('[RATE LIMIT] REDIS_URL not configured, rate limiting disabled');
+    logger.warn("[RATE LIMIT] REDIS_URL not configured, rate limiting disabled");
     return null;
   }
 
@@ -30,7 +30,7 @@ function getRedisClient(): Redis | null {
 
     return redisClient;
   } catch (_error) {
-    logger.error('[RATE LIMIT] Failed to create client:', { error });
+    logger.error("[RATE LIMIT] Failed to create client:", { error: _error });
     return null;
   }
 }
@@ -76,7 +76,7 @@ export async function checkRateLimit(
     };
   }
 
-  const { limit, window, keyPrefix = 'ratelimit' } = config;
+  const { limit, window, keyPrefix = "ratelimit" } = config;
   const key = `${keyPrefix}:${identifier}`;
 
   try {
@@ -95,7 +95,7 @@ export async function checkRateLimit(
     const resetAt = (bucket + 1) * window * 1000;
 
     if (!allowed) {
-      logger.warn('[RATE LIMIT] Request blocked', {
+      logger.warn("[RATE LIMIT] Request blocked", {
         identifier,
         count,
         limit,
@@ -105,7 +105,7 @@ export async function checkRateLimit(
 
     return { allowed, remaining, resetAt };
   } catch (_error) {
-    logger.error('[RATE LIMIT ERROR]', { identifier, error });
+    logger.error("[RATE LIMIT ERROR]", { identifier, error: _error });
     // On error, allow the request
     return {
       allowed: true,
@@ -120,12 +120,12 @@ export async function checkRateLimit(
  */
 export function getClientIdentifier(req: NextRequest): string {
   // Try to get IP from various headers
-  const forwardedFor = req.headers.get('x-forwarded-for');
-  const realIp = req.headers.get('x-real-ip');
-  const ip = forwardedFor?.split(',')[0] || realIp || 'unknown';
+  const forwardedFor = req.headers.get("x-forwarded-for");
+  const realIp = req.headers.get("x-real-ip");
+  const ip = forwardedFor?.split(",")[0] || realIp || "unknown";
 
   // Try to get user ID from auth header
-  const authHeader = req.headers.get('authorization');
+  const authHeader = req.headers.get("authorization");
   const userId = authHeader ? `user:${authHeader.slice(0, 10)}` : null;
 
   return userId || `ip:${ip}`;
@@ -143,19 +143,17 @@ export function createRateLimitMiddleware(config: RateLimitConfig) {
       return new Response(
         JSON.stringify({
           ok: false,
-          error: 'Rate limit exceeded',
+          error: "Rate limit exceeded",
           retryAfter: Math.ceil((result.resetAt - Date.now()) / 1000),
         }),
         {
           status: 429,
           headers: {
-            'Content-Type': 'application/json',
-            'X-RateLimit-Limit': config.limit.toString(),
-            'X-RateLimit-Remaining': result.remaining.toString(),
-            'X-RateLimit-Reset': result.resetAt.toString(),
-            'Retry-After': Math.ceil(
-              (result.resetAt - Date.now()) / 1000
-            ).toString(),
+            "Content-Type": "application/json",
+            "X-RateLimit-Limit": config.limit.toString(),
+            "X-RateLimit-Remaining": result.remaining.toString(),
+            "X-RateLimit-Reset": result.resetAt.toString(),
+            "Retry-After": Math.ceil((result.resetAt - Date.now()) / 1000).toString(),
           },
         }
       );
@@ -192,4 +190,3 @@ export async function getRateLimitInfo(
     resetAt: result.resetAt,
   };
 }
-

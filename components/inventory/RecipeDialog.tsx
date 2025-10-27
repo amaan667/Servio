@@ -1,21 +1,35 @@
-'use client';
+"use client";
 
-import { useState, useEffect } from 'react';
-import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from '@/components/ui/dialog';
-import { Button } from '@/components/ui/button';
-import { Input } from '@/components/ui/input';
-import { Label } from '@/components/ui/label';
+import { useState, useEffect } from "react";
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
 import {
   Select,
   SelectContent,
   SelectItem,
   SelectTrigger,
   SelectValue,
-} from '@/components/ui/select';
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
-import { Badge } from '@/components/ui/badge';
-import { Plus, Trash2 } from 'lucide-react';
-import type { IngredientUnit, StockLevel } from '@/types/inventory';
+} from "@/components/ui/select";
+import {
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from "@/components/ui/table";
+import { Badge } from "@/components/ui/badge";
+import { Plus, Trash2 } from "lucide-react";
+import type { IngredientUnit, StockLevel } from "@/types/inventory";
 
 interface RecipeDialogProps {
   open: boolean;
@@ -33,12 +47,18 @@ interface RecipeRow {
   cost_per_unit?: number;
 }
 
-export function RecipeDialog({ open, onOpenChange, menuItemId, menuItemName, venueId }: RecipeDialogProps) {
+export function RecipeDialog({
+  open,
+  onOpenChange,
+  menuItemId,
+  menuItemName,
+  venueId,
+}: RecipeDialogProps) {
   const [loading, setLoading] = useState(false);
   const [ingredients, setIngredients] = useState<StockLevel[]>([]);
   const [recipe, setRecipe] = useState<RecipeRow[]>([]);
-  const [newIngredientId, setNewIngredientId] = useState('');
-  const [newQuantity, setNewQuantity] = useState('');
+  const [newIngredientId, setNewIngredientId] = useState("");
+  const [newQuantity, setNewQuantity] = useState("");
 
   useEffect(() => {
     if (open) {
@@ -64,13 +84,18 @@ export function RecipeDialog({ open, onOpenChange, menuItemId, menuItemName, ven
       const response = await fetch(`/api/inventory/recipes/${menuItemId}`);
       const result = await response.json();
       if (result.data) {
-        const mappedRecipe = result.data.map((item: Record<string, unknown>) => ({
-          ingredient_id: item.ingredient_id,
-          ingredient_name: item.ingredient?.name,
-          qty_per_item: item.qty_per_item,
-          unit: item.unit,
-          cost_per_unit: item.ingredient?.cost_per_unit,
-        }));
+        const mappedRecipe = result.data.map((item: Record<string, unknown>) => {
+          const ingredient = item.ingredient as
+            | { name?: string; cost_per_unit?: number }
+            | undefined;
+          return {
+            ingredient_id: item.ingredient_id,
+            ingredient_name: ingredient?.name,
+            qty_per_item: item.qty_per_item,
+            unit: item.unit,
+            cost_per_unit: ingredient?.cost_per_unit,
+          };
+        });
         setRecipe(mappedRecipe);
       }
     } catch (_error) {
@@ -95,8 +120,8 @@ export function RecipeDialog({ open, onOpenChange, menuItemId, menuItemName, ven
       },
     ]);
 
-    setNewIngredientId('');
-    setNewQuantity('');
+    setNewIngredientId("");
+    setNewQuantity("");
   };
 
   const removeIngredient = (ingredientId: string) => {
@@ -107,8 +132,8 @@ export function RecipeDialog({ open, onOpenChange, menuItemId, menuItemName, ven
     setLoading(true);
     try {
       const response = await fetch(`/api/inventory/recipes/${menuItemId}`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           ingredients: recipe.map((r) => ({
             ingredient_id: r.ingredient_id,
@@ -176,7 +201,7 @@ export function RecipeDialog({ open, onOpenChange, menuItemId, menuItemName, ven
                       <TableCell className="font-medium">{item.ingredient_name}</TableCell>
                       <TableCell>{item.qty_per_item}</TableCell>
                       <TableCell>{item.unit}</TableCell>
-                      <TableCell>£{item.cost_per_unit?.toFixed(2) || '0.00'}</TableCell>
+                      <TableCell>£{item.cost_per_unit?.toFixed(2) || "0.00"}</TableCell>
                       <TableCell className="font-medium">
                         £{((item.cost_per_unit || 0) * item.qty_per_item).toFixed(2)}
                       </TableCell>
@@ -256,11 +281,10 @@ export function RecipeDialog({ open, onOpenChange, menuItemId, menuItemName, ven
             Cancel
           </Button>
           <Button onClick={handleSave} disabled={loading}>
-            {loading ? 'Saving...' : 'Save Recipe'}
+            {loading ? "Saving..." : "Save Recipe"}
           </Button>
         </DialogFooter>
       </DialogContent>
     </Dialog>
   );
 }
-

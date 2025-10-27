@@ -252,7 +252,7 @@ export async function POST(req: Request) {
     return NextResponse.json(
       {
         ok: false,
-        error: _error.message || "An unexpected _error occurred",
+        error: _error instanceof Error ? _error.message : "An unexpected error occurred",
       },
       { status: 500 }
     );

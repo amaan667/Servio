@@ -38,7 +38,7 @@ class CacheService {
       // Fallback to memory cache
       const entry = this.memoryCache.get(key);
       if (entry && Date.now() < entry.expires) {
-        return entry.value;
+        return entry.value as T;
       }
 
       // Clean up expired entry
@@ -155,7 +155,7 @@ export const cache = new CacheService();
  * Cache decorator for functions
  */
 export function cached(ttl: number = 3600, keyGenerator?: (...args: unknown[]) => string) {
-  return function (target: unknown, propertyName: string, descriptor: PropertyDescriptor) {
+  return function (_target: unknown, propertyName: string, descriptor: PropertyDescriptor) {
     const method = descriptor.value;
 
     descriptor.value = async function (...args: unknown[]) {

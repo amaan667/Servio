@@ -1,17 +1,17 @@
-'use client';
+"use client";
 
-import React, { useEffect, useCallback } from 'react';
-import { logger } from '@/lib/logger';
+import React, { useEffect, useCallback } from "react";
+import { logger } from "@/lib/logger";
 
 interface PerformanceMetrics {
   name: string;
   value: number;
-  rating: 'good' | 'needs-improvement' | 'poor';
+  rating: "good" | "needs-improvement" | "poor";
 }
 
 export function usePerformance() {
   const measureComponentRender = useCallback((componentName: string) => {
-    if (typeof window === 'undefined' || !window.performance) return;
+    if (typeof window === "undefined" || !window.performance) return;
 
     const startMark = `${componentName}-start`;
     const endMark = `${componentName}-end`;
@@ -24,9 +24,11 @@ export function usePerformance() {
         try {
           performance.measure(measureName, startMark, endMark);
           const measure = performance.getEntriesByName(measureName)[0];
-          
-          if (process.env.NODE_ENV === 'development') {
-            logger.debug(`[Performance] ${componentName} rendered in ${measure.duration.toFixed(2)}ms`);
+
+          if (process.env.NODE_ENV === "development") {
+            logger.debug(
+              `[Performance] ${componentName} rendered in ${measure.duration.toFixed(2)}ms`
+            );
           }
 
           // Clean up marks
@@ -43,49 +45,63 @@ export function usePerformance() {
     };
   }, []);
 
-  const measureAction = useCallback(async <T,>(
-    actionName: string,
-    action: () => Promise<T> | T
-  ): Promise<T> => {
-    const start = performance.now();
-    const result = await action();
-    const duration = performance.now() - start;
+  const measureAction = useCallback(
+    async <T>(actionName: string, action: () => Promise<T> | T): Promise<T> => {
+      const start = performance.now();
+      const result = await action();
+      const duration = performance.now() - start;
 
-    if (process.env.NODE_ENV === 'development') {
-      logger.debug(`[Performance] ${actionName} completed in ${duration.toFixed(2)}ms`);
-    }
+      if (process.env.NODE_ENV === "development") {
+        logger.debug(`[Performance] ${actionName} completed in ${duration.toFixed(2)}ms`);
+      }
 
-    return result;
-  }, []);
+      return result;
+    },
+    []
+  );
 
   const getNetworkInfo = useCallback(() => {
-    if (typeof navigator === 'undefined' || !('connection' in navigator)) {
+    if (typeof navigator === "undefined" || !("connection" in navigator)) {
       return null;
     }
 
-    const connection = (navigator as unknown).connection;
+    const connection = (
+      navigator as {
+        connection?: {
+          effectiveType?: string;
+          downlink?: number;
+          rtt?: number;
+          saveData?: boolean;
+        };
+      }
+    ).connection;
     return {
       effectiveType: connection?.effectiveType,
       downlink: connection?.downlink,
       rtt: connection?.rtt,
       saveData: connection?.saveData,
-    };
+    } as unknown;
   }, []);
 
   const getMemoryInfo = useCallback(() => {
-    if (typeof performance === 'undefined' || !('memory' in performance)) {
+    if (typeof performance === "undefined" || !("memory" in performance)) {
       return null;
     }
 
-    const memory = (performance as unknown).memory;
+    const memory = (
+      performance as {
+        memory?: { usedJSHeapSize?: number; totalJSHeapSize?: number; jsHeapSizeLimit?: number };
+      }
+    ).memory;
     return {
       usedJSHeapSize: memory?.usedJSHeapSize,
       totalJSHeapSize: memory?.totalJSHeapSize,
       jsHeapSizeLimit: memory?.jsHeapSizeLimit,
-      usagePercentage: memory
-        ? ((memory.usedJSHeapSize / memory.jsHeapSizeLimit) * 100).toFixed(2)
-        : 0,
-    };
+      usagePercentage:
+        memory && memory.usedJSHeapSize && memory.jsHeapSizeLimit
+          ? ((memory.usedJSHeapSize / memory.jsHeapSizeLimit) * 100).toFixed(2)
+          : 0,
+    } as unknown;
   }, []);
 
   const reportLongTask = useCallback((taskName: string, duration: number) => {
@@ -96,13 +112,15 @@ export function usePerformance() {
       );
 
       // Send to analytics if in production
-      if (process.env.NODE_ENV === 'production') {
-        fetch('/api/analytics/long-task', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
+      if (process.env.NODE_ENV === "production") {
+        fetch("/api/analytics/long-task", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
           body: JSON.stringify({ taskName, duration }),
           keepalive: true,
-        }).catch(() => { /* Empty */ });
+        }).catch(() => {
+          /* Empty */
+        });
       }
     }
   }, []);
@@ -127,7 +145,7 @@ export function withPerformanceTracking<P extends object>(
     useEffect(() => {
       const measure = measureComponentRender(componentName);
       if (!measure) return;
-      
+
       measure.start();
       return () => {
         const duration = measure.end();
@@ -143,7 +161,6 @@ export function withPerformanceTracking<P extends object>(
   };
 
   PerformanceTrackedComponent.displayName = `withPerformanceTracking(${componentName})`;
-  
+
   return PerformanceTrackedComponent;
 }
-

@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -11,7 +11,11 @@ interface CategoriesManagementSectionProps {
   onRefresh: () => void;
 }
 
-export function CategoriesManagementSection({ venueId, menuItemsCount, onRefresh }: CategoriesManagementSectionProps) {
+export function CategoriesManagementSection({
+  venueId,
+  menuItemsCount: _menuItemsCount,
+  onRefresh,
+}: CategoriesManagementSectionProps) {
   const [showCategories, setShowCategories] = useState(false);
 
   return (
@@ -27,8 +31,12 @@ export function CategoriesManagementSection({ venueId, menuItemsCount, onRefresh
             onClick={() => setShowCategories(!showCategories)}
             className="flex items-center space-x-2"
           >
-            {showCategories ? <ChevronDown className="h-4 w-4" /> : <ChevronRight className="h-4 w-4" />}
-            <span>{showCategories ? 'Hide' : 'Manage'}</span>
+            {showCategories ? (
+              <ChevronDown className="h-4 w-4" />
+            ) : (
+              <ChevronRight className="h-4 w-4" />
+            )}
+            <span>{showCategories ? "Hide" : "Manage"}</span>
           </Button>
         </CardTitle>
       </CardHeader>
@@ -40,4 +48,3 @@ export function CategoriesManagementSection({ venueId, menuItemsCount, onRefresh
     </Card>
   );
 }
-

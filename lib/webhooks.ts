@@ -30,7 +30,7 @@ interface WebhookEvent {
 interface WebhookDelivery {
   webhook_id: string;
   event_type: string;
-  _payload: unknown;
+  payload: unknown;
   signature: string;
   timestamp: string;
 }
@@ -74,7 +74,7 @@ class WebhookService {
     );
 
     for (const webhook of webhooks) {
-      await this.deliverWebhook(webhook, eventType, payload);
+      await this.deliverWebhook(webhook, eventType, _payload);
     }
   }
 
@@ -89,8 +89,8 @@ class WebhookService {
     const delivery: WebhookDelivery = {
       webhook_id: webhook.id,
       event_type: eventType,
-      payload,
-      signature: this.generateSignature(payload, webhook.secret),
+      payload: _payload,
+      signature: this.generateSignature(_payload, webhook.secret),
       timestamp: new Date().toISOString(),
     };
 
@@ -107,7 +107,7 @@ class WebhookService {
       });
 
       if (response.ok) {
-        logger.info(`Webhook delivered successfully: ${webhook.name}`);
+        console.log(`Webhook delivered successfully: ${webhook.name}`);
       } else {
         throw new Error(`Webhook delivery failed: ${response.status}`);
       }
@@ -122,7 +122,7 @@ class WebhookService {
   private generateSignature(_payload: unknown, secret: string): string {
     const crypto = require("crypto");
     const hmac = crypto.createHmac("sha256", secret);
-    hmac.update(JSON.stringify(payload));
+    hmac.update(JSON.stringify(_payload));
     return hmac.digest("hex");
   }
 
@@ -143,7 +143,7 @@ class WebhookService {
       id: `event_${Date.now()}`,
       webhook_id: webhookId,
       event_type: "webhook_failure",
-      payload: { error: errorMessage },
+      _payload: { error: errorMessage },
       status: "failed",
       attempts: 1,
       last_attempt: new Date().toISOString(),
@@ -174,7 +174,7 @@ class WebhookService {
     event.last_attempt = new Date().toISOString();
 
     try {
-      await this.deliverWebhook(webhook, event.event_type, event.payload);
+      await this.deliverWebhook(webhook, event.event_type, event._payload);
       event.status = "delivered";
     } catch (_error) {
       event.status = "failed";

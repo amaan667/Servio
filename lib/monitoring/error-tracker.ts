@@ -64,7 +64,7 @@ export function trackError(
       endpoint: context?.endpoint,
     },
     extra: context,
-  });
+  } as any);
 
   // Alert for critical errors
   if (severity === ErrorSeverity.CRITICAL) {
@@ -141,6 +141,12 @@ export function trackPerformance(threshold = 1000) {
     descriptor: PropertyDescriptor
   ): PropertyDescriptor {
     const originalMethod = descriptor.value;
+    const targetName =
+      (target &&
+        typeof target === "object" &&
+        "constructor" in target &&
+        target.constructor?.name) ||
+      "Unknown";
 
     descriptor.value = async function (...args: unknown[]) {
       const startTime = Date.now();

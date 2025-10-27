@@ -213,7 +213,13 @@ export function withCache(
     const method = descriptor.value;
 
     descriptor.value = async function (...args: unknown[]) {
-      const cacheKey = `${target.constructor.name}:${propertyName}:${JSON.stringify(args)}`;
+      const targetName =
+        (target &&
+          typeof target === "object" &&
+          "constructor" in target &&
+          target.constructor?.name) ||
+        "Unknown";
+      const cacheKey = `${targetName}:${propertyName}:${JSON.stringify(args)}`;
 
       return QueryCache.cacheQuery(cacheKey, () => method.apply(this, args), options);
     };

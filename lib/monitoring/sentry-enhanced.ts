@@ -139,7 +139,8 @@ export class EnhancedErrorTracker {
     table: string,
     handler: () => Promise<T>
   ): Promise<T> {
-    const transaction = Sentry.getCurrentHub().getScope()?.getTransaction();
+    const scope = Sentry.getCurrentHub().getScope();
+    const transaction = (scope as any)?.getTransaction?.();
     const span = transaction?.startChild({
       op: "db.query",
       description: `${operation} ${table}`,
@@ -199,7 +200,11 @@ export function TrackErrors(target: unknown, propertyKey: string, descriptor: Pr
       EnhancedErrorTracker.captureException(_error as Error, {
         tags: {
           method: propertyKey,
-          class: target.constructor.name,
+          class: ((target &&
+            typeof target === "object" &&
+            "constructor" in target &&
+            target.constructor?.name) ||
+            "Unknown") as string,
         },
       });
       throw _error;

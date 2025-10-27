@@ -57,8 +57,11 @@ export class PerformanceMonitor {
       // First Input Delay
       const fidObserver = new PerformanceObserver((list) => {
         const entries = list.getEntries();
-        entries.forEach((entry: PerformanceEntry & { processingStart: number }) => {
-          this.recordMetric("fid", entry.processingStart - entry.startTime);
+        entries.forEach((entry) => {
+          const typedEntry = entry as PerformanceEntry & { processingStart?: number };
+          if (typedEntry.processingStart !== undefined) {
+            this.recordMetric("fid", typedEntry.processingStart - entry.startTime);
+          }
         });
       });
       fidObserver.observe({ entryTypes: ["first-input"] });
@@ -68,9 +71,13 @@ export class PerformanceMonitor {
       const clsObserver = new PerformanceObserver((list) => {
         let clsValue = 0;
         const entries = list.getEntries();
-        entries.forEach((entry: PerformanceEntry & { hadRecentInput: boolean; value: number }) => {
-          if (!entry.hadRecentInput) {
-            clsValue += entry.value;
+        entries.forEach((entry) => {
+          const typedEntry = entry as PerformanceEntry & {
+            hadRecentInput?: boolean;
+            value?: number;
+          };
+          if (typedEntry.hadRecentInput === false && typedEntry.value !== undefined) {
+            clsValue += typedEntry.value;
           }
         });
         this.recordMetric("cls", clsValue);
@@ -133,7 +140,7 @@ export class PerformanceMonitor {
     if ("memory" in performance) {
       setInterval(() => {
         const memory = (
-          performance as { memory: { usedJSHeapSize: number; totalJSHeapSize: number } }
+          performance as unknown as { memory: { usedJSHeapSize: number; totalJSHeapSize: number } }
         ).memory;
         if (memory) {
           this.recordMetric("memoryUsage", memory.usedJSHeapSize / memory.totalJSHeapSize);

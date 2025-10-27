@@ -26,7 +26,11 @@ export function TableOrdersSection({ groupedTableOrders, venueId }: TableOrdersS
             .sort((a, b) => a[0].localeCompare(b[0]))
             .map(([tableKey, orders]) => (
               <div key={tableKey} className="flex-shrink-0 w-80">
-                <TableOrderGroupCard tableLabel={tableKey} orders={orders} venueId={venueId} />
+                <TableOrderGroupCard
+                  tableLabel={tableKey}
+                  orders={orders as any}
+                  venueId={venueId}
+                />
               </div>
             ))}
         </div>

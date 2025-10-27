@@ -16,13 +16,27 @@ interface MenuItemFormProps {
     category: string;
     available: boolean;
   };
-  setFormData: (data: unknown) => void;
+  setFormData: React.Dispatch<
+    React.SetStateAction<{
+      name: string;
+      description: string;
+      price: string;
+      category: string;
+      available: boolean;
+    }>
+  >;
   editingItem: MenuItem | null;
   onSubmit: (e: React.FormEvent) => void;
   onCancel: () => void;
 }
 
-export function MenuItemForm({ formData, setFormData, editingItem, onSubmit, onCancel }: MenuItemFormProps) {
+export function MenuItemForm({
+  formData,
+  setFormData,
+  editingItem,
+  onSubmit,
+  onCancel,
+}: MenuItemFormProps) {
   return (
     <form onSubmit={onSubmit} className="space-y-4">
       <div>
@@ -30,7 +44,7 @@ export function MenuItemForm({ formData, setFormData, editingItem, onSubmit, onC
         <Input
           id="name"
           value={formData.name}
-          onChange={(e) => setFormData({...formData, name: e.target.value})}
+          onChange={(e) => setFormData({ ...formData, name: e.target.value })}
           placeholder="e.g., Margherita Pizza"
           required
         />
@@ -40,7 +54,7 @@ export function MenuItemForm({ formData, setFormData, editingItem, onSubmit, onC
         <Textarea
           id="description"
           value={formData.description}
-          onChange={(e) => setFormData({...formData, description: e.target.value})}
+          onChange={(e) => setFormData({ ...formData, description: e.target.value })}
           placeholder="Describe the item..."
           rows={3}
         />
@@ -48,13 +62,15 @@ export function MenuItemForm({ formData, setFormData, editingItem, onSubmit, onC
       <div>
         <Label htmlFor="price">Price (£)</Label>
         <div className="relative">
-          <span className="absolute left-3 top-1/2 transform -translate-y-1/2 text-muted-foreground">£</span>
+          <span className="absolute left-3 top-1/2 transform -translate-y-1/2 text-muted-foreground">
+            £
+          </span>
           <Input
             id="price"
             type="number"
             step="0.01"
             value={formData.price}
-            onChange={(e) => setFormData({...formData, price: e.target.value})}
+            onChange={(e) => setFormData({ ...formData, price: e.target.value })}
             placeholder="0.00"
             className="pl-8"
             required
@@ -66,7 +82,7 @@ export function MenuItemForm({ formData, setFormData, editingItem, onSubmit, onC
         <Input
           id="category"
           value={formData.category}
-          onChange={(e) => setFormData({...formData, category: e.target.value})}
+          onChange={(e) => setFormData({ ...formData, category: e.target.value })}
           placeholder="e.g., Pizza, Drinks, Desserts"
           required
         />
@@ -74,7 +90,7 @@ export function MenuItemForm({ formData, setFormData, editingItem, onSubmit, onC
       <div className="flex items-center space-x-2">
         <ToggleSwitch
           checked={formData.available}
-          onCheckedChange={(checked) => setFormData({...formData, available: checked})}
+          onCheckedChange={(checked) => setFormData({ ...formData, available: checked })}
         />
         <Label>Available</Label>
       </div>
@@ -84,10 +100,9 @@ export function MenuItemForm({ formData, setFormData, editingItem, onSubmit, onC
         </Button>
         <Button type="submit">
           <Save className="h-4 w-4 mr-2" />
-          {editingItem ? 'Update' : 'Add'} Item
+          {editingItem ? "Update" : "Add"} Item
         </Button>
       </div>
     </form>
   );
 }
-

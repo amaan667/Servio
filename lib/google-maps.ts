@@ -1,5 +1,4 @@
-
-import { logger } from '@/lib/logger';
+import { logger } from "@/lib/logger";
 /**
  * Google Maps API Loader
  * Loads Google Maps JavaScript API with Places library
@@ -11,7 +10,7 @@ let isLoaded = false;
 export function loadGoogleMapsAPI(): Promise<void> {
   return new Promise((resolve, reject) => {
     // Check if already loaded
-    if (isLoaded || (window as unknown).google?.maps?.places) {
+    if (isLoaded || (window as any).google?.maps?.places) {
       isLoaded = true;
       resolve();
       return;
@@ -21,41 +20,41 @@ export function loadGoogleMapsAPI(): Promise<void> {
     if (isLoading) {
       // Wait for the existing load to complete
       const checkInterval = setInterval(() => {
-        if (isLoaded || (window as unknown).google?.maps?.places) {
+        if (isLoaded || (window as any).google?.maps?.places) {
           isLoaded = true;
           clearInterval(checkInterval);
           resolve();
         }
       }, 100);
-      
+
       setTimeout(() => {
         clearInterval(checkInterval);
-        reject(new Error('Google Maps API loading timeout'));
+        reject(new Error("Google Maps API loading timeout"));
       }, 10000);
       return;
     }
 
     // Get API key from environment (works in Next.js client components)
     const apiKey = process.env.NEXT_PUBLIC_GOOGLE_MAPS_API_KEY;
-    
+
     if (!apiKey) {
-      logger.warn('Google Maps API key not found. Address autocomplete will not be available.');
-      reject(new Error('Google Maps API key not configured'));
+      logger.warn("Google Maps API key not found. Address autocomplete will not be available.");
+      reject(new Error("Google Maps API key not configured"));
       return;
     }
 
-    logger.debug('Loading Google Maps API', { keyPrefix: apiKey.substring(0, 10) + '...' });
+    logger.debug("Loading Google Maps API", { keyPrefix: apiKey.substring(0, 10) + "..." });
 
     isLoading = true;
 
     // Create script element
-    const script = document.createElement('script');
+    const script = document.createElement("script");
     script.src = `https://maps.googleapis.com/maps/api/js?key=${apiKey}&libraries=places&callback=initGoogleMaps`;
     script.async = true;
     script.defer = true;
 
     // Define global callback
-    (window as unknown).initGoogleMaps = () => {
+    (window as any).initGoogleMaps = () => {
       isLoaded = true;
       isLoading = false;
       resolve();
@@ -63,7 +62,7 @@ export function loadGoogleMapsAPI(): Promise<void> {
 
     script.onerror = () => {
       isLoading = false;
-      reject(new Error('Failed to load Google Maps API'));
+      reject(new Error("Failed to load Google Maps API"));
     };
 
     document.head.appendChild(script);
@@ -74,10 +73,9 @@ export function loadGoogleMapsAPI(): Promise<void> {
  * Hook to load Google Maps on component mount
  */
 export function useGoogleMaps() {
-  if (typeof window === 'undefined') return;
-  
-  loadGoogleMapsAPI().catch(error => {
-    logger.warn('Google Maps failed to load:', error.message);
+  if (typeof window === "undefined") return;
+
+  loadGoogleMapsAPI().catch((error) => {
+    logger.warn("Google Maps failed to load:", error.message);
   });
 }
-

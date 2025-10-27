@@ -88,7 +88,7 @@ export default function SignInForm({
         window.location.assign(`/dashboard/${venues[0]?.venue_id}`);
       }
     } catch (_err) {
-      const msg = _err?.message || "Sign-in failed. Please try again.";
+      const msg = _err instanceof Error ? _err.message : "Sign-in failed. Please try again.";
       if (/rate limit/i.test(msg)) {
         const waitMs = 30_000;
         setCooldownUntil(Date.now() + waitMs);
