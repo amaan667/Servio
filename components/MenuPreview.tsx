@@ -1,8 +1,8 @@
-'use client';
+"use client";
 
-import { useEffect, useState } from 'react';
-import { supabaseBrowser as createClient } from '@/lib/supabase';
-import { MenuStyle, getMenuStyleClasses } from '@/lib/menu-style-extractor';
+import { useEffect, useState } from "react";
+import { supabaseBrowser as createClient } from "@/lib/supabase";
+import { MenuStyle, getMenuStyleClasses } from "@/lib/menu-style-extractor";
 
 interface MenuItem {
   id: string;
@@ -20,11 +20,7 @@ interface MenuPreviewProps {
   categoryOrder: string[] | null;
 }
 
-export function MenuPreview({
-  venueId,
-  menuItems,
-  categoryOrder
-}: MenuPreviewProps) {
+export function MenuPreview({ venueId, menuItems, categoryOrder }: MenuPreviewProps) {
   const [menuStyle, setMenuStyle] = useState<MenuStyle | null>(null);
   const [loading, setLoading] = useState(true);
 
@@ -33,39 +29,50 @@ export function MenuPreview({
       try {
         const supabase = createClient();
         const { data, error } = await supabase
-          .from('menu_design_settings')
-          .select('*')
-          .eq('venue_id', venueId)
+          .from("menu_design_settings")
+          .select("*")
+          .eq("venue_id", venueId)
           .single();
 
         if (data && !error) {
+          // Use detected colors if auto_theme_enabled is true, otherwise use manually set colors
+          const primaryColor =
+            data.auto_theme_enabled && data.detected_primary_color
+              ? data.detected_primary_color
+              : data.primary_color || "#8b5cf6";
+          const secondaryColor =
+            data.auto_theme_enabled && data.detected_secondary_color
+              ? data.detected_secondary_color
+              : data.secondary_color || "#f3f4f6";
+
           const style: MenuStyle = {
-            primary_color: data.primary_color || '#8b5cf6',
-            secondary_color: data.secondary_color || '#f3f4f6',
-            accent_color: data.primary_color || '#8b5cf6',
-            background_color: '#ffffff',
-            text_color: '#1f2937',
-            font_family: data.font_family || 'inter',
-            font_size: (data.font_size as 'small' | 'medium' | 'large') || 'medium',
-            heading_font_size: data.font_size === 'small' ? 20 : data.font_size === 'large' ? 28 : 24,
-            body_font_size: data.font_size === 'small' ? 14 : data.font_size === 'large' ? 18 : 16,
-            layout: 'single-column',
-            alignment: 'left',
-            spacing: 'normal',
+            primary_color: primaryColor,
+            secondary_color: secondaryColor,
+            accent_color: primaryColor,
+            background_color: "#ffffff",
+            text_color: "#1f2937",
+            font_family: data.font_family || "inter",
+            font_size: (data.font_size as "small" | "medium" | "large") || "medium",
+            heading_font_size:
+              data.font_size === "small" ? 20 : data.font_size === "large" ? 28 : 24,
+            body_font_size: data.font_size === "small" ? 14 : data.font_size === "large" ? 18 : 16,
+            layout: "single-column",
+            alignment: "left",
+            spacing: "normal",
             logo_url: data.logo_url || undefined,
             venue_name: data.venue_name || undefined,
             show_descriptions: data.show_descriptions ?? true,
             show_prices: data.show_prices ?? true,
             show_images: false,
-            detected_primary_color: data.primary_color,
-            detected_secondary_color: data.secondary_color,
-            detected_layout: 'single-column'
+            detected_primary_color: data.detected_primary_color || data.primary_color,
+            detected_secondary_color: data.detected_secondary_color || data.secondary_color,
+            detected_layout: "single-column",
           };
           setMenuStyle(style);
         }
       } catch (_error) {
-      // Error silently handled
-    } finally {
+        // Error silently handled
+      } finally {
         setLoading(false);
       }
     };
@@ -85,40 +92,45 @@ export function MenuPreview({
   const styleClasses = getMenuStyleClasses(menuStyle);
 
   // Group items by category
-  const groupedItems = menuItems.reduce((acc, item) => {
-    if (!acc[item.category]) {
-      acc[item.category] = [];
-    }
-    acc[item.category].push(item);
-    return acc;
-  }, { /* Empty */ } as Record<string, MenuItem[]>);
+  const groupedItems = menuItems.reduce(
+    (acc, item) => {
+      if (!acc[item.category]) {
+        acc[item.category] = [];
+      }
+      acc[item.category].push(item);
+      return acc;
+    },
+    {
+      /* Empty */
+    } as Record<string, MenuItem[]>
+  );
 
   // Get category order or use alphabetical
   const categories = categoryOrder || Object.keys(groupedItems).sort();
 
   return (
-    <div 
+    <div
       className="min-h-screen"
       style={{ backgroundColor: menuStyle.background_color, color: menuStyle.text_color }}
     >
       {/* Header with Logo and Venue Name */}
       {menuStyle.logo_url && (
         <div className="flex justify-center items-center py-8">
-          <img 
-            src={menuStyle.logo_url} 
-            alt={menuStyle.venue_name || 'Venue Logo'} 
+          <img
+            src={menuStyle.logo_url}
+            alt={menuStyle.venue_name || "Venue Logo"}
             className="h-24 object-contain"
           />
         </div>
       )}
-      
+
       {menuStyle.venue_name && !menuStyle.logo_url && (
         <div className="text-center py-8">
-          <h1 
+          <h1
             className="font-bold"
-            style={{ 
+            style={{
               fontSize: `${menuStyle.heading_font_size + 8}px`,
-              color: menuStyle.primary_color
+              color: menuStyle.primary_color,
             }}
           >
             {menuStyle.venue_name}
@@ -135,7 +147,7 @@ export function MenuPreview({
           return (
             <div key={category} className="mb-12">
               {/* Category Header */}
-              <h2 
+              <h2
                 className={`${styleClasses.category} mb-6`}
                 style={{ color: menuStyle.primary_color }}
               >
@@ -145,22 +157,19 @@ export function MenuPreview({
               {/* Items List - PDF Style */}
               <div className="space-y-4">
                 {items
-                  .filter(item => item.is_available)
+                  .filter((item) => item.is_available)
                   .map((item) => (
-                    <div
-                      key={item.id}
-                      className="border-b border-gray-200 pb-4 last:border-b-0"
-                    >
+                    <div key={item.id} className="border-b border-gray-200 pb-4 last:border-b-0">
                       {/* Item Name and Price */}
                       <div className="flex justify-between items-start mb-1">
-                        <h3 
+                        <h3
                           className={`${styleClasses.item} font-semibold uppercase`}
                           style={{ color: menuStyle.text_color }}
                         >
                           {item.name}
                         </h3>
                         {menuStyle.show_prices && (
-                          <span 
+                          <span
                             className={`${styleClasses.price} ml-4 whitespace-nowrap`}
                             style={{ color: menuStyle.accent_color }}
                           >
@@ -189,15 +198,23 @@ export function MenuPreview({
 // Default menu preview (fallback)
 function DefaultMenuPreview({
   menuItems,
-  categoryOrder
-}: { menuItems: MenuItem[]; categoryOrder: string[] | null }) {
-  const groupedItems = menuItems.reduce((acc, item) => {
-    if (!acc[item.category]) {
-      acc[item.category] = [];
-    }
-    acc[item.category].push(item);
-    return acc;
-  }, { /* Empty */ } as Record<string, MenuItem[]>);
+  categoryOrder,
+}: {
+  menuItems: MenuItem[];
+  categoryOrder: string[] | null;
+}) {
+  const groupedItems = menuItems.reduce(
+    (acc, item) => {
+      if (!acc[item.category]) {
+        acc[item.category] = [];
+      }
+      acc[item.category].push(item);
+      return acc;
+    },
+    {
+      /* Empty */
+    } as Record<string, MenuItem[]>
+  );
 
   const categories = categoryOrder || Object.keys(groupedItems).sort();
 
@@ -213,7 +230,7 @@ function DefaultMenuPreview({
               <h2 className="text-2xl font-bold mb-6 text-gray-900">{category}</h2>
               <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                 {items
-                  .filter(item => item.is_available)
+                  .filter((item) => item.is_available)
                   .map((item) => (
                     <div
                       key={item.id}
@@ -239,4 +256,3 @@ function DefaultMenuPreview({
     </div>
   );
 }
-

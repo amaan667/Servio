@@ -97,22 +97,28 @@ export default function OrderFeedbackForm({ venueId, orderId }: OrderFeedbackFor
 
   const fetchQuestions = useCallback(async () => {
     try {
-      const response = await fetch(`/api/feedback/questions?venueId=${venueId}`);
+      setLoading(true);
+      const response = await fetch(`/api/feedback/questions/public?venueId=${venueId}`);
+
       if (response.ok) {
         const data = await response.json();
-
-        const activeQuestions = (data.questions || []).filter((q: FeedbackQuestion) => q.is_active);
+        const ownerQuestions = data.questions || [];
 
         // If no custom questions, use generic ones
-        if (activeQuestions.length === 0) {
+        if (ownerQuestions.length === 0) {
           setQuestions(genericQuestions);
           setTotalCount(genericQuestions.length);
           setActiveCount(genericQuestions.length);
         } else {
-          setQuestions(activeQuestions);
-          setTotalCount(data.totalCount || 0);
-          setActiveCount(data.activeCount || 0);
+          setQuestions(ownerQuestions);
+          setTotalCount(ownerQuestions.length);
+          setActiveCount(ownerQuestions.length);
         }
+      } else {
+        // If API fails, fall back to generic questions
+        setQuestions(genericQuestions);
+        setTotalCount(genericQuestions.length);
+        setActiveCount(genericQuestions.length);
       }
     } catch (_error) {
       // If API fails, fall back to generic questions

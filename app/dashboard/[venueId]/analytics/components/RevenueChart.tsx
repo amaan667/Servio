@@ -5,9 +5,9 @@ import { formatTooltipDate, formatXAxisLabel, getTimePeriodLabel } from "../util
 import { TimePeriod } from "../hooks/useAnalyticsData";
 
 interface RevenueChartProps {
-  revenueOverTime: Array<{ 
-    date: string; 
-    revenue: number; 
+  revenueOverTime: Array<{
+    date: string;
+    revenue: number;
     orders: number;
     isCurrentPeriod?: boolean;
     isPeak?: boolean;
@@ -19,7 +19,13 @@ interface RevenueChartProps {
   timePeriod: TimePeriod;
 }
 
-export function RevenueChart({ revenueOverTime, trendline, peakDay, lowestDay, timePeriod }: RevenueChartProps) {
+export function RevenueChart({
+  revenueOverTime,
+  trendline,
+  peakDay,
+  lowestDay,
+  timePeriod,
+}: RevenueChartProps) {
   const [hoveredPoint, setHoveredPoint] = useState<number | null>(null);
 
   if (revenueOverTime.length === 0) {
@@ -43,18 +49,20 @@ export function RevenueChart({ revenueOverTime, trendline, peakDay, lowestDay, t
   return (
     <Card className="xl:col-span-2">
       <CardHeader>
-        <div className="flex items-center justify-between">
-          <CardTitle>Revenue & Orders Over Time - {getTimePeriodLabel(timePeriod)}</CardTitle>
-          <div className="flex items-center space-x-4 text-sm">
+        <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2">
+          <CardTitle className="text-base sm:text-lg">
+            Revenue & Orders Over Time - {getTimePeriodLabel(timePeriod)}
+          </CardTitle>
+          <div className="flex flex-col sm:flex-row items-start sm:items-center gap-2 sm:gap-4 text-xs sm:text-sm">
             {peakDay.revenue > 0 && (
               <div className="flex items-center space-x-1 text-green-600">
-                <Award className="h-4 w-4" />
+                <Award className="h-3 w-3 sm:h-4 sm:w-4" />
                 <span>Peak: £{peakDay.revenue.toFixed(2)}</span>
               </div>
             )}
             {lowestDay.revenue > 0 && lowestDay.revenue !== peakDay.revenue && (
               <div className="flex items-center space-x-1 text-orange-600">
-                <TrendingDown className="h-4 w-4" />
+                <TrendingDown className="h-3 w-3 sm:h-4 sm:w-4" />
                 <span>Low: £{lowestDay.revenue.toFixed(2)}</span>
               </div>
             )}
@@ -66,61 +74,65 @@ export function RevenueChart({ revenueOverTime, trendline, peakDay, lowestDay, t
           <div className="h-full relative">
             {/* Trendline */}
             {trendline > 0 && (
-              <div 
+              <div
                 className="absolute w-full border-t-2 border-dashed border-gray-300 opacity-50"
-                style={{ 
-                  bottom: `${(trendline / Math.max(...revenueOverTime.map(d => d.revenue))) * 100}%` 
+                style={{
+                  bottom: `${(trendline / Math.max(...revenueOverTime.map((d) => d.revenue))) * 100}%`,
                 }}
               />
             )}
-            
+
             {/* Chart Bars and Lines */}
             <div className="h-64 flex items-end justify-between space-x-1 relative">
               {revenueOverTime.map((period, index) => {
-                const maxRevenue = Math.max(...revenueOverTime.map(d => d.revenue));
-                const maxOrders = Math.max(...revenueOverTime.map(d => d.orders));
-                
+                const maxRevenue = Math.max(...revenueOverTime.map((d) => d.revenue));
+                const maxOrders = Math.max(...revenueOverTime.map((d) => d.orders));
+
                 const revenueHeight = maxRevenue > 0 ? (period.revenue / maxRevenue) * 100 : 0;
                 const ordersHeight = maxOrders > 0 ? (period.orders / maxOrders) * 100 : 0;
-                
+
                 const isHovered = hoveredPoint === index;
-                const barColor = period.isPeak ? 'bg-green-500' : 
-                                period.isLowest ? 'bg-orange-500' : 
-                                period.isCurrentPeriod ? 'bg-purple-600' : 'bg-purple-500';
-                
+                const barColor = period.isPeak
+                  ? "bg-green-500"
+                  : period.isLowest
+                    ? "bg-orange-500"
+                    : period.isCurrentPeriod
+                      ? "bg-purple-600"
+                      : "bg-purple-500";
+
                 return (
-                  <div 
-                    key={index} 
+                  <div
+                    key={index}
                     className="flex flex-col items-center flex-1 group cursor-pointer"
                     onMouseEnter={() => setHoveredPoint(index)}
                     onMouseLeave={() => setHoveredPoint(null)}
                   >
                     {/* Order Count Bars (background) */}
-                    <div 
+                    <div
                       className="w-full bg-blue-200 rounded-t transition-all duration-300"
-                      style={{ 
+                      style={{
                         height: `${Math.max(ordersHeight * 0.6, 2)}%`,
-                        minHeight: period.orders > 0 ? '8px' : '2px'
+                        minHeight: period.orders > 0 ? "8px" : "2px",
                       }}
                     />
-                    
+
                     {/* Revenue Bars (foreground) */}
-                    <div 
-                      className={`w-full ${barColor} rounded-t transition-all duration-300 ${isHovered ? 'ring-2 ring-purple-300' : ''}`}
-                      style={{ 
+                    <div
+                      className={`w-full ${barColor} rounded-t transition-all duration-300 ${isHovered ? "ring-2 ring-purple-300" : ""}`}
+                      style={{
                         height: `${Math.max(revenueHeight, 2)}%`,
-                        minHeight: period.revenue > 0 ? '12px' : '4px'
+                        minHeight: period.revenue > 0 ? "12px" : "4px",
                       }}
                     />
-                    
-                    {/* Peak/Lowest Badges */}
+
+                    {/* Peak/Lowest Badges - positioned to prevent clash */}
                     {period.isPeak && (
-                      <div className="absolute -top-6 bg-green-100 text-green-800 text-xs px-2 py-1 rounded-full font-medium">
+                      <div className="absolute -top-8 left-1/2 transform -translate-x-1/2 bg-green-100 text-green-800 text-xs px-2 py-1 rounded-full font-medium whitespace-nowrap z-10">
                         Peak £{period.revenue.toFixed(2)}
                       </div>
                     )}
                     {period.isLowest && period.revenue !== peakDay.revenue && (
-                      <div className="absolute -top-6 bg-orange-100 text-orange-800 text-xs px-2 py-1 rounded-full font-medium">
+                      <div className="absolute -top-16 left-1/2 transform -translate-x-1/2 bg-orange-100 text-orange-800 text-xs px-2 py-1 rounded-full font-medium whitespace-nowrap z-10">
                         Low £{period.revenue.toFixed(2)}
                       </div>
                     )}
@@ -128,23 +140,26 @@ export function RevenueChart({ revenueOverTime, trendline, peakDay, lowestDay, t
                 );
               })}
             </div>
-            
+
             {/* X-axis Labels */}
-            <div className="h-16 flex items-start justify-between space-x-1 mt-2">
+            <div className="h-20 flex items-start justify-between space-x-1 mt-8 sm:mt-2">
               {revenueOverTime.map((period, index) => {
-                const label = formatXAxisLabel(period.date, timePeriod, index, revenueOverTime.length);
+                const label = formatXAxisLabel(
+                  period.date,
+                  timePeriod,
+                  index,
+                  revenueOverTime.length
+                );
                 if (!label) return <div key={index} className="flex-1" />;
-                
+
                 return (
                   <div key={index} className="flex-1 text-center">
-                    <span className="text-xs text-muted-foreground">
-                      {label}
-                    </span>
+                    <span className="text-xs text-muted-foreground break-words">{label}</span>
                   </div>
                 );
               })}
             </div>
-            
+
             {/* Hover Tooltip */}
             {hoveredPoint !== null && (
               <div className="absolute top-4 right-4 bg-white border border-gray-200 rounded-lg shadow-lg p-3 z-10">
@@ -160,7 +175,7 @@ export function RevenueChart({ revenueOverTime, trendline, peakDay, lowestDay, t
               </div>
             )}
           </div>
-          
+
           {/* Chart Legend */}
           <div className="flex items-center justify-center space-x-6 mt-4 text-sm">
             <div className="flex items-center space-x-2">
@@ -181,4 +196,3 @@ export function RevenueChart({ revenueOverTime, trendline, peakDay, lowestDay, t
     </Card>
   );
 }
-

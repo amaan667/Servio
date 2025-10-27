@@ -71,11 +71,31 @@ export async function GET(req: Request) {
 // POST - Create new question
 export async function POST(req: Request) {
   try {
-    const { venue_id, prompt, type, choices, is_active = true } = await req.json();
+    let body;
+    try {
+      body = await req.json();
+    } catch (parseError) {
+      logger.error("[FEEDBACK:Q] JSON parse error:", { error: parseError });
+      return NextResponse.json({ error: "Invalid JSON in request body" }, { status: 400 });
+    }
+
+    const { venue_id, prompt, type, choices, is_active = true } = body;
+
+    // Log the received data for debugging
+    logger.debug("[FEEDBACK:Q] POST request body:", {
+      venue_id: venue_id ? "present" : "missing",
+      prompt: prompt ? "present" : "missing",
+      type: type ? "present" : "missing",
+    });
 
     // Validate inputs
-    if (!venue_id || !prompt || !type) {
-      return NextResponse.json({ error: "venue_id, prompt, and type required" }, { status: 400 });
+    if (!venue_id) {
+      logger.error("[FEEDBACK:Q] Missing venue_id in request:", { body });
+      return NextResponse.json({ error: "venueId required" }, { status: 400 });
+    }
+    if (!prompt || !type) {
+      logger.error("[FEEDBACK:Q] Missing prompt or type:", { prompt: !!prompt, type: !!type });
+      return NextResponse.json({ error: "prompt and type required" }, { status: 400 });
     }
 
     if (prompt.length < 4 || prompt.length > 160) {

@@ -1,5 +1,11 @@
 import { Calendar, CalendarIcon, Download } from "lucide-react";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 import { Button } from "@/components/ui/button";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { Input } from "@/components/ui/input";
@@ -23,18 +29,21 @@ export function TimePeriodSelector({
   onCustomDateRangeChange,
   onExportCSV,
   isDownloading,
-  hasData
+  hasData,
 }: TimePeriodSelectorProps) {
   return (
-    <div className="mb-6 flex items-center justify-between">
-      <div className="flex items-center space-x-4">
+    <div className="mb-6 flex flex-col md:flex-row md:items-center md:justify-between gap-4">
+      <div className="flex flex-col sm:flex-row items-start sm:items-center gap-2 sm:gap-4">
         <div className="flex items-center space-x-2">
           <Calendar className="h-4 w-4 text-muted-foreground" />
-          <span className="text-sm text-muted-foreground">Time period:</span>
-          <Select value={timePeriod} onValueChange={(value: TimePeriod) => {
-            onTimePeriodChange(value);
-            onCustomDateRangeChange(null);
-          }}>
+          <span className="text-sm text-muted-foreground hidden sm:inline">Time period:</span>
+          <Select
+            value={timePeriod}
+            onValueChange={(value: TimePeriod) => {
+              onTimePeriodChange(value);
+              onCustomDateRangeChange(null);
+            }}
+          >
             <SelectTrigger className="w-40">
               <SelectValue />
             </SelectTrigger>
@@ -46,17 +55,16 @@ export function TimePeriodSelector({
             </SelectContent>
           </Select>
         </div>
-        
+
         <div className="flex items-center space-x-2">
-          <span className="text-sm text-muted-foreground">or</span>
+          <span className="text-sm text-muted-foreground hidden sm:inline">or</span>
           <Popover>
             <PopoverTrigger asChild>
               <Button variant="outline" className="w-40 justify-start text-left font-normal">
                 <CalendarIcon className="mr-2 h-4 w-4" />
-                {customDateRange ? 
-                  `${new Date(customDateRange.start).toLocaleDateString()} - ${new Date(customDateRange.end).toLocaleDateString()}` : 
-                  "Custom range"
-                }
+                {customDateRange
+                  ? `${new Date(customDateRange.start).toLocaleDateString()} - ${new Date(customDateRange.end).toLocaleDateString()}`
+                  : "Custom range"}
               </Button>
             </PopoverTrigger>
             <PopoverContent className="w-auto p-0" align="start">
@@ -66,11 +74,13 @@ export function TimePeriodSelector({
                   <Input
                     id="start-date"
                     type="date"
-                    value={customDateRange?.start || ''}
-                    onChange={(e) => onCustomDateRangeChange({ 
-                      start: e.target.value, 
-                      end: customDateRange?.end || new Date().toISOString().split('T')[0] 
-                    })}
+                    value={customDateRange?.start || ""}
+                    onChange={(e) =>
+                      onCustomDateRangeChange({
+                        start: e.target.value,
+                        end: customDateRange?.end || new Date().toISOString().split("T")[0],
+                      })
+                    }
                   />
                 </div>
                 <div className="space-y-2">
@@ -78,17 +88,19 @@ export function TimePeriodSelector({
                   <Input
                     id="end-date"
                     type="date"
-                    value={customDateRange?.end || ''}
-                    onChange={(e) => onCustomDateRangeChange({ 
-                      start: customDateRange?.start || new Date().toISOString().split('T')[0], 
-                      end: e.target.value 
-                    })}
+                    value={customDateRange?.end || ""}
+                    onChange={(e) =>
+                      onCustomDateRangeChange({
+                        start: customDateRange?.start || new Date().toISOString().split("T")[0],
+                        end: e.target.value,
+                      })
+                    }
                   />
                 </div>
-                <Button 
+                <Button
                   onClick={() => {
                     if (customDateRange?.start && customDateRange?.end) {
-                      onTimePeriodChange('7d'); // Reset to trigger refresh
+                      onTimePeriodChange("7d"); // Reset to trigger refresh
                     }
                   }}
                   className="w-full"
@@ -100,22 +112,21 @@ export function TimePeriodSelector({
           </Popover>
         </div>
       </div>
-      <div className="flex items-center space-x-4">
+      <div className="flex flex-col sm:flex-row items-start sm:items-center gap-2 sm:gap-4">
         <Button
           onClick={onExportCSV}
           disabled={!hasData || isDownloading}
-          className="inline-flex items-center gap-2 rounded-lg bg-purple-600 px-3 py-2 text-white text-sm hover:bg-purple-700 disabled:opacity-50"
+          className="inline-flex items-center gap-2 rounded-lg bg-purple-600 px-3 py-2 text-white text-sm hover:bg-purple-700 disabled:opacity-50 w-full sm:w-auto"
           title="Exports the rows you're viewing"
         >
           <Download className="h-4 w-4" />
-          {isDownloading ? 'Generating...' : 'Download CSV'}
+          {isDownloading ? "Generating..." : "Download CSV"}
         </Button>
-        <div className="flex items-center space-x-2">
-          <span className="text-sm text-gray-900">Last updated:</span>
-          <span className="text-sm font-medium text-gray-900">{new Date().toLocaleTimeString()}</span>
+        <div className="flex items-center space-x-2 text-xs sm:text-sm">
+          <span className="text-gray-900">Last updated:</span>
+          <span className="font-medium text-gray-900">{new Date().toLocaleTimeString()}</span>
         </div>
       </div>
     </div>
   );
 }
-

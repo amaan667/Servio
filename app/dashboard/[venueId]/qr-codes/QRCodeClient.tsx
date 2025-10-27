@@ -53,7 +53,6 @@ export default function QRCodeClient({
         qrManagement.generateQRForName(tableName, "table");
       }, 100);
     }
-     
   }, [searchParams]);
 
   // Generate single QR code
@@ -95,6 +94,91 @@ export default function QRCodeClient({
 
   // Download all as PDF (4 per page)
   const downloadAllAsPDF = async () => {
+    try {
+      const { default: jsPDF } = await import("jspdf");
+      const QRCode = await import("qrcode");
+
+      const qrCodes = qrManagement.generatedQRs;
+      const pdf = new jsPDF({
+        orientation: "portrait",
+        unit: "mm",
+        format: "a4",
+      });
+
+      const pageWidth = pdf.internal.pageSize.getWidth();
+      const margin = 10;
+      const qrSize = 70; // Size of each QR code in mm
+      const spacing = 5;
+      const cardsPerRow = 2;
+      const cardsPerPage = 4;
+      const cardWidth = (pageWidth - 2 * margin - spacing) / cardsPerRow;
+
+      let qrIndex = 0;
+
+      for (let pageIndex = 0; qrIndex < qrCodes.length; pageIndex++) {
+        if (pageIndex > 0) {
+          pdf.addPage();
+        }
+
+        let currentY = margin;
+
+        // Add page title
+        pdf.setFontSize(16);
+        pdf.setFont("helvetica", "bold");
+        pdf.text(`${venueName} - QR Codes`, pageWidth / 2, currentY, { align: "center" });
+        currentY += 8;
+
+        pdf.setFontSize(10);
+        pdf.setFont("helvetica", "normal");
+        pdf.text(`Page ${pageIndex + 1}`, pageWidth / 2, currentY, { align: "center" });
+        currentY += 10;
+
+        // Generate QR codes for this page
+        const pageQRs = qrCodes.slice(qrIndex, qrIndex + cardsPerPage);
+
+        for (let i = 0; i < pageQRs.length; i++) {
+          const qr = pageQRs[i];
+          const row = Math.floor(i / cardsPerRow);
+          const col = i % cardsPerRow;
+
+          const x = margin + col * (cardWidth + spacing);
+          const y = currentY + row * (qrSize + 35 + spacing);
+
+          // Generate QR code image
+          const dataUrl = await QRCode.toDataURL(qr.url, {
+            width: 300,
+            margin: 2,
+            color: { dark: "#000000", light: "#ffffff" },
+          });
+
+          // Add QR code image
+          pdf.addImage(dataUrl, "PNG", x, y, qrSize, qrSize);
+
+          // Add QR code name
+          pdf.setFontSize(12);
+          pdf.setFont("helvetica", "bold");
+          const textY = y + qrSize + 5;
+          pdf.text(qr.name, x + qrSize / 2, textY, { align: "center", maxWidth: qrSize });
+
+          // Add venue name
+          pdf.setFontSize(8);
+          pdf.setFont("helvetica", "normal");
+          pdf.text(venueName, x + qrSize / 2, textY + 5, { align: "center", maxWidth: qrSize });
+        }
+
+        qrIndex += pageQRs.length;
+      }
+
+      // Download the PDF
+      pdf.save(`qr-codes-${venueName}-${new Date().toISOString().split("T")[0]}.pdf`);
+    } catch (error) {
+      console.error("Error generating PDF:", error);
+      alert("Failed to generate PDF. Please try again.");
+    }
+  };
+
+  // Print all (opens print dialog)
+  const printAll = async () => {
     const printWindow = window.open("", "_blank");
     if (!printWindow) return;
 
@@ -153,12 +237,9 @@ export default function QRCodeClient({
     printWindow.document.close();
     printWindow.focus();
 
-    // Trigger print dialog (user can save as PDF)
+    // Trigger print dialog
     setTimeout(() => printWindow.print(), 250);
   };
-
-  // Print all (4 per page)
-  const printAll = downloadAllAsPDF; // Same function, just opens print dialog
 
   return (
     <div className="space-y-6 pb-32 md:pb-8">
@@ -267,11 +348,11 @@ export default function QRCodeClient({
               </Button>
               <Button variant="outline" size="sm" onClick={downloadAllAsPDF}>
                 <Download className="h-4 w-4 mr-2" />
-                Download{qrManagement.generatedQRs.length > 1 ? " All" : ""} (PDF)
+                {qrManagement.generatedQRs.length === 1 ? "Download" : "Download All"} (PDF)
               </Button>
               <Button variant="outline" size="sm" onClick={printAll}>
                 <Printer className="h-4 w-4 mr-2" />
-                Print{qrManagement.generatedQRs.length > 1 ? " All" : ""}
+                {qrManagement.generatedQRs.length === 1 ? "Print" : "Print All"}
               </Button>
               <Button
                 variant="outline"

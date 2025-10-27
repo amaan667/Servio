@@ -49,10 +49,20 @@ export function StyledMenuDisplay({
           .single();
 
         if (data && !error) {
+          // Use detected colors if auto_theme_enabled is true, otherwise use manually set colors
+          const primaryColor =
+            data.auto_theme_enabled && data.detected_primary_color
+              ? data.detected_primary_color
+              : data.primary_color || "#8b5cf6";
+          const secondaryColor =
+            data.auto_theme_enabled && data.detected_secondary_color
+              ? data.detected_secondary_color
+              : data.secondary_color || "#f3f4f6";
+
           const style: MenuStyle = {
-            primary_color: data.primary_color || "#8b5cf6",
-            secondary_color: data.secondary_color || "#f3f4f6",
-            accent_color: data.primary_color || "#8b5cf6",
+            primary_color: primaryColor,
+            secondary_color: secondaryColor,
+            accent_color: primaryColor,
             background_color: "#ffffff",
             text_color: "#1f2937",
             font_family: data.font_family || "inter",
@@ -68,8 +78,8 @@ export function StyledMenuDisplay({
             show_descriptions: data.show_descriptions ?? true,
             show_prices: data.show_prices ?? true,
             show_images: false,
-            detected_primary_color: data.primary_color,
-            detected_secondary_color: data.secondary_color,
+            detected_primary_color: data.detected_primary_color || data.primary_color,
+            detected_secondary_color: data.detected_secondary_color || data.secondary_color,
             detected_layout: "single-column",
           };
           setMenuStyle(style);

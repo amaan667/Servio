@@ -11,6 +11,8 @@ import {
   X,
   Check,
   MessageSquare,
+  Star,
+  BarChart3,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -26,6 +28,7 @@ import {
 } from "@/components/ui/select";
 import { ToggleSwitch } from "@/components/ui/toggle-switch";
 import { Badge } from "@/components/ui/badge";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { useToast } from "@/hooks/use-toast";
 import type { FeedbackQuestion, FeedbackType } from "@/types/feedback";
 import { dbLogger } from "@/lib/logger";
@@ -40,14 +43,23 @@ interface QuestionsClientProps {
 export default function QuestionsClient({
   venueId,
   venueName: _venueName,
-  mode = "full",
+  mode: _mode = "full",
 }: QuestionsClientProps) {
   const [questions, setQuestions] = useState<FeedbackQuestion[]>([]);
   const [totalCount, setTotalCount] = useState(0);
   const [loading, setLoading] = useState(false);
   const [showAddForm, setShowAddForm] = useState(false);
   const [editingId, setEditingId] = useState<string | null>(null);
+  const [activeTab, setActiveTab] = useState<"overview" | "questions" | "create">("overview");
   const { toast } = useToast();
+
+  // Log venueId on mount for debugging
+  useEffect(() => {
+    console.log("[FEEDBACK DEBUG] QuestionsClient mounted with venueId:", venueId);
+    if (!venueId) {
+      console.error("[FEEDBACK DEBUG] WARNING: venueId is missing!");
+    }
+  }, [venueId]);
 
   // Clear editing state if the edited question no longer exists
   useEffect(() => {
@@ -60,6 +72,7 @@ export default function QuestionsClient({
   useEffect(() => {
     if (questions.length === 0 && !editingId) {
       setShowAddForm(true);
+      setActiveTab("create");
     }
   }, [questions.length, editingId]);
 
@@ -90,7 +103,10 @@ export default function QuestionsClient({
     try {
       setLoading(true);
       const response = await fetch(
-        `/api/feedback/questions?venueId=${encodeURIComponent(venueId)}`
+        `/api/feedback/questions?venueId=${encodeURIComponent(venueId)}`,
+        {
+          credentials: "include",
+        }
       );
 
       if (response.ok) {
@@ -170,6 +186,19 @@ export default function QuestionsClient({
     setLoading(true);
 
     try {
+      // Debug log
+      console.log("[FEEDBACK DEBUG] Submitting question with venueId:", venueId);
+
+      if (!venueId) {
+        toast({
+          title: "Error",
+          description: "Venue ID is missing. Please refresh the page.",
+          variant: "destructive",
+        });
+        setLoading(false);
+        return;
+      }
+
       const payload = {
         venue_id: venueId,
         prompt: formData.prompt.trim(),
@@ -181,11 +210,21 @@ export default function QuestionsClient({
         is_active: formData.is_active,
       };
 
+      console.log("[FEEDBACK DEBUG] Payload:", {
+        ...payload,
+        choices: payload.choices?.length || 0,
+      });
+
       const response = await fetch("/api/feedback/questions", {
         method: "POST",
-        headers: { "Content-Type": "application/json" },
+        headers: {
+          "Content-Type": "application/json",
+        },
+        credentials: "include",
         body: JSON.stringify(payload),
       });
+
+      console.log("[FEEDBACK DEBUG] Response status:", response.status);
 
       if (response.ok) {
         const result = await response.json();
@@ -198,19 +237,27 @@ export default function QuestionsClient({
         // Refresh questions list first to show the new question
         await fetchQuestions();
 
-        // Then reset form
+        // Then reset form and switch to questions tab
         resetForm();
+        setActiveTab("questions");
 
         // Dispatch event to notify other components
         if (typeof window !== "undefined") {
           window.dispatchEvent(new CustomEvent("feedbackQuestionsUpdated"));
         }
       } else {
-        const error = await response.json();
+        let errorMessage = "Couldn't save question";
+        try {
+          const error = await response.json();
+          errorMessage = error.error || errorMessage;
+          console.error("[FEEDBACK DEBUG] Error response:", error);
+        } catch {
+          errorMessage = `Server error: ${response.status} ${response.statusText}`;
+        }
 
         toast({
           title: "Error",
-          description: error.error || "Couldn't save question",
+          description: errorMessage,
           variant: "destructive",
         });
       }
@@ -262,6 +309,7 @@ export default function QuestionsClient({
         });
         resetForm();
         await fetchQuestions();
+        setActiveTab("questions");
 
         // Dispatch event to notify other components
         if (typeof window !== "undefined") {
@@ -403,6 +451,7 @@ export default function QuestionsClient({
     });
     setEditingId(question.id);
     setShowAddForm(true);
+    setActiveTab("create");
   };
 
   const addChoice = () => {
@@ -452,279 +501,334 @@ export default function QuestionsClient({
     );
   };
 
+  const activeQuestions = questions.filter((q) => q.is_active);
+  const inactiveQuestions = questions.filter((q) => !q.is_active);
+
   return (
     <div className="space-y-6">
-      {/* Feedback Stats */}
-      <div className="mb-6 flex items-center justify-between">
-        <div className="flex items-center space-x-4">
-          <div className="flex items-center space-x-2">
-            <MessageSquare className="h-5 w-5 text-muted-foreground" />
-            <span className="text-sm text-muted-foreground">{totalCount} feedback questions</span>
-          </div>
-          <span className="text-sm text-muted-foreground">•</span>
-          <span className="text-sm text-muted-foreground">
-            {questions.filter((q) => q.is_active).length} active
-          </span>
-        </div>
+      {/* Summary Stats */}
+      <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+        <Card>
+          <CardContent className="p-4">
+            <div className="flex items-center space-x-2">
+              <MessageSquare className="h-4 w-4 text-blue-500" />
+              <div>
+                <p className="text-sm font-medium text-gray-500">Total Questions</p>
+                <p className="text-2xl font-bold">{totalCount}</p>
+              </div>
+            </div>
+          </CardContent>
+        </Card>
+        <Card>
+          <CardContent className="p-4">
+            <div className="flex items-center space-x-2">
+              <Star className="h-4 w-4 text-green-500" />
+              <div>
+                <p className="text-sm font-medium text-gray-500">Active</p>
+                <p className="text-2xl font-bold">{activeQuestions.length}</p>
+              </div>
+            </div>
+          </CardContent>
+        </Card>
+        <Card>
+          <CardContent className="p-4">
+            <div className="flex items-center space-x-2">
+              <BarChart3 className="h-4 w-4 text-gray-500" />
+              <div>
+                <p className="text-sm font-medium text-gray-500">Inactive</p>
+                <p className="text-2xl font-bold">{inactiveQuestions.length}</p>
+              </div>
+            </div>
+          </CardContent>
+        </Card>
       </div>
 
-      {/* Add Question Form */}
-      {(mode === "form-only" || mode === "full") && (
-        <div className="space-y-4">
-          <div className="flex items-center justify-between">
-            <h3 className="text-lg font-semibold">
-              {editingId ? "Edit Question" : "Add New Question"}
-            </h3>
-            <Button
-              variant="outline"
-              size="sm"
-              onClick={() => {
-                if (editingId) {
-                  resetForm();
-                } else {
-                  setShowAddForm(!showAddForm);
-                }
-              }}
-            >
-              {showAddForm ? <X className="h-4 w-4" /> : <Plus className="h-4 w-4" />}
-            </Button>
-          </div>
+      {/* Tabs */}
+      <Tabs
+        value={activeTab}
+        onValueChange={(value) => setActiveTab(value as "overview" | "questions" | "create")}
+      >
+        <TabsList className="grid w-full grid-cols-3">
+          <TabsTrigger value="overview">Overview</TabsTrigger>
+          <TabsTrigger value="questions">All Questions</TabsTrigger>
+          <TabsTrigger value="create">Create Question</TabsTrigger>
+        </TabsList>
 
-          {showAddForm && (
-            <Card className="border-0 shadow-sm bg-white/50 dark:bg-gray-900/50">
-              <CardContent className="p-6">
-                <form
-                  onSubmit={
-                    editingId
-                      ? (e) => {
-                          e.preventDefault();
-                          handleUpdate(editingId);
-                        }
-                      : handleSubmit
-                  }
-                  className="space-y-4"
-                >
+        <TabsContent value="overview" className="space-y-4">
+          <Card>
+            <CardHeader>
+              <CardTitle>Feedback Overview</CardTitle>
+            </CardHeader>
+            <CardContent className="space-y-4">
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div>
+                  <h4 className="font-medium mb-2">Active Questions ({activeQuestions.length})</h4>
                   <div className="space-y-2">
-                    <Label htmlFor="prompt" className="text-sm font-medium">
-                      Question Prompt *
-                    </Label>
-                    <Textarea
-                      id="prompt"
-                      value={formData.prompt}
-                      onChange={(e) => setFormData((prev) => ({ ...prev, prompt: e.target.value }))}
-                      placeholder="Enter your question (4-160 characters)"
-                      maxLength={160}
-                      rows={2}
-                      className="resize-none"
-                    />
-                    <p className="text-xs text-muted-foreground">
-                      {formData.prompt.length}/160 characters
-                    </p>
-                  </div>
-
-                  <div className="space-y-2">
-                    <Label htmlFor="type" className="text-sm font-medium">
-                      Question Type *
-                    </Label>
-                    <Select
-                      value={formData.type}
-                      onValueChange={(value: FeedbackType) =>
-                        setFormData((prev) => ({ ...prev, type: value }))
-                      }
-                    >
-                      <SelectTrigger>
-                        <SelectValue />
-                      </SelectTrigger>
-                      <SelectContent>
-                        <SelectItem value="stars">Star Rating (1-5)</SelectItem>
-                        <SelectItem value="multiple_choice">Multiple Choice</SelectItem>
-                        <SelectItem value="paragraph">Paragraph</SelectItem>
-                      </SelectContent>
-                    </Select>
-                  </div>
-
-                  {formData.type === "multiple_choice" && (
-                    <div className="space-y-2">
-                      <Label className="text-sm font-medium">
-                        Choices * (2-6 options, max 40 chars each)
-                      </Label>
-                      <div className="space-y-2">
-                        {formData.choices.map((choice, index) => (
-                          <div key={index} className="flex gap-2">
-                            <Input
-                              value={choice}
-                              onChange={(e) => updateChoice(index, e.target.value)}
-                              placeholder={`Choice ${index + 1}`}
-                              maxLength={40}
-                            />
-                            {formData.choices.length > 2 && (
-                              <Button
-                                type="button"
-                                variant="outline"
-                                size="sm"
-                                onClick={() => removeChoice(index)}
-                              >
-                                <Trash2 className="h-4 w-4" />
-                              </Button>
-                            )}
-                          </div>
-                        ))}
-                        {formData.choices.length < 6 && (
-                          <Button type="button" variant="outline" size="sm" onClick={addChoice}>
-                            <Plus className="h-4 w-4 mr-2" />
-                            Add Choice
-                          </Button>
-                        )}
+                    {activeQuestions.slice(0, 3).map((question) => (
+                      <div
+                        key={question.id}
+                        className="flex items-center justify-between p-2 bg-green-50 rounded"
+                      >
+                        <span className="text-sm">{question.prompt}</span>
+                        {getTypeBadge(question.type)}
                       </div>
-                    </div>
-                  )}
-
-                  <div className="flex items-center gap-3">
-                    <Label className="text-sm font-medium text-gray-700">Status</Label>
-                    <div className="flex items-center gap-2">
-                      <ToggleSwitch
-                        checked={formData.is_active}
-                        onCheckedChange={(checked) =>
-                          setFormData((prev) => ({ ...prev, is_active: checked }))
-                        }
-                      />
-                      <span className="text-sm font-medium text-gray-700">
-                        {formData.is_active ? "Active" : "Inactive"}
-                      </span>
-                    </div>
-                  </div>
-
-                  <div className="flex gap-2 pt-2">
-                    <Button type="submit" disabled={loading} className="flex-1">
-                      {loading ? "Saving..." : editingId ? "Update Question" : "Add Question"}
-                    </Button>
-                    {editingId && (
-                      <Button type="button" variant="outline" onClick={resetForm}>
-                        Cancel Edit
-                      </Button>
+                    ))}
+                    {activeQuestions.length > 3 && (
+                      <p className="text-sm text-gray-500">+{activeQuestions.length - 3} more...</p>
+                    )}
+                    {activeQuestions.length === 0 && (
+                      <p className="text-sm text-gray-500">No active questions yet</p>
                     )}
                   </div>
-                </form>
-              </CardContent>
-            </Card>
-          )}
-        </div>
-      )}
-
-      {/* Questions List */}
-      {(mode === "list-only" || mode === "full") && (
-        <div className="space-y-4">
-          <div className="flex items-center justify-between">
-            <h3 className="text-lg font-semibold">Current Questions ({questions.length})</h3>
-          </div>
-
-          {questions.length === 0 ? (
-            <Card className="border-0 shadow-sm bg-white/50 dark:bg-gray-900/50">
-              <CardContent className="p-12 text-center">
-                <div className="flex flex-col items-center space-y-4">
-                  <div className="w-16 h-16 bg-gray-100 dark:bg-gray-800 rounded-full flex items-center justify-center">
-                    <MessageSquare className="h-8 w-8 text-gray-700" />
-                  </div>
-                  <div>
-                    <h4 className="text-lg font-medium text-gray-900 dark:text-gray-100">
-                      No questions yet
-                    </h4>
-                    <p className="text-sm text-muted-foreground mt-1">
-                      Create your first feedback question to start collecting customer insights
-                    </p>
+                </div>
+                <div>
+                  <h4 className="font-medium mb-2">Recent Activity</h4>
+                  <div className="text-sm text-gray-500">
+                    <p>• {totalCount} total questions created</p>
+                    <p>• {activeQuestions.length} currently active</p>
+                    <p>• Questions help collect customer feedback</p>
                   </div>
                 </div>
-              </CardContent>
-            </Card>
-          ) : (
-            <div className="space-y-3">
-              {questions.map((question, index) => (
-                <Card
-                  key={question.id}
-                  className="border-0 shadow-sm bg-white/50 dark:bg-gray-900/50 hover:shadow-md transition-shadow"
-                >
-                  <CardContent className="p-6">
-                    <div className="flex items-start justify-between">
-                      <div className="flex-1 space-y-3">
-                        <div className="flex items-center gap-3">
-                          <div className="flex items-center gap-2 text-sm text-muted-foreground">
-                            <GripVertical className="h-4 w-4" />
-                            <span className="font-medium">{index + 1}.</span>
+              </div>
+            </CardContent>
+          </Card>
+        </TabsContent>
+
+        <TabsContent value="questions" className="space-y-4">
+          <Card>
+            <CardHeader className="flex flex-row items-center justify-between">
+              <CardTitle>Current Questions ({questions.length})</CardTitle>
+              <Button
+                onClick={() => {
+                  setShowAddForm(true);
+                  setActiveTab("create");
+                }}
+                size="sm"
+              >
+                <Plus className="h-4 w-4 mr-2" />
+                Add Question
+              </Button>
+            </CardHeader>
+            <CardContent>
+              {questions.length === 0 ? (
+                <div className="text-center py-8">
+                  <MessageSquare className="h-12 w-12 mx-auto mb-4 text-gray-400" />
+                  <p className="text-gray-500 mb-4">No feedback questions yet</p>
+                  <Button onClick={() => setActiveTab("create")}>Create Your First Question</Button>
+                </div>
+              ) : (
+                <div className="space-y-3">
+                  {questions.map((question, index) => (
+                    <Card
+                      key={question.id}
+                      className="border-0 shadow-sm bg-white/50 dark:bg-gray-900/50 hover:shadow-md transition-shadow"
+                    >
+                      <CardContent className="p-6">
+                        <div className="flex items-start justify-between">
+                          <div className="flex-1 space-y-3">
+                            <div className="flex items-center gap-3">
+                              <div className="flex items-center gap-2 text-sm text-muted-foreground">
+                                <GripVertical className="h-4 w-4" />
+                                <span className="font-medium">{index + 1}.</span>
+                              </div>
+                              <h4 className="font-medium text-gray-900 dark:text-gray-100">
+                                {question.prompt}
+                              </h4>
+                            </div>
+
+                            <div className="flex items-center gap-2">
+                              {getTypeBadge(question.type)}
+                              {getStatusBadge(question.is_active)}
+                            </div>
+
+                            {question.type === "multiple_choice" && question.choices && (
+                              <div className="text-sm text-muted-foreground">
+                                <span className="font-medium">Choices:</span>{" "}
+                                {question.choices.join(", ")}
+                              </div>
+                            )}
                           </div>
-                          <h4 className="font-medium text-gray-900 dark:text-gray-100">
-                            {question.prompt}
-                          </h4>
-                        </div>
 
-                        <div className="flex items-center gap-2">
-                          {getTypeBadge(question.type)}
-                          {getStatusBadge(question.is_active)}
-                        </div>
-
-                        {question.type === "multiple_choice" && question.choices && (
-                          <div className="text-sm text-muted-foreground">
-                            <span className="font-medium">Choices:</span>{" "}
-                            {question.choices.join(", ")}
+                          <div className="flex items-center gap-1 ml-4">
+                            <Button
+                              variant="outline"
+                              size="sm"
+                              onClick={() => handleReorder(question.id, "up")}
+                              disabled={index === 0}
+                              className="h-8 w-8 p-0"
+                            >
+                              ↑
+                            </Button>
+                            <Button
+                              variant="outline"
+                              size="sm"
+                              onClick={() => handleReorder(question.id, "down")}
+                              disabled={index === questions.length - 1}
+                              className="h-8 w-8 p-0"
+                            >
+                              ↓
+                            </Button>
+                            <Button
+                              variant="outline"
+                              size="sm"
+                              onClick={() => handleToggleActive(question.id, question.is_active)}
+                              className="h-8 w-8 p-0"
+                            >
+                              {question.is_active ? (
+                                <EyeOff className="h-4 w-4" />
+                              ) : (
+                                <Eye className="h-4 w-4" />
+                              )}
+                            </Button>
+                            <Button
+                              variant="outline"
+                              size="sm"
+                              onClick={() => startEdit(question)}
+                              className="h-8 w-8 p-0"
+                            >
+                              <Edit className="h-4 w-4" />
+                            </Button>
+                            <Button
+                              variant="outline"
+                              size="sm"
+                              onClick={() => handleDelete(question.id)}
+                              className="h-8 w-8 p-0 text-red-600 hover:text-red-700"
+                            >
+                              <Trash2 className="h-4 w-4" />
+                            </Button>
                           </div>
-                        )}
-                      </div>
+                        </div>
+                      </CardContent>
+                    </Card>
+                  ))}
+                </div>
+              )}
+            </CardContent>
+          </Card>
+        </TabsContent>
 
-                      <div className="flex items-center gap-1 ml-4">
-                        <Button
-                          variant="outline"
-                          size="sm"
-                          onClick={() => handleReorder(question.id, "up")}
-                          disabled={index === 0}
-                          className="h-8 w-8 p-0"
-                        >
-                          ↑
-                        </Button>
-                        <Button
-                          variant="outline"
-                          size="sm"
-                          onClick={() => handleReorder(question.id, "down")}
-                          disabled={index === questions.length - 1}
-                          className="h-8 w-8 p-0"
-                        >
-                          ↓
-                        </Button>
-                        <Button
-                          variant="outline"
-                          size="sm"
-                          onClick={() => handleToggleActive(question.id, question.is_active)}
-                          className="h-8 w-8 p-0"
-                        >
-                          {question.is_active ? (
-                            <EyeOff className="h-4 w-4" />
-                          ) : (
-                            <Eye className="h-4 w-4" />
+        <TabsContent value="create" className="space-y-4">
+          <Card>
+            <CardHeader>
+              <CardTitle>{editingId ? "Edit Question" : "Create New Question"}</CardTitle>
+            </CardHeader>
+            <CardContent>
+              <form
+                onSubmit={
+                  editingId
+                    ? (e) => {
+                        e.preventDefault();
+                        handleUpdate(editingId);
+                      }
+                    : handleSubmit
+                }
+                className="space-y-4"
+              >
+                <div className="space-y-2">
+                  <Label htmlFor="prompt" className="text-sm font-medium">
+                    Question Prompt *
+                  </Label>
+                  <Textarea
+                    id="prompt"
+                    value={formData.prompt}
+                    onChange={(e) => setFormData((prev) => ({ ...prev, prompt: e.target.value }))}
+                    placeholder="Enter your question (4-160 characters)"
+                    maxLength={160}
+                    rows={2}
+                    className="resize-none"
+                  />
+                  <p className="text-xs text-muted-foreground">
+                    {formData.prompt.length}/160 characters
+                  </p>
+                </div>
+
+                <div className="space-y-2">
+                  <Label htmlFor="type" className="text-sm font-medium">
+                    Question Type *
+                  </Label>
+                  <Select
+                    value={formData.type}
+                    onValueChange={(value: FeedbackType) =>
+                      setFormData((prev) => ({ ...prev, type: value }))
+                    }
+                  >
+                    <SelectTrigger>
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="stars">Star Rating (1-5)</SelectItem>
+                      <SelectItem value="multiple_choice">Multiple Choice</SelectItem>
+                      <SelectItem value="paragraph">Paragraph</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+
+                {formData.type === "multiple_choice" && (
+                  <div className="space-y-2">
+                    <Label className="text-sm font-medium">
+                      Choices * (2-6 options, max 40 chars each)
+                    </Label>
+                    <div className="space-y-2">
+                      {formData.choices.map((choice, index) => (
+                        <div key={index} className="flex gap-2">
+                          <Input
+                            value={choice}
+                            onChange={(e) => updateChoice(index, e.target.value)}
+                            placeholder={`Choice ${index + 1}`}
+                            maxLength={40}
+                          />
+                          {formData.choices.length > 2 && (
+                            <Button
+                              type="button"
+                              variant="outline"
+                              size="sm"
+                              onClick={() => removeChoice(index)}
+                            >
+                              <Trash2 className="h-4 w-4" />
+                            </Button>
                           )}
+                        </div>
+                      ))}
+                      {formData.choices.length < 6 && (
+                        <Button type="button" variant="outline" size="sm" onClick={addChoice}>
+                          <Plus className="h-4 w-4 mr-2" />
+                          Add Choice
                         </Button>
-                        <Button
-                          variant="outline"
-                          size="sm"
-                          onClick={() => startEdit(question)}
-                          className="h-8 w-8 p-0"
-                        >
-                          <Edit className="h-4 w-4" />
-                        </Button>
-                        <Button
-                          variant="outline"
-                          size="sm"
-                          onClick={() => handleDelete(question.id)}
-                          className="h-8 w-8 p-0 text-red-600 hover:text-red-700"
-                        >
-                          <Trash2 className="h-4 w-4" />
-                        </Button>
-                      </div>
+                      )}
                     </div>
-                  </CardContent>
-                </Card>
-              ))}
-            </div>
-          )}
-        </div>
-      )}
+                  </div>
+                )}
+
+                <div className="flex items-center gap-3">
+                  <Label className="text-sm font-medium text-gray-700">Status</Label>
+                  <div className="flex items-center gap-2">
+                    <ToggleSwitch
+                      checked={formData.is_active}
+                      onCheckedChange={(checked) =>
+                        setFormData((prev) => ({ ...prev, is_active: checked }))
+                      }
+                    />
+                    <span className="text-sm font-medium text-gray-700">
+                      {formData.is_active ? "Active" : "Inactive"}
+                    </span>
+                  </div>
+                </div>
+
+                <div className="flex gap-2 pt-2">
+                  <Button type="submit" disabled={loading} className="flex-1">
+                    {loading ? "Saving..." : editingId ? "Update Question" : "Add Question"}
+                  </Button>
+                  {editingId && (
+                    <Button type="button" variant="outline" onClick={resetForm}>
+                      Cancel Edit
+                    </Button>
+                  )}
+                </div>
+              </form>
+            </CardContent>
+          </Card>
+        </TabsContent>
+      </Tabs>
 
       {/* Mobile Navigation - Temporarily disabled */}
       {/* <MobileNav 

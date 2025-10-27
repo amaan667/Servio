@@ -25,11 +25,7 @@ export default function CompleteProfileForm({ user }: CompleteProfileFormProps) 
     identities?: Array<Record<string, unknown>>;
   } | null;
   const [formData, setFormData] = useState({
-    venueName:
-      (userMeta?.user_metadata?.venue_name as string) ||
-      (userMeta?.user_metadata?.full_name as string) ||
-      (userMeta?.user_metadata?.name as string) ||
-      "",
+    venueName: (userMeta?.user_metadata?.venue_name as string) || "",
     businessType: (userMeta?.user_metadata?.business_type as string) || "Restaurant",
     address: (userMeta?.user_metadata?.address as string) || "",
     phone: (userMeta?.user_metadata?.phone as string) || "",
@@ -42,21 +38,6 @@ export default function CompleteProfileForm({ user }: CompleteProfileFormProps) 
     (identity: Record<string, unknown>) =>
       identity.provider === "google" || identity.provider === "oauth"
   );
-
-  // Pre-populate form with Google data if available
-  useEffect(() => {
-    if (user && isOAuthUser) {
-      const googleName =
-        (user as any).user_metadata?.full_name || (user as any).user_metadata?.name;
-
-      if (googleName && !formData.venueName) {
-        setFormData((prev) => ({
-          ...prev,
-          venueName: `${googleName}'s Business`,
-        }));
-      }
-    }
-  }, [user, isOAuthUser]);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();

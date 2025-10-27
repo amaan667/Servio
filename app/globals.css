@@ -3,16 +3,24 @@
 @tailwind utilities;
 
 @layer components {
-  .btn-servio, .btn-primary, .btn-outline, .btn-secondary, .btn-ghost {
+  .btn-servio,
+  .btn-primary,
+  .btn-outline,
+  .btn-secondary,
+  .btn-ghost {
     @apply bg-white text-servio-purple border-2 border-servio-purple rounded-lg py-2 px-4 font-semibold shadow-md hover:bg-gray-50 hover:text-servio-purple-dark hover:shadow-lg transition;
   }
-  
+
   /* Unified button styles for all devices */
   .btn-unified {
     @apply inline-flex items-center justify-center gap-2 whitespace-nowrap rounded-md text-sm font-medium transition-all duration-200 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-70 touch-manipulation min-h-[44px] min-w-[44px];
   }
-  
-  .btn-unified-primary, .btn-unified-outline, .btn-unified-servio, .btn-unified-secondary, .btn-unified-ghost {
+
+  .btn-unified-primary,
+  .btn-unified-outline,
+  .btn-unified-servio,
+  .btn-unified-secondary,
+  .btn-unified-ghost {
     @apply bg-white text-servio-purple border-2 border-servio-purple hover:bg-gray-50 hover:text-servio-purple-dark shadow-md hover:shadow-lg;
   }
 }
@@ -93,42 +101,84 @@
 }
 
 /* Custom height classes for enlarged logo */
-.h-80 { height: 20rem; } /* 320px */
-.h-100 { height: 25rem; } /* 400px */
-.h-120 { height: 30rem; } /* 480px */
-.h-140 { height: 35rem; } /* 560px */
-.h-160 { height: 40rem; } /* 640px */
-.h-180 { height: 45rem; } /* 720px */
-.h-200 { height: 50rem; } /* 800px */
-.h-280 { height: 70rem; } /* 1120px */
-.h-320 { height: 80rem; } /* 1280px */
-.h-360 { height: 90rem; } /* 1440px */
+.h-80 {
+  height: 20rem;
+} /* 320px */
+.h-100 {
+  height: 25rem;
+} /* 400px */
+.h-120 {
+  height: 30rem;
+} /* 480px */
+.h-140 {
+  height: 35rem;
+} /* 560px */
+.h-160 {
+  height: 40rem;
+} /* 640px */
+.h-180 {
+  height: 45rem;
+} /* 720px */
+.h-200 {
+  height: 50rem;
+} /* 800px */
+.h-280 {
+  height: 70rem;
+} /* 1120px */
+.h-320 {
+  height: 80rem;
+} /* 1280px */
+.h-360 {
+  height: 90rem;
+} /* 1440px */
 
 /* Responsive height classes */
 @media (min-width: 640px) {
-  .sm\:h-100 { height: 25rem; }
-  .sm\:h-160 { height: 40rem; }
-  .sm\:h-180 { height: 45rem; }
+  .sm\:h-100 {
+    height: 25rem;
+  }
+  .sm\:h-160 {
+    height: 40rem;
+  }
+  .sm\:h-180 {
+    height: 45rem;
+  }
 }
 
 @media (min-width: 768px) {
-  .md\:h-120 { height: 30rem; }
-  .md\:h-180 { height: 45rem; }
-  .md\:h-200 { height: 50rem; }
+  .md\:h-120 {
+    height: 30rem;
+  }
+  .md\:h-180 {
+    height: 45rem;
+  }
+  .md\:h-200 {
+    height: 50rem;
+  }
 }
 
 @media (min-width: 1024px) {
-  .lg\:h-140 { height: 35rem; }
-  .lg\:h-280 { height: 70rem; }
+  .lg\:h-140 {
+    height: 35rem;
+  }
+  .lg\:h-280 {
+    height: 70rem;
+  }
 }
 
 @media (min-width: 1280px) {
-  .xl\:h-160 { height: 40rem; }
-  .xl\:h-320 { height: 80rem; }
+  .xl\:h-160 {
+    height: 40rem;
+  }
+  .xl\:h-320 {
+    height: 80rem;
+  }
 }
 
 @media (min-width: 1536px) {
-  .2xl\:h-360 { height: 90rem; }
+  .2xl\:h-360 {
+    height: 90rem;
+  }
 }
 
 /* Enhanced Button Visibility */
@@ -158,16 +208,16 @@
     @apply border-2 border-border text-foreground font-semibold;
     @apply hover:bg-accent hover:border-border;
   }
-  
+
   .btn-enhanced-ghost {
     @apply text-foreground font-semibold;
     @apply hover:bg-accent hover:text-foreground;
   }
-  
+
   .btn-enhanced-icon {
     @apply text-foreground/80 hover:text-foreground hover:bg-accent;
   }
-  
+
   /* Hero section buttons - white background with purple text */
   section button.bg-purple-600,
   section button.bg-white {
@@ -175,14 +225,14 @@
     color: hsl(var(--servio-purple)) !important;
     border: 2px solid hsl(var(--servio-purple)) !important;
   }
-  
+
   section button.bg-purple-600:hover,
   section button.bg-white:hover {
     background-color: #f9fafb !important;
     color: hsl(var(--servio-purple-dark)) !important;
     border: 2px solid hsl(var(--servio-purple-dark)) !important;
   }
-  
+
   /* Ensure icons in hero buttons are also purple */
   section button.bg-purple-600 svg,
   section button.bg-white svg {
@@ -217,42 +267,79 @@
 }
 
 /* Global readability overrides: ensure dark, readable body text on all pages */
-.text-gray-400, .text-slate-400 { color: #6b7280 !important; }
-.text-gray-500, .text-slate-500 { color: #374151 !important; }
-.text-gray-600, .text-slate-600 { color: #1f2937 !important; }
-.text-foreground\/80, .text-foreground\/70, .text-foreground\/60 { color: #1f2937 !important; }
-.text-muted-foreground { color: #1f2937 !important; }
+.text-gray-400,
+.text-slate-400 {
+  color: #6b7280 !important;
+}
+.text-gray-500,
+.text-slate-500 {
+  color: #374151 !important;
+}
+.text-gray-600,
+.text-slate-600 {
+  color: #1f2937 !important;
+}
+.text-foreground\/80,
+.text-foreground\/70,
+.text-foreground\/60 {
+  color: #1f2937 !important;
+}
+.text-muted-foreground {
+  color: #1f2937 !important;
+}
 
 /* Contrast guarantees for dark buttons and controls across the app */
 button.bg-black,
-button.bg-gray-900, button.bg-gray-800,
-button.bg-neutral-900, button.bg-neutral-800,
-button.bg-slate-900, button.bg-slate-800,
+button.bg-gray-900,
+button.bg-gray-800,
+button.bg-neutral-900,
+button.bg-neutral-800,
+button.bg-slate-900,
+button.bg-slate-800,
 [role="button"].bg-black,
-[role="button"].bg-gray-900, [role="button"].bg-gray-800,
-[role="button"].bg-neutral-900, [role="button"].bg-neutral-800,
-[role="button"].bg-slate-900, [role="button"].bg-slate-800,
-.bg-black > button, .bg-gray-900 > button, .bg-gray-800 > button,
-.bg-neutral-900 > button, .bg-neutral-800 > button,
-.bg-slate-900 > button, .bg-slate-800 > button,
-.SelectTrigger.bg-gray-900, .SelectTrigger.bg-gray-800,
-.SelectTrigger.bg-neutral-900, .SelectTrigger.bg-neutral-800,
-.SelectTrigger.bg-slate-900, .SelectTrigger.bg-slate-800 {
+[role="button"].bg-gray-900,
+[role="button"].bg-gray-800,
+[role="button"].bg-neutral-900,
+[role="button"].bg-neutral-800,
+[role="button"].bg-slate-900,
+[role="button"].bg-slate-800,
+.bg-black > button,
+.bg-gray-900 > button,
+.bg-gray-800 > button,
+.bg-neutral-900 > button,
+.bg-neutral-800 > button,
+.bg-slate-900 > button,
+.bg-slate-800 > button,
+.SelectTrigger.bg-gray-900,
+.SelectTrigger.bg-gray-800,
+.SelectTrigger.bg-neutral-900,
+.SelectTrigger.bg-neutral-800,
+.SelectTrigger.bg-slate-900,
+.SelectTrigger.bg-slate-800 {
   color: #ffffff !important;
 }
 
 /* Ensure icons inside dark buttons are also white */
 button.bg-black svg,
-button.bg-gray-900 svg, button.bg-gray-800 svg,
-button.bg-neutral-900 svg, button.bg-neutral-800 svg,
-button.bg-slate-900 svg, button.bg-slate-800 svg,
+button.bg-gray-900 svg,
+button.bg-gray-800 svg,
+button.bg-neutral-900 svg,
+button.bg-neutral-800 svg,
+button.bg-slate-900 svg,
+button.bg-slate-800 svg,
 [role="button"].bg-black svg,
-[role="button"].bg-gray-900 svg, [role="button"].bg-gray-800 svg,
-[role="button"].bg-neutral-900 svg, [role="button"].bg-neutral-800 svg,
-[role="button"].bg-slate-900 svg, [role="button"].bg-slate-800 svg,
-.SelectTrigger.bg-gray-900 svg, .SelectTrigger.bg-gray-800 svg,
-.SelectTrigger.bg-neutral-900 svg, .SelectTrigger.bg-neutral-800 svg,
-.SelectTrigger.bg-slate-900 svg, .SelectTrigger.bg-slate-800 svg {
+[role="button"].bg-gray-900 svg,
+[role="button"].bg-gray-800 svg,
+[role="button"].bg-neutral-900 svg,
+[role="button"].bg-neutral-800 svg,
+[role="button"].bg-slate-900 svg,
+[role="button"].bg-slate-800 svg,
+.SelectTrigger.bg-gray-900 svg,
+.SelectTrigger.bg-gray-800 svg,
+.SelectTrigger.bg-neutral-900 svg,
+.SelectTrigger.bg-neutral-800 svg,
+.SelectTrigger.bg-slate-900 svg,
+.SelectTrigger.bg-slate-800 svg {
   color: #ffffff !important;
 }
 
@@ -262,13 +349,13 @@ button.bg-slate-900 svg, button.bg-slate-800 svg,
   .text-muted-foreground {
     color: #374151 !important; /* Dark gray for better readability */
   }
-  
+
   .text-foreground\/80 {
     color: #374151 !important; /* Dark instead of 80% opacity */
   }
-  
+
   /* Do NOT override .text-white globally on desktop. Many components rely on real white. */
-  
+
   /* Enhanced toggle switch styling for desktop */
   [data-radix-switch-root] {
     height: 24px !important;
@@ -276,18 +363,18 @@ button.bg-slate-900 svg, button.bg-slate-800 svg,
     min-height: 24px !important;
     min-width: 44px !important;
   }
-  
+
   [data-radix-switch-thumb] {
     height: 20px !important;
     width: 20px !important;
   }
-  
+
   /* Enhanced form labels on desktop */
   label {
     color: #1f2937 !important; /* Very dark for maximum readability */
     font-weight: 600 !important;
   }
-  
+
   /* Enhanced desktop button consistency */
   button {
     min-height: 44px !important;
@@ -296,31 +383,47 @@ button.bg-slate-900 svg, button.bg-slate-800 svg,
     font-weight: 600 !important;
     transition: all 0.2s ease !important;
   }
-  
+
   /* Enhanced desktop button styling - ALL variants get white bg with purple text */
-  button[class*="servio"], button[class*="default"], button[class*="outline"], button[class*="secondary"], button[class*="ghost"] {
+  button[class*="servio"],
+  button[class*="default"],
+  button[class*="outline"],
+  button[class*="secondary"],
+  button[class*="ghost"] {
     background-color: #ffffff !important;
     color: hsl(var(--servio-purple)) !important;
     font-weight: 600 !important;
     border: 2px solid hsl(var(--servio-purple)) !important;
     box-shadow: 0 2px 8px rgba(124, 58, 237, 0.15) !important;
   }
-  
-  button[class*="servio"]:hover, button[class*="default"]:hover, button[class*="outline"]:hover, button[class*="secondary"]:hover, button[class*="ghost"]:hover {
+
+  button[class*="servio"]:hover,
+  button[class*="default"]:hover,
+  button[class*="outline"]:hover,
+  button[class*="secondary"]:hover,
+  button[class*="ghost"]:hover {
     background-color: #f9fafb !important;
     color: hsl(var(--servio-purple-dark)) !important;
     border-color: hsl(var(--servio-purple-dark)) !important;
     box-shadow: 0 4px 12px rgba(124, 58, 237, 0.2) !important;
   }
-  
-  button[class*="servio"] svg, button[class*="default"] svg, button[class*="outline"] svg, button[class*="secondary"] svg, button[class*="ghost"] svg {
+
+  button[class*="servio"] svg,
+  button[class*="default"] svg,
+  button[class*="outline"] svg,
+  button[class*="secondary"] svg,
+  button[class*="ghost"] svg {
     color: hsl(var(--servio-purple)) !important;
   }
-  
-  button[class*="servio"]:hover svg, button[class*="default"]:hover svg, button[class*="outline"]:hover svg, button[class*="secondary"]:hover svg, button[class*="ghost"]:hover svg {
+
+  button[class*="servio"]:hover svg,
+  button[class*="default"]:hover svg,
+  button[class*="outline"]:hover svg,
+  button[class*="secondary"]:hover svg,
+  button[class*="ghost"]:hover svg {
     color: hsl(var(--servio-purple-dark)) !important;
   }
-  
+
   /* Enhanced desktop destructive button styling */
   button[class*="destructive"] {
     background-color: #dc2626 !important;
@@ -329,37 +432,46 @@ button.bg-slate-900 svg, button.bg-slate-800 svg,
     border: none !important;
     box-shadow: 0 2px 4px rgba(220, 38, 38, 0.2) !important;
   }
-  
+
   button[class*="destructive"]:hover {
     background-color: #b91c1c !important;
     box-shadow: 0 4px 8px rgba(220, 38, 38, 0.3) !important;
   }
-  
+
   button[class*="destructive"] svg {
     color: #ffffff !important;
   }
-  
+
   button[class*="destructive"]:hover svg {
     color: #ffffff !important;
   }
 }
 
 /* Ensure all headings are visible */
-h1, h2, h3, h4, h5, h6 {
+h1,
+h2,
+h3,
+h4,
+h5,
+h6 {
   @apply text-foreground;
 }
 
 /* Ensure all paragraphs and text are visible */
-p, span, div {
+p,
+span,
+div {
   @apply text-foreground;
 }
 
 /* Global text readability fixes - catch any remaining greyed-out text */
-.text-white, .text-slate-400 {
+.text-white,
+.text-slate-400 {
   color: #6b7280 !important; /* Much darker for better visibility */
 }
 
-.text-white, .text-slate-500 {
+.text-white,
+.text-slate-500 {
   color: #4b5563 !important; /* Darker for better visibility */
 }
 
@@ -367,17 +479,21 @@ p, span, div {
   color: #374151 !important; /* Dark gray instead of muted */
 }
 
-.text-foreground\/80, .text-foreground\/70, .text-foreground\/60 {
+.text-foreground\/80,
+.text-foreground\/70,
+.text-foreground\/60 {
   color: #374151 !important; /* Dark instead of opacity */
 }
 
 /* Enhanced component-specific text readability */
-.staff-member-role, .staff-role-header p {
+.staff-member-role,
+.staff-role-header p {
   color: #4b5563 !important; /* Darker for better readability */
 }
 
 /* Fix any remaining icon colors */
-.text-white svg, .text-slate-400 svg {
+.text-white svg,
+.text-slate-400 svg {
   color: #6b7280 !important;
 }
 
@@ -386,11 +502,11 @@ p, span, div {
   .text-enhanced {
     @apply text-base;
   }
-  
+
   .text-enhanced-muted {
     @apply text-sm;
   }
-  
+
   .text-enhanced-subtle {
     @apply text-xs;
   }
@@ -500,11 +616,11 @@ p, span, div {
     font-size: 0.7rem;
     padding: 0.25rem;
   }
-  
+
   .shift-pill .font-medium {
     font-size: 0.7rem;
   }
-  
+
   .shift-pill {
     height: 60px !important;
   }
@@ -554,64 +670,70 @@ p, span, div {
   .text-muted-foreground {
     color: rgb(55, 65, 81) !important; /* gray-700 for visibility */
   }
-  
+
   /* DO NOT override .text-white - let it stay white! */
-  
+
   /* Enhanced card text visibility - specific selectors */
   .card .text-muted {
     color: rgb(75, 85, 99) !important; /* gray-600 */
   }
-  
+
   /* Target only elements without explicit color classes */
   .card p:not([class*="text-white"]):not([class*="text-"]),
   .card span:not([class*="text-white"]):not([class*="text-"]) {
     color: rgb(31, 41, 55) !important; /* gray-800 */
   }
-  
+
   /* Dark mode fixes */
   .dark .text-muted-foreground {
     color: rgb(209, 213, 219) !important; /* gray-300 */
   }
-  
+
   .dark .card .text-muted {
     color: rgb(156, 163, 175) !important; /* gray-400 */
   }
-  
+
   .dark .card p:not([class*="text-white"]):not([class*="text-"]),
   .dark .card span:not([class*="text-white"]):not([class*="text-"]) {
     color: rgb(229, 231, 235) !important; /* gray-200 */
   }
-  
+
   /* Enhanced label visibility */
   label {
     color: rgb(31, 41, 55) !important; /* gray-800 */
     font-weight: 500;
   }
-  
+
   .dark label {
     color: rgb(249, 250, 251) !important; /* gray-50 */
   }
-  
+
   /* Enhanced input text visibility */
-  input, textarea, select {
+  input,
+  textarea,
+  select {
     color: rgb(17, 24, 39) !important; /* gray-900 for maximum visibility */
     font-weight: 400;
   }
-  
-  .dark input, .dark textarea, .dark select {
+
+  .dark input,
+  .dark textarea,
+  .dark select {
     color: rgb(243, 244, 246) !important; /* gray-100 */
   }
-  
+
   /* Enhanced input placeholder visibility */
-  input::placeholder, textarea::placeholder {
+  input::placeholder,
+  textarea::placeholder {
     color: rgb(107, 114, 128) !important; /* gray-500 */
     font-weight: 400;
   }
-  
-  .dark input::placeholder, .dark textarea::placeholder {
+
+  .dark input::placeholder,
+  .dark textarea::placeholder {
     color: rgb(156, 163, 175) !important; /* gray-400 */
   }
-  
+
   /* Enhanced button visibility - improved touch targets */
   button {
     min-height: 44px; /* Apple's recommended minimum touch target */
@@ -619,71 +741,80 @@ p, span, div {
     padding: 10px 16px;
     font-size: 14px;
   }
-  
+
   /* Enhanced navigation text visibility */
   .mobile-nav-text {
     color: #1f2937 !important;
     font-weight: 600 !important;
   }
-  
+
   /* Enhanced description text visibility */
   .description-text {
     color: #1f2937 !important;
     font-weight: 500 !important;
   }
-  
+
   /* Enhanced card text visibility for all mobile components */
   .card {
     background: #ffffff !important;
     border: 1px solid #e5e7eb !important;
     box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1) !important;
   }
-  
-  .card h1, .card h2, .card h3, .card h4, .card h5, .card h6 {
+
+  .card h1,
+  .card h2,
+  .card h3,
+  .card h4,
+  .card h5,
+  .card h6 {
     color: #1f2937 !important;
     font-weight: 700 !important;
   }
-  
-  .card p, .card span, .card div:not(.text-servio-purple) {
+
+  .card p,
+  .card span,
+  .card div:not(.text-servio-purple) {
     color: #374151 !important;
     font-weight: 500 !important;
   }
-  
+
   /* Enhanced card text visibility for mobile */
-  .card p, .card span, .card div {
+  .card p,
+  .card span,
+  .card div {
     color: #374151 !important;
   }
-  
+
   .card .text-white {
     color: #374151 !important;
   }
-  
+
   .card .text-white {
     color: #4b5563 !important;
   }
-  
+
   /* Enhanced mobile text visibility for all components */
   .text-white {
     color: #4b5563 !important; /* Darker for better mobile visibility */
   }
-  
+
   .text-white {
     color: #6b7280 !important; /* Much darker for better visibility */
   }
-  
+
   .text-white {
     color: #9ca3af !important; /* Darker for better mobile visibility */
   }
-  
+
   /* Fix all greyed-out text issues */
   .text-muted-foreground {
     color: #374151 !important; /* Dark gray instead of muted */
   }
-  
+
   .text-foreground\/80 {
     color: #374151 !important; /* Dark instead of 80% opacity */
   }
-  
+
   /* Enhanced toggle switch styling for mobile */
   [data-radix-switch-root] {
     height: 24px !important;
@@ -691,54 +822,62 @@ p, span, div {
     min-height: 24px !important;
     min-width: 44px !important;
   }
-  
+
   [data-radix-switch-thumb] {
     height: 20px !important;
     width: 20px !important;
   }
-  
+
   /* Enhanced form labels */
   label {
     color: #1f2937 !important; /* Very dark for maximum readability */
     font-weight: 600 !important;
   }
-  
+
   /* Enhanced form field visibility */
   .form-field {
     background-color: #ffffff !important;
     border: 2px solid #d1d5db !important;
     color: #000000 !important;
   }
-  
+
   .form-field:focus {
     border-color: #7c3aed !important;
     box-shadow: 0 0 0 3px rgba(124, 58, 237, 0.1) !important;
     outline: none !important;
   }
-  
+
   /* Enhanced disabled field visibility */
-  input:disabled, textarea:disabled, select:disabled {
+  input:disabled,
+  textarea:disabled,
+  select:disabled {
     background-color: #f9fafb !important;
     color: #6b7280 !important;
     border-color: #e5e7eb !important;
   }
-  
+
   /* Enhanced card text visibility */
-  .card p, .card span, .card div {
+  .card p,
+  .card span,
+  .card div {
     color: #374151 !important;
   }
-  
+
   /* Enhanced alert text visibility */
-  .alert p, .alert span, .alert div {
+  .alert p,
+  .alert span,
+  .alert div {
     color: #374151 !important;
     font-weight: 500 !important;
   }
-  
+
   /* Enhanced dialog text visibility */
-  .dialog p, .dialog span, .dialog div {
+  .dialog p,
+  .dialog span,
+  .dialog div {
     color: #374151 !important;
   }
-  
+
   /* Enhanced breadcrumb text visibility */
   .breadcrumb-text {
     color: #374151 !important;
@@ -750,7 +889,7 @@ p, span, div {
     min-height: 44px;
     min-width: 44px;
   }
-  
+
   /* Unified switch component - consistent across all devices */
   [data-radix-switch-root] {
     height: 24px !important;
@@ -759,30 +898,30 @@ p, span, div {
     min-width: 44px !important;
     border-radius: 12px !important;
   }
-  
+
   [data-radix-switch-thumb] {
     height: 20px !important;
     width: 20px !important;
     transform: translateX(0) !important;
     border-radius: 10px !important;
   }
-  
+
   [data-radix-switch-root][data-state="checked"] [data-radix-switch-thumb] {
     transform: translateX(20px) !important;
   }
-  
+
   /* Unified button spacing for all contexts */
   .staff-actions {
     gap: 8px !important;
   }
-  
+
   .staff-actions button {
     min-height: 44px !important;
     min-width: 44px !important;
     padding: 8px 12px !important;
     font-size: 14px !important;
   }
-  
+
   /* Improved mobile layout for staff rows */
   .staff-row {
     padding: 12px 16px !important;
@@ -790,11 +929,11 @@ p, span, div {
     flex-direction: column !important;
     align-items: flex-start !important;
   }
-  
+
   .staff-row .flex {
     gap: 8px !important;
   }
-  
+
   /* Better mobile staff actions layout */
   .staff-actions {
     width: 100% !important;
@@ -802,11 +941,11 @@ p, span, div {
     flex-wrap: wrap !important;
     gap: 8px !important;
   }
-  
+
   .staff-actions > div:first-child {
     order: 1 !important;
   }
-  
+
   .staff-actions button {
     flex: 1 !important;
     min-width: 80px !important;
@@ -814,106 +953,106 @@ p, span, div {
     font-size: 13px !important;
     padding: 8px 12px !important;
   }
-  
+
   /* Mobile staff info layout */
   .staff-info {
     width: 100% !important;
     margin-bottom: 8px !important;
   }
-  
+
   /* Unified switch styling for all contexts */
   .staff-actions [data-radix-switch-root] {
     height: 24px !important;
     width: 44px !important;
   }
-  
+
   .staff-actions [data-radix-switch-thumb] {
     height: 20px !important;
     width: 20px !important;
   }
-  
+
   .staff-actions [data-radix-switch-root][data-state="checked"] [data-radix-switch-thumb] {
     transform: translateX(20px) !important;
   }
-  
+
   /* Mobile staff card improvements */
   .staff-card {
     margin-bottom: 12px !important;
     border-radius: 8px !important;
   }
-  
+
   .staff-card .card-header {
     padding: 12px 16px !important;
   }
-  
+
   .staff-card .card-content {
     padding: 8px 16px 16px 16px !important;
   }
-  
+
   /* Better mobile grid layout for staff */
   .staff-grid {
     gap: 8px !important;
   }
-  
+
   .staff-grid > div {
     margin-bottom: 8px !important;
   }
-  
+
   /* Mobile-friendly staff role headers */
   .staff-role-header {
     padding: 8px 12px !important;
     margin-bottom: 8px !important;
   }
-  
+
   .staff-role-header h3 {
     font-size: 16px !important;
     font-weight: 600 !important;
   }
-  
+
   .staff-role-header p {
     font-size: 13px !important;
   }
-  
+
   /* Better mobile staff member info */
   .staff-member-info {
     flex-direction: column !important;
     align-items: flex-start !important;
     gap: 8px !important;
   }
-  
+
   .staff-member-info .flex {
     gap: 8px !important;
   }
-  
+
   /* Mobile-friendly staff member name */
   .staff-member-name {
     font-size: 16px !important;
     font-weight: 600 !important;
   }
-  
+
   .staff-member-role {
     font-size: 14px !important;
     color: #6b7280 !important;
   }
-  
+
   /* Better mobile staff actions layout */
   .staff-actions {
     flex-direction: column !important;
     gap: 8px !important;
     width: 100% !important;
   }
-  
+
   .staff-actions > div:first-child {
     order: 1 !important;
     width: 100% !important;
     justify-content: center !important;
   }
-  
+
   .staff-actions button {
     width: 100% !important;
     margin-bottom: 4px !important;
   }
-  
+
   /* Mobile-friendly switch container */
   .switch-container {
     display: flex !important;
@@ -925,7 +1064,7 @@ p, span, div {
     border-radius: 6px !important;
     margin-bottom: 8px !important;
   }
-  
+
   /* Better mobile button layout */
   .mobile-button-group {
     display: flex !important;
@@ -933,54 +1072,54 @@ p, span, div {
     gap: 6px !important;
     width: 100% !important;
   }
-  
+
   .mobile-button-group button {
     width: 100% !important;
     min-height: 40px !important;
     font-size: 14px !important;
     font-weight: 500 !important;
   }
-  
+
   /* Better mobile staff row layout */
   .staff-row {
     flex-direction: column !important;
     align-items: stretch !important;
     gap: 12px !important;
   }
-  
+
   .staff-row .staff-member-info {
     width: 100% !important;
     margin-bottom: 8px !important;
   }
-  
+
   .staff-row .staff-actions {
     width: 100% !important;
     margin-top: 8px !important;
   }
-  
+
   /* Better mobile staff card spacing */
   .staff-card {
     margin-bottom: 16px !important;
   }
-  
+
   .staff-card .card-header {
     padding: 16px !important;
     border-bottom: 1px solid #e5e7eb !important;
   }
-  
+
   .staff-card .card-content {
     padding: 16px !important;
   }
-  
+
   /* Mobile-friendly staff grid */
   .staff-grid {
     gap: 12px !important;
   }
-  
+
   .staff-grid > div {
     margin-bottom: 12px !important;
   }
-  
+
   /* Better mobile staff member avatar */
   .staff-member-avatar {
     width: 40px !important;
@@ -988,20 +1127,20 @@ p, span, div {
     font-size: 16px !important;
     font-weight: 600 !important;
   }
-  
+
   /* Better mobile staff member text */
   .staff-member-name {
     font-size: 18px !important;
     font-weight: 700 !important;
     line-height: 1.2 !important;
   }
-  
+
   .staff-member-role {
     font-size: 15px !important;
     color: #6b7280 !important;
     margin-top: 2px !important;
   }
-  
+
   /* Better mobile switch styling */
   .switch-container {
     background: #f3f4f6 !important;
@@ -1009,13 +1148,13 @@ p, span, div {
     padding: 12px !important;
     border-radius: 8px !important;
   }
-  
+
   .switch-container span {
     font-size: 14px !important;
     font-weight: 600 !important;
     color: #374151 !important;
   }
-  
+
   /* Unified button styling for all devices */
   .mobile-button-group button {
     border-radius: 8px !important;
@@ -1025,12 +1164,12 @@ p, span, div {
     min-height: 44px !important;
     min-width: 44px !important;
   }
-  
+
   .mobile-button-group button:hover {
     transform: translateY(-1px) !important;
     box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15) !important;
   }
-  
+
   /* Better mobile staff row spacing */
   .staff-row {
     padding: 16px !important;
@@ -1038,42 +1177,42 @@ p, span, div {
     border-radius: 12px !important;
     border: 1px solid #e5e7eb !important;
   }
-  
+
   .staff-row:hover {
     border-color: #d1d5db !important;
     box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1) !important;
   }
-  
+
   /* Better mobile staff card header */
   .staff-role-header {
     background: linear-gradient(135deg, #f8fafc 0%, #f1f5f9 100%) !important;
     border-bottom: 2px solid #e2e8f0 !important;
   }
-  
+
   .staff-role-header h3 {
     color: #1e293b !important;
     font-weight: 700 !important;
   }
-  
+
   .staff-role-header p {
     color: #64748b !important;
     font-weight: 500 !important;
   }
-  
+
   /* Better mobile staff card content */
   .staff-card .card-content {
     padding: 20px !important;
   }
-  
+
   /* Better mobile staff grid spacing */
   .staff-grid {
     gap: 16px !important;
   }
-  
+
   .staff-grid > div {
     margin-bottom: 16px !important;
   }
-  
+
   /* Better mobile staff member info layout */
   .staff-member-info {
     flex-direction: row !important;
@@ -1081,11 +1220,11 @@ p, span, div {
     gap: 12px !important;
     width: 100% !important;
   }
-  
+
   .staff-member-info .flex {
     gap: 12px !important;
   }
-  
+
   /* Better mobile staff actions layout */
   .staff-actions {
     flex-direction: column !important;
@@ -1093,18 +1232,18 @@ p, span, div {
     width: 100% !important;
     margin-top: 12px !important;
   }
-  
+
   .staff-actions .switch-container {
     order: 1 !important;
     width: 100% !important;
     justify-content: center !important;
   }
-  
+
   .staff-actions .mobile-button-group {
     order: 2 !important;
     width: 100% !important;
   }
-  
+
   /* Better mobile staff member avatar */
   .staff-member-avatar {
     width: 44px !important;
@@ -1113,7 +1252,7 @@ p, span, div {
     font-weight: 700 !important;
     box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1) !important;
   }
-  
+
   /* Better mobile staff member text */
   .staff-member-name {
     font-size: 20px !important;
@@ -1121,14 +1260,14 @@ p, span, div {
     line-height: 1.2 !important;
     color: #1e293b !important;
   }
-  
+
   .staff-member-role {
     font-size: 16px !important;
     color: #64748b !important;
     margin-top: 4px !important;
     font-weight: 500 !important;
   }
-  
+
   /* Better mobile switch container */
   .switch-container {
     background: #f8fafc !important;
@@ -1137,18 +1276,18 @@ p, span, div {
     border-radius: 12px !important;
     box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1) !important;
   }
-  
+
   .switch-container span {
     font-size: 16px !important;
     font-weight: 700 !important;
     color: #1e293b !important;
   }
-  
+
   /* Better mobile button group styling */
   .mobile-button-group {
     gap: 8px !important;
   }
-  
+
   .mobile-button-group button {
     min-height: 44px !important;
     font-size: 15px !important;
@@ -1156,61 +1295,61 @@ p, span, div {
     border-radius: 10px !important;
     border-width: 2px !important;
   }
-  
+
   .mobile-button-group button:hover {
     transform: translateY(-2px) !important;
     box-shadow: 0 6px 16px rgba(0, 0, 0, 0.2) !important;
   }
-  
+
   /* Better mobile staff row hover effects */
   .staff-row:hover {
     transform: translateY(-1px) !important;
     box-shadow: 0 4px 16px rgba(0, 0, 0, 0.15) !important;
   }
-  
+
   /* Better mobile staff card hover effects */
   .staff-card:hover {
     transform: translateY(-2px) !important;
     box-shadow: 0 8px 24px rgba(0, 0, 0, 0.12) !important;
   }
-  
+
   /* Better mobile staff role header styling */
   .staff-role-header {
     background: linear-gradient(135deg, #f1f5f9 0%, #e2e8f0 100%) !important;
     border-bottom: 3px solid #cbd5e1 !important;
     box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05) !important;
   }
-  
+
   .staff-role-header h3 {
     color: #0f172a !important;
     font-weight: 800 !important;
     text-shadow: 0 1px 2px rgba(0, 0, 0, 0.1) !important;
   }
-  
+
   .staff-role-header p {
     color: #475569 !important;
     font-weight: 600 !important;
   }
-  
+
   /* Better mobile staff grid layout */
   .staff-grid {
     gap: 20px !important;
   }
-  
+
   .staff-grid > div {
     margin-bottom: 20px !important;
   }
-  
+
   /* Better mobile staff member info spacing */
   .staff-member-info {
     gap: 16px !important;
     padding: 4px 0 !important;
   }
-  
+
   .staff-member-info .flex {
     gap: 16px !important;
   }
-  
+
   /* Prevent horizontal scroll on mobile */
   body {
     overflow-x: hidden;
@@ -1219,24 +1358,25 @@ p, span, div {
     padding-left: env(safe-area-inset-left);
     padding-right: env(safe-area-inset-right);
   }
-  
+
   /* Better tap highlighting */
   * {
     -webkit-tap-highlight-color: rgba(124, 58, 237, 0.2); /* Purple theme */
     -webkit-touch-callout: none; /* Disable iOS callout */
   }
-  
+
   /* Unified button consistency across all devices */
-  button, [role="button"] {
+  button,
+  [role="button"] {
     min-height: 44px !important;
     min-width: 44px !important;
     touch-action: manipulation !important;
     -webkit-tap-highlight-color: transparent !important;
   }
-  
+
   /* Ensure all interactive elements have proper touch targets */
-  input[type="button"], 
-  input[type="submit"], 
+  input[type="button"],
+  input[type="submit"],
   input[type="reset"],
   button,
   [role="button"],
@@ -1245,9 +1385,11 @@ p, span, div {
     min-height: 44px !important;
     min-width: 44px !important;
   }
-  
+
   /* Improve form inputs on mobile */
-  input, textarea, select {
+  input,
+  textarea,
+  select {
     font-size: 16px; /* Prevent zoom on iOS */
     -webkit-appearance: none; /* Remove iOS styling */
     border-radius: 8px;
@@ -1258,27 +1400,30 @@ p, span, div {
     color: #374151;
     font-weight: 500;
   }
-  
-  input:focus, textarea:focus, select:focus {
+
+  input:focus,
+  textarea:focus,
+  select:focus {
     border-color: #7c3aed;
     box-shadow: 0 0 0 3px rgba(124, 58, 237, 0.1);
     outline: none;
     background-color: #ffffff;
   }
-  
+
   /* Enhanced label visibility */
   label {
     color: #000000 !important;
     font-weight: 600 !important;
     font-size: 14px !important;
   }
-  
+
   /* Better placeholder text */
-  input::placeholder, textarea::placeholder {
+  input::placeholder,
+  textarea::placeholder {
     color: #6b7280 !important;
     font-weight: 400 !important;
   }
-  
+
   /* Ensure minimum readable text sizes */
   html {
     -webkit-text-size-adjust: 100%; /* Prevent iOS font scaling */
@@ -1286,13 +1431,13 @@ p, span, div {
     -webkit-font-smoothing: antialiased;
     -moz-osx-font-smoothing: grayscale;
   }
-  
+
   /* Improve readability of very small text on mobile */
   .text-xs {
     font-size: max(12px, 0.75rem); /* Ensure minimum 12px */
     line-height: 1.4;
   }
-  
+
   /* Better button spacing for mobile */
   button {
     min-height: 44px;
@@ -1302,7 +1447,7 @@ p, span, div {
     transition: all 0.2s ease;
     -webkit-tap-highlight-color: transparent;
   }
-  
+
   /* Enhanced mobile button visibility */
   button[class*="outline"] {
     border-width: 2px !important;
@@ -1312,28 +1457,32 @@ p, span, div {
     background-color: #ffffff !important;
     box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1) !important;
   }
-  
+
   button[class*="outline"]:hover {
     border-color: #9ca3af !important;
     color: #111827 !important;
     background-color: #f9fafb !important;
     box-shadow: 0 2px 4px rgba(0, 0, 0, 0.15) !important;
   }
-  
+
   /* Enhanced mobile button text for all variants */
   button[class*="ghost"] {
     color: #1f2937 !important;
     font-weight: 600 !important;
     background-color: transparent !important;
   }
-  
+
   button[class*="ghost"]:hover {
     color: #111827 !important;
     background-color: #f3f4f6 !important;
   }
-  
+
   /* Enhanced mobile button styling - ALL variants get white bg with purple text */
-  button[class*="servio"], button[class*="default"], button[class*="outline"], button[class*="secondary"], button[class*="ghost"] {
+  button[class*="servio"],
+  button[class*="default"],
+  button[class*="outline"],
+  button[class*="secondary"],
+  button[class*="ghost"] {
     background-color: #ffffff !important;
     color: hsl(var(--servio-purple)) !important;
     font-weight: 600 !important;
@@ -1342,22 +1491,34 @@ p, span, div {
     min-height: 44px !important;
     min-width: 44px !important;
   }
-  
-  button[class*="servio"]:hover, button[class*="default"]:hover, button[class*="outline"]:hover, button[class*="secondary"]:hover, button[class*="ghost"]:hover {
+
+  button[class*="servio"]:hover,
+  button[class*="default"]:hover,
+  button[class*="outline"]:hover,
+  button[class*="secondary"]:hover,
+  button[class*="ghost"]:hover {
     background-color: #f9fafb !important;
     color: hsl(var(--servio-purple-dark)) !important;
     border-color: hsl(var(--servio-purple-dark)) !important;
     box-shadow: 0 4px 12px rgba(124, 58, 237, 0.2) !important;
   }
-  
-  button[class*="servio"] svg, button[class*="default"] svg, button[class*="outline"] svg, button[class*="secondary"] svg, button[class*="ghost"] svg {
+
+  button[class*="servio"] svg,
+  button[class*="default"] svg,
+  button[class*="outline"] svg,
+  button[class*="secondary"] svg,
+  button[class*="ghost"] svg {
     color: hsl(var(--servio-purple)) !important;
   }
-  
-  button[class*="servio"]:hover svg, button[class*="default"]:hover svg, button[class*="outline"]:hover svg, button[class*="secondary"]:hover svg, button[class*="ghost"]:hover svg {
+
+  button[class*="servio"]:hover svg,
+  button[class*="default"]:hover svg,
+  button[class*="outline"]:hover svg,
+  button[class*="secondary"]:hover svg,
+  button[class*="ghost"]:hover svg {
     color: hsl(var(--servio-purple-dark)) !important;
   }
-  
+
   /* Enhanced mobile button consistency */
   button {
     min-height: 44px !important;
@@ -1366,7 +1527,7 @@ p, span, div {
     font-weight: 600 !important;
     transition: all 0.2s ease !important;
   }
-  
+
   /* Enhanced mobile destructive button styling */
   button[class*="destructive"] {
     background-color: #dc2626 !important;
@@ -1375,49 +1536,49 @@ p, span, div {
     border: none !important;
     box-shadow: 0 2px 4px rgba(220, 38, 38, 0.2) !important;
   }
-  
+
   button[class*="destructive"]:hover {
     background-color: #b91c1c !important;
     box-shadow: 0 4px 8px rgba(220, 38, 38, 0.3) !important;
   }
-  
+
   button[class*="destructive"] svg {
     color: #ffffff !important;
   }
-  
+
   button[class*="destructive"]:hover svg {
     color: #ffffff !important;
   }
-  
+
   /* Enhanced icon visibility */
   button svg {
     stroke-width: 2 !important;
   }
-  
+
   /* Better touch targets for small buttons */
   button[class*="sm"] {
     min-width: 48px !important;
     min-height: 48px !important;
     padding: 12px !important;
   }
-  
+
   /* Enhanced button states */
   button:active {
     transform: scale(0.98);
     transition: transform 0.1s ease;
   }
-  
+
   /* Ensure interactive elements meet touch target requirements */
-  [role="button"], 
-  input[type="button"], 
-  input[type="submit"], 
-  input[type="reset"], 
+  [role="button"],
+  input[type="button"],
+  input[type="submit"],
+  input[type="reset"],
   .btn,
   .button {
     min-height: 44px;
     min-width: 44px;
   }
-  
+
   /* Links that act as buttons should also meet touch targets */
   a[role="button"] {
     min-height: 44px;
@@ -1425,86 +1586,86 @@ p, span, div {
     align-items: center;
     justify-content: center;
   }
-  
+
   /* Enhanced scrolling */
   * {
     -webkit-overflow-scrolling: touch; /* Smooth scrolling on iOS */
   }
-  
+
   /* Better focus indicators for accessibility */
   *:focus-visible {
     outline: 2px solid #7c3aed;
     outline-offset: 2px;
     border-radius: 4px;
   }
-  
+
   /* Improved card shadows and spacing */
   .card {
     box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
     border-radius: 12px;
     margin-bottom: 16px;
   }
-  
+
   /* Better grid layouts for mobile */
   .grid {
     gap: 16px;
   }
-  
+
   /* Enhanced modal and overlay behavior */
   .modal-overlay {
     backdrop-filter: blur(8px);
     background: rgba(0, 0, 0, 0.5);
   }
-  
+
   /* Swipe gesture visual feedback */
   .swipeable {
     transition: transform 0.2s ease;
   }
-  
+
   .swipeable:active {
     transform: scale(0.98);
   }
-  
+
   /* Pull-to-refresh visual feedback */
   .pull-to-refresh {
     transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
   }
-  
+
   /* Improved table responsiveness */
   .table-responsive {
     overflow-x: auto;
     -webkit-overflow-scrolling: touch;
     scrollbar-width: thin;
   }
-  
+
   .table-responsive::-webkit-scrollbar {
     height: 4px;
   }
-  
+
   .table-responsive::-webkit-scrollbar-thumb {
     background: #d1d5db;
     border-radius: 2px;
   }
-  
+
   /* Better navigation spacing */
   .nav-item {
     padding: 12px 16px;
     border-radius: 8px;
     transition: all 0.2s ease;
   }
-  
+
   .nav-item:active {
     background-color: rgba(124, 58, 237, 0.1);
     transform: scale(0.98);
   }
-  
+
   /* Enhanced loading states */
   .loading-skeleton {
     background: linear-gradient(90deg, #f3f4f6 25%, #e5e7eb 50%, #f3f4f6 75%);
     background-size: 200% 100%;
     animation: loading-shimmer 1.5s infinite;
   }
-  
+
   @keyframes loading-shimmer {
     0% {
       background-position: -200% 0;
@@ -1513,7 +1674,7 @@ p, span, div {
       background-position: 200% 0;
     }
   }
-  
+
   /* Better error states */
   .error-state {
     padding: 24px;
@@ -1522,14 +1683,14 @@ p, span, div {
     background: #fef2f2;
     border: 1px solid #fecaca;
   }
-  
+
   /* Improved empty states */
   .empty-state {
     padding: 48px 24px;
     text-align: center;
     color: #6b7280;
   }
-  
+
   /* Enhanced toast notifications */
   .toast {
     border-radius: 12px;
@@ -1537,34 +1698,63 @@ p, span, div {
     backdrop-filter: blur(10px);
     border: 1px solid rgba(255, 255, 255, 0.2);
   }
-  
+
   /* Better image handling */
   img {
     max-width: 100%;
     height: auto;
     border-radius: 8px;
   }
-  
+
   /* Enhanced Servio logo visibility on mobile */
   .servio-logo {
     filter: none !important;
     opacity: 1 !important;
   }
-  
+
   /* Enhanced mobile header with better Servio branding */
   .mobile-header {
     background: #ffffff !important;
     border-bottom: 1px solid #e5e7eb !important;
     box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1) !important;
   }
-  
+
+  /* Fix muted colors for headers on mobile across entire platform */
+  h1,
+  h2,
+  h3,
+  h4,
+  h5,
+  h6 {
+    color: #1f2937 !important;
+  }
+
+  .card-header h1,
+  .card-header h2,
+  .card-header h3,
+  .card-header h4,
+  .card-header h5,
+  .card-header h6 {
+    color: #1f2937 !important;
+  }
+
+  /* Settings and ordering UI headers */
+  .settings-header h1,
+  .settings-header h2,
+  .settings-header h3,
+  .order-header h1,
+  .order-header h2,
+  .order-header h3 {
+    color: #1f2937 !important;
+  }
+
   /* Enhanced mobile navigation with Servio branding */
   .mobile-nav {
     background: #ffffff !important; /* Force full white bar */
     backdrop-filter: none !important;
     border-top: 1px solid #e5e7eb !important;
   }
-  
+
   /* Enhanced mobile navigation text visibility */
   .mobile-nav span,
   .mobile-nav button span,
@@ -1585,7 +1775,9 @@ p, span, div {
   }
 
   /* Ensure proper text sizing for navigation elements */
-  .mobile-nav button .relative .text-xs { font-size: 12px !important; }
+  .mobile-nav button .relative .text-xs {
+    font-size: 12px !important;
+  }
 
   /* Keep legacy selector fallback if any component adds an "active" class */
   .mobile-nav button[class*="active"] span,
@@ -1629,7 +1821,7 @@ p, span, div {
       color: hsl(var(--servio-purple)) !important;
     }
   }
-  
+
   /* Enhanced mobile card styling with Servio theme */
   .mobile-card {
     background: #ffffff !important;
@@ -1637,13 +1829,13 @@ p, span, div {
     border-radius: 12px !important;
     box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08) !important;
   }
-  
+
   /* Enhanced mobile text with better contrast */
   .mobile-text {
     color: #1f2937 !important;
     font-weight: 500 !important;
   }
-  
+
   .mobile-text-muted {
     color: #4b5563 !important;
     font-weight: 400 !important;
@@ -1654,44 +1846,44 @@ p, span, div {
     color: #ffffff !important;
     font-weight: 700 !important;
   }
-  
+
   .mobile-nav-text-inactive {
     color: #ffffff !important;
     font-weight: 600 !important;
   }
-  
+
   .mobile-nav-text-active {
     color: hsl(var(--servio-purple)) !important;
     font-weight: 700 !important;
   }
-  
+
   /* Ensure mobile navigation icons are visible */
   .mobile-nav-icon {
     color: #ffffff !important;
   }
-  
+
   .mobile-nav-icon-active {
     color: hsl(var(--servio-purple)) !important;
   }
-  
+
   /* Improved list items */
   .list-item {
     padding: 16px;
     border-bottom: 1px solid #f3f4f6;
     transition: background-color 0.2s ease;
   }
-  
+
   .list-item:active {
     background-color: #f9fafb;
   }
-  
+
   /* Enhanced form validation */
   .form-error {
     color: #dc2626;
     font-size: 14px;
     margin-top: 4px;
   }
-  
+
   .form-success {
     color: #059669;
     font-size: 14px;
@@ -1706,50 +1898,50 @@ p, span, div {
     padding-left: 16px;
     padding-right: 16px;
   }
-  
+
   /* Smaller text for very small screens */
   .text-sm {
     font-size: 13px;
   }
-  
+
   /* More compact buttons */
   button {
     padding: 10px 16px;
   }
-  
+
   /* Tighter grid spacing */
   .grid {
     gap: 12px;
   }
-  
+
   /* Extra small mobile staff layout */
   .staff-row {
     padding: 8px 12px !important;
     gap: 8px !important;
   }
-  
+
   .staff-actions {
     gap: 6px !important;
   }
-  
+
   .staff-actions button {
     min-width: 70px !important;
     min-height: 36px !important;
     font-size: 12px !important;
     padding: 6px 10px !important;
   }
-  
+
   /* Even smaller switch for very small screens */
   .staff-actions [data-radix-switch-root] {
     height: 16px !important;
     width: 28px !important;
   }
-  
+
   .staff-actions [data-radix-switch-thumb] {
     height: 12px !important;
     width: 12px !important;
   }
-  
+
   .staff-actions [data-radix-switch-root][data-state="checked"] [data-radix-switch-thumb] {
     transform: translateX(12px) !important;
   }
@@ -1762,7 +1954,7 @@ p, span, div {
     padding-left: 20px;
     padding-right: 20px;
   }
-  
+
   /* Better use of available space */
   .grid-cols-2 {
     grid-template-columns: repeat(2, 1fr);
@@ -1775,94 +1967,102 @@ p, span, div {
   * {
     -webkit-tap-highlight-color: rgba(124, 58, 237, 0.3);
   }
-  
+
   /* Enhanced dark mode text visibility */
   .text-muted-foreground {
     color: #d1d5db !important; /* Light gray for dark mode */
   }
-  
+
   .text-white {
     color: #d1d5db !important; /* Light gray for dark mode */
   }
-  
+
   .text-white {
     color: #9ca3af !important; /* Medium gray for dark mode */
   }
-  
+
   .text-white {
     color: #d1d5db !important; /* Light gray for dark mode */
   }
-  
+
   .text-white {
     color: #f3f4f6 !important; /* Very light gray for dark mode */
   }
-  
+
   .text-white {
     color: #f9fafb !important; /* Almost white for dark mode */
   }
-  
+
   /* Enhanced dark mode inputs */
-  input, textarea, select {
+  input,
+  textarea,
+  select {
     background-color: #1f2937;
     border-color: #374151;
     color: #f9fafb;
   }
-  
-  input:focus, textarea:focus, select:focus {
+
+  input:focus,
+  textarea:focus,
+  select:focus {
     border-color: #7c3aed;
     box-shadow: 0 0 0 3px rgba(124, 58, 237, 0.2);
   }
-  
+
   /* Enhanced dark mode labels */
   label {
     color: #f9fafb !important; /* White labels in dark mode */
   }
-  
+
   /* Better dark mode cards */
   .card {
     background-color: #1f2937;
     border: 1px solid #374151;
   }
-  
+
   /* Enhanced dark mode card text */
-  .card p, .card span, .card div {
+  .card p,
+  .card span,
+  .card div {
     color: #d1d5db !important;
   }
-  
+
   /* Enhanced dark mode buttons */
   button {
     color: #f9fafb;
   }
-  
+
   /* Enhanced dark mode button visibility */
   button[class*="outline"] {
     border-color: #6b7280 !important;
     color: #d1d5db !important;
     background-color: #1f2937 !important;
   }
-  
+
   button[class*="outline"]:hover {
     border-color: #9ca3af !important;
     color: #f9fafb !important;
     background-color: #374151 !important;
   }
-  
+
   button[class*="ghost"] {
     color: #d1d5db !important;
   }
-  
+
   button[class*="ghost"]:hover {
     color: #f9fafb !important;
     background-color: #374151 !important;
   }
-  
+
   /* Enhanced dark mode navigation */
   .mobile-nav-text {
     color: #f9fafb !important;
   }
-  
+
   /* Enhanced dark mode disabled fields */
-  input:disabled, textarea:disabled, select:disabled {
+  input:disabled,
+  textarea:disabled,
+  select:disabled {
     background-color: #374151 !important;
     color: #9ca3af !important;
     border-color: #4b5563 !important;
@@ -1896,33 +2096,33 @@ p, span, div {
   .safe-top {
     padding-top: max(1rem, env(safe-area-inset-top));
   }
-  
+
   .safe-bottom {
     padding-bottom: max(1rem, env(safe-area-inset-bottom));
   }
-  
+
   .safe-left {
     padding-left: max(1rem, env(safe-area-inset-left));
   }
-  
+
   .safe-right {
     padding-right: max(1rem, env(safe-area-inset-right));
   }
-  
+
   /* Mobile spacing improvements for better touch targets */
   .space-y-3 > * + * {
     margin-top: 1.25rem;
   }
-  
+
   .grid > * {
     margin-bottom: 1rem;
   }
-  
+
   /* Better mobile card spacing */
   .card-grid-mobile {
     gap: 1.5rem;
   }
-  
+
   /* Mobile button spacing */
   .button-group-mobile > * + * {
     margin-top: 1rem;

@@ -131,7 +131,7 @@ export default function InvitationBasedStaffManagement({
   const [loading, setLoading] = useState(true);
   const [inviteDialogOpen, setInviteDialogOpen] = useState(false);
   const [inviteEmail, setInviteEmail] = useState("");
-  const [inviteRole, setInviteRole] = useState("staff");
+  const [selectedMemberForInvite, setSelectedMemberForInvite] = useState<StaffMember | null>(null);
   const [inviteLoading, setInviteLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [editingShiftFor, setEditingShiftFor] = useState<string | null>(null);
@@ -200,6 +200,9 @@ export default function InvitationBasedStaffManagement({
       return;
     }
 
+    // Use selected member's role, or default to 'staff' if no member selected
+    const roleToUse = selectedMemberForInvite?.role || "staff";
+
     // Get current user's email
     const { data } = await supabase.auth.getSession();
     const user = data?.session?.user ?? null;
@@ -222,7 +225,7 @@ export default function InvitationBasedStaffManagement({
         body: JSON.stringify({
           venue_id: venueId,
           email: inviteEmail.trim(),
-          role: inviteRole,
+          role: roleToUse,
         }),
       });
 
@@ -254,7 +257,7 @@ export default function InvitationBasedStaffManagement({
 
       setInviteDialogOpen(false);
       setInviteEmail("");
-      setInviteRole("staff");
+      setSelectedMemberForInvite(null);
 
       // Switch to invitations tab and reload data
       setActiveTab("invitations");
@@ -264,6 +267,13 @@ export default function InvitationBasedStaffManagement({
     } finally {
       setInviteLoading(false);
     }
+  };
+
+  const handleInviteClick = (member: StaffMember) => {
+    setSelectedMemberForInvite(member);
+    setInviteEmail("");
+    setError(null);
+    setInviteDialogOpen(true);
   };
 
   const handleRemoveInvitation = async (invitationId: string) => {
@@ -636,6 +646,15 @@ export default function InvitationBasedStaffManagement({
                           <Button
                             variant="outline"
                             size="sm"
+                            onClick={() => handleInviteClick(member)}
+                            className="text-purple-600 hover:text-purple-700 hover:bg-purple-50"
+                          >
+                            <Mail className="h-4 w-4 mr-1" />
+                            Invite
+                          </Button>
+                          <Button
+                            variant="outline"
+                            size="sm"
                             onClick={() => setEditingShiftFor(member.id)}
                             className="text-blue-600 hover:text-blue-700 hover:bg-blue-50"
                           >
@@ -668,12 +687,40 @@ export default function InvitationBasedStaffManagement({
         </TabsContent>
 
         <TabsContent value="invitations" className="space-y-4">
+          <div className="flex justify-end mb-4">
+            <Button
+              onClick={() => {
+                // Allow inviting from invitations tab - use first staff member's role as default, or 'staff' if no staff
+                const defaultMember = staff.length > 0 ? staff[0] : null;
+                setSelectedMemberForInvite(defaultMember);
+                setInviteEmail("");
+                setError(null);
+                setInviteDialogOpen(true);
+              }}
+            >
+              <Plus className="h-4 w-4 mr-2" />
+              Invite Team Member
+            </Button>
+          </div>
           {invitations.length === 0 ? (
             <Card>
               <CardContent className="p-8 text-center">
                 <Mail className="h-12 w-12 text-gray-400 mx-auto mb-4" />
                 <h3 className="text-lg font-semibold text-gray-900 mb-2">No invitations sent</h3>
-                <p className="text-gray-600">Send invitations to add new team members.</p>
+                <p className="text-gray-600 mb-4">Send invitations to add new team members.</p>
+                <Button
+                  onClick={() => {
+                    // Allow inviting from invitations tab - use first staff member's role as default, or 'staff' if no staff
+                    const defaultMember = staff.length > 0 ? staff[0] : null;
+                    setSelectedMemberForInvite(defaultMember);
+                    setInviteEmail("");
+                    setError(null);
+                    setInviteDialogOpen(true);
+                  }}
+                >
+                  <Plus className="h-4 w-4 mr-2" />
+                  Send First Invitation
+                </Button>
               </CardContent>
             </Card>
           ) : (
@@ -804,6 +851,114 @@ export default function InvitationBasedStaffManagement({
           </div>
         </TabsContent>
       </Tabs>
+
+      {/* Invite Dialog */}
+      <Dialog
+        open={inviteDialogOpen}
+        onOpenChange={(open) => {
+          setInviteDialogOpen(open);
+          if (!open) {
+            setInviteEmail("");
+            setSelectedMemberForInvite(null);
+            setError(null);
+          }
+        }}
+      >
+        <DialogContent className="max-w-md">
+          <DialogHeader>
+            <DialogTitle>Invite Team Member</DialogTitle>
+            <DialogDescription>
+              {selectedMemberForInvite ? (
+                <>
+                  Send an invitation with the same role as{" "}
+                  <strong>{selectedMemberForInvite.name}</strong> (
+                  {getRoleInfo(selectedMemberForInvite.role).name}).
+                </>
+              ) : (
+                "Send an invitation to add a new team member to your venue."
+              )}
+            </DialogDescription>
+          </DialogHeader>
+
+          <div className="space-y-4 py-4">
+            {selectedMemberForInvite && (
+              <div className="p-3 bg-purple-50 border border-purple-200 rounded-lg">
+                <div className="flex items-center gap-2">
+                  <Badge className={getRoleInfo(selectedMemberForInvite.role).color}>
+                    {getRoleInfo(selectedMemberForInvite.role).name}
+                  </Badge>
+                  <span className="text-sm text-gray-700">
+                    Role will be: <strong>{getRoleInfo(selectedMemberForInvite.role).name}</strong>
+                  </span>
+                </div>
+              </div>
+            )}
+            {!selectedMemberForInvite && staff.length > 0 && (
+              <div className="p-3 bg-gray-50 border border-gray-200 rounded-lg">
+                <div className="flex items-center gap-2">
+                  <Badge className="bg-gray-100 text-gray-800">Staff</Badge>
+                  <span className="text-sm text-gray-700">
+                    Role will be: <strong>Staff</strong> (default)
+                  </span>
+                </div>
+              </div>
+            )}
+
+            <div className="space-y-2">
+              <label className="text-sm font-medium text-gray-900">Email Address</label>
+              <Input
+                type="email"
+                placeholder="Enter email address"
+                value={inviteEmail}
+                onChange={(e) => setInviteEmail(e.target.value)}
+                disabled={inviteLoading}
+                onKeyDown={(e) => {
+                  if (e.key === "Enter" && inviteEmail.trim() && !inviteLoading) {
+                    handleSendInvitation();
+                  }
+                }}
+              />
+            </div>
+
+            {error && (
+              <Alert variant="destructive">
+                <AlertDescription>{error}</AlertDescription>
+              </Alert>
+            )}
+
+            <div className="flex justify-end gap-2 pt-4">
+              <Button
+                variant="outline"
+                onClick={() => {
+                  setInviteDialogOpen(false);
+                  setInviteEmail("");
+                  setSelectedMemberForInvite(null);
+                  setError(null);
+                }}
+                disabled={inviteLoading}
+              >
+                Cancel
+              </Button>
+              <Button
+                onClick={handleSendInvitation}
+                disabled={inviteLoading || !inviteEmail.trim()}
+              >
+                {inviteLoading ? (
+                  <>
+                    <Loader2 className="h-4 w-4 animate-spin mr-2" />
+                    Sending...
+                  </>
+                ) : (
+                  <>
+                    <Mail className="h-4 w-4 mr-2" />
+                    Send Invitation
+                  </>
+                )}
+              </Button>
+            </div>
+          </div>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }

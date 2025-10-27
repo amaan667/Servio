@@ -35,7 +35,11 @@ export async function POST(_request: NextRequest) {
     }
 
     // Create billing portal session
-    const returnUrl = `${process.env.NEXT_PUBLIC_SITE_URL || "https://servio-production.up.railway.app"}/dashboard`;
+    // Return to settings page - if we have venueId in org metadata, use it; otherwise go to general settings
+    const venueId = (org as any).venue_id || (org as any).primary_venue_id;
+    const returnUrl = venueId
+      ? `${process.env.NEXT_PUBLIC_SITE_URL || "https://servio-production.up.railway.app"}/dashboard/${venueId}/settings`
+      : `${process.env.NEXT_PUBLIC_SITE_URL || "https://servio-production.up.railway.app"}/dashboard`;
 
     logger.debug("[STRIPE PORTAL] Creating session for customer:", (org as any).stripe_customer_id);
     logger.debug("[STRIPE PORTAL] Return URL:", { value: returnUrl });
