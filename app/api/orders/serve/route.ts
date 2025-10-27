@@ -115,9 +115,85 @@ export async function POST(req: Request) {
       logger.warn("[ORDERS SERVE] table_sessions update warning", { orderId, venueId, error: _e });
     }
 
+    // Check if payment has been completed - if so, automatically complete the order
+    const paymentStatus = (orderData.payment_status || "").toString().toUpperCase();
+    logger.debug("[ORDERS SERVE] Checking payment status", {
+      orderId,
+      paymentStatus,
+      paymentMode: orderData.payment_mode,
+    });
+
+    if (paymentStatus === "PAID") {
+      logger.debug("[ORDERS SERVE] Payment completed - auto-completing order", { orderId });
+
+      // Import the cleanup function
+      const { cleanupTableOnOrderCompletion } = await import("@/lib/table-cleanup");
+
+      // Update order to COMPLETED
+      const { error: completeError } = await admin
+        .from("orders")
+        .update({
+          order_status: "COMPLETED",
+          completed_at: new Date().toISOString(),
+          updated_at: new Date().toISOString(),
+        })
+        .eq("id", orderId)
+        .eq("venue_id", venueId);
+
+      if (completeError) {
+        logger.error("[ORDERS SERVE] Failed to auto-complete order", {
+          error: { orderId, context: venueId, error: completeError },
+        });
+        // Don't fail the request - order is still marked as served
+      } else {
+        logger.debug("[ORDERS SERVE] Order auto-completed successfully", {
+          data: { orderId, extra: venueId },
+        });
+
+        // Clear table session and runtime state if this is a table order
+        if (orderData.table_id || orderData.table_number) {
+          logger.debug("[ORDERS SERVE] Clearing table session for auto-completed order", {
+            data: {
+              orderId,
+              tableId: orderData.table_id,
+              tableNumber: orderData.table_number,
+            },
+          });
+
+          const cleanupResult = await cleanupTableOnOrderCompletion({
+            venueId,
+            tableId: orderData.table_id || undefined,
+            tableNumber: orderData.table_number?.toString() || undefined,
+            orderId,
+          });
+
+          if (!cleanupResult.success) {
+            logger.warn("[ORDERS SERVE] Table cleanup failed", {
+              orderId,
+              venueId,
+              error: cleanupResult.error,
+            });
+          } else {
+            logger.debug("[ORDERS SERVE] Table cleanup successful", {
+              orderId,
+              venueId,
+              details: cleanupResult.details,
+            });
+          }
+        }
+
+        return NextResponse.json({
+          success: true,
+          message: "Order marked as served and automatically completed (payment received)",
+          autoCompleted: true,
+        });
+      }
+    }
+
     return NextResponse.json({
       success: true,
       message: "Order marked as served",
+      autoCompleted: false,
     });
   } catch (error: unknown) {
     const err = error instanceof Error ? error : new Error(String(error));
