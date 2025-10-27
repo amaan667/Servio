@@ -14,7 +14,7 @@ interface GroupSizeModalProps {
   onSetCustomGroupSize: (value: string) => void;
   onHideCustomGroupSize: () => void;
   onSubmit: (size: number) => void;
-  mode: 'initial' | 'update';
+  mode: "initial" | "update";
 }
 
 export function GroupSizeModal({
@@ -30,15 +30,15 @@ export function GroupSizeModal({
   onSubmit,
   mode,
 }: GroupSizeModalProps) {
+  // Render instantly - no delays
   if (!show) return null;
 
-  const title = mode === 'initial' 
-    ? 'How many people are you ordering for?' 
-    : 'Update Group Size';
-  
-  const description = mode === 'initial'
-    ? 'This helps us track your table and manage orders efficiently.'
-    : `Current: ${groupSize} ${groupSize === 1 ? 'person' : 'people'}`;
+  const title = mode === "initial" ? "How many people are you ordering for?" : "Update Group Size";
+
+  const description =
+    mode === "initial"
+      ? "This helps us track your table and manage orders efficiently."
+      : `Current: ${groupSize} ${groupSize === 1 ? "person" : "people"}`;
 
   return (
     <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50">
@@ -62,8 +62,8 @@ export function GroupSizeModal({
                       onHideCustomGroupSize();
                     }}
                     className={`h-10 sm:h-12 text-sm sm:text-base transition-all duration-200 ${
-                      groupSize === size 
-                        ? "bg-servio-purple hover:bg-servio-purple-dark text-white border-servio-purple shadow-lg ring-2 ring-servio-purple ring-opacity-50" 
+                      groupSize === size
+                        ? "bg-servio-purple hover:bg-servio-purple-dark text-white border-servio-purple shadow-lg ring-2 ring-servio-purple ring-opacity-50"
                         : "hover:bg-gray-50 border-gray-300"
                     }`}
                   >
@@ -74,14 +74,14 @@ export function GroupSizeModal({
                   </Button>
                 ))}
               </div>
-              
+
               <div className="pt-2">
                 <Button
                   variant={showCustomGroupSize ? "default" : "outline"}
                   onClick={onShowCustomGroupSize}
                   className={`w-full h-10 sm:h-12 text-sm sm:text-base border-dashed transition-all duration-200 ${
-                    showCustomGroupSize 
-                      ? "bg-servio-purple hover:bg-servio-purple-dark text-white border-servio-purple shadow-lg ring-2 ring-servio-purple ring-opacity-50" 
+                    showCustomGroupSize
+                      ? "bg-servio-purple hover:bg-servio-purple-dark text-white border-servio-purple shadow-lg ring-2 ring-servio-purple ring-opacity-50"
                       : "hover:bg-gray-50 border-gray-300"
                   }`}
                 >
@@ -95,9 +95,7 @@ export function GroupSizeModal({
           ) : (
             <div className="space-y-4">
               <div>
-                <label className="text-sm font-medium mb-2 block">
-                  Number of people:
-                </label>
+                <label className="text-sm font-medium mb-2 block">Number of people:</label>
                 <Input
                   type="number"
                   min="9"
@@ -112,7 +110,7 @@ export function GroupSizeModal({
                 variant="outline"
                 onClick={() => {
                   onHideCustomGroupSize();
-                  onSetCustomGroupSize('');
+                  onSetCustomGroupSize("");
                 }}
                 className="w-full h-10 sm:h-12"
               >
@@ -120,14 +118,14 @@ export function GroupSizeModal({
               </Button>
             </div>
           )}
-          
+
           <div className="flex gap-3 pt-2">
             <Button
               variant="outline"
               onClick={() => {
                 onClose();
                 onHideCustomGroupSize();
-                onSetCustomGroupSize('');
+                onSetCustomGroupSize("");
               }}
               className="flex-1 h-10 sm:h-12"
             >
@@ -135,21 +133,24 @@ export function GroupSizeModal({
             </Button>
             <Button
               onClick={() => {
-                const finalSize = showCustomGroupSize && customGroupSize ? parseInt(customGroupSize) : groupSize;
+                const finalSize =
+                  showCustomGroupSize && customGroupSize ? parseInt(customGroupSize) : groupSize;
                 if (finalSize && finalSize > 0) {
                   onSubmit(finalSize);
                   onHideCustomGroupSize();
-                  onSetCustomGroupSize('');
+                  onSetCustomGroupSize("");
                 }
               }}
               className="flex-1 h-10 sm:h-12 bg-purple-600 hover:bg-purple-700 text-white font-medium shadow-sm"
               disabled={
-                showCustomGroupSize 
-                  ? (!customGroupSize || parseInt(customGroupSize) < 9 || isNaN(parseInt(customGroupSize)))
+                showCustomGroupSize
+                  ? !customGroupSize ||
+                    parseInt(customGroupSize) < 9 ||
+                    isNaN(parseInt(customGroupSize))
                   : !groupSize || groupSize <= 0
               }
             >
-              {mode === 'initial' ? 'Continue' : 'Update'}
+              {mode === "initial" ? "Continue" : "Update"}
             </Button>
           </div>
         </CardContent>
@@ -157,4 +158,3 @@ export function GroupSizeModal({
     </div>
   );
 }
-

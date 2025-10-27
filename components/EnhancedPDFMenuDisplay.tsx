@@ -47,6 +47,9 @@ interface Hotspot {
   y1_percent?: number;
   x2_percent?: number;
   y2_percent?: number;
+  // Button position (from GPT Vision)
+  button_x_percent?: number;
+  button_y_percent?: number;
 }
 
 export function EnhancedPDFMenuDisplay({
@@ -82,15 +85,16 @@ export function EnhancedPDFMenuDisplay({
   // Initialize with cached data immediately - no loading state if cache exists
   const cachedImages = getCachedPdfImages();
   const cachedHotspots = getCachedHotspots();
-  const hasCachedData = cachedImages.length > 0 || cachedHotspots.length > 0;
+  const hasCachedImages = cachedImages.length > 0;
+  const hasCachedHotspots = cachedHotspots.length > 0;
 
   const [pdfImages, setPdfImages] = useState<string[]>(cachedImages);
-  const [loading, setLoading] = useState(!hasCachedData); // Only load if no cache
+  const [loading, setLoading] = useState(!hasCachedImages); // Only show loading if no cached images
   const [hotspots, setHotspots] = useState<Hotspot[]>(cachedHotspots);
   const [selectedItem, setSelectedItem] = useState<MenuItem | null>(null);
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [viewMode, setViewMode] = useState<"pdf" | "list">(
-    hasCachedData && cachedImages.length > 0 ? "pdf" : "list"
+    hasCachedImages && cachedImages.length > 0 ? "pdf" : "list"
   );
   const [hasPdfImages, setHasPdfImages] = useState(
     hasPdfImagesInCache() || cachedImages.length > 0
@@ -108,9 +112,20 @@ export function EnhancedPDFMenuDisplay({
     /* Empty */
   });
 
+  // Preload images for instant display
+  useEffect(() => {
+    if (pdfImages.length > 0 && typeof window !== "undefined") {
+      pdfImages.forEach((imageUrl) => {
+        const img = new Image();
+        img.src = imageUrl;
+      });
+    }
+  }, [pdfImages]);
+
   useEffect(() => {
     // Skip fetch if we already have cached data - instant load
-    if (hasCachedData && cachedImages.length > 0) {
+    if (hasCachedImages && cachedImages.length > 0) {
+      setLoading(false);
       return;
     }
 
@@ -139,6 +154,11 @@ export function EnhancedPDFMenuDisplay({
             sessionStorage.setItem(`has_pdf_images_${venueId}`, "true");
             sessionStorage.setItem(`pdf_images_${venueId}`, JSON.stringify(images));
           }
+          // Preload images
+          images.forEach((imageUrl: string) => {
+            const img = new Image();
+            img.src = imageUrl;
+          });
         } else {
           setViewMode("list");
           setHasPdfImages(false);
@@ -155,12 +175,12 @@ export function EnhancedPDFMenuDisplay({
     };
 
     fetchPDFImages();
-  }, [venueId, hasCachedData, cachedImages.length]);
+  }, [venueId, hasCachedImages, cachedImages.length]);
 
   // Fetch or auto-generate hotspots - skip if cached
   useEffect(() => {
     // Skip if we already have cached hotspots
-    if (cachedHotspots.length > 0) {
+    if (hasCachedHotspots && cachedHotspots.length > 0) {
       return;
     }
 
@@ -450,8 +470,8 @@ export function EnhancedPDFMenuDisplay({
         )}
       </div>
 
-      {/* PDF View Loading State */}
-      {viewMode === "pdf" && pdfImages.length === 0 && (
+      {/* PDF View Loading State - Only show if truly loading */}
+      {viewMode === "pdf" && pdfImages.length === 0 && loading && (
         <div className="flex items-center justify-center py-20">
           <div className="text-center">
             <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary mx-auto mb-4"></div>
@@ -478,181 +498,215 @@ export function EnhancedPDFMenuDisplay({
               const pageHotspots = hotspots.filter((h) => h.page_index === index);
 
               return (
-                <div
-                  key={index}
-                  className="relative mb-4"
-                  style={{
-                    transform: `scale(${zoomLevel}) translate(${imagePosition.x / zoomLevel}px, ${imagePosition.y / zoomLevel}px)`,
-                    transformOrigin: "center center",
-                    transition: isDragging ? "none" : "transform 0.1s ease-out",
-                  }}
-                >
-                  <img
-                    src={imageUrl}
-                    alt={`Menu Page ${index + 1}`}
-                    className="w-full h-auto"
-                    draggable={false}
-                    onMouseDown={handleMouseDown}
-                  />
+                <div key={index} className="relative mb-4">
+                  {/* Image container with transform */}
+                  <div
+                    className="relative"
+                    style={{
+                      transform: `scale(${zoomLevel}) translate(${imagePosition.x / zoomLevel}px, ${imagePosition.y / zoomLevel}px)`,
+                      transformOrigin: "center center",
+                      transition: isDragging ? "none" : "transform 0.1s ease-out",
+                    }}
+                  >
+                    <img
+                      src={imageUrl}
+                      alt={`Menu Page ${index + 1}`}
+                      className="w-full h-auto"
+                      draggable={false}
+                      onMouseDown={handleMouseDown}
+                      loading="eager"
+                      decoding="async"
+                    />
+                  </div>
 
-                  {/* Smart Overlay Cards - Professional bounding box system */}
-                  {pageHotspots.map((hotspot) => {
-                    const item = menuItems.find((i) => i.id === hotspot.menu_item_id);
-                    if (!item) return null;
+                  {/* Hotspot overlays - positioned relative to image, accounting for transform */}
+                  <div
+                    className="absolute inset-0"
+                    style={{
+                      transform: `scale(${zoomLevel}) translate(${imagePosition.x / zoomLevel}px, ${imagePosition.y / zoomLevel}px)`,
+                      transformOrigin: "center center",
+                      pointerEvents: zoomLevel > 1 ? "none" : "auto",
+                    }}
+                  >
+                    {pageHotspots.map((hotspot) => {
+                      const item = menuItems.find((i) => i.id === hotspot.menu_item_id);
+                      if (!item) return null;
 
-                    const cartItem = cart.find((c) => c.id === item.id);
-                    const quantity = cartItem?.quantity || 0;
+                      const cartItem = cart.find((c) => c.id === item.id);
+                      const quantity = cartItem?.quantity || 0;
 
-                    // Prefer bounding box coordinates if available
-                    const hasBoundingBox =
-                      hotspot.x1_percent !== undefined &&
-                      hotspot.y1_percent !== undefined &&
-                      hotspot.x2_percent !== undefined &&
-                      hotspot.y2_percent !== undefined &&
-                      hotspot.x2_percent - hotspot.x1_percent < 60; // Sanity check
+                      // Prefer bounding box coordinates if available
+                      const hasBoundingBox =
+                        hotspot.x1_percent !== undefined &&
+                        hotspot.y1_percent !== undefined &&
+                        hotspot.x2_percent !== undefined &&
+                        hotspot.y2_percent !== undefined &&
+                        hotspot.x2_percent - hotspot.x1_percent < 60; // Sanity check
 
-                    if (hasBoundingBox) {
-                      // Use precise bounding box coordinates
-                      return (
-                        <div
-                          key={hotspot.id}
-                          className="absolute group transition-all duration-200 cursor-pointer"
-                          style={{
-                            left: `${hotspot.x1_percent}%`,
-                            top: `${hotspot.y1_percent}%`,
-                            width: `${hotspot.x2_percent! - hotspot.x1_percent!}%`,
-                            height: `${hotspot.y2_percent! - hotspot.y1_percent!}%`,
-                          }}
-                          onClick={() => handleHotspotClick(hotspot)}
-                        >
-                          {/* Overlay card - extremely subtle, only visible on hover */}
-                          <div className="absolute inset-0 bg-gradient-to-r from-primary/5 via-transparent to-primary/5 opacity-0 group-hover:opacity-100 transition-opacity duration-200 rounded-md border border-primary/0 group-hover:border-primary/30" />
-
-                          {/* Always-visible cart controls overlayed on PDF */}
+                      if (hasBoundingBox) {
+                        // Use precise bounding box coordinates
+                        return (
                           <div
-                            className="absolute right-2 top-2 z-20 opacity-95 hover:opacity-100 transition-opacity"
-                            onClick={(e) => e.stopPropagation()}
+                            key={hotspot.id}
+                            className="absolute group transition-all duration-200 cursor-pointer"
+                            style={{
+                              left: `${hotspot.x1_percent}%`,
+                              top: `${hotspot.y1_percent}%`,
+                              width: `${hotspot.x2_percent! - hotspot.x1_percent!}%`,
+                              height: `${hotspot.y2_percent! - hotspot.y1_percent!}%`,
+                            }}
+                            onClick={() => handleHotspotClick(hotspot)}
                           >
-                            {quantity === 0 ? (
-                              <Button
-                                size="sm"
-                                onClick={() => {
-                                  onAddToCart(item);
-                                  // Visual feedback
-                                  const button = e.currentTarget;
-                                  button.classList.add("animate-pulse");
-                                  setTimeout(() => button.classList.remove("animate-pulse"), 300);
-                                }}
-                                className="bg-primary hover:bg-primary/90 text-white shadow-2xl text-xs px-3 py-1.5 h-8 font-semibold"
-                              >
-                                <Plus className="h-4 w-4 mr-1" />
-                                Add to Cart
-                              </Button>
-                            ) : (
-                              <div className="bg-white rounded-lg shadow-2xl border-2 border-primary p-1.5 flex items-center gap-2 backdrop-blur-sm">
+                            {/* Always-visible cart controls overlayed on PDF - positioned using GPT Vision button coordinates */}
+                            <div
+                              className="absolute z-20"
+                              style={{
+                                left:
+                                  hotspot.button_x_percent !== undefined
+                                    ? `${hotspot.button_x_percent}%`
+                                    : `${hotspot.x2_percent! - 8}%`,
+                                top:
+                                  hotspot.button_y_percent !== undefined
+                                    ? `${hotspot.button_y_percent}%`
+                                    : `${(hotspot.y1_percent! + hotspot.y2_percent!) / 2}%`,
+                                transform: "translate(-50%, -50%)",
+                              }}
+                              onClick={(e) => e.stopPropagation()}
+                            >
+                              {quantity === 0 ? (
                                 <Button
+                                  size="sm"
                                   onClick={(e) => {
                                     e.stopPropagation();
-                                    onUpdateQuantity(item.id, quantity - 1);
+                                    handleAddToCart(item);
+                                    // Visual feedback
+                                    const button = e.currentTarget;
+                                    button.classList.add("animate-pulse");
+                                    setTimeout(() => button.classList.remove("animate-pulse"), 300);
                                   }}
-                                  variant="outline"
-                                  size="sm"
-                                  className="h-7 w-7 p-0 border-primary/30 hover:bg-primary/10"
+                                  className="bg-primary hover:bg-primary/90 text-white shadow-2xl text-xs px-3 py-1.5 h-8 font-semibold"
                                 >
-                                  <Minus className="h-3.5 w-3.5 text-primary" />
+                                  <Plus className="h-4 w-4 mr-1" />
+                                  Add to Cart
                                 </Button>
-                                <span className="text-sm font-bold text-primary min-w-[24px] text-center">
-                                  {quantity}
-                                </span>
-                                <Button
-                                  onClick={(e) => {
-                                    e.stopPropagation();
-                                    onUpdateQuantity(item.id, quantity + 1);
-                                  }}
-                                  size="sm"
-                                  className="h-7 w-7 p-0 bg-primary hover:bg-primary/90 text-white"
-                                >
-                                  <Plus className="h-3.5 w-3.5" />
-                                </Button>
-                              </div>
-                            )}
+                              ) : (
+                                <div className="bg-white rounded-lg shadow-2xl border-2 border-primary p-1.5 flex items-center gap-2">
+                                  <Button
+                                    onClick={(e) => {
+                                      e.stopPropagation();
+                                      handleUpdateQuantity(item.id, quantity - 1);
+                                    }}
+                                    variant="outline"
+                                    size="sm"
+                                    className="h-7 w-7 p-0 border-primary/30 hover:bg-primary/10"
+                                  >
+                                    <Minus className="h-3.5 w-3.5 text-primary" />
+                                  </Button>
+                                  <span className="text-sm font-bold text-primary min-w-[24px] text-center">
+                                    {quantity}
+                                  </span>
+                                  <Button
+                                    onClick={(e) => {
+                                      e.stopPropagation();
+                                      handleUpdateQuantity(item.id, quantity + 1);
+                                    }}
+                                    size="sm"
+                                    className="h-7 w-7 p-0 bg-primary hover:bg-primary/90 text-white"
+                                  >
+                                    <Plus className="h-3.5 w-3.5" />
+                                  </Button>
+                                </div>
+                              )}
+                            </div>
+
+                            {/* Item name overlay (optional - shows on hover) */}
+                            <div className="absolute left-2 bottom-2 bg-black/70 text-white px-2 py-1 rounded text-xs opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none">
+                              {item.name} - £{item.price.toFixed(2)}
+                            </div>
                           </div>
+                        );
+                      } else {
+                        // Fallback: Create smart overlay even with old format
+                        // Use estimated bounding box based on typical menu layouts
+                        const estimatedWidth = 85; // Most items span ~85% of width
+                        const estimatedHeight = 6; // Typical item height
+                        const estimatedX1 = Math.max(5, hotspot.x_percent - 40); // Start from left edge
+                        const estimatedY1 = Math.max(0, hotspot.y_percent - 3);
 
-                          {/* Item name overlay (optional - shows on hover) */}
-                          <div className="absolute left-2 bottom-2 bg-black/70 text-white px-2 py-1 rounded text-xs opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none">
-                            {item.name} - £{item.price.toFixed(2)}
-                          </div>
-                        </div>
-                      );
-                    } else {
-                      // Fallback: Create smart overlay even with old format
-                      // Use estimated bounding box based on typical menu layouts
-                      const estimatedWidth = 85; // Most items span ~85% of width
-                      const estimatedHeight = 6; // Typical item height
-                      const estimatedX1 = Math.max(5, hotspot.x_percent - 40); // Start from left edge
-                      const estimatedY1 = Math.max(0, hotspot.y_percent - 3);
-
-                      return (
-                        <div
-                          key={hotspot.id}
-                          className="absolute group transition-all duration-200 cursor-pointer"
-                          style={{
-                            left: `${estimatedX1}%`,
-                            top: `${estimatedY1}%`,
-                            width: `${estimatedWidth}%`,
-                            height: `${estimatedHeight}%`,
-                          }}
-                          onClick={() => handleHotspotClick(hotspot)}
-                        >
-                          {/* Overlay card - extremely subtle, only visible on hover */}
-                          <div className="absolute inset-0 bg-gradient-to-r from-primary/5 via-transparent to-primary/5 opacity-0 group-hover:opacity-100 transition-opacity duration-200 rounded-md border border-primary/0 group-hover:border-primary/30" />
-
+                        return (
                           <div
-                            className="absolute right-2 top-1/2 -translate-y-1/2 z-10"
-                            onClick={(e) => e.stopPropagation()}
+                            key={hotspot.id}
+                            className="absolute group transition-all duration-200 cursor-pointer"
+                            style={{
+                              left: `${estimatedX1}%`,
+                              top: `${estimatedY1}%`,
+                              width: `${estimatedWidth}%`,
+                              height: `${estimatedHeight}%`,
+                            }}
+                            onClick={() => handleHotspotClick(hotspot)}
                           >
-                            {quantity === 0 ? (
-                              <Button
-                                size="sm"
-                                onClick={() => onAddToCart(item)}
-                                className="bg-primary hover:bg-primary/90 text-white shadow-xl text-xs px-3 py-1.5 h-8 opacity-90 group-hover:opacity-100 transition-opacity"
-                              >
-                                <Plus className="h-4 w-4 mr-1" />
-                                Add
-                              </Button>
-                            ) : (
-                              <div className="bg-white rounded-lg shadow-xl border-2 border-primary p-1.5 flex items-center gap-2">
+                            {/* Always-visible cart controls overlayed on PDF - positioned using GPT Vision button coordinates */}
+                            <div
+                              className="absolute z-10"
+                              style={{
+                                left:
+                                  hotspot.button_x_percent !== undefined
+                                    ? `${hotspot.button_x_percent}%`
+                                    : `${estimatedX1 + estimatedWidth - 8}%`,
+                                top:
+                                  hotspot.button_y_percent !== undefined
+                                    ? `${hotspot.button_y_percent}%`
+                                    : `${estimatedY1 + estimatedHeight / 2}%`,
+                                transform: "translate(-50%, -50%)",
+                              }}
+                              onClick={(e) => e.stopPropagation()}
+                            >
+                              {quantity === 0 ? (
                                 <Button
+                                  size="sm"
                                   onClick={(e) => {
                                     e.stopPropagation();
-                                    onUpdateQuantity(item.id, quantity - 1);
+                                    handleAddToCart(item);
                                   }}
-                                  variant="outline"
-                                  size="sm"
-                                  className="h-7 w-7 p-0 border-primary/30 hover:bg-primary/10"
+                                  className="bg-primary hover:bg-primary/90 text-white shadow-xl text-xs px-3 py-1.5 h-8"
                                 >
-                                  <Minus className="h-3.5 w-3.5 text-primary" />
+                                  <Plus className="h-4 w-4 mr-1" />
+                                  Add
                                 </Button>
-                                <span className="text-sm font-bold text-primary min-w-[20px] text-center">
-                                  {quantity}
-                                </span>
-                                <Button
-                                  onClick={(e) => {
-                                    e.stopPropagation();
-                                    onUpdateQuantity(item.id, quantity + 1);
-                                  }}
-                                  size="sm"
-                                  className="h-7 w-7 p-0 bg-primary hover:bg-primary/90"
-                                >
-                                  <Plus className="h-3.5 w-3.5" />
-                                </Button>
-                              </div>
-                            )}
+                              ) : (
+                                <div className="bg-white rounded-lg shadow-xl border-2 border-primary p-1.5 flex items-center gap-2">
+                                  <Button
+                                    onClick={(e) => {
+                                      e.stopPropagation();
+                                      handleUpdateQuantity(item.id, quantity - 1);
+                                    }}
+                                    variant="outline"
+                                    size="sm"
+                                    className="h-7 w-7 p-0 border-primary/30 hover:bg-primary/10"
+                                  >
+                                    <Minus className="h-3.5 w-3.5 text-primary" />
+                                  </Button>
+                                  <span className="text-sm font-bold text-primary min-w-[20px] text-center">
+                                    {quantity}
+                                  </span>
+                                  <Button
+                                    onClick={(e) => {
+                                      e.stopPropagation();
+                                      handleUpdateQuantity(item.id, quantity + 1);
+                                    }}
+                                    size="sm"
+                                    className="h-7 w-7 p-0 bg-primary hover:bg-primary/90"
+                                  >
+                                    <Plus className="h-3.5 w-3.5" />
+                                  </Button>
+                                </div>
+                              )}
+                            </div>
                           </div>
-                        </div>
-                      );
-                    }
-                  })}
+                        );
+                      }
+                    })}
+                  </div>
                 </div>
               );
             })}

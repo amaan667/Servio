@@ -99,38 +99,44 @@ export async function extractMenuItemPositions(imageUrl: string) {
   const openai = getOpenAI();
 
   const prompt = `
-You are analyzing a restaurant menu to place "Add to Cart" buttons.
+You are analyzing a restaurant menu PDF to place "Add to Cart" buttons directly on each menu item.
 
-TASK: For EACH menu item, identify where to place a small button (not a full overlay).
+TASK: For EACH menu item with a price, find where the item's name ends and price begins, then place a button hotspot there.
 
-IMPORTANT LAYOUT DETECTION:
-- If menu has 2 columns: left items span x: 0-50%, right items span x: 50-100%
-- If menu has 1 column: items span x: 0-100%
-- DO NOT create boxes that span more than one column (max width 45%)
+COORDINATE SYSTEM:
+- All coordinates are percentages: 0-100%
+- (0,0) = top-left of page, (100,100) = bottom-right
+- Button should be placed at the RIGHT edge of each item row, vertically centered on the item
 
-For each menu item with a price, return:
+For each menu item, return:
 {
-  "name": "Item Name",
-  "x1": 5,    // Left edge of item in its column
-  "y1": 20,   // Top of item text
-  "x2": 45,   // Right edge (price end) in its column  
-  "y2": 25,   // Bottom of item
+  "name": "Exact Item Name as shown in menu",
+  "name_normalized": "exact item name lowercase",  // Normalized for matching
+  "x1": 8.5,   // Left edge where item name starts
+  "y1": 22.3,  // Top of item (where name begins)
+  "x2": 92.5,  // Right edge where price ends (button goes here)
+  "y2": 26.8,  // Bottom of item (end of price)
+  "button_x": 92.5,  // X position for button (right edge, near price)
+  "button_y": 24.5,  // Y position for button (vertical center of item)
+  "price": 12.50,  // Price amount to help with matching
   "confidence": 0.95
 }
 
-EXAMPLES for 2-column menu:
-Left column: "Labneh £8.00" → x1: 5, x2: 48, width: 43%
-Right column: "Burger £12.00" → x1: 52, x2: 95, width: 43%
+LAYOUT RULES:
+- If 2 columns: Left column items x1: 5-47%, Right column items x1: 52-95%
+- If 1 column: Items span x1: 5-10%, x2: 90-95%
+- Button should be positioned at the RIGHT edge of the item (near the price)
+- Button Y position should be the vertical MIDDLE of the item (average of y1 and y2)
 
-RULES:
-1. EACH item = ONE box (not multiple items in one box!)
-2. Width should be ~40-45% max (one column width)
-3. Height should be ~3-8% (just that item's text height)
-4. If box width > 50%, you're doing it WRONG
-5. Include items from ALL columns
-6. Skip section headers (STARTERS, MAINS, etc.)
+CRITICAL:
+1. Find EACH item individually - don't combine multiple items
+2. Button position (button_x, button_y) should be where you'd naturally click to add that item
+3. If price is on same line as name: button_x = x2 (right edge), button_y = (y1+y2)/2
+4. If price is below name: button_x = right side, button_y = center of price line
+5. Skip section headers, decorative text, descriptions without prices
+6. Only items WITH prices get buttons
 
-Return ONLY the JSON array, no explanation.
+Return ONLY a JSON array, no markdown, no explanation.
 `;
 
   const response = await openai.chat.completions.create({
@@ -192,7 +198,7 @@ Return ONLY the JSON array, no explanation.
       }
     });
 
-    // Convert and validate bounding box coordinates
+    // Convert and validate bounding box coordinates with button positions
     return positions.map((pos: any) => {
       // Clamp values to valid range (0-100)
       const clamp = (val: number) => Math.max(0, Math.min(100, val));
@@ -206,14 +212,22 @@ Return ONLY the JSON array, no explanation.
       const finalX2 = Math.max(x2, x1 + 1);
       const finalY2 = Math.max(y2, y1 + 1);
 
+      // Button position: Use provided button_x/button_y, or calculate from bounding box
+      const buttonX = clamp(pos.button_x !== undefined ? pos.button_x : finalX2 - 2); // Right edge, slightly left
+      const buttonY = clamp(pos.button_y !== undefined ? pos.button_y : (y1 + finalY2) / 2); // Vertical center
+
       return {
         name: pos.name || "Unknown Item",
-        x: clamp((x1 + finalX2) / 2),
-        y: clamp((y1 + finalY2) / 2),
+        name_normalized: (pos.name || "unknown item").toLowerCase().trim(),
+        price: pos.price || null, // Price for better matching
+        x: clamp((x1 + finalX2) / 2), // Center for legacy support
+        y: clamp((y1 + finalY2) / 2), // Center for legacy support
         x1,
         y1,
         x2: finalX2,
         y2: finalY2,
+        button_x: buttonX, // Specific button position
+        button_y: buttonY, // Specific button position
         confidence: pos.confidence || 0.8,
       };
     });

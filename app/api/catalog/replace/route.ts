@@ -216,10 +216,20 @@ export async function POST(req: NextRequest) {
           (pdfItem) => calculateSimilarity(urlItem.name, pdfItem.name) > 0.7
         );
 
-        // Find matching position
-        const posMatch = pdfPositions.find(
-          (pos) => calculateSimilarity(urlItem.name, pos.name) > 0.7
-        );
+        // Find matching position - try multiple strategies
+        const normalizedItemName = urlItem.name.toLowerCase().trim();
+        const posMatch = pdfPositions.find((pos) => {
+          // Strategy 1: Exact normalized name match
+          if ((pos as any).name_normalized === normalizedItemName) return true;
+          // Strategy 2: Calculate similarity with name
+          if (calculateSimilarity(urlItem.name, pos.name) > 0.7) return true;
+          // Strategy 3: Price match + name similarity (more flexible)
+          const posPrice = (pos as any).price;
+          if (posPrice && Math.abs(urlItem.price - posPrice) < 0.01) {
+            return calculateSimilarity(urlItem.name, pos.name) > 0.6;
+          }
+          return false;
+        });
 
         // Combine data: URL provides images/descriptions, PDF provides fallbacks
         menuItems.push({
@@ -250,6 +260,9 @@ export async function POST(req: NextRequest) {
             y1_percent: posMatch.y1,
             x2_percent: posMatch.x2,
             y2_percent: posMatch.y2,
+            // Button position from GPT Vision
+            button_x_percent: (posMatch as any).button_x,
+            button_y_percent: (posMatch as any).button_y,
             is_active: true,
             created_at: new Date().toISOString(),
           });
@@ -263,9 +276,19 @@ export async function POST(req: NextRequest) {
         if (!combinedItems.has(pdfItem.name.toLowerCase())) {
           const itemId = uuidv4();
 
-          const posMatch = pdfPositions.find(
-            (pos) => calculateSimilarity(pdfItem.name, pos.name) > 0.7
-          );
+          const normalizedItemName = pdfItem.name.toLowerCase().trim();
+          const posMatch = pdfPositions.find((pos) => {
+            // Strategy 1: Exact normalized name match
+            if ((pos as any).name_normalized === normalizedItemName) return true;
+            // Strategy 2: Calculate similarity with name
+            if (calculateSimilarity(pdfItem.name, pos.name) > 0.7) return true;
+            // Strategy 3: Price match + name similarity (more flexible)
+            const posPrice = (pos as any).price;
+            if (posPrice && Math.abs(pdfItem.price - posPrice) < 0.01) {
+              return calculateSimilarity(pdfItem.name, pos.name) > 0.6;
+            }
+            return false;
+          });
 
           menuItems.push({
             id: itemId,
@@ -295,6 +318,9 @@ export async function POST(req: NextRequest) {
               y1_percent: posMatch.y1,
               x2_percent: posMatch.x2,
               y2_percent: posMatch.y2,
+              // Button position from GPT Vision
+              button_x_percent: (posMatch as any).button_x,
+              button_y_percent: (posMatch as any).button_y,
               created_at: new Date().toISOString(),
             });
           }
@@ -305,7 +331,19 @@ export async function POST(req: NextRequest) {
       logger.info("[MENU IMPORT] Using URL data with PDF positions...");
       for (const item of urlItems) {
         const itemId = uuidv4();
-        const posMatch = pdfPositions.find((pos) => calculateSimilarity(item.name, pos.name) > 0.7);
+        const normalizedItemName = item.name.toLowerCase().trim();
+        const posMatch = pdfPositions.find((pos) => {
+          // Strategy 1: Exact normalized name match
+          if ((pos as any).name_normalized === normalizedItemName) return true;
+          // Strategy 2: Calculate similarity with name
+          if (calculateSimilarity(item.name, pos.name) > 0.7) return true;
+          // Strategy 3: Price match + name similarity (more flexible)
+          const posPrice = (pos as any).price;
+          if (posPrice && Math.abs(item.price - posPrice) < 0.01) {
+            return calculateSimilarity(item.name, pos.name) > 0.6;
+          }
+          return false;
+        });
 
         menuItems.push({
           id: itemId,
@@ -335,6 +373,9 @@ export async function POST(req: NextRequest) {
             y1_percent: posMatch.y1,
             x2_percent: posMatch.x2,
             y2_percent: posMatch.y2,
+            // Button position from GPT Vision
+            button_x_percent: (posMatch as any).button_x,
+            button_y_percent: (posMatch as any).button_y,
             is_active: true,
             created_at: new Date().toISOString(),
           });
@@ -345,7 +386,19 @@ export async function POST(req: NextRequest) {
       logger.info("[MENU IMPORT] Using PDF data only...");
       for (const item of pdfExtractedItems) {
         const itemId = uuidv4();
-        const posMatch = pdfPositions.find((pos) => calculateSimilarity(item.name, pos.name) > 0.7);
+        const normalizedItemName = item.name.toLowerCase().trim();
+        const posMatch = pdfPositions.find((pos) => {
+          // Strategy 1: Exact normalized name match
+          if ((pos as any).name_normalized === normalizedItemName) return true;
+          // Strategy 2: Calculate similarity with name
+          if (calculateSimilarity(item.name, pos.name) > 0.7) return true;
+          // Strategy 3: Price match + name similarity (more flexible)
+          const posPrice = (pos as any).price;
+          if (posPrice && Math.abs(item.price - posPrice) < 0.01) {
+            return calculateSimilarity(item.name, pos.name) > 0.6;
+          }
+          return false;
+        });
 
         menuItems.push({
           id: itemId,
@@ -375,6 +428,9 @@ export async function POST(req: NextRequest) {
             y1_percent: posMatch.y1,
             x2_percent: posMatch.x2,
             y2_percent: posMatch.y2,
+            // Button position from GPT Vision
+            button_x_percent: (posMatch as any).button_x,
+            button_y_percent: (posMatch as any).button_y,
             is_active: true,
             created_at: new Date().toISOString(),
           });
