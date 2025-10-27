@@ -163,7 +163,7 @@ async function scrapeWithPlaywright(url: string, _waitForNetworkIdle: boolean = 
         .forEach((el) => el.remove());
       const mainContent =
         clone.querySelector("main, article, [role='main'], .content, .main-content") || clone;
-      return mainContent.innerText || clone.innerText;
+      return (mainContent as HTMLElement).innerText || (clone as HTMLElement).innerText;
     });
 
     // Extract images
