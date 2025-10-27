@@ -557,6 +557,18 @@ export default function InvitationBasedStaffManagement({
           <h2 className="text-2xl font-bold text-gray-900">Staff Management</h2>
           <p className="text-gray-600">Invite and manage your team members and their shifts</p>
         </div>
+        <Button
+          onClick={() => {
+            setSelectedMemberForInvite(null);
+            setInviteEmail("");
+            setError(null);
+            setInviteDialogOpen(true);
+          }}
+          className="bg-purple-600 hover:bg-purple-700"
+        >
+          <Plus className="h-4 w-4 mr-2" />
+          Invite Staff Member
+        </Button>
       </div>
 
       {/* Stats Cards */}

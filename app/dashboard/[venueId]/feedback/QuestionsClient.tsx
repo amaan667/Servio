@@ -299,6 +299,7 @@ export default function QuestionsClient({
       const response = await fetch("/api/feedback/questions", {
         method: "PATCH",
         headers: { "Content-Type": "application/json" },
+        credentials: "include",
         body: JSON.stringify(payload),
       });
 
@@ -339,6 +340,7 @@ export default function QuestionsClient({
       const response = await fetch("/api/feedback/questions", {
         method: "PATCH",
         headers: { "Content-Type": "application/json" },
+        credentials: "include",
         body: JSON.stringify({ id, venue_id: venueId, is_active: !isActive }),
       });
 
@@ -367,6 +369,7 @@ export default function QuestionsClient({
       const response = await fetch("/api/feedback/questions", {
         method: "DELETE",
         headers: { "Content-Type": "application/json" },
+        credentials: "include",
         body: JSON.stringify({ id, venue_id: venueId }),
       });
 
@@ -417,6 +420,7 @@ export default function QuestionsClient({
       const response = await fetch("/api/feedback/questions", {
         method: "PATCH",
         headers: { "Content-Type": "application/json" },
+        credentials: "include",
         body: JSON.stringify({
           id: currentQuestion.id,
           venue_id: venueId,
