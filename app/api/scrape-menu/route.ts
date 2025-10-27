@@ -51,41 +51,83 @@ async function getBrowser() {
 }
 
 /**
- * Quick detection: Is this a JS-heavy site?
- * Fetches HTML and checks for common JS framework indicators
+ * Detect site type and determine scraping strategy
  */
-async function detectJSHeavySite(url: string): Promise<boolean> {
+async function detectSiteType(url: string): Promise<{
+  type: "static" | "spa" | "ssr" | "lazy" | "unknown";
+  needsJS: boolean;
+  needsScroll: boolean;
+}> {
   try {
     const response = await fetch(url, {
       headers: {
         "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36",
       },
-      signal: AbortSignal.timeout(5000), // 5 second timeout
+      signal: AbortSignal.timeout(5000),
     });
 
     const html = await response.text();
     const lowerHtml = html.toLowerCase();
+    const htmlLength = html.length;
 
-    // Check for JS framework indicators
-    const indicators = [
+    // Check for static content (server-rendered with menu already in HTML)
+    const hasMenuContent = /menu|price|£|\$\d+\.\d{2}/i.test(html);
+    const hasPrices = /\£|\$|€|\d+\.\d{2}/.test(html);
+
+    // SPA indicators (needs JS rendering)
+    const spaIndicators = [
       lowerHtml.includes("loading..."),
-      lowerHtml.includes("__next_data__"),
-      lowerHtml.includes("__nuxt"),
-      lowerHtml.includes("react"),
-      lowerHtml.includes("vue"),
-      lowerHtml.includes("angular"),
-      html.length < 5000, // Very minimal HTML
       lowerHtml.includes("spa-root"),
       lowerHtml.includes("app-root"),
+      lowerHtml.includes("vue"),
+      lowerHtml.includes("angular"),
+      htmlLength < 5000 && !hasMenuContent,
     ];
 
-    const jsIndicatorCount = indicators.filter(Boolean).length;
-    const isJSHeavy = jsIndicatorCount >= 2;
+    // SSR indicators (Next.js, Nuxt, etc. - may have embedded data)
+    const ssrIndicators = [
+      lowerHtml.includes("__next_data__"),
+      lowerHtml.includes("__nuxt"),
+      lowerHtml.includes("next.js"),
+      html.includes("<!-- SSR -->"),
+    ];
 
-    return isJSHeavy;
+    // Lazy loading indicators
+    const lazyIndicators = [
+      lowerHtml.includes("lazy"),
+      lowerHtml.includes("infinite-scroll"),
+      lowerHtml.includes("load-more"),
+      html.includes("data-lazy"),
+    ];
+
+    const isSPA = spaIndicators.filter(Boolean).length >= 2;
+    const isSSR = ssrIndicators.filter(Boolean).length >= 1;
+    const hasLazy = lazyIndicators.filter(Boolean).length >= 1;
+
+    // Determine strategy
+    if (hasMenuContent && hasPrices && htmlLength > 10000) {
+      // Static HTML with menu already present
+      return { type: "static", needsJS: false, needsScroll: false };
+    } else if (isSSR && hasMenuContent) {
+      // SSR with content available
+      return { type: "ssr", needsJS: true, needsScroll: false };
+    } else if (hasLazy || !hasMenuContent) {
+      // Needs scrolling to load content
+      return { type: "lazy", needsJS: true, needsScroll: true };
+    } else if (isSPA) {
+      // Full SPA, needs JS rendering
+      return { type: "spa", needsJS: true, needsScroll: true };
+    }
+
+    // Default: assume needs JS but no scroll if content seems present
+    return {
+      type: "unknown",
+      needsJS: !hasMenuContent,
+      needsScroll: !hasMenuContent || hasLazy,
+    };
   } catch {
-    // If fetch fails, assume it needs JS rendering
-    return true;
+    // If fetch fails, assume it needs full JS rendering
+    return { type: "unknown", needsJS: true, needsScroll: true };
   }
 }
 
@@ -93,7 +135,10 @@ async function detectJSHeavySite(url: string): Promise<boolean> {
  * Smart scrape with Playwright
  * Uses the right strategy based on site type
  */
-async function scrapeWithPlaywright(url: string, _waitForNetworkIdle: boolean = false) {
+async function scrapeWithPlaywright(
+  url: string,
+  siteType: { type: string; needsJS: boolean; needsScroll: boolean }
+) {
   let browser;
   let context;
   let page;
@@ -218,24 +263,27 @@ export async function POST(req: NextRequest) {
 
     logger.info(`[MENU SCRAPE] Starting scrape`, { url, requestId });
 
-    // Smart detection: Determine site type FIRST (saves 20s for JS sites!)
-    const isJSHeavy = await detectJSHeavySite(url);
+    // Detect site type for optimal strategy
+    const siteType = await detectSiteType(url);
+    logger.info(`[MENU SCRAPE] Detected site type: ${siteType.type}`, {
+      needsJS: siteType.needsJS,
+      needsScroll: siteType.needsScroll,
+    });
 
-    if (isJSHeavy) {
-      /* Empty */
-    } else {
-      // Intentionally empty
-    }
-
-    // Scrape with optimized strategy
-    // For sites like Cafe Nur, content is immediately visible - no need for networkidle
-    const { text: finalText, images: imageUrls } = await scrapeWithPlaywright(url, false);
+    // Scrape with strategy optimized for site type
+    const { text: finalText, images: imageUrls } = await scrapeWithPlaywright(url, siteType);
 
     if (!finalText || finalText.length < 50) {
       const errorResponse = {
         ok: false,
         error:
-          "Unable to extract meaningful content from the URL. The page may be empty, protected, or require authentication.",
+          "Unable to extract meaningful content from the URL. The page may be empty, protected, require authentication, or use a format we don't support yet.",
+        suggestions: [
+          "Try checking if the menu is behind a login",
+          "Verify the URL is publicly accessible",
+          "Check if the menu is in a PDF or image format",
+          "Ensure the page loads menu content on initial render",
+        ],
       };
       return NextResponse.json(errorResponse, { status: 400 });
     }
