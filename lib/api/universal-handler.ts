@@ -204,7 +204,7 @@ export function createUniversalHandler<TBody = unknown, TResponse = unknown>(
       if (options.onError) {
         const customResponse = options.onError(error, req);
         if (customResponse) {
-          return customResponse;
+          return customResponse as NextResponse<ApiResponse<TResponse>>;
         }
       }
 
