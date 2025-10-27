@@ -84,7 +84,6 @@ export default function QuestionsClient({
 
   const fetchQuestions = useCallback(async () => {
     if (!venueId) {
-      console.error("[Feedback Questions] venueId is missing");
       return;
     }
 
@@ -128,10 +127,12 @@ export default function QuestionsClient({
     }
   }, [venueId, toast]);
 
-  // Load questions on mount
+  // Load questions on mount - only when venueId is available
   useEffect(() => {
-    fetchQuestions();
-  }, [fetchQuestions]);
+    if (venueId) {
+      fetchQuestions();
+    }
+  }, [venueId, fetchQuestions]);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
