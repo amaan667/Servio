@@ -44,12 +44,6 @@ export default function GlobalNav() {
   );
   const [userRole, setUserRole] = useState<string | null>(getCachedData().userRole);
 
-  // Use initial auth state if session not loaded yet, otherwise use actual session
-  // This prevents the flash of unauthenticated state
-  // CRITICAL: If we detected auth cookies on mount, ALWAYS treat as authenticated until proven otherwise
-  const isAuthenticated = initiallyAuthenticated || (session?.user && !!session.access_token);
-  const isLoadingAuth = false; // Never show loading state - render immediately with best guess
-
   // Determine if we're on an authenticated route that supports dark mode
   const isAuthenticatedRoute =
     pathname?.startsWith("/dashboard") ||
@@ -58,9 +52,9 @@ export default function GlobalNav() {
     pathname?.startsWith("/sign-in") ||
     pathname?.startsWith("/sign-up");
 
-  // If we're on an authenticated route OR we detected auth on mount, suppress public-only actions
-  // to avoid the "Sign In" flash.
-  const shouldHidePublicActions = isAuthenticatedRoute || initiallyAuthenticated || isAuthenticated;
+  // Use session from auth context - already initialized from server
+  // This prevents flicker because the session is available immediately
+  const shouldHidePublicActions = isAuthenticatedRoute || isAuthenticated;
 
   // Use theme-aware colors for authenticated routes, light mode colors for public pages
   const navClasses = isAuthenticatedRoute
