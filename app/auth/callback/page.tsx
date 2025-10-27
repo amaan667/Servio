@@ -289,15 +289,43 @@ function CallbackContent() {
                 .limit(1);
 
               if (venueError || !venues || venues.length === 0) {
-                addDebugLog("[AUTH CALLBACK] No venue found or error, redirecting to home");
-                router.push("/");
+                addDebugLog("[AUTH CALLBACK] No venue found - checking if Google OAuth user");
+                // Check if this is a Google OAuth user (new sign-up)
+                const isOAuthUser = retryData.session.user.identities?.some(
+                  (identity: { provider?: string }) =>
+                    identity.provider === "google" || identity.provider === "oauth"
+                );
+
+                if (isOAuthUser) {
+                  addDebugLog("[AUTH CALLBACK] Google OAuth user - redirecting to plan selection");
+                  router.push("/sign-up");
+                } else {
+                  addDebugLog(
+                    "[AUTH CALLBACK] Existing user without venue - redirecting to complete profile"
+                  );
+                  router.push("/complete-profile");
+                }
                 return;
               }
 
               const primaryVenue = venues[0];
               if (!primaryVenue) {
-                addDebugLog("[AUTH CALLBACK] No primary venue, redirecting to home");
-                router.push("/");
+                addDebugLog("[AUTH CALLBACK] No primary venue - checking if Google OAuth user");
+                // Check if this is a Google OAuth user (new sign-up)
+                const isOAuthUser = retryData.session.user.identities?.some(
+                  (identity: { provider?: string }) =>
+                    identity.provider === "google" || identity.provider === "oauth"
+                );
+
+                if (isOAuthUser) {
+                  addDebugLog("[AUTH CALLBACK] Google OAuth user - redirecting to plan selection");
+                  router.push("/sign-up");
+                } else {
+                  addDebugLog(
+                    "[AUTH CALLBACK] Existing user without venue - redirecting to complete profile"
+                  );
+                  router.push("/complete-profile");
+                }
                 return;
               }
 
@@ -340,18 +368,46 @@ function CallbackContent() {
 
           if (venueError || !venues || venues.length === 0) {
             addDebugLog(
-              "[AUTH CALLBACK] No venue found - redirecting to plan selection for new user"
+              "[AUTH CALLBACK] No venue found - checking if Google OAuth user needs plan selection"
             );
-            router.push("/sign-up");
+            // Check if this is a Google OAuth user (new sign-up)
+            const isOAuthUser = data.session.user.identities?.some(
+              (identity: { provider?: string }) =>
+                identity.provider === "google" || identity.provider === "oauth"
+            );
+
+            if (isOAuthUser) {
+              addDebugLog("[AUTH CALLBACK] Google OAuth user - redirecting to plan selection");
+              router.push("/sign-up");
+            } else {
+              addDebugLog(
+                "[AUTH CALLBACK] Existing user without venue - redirecting to complete profile"
+              );
+              router.push("/complete-profile");
+            }
             return;
           }
 
           const primaryVenue = venues[0];
           if (!primaryVenue) {
             addDebugLog(
-              "[AUTH CALLBACK] No primary venue - redirecting to plan selection for new user"
+              "[AUTH CALLBACK] No primary venue - checking if Google OAuth user needs plan selection"
             );
-            router.push("/sign-up");
+            // Check if this is a Google OAuth user (new sign-up)
+            const isOAuthUser = data.session.user.identities?.some(
+              (identity: { provider?: string }) =>
+                identity.provider === "google" || identity.provider === "oauth"
+            );
+
+            if (isOAuthUser) {
+              addDebugLog("[AUTH CALLBACK] Google OAuth user - redirecting to plan selection");
+              router.push("/sign-up");
+            } else {
+              addDebugLog(
+                "[AUTH CALLBACK] Existing user without venue - redirecting to complete profile"
+              );
+              router.push("/complete-profile");
+            }
             return;
           }
 

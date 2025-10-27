@@ -72,7 +72,18 @@ export default function CompleteProfilePage() {
           return;
         }
 
-        // Only show form for Google OAuth users without venues
+        // For Google OAuth users without venues, check if they've selected a plan
+        // by checking if they have any subscription metadata
+        const hasSubscription =
+          user.user_metadata?.has_subscription || user.user_metadata?.stripe_customer_id;
+
+        if (!hasSubscription) {
+          // Redirect to plan selection first
+          router.replace("/sign-up");
+          return;
+        }
+
+        // Only show form for Google OAuth users without venues but with subscription
         setUser(user);
         setShowForm(true);
         setLoading(false);

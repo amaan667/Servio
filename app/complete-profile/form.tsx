@@ -103,17 +103,18 @@ export default function CompleteProfileForm({ user }: CompleteProfileFormProps) 
         }
       }
 
-      // Ensure we have a valid venue name
-      const userMeta = user as {
-        user_metadata?: Record<string, unknown>;
-        email?: string;
-        id?: string;
-      } | null;
-      const venueName =
-        formData.venueName.trim() ||
-        `${(userMeta?.user_metadata?.full_name as string) || userMeta?.email?.split("@")[0] || "My"}'s Business`;
+      // Ensure we have a valid venue name (don't autofill from user name)
+      const venueName = formData.venueName.trim();
+      if (!venueName) {
+        setError("Business name is required.");
+        setLoading(false);
+        return;
+      }
 
       // Generate venue ID based on user ID
+      const userMeta = user as {
+        id?: string;
+      } | null;
       const venueId = `venue-${(userMeta?.id || "").slice(0, 8)}`;
 
       const res = await fetch("/api/venues/upsert", {
@@ -260,8 +261,8 @@ export default function CompleteProfileForm({ user }: CompleteProfileFormProps) 
                   <div className="border-t pt-4 mt-4">
                     <h3 className="text-lg font-medium text-gray-900 mb-3">Set Up Password *</h3>
                     <p className="text-sm text-gray-900 mb-4">
-                      Set a password so you can also sign in with your email and password in the
-                      future.
+                      Create a password for your account so you can sign in with your email and
+                      password in the future.
                     </p>
                   </div>
 
