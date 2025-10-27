@@ -3,6 +3,7 @@
 import { usePathname } from "next/navigation";
 import GlobalBottomNav from "./GlobalBottomNav";
 import { supabaseBrowser as createClient } from "@/lib/supabase";
+import { getRealtimeChannelName } from "@/lib/realtime-device-id";
 import { useEffect, useState } from "react";
 
 export default function ConditionalBottomNav() {
@@ -42,8 +43,13 @@ export default function ConditionalBottomNav() {
 
     setVenueId(venueIdFromPath);
 
+    let isMounted = true;
+    let debounceTimeout: NodeJS.Timeout | null = null;
+
     // Load counts for the venue
     const loadCounts = async () => {
+      if (!isMounted) return;
+
       try {
         const supabase = createClient();
         const { data, error } = await supabase
@@ -53,6 +59,8 @@ export default function ConditionalBottomNav() {
             p_live_window_mins: 30,
           })
           .single();
+
+        if (!isMounted) return;
 
         if (!error && data) {
           setCounts({
@@ -66,12 +74,23 @@ export default function ConditionalBottomNav() {
       }
     };
 
+    // Debounced version of loadCounts
+    const debouncedLoadCounts = () => {
+      if (debounceTimeout) {
+        clearTimeout(debounceTimeout);
+      }
+      debounceTimeout = setTimeout(() => {
+        loadCounts();
+      }, 300);
+    };
+
     loadCounts();
 
-    // Set up real-time subscription for order updates
+    // Set up real-time subscription for order updates with unique channel name
     const supabase = createClient();
+    const channelName = getRealtimeChannelName("bottom-nav", venueIdFromPath);
     const channel = supabase
-      .channel(`bottom-nav-${venueIdFromPath}`)
+      .channel(channelName)
       .on(
         "postgres_changes",
         {
@@ -81,12 +100,17 @@ export default function ConditionalBottomNav() {
           filter: `venue_id=eq.${venueIdFromPath}`,
         },
         () => {
-          loadCounts();
+          if (!isMounted) return;
+          debouncedLoadCounts();
         }
       )
       .subscribe();
 
     return () => {
+      isMounted = false;
+      if (debounceTimeout) {
+        clearTimeout(debounceTimeout);
+      }
       supabase.removeChannel(channel);
     };
   }, [pathname]);

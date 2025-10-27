@@ -112,11 +112,29 @@ export function supabaseBrowser() {
       },
     } as any);
 
-    // Still override getSession to gracefully handle edge cases where refresh fails
+    // Handle session management for multiple devices
+    // Each device should maintain its own session independently
     const originalGetSession = browserClient.auth.getSession.bind(browserClient.auth);
     browserClient.auth.getSession = async () => {
       try {
-        return await originalGetSession();
+        const result = await originalGetSession();
+        // If session exists but is expired, try to refresh it automatically
+        if (result.data?.session && browserClient) {
+          const expiresAt = result.data.session.expires_at;
+          const now = Math.floor(Date.now() / 1000);
+          // If token expires in less than 60 seconds, refresh it proactively
+          if (expiresAt && expiresAt - now < 60) {
+            try {
+              const { data: refreshed } = await browserClient.auth.refreshSession();
+              if (refreshed?.session) {
+                return { data: { session: refreshed.session }, error: null };
+              }
+            } catch (_refreshError) {
+              // Refresh failed, return original session
+            }
+          }
+        }
+        return result;
       } catch (_err) {
         // Only catch truly invalid tokens (user signed out elsewhere, token revoked, etc)
         const errorMessage = _err instanceof Error ? _err.message : String(_err);
@@ -124,10 +142,8 @@ export function supabaseBrowser() {
           errorMessage.includes("refresh_token_not_found") ||
           errorMessage.includes("Invalid Refresh Token")
         ) {
-          // Clear local storage and return null - user needs to sign in again
-          if (typeof window !== "undefined") {
-            window.localStorage.removeItem(`sb-${getSupabaseUrl()}-auth-token`);
-          }
+          // Don't clear storage for multi-device - might be valid on another device
+          // Just return null session
           return { data: { session: null }, error: null };
         }
         throw _err; // Re-throw unexpected errors

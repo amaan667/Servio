@@ -102,7 +102,7 @@ export function OrderCard({
     try {
       setIsProcessing(true);
 
-      if (nextStatus === "SERVED" || nextStatus === "SERVING") {
+      if (nextStatus === "SERVED") {
         // Use server endpoint for serving to ensure related side-effects
         const response = await fetch("/api/orders/serve", {
           method: "POST",
@@ -190,7 +190,7 @@ export function OrderCard({
             </div>
             <Button
               size="sm"
-              onClick={() => handleStatusUpdate("SERVING")}
+              onClick={() => handleStatusUpdate("SERVED")}
               disabled={isProcessing}
               className="bg-blue-600 hover:bg-blue-700"
             >
@@ -202,15 +202,15 @@ export function OrderCard({
       );
     }
 
-    // If order is SERVING, check payment status before allowing completion
-    if (orderStatus === "SERVING") {
+    // If order is SERVED, check payment status before allowing completion
+    if (orderStatus === "SERVED") {
       // CASE 1: Already paid (online/stripe) - can mark completed immediately
       if (isPaid) {
         return (
           <div className="mt-4 pt-4 border-t border-slate-200">
             <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3">
               <div className="text-sm text-green-600">
-                <span className="font-medium">✓ Paid - Ready to Complete</span>
+                <span className="font-medium">✓ Paid & Served - Ready to Complete</span>
               </div>
               <Button
                 size="sm"
@@ -219,7 +219,7 @@ export function OrderCard({
                 className="bg-green-600 hover:bg-green-700"
               >
                 <CheckCircle className="h-4 w-4 mr-1" />
-                Mark Completed
+                Mark Complete
               </Button>
             </div>
           </div>

@@ -1,7 +1,8 @@
 "use client";
 
-import React, { useEffect, useState, useCallback, useMemo } from "react";
+import React, { useEffect, useState, useCallback, useMemo, useRef } from "react";
 import { supabaseBrowser as createClient } from "@/lib/supabase";
+import { getRealtimeChannelName } from "@/lib/realtime-device-id";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -224,40 +225,89 @@ export default function KDSClient({ venueId, initialTickets, initialStations }: 
     fetchTickets();
   }, [fetchStations, fetchTickets]);
 
-  // Set up realtime subscription
+  // Set up realtime subscription with token refresh handling
   useEffect(() => {
     const supabase = createClient();
+    let channel: any = null;
+    let authSubscription: any = null;
+    let isMounted = true;
 
-    const channel = supabase
-      .channel(`kds-${venueId}`)
-      .on(
-        "postgres_changes",
-        {
-          event: "*",
-          schema: "public",
-          table: "kds_tickets",
-          filter: `venue_id=eq.${venueId}`,
-        },
-        (payload: {
-          eventType: string;
-          new?: Record<string, unknown>;
-          old?: Record<string, unknown>;
-        }) => {
-          if (payload.eventType === "INSERT") {
-            fetchTickets();
-          } else if (payload.eventType === "UPDATE") {
-            setTickets((prev) =>
-              prev.map((t) => (t.id === payload.new?.id ? { ...t, ...payload.new } : t))
-            );
-          } else if (payload.eventType === "DELETE") {
-            setTickets((prev) => prev.filter((t) => t.id !== payload.old?.id));
+    const setupChannel = () => {
+      // Use unique channel name with device ID to prevent conflicts
+      const channelName = getRealtimeChannelName("kds", venueId);
+      channel = supabase
+        .channel(channelName)
+        .on(
+          "postgres_changes",
+          {
+            event: "*",
+            schema: "public",
+            table: "kds_tickets",
+            filter: `venue_id=eq.${venueId}`,
+          },
+          (payload: {
+            eventType: string;
+            new?: Record<string, unknown>;
+            old?: Record<string, unknown>;
+          }) => {
+            if (!isMounted) return;
+
+            if (payload.eventType === "INSERT") {
+              fetchTickets();
+            } else if (payload.eventType === "UPDATE") {
+              setTickets((prev) =>
+                prev.map((t) => (t.id === payload.new?.id ? { ...t, ...payload.new } : t))
+              );
+            } else if (payload.eventType === "DELETE") {
+              setTickets((prev) => prev.filter((t) => t.id !== payload.old?.id));
+            }
           }
+        )
+        .subscribe((status: string) => {
+          if (status === "CHANNEL_ERROR" || status === "TIMED_OUT") {
+            // Try to reconnect after token refresh
+            setTimeout(async () => {
+              try {
+                const {
+                  data: { session },
+                } = await supabase.auth.getSession();
+                if (session && channel) {
+                  channel.subscribe();
+                }
+              } catch (_error) {
+                // Session invalid
+              }
+            }, 3000);
+          }
+        });
+
+      return channel;
+    };
+
+    // Set up auth state change listener to reconnect on token refresh
+    const {
+      data: { subscription },
+    } = supabase.auth.onAuthStateChange((event) => {
+      if (event === "TOKEN_REFRESHED" && channel) {
+        if (channel.state !== "joined") {
+          channel.subscribe();
         }
-      )
-      .subscribe();
+      }
+    });
+    authSubscription = subscription;
+
+    channel = setupChannel();
 
     return () => {
-      supabase.removeChannel(channel);
+      isMounted = false;
+      if (channel) {
+        supabase.removeChannel(channel);
+        channel = null;
+      }
+      if (authSubscription) {
+        authSubscription.unsubscribe();
+        authSubscription = null;
+      }
     };
   }, [venueId, fetchTickets]);
 

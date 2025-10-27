@@ -63,11 +63,11 @@ export async function POST(req: Request) {
 
     logger.debug("[ORDERS SERVE] No auth required - customer-facing feature");
 
-    // Update the order status to SERVING
+    // Update the order status to SERVED
     const { error } = await admin
       .from("orders")
       .update({
-        order_status: "SERVING",
+        order_status: "SERVED",
         served_at: new Date().toISOString(),
         updated_at: new Date().toISOString(),
       })
@@ -80,7 +80,7 @@ export async function POST(req: Request) {
       });
       return NextResponse.json({ error: error.message }, { status: 500 });
     }
-    logger.debug("[ORDERS SERVE] Order updated to SERVING", { data: { orderId, extra: venueId } });
+    logger.debug("[ORDERS SERVE] Order updated to SERVED", { data: { orderId, extra: venueId } });
 
     // Also update table_sessions if present (best-effort)
     try {

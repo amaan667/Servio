@@ -5,6 +5,7 @@ import { useRouter, usePathname } from "next/navigation";
 import { Home, Clock, ShoppingBag, QrCode, LayoutDashboard } from "lucide-react";
 import { useIsMobile } from "@/hooks/use-mobile";
 import { supabaseBrowser as createClient } from "@/lib/supabase";
+import { getRealtimeChannelName } from "@/lib/realtime-device-id";
 import { logger } from "@/lib/logger";
 
 interface GlobalBottomNavProps {
@@ -98,10 +99,12 @@ export default function GlobalBottomNav({
     if (!venueId || !shouldShowNav) return;
 
     let isSubscribed = true;
+    let debounceTimeout: NodeJS.Timeout | null = null;
     const supabase = createClient();
 
+    const channelName = getRealtimeChannelName("live-orders-count", venueId);
     const channel = supabase
-      .channel(`live-orders-count-${venueId}`)
+      .channel(channelName)
       .on(
         "postgres_changes",
         {
@@ -114,7 +117,11 @@ export default function GlobalBottomNav({
           if (!isSubscribed || !isMountedRef.current) return;
 
           // Debounce the updates to prevent rapid state changes
-          setTimeout(async () => {
+          if (debounceTimeout) {
+            clearTimeout(debounceTimeout);
+          }
+
+          debounceTimeout = setTimeout(async () => {
             if (!isSubscribed || !isMountedRef.current) return;
 
             try {
@@ -141,13 +148,16 @@ export default function GlobalBottomNav({
             } catch {
               // Silent error handling
             }
-          }, 100);
+          }, 300);
         }
       )
       .subscribe();
 
     return () => {
       isSubscribed = false;
+      if (debounceTimeout) {
+        clearTimeout(debounceTimeout);
+      }
       supabase.removeChannel(channel);
     };
   }, [venueId, shouldShowNav]);
