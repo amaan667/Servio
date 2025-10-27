@@ -130,7 +130,7 @@ export default function GlobalNav() {
         } catch (_error) {
           // Error handled silently
         }
-      } else if (!initiallyAuthenticated) {
+      } else if (!isAuthenticated) {
         // Only clear if we're definitely not authenticated
         setPrimaryVenueId(null);
         setUserRole(null);
@@ -138,7 +138,7 @@ export default function GlobalNav() {
     };
 
     fetchUserData();
-  }, [session?.user?.id, supabase, initiallyAuthenticated]);
+  }, [session?.user?.id, supabase, isAuthenticated]);
 
   // Always render navigation immediately - don't wait for auth loading
   // The navigation will show appropriate content based on auth state
