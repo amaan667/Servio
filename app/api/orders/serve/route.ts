@@ -36,21 +36,35 @@ export async function POST(req: Request) {
       logger.error("[ORDERS SERVE] Order not found", { orderId });
       return NextResponse.json({ error: "Order not found" }, { status: 404 });
     }
+    const currentStatus = (orderData.order_status || "").toString().toUpperCase();
     logger.debug("[ORDERS SERVE] Loaded order", {
       data: {
         orderId: orderData.id,
         venueId: orderData.venue_id,
         order_status: orderData.order_status,
+        currentStatus,
       },
     });
 
-    // Only allow serving orders that are READY (case-insensitive)
-    const currentStatus = (orderData.order_status || "").toString().toUpperCase();
-    if (currentStatus !== "READY") {
-      logger.warn("[ORDERS SERVE] Refusing serve due to status", { orderId, currentStatus });
+    // Allow serving orders that are READY or SERVING
+    // READY = kitchen marked as ready (from KDS bump), SERVING = already being served (re-serve case)
+    // Note: Orders must be READY before serving (set by KDS when tickets are bumped)
+    const allowedStatuses = ["READY", "SERVING"];
+    if (!allowedStatuses.includes(currentStatus)) {
+      logger.warn("[ORDERS SERVE] Refusing serve due to status", {
+        orderId,
+        currentStatus,
+        orderData: {
+          id: orderData.id,
+          status: orderData.order_status,
+          created_at: orderData.created_at,
+        },
+      });
       return NextResponse.json(
         {
-          error: "Order must be READY to mark as SERVED",
+          error: `Order must be READY (from KDS) or SERVING to mark as served. Current status: ${currentStatus}. Please ensure KDS has marked tickets as ready/bumped.`,
+          currentStatus,
+          orderId,
         },
         { status: 400 }
       );
@@ -63,11 +77,12 @@ export async function POST(req: Request) {
 
     logger.debug("[ORDERS SERVE] No auth required - customer-facing feature");
 
-    // Update the order status to SERVED
+    // Update the order status to SERVING (which is allowed by DB constraint)
+    // SERVED may not be in the constraint, so use SERVING as intermediate status
     const { error } = await admin
       .from("orders")
       .update({
-        order_status: "SERVED",
+        order_status: "SERVING",
         served_at: new Date().toISOString(),
         updated_at: new Date().toISOString(),
       })
@@ -80,7 +95,7 @@ export async function POST(req: Request) {
       });
       return NextResponse.json({ error: error.message }, { status: 500 });
     }
-    logger.debug("[ORDERS SERVE] Order updated to SERVED", { data: { orderId, extra: venueId } });
+    logger.debug("[ORDERS SERVE] Order updated to SERVING", { data: { orderId, extra: venueId } });
 
     // Also update table_sessions if present (best-effort)
     try {

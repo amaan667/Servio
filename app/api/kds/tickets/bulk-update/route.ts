@@ -67,6 +67,19 @@ export async function PATCH(req: Request) {
 
     // If bumping tickets, update the main order status to READY (not SERVED - that comes later)
     if (status === "bumped" && orderId) {
+      // First check current order status
+      const { data: currentOrder } = await supabase
+        .from("orders")
+        .select("order_status")
+        .eq("id", orderId)
+        .single();
+
+      logger.debug("[KDS] Updating order status after bump", {
+        orderId,
+        currentStatus: currentOrder?.order_status,
+        updatingTo: "READY",
+      });
+
       const { error: orderUpdateError } = await supabase
         .from("orders")
         .update({
@@ -78,11 +91,13 @@ export async function PATCH(req: Request) {
       if (orderUpdateError) {
         logger.error("[KDS] Error updating order status after bump:", {
           error: orderUpdateError.message,
+          orderId,
+          currentStatus: currentOrder?.order_status,
         });
       } else {
         logger.info(
-          "[KDS] Order status updated to READY after bump - staff can now mark as SERVED",
-          { orderId }
+          "[KDS] Order status updated to READY after bump - staff can now mark as SERVING",
+          { orderId, previousStatus: currentOrder?.order_status }
         );
       }
 

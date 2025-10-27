@@ -79,17 +79,20 @@ export function useDashboardRealtime({
     isMountedRef.current = true;
 
     if (!todayWindow || !todayWindow.startUtcISO || !todayWindow.endUtcISO) {
+      console.log("[Dashboard Realtime] Waiting for todayWindow to be set...", { todayWindow });
       return;
     }
 
     const venueId_check =
       venue && typeof venue === "object" && "venue_id" in venue
         ? (venue as { venue_id?: string }).venue_id
-        : undefined;
+        : venueId;
     if (!venueId_check) {
+      console.log("[Dashboard Realtime] Waiting for venueId...", { venue, venueId });
       return;
     }
 
+    console.log("[Dashboard Realtime] Setting up real-time subscription for venue:", venueId_check);
     const supabase = supabaseBrowser();
 
     // Set up session refresh listener to reconnect when token refreshes
@@ -123,11 +126,19 @@ export function useDashboardRealtime({
           async (payload: RealtimePayload) => {
             if (!isMountedRef.current) return;
 
+            console.log(
+              "[Dashboard Realtime] Order change detected:",
+              payload.eventType,
+              payload.new?.id || payload.old?.id
+            );
+
             // For INSERT (new orders), refresh immediately to show new data
             // For UPDATE/DELETE, use debounced refresh
             if (payload.eventType === "INSERT") {
+              console.log("[Dashboard Realtime] New order inserted, refreshing immediately");
               immediateRefresh();
             } else {
+              console.log("[Dashboard Realtime] Order updated/deleted, using debounced refresh");
               debouncedRefresh();
             }
             debouncedLoadStats();
@@ -197,8 +208,10 @@ export function useDashboardRealtime({
           }
         )
         .subscribe((status: string) => {
+          console.log("[Dashboard Realtime] Channel subscription status:", status, { channelName });
           if (status === "SUBSCRIBED") {
             channelRef.current = channel;
+            console.log("[Dashboard Realtime] Successfully subscribed to channel:", channelName);
           } else if (status === "CHANNEL_ERROR" || status === "TIMED_OUT") {
             // Clear any existing reconnect timeout
             if (reconnectTimeoutRef.current) {
@@ -269,6 +282,7 @@ export function useDashboardRealtime({
     venue,
     todayWindow,
     debouncedRefresh,
+    immediateRefresh,
     debouncedLoadStats,
     updateRevenueIncrementally,
   ]);

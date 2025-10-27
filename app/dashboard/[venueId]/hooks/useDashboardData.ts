@@ -112,6 +112,7 @@ export function useDashboardData(
   );
 
   const refreshCounts = useCallback(async () => {
+    console.log("[Dashboard] refreshCounts called for venue:", venueId);
     try {
       setError(null);
       const supabase = createClient();
@@ -132,6 +133,8 @@ export function useDashboardData(
         setError("Failed to refresh dashboard data");
         return;
       }
+
+      console.log("[Dashboard] Counts fetched:", newCounts);
 
       // Fetch REAL table counts directly (no RPC, no caching)
       const { data: allTables } = await withSupabaseRetry(
@@ -173,6 +176,7 @@ export function useDashboardData(
           active_tables_count: activeTables.length, // Same as tables_set_up
         };
 
+        console.log("[Dashboard] Setting counts:", finalCounts);
         setCounts(finalCounts);
         // Cache the counts to prevent flicker (but allow refresh)
         if (typeof window !== "undefined") {
@@ -190,6 +194,7 @@ export function useDashboardData(
   // Force refresh on mount to get fresh data
   useEffect(() => {
     if (venueId) {
+      console.log("[Dashboard] Mount effect: refreshing counts for venue:", venueId);
       refreshCounts();
     }
      

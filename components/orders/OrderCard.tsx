@@ -202,8 +202,8 @@ export function OrderCard({
       );
     }
 
-    // If order is SERVED, check payment status before allowing completion
-    if (orderStatus === "SERVED") {
+    // If order is SERVING or SERVED, check payment status before allowing completion
+    if (orderStatus === "SERVING" || orderStatus === "SERVED") {
       // CASE 1: Already paid (online/stripe) - can mark completed immediately
       if (isPaid) {
         return (
