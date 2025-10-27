@@ -48,13 +48,9 @@ export function deriveEntityKind(
     return "table";
   }
 
-  // If we have a table_number (not null), it's likely a table order (unless explicitly counter)
+  // If we have a table_number (not null), it's likely a table order
+  // (We already checked for counter source above, so if we're here, it's not a counter)
   if (order.table_number !== null && order.table_number !== undefined) {
-    // Check if source indicates counter - if so, it's counter
-    if (order.source === "counter" || order.source === "qr_counter") {
-      return "counter";
-    }
-    // Otherwise, assume table order
     return "table";
   }
 
