@@ -19,7 +19,7 @@ export function createMockRequest(
 ): NextRequest {
   const { method = "GET", body, headers = {} } = options;
 
-  const requestOptions: RequestInit = {
+  const init: Parameters<typeof NextRequest>[1] = {
     method,
     headers: {
       "content-type": "application/json",
@@ -28,10 +28,10 @@ export function createMockRequest(
   };
 
   if (body) {
-    requestOptions.body = JSON.stringify(body);
+    init.body = JSON.stringify(body);
   }
 
-  return new NextRequest(url, requestOptions);
+  return new NextRequest(url, init);
 }
 
 /**

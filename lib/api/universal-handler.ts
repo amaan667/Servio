@@ -89,7 +89,7 @@ export function createUniversalHandler<TBody = unknown, TResponse = unknown>(
               url: req.url,
               errors: error.errors,
             });
-            return handleZodError(error);
+            return handleZodError(error) as NextResponse<ApiResponse<TResponse>>;
           }
           throw error;
         }
@@ -117,7 +117,7 @@ export function createUniversalHandler<TBody = unknown, TResponse = unknown>(
             url: req.url,
             error: authResult.error,
           });
-          return fail("Unauthorized", 401);
+          return fail("Unauthorized", 401) as NextResponse<ApiResponse<TResponse>>;
         }
         user = authResult.user;
       }
@@ -142,7 +142,7 @@ export function createUniversalHandler<TBody = unknown, TResponse = unknown>(
         }
 
         if (!venueId) {
-          return fail("venueId is required", 400);
+          return fail("venueId is required", 400) as NextResponse<ApiResponse<TResponse>>;
         }
 
         const access = await verifyVenueAccess(venueId, user.id);
@@ -154,7 +154,9 @@ export function createUniversalHandler<TBody = unknown, TResponse = unknown>(
             venueId,
             userId: user.id,
           });
-          return fail("Forbidden - access denied to this venue", 403);
+          return fail("Forbidden - access denied to this venue", 403) as NextResponse<
+            ApiResponse<TResponse>
+          >;
         }
 
         venueContext = {
@@ -194,7 +196,7 @@ export function createUniversalHandler<TBody = unknown, TResponse = unknown>(
         });
       }
 
-      return ok(result);
+      return ok(result) as NextResponse<ApiResponse<TResponse>>;
     } catch (error) {
       const duration = Date.now() - startTime;
 
@@ -224,22 +226,22 @@ export function createUniversalHandler<TBody = unknown, TResponse = unknown>(
 
       // Handle Zod validation errors
       if (error instanceof ZodError) {
-        return handleZodError(error);
+        return handleZodError(error) as NextResponse<ApiResponse<TResponse>>;
       }
 
       // Handle known error types
       if (error instanceof Error) {
         if (error.name === "UnauthorizedError") {
-          return fail(error.message, 401);
+          return fail(error.message, 401) as NextResponse<ApiResponse<TResponse>>;
         }
         if (error.name === "ForbiddenError") {
-          return fail(error.message, 403);
+          return fail(error.message, 403) as NextResponse<ApiResponse<TResponse>>;
         }
         if (error.name === "NotFoundError") {
-          return fail(error.message, 404);
+          return fail(error.message, 404) as NextResponse<ApiResponse<TResponse>>;
         }
         if (error.name === "ValidationError") {
-          return fail(error.message, 400);
+          return fail(error.message, 400) as NextResponse<ApiResponse<TResponse>>;
         }
       }
 
@@ -250,7 +252,7 @@ export function createUniversalHandler<TBody = unknown, TResponse = unknown>(
         ...(process.env.NODE_ENV === "development" && {
           stack: error instanceof Error ? error.stack : undefined,
         }),
-      });
+      }) as NextResponse<ApiResponse<TResponse>>;
     }
   };
 }
