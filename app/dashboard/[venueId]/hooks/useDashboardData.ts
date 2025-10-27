@@ -128,6 +128,7 @@ export function useDashboardData(
       );
 
       if (error) {
+        console.error("[Dashboard] Error fetching counts:", error);
         setError("Failed to refresh dashboard data");
         return;
       }
@@ -173,15 +174,26 @@ export function useDashboardData(
         };
 
         setCounts(finalCounts);
-        // Cache the counts to prevent flicker
+        // Cache the counts to prevent flicker (but allow refresh)
         if (typeof window !== "undefined") {
           sessionStorage.setItem(`dashboard_counts_${venueId}`, JSON.stringify(finalCounts));
         }
+      } else {
+        console.warn("[Dashboard] No counts data received from RPC");
       }
     } catch (_err) {
+      console.error("[Dashboard] Error refreshing counts:", _err);
       setError("Failed to refresh dashboard data");
     }
   }, [venueId, venueTz]);
+
+  // Force refresh on mount to get fresh data
+  useEffect(() => {
+    if (venueId) {
+      refreshCounts();
+    }
+     
+  }, [venueId]); // Only run when venueId changes, not every render
 
   const updateRevenueIncrementally = useCallback(
     (order: { order_status: string; total_amount?: number }) => {

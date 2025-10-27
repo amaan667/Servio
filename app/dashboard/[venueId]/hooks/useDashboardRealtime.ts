@@ -42,9 +42,19 @@ export function useDashboardRealtime({
       try {
         await refreshCounts();
       } catch (_error) {
-        // Error handled silently
+        console.error("[Dashboard Realtime] Error refreshing counts:", _error);
       }
     }, 300); // 300ms debounce
+  }, [refreshCounts]);
+
+  // Immediate refresh (no debounce) for critical updates
+  const immediateRefresh = useCallback(async () => {
+    if (!isMountedRef.current) return;
+    try {
+      await refreshCounts();
+    } catch (_error) {
+      console.error("[Dashboard Realtime] Error in immediate refresh:", _error);
+    }
   }, [refreshCounts]);
 
   // Debounced stats load function
