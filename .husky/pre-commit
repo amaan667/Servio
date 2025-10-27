@@ -1,2 +1,8 @@
-# Run lint-staged
+#!/usr/bin/env sh
+. "$(dirname -- "$0")/_/husky.sh"
+
+# Run lint-staged (formatting and linting)
 pnpm lint-staged
+
+# Run quick tests on staged files (optional - can be slow)
+# pnpm test --related $(git diff --cached --name-only --diff-filter=ACM | grep -E '\.(ts|tsx)$')

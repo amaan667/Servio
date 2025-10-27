@@ -1,17 +1,28 @@
 version: 2
 updates:
+  # Enable version updates for npm
   - package-ecosystem: "npm"
     directory: "/"
     schedule:
       interval: "weekly"
-    open-pull-requests-limit: 10
-    reviewers:
-      - "amaan667"
-    labels:
-      - "dependencies"
-    
-  - package-ecosystem: "github-actions"
-    directory: "/"
-    schedule:
-      interval: "weekly"
-
+    open-pull-requests-limit: 5
+    groups:
+      production-dependencies:
+        patterns:
+          - "@*/*"
+          - "next"
+          - "react"
+          - "react-dom"
+          - "typescript"
+        update-types:
+          - "minor"
+          - "patch"
+      dev-dependencies:
+        patterns:
+          - "vitest"
+          - "playwright"
+          - "eslint"
+          - "prettier"
+        update-types:
+          - "minor"
+          - "patch"

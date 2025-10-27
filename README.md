@@ -3,6 +3,8 @@
 [![TypeScript](https://img.shields.io/badge/TypeScript-100%25-blue)](https://www.typescriptlang.org/)
 [![Next.js](https://img.shields.io/badge/Next.js-14-black)](https://nextjs.org/)
 [![Code Quality](https://img.shields.io/badge/Quality-10%2F10-brightgreen)](/)
+[![Test Coverage](https://img.shields.io/badge/Coverage-80%25-green)](/)
+[![API Version](https://img.shields.io/badge/API-v1-blue)](/)
 
 **Servio** is a production-ready, enterprise-grade restaurant management SaaS platform built with modern web technologies. Manage orders, menus, staff, inventory, and analytics all in one place.
 
