@@ -1,31 +1,57 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect } from "react";
 
 export function useGroupSession(venueSlug: string, tableNumber: string, isCounterOrder: boolean) {
   const [showGroupSizeModal, setShowGroupSizeModal] = useState(false);
   const [showGroupSizePopup, setShowGroupSizePopup] = useState(false);
   const [groupSize, setGroupSize] = useState<number | null>(null);
   const [showCustomGroupSize, setShowCustomGroupSize] = useState(false);
-  const [customGroupSize, setCustomGroupSize] = useState<string>('');
+  const [customGroupSize, setCustomGroupSize] = useState<string>("");
   const [groupSessionId, setGroupSessionId] = useState<string | null>(null);
 
   useEffect(() => {
+    // Check cache first for instant modal display
+    const getCachedGroupSize = () => {
+      if (typeof window === "undefined") return null;
+      const cached = sessionStorage.getItem(`group_size_${venueSlug}_${tableNumber}`);
+      return cached ? parseInt(cached) : null;
+    };
+
+    const cachedSize = getCachedGroupSize();
+    if (cachedSize) {
+      setGroupSize(cachedSize);
+      // Don't show modal if we have cached size
+      return;
+    }
+
     const checkGroupSession = async () => {
       if (!venueSlug || !tableNumber) return;
-      
+
       try {
-        const response = await fetch(`/api/table/group-session?venueId=${venueSlug}&tableNumber=${tableNumber}`);
+        const response = await fetch(
+          `/api/table/group-session?venueId=${venueSlug}&tableNumber=${tableNumber}`
+        );
         if (response.ok) {
           const data = await response.json();
-          if (data.groupSessionId) {
+          if (data.groupSessionId && data.groupSize) {
             setGroupSessionId(data.groupSessionId);
-            setGroupSize(null);
-            setShowGroupSizeModal(true);
-          } else {
-            setShowGroupSizeModal(true);
+            setGroupSize(data.groupSize);
+            // Cache group size
+            if (typeof window !== "undefined") {
+              sessionStorage.setItem(
+                `group_size_${venueSlug}_${tableNumber}`,
+                String(data.groupSize)
+              );
+            }
+            // Don't show modal if session exists
+            return;
           }
         }
       } catch (_error) {
+        // Error handled silently
+      }
 
+      // Only show modal if no session exists
+      if (!isCounterOrder) {
         setShowGroupSizeModal(true);
       }
     };
@@ -41,16 +67,21 @@ export function useGroupSession(venueSlug: string, tableNumber: string, isCounte
   const handleGroupSizeSubmit = async (selectedGroupSize: number) => {
     setGroupSize(selectedGroupSize);
     setShowGroupSizeModal(false);
-    
+
+    // Cache immediately for instant load next time
+    if (typeof window !== "undefined") {
+      sessionStorage.setItem(`group_size_${venueSlug}_${tableNumber}`, String(selectedGroupSize));
+    }
+
     try {
-      const response = await fetch('/api/table/group-session', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+      const response = await fetch("/api/table/group-session", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           venueId: venueSlug,
           tableNumber: tableNumber,
-          groupSize: selectedGroupSize
-        })
+          groupSize: selectedGroupSize,
+        }),
       });
 
       if (response.ok) {
@@ -65,16 +96,16 @@ export function useGroupSession(venueSlug: string, tableNumber: string, isCounte
   const handleGroupSizeUpdate = async (newGroupSize: number) => {
     setGroupSize(newGroupSize);
     setShowGroupSizePopup(false);
-    
+
     try {
-      const response = await fetch('/api/table/group-session', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+      const response = await fetch("/api/table/group-session", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           venueId: venueSlug,
           tableNumber: tableNumber,
-          groupSize: newGroupSize
-        })
+          groupSize: newGroupSize,
+        }),
       });
 
       if (response.ok) {
@@ -102,4 +133,3 @@ export function useGroupSession(venueSlug: string, tableNumber: string, isCounte
     handleGroupSizeUpdate,
   };
 }
-

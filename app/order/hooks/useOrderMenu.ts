@@ -21,13 +21,22 @@ export function useOrderMenu(venueSlug: string, isDemo: boolean) {
     return cached ? JSON.parse(cached) : null;
   };
 
-  const [menuItems, setMenuItems] = useState<MenuItem[]>(getCachedMenu() || []);
-  const [loadingMenu, setLoadingMenu] = useState(!getCachedMenu()); // No loading if we have cache
+  const cachedMenu = getCachedMenu();
+  const cachedCategories = getCachedCategories();
+  const cachedVenueName = getCachedVenueName();
+
+  const [menuItems, setMenuItems] = useState<MenuItem[]>(cachedMenu || []);
+  const [loadingMenu, setLoadingMenu] = useState(!cachedMenu); // No loading if we have cache
   const [menuError, setMenuError] = useState<string | null>(null);
-  const [categoryOrder, setCategoryOrder] = useState<string[] | null>(getCachedCategories());
-  const [venueName, setVenueName] = useState<string>(getCachedVenueName());
+  const [categoryOrder, setCategoryOrder] = useState<string[] | null>(cachedCategories);
+  const [venueName, setVenueName] = useState<string>(cachedVenueName);
 
   const loadMenuItems = useCallback(async () => {
+    // Skip fetch if we have cached data - instant load
+    if (cachedMenu && cachedMenu.length > 0) {
+      return;
+    }
+
     // Don't show loading if we have cached data
     if (!menuItems || menuItems.length === 0) {
       setLoadingMenu(true);
@@ -129,7 +138,7 @@ export function useOrderMenu(venueSlug: string, isDemo: boolean) {
       setMenuError(`Error loading menu: ${_err instanceof Error ? _err.message : "Unknown error"}`);
       setLoadingMenu(false);
     }
-  }, [venueSlug, isDemo]);
+  }, [venueSlug, isDemo, cachedMenu]);
 
   useEffect(() => {
     loadMenuItems();
