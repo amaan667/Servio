@@ -50,13 +50,82 @@ export default function AuthProvider({
     return null;
   };
 
-  const [session, setSession] = useState<Session | null>(getInitialSession());
-  const [user, setUser] = useState<User | null>(getInitialSession()?.user ?? null);
-  // Start with loading=false since we have initialSession from server
-  // Only set loading=true if we need to fetch session on client
-  const [loading, setLoading] = useState(!initialSession); // Only load if no initial session
+  // Use initialSession directly - this is set on server, prevents flicker
+  const [session, setSession] = useState<Session | null>(initialSession);
+  const [user, setUser] = useState<User | null>(initialSession?.user ?? null);
+  // Start with loading=false if we have initialSession, true otherwise
+  const [loading, setLoading] = useState(!initialSession);
 
   useEffect(() => {
+    // If we have initialSession from server, use it immediately and skip client fetch
+    if (initialSession) {
+      setSession(initialSession);
+      setUser(initialSession.user);
+      setLoading(false);
+
+      // Still set up auth state change listener for future updates
+      let supabase;
+      try {
+        supabase = supabaseBrowser();
+      } catch {
+        return;
+      }
+
+      // Set up auth state change listener
+      let subscription: unknown;
+      try {
+        const { data } = supabase.auth.onAuthStateChange(
+          async (event: unknown, newSession: unknown) => {
+            switch (event) {
+              case "SIGNED_IN":
+                setSession(newSession as Session | null);
+                setUser((newSession as { user?: User } | null)?.user ?? null);
+                if (typeof window !== "undefined" && newSession) {
+                  localStorage.setItem("sb-auth-session", JSON.stringify(newSession));
+                }
+                setLoading(false);
+                break;
+              case "SIGNED_OUT":
+                setSession(null);
+                setUser(null);
+                if (typeof window !== "undefined") {
+                  localStorage.removeItem("sb-auth-session");
+                }
+                setLoading(false);
+                break;
+              case "TOKEN_REFRESHED":
+                setSession(newSession as Session | null);
+                setUser((newSession as { user?: User } | null)?.user ?? null);
+                if (typeof window !== "undefined" && newSession) {
+                  localStorage.setItem("sb-auth-session", JSON.stringify(newSession));
+                }
+                break;
+              case "USER_UPDATED":
+                setSession(newSession as Session | null);
+                setUser((newSession as { user?: User } | null)?.user ?? null);
+                break;
+              default:
+                if (newSession) {
+                  setSession(newSession as Session | null);
+                  setUser((newSession as { user?: User } | null)?.user ?? null);
+                }
+                setLoading(false);
+            }
+          }
+        );
+        subscription = data?.subscription;
+      } catch {
+        setLoading(false);
+      }
+
+      return () => {
+        if (subscription) {
+          (subscription as any).unsubscribe();
+        }
+      };
+    }
+
+    // No initialSession - fetch on client
     let supabase;
     try {
       supabase = supabaseBrowser();
@@ -67,15 +136,8 @@ export default function AuthProvider({
       return;
     }
 
-    // Get initial session quickly - only if we don't have one already
+    // Fetch session from client
     const getInitialSession = async () => {
-      if (initialSession) {
-        // Already have session from server, no need to fetch
-        setLoading(false);
-        return;
-      }
-
-      // No initial session, fetch on client
       setLoading(true);
       try {
         const {
@@ -91,7 +153,6 @@ export default function AuthProvider({
       }
     };
 
-    // Get initial session immediately
     getInitialSession();
 
     // Handle auth state changes
