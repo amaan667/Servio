@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useCallback } from "react";
 import {
   Plus,
   Edit,
@@ -82,7 +82,7 @@ export default function QuestionsClient({
     setShowAddForm(false);
   };
 
-  const fetchQuestions = async () => {
+  const fetchQuestions = useCallback(async () => {
     try {
       const response = await fetch(`/api/feedback/questions?venueId=${venueId}`);
 
@@ -105,12 +105,12 @@ export default function QuestionsClient({
         variant: "destructive",
       });
     }
-  };
+  }, [venueId, toast]);
 
   // Load questions on mount
   useEffect(() => {
     fetchQuestions();
-  }, [venueId]);
+  }, [fetchQuestions]);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
