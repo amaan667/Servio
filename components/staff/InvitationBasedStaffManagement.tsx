@@ -557,18 +557,6 @@ export default function InvitationBasedStaffManagement({
           <h2 className="text-2xl font-bold text-gray-900">Staff Management</h2>
           <p className="text-gray-600">Invite and manage your team members and their shifts</p>
         </div>
-        <Button
-          onClick={() => {
-            setSelectedMemberForInvite(null);
-            setInviteEmail("");
-            setError(null);
-            setInviteDialogOpen(true);
-          }}
-          className="bg-purple-600 hover:bg-purple-700"
-        >
-          <Plus className="h-4 w-4 mr-2" />
-          Invite Staff Member
-        </Button>
       </div>
 
       {/* Stats Cards */}
@@ -628,72 +616,100 @@ export default function InvitationBasedStaffManagement({
                 <p className="text-gray-600 mb-4">
                   Start building your team by inviting staff members.
                 </p>
-                <Button onClick={() => setInviteDialogOpen(true)}>
+                <Button
+                  onClick={() => {
+                    setSelectedMemberForInvite(null);
+                    setInviteEmail("");
+                    setError(null);
+                    setInviteDialogOpen(true);
+                  }}
+                >
                   <Plus className="h-4 w-4 mr-2" />
                   Invite Your First Member
                 </Button>
               </CardContent>
             </Card>
           ) : (
-            <div className="grid gap-4">
-              {staff.map((member) => {
-                const roleInfo = getRoleInfo(member.role);
-                const IconComponent = roleInfo.icon;
+            <div className="space-y-4">
+              {/* Add New Staff Member Button */}
+              <Card>
+                <CardContent className="p-4">
+                  <Button
+                    onClick={() => {
+                      setSelectedMemberForInvite(null);
+                      setInviteEmail("");
+                      setError(null);
+                      setInviteDialogOpen(true);
+                    }}
+                    className="w-full bg-purple-600 hover:bg-purple-700"
+                  >
+                    <Plus className="h-4 w-4 mr-2" />
+                    Invite New Staff Member
+                  </Button>
+                </CardContent>
+              </Card>
 
-                return (
-                  <Card key={member.id}>
-                    <CardContent className="p-4">
-                      <div className="flex items-center justify-between">
-                        <div className="flex items-center gap-3">
-                          <div className="w-10 h-10 bg-purple-100 rounded-full flex items-center justify-center">
-                            <IconComponent className="h-5 w-5 text-purple-600" />
-                          </div>
-                          <div>
-                            <p className="font-medium text-gray-900">{member.name}</p>
-                            <p className="text-sm text-gray-600">{member.email}</p>
-                          </div>
-                        </div>
-                        <div className="flex items-center gap-2">
-                          <Badge className={roleInfo.color}>{roleInfo.name}</Badge>
-                          <Button
-                            variant="outline"
-                            size="sm"
-                            onClick={() => handleInviteClick(member)}
-                            className="text-purple-600 hover:text-purple-700 hover:bg-purple-50"
-                          >
-                            <Mail className="h-4 w-4 mr-1" />
-                            Invite
-                          </Button>
-                          <Button
-                            variant="outline"
-                            size="sm"
-                            onClick={() => setEditingShiftFor(member.id)}
-                            className="text-blue-600 hover:text-blue-700 hover:bg-blue-50"
-                          >
-                            <Calendar className="h-4 w-4 mr-1" />
-                            Manage Shifts
-                          </Button>
-                        </div>
-                      </div>
+              {/* Existing Staff Members */}
+              <div className="grid gap-4">
+                {staff.map((member) => {
+                  const roleInfo = getRoleInfo(member.role);
+                  const IconComponent = roleInfo.icon;
 
-                      {/* Shift Editor */}
-                      {editingShiftFor === member.id && (
-                        <div className="mt-4">
-                          <StaffRowItem
-                            row={member}
-                            onDeleteRow={() => {
-                              /* Empty */
-                            }}
-                            onShiftsChanged={reloadAllShifts}
-                            embedded={true}
-                            onClose={() => setEditingShiftFor(null)}
-                          />
+                  return (
+                    <Card key={member.id}>
+                      <CardContent className="p-4">
+                        <div className="flex items-center justify-between">
+                          <div className="flex items-center gap-3">
+                            <div className="w-10 h-10 bg-purple-100 rounded-full flex items-center justify-center">
+                              <IconComponent className="h-5 w-5 text-purple-600" />
+                            </div>
+                            <div>
+                              <p className="font-medium text-gray-900">{member.name}</p>
+                              <p className="text-sm text-gray-600">{member.email}</p>
+                            </div>
+                          </div>
+                          <div className="flex items-center gap-2">
+                            <Badge className={roleInfo.color}>{roleInfo.name}</Badge>
+                            <Button
+                              variant="outline"
+                              size="sm"
+                              onClick={() => handleInviteClick(member)}
+                              className="text-purple-600 hover:text-purple-700 hover:bg-purple-50"
+                            >
+                              <Mail className="h-4 w-4 mr-1" />
+                              Invite Similar
+                            </Button>
+                            <Button
+                              variant="outline"
+                              size="sm"
+                              onClick={() => setEditingShiftFor(member.id)}
+                              className="text-blue-600 hover:text-blue-700 hover:bg-blue-50"
+                            >
+                              <Calendar className="h-4 w-4 mr-1" />
+                              Manage Shifts
+                            </Button>
+                          </div>
                         </div>
-                      )}
-                    </CardContent>
-                  </Card>
-                );
-              })}
+
+                        {/* Shift Editor */}
+                        {editingShiftFor === member.id && (
+                          <div className="mt-4">
+                            <StaffRowItem
+                              row={member}
+                              onDeleteRow={() => {
+                                /* Empty */
+                              }}
+                              onShiftsChanged={reloadAllShifts}
+                              embedded={true}
+                              onClose={() => setEditingShiftFor(null)}
+                            />
+                          </div>
+                        )}
+                      </CardContent>
+                    </Card>
+                  );
+                })}
+              </div>
             </div>
           )}
         </TabsContent>
