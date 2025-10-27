@@ -243,7 +243,7 @@ export function OrderCard({
             <div className="flex flex-col gap-3">
               <div className="flex items-center justify-between">
                 <div className="text-sm text-orange-600">
-                  <span className="font-medium">⚠️ Payment Required at Till</span>
+                  <span className="font-medium">Served - Unpaid</span>
                 </div>
                 <Badge variant="outline" className="bg-orange-50 text-orange-700 border-orange-200">
                   Unpaid - {formatCurrency(order.total_amount, order.currency)}
@@ -271,7 +271,7 @@ export function OrderCard({
             <div className="flex flex-col gap-3">
               <div className="flex items-center justify-between">
                 <div className="text-sm text-blue-600">
-                  <span className="font-medium">⏳ Awaiting Customer Payment</span>
+                  <span className="font-medium">Served - Unpaid</span>
                 </div>
                 <Badge variant="outline" className="bg-blue-50 text-blue-700 border-blue-200">
                   Pay Later - {formatCurrency(order.total_amount, order.currency)}

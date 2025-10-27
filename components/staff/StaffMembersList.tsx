@@ -14,8 +14,16 @@ import {
 } from "@/components/ui/select";
 import { Badge } from "@/components/ui/badge";
 import { Switch } from "@/components/ui/switch";
-import { UserPlus, Calendar, Users } from "lucide-react";
+import { UserPlus, Calendar, Users, Mail } from "lucide-react";
 import { AddShiftModal } from "./AddShiftModal";
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
+import { useStaffInvitation } from "@/hooks/useStaffInvitation";
 
 type StaffMember = {
   id: string;
@@ -47,6 +55,12 @@ const StaffMembersList: React.FC<StaffMembersListProps> = ({
     id: string;
     name: string;
   } | null>(null);
+  const invitation = useStaffInvitation({
+    venueId,
+    onSuccess: () => {
+      // Optionally reload staff list after invitation
+    },
+  });
 
   const handleAddStaff = async () => {
     if (!name.trim()) {
@@ -173,17 +187,28 @@ const StaffMembersList: React.FC<StaffMembersListProps> = ({
                         />
                       )}
                     </div>
-                    <Button
-                      variant="outline"
-                      size="sm"
-                      onClick={() => {
-                        setSelectedStaffForShift({ id: member.id, name: member.name });
-                        setShiftModalOpen(true);
-                      }}
-                    >
-                      <Calendar className="h-4 w-4 mr-1" />
-                      Add Shift
-                    </Button>
+                    <div className="flex gap-2">
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        onClick={() => invitation.handleInviteClick(member)}
+                        className="text-purple-600 hover:text-purple-700 hover:bg-purple-50"
+                      >
+                        <Mail className="h-4 w-4 mr-1" />
+                        Invite
+                      </Button>
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        onClick={() => {
+                          setSelectedStaffForShift({ id: member.id, name: member.name });
+                          setShiftModalOpen(true);
+                        }}
+                      >
+                        <Calendar className="h-4 w-4 mr-1" />
+                        Add Shift
+                      </Button>
+                    </div>
                   </div>
                 </div>
               ))}
@@ -205,6 +230,64 @@ const StaffMembersList: React.FC<StaffMembersListProps> = ({
           if (onStaffAdded) onStaffAdded();
         }}
       />
+
+      {/* Invite Dialog */}
+      <Dialog open={invitation.inviteDialogOpen} onOpenChange={invitation.closeInviteDialog}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Invite Staff Member</DialogTitle>
+            <DialogDescription>
+              {invitation.selectedStaffForInvite
+                ? `Invite someone to join with the same role as ${invitation.selectedStaffForInvite.name} (${invitation.selectedStaffForInvite.role}).`
+                : "Please select a staff member to invite someone with the same role."}
+            </DialogDescription>
+          </DialogHeader>
+          {invitation.selectedStaffForInvite && (
+            <div className="space-y-4">
+              <div className="space-y-2">
+                <Label htmlFor="invite-email">Email Address</Label>
+                <Input
+                  id="invite-email"
+                  type="email"
+                  placeholder="colleague@example.com"
+                  value={invitation.inviteEmail}
+                  onChange={(e) => invitation.setInviteEmail(e.target.value)}
+                  disabled={invitation.inviteLoading}
+                  onKeyDown={(e) => {
+                    if (
+                      e.key === "Enter" &&
+                      invitation.inviteEmail.trim() &&
+                      !invitation.inviteLoading
+                    ) {
+                      invitation.handleSendInvite();
+                    }
+                  }}
+                />
+                <p className="text-sm text-gray-500">
+                  The invited person will receive {invitation.selectedStaffForInvite.role} role
+                  access.
+                </p>
+              </div>
+              <div className="flex justify-end gap-2">
+                <Button
+                  variant="outline"
+                  onClick={invitation.closeInviteDialog}
+                  disabled={invitation.inviteLoading}
+                >
+                  Cancel
+                </Button>
+                <Button
+                  onClick={invitation.handleSendInvite}
+                  disabled={invitation.inviteLoading || !invitation.inviteEmail.trim()}
+                  className="bg-purple-600 hover:bg-purple-700"
+                >
+                  {invitation.inviteLoading ? "Sending..." : "Send Invitation"}
+                </Button>
+              </div>
+            </div>
+          )}
+        </DialogContent>
+      </Dialog>
     </div>
   );
 };

@@ -1,304 +1,252 @@
 /**
- * @fileoverview OpenAPI/Swagger configuration
- * @module lib/swagger/config
+ * OpenAPI/Swagger Configuration
+ * Comprehensive API documentation setup
  */
 
-import swaggerJsdoc from 'swagger-jsdoc';
+import swaggerJsdoc from "swagger-jsdoc";
+import packageJson from "../../package.json";
 
 const options: swaggerJsdoc.Options = {
   definition: {
-    openapi: '3.0.0',
+    openapi: "3.0.0",
     info: {
-      title: 'Servio API Documentation',
-      version: '1.0.0',
-      description: 'Complete API documentation for Servio - Modern Restaurant Management Platform',
+      title: "Servio API",
+      version: packageJson.version || "1.0.0",
+      description: `
+# Servio API Documentation
+
+Complete REST API for the Servio restaurant management platform.
+
+## Authentication
+
+Most endpoints require authentication via Supabase session cookies or Bearer token.
+
+## Rate Limiting
+
+API requests are rate-limited to prevent abuse. Limits vary by endpoint.
+
+## Error Handling
+
+All errors follow a consistent format:
+\`\`\`json
+{
+  "ok": false,
+      "error": "Error message",
+      "details": {}
+}
+\`\`\`
+
+## Status Codes
+
+- \`200\` - Success
+- \`400\` - Bad Request (validation error)
+- \`401\` - Unauthorized
+- \`403\` - Forbidden
+- \`404\` - Not Found
+- \`429\` - Rate Limited
+- \`500\` - Internal Server Error
+      `,
       contact: {
-        name: 'API Support',
-        email: 'support@servio.com',
+        name: "Servio Support",
+        email: "support@servio.app",
       },
       license: {
-        name: 'Proprietary',
+        name: "Proprietary",
       },
     },
     servers: [
       {
-        url: process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3000',
-        description: 'Development server',
+        url: process.env.NEXT_PUBLIC_API_URL || "https://servio-production.up.railway.app",
+        description: "Production (Railway)",
       },
       {
-        url: 'https://servio-production.up.railway.app',
-        description: 'Production server',
+        url: "http://localhost:3000",
+        description: "Local Development",
       },
     ],
     components: {
       securitySchemes: {
-        BearerAuth: {
-          type: 'http',
-          scheme: 'bearer',
-          bearerFormat: 'JWT',
-          description: 'Enter your Supabase session token',
+        bearerAuth: {
+          type: "http",
+          scheme: "bearer",
+          bearerFormat: "JWT",
+          description: "Supabase JWT token",
         },
-        CookieAuth: {
-          type: 'apiKey',
-          in: 'cookie',
-          name: 'sb-auth-token',
+        cookieAuth: {
+          type: "apiKey",
+          in: "cookie",
+          name: "sb-access-token",
+          description: "Supabase session cookie",
         },
       },
       schemas: {
         Error: {
-          type: 'object',
+          type: "object",
+          required: ["ok", "error"],
           properties: {
+            ok: {
+              type: "boolean",
+              example: false,
+            },
             error: {
-              type: 'string',
-              description: 'Error type',
-            },
-            message: {
-              type: 'string',
-              description: 'Human-readable error message',
-            },
-            code: {
-              type: 'string',
-              description: 'Error code',
+              type: "string",
+              description: "Error message",
             },
             details: {
-              type: 'object',
-              description: 'Additional error details',
+              type: "object",
+              description: "Additional error details",
             },
           },
         },
-        PaginatedResponse: {
-          type: 'object',
+        Success: {
+          type: "object",
+          required: ["ok", "data"],
           properties: {
-            data: {
-              type: 'array',
-              items: { /* Empty */ },
+            ok: {
+              type: "boolean",
+              example: true,
             },
-            pagination: {
-              type: 'object',
-              properties: {
-                page: { type: 'integer' },
-                limit: { type: 'integer' },
-                total: { type: 'integer' },
-                totalPages: { type: 'integer' },
-              },
+            data: {
+              description: "Response data",
             },
           },
         },
         Order: {
-          type: 'object',
-          required: ['id', 'venue_id', 'status', 'total_amount'],
+          type: "object",
           properties: {
             id: {
-              type: 'string',
-              format: 'uuid',
-              description: 'Unique order identifier',
+              type: "string",
+              format: "uuid",
             },
             venue_id: {
-              type: 'string',
-              format: 'uuid',
-              description: 'Venue identifier',
+              type: "string",
+              format: "uuid",
             },
-            table_number: {
-              type: 'string',
-              description: 'Table number',
+            order_status: {
+              type: "string",
+              enum: ["pending", "confirmed", "preparing", "ready", "served", "cancelled"],
             },
-            status: {
-              type: 'string',
-              enum: ['pending', 'confirmed', 'preparing', 'ready', 'served', 'completed', 'cancelled'],
-              description: 'Order status',
-            },
-            items: {
-              type: 'array',
-              items: {
-                $ref: '#/components/schemas/OrderItem',
-              },
+            payment_status: {
+              type: "string",
+              enum: ["pending", "paid", "refunded"],
             },
             total_amount: {
-              type: 'number',
-              format: 'float',
-              description: 'Total order amount',
+              type: "number",
             },
             created_at: {
-              type: 'string',
-              format: 'date-time',
-            },
-          },
-        },
-        OrderItem: {
-          type: 'object',
-          properties: {
-            menu_item_id: {
-              type: 'string',
-              format: 'uuid',
-            },
-            item_name: {
-              type: 'string',
-            },
-            quantity: {
-              type: 'integer',
-              minimum: 1,
-            },
-            price: {
-              type: 'number',
-              format: 'float',
-            },
-            special_instructions: {
-              type: 'string',
+              type: "string",
+              format: "date-time",
             },
           },
         },
         MenuItem: {
-          type: 'object',
+          type: "object",
           properties: {
             id: {
-              type: 'string',
-              format: 'uuid',
+              type: "string",
+              format: "uuid",
+            },
+            venue_id: {
+              type: "string",
+              format: "uuid",
             },
             name: {
-              type: 'string',
+              type: "string",
             },
             description: {
-              type: 'string',
+              type: "string",
             },
             price: {
-              type: 'number',
-              format: 'float',
+              type: "number",
             },
             category: {
-              type: 'string',
-            },
-            image_url: {
-              type: 'string',
-              format: 'uri',
+              type: "string",
             },
             is_available: {
-              type: 'boolean',
-            },
-          },
-        },
-        Table: {
-          type: 'object',
-          properties: {
-            id: {
-              type: 'string',
-              format: 'uuid',
-            },
-            table_number: {
-              type: 'string',
-            },
-            capacity: {
-              type: 'integer',
-            },
-            status: {
-              type: 'string',
-              enum: ['available', 'occupied', 'reserved', 'maintenance'],
+              type: "boolean",
             },
           },
         },
         Venue: {
-          type: 'object',
+          type: "object",
           properties: {
             venue_id: {
-              type: 'string',
-              format: 'uuid',
+              type: "string",
+              format: "uuid",
             },
-            name: {
-              type: 'string',
+            venue_name: {
+              type: "string",
             },
-            description: {
-              type: 'string',
+            owner_user_id: {
+              type: "string",
+              format: "uuid",
             },
-            address: {
-              type: 'string',
-            },
-            phone: {
-              type: 'string',
-            },
-            email: {
-              type: 'string',
-              format: 'email',
+            created_at: {
+              type: "string",
+              format: "date-time",
             },
           },
         },
       },
       responses: {
         UnauthorizedError: {
-          description: 'Authentication required',
+          description: "Authentication required",
           content: {
-            'application/json': {
+            "application/json": {
               schema: {
-                $ref: '#/components/schemas/Error',
+                $ref: "#/components/schemas/Error",
               },
               example: {
-                error: 'Unauthorized',
-                message: 'Authentication required',
+                ok: false,
+                error: "Unauthorized",
               },
             },
           },
         },
         ForbiddenError: {
-          description: 'Access denied',
+          description: "Access denied",
           content: {
-            'application/json': {
+            "application/json": {
               schema: {
-                $ref: '#/components/schemas/Error',
+                $ref: "#/components/schemas/Error",
               },
               example: {
-                error: 'Forbidden',
-                message: 'Access denied to this resource',
-              },
-            },
-          },
-        },
-        NotFoundError: {
-          description: 'Resource not found',
-          content: {
-            'application/json': {
-              schema: {
-                $ref: '#/components/schemas/Error',
-              },
-              example: {
-                error: 'Not Found',
-                message: 'Resource not found',
+                ok: false,
+                error: "Forbidden - access denied to this venue",
               },
             },
           },
         },
         ValidationError: {
-          description: 'Invalid request data',
+          description: "Validation failed",
           content: {
-            'application/json': {
+            "application/json": {
               schema: {
-                type: 'object',
-                properties: {
-                  error: { type: 'string' },
-                  message: { type: 'string' },
-                  details: {
-                    type: 'array',
-                    items: {
-                      type: 'object',
-                      properties: {
-                        field: { type: 'string' },
-                        message: { type: 'string' },
-                      },
-                    },
+                $ref: "#/components/schemas/Error",
+              },
+              example: {
+                ok: false,
+                error: "Validation failed",
+                details: [
+                  {
+                    path: "venueId",
+                    message: "Required",
                   },
-                },
+                ],
               },
             },
           },
         },
-        RateLimitError: {
-          description: 'Too many requests',
+        ServerError: {
+          description: "Internal server error",
           content: {
-            'application/json': {
+            "application/json": {
               schema: {
-                $ref: '#/components/schemas/Error',
+                $ref: "#/components/schemas/Error",
               },
               example: {
-                error: 'Too Many Requests',
-                message: 'Rate limit exceeded. Please try again later.',
-                retryAfter: 60,
+                ok: false,
+                error: "Internal server error",
               },
             },
           },
@@ -307,49 +255,48 @@ const options: swaggerJsdoc.Options = {
     },
     security: [
       {
-        BearerAuth: [],
+        bearerAuth: [],
       },
       {
-        CookieAuth: [],
+        cookieAuth: [],
       },
     ],
     tags: [
       {
-        name: 'Orders',
-        description: 'Order management endpoints',
+        name: "Orders",
+        description: "Order management endpoints",
       },
       {
-        name: 'Menu',
-        description: 'Menu management endpoints',
+        name: "Menu",
+        description: "Menu and catalog management",
       },
       {
-        name: 'Tables',
-        description: 'Table management endpoints',
+        name: "Tables",
+        description: "Table management and QR codes",
       },
       {
-        name: 'Inventory',
-        description: 'Inventory management endpoints',
+        name: "Staff",
+        description: "Staff management and invitations",
       },
       {
-        name: 'Staff',
-        description: 'Staff management endpoints',
+        name: "Inventory",
+        description: "Inventory and stock management",
       },
       {
-        name: 'Analytics',
-        description: 'Analytics and reporting endpoints',
+        name: "Payments",
+        description: "Payment processing",
       },
       {
-        name: 'Payments',
-        description: 'Payment processing endpoints',
+        name: "Dashboard",
+        description: "Dashboard and analytics",
       },
       {
-        name: 'Auth',
-        description: 'Authentication endpoints',
+        name: "AI Assistant",
+        description: "AI-powered features",
       },
     ],
   },
-  apis: ['./app/api/**/*.ts', './lib/swagger/annotations.ts'],
+  apis: ["./app/api/**/*.ts", "./lib/api/**/*.ts"],
 };
 
 export const swaggerSpec = swaggerJsdoc(options);
-
