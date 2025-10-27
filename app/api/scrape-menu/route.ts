@@ -168,32 +168,56 @@ async function scrapeWithPlaywright(
         /* Ignore - cookies already dismissed or not present */
       });
 
-    // Wait for actual content to appear (menu items visible)
-    try {
-      await page.waitForSelector(
-        'main, article, [role="main"], .menu, .menu-item, [class*="menu"], [id*="menu"], h1, h2',
-        { timeout: 5000 }
-      );
-    } catch {
-      // Content might be there but selector doesn't match - continue anyway
+    // Strategy-based content loading
+    if (siteType.needsJS) {
+      // Wait for content to appear if JS rendering needed
+      try {
+        await page.waitForSelector(
+          'main, article, [role="main"], .menu, .menu-item, [class*="menu"], [id*="menu"], .content, body > *',
+          { timeout: 10000 }
+        );
+      } catch {
+        // Continue even if selector doesn't match
+      }
     }
 
-    // Check if content is already loaded (don't scroll unnecessarily)
+    // Handle lazy-loaded content with progressive scrolling
+    if (siteType.needsScroll) {
+      await page.evaluate(async () => {
+        const scrollHeight = document.body.scrollHeight;
+        const viewportHeight = window.innerHeight;
+        let scrolled = 0;
+
+        // Progressive scroll to trigger lazy loading
+        while (scrolled < scrollHeight) {
+          window.scrollTo(0, scrolled);
+          scrolled += viewportHeight;
+          await new Promise((resolve) => setTimeout(resolve, 300));
+        }
+
+        // Scroll back to top
+        window.scrollTo(0, 0);
+      });
+
+      // Wait for lazy-loaded content to render
+      await page.waitForTimeout(2000);
+    }
+
+    // Verify menu content exists
     const hasMenuContent = await page.evaluate(() => {
       const bodyText = document.body.innerText || "";
       const hasPrices = /\$|\£|€|\d+\.\d{2}/.test(bodyText);
       const hasFoodWords = /menu|item|dish|food|breakfast|lunch|dinner|price|£/i.test(bodyText);
-      return hasPrices && hasFoodWords && bodyText.length > 100;
+      const hasEnoughContent = bodyText.length > 200;
+      return hasPrices && hasFoodWords && hasEnoughContent;
     });
 
-    // Only scroll if content isn't visible yet
-    if (!hasMenuContent) {
-      // Quick scroll to trigger lazy loading (if needed)
+    // If still no content and not static, try one more scroll
+    if (!hasMenuContent && siteType.type !== "static") {
       await page.evaluate(() => {
         window.scrollTo(0, document.body.scrollHeight);
       });
-      // Small wait for lazy-loaded content
-      await page.waitForTimeout(1000);
+      await page.waitForTimeout(1500);
     }
 
     // Get HTML
