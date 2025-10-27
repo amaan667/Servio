@@ -161,63 +161,63 @@ export default function AuthProvider({
       };
 
       getInitialSession();
-    }
 
-    // Handle auth state changes
-    let subscription: unknown;
-    try {
-      const { data } = supabase.auth.onAuthStateChange(
-        async (event: unknown, newSession: unknown) => {
-          switch (event) {
-            case "SIGNED_IN":
-              setSession(newSession as Session | null);
-              setUser((newSession as { user?: User } | null)?.user ?? null);
-              // Store session to prevent flicker on reload
-              if (typeof window !== "undefined" && newSession) {
-                localStorage.setItem("sb-auth-session", JSON.stringify(newSession));
-              }
-              setLoading(false);
-              break;
-            case "SIGNED_OUT":
-              setSession(null);
-              setUser(null);
-              // Clear stored session
-              if (typeof window !== "undefined") {
-                localStorage.removeItem("sb-auth-session");
-              }
-              setLoading(false);
-              break;
-            case "TOKEN_REFRESHED":
-              setSession(newSession as Session | null);
-              setUser((newSession as { user?: User } | null)?.user ?? null);
-              // Update stored session
-              if (typeof window !== "undefined" && newSession) {
-                localStorage.setItem("sb-auth-session", JSON.stringify(newSession));
-              }
-              break;
-            case "USER_UPDATED":
-              setSession(newSession as Session | null);
-              setUser((newSession as { user?: User } | null)?.user ?? null);
-              break;
-            default:
-              if (newSession) {
+      // Handle auth state changes for client-fetched sessions
+      let subscription: unknown;
+      try {
+        const { data } = supabase.auth.onAuthStateChange(
+          async (event: unknown, newSession: unknown) => {
+            switch (event) {
+              case "SIGNED_IN":
                 setSession(newSession as Session | null);
                 setUser((newSession as { user?: User } | null)?.user ?? null);
-              }
-              setLoading(false);
+                // Store session to prevent flicker on reload
+                if (typeof window !== "undefined" && newSession) {
+                  localStorage.setItem("sb-auth-session", JSON.stringify(newSession));
+                }
+                setLoading(false);
+                break;
+              case "SIGNED_OUT":
+                setSession(null);
+                setUser(null);
+                // Clear stored session
+                if (typeof window !== "undefined") {
+                  localStorage.removeItem("sb-auth-session");
+                }
+                setLoading(false);
+                break;
+              case "TOKEN_REFRESHED":
+                setSession(newSession as Session | null);
+                setUser((newSession as { user?: User } | null)?.user ?? null);
+                // Update stored session
+                if (typeof window !== "undefined" && newSession) {
+                  localStorage.setItem("sb-auth-session", JSON.stringify(newSession));
+                }
+                break;
+              case "USER_UPDATED":
+                setSession(newSession as Session | null);
+                setUser((newSession as { user?: User } | null)?.user ?? null);
+                break;
+              default:
+                if (newSession) {
+                  setSession(newSession as Session | null);
+                  setUser((newSession as { user?: User } | null)?.user ?? null);
+                }
+                setLoading(false);
+            }
           }
-        }
-      );
-      subscription = data?.subscription;
-    } catch {
-      setLoading(false);
-    }
-
-    return () => {
-      if (subscription) {
-        (subscription as any).unsubscribe();
+        );
+        subscription = data?.subscription;
+      } catch {
+        setLoading(false);
       }
-    };
+
+      return () => {
+        if (subscription) {
+          (subscription as any).unsubscribe();
+        }
+      };
+    }
   }, [initialSession]);
 
   const signOut = async () => {
