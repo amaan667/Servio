@@ -308,39 +308,57 @@ export default function LiveOrdersClient({
       <main className="mt-4 space-y-6 pb-20">
         {activeTab === "live" && (
           <div className="space-y-6">
-            {orders.length === 0 ? (
-              <EmptyState title="No Live Orders" description="Recent orders will appear here" />
-            ) : (
-              <>
-                <BulkCompleteButton
-                  count={
-                    orders.filter((order) =>
-                      ["PLACED", "IN_PREP", "READY", "SERVING", "SERVED"].includes(
-                        order.order_status
-                      )
-                    ).length
-                  }
-                  isCompleting={isBulkCompleting}
-                  onClick={handleBulkComplete}
-                />
+            {(() => {
+              // If filtering by table, search through both live and all tabs
+              const filteredLiveOrders = parsedTableFilter
+                ? orders.filter((order) => order.table_number?.toString() === parsedTableFilter)
+                : orders;
+              const filteredAllOrders = parsedTableFilter
+                ? allTodayOrders.filter(
+                    (order) => order.table_number?.toString() === parsedTableFilter
+                  )
+                : [];
 
-                {renderOrdersSection(
-                  orders.filter((order) => isCounterOrder(order)),
-                  "Counter Orders",
-                  "orange"
-                )}
+              const allFilteredOrders = [...filteredLiveOrders, ...filteredAllOrders];
 
-                {renderOrdersSection(
-                  orders.filter(
-                    (order) =>
-                      !isCounterOrder(order) &&
-                      LIVE_TABLE_ORDER_STATUSES.includes(order.order_status)
-                  ),
-                  "Table Orders",
-                  "blue"
-                )}
-              </>
-            )}
+              if (allFilteredOrders.length === 0) {
+                return (
+                  <EmptyState title="No Live Orders" description="Recent orders will appear here" />
+                );
+              }
+
+              return (
+                <>
+                  <BulkCompleteButton
+                    count={
+                      allFilteredOrders.filter((order) =>
+                        ["PLACED", "IN_PREP", "READY", "SERVING", "SERVED"].includes(
+                          order.order_status
+                        )
+                      ).length
+                    }
+                    isCompleting={isBulkCompleting}
+                    onClick={handleBulkComplete}
+                  />
+
+                  {renderOrdersSection(
+                    allFilteredOrders.filter((order) => isCounterOrder(order)),
+                    "Counter Orders",
+                    "orange"
+                  )}
+
+                  {renderOrdersSection(
+                    allFilteredOrders.filter(
+                      (order) =>
+                        !isCounterOrder(order) &&
+                        LIVE_TABLE_ORDER_STATUSES.includes(order.order_status)
+                    ),
+                    "Table Orders",
+                    "blue"
+                  )}
+                </>
+              );
+            })()}
           </div>
         )}
 

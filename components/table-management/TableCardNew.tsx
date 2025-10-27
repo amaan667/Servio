@@ -264,22 +264,9 @@ export function TableCardNew({
                     const startOfToday = new Date(now.getFullYear(), now.getMonth(), now.getDate());
                     const orderCreatedAt = new Date(orderData.created_at);
 
-                    let targetTab = "live"; // fallback
-
-                    // Always search through all of today's orders first
-                    // Check if order is from today (regardless of how recent)
-                    if (orderCreatedAt >= startOfToday) {
-                      // Today's order - search in both live and all tabs
-                      // Try live tab first, then all tab if not found there
-                      targetTab = orderCreatedAt > thirtyMinutesAgo ? "live" : "all";
-                    } else {
-                      // Historical order - go to history tab
-                      targetTab = "history";
-                    }
-
-                    router.push(
-                      `/dashboard/${venueId}/live-orders?table=${tableLabel}&tab=${targetTab}`
-                    );
+                    // Simply navigate to live orders with table filter
+                    // The filter will search through both live and all tabs automatically
+                    router.push(`/dashboard/${venueId}/live-orders?table=${tableLabel}`);
                     return;
                   }
                 } catch {
