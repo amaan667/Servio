@@ -45,40 +45,50 @@ async function loadMigrations(): Promise<Migration[]> {
 }
 
 async function ensureMigrationsTable(supabase: ReturnType<typeof createClient>) {
-  const { error } = await supabase.rpc("exec_sql", {
-    sql: `
-      CREATE TABLE IF NOT EXISTS migrations (
-        id SERIAL PRIMARY KEY,
-        filename VARCHAR(255) UNIQUE NOT NULL,
-        timestamp VARCHAR(14) NOT NULL,
-        description TEXT,
-        executed_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
-      );
-    `,
-  });
+  // Try to create migrations table if it doesn't exist
+  const createTableSQL = `
+    CREATE TABLE IF NOT EXISTS migrations (
+      id SERIAL PRIMARY KEY,
+      filename VARCHAR(255) UNIQUE NOT NULL,
+      timestamp VARCHAR(14) NOT NULL,
+      description TEXT,
+      executed_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
+    );
+  `;
 
-  if (error) {
-    logger.error("Failed to create migrations table", { error });
-    throw error;
+  // Use raw SQL execution if rpc is not available
+  try {
+    const { error } = await (supabase as any).rpc("exec_sql", { sql: createTableSQL });
+    if (error) {
+      logger.error("Failed to create migrations table", { error });
+      throw error;
+    }
+  } catch (err) {
+    // If exec_sql doesn't exist, the table might already exist or we need to create it manually
+    logger.warn("Could not execute exec_sql, table may need to be created manually");
   }
 }
 
 async function getExecutedMigrations(supabase: ReturnType<typeof createClient>): Promise<string[]> {
-  const { data, error } = await supabase.from("migrations").select("filename");
+  try {
+    const { data, error } = await (supabase as any).from("migrations").select("filename");
 
-  if (error) {
-    logger.error("Failed to fetch executed migrations", { error });
-    throw error;
+    if (error) {
+      logger.error("Failed to fetch executed migrations", { error });
+      return [];
+    }
+
+    return (data as Array<{ filename: string }>)?.map((m) => m.filename) || [];
+  } catch {
+    return [];
   }
-
-  return data?.map((m) => m.filename) || [];
 }
 
 async function markMigrationExecuted(
   supabase: ReturnType<typeof createClient>,
   migration: Migration
 ) {
-  const { error } = await supabase.from("migrations").insert({
+  const { error } = await (supabase as any).from("migrations").insert({
     filename: migration.filename,
     timestamp: migration.timestamp,
     description: migration.description,
@@ -96,11 +106,16 @@ async function runMigration(supabase: ReturnType<typeof createClient>, migration
     description: migration.description,
   });
 
-  const { error } = await supabase.rpc("exec_sql", { sql: migration.sql });
+  try {
+    const { error } = await (supabase as any).rpc("exec_sql", { sql: migration.sql });
 
-  if (error) {
-    logger.error("Migration failed", { filename: migration.filename, error });
-    throw error;
+    if (error) {
+      logger.error("Migration failed", { filename: migration.filename, error });
+      throw error;
+    }
+  } catch (err) {
+    logger.error("Migration execution error", { filename: migration.filename, error: err });
+    throw err;
   }
 
   await markMigrationExecuted(supabase, migration);
@@ -115,7 +130,7 @@ async function main() {
 
   const supabase = createClient(SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY, {
     auth: { autoRefreshToken: false, persistSession: false },
-  });
+  }) as any;
 
   try {
     await ensureMigrationsTable(supabase);

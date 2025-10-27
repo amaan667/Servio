@@ -53,11 +53,11 @@ export type UniversalHandler<TBody = unknown, TResponse = unknown> = (
 export function createUniversalHandler<TBody = unknown, TResponse = unknown>(
   handler: UniversalHandler<TBody, TResponse>,
   options: HandlerOptions = {}
-): (
-  req: NextRequest,
-  context?: { params?: Record<string, string> }
-) => Promise<NextResponse<ApiResponse<TResponse>>> {
-  return async (req: NextRequest, context?: { params?: Record<string, string> }) => {
+) {
+  return async (
+    req: NextRequest,
+    context?: { params?: Record<string, string> }
+  ): Promise<NextResponse<ApiResponse<TResponse>>> => {
     const startTime = Date.now();
     const requestId = crypto.randomUUID();
 

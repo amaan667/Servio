@@ -19,14 +19,19 @@ export function createMockRequest(
 ): NextRequest {
   const { method = "GET", body, headers = {} } = options;
 
-  return new NextRequest(url, {
+  const requestOptions: RequestInit = {
     method,
     headers: {
       "content-type": "application/json",
       ...headers,
     },
-    ...(body && { body: JSON.stringify(body) }),
-  });
+  };
+
+  if (body) {
+    requestOptions.body = JSON.stringify(body);
+  }
+
+  return new NextRequest(url, requestOptions);
 }
 
 /**
@@ -47,10 +52,7 @@ export const apiRouteTests = {
   /**
    * Test that route validates request body
    */
-  validatesBody: async (
-    handler: (req: NextRequest) => Promise<Response>,
-    schema: { parse: (data: unknown) => unknown }
-  ) => {
+  validatesBody: async (handler: (req: NextRequest) => Promise<Response>) => {
     it("should return 400 for invalid body", async () => {
       const req = createMockRequest("http://localhost/api/test", {
         method: "POST",
