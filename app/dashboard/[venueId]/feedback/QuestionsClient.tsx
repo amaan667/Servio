@@ -83,18 +83,37 @@ export default function QuestionsClient({
   };
 
   const fetchQuestions = useCallback(async () => {
+    if (!venueId) {
+      console.error("[Feedback Questions] venueId is missing");
+      return;
+    }
+
     try {
-      const response = await fetch(`/api/feedback/questions?venueId=${venueId}`);
+      setLoading(true);
+      const response = await fetch(
+        `/api/feedback/questions?venueId=${encodeURIComponent(venueId)}`
+      );
 
       if (response.ok) {
         const data = await response.json();
 
-        setQuestions(data.questions || []);
+        // Sort questions by sort_index and created_at to ensure proper order
+        const sortedQuestions = (data.questions || []).sort(
+          (a: FeedbackQuestion, b: FeedbackQuestion) => {
+            if (a.sort_index !== b.sort_index) {
+              return (a.sort_index || 0) - (b.sort_index || 0);
+            }
+            return new Date(a.created_at).getTime() - new Date(b.created_at).getTime();
+          }
+        );
+
+        setQuestions(sortedQuestions);
         setTotalCount(data.totalCount || 0);
       } else {
+        const errorData = await response.json().catch(() => ({ error: "Unknown error" }));
         toast({
           title: "Error",
-          description: "Couldn't load questions",
+          description: errorData.error || "Couldn't load questions",
           variant: "destructive",
         });
       }
@@ -104,6 +123,8 @@ export default function QuestionsClient({
         description: "Couldn't load questions",
         variant: "destructive",
       });
+    } finally {
+      setLoading(false);
     }
   }, [venueId, toast]);
 
@@ -114,6 +135,15 @@ export default function QuestionsClient({
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+
+    if (!venueId) {
+      toast({
+        title: "Error",
+        description: "Venue ID is missing. Please refresh the page.",
+        variant: "destructive",
+      });
+      return;
+    }
 
     if (!formData.prompt.trim()) {
       toast({
@@ -163,8 +193,12 @@ export default function QuestionsClient({
           title: "Success",
           description: "Question added successfully",
         });
+
+        // Refresh questions list first to show the new question
+        await fetchQuestions();
+
+        // Then reset form
         resetForm();
-        fetchQuestions();
 
         // Dispatch event to notify other components
         if (typeof window !== "undefined") {
@@ -226,7 +260,7 @@ export default function QuestionsClient({
           description: "Question updated successfully",
         });
         resetForm();
-        fetchQuestions();
+        await fetchQuestions();
 
         // Dispatch event to notify other components
         if (typeof window !== "undefined") {
@@ -298,7 +332,7 @@ export default function QuestionsClient({
           resetForm();
         }
 
-        fetchQuestions();
+        await fetchQuestions();
 
         // Dispatch event to notify other components
         if (typeof window !== "undefined") {
@@ -342,7 +376,7 @@ export default function QuestionsClient({
       });
 
       if (response.ok) {
-        fetchQuestions();
+        await fetchQuestions();
       } else {
         toast({
           title: "Error",
