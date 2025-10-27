@@ -78,31 +78,8 @@ export default function LiveOrdersClient({
     }
   }, [tabParam]);
 
-  // Auto-switch tab if filtered order not found in current tab
-  useEffect(() => {
-    if (!parsedTableFilter || !tabParam) return;
-
-    // Check if order exists in current tab's orders
-    const currentTabOrders =
-      tabParam === "live" ? orders : tabParam === "all" ? allTodayOrders : [];
-    const orderFound = currentTabOrders.some(
-      (order) => (order as any).table_number?.toString() === parsedTableFilter
-    );
-
-    // If not found and we're in live tab, check all tab
-    if (!orderFound && tabParam === "live") {
-      const orderInAllTab = allTodayOrders.some(
-        (order) => (order as any).table_number?.toString() === parsedTableFilter
-      );
-      if (orderInAllTab) {
-        setActiveTab("all");
-        // Update URL without reload
-        const url = new URL(window.location.href);
-        url.searchParams.set("tab", "all");
-        window.history.replaceState({}, "", url.toString());
-      }
-    }
-  }, [parsedTableFilter, tabParam, orders, allTodayOrders]);
+  // When table filter is active, search through both live and all tabs
+  // Show orders from whichever tab they're in without switching tabs
 
   // Load venue name
   useEffect(() => {
@@ -364,38 +341,56 @@ export default function LiveOrdersClient({
 
         {activeTab === "all" && (
           <div className="space-y-6">
-            {allTodayOrders.length === 0 ? (
-              <EmptyState
-                title="No Earlier Orders Today"
-                description="Orders from earlier today will appear here"
-              />
-            ) : (
-              <>
-                <BulkCompleteButton
-                  count={
-                    allTodayOrders.filter((order) =>
-                      ["PLACED", "IN_PREP", "READY", "SERVING", "SERVED"].includes(
-                        order.order_status
-                      )
-                    ).length
-                  }
-                  isCompleting={isBulkCompleting}
-                  onClick={handleBulkComplete}
-                />
+            {(() => {
+              // If filtering by table, search through both live and all tabs
+              const filteredLiveOrders = parsedTableFilter
+                ? orders.filter((order) => order.table_number?.toString() === parsedTableFilter)
+                : [];
+              const filteredAllOrders = parsedTableFilter
+                ? allTodayOrders.filter(
+                    (order) => order.table_number?.toString() === parsedTableFilter
+                  )
+                : allTodayOrders;
 
-                {renderOrdersSection(
-                  allTodayOrders.filter((order) => isCounterOrder(order)),
-                  "Counter Orders",
-                  "orange"
-                )}
+              const allFilteredOrders = [...filteredLiveOrders, ...filteredAllOrders];
 
-                {renderOrdersSection(
-                  allTodayOrders.filter((order) => !isCounterOrder(order)),
-                  "Table Orders",
-                  "blue"
-                )}
-              </>
-            )}
+              if (allFilteredOrders.length === 0) {
+                return (
+                  <EmptyState
+                    title="No Earlier Orders Today"
+                    description="Orders from earlier today will appear here"
+                  />
+                );
+              }
+
+              return (
+                <>
+                  <BulkCompleteButton
+                    count={
+                      allFilteredOrders.filter((order) =>
+                        ["PLACED", "IN_PREP", "READY", "SERVING", "SERVED"].includes(
+                          order.order_status
+                        )
+                      ).length
+                    }
+                    isCompleting={isBulkCompleting}
+                    onClick={handleBulkComplete}
+                  />
+
+                  {renderOrdersSection(
+                    allFilteredOrders.filter((order) => isCounterOrder(order)),
+                    "Counter Orders",
+                    "orange"
+                  )}
+
+                  {renderOrdersSection(
+                    allFilteredOrders.filter((order) => !isCounterOrder(order)),
+                    "Table Orders",
+                    "blue"
+                  )}
+                </>
+              );
+            })()}
           </div>
         )}
 
