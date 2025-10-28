@@ -78,13 +78,34 @@ export function useDesignSettings(venueId: string) {
       setIsSavingDesign(true);
       const supabase = createClient();
 
-      const { error } = await supabase.from("menu_design_settings").upsert({
+      // Prepare data for upsert - exclude legacy fields if using numeric
+      const saveData: any = {
         venue_id: venueId,
-        ...designSettings,
+        venue_name: designSettings.venue_name,
+        logo_url: designSettings.logo_url,
+        primary_color: designSettings.primary_color,
+        secondary_color: designSettings.secondary_color,
+        font_family: designSettings.font_family,
+        font_size: designSettings.font_size,
+        font_size_numeric: designSettings.font_size_numeric,
+        custom_heading: designSettings.custom_heading,
+        auto_theme_enabled: designSettings.auto_theme_enabled,
+        detected_primary_color: designSettings.detected_primary_color,
+        detected_secondary_color: designSettings.detected_secondary_color,
+        show_descriptions: designSettings.show_descriptions,
+        show_prices: designSettings.show_prices,
         updated_at: new Date().toISOString(),
-      });
+      };
+
+      // Only include logo_size_numeric if it's set (for backwards compatibility)
+      if (designSettings.logo_size_numeric !== undefined) {
+        saveData.logo_size_numeric = designSettings.logo_size_numeric;
+      }
+
+      const { error } = await supabase.from("menu_design_settings").upsert(saveData);
 
       if (error) {
+        console.error("Save design error:", error);
         throw error;
       }
 
@@ -93,6 +114,7 @@ export function useDesignSettings(venueId: string) {
         description: "Your design settings have been saved.",
       });
     } catch (_error) {
+      console.error("Save design catch error:", _error);
       toast({
         title: "Save failed",
         description: _error instanceof Error ? _error.message : "Failed to save design settings.",
