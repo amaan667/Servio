@@ -37,15 +37,6 @@ export function HeroSection({
       <div className="relative max-w-screen-xl mx-auto px-6 py-24 lg:py-32">
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-12 items-center">
           <div className="max-w-3xl sm:max-w-xl md:max-w-2xl">
-            <Badge
-              className="bg-white text-purple-700 border-2 border-white mb-6 shadow-2xl font-semibold"
-              style={{
-                boxShadow: "0 4px 20px rgba(255,255,255,0.4), 0 0 40px rgba(255,255,255,0.3)",
-              }}
-            >
-              <QrCode className="w-4 h-4 mr-2" />
-              Transform Your Business
-            </Badge>
             <h1
               className="!text-white text-[clamp(2rem,6vw,4.5rem)] leading-[1.05] tracking-tight font-extrabold"
               style={{
