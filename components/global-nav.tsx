@@ -174,11 +174,11 @@ export default function GlobalNav() {
               // Signed in navigation - modern SaaS style
               <div className="flex items-center space-x-2">
                 {isDashboardRoot ? (
-                  // On dashboard root page: Dashboard, Settings (owners only), Sign Out - default styling
+                  // On dashboard root page: Dashboard, Settings (no border), Sign Out (purple border)
                   <>
                     <Link
                       href="/"
-                      className="flex items-center px-4 py-3 text-base font-medium text-foreground hover:text-primary hover:bg-accent rounded-md transition-all duration-200"
+                      className="flex items-center px-4 py-3 text-base font-medium text-gray-900 hover:text-purple-600 transition-all duration-200"
                     >
                       <Home className="mr-3 h-5 w-5" />
                       Home
@@ -190,34 +190,34 @@ export default function GlobalNav() {
                             ? `/dashboard/${venueId || primaryVenueId}/settings`
                             : "/"
                         }
-                        className="flex items-center px-4 py-3 text-base font-medium text-foreground hover:text-primary hover:bg-accent rounded-md transition-all duration-200"
+                        className="flex items-center px-4 py-3 text-base font-medium text-gray-900 hover:text-purple-600 transition-all duration-200"
                       >
                         <Settings className="mr-3 h-5 w-5" />
                         Settings
                       </Link>
                     )}
                     {/* NO DARK MODE BUTTON ON DASHBOARD ROOT - hidden on home page */}
-                    <div className="w-px h-8 bg-border mx-2"></div>
+                    <div className="w-px h-8 bg-gray-200 mx-2"></div>
                     <Button
-                      variant="destructive"
+                      variant="outline"
                       onClick={async () => {
                         await signOut();
                         router.replace("/");
                       }}
-                      className="flex items-center px-4 py-3 text-base font-medium bg-red-600 text-white hover:bg-red-700 rounded-md transition-all duration-200"
+                      className="flex items-center px-4 py-3 text-base font-medium bg-white text-purple-600 border-2 border-purple-600 hover:bg-purple-600 hover:text-white rounded-md transition-all duration-200"
                     >
                       <LogOut className="mr-3 h-5 w-5" />
                       Sign Out
                     </Button>
                   </>
                 ) : isOnFeaturePage || isOnQRPage ? (
-                  // On feature pages (Live Orders, Menu, etc.) and QR pages: Dashboard, Settings (owners only), Sign Out - default styling
+                  // On feature pages: Dashboard, Settings (no border), Sign Out (purple border)
                   <>
                     <Link
                       href={
                         venueId || primaryVenueId ? `/dashboard/${venueId || primaryVenueId}` : "/"
                       }
-                      className="flex items-center px-4 py-3 text-base font-medium text-foreground hover:text-primary hover:bg-accent rounded-md transition-all duration-200"
+                      className="flex items-center px-4 py-3 text-base font-medium text-gray-900 hover:text-purple-600 transition-all duration-200"
                     >
                       <LayoutDashboard className="mr-3 h-5 w-5" />
                       Dashboard
@@ -229,67 +229,67 @@ export default function GlobalNav() {
                             ? `/dashboard/${venueId || primaryVenueId}/settings`
                             : "/"
                         }
-                        className="flex items-center px-4 py-3 text-base font-medium text-foreground hover:text-primary hover:bg-accent rounded-md transition-all duration-200"
+                        className="flex items-center px-4 py-3 text-base font-medium text-gray-900 hover:text-purple-600 transition-all duration-200"
                       >
                         <Settings className="mr-3 h-5 w-5" />
                         Settings
                       </Link>
                     )}
                     {/* NO DARK MODE BUTTON ON FEATURE PAGES - hidden on home page */}
-                    <div className="w-px h-8 bg-border mx-2"></div>
+                    <div className="w-px h-8 bg-gray-200 mx-2"></div>
                     <Button
-                      variant="destructive"
+                      variant="outline"
                       onClick={async () => {
                         await signOut();
                         router.replace("/");
                       }}
-                      className="flex items-center px-4 py-3 text-base font-medium bg-red-600 text-white hover:bg-red-700 rounded-md transition-all duration-200"
+                      className="flex items-center px-4 py-3 text-base font-medium bg-white text-purple-600 border-2 border-purple-600 hover:bg-purple-600 hover:text-white rounded-md transition-all duration-200"
                     >
                       <LogOut className="mr-3 h-5 w-5" />
                       Sign Out
                     </Button>
                   </>
                 ) : isOnSettings ? (
-                  // On settings pages: Dashboard, Home, Sign Out - default styling
+                  // On settings pages: Dashboard, Home (no border), Sign Out (purple border)
                   <>
                     <Link
                       href={
                         venueId || primaryVenueId ? `/dashboard/${venueId || primaryVenueId}` : "/"
                       }
-                      className="flex items-center px-4 py-3 text-base font-medium text-foreground hover:text-primary hover:bg-accent rounded-md transition-all duration-200"
+                      className="flex items-center px-4 py-3 text-base font-medium text-gray-900 hover:text-purple-600 transition-all duration-200"
                     >
                       <LayoutDashboard className="mr-3 h-5 w-5" />
                       Dashboard
                     </Link>
                     <Link
                       href="/"
-                      className="flex items-center px-4 py-3 text-base font-medium text-foreground hover:text-primary hover:bg-accent rounded-md transition-all duration-200"
+                      className="flex items-center px-4 py-3 text-base font-medium text-gray-900 hover:text-purple-600 transition-all duration-200"
                     >
                       <Home className="mr-3 h-5 w-5" />
                       Home
                     </Link>
                     {/* NO DARK MODE BUTTON ON SETTINGS PAGES - hidden on home page */}
-                    <div className="w-px h-8 bg-border mx-2"></div>
+                    <div className="w-px h-8 bg-gray-200 mx-2"></div>
                     <Button
-                      variant="destructive"
+                      variant="outline"
                       onClick={async () => {
                         await signOut();
                         router.replace("/");
                       }}
-                      className="flex items-center px-4 py-3 text-base font-medium bg-red-600 text-white hover:bg-red-700 rounded-md transition-all duration-200"
+                      className="flex items-center px-4 py-3 text-base font-medium bg-white text-purple-600 border-2 border-purple-600 hover:bg-purple-600 hover:text-white rounded-md transition-all duration-200"
                     >
                       <LogOut className="mr-3 h-5 w-5" />
                       Sign Out
                     </Button>
                   </>
                 ) : (
-                  // On home page only: Dashboard, Settings (owners only), Sign Out (NO dark mode toggle)
+                  // On home page: Dashboard, Settings (no border), Sign Out (purple border) - NO dark mode
                   <>
                     <Link
                       href={
                         venueId || primaryVenueId ? `/dashboard/${venueId || primaryVenueId}` : "/"
                       }
-                      className="flex items-center px-4 py-3 text-base font-medium bg-purple-600 text-white hover:bg-white hover:text-purple-600 hover:border-purple-600 border-2 border-transparent rounded-md transition-all duration-200"
+                      className="flex items-center px-4 py-3 text-base font-medium text-gray-900 hover:text-purple-600 transition-all duration-200"
                     >
                       <LayoutDashboard className="mr-3 h-5 w-5" />
                       Dashboard
@@ -301,21 +301,21 @@ export default function GlobalNav() {
                             ? `/dashboard/${venueId || primaryVenueId}/settings`
                             : "/"
                         }
-                        className="flex items-center px-4 py-3 text-base font-medium bg-purple-600 text-white hover:bg-white hover:text-purple-600 hover:border-purple-600 border-2 border-transparent rounded-md transition-all duration-200"
+                        className="flex items-center px-4 py-3 text-base font-medium text-gray-900 hover:text-purple-600 transition-all duration-200"
                       >
                         <Settings className="mr-3 h-5 w-5" />
                         Settings
                       </Link>
                     )}
                     {/* NO DARK MODE TOGGLE ON HOME PAGE */}
-                    <div className="w-px h-8 bg-border mx-2"></div>
+                    <div className="w-px h-8 bg-gray-200 mx-2"></div>
                     <Button
-                      variant="destructive"
+                      variant="outline"
                       onClick={async () => {
                         await signOut();
                         router.replace("/");
                       }}
-                      className="flex items-center px-4 py-3 text-base font-medium bg-red-600 text-white hover:bg-red-700 rounded-md transition-all duration-200"
+                      className="flex items-center px-4 py-3 text-base font-medium bg-white text-purple-600 border-2 border-purple-600 hover:bg-purple-600 hover:text-white rounded-md transition-all duration-200"
                     >
                       <LogOut className="mr-3 h-5 w-5" />
                       Sign Out
