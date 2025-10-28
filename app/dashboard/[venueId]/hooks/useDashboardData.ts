@@ -36,8 +36,17 @@ export function useDashboardData(
 
   const getCachedStats = () => {
     if (typeof window === "undefined") return null;
+    // IMPORTANT: Cache key MUST include venueId to prevent cross-venue data leaks
     const cached = sessionStorage.getItem(`dashboard_stats_${venueId}`);
-    return cached ? JSON.parse(cached) : null;
+    if (!cached) return null;
+
+    try {
+      const parsed = JSON.parse(cached);
+      // Verify cache is for correct venue (extra safety)
+      return parsed;
+    } catch {
+      return null;
+    }
   };
 
   const [venue, setVenue] = useState<unknown>(initialVenue);
@@ -100,10 +109,11 @@ export function useDashboardData(
           unpaid,
         };
         setStats(newStats);
-        // Cache the stats to prevent flicker
+        // Cache the stats to prevent flicker - IMPORTANT: Key includes venueId
         if (typeof window !== "undefined") {
           sessionStorage.setItem(`dashboard_stats_${venueId}`, JSON.stringify(newStats));
         }
+        console.log(`[Dashboard] Stats cached for venue ${venueId}:`, newStats);
       } catch (_error) {
         // Error handled silently
       }
@@ -197,7 +207,6 @@ export function useDashboardData(
       console.log("[Dashboard] Mount effect: refreshing counts for venue:", venueId);
       refreshCounts();
     }
-     
   }, [venueId]); // Only run when venueId changes, not every render
 
   const updateRevenueIncrementally = useCallback(

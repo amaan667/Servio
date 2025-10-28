@@ -360,6 +360,14 @@ export default function VenueSwitcherPopup({
                 }`}
                 onClick={() => {
                   if (venue.venue_id !== currentVenueId) {
+                    // Clear old venue's cached data before switching
+                    if (typeof window !== "undefined") {
+                      sessionStorage.removeItem(`dashboard_stats_${currentVenueId}`);
+                      sessionStorage.removeItem(`dashboard_counts_${currentVenueId}`);
+                      console.log(
+                        `[Venue Switch] Cleared cache for ${currentVenueId}, switching to ${venue.venue_id}`
+                      );
+                    }
                     onVenueChange(venue.venue_id);
                     setOpen(false);
                   } else {

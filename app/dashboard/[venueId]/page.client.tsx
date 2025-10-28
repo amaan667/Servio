@@ -297,69 +297,58 @@ const DashboardClient = React.memo(function DashboardClient({
         {/* Enhanced KPI Cards - Fixed Position Grid */}
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 sm:gap-6">
           {/* Position 1: Today's Orders - Always visible */}
-          <Link href={`/dashboard/${venueId}/live-orders?since=today`} className="block">
-            <EnhancedStatCard
-              title="Today's Orders"
-              value={dashboardData.counts.today_orders_count}
-              icon={Clock}
-              iconColor="text-blue-600"
-              iconBgColor="bg-blue-100"
-              trend={
-                analyticsData.data?.yesterdayComparison
-                  ? {
-                      value:
-                        ((dashboardData.counts.today_orders_count -
-                          analyticsData.data.yesterdayComparison.orders) /
-                          (analyticsData.data.yesterdayComparison.orders || 1)) *
-                        100,
-                      label: "vs yesterday",
-                    }
-                  : undefined
-              }
-              tooltip="View all orders placed today"
-              href={`/dashboard/${venueId}/live-orders?since=today`}
-            />
-          </Link>
-
-          {/* Position 2: Revenue - Always rendered to maintain grid position */}
           <div className="min-h-[140px]">
-            {userRole === "owner" || userRole === "manager" ? (
-              <Link href={`/dashboard/${venueId}/analytics`} className="block h-full">
-                <EnhancedStatCard
-                  title="Revenue"
-                  value={dashboardData.stats.revenue || 0}
-                  icon={TrendingUp}
-                  iconColor="text-green-600"
-                  iconBgColor="bg-green-100"
-                  isCurrency
-                  trend={
-                    analyticsData.data?.yesterdayComparison
-                      ? {
-                          value:
-                            ((dashboardData.stats.revenue -
-                              analyticsData.data.yesterdayComparison.revenue) /
-                              (analyticsData.data.yesterdayComparison.revenue || 1)) *
-                            100,
-                          label: "vs yesterday",
-                        }
-                      : undefined
-                  }
-                  tooltip="View detailed revenue analytics"
-                  href={`/dashboard/${venueId}/analytics`}
-                />
-              </Link>
-            ) : (
-              <div className="opacity-0 pointer-events-none select-none h-full" aria-hidden="true">
-                <EnhancedStatCard
-                  title="Revenue"
-                  value={0}
-                  icon={TrendingUp}
-                  iconColor="text-green-600"
-                  iconBgColor="bg-green-100"
-                  isCurrency
-                />
-              </div>
-            )}
+            <Link href={`/dashboard/${venueId}/live-orders?since=today`} className="block h-full">
+              <EnhancedStatCard
+                title="Today's Orders"
+                value={dashboardData.counts.today_orders_count}
+                icon={Clock}
+                iconColor="text-blue-600"
+                iconBgColor="bg-blue-100"
+                trend={
+                  analyticsData.data?.yesterdayComparison
+                    ? {
+                        value:
+                          ((dashboardData.counts.today_orders_count -
+                            analyticsData.data.yesterdayComparison.orders) /
+                            (analyticsData.data.yesterdayComparison.orders || 1)) *
+                          100,
+                        label: "vs yesterday",
+                      }
+                    : undefined
+                }
+                tooltip="View all orders placed today"
+                href={`/dashboard/${venueId}/live-orders?since=today`}
+              />
+            </Link>
+          </div>
+
+          {/* Position 2: Revenue - Always visible with consistent height */}
+          <div className="min-h-[140px]">
+            <Link href={`/dashboard/${venueId}/analytics`} className="block h-full">
+              <EnhancedStatCard
+                title="Revenue"
+                value={dashboardData.stats.revenue || 0}
+                icon={TrendingUp}
+                iconColor="text-green-600"
+                iconBgColor="bg-green-100"
+                isCurrency
+                trend={
+                  analyticsData.data?.yesterdayComparison
+                    ? {
+                        value:
+                          ((dashboardData.stats.revenue -
+                            analyticsData.data.yesterdayComparison.revenue) /
+                            (analyticsData.data.yesterdayComparison.revenue || 1)) *
+                          100,
+                        label: "vs yesterday",
+                      }
+                    : undefined
+                }
+                tooltip="View detailed revenue analytics"
+                href={`/dashboard/${venueId}/analytics`}
+              />
+            </Link>
           </div>
 
           {/* Position 3: Tables Set Up - Always visible */}
