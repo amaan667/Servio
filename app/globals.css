@@ -666,22 +666,35 @@ div {
 
 /* Mobile-specific improvements */
 @media (max-width: 768px) {
-  /* Enhanced text visibility on mobile - only target specific elements */
+  /* Enhanced text visibility on mobile - make all text black for readability */
   .text-muted-foreground {
-    color: rgb(55, 65, 81) !important; /* gray-700 for visibility */
+    color: rgb(0, 0, 0) !important; /* Black for maximum visibility on mobile */
   }
 
   /* DO NOT override .text-white - let it stay white! */
 
   /* Enhanced card text visibility - specific selectors */
   .card .text-muted {
-    color: rgb(75, 85, 99) !important; /* gray-600 */
+    color: rgb(0, 0, 0) !important; /* Black */
+  }
+
+  /* Gray text colors to black on mobile */
+  .text-gray-500,
+  .text-gray-600 {
+    color: rgb(0, 0, 0) !important; /* Black */
   }
 
   /* Target only elements without explicit color classes */
   .card p:not([class*="text-white"]):not([class*="text-"]),
   .card span:not([class*="text-white"]):not([class*="text-"]) {
-    color: rgb(31, 41, 55) !important; /* gray-800 */
+    color: rgb(0, 0, 0) !important; /* Black */
+  }
+
+  /* Labels and descriptions to black */
+  label,
+  .text-sm,
+  .text-xs {
+    color: rgb(0, 0, 0) !important; /* Black */
   }
 
   /* Dark mode fixes */
@@ -1837,8 +1850,8 @@ div {
   }
 
   .mobile-text-muted {
-    color: #4b5563 !important;
-    font-weight: 400 !important;
+    color: #000000 !important; /* Black instead of gray */
+    font-weight: 500 !important; /* Slightly bolder for readability */
   }
 
   /* Mobile navigation text visibility fixes */
