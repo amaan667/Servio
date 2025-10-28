@@ -91,18 +91,32 @@ export function HeroSection({
                 View Demo
               </Button>
             </div>
-            <div className="mt-12 flex items-center space-x-8 !text-white">
-              <div className="flex items-center">
-                <CheckCircle className="h-5 w-5 mr-2 text-white" strokeWidth={2} />
-                <span className="font-semibold !text-white drop-shadow-sm">14-day free trial</span>
+            <div className="mt-12 flex flex-wrap items-center justify-center lg:justify-start gap-6">
+              <div className="flex items-center gap-2">
+                <CheckCircle
+                  className="h-5 w-5 !text-white"
+                  strokeWidth={2}
+                  style={{ color: "#ffffff", stroke: "#ffffff" }}
+                />
+                <span className="font-semibold text-white whitespace-nowrap">
+                  14-day free trial
+                </span>
               </div>
-              <div className="flex items-center">
-                <CheckCircle className="h-5 w-5 mr-2 text-white" strokeWidth={2} />
-                <span className="font-semibold !text-white drop-shadow-sm">No setup fees</span>
+              <div className="flex items-center gap-2">
+                <CheckCircle
+                  className="h-5 w-5 !text-white"
+                  strokeWidth={2}
+                  style={{ color: "#ffffff", stroke: "#ffffff" }}
+                />
+                <span className="font-semibold text-white whitespace-nowrap">No setup fees</span>
               </div>
-              <div className="flex items-center">
-                <CheckCircle className="h-5 w-5 mr-2 text-white" strokeWidth={2} />
-                <span className="font-semibold !text-white drop-shadow-sm">Cancel anytime</span>
+              <div className="flex items-center gap-2">
+                <CheckCircle
+                  className="h-5 w-5 !text-white"
+                  strokeWidth={2}
+                  style={{ color: "#ffffff", stroke: "#ffffff" }}
+                />
+                <span className="font-semibold text-white whitespace-nowrap">Cancel anytime</span>
               </div>
             </div>
           </div>
