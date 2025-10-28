@@ -54,6 +54,7 @@ export default function VenueSwitcherPopup({
   const [loading, setLoading] = useState(false);
   const [showAddForm, setShowAddForm] = useState(false);
   const [editingVenue, setEditingVenue] = useState<Venue | null>(null);
+  const [currentVenueName, setCurrentVenueName] = useState<string | null>(null);
   const router = useRouter();
 
   // Form state
@@ -64,7 +65,31 @@ export default function VenueSwitcherPopup({
     description: "",
   });
 
-  // Load venues
+  // Load current venue name on mount and when currentVenueId changes
+  useEffect(() => {
+    const loadCurrentVenueName = async () => {
+      try {
+        const supabase = createClient();
+        const { data } = await supabase
+          .from("venues")
+          .select("venue_name")
+          .eq("venue_id", currentVenueId)
+          .single();
+
+        if (data) {
+          setCurrentVenueName(data.venue_name);
+        }
+      } catch {
+        // Silently handle - will show "Select Venue"
+      }
+    };
+
+    if (currentVenueId) {
+      loadCurrentVenueName();
+    }
+  }, [currentVenueId]);
+
+  // Load all venues when dialog opens
   useEffect(() => {
     if (open) {
       loadVenues();
@@ -277,7 +302,7 @@ export default function VenueSwitcherPopup({
       <DialogTrigger asChild>
         <Button variant="outline" className="flex items-center gap-2">
           <Building2 className="h-4 w-4" />
-          {currentVenue?.venue_name || "Select Venue"}
+          {currentVenueName || currentVenue?.venue_name || "Select Venue"}
         </Button>
       </DialogTrigger>
       <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
