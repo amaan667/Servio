@@ -82,12 +82,9 @@ export function QuickActionsToolbar({
             <div className="flex items-center gap-2 overflow-x-auto scrollbar-hide py-1">
               {actions.map((action) => (
                 <Link key={action.href} href={action.href} className="flex-shrink-0">
-                  <button
-                    className="flex items-center gap-2 px-3 py-2 h-10 bg-purple-600 hover:bg-white hover:border-purple-600 border-2 border-transparent transition-all duration-200 rounded-lg font-medium"
-                    style={{ color: "white" }}
-                  >
-                    <action.icon className="h-4 w-4" style={{ color: "white" }} />
-                    <span className="hidden sm:inline text-sm" style={{ color: "white" }}>
+                  <button className="group flex items-center gap-2 px-3 py-2 h-10 bg-purple-600 hover:bg-white hover:border-purple-600 border-2 border-transparent transition-all duration-200 rounded-lg font-medium">
+                    <action.icon className="h-4 w-4 text-white group-hover:text-purple-600 transition-colors" />
+                    <span className="hidden sm:inline text-sm text-white group-hover:text-purple-600 transition-colors">
                       {action.label}
                     </span>
                   </button>
