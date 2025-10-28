@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -31,6 +31,16 @@ export default function SignUpForm({ onGoogleSignIn, isSigningUp = false }: Sign
     businessType: "Restaurant",
     serviceType: "table_service", // 'table_service' or 'counter_pickup'
   });
+
+  // Pre-fill email if coming from OAuth
+  useEffect(() => {
+    if (typeof window !== "undefined") {
+      const pendingEmail = sessionStorage.getItem("pending_signup_email");
+      if (pendingEmail) {
+        setFormData((prev) => ({ ...prev, email: pendingEmail }));
+      }
+    }
+  }, []);
 
   const handleEmailSignUp = async (e: React.FormEvent) => {
     e.preventDefault();

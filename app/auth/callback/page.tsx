@@ -86,13 +86,26 @@ function CallbackContent() {
             .limit(1);
 
           if (venueError || !venues || venues.length === 0) {
-            router.push("/sign-up");
+            // New user without venue - store email and sign them out
+            // They should NOT be authenticated until signup is complete
+            if (existingSession.user.email) {
+              sessionStorage.setItem("pending_signup_email", existingSession.user.email);
+            }
+            await supabaseBrowser().auth.signOut();
+            // Use replace to avoid back button issues
+            router.replace("/sign-up");
             return;
           }
 
           const primaryVenue = venues[0];
           if (!primaryVenue) {
-            router.push("/sign-up");
+            // New user without venue - store email and sign them out
+            if (existingSession.user.email) {
+              sessionStorage.setItem("pending_signup_email", existingSession.user.email);
+            }
+            await supabaseBrowser().auth.signOut();
+            // Use replace to avoid back button issues
+            router.replace("/sign-up");
             return;
           }
 
@@ -165,13 +178,23 @@ function CallbackContent() {
                 .limit(1);
 
               if (venueError || !venues || venues.length === 0) {
-                router.push("/sign-up");
+                // New user without venue - store email and sign them out
+                if (retryData.session.user.email) {
+                  sessionStorage.setItem("pending_signup_email", retryData.session.user.email);
+                }
+                await supabaseBrowser().auth.signOut();
+                router.replace("/sign-up");
                 return;
               }
 
               const primaryVenue = venues[0];
               if (!primaryVenue) {
-                router.push("/sign-up");
+                // New user without venue - store email and sign them out
+                if (retryData.session.user.email) {
+                  sessionStorage.setItem("pending_signup_email", retryData.session.user.email);
+                }
+                await supabaseBrowser().auth.signOut();
+                router.replace("/sign-up");
                 return;
               }
 
@@ -200,13 +223,24 @@ function CallbackContent() {
             .limit(1);
 
           if (venueError || !venues || venues.length === 0) {
-            router.push("/sign-up");
+            // New user without venue - store email and sign them out
+            // They should NOT be authenticated until signup is complete
+            if (data.session.user.email) {
+              sessionStorage.setItem("pending_signup_email", data.session.user.email);
+            }
+            await supabaseBrowser().auth.signOut();
+            router.replace("/sign-up");
             return;
           }
 
           const primaryVenue = venues[0];
           if (!primaryVenue) {
-            router.push("/sign-up");
+            // New user without venue - store email and sign them out
+            if (data.session.user.email) {
+              sessionStorage.setItem("pending_signup_email", data.session.user.email);
+            }
+            await supabaseBrowser().auth.signOut();
+            router.replace("/sign-up");
             return;
           }
 
