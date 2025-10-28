@@ -373,12 +373,15 @@ export default function VenueSwitcherPopup({
                 }`}
                 onClick={() => {
                   if (venue.venue_id !== currentVenueId) {
-                    // Clear old venue's cached data before switching
+                    // Cache new venue name and clear old venue's data before switching
                     if (typeof window !== "undefined") {
+                      // Pre-cache new venue name to prevent flicker
+                      sessionStorage.setItem(`venue_name_${venue.venue_id}`, venue.venue_name);
+                      // Clear old venue's cached data
                       sessionStorage.removeItem(`dashboard_stats_${currentVenueId}`);
                       sessionStorage.removeItem(`dashboard_counts_${currentVenueId}`);
                       console.log(
-                        `[Venue Switch] Cleared cache for ${currentVenueId}, switching to ${venue.venue_id}`
+                        `[Venue Switch] Cleared cache for ${currentVenueId}, switching to ${venue.venue_id} (${venue.venue_name})`
                       );
                     }
                     onVenueChange(venue.venue_id);
