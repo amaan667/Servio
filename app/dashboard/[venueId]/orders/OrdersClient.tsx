@@ -302,16 +302,24 @@ const OrdersClient: React.FC<OrdersClientProps> = ({
                 key={tab.key}
                 onClick={() => setActiveTab(tab.key)}
                 className={`
-                  group relative grid w-[11rem] grid-rows-[1fr_auto] rounded-xl px-4 py-2 text-left transition
-                  ${activeTab === tab.key ? "bg-violet-600 text-white" : "text-slate-700 hover:bg-slate-50"}
+                  group relative grid w-[11rem] grid-rows-[1fr_auto] rounded-xl px-4 py-2 text-left transition-all duration-200 border-2
+                  ${
+                    activeTab === tab.key
+                      ? "bg-purple-600 text-white border-purple-600 hover:bg-white hover:text-purple-600"
+                      : "bg-white text-purple-600 border-purple-600"
+                  }
                 `}
               >
                 <span className="flex items-center justify-between">
                   <span className="font-medium">{tab.label}</span>
                   <span
                     className={`
-                    ml-2 inline-flex min-w-[1.5rem] items-center justify-center rounded-full px-2 text-xs
-                    ${activeTab === tab.key ? "bg-violet-500/70 text-white" : "bg-slate-200 text-slate-700"}
+                    ml-2 inline-flex min-w-[1.5rem] items-center justify-center rounded-full px-2 text-xs transition-all duration-200
+                    ${
+                      activeTab === tab.key
+                        ? "bg-white/20 text-white group-hover:bg-purple-600/20 group-hover:text-purple-600"
+                        : "bg-purple-100 text-purple-600"
+                    }
                   `}
                   >
                     {tab.count}
@@ -319,8 +327,8 @@ const OrdersClient: React.FC<OrdersClientProps> = ({
                 </span>
                 <span
                   className={`
-                  mt-0.5 text-xs
-                  ${activeTab === tab.key ? "text-violet-100" : "text-slate-400"}
+                  mt-0.5 text-xs transition-all duration-200
+                  ${activeTab === tab.key ? "text-white group-hover:text-purple-600" : "text-purple-600/70"}
                 `}
                 >
                   {tab.hint}

@@ -7,6 +7,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { ToggleSwitch } from "@/components/ui/toggle-switch";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import {
   Dialog,
   DialogContent,
@@ -291,242 +292,227 @@ export default function MenuManagementClient({
 
   return (
     <div className="space-y-6">
-      {/* Tab Navigation */}
-      <div className="flex flex-col sm:flex-row space-y-2 sm:space-y-0 sm:space-x-1 mb-6 bg-muted p-1 rounded-lg w-full sm:w-fit">
-        <Button
-          variant={activeTab === "manage" ? "default" : "ghost"}
-          onClick={() => setActiveTab("manage")}
-          className="flex items-center justify-center space-x-2 w-full sm:w-auto"
-        >
-          <Settings className="h-4 w-4" />
-          <span>Manage</span>
-        </Button>
-        <Button
-          variant={activeTab === "design" ? "default" : "ghost"}
-          onClick={() => setActiveTab("design")}
-          className="flex items-center justify-center space-x-2 w-full sm:w-auto"
-        >
-          <Palette className="h-4 w-4" />
-          <span>Design</span>
-        </Button>
-        <Button
-          variant={activeTab === "preview" ? "default" : "ghost"}
-          onClick={() => setActiveTab("preview")}
-          className="flex items-center justify-center space-x-2 w-full sm:w-auto"
-        >
-          <Eye className="h-4 w-4" />
-          <span>Preview</span>
-        </Button>
-      </div>
+      <Tabs value={activeTab} onValueChange={(value) => setActiveTab(value as ActiveTab)}>
+        <TabsList className="grid w-full grid-cols-3">
+          <TabsTrigger value="manage" className="flex items-center gap-2">
+            <Settings className="h-4 w-4" />
+            Manage
+          </TabsTrigger>
+          <TabsTrigger value="design" className="flex items-center gap-2">
+            <Palette className="h-4 w-4" />
+            Design
+          </TabsTrigger>
+          <TabsTrigger value="preview" className="flex items-center gap-2">
+            <Eye className="h-4 w-4" />
+            Preview
+          </TabsTrigger>
+        </TabsList>
 
-      {/* Manage Tab */}
-      {activeTab === "manage" && (
-        <div className="space-y-6">
-          {/* Unified Menu Upload - Handles PDF + Optional URL */}
-          <MenuUploadCard venueId={venueId} onSuccess={() => loadMenuItems()} />
+        <TabsContent value="manage" className="space-y-6 mt-6">
+          <div className="space-y-6">
+            {/* Unified Menu Upload - Handles PDF + Optional URL */}
+            <MenuUploadCard venueId={venueId} onSuccess={() => loadMenuItems()} />
 
-          {menuItems.length > 0 && (
+            {menuItems.length > 0 && (
+              <Card>
+                <CardHeader>
+                  <CardTitle className="flex items-center justify-between">
+                    <div className="flex items-center space-x-2">
+                      <Grid className="h-5 w-5" />
+                      <span>Categories</span>
+                    </div>
+                    <Button
+                      variant="outline"
+                      onClick={() => setShowCategories(!showCategories)}
+                      className="flex items-center space-x-2"
+                    >
+                      {showCategories ? (
+                        <ChevronDown className="h-4 w-4" />
+                      ) : (
+                        <ChevronRight className="h-4 w-4" />
+                      )}
+                      <span>{showCategories ? "Hide" : "Manage"}</span>
+                    </Button>
+                  </CardTitle>
+                </CardHeader>
+                {showCategories && (
+                  <CardContent>
+                    <CategoriesManagement
+                      venueId={venueId}
+                      onCategoriesUpdate={() => loadMenuItems()}
+                    />
+                  </CardContent>
+                )}
+              </Card>
+            )}
+
             <Card>
               <CardHeader>
                 <CardTitle className="flex items-center justify-between">
                   <div className="flex items-center space-x-2">
-                    <Grid className="h-5 w-5" />
-                    <span>Categories</span>
+                    <ShoppingBag className="h-5 w-5" />
+                    <span>Menu Items ({menuItems.length})</span>
                   </div>
-                  <Button
-                    variant="outline"
-                    onClick={() => setShowCategories(!showCategories)}
-                    className="flex items-center space-x-2"
-                  >
-                    {showCategories ? (
-                      <ChevronDown className="h-4 w-4" />
-                    ) : (
-                      <ChevronRight className="h-4 w-4" />
+                  <div className="flex items-center space-x-2">
+                    <Dialog open={isAddModalOpen} onOpenChange={setIsAddModalOpen}>
+                      <DialogTrigger asChild>
+                        <Button className="flex items-center space-x-2">
+                          <Plus className="h-4 w-4" />
+                          <span>Add Item</span>
+                        </Button>
+                      </DialogTrigger>
+                      <DialogContent className="sm:max-w-[425px]">
+                        <DialogHeader>
+                          <DialogTitle>
+                            {editingItem ? "Edit Menu Item" : "Add Menu Item"}
+                          </DialogTitle>
+                        </DialogHeader>
+                        <MenuItemForm
+                          formData={formData}
+                          setFormData={setFormData}
+                          editingItem={editingItem}
+                          onSubmit={handleSubmit}
+                          onCancel={() => setIsAddModalOpen(false)}
+                        />
+                      </DialogContent>
+                    </Dialog>
+                    {menuItems.length > 0 && (
+                      <Button
+                        variant="destructive"
+                        onClick={clearAllMenu}
+                        disabled={isClearing}
+                        className="flex items-center space-x-2"
+                      >
+                        <Trash className="h-4 w-4" />
+                        <span>{isClearing ? "Clearing..." : "Clear All"}</span>
+                      </Button>
                     )}
-                    <span>{showCategories ? "Hide" : "Manage"}</span>
-                  </Button>
+                  </div>
                 </CardTitle>
               </CardHeader>
-              {showCategories && (
-                <CardContent>
-                  <CategoriesManagement
-                    venueId={venueId}
-                    onCategoriesUpdate={() => loadMenuItems()}
-                  />
-                </CardContent>
-              )}
-            </Card>
-          )}
-
-          <Card>
-            <CardHeader>
-              <CardTitle className="flex items-center justify-between">
-                <div className="flex items-center space-x-2">
-                  <ShoppingBag className="h-5 w-5" />
-                  <span>Menu Items ({menuItems.length})</span>
-                </div>
-                <div className="flex items-center space-x-2">
-                  <Dialog open={isAddModalOpen} onOpenChange={setIsAddModalOpen}>
-                    <DialogTrigger asChild>
-                      <Button className="flex items-center space-x-2">
-                        <Plus className="h-4 w-4" />
-                        <span>Add Item</span>
-                      </Button>
-                    </DialogTrigger>
-                    <DialogContent className="sm:max-w-[425px]">
-                      <DialogHeader>
-                        <DialogTitle>
-                          {editingItem ? "Edit Menu Item" : "Add Menu Item"}
-                        </DialogTitle>
-                      </DialogHeader>
-                      <MenuItemForm
-                        formData={formData}
-                        setFormData={setFormData}
-                        editingItem={editingItem}
-                        onSubmit={handleSubmit}
-                        onCancel={() => setIsAddModalOpen(false)}
-                      />
-                    </DialogContent>
-                  </Dialog>
-                  {menuItems.length > 0 && (
+              <CardContent>
+                {menuItems.length === 0 ? (
+                  <div className="text-center py-8">
+                    <ShoppingBag className="h-12 w-12 text-muted-foreground mx-auto mb-4" />
+                    <h3 className="text-lg font-medium text-foreground mb-2">No menu items yet</h3>
+                    <p className="text-muted-foreground mb-4">
+                      Get started by adding your first menu item or uploading a menu.
+                    </p>
                     <Button
-                      variant="destructive"
-                      onClick={clearAllMenu}
-                      disabled={isClearing}
+                      onClick={() => setIsAddModalOpen(true)}
                       className="flex items-center space-x-2"
                     >
-                      <Trash className="h-4 w-4" />
-                      <span>{isClearing ? "Clearing..." : "Clear All"}</span>
+                      <Plus className="h-4 w-4" />
+                      <span>Add First Item</span>
                     </Button>
-                  )}
-                </div>
-              </CardTitle>
-            </CardHeader>
-            <CardContent>
-              {menuItems.length === 0 ? (
-                <div className="text-center py-8">
-                  <ShoppingBag className="h-12 w-12 text-muted-foreground mx-auto mb-4" />
-                  <h3 className="text-lg font-medium text-foreground mb-2">No menu items yet</h3>
-                  <p className="text-muted-foreground mb-4">
-                    Get started by adding your first menu item or uploading a menu.
-                  </p>
-                  <Button
-                    onClick={() => setIsAddModalOpen(true)}
-                    className="flex items-center space-x-2"
-                  >
-                    <Plus className="h-4 w-4" />
-                    <span>Add First Item</span>
-                  </Button>
-                </div>
-              ) : (
-                <DragDropContext onDragEnd={handleDragEnd}>
-                  <div className="space-y-4">
-                    {getCategories().map((category) => (
-                      <div key={category} className="border rounded-lg">
-                        <div
-                          className="flex items-center justify-between p-4 cursor-pointer hover:bg-muted/50"
-                          onClick={() => toggleCategory(category)}
-                        >
-                          <div className="flex items-center space-x-2">
-                            {expandedCategories.has(category) ? (
-                              <ChevronDown className="h-4 w-4" />
-                            ) : (
-                              <ChevronRight className="h-4 w-4" />
-                            )}
-                            <h3 className="font-medium text-foreground">{category}</h3>
-                            <span className="text-sm text-muted-foreground">
-                              ({getItemsByCategory(category).length} items)
-                            </span>
-                          </div>
-                        </div>
-                        {expandedCategories.has(category) && (
-                          <Droppable droppableId={category}>
-                            {(provided, snapshot) => (
-                              <div
-                                ref={provided.innerRef}
-                                {...provided.droppableProps}
-                                className={`border-t ${snapshot.isDraggingOver ? "bg-blue-50" : ""}`}
-                              >
-                                {getItemsByCategory(category)
-                                  .sort((a, b) => (a.position || 0) - (b.position || 0))
-                                  .map((item, index) => (
-                                    <Draggable key={item.id} draggableId={item.id} index={index}>
-                                      {(provided, snapshot) => (
-                                        <div
-                                          ref={provided.innerRef}
-                                          {...provided.draggableProps}
-                                          className={`flex items-center justify-between p-4 hover:bg-muted/25 transition-colors ${
-                                            snapshot.isDragging
-                                              ? "bg-blue-50 border-l-4 border-blue-500 shadow-md"
-                                              : ""
-                                          }`}
-                                        >
-                                          <div className="flex items-center space-x-2 flex-1">
-                                            <div
-                                              {...provided.dragHandleProps}
-                                              className="cursor-grab active:cursor-grabbing text-gray-400 hover:text-gray-600"
-                                            >
-                                              <GripVertical className="h-5 w-5" />
-                                            </div>
-                                            <div className="flex-1">
-                                              <div className="flex items-center space-x-2">
-                                                <h4 className="font-medium text-foreground">
-                                                  {item.name}
-                                                </h4>
-                                                {!item.is_available && (
-                                                  <span className="text-xs bg-red-100 text-red-800 px-2 py-1 rounded">
-                                                    Unavailable
-                                                  </span>
-                                                )}
-                                              </div>
-                                              {item.description && (
-                                                <p className="text-sm text-muted-foreground mt-1">
-                                                  {item.description}
-                                                </p>
-                                              )}
-                                              <p className="text-sm font-medium text-foreground mt-1">
-                                                {formatPriceWithCurrency(item.price, "£")}
-                                              </p>
-                                            </div>
-                                          </div>
-                                          <div className="flex items-center space-x-2">
-                                            <Button
-                                              variant="ghost"
-                                              size="sm"
-                                              onClick={() => handleEdit(item)}
-                                            >
-                                              <Edit className="h-4 w-4" />
-                                            </Button>
-                                            <Button
-                                              variant="ghost"
-                                              size="sm"
-                                              onClick={() => handleDelete(item)}
-                                            >
-                                              <Trash2 className="h-4 w-4" />
-                                            </Button>
-                                          </div>
-                                        </div>
-                                      )}
-                                    </Draggable>
-                                  ))}
-                                {provided.placeholder}
-                              </div>
-                            )}
-                          </Droppable>
-                        )}
-                      </div>
-                    ))}
                   </div>
-                </DragDropContext>
-              )}
-            </CardContent>
-          </Card>
-        </div>
-      )}
+                ) : (
+                  <DragDropContext onDragEnd={handleDragEnd}>
+                    <div className="space-y-4">
+                      {getCategories().map((category) => (
+                        <div key={category} className="border rounded-lg">
+                          <div
+                            className="flex items-center justify-between p-4 cursor-pointer hover:bg-muted/50"
+                            onClick={() => toggleCategory(category)}
+                          >
+                            <div className="flex items-center space-x-2">
+                              {expandedCategories.has(category) ? (
+                                <ChevronDown className="h-4 w-4" />
+                              ) : (
+                                <ChevronRight className="h-4 w-4" />
+                              )}
+                              <h3 className="font-medium text-foreground">{category}</h3>
+                              <span className="text-sm text-muted-foreground">
+                                ({getItemsByCategory(category).length} items)
+                              </span>
+                            </div>
+                          </div>
+                          {expandedCategories.has(category) && (
+                            <Droppable droppableId={category}>
+                              {(provided, snapshot) => (
+                                <div
+                                  ref={provided.innerRef}
+                                  {...provided.droppableProps}
+                                  className={`border-t ${snapshot.isDraggingOver ? "bg-blue-50" : ""}`}
+                                >
+                                  {getItemsByCategory(category)
+                                    .sort((a, b) => (a.position || 0) - (b.position || 0))
+                                    .map((item, index) => (
+                                      <Draggable key={item.id} draggableId={item.id} index={index}>
+                                        {(provided, snapshot) => (
+                                          <div
+                                            ref={provided.innerRef}
+                                            {...provided.draggableProps}
+                                            className={`flex items-center justify-between p-4 hover:bg-muted/25 transition-colors ${
+                                              snapshot.isDragging
+                                                ? "bg-blue-50 border-l-4 border-blue-500 shadow-md"
+                                                : ""
+                                            }`}
+                                          >
+                                            <div className="flex items-center space-x-2 flex-1">
+                                              <div
+                                                {...provided.dragHandleProps}
+                                                className="cursor-grab active:cursor-grabbing text-gray-400 hover:text-gray-600"
+                                              >
+                                                <GripVertical className="h-5 w-5" />
+                                              </div>
+                                              <div className="flex-1">
+                                                <div className="flex items-center space-x-2">
+                                                  <h4 className="font-medium text-foreground">
+                                                    {item.name}
+                                                  </h4>
+                                                  {!item.is_available && (
+                                                    <span className="text-xs bg-red-100 text-red-800 px-2 py-1 rounded">
+                                                      Unavailable
+                                                    </span>
+                                                  )}
+                                                </div>
+                                                {item.description && (
+                                                  <p className="text-sm text-muted-foreground mt-1">
+                                                    {item.description}
+                                                  </p>
+                                                )}
+                                                <p className="text-sm font-medium text-foreground mt-1">
+                                                  {formatPriceWithCurrency(item.price, "£")}
+                                                </p>
+                                              </div>
+                                            </div>
+                                            <div className="flex items-center space-x-2">
+                                              <Button
+                                                variant="ghost"
+                                                size="sm"
+                                                onClick={() => handleEdit(item)}
+                                              >
+                                                <Edit className="h-4 w-4" />
+                                              </Button>
+                                              <Button
+                                                variant="ghost"
+                                                size="sm"
+                                                onClick={() => handleDelete(item)}
+                                              >
+                                                <Trash2 className="h-4 w-4" />
+                                              </Button>
+                                            </div>
+                                          </div>
+                                        )}
+                                      </Draggable>
+                                    ))}
+                                  {provided.placeholder}
+                                </div>
+                              )}
+                            </Droppable>
+                          )}
+                        </div>
+                      ))}
+                    </div>
+                  </DragDropContext>
+                )}
+              </CardContent>
+            </Card>
+          </div>
+        </TabsContent>
 
-      {/* Design Tab */}
-      {activeTab === "design" && (
-        <div className="space-y-6">
+        <TabsContent value="design" className="space-y-6 mt-6">
           <ThemeSettings designSettings={designSettings} setDesignSettings={setDesignSettings} />
 
           <LayoutSettings designSettings={designSettings} setDesignSettings={setDesignSettings} />
@@ -551,12 +537,9 @@ export default function MenuManagementClient({
               <span>{isSavingDesign ? "Saving..." : "Save Design"}</span>
             </Button>
           </div>
-        </div>
-      )}
+        </TabsContent>
 
-      {/* Preview Tab */}
-      {activeTab === "preview" && (
-        <div className="space-y-6">
+        <TabsContent value="preview" className="space-y-6 mt-6">
           <PreviewControls
             previewMode={previewMode}
             setPreviewMode={setPreviewMode}
@@ -753,8 +736,8 @@ export default function MenuManagementClient({
               </CardContent>
             </Card>
           )}
-        </div>
-      )}
+        </TabsContent>
+      </Tabs>
     </div>
   );
 }

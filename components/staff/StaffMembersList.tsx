@@ -119,8 +119,11 @@ const StaffMembersList: React.FC<StaffMembersListProps> = ({
             <div className="space-y-2">
               <Label htmlFor="role">Role</Label>
               <Select value={role} onValueChange={setRole}>
-                <SelectTrigger id="role">
-                  <SelectValue />
+                <SelectTrigger
+                  id="role"
+                  className="bg-purple-600 text-white border-purple-600 hover:bg-purple-700"
+                >
+                  <SelectValue className="text-white" />
                 </SelectTrigger>
                 <SelectContent>
                   <SelectItem value="Server">Server</SelectItem>
@@ -133,7 +136,11 @@ const StaffMembersList: React.FC<StaffMembersListProps> = ({
               </Select>
             </div>
             <div className="flex items-end">
-              <Button onClick={handleAddStaff} disabled={adding || !name.trim()} className="w-full">
+              <Button
+                onClick={handleAddStaff}
+                disabled={adding || !name.trim()}
+                className="w-full bg-purple-600 text-white hover:bg-purple-700"
+              >
                 <UserPlus className="h-4 w-4 mr-2" />
                 {adding ? "Adding..." : "Add Staff"}
               </Button>
@@ -280,7 +287,7 @@ const StaffMembersList: React.FC<StaffMembersListProps> = ({
                 <Button
                   onClick={invitation.handleSendInvite}
                   disabled={invitation.inviteLoading || !invitation.inviteEmail.trim()}
-                  className="bg-purple-600 hover:bg-purple-700"
+                  className="bg-purple-600 text-white hover:bg-purple-700"
                 >
                   {invitation.inviteLoading ? "Sending..." : "Send Invitation"}
                 </Button>
