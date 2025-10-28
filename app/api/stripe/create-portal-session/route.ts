@@ -16,7 +16,7 @@ export async function POST(_request: NextRequest) {
     const { user, supabase } = auth;
 
     const body = await _request.json();
-    const { organizationId } = body;
+    const { organizationId, venueId } = body;
 
     // Get organization
     const { data: org } = await supabase
@@ -35,8 +35,7 @@ export async function POST(_request: NextRequest) {
     }
 
     // Create billing portal session
-    // Return to settings page - if we have venueId in org metadata, use it; otherwise go to general settings
-    const venueId = (org as any).venue_id || (org as any).primary_venue_id;
+    // Return to settings page - use venueId from request if provided
     const returnUrl = venueId
       ? `${process.env.NEXT_PUBLIC_SITE_URL || "https://servio-production.up.railway.app"}/dashboard/${venueId}/settings`
       : `${process.env.NEXT_PUBLIC_SITE_URL || "https://servio-production.up.railway.app"}/dashboard`;

@@ -5,20 +5,20 @@ import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { CheckCircle2, AlertTriangle, Save } from "lucide-react";
-import MobileNav from '@/components/MobileNav';
-import BillingSection from '@/components/settings/BillingSection';
+import MobileNav from "@/components/MobileNav";
+import BillingSection from "@/components/settings/BillingSection";
 
 // Hooks
-import { useVenueSettings, Venue, User } from './hooks/useVenueSettings';
-import { usePasswordManagement } from './hooks/usePasswordManagement';
-import { useAccountDeletion } from './hooks/useAccountDeletion';
+import { useVenueSettings, Venue, User } from "./hooks/useVenueSettings";
+import { usePasswordManagement } from "./hooks/usePasswordManagement";
+import { useAccountDeletion } from "./hooks/useAccountDeletion";
 
 // Components
-import { AccountInformationCard } from './components/AccountInformationCard';
-import { SecuritySettingsCard } from './components/SecuritySettingsCard';
-import { VenueSettingsCard } from './components/VenueSettingsCard';
-import { OperatingHoursCard } from './components/OperatingHoursCard';
-import { DeleteAccountCard } from './components/DeleteAccountCard';
+import { AccountInformationCard } from "./components/AccountInformationCard";
+import { SecuritySettingsCard } from "./components/SecuritySettingsCard";
+import { VenueSettingsCard } from "./components/VenueSettingsCard";
+import { OperatingHoursCard } from "./components/OperatingHoursCard";
+import { DeleteAccountCard } from "./components/DeleteAccountCard";
 
 interface VenueSettingsClientProps {
   user: User;
@@ -27,7 +27,8 @@ interface VenueSettingsClientProps {
   isOwner?: boolean;
   organization?: {
     id: string;
-    subscription_tier?: string;    stripe_customer_id?: string;
+    subscription_tier?: string;
+    stripe_customer_id?: string;
     subscription_status?: string;
     trial_ends_at?: string;
   };
@@ -36,12 +37,18 @@ interface VenueSettingsClientProps {
 /**
  * Venue Settings Client Component
  * Manages venue and account settings
- * 
+ *
  * Refactored: Extracted hooks and components for better organization
  * Original: 828 lines → Now: ~180 lines
  */
 
-export default function VenueSettingsClient({ user, venue, venues, organization, isOwner = true }: VenueSettingsClientProps) {
+export default function VenueSettingsClient({
+  user,
+  venue,
+  venues,
+  organization,
+  isOwner = true,
+}: VenueSettingsClientProps) {
   const [twoFactorEnabled, setTwoFactorEnabled] = useState(false);
 
   // Custom hooks for different sections
@@ -68,7 +75,7 @@ export default function VenueSettingsClient({ user, venue, venues, organization,
             <AlertDescription className="text-green-800">{venueSettings.success}</AlertDescription>
           </Alert>
         )}
-        
+
         {(venueSettings.error || passwordManagement.error || accountDeletion.error) && (
           <Alert variant="destructive">
             <AlertTriangle className="h-4 w-4" />
@@ -136,6 +143,7 @@ export default function VenueSettingsClient({ user, venue, venues, organization,
             organization={organization}
             venues={venues}
             isOwner={isOwner}
+            venueId={venue.venue_id}
           />
         )}
 
@@ -164,7 +172,7 @@ export default function VenueSettingsClient({ user, venue, venues, organization,
                     className="bg-gradient-to-r from-purple-600 to-pink-600 hover:from-purple-700 hover:to-pink-700"
                   >
                     <Save className="h-4 w-4 mr-2" />
-                    {venueSettings.loading ? 'Saving...' : 'Save Changes'}
+                    {venueSettings.loading ? "Saving..." : "Save Changes"}
                   </Button>
                 </div>
               </div>
@@ -185,13 +193,13 @@ export default function VenueSettingsClient({ user, venue, venues, organization,
       </div>
 
       {/* Mobile Navigation */}
-      <MobileNav 
+      <MobileNav
         venueId={venue.venue_id}
         venueName={venue.venue_name}
         counts={{
           live_orders: 0,
           total_orders: 0,
-          notifications: 0
+          notifications: 0,
         }}
       />
     </>

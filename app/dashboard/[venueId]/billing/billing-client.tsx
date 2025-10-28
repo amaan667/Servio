@@ -117,6 +117,7 @@ export default function BillingClient({ venueId }: BillingClientProps) {
       const { apiClient } = await import("@/lib/api-client");
       const response = await apiClient.post("/api/stripe/create-portal-session", {
         organizationId: organization?.id,
+        venueId: venueId,
       });
 
       const data = await response.json();

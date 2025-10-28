@@ -30,9 +30,10 @@ interface BillingSectionProps {
   };
   venues?: unknown[];
   isOwner?: boolean;
+  venueId?: string;
 }
 
-export default function BillingSection({ organization }: BillingSectionProps) {
+export default function BillingSection({ organization, venueId }: BillingSectionProps) {
   const [showUpgradeModal, setShowUpgradeModal] = useState(false);
   const [loadingPortal, setLoadingPortal] = useState(false);
 
@@ -46,6 +47,7 @@ export default function BillingSection({ organization }: BillingSectionProps) {
       const { apiClient } = await import("@/lib/api-client");
       const response = await apiClient.post("/api/stripe/create-portal-session", {
         organizationId: organization?.id,
+        venueId: venueId,
       });
 
       const data = await response.json();
