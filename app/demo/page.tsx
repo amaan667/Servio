@@ -69,13 +69,13 @@ export default function DemoPage() {
 
         {/* View Toggle */}
         <div className="flex justify-center mb-8">
-          <div className="inline-flex rounded-lg bg-white p-1">
+          <div className="inline-flex gap-2">
             <button
               onClick={() => setActiveView("customer")}
-              className={`px-6 py-3 rounded-md font-medium transition-all ${
+              className={`px-6 py-3 rounded-lg font-medium transition-all ${
                 activeView === "customer"
                   ? "bg-purple-600 text-white"
-                  : "text-gray-600 hover:text-gray-900"
+                  : "bg-white text-gray-600 hover:text-gray-900 border border-gray-300"
               }`}
             >
               <Smartphone className="w-4 h-4 inline mr-2" />
@@ -83,10 +83,10 @@ export default function DemoPage() {
             </button>
             <button
               onClick={() => setActiveView("owner")}
-              className={`px-6 py-3 rounded-md font-medium transition-all ${
+              className={`px-6 py-3 rounded-lg font-medium transition-all ${
                 activeView === "owner"
                   ? "bg-purple-600 text-white"
-                  : "text-gray-600 hover:text-gray-900"
+                  : "bg-white text-gray-600 hover:text-gray-900 border border-gray-300"
               }`}
             >
               <LayoutDashboard className="w-4 h-4 inline mr-2" />
