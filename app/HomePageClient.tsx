@@ -57,6 +57,19 @@ export function HomePageClient({ initialAuthState }: { initialAuthState: boolean
     }
   }, [user, isSignedIn]);
 
+  // Clean up URL params on mount
+  useEffect(() => {
+    if (typeof window !== "undefined") {
+      const url = new URL(window.location.href);
+      if (url.searchParams.has("cancelled") || url.searchParams.has("upgrade")) {
+        // Remove cancelled/upgrade params from URL without reload
+        url.searchParams.delete("cancelled");
+        url.searchParams.delete("upgrade");
+        window.history.replaceState({}, document.title, url.toString());
+      }
+    }
+  }, []);
+
   const handleGetStarted = async () => {
     if (isSignedIn && user) {
       // Get user's first venue
