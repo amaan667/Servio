@@ -69,12 +69,12 @@ export default function DemoPage() {
 
         {/* View Toggle */}
         <div className="flex justify-center mb-8">
-          <div className="inline-flex rounded-lg border border-gray-300 bg-white p-1 shadow-sm">
+          <div className="inline-flex rounded-lg bg-white p-1">
             <button
               onClick={() => setActiveView("customer")}
               className={`px-6 py-3 rounded-md font-medium transition-all ${
                 activeView === "customer"
-                  ? "bg-purple-600 text-white shadow-sm"
+                  ? "bg-purple-600 text-white"
                   : "text-gray-600 hover:text-gray-900"
               }`}
             >
@@ -85,7 +85,7 @@ export default function DemoPage() {
               onClick={() => setActiveView("owner")}
               className={`px-6 py-3 rounded-md font-medium transition-all ${
                 activeView === "owner"
-                  ? "bg-purple-600 text-white shadow-sm"
+                  ? "bg-purple-600 text-white"
                   : "text-gray-600 hover:text-gray-900"
               }`}
             >
