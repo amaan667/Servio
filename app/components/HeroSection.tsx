@@ -93,15 +93,15 @@ export function HeroSection({
             </div>
             <div className="mt-12 flex items-center space-x-8 !text-white">
               <div className="flex items-center">
-                <CheckCircle className="h-5 w-5 mr-2 !text-white fill-white stroke-white" />
+                <CheckCircle className="h-5 w-5 mr-2 text-white" strokeWidth={2} />
                 <span className="font-semibold !text-white drop-shadow-sm">14-day free trial</span>
               </div>
               <div className="flex items-center">
-                <CheckCircle className="h-5 w-5 mr-2 !text-white fill-white stroke-white" />
+                <CheckCircle className="h-5 w-5 mr-2 text-white" strokeWidth={2} />
                 <span className="font-semibold !text-white drop-shadow-sm">No setup fees</span>
               </div>
               <div className="flex items-center">
-                <CheckCircle className="h-5 w-5 mr-2 !text-white fill-white stroke-white" />
+                <CheckCircle className="h-5 w-5 mr-2 text-white" strokeWidth={2} />
                 <span className="font-semibold !text-white drop-shadow-sm">Cancel anytime</span>
               </div>
             </div>

@@ -240,33 +240,33 @@ export default function DemoPage() {
                 <Card className="bg-white shadow-sm">
                   <CardContent className="p-4">
                     <div className="flex items-center gap-2 overflow-x-auto">
-                      <Button variant="outline" size="sm">
-                        <Clock className="w-4 h-4 mr-2" />
+                      <div className="px-3 py-2 border border-gray-300 rounded-md text-sm font-medium text-gray-700 flex items-center">
+                        <Clock className="w-4 h-4 mr-2 text-gray-600" />
                         Live Orders
-                      </Button>
-                      <Button variant="outline" size="sm">
-                        <LayoutDashboard className="w-4 h-4 mr-2" />
+                      </div>
+                      <div className="px-3 py-2 border border-gray-300 rounded-md text-sm font-medium text-gray-700 flex items-center">
+                        <LayoutDashboard className="w-4 h-4 mr-2 text-gray-600" />
                         KDS
-                      </Button>
-                      <Button variant="outline" size="sm">
-                        <ShoppingCart className="w-4 h-4 mr-2" />
+                      </div>
+                      <div className="px-3 py-2 border border-gray-300 rounded-md text-sm font-medium text-gray-700 flex items-center">
+                        <ShoppingCart className="w-4 h-4 mr-2 text-gray-600" />
                         Menu
-                      </Button>
-                      <Button variant="outline" size="sm">
-                        <TrendingUp className="w-4 h-4 mr-2" />
+                      </div>
+                      <div className="px-3 py-2 border border-gray-300 rounded-md text-sm font-medium text-gray-700 flex items-center">
+                        <TrendingUp className="w-4 h-4 mr-2 text-gray-600" />
                         Analytics
-                      </Button>
-                      <Button variant="outline" size="sm">
-                        <Users className="w-4 h-4 mr-2" />
+                      </div>
+                      <div className="px-3 py-2 border border-gray-300 rounded-md text-sm font-medium text-gray-700 flex items-center">
+                        <Users className="w-4 h-4 mr-2 text-gray-600" />
                         Staff
-                      </Button>
+                      </div>
                     </div>
                   </CardContent>
                 </Card>
 
                 {/* KPI Cards - Matches Real Dashboard */}
                 <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
-                  <Card className="hover:shadow-lg transition-shadow">
+                  <Card>
                     <CardContent className="p-6">
                       <div className="flex items-center justify-between mb-4">
                         <div className="w-12 h-12 bg-blue-100 rounded-lg flex items-center justify-center">
@@ -285,7 +285,7 @@ export default function DemoPage() {
                     </CardContent>
                   </Card>
 
-                  <Card className="hover:shadow-lg transition-shadow">
+                  <Card>
                     <CardContent className="p-6">
                       <div className="flex items-center justify-between mb-4">
                         <div className="w-12 h-12 bg-green-100 rounded-lg flex items-center justify-center">
@@ -304,7 +304,7 @@ export default function DemoPage() {
                     </CardContent>
                   </Card>
 
-                  <Card className="hover:shadow-lg transition-shadow">
+                  <Card>
                     <CardContent className="p-6">
                       <div className="flex items-center justify-between mb-4">
                         <div className="w-12 h-12 bg-purple-100 rounded-lg flex items-center justify-center">
@@ -317,7 +317,7 @@ export default function DemoPage() {
                     </CardContent>
                   </Card>
 
-                  <Card className="hover:shadow-lg transition-shadow">
+                  <Card>
                     <CardContent className="p-6">
                       <div className="flex items-center justify-between mb-4">
                         <div className="w-12 h-12 bg-orange-100 rounded-lg flex items-center justify-center">
@@ -381,7 +381,7 @@ export default function DemoPage() {
                       ].map((order, idx) => (
                         <div
                           key={idx}
-                          className="flex items-center justify-between p-4 bg-gray-50 rounded-lg hover:bg-gray-100 transition-colors border border-gray-200"
+                          className="flex items-center justify-between p-4 bg-gray-50 rounded-lg border border-gray-200"
                         >
                           <div className="flex-1">
                             <div className="flex items-center gap-2 mb-1">
@@ -450,7 +450,7 @@ export default function DemoPage() {
                       Your intelligent business partner - Premium feature
                     </CardDescription>
                   </div>
-                  <Badge className="bg-gradient-to-r from-purple-600 to-pink-600 text-white">
+                  <Badge className="bg-gradient-to-r from-purple-600 to-pink-600 text-white font-semibold shadow-sm">
                     Premium Only
                   </Badge>
                 </div>
