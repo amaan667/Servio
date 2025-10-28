@@ -42,8 +42,10 @@ export function EnhancedStatCard({
 
   const content = (
     <Card
-      className={`relative overflow-hidden transition-all duration-300 cursor-pointer ${
-        onClick || href ? "hover:shadow-xl hover:-translate-y-1" : ""
+      className={`group relative overflow-hidden transition-all duration-300 cursor-pointer border-2 ${
+        onClick || href
+          ? "hover:shadow-xl hover:-translate-y-1 hover:border-gray-300"
+          : "border-transparent"
       }`}
       onMouseEnter={() => setIsHovered(true)}
       onMouseLeave={() => setIsHovered(false)}
@@ -58,7 +60,11 @@ export function EnhancedStatCard({
 
       <CardContent className="p-6 relative">
         <div className="flex items-start justify-between mb-4">
-          <div className={`${iconBgColor} p-3 rounded-xl`}>
+          <div
+            className={`${iconBgColor} p-3 rounded-xl transition-transform duration-300 ${
+              onClick || href ? "group-hover:scale-110" : ""
+            }`}
+          >
             <Icon className={`h-6 w-6 ${iconColor}`} />
           </div>
 
@@ -79,7 +85,13 @@ export function EnhancedStatCard({
         </div>
 
         <div className="space-y-1">
-          <p className="text-sm font-medium text-gray-600">{title}</p>
+          <p
+            className={`text-sm font-medium text-gray-600 transition-colors duration-300 ${
+              onClick || href ? "group-hover:text-blue-600" : ""
+            }`}
+          >
+            {title}
+          </p>
           <p className="text-3xl font-bold text-gray-900">{displayValue}</p>
           {trend && <p className="text-xs text-gray-500">{trend.label}</p>}
           {!trend && subtitle && <p className="text-xs text-gray-500">{subtitle}</p>}
