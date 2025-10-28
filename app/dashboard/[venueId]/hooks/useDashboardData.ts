@@ -221,9 +221,12 @@ export function useDashboardData(
         }
         // Refresh data
         refreshCounts();
-        const window = todayWindowForTZ(venueTz);
-        if (window.startUtcISO && window.endUtcISO) {
-          loadStats(venueId, { startUtcISO: window.startUtcISO, endUtcISO: window.endUtcISO });
+        const timeWindow = todayWindowForTZ(venueTz);
+        if (timeWindow.startUtcISO && timeWindow.endUtcISO) {
+          loadStats(venueId, {
+            startUtcISO: timeWindow.startUtcISO,
+            endUtcISO: timeWindow.endUtcISO,
+          });
         }
       }
     };
