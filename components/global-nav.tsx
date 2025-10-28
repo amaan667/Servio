@@ -66,6 +66,9 @@ export default function GlobalNav() {
   const isOnSettings = pathname?.includes("/settings");
   const isOnQRPage = pathname?.includes("/qr-codes");
 
+  // Check if on home page
+  const isHomePage = pathname === "/" || pathname === "/home";
+
   // Check if we're on the dashboard root page (not a feature page)
   const isDashboardRoot = pathname?.match(/^\/dashboard\/(?:[^/]+)\/?$/);
   const isOnFeaturePage = isOnDashboard && !isDashboardRoot;
@@ -175,7 +178,7 @@ export default function GlobalNav() {
                   <>
                     <Link
                       href="/"
-                      className="flex items-center px-4 py-3 text-base font-medium text-foreground hover:text-primary hover:bg-accent rounded-md transition-all duration-200"
+                      className="flex items-center px-4 py-3 text-base font-medium bg-purple-600 text-white hover:bg-white hover:text-purple-600 hover:border-purple-600 border-2 border-transparent rounded-md transition-all duration-200"
                     >
                       <Home className="mr-3 h-5 w-5" />
                       Home
@@ -187,7 +190,7 @@ export default function GlobalNav() {
                             ? `/dashboard/${venueId || primaryVenueId}/settings`
                             : "/"
                         }
-                        className="flex items-center px-4 py-3 text-base font-medium text-foreground hover:text-primary hover:bg-accent rounded-md transition-all duration-200"
+                        className="flex items-center px-4 py-3 text-base font-medium bg-purple-600 text-white hover:bg-white hover:text-purple-600 hover:border-purple-600 border-2 border-transparent rounded-md transition-all duration-200"
                       >
                         <Settings className="mr-3 h-5 w-5" />
                         Settings
@@ -197,7 +200,7 @@ export default function GlobalNav() {
                       variant="ghost"
                       size="icon"
                       onClick={() => setTheme(theme === "dark" ? "light" : "dark")}
-                      className="text-foreground hover:text-primary hover:bg-accent rounded-md"
+                      className="bg-purple-600 text-white hover:bg-white hover:text-purple-600 hover:border-purple-600 border-2 border-transparent rounded-md"
                     >
                       {theme === "dark" ? (
                         <Sun className="h-5 w-5" />
@@ -225,7 +228,7 @@ export default function GlobalNav() {
                       href={
                         venueId || primaryVenueId ? `/dashboard/${venueId || primaryVenueId}` : "/"
                       }
-                      className="flex items-center px-4 py-3 text-base font-medium text-foreground hover:text-primary hover:bg-accent rounded-md transition-all duration-200"
+                      className="flex items-center px-4 py-3 text-base font-medium bg-purple-600 text-white hover:bg-white hover:text-purple-600 hover:border-purple-600 border-2 border-transparent rounded-md transition-all duration-200"
                     >
                       <LayoutDashboard className="mr-3 h-5 w-5" />
                       Dashboard
@@ -237,7 +240,7 @@ export default function GlobalNav() {
                             ? `/dashboard/${venueId || primaryVenueId}/settings`
                             : "/"
                         }
-                        className="flex items-center px-4 py-3 text-base font-medium text-foreground hover:text-primary hover:bg-accent rounded-md transition-all duration-200"
+                        className="flex items-center px-4 py-3 text-base font-medium bg-purple-600 text-white hover:bg-white hover:text-purple-600 hover:border-purple-600 border-2 border-transparent rounded-md transition-all duration-200"
                       >
                         <Settings className="mr-3 h-5 w-5" />
                         Settings
@@ -247,7 +250,7 @@ export default function GlobalNav() {
                       variant="ghost"
                       size="icon"
                       onClick={() => setTheme(theme === "dark" ? "light" : "dark")}
-                      className="text-foreground hover:text-primary hover:bg-accent rounded-md"
+                      className="bg-purple-600 text-white hover:bg-white hover:text-purple-600 hover:border-purple-600 border-2 border-transparent rounded-md"
                     >
                       {theme === "dark" ? (
                         <Sun className="h-5 w-5" />
@@ -275,14 +278,14 @@ export default function GlobalNav() {
                       href={
                         venueId || primaryVenueId ? `/dashboard/${venueId || primaryVenueId}` : "/"
                       }
-                      className="flex items-center px-4 py-3 text-base font-medium text-foreground hover:text-primary hover:bg-accent rounded-md transition-all duration-200"
+                      className="flex items-center px-4 py-3 text-base font-medium bg-purple-600 text-white hover:bg-white hover:text-purple-600 hover:border-purple-600 border-2 border-transparent rounded-md transition-all duration-200"
                     >
                       <LayoutDashboard className="mr-3 h-5 w-5" />
                       Dashboard
                     </Link>
                     <Link
                       href="/"
-                      className="flex items-center px-4 py-3 text-base font-medium text-foreground hover:text-primary hover:bg-accent rounded-md transition-all duration-200"
+                      className="flex items-center px-4 py-3 text-base font-medium bg-purple-600 text-white hover:bg-white hover:text-purple-600 hover:border-purple-600 border-2 border-transparent rounded-md transition-all duration-200"
                     >
                       <Home className="mr-3 h-5 w-5" />
                       Home
@@ -291,7 +294,7 @@ export default function GlobalNav() {
                       variant="ghost"
                       size="icon"
                       onClick={() => setTheme(theme === "dark" ? "light" : "dark")}
-                      className="text-foreground hover:text-primary hover:bg-accent rounded-md"
+                      className="bg-purple-600 text-white hover:bg-white hover:text-purple-600 hover:border-purple-600 border-2 border-transparent rounded-md"
                     >
                       {theme === "dark" ? (
                         <Sun className="h-5 w-5" />
@@ -313,13 +316,13 @@ export default function GlobalNav() {
                     </Button>
                   </>
                 ) : (
-                  // On home page only: Dashboard, Settings (owners only), Sign Out
+                  // On home page only: Dashboard, Settings (owners only), Sign Out (NO dark mode toggle)
                   <>
                     <Link
                       href={
                         venueId || primaryVenueId ? `/dashboard/${venueId || primaryVenueId}` : "/"
                       }
-                      className="flex items-center px-4 py-3 text-base font-medium text-foreground hover:text-primary hover:bg-accent rounded-md transition-all duration-200"
+                      className="flex items-center px-4 py-3 text-base font-medium bg-purple-600 text-white hover:bg-white hover:text-purple-600 hover:border-purple-600 border-2 border-transparent rounded-md transition-all duration-200"
                     >
                       <LayoutDashboard className="mr-3 h-5 w-5" />
                       Dashboard
@@ -331,24 +334,13 @@ export default function GlobalNav() {
                             ? `/dashboard/${venueId || primaryVenueId}/settings`
                             : "/"
                         }
-                        className="flex items-center px-4 py-3 text-base font-medium text-foreground hover:text-primary hover:bg-accent rounded-md transition-all duration-200"
+                        className="flex items-center px-4 py-3 text-base font-medium bg-purple-600 text-white hover:bg-white hover:text-purple-600 hover:border-purple-600 border-2 border-transparent rounded-md transition-all duration-200"
                       >
                         <Settings className="mr-3 h-5 w-5" />
                         Settings
                       </Link>
                     )}
-                    <Button
-                      variant="ghost"
-                      size="icon"
-                      onClick={() => setTheme(theme === "dark" ? "light" : "dark")}
-                      className="text-foreground hover:text-primary hover:bg-accent rounded-md"
-                    >
-                      {theme === "dark" ? (
-                        <Sun className="h-5 w-5" />
-                      ) : (
-                        <Moon className="h-5 w-5" />
-                      )}
-                    </Button>
+                    {/* NO DARK MODE TOGGLE ON HOME PAGE */}
                     <div className="w-px h-8 bg-border mx-2"></div>
                     <Button
                       variant="destructive"

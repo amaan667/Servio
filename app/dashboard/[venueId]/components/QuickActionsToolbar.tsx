@@ -86,9 +86,9 @@ export function QuickActionsToolbar({
                     <Link href={action.href} className="flex-shrink-0">
                       <Button
                         variant="outline"
-                        className="flex items-center gap-2 px-3 py-2 h-10 border-2 border-purple-200 bg-white hover:bg-purple-50 hover:border-purple-300 text-gray-700 hover:text-purple-700 transition-all duration-200 rounded-lg"
+                        className="flex items-center gap-2 px-3 py-2 h-10 bg-purple-600 text-white hover:bg-white hover:text-purple-600 hover:border-purple-600 border-2 border-transparent transition-all duration-200 rounded-lg"
                       >
-                        <action.icon className="h-4 w-4 text-purple-600" />
+                        <action.icon className="h-4 w-4" />
                         <span className="hidden sm:inline text-sm font-medium">{action.label}</span>
                       </Button>
                     </Link>

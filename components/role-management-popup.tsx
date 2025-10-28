@@ -32,10 +32,10 @@ const ROLES: Role[] = [
       "Staff management and roles",
       "Venue settings and billing",
       "Kitchen display system",
-      "Table management"
+      "Table management",
     ],
     icon: <Crown className="h-5 w-5" />,
-    color: "bg-yellow-100 text-yellow-800 border-yellow-200"
+    color: "bg-yellow-100 text-yellow-800 border-yellow-200",
   },
   {
     id: "manager",
@@ -46,10 +46,10 @@ const ROLES: Role[] = [
       "Manage menu items",
       "Staff scheduling",
       "Kitchen display system",
-      "Table management"
+      "Table management",
     ],
     icon: <Shield className="h-5 w-5" />,
-    color: "bg-blue-100 text-blue-800 border-blue-200"
+    color: "bg-blue-100 text-blue-800 border-blue-200",
   },
   {
     id: "staff",
@@ -59,40 +59,39 @@ const ROLES: Role[] = [
       "View live orders",
       "Update order status",
       "Kitchen display system",
-      "Basic table management"
+      "Basic table management",
     ],
     icon: <UserCheck className="h-5 w-5" />,
-    color: "bg-green-100 text-green-800 border-green-200"
+    color: "bg-green-100 text-green-800 border-green-200",
   },
   {
     id: "kitchen",
     name: "Kitchen",
     description: "Focus on food preparation and orders",
-    permissions: [
-      "View kitchen display",
-      "Update order preparation status",
-      "View menu items"
-    ],
+    permissions: ["View kitchen display", "Update order preparation status", "View menu items"],
     icon: <ChefHat className="h-5 w-5" />,
-    color: "bg-orange-100 text-orange-800 border-orange-200"
-  }
+    color: "bg-orange-100 text-orange-800 border-orange-200",
+  },
 ];
 
 interface RoleManagementPopupProps {
   currentUserRole?: string;
 }
 
-export default function RoleManagementPopup({ 
-  currentUserRole = "owner"
+export default function RoleManagementPopup({
+  currentUserRole = "owner",
 }: RoleManagementPopupProps) {
   const [open, setOpen] = useState(false);
 
-  const currentRole = ROLES.find(role => role.id === currentUserRole);
+  const currentRole = ROLES.find((role) => role.id === currentUserRole);
 
   return (
     <Dialog open={open} onOpenChange={setOpen}>
       <DialogTrigger asChild>
-        <Button variant="outline" className="flex items-center gap-2">
+        <Button
+          variant="outline"
+          className="flex items-center gap-2 bg-purple-600 text-white hover:bg-white hover:text-purple-600 hover:border-purple-600 border-2 border-transparent transition-all duration-200"
+        >
           <Users className="h-4 w-4" />
           View Role
         </Button>
@@ -112,9 +111,7 @@ export default function RoleManagementPopup({
           {/* Current Role Display */}
           <div className="p-6 bg-gradient-to-r from-blue-50 to-indigo-50 border border-blue-200 rounded-lg">
             <div className="flex items-center gap-4">
-              <div className={`p-3 rounded-lg ${currentRole?.color}`}>
-                {currentRole?.icon}
-              </div>
+              <div className={`p-3 rounded-lg ${currentRole?.color}`}>{currentRole?.icon}</div>
               <div className="flex-1">
                 <h3 className="text-xl font-bold text-gray-900">{currentRole?.name}</h3>
                 <p className="text-sm text-gray-600 mt-1">{currentRole?.description}</p>
@@ -137,10 +134,7 @@ export default function RoleManagementPopup({
 
           {/* Action Button */}
           <div className="flex justify-end pt-4">
-            <Button 
-              onClick={() => setOpen(false)}
-              className="px-6"
-            >
+            <Button onClick={() => setOpen(false)} className="px-6">
               Close
             </Button>
           </div>
@@ -149,8 +143,8 @@ export default function RoleManagementPopup({
           <div className="p-4 bg-gray-50 border border-gray-200 rounded-lg">
             <h4 className="font-semibold text-gray-900 mb-2">ℹ️ About Your Role</h4>
             <p className="text-sm text-gray-600">
-              Your role determines which features and settings you can access in this venue. 
-              Contact the venue owner if you need different permissions.
+              Your role determines which features and settings you can access in this venue. Contact
+              the venue owner if you need different permissions.
             </p>
           </div>
         </div>

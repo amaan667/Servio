@@ -77,8 +77,8 @@ export function TodayAtAGlance({
   };
 
   return (
-    <div className="space-y-6">
-      <div className="flex items-center gap-2">
+    <div className="space-y-3">
+      <div className="flex items-center gap-2 mb-2">
         <TrendingUp className="h-5 w-5 text-blue-600" />
         <h2 className="text-xl font-bold text-gray-900">Today at a Glance</h2>
       </div>
