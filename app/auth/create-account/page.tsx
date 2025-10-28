@@ -7,6 +7,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Loader2 } from "lucide-react";
+import NavigationBreadcrumb from "@/components/navigation-breadcrumb";
 
 export default function CreateAccountPage() {
   const router = useRouter();
@@ -123,6 +124,7 @@ export default function CreateAccountPage() {
       <div className="min-h-screen bg-gray-50 flex items-center justify-center p-4">
         <Card className="w-full max-w-md">
           <CardHeader className="text-center">
+            <NavigationBreadcrumb showBackButton={false} />
             <CardTitle className="text-2xl font-bold">Complete Your Account</CardTitle>
             <CardDescription>
               Payment successful! Create your password and business details.

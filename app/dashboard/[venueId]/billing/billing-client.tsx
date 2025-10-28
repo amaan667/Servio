@@ -18,6 +18,7 @@ import {
 } from "lucide-react";
 import { UpgradeModal } from "@/components/upgrade-modal";
 import { formatDistanceToNow } from "date-fns";
+import NavigationBreadcrumb from "@/components/navigation-breadcrumb";
 
 interface BillingClientProps {
   venueId: string;
@@ -150,6 +151,8 @@ export default function BillingClient({ venueId }: BillingClientProps) {
 
   return (
     <div className="space-y-6">
+      <NavigationBreadcrumb venueId={venueId} />
+
       {/* Current Plan */}
       <Card className={`border-2 ${tierInfo.borderColor} ${tierInfo.bgColor}`}>
         <CardHeader>
