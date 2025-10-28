@@ -1,42 +1,12 @@
-# Railway/Nixpacks configuration for Playwright
-# Install dependencies and let Playwright download its own Chromium
-
-[phases.setup]
-# Install dependencies needed for Playwright's Chromium
-aptPkgs = [
-  "libnss3",
-  "libnspr4",
-  "libatk1.0-0",
-  "libatk-bridge2.0-0",
-  "libcups2",
-  "libdrm2",
-  "libxkbcommon0",
-  "libxcomposite1",
-  "libxdamage1",
-  "libxfixes3",
-  "libxrandr2",
-  "libgbm1",
-  "libpango-1.0-0",
-  "libcairo2",
-  "libasound2t64",
-  "libatspi2.0-0",
-  "libxshmfence1",
-  "fonts-liberation",
-  "fonts-noto-color-emoji",
-  "libvulkan1"
-]
+# Railway/Nixpacks configuration
+# Playwright is not needed in production, only for local testing
 
 [phases.install]
 cmds = [
-  "pnpm install --frozen-lockfile",
-  "npx playwright install --with-deps chromium"
+  "pnpm install --frozen-lockfile"
 ]
 
 [phases.build]
-# Verify Playwright installation
 cmds = [
-  "echo '📦 Verifying Playwright installation...'",
-  "npx playwright --version || echo '⚠️ Playwright not found'",
-  "ls -la /root/.cache/ms-playwright/ || echo '⚠️ Playwright cache not found'",
   "pnpm run build"
 ]
