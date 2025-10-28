@@ -94,7 +94,9 @@ export default function NavigationBreadcrumb({
             </Button>
           </li>
           <li className="text-foreground/60">←</li>
-          <li className="text-foreground font-medium">Demo</li>
+          <li className="inline-flex items-center px-3 py-1 rounded-md font-medium text-gray-900 shadow-[0_0_20px_rgba(147,51,234,0.7)] transition-all duration-200">
+            Demo
+          </li>
         </ol>
       </nav>
     );
@@ -121,7 +123,9 @@ export default function NavigationBreadcrumb({
             </Button>
           </li>
           <li className="text-foreground/60">←</li>
-          <li className="text-gray-900 font-medium">{pageTitle}</li>
+          <li className="inline-flex items-center px-3 py-1 rounded-md font-medium text-gray-900 shadow-[0_0_20px_rgba(147,51,234,0.7)] transition-all duration-200">
+            {pageTitle}
+          </li>
         </ol>
       </nav>
     );
@@ -148,7 +152,9 @@ export default function NavigationBreadcrumb({
             </Button>
           </li>
           <li className="text-foreground/60">←</li>
-          <li className="text-foreground font-medium">Dashboard</li>
+          <li className="inline-flex items-center px-3 py-1 rounded-md font-medium text-gray-900 shadow-[0_0_20px_rgba(147,51,234,0.7)] transition-all duration-200">
+            Dashboard
+          </li>
         </ol>
       </nav>
     );
@@ -191,7 +197,9 @@ export default function NavigationBreadcrumb({
             </Button>
           </li>
           <li className="text-foreground/60">←</li>
-          <li className="text-gray-900 font-medium">{pageTitle}</li>
+          <li className="inline-flex items-center px-3 py-1 rounded-md font-medium text-gray-900 shadow-[0_0_20px_rgba(147,51,234,0.7)] transition-all duration-200">
+            {pageTitle}
+          </li>
         </ol>
       </nav>
     );
@@ -233,7 +241,9 @@ export default function NavigationBreadcrumb({
           </Button>
         </li>
         <li className="text-foreground/40">←</li>
-        <li className="text-foreground font-medium">{pageTitle}</li>
+        <li className="inline-flex items-center px-3 py-1 rounded-md font-medium text-gray-900 shadow-[0_0_20px_rgba(147,51,234,0.7)] transition-all duration-200">
+          {pageTitle}
+        </li>
       </ol>
     </nav>
   );
