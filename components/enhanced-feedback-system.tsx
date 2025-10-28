@@ -500,7 +500,7 @@ export function EnhancedFeedbackSystem({ venueId }: FeedbackSystemProps) {
                     onChange={(e) =>
                       setFilters((prev) => ({ ...prev, rating: parseInt(e.target.value) }))
                     }
-                    className="border rounded px-3 py-2 text-sm h-11 min-w-[120px]"
+                    className="border rounded px-3 py-2 text-sm h-11 min-w-[120px] bg-purple-600 text-white border-purple-600"
                   >
                     <option value={0}>All Ratings</option>
                     <option value={5}>5 Stars</option>
@@ -512,7 +512,7 @@ export function EnhancedFeedbackSystem({ venueId }: FeedbackSystemProps) {
                   <select
                     value={filters.sentiment}
                     onChange={(e) => setFilters((prev) => ({ ...prev, sentiment: e.target.value }))}
-                    className="border rounded px-3 py-2 text-sm h-11 min-w-[120px]"
+                    className="border rounded px-3 py-2 text-sm h-11 min-w-[120px] bg-purple-600 text-white border-purple-600"
                   >
                     <option value="all">All Sentiments</option>
                     <option value="positive">Positive</option>
@@ -522,7 +522,7 @@ export function EnhancedFeedbackSystem({ venueId }: FeedbackSystemProps) {
                   <select
                     value={filters.dateRange}
                     onChange={(e) => setFilters((prev) => ({ ...prev, dateRange: e.target.value }))}
-                    className="border rounded px-3 py-2 text-sm h-11 min-w-[120px]"
+                    className="border rounded px-3 py-2 text-sm h-11 min-w-[120px] bg-purple-600 text-white border-purple-600"
                   >
                     <option value="7d">Last 7 days</option>
                     <option value="30d">Last 30 days</option>
