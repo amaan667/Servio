@@ -88,10 +88,7 @@ export default function RoleManagementPopup({
   return (
     <Dialog open={open} onOpenChange={setOpen}>
       <DialogTrigger asChild>
-        <Button
-          variant="outline"
-          className="flex items-center gap-2 h-10 px-4 text-sm font-medium bg-purple-600 text-white hover:bg-white hover:text-purple-600 hover:border-purple-600 border-2 border-transparent transition-all duration-200"
-        >
+        <Button className="flex items-center gap-2 h-10 px-4 text-sm font-medium bg-purple-600 !text-white hover:bg-white hover:!text-purple-600 hover:border-purple-600 border-2 border-transparent transition-all duration-200 [&_svg]:!text-white hover:[&_svg]:!text-purple-600">
           <Users className="h-4 w-4" />
           View Role
         </Button>

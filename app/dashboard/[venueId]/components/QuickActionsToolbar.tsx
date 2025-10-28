@@ -82,10 +82,7 @@ export function QuickActionsToolbar({
             <div className="flex items-center gap-2 overflow-x-auto scrollbar-hide py-1">
               {actions.map((action) => (
                 <Link key={action.href} href={action.href} className="flex-shrink-0">
-                  <Button
-                    variant="outline"
-                    className="flex items-center gap-2 px-3 py-2 h-10 bg-purple-600 text-white hover:bg-white hover:text-purple-600 hover:border-purple-600 border-2 border-transparent transition-all duration-200 rounded-lg"
-                  >
+                  <Button className="flex items-center gap-2 px-3 py-2 h-10 bg-purple-600 !text-white hover:bg-white hover:!text-purple-600 hover:border-purple-600 border-2 border-transparent transition-all duration-200 rounded-lg [&_svg]:!text-white hover:[&_svg]:!text-purple-600">
                     <action.icon className="h-4 w-4" />
                     <span className="hidden sm:inline text-sm font-medium">{action.label}</span>
                   </Button>
