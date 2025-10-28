@@ -33,7 +33,9 @@ export default function Breadcrumbs() {
         {crumbs.map((c, i) => (
           <li key={i} className="flex items-center gap-2">
             {"current" in c && c.current ? (
-              <span className="font-medium text-foreground">{c.label}</span>
+              <span className="inline-flex items-center px-3 py-1 rounded-md bg-purple-600 !text-white font-medium">
+                {c.label}
+              </span>
             ) : (
               <Link href={(c as { href: string }).href} className="hover:underline">
                 {c.label}
