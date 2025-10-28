@@ -18,31 +18,25 @@ export default function GlobalNav() {
   const supabase = createClient();
   const { theme, setTheme } = useTheme();
 
-  // Use session from auth context immediately - already initialized on server
-  // This prevents flicker because AuthProvider uses server-provided initialSession
-  // Use strict check to avoid any falsy values causing flicker
+  // SYNCHRONOUS auth state - no useState, no useEffect delays
+  // This prevents ALL flicker by using session from context immediately
   const isAuthenticated = !!(session?.user && session?.access_token);
 
-  // Initialize with cached data SYNCHRONOUSLY for instant render
+  // SYNCHRONOUS cached data extraction - happens during render, not in state
   const getCachedData = () => {
     if (typeof window === "undefined" || !session?.user?.id) {
       return { primaryVenueId: null, userRole: null };
     }
-    // Only get cached data for the current authenticated user
     const userId = session.user.id;
     const cachedRole = sessionStorage.getItem(`user_role_${userId}`);
     const cachedVenueId = sessionStorage.getItem(`venue_id_${userId}`);
-
-    return {
-      primaryVenueId: cachedVenueId,
-      userRole: cachedRole,
-    };
+    return { primaryVenueId: cachedVenueId, userRole: cachedRole };
   };
 
-  const [primaryVenueId, setPrimaryVenueId] = useState<string | null>(
-    getCachedData().primaryVenueId
-  );
-  const [userRole, setUserRole] = useState<string | null>(getCachedData().userRole);
+  // Use synchronous values, not state - prevents re-render flicker
+  const cachedData = getCachedData();
+  const [primaryVenueId, setPrimaryVenueId] = useState<string | null>(cachedData.primaryVenueId);
+  const [userRole, setUserRole] = useState<string | null>(cachedData.userRole);
 
   // Determine if we're on an authenticated route that supports dark mode
   const isAuthenticatedRoute =

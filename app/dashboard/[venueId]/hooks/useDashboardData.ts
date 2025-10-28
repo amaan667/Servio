@@ -201,25 +201,33 @@ export function useDashboardData(
     }
   }, [venueId, venueTz]);
 
-  // Force refresh on mount to get fresh data
+  // Force refresh on mount AND when venueId changes
   useEffect(() => {
     if (venueId) {
-      console.log("[Dashboard] Mount effect: refreshing counts for venue:", venueId);
+      console.log("[Dashboard] Mount/VenueChange: refreshing counts for venue:", venueId);
+      // Clear old venue's cache when switching to ensure fresh data
+      if (typeof window !== "undefined") {
+        const allKeys = Object.keys(sessionStorage);
+        allKeys.forEach((key) => {
+          if (key.startsWith("dashboard_stats_") || key.startsWith("dashboard_counts_")) {
+            const cachedVenueId = key.split("_")[key.split("_").length - 1];
+            if (cachedVenueId !== venueId) {
+              sessionStorage.removeItem(key);
+            }
+          }
+        });
+      }
       refreshCounts();
     }
-  }, [venueId]); // Only run when venueId changes, not every render
+  }, [venueId, refreshCounts]); // Re-run when venueId changes
 
-  // Invalidate cache and refresh when page becomes visible (user returns from another page)
+  // Refresh data when page becomes visible (DON'T clear cache to prevent flicker)
   useEffect(() => {
     const handleVisibilityChange = () => {
       if (!document.hidden && venueId) {
-        console.log("[Dashboard] Page became visible - invalidating cache and refreshing");
-        // Clear the stale cache
-        if (typeof window !== "undefined") {
-          sessionStorage.removeItem(`dashboard_stats_${venueId}`);
-          sessionStorage.removeItem(`dashboard_counts_${venueId}`);
-        }
-        // Refresh data
+        console.log("[Dashboard] Page visible - background refresh (cache preserved)");
+        // Refresh data WITHOUT clearing cache first
+        // Old data shows instantly, new data updates smoothly
         refreshCounts();
         const timeWindow = todayWindowForTZ(venueTz);
         if (timeWindow.startUtcISO && timeWindow.endUtcISO) {

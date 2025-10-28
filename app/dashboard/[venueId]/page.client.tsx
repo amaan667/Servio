@@ -133,16 +133,13 @@ const DashboardClient = React.memo(function DashboardClient({
     }
   }, [handleRefresh]);
 
-  // Auto-refresh when user navigates back to dashboard (clears stale cache)
+  // Auto-refresh when user navigates back to dashboard
+  // DON'T clear cache immediately - prevents flicker
   useEffect(() => {
     const handleFocus = () => {
-      console.log("[Dashboard] Window focused - invalidating cache and refreshing");
-      // Clear the stale cache
-      if (typeof window !== "undefined") {
-        sessionStorage.removeItem(`dashboard_stats_${venueId}`);
-        sessionStorage.removeItem(`dashboard_counts_${venueId}`);
-      }
-      // Refresh data
+      console.log("[Dashboard] Window focused - background refresh (no cache clear)");
+      // Refresh data in background without clearing cache first
+      // This prevents flicker by showing cached data while new data loads
       handleRefresh();
     };
 
