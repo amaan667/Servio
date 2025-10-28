@@ -102,7 +102,9 @@ export function useDesignSettings(venueId: string) {
         saveData.logo_size_numeric = designSettings.logo_size_numeric;
       }
 
-      const { error } = await supabase.from("menu_design_settings").upsert(saveData);
+      const { error } = await supabase.from("menu_design_settings").upsert(saveData, {
+        onConflict: "venue_id", // Use venue_id for conflict resolution
+      });
 
       if (error) {
         console.error("Save design error:", error);
