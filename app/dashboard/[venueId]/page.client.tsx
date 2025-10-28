@@ -271,7 +271,11 @@ const DashboardClient = React.memo(function DashboardClient({
       <TrialStatusBanner userRole={userRole || undefined} />
 
       {/* Quick Actions Toolbar */}
-      <QuickActionsToolbar venueId={venueId} userRole={userRole || undefined} />
+      <QuickActionsToolbar
+        venueId={venueId}
+        userRole={userRole || undefined}
+        onVenueChange={handleVenueChange}
+      />
 
       {/* Main Content */}
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 space-y-8">
@@ -387,34 +391,35 @@ const DashboardClient = React.memo(function DashboardClient({
           </div>
         </div>
 
-        {/* AI Insights - Hide revenue insights for staff */}
-        <AIInsights
-          venueId={venueId}
-          stats={{
-            revenue: dashboardData.stats.revenue,
-            menuItems: dashboardData.stats.menuItems,
-            todayOrdersCount: dashboardData.counts.today_orders_count,
-          }}
-          topSellingItems={analyticsData.data?.topSellingItems}
-          yesterdayComparison={analyticsData.data?.yesterdayComparison}
-          userRole={userRole || undefined}
-        />
+        {/* AI Insights & Today at a Glance - Side by Side */}
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+          {/* AI Insights - Left */}
+          <AIInsights
+            venueId={venueId}
+            stats={{
+              revenue: dashboardData.stats.revenue,
+              menuItems: dashboardData.stats.menuItems,
+              todayOrdersCount: dashboardData.counts.today_orders_count,
+            }}
+            topSellingItems={analyticsData.data?.topSellingItems}
+            yesterdayComparison={analyticsData.data?.yesterdayComparison}
+            userRole={userRole || undefined}
+          />
 
-        {/* Today at a Glance */}
-        <TodayAtAGlance
-          ordersByHour={ordersByHour}
-          tableUtilization={tableUtilization}
-          revenueByCategory={revenueByCategory}
-          loading={false}
-        />
+          {/* Today at a Glance - Right */}
+          <TodayAtAGlance
+            ordersByHour={ordersByHour}
+            tableUtilization={tableUtilization}
+            revenueByCategory={revenueByCategory}
+            loading={false}
+          />
+        </div>
 
         {/* Feature Sections */}
         <FeatureSections venueId={venueId} userRole={userRole || undefined} />
       </div>
 
-      {/* Footer Modals */}
-      <RoleManagementPopup />
-      <VenueSwitcherPopup currentVenueId={venueId} onVenueChange={handleVenueChange} />
+      {/* Removed Footer Modals - moved to QuickActionsToolbar */}
     </div>
   );
 });

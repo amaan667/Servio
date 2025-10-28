@@ -300,16 +300,13 @@ export default function TrialStatusBanner({ userRole }: TrialStatusBannerProps) 
     return null;
   }
 
-  // Show banner for trialing, active subscriptions, or expired trials
+  // Only show if loading, no status, or trial is NOT active
   if (loading || !trialStatus) {
     return null;
   }
 
-  // Don't show for canceled, past_due, etc. unless it's a trialing status or active plan
-  if (
-    !trialStatus.isTrialing &&
-    !["active", "trialing", "basic", "standard", "premium"].includes(trialStatus.subscriptionStatus)
-  ) {
+  // ONLY show if trial is actively running (not expired, not paid)
+  if (!trialStatus.isTrialing) {
     return null;
   }
 
@@ -342,106 +339,56 @@ export default function TrialStatusBanner({ userRole }: TrialStatusBannerProps) 
     return "bg-green-500 text-white";
   };
 
-  // Render trial status banner
-  if (trialStatus.isTrialing) {
-    return (
-      <div className="bg-gradient-to-r from-blue-50 to-purple-50 border border-blue-200 rounded-lg p-4 mb-6">
-        <div className="flex items-center justify-between">
-          <div className="flex items-center gap-3">
-            <div className="flex items-center gap-2">
-              <Clock className="h-5 w-5 text-blue-600" />
-              <span className="font-semibold text-blue-900">
-                {getTierDisplayName(trialStatus.tier)} Plan - Free Trial Active
-              </span>
-            </div>
-
-            {trialStatus.daysRemaining !== null && (
-              <div className="flex items-center gap-2">
-                <Badge
-                  className={`${getDaysRemainingColor(trialStatus.daysRemaining)} font-bold text-sm px-3 py-1`}
-                >
-                  {trialStatus.daysRemaining === 0
-                    ? "⚠️ Trial Expired"
-                    : trialStatus.daysRemaining === 1
-                      ? "🔥 1 Day Left"
-                      : trialStatus.daysRemaining <= 3
-                        ? `⚠️ ${trialStatus.daysRemaining} Days Left`
-                        : trialStatus.daysRemaining <= 7
-                          ? `⏰ ${trialStatus.daysRemaining} Days Left`
-                          : `✅ ${trialStatus.daysRemaining} Days Left`}
-                </Badge>
-                {trialStatus.daysRemaining <= 7 && (
-                  <span className="text-sm text-orange-600 font-medium">Upgrade to continue</span>
-                )}
-              </div>
-            )}
-          </div>
-
-          {trialStatus.trialEndsAt && (
-            <div className="flex items-center gap-2 text-blue-700">
-              <Calendar className="h-4 w-4" />
-              <span className="text-sm">Trial ends {getTrialEndDate(trialStatus.trialEndsAt)}</span>
-            </div>
-          )}
-        </div>
-
-        <div className="mt-2 text-sm text-blue-700">
-          Enjoy full access to all {getTierDisplayName(trialStatus.tier)} features during your trial
-          period.
-          {trialStatus.daysRemaining !== null && trialStatus.daysRemaining <= 7 && (
-            <span className="font-medium ml-1">
-              Consider upgrading to continue without interruption.
-            </span>
-          )}
-        </div>
-      </div>
-    );
-  }
-
-  // Render plan status banner (active subscription or expired trial)
-  // Treat "basic", "standard", "premium", and "active" as active subscriptions
-  const isActiveSubscription = ["active", "basic", "standard", "premium"].includes(
-    trialStatus.subscriptionStatus
-  );
-  const isPaid = isActiveSubscription && !trialStatus.isTrialing;
-
+  // Render trial status banner (only when actively trialing)
   return (
-    <div
-      className={`bg-gradient-to-r ${isActiveSubscription ? "from-green-50 to-emerald-50 border-green-200" : "from-red-50 to-orange-50 border-red-200"} border rounded-lg p-4 mb-6`}
-    >
+    <div className="bg-gradient-to-r from-blue-50 to-purple-50 border border-blue-200 rounded-lg p-4 mb-6">
       <div className="flex items-center justify-between">
         <div className="flex items-center gap-3">
           <div className="flex items-center gap-2">
-            {isActiveSubscription ? (
-              <div className="h-5 w-5 bg-green-600 rounded-full flex items-center justify-center">
-                <span className="text-white text-xs font-bold">✓</span>
-              </div>
-            ) : (
-              <div className="h-5 w-5 bg-red-600 rounded-full flex items-center justify-center">
-                <span className="text-white text-xs font-bold">⚠</span>
-              </div>
-            )}
-            <span
-              className={`font-semibold ${isActiveSubscription ? "text-green-900" : "text-red-900"}`}
-            >
-              {getTierDisplayName(trialStatus.tier)} Plan
+            <Clock className="h-5 w-5 text-blue-600" />
+            <span className="font-semibold text-blue-900">
+              {getTierDisplayName(trialStatus.tier)} Plan - Free Trial Active
             </span>
           </div>
 
-          <Badge
-            className={`${isActiveSubscription ? "bg-green-500" : "bg-red-500"} text-white font-medium`}
-          >
-            {isPaid ? "Active - Paid" : isActiveSubscription ? "Active" : "Trial Expired"}
-          </Badge>
+          {trialStatus.daysRemaining !== null && (
+            <div className="flex items-center gap-2">
+              <Badge
+                className={`${getDaysRemainingColor(trialStatus.daysRemaining)} font-bold text-sm px-3 py-1`}
+              >
+                {trialStatus.daysRemaining === 0
+                  ? "⚠️ Trial Expired"
+                  : trialStatus.daysRemaining === 1
+                    ? "🔥 1 Day Left"
+                    : trialStatus.daysRemaining <= 3
+                      ? `⚠️ ${trialStatus.daysRemaining} Days Left`
+                      : trialStatus.daysRemaining <= 7
+                        ? `⏰ ${trialStatus.daysRemaining} Days Left`
+                        : `✅ ${trialStatus.daysRemaining} Days Left`}
+              </Badge>
+              {trialStatus.daysRemaining <= 7 && (
+                <span className="text-sm text-orange-600 font-medium">Upgrade to continue</span>
+              )}
+            </div>
+          )}
         </div>
+
+        {trialStatus.trialEndsAt && (
+          <div className="flex items-center gap-2 text-blue-700">
+            <Calendar className="h-4 w-4" />
+            <span className="text-sm">Trial ends {getTrialEndDate(trialStatus.trialEndsAt)}</span>
+          </div>
+        )}
       </div>
 
-      <div className={`mt-2 text-sm ${isActiveSubscription ? "text-green-700" : "text-red-700"}`}>
-        {isPaid
-          ? `Your ${getTierDisplayName(trialStatus.tier)} plan is active. Stripe is handling your billing automatically.`
-          : isActiveSubscription
-            ? `Your ${getTierDisplayName(trialStatus.tier)} subscription is active`
-            : `Your ${getTierDisplayName(trialStatus.tier)} trial has expired. Upgrade to continue using all features.`}
+      <div className="mt-2 text-sm text-blue-700">
+        Enjoy full access to all {getTierDisplayName(trialStatus.tier)} features during your trial
+        period.
+        {trialStatus.daysRemaining !== null && trialStatus.daysRemaining <= 7 && (
+          <span className="font-medium ml-1">
+            Consider upgrading to continue without interruption.
+          </span>
+        )}
       </div>
     </div>
   );

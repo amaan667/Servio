@@ -5,9 +5,10 @@ import Link from "next/link";
 import Image from "next/image";
 import { Button } from "@/components/ui/button";
 import { supabaseBrowser as createClient } from "@/lib/supabase";
-import { Menu, X, Settings, Home, LayoutDashboard, LogOut } from "lucide-react";
+import { Menu, X, Settings, Home, LayoutDashboard, LogOut, Moon, Sun } from "lucide-react";
 import { useAuth } from "@/app/auth/AuthProvider";
 import { useRouter, usePathname } from "next/navigation";
+import { useTheme } from "next-themes";
 
 export default function GlobalNav() {
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
@@ -15,6 +16,7 @@ export default function GlobalNav() {
   const router = useRouter();
   const pathname = usePathname();
   const supabase = createClient();
+  const { theme, setTheme } = useTheme();
 
   // Use session from auth context immediately - already initialized on server
   // This prevents flicker because AuthProvider uses server-provided initialSession
@@ -208,6 +210,18 @@ export default function GlobalNav() {
                         Settings
                       </Link>
                     )}
+                    <Button
+                      variant="ghost"
+                      size="icon"
+                      onClick={() => setTheme(theme === "dark" ? "light" : "dark")}
+                      className="text-foreground hover:text-primary hover:bg-accent rounded-md"
+                    >
+                      {theme === "dark" ? (
+                        <Sun className="h-5 w-5" />
+                      ) : (
+                        <Moon className="h-5 w-5" />
+                      )}
+                    </Button>
                     <div className="w-px h-8 bg-border mx-2"></div>
                     <Button
                       variant="destructive"
@@ -246,6 +260,18 @@ export default function GlobalNav() {
                         Settings
                       </Link>
                     )}
+                    <Button
+                      variant="ghost"
+                      size="icon"
+                      onClick={() => setTheme(theme === "dark" ? "light" : "dark")}
+                      className="text-foreground hover:text-primary hover:bg-accent rounded-md"
+                    >
+                      {theme === "dark" ? (
+                        <Sun className="h-5 w-5" />
+                      ) : (
+                        <Moon className="h-5 w-5" />
+                      )}
+                    </Button>
                     <div className="w-px h-8 bg-border mx-2"></div>
                     <Button
                       variant="destructive"
@@ -278,6 +304,18 @@ export default function GlobalNav() {
                       <Home className="mr-3 h-5 w-5" />
                       Home
                     </Link>
+                    <Button
+                      variant="ghost"
+                      size="icon"
+                      onClick={() => setTheme(theme === "dark" ? "light" : "dark")}
+                      className="text-foreground hover:text-primary hover:bg-accent rounded-md"
+                    >
+                      {theme === "dark" ? (
+                        <Sun className="h-5 w-5" />
+                      ) : (
+                        <Moon className="h-5 w-5" />
+                      )}
+                    </Button>
                     <div className="w-px h-8 bg-border mx-2"></div>
                     <Button
                       variant="destructive"
@@ -316,6 +354,18 @@ export default function GlobalNav() {
                         Settings
                       </Link>
                     )}
+                    <Button
+                      variant="ghost"
+                      size="icon"
+                      onClick={() => setTheme(theme === "dark" ? "light" : "dark")}
+                      className="text-foreground hover:text-primary hover:bg-accent rounded-md"
+                    >
+                      {theme === "dark" ? (
+                        <Sun className="h-5 w-5" />
+                      ) : (
+                        <Moon className="h-5 w-5" />
+                      )}
+                    </Button>
                     <div className="w-px h-8 bg-border mx-2"></div>
                     <Button
                       variant="destructive"

@@ -6,6 +6,8 @@ import { LucideIcon, Clock, ShoppingBag, QrCode, BarChart, ChefHat } from "lucid
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
+import RoleManagementPopup from "@/components/role-management-popup";
+import VenueSwitcherPopup from "@/components/venue-switcher-popup";
 
 interface QuickAction {
   label: string;
@@ -19,9 +21,14 @@ interface QuickAction {
 interface QuickActionsToolbarProps {
   venueId: string;
   userRole?: string;
+  onVenueChange?: (venueId: string) => void;
 }
 
-export function QuickActionsToolbar({ venueId, userRole }: QuickActionsToolbarProps) {
+export function QuickActionsToolbar({
+  venueId,
+  userRole,
+  onVenueChange,
+}: QuickActionsToolbarProps) {
   const actions: QuickAction[] = [
     {
       label: "Live Orders",
@@ -70,29 +77,41 @@ export function QuickActionsToolbar({ venueId, userRole }: QuickActionsToolbarPr
     <TooltipProvider>
       <div className="bg-white border-b border-gray-200 sticky top-0 z-40">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="flex items-center gap-2 py-3 overflow-x-auto scrollbar-hide">
-            {actions.map((action) => (
-              <Tooltip key={action.href}>
-                <TooltipTrigger asChild>
-                  <Link href={action.href} className="flex-shrink-0">
-                    <Button
-                      variant={action.variant || "outline"}
-                      size="sm"
-                      className={cn(
-                        "gap-2 transition-all duration-200 hover:scale-105",
-                        action.color || ""
-                      )}
-                    >
-                      <action.icon className="h-4 w-4" />
-                      <span className="hidden sm:inline">{action.label}</span>
-                    </Button>
-                  </Link>
-                </TooltipTrigger>
-                <TooltipContent>
-                  <p>{action.description}</p>
-                </TooltipContent>
-              </Tooltip>
-            ))}
+          <div className="flex items-center justify-between gap-2 py-3">
+            {/* Left: Quick Actions */}
+            <div className="flex items-center gap-2 overflow-x-auto scrollbar-hide">
+              {actions.map((action) => (
+                <Tooltip key={action.href}>
+                  <TooltipTrigger asChild>
+                    <Link href={action.href} className="flex-shrink-0">
+                      <Button
+                        variant={action.variant || "outline"}
+                        size="sm"
+                        className={cn(
+                          "gap-2 transition-all duration-200 hover:scale-105",
+                          action.color || ""
+                        )}
+                      >
+                        <action.icon className="h-4 w-4" />
+                        <span className="hidden sm:inline">{action.label}</span>
+                      </Button>
+                    </Link>
+                  </TooltipTrigger>
+                  <TooltipContent>
+                    <p>{action.description}</p>
+                  </TooltipContent>
+                </Tooltip>
+              ))}
+            </div>
+
+            {/* Right: Venue/Role Controls */}
+            <div className="flex items-center gap-2 flex-shrink-0">
+              <RoleManagementPopup />
+              <VenueSwitcherPopup
+                currentVenueId={venueId}
+                onVenueChange={onVenueChange || (() => {})}
+              />
+            </div>
           </div>
         </div>
       </div>
