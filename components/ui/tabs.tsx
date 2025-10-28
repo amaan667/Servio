@@ -29,7 +29,7 @@ const TabsTrigger = React.forwardRef<
   <TabsPrimitive.Trigger
     ref={ref}
     className={cn(
-      "inline-flex items-center justify-center whitespace-nowrap rounded-md px-3 sm:px-4 py-2 sm:py-1.5 text-sm sm:text-sm font-medium ring-offset-background transition-all focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50 data-[state=active]:bg-purple-600 data-[state=active]:!text-white data-[state=active]:shadow-sm data-[state=inactive]:bg-white data-[state=inactive]:text-purple-600 data-[state=inactive]:border-2 data-[state=inactive]:border-purple-600 hover:bg-purple-600 hover:!text-white flex-1 min-h-[44px] sm:min-h-0 border-2 border-transparent",
+      "inline-flex items-center justify-center whitespace-nowrap rounded-md px-3 sm:px-4 py-2 sm:py-1.5 text-sm sm:text-sm font-medium ring-offset-background transition-all focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50 data-[state=active]:bg-purple-600 data-[state=active]:text-white data-[state=active]:shadow-sm data-[state=active]:hover:bg-white data-[state=active]:hover:text-purple-600 data-[state=inactive]:bg-white data-[state=inactive]:text-purple-600 data-[state=inactive]:border-2 data-[state=inactive]:border-purple-600 flex-1 min-h-[44px] sm:min-h-0 border-2 border-transparent",
       className
     )}
     {...props}

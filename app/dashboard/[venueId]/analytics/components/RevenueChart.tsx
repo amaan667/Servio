@@ -124,7 +124,7 @@ export function RevenueChart({
             </div>
 
             {/* X-axis Labels - Fixed positioning */}
-            <div className="h-16 flex items-start justify-between space-x-1 mt-4 pt-2">
+            <div className="h-12 flex items-start justify-between space-x-1 mt-2 pt-1">
               {revenueOverTime.map((period, index) => {
                 const label = formatXAxisLabel(
                   period.date,
@@ -159,21 +159,21 @@ export function RevenueChart({
               </div>
             )}
           </div>
+        </div>
 
-          {/* Chart Legend */}
-          <div className="flex items-center justify-center space-x-6 mt-4 text-sm">
-            <div className="flex items-center space-x-2">
-              <div className="w-3 h-3 bg-purple-500 rounded"></div>
-              <span className="text-muted-foreground">Revenue</span>
-            </div>
-            <div className="flex items-center space-x-2">
-              <div className="w-3 h-3 bg-blue-200 rounded"></div>
-              <span className="text-muted-foreground">Orders</span>
-            </div>
-            <div className="flex items-center space-x-2">
-              <div className="w-3 h-1 bg-gray-300 border-dashed border-t-2"></div>
-              <span className="text-muted-foreground">Average</span>
-            </div>
+        {/* Chart Legend */}
+        <div className="flex items-center justify-center space-x-6 mt-4 text-sm">
+          <div className="flex items-center space-x-2">
+            <div className="w-3 h-3 bg-purple-500 rounded"></div>
+            <span className="text-muted-foreground">Revenue</span>
+          </div>
+          <div className="flex items-center space-x-2">
+            <div className="w-3 h-3 bg-blue-200 rounded"></div>
+            <span className="text-muted-foreground">Orders</span>
+          </div>
+          <div className="flex items-center space-x-2">
+            <div className="w-3 h-1 bg-gray-300 border-dashed border-t-2"></div>
+            <span className="text-muted-foreground">Average</span>
           </div>
         </div>
       </CardContent>

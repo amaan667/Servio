@@ -68,13 +68,7 @@ export default function QuestionsClient({
     }
   }, [questions, editingId]);
 
-  // Show form by default when there are no questions
-  useEffect(() => {
-    if (questions.length === 0 && !editingId) {
-      setShowAddForm(true);
-      setActiveTab("create");
-    }
-  }, [questions.length, editingId]);
+  // Note: Removed auto-switching to "create" tab - user prefers to stay on "overview" by default
 
   // Form state
   const [formData, setFormData] = useState({
