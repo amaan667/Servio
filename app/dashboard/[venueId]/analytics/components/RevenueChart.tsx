@@ -23,7 +23,7 @@ export function RevenueChart({
   revenueOverTime,
   trendline,
   peakDay,
-  lowestDay,
+  lowestDay: _lowestDay,
   timePeriod,
 }: RevenueChartProps) {
   const [hoveredPoint, setHoveredPoint] = useState<number | null>(null);
@@ -57,13 +57,7 @@ export function RevenueChart({
             {peakDay.revenue > 0 && (
               <div className="flex items-center space-x-1 text-green-600">
                 <Award className="h-3 w-3 sm:h-4 sm:w-4" />
-                <span>Peak: £{peakDay.revenue.toFixed(2)}</span>
-              </div>
-            )}
-            {lowestDay.revenue > 0 && lowestDay.revenue !== peakDay.revenue && (
-              <div className="flex items-center space-x-1 text-orange-600">
-                <TrendingDown className="h-3 w-3 sm:h-4 sm:w-4" />
-                <span>Low: £{lowestDay.revenue.toFixed(2)}</span>
+                <span>Best: £{peakDay.revenue.toFixed(2)}</span>
               </div>
             )}
           </div>
@@ -94,11 +88,9 @@ export function RevenueChart({
                 const isHovered = hoveredPoint === index;
                 const barColor = period.isPeak
                   ? "bg-green-500"
-                  : period.isLowest
-                    ? "bg-orange-500"
-                    : period.isCurrentPeriod
-                      ? "bg-purple-600"
-                      : "bg-purple-500";
+                  : period.isCurrentPeriod
+                    ? "bg-purple-600"
+                    : "bg-purple-500";
 
                 return (
                   <div
@@ -125,24 +117,14 @@ export function RevenueChart({
                       }}
                     />
 
-                    {/* Peak/Lowest Badges - positioned to prevent clash */}
-                    {period.isPeak && (
-                      <div className="absolute -top-8 left-1/2 transform -translate-x-1/2 bg-green-100 text-green-800 text-xs px-2 py-1 rounded-full font-medium whitespace-nowrap z-10">
-                        Peak £{period.revenue.toFixed(2)}
-                      </div>
-                    )}
-                    {period.isLowest && period.revenue !== peakDay.revenue && (
-                      <div className="absolute -top-16 left-1/2 transform -translate-x-1/2 bg-orange-100 text-orange-800 text-xs px-2 py-1 rounded-full font-medium whitespace-nowrap z-10">
-                        Low £{period.revenue.toFixed(2)}
-                      </div>
-                    )}
+                    {/* Removed Peak/Lowest badges from chart bars */}
                   </div>
                 );
               })}
             </div>
 
-            {/* X-axis Labels */}
-            <div className="h-20 flex items-start justify-between space-x-1 mt-8 sm:mt-2">
+            {/* X-axis Labels - Fixed positioning */}
+            <div className="h-16 flex items-start justify-between space-x-1 mt-4 pt-2">
               {revenueOverTime.map((period, index) => {
                 const label = formatXAxisLabel(
                   period.date,
@@ -154,7 +136,9 @@ export function RevenueChart({
 
                 return (
                   <div key={index} className="flex-1 text-center">
-                    <span className="text-xs text-muted-foreground break-words">{label}</span>
+                    <span className="text-xs text-muted-foreground break-words leading-tight">
+                      {label}
+                    </span>
                   </div>
                 );
               })}
