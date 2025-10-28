@@ -1,8 +1,8 @@
-'use client';
-import { useTheme } from 'next-themes';
-import { Moon, Sun } from 'lucide-react';
-import { useEffect, useState } from 'react';
-import { usePathname } from 'next/navigation';
+"use client";
+import { useTheme } from "next-themes";
+import { Moon, Sun } from "lucide-react";
+import { useEffect, useState } from "react";
+import { usePathname } from "next/navigation";
 
 export default function ThemeToggleFloat() {
   const { theme, setTheme } = useTheme();
@@ -14,36 +14,40 @@ export default function ThemeToggleFloat() {
   // Ensure component is mounted before rendering
   useEffect(() => {
     setMounted(true);
-    
+
     // Check if device is mobile
     const checkMobile = () => {
       setIsMobile(window.innerWidth < 768); // md breakpoint
     };
-    
+
     checkMobile();
-    window.addEventListener('resize', checkMobile);
-    
-    return () => window.removeEventListener('resize', checkMobile);
+    window.addEventListener("resize", checkMobile);
+
+    return () => window.removeEventListener("resize", checkMobile);
   }, []);
 
   // Handle scroll detection with improved logic
   useEffect(() => {
     const handleScroll = () => {
       const scrollTop = window.scrollY || document.documentElement.scrollTop;
-      
+
       // Different scroll thresholds for mobile vs desktop
       const scrollThreshold = isMobile ? 150 : 100;
       setShowOnScroll(scrollTop > scrollThreshold);
     };
 
-    window.addEventListener('scroll', handleScroll, { passive: true });
-    return () => window.removeEventListener('scroll', handleScroll);
+    window.addEventListener("scroll", handleScroll, { passive: true });
+    return () => window.removeEventListener("scroll", handleScroll);
   }, [isMobile]);
 
   // Only show theme toggle on dashboard, settings, and order pages
-  const shouldShowToggle = pathname?.startsWith('/dashboard') || 
-                          pathname?.startsWith('/settings') ||
-                          pathname?.startsWith('/order');
+  // Explicitly hide on home page (/ or /home)
+  const isHomePage = pathname === "/" || pathname === "/home";
+  const shouldShowToggle =
+    !isHomePage &&
+    (pathname?.startsWith("/dashboard") ||
+      pathname?.startsWith("/settings") ||
+      pathname?.startsWith("/order"));
 
   // Don't render until mounted to avoid hydration mismatch
   if (!mounted || !shouldShowToggle) {
@@ -51,16 +55,16 @@ export default function ThemeToggleFloat() {
   }
 
   const toggle = () => {
-    const currentTheme = theme || 'light';
-    setTheme(currentTheme === 'dark' ? 'light' : 'dark');
+    const currentTheme = theme || "light";
+    setTheme(currentTheme === "dark" ? "light" : "dark");
   };
 
-  const currentTheme = theme || 'light';
+  const currentTheme = theme || "light";
 
   // Improved positioning logic for desktop vs mobile
   const getPositionClasses = () => {
     if (!showOnScroll) return "hidden";
-    
+
     if (isMobile) {
       // Mobile: Center position to avoid conflicts
       return "fixed top-24 right-1/2 transform translate-x-1/2 z-50";
@@ -78,7 +82,7 @@ export default function ThemeToggleFloat() {
       className={`${getPositionClasses()} rounded-full border-2 border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-800 p-3 shadow-lg hover:shadow-xl hover:scale-105 transition-all duration-300 backdrop-blur-sm bg-white/95 dark:bg-gray-800/95 hover:bg-gray-50 dark:hover:bg-gray-700`}
     >
       <div className="flex items-center justify-center">
-        {currentTheme === 'dark' ? (
+        {currentTheme === "dark" ? (
           <Sun className="h-5 w-5 text-yellow-500" />
         ) : (
           <Moon className="h-5 w-5 text-gray-700 dark:text-gray-300" />
@@ -87,4 +91,3 @@ export default function ThemeToggleFloat() {
     </button>
   );
 }
-

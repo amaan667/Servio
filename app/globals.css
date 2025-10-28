@@ -64,30 +64,51 @@
   }
 
   .dark {
-    --background: 222.2 84% 4.9%;
-    --foreground: 210 40% 98%;
-    --card: 222.2 84% 4.9%;
-    --card-foreground: 210 40% 98%;
-    --popover: 222.2 84% 4.9%;
-    --popover-foreground: 210 40% 98%;
-    --primary: 210 40% 98%;
-    --primary-foreground: 222.2 47.4% 11.2%;
-    --secondary: 217.2 32.6% 17.5%;
-    --secondary-foreground: 210 40% 98%;
-    --muted: 217.2 32.6% 17.5%;
-    --muted-foreground: 215 20.2% 85%;
-    --accent: 217.2 32.6% 17.5%;
-    --accent-foreground: 210 40% 98%;
-    --destructive: 0 62.8% 30.6%;
-    --destructive-foreground: 210 40% 98%;
-    --border: 217.2 32.6% 17.5%;
-    --input: 217.2 32.6% 17.5%;
-    --ring: 212.7 26.8% 83.9%;
-    --chart-1: 220 70% 50%;
-    --chart-2: 160 60% 45%;
-    --chart-3: 30 80% 55%;
-    --chart-4: 280 65% 60%;
-    --chart-5: 340 75% 55%;
+    /* Dark purple-branded background with better contrast */
+    --background: 262 50% 8%;
+    --foreground: 262 10% 98%;
+
+    /* Cards with visible contrast */
+    --card: 262 40% 12%;
+    --card-foreground: 262 10% 98%;
+
+    /* Popovers with good contrast */
+    --popover: 262 40% 12%;
+    --popover-foreground: 262 10% 98%;
+
+    /* Primary uses brand purple */
+    --primary: 262 83% 58%;
+    --primary-foreground: 0 0% 100%;
+
+    /* Secondary with better contrast */
+    --secondary: 262 30% 20%;
+    --secondary-foreground: 262 10% 98%;
+
+    /* Muted with proper visibility */
+    --muted: 262 25% 22%;
+    --muted-foreground: 262 10% 75%;
+
+    /* Accent with purple */
+    --accent: 262 30% 24%;
+    --accent-foreground: 262 83% 68%;
+
+    /* Destructive stays red but more visible */
+    --destructive: 0 72% 51%;
+    --destructive-foreground: 0 0% 98%;
+
+    /* Borders with better visibility */
+    --border: 262 25% 28%;
+    --input: 262 25% 28%;
+
+    /* Ring uses brand purple */
+    --ring: 262 83% 58%;
+
+    /* Charts with better contrast */
+    --chart-1: 262 70% 65%;
+    --chart-2: 280 65% 65%;
+    --chart-3: 340 75% 60%;
+    --chart-4: 160 60% 50%;
+    --chart-5: 30 80% 60%;
   }
 }
 
@@ -97,6 +118,140 @@
   }
   body {
     @apply bg-background text-foreground;
+  }
+
+  /* Dark mode comprehensive fixes */
+  .dark {
+    color-scheme: dark;
+  }
+
+  /* Ensure all headings are visible in dark mode */
+  .dark h1,
+  .dark h2,
+  .dark h3,
+  .dark h4,
+  .dark h5,
+  .dark h6 {
+    color: hsl(262 10% 98%);
+  }
+
+  /* Ensure all text is visible in dark mode */
+  .dark p,
+  .dark span,
+  .dark div,
+  .dark label {
+    color: hsl(262 10% 90%);
+  }
+
+  /* Card text visibility */
+  .dark [class*="card"] {
+    background-color: hsl(262 40% 12%);
+    border-color: hsl(262 25% 28%);
+  }
+
+  .dark [class*="card"] h1,
+  .dark [class*="card"] h2,
+  .dark [class*="card"] h3,
+  .dark [class*="card"] h4,
+  .dark [class*="card"] h5,
+  .dark [class*="card"] h6 {
+    color: hsl(262 10% 98%);
+  }
+
+  .dark [class*="card"] p,
+  .dark [class*="card"] span,
+  .dark [class*="card"] div:not([class*="bg-"]) {
+    color: hsl(262 10% 88%);
+  }
+
+  /* Form inputs in dark mode */
+  .dark input,
+  .dark textarea,
+  .dark select {
+    background-color: hsl(262 30% 16%);
+    border-color: hsl(262 25% 28%);
+    color: hsl(262 10% 98%);
+  }
+
+  .dark input::placeholder,
+  .dark textarea::placeholder {
+    color: hsl(262 10% 60%);
+  }
+
+  .dark input:focus,
+  .dark textarea:focus,
+  .dark select:focus {
+    border-color: hsl(262 83% 58%);
+    box-shadow: 0 0 0 3px hsl(262 83% 58% / 0.3);
+    outline: none;
+  }
+
+  /* Button visibility in dark mode */
+  .dark button:not([class*="destructive"]) {
+    background-color: hsl(262 83% 58%);
+    color: white;
+    border-color: hsl(262 83% 58%);
+  }
+
+  .dark button:not([class*="destructive"]):hover {
+    background-color: hsl(262 83% 48%);
+    border-color: hsl(262 83% 48%);
+  }
+
+  /* Override problematic gray classes in dark mode */
+  .dark .text-gray-900,
+  .dark .text-gray-800,
+  .dark .text-gray-700 {
+    color: hsl(262 10% 95%);
+  }
+
+  .dark .text-gray-600,
+  .dark .text-gray-500 {
+    color: hsl(262 10% 80%);
+  }
+
+  .dark .text-gray-400 {
+    color: hsl(262 10% 70%);
+  }
+
+  /* Background overrides for dark mode */
+  .dark .bg-white {
+    background-color: hsl(262 40% 12%);
+    color: hsl(262 10% 98%);
+  }
+
+  .dark .bg-gray-50 {
+    background-color: hsl(262 30% 14%);
+  }
+
+  .dark .bg-gray-100 {
+    background-color: hsl(262 25% 18%);
+  }
+
+  /* Border overrides for dark mode */
+  .dark .border-gray-200 {
+    border-color: hsl(262 25% 28%);
+  }
+
+  .dark .border-gray-300 {
+    border-color: hsl(262 25% 32%);
+  }
+
+  /* Muted text with proper contrast */
+  .dark .text-muted-foreground {
+    color: hsl(262 10% 75%);
+  }
+
+  /* Purple brand colors remain consistent */
+  .dark .text-purple-600,
+  .dark .text-servio-purple {
+    color: hsl(262 83% 68%);
+  }
+
+  .dark .bg-purple-600,
+  .dark .bg-servio-purple {
+    background-color: hsl(262 83% 58%);
+    color: white;
   }
 }
 
@@ -266,26 +421,18 @@
   @apply text-foreground/60;
 }
 
-/* Global readability overrides: ensure dark, readable body text on all pages */
-.text-gray-400,
-.text-slate-400 {
-  color: #6b7280 !important;
+/* Global readability improvements - respects dark mode */
+.text-gray-400:not(.dark *),
+.text-slate-400:not(.dark *) {
+  color: #6b7280;
 }
-.text-gray-500,
-.text-slate-500 {
-  color: #374151 !important;
+.text-gray-500:not(.dark *),
+.text-slate-500:not(.dark *) {
+  color: #374151;
 }
-.text-gray-600,
-.text-slate-600 {
-  color: #1f2937 !important;
-}
-.text-foreground\/80,
-.text-foreground\/70,
-.text-foreground\/60 {
-  color: #1f2937 !important;
-}
-.text-muted-foreground {
-  color: #1f2937 !important;
+.text-gray-600:not(.dark *),
+.text-slate-600:not(.dark *) {
+  color: #1f2937;
 }
 
 /* Contrast guarantees for dark buttons and controls across the app */
@@ -343,111 +490,52 @@ button.bg-slate-800 svg,
   color: #ffffff !important;
 }
 
-/* Desktop-specific text readability improvements */
+/* Desktop-specific improvements - respects dark mode */
 @media (min-width: 769px) {
-  /* Ensure all text is readable on desktop too */
-  .text-muted-foreground {
-    color: #374151 !important; /* Dark gray for better readability */
-  }
-
-  .text-foreground\/80 {
-    color: #374151 !important; /* Dark instead of 80% opacity */
-  }
-
-  /* Do NOT override .text-white globally on desktop. Many components rely on real white. */
-
   /* Enhanced toggle switch styling for desktop */
   [data-radix-switch-root] {
-    height: 24px !important;
-    width: 44px !important;
-    min-height: 24px !important;
-    min-width: 44px !important;
+    height: 24px;
+    width: 44px;
+    min-height: 24px;
+    min-width: 44px;
   }
 
   [data-radix-switch-thumb] {
-    height: 20px !important;
-    width: 20px !important;
+    height: 20px;
+    width: 20px;
   }
 
   /* Enhanced form labels on desktop */
   label {
-    color: #1f2937 !important; /* Very dark for maximum readability */
-    font-weight: 600 !important;
+    color: hsl(var(--foreground));
+    font-weight: 600;
   }
 
   /* Enhanced desktop button consistency */
   button {
-    min-height: 44px !important;
-    min-width: 44px !important;
-    border-radius: 12px !important;
-    font-weight: 600 !important;
-    transition: all 0.2s ease !important;
-  }
-
-  /* Enhanced desktop button styling - ALL variants get white bg with purple text */
-  button[class*="servio"],
-  button[class*="default"],
-  button[class*="outline"],
-  button[class*="secondary"],
-  button[class*="ghost"] {
-    background-color: #ffffff !important;
-    color: hsl(var(--servio-purple)) !important;
-    font-weight: 600 !important;
-    border: 2px solid hsl(var(--servio-purple)) !important;
-    box-shadow: 0 2px 8px rgba(124, 58, 237, 0.15) !important;
-  }
-
-  button[class*="servio"]:hover,
-  button[class*="default"]:hover,
-  button[class*="outline"]:hover,
-  button[class*="secondary"]:hover,
-  button[class*="ghost"]:hover {
-    background-color: #f9fafb !important;
-    color: hsl(var(--servio-purple-dark)) !important;
-    border-color: hsl(var(--servio-purple-dark)) !important;
-    box-shadow: 0 4px 12px rgba(124, 58, 237, 0.2) !important;
-  }
-
-  button[class*="servio"] svg,
-  button[class*="default"] svg,
-  button[class*="outline"] svg,
-  button[class*="secondary"] svg,
-  button[class*="ghost"] svg {
-    color: hsl(var(--servio-purple)) !important;
-  }
-
-  button[class*="servio"]:hover svg,
-  button[class*="default"]:hover svg,
-  button[class*="outline"]:hover svg,
-  button[class*="secondary"]:hover svg,
-  button[class*="ghost"]:hover svg {
-    color: hsl(var(--servio-purple-dark)) !important;
+    min-height: 44px;
+    min-width: 44px;
+    border-radius: 12px;
+    font-weight: 600;
+    transition: all 0.2s ease;
   }
 
   /* Enhanced desktop destructive button styling */
   button[class*="destructive"] {
-    background-color: #dc2626 !important;
-    color: #ffffff !important;
-    font-weight: 600 !important;
-    border: none !important;
-    box-shadow: 0 2px 4px rgba(220, 38, 38, 0.2) !important;
+    background-color: hsl(var(--destructive));
+    color: hsl(var(--destructive-foreground));
+    font-weight: 600;
+    border: none;
+    box-shadow: 0 2px 4px rgba(220, 38, 38, 0.2);
   }
 
   button[class*="destructive"]:hover {
-    background-color: #b91c1c !important;
-    box-shadow: 0 4px 8px rgba(220, 38, 38, 0.3) !important;
-  }
-
-  button[class*="destructive"] svg {
-    color: #ffffff !important;
-  }
-
-  button[class*="destructive"]:hover svg {
-    color: #ffffff !important;
+    opacity: 0.9;
+    box-shadow: 0 4px 8px rgba(220, 38, 38, 0.3);
   }
 }
 
-/* Ensure all headings are visible */
+/* Ensure all headings and text respect theme */
 h1,
 h2,
 h3,
@@ -457,45 +545,13 @@ h6 {
   @apply text-foreground;
 }
 
-/* Ensure all paragraphs and text are visible */
 p,
 span,
 div {
   @apply text-foreground;
 }
 
-/* Global text readability fixes - catch any remaining greyed-out text */
-.text-white,
-.text-slate-400 {
-  color: #6b7280 !important; /* Much darker for better visibility */
-}
-
-.text-white,
-.text-slate-500 {
-  color: #4b5563 !important; /* Darker for better visibility */
-}
-
-.text-muted-foreground {
-  color: #374151 !important; /* Dark gray instead of muted */
-}
-
-.text-foreground\/80,
-.text-foreground\/70,
-.text-foreground\/60 {
-  color: #374151 !important; /* Dark instead of opacity */
-}
-
-/* Enhanced component-specific text readability */
-.staff-member-role,
-.staff-role-header p {
-  color: #4b5563 !important; /* Darker for better readability */
-}
-
-/* Fix any remaining icon colors */
-.text-white svg,
-.text-slate-400 svg {
-  color: #6b7280 !important;
-}
+/* Text readability improvements - respects dark mode */
 
 /* Mobile text size improvements */
 @media (max-width: 768px) {
@@ -666,85 +722,38 @@ div {
 
 /* Mobile-specific improvements */
 @media (max-width: 768px) {
-  /* Enhanced text visibility on mobile - make all text black for readability */
+  /* Enhanced text visibility on mobile - respects dark mode */
   .text-muted-foreground {
-    color: rgb(0, 0, 0) !important; /* Black for maximum visibility on mobile */
-  }
-
-  /* DO NOT override .text-white - let it stay white! */
-
-  /* Enhanced card text visibility - specific selectors */
-  .card .text-muted {
-    color: rgb(0, 0, 0) !important; /* Black */
-  }
-
-  /* Gray text colors to black on mobile */
-  .text-gray-500,
-  .text-gray-600 {
-    color: rgb(0, 0, 0) !important; /* Black */
-  }
-
-  /* Target only elements without explicit color classes */
-  .card p:not([class*="text-white"]):not([class*="text-"]),
-  .card span:not([class*="text-white"]):not([class*="text-"]) {
-    color: rgb(0, 0, 0) !important; /* Black */
-  }
-
-  /* Labels and descriptions to black */
-  label,
-  .text-sm,
-  .text-xs {
-    color: rgb(0, 0, 0) !important; /* Black */
-  }
-
-  /* Dark mode fixes */
-  .dark .text-muted-foreground {
-    color: rgb(209, 213, 219) !important; /* gray-300 */
-  }
-
-  .dark .card .text-muted {
-    color: rgb(156, 163, 175) !important; /* gray-400 */
-  }
-
-  .dark .card p:not([class*="text-white"]):not([class*="text-"]),
-  .dark .card span:not([class*="text-white"]):not([class*="text-"]) {
-    color: rgb(229, 231, 235) !important; /* gray-200 */
-  }
-
-  /* Enhanced label visibility */
-  label {
-    color: rgb(31, 41, 55) !important; /* gray-800 */
+    color: hsl(var(--muted-foreground));
     font-weight: 500;
   }
 
-  .dark label {
-    color: rgb(249, 250, 251) !important; /* gray-50 */
+  /* Enhanced card text visibility */
+  .card .text-muted {
+    color: hsl(var(--muted-foreground));
+  }
+
+  /* Labels with better visibility */
+  label {
+    color: hsl(var(--foreground));
+    font-weight: 600;
   }
 
   /* Enhanced input text visibility */
   input,
   textarea,
   select {
-    color: rgb(17, 24, 39) !important; /* gray-900 for maximum visibility */
+    color: hsl(var(--foreground));
+    background-color: hsl(var(--background));
+    border-color: hsl(var(--border));
     font-weight: 400;
-  }
-
-  .dark input,
-  .dark textarea,
-  .dark select {
-    color: rgb(243, 244, 246) !important; /* gray-100 */
   }
 
   /* Enhanced input placeholder visibility */
   input::placeholder,
   textarea::placeholder {
-    color: rgb(107, 114, 128) !important; /* gray-500 */
+    color: hsl(var(--muted-foreground));
     font-weight: 400;
-  }
-
-  .dark input::placeholder,
-  .dark textarea::placeholder {
-    color: rgb(156, 163, 175) !important; /* gray-400 */
   }
 
   /* Enhanced button visibility - improved touch targets */
@@ -767,11 +776,11 @@ div {
     font-weight: 500 !important;
   }
 
-  /* Enhanced card text visibility for all mobile components */
+  /* Enhanced card styling for mobile - respects dark mode */
   .card {
-    background: #ffffff !important;
-    border: 1px solid #e5e7eb !important;
-    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1) !important;
+    background: hsl(var(--card));
+    border: 1px solid hsl(var(--border));
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
   }
 
   .card h1,
@@ -780,52 +789,15 @@ div {
   .card h4,
   .card h5,
   .card h6 {
-    color: #1f2937 !important;
-    font-weight: 700 !important;
+    color: hsl(var(--card-foreground));
+    font-weight: 700;
   }
 
   .card p,
   .card span,
-  .card div:not(.text-servio-purple) {
-    color: #374151 !important;
-    font-weight: 500 !important;
-  }
-
-  /* Enhanced card text visibility for mobile */
-  .card p,
-  .card span,
-  .card div {
-    color: #374151 !important;
-  }
-
-  .card .text-white {
-    color: #374151 !important;
-  }
-
-  .card .text-white {
-    color: #4b5563 !important;
-  }
-
-  /* Enhanced mobile text visibility for all components */
-  .text-white {
-    color: #4b5563 !important; /* Darker for better mobile visibility */
-  }
-
-  .text-white {
-    color: #6b7280 !important; /* Much darker for better visibility */
-  }
-
-  .text-white {
-    color: #9ca3af !important; /* Darker for better mobile visibility */
-  }
-
-  /* Fix all greyed-out text issues */
-  .text-muted-foreground {
-    color: #374151 !important; /* Dark gray instead of muted */
-  }
-
-  .text-foreground\/80 {
-    color: #374151 !important; /* Dark instead of 80% opacity */
+  .card div:not([class*="bg-"]) {
+    color: hsl(var(--card-foreground));
+    font-weight: 500;
   }
 
   /* Enhanced toggle switch styling for mobile */
@@ -841,60 +813,25 @@ div {
     width: 20px !important;
   }
 
-  /* Enhanced form labels */
-  label {
-    color: #1f2937 !important; /* Very dark for maximum readability */
-    font-weight: 600 !important;
-  }
-
-  /* Enhanced form field visibility */
+  /* Enhanced form elements - respects dark mode */
   .form-field {
-    background-color: #ffffff !important;
-    border: 2px solid #d1d5db !important;
-    color: #000000 !important;
+    background-color: hsl(var(--background));
+    border: 2px solid hsl(var(--border));
+    color: hsl(var(--foreground));
   }
 
   .form-field:focus {
-    border-color: #7c3aed !important;
-    box-shadow: 0 0 0 3px rgba(124, 58, 237, 0.1) !important;
-    outline: none !important;
+    border-color: hsl(var(--ring));
+    box-shadow: 0 0 0 3px hsl(var(--ring) / 0.2);
+    outline: none;
   }
 
   /* Enhanced disabled field visibility */
   input:disabled,
   textarea:disabled,
   select:disabled {
-    background-color: #f9fafb !important;
-    color: #6b7280 !important;
-    border-color: #e5e7eb !important;
-  }
-
-  /* Enhanced card text visibility */
-  .card p,
-  .card span,
-  .card div {
-    color: #374151 !important;
-  }
-
-  /* Enhanced alert text visibility */
-  .alert p,
-  .alert span,
-  .alert div {
-    color: #374151 !important;
-    font-weight: 500 !important;
-  }
-
-  /* Enhanced dialog text visibility */
-  .dialog p,
-  .dialog span,
-  .dialog div {
-    color: #374151 !important;
-  }
-
-  /* Enhanced breadcrumb text visibility */
-  .breadcrumb-text {
-    color: #374151 !important;
-    font-weight: 500 !important;
+    opacity: 0.6;
+    cursor: not-allowed;
   }
 
   /* Ensure touch targets are at least 44px */
@@ -1461,106 +1398,38 @@ div {
     -webkit-tap-highlight-color: transparent;
   }
 
-  /* Enhanced mobile button visibility */
-  button[class*="outline"] {
-    border-width: 2px !important;
-    border-color: #d1d5db !important;
-    color: #1f2937 !important;
-    font-weight: 600 !important;
-    background-color: #ffffff !important;
-    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1) !important;
-  }
-
-  button[class*="outline"]:hover {
-    border-color: #9ca3af !important;
-    color: #111827 !important;
-    background-color: #f9fafb !important;
-    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.15) !important;
-  }
-
-  /* Enhanced mobile button text for all variants */
-  button[class*="ghost"] {
-    color: #1f2937 !important;
-    font-weight: 600 !important;
-    background-color: transparent !important;
-  }
-
-  button[class*="ghost"]:hover {
-    color: #111827 !important;
-    background-color: #f3f4f6 !important;
-  }
-
-  /* Enhanced mobile button styling - ALL variants get white bg with purple text */
-  button[class*="servio"],
-  button[class*="default"],
-  button[class*="outline"],
-  button[class*="secondary"],
-  button[class*="ghost"] {
-    background-color: #ffffff !important;
-    color: hsl(var(--servio-purple)) !important;
-    font-weight: 600 !important;
-    border: 2px solid hsl(var(--servio-purple)) !important;
-    box-shadow: 0 2px 8px rgba(124, 58, 237, 0.15) !important;
-    min-height: 44px !important;
-    min-width: 44px !important;
-  }
-
-  button[class*="servio"]:hover,
-  button[class*="default"]:hover,
-  button[class*="outline"]:hover,
-  button[class*="secondary"]:hover,
-  button[class*="ghost"]:hover {
-    background-color: #f9fafb !important;
-    color: hsl(var(--servio-purple-dark)) !important;
-    border-color: hsl(var(--servio-purple-dark)) !important;
-    box-shadow: 0 4px 12px rgba(124, 58, 237, 0.2) !important;
-  }
-
-  button[class*="servio"] svg,
-  button[class*="default"] svg,
-  button[class*="outline"] svg,
-  button[class*="secondary"] svg,
-  button[class*="ghost"] svg {
-    color: hsl(var(--servio-purple)) !important;
-  }
-
-  button[class*="servio"]:hover svg,
-  button[class*="default"]:hover svg,
-  button[class*="outline"]:hover svg,
-  button[class*="secondary"]:hover svg,
-  button[class*="ghost"]:hover svg {
-    color: hsl(var(--servio-purple-dark)) !important;
-  }
-
-  /* Enhanced mobile button consistency */
+  /* Enhanced mobile button styling - respects dark mode */
   button {
-    min-height: 44px !important;
-    min-width: 44px !important;
-    border-radius: 12px !important;
-    font-weight: 600 !important;
-    transition: all 0.2s ease !important;
+    min-height: 44px;
+    min-width: 44px;
+    border-radius: 12px;
+    font-weight: 600;
+    transition: all 0.2s ease;
   }
 
-  /* Enhanced mobile destructive button styling */
+  /* Outline button variant */
+  button[class*="outline"] {
+    border-width: 2px;
+    background-color: transparent;
+    font-weight: 600;
+  }
+
+  /* Ghost button variant */
+  button[class*="ghost"] {
+    background-color: transparent;
+    font-weight: 600;
+  }
+
+  /* Destructive button styling */
   button[class*="destructive"] {
-    background-color: #dc2626 !important;
-    color: #ffffff !important;
-    font-weight: 600 !important;
-    border: none !important;
-    box-shadow: 0 2px 4px rgba(220, 38, 38, 0.2) !important;
+    background-color: hsl(var(--destructive));
+    color: hsl(var(--destructive-foreground));
+    font-weight: 600;
+    border: none;
   }
 
   button[class*="destructive"]:hover {
-    background-color: #b91c1c !important;
-    box-shadow: 0 4px 8px rgba(220, 38, 38, 0.3) !important;
-  }
-
-  button[class*="destructive"] svg {
-    color: #ffffff !important;
-  }
-
-  button[class*="destructive"]:hover svg {
-    color: #ffffff !important;
+    opacity: 0.9;
   }
 
   /* Enhanced icon visibility */
@@ -1725,21 +1594,22 @@ div {
     opacity: 1 !important;
   }
 
-  /* Enhanced mobile header with better Servio branding */
+  /* Enhanced mobile header - respects dark mode */
   .mobile-header {
-    background: #ffffff !important;
-    border-bottom: 1px solid #e5e7eb !important;
-    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1) !important;
+    background: hsl(var(--background));
+    border-bottom: 1px solid hsl(var(--border));
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
   }
 
-  /* Fix muted colors for headers on mobile across entire platform */
+  /* Fix headers on mobile - respects dark mode */
   h1,
   h2,
   h3,
   h4,
   h5,
   h6 {
-    color: #1f2937 !important;
+    color: hsl(var(--foreground));
+    font-weight: 700;
   }
 
   .card-header h1,
@@ -1748,135 +1618,72 @@ div {
   .card-header h4,
   .card-header h5,
   .card-header h6 {
-    color: #1f2937 !important;
+    color: hsl(var(--card-foreground));
   }
 
-  /* Settings and ordering UI headers */
-  .settings-header h1,
-  .settings-header h2,
-  .settings-header h3,
-  .order-header h1,
-  .order-header h2,
-  .order-header h3 {
-    color: #1f2937 !important;
-  }
-
-  /* Enhanced mobile navigation with Servio branding */
+  /* Enhanced mobile navigation - respects dark mode */
   .mobile-nav {
-    background: #ffffff !important; /* Force full white bar */
-    backdrop-filter: none !important;
-    border-top: 1px solid #e5e7eb !important;
+    background: hsl(var(--background));
+    backdrop-filter: none;
+    border-top: 1px solid hsl(var(--border));
+    box-shadow: 0 -2px 8px rgba(0, 0, 0, 0.08);
+    min-height: 80px;
+    height: auto;
   }
 
   /* Enhanced mobile navigation text visibility */
   .mobile-nav span,
-  .mobile-nav button span,
-  .mobile-nav .text-xs {
-    color: hsl(var(--servio-purple)) !important; /* Always Servio purple */
-    font-weight: 700 !important;
-  }
-
-  /* Force readable contrast for active/selected nav buttons */
-  .mobile-nav button.bg-purple-600 span,
-  .mobile-nav button.bg-purple-600 svg {
-    color: hsl(var(--servio-purple)) !important;
-  }
-
-  /* Safety: hide any legacy inline count under bottom-nav icons */
-  .mobile-nav button .mt-1.text-xs.font-bold {
-    display: none !important;
-  }
-
-  /* Ensure proper text sizing for navigation elements */
-  .mobile-nav button .relative .text-xs {
-    font-size: 12px !important;
-  }
-
-  /* Keep legacy selector fallback if any component adds an "active" class */
-  .mobile-nav button[class*="active"] span,
-  .mobile-nav button[class*="active"] svg {
-    color: hsl(var(--servio-purple)) !important;
+  .mobile-nav button span {
+    color: hsl(var(--servio-purple));
+    font-weight: 700;
   }
 
   /* Enhanced mobile navigation icon visibility */
   .mobile-nav svg {
-    color: hsl(var(--servio-purple)) !important; /* Icons always purple */
+    color: hsl(var(--servio-purple));
   }
 
-  .mobile-nav button[class*="active"] svg,
-  .mobile-nav .text-servio-purple svg {
-    color: hsl(var(--servio-purple)) !important;
+  .mobile-nav button[class*="active"] span,
+  .mobile-nav button[class*="active"] svg {
+    color: hsl(var(--servio-purple));
   }
 
-  /* Enhanced mobile navigation background and borders */
-  .mobile-nav {
-    background: #ffffff !important;
-    backdrop-filter: none !important;
-    border-top: 1px solid #e5e7eb !important;
-    box-shadow: 0 -2px 8px rgba(0, 0, 0, 0.08) !important;
-    min-height: 80px !important;
-    height: auto !important;
-  }
-
-  /* Dark mode mobile navigation support */
-  @media (prefers-color-scheme: dark) {
-    .mobile-nav {
-      background: #ffffff !important; /* Keep white in dark mode too */
-      border-top: 1px solid #e5e7eb !important;
-      box-shadow: 0 -2px 8px rgba(0, 0, 0, 0.12) !important;
-      min-height: 80px !important;
-      height: auto !important;
-    }
-
-    .mobile-nav span,
-    .mobile-nav button span,
-    .mobile-nav svg {
-      color: hsl(var(--servio-purple)) !important;
-    }
-  }
-
-  /* Enhanced mobile card styling with Servio theme */
+  /* Enhanced mobile card styling - respects dark mode */
   .mobile-card {
-    background: #ffffff !important;
-    border: 1px solid #e5e7eb !important;
-    border-radius: 12px !important;
-    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08) !important;
+    background: hsl(var(--card));
+    border: 1px solid hsl(var(--border));
+    border-radius: 12px;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
   }
 
-  /* Enhanced mobile text with better contrast */
+  /* Enhanced mobile text - respects dark mode */
   .mobile-text {
-    color: #1f2937 !important;
-    font-weight: 500 !important;
+    color: hsl(var(--foreground));
+    font-weight: 500;
   }
 
   .mobile-text-muted {
-    color: #000000 !important; /* Black instead of gray */
-    font-weight: 500 !important; /* Slightly bolder for readability */
+    color: hsl(var(--muted-foreground));
+    font-weight: 500;
   }
 
-  /* Mobile navigation text visibility fixes */
+  /* Mobile navigation text variants - respects dark mode */
   .mobile-nav-text {
-    color: #ffffff !important;
-    font-weight: 700 !important;
-  }
-
-  .mobile-nav-text-inactive {
-    color: #ffffff !important;
-    font-weight: 600 !important;
+    color: hsl(var(--foreground));
+    font-weight: 700;
   }
 
   .mobile-nav-text-active {
-    color: hsl(var(--servio-purple)) !important;
-    font-weight: 700 !important;
+    color: hsl(var(--servio-purple));
+    font-weight: 700;
   }
 
-  /* Ensure mobile navigation icons are visible */
   .mobile-nav-icon {
-    color: #ffffff !important;
+    color: hsl(var(--foreground));
   }
 
   .mobile-nav-icon-active {
-    color: hsl(var(--servio-purple)) !important;
+    color: hsl(var(--servio-purple));
   }
 
   /* Improved list items */
@@ -1974,111 +1781,11 @@ div {
   }
 }
 
-/* Dark mode mobile optimizations */
-@media (max-width: 768px) and (prefers-color-scheme: dark) {
+/* Dark mode mobile optimizations - respects CSS variables */
+.dark {
   /* Better tap highlighting for dark mode */
   * {
     -webkit-tap-highlight-color: rgba(124, 58, 237, 0.3);
-  }
-
-  /* Enhanced dark mode text visibility */
-  .text-muted-foreground {
-    color: #d1d5db !important; /* Light gray for dark mode */
-  }
-
-  .text-white {
-    color: #d1d5db !important; /* Light gray for dark mode */
-  }
-
-  .text-white {
-    color: #9ca3af !important; /* Medium gray for dark mode */
-  }
-
-  .text-white {
-    color: #d1d5db !important; /* Light gray for dark mode */
-  }
-
-  .text-white {
-    color: #f3f4f6 !important; /* Very light gray for dark mode */
-  }
-
-  .text-white {
-    color: #f9fafb !important; /* Almost white for dark mode */
-  }
-
-  /* Enhanced dark mode inputs */
-  input,
-  textarea,
-  select {
-    background-color: #1f2937;
-    border-color: #374151;
-    color: #f9fafb;
-  }
-
-  input:focus,
-  textarea:focus,
-  select:focus {
-    border-color: #7c3aed;
-    box-shadow: 0 0 0 3px rgba(124, 58, 237, 0.2);
-  }
-
-  /* Enhanced dark mode labels */
-  label {
-    color: #f9fafb !important; /* White labels in dark mode */
-  }
-
-  /* Better dark mode cards */
-  .card {
-    background-color: #1f2937;
-    border: 1px solid #374151;
-  }
-
-  /* Enhanced dark mode card text */
-  .card p,
-  .card span,
-  .card div {
-    color: #d1d5db !important;
-  }
-
-  /* Enhanced dark mode buttons */
-  button {
-    color: #f9fafb;
-  }
-
-  /* Enhanced dark mode button visibility */
-  button[class*="outline"] {
-    border-color: #6b7280 !important;
-    color: #d1d5db !important;
-    background-color: #1f2937 !important;
-  }
-
-  button[class*="outline"]:hover {
-    border-color: #9ca3af !important;
-    color: #f9fafb !important;
-    background-color: #374151 !important;
-  }
-
-  button[class*="ghost"] {
-    color: #d1d5db !important;
-  }
-
-  button[class*="ghost"]:hover {
-    color: #f9fafb !important;
-    background-color: #374151 !important;
-  }
-
-  /* Enhanced dark mode navigation */
-  .mobile-nav-text {
-    color: #f9fafb !important;
-  }
-
-  /* Enhanced dark mode disabled fields */
-  input:disabled,
-  textarea:disabled,
-  select:disabled {
-    background-color: #374151 !important;
-    color: #9ca3af !important;
-    border-color: #4b5563 !important;
   }
 }
 
@@ -2142,39 +1849,28 @@ div {
   }
 }
 
-/* Force consistent Servio button theme globally */
-/* Brand default button (exclude destructive) */
-button:not([class*="destructive"]),
-[role="button"]:not([class*="destructive"]),
-input[type="button"]:not([class*="destructive"]),
-input[type="submit"]:not([class*="destructive"]),
-input[type="reset"]:not([class*="destructive"]) {
-  background-color: #ffffff !important;
-  color: hsl(var(--servio-purple)) !important;
-  border: 2px solid hsl(var(--servio-purple)) !important;
-  border-radius: 12px !important;
-  font-weight: 600 !important;
+/* Consistent button theme - respects dark mode */
+button:not([class*="destructive"]) {
+  background-color: hsl(var(--primary));
+  color: hsl(var(--primary-foreground));
+  border: 2px solid hsl(var(--primary));
+  border-radius: 12px;
+  font-weight: 600;
 }
 
-button:not([class*="destructive"]):hover,
-[role="button"]:not([class*="destructive"]):hover,
-input[type="button"]:not([class*="destructive"]):hover,
-input[type="submit"]:not([class*="destructive"]):hover,
-input[type="reset"]:not([class*="destructive"]):hover {
-  background-color: #f9fafb !important;
-  color: hsl(var(--servio-purple)) !important;
+button:not([class*="destructive"]):hover {
+  opacity: 0.9;
 }
 
-/* Destructive buttons: red background, white text, red border */
+/* Destructive buttons */
 button[class*="destructive"],
 [role="button"][class*="destructive"] {
-  background-color: #ef4444 !important;
-  color: #ffffff !important;
-  border: 2px solid #ef4444 !important;
+  background-color: hsl(var(--destructive));
+  color: hsl(var(--destructive-foreground));
+  border: 2px solid hsl(var(--destructive));
 }
+
 button[class*="destructive"]:hover,
 [role="button"][class*="destructive"]:hover {
-  background-color: #dc2626 !important;
-  color: #ffffff !important;
-  border-color: #dc2626 !important;
+  opacity: 0.9;
 }
