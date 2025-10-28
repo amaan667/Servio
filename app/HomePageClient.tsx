@@ -251,7 +251,7 @@ export function HomePageClient({ initialAuthState }: { initialAuthState: boolean
                   </ul>
                   <Button
                     onClick={handleGetStarted}
-                    className={`w-full ${plan.popular ? "bg-purple-600 hover:bg-purple-700" : ""}`}
+                    className={`w-full ${plan.popular ? "bg-purple-600 hover:bg-purple-700 text-white" : ""}`}
                     variant={plan.popular ? "default" : "outline"}
                     size="lg"
                   >

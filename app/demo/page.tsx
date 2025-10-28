@@ -150,7 +150,7 @@ export default function DemoPage() {
                                 </p>
                                 <Button
                                   size="sm"
-                                  className="bg-purple-600 hover:bg-purple-700 h-7 px-3"
+                                  className="bg-purple-600 hover:bg-purple-700 text-white h-7 px-3"
                                 >
                                   <Plus className="w-3 h-3" />
                                 </Button>
@@ -162,7 +162,7 @@ export default function DemoPage() {
 
                       {/* Cart Footer */}
                       <div className="border-t p-4 bg-white sticky bottom-0">
-                        <Button className="w-full bg-purple-600 hover:bg-purple-700">
+                        <Button className="w-full bg-purple-600 hover:bg-purple-700 text-white">
                           <ShoppingCart className="w-4 h-4 mr-2" />
                           View Cart (3 items)
                         </Button>
@@ -189,7 +189,7 @@ export default function DemoPage() {
 
                 {/* Try Live Demo */}
                 <Link href="/order?venue=demo-cafe&table=1&demo=true" target="_blank">
-                  <Button className="w-full bg-purple-600 hover:bg-purple-700 h-14 text-lg">
+                  <Button className="w-full bg-purple-600 hover:bg-purple-700 text-white h-14 text-lg">
                     <ExternalLink className="w-5 h-5 mr-2" />
                     Try Live Customer Demo
                   </Button>

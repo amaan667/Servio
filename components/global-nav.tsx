@@ -174,11 +174,11 @@ export default function GlobalNav() {
               // Signed in navigation - modern SaaS style
               <div className="flex items-center space-x-2">
                 {isDashboardRoot ? (
-                  // On dashboard root page: Home, Settings (owners only), Sign Out
+                  // On dashboard root page: Dashboard, Settings (owners only), Sign Out - default styling
                   <>
                     <Link
                       href="/"
-                      className="flex items-center px-4 py-3 text-base font-medium bg-purple-600 text-white hover:bg-white hover:text-purple-600 hover:border-purple-600 border-2 border-transparent rounded-md transition-all duration-200"
+                      className="flex items-center px-4 py-3 text-base font-medium text-foreground hover:text-primary hover:bg-accent rounded-md transition-all duration-200"
                     >
                       <Home className="mr-3 h-5 w-5" />
                       Home
@@ -190,24 +190,13 @@ export default function GlobalNav() {
                             ? `/dashboard/${venueId || primaryVenueId}/settings`
                             : "/"
                         }
-                        className="flex items-center px-4 py-3 text-base font-medium bg-purple-600 text-white hover:bg-white hover:text-purple-600 hover:border-purple-600 border-2 border-transparent rounded-md transition-all duration-200"
+                        className="flex items-center px-4 py-3 text-base font-medium text-foreground hover:text-primary hover:bg-accent rounded-md transition-all duration-200"
                       >
                         <Settings className="mr-3 h-5 w-5" />
                         Settings
                       </Link>
                     )}
-                    <Button
-                      variant="ghost"
-                      size="icon"
-                      onClick={() => setTheme(theme === "dark" ? "light" : "dark")}
-                      className="bg-purple-600 text-white hover:bg-white hover:text-purple-600 hover:border-purple-600 border-2 border-transparent rounded-md"
-                    >
-                      {theme === "dark" ? (
-                        <Sun className="h-5 w-5" />
-                      ) : (
-                        <Moon className="h-5 w-5" />
-                      )}
-                    </Button>
+                    {/* NO DARK MODE BUTTON ON DASHBOARD ROOT - hidden on home page */}
                     <div className="w-px h-8 bg-border mx-2"></div>
                     <Button
                       variant="destructive"
@@ -222,13 +211,13 @@ export default function GlobalNav() {
                     </Button>
                   </>
                 ) : isOnFeaturePage || isOnQRPage ? (
-                  // On feature pages (Live Orders, Menu, etc.) and QR pages: Dashboard, Settings (owners only), Sign Out
+                  // On feature pages (Live Orders, Menu, etc.) and QR pages: Dashboard, Settings (owners only), Sign Out - default styling
                   <>
                     <Link
                       href={
                         venueId || primaryVenueId ? `/dashboard/${venueId || primaryVenueId}` : "/"
                       }
-                      className="flex items-center px-4 py-3 text-base font-medium bg-purple-600 text-white hover:bg-white hover:text-purple-600 hover:border-purple-600 border-2 border-transparent rounded-md transition-all duration-200"
+                      className="flex items-center px-4 py-3 text-base font-medium text-foreground hover:text-primary hover:bg-accent rounded-md transition-all duration-200"
                     >
                       <LayoutDashboard className="mr-3 h-5 w-5" />
                       Dashboard
@@ -240,24 +229,13 @@ export default function GlobalNav() {
                             ? `/dashboard/${venueId || primaryVenueId}/settings`
                             : "/"
                         }
-                        className="flex items-center px-4 py-3 text-base font-medium bg-purple-600 text-white hover:bg-white hover:text-purple-600 hover:border-purple-600 border-2 border-transparent rounded-md transition-all duration-200"
+                        className="flex items-center px-4 py-3 text-base font-medium text-foreground hover:text-primary hover:bg-accent rounded-md transition-all duration-200"
                       >
                         <Settings className="mr-3 h-5 w-5" />
                         Settings
                       </Link>
                     )}
-                    <Button
-                      variant="ghost"
-                      size="icon"
-                      onClick={() => setTheme(theme === "dark" ? "light" : "dark")}
-                      className="bg-purple-600 text-white hover:bg-white hover:text-purple-600 hover:border-purple-600 border-2 border-transparent rounded-md"
-                    >
-                      {theme === "dark" ? (
-                        <Sun className="h-5 w-5" />
-                      ) : (
-                        <Moon className="h-5 w-5" />
-                      )}
-                    </Button>
+                    {/* NO DARK MODE BUTTON ON FEATURE PAGES - hidden on home page */}
                     <div className="w-px h-8 bg-border mx-2"></div>
                     <Button
                       variant="destructive"
@@ -272,36 +250,25 @@ export default function GlobalNav() {
                     </Button>
                   </>
                 ) : isOnSettings ? (
-                  // On settings pages: Dashboard, Home, Sign Out
+                  // On settings pages: Dashboard, Home, Sign Out - default styling
                   <>
                     <Link
                       href={
                         venueId || primaryVenueId ? `/dashboard/${venueId || primaryVenueId}` : "/"
                       }
-                      className="flex items-center px-4 py-3 text-base font-medium bg-purple-600 text-white hover:bg-white hover:text-purple-600 hover:border-purple-600 border-2 border-transparent rounded-md transition-all duration-200"
+                      className="flex items-center px-4 py-3 text-base font-medium text-foreground hover:text-primary hover:bg-accent rounded-md transition-all duration-200"
                     >
                       <LayoutDashboard className="mr-3 h-5 w-5" />
                       Dashboard
                     </Link>
                     <Link
                       href="/"
-                      className="flex items-center px-4 py-3 text-base font-medium bg-purple-600 text-white hover:bg-white hover:text-purple-600 hover:border-purple-600 border-2 border-transparent rounded-md transition-all duration-200"
+                      className="flex items-center px-4 py-3 text-base font-medium text-foreground hover:text-primary hover:bg-accent rounded-md transition-all duration-200"
                     >
                       <Home className="mr-3 h-5 w-5" />
                       Home
                     </Link>
-                    <Button
-                      variant="ghost"
-                      size="icon"
-                      onClick={() => setTheme(theme === "dark" ? "light" : "dark")}
-                      className="bg-purple-600 text-white hover:bg-white hover:text-purple-600 hover:border-purple-600 border-2 border-transparent rounded-md"
-                    >
-                      {theme === "dark" ? (
-                        <Sun className="h-5 w-5" />
-                      ) : (
-                        <Moon className="h-5 w-5" />
-                      )}
-                    </Button>
+                    {/* NO DARK MODE BUTTON ON SETTINGS PAGES - hidden on home page */}
                     <div className="w-px h-8 bg-border mx-2"></div>
                     <Button
                       variant="destructive"

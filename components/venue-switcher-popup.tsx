@@ -315,7 +315,7 @@ export default function VenueSwitcherPopup({
       <DialogTrigger asChild>
         <Button
           variant="outline"
-          className="flex items-center gap-2 bg-purple-600 text-white hover:bg-white hover:text-purple-600 hover:border-purple-600 border-2 border-transparent transition-all duration-200"
+          className="flex items-center gap-2 h-10 px-4 text-sm font-medium bg-purple-600 text-white hover:bg-white hover:text-purple-600 hover:border-purple-600 border-2 border-transparent transition-all duration-200"
         >
           <Building2 className="h-4 w-4" />
           {currentVenueName || currentVenue?.venue_name || "Select Venue"}
