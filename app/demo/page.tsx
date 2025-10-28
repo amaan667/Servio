@@ -17,6 +17,8 @@ import {
   Clock,
   Star,
   Plus,
+  ShoppingBag,
+  Table,
 } from "lucide-react";
 import NavigationBreadcrumb from "@/components/navigation-breadcrumb";
 import Link from "next/link";
@@ -26,14 +28,31 @@ import { demoMenuItems } from "@/data/demoMenuItems";
 export default function DemoPage() {
   const [activeView, setActiveView] = useState<"customer" | "owner">("customer");
 
-  // Select variety of items from different categories
+  // Select variety of items from different categories - 18 items showcasing all business types
   const showcaseItems = [
-    demoMenuItems[0], // Cappuccino (Coffee)
-    demoMenuItems[10], // Croissant (Pastries)
-    demoMenuItems[14], // Avocado Toast (Pastries)
-    demoMenuItems[15], // Club Sandwich (Food)
-    demoMenuItems[20], // Chocolate Cake (Desserts)
-    demoMenuItems[6], // Fresh Orange Juice (Cold Drinks)
+    // Coffee (5 items)
+    demoMenuItems[0], // Cappuccino
+    demoMenuItems[1], // Latte
+    demoMenuItems[2], // Americano
+    demoMenuItems[3], // Mocha
+    demoMenuItems[4], // Flat White
+    // Pastries (3 items)
+    demoMenuItems[10], // Croissant
+    demoMenuItems[11], // Pain au Chocolat
+    demoMenuItems[14], // Avocado Toast
+    // Food (5 items)
+    demoMenuItems[15], // Club Sandwich
+    demoMenuItems[16], // Caesar Salad
+    demoMenuItems[17], // Quiche Lorraine
+    demoMenuItems[18], // Chicken Panini
+    demoMenuItems[19], // Soup of the Day
+    // Cold Drinks (2 items)
+    demoMenuItems[6], // Fresh Orange Juice
+    demoMenuItems[7], // Sparkling Water
+    // Desserts (3 items)
+    demoMenuItems[20], // Chocolate Cake
+    demoMenuItems[21], // Tiramisu
+    demoMenuItems[22], // Cheesecake
   ];
 
   return (
@@ -200,112 +219,220 @@ export default function DemoPage() {
                 </div>
               </CardHeader>
               <CardContent className="space-y-6">
-                {/* Dashboard Stats Mockup */}
-                <div className="bg-gradient-to-br from-gray-50 to-purple-50 rounded-xl p-6 border-2 border-purple-200">
-                  <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-6">
-                    <div className="bg-white rounded-lg p-4 shadow-sm">
-                      <div className="flex items-center justify-between mb-2">
-                        <Clock className="w-5 h-5 text-blue-600" />
-                        <Badge variant="outline" className="text-xs">
-                          Live
-                        </Badge>
-                      </div>
-                      <p className="text-2xl font-bold text-gray-900">8</p>
-                      <p className="text-sm text-gray-600">Active Orders</p>
+                {/* Trial Banner */}
+                <div className="bg-gradient-to-r from-purple-600 to-pink-600 text-white rounded-lg p-4 shadow-lg">
+                  <div className="flex items-center justify-between">
+                    <div className="flex items-center gap-3">
+                      <Sparkles className="w-5 h-5" />
+                      <span className="font-semibold">14-day free trial • 12 days remaining</span>
                     </div>
-                    <div className="bg-white rounded-lg p-4 shadow-sm">
-                      <div className="flex items-center justify-between mb-2">
-                        <TrendingUp className="w-5 h-5 text-green-600" />
-                        <Badge variant="outline" className="text-xs">
-                          +12%
-                        </Badge>
-                      </div>
-                      <p className="text-2xl font-bold text-gray-900">£1,247</p>
-                      <p className="text-sm text-gray-600">Today's Revenue</p>
-                    </div>
-                    <div className="bg-white rounded-lg p-4 shadow-sm">
-                      <div className="flex items-center justify-between mb-2">
-                        <ShoppingCart className="w-5 h-5 text-purple-600" />
-                      </div>
-                      <p className="text-2xl font-bold text-gray-900">34</p>
-                      <p className="text-sm text-gray-600">Completed Orders</p>
-                    </div>
-                    <div className="bg-white rounded-lg p-4 shadow-sm">
-                      <div className="flex items-center justify-between mb-2">
-                        <Star className="w-5 h-5 text-yellow-600" />
-                      </div>
-                      <p className="text-2xl font-bold text-gray-900">4.8</p>
-                      <p className="text-sm text-gray-600">Avg Rating</p>
-                    </div>
+                    <Button
+                      size="sm"
+                      variant="secondary"
+                      className="bg-white text-purple-600 hover:bg-gray-100"
+                    >
+                      Upgrade
+                    </Button>
                   </div>
+                </div>
 
-                  {/* Recent Orders Preview */}
-                  <div className="bg-white rounded-lg shadow-sm overflow-hidden">
-                    <div className="bg-purple-600 text-white px-4 py-2 font-semibold">
+                {/* Quick Actions Toolbar */}
+                <Card className="bg-white shadow-sm">
+                  <CardContent className="p-4">
+                    <div className="flex items-center gap-2 overflow-x-auto">
+                      <Button variant="outline" size="sm">
+                        <Clock className="w-4 h-4 mr-2" />
+                        Live Orders
+                      </Button>
+                      <Button variant="outline" size="sm">
+                        <LayoutDashboard className="w-4 h-4 mr-2" />
+                        KDS
+                      </Button>
+                      <Button variant="outline" size="sm">
+                        <ShoppingCart className="w-4 h-4 mr-2" />
+                        Menu
+                      </Button>
+                      <Button variant="outline" size="sm">
+                        <TrendingUp className="w-4 h-4 mr-2" />
+                        Analytics
+                      </Button>
+                      <Button variant="outline" size="sm">
+                        <Users className="w-4 h-4 mr-2" />
+                        Staff
+                      </Button>
+                    </div>
+                  </CardContent>
+                </Card>
+
+                {/* KPI Cards - Matches Real Dashboard */}
+                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+                  <Card className="hover:shadow-lg transition-shadow">
+                    <CardContent className="p-6">
+                      <div className="flex items-center justify-between mb-4">
+                        <div className="w-12 h-12 bg-blue-100 rounded-lg flex items-center justify-center">
+                          <Clock className="w-6 h-6 text-blue-600" />
+                        </div>
+                        <Badge
+                          variant="outline"
+                          className="text-xs text-green-600 border-green-600"
+                        >
+                          +18%
+                        </Badge>
+                      </div>
+                      <p className="text-3xl font-bold text-gray-900 mb-1">47</p>
+                      <p className="text-sm text-gray-600 mb-2">Today's Orders</p>
+                      <p className="text-xs text-gray-500">vs yesterday</p>
+                    </CardContent>
+                  </Card>
+
+                  <Card className="hover:shadow-lg transition-shadow">
+                    <CardContent className="p-6">
+                      <div className="flex items-center justify-between mb-4">
+                        <div className="w-12 h-12 bg-green-100 rounded-lg flex items-center justify-center">
+                          <TrendingUp className="w-6 h-6 text-green-600" />
+                        </div>
+                        <Badge
+                          variant="outline"
+                          className="text-xs text-green-600 border-green-600"
+                        >
+                          +24%
+                        </Badge>
+                      </div>
+                      <p className="text-3xl font-bold text-gray-900 mb-1">£1,847</p>
+                      <p className="text-sm text-gray-600 mb-2">Revenue</p>
+                      <p className="text-xs text-gray-500">vs yesterday</p>
+                    </CardContent>
+                  </Card>
+
+                  <Card className="hover:shadow-lg transition-shadow">
+                    <CardContent className="p-6">
+                      <div className="flex items-center justify-between mb-4">
+                        <div className="w-12 h-12 bg-purple-100 rounded-lg flex items-center justify-center">
+                          <Table className="w-6 h-6 text-purple-600" />
+                        </div>
+                      </div>
+                      <p className="text-3xl font-bold text-gray-900 mb-1">15</p>
+                      <p className="text-sm text-gray-600 mb-2">Tables Set Up</p>
+                      <p className="text-xs text-gray-500">all active</p>
+                    </CardContent>
+                  </Card>
+
+                  <Card className="hover:shadow-lg transition-shadow">
+                    <CardContent className="p-6">
+                      <div className="flex items-center justify-between mb-4">
+                        <div className="w-12 h-12 bg-orange-100 rounded-lg flex items-center justify-center">
+                          <ShoppingBag className="w-6 h-6 text-orange-600" />
+                        </div>
+                      </div>
+                      <p className="text-3xl font-bold text-gray-900 mb-1">127</p>
+                      <p className="text-sm text-gray-600 mb-2">Menu Items</p>
+                      <p className="text-xs text-gray-500">available</p>
+                    </CardContent>
+                  </Card>
+                </div>
+
+                {/* Live Orders Section */}
+                <Card>
+                  <CardHeader>
+                    <CardTitle className="flex items-center">
+                      <Clock className="w-5 h-5 mr-2 text-blue-600" />
                       Live Orders
-                    </div>
-                    <div className="divide-y">
-                      <div className="p-3 hover:bg-gray-50">
-                        <div className="flex items-center justify-between">
-                          <div>
-                            <p className="font-semibold text-gray-900">Table 5</p>
-                            <p className="text-sm text-gray-600">2x Cappuccino, 1x Croissant</p>
+                      <Badge className="ml-2 bg-blue-500">8 Active</Badge>
+                    </CardTitle>
+                  </CardHeader>
+                  <CardContent>
+                    <div className="space-y-3">
+                      {[
+                        {
+                          table: "Table 5",
+                          items: "2x Cappuccino, 1x Croissant",
+                          time: "2 min ago",
+                          status: "Preparing",
+                          color: "bg-blue-500",
+                        },
+                        {
+                          table: "Table 3",
+                          items: "1x Caesar Salad, 1x Latte",
+                          time: "5 min ago",
+                          status: "New",
+                          color: "bg-orange-500",
+                        },
+                        {
+                          table: "Table 8",
+                          items: "1x Club Sandwich, 1x Smoothie Bowl",
+                          time: "8 min ago",
+                          status: "Ready",
+                          color: "bg-green-500",
+                        },
+                        {
+                          table: "Table 12",
+                          items: "2x Avocado Toast, 2x Orange Juice",
+                          time: "just now",
+                          status: "New",
+                          color: "bg-orange-500",
+                        },
+                        {
+                          table: "Table 2",
+                          items: "1x Tiramisu, 1x Cappuccino",
+                          time: "12 min ago",
+                          status: "Serving",
+                          color: "bg-purple-500",
+                        },
+                      ].map((order, idx) => (
+                        <div
+                          key={idx}
+                          className="flex items-center justify-between p-4 bg-gray-50 rounded-lg hover:bg-gray-100 transition-colors border border-gray-200"
+                        >
+                          <div className="flex-1">
+                            <div className="flex items-center gap-2 mb-1">
+                              <p className="font-semibold text-gray-900">{order.table}</p>
+                              <span className="text-xs text-gray-500">{order.time}</span>
+                            </div>
+                            <p className="text-sm text-gray-600">{order.items}</p>
                           </div>
-                          <Badge className="bg-blue-500">Preparing</Badge>
+                          <Badge className={order.color}>{order.status}</Badge>
                         </div>
-                      </div>
-                      <div className="p-3 hover:bg-gray-50">
-                        <div className="flex items-center justify-between">
-                          <div>
-                            <p className="font-semibold text-gray-900">Table 3</p>
-                            <p className="text-sm text-gray-600">1x Caesar Salad, 1x Latte</p>
-                          </div>
-                          <Badge className="bg-orange-500">New</Badge>
-                        </div>
-                      </div>
+                      ))}
                     </div>
-                  </div>
-                </div>
+                  </CardContent>
+                </Card>
 
-                {/* Key Features Grid */}
-                <div className="grid md:grid-cols-2 gap-4">
-                  <div className="bg-white p-5 rounded-lg border-2 border-purple-100">
-                    <h4 className="font-semibold text-gray-900 mb-2 flex items-center">
-                      <Clock className="w-5 h-5 mr-2 text-purple-600" />
-                      Real-Time Order Management
-                    </h4>
-                    <p className="text-sm text-gray-600">
-                      Track every order from placement to completion with live status updates
-                    </p>
-                  </div>
-                  <div className="bg-white p-5 rounded-lg border-2 border-purple-100">
-                    <h4 className="font-semibold text-gray-900 mb-2 flex items-center">
-                      <Package className="w-5 h-5 mr-2 text-purple-600" />
-                      Kitchen Display System
-                    </h4>
-                    <p className="text-sm text-gray-600">
-                      Digital KDS showing tickets organized by station and priority
-                    </p>
-                  </div>
-                  <div className="bg-white p-5 rounded-lg border-2 border-purple-100">
-                    <h4 className="font-semibold text-gray-900 mb-2 flex items-center">
-                      <TrendingUp className="w-5 h-5 mr-2 text-purple-600" />
-                      Advanced Analytics
-                    </h4>
-                    <p className="text-sm text-gray-600">
-                      Sales trends, popular items, peak hours, and customer insights
-                    </p>
-                  </div>
-                  <div className="bg-white p-5 rounded-lg border-2 border-purple-100">
-                    <h4 className="font-semibold text-gray-900 mb-2 flex items-center">
-                      <Users className="w-5 h-5 mr-2 text-purple-600" />
-                      Staff Management
-                    </h4>
-                    <p className="text-sm text-gray-600">
-                      Role-based access for waiters, kitchen staff, and managers
-                    </p>
-                  </div>
-                </div>
+                {/* Top Selling Items */}
+                <Card>
+                  <CardHeader>
+                    <CardTitle className="flex items-center">
+                      <Star className="w-5 h-5 mr-2 text-yellow-600" />
+                      Top Selling Today
+                    </CardTitle>
+                  </CardHeader>
+                  <CardContent>
+                    <div className="space-y-3">
+                      {[
+                        { name: "Cappuccino", sales: 23, revenue: "£80.50" },
+                        { name: "Avocado Toast", sales: 18, revenue: "£117.00" },
+                        { name: "Latte", sales: 15, revenue: "£60.00" },
+                        { name: "Club Sandwich", sales: 14, revenue: "£119.00" },
+                        { name: "Croissant", sales: 12, revenue: "£30.00" },
+                      ].map((item, idx) => (
+                        <div
+                          key={idx}
+                          className="flex items-center justify-between p-3 bg-gray-50 rounded-lg"
+                        >
+                          <div className="flex items-center gap-3">
+                            <div className="w-8 h-8 bg-purple-100 rounded-full flex items-center justify-center">
+                              <span className="text-sm font-bold text-purple-600">#{idx + 1}</span>
+                            </div>
+                            <div>
+                              <p className="font-semibold text-gray-900">{item.name}</p>
+                              <p className="text-xs text-gray-500">{item.sales} sold</p>
+                            </div>
+                          </div>
+                          <p className="font-bold text-green-600">{item.revenue}</p>
+                        </div>
+                      ))}
+                    </div>
+                  </CardContent>
+                </Card>
               </CardContent>
             </Card>
 
