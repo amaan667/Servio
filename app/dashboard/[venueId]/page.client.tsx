@@ -133,6 +133,23 @@ const DashboardClient = React.memo(function DashboardClient({
     }
   }, [handleRefresh]);
 
+  // Auto-refresh when user navigates back to dashboard (clears stale cache)
+  useEffect(() => {
+    const handleFocus = () => {
+      console.log("[Dashboard] Window focused - invalidating cache and refreshing");
+      // Clear the stale cache
+      if (typeof window !== "undefined") {
+        sessionStorage.removeItem(`dashboard_stats_${venueId}`);
+        sessionStorage.removeItem(`dashboard_counts_${venueId}`);
+      }
+      // Refresh data
+      handleRefresh();
+    };
+
+    window.addEventListener("focus", handleFocus);
+    return () => window.removeEventListener("focus", handleFocus);
+  }, [venueId, handleRefresh]);
+
   // Use live analytics data or fallback to empty data
   const ordersByHour = useMemo(() => {
     if (analyticsData.data?.ordersByHour && analyticsData.data.ordersByHour.length > 0) {

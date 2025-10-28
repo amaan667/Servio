@@ -209,6 +209,29 @@ export function useDashboardData(
     }
   }, [venueId]); // Only run when venueId changes, not every render
 
+  // Invalidate cache and refresh when page becomes visible (user returns from another page)
+  useEffect(() => {
+    const handleVisibilityChange = () => {
+      if (!document.hidden && venueId) {
+        console.log("[Dashboard] Page became visible - invalidating cache and refreshing");
+        // Clear the stale cache
+        if (typeof window !== "undefined") {
+          sessionStorage.removeItem(`dashboard_stats_${venueId}`);
+          sessionStorage.removeItem(`dashboard_counts_${venueId}`);
+        }
+        // Refresh data
+        refreshCounts();
+        const window = todayWindowForTZ(venueTz);
+        if (window.startUtcISO && window.endUtcISO) {
+          loadStats(venueId, { startUtcISO: window.startUtcISO, endUtcISO: window.endUtcISO });
+        }
+      }
+    };
+
+    document.addEventListener("visibilitychange", handleVisibilityChange);
+    return () => document.removeEventListener("visibilitychange", handleVisibilityChange);
+  }, [venueId, venueTz, refreshCounts, loadStats]);
+
   const updateRevenueIncrementally = useCallback(
     (order: { order_status: string; total_amount?: number }) => {
       const totalAmount = typeof order.total_amount === "number" ? order.total_amount : 0;
