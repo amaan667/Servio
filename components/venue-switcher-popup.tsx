@@ -54,8 +54,17 @@ export default function VenueSwitcherPopup({
   const [loading, setLoading] = useState(false);
   const [showAddForm, setShowAddForm] = useState(false);
   const [editingVenue, setEditingVenue] = useState<Venue | null>(null);
-  const [currentVenueName, setCurrentVenueName] = useState<string | null>(null);
   const router = useRouter();
+
+  // Get cached venue name synchronously to prevent flicker
+  const getCachedVenueName = (venueId: string) => {
+    if (typeof window === "undefined") return null;
+    return sessionStorage.getItem(`venue_name_${venueId}`);
+  };
+
+  const [currentVenueName, setCurrentVenueName] = useState<string | null>(
+    getCachedVenueName(currentVenueId)
+  );
 
   // Form state
   const [formData, setFormData] = useState({
@@ -78,6 +87,10 @@ export default function VenueSwitcherPopup({
 
         if (data) {
           setCurrentVenueName(data.venue_name);
+          // Cache the venue name
+          if (typeof window !== "undefined") {
+            sessionStorage.setItem(`venue_name_${currentVenueId}`, data.venue_name);
+          }
         }
       } catch {
         // Silently handle - will show "Select Venue"
