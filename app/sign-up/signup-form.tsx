@@ -405,6 +405,13 @@ export default function SignUpForm({ onGoogleSignIn, isSigningUp = false }: Sign
                 disabled={loading}
                 required
               />
+              {formData.email && (
+                <p className="text-xs text-gray-500">
+                  {typeof window !== "undefined" && sessionStorage.getItem("pending_signup_email")
+                    ? "Pre-filled from your Google account • You can change this if needed"
+                    : ""}
+                </p>
+              )}
             </div>
 
             <div className="space-y-2">
