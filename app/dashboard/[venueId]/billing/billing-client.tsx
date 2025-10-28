@@ -317,7 +317,11 @@ export default function BillingClient({ venueId }: BillingClientProps) {
 
               {organization.trial_ends_at && (
                 <div>
-                  <p className="text-sm text-muted-foreground">Trial Ends</p>
+                  <p className="text-sm text-muted-foreground">
+                    {new Date(organization.trial_ends_at) > new Date()
+                      ? "Trial Ends"
+                      : "Trial Ended"}
+                  </p>
                   <p className="font-medium">
                     {formatDistanceToNow(new Date(organization.trial_ends_at), { addSuffix: true })}
                   </p>

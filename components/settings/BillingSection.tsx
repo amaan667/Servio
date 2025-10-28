@@ -221,7 +221,11 @@ export default function BillingSection({ organization }: BillingSectionProps) {
 
               {organization?.trial_ends_at && (
                 <div className="flex items-center justify-between">
-                  <span className="text-sm font-medium">Trial Ends</span>
+                  <span className="text-sm font-medium">
+                    {new Date(organization.trial_ends_at) > new Date()
+                      ? "Trial Ends"
+                      : "Trial Ended"}
+                  </span>
                   <span className="text-sm text-gray-600">
                     {new Date(organization.trial_ends_at).toLocaleDateString()}
                   </span>
