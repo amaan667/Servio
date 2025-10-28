@@ -80,6 +80,7 @@ export default function MenuManagementClient({
   const [activeTab, setActiveTab] = useState<ActiveTab>("manage");
   const [showCategories, setShowCategories] = useState(false);
   const [previewMode, setPreviewMode] = useState<PreviewMode>("pdf");
+  const [designRefreshKey, setDesignRefreshKey] = useState(0); // Triggers preview refresh
   const { toast } = useToast();
 
   const { menuItems, loading, categoryOrder, setMenuItems, loadMenuItems } = useMenuItems(venueId);
@@ -91,6 +92,12 @@ export default function MenuManagementClient({
     designSettings,
     setDesignSettings
   );
+
+  // Wrapper for saveDesignSettings that triggers preview refresh
+  const handleSaveDesign = async () => {
+    await saveDesignSettings();
+    setDesignRefreshKey((prev) => prev + 1); // Force preview to refresh
+  };
 
   useEffect(() => {
     loadFontForFamily(designSettings.font_family);
@@ -536,7 +543,7 @@ export default function MenuManagementClient({
               💡 Changes will be visible in the Preview tab
             </div>
             <Button
-              onClick={saveDesignSettings}
+              onClick={handleSaveDesign}
               disabled={isSavingDesign}
               className="flex items-center space-x-2 w-full sm:w-auto"
             >
@@ -599,6 +606,7 @@ export default function MenuManagementClient({
             </Card>
           ) : previewMode === "pdf" ? (
             <EnhancedPDFMenuDisplay
+              key={`pdf-${designRefreshKey}`}
               venueId={venueId}
               menuItems={menuItems}
               categoryOrder={categoryOrder}
@@ -616,6 +624,7 @@ export default function MenuManagementClient({
             />
           ) : previewMode === "styled" ? (
             <MenuPreview
+              key={`styled-${designRefreshKey}`}
               venueId={venueId}
               menuItems={menuItems as any}
               categoryOrder={categoryOrder}

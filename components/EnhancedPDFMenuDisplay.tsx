@@ -397,7 +397,7 @@ export function EnhancedPDFMenuDisplay({
       {/* Horizontal Scrollable Categories */}
       {categories.length > 0 && viewMode === "list" && (
         <div className="mb-6 sticky top-0 z-10 bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60 border-b">
-          <div className="overflow-x-auto scrollbar-hide py-3">
+          <div className="overflow-x-auto py-3 [&::-webkit-scrollbar]:h-2 [&::-webkit-scrollbar-track]:bg-gray-100 [&::-webkit-scrollbar-thumb]:bg-purple-600 [&::-webkit-scrollbar-thumb]:rounded-full [&::-webkit-scrollbar-thumb]:hover:bg-purple-700">
             <div className="flex space-x-2 px-4">
               <Button
                 variant={selectedCategory === null ? "default" : "outline"}
@@ -557,67 +557,72 @@ export function EnhancedPDFMenuDisplay({
                             }}
                             onClick={() => handleHotspotClick(hotspot)}
                           >
-                            {/* Always-visible cart controls overlayed on PDF - positioned using GPT Vision button coordinates */}
-                            <div
-                              className="absolute z-20"
-                              style={{
-                                left:
-                                  hotspot.button_x_percent !== undefined
-                                    ? `${hotspot.button_x_percent}%`
-                                    : `${hotspot.x2_percent! - 8}%`,
-                                top:
-                                  hotspot.button_y_percent !== undefined
-                                    ? `${hotspot.button_y_percent}%`
-                                    : `${(hotspot.y1_percent! + hotspot.y2_percent!) / 2}%`,
-                                transform: "translate(-50%, -50%)",
-                              }}
-                              onClick={(e) => e.stopPropagation()}
-                            >
-                              {quantity === 0 ? (
-                                <Button
-                                  size="sm"
-                                  onClick={(e) => {
-                                    e.stopPropagation();
-                                    handleAddToCart(item);
-                                    // Visual feedback
-                                    const button = e.currentTarget;
-                                    button.classList.add("animate-pulse");
-                                    setTimeout(() => button.classList.remove("animate-pulse"), 300);
-                                  }}
-                                  className="bg-primary hover:bg-primary/90 text-white shadow-2xl text-xs px-3 py-1.5 h-8 font-semibold"
-                                >
-                                  <Plus className="h-4 w-4 mr-1" />
-                                  Add to Cart
-                                </Button>
-                              ) : (
-                                <div className="bg-white rounded-lg shadow-2xl border-2 border-primary p-1.5 flex items-center gap-2">
+                            {/* Cart controls only shown when ordering (not in preview mode) */}
+                            {isOrdering && (
+                              <div
+                                className="absolute z-20"
+                                style={{
+                                  left:
+                                    hotspot.button_x_percent !== undefined
+                                      ? `${hotspot.button_x_percent}%`
+                                      : `${hotspot.x2_percent! - 8}%`,
+                                  top:
+                                    hotspot.button_y_percent !== undefined
+                                      ? `${hotspot.button_y_percent}%`
+                                      : `${(hotspot.y1_percent! + hotspot.y2_percent!) / 2}%`,
+                                  transform: "translate(-50%, -50%)",
+                                }}
+                                onClick={(e) => e.stopPropagation()}
+                              >
+                                {quantity === 0 ? (
                                   <Button
+                                    size="sm"
                                     onClick={(e) => {
                                       e.stopPropagation();
-                                      handleUpdateQuantity(item.id, quantity - 1);
+                                      handleAddToCart(item);
+                                      // Visual feedback
+                                      const button = e.currentTarget;
+                                      button.classList.add("animate-pulse");
+                                      setTimeout(
+                                        () => button.classList.remove("animate-pulse"),
+                                        300
+                                      );
                                     }}
-                                    variant="outline"
-                                    size="sm"
-                                    className="h-7 w-7 p-0 border-primary/30 hover:bg-primary/10"
+                                    className="bg-primary hover:bg-primary/90 text-white shadow-2xl text-xs px-3 py-1.5 h-8 font-semibold"
                                   >
-                                    <Minus className="h-3.5 w-3.5 text-primary" />
+                                    <Plus className="h-4 w-4 mr-1" />
+                                    Add to Cart
                                   </Button>
-                                  <span className="text-sm font-bold text-primary min-w-[24px] text-center">
-                                    {quantity}
-                                  </span>
-                                  <Button
-                                    onClick={(e) => {
-                                      e.stopPropagation();
-                                      handleUpdateQuantity(item.id, quantity + 1);
-                                    }}
-                                    size="sm"
-                                    className="h-7 w-7 p-0 bg-primary hover:bg-primary/90 text-white"
-                                  >
-                                    <Plus className="h-3.5 w-3.5" />
-                                  </Button>
-                                </div>
-                              )}
-                            </div>
+                                ) : (
+                                  <div className="bg-white rounded-lg shadow-2xl border-2 border-primary p-1.5 flex items-center gap-2">
+                                    <Button
+                                      onClick={(e) => {
+                                        e.stopPropagation();
+                                        handleUpdateQuantity(item.id, quantity - 1);
+                                      }}
+                                      variant="outline"
+                                      size="sm"
+                                      className="h-7 w-7 p-0 border-primary/30 hover:bg-primary/10"
+                                    >
+                                      <Minus className="h-3.5 w-3.5 text-primary" />
+                                    </Button>
+                                    <span className="text-sm font-bold text-primary min-w-[24px] text-center">
+                                      {quantity}
+                                    </span>
+                                    <Button
+                                      onClick={(e) => {
+                                        e.stopPropagation();
+                                        handleUpdateQuantity(item.id, quantity + 1);
+                                      }}
+                                      size="sm"
+                                      className="h-7 w-7 p-0 bg-primary hover:bg-primary/90 text-white"
+                                    >
+                                      <Plus className="h-3.5 w-3.5" />
+                                    </Button>
+                                  </div>
+                                )}
+                              </div>
+                            )}
 
                             {/* Item name overlay (optional - shows on hover) */}
                             <div className="absolute left-2 bottom-2 bg-black/70 text-white px-2 py-1 rounded text-xs opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none">
@@ -646,62 +651,65 @@ export function EnhancedPDFMenuDisplay({
                             onClick={() => handleHotspotClick(hotspot)}
                           >
                             {/* Always-visible cart controls overlayed on PDF - positioned using GPT Vision button coordinates */}
-                            <div
-                              className="absolute z-10"
-                              style={{
-                                left:
-                                  hotspot.button_x_percent !== undefined
-                                    ? `${hotspot.button_x_percent}%`
-                                    : `${estimatedX1 + estimatedWidth - 8}%`,
-                                top:
-                                  hotspot.button_y_percent !== undefined
-                                    ? `${hotspot.button_y_percent}%`
-                                    : `${estimatedY1 + estimatedHeight / 2}%`,
-                                transform: "translate(-50%, -50%)",
-                              }}
-                              onClick={(e) => e.stopPropagation()}
-                            >
-                              {quantity === 0 ? (
-                                <Button
-                                  size="sm"
-                                  onClick={(e) => {
-                                    e.stopPropagation();
-                                    handleAddToCart(item);
-                                  }}
-                                  className="bg-primary hover:bg-primary/90 text-white shadow-xl text-xs px-3 py-1.5 h-8"
-                                >
-                                  <Plus className="h-4 w-4 mr-1" />
-                                  Add
-                                </Button>
-                              ) : (
-                                <div className="bg-white rounded-lg shadow-xl border-2 border-primary p-1.5 flex items-center gap-2">
+                            {/* Cart controls only shown when ordering (not in preview mode) */}
+                            {isOrdering && (
+                              <div
+                                className="absolute z-10"
+                                style={{
+                                  left:
+                                    hotspot.button_x_percent !== undefined
+                                      ? `${hotspot.button_x_percent}%`
+                                      : `${estimatedX1 + estimatedWidth - 8}%`,
+                                  top:
+                                    hotspot.button_y_percent !== undefined
+                                      ? `${hotspot.button_y_percent}%`
+                                      : `${estimatedY1 + estimatedHeight / 2}%`,
+                                  transform: "translate(-50%, -50%)",
+                                }}
+                                onClick={(e) => e.stopPropagation()}
+                              >
+                                {quantity === 0 ? (
                                   <Button
+                                    size="sm"
                                     onClick={(e) => {
                                       e.stopPropagation();
-                                      handleUpdateQuantity(item.id, quantity - 1);
+                                      handleAddToCart(item);
                                     }}
-                                    variant="outline"
-                                    size="sm"
-                                    className="h-7 w-7 p-0 border-primary/30 hover:bg-primary/10"
+                                    className="bg-primary hover:bg-primary/90 text-white shadow-xl text-xs px-3 py-1.5 h-8"
                                   >
-                                    <Minus className="h-3.5 w-3.5 text-primary" />
+                                    <Plus className="h-4 w-4 mr-1" />
+                                    Add
                                   </Button>
-                                  <span className="text-sm font-bold text-primary min-w-[20px] text-center">
-                                    {quantity}
-                                  </span>
-                                  <Button
-                                    onClick={(e) => {
-                                      e.stopPropagation();
-                                      handleUpdateQuantity(item.id, quantity + 1);
-                                    }}
-                                    size="sm"
-                                    className="h-7 w-7 p-0 bg-primary hover:bg-primary/90"
-                                  >
-                                    <Plus className="h-3.5 w-3.5" />
-                                  </Button>
-                                </div>
-                              )}
-                            </div>
+                                ) : (
+                                  <div className="bg-white rounded-lg shadow-xl border-2 border-primary p-1.5 flex items-center gap-2">
+                                    <Button
+                                      onClick={(e) => {
+                                        e.stopPropagation();
+                                        handleUpdateQuantity(item.id, quantity - 1);
+                                      }}
+                                      variant="outline"
+                                      size="sm"
+                                      className="h-7 w-7 p-0 border-primary/30 hover:bg-primary/10"
+                                    >
+                                      <Minus className="h-3.5 w-3.5 text-primary" />
+                                    </Button>
+                                    <span className="text-sm font-bold text-primary min-w-[20px] text-center">
+                                      {quantity}
+                                    </span>
+                                    <Button
+                                      onClick={(e) => {
+                                        e.stopPropagation();
+                                        handleUpdateQuantity(item.id, quantity + 1);
+                                      }}
+                                      size="sm"
+                                      className="h-7 w-7 p-0 bg-primary hover:bg-primary/90"
+                                    >
+                                      <Plus className="h-3.5 w-3.5" />
+                                    </Button>
+                                  </div>
+                                )}
+                              </div>
+                            )}
                           </div>
                         );
                       }
@@ -782,7 +790,7 @@ export function EnhancedPDFMenuDisplay({
                             <span className="text-lg font-bold text-primary">
                               {formatPriceWithCurrency(item.price, "£")}
                             </span>
-                            {quantity > 0 && (
+                            {isOrdering && quantity > 0 && (
                               <span className="text-sm text-muted-foreground">
                                 {quantity} in cart
                               </span>
@@ -841,6 +849,7 @@ export function EnhancedPDFMenuDisplay({
         onAddToCart={handleAddToCart}
         onUpdateQuantity={handleUpdateQuantity}
         quantity={selectedItem ? cart.find((c) => c.id === selectedItem.id)?.quantity || 0 : 0}
+        isPreview={!isOrdering}
       />
     </div>
   );

@@ -98,7 +98,10 @@ export function HeroSection({
                   strokeWidth={2}
                   style={{ color: "#ffffff", stroke: "#ffffff" }}
                 />
-                <span className="font-semibold text-white whitespace-nowrap">
+                <span
+                  className="font-semibold !text-white whitespace-nowrap"
+                  style={{ color: "#ffffff" }}
+                >
                   14-day free trial
                 </span>
               </div>
@@ -108,7 +111,12 @@ export function HeroSection({
                   strokeWidth={2}
                   style={{ color: "#ffffff", stroke: "#ffffff" }}
                 />
-                <span className="font-semibold text-white whitespace-nowrap">No setup fees</span>
+                <span
+                  className="font-semibold !text-white whitespace-nowrap"
+                  style={{ color: "#ffffff" }}
+                >
+                  No setup fees
+                </span>
               </div>
               <div className="flex items-center gap-2">
                 <CheckCircle
@@ -116,7 +124,12 @@ export function HeroSection({
                   strokeWidth={2}
                   style={{ color: "#ffffff", stroke: "#ffffff" }}
                 />
-                <span className="font-semibold text-white whitespace-nowrap">Cancel anytime</span>
+                <span
+                  className="font-semibold !text-white whitespace-nowrap"
+                  style={{ color: "#ffffff" }}
+                >
+                  Cancel anytime
+                </span>
               </div>
             </div>
           </div>

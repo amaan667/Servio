@@ -60,6 +60,8 @@ export function MenuPreview({ venueId, menuItems, categoryOrder }: MenuPreviewPr
             alignment: "left",
             spacing: "normal",
             logo_url: data.logo_url || undefined,
+            logo_size_numeric: data.logo_size_numeric || 200, // Use numeric size
+            custom_heading: data.custom_heading || undefined,
             venue_name: data.venue_name || undefined,
             show_descriptions: data.show_descriptions ?? true,
             show_prices: data.show_prices ?? true,
@@ -115,12 +117,27 @@ export function MenuPreview({ venueId, menuItems, categoryOrder }: MenuPreviewPr
     >
       {/* Header with Logo and Venue Name */}
       {menuStyle.logo_url && (
-        <div className="flex justify-center items-center py-8">
+        <div className="flex flex-col justify-center items-center py-8">
           <img
             src={menuStyle.logo_url}
             alt={menuStyle.venue_name || "Venue Logo"}
-            className="h-24 object-contain"
+            className="object-contain"
+            style={{
+              height: `${menuStyle.logo_size_numeric || 200}px`,
+              maxWidth: "100%",
+            }}
           />
+          {menuStyle.custom_heading && (
+            <p
+              className="mt-4 text-center font-medium"
+              style={{
+                color: menuStyle.text_color,
+                fontSize: `${menuStyle.body_font_size}px`,
+              }}
+            >
+              {menuStyle.custom_heading}
+            </p>
+          )}
         </div>
       )}
 

@@ -11,7 +11,8 @@ const DEFAULT_DESIGN_SETTINGS: DesignSettings = {
   font_family: "inter",
   font_size: "medium",
   font_size_numeric: 16,
-  logo_size: "large",
+  logo_size: "large", // Legacy
+  logo_size_numeric: 200, // Default 200px
   custom_heading: "",
   auto_theme_enabled: false,
   detected_primary_color: "",
@@ -57,7 +58,8 @@ export function useDesignSettings(venueId: string) {
           font_family: data.font_family || "inter",
           font_size: data.font_size || "medium",
           font_size_numeric: data.font_size_numeric || 16,
-          logo_size: data.logo_size || "large",
+          logo_size: data.logo_size || "large", // Legacy
+          logo_size_numeric: data.logo_size_numeric || 200, // New numeric size
           custom_heading: data.custom_heading || "",
           auto_theme_enabled: data.auto_theme_enabled ?? false,
           detected_primary_color: data.detected_primary_color || "",

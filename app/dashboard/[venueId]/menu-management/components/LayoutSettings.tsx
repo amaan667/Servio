@@ -2,6 +2,7 @@
 
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Label } from "@/components/ui/label";
+import { Switch } from "@/components/ui/switch";
 import { Layout } from "lucide-react";
 import { DesignSettings } from "../types";
 
@@ -23,10 +24,12 @@ export function LayoutSettings({ designSettings, setDesignSettings }: LayoutSett
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
           <div>
             <Label htmlFor="font-family">Font Family</Label>
-            <select 
-              id="font-family" 
+            <select
+              id="font-family"
               value={designSettings.font_family}
-              onChange={(e) => setDesignSettings({ ...designSettings, font_family: e.target.value })}
+              onChange={(e) =>
+                setDesignSettings({ ...designSettings, font_family: e.target.value })
+              }
               className="w-full mt-2 p-2 border border-gray-300 rounded-md"
             >
               <optgroup label="Sans-Serif Fonts">
@@ -76,12 +79,18 @@ export function LayoutSettings({ designSettings, setDesignSettings }: LayoutSett
                 min="8"
                 max="24"
                 value={designSettings.font_size_numeric || 16}
-                onChange={(e) => setDesignSettings({ 
-                  ...designSettings, 
-                  font_size_numeric: parseInt(e.target.value),
-                  font_size: parseInt(e.target.value) <= 12 ? 'small' : 
-                            parseInt(e.target.value) <= 18 ? 'medium' : 'large'
-                })}
+                onChange={(e) =>
+                  setDesignSettings({
+                    ...designSettings,
+                    font_size_numeric: parseInt(e.target.value),
+                    font_size:
+                      parseInt(e.target.value) <= 12
+                        ? "small"
+                        : parseInt(e.target.value) <= 18
+                          ? "medium"
+                          : "large",
+                  })
+                }
                 className="flex-1"
               />
               <span className="text-sm font-medium w-12 text-center">
@@ -94,28 +103,31 @@ export function LayoutSettings({ designSettings, setDesignSettings }: LayoutSett
             </div>
           </div>
         </div>
-        <div className="flex items-center space-x-2">
-          <input 
-            type="checkbox" 
-            id="show-descriptions" 
+        <div className="flex items-center justify-between p-3 bg-gray-50 rounded-lg">
+          <Label htmlFor="show-descriptions" className="text-sm font-medium cursor-pointer">
+            Show item descriptions
+          </Label>
+          <Switch
+            id="show-descriptions"
             checked={designSettings.show_descriptions}
-            onChange={(e) => setDesignSettings({ ...designSettings, show_descriptions: e.target.checked })}
-            className="rounded" 
+            onCheckedChange={(checked) =>
+              setDesignSettings({ ...designSettings, show_descriptions: checked })
+            }
           />
-          <Label htmlFor="show-descriptions">Show item descriptions</Label>
         </div>
-        <div className="flex items-center space-x-2">
-          <input 
-            type="checkbox" 
-            id="show-prices" 
+        <div className="flex items-center justify-between p-3 bg-gray-50 rounded-lg">
+          <Label htmlFor="show-prices" className="text-sm font-medium cursor-pointer">
+            Show prices
+          </Label>
+          <Switch
+            id="show-prices"
             checked={designSettings.show_prices}
-            onChange={(e) => setDesignSettings({ ...designSettings, show_prices: e.target.checked })}
-            className="rounded" 
+            onCheckedChange={(checked) =>
+              setDesignSettings({ ...designSettings, show_prices: checked })
+            }
           />
-          <Label htmlFor="show-prices">Show prices</Label>
         </div>
       </CardContent>
     </Card>
   );
 }
-

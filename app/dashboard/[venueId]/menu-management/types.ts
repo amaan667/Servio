@@ -18,7 +18,8 @@ export interface DesignSettings {
   font_family: string;
   font_size: string;
   font_size_numeric?: number;
-  logo_size?: string;
+  logo_size?: string; // Legacy support
+  logo_size_numeric?: number; // New: 80-400px range
   custom_heading?: string;
   auto_theme_enabled?: boolean;
   detected_primary_color?: string;
@@ -27,6 +28,5 @@ export interface DesignSettings {
   show_prices: boolean;
 }
 
-export type ActiveTab = 'manage' | 'design' | 'preview';
-export type PreviewMode = 'pdf' | 'styled' | 'simple';
-
+export type ActiveTab = "manage" | "design" | "preview";
+export type PreviewMode = "pdf" | "styled" | "simple";
