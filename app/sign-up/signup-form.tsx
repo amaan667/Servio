@@ -11,6 +11,7 @@ import { Badge } from "@/components/ui/badge";
 import { supabaseBrowser } from "@/lib/supabase";
 import Link from "next/link";
 import { Check, Loader2, Mail } from "lucide-react";
+import NavigationBreadcrumb from "@/components/navigation-breadcrumb";
 
 interface SignUpFormProps {
   onGoogleSignIn: () => Promise<void>;
@@ -178,6 +179,7 @@ export default function SignUpForm({ onGoogleSignIn, isSigningUp = false }: Sign
       <div className="min-h-screen bg-gray-50 flex items-center justify-center p-4">
         <Card className="w-full max-w-6xl animate-in fade-in duration-300">
           <CardHeader className="text-center">
+            <NavigationBreadcrumb showBackButton={false} />
             <CardTitle className="text-3xl font-bold">Choose Your Plan</CardTitle>
             <CardDescription>
               Start your 14-day free trial • First billing after trial ends

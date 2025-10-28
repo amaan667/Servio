@@ -11,6 +11,7 @@ function CallbackContent() {
   const searchParams = useSearchParams();
   const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
+  const [redirecting, setRedirecting] = useState(false);
 
   // Detect if we're on mobile
   const isMobile = () => {
@@ -88,6 +89,7 @@ function CallbackContent() {
           if (venueError || !venues || venues.length === 0) {
             // New user without venue - store email and sign them out
             // They should NOT be authenticated until signup is complete
+            setRedirecting(true);
             if (existingSession.user.email) {
               sessionStorage.setItem("pending_signup_email", existingSession.user.email);
             }
@@ -100,6 +102,7 @@ function CallbackContent() {
           const primaryVenue = venues[0];
           if (!primaryVenue) {
             // New user without venue - store email and sign them out
+            setRedirecting(true);
             if (existingSession.user.email) {
               sessionStorage.setItem("pending_signup_email", existingSession.user.email);
             }
@@ -179,6 +182,7 @@ function CallbackContent() {
 
               if (venueError || !venues || venues.length === 0) {
                 // New user without venue - store email and sign them out
+                setRedirecting(true);
                 if (retryData.session.user.email) {
                   sessionStorage.setItem("pending_signup_email", retryData.session.user.email);
                 }
@@ -190,6 +194,7 @@ function CallbackContent() {
               const primaryVenue = venues[0];
               if (!primaryVenue) {
                 // New user without venue - store email and sign them out
+                setRedirecting(true);
                 if (retryData.session.user.email) {
                   sessionStorage.setItem("pending_signup_email", retryData.session.user.email);
                 }
@@ -225,6 +230,7 @@ function CallbackContent() {
           if (venueError || !venues || venues.length === 0) {
             // New user without venue - store email and sign them out
             // They should NOT be authenticated until signup is complete
+            setRedirecting(true);
             if (data.session.user.email) {
               sessionStorage.setItem("pending_signup_email", data.session.user.email);
             }
@@ -236,6 +242,7 @@ function CallbackContent() {
           const primaryVenue = venues[0];
           if (!primaryVenue) {
             // New user without venue - store email and sign them out
+            setRedirecting(true);
             if (data.session.user.email) {
               sessionStorage.setItem("pending_signup_email", data.session.user.email);
             }
@@ -291,6 +298,11 @@ function CallbackContent() {
         </div>
       </div>
     );
+  }
+
+  // If redirecting to sign-up, show nothing to prevent flicker
+  if (redirecting) {
+    return null;
   }
 
   return (

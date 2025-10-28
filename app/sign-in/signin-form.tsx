@@ -8,6 +8,7 @@ import { Label } from "@/components/ui/label";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
+import NavigationBreadcrumb from "@/components/navigation-breadcrumb";
 
 interface SignInFormProps {
   onGoogleSignIn: () => Promise<void>;
@@ -101,6 +102,8 @@ export default function SignInForm({
 
   return (
     <div className="w-full bg-white rounded-lg shadow-md p-4 sm:p-6 lg:p-8">
+      <NavigationBreadcrumb showBackButton={false} />
+
       <div className="text-center mb-6 sm:mb-8">
         <h1 className="text-xl sm:text-2xl font-bold text-gray-900 mb-2">Welcome to Servio</h1>
         <p className="text-sm sm:text-base text-gray-700">Sign in to manage your venue</p>
