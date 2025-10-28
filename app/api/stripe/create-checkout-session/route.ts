@@ -102,7 +102,7 @@ export async function POST(_request: NextRequest) {
           },
         ],
         success_url: `${process.env.NEXT_PUBLIC_APP_URL || "http://localhost:3000"}/auth/create-account?session_id={CHECKOUT_SESSION_ID}`,
-        cancel_url: `${process.env.NEXT_PUBLIC_APP_URL || "http://localhost:3000"}/sign-up?cancelled=true`,
+        cancel_url: `${process.env.NEXT_PUBLIC_APP_URL || "http://localhost:3000"}/?cancelled=true`,
         customer_email: email,
         metadata: {
           tier,
@@ -118,6 +118,11 @@ export async function POST(_request: NextRequest) {
             venue_name: venueName || "",
           },
           // Trial period managed by our organization logic, not Stripe
+        },
+        custom_text: {
+          submit: {
+            message: "Start your 14-day free trial",
+          },
         },
       };
 
