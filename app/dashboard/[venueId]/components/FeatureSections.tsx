@@ -162,9 +162,10 @@ export function FeatureSections({ venueId, userRole }: FeatureSectionsProps) {
                 key={feature.href}
                 href={feature.href}
                 onClick={() => handleFeatureClick(feature, section.title)}
+                className="block h-full"
               >
-                <Card className="group hover:shadow-xl transition-all duration-300 hover:-translate-y-1 border-2 hover:border-gray-300">
-                  <CardContent className="p-6">
+                <Card className="group hover:shadow-xl transition-all duration-300 hover:-translate-y-1 border-2 hover:border-gray-300 h-full flex flex-col">
+                  <CardContent className="p-6 flex-1 flex flex-col">
                     <div
                       className={`${feature.bgColor} w-12 h-12 rounded-xl flex items-center justify-center mb-4 group-hover:scale-110 transition-transform duration-300`}
                     >
@@ -173,7 +174,9 @@ export function FeatureSections({ venueId, userRole }: FeatureSectionsProps) {
                     <h4 className="text-base font-semibold mb-2 text-gray-900 group-hover:text-blue-600 transition-colors">
                       {feature.title}
                     </h4>
-                    <p className="text-sm text-gray-600 leading-relaxed">{feature.description}</p>
+                    <p className="text-sm text-gray-600 leading-relaxed flex-1">
+                      {feature.description}
+                    </p>
                   </CardContent>
                 </Card>
               </Link>
