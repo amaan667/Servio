@@ -630,8 +630,48 @@ export default function MenuManagementClient({
               categoryOrder={categoryOrder}
             />
           ) : (
-            <Card>
+            <Card key={`simple-${designRefreshKey}`}>
               <CardContent className="p-6">
+                {/* Logo and Custom Heading */}
+                {designSettings.logo_url && (
+                  <div className="flex flex-col items-center justify-center mb-8">
+                    <img
+                      src={designSettings.logo_url}
+                      alt={designSettings.venue_name || "Venue Logo"}
+                      className="object-contain"
+                      style={{
+                        height: `${designSettings.logo_size_numeric || 200}px`,
+                        maxWidth: "100%",
+                      }}
+                    />
+                    {designSettings.custom_heading && (
+                      <p
+                        className="mt-4 text-center font-medium"
+                        style={{
+                          color: designSettings.primary_color,
+                          fontSize: `${designSettings.font_size_numeric || 16}px`,
+                        }}
+                      >
+                        {designSettings.custom_heading}
+                      </p>
+                    )}
+                  </div>
+                )}
+
+                {designSettings.venue_name && !designSettings.logo_url && (
+                  <div className="text-center mb-8">
+                    <h1
+                      className="font-bold"
+                      style={{
+                        fontSize: `${(designSettings.font_size_numeric || 16) + 12}px`,
+                        color: designSettings.primary_color,
+                      }}
+                    >
+                      {designSettings.venue_name}
+                    </h1>
+                  </div>
+                )}
+
                 <div className="space-y-8">
                   {(() => {
                     const categories = Array.from(new Set(menuItems.map((i) => i.category)));
@@ -652,7 +692,14 @@ export default function MenuManagementClient({
 
                     return sortedCats.map((category) => (
                       <div key={category} className="space-y-4">
-                        <h2 className="text-2xl font-bold text-gray-900 border-b-2 border-gray-200 pb-2">
+                        <h2
+                          className="text-2xl font-bold border-b-2 pb-2"
+                          style={{
+                            color: designSettings.primary_color,
+                            borderColor: designSettings.secondary_color,
+                            fontFamily: designSettings.font_family,
+                          }}
+                        >
                           {category}
                         </h2>
                         <div className="space-y-3">
@@ -664,14 +711,38 @@ export default function MenuManagementClient({
                                 className="flex justify-between items-start py-2 border-b border-gray-100 last:border-b-0"
                               >
                                 <div className="flex-1">
-                                  <h3 className="font-semibold text-gray-900">{item.name}</h3>
-                                  {item.description && (
-                                    <p className="text-sm text-gray-600 mt-1">{item.description}</p>
+                                  <h3
+                                    className="font-semibold"
+                                    style={{
+                                      fontFamily: designSettings.font_family,
+                                      fontSize: `${designSettings.font_size_numeric || 16}px`,
+                                    }}
+                                  >
+                                    {item.name}
+                                  </h3>
+                                  {designSettings.show_descriptions && item.description && (
+                                    <p
+                                      className="text-gray-600 mt-1 italic"
+                                      style={{
+                                        fontSize: `${(designSettings.font_size_numeric || 16) - 2}px`,
+                                        fontFamily: designSettings.font_family,
+                                      }}
+                                    >
+                                      {item.description}
+                                    </p>
                                   )}
                                 </div>
-                                <span className="text-lg font-semibold text-purple-600 ml-4">
-                                  £{item.price.toFixed(2)}
-                                </span>
+                                {designSettings.show_prices && (
+                                  <span
+                                    className="text-lg font-semibold ml-4"
+                                    style={{
+                                      color: designSettings.primary_color,
+                                      fontFamily: designSettings.font_family,
+                                    }}
+                                  >
+                                    £{item.price.toFixed(2)}
+                                  </span>
+                                )}
                               </div>
                             ))}
                         </div>
