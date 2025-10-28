@@ -75,9 +75,9 @@ export function QuickActionsToolbar({
 
   return (
     <TooltipProvider>
-      <div className="bg-white border-b border-gray-200 sticky top-0 z-40">
+      <div className="sticky top-0 z-40">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="flex items-center justify-between gap-2 py-3">
+          <div className="flex items-center justify-between gap-2 py-4">
             {/* Left: Quick Actions */}
             <div className="flex items-center gap-2 overflow-x-auto scrollbar-hide">
               {actions.map((action) => (
