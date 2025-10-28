@@ -33,15 +33,18 @@ export default function Breadcrumbs() {
         {crumbs.map((c, i) => (
           <li key={i} className="flex items-center gap-2">
             {"current" in c && c.current ? (
-              <span className="inline-flex items-center px-3 py-1 rounded-md bg-purple-600 !text-white font-medium">
+              <span className="inline-flex items-center px-3 py-1 rounded-md font-medium text-gray-900 shadow-[0_0_12px_rgba(147,51,234,0.4)] bg-white border border-purple-200 transition-all duration-200">
                 {c.label}
               </span>
             ) : (
-              <Link href={(c as { href: string }).href} className="hover:underline">
+              <Link
+                href={(c as { href: string }).href}
+                className="hover:underline text-gray-600 hover:text-purple-600 transition-colors"
+              >
                 {c.label}
               </Link>
             )}
-            {i < crumbs.length - 1 && <span>→</span>}
+            {i < crumbs.length - 1 && <span className="text-gray-400">→</span>}
           </li>
         ))}
       </ol>

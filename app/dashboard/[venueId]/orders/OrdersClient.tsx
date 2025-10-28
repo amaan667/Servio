@@ -305,7 +305,7 @@ const OrdersClient: React.FC<OrdersClientProps> = ({
                   group relative grid w-[11rem] grid-rows-[1fr_auto] rounded-xl px-4 py-2 text-left transition-all duration-200 border-2
                   ${
                     activeTab === tab.key
-                      ? "bg-purple-600 text-white border-purple-600 hover:bg-white hover:text-purple-600"
+                      ? "bg-white text-purple-600 border-purple-200 shadow-[0_0_12px_rgba(147,51,234,0.4)] hover:bg-purple-600 hover:text-white hover:shadow-none"
                       : "bg-white text-purple-600 border-purple-600"
                   }
                 `}
@@ -317,7 +317,7 @@ const OrdersClient: React.FC<OrdersClientProps> = ({
                     ml-2 inline-flex min-w-[1.5rem] items-center justify-center rounded-full px-2 text-xs transition-all duration-200
                     ${
                       activeTab === tab.key
-                        ? "bg-white/20 text-white group-hover:bg-purple-600/20 group-hover:text-purple-600"
+                        ? "bg-purple-100 text-purple-600 group-hover:bg-white group-hover:text-white"
                         : "bg-purple-100 text-purple-600"
                     }
                   `}
@@ -328,7 +328,7 @@ const OrdersClient: React.FC<OrdersClientProps> = ({
                 <span
                   className={`
                   mt-0.5 text-xs transition-all duration-200
-                  ${activeTab === tab.key ? "text-white group-hover:text-purple-600" : "text-purple-600/70"}
+                  ${activeTab === tab.key ? "text-purple-500 group-hover:text-white" : "text-purple-600/70"}
                 `}
                 >
                   {tab.hint}
