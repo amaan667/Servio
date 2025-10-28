@@ -177,7 +177,7 @@ const StaffMembersList: React.FC<StaffMembersListProps> = ({
                       {member.active ? "Active" : "Inactive"}
                     </Badge>
                   </div>
-                  <div className="flex items-center justify-between mt-3 pt-3 border-t">
+                  <div className="mt-3 pt-3 border-t space-y-3">
                     <div className="flex items-center gap-2">
                       <span className="text-sm text-gray-600">Active</span>
                       {onStaffToggle && (
@@ -187,12 +187,12 @@ const StaffMembersList: React.FC<StaffMembersListProps> = ({
                         />
                       )}
                     </div>
-                    <div className="flex gap-2">
+                    <div className="flex gap-2 w-full">
                       <Button
                         variant="outline"
                         size="sm"
                         onClick={() => invitation.handleInviteClick(member)}
-                        className="text-purple-600 hover:text-purple-700 hover:bg-purple-50"
+                        className="text-purple-600 hover:text-purple-700 hover:bg-purple-50 flex-1"
                       >
                         <Mail className="h-4 w-4 mr-1" />
                         Invite
@@ -204,6 +204,7 @@ const StaffMembersList: React.FC<StaffMembersListProps> = ({
                           setSelectedStaffForShift({ id: member.id, name: member.name });
                           setShiftModalOpen(true);
                         }}
+                        className="flex-1"
                       >
                         <Calendar className="h-4 w-4 mr-1" />
                         Add Shift
