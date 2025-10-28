@@ -159,18 +159,7 @@ export default function GlobalNav() {
         <div className="flex justify-between items-center h-20 sm:h-24 md:h-28">
           {/* Logo - Top-left on desktop, centered on mobile */}
           <div className="flex-shrink-0 md:-ml-2 sm:-ml-1 flex justify-center md:justify-start w-full md:w-auto">
-            <Link
-              href={
-                isAuthenticated
-                  ? venueId
-                    ? `/dashboard/${venueId}`
-                    : primaryVenueId
-                      ? `/dashboard/${primaryVenueId}`
-                      : "/"
-                  : "/"
-              }
-              className="flex items-center group"
-            >
+            <Link href="/" className="inline-block group">
               <Image
                 src="/assets/servio-logo-updated.png"
                 alt="Servio"

@@ -85,15 +85,12 @@ export function QuickActionsToolbar({
                   <TooltipTrigger asChild>
                     <Link href={action.href} className="flex-shrink-0">
                       <Button
-                        variant={action.variant || "outline"}
+                        variant="outline"
                         size="sm"
-                        className={cn(
-                          "gap-2 transition-all duration-200 hover:scale-105",
-                          action.color || ""
-                        )}
+                        className="flex items-center gap-2 px-3 py-2 h-9 border border-purple-200 bg-white hover:bg-purple-50 hover:border-purple-300 text-gray-700 hover:text-purple-700 transition-all duration-200"
                       >
-                        <action.icon className="h-4 w-4" />
-                        <span className="hidden sm:inline">{action.label}</span>
+                        <action.icon className="h-4 w-4 text-purple-600" />
+                        <span className="hidden sm:inline text-sm font-medium">{action.label}</span>
                       </Button>
                     </Link>
                   </TooltipTrigger>
