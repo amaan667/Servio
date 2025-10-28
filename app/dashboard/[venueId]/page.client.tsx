@@ -297,7 +297,7 @@ const DashboardClient = React.memo(function DashboardClient({
         {/* Enhanced KPI Cards - Fixed Position Grid */}
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 sm:gap-6">
           {/* Position 1: Today's Orders - Always visible */}
-          <Link href={`/dashboard/${venueId}/live-orders?since=today`}>
+          <Link href={`/dashboard/${venueId}/live-orders?since=today`} className="block">
             <EnhancedStatCard
               title="Today's Orders"
               value={dashboardData.counts.today_orders_count}
@@ -317,6 +317,7 @@ const DashboardClient = React.memo(function DashboardClient({
                   : undefined
               }
               tooltip="View all orders placed today"
+              href={`/dashboard/${venueId}/live-orders?since=today`}
             />
           </Link>
 
@@ -344,6 +345,7 @@ const DashboardClient = React.memo(function DashboardClient({
                       : undefined
                   }
                   tooltip="View detailed revenue analytics"
+                  href={`/dashboard/${venueId}/analytics`}
                 />
               </Link>
             ) : (
@@ -371,6 +373,7 @@ const DashboardClient = React.memo(function DashboardClient({
                 iconBgColor="bg-purple-100"
                 subtitle="all active"
                 tooltip="Manage table setup and reservations"
+                href={`/dashboard/${venueId}/tables`}
               />
             </Link>
           </div>
@@ -386,6 +389,7 @@ const DashboardClient = React.memo(function DashboardClient({
                 iconBgColor="bg-orange-100"
                 subtitle="available"
                 tooltip="Edit your menu items"
+                href={`/dashboard/${venueId}/menu-management`}
               />
             </Link>
           </div>
