@@ -16,6 +16,7 @@ export default function CreateAccountPage() {
   const [sessionData, setSessionData] = useState<unknown>(null);
   const [loading, setLoading] = useState(false);
   const [formData, setFormData] = useState({
+    email: "",
     password: "",
     venueName: "",
     businessType: "Restaurant",
@@ -43,6 +44,12 @@ export default function CreateAccountPage() {
         }
 
         setSessionData(data);
+        // Smart autofill: Use Stripe email if available, otherwise check for pending OAuth email
+        const stripeEmail = data.customer_email;
+        const pendingEmail =
+          typeof window !== "undefined" ? sessionStorage.getItem("pending_signup_email") : null;
+        const emailToUse = stripeEmail || pendingEmail || "";
+        setFormData((prev) => ({ ...prev, email: emailToUse }));
         setStatus("form");
       } catch (_err) {
         setError(_err instanceof Error ? _err.message : "Failed to fetch session details.");
@@ -63,7 +70,7 @@ export default function CreateAccountPage() {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
-          email: (sessionData as any).customer_email,
+          email: formData.email, // Use form data email (editable by user)
           password: formData.password,
           fullName: (sessionData as any).metadata.full_name,
           venueName: formData.venueName,
@@ -134,10 +141,16 @@ export default function CreateAccountPage() {
                 <Input
                   id="email"
                   type="email"
-                  value={(sessionData as any).customer_email}
-                  disabled
-                  className="bg-gray-100"
+                  value={formData.email}
+                  onChange={(e) => setFormData({ ...formData, email: e.target.value })}
+                  placeholder="Enter your email"
+                  disabled={loading}
+                  required
                 />
+                <p className="text-xs text-gray-500">
+                  {(sessionData as any).customer_email &&
+                    "Pre-filled from your account • You can change this if needed"}
+                </p>
               </div>
 
               <div className="space-y-2">
