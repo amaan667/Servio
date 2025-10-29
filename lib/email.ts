@@ -144,7 +144,7 @@ export async function sendEmail(template: EmailTemplate): Promise<boolean> {
         const resend = new Resend(process.env.RESEND_API_KEY);
 
         const result = await resend.emails.send({
-          from: "Team Invitations <invite@servio.uk>",
+          from: "Servio Team <onboarding@resend.dev>",
           to: template.to,
           subject: template.subject,
           html: template.html,
