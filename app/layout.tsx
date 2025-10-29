@@ -12,6 +12,7 @@ import AuthProvider from "@/app/auth/AuthProvider";
 import Providers from "./providers";
 import ConditionalHeader from "@/components/ConditionalHeader";
 import ConditionalBottomNav from "@/components/ConditionalBottomNav";
+import { ScrollToTop } from "@/components/scroll-to-top";
 import { ErrorBoundary } from "@/components/error-boundary";
 import { Analytics } from "@/components/Analytics";
 import { WebVitals } from "./web-vitals";
@@ -178,6 +179,7 @@ export default async function RootLayout({ children }: { children: React.ReactNo
               <ConditionalHeader />
               {children}
               <ConditionalBottomNav />
+              <ScrollToTop />
               <Analytics />
               <WebVitals />
             </Providers>
