@@ -63,76 +63,9 @@ export function supabaseBrowser() {
         persistSession: true,
         detectSessionInUrl: true,
         autoRefreshToken: true,
-        // Use cookies as primary storage so server can read them
-        storage: typeof window !== "undefined" ? {
-          getItem: (key: string) => {
-            // Try cookies first, then localStorage
-            const cookieValue = document.cookie
-              .split('; ')
-              .find(row => row.startsWith(key + '='))
-              ?.split('=')[1];
-            if (cookieValue) return cookieValue;
-            return localStorage.getItem(key);
-          },
-          setItem: (key: string, value: string) => {
-            // Store in both cookies AND localStorage for redundancy
-            localStorage.setItem(key, value);
-            // Set cookie with proper options for server access
-            const maxAge = 60 * 60 * 24 * 365; // 1 year
-            document.cookie = `${key}=${value}; path=/; max-age=${maxAge}; samesite=lax; secure`;
-          },
-          removeItem: (key: string) => {
-            localStorage.removeItem(key);
-            document.cookie = `${key}=; path=/; max-age=0`;
-          }
-        } : undefined,
-        storageKey: `sb-${getSupabaseUrl().split("//")[1].split(".")[0]}-auth-token`,
         flowType: "pkce", // Use PKCE flow for better security
       },
-      cookies: {
-        // Ensure cookies are also set for server-side access
-        get(name: string) {
-          if (typeof document === "undefined") return undefined;
-          const value = `; ${document.cookie}`;
-          const parts = value.split(`; ${name}=`);
-          if (parts.length === 2) return parts.pop()?.split(";").shift();
-          return undefined;
-        },
-        set(
-          name: string,
-          value: string,
-          options?: {
-            maxAge?: number;
-            path?: string;
-            domain?: string;
-            sameSite?: string;
-            secure?: boolean;
-          }
-        ) {
-          if (typeof document === "undefined") return;
-          let cookie = `${name}=${value}`;
-          if (options?.maxAge) cookie += `; max-age=${options.maxAge}`;
-          if (options?.path) cookie += `; path=${options.path}`;
-          if (options?.domain) cookie += `; domain=${options.domain}`;
-          if (options?.sameSite) cookie += `; samesite=${options.sameSite}`;
-          if (options?.secure) cookie += "; secure";
-          document.cookie = cookie;
-        },
-        remove(
-          name: string,
-          options?: {
-            maxAge?: number;
-            path?: string;
-            domain?: string;
-            sameSite?: string;
-            secure?: boolean;
-          }
-        ) {
-          if (typeof document === "undefined") return;
-          this.set(name, "", { ...options, maxAge: 0 });
-        },
-      },
-    } as any);
+    });
 
     // Handle session management for multiple devices
     // Each device should maintain its own session independently
