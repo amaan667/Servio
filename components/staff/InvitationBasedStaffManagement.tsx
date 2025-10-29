@@ -212,6 +212,11 @@ export default function InvitationBasedStaffManagement({
   };
 
   const handleSendInvitation = async () => {
+    console.log("=== handleSendInvitation CALLED ===");
+    console.log("venueId:", venueId);
+    console.log("inviteEmail:", inviteEmail);
+    console.log("selectedMemberForInvite:", selectedMemberForInvite);
+
     if (!inviteEmail.trim()) {
       setError("Email is required");
       return;
@@ -237,8 +242,10 @@ export default function InvitationBasedStaffManagement({
     setError(null);
 
     try {
+      console.log("=== Getting session ===");
       // Refresh session before making API call
       const { data: sessionData, error: sessionError } = await supabase.auth.getSession();
+      console.log("=== Session retrieved ===");
 
       console.log("Session data:", {
         hasSession: !!sessionData?.session,
