@@ -63,14 +63,22 @@ export function useStaffInvitation({ venueId, onSuccess }: UseStaffInvitationOpt
     setInviteLoading(true);
 
     try {
+      // Send invitation with user context from localStorage session
+      const requestBody = {
+        venue_id: venueId,
+        email: inviteEmail.trim(),
+        role: selectedStaffForInvite.role,
+        user_id: user?.id,
+        user_email: user?.email,
+        user_name: user?.user_metadata?.full_name || user?.email,
+      };
+
+      console.log("Sending invitation with:", requestBody);
+
       const res = await fetch("/api/staff/invitations", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          venue_id: venueId,
-          email: inviteEmail.trim(),
-          role: selectedStaffForInvite.role,
-        }),
+        body: JSON.stringify(requestBody),
       });
 
       const data = await res.json();
