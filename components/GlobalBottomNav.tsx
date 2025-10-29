@@ -227,25 +227,17 @@ export default function GlobalBottomNav({
             <button
               key={item.id}
               onClick={() => handleNavigation(item.href, item.id, item.label)}
-              className={`flex flex-col items-center justify-center p-1.5 relative transition-all duration-200 rounded-lg ${
-                item.isActive
-                  ? "bg-white text-purple-600"
-                  : "bg-transparent text-white hover:bg-purple-500"
-              } active:scale-95 h-full`}
+              className="flex flex-col items-center justify-center p-1.5 relative transition-all duration-200 rounded-lg text-white hover:bg-purple-500 active:scale-95 h-full"
             >
               <div className="relative mb-0.5 flex flex-col items-center justify-center">
-                <item.icon
-                  className={`h-5 w-5 transition-colors ${
-                    item.isActive ? "text-purple-600" : "text-white"
-                  }`}
-                />
+                <item.icon className="h-5 w-5 transition-colors [color:white]" />
               </div>
               <span
-                className={`font-medium text-center px-0.5 transition-colors
-                  leading-tight text-[10px] w-full flex items-center justify-center
-                  whitespace-nowrap overflow-hidden ${
-                    item.isActive ? "text-purple-600" : "text-white"
-                  }`}
+                className={
+                  item.isActive
+                    ? "font-bold text-center px-0.5 transition-colors leading-tight text-[10px] w-full flex items-center justify-center whitespace-nowrap overflow-hidden [color:white] underline underline-offset-2 [text-shadow:0_0_10px_rgba(255,255,255,0.8)]"
+                    : "font-medium text-center px-0.5 transition-colors leading-tight text-[10px] w-full flex items-center justify-center whitespace-nowrap overflow-hidden [color:white]"
+                }
               >
                 {item.id === "live-orders" ? `Live (${liveOrdersCount})` : item.label}
               </span>
@@ -261,10 +253,12 @@ export default function GlobalBottomNav({
             isVisible ? "translate-y-0" : "-translate-y-full"
           }`}
         >
-          <div className="bg-white border-2 border-servio-purple rounded-full px-4 py-3 shadow-lg">
+          <div className="bg-servio-purple rounded-full px-4 py-3 shadow-[0_0_20px_rgba(124,58,237,0.5)]">
             <div className="flex items-center space-x-2">
-              <activeItem.icon className="h-5 w-5 text-servio-purple" />
-              <span className="text-sm font-bold text-servio-purple">{activeItem.label}</span>
+              <activeItem.icon className="h-5 w-5 text-white" />
+              <span className="text-sm font-bold text-white [text-shadow:0_0_10px_rgba(255,255,255,0.8)]">
+                {activeItem.label}
+              </span>
             </div>
           </div>
         </div>

@@ -10,7 +10,6 @@ import { cookies } from "next/headers";
 import { createServerSupabase } from "@/lib/supabase";
 import AuthProvider from "@/app/auth/AuthProvider";
 import Providers from "./providers";
-import ThemeToggleFloat from "@/components/ThemeToggleFloat";
 import ConditionalHeader from "@/components/ConditionalHeader";
 import ConditionalBottomNav from "@/components/ConditionalBottomNav";
 import { ErrorBoundary } from "@/components/error-boundary";
@@ -178,7 +177,6 @@ export default async function RootLayout({ children }: { children: React.ReactNo
             <Providers>
               <ConditionalHeader />
               {children}
-              <ThemeToggleFloat />
               <ConditionalBottomNav />
               <Analytics />
               <WebVitals />

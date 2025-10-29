@@ -39,71 +39,53 @@ body {
     --chart-4: 43 74% 66%;
     --chart-5: 27 87% 67%;
     --radius: 0.5rem;
-    --sidebar-background: 0 0% 98%;
-    --sidebar-foreground: 240 5.3% 26.1%;
-    --sidebar-primary: 240 5.9% 10%;
-    --sidebar-primary-foreground: 0 0% 98%;
-    --sidebar-accent: 240 4.8% 95.9%;
-    --sidebar-accent-foreground: 240 5.9% 10%;
-    --sidebar-border: 220 13% 91%;
-    --sidebar-ring: 217.2 91.2% 59.8%;
   }
   .dark {
     /* Dark purple-branded background instead of pure black */
     --background: 262 50% 6%;
     --foreground: 262 15% 96%;
-    
+
     /* Cards with subtle purple tint */
     --card: 262 40% 9%;
     --card-foreground: 262 15% 96%;
-    
+
     /* Popovers with purple tint */
     --popover: 262 40% 9%;
     --popover-foreground: 262 15% 96%;
-    
+
     /* Primary uses brand purple */
     --primary: 262 83% 58%;
     --primary-foreground: 0 0% 100%;
-    
+
     /* Secondary with purple tint */
     --secondary: 262 30% 15%;
     --secondary-foreground: 262 15% 96%;
-    
+
     /* Muted with purple undertones */
     --muted: 262 25% 18%;
     --muted-foreground: 262 15% 70%;
-    
+
     /* Accent with purple */
     --accent: 262 30% 20%;
     --accent-foreground: 262 83% 68%;
-    
+
     /* Destructive stays red */
     --destructive: 0 72% 51%;
     --destructive-foreground: 0 0% 98%;
-    
+
     /* Borders with purple tint */
     --border: 262 25% 22%;
     --input: 262 25% 22%;
-    
+
     /* Ring uses brand purple */
     --ring: 262 83% 58%;
-    
+
     /* Charts with purple-friendly colors */
     --chart-1: 262 70% 60%;
     --chart-2: 280 65% 60%;
     --chart-3: 340 75% 55%;
     --chart-4: 160 60% 45%;
     --chart-5: 30 80% 55%;
-    
-    /* Sidebar with deep purple */
-    --sidebar-background: 262 45% 8%;
-    --sidebar-foreground: 262 15% 90%;
-    --sidebar-primary: 262 83% 58%;
-    --sidebar-primary-foreground: 0 0% 100%;
-    --sidebar-accent: 262 30% 15%;
-    --sidebar-accent-foreground: 262 15% 90%;
-    --sidebar-border: 262 25% 18%;
-    --sidebar-ring: 262 83% 58%;
   }
 }
 
@@ -114,104 +96,117 @@ body {
   body {
     @apply bg-background text-foreground;
   }
-  
+
   /* Dark mode with purple branding */
   .dark {
     color-scheme: dark;
   }
-  
+
   /* Headings with subtle purple tint */
-  .dark h1, .dark h2, .dark h3, .dark h4, .dark h5, .dark h6 {
+  .dark h1,
+  .dark h2,
+  .dark h3,
+  .dark h4,
+  .dark h5,
+  .dark h6 {
     @apply text-foreground;
     color: hsl(var(--foreground));
   }
-  
+
   /* Body text with proper contrast */
-  .dark p, .dark span, .dark div, .dark label {
+  .dark p,
+  .dark span,
+  .dark div,
+  .dark label {
     @apply text-foreground;
   }
-  
+
   /* Form inputs with purple-tinted dark background */
-  .dark input, .dark textarea, .dark select {
+  .dark input,
+  .dark textarea,
+  .dark select {
     background-color: hsl(262 30% 12%);
     border-color: hsl(262 25% 22%);
     color: hsl(262 15% 96%);
   }
-  
-  .dark input::placeholder, .dark textarea::placeholder {
+
+  .dark input::placeholder,
+  .dark textarea::placeholder {
     color: hsl(262 15% 50%);
   }
-  
-  .dark input:focus, .dark textarea:focus, .dark select:focus {
+
+  .dark input:focus,
+  .dark textarea:focus,
+  .dark select:focus {
     border-color: hsl(262 83% 58%);
     box-shadow: 0 0 0 3px hsl(262 83% 58% / 0.2);
   }
-  
+
   /* Preserve brand button styling in dark mode */
   .dark button {
     @apply text-inherit;
   }
-  
+
   /* Override gray text colors in dark mode */
   .dark .text-gray-900 {
     color: hsl(262 15% 96%);
   }
-  
+
   .dark .text-gray-800 {
     color: hsl(262 15% 90%);
   }
-  
+
   .dark .text-gray-700 {
     color: hsl(262 15% 80%);
   }
-  
+
   .dark .text-gray-600 {
     color: hsl(262 15% 70%);
   }
-  
+
   /* Cards in dark mode with purple tint */
   .dark .bg-white {
     background-color: hsl(262 40% 9%);
     color: hsl(262 15% 96%);
   }
-  
+
   .dark .bg-gray-50 {
     background-color: hsl(262 30% 12%);
   }
-  
+
   .dark .bg-gray-100 {
     background-color: hsl(262 25% 15%);
   }
-  
+
   /* Borders with purple tint */
   .dark .border-gray-200 {
     border-color: hsl(262 25% 22%);
   }
-  
+
   .dark .border-gray-300 {
     border-color: hsl(262 25% 28%);
   }
-  
+
   /* Purple accents for interactive elements */
   .dark .hover\:bg-gray-100:hover {
     background-color: hsl(262 30% 20%);
   }
-  
+
   /* Ensure purple buttons stand out */
   .dark .bg-purple-600 {
     background-color: hsl(262 83% 58%);
     color: white;
   }
-  
+
   .dark .hover\:bg-purple-700:hover {
     background-color: hsl(262 83% 48%);
   }
-  
+
   /* Purple text and borders */
   .dark .text-purple-600 {
     color: hsl(262 83% 68%);
   }
-  
+
   .dark .border-purple-500 {
     border-color: hsl(262 83% 58%);
   }

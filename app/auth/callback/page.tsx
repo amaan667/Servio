@@ -86,32 +86,46 @@ function CallbackContent() {
             .order("created_at", { ascending: true })
             .limit(1);
 
-          if (venueError || !venues || venues.length === 0) {
-            // New user without venue - store email and redirect to plan selection
-            setRedirecting(true);
-            if (existingSession.user.email) {
-              sessionStorage.setItem("pending_signup_email", existingSession.user.email);
-            }
-            await supabaseBrowser().auth.signOut();
-            // Use replace to avoid back button issues
-            router.replace("/select-plan");
+          // If there's a database error, redirect to home instead of sign-out
+          if (venueError) {
+            console.error("[AUTH CALLBACK] Venue query error:", venueError);
+            router.push("/");
             return;
           }
 
-          const primaryVenue = venues[0];
-          if (!primaryVenue) {
-            // New user without venue - store email and redirect to plan selection
-            setRedirecting(true);
-            if (existingSession.user.email) {
-              sessionStorage.setItem("pending_signup_email", existingSession.user.email);
-            }
-            await supabaseBrowser().auth.signOut();
-            // Use replace to avoid back button issues
-            router.replace("/select-plan");
+          // Check if user has any owned venues
+          if (venues && venues.length > 0 && venues[0]) {
+            router.push(`/dashboard/${venues[0].venue_id}`);
             return;
           }
 
-          router.push(`/dashboard/${primaryVenue.venue_id}`);
+          // No owned venues - check if user is staff at any venue
+          const { data: staffRoles, error: staffError } = await supabaseBrowser()
+            .from("user_venue_roles")
+            .select("venue_id, role")
+            .eq("user_id", existingSession.user.id)
+            .limit(1);
+
+          // If there's a database error, redirect to home
+          if (staffError) {
+            console.error("[AUTH CALLBACK] Staff query error:", staffError);
+            router.push("/");
+            return;
+          }
+
+          // If user has staff role, redirect to that venue
+          if (staffRoles && staffRoles.length > 0 && staffRoles[0]?.venue_id) {
+            router.push(`/dashboard/${staffRoles[0].venue_id}`);
+            return;
+          }
+
+          // User has no venues and no staff roles - treat as new user
+          setRedirecting(true);
+          if (existingSession.user.email) {
+            sessionStorage.setItem("pending_signup_email", existingSession.user.email);
+          }
+          await supabaseBrowser().auth.signOut();
+          router.replace("/select-plan");
           return;
         }
 
@@ -179,30 +193,46 @@ function CallbackContent() {
                 .order("created_at", { ascending: true })
                 .limit(1);
 
-              if (venueError || !venues || venues.length === 0) {
-                // New user without venue - store email and sign them out
-                setRedirecting(true);
-                if (retryData.session.user.email) {
-                  sessionStorage.setItem("pending_signup_email", retryData.session.user.email);
-                }
-                await supabaseBrowser().auth.signOut();
-                router.replace("/select-plan");
+              // If there's a database error, redirect to home instead of sign-out
+              if (venueError) {
+                console.error("[AUTH CALLBACK] Venue query error (retry):", venueError);
+                router.push("/");
                 return;
               }
 
-              const primaryVenue = venues[0];
-              if (!primaryVenue) {
-                // New user without venue - store email and sign them out
-                setRedirecting(true);
-                if (retryData.session.user.email) {
-                  sessionStorage.setItem("pending_signup_email", retryData.session.user.email);
-                }
-                await supabaseBrowser().auth.signOut();
-                router.replace("/select-plan");
+              // Check if user has any owned venues
+              if (venues && venues.length > 0 && venues[0]) {
+                router.push(`/dashboard/${venues[0].venue_id}`);
                 return;
               }
 
-              router.push(`/dashboard/${primaryVenue.venue_id}`);
+              // No owned venues - check if user is staff at any venue
+              const { data: staffRoles, error: staffError } = await supabaseBrowser()
+                .from("user_venue_roles")
+                .select("venue_id, role")
+                .eq("user_id", retryData.session.user.id)
+                .limit(1);
+
+              // If there's a database error, redirect to home
+              if (staffError) {
+                console.error("[AUTH CALLBACK] Staff query error (retry):", staffError);
+                router.push("/");
+                return;
+              }
+
+              // If user has staff role, redirect to that venue
+              if (staffRoles && staffRoles.length > 0 && staffRoles[0]?.venue_id) {
+                router.push(`/dashboard/${staffRoles[0].venue_id}`);
+                return;
+              }
+
+              // User has no venues and no staff roles - treat as new user
+              setRedirecting(true);
+              if (retryData.session.user.email) {
+                sessionStorage.setItem("pending_signup_email", retryData.session.user.email);
+              }
+              await supabaseBrowser().auth.signOut();
+              router.replace("/select-plan");
               return;
             }
           } catch (fallbackErr: unknown) {

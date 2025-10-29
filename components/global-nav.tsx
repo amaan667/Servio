@@ -400,6 +400,37 @@ export default function GlobalNav() {
                         <span>Settings</span>
                       </Link>
                     )}
+                    <button
+                      onClick={() => {
+                        const currentTheme = theme || "light";
+                        setTheme(currentTheme === "dark" ? "light" : "dark");
+                      }}
+                      className="flex items-center px-4 py-3 text-base font-semibold text-gray-900 hover:text-servio-purple hover:bg-servio-purple/5 rounded-xl transition-all duration-200 min-h-[48px] w-full"
+                    >
+                      {theme === "dark" ? (
+                        <>
+                          <Sun className="mr-3 h-5 w-5 flex-shrink-0 text-yellow-500" />
+                          <span>Light Mode</span>
+                        </>
+                      ) : (
+                        <>
+                          <Moon className="mr-3 h-5 w-5 flex-shrink-0 text-gray-900" />
+                          <span>Dark Mode</span>
+                        </>
+                      )}
+                    </button>
+                    <div className="w-full h-px bg-gray-100 my-4"></div>
+                    <button
+                      onClick={async () => {
+                        await signOut();
+                        setMobileMenuOpen(false);
+                        router.replace("/");
+                      }}
+                      className="flex items-center w-full px-4 py-3 text-base font-semibold bg-red-600 hover:bg-red-700 text-white rounded-xl transition-all duration-200 min-h-[48px] justify-start"
+                    >
+                      <LogOut className="mr-3 h-5 w-5 flex-shrink-0 text-white" />
+                      <span>Sign Out</span>
+                    </button>
                   </>
                 ) : isOnFeaturePage || isOnQRPage ? (
                   <>
@@ -427,6 +458,37 @@ export default function GlobalNav() {
                         <span>Settings</span>
                       </Link>
                     )}
+                    <button
+                      onClick={() => {
+                        const currentTheme = theme || "light";
+                        setTheme(currentTheme === "dark" ? "light" : "dark");
+                      }}
+                      className="flex items-center px-4 py-3 text-base font-semibold text-gray-900 hover:text-servio-purple hover:bg-servio-purple/5 rounded-xl transition-all duration-200 min-h-[48px] w-full"
+                    >
+                      {theme === "dark" ? (
+                        <>
+                          <Sun className="mr-3 h-5 w-5 flex-shrink-0 text-yellow-500" />
+                          <span>Light Mode</span>
+                        </>
+                      ) : (
+                        <>
+                          <Moon className="mr-3 h-5 w-5 flex-shrink-0 text-gray-900" />
+                          <span>Dark Mode</span>
+                        </>
+                      )}
+                    </button>
+                    <div className="w-full h-px bg-gray-100 my-4"></div>
+                    <button
+                      onClick={async () => {
+                        await signOut();
+                        setMobileMenuOpen(false);
+                        router.replace("/");
+                      }}
+                      className="flex items-center w-full px-4 py-3 text-base font-semibold bg-red-600 hover:bg-red-700 text-white rounded-xl transition-all duration-200 min-h-[48px] justify-start"
+                    >
+                      <LogOut className="mr-3 h-5 w-5 flex-shrink-0 text-white" />
+                      <span>Sign Out</span>
+                    </button>
                   </>
                 ) : isOnSettings ? (
                   <>
@@ -448,6 +510,37 @@ export default function GlobalNav() {
                       <Home className="mr-3 h-5 w-5 flex-shrink-0 text-gray-900" />
                       <span>Home</span>
                     </Link>
+                    <button
+                      onClick={() => {
+                        const currentTheme = theme || "light";
+                        setTheme(currentTheme === "dark" ? "light" : "dark");
+                      }}
+                      className="flex items-center px-4 py-3 text-base font-semibold text-gray-900 hover:text-servio-purple hover:bg-servio-purple/5 rounded-xl transition-all duration-200 min-h-[48px] w-full"
+                    >
+                      {theme === "dark" ? (
+                        <>
+                          <Sun className="mr-3 h-5 w-5 flex-shrink-0 text-yellow-500" />
+                          <span>Light Mode</span>
+                        </>
+                      ) : (
+                        <>
+                          <Moon className="mr-3 h-5 w-5 flex-shrink-0 text-gray-900" />
+                          <span>Dark Mode</span>
+                        </>
+                      )}
+                    </button>
+                    <div className="w-full h-px bg-gray-100 my-4"></div>
+                    <button
+                      onClick={async () => {
+                        await signOut();
+                        setMobileMenuOpen(false);
+                        router.replace("/");
+                      }}
+                      className="flex items-center w-full px-4 py-3 text-base font-semibold bg-red-600 hover:bg-red-700 text-white rounded-xl transition-all duration-200 min-h-[48px] justify-start"
+                    >
+                      <LogOut className="mr-3 h-5 w-5 flex-shrink-0 text-white" />
+                      <span>Sign Out</span>
+                    </button>
                   </>
                 ) : (
                   <>
@@ -475,6 +568,25 @@ export default function GlobalNav() {
                         <span>Settings</span>
                       </Link>
                     )}
+                    <button
+                      onClick={() => {
+                        const currentTheme = theme || "light";
+                        setTheme(currentTheme === "dark" ? "light" : "dark");
+                      }}
+                      className="flex items-center px-4 py-3 text-base font-semibold text-gray-900 hover:text-servio-purple hover:bg-servio-purple/5 rounded-xl transition-all duration-200 min-h-[48px] w-full"
+                    >
+                      {theme === "dark" ? (
+                        <>
+                          <Sun className="mr-3 h-5 w-5 flex-shrink-0 text-yellow-500" />
+                          <span>Light Mode</span>
+                        </>
+                      ) : (
+                        <>
+                          <Moon className="mr-3 h-5 w-5 flex-shrink-0 text-gray-900" />
+                          <span>Dark Mode</span>
+                        </>
+                      )}
+                    </button>
                     <div className="w-full h-px bg-gray-100 my-4"></div>
                     <button
                       onClick={async () => {
