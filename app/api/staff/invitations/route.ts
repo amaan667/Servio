@@ -105,7 +105,7 @@ export async function POST(_request: NextRequest) {
     // Get venue details
     const { data: venue, error: venueError } = await supabase
       .from("venues")
-      .select("name, slug")
+      .select("venue_name, slug")
       .eq("venue_id", venue_id)
       .single();
 
@@ -161,11 +161,11 @@ export async function POST(_request: NextRequest) {
         body: JSON.stringify({
           from: "Servio <invite@servio.uk>",
           to: [email],
-          subject: `You've been invited to join ${venue.name} on Servio`,
+          subject: `You've been invited to join ${venue.venue_name} on Servio`,
           html: `
             <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
               <h2>You've been invited!</h2>
-              <p>You've been invited by ${user_name || user_email} to join <strong>${venue.name}</strong> as a <strong>${role}</strong>.</p>
+              <p>You've been invited by ${user_name || user_email} to join <strong>${venue.venue_name}</strong> as a <strong>${role}</strong>.</p>
               <p>Click the button below to accept your invitation:</p>
               <a href="${inviteLink}" style="display: inline-block; padding: 12px 24px; background-color: #7C3AED; color: white; text-decoration: none; border-radius: 6px; margin: 16px 0;">Accept Invitation</a>
               <p style="color: #666; font-size: 14px;">This invitation expires in 7 days.</p>
