@@ -255,19 +255,23 @@ export default function InvitationBasedStaffManagement({
       // Use the selected member's role
       const roleToUse = selectedMemberForInvite.role;
 
+      const requestBody = {
+        venue_id: venueId,
+        email: inviteEmail.trim(),
+        role: roleToUse,
+        user_id: user.id,
+        user_email: user.email,
+        user_name: user.user_metadata?.full_name || user.email,
+      };
+
+      console.log("Sending invitation with:", requestBody);
+
       const response = await fetch("/api/staff/invitations", {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
         },
-        body: JSON.stringify({
-          venue_id: venueId,
-          email: inviteEmail.trim(),
-          role: roleToUse,
-          user_id: user.id,
-          user_email: user.email,
-          user_name: user.user_metadata?.full_name || user.email,
-        }),
+        body: JSON.stringify(requestBody),
       });
 
       const data = await response.json();
