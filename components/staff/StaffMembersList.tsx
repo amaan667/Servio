@@ -121,9 +121,9 @@ const StaffMembersList: React.FC<StaffMembersListProps> = ({
               <Select value={role} onValueChange={setRole}>
                 <SelectTrigger
                   id="role"
-                  className="bg-purple-600 text-white border-purple-600 hover:bg-purple-700"
+                  className="bg-purple-600 text-white border-purple-600 hover:bg-purple-700 [&>span]:text-white hover:[&>span]:text-white"
                 >
-                  <SelectValue className="text-white" />
+                  <SelectValue className="text-white !text-white" />
                 </SelectTrigger>
                 <SelectContent>
                   <SelectItem value="Server">Server</SelectItem>

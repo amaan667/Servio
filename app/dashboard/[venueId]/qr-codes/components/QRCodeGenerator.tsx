@@ -59,8 +59,8 @@ export function QRCodeGenerator({
         <div>
           <Label>QR Code Type</Label>
           <Select value={qrCodeType} onValueChange={onTypeChange}>
-            <SelectTrigger className="rounded-lg mt-1 bg-purple-600 text-white border-purple-600 hover:bg-purple-700">
-              <SelectValue className="text-white" />
+            <SelectTrigger className="rounded-lg mt-1 bg-purple-600 text-white border-purple-600 hover:bg-purple-700 [&>span]:text-white hover:[&>span]:text-white [&_svg]:text-white">
+              <SelectValue className="text-white !text-white" />
             </SelectTrigger>
             <SelectContent>
               <SelectItem value="tables">Tables</SelectItem>
@@ -84,9 +84,9 @@ export function QRCodeGenerator({
           <div>
             <Label>Select {qrCodeType === "tables" ? "Table" : "Counter"}</Label>
             <Select value={inputName} onValueChange={onInputNameChange}>
-              <SelectTrigger className="rounded-lg mt-1 bg-purple-600 text-white border-purple-600 hover:bg-purple-700">
+              <SelectTrigger className="rounded-lg mt-1 bg-purple-600 text-white border-purple-600 hover:bg-purple-700 [&>span]:text-white hover:[&>span]:text-white [&_svg]:text-white">
                 <SelectValue
-                  className="text-white"
+                  className="text-white !text-white"
                   placeholder={`Select a ${qrCodeType === "tables" ? "table" : "counter"}`}
                 />
               </SelectTrigger>
