@@ -74,7 +74,7 @@ export function HomePageClient({ initialAuthState }: { initialAuthState: boolean
     if (isSignedIn && user) {
       // Get user's first venue
       if (!supabase) {
-        router.push("/complete-profile");
+        router.push("/select-plan");
         return;
       }
       const { data: venues } = await supabase
@@ -87,10 +87,10 @@ export function HomePageClient({ initialAuthState }: { initialAuthState: boolean
       if (venues && venues.length > 0 && venues[0]) {
         router.push(`/dashboard/${venues[0].venue_id}`);
       } else {
-        router.push("/complete-profile");
+        router.push("/select-plan");
       }
     } else {
-      router.push("/sign-up");
+      router.push("/select-plan");
     }
   };
 

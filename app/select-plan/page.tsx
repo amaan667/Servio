@@ -1,0 +1,194 @@
+"use client";
+
+import { useState } from "react";
+import { useRouter } from "next/navigation";
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import { Button } from "@/components/ui/button";
+import { Badge } from "@/components/ui/badge";
+import { Check, X, Loader2 } from "lucide-react";
+import NavigationBreadcrumb from "@/components/navigation-breadcrumb";
+
+export default function SelectPlanPage() {
+  const router = useRouter();
+  const [loading, setLoading] = useState(false);
+  const [selectedTier, setSelectedTier] = useState<string | null>(null);
+
+  const pricingPlans = [
+    {
+      name: "Basic",
+      price: "£99",
+      period: "month",
+      tier: "basic",
+      description: "Perfect for small cafes and restaurants",
+      features: [
+        "QR code ordering system",
+        "Up to 3 staff accounts",
+        "Basic analytics dashboard",
+        "Table management (up to 20 tables)",
+        "Menu management",
+        "Email support",
+      ],
+      notIncluded: [
+        "Advanced AI insights",
+        "Priority support",
+        "Custom branding",
+        "Multi-location support",
+      ],
+      popular: false,
+      cta: "Start Free Trial",
+    },
+    {
+      name: "Standard",
+      price: "£199",
+      period: "month",
+      tier: "standard",
+      description: "Ideal for growing businesses",
+      features: [
+        "Everything in Basic",
+        "Up to 10 staff accounts",
+        "Advanced analytics & AI insights",
+        "Table management (up to 50 tables)",
+        "Customer feedback system",
+        "Inventory management",
+        "Priority email support",
+      ],
+      notIncluded: ["Custom branding", "Multi-location support", "Dedicated account manager"],
+      popular: true,
+      cta: "Start Free Trial",
+    },
+    {
+      name: "Premium",
+      price: "£399",
+      period: "month",
+      tier: "premium",
+      description: "For established restaurants & chains",
+      features: [
+        "Everything in Standard",
+        "Unlimited staff accounts",
+        "Multi-location support",
+        "Custom branding",
+        "Unlimited tables",
+        "Advanced reporting & exports",
+        "Kitchen Display System (KDS)",
+        "API access",
+        "Dedicated account manager",
+        "24/7 priority support",
+      ],
+      notIncluded: [],
+      popular: false,
+      cta: "Start Free Trial",
+    },
+  ];
+
+  const handleSelectPlan = async (tier: string) => {
+    setLoading(true);
+    setSelectedTier(tier);
+
+    try {
+      // Get pending email from sessionStorage (from Google OAuth)
+      const pendingEmail =
+        typeof window !== "undefined" ? sessionStorage.getItem("pending_signup_email") : null;
+
+      // Create Stripe checkout session
+      const response = await fetch("/api/stripe/create-checkout-session", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          tier,
+          email: pendingEmail || "",
+          isSignup: true,
+        }),
+      });
+
+      const data = await response.json();
+
+      if (data.error || !data.url) {
+        alert(data.error || "Failed to create checkout session. Please try again.");
+        setLoading(false);
+        setSelectedTier(null);
+        return;
+      }
+
+      // Redirect to Stripe checkout
+      window.location.href = data.url;
+    } catch (error) {
+      alert(error instanceof Error ? error.message : "Failed to proceed. Please try again.");
+      setLoading(false);
+      setSelectedTier(null);
+    }
+  };
+
+  return (
+    <div className="min-h-screen bg-gradient-to-br from-purple-50 to-indigo-100">
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
+        <NavigationBreadcrumb showBackButton={false} />
+
+        <div className="text-center mb-12">
+          <h1 className="text-4xl font-bold text-gray-900 mb-4">Choose Your Plan</h1>
+          <p className="text-xl text-gray-700">
+            Start your 14-day free trial. No credit card required until trial ends.
+          </p>
+        </div>
+
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-8 max-w-6xl mx-auto">
+          {pricingPlans.map((plan) => (
+            <Card
+              key={plan.tier}
+              className={`border-2 shadow-lg relative ${plan.popular ? "border-purple-500" : ""}`}
+            >
+              {plan.popular && (
+                <div className="absolute -top-4 left-1/2 transform -translate-x-1/2">
+                  <Badge className="bg-purple-600 text-white px-4 py-1">Most Popular</Badge>
+                </div>
+              )}
+              <CardHeader className="text-center pb-8">
+                <CardTitle className="text-2xl mb-2">{plan.name}</CardTitle>
+                <div className="flex items-baseline justify-center">
+                  <span className="text-5xl font-bold text-gray-900">{plan.price}</span>
+                  {plan.period && <span className="text-gray-700 ml-2">/{plan.period}</span>}
+                </div>
+                <CardDescription className="mt-4">{plan.description}</CardDescription>
+              </CardHeader>
+              <CardContent className="space-y-6">
+                <ul className="space-y-3">
+                  {plan.features.map((feature, idx) => (
+                    <li key={idx} className="flex items-start">
+                      <Check className="h-5 w-5 text-green-500 mr-2 flex-shrink-0 mt-0.5" />
+                      <span className="text-gray-700">{feature}</span>
+                    </li>
+                  ))}
+                  {plan.notIncluded.map((feature, idx) => (
+                    <li key={idx} className="flex items-start opacity-50">
+                      <X className="h-5 w-5 text-gray-400 mr-2 flex-shrink-0 mt-0.5" />
+                      <span className="text-gray-700">{feature}</span>
+                    </li>
+                  ))}
+                </ul>
+                <Button
+                  onClick={() => handleSelectPlan(plan.tier)}
+                  disabled={loading && selectedTier !== plan.tier}
+                  className={`w-full ${plan.popular ? "bg-purple-600 hover:bg-purple-700 text-white" : ""}`}
+                  variant={plan.popular ? "default" : "outline"}
+                  size="lg"
+                >
+                  {loading && selectedTier === plan.tier ? (
+                    <>
+                      <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                      Processing...
+                    </>
+                  ) : (
+                    plan.cta
+                  )}
+                </Button>
+              </CardContent>
+            </Card>
+          ))}
+        </div>
+
+        <div className="mt-12 text-center text-gray-600">
+          <p>All plans include a 14-day free trial. Cancel anytime.</p>
+        </div>
+      </div>
+    </div>
+  );
+}

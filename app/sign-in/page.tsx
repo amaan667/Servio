@@ -53,7 +53,7 @@ function SignInPageContent() {
         } else if (venues && venues.length > 0) {
           router.push(`/dashboard/${venues[0]?.venue_id}`);
         } else {
-          router.push("/complete-profile");
+          router.push("/select-plan");
         }
       };
 

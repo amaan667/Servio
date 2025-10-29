@@ -87,28 +87,27 @@ function CallbackContent() {
             .limit(1);
 
           if (venueError || !venues || venues.length === 0) {
-            // New user without venue - store email and sign them out
-            // They should NOT be authenticated until signup is complete
+            // New user without venue - store email and redirect to plan selection
             setRedirecting(true);
             if (existingSession.user.email) {
               sessionStorage.setItem("pending_signup_email", existingSession.user.email);
             }
             await supabaseBrowser().auth.signOut();
             // Use replace to avoid back button issues
-            router.replace("/sign-up");
+            router.replace("/select-plan");
             return;
           }
 
           const primaryVenue = venues[0];
           if (!primaryVenue) {
-            // New user without venue - store email and sign them out
+            // New user without venue - store email and redirect to plan selection
             setRedirecting(true);
             if (existingSession.user.email) {
               sessionStorage.setItem("pending_signup_email", existingSession.user.email);
             }
             await supabaseBrowser().auth.signOut();
             // Use replace to avoid back button issues
-            router.replace("/sign-up");
+            router.replace("/select-plan");
             return;
           }
 
@@ -187,7 +186,7 @@ function CallbackContent() {
                   sessionStorage.setItem("pending_signup_email", retryData.session.user.email);
                 }
                 await supabaseBrowser().auth.signOut();
-                router.replace("/sign-up");
+                router.replace("/select-plan");
                 return;
               }
 
@@ -199,7 +198,7 @@ function CallbackContent() {
                   sessionStorage.setItem("pending_signup_email", retryData.session.user.email);
                 }
                 await supabaseBrowser().auth.signOut();
-                router.replace("/sign-up");
+                router.replace("/select-plan");
                 return;
               }
 
@@ -235,7 +234,7 @@ function CallbackContent() {
               sessionStorage.setItem("pending_signup_email", data.session.user.email);
             }
             await supabaseBrowser().auth.signOut();
-            router.replace("/sign-up");
+            router.replace("/select-plan");
             return;
           }
 
@@ -247,7 +246,7 @@ function CallbackContent() {
               sessionStorage.setItem("pending_signup_email", data.session.user.email);
             }
             await supabaseBrowser().auth.signOut();
-            router.replace("/sign-up");
+            router.replace("/select-plan");
             return;
           }
 
