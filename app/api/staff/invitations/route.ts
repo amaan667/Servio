@@ -105,7 +105,7 @@ export async function POST(_request: NextRequest) {
     // Get venue details
     const { data: venue, error: venueError } = await supabase
       .from("venues")
-      .select("venue_name, slug")
+      .select("venue_name")
       .eq("venue_id", venue_id)
       .single();
 

@@ -6,6 +6,9 @@
 import * as Sentry from "@sentry/nextjs";
 import { logger } from "@/lib/logger";
 
+// Sentry severity levels
+type SentrySeverity = "fatal" | "error" | "warning" | "log" | "info" | "debug";
+
 export interface ErrorContext {
   userId?: string;
   venueId?: string;
@@ -55,8 +58,17 @@ export function trackError(
   });
 
   // Send to Sentry with context
+  const sentryLevel: SentrySeverity =
+    severity === ErrorSeverity.CRITICAL
+      ? "fatal"
+      : severity === ErrorSeverity.HIGH
+        ? "error"
+        : severity === ErrorSeverity.MEDIUM
+          ? "warning"
+          : "info";
+
   Sentry.captureException(error, {
-    level: severity,
+    level: sentryLevel,
     tags: {
       error_code: (error as AppError).code,
       venue_id: context?.venueId,
@@ -64,7 +76,7 @@ export function trackError(
       endpoint: context?.endpoint,
     },
     extra: context,
-  } as any);
+  });
 
   // Alert for critical errors
   if (severity === ErrorSeverity.CRITICAL) {

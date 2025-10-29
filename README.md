@@ -1,12 +1,13 @@
 # 🍽️ Servio - Modern Restaurant Management Platform
 
-[![TypeScript](https://img.shields.io/badge/TypeScript-100%25-blue)](https://www.typescriptlang.org/)
+[![TypeScript](https://img.shields.io/badge/TypeScript-Strict-blue)](https://www.typescriptlang.org/)
 [![Next.js](https://img.shields.io/badge/Next.js-14-black)](https://nextjs.org/)
-[![Code Quality](https://img.shields.io/badge/Quality-10%2F10-brightgreen)](/)
-[![Test Coverage](https://img.shields.io/badge/Coverage-80%25-green)](/)
-[![API Version](https://img.shields.io/badge/API-v1-blue)](/)
+[![Code Quality](https://img.shields.io/badge/Quality-7.5%2F10-yellow)](/docs/QUALITY_METRICS.md)
+[![Test Coverage](https://img.shields.io/badge/Coverage-89%25-green)](/docs/QUALITY_METRICS.md)
+[![API Routes](https://img.shields.io/badge/API_Routes-196-blue)](/docs/API_REFERENCE.md)
+[![Build](https://img.shields.io/badge/Build-Passing-success)](/)
 
-**Servio** is a production-ready, enterprise-grade restaurant management SaaS platform built with modern web technologies. Manage orders, menus, staff, inventory, and analytics all in one place.
+**Servio** is a comprehensive, feature-rich restaurant management SaaS platform built with modern web technologies. Manage orders, menus, staff, inventory, and analytics all in one place.
 
 ## ✨ Features
 
@@ -33,14 +34,16 @@
 ## 🚀 Tech Stack
 
 - **Framework:** Next.js 14 (App Router)
-- **Language:** TypeScript (100% type-safe, zero `any` types)
-- **Database:** Supabase (PostgreSQL)
-- **Auth:** Supabase Auth
+- **Language:** TypeScript (Strict mode enabled)
+- **Database:** Supabase (PostgreSQL) with RLS
+- **Auth:** Supabase Auth (Google OAuth + Email)
 - **UI:** Tailwind CSS + Shadcn UI
-- **Payments:** Stripe
-- **Monitoring:** Sentry
-- **Testing:** Vitest + Playwright
+- **Payments:** Stripe (Subscriptions + Checkout)
+- **Monitoring:** Sentry + Custom Performance Tracking
+- **Testing:** Vitest (Unit/Integration) + Playwright (E2E)
 - **Deployment:** Railway
+- **Caching:** Redis + In-Memory
+- **Real-time:** Supabase Realtime + WebSockets
 
 ## 📦 Quick Start
 

@@ -42,29 +42,30 @@ class ErrorTracker {
     }
   }
 
-  private setupSentry() {
+  private async setupSentry() {
     // Dynamic import to avoid SSR issues
-    import("@sentry/nextjs")
-      .then((Sentry) => {
-        Sentry.init({
-          dsn: this.sentryDsn || undefined,
-          environment: this.environment,
-          tracesSampleRate: 0.1,
-          replaysSessionSampleRate: 0.1,
-          replaysOnErrorSampleRate: 1.0,
-          integrations: [new (Sentry as any).BrowserTracing(), new (Sentry as any).Replay()],
-          beforeSend(event) {
-            // Filter out development errors
-            if (this.environment === "development") {
-              return null;
-            }
-            return event;
-          },
-        });
-      })
-      .catch((_error) => {
-        // Ignore Sentry initialization errors
+    try {
+      const Sentry = await import("@sentry/nextjs");
+
+      Sentry.init({
+        dsn: this.sentryDsn || undefined,
+        environment: this.environment,
+        tracesSampleRate: 0.1,
+        replaysSessionSampleRate: 0.1,
+        replaysOnErrorSampleRate: 1.0,
+        // Integrations are automatically included by @sentry/nextjs
+        // BrowserTracing and Replay are enabled by default when configured
+        beforeSend(event) {
+          // Filter out development errors
+          if (this.environment === "development") {
+            return null;
+          }
+          return event;
+        },
       });
+    } catch (_error) {
+      // Ignore Sentry initialization errors
+    }
   }
 
   public captureError(error: Error, context?: Partial<ErrorContext>) {
