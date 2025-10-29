@@ -19,23 +19,34 @@ function FAQItem({ question, answer }: { question: string; answer: string }) {
   const [isOpen, setIsOpen] = useState(false);
 
   return (
-    <div className="rounded-xl border border-purple-200/60 bg-white shadow-sm hover:shadow transition-shadow duration-200">
+    <div className="rounded-xl bg-purple-600 shadow-lg hover:shadow-xl transition-all duration-200">
       <button
         onClick={() => setIsOpen(!isOpen)}
         className="w-full px-5 py-4 text-left flex justify-between items-center gap-4 focus:outline-none group"
+        style={{ color: "white" }}
       >
-        <h3 className="font-semibold text-gray-900 text-base md:text-lg">{question}</h3>
+        <h3 className="font-semibold text-base md:text-lg !text-white" style={{ color: "white" }}>
+          {question}
+        </h3>
         <div className="ml-4 flex-shrink-0">
           {isOpen ? (
-            <ChevronUp className="h-5 w-5 text-purple-600 transition-transform duration-200 ease-out" />
+            <ChevronUp
+              className="h-5 w-5 !text-white transition-transform duration-200 ease-out"
+              style={{ color: "white" }}
+            />
           ) : (
-            <ChevronDown className="h-5 w-5 text-purple-600 transition-transform duration-200 ease-out" />
+            <ChevronDown
+              className="h-5 w-5 !text-white transition-transform duration-200 ease-out"
+              style={{ color: "white" }}
+            />
           )}
         </div>
       </button>
       {isOpen && (
-        <div className="px-5 pt-3 pb-4 text-gray-900 leading-relaxed">
-          <p className="text-gray-700 leading-relaxed">{answer}</p>
+        <div className="px-5 pt-3 pb-4 border-t border-purple-500/30">
+          <p className="!text-white leading-relaxed" style={{ color: "white" }}>
+            {answer}
+          </p>
         </div>
       )}
     </div>
