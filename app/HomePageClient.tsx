@@ -69,7 +69,7 @@ export function HomePageClient({ initialAuthState }: { initialAuthState: boolean
     }
   }, [user, isSignedIn]);
 
-  // Fetch user's current subscription plan
+  // Fetch user's current subscription plan from organizations table
   useEffect(() => {
     const fetchUserPlan = async () => {
       if (!isSignedIn || !user) {
@@ -79,16 +79,30 @@ export function HomePageClient({ initialAuthState }: { initialAuthState: boolean
 
       try {
         const supabase = supabaseBrowser();
+
+        // First get user's venue to find organization
         const { data: venues } = await supabase
           .from("venues")
-          .select("subscription_tier")
+          .select("organization_id")
           .eq("owner_user_id", user.id)
           .limit(1)
           .single();
 
-        if (venues?.subscription_tier) {
-          setUserPlan(venues.subscription_tier as "basic" | "standard" | "premium");
-          console.log("[PRICING] User plan:", venues.subscription_tier);
+        if (!venues?.organization_id) {
+          console.log("[PRICING] No organization found");
+          return;
+        }
+
+        // Then get the organization's subscription tier
+        const { data: org } = await supabase
+          .from("organizations")
+          .select("subscription_tier")
+          .eq("id", venues.organization_id)
+          .single();
+
+        if (org?.subscription_tier) {
+          setUserPlan(org.subscription_tier as "basic" | "standard" | "premium");
+          console.log("[PRICING] User plan:", org.subscription_tier);
         } else {
           console.log("[PRICING] No subscription tier found");
         }
