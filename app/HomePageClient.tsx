@@ -12,7 +12,7 @@ import { FeaturesSection } from "./components/FeaturesSection";
 import { TestimonialsSection } from "./components/TestimonialsSection";
 import { CTASection } from "./components/CTASection";
 import { Footer } from "./components/Footer";
-import { supabase } from "@/lib/supabase";
+import { supabaseBrowser } from "@/lib/supabase";
 
 // FAQ Item Component
 function FAQItem({ question, answer }: { question: string; answer: string }) {
@@ -61,12 +61,13 @@ export function HomePageClient({ initialAuthState }: { initialAuthState: boolean
   // Fetch user's current subscription plan
   useEffect(() => {
     const fetchUserPlan = async () => {
-      if (!isSignedIn || !user || !supabase) {
+      if (!isSignedIn || !user) {
         setUserPlan(null);
         return;
       }
 
       try {
+        const supabase = supabaseBrowser();
         const { data: venues } = await supabase
           .from("venues")
           .select("subscription_tier")
@@ -76,9 +77,12 @@ export function HomePageClient({ initialAuthState }: { initialAuthState: boolean
 
         if (venues?.subscription_tier) {
           setUserPlan(venues.subscription_tier as "basic" | "standard" | "premium");
+          console.log("[PRICING] User plan:", venues.subscription_tier);
+        } else {
+          console.log("[PRICING] No subscription tier found");
         }
-      } catch {
-        // Silent error handling
+      } catch (error) {
+        console.error("[PRICING] Error fetching plan:", error);
       }
     };
 
@@ -101,10 +105,7 @@ export function HomePageClient({ initialAuthState }: { initialAuthState: boolean
   const handleGetStarted = async () => {
     if (isSignedIn && user) {
       // Get user's first venue
-      if (!supabase) {
-        router.push("/select-plan");
-        return;
-      }
+      const supabase = supabaseBrowser();
       const { data: venues } = await supabase
         .from("venues")
         .select("venue_id")
@@ -311,14 +312,16 @@ export function HomePageClient({ initialAuthState }: { initialAuthState: boolean
                     className={`w-full ${
                       getPlanCTA(plan.name) === "Current Plan"
                         ? "bg-gray-300 text-gray-600 cursor-not-allowed"
-                        : plan.popular
+                        : plan.name === "Standard"
                           ? "bg-purple-600 hover:bg-purple-700 text-white"
-                          : ""
+                          : plan.popular
+                            ? "bg-purple-600 hover:bg-purple-700 text-white"
+                            : "hover:bg-purple-600 hover:text-white"
                     }`}
                     variant={
                       getPlanCTA(plan.name) === "Current Plan"
                         ? "outline"
-                        : plan.popular
+                        : plan.popular || plan.name === "Standard"
                           ? "default"
                           : "outline"
                     }
