@@ -223,7 +223,8 @@ export default function InvitationBasedStaffManagement({
       // Refresh session before making API call
       const { data: sessionData, error: sessionError } = await supabase.auth.getSession();
 
-      if (sessionError || !sessionData?.session) {
+      if (sessionError || !sessionData?.session || !sessionData.session.user) {
+        console.error("Session error:", sessionError, "Session data:", sessionData);
         setError("Your session has expired. Please refresh the page and sign in again.");
         setInviteLoading(false);
         toast({
@@ -235,6 +236,14 @@ export default function InvitationBasedStaffManagement({
       }
 
       const user = sessionData.session.user;
+
+      // Validate user has all required fields
+      if (!user.id || !user.email) {
+        console.error("User missing required fields:", user);
+        setError("Invalid session data. Please sign out and sign in again.");
+        setInviteLoading(false);
+        return;
+      }
 
       // Prevent inviting yourself
       if (user?.email?.toLowerCase() === inviteEmail.trim().toLowerCase()) {
