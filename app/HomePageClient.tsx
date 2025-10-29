@@ -185,16 +185,37 @@ export function HomePageClient({ initialAuthState }: { initialAuthState: boolean
           return;
         }
 
+        // Verify we have a valid session first
+        const {
+          data: { session },
+        } = await supabase.auth.getSession();
+        if (!session?.access_token) {
+          alert("Session expired. Please sign in again.");
+          router.push("/sign-in");
+          setLoadingPlan(false);
+          return;
+        }
+
         const { apiClient } = await import("@/lib/api-client");
 
         // Handle downgrades
         if (ctaText.includes("Downgrade")) {
           const targetTier = ctaText.includes("Basic") ? "basic" : "standard";
 
+          console.log("[PRICING] Downgrading to:", targetTier, "Org ID:", venues.organization_id);
+
           const response = await apiClient.post("/api/stripe/downgrade-plan", {
             organizationId: venues.organization_id,
             newTier: targetTier,
           });
+
+          if (!response.ok) {
+            const errorText = await response.text();
+            console.error("[PRICING] Downgrade failed:", response.status, errorText);
+            alert(`Failed to downgrade: ${response.status} ${errorText}`);
+            setLoadingPlan(false);
+            return;
+          }
 
           const data = await response.json();
 
