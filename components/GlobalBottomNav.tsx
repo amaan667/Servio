@@ -227,17 +227,22 @@ export default function GlobalBottomNav({
             <button
               key={item.id}
               onClick={() => handleNavigation(item.href, item.id, item.label)}
-              className="flex flex-col items-center justify-center p-1.5 relative transition-all duration-200 rounded-lg text-white hover:bg-purple-500 active:scale-95 h-full"
+              className="flex flex-col items-center justify-center p-1.5 relative transition-all duration-200 rounded-lg hover:bg-purple-500 active:scale-95 h-full"
+              style={{ color: "white" }}
             >
-              <div className="relative mb-0.5 flex flex-col items-center justify-center">
-                <item.icon className="h-5 w-5 transition-colors [color:white]" />
+              <div
+                className="relative mb-0.5 flex flex-col items-center justify-center"
+                style={{ color: "white" }}
+              >
+                <item.icon className="h-5 w-5 transition-colors" />
               </div>
               <span
                 className={
                   item.isActive
-                    ? "font-bold text-center px-0.5 transition-colors leading-tight text-[10px] w-full flex items-center justify-center whitespace-nowrap overflow-hidden [color:white] underline underline-offset-2 [text-shadow:0_0_10px_rgba(255,255,255,0.8)]"
-                    : "font-medium text-center px-0.5 transition-colors leading-tight text-[10px] w-full flex items-center justify-center whitespace-nowrap overflow-hidden [color:white]"
+                    ? "font-bold text-center px-0.5 transition-colors leading-tight text-[10px] w-full flex items-center justify-center whitespace-nowrap overflow-hidden underline underline-offset-2 [text-shadow:0_0_10px_rgba(255,255,255,0.8)]"
+                    : "font-medium text-center px-0.5 transition-colors leading-tight text-[10px] w-full flex items-center justify-center whitespace-nowrap overflow-hidden"
                 }
+                style={{ color: "white" }}
               >
                 {item.id === "live-orders" ? `Live (${liveOrdersCount})` : item.label}
               </span>

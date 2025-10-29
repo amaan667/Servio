@@ -380,7 +380,7 @@ export default function GlobalNav() {
                   <>
                     <Link
                       href="/"
-                      className="flex items-center px-4 py-3 text-base font-semibold text-gray-900 hover:text-servio-purple hover:bg-servio-purple/5 rounded-xl transition-all duration-200 min-h-[48px]"
+                      className="flex items-center px-4 py-3 text-base font-medium text-gray-900 hover:text-servio-purple hover:bg-servio-purple/5 rounded-xl transition-all duration-200 min-h-[48px]"
                       onClick={() => setMobileMenuOpen(false)}
                     >
                       <Home className="mr-3 h-5 w-5 flex-shrink-0 text-gray-900" />
@@ -393,7 +393,7 @@ export default function GlobalNav() {
                             ? `/dashboard/${venueId || primaryVenueId}/settings`
                             : "/"
                         }
-                        className="flex items-center px-4 py-3 text-base font-semibold text-gray-900 hover:text-servio-purple hover:bg-servio-purple/5 rounded-xl transition-all duration-200 min-h-[48px]"
+                        className="flex items-center px-4 py-3 text-base font-medium text-gray-900 hover:text-servio-purple hover:bg-servio-purple/5 rounded-xl transition-all duration-200 min-h-[48px]"
                         onClick={() => setMobileMenuOpen(false)}
                       >
                         <Settings className="mr-3 h-5 w-5 flex-shrink-0 text-gray-900" />
@@ -405,7 +405,7 @@ export default function GlobalNav() {
                         const currentTheme = theme || "light";
                         setTheme(currentTheme === "dark" ? "light" : "dark");
                       }}
-                      className="flex items-center px-4 py-3 text-base font-semibold text-gray-900 hover:text-servio-purple hover:bg-servio-purple/5 rounded-xl transition-all duration-200 min-h-[48px] w-full"
+                      className="flex items-center px-4 py-3 text-base font-medium text-gray-900 hover:text-servio-purple hover:bg-servio-purple/5 rounded-xl transition-all duration-200 min-h-[48px] w-full"
                     >
                       {theme === "dark" ? (
                         <>
@@ -438,7 +438,7 @@ export default function GlobalNav() {
                       href={
                         venueId || primaryVenueId ? `/dashboard/${venueId || primaryVenueId}` : "/"
                       }
-                      className="flex items-center px-4 py-3 text-base font-semibold text-gray-900 hover:text-servio-purple hover:bg-servio-purple/5 rounded-xl transition-all duration-200 min-h-[48px]"
+                      className="flex items-center px-4 py-3 text-base font-medium text-gray-900 hover:text-servio-purple hover:bg-servio-purple/5 rounded-xl transition-all duration-200 min-h-[48px]"
                       onClick={() => setMobileMenuOpen(false)}
                     >
                       <LayoutDashboard className="mr-3 h-5 w-5 flex-shrink-0 text-gray-900" />
@@ -451,7 +451,7 @@ export default function GlobalNav() {
                             ? `/dashboard/${venueId || primaryVenueId}/settings`
                             : "/"
                         }
-                        className="flex items-center px-4 py-3 text-base font-semibold text-gray-900 hover:text-servio-purple hover:bg-servio-purple/5 rounded-xl transition-all duration-200 min-h-[48px]"
+                        className="flex items-center px-4 py-3 text-base font-medium text-gray-900 hover:text-servio-purple hover:bg-servio-purple/5 rounded-xl transition-all duration-200 min-h-[48px]"
                         onClick={() => setMobileMenuOpen(false)}
                       >
                         <Settings className="mr-3 h-5 w-5 flex-shrink-0 text-gray-900" />
@@ -463,7 +463,7 @@ export default function GlobalNav() {
                         const currentTheme = theme || "light";
                         setTheme(currentTheme === "dark" ? "light" : "dark");
                       }}
-                      className="flex items-center px-4 py-3 text-base font-semibold text-gray-900 hover:text-servio-purple hover:bg-servio-purple/5 rounded-xl transition-all duration-200 min-h-[48px] w-full"
+                      className="flex items-center px-4 py-3 text-base font-medium text-gray-900 hover:text-servio-purple hover:bg-servio-purple/5 rounded-xl transition-all duration-200 min-h-[48px] w-full"
                     >
                       {theme === "dark" ? (
                         <>
@@ -496,7 +496,7 @@ export default function GlobalNav() {
                       href={
                         venueId || primaryVenueId ? `/dashboard/${venueId || primaryVenueId}` : "/"
                       }
-                      className="flex items-center px-4 py-3 text-base font-semibold text-gray-900 hover:text-servio-purple hover:bg-servio-purple/5 rounded-xl transition-all duration-200 min-h-[48px]"
+                      className="flex items-center px-4 py-3 text-base font-medium text-gray-900 hover:text-servio-purple hover:bg-servio-purple/5 rounded-xl transition-all duration-200 min-h-[48px]"
                       onClick={() => setMobileMenuOpen(false)}
                     >
                       <LayoutDashboard className="mr-3 h-5 w-5 flex-shrink-0 text-gray-900" />
@@ -504,7 +504,7 @@ export default function GlobalNav() {
                     </Link>
                     <Link
                       href="/"
-                      className="flex items-center px-4 py-3 text-base font-semibold text-gray-900 hover:text-servio-purple hover:bg-servio-purple/5 rounded-xl transition-all duration-200 min-h-[48px]"
+                      className="flex items-center px-4 py-3 text-base font-medium text-gray-900 hover:text-servio-purple hover:bg-servio-purple/5 rounded-xl transition-all duration-200 min-h-[48px]"
                       onClick={() => setMobileMenuOpen(false)}
                     >
                       <Home className="mr-3 h-5 w-5 flex-shrink-0 text-gray-900" />
@@ -515,7 +515,7 @@ export default function GlobalNav() {
                         const currentTheme = theme || "light";
                         setTheme(currentTheme === "dark" ? "light" : "dark");
                       }}
-                      className="flex items-center px-4 py-3 text-base font-semibold text-gray-900 hover:text-servio-purple hover:bg-servio-purple/5 rounded-xl transition-all duration-200 min-h-[48px] w-full"
+                      className="flex items-center px-4 py-3 text-base font-medium text-gray-900 hover:text-servio-purple hover:bg-servio-purple/5 rounded-xl transition-all duration-200 min-h-[48px] w-full"
                     >
                       {theme === "dark" ? (
                         <>
@@ -548,7 +548,7 @@ export default function GlobalNav() {
                       href={
                         venueId || primaryVenueId ? `/dashboard/${venueId || primaryVenueId}` : "/"
                       }
-                      className="flex items-center px-4 py-3 text-base font-semibold text-gray-900 hover:text-servio-purple hover:bg-servio-purple/5 rounded-xl transition-all duration-200 min-h-[48px]"
+                      className="flex items-center px-4 py-3 text-base font-medium text-gray-900 hover:text-servio-purple hover:bg-servio-purple/5 rounded-xl transition-all duration-200 min-h-[48px]"
                       onClick={() => setMobileMenuOpen(false)}
                     >
                       <LayoutDashboard className="mr-3 h-5 w-5 flex-shrink-0 text-gray-900" />
@@ -561,7 +561,7 @@ export default function GlobalNav() {
                             ? `/dashboard/${venueId || primaryVenueId}/settings`
                             : "/"
                         }
-                        className="flex items-center px-4 py-3 text-base font-semibold text-gray-900 hover:text-servio-purple hover:bg-servio-purple/5 rounded-xl transition-all duration-200 min-h-[48px]"
+                        className="flex items-center px-4 py-3 text-base font-medium text-gray-900 hover:text-servio-purple hover:bg-servio-purple/5 rounded-xl transition-all duration-200 min-h-[48px]"
                         onClick={() => setMobileMenuOpen(false)}
                       >
                         <Settings className="mr-3 h-5 w-5 flex-shrink-0 text-gray-900" />
@@ -573,7 +573,7 @@ export default function GlobalNav() {
                         const currentTheme = theme || "light";
                         setTheme(currentTheme === "dark" ? "light" : "dark");
                       }}
-                      className="flex items-center px-4 py-3 text-base font-semibold text-gray-900 hover:text-servio-purple hover:bg-servio-purple/5 rounded-xl transition-all duration-200 min-h-[48px] w-full"
+                      className="flex items-center px-4 py-3 text-base font-medium text-gray-900 hover:text-servio-purple hover:bg-servio-purple/5 rounded-xl transition-all duration-200 min-h-[48px] w-full"
                     >
                       {theme === "dark" ? (
                         <>
