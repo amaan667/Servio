@@ -46,7 +46,6 @@ export default function RoleBasedNavigation({
     if (path.includes("/feedback")) return "Feedback";
     if (path.includes("/live-orders")) return "Live Orders";
     if (path.includes("/orders")) return "Orders";
-    if (path.includes("/billing")) return "Billing";
     if (path.includes("/ai-chat")) return "AI Assistant";
     return "Dashboard";
   };
@@ -55,7 +54,7 @@ export default function RoleBasedNavigation({
   const isDashboard = currentPage === "Dashboard";
 
   // Navigation items definition (currently unused but kept for future use)
-   
+
   const navigationItems = [
     {
       label: "Dashboard",
