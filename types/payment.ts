@@ -23,7 +23,7 @@ export interface CheckoutData {
   total: number;
   notes?: string;
   source?: string;
-  sessionId?: string;
+  sessionId?: string | null;
 }
 
 export type PaymentAction = "demo" | "stripe" | "till" | "later";
