@@ -212,20 +212,33 @@ export default function InvitationBasedStaffManagement({
       return;
     }
 
-    // Get current user's email
-    const { data } = await supabase.auth.getSession();
-    const user = data?.session?.user ?? null;
-
-    // Prevent inviting yourself
-    if (user?.email?.toLowerCase() === inviteEmail.trim().toLowerCase()) {
-      setError("You cannot invite yourself. You already have access to this venue.");
-      return;
-    }
-
     setInviteLoading(true);
     setError(null);
 
     try {
+      // Refresh session before making API call
+      const { data: sessionData, error: sessionError } = await supabase.auth.getSession();
+      
+      if (sessionError || !sessionData?.session) {
+        setError("Your session has expired. Please refresh the page and sign in again.");
+        setInviteLoading(false);
+        toast({
+          title: "Session Expired",
+          description: "Please refresh the page and sign in again.",
+          variant: "destructive",
+        });
+        return;
+      }
+
+      const user = sessionData.session.user;
+
+      // Prevent inviting yourself
+      if (user?.email?.toLowerCase() === inviteEmail.trim().toLowerCase()) {
+        setError("You cannot invite yourself. You already have access to this venue.");
+        setInviteLoading(false);
+        return;
+      }
+
       // Use the selected member's role
       const roleToUse = selectedMemberForInvite.role;
 
@@ -234,6 +247,7 @@ export default function InvitationBasedStaffManagement({
         headers: {
           "Content-Type": "application/json",
         },
+        credentials: "include", // Ensure cookies are sent
         body: JSON.stringify({
           venue_id: venueId,
           email: inviteEmail.trim(),
@@ -244,7 +258,18 @@ export default function InvitationBasedStaffManagement({
       const data = await response.json();
 
       if (!response.ok) {
-        throw new Error(data.error || "Failed to send invitation");
+        // Handle auth errors specifically
+        if (response.status === 401) {
+          setError("Authentication failed. Please refresh the page and sign in again.");
+          toast({
+            title: "Authentication Required",
+            description: "Your session has expired. Please refresh the page and sign in again.",
+            variant: "destructive",
+          });
+          setInviteLoading(false);
+          return;
+        }
+        throw new Error(data.error || data.details || "Failed to send invitation");
       }
 
       // Show different messages based on email status
