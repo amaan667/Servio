@@ -46,6 +46,9 @@ export default function GlobalNav() {
     pathname?.startsWith("/sign-in") ||
     pathname?.startsWith("/sign-up");
 
+  // Check if on home page
+  const isOnHomePage = pathname === "/" || pathname === "/home";
+
   // Use session from auth context - already initialized from server
   // This prevents flicker because the session is available immediately
   const shouldHidePublicActions = isAuthenticatedRoute || isAuthenticated;
@@ -400,25 +403,27 @@ export default function GlobalNav() {
                         <span>Settings</span>
                       </Link>
                     )}
-                    <button
-                      onClick={() => {
-                        const currentTheme = theme || "light";
-                        setTheme(currentTheme === "dark" ? "light" : "dark");
-                      }}
-                      className="flex items-center px-4 py-3 text-base font-medium text-gray-900 hover:text-servio-purple hover:bg-servio-purple/5 rounded-xl transition-all duration-200 min-h-[48px] w-full"
-                    >
-                      {theme === "dark" ? (
-                        <>
-                          <Sun className="mr-3 h-5 w-5 flex-shrink-0 text-yellow-500" />
-                          <span>Light Mode</span>
-                        </>
-                      ) : (
-                        <>
-                          <Moon className="mr-3 h-5 w-5 flex-shrink-0 text-gray-900" />
-                          <span>Dark Mode</span>
-                        </>
-                      )}
-                    </button>
+                    {!isHomePage && (
+                      <button
+                        onClick={() => {
+                          const currentTheme = theme || "light";
+                          setTheme(currentTheme === "dark" ? "light" : "dark");
+                        }}
+                        className="flex items-center px-4 py-3 text-base font-medium text-gray-900 hover:text-servio-purple hover:bg-servio-purple/5 rounded-xl transition-all duration-200 min-h-[48px] w-full"
+                      >
+                        {theme === "dark" ? (
+                          <>
+                            <Sun className="mr-3 h-5 w-5 flex-shrink-0 text-yellow-500" />
+                            <span>Light Mode</span>
+                          </>
+                        ) : (
+                          <>
+                            <Moon className="mr-3 h-5 w-5 flex-shrink-0 text-gray-900" />
+                            <span>Dark Mode</span>
+                          </>
+                        )}
+                      </button>
+                    )}
                     <div className="w-full h-px bg-gray-100 my-4"></div>
                     <button
                       onClick={async () => {
@@ -458,25 +463,27 @@ export default function GlobalNav() {
                         <span>Settings</span>
                       </Link>
                     )}
-                    <button
-                      onClick={() => {
-                        const currentTheme = theme || "light";
-                        setTheme(currentTheme === "dark" ? "light" : "dark");
-                      }}
-                      className="flex items-center px-4 py-3 text-base font-medium text-gray-900 hover:text-servio-purple hover:bg-servio-purple/5 rounded-xl transition-all duration-200 min-h-[48px] w-full"
-                    >
-                      {theme === "dark" ? (
-                        <>
-                          <Sun className="mr-3 h-5 w-5 flex-shrink-0 text-yellow-500" />
-                          <span>Light Mode</span>
-                        </>
-                      ) : (
-                        <>
-                          <Moon className="mr-3 h-5 w-5 flex-shrink-0 text-gray-900" />
-                          <span>Dark Mode</span>
-                        </>
-                      )}
-                    </button>
+                    {!isHomePage && (
+                      <button
+                        onClick={() => {
+                          const currentTheme = theme || "light";
+                          setTheme(currentTheme === "dark" ? "light" : "dark");
+                        }}
+                        className="flex items-center px-4 py-3 text-base font-medium text-gray-900 hover:text-servio-purple hover:bg-servio-purple/5 rounded-xl transition-all duration-200 min-h-[48px] w-full"
+                      >
+                        {theme === "dark" ? (
+                          <>
+                            <Sun className="mr-3 h-5 w-5 flex-shrink-0 text-yellow-500" />
+                            <span>Light Mode</span>
+                          </>
+                        ) : (
+                          <>
+                            <Moon className="mr-3 h-5 w-5 flex-shrink-0 text-gray-900" />
+                            <span>Dark Mode</span>
+                          </>
+                        )}
+                      </button>
+                    )}
                     <div className="w-full h-px bg-gray-100 my-4"></div>
                     <button
                       onClick={async () => {
@@ -510,25 +517,27 @@ export default function GlobalNav() {
                       <Home className="mr-3 h-5 w-5 flex-shrink-0 text-gray-900" />
                       <span>Home</span>
                     </Link>
-                    <button
-                      onClick={() => {
-                        const currentTheme = theme || "light";
-                        setTheme(currentTheme === "dark" ? "light" : "dark");
-                      }}
-                      className="flex items-center px-4 py-3 text-base font-medium text-gray-900 hover:text-servio-purple hover:bg-servio-purple/5 rounded-xl transition-all duration-200 min-h-[48px] w-full"
-                    >
-                      {theme === "dark" ? (
-                        <>
-                          <Sun className="mr-3 h-5 w-5 flex-shrink-0 text-yellow-500" />
-                          <span>Light Mode</span>
-                        </>
-                      ) : (
-                        <>
-                          <Moon className="mr-3 h-5 w-5 flex-shrink-0 text-gray-900" />
-                          <span>Dark Mode</span>
-                        </>
-                      )}
-                    </button>
+                    {!isHomePage && (
+                      <button
+                        onClick={() => {
+                          const currentTheme = theme || "light";
+                          setTheme(currentTheme === "dark" ? "light" : "dark");
+                        }}
+                        className="flex items-center px-4 py-3 text-base font-medium text-gray-900 hover:text-servio-purple hover:bg-servio-purple/5 rounded-xl transition-all duration-200 min-h-[48px] w-full"
+                      >
+                        {theme === "dark" ? (
+                          <>
+                            <Sun className="mr-3 h-5 w-5 flex-shrink-0 text-yellow-500" />
+                            <span>Light Mode</span>
+                          </>
+                        ) : (
+                          <>
+                            <Moon className="mr-3 h-5 w-5 flex-shrink-0 text-gray-900" />
+                            <span>Dark Mode</span>
+                          </>
+                        )}
+                      </button>
+                    )}
                     <div className="w-full h-px bg-gray-100 my-4"></div>
                     <button
                       onClick={async () => {
@@ -568,25 +577,7 @@ export default function GlobalNav() {
                         <span>Settings</span>
                       </Link>
                     )}
-                    <button
-                      onClick={() => {
-                        const currentTheme = theme || "light";
-                        setTheme(currentTheme === "dark" ? "light" : "dark");
-                      }}
-                      className="flex items-center px-4 py-3 text-base font-medium text-gray-900 hover:text-servio-purple hover:bg-servio-purple/5 rounded-xl transition-all duration-200 min-h-[48px] w-full"
-                    >
-                      {theme === "dark" ? (
-                        <>
-                          <Sun className="mr-3 h-5 w-5 flex-shrink-0 text-yellow-500" />
-                          <span>Light Mode</span>
-                        </>
-                      ) : (
-                        <>
-                          <Moon className="mr-3 h-5 w-5 flex-shrink-0 text-gray-900" />
-                          <span>Dark Mode</span>
-                        </>
-                      )}
-                    </button>
+                    {/* Dark mode button hidden on home page */}
                     <div className="w-full h-px bg-gray-100 my-4"></div>
                     <button
                       onClick={async () => {

@@ -231,10 +231,10 @@ export default function GlobalBottomNav({
               style={{ color: "white" }}
             >
               <div
-                className="relative mb-0.5 flex flex-col items-center justify-center"
+                className="relative mb-0.5 flex flex-col items-center justify-center [&>svg]:!text-white"
                 style={{ color: "white" }}
               >
-                <item.icon className="h-5 w-5 transition-colors" />
+                <item.icon className="h-5 w-5 transition-colors !text-white [&>*]:!text-white" />
               </div>
               <span
                 className={
@@ -258,12 +258,10 @@ export default function GlobalBottomNav({
             isVisible ? "translate-y-0" : "-translate-y-full"
           }`}
         >
-          <div className="bg-servio-purple rounded-full px-4 py-3 shadow-[0_0_20px_rgba(124,58,237,0.5)]">
+          <div className="bg-white rounded-md px-3 py-1 shadow-[0_0_20px_rgba(147,51,234,0.7)] transition-all duration-200">
             <div className="flex items-center space-x-2">
-              <activeItem.icon className="h-5 w-5 text-white" />
-              <span className="text-sm font-bold text-white [text-shadow:0_0_10px_rgba(255,255,255,0.8)]">
-                {activeItem.label}
-              </span>
+              <activeItem.icon className="h-4 w-4 text-gray-900" />
+              <span className="text-sm font-medium text-gray-900">{activeItem.label}</span>
             </div>
           </div>
         </div>
