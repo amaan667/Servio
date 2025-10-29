@@ -83,7 +83,7 @@ export default function NavigationBreadcrumb({
               asChild
               variant="ghost"
               size="sm"
-              className="flex items-center gap-1 text-foreground hover:text-foreground font-medium"
+              className="flex items-center gap-1 text-gray-700 hover:text-purple-600 font-medium transition-colors duration-200"
             >
               <Link href={homeLink}>
                 <>
@@ -94,7 +94,7 @@ export default function NavigationBreadcrumb({
             </Button>
           </li>
           <li className="text-foreground/60">←</li>
-          <li className="inline-flex items-center px-3 py-1 rounded-md font-medium text-gray-900 shadow-[0_0_20px_rgba(147,51,234,0.7)] transition-all duration-200">
+          <li className="inline-flex items-center px-3 py-1 rounded-md font-medium text-gray-700 transition-colors duration-200">
             Demo
           </li>
         </ol>
@@ -112,7 +112,7 @@ export default function NavigationBreadcrumb({
               asChild
               variant="ghost"
               size="sm"
-              className="flex items-center gap-1 text-foreground hover:text-foreground font-medium"
+              className="flex items-center gap-1 text-gray-700 hover:text-purple-600 font-medium transition-colors duration-200"
             >
               <Link href={homeLink}>
                 <>
@@ -123,7 +123,7 @@ export default function NavigationBreadcrumb({
             </Button>
           </li>
           <li className="text-foreground/60">←</li>
-          <li className="inline-flex items-center px-3 py-1 rounded-md font-medium text-gray-900 shadow-[0_0_20px_rgba(147,51,234,0.7)] transition-all duration-200">
+          <li className="inline-flex items-center px-3 py-1 rounded-md font-medium text-gray-700 transition-colors duration-200">
             {pageTitle}
           </li>
         </ol>
@@ -141,7 +141,7 @@ export default function NavigationBreadcrumb({
               asChild
               variant="ghost"
               size="sm"
-              className="flex items-center gap-1 text-foreground hover:text-foreground font-medium"
+              className="flex items-center gap-1 text-gray-700 hover:text-purple-600 font-medium transition-colors duration-200"
             >
               <Link href={homeLink}>
                 <>
@@ -170,7 +170,7 @@ export default function NavigationBreadcrumb({
               asChild
               variant="ghost"
               size="sm"
-              className="flex items-center gap-1 text-foreground hover:text-foreground font-medium"
+              className="flex items-center gap-1 text-gray-700 hover:text-purple-600 font-medium transition-colors duration-200"
             >
               <Link href={homeLink}>
                 <>
@@ -186,7 +186,7 @@ export default function NavigationBreadcrumb({
               asChild
               variant="ghost"
               size="sm"
-              className="flex items-center gap-1 text-foreground hover:text-foreground font-medium"
+              className="flex items-center gap-1 text-gray-700 hover:text-purple-600 font-medium transition-colors duration-200"
             >
               <Link href={dashboardLink}>
                 <>
@@ -197,7 +197,7 @@ export default function NavigationBreadcrumb({
             </Button>
           </li>
           <li className="text-foreground/60">←</li>
-          <li className="inline-flex items-center px-3 py-1 rounded-md font-medium text-gray-900 shadow-[0_0_20px_rgba(147,51,234,0.7)] transition-all duration-200">
+          <li className="inline-flex items-center px-3 py-1 rounded-md font-medium text-gray-700 transition-colors duration-200">
             {pageTitle}
           </li>
         </ol>
