@@ -145,6 +145,10 @@ export default function InvitationBasedStaffManagement({
   const loadData = async () => {
     setLoading(true);
     try {
+      // Get user session for userId
+      const { data: sessionData } = await supabase.auth.getSession();
+      const userId = sessionData?.session?.user?.id;
+
       // Load staff members
       const staffResponse = await fetch(`/api/staff/check?venue_id=${encodeURIComponent(venueId)}`);
       const staffData = await staffResponse.json();
@@ -153,9 +157,9 @@ export default function InvitationBasedStaffManagement({
         setStaff(staffData.staff || []);
       }
 
-      // Load invitations
+      // Load invitations with userId
       const invitationsResponse = await fetch(
-        `/api/staff/invitations?venue_id=${encodeURIComponent(venueId)}`
+        `/api/staff/invitations?venue_id=${encodeURIComponent(venueId)}&userId=${userId || ""}`
       );
       const invitationsData = await invitationsResponse.json();
 
@@ -218,7 +222,7 @@ export default function InvitationBasedStaffManagement({
     try {
       // Refresh session before making API call
       const { data: sessionData, error: sessionError } = await supabase.auth.getSession();
-      
+
       if (sessionError || !sessionData?.session) {
         setError("Your session has expired. Please refresh the page and sign in again.");
         setInviteLoading(false);
@@ -247,11 +251,13 @@ export default function InvitationBasedStaffManagement({
         headers: {
           "Content-Type": "application/json",
         },
-        credentials: "include", // Ensure cookies are sent
         body: JSON.stringify({
           venue_id: venueId,
           email: inviteEmail.trim(),
           role: roleToUse,
+          user_id: user.id,
+          user_email: user.email,
+          user_name: user.user_metadata?.full_name || user.email,
         }),
       });
 
@@ -314,12 +320,29 @@ export default function InvitationBasedStaffManagement({
     }
 
     try {
+      // Get user session for userId
+      const { data: sessionData } = await supabase.auth.getSession();
+      const userId = sessionData?.session?.user?.id;
+
+      if (!userId) {
+        toast({
+          title: "Authentication Required",
+          description: "Please refresh the page and sign in again.",
+          variant: "destructive",
+        });
+        return;
+      }
+
       const response = await fetch("/api/staff/invitations", {
         method: "DELETE",
         headers: {
           "Content-Type": "application/json",
         },
-        body: JSON.stringify({ id: invitationId }),
+        body: JSON.stringify({
+          invitation_id: invitationId,
+          user_id: userId,
+          venue_id: venueId,
+        }),
       });
 
       const data = await response.json();
