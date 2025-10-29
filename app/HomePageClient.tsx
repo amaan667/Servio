@@ -155,7 +155,7 @@ export function HomePageClient({ initialAuthState }: { initialAuthState: boolean
     }
   };
 
-  const handlePlanAction = async (planName: string, ctaText: string) => {
+  const handlePlanAction = async (ctaText: string) => {
     // If current plan, do nothing
     if (ctaText === "Current Plan") {
       return;
@@ -378,7 +378,7 @@ export function HomePageClient({ initialAuthState }: { initialAuthState: boolean
                     ))}
                   </ul>
                   <Button
-                    onClick={() => handlePlanAction(plan.name, getPlanCTA(plan.name))}
+                    onClick={() => handlePlanAction(getPlanCTA(plan.name))}
                     className="w-full bg-purple-600 hover:bg-purple-700 disabled:bg-gray-400 disabled:hover:bg-gray-400 disabled:cursor-not-allowed transition-colors"
                     style={{ color: "white" }}
                     size="lg"
