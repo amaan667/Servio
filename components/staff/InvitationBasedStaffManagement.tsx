@@ -223,6 +223,14 @@ export default function InvitationBasedStaffManagement({
       // Refresh session before making API call
       const { data: sessionData, error: sessionError } = await supabase.auth.getSession();
 
+      console.log("Session data:", {
+        hasSession: !!sessionData?.session,
+        hasUser: !!sessionData?.session?.user,
+        userId: sessionData?.session?.user?.id,
+        email: sessionData?.session?.user?.email,
+        error: sessionError,
+      });
+
       if (sessionError || !sessionData?.session || !sessionData.session.user) {
         console.error("Session error:", sessionError, "Session data:", sessionData);
         setError("Your session has expired. Please refresh the page and sign in again.");
@@ -242,6 +250,11 @@ export default function InvitationBasedStaffManagement({
         console.error("User missing required fields:", user);
         setError("Invalid session data. Please sign out and sign in again.");
         setInviteLoading(false);
+        toast({
+          title: "Invalid Session",
+          description: "Please sign out and sign in again.",
+          variant: "destructive",
+        });
         return;
       }
 
