@@ -1,7 +1,13 @@
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 import { Building, Mail, Phone, MapPin, Globe, Utensils } from "lucide-react";
 import { TIMEZONES, VENUE_TYPES, SERVICE_TYPES } from "../constants";
 
@@ -44,7 +50,7 @@ export function VenueSettingsCard({
   latitude,
   setLatitude,
   longitude,
-  setLongitude
+  setLongitude,
 }: VenueSettingsCardProps) {
   return (
     <Card className="shadow-lg rounded-xl border-gray-200">
@@ -137,11 +143,11 @@ export function VenueSettingsCard({
           <div>
             <Label htmlFor="venueType" className="flex items-center gap-2">
               <Utensils className="h-4 w-4" />
-              Venue Type
+              Business Type
             </Label>
             <Select value={venueType} onValueChange={setVenueType}>
               <SelectTrigger className="rounded-lg mt-1">
-                <SelectValue placeholder="Select venue type" />
+                <SelectValue placeholder="Select business type" />
               </SelectTrigger>
               <SelectContent>
                 {VENUE_TYPES.map((type) => (
@@ -177,7 +183,7 @@ export function VenueSettingsCard({
               id="latitude"
               type="number"
               step="unknown"
-              value={latitude || ''}
+              value={latitude || ""}
               onChange={(e) => setLatitude(e.target.value ? parseFloat(e.target.value) : undefined)}
               placeholder="51.5074"
               className="rounded-lg mt-1"
@@ -190,8 +196,10 @@ export function VenueSettingsCard({
               id="longitude"
               type="number"
               step="unknown"
-              value={longitude || ''}
-              onChange={(e) => setLongitude(e.target.value ? parseFloat(e.target.value) : undefined)}
+              value={longitude || ""}
+              onChange={(e) =>
+                setLongitude(e.target.value ? parseFloat(e.target.value) : undefined)
+              }
               placeholder="-0.1278"
               className="rounded-lg mt-1"
             />
@@ -201,4 +209,3 @@ export function VenueSettingsCard({
     </Card>
   );
 }
-
