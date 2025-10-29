@@ -217,25 +217,35 @@ export default function GlobalBottomNav({
     <>
       {/* Bottom Navigation Bar */}
       <div
-        className={`fixed bottom-0 left-0 right-0 z-50 bg-white border-t border-gray-200 shadow-lg transition-transform duration-300 mobile-nav ${
+        className={`fixed bottom-0 left-0 right-0 z-50 bg-purple-600 border-t border-purple-700 shadow-lg transition-transform duration-300 mobile-nav ${
           isVisible ? "translate-y-0" : "translate-y-full"
         }`}
         style={{ paddingBottom: "env(safe-area-inset-bottom)" }}
       >
-        <div className="grid grid-cols-4 h-20 gap-1 px-3 pb-2 pt-2 items-stretch">
+        <div className="grid grid-cols-4 h-20 gap-2 px-3 pb-2 pt-2 items-stretch">
           {navItems.map((item) => (
             <button
               key={item.id}
               onClick={() => handleNavigation(item.href, item.id, item.label)}
-              className={`flex flex-col items-center justify-center p-1.5 relative transition-all duration-200 rounded-lg bg-white border border-servio-purple shadow-sm hover:shadow-md active:scale-95 h-full`}
+              className={`flex flex-col items-center justify-center p-1.5 relative transition-all duration-200 rounded-lg ${
+                item.isActive
+                  ? "bg-white text-purple-600"
+                  : "bg-transparent text-white hover:bg-purple-500"
+              } active:scale-95 h-full`}
             >
               <div className="relative mb-0.5 flex flex-col items-center justify-center">
-                <item.icon className={`h-5 w-5 transition-colors text-servio-purple`} />
+                <item.icon
+                  className={`h-5 w-5 transition-colors ${
+                    item.isActive ? "text-purple-600" : "text-white"
+                  }`}
+                />
               </div>
               <span
-                className={`text-servio-purple font-medium text-center px-0.5 transition-colors
+                className={`font-medium text-center px-0.5 transition-colors
                   leading-tight text-[10px] w-full flex items-center justify-center
-                  whitespace-nowrap overflow-hidden`}
+                  whitespace-nowrap overflow-hidden ${
+                    item.isActive ? "text-purple-600" : "text-white"
+                  }`}
               >
                 {item.id === "live-orders" ? `Live (${liveOrdersCount})` : item.label}
               </span>
