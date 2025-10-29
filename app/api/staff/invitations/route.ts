@@ -52,9 +52,27 @@ export async function GET(_request: NextRequest) {
 export async function POST(_request: NextRequest) {
   try {
     const body = await _request.json();
+
+    // Log the received body for debugging
+    logger.info("[STAFF INVITATION POST] Received body:", {
+      email: body.email,
+      role: body.role,
+      venue_id: body.venue_id,
+      user_id: body.user_id,
+      user_email: body.user_email,
+      hasAllFields: !!(body.email && body.role && body.venue_id && body.user_id),
+    });
+
     const { email, role, venue_id, user_id, user_email, user_name, permissions = {} } = body;
 
     if (!email || !role || !venue_id || !user_id) {
+      logger.error("[STAFF INVITATION POST] Missing required fields:", {
+        hasEmail: !!email,
+        hasRole: !!role,
+        hasVenueId: !!venue_id,
+        hasUserId: !!user_id,
+        body,
+      });
       return NextResponse.json(
         { error: "email, role, venue_id, and user_id are required" },
         { status: 400 }
