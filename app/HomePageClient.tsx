@@ -60,6 +60,7 @@ export function HomePageClient({ initialAuthState }: { initialAuthState: boolean
   // Use server-provided auth state as initial value - prevents flicker
   const [isSignedIn, setIsSignedIn] = useState(initialAuthState);
   const [userPlan, setUserPlan] = useState<"basic" | "standard" | "premium" | null>(null);
+  const [loadingPlan, setLoadingPlan] = useState(false);
 
   // Sync with auth context when it updates (but only if different)
   useEffect(() => {
@@ -74,9 +75,11 @@ export function HomePageClient({ initialAuthState }: { initialAuthState: boolean
     const fetchUserPlan = async () => {
       if (!isSignedIn || !user) {
         setUserPlan(null);
+        setLoadingPlan(false);
         return;
       }
 
+      setLoadingPlan(true);
       try {
         const supabase = supabaseBrowser();
 
@@ -90,6 +93,7 @@ export function HomePageClient({ initialAuthState }: { initialAuthState: boolean
 
         if (!venues?.organization_id) {
           console.log("[PRICING] No organization found");
+          setLoadingPlan(false);
           return;
         }
 
@@ -101,13 +105,16 @@ export function HomePageClient({ initialAuthState }: { initialAuthState: boolean
           .single();
 
         if (org?.subscription_tier) {
-          setUserPlan(org.subscription_tier as "basic" | "standard" | "premium");
-          console.log("[PRICING] User plan:", org.subscription_tier);
+          const tier = org.subscription_tier.toLowerCase();
+          setUserPlan(tier as "basic" | "standard" | "premium");
+          console.log("[PRICING] User plan detected:", tier);
         } else {
-          console.log("[PRICING] No subscription tier found");
+          console.log("[PRICING] No subscription tier in organization");
         }
       } catch (error) {
         console.error("[PRICING] Error fetching plan:", error);
+      } finally {
+        setLoadingPlan(false);
       }
     };
 
@@ -148,6 +155,39 @@ export function HomePageClient({ initialAuthState }: { initialAuthState: boolean
     }
   };
 
+  const handlePlanAction = async (planName: string, ctaText: string) => {
+    // If current plan, do nothing
+    if (ctaText === "Current Plan") {
+      return;
+    }
+
+    // If Contact Sales, open mailto
+    if (ctaText === "Contact Sales") {
+      window.location.href = "mailto:support@servio.app?subject=Premium Plan Inquiry";
+      return;
+    }
+
+    // For upgrades/downgrades or trial starts, get venue and go to billing
+    if (isSignedIn && user) {
+      const supabase = supabaseBrowser();
+      const { data: venues } = await supabase
+        .from("venues")
+        .select("venue_id")
+        .eq("owner_user_id", user.id)
+        .order("created_at", { ascending: false })
+        .limit(1);
+
+      if (venues && venues.length > 0 && venues[0]) {
+        // Redirect to billing page for plan management
+        router.push(`/dashboard/${venues[0].venue_id}/billing`);
+      } else {
+        router.push("/select-plan");
+      }
+    } else {
+      router.push("/select-plan");
+    }
+  };
+
   const handleSignIn = () => {
     router.push("/sign-in");
   };
@@ -158,6 +198,11 @@ export function HomePageClient({ initialAuthState }: { initialAuthState: boolean
 
   // Get CTA text and variant based on user's current plan
   const getPlanCTA = (planName: string) => {
+    // Show loading state while fetching plan
+    if (isSignedIn && loadingPlan) {
+      return "Loading...";
+    }
+
     if (!isSignedIn || !userPlan) {
       return planName === "Premium" ? "Contact Sales" : "Start Free Trial";
     }
@@ -333,27 +378,13 @@ export function HomePageClient({ initialAuthState }: { initialAuthState: boolean
                     ))}
                   </ul>
                   <Button
-                    onClick={handleGetStarted}
-                    className={`w-full ${
-                      getPlanCTA(plan.name) === "Current Plan"
-                        ? "bg-gray-300 text-gray-600 cursor-not-allowed"
-                        : plan.name === "Standard"
-                          ? "bg-purple-600 hover:bg-purple-700 text-white"
-                          : plan.popular
-                            ? "bg-purple-600 hover:bg-purple-700 text-white"
-                            : "hover:bg-purple-600 hover:text-white"
-                    }`}
-                    variant={
-                      getPlanCTA(plan.name) === "Current Plan"
-                        ? "outline"
-                        : plan.popular || plan.name === "Standard"
-                          ? "default"
-                          : "outline"
-                    }
+                    onClick={() => handlePlanAction(plan.name, getPlanCTA(plan.name))}
+                    className="w-full bg-purple-600 hover:bg-purple-700 disabled:bg-gray-400 disabled:hover:bg-gray-400 disabled:cursor-not-allowed transition-colors"
+                    style={{ color: "white" }}
                     size="lg"
-                    disabled={getPlanCTA(plan.name) === "Current Plan"}
+                    disabled={getPlanCTA(plan.name) === "Current Plan" || loadingPlan}
                   >
-                    {getPlanCTA(plan.name)}
+                    <span style={{ color: "white" }}>{getPlanCTA(plan.name)}</span>
                   </Button>
                 </CardContent>
               </Card>
