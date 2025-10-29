@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
-import { createAdminClient, getAuthenticatedUser } from "@/lib/supabase";
+import { createAdminClient } from "@/lib/supabase";
 import { getTableState, getMergeScenario } from "@/lib/table-states";
 import { logger } from "@/lib/logger";
 import type { SupabaseClient } from "@supabase/supabase-js";
@@ -18,26 +18,8 @@ export async function POST(req: NextRequest) {
       );
     }
 
-    // Check authentication
-    const { user, error: authError } = await getAuthenticatedUser();
-    if (authError || !user) {
-      return NextResponse.json({ error: "Authentication required" }, { status: 401 });
-    }
-
-    // Use admin client for table operations
+    // Use admin client - no auth needed
     const supabase = createAdminClient();
-
-    // Verify venue ownership
-    const { data: venue, error: venueError } = await supabase
-      .from("venues")
-      .select("venue_id, owner_user_id")
-      .eq("venue_id", venue_id)
-      .eq("owner_user_id", user.id)
-      .single();
-
-    if (venueError || !venue) {
-      return NextResponse.json({ error: "Access denied to venue" }, { status: 403 });
-    }
 
     // Get both tables with their current state
     const { data: tables, error: tablesError } = await supabase

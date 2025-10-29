@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
-import { createClient, getAuthenticatedUser } from "@/lib/supabase";
+import { createAdminClient } from "@/lib/supabase";
 import { logger } from "@/lib/logger";
 
 export const runtime = "nodejs";
@@ -32,20 +32,10 @@ export async function PUT(
       );
     }
 
-    const { user } = await getAuthenticatedUser();
-    if (!user) {
-      return NextResponse.json(
-        {
-          ok: false,
-          error: "Not authenticated",
-        },
-        { status: 401 }
-      );
-    }
+    // Use admin client - no auth needed
+    const supabase = createAdminClient();
 
-    const supabase = await createClient();
-
-    // Check venue ownership through the reservation
+    // Get reservation to validate it exists
     const { data: reservation, error: reservationError } = await supabase
       .from("reservations")
       .select("venue_id")
@@ -59,23 +49,6 @@ export async function PUT(
           error: "Reservation not found",
         },
         { status: 404 }
-      );
-    }
-
-    const { data: venue } = await supabase
-      .from("venues")
-      .select("venue_id")
-      .eq("venue_id", reservation.venue_id)
-      .eq("owner_user_id", user.id)
-      .maybeSingle();
-
-    if (!venue) {
-      return NextResponse.json(
-        {
-          ok: false,
-          error: "Forbidden",
-        },
-        { status: 403 }
       );
     }
 
