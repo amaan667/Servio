@@ -80,10 +80,24 @@ export async function GET(_request: NextRequest) {
 
 // POST /api/staff/invitations - Create a new invitation
 export async function POST(_request: NextRequest) {
+  // CRITICAL: Log at the very start to confirm request arrives
+  logger.info("🔵 [STAFF INVITATION POST] ========== REQUEST RECEIVED ==========", {
+    url: _request.url,
+    method: _request.method,
+    timestamp: new Date().toISOString(),
+    headers: {
+      cookie: _request.headers.get('cookie') ? 'Present' : 'Missing',
+      authorization: _request.headers.get('authorization') ? 'Present' : 'Missing',
+      'content-type': _request.headers.get('content-type'),
+    }
+  });
+
   try {
+    logger.info("🔵 [STAFF INVITATION POST] Calling getUserSafe...");
     const user = await getUserSafe();
+    
     if (!user) {
-      logger.warn("[STAFF INVITATION] No authenticated user found", {
+      logger.warn("⚠️ [STAFF INVITATION POST] No authenticated user found", {
         headers: Object.fromEntries(_request.headers.entries()),
         url: _request.url,
       });
@@ -92,6 +106,11 @@ export async function POST(_request: NextRequest) {
         details: "Session may have expired. Try refreshing the page."
       }, { status: 401 });
     }
+    
+    logger.info("✅ [STAFF INVITATION POST] User authenticated successfully", {
+      userId: user.id,
+      email: user.email
+    });
 
     let body;
     try {
