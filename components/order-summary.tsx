@@ -16,23 +16,27 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import UnifiedFeedbackForm from "@/components/UnifiedFeedbackForm";
 import { supabaseBrowser as createClient } from "@/lib/supabase";
+import { Order, OrderStatus } from "@/types/order";
 
 interface OrderSummaryProps {
   orderId?: string;
   sessionId?: string;
-  orderData?: unknown;
+  orderData?: Order;
 }
 
 interface OrderTimelineItem {
-  status: string;
+  status: OrderStatus;
   label: string;
-  icon: unknown;
+  icon: React.ComponentType<{ className?: string }>;
   timestamp?: string;
   completed: boolean;
   current: boolean;
 }
 
-const ORDER_STATUSES = {
+const ORDER_STATUSES: Record<
+  OrderStatus,
+  { label: string; icon: React.ComponentType<{ className?: string }>; color: string }
+> = {
   PLACED: { label: "Order Placed", icon: Receipt, color: "bg-blue-100 text-blue-800" },
   ACCEPTED: { label: "Order Accepted", icon: CheckCircle, color: "bg-green-100 text-green-800" },
   IN_PREP: { label: "Preparing", icon: ChefHat, color: "bg-orange-100 text-orange-800" },
@@ -43,10 +47,11 @@ const ORDER_STATUSES = {
   },
   SERVING: { label: "Serving", icon: Truck, color: "bg-indigo-100 text-indigo-800" },
   COMPLETED: { label: "Completed", icon: Check, color: "bg-green-100 text-green-800" },
+  CANCELLED: { label: "Cancelled", icon: Check, color: "bg-red-100 text-red-800" },
 };
 
 export default function OrderSummary({ orderId, sessionId, orderData }: OrderSummaryProps) {
-  const [order, setOrder] = useState<unknown>(orderData);
+  const [order, setOrder] = useState<Order | null>(orderData || null);
   const [loading, setLoading] = useState(!orderData);
   const [error, setError] = useState<string | null>(null);
   const [showFeedback, setShowFeedback] = useState(false);
@@ -164,31 +169,26 @@ export default function OrderSummary({ orderId, sessionId, orderData }: OrderSum
 
   // Set up real-time subscription for order updates
   useEffect(() => {
-    const orderObj = order as { id?: string } | null | undefined;
-    if (!orderObj?.id) return;
+    if (!order?.id) return;
 
     const supabase = createClient();
     if (!supabase) return;
 
     const channel = supabase
-      .channel(`order-summary-${(order as any).id}`)
+      .channel(`order-summary-${order.id}`)
       .on(
         "postgres_changes",
         {
           event: "*",
           schema: "public",
           table: "orders",
-          filter: `id=eq.${(order as any).id}`,
+          filter: `id=eq.${order.id}`,
         },
-        (payload: {
-          eventType: string;
-          new?: Record<string, unknown>;
-          old?: Record<string, unknown>;
-        }) => {
-          if (payload.eventType === "UPDATE") {
-            setOrder((prevOrder: unknown) => {
+        (payload: { eventType: string; new?: Partial<Order>; old?: Partial<Order> }) => {
+          if (payload.eventType === "UPDATE" && payload.new) {
+            setOrder((prevOrder) => {
               if (!prevOrder) return null;
-              return { ...prevOrder, ...payload.new };
+              return { ...prevOrder, ...payload.new } as Order;
             });
 
             setLastUpdate(new Date());
@@ -200,25 +200,30 @@ export default function OrderSummary({ orderId, sessionId, orderData }: OrderSum
     return () => {
       supabase.removeChannel(channel);
     };
-  }, [(order as { id?: string } | null | undefined)?.id]);
+  }, [order?.id]);
 
   // Generate timeline items
   const getTimelineItems = (): OrderTimelineItem[] => {
-    const statusOrder = ["PLACED", "ACCEPTED", "IN_PREP", "READY", "SERVING", "COMPLETED"];
-    const orderObj = order as { order_status?: string } | null | undefined;
-    const currentStatus = orderObj?.order_status || "PLACED";
+    const statusOrder: OrderStatus[] = [
+      "PLACED",
+      "ACCEPTED",
+      "IN_PREP",
+      "READY",
+      "SERVING",
+      "COMPLETED",
+    ];
+    const currentStatus = order?.order_status || "PLACED";
     const currentIndex = statusOrder.indexOf(currentStatus);
 
     return statusOrder.map((status, index) => {
-      const statusInfo = ORDER_STATUSES[status as keyof typeof ORDER_STATUSES];
+      const statusInfo = ORDER_STATUSES[status];
       const completed = index <= currentIndex;
-      const Icon = statusInfo?.icon as React.ComponentType<{ className?: string }> | undefined;
       const current = index === currentIndex;
 
       return {
         status,
         label: statusInfo.label,
-        icon: statusInfo.icon as React.ComponentType<{ className?: string }>,
+        icon: statusInfo.icon,
         completed,
         current,
       };
@@ -259,8 +264,8 @@ export default function OrderSummary({ orderId, sessionId, orderData }: OrderSum
   }
 
   const paymentMessage = getPaymentSuccessMessage(
-    (order as any).payment_method,
-    (order as any).payment_status
+    order.payment_method || "unknown",
+    order.payment_status
   );
   const timelineItems = getTimelineItems();
 
@@ -290,72 +295,64 @@ export default function OrderSummary({ orderId, sessionId, orderData }: OrderSum
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               <div>
                 <p className="text-sm text-gray-900">Customer Name</p>
-                <p className="font-semibold">{(order as any).customer_name || "Not provided"}</p>
+                <p className="font-semibold">{order.customer_name || "Not provided"}</p>
               </div>
-              {(order as any).customer_phone && (
+              {order.customer_phone && (
                 <div>
                   <p className="text-sm text-gray-900">Phone Number</p>
-                  <p className="font-semibold">{(order as any).customer_phone}</p>
+                  <p className="font-semibold">{order.customer_phone}</p>
                 </div>
               )}
               <div>
                 <p className="text-sm text-gray-900">Order Number</p>
-                <p className="font-semibold">#{getShortOrderNumber((order as any).id)}</p>
+                <p className="font-semibold">#{getShortOrderNumber(order.id)}</p>
               </div>
               <div>
                 <p className="text-sm text-gray-900">Table</p>
-                <p className="font-semibold">{(order as any).table_number || "N/A"}</p>
+                <p className="font-semibold">{order.table_number || "N/A"}</p>
               </div>
             </div>
           </CardContent>
         </Card>
 
         {/* Order Items */}
-        {(order as any).items && (order as any).items.length > 0 && (
+        {order.items && order.items.length > 0 && (
           <Card className="mb-6">
             <CardHeader>
               <CardTitle>Order Items</CardTitle>
             </CardHeader>
             <CardContent>
               <div className="space-y-4">
-                {(order as any).items.map((item: unknown, index: number) => (
+                {order.items.map((item, index) => (
                   <div
                     key={index}
                     className="flex justify-between items-start py-3 border-b border-gray-100 last:border-b-0"
                   >
                     <div className="flex-1">
                       <div className="flex items-center gap-3">
-                        {(item as any).image_url && (
+                        {item.image_url && (
                           <div className="w-12 h-12 bg-gray-50 rounded-lg flex items-center justify-center overflow-hidden border border-gray-200">
                             <img
-                              src={(item as any).image_url}
-                              alt={(item as any).item_name}
+                              src={item.image_url}
+                              alt={item.item_name}
                               className="w-full h-full object-cover"
                             />
                           </div>
                         )}
                         <div>
-                          <p className="font-medium">
-                            {(item as any).item_name || `Item ${index + 1}`}
-                          </p>
-                          <p className="text-sm text-gray-900">
-                            Quantity: {(item as any).quantity}
-                          </p>
-                          {(item as any).special_instructions && (
+                          <p className="font-medium">{item.item_name || `Item ${index + 1}`}</p>
+                          <p className="text-sm text-gray-900">Quantity: {item.quantity}</p>
+                          {item.special_instructions && (
                             <p className="text-sm text-blue-600 italic">
-                              Note: {(item as any).special_instructions}
+                              Note: {item.special_instructions}
                             </p>
                           )}
                         </div>
                       </div>
                     </div>
                     <div className="text-right">
-                      <p className="font-semibold">
-                        £{((item as any).price * (item as any).quantity).toFixed(2)}
-                      </p>
-                      <p className="text-sm text-gray-900">
-                        £{(item as any).price.toFixed(2)} each
-                      </p>
+                      <p className="font-semibold">£{(item.price * item.quantity).toFixed(2)}</p>
+                      <p className="text-sm text-gray-900">£{item.price.toFixed(2)} each</p>
                     </div>
                   </div>
                 ))}
@@ -364,9 +361,7 @@ export default function OrderSummary({ orderId, sessionId, orderData }: OrderSum
                 <div className="pt-4 border-t-2 border-gray-200">
                   <div className="flex justify-between items-center">
                     <p className="text-lg font-bold">Total</p>
-                    <p className="text-lg font-bold">
-                      £{(order as any).total_amount?.toFixed(2) || "0.00"}
-                    </p>
+                    <p className="text-lg font-bold">£{order.total_amount?.toFixed(2) || "0.00"}</p>
                   </div>
                 </div>
               </div>
