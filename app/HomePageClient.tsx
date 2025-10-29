@@ -167,7 +167,7 @@ export function HomePageClient({ initialAuthState }: { initialAuthState: boolean
       return;
     }
 
-    // For upgrades/downgrades, open Stripe portal
+    // For upgrades/downgrades
     if (isSignedIn && user) {
       setLoadingPlan(true);
       try {
@@ -179,32 +179,67 @@ export function HomePageClient({ initialAuthState }: { initialAuthState: boolean
           .limit(1)
           .single();
 
-        if (venues?.organization_id && venues?.venue_id) {
-          // Open Stripe billing portal
-          const { apiClient } = await import("@/lib/api-client");
-          const response = await apiClient.post("/api/stripe/create-portal-session", {
+        if (!venues?.organization_id) {
+          alert("No organization found");
+          setLoadingPlan(false);
+          return;
+        }
+
+        const { apiClient } = await import("@/lib/api-client");
+
+        // Handle downgrades
+        if (ctaText.includes("Downgrade")) {
+          const targetTier = ctaText.includes("Basic") ? "basic" : "standard";
+
+          const response = await apiClient.post("/api/stripe/downgrade-plan", {
             organizationId: venues.organization_id,
-            venueId: venues.venue_id,
+            newTier: targetTier,
           });
 
           const data = await response.json();
 
           if (data.error) {
-            alert(`Failed to open billing portal: ${data.error}`);
+            alert(`Failed to downgrade: ${data.error}`);
+            return;
+          }
+
+          if (data.success) {
+            alert(
+              `Successfully downgraded to ${targetTier === "basic" ? "Basic" : "Standard"} plan! Refreshing...`
+            );
+            window.location.reload();
+          }
+        }
+        // Handle upgrades
+        else if (ctaText.includes("Upgrade")) {
+          const targetTier = ctaText.includes("Premium") ? "premium" : "standard";
+
+          const response = await apiClient.post("/api/stripe/create-checkout-session", {
+            tier: targetTier,
+            organizationId: venues.organization_id,
+          });
+
+          const data = await response.json();
+
+          if (data.error) {
+            alert(`Failed to upgrade: ${data.error}`);
             return;
           }
 
           if (data.url) {
+            // Redirect to Stripe Checkout for upgrade
             window.location.href = data.url;
           } else {
-            alert("Failed to open billing portal - no URL received");
+            alert("Failed to create checkout session");
           }
-        } else {
+        }
+        // Handle Start Free Trial for non-logged in or new users
+        else if (ctaText === "Start Free Trial") {
           router.push("/select-plan");
         }
       } catch (error) {
-        console.error("[PRICING] Error opening billing portal:", error);
-        alert("Failed to open billing portal. Please try again.");
+        console.error("[PRICING] Error processing plan change:", error);
+        alert("Failed to process plan change. Please try again.");
       } finally {
         setLoadingPlan(false);
       }
