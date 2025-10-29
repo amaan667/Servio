@@ -48,6 +48,7 @@ export function HomePageClient({ initialAuthState }: { initialAuthState: boolean
 
   // Use server-provided auth state as initial value - prevents flicker
   const [isSignedIn, setIsSignedIn] = useState(initialAuthState);
+  const [userPlan, setUserPlan] = useState<"basic" | "standard" | "premium" | null>(null);
 
   // Sync with auth context when it updates (but only if different)
   useEffect(() => {
@@ -56,6 +57,33 @@ export function HomePageClient({ initialAuthState }: { initialAuthState: boolean
       setIsSignedIn(currentAuthState);
     }
   }, [user, isSignedIn]);
+
+  // Fetch user's current subscription plan
+  useEffect(() => {
+    const fetchUserPlan = async () => {
+      if (!isSignedIn || !user || !supabase) {
+        setUserPlan(null);
+        return;
+      }
+
+      try {
+        const { data: venues } = await supabase
+          .from("venues")
+          .select("subscription_tier")
+          .eq("owner_user_id", user.id)
+          .limit(1)
+          .single();
+
+        if (venues?.subscription_tier) {
+          setUserPlan(venues.subscription_tier as "basic" | "standard" | "premium");
+        }
+      } catch {
+        // Silent error handling
+      }
+    };
+
+    fetchUserPlan();
+  }, [isSignedIn, user]);
 
   // Clean up URL params on mount
   useEffect(() => {
@@ -102,6 +130,38 @@ export function HomePageClient({ initialAuthState }: { initialAuthState: boolean
     router.push("/demo");
   };
 
+  // Get CTA text and variant based on user's current plan
+  const getPlanCTA = (planName: string) => {
+    if (!isSignedIn || !userPlan) {
+      return planName === "Premium" ? "Contact Sales" : "Start Free Trial";
+    }
+
+    const planLower = planName.toLowerCase();
+
+    // User is on Premium
+    if (userPlan === "premium") {
+      if (planLower === "premium") return "Current Plan";
+      if (planLower === "standard") return "Downgrade to Standard";
+      if (planLower === "basic") return "Downgrade to Basic";
+    }
+
+    // User is on Standard
+    if (userPlan === "standard") {
+      if (planLower === "standard") return "Current Plan";
+      if (planLower === "premium") return "Upgrade to Premium";
+      if (planLower === "basic") return "Downgrade to Basic";
+    }
+
+    // User is on Basic
+    if (userPlan === "basic") {
+      if (planLower === "basic") return "Current Plan";
+      if (planLower === "standard") return "Upgrade to Standard";
+      if (planLower === "premium") return "Upgrade to Premium";
+    }
+
+    return planName === "Premium" ? "Contact Sales" : "Start Free Trial";
+  };
+
   const pricingPlans = [
     {
       name: "Basic",
@@ -117,7 +177,6 @@ export function HomePageClient({ initialAuthState }: { initialAuthState: boolean
         "Email support",
       ],
       notIncluded: ["Custom branding", "Advanced analytics", "Priority support"],
-      cta: "Start Free Trial",
       popular: false,
     },
     {
@@ -136,7 +195,6 @@ export function HomePageClient({ initialAuthState }: { initialAuthState: boolean
         "Priority support",
       ],
       notIncluded: ["Custom branding", "White-label options"],
-      cta: "Start Free Trial",
       popular: true,
     },
     {
@@ -155,7 +213,6 @@ export function HomePageClient({ initialAuthState }: { initialAuthState: boolean
         "24/7 phone support",
       ],
       notIncluded: [],
-      cta: "Contact Sales",
       popular: false,
     },
   ];
@@ -251,11 +308,24 @@ export function HomePageClient({ initialAuthState }: { initialAuthState: boolean
                   </ul>
                   <Button
                     onClick={handleGetStarted}
-                    className={`w-full ${plan.popular ? "bg-purple-600 hover:bg-purple-700 text-white" : ""}`}
-                    variant={plan.popular ? "default" : "outline"}
+                    className={`w-full ${
+                      getPlanCTA(plan.name) === "Current Plan"
+                        ? "bg-gray-300 text-gray-600 cursor-not-allowed"
+                        : plan.popular
+                          ? "bg-purple-600 hover:bg-purple-700 text-white"
+                          : ""
+                    }`}
+                    variant={
+                      getPlanCTA(plan.name) === "Current Plan"
+                        ? "outline"
+                        : plan.popular
+                          ? "default"
+                          : "outline"
+                    }
                     size="lg"
+                    disabled={getPlanCTA(plan.name) === "Current Plan"}
                   >
-                    {plan.cta}
+                    {getPlanCTA(plan.name)}
                   </Button>
                 </CardContent>
               </Card>
