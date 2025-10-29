@@ -460,12 +460,14 @@ export function HomePageClient({ initialAuthState }: { initialAuthState: boolean
                   </ul>
                   <Button
                     onClick={() => handlePlanAction(getPlanCTA(plan.name))}
-                    className="w-full bg-purple-600 hover:bg-purple-700 disabled:bg-gray-400 disabled:hover:bg-gray-400 disabled:cursor-not-allowed transition-colors"
+                    className="w-full bg-purple-600 hover:bg-purple-700 active:bg-purple-800 disabled:bg-gray-400 disabled:hover:bg-gray-400 disabled:cursor-not-allowed transition-all duration-200 font-medium shadow-sm hover:shadow-md active:scale-95"
                     style={{ color: "white" }}
                     size="lg"
                     disabled={getPlanCTA(plan.name) === "Current Plan" || loadingPlan}
                   >
-                    <span style={{ color: "white" }}>{getPlanCTA(plan.name)}</span>
+                    <span className="!text-white" style={{ color: "white" }}>
+                      {getPlanCTA(plan.name)}
+                    </span>
                   </Button>
                 </CardContent>
               </Card>

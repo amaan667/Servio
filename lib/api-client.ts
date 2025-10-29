@@ -52,10 +52,11 @@ export async function fetchWithAuth(
     }
   }
 
-  // Make the request
+  // Make the request with credentials to ensure cookies are sent
   return fetch(finalUrl, {
     ...options,
     headers,
+    credentials: "include", // Essential: sends cookies for server-side auth
   });
 }
 
