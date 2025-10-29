@@ -64,8 +64,8 @@ export default async function VenuePage({ params }: { params: Promise<{ venueId:
         .select("id")
         .eq("venue_id", venueId)
         .eq("status", "BOOKED")
-        .lte("start_time", now.toISOString())
-        .gte("end_time", now.toISOString());
+        .lte("start_at", now.toISOString())
+        .gte("end_at", now.toISOString());
 
       if (reservationsError) {
         /* Empty */

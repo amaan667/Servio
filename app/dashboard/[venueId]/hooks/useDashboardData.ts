@@ -169,8 +169,8 @@ export function useDashboardData(
             .select("id")
             .eq("venue_id", venueId)
             .eq("status", "BOOKED")
-            .lte("start_time", now.toISOString())
-            .gte("end_time", now.toISOString())
+            .lte("start_at", now.toISOString())
+            .gte("end_at", now.toISOString())
       );
 
       if (newCounts && typeof newCounts === "object") {

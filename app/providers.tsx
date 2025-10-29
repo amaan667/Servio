@@ -5,6 +5,7 @@ import { QueryClientProvider } from "@tanstack/react-query";
 import { useState } from "react";
 import ServiceWorkerRegistration from "@/components/ServiceWorkerRegistration";
 import { getQueryClient } from "@/lib/query-client";
+import { Toaster } from "@/components/ui/toaster";
 
 export default function Providers({ children }: { children: React.ReactNode }) {
   // ALL HOOKS MUST BE CALLED BEFORE ANY CONDITIONAL LOGIC
@@ -28,10 +29,16 @@ export default function Providers({ children }: { children: React.ReactNode }) {
     <QueryClientProvider client={queryClient}>
       {isAuthenticatedRoute ? (
         <ThemeProvider attribute="class" defaultTheme="light" enableSystem>
-          <ServiceWorkerRegistration>{children}</ServiceWorkerRegistration>
+          <ServiceWorkerRegistration>
+            {children}
+            <Toaster />
+          </ServiceWorkerRegistration>
         </ThemeProvider>
       ) : (
-        <ServiceWorkerRegistration>{children}</ServiceWorkerRegistration>
+        <ServiceWorkerRegistration>
+          {children}
+          <Toaster />
+        </ServiceWorkerRegistration>
       )}
     </QueryClientProvider>
   );

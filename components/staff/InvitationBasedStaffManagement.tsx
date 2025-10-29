@@ -924,6 +924,7 @@ export default function InvitationBasedStaffManagement({
               <Button
                 onClick={handleSendInvitation}
                 disabled={inviteLoading || !inviteEmail.trim() || !selectedMemberForInvite}
+                className="bg-purple-600 hover:bg-purple-700 text-white hover:text-white"
               >
                 {inviteLoading ? (
                   <>

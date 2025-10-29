@@ -48,8 +48,8 @@ export function OrderTabs({ activeTab, onTabChange, counts }: OrderTabsProps) {
               group relative grid grid-rows-[1fr_auto] rounded-xl px-3 py-2 sm:px-4 text-left transition-all duration-200 min-w-[5rem] sm:w-[11rem] border-2
               ${
                 activeTab === tab.key
-                  ? "bg-white text-purple-600 border-purple-200 shadow-[0_0_12px_rgba(147,51,234,0.4)] hover:bg-purple-600 hover:text-white hover:shadow-none"
-                  : "bg-white text-purple-600 border-purple-600"
+                  ? "bg-purple-600 text-white border-purple-600 shadow-[0_0_12px_rgba(147,51,234,0.4)] hover:bg-purple-700"
+                  : "bg-white text-purple-600 border-purple-600 hover:bg-purple-600 hover:text-white hover:border-purple-600"
               }
             `}
           >
@@ -60,11 +60,11 @@ export function OrderTabs({ activeTab, onTabChange, counts }: OrderTabsProps) {
               </span>
               <span
                 className={`
-                ml-2 inline-flex min-w-[1.5rem] items-center justify-center rounded-full px-1.5 sm:px-2 text-xs transition-all duration-200
+                ml-2 inline-flex min-w-[1.5rem] items-center justify-center rounded-full px-1.5 sm:px-2 text-xs font-medium transition-all duration-200
                 ${
                   activeTab === tab.key
-                    ? "bg-purple-100 text-purple-600 group-hover:bg-white group-hover:text-white"
-                    : "bg-purple-100 text-purple-600"
+                    ? "bg-white text-purple-600"
+                    : "bg-purple-100 text-purple-600 group-hover:bg-white group-hover:text-purple-600"
                 }
               `}
               >
@@ -74,7 +74,7 @@ export function OrderTabs({ activeTab, onTabChange, counts }: OrderTabsProps) {
             <span
               className={`
               mt-0.5 text-xs hidden sm:block transition-all duration-200
-              ${activeTab === tab.key ? "text-purple-500 group-hover:text-white" : "text-purple-600/70"}
+              ${activeTab === tab.key ? "text-white opacity-90" : "text-purple-600 group-hover:text-white group-hover:opacity-90"}
             `}
             >
               {tab.hint}

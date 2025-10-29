@@ -327,7 +327,9 @@ export async function POST(_request: NextRequest) {
           updated_at: new Date().toISOString(),
         })
         .eq("id", existingInvitation.id)
-        .select()
+        .select(
+          "id, venue_id, organization_id, invited_by, email, role, permissions, status, token, expires_at, created_at, updated_at, accepted_at, user_id"
+        )
         .single();
 
       if (updateError) {
@@ -355,7 +357,9 @@ export async function POST(_request: NextRequest) {
           token,
           expires_at: expiresAt,
         })
-        .select()
+        .select(
+          "id, venue_id, organization_id, invited_by, email, role, permissions, status, token, expires_at, created_at, updated_at, accepted_at, user_id"
+        )
         .single();
 
       if (createError) {
