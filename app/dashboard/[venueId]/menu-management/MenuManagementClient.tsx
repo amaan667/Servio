@@ -540,31 +540,7 @@ export default function MenuManagementClient({
         </TabsContent>
 
         <TabsContent value="preview" className="space-y-6 mt-6">
-          <PreviewControls
-            previewMode={previewMode}
-            setPreviewMode={setPreviewMode}
-            venueId={venueId}
-            onShare={async () => {
-              const shareUrl = `${window.location.origin}/order/${venueId}`;
-              if (navigator.share) {
-                try {
-                  await navigator.share({
-                    title: "View Our Menu",
-                    text: "Check out our menu!",
-                    url: shareUrl,
-                  });
-                } catch (_err) {
-                  // Error silently handled
-                }
-              } else {
-                await navigator.clipboard.writeText(shareUrl);
-                toast({
-                  title: "Link copied!",
-                  description: "Menu link has been copied to your clipboard",
-                });
-              }
-            }}
-          />
+          <PreviewControls previewMode={previewMode} setPreviewMode={setPreviewMode} />
 
           {menuItems.length === 0 ? (
             <Card>
