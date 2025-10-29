@@ -258,10 +258,10 @@ export default function GlobalBottomNav({
             isVisible ? "translate-y-0" : "-translate-y-full"
           }`}
         >
-          <div className="bg-white rounded-md px-3 py-1 shadow-[0_0_20px_rgba(147,51,234,0.7)] transition-all duration-200">
+          <div className="bg-white rounded-md px-3 py-1 shadow-sm transition-all duration-200">
             <div className="flex items-center space-x-2">
-              <activeItem.icon className="h-4 w-4 text-gray-900" />
-              <span className="text-sm font-medium text-gray-900">{activeItem.label}</span>
+              <activeItem.icon className="h-4 w-4 text-gray-700" />
+              <span className="text-sm font-medium text-gray-700">{activeItem.label}</span>
             </div>
           </div>
         </div>
