@@ -139,6 +139,12 @@ export default function InvitationBasedStaffManagement({
 
   // Load staff and invitations
   useEffect(() => {
+    if (!venueId) {
+      console.error("ERROR: venueId prop is missing!");
+      setError("Venue ID is missing");
+      return;
+    }
+    console.log("Loading data for venueId:", venueId);
     loadData();
   }, [venueId]);
 
@@ -213,6 +219,17 @@ export default function InvitationBasedStaffManagement({
 
     if (!selectedMemberForInvite) {
       setError("No staff member selected for invitation");
+      return;
+    }
+
+    if (!venueId) {
+      console.error("ERROR: venueId is missing when sending invitation");
+      setError("Venue ID is missing. Please refresh the page.");
+      toast({
+        title: "Error",
+        description: "Venue ID is missing. Please refresh the page.",
+        variant: "destructive",
+      });
       return;
     }
 
