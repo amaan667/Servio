@@ -54,6 +54,6 @@ export abstract class BaseService {
    */
   protected async invalidateCachePattern(pattern: string): Promise<void> {
     if (process.env.NODE_ENV === "test") return;
-    await (this.cache as any).invalidate(pattern);
+    await this.cache.invalidatePattern(pattern);
   }
 }
