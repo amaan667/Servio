@@ -156,8 +156,8 @@ export function HomePageClient({ initialAuthState }: { initialAuthState: boolean
   };
 
   const handlePlanAction = async (ctaText: string) => {
-    // If current plan, do nothing
-    if (ctaText === "Current Plan") {
+    // If current plan or loading, do nothing
+    if (ctaText === "Current Plan" || ctaText === "Loading...") {
       return;
     }
 
@@ -167,21 +167,46 @@ export function HomePageClient({ initialAuthState }: { initialAuthState: boolean
       return;
     }
 
-    // For upgrades/downgrades or trial starts, get venue and go to billing
+    // For upgrades/downgrades, open Stripe portal
     if (isSignedIn && user) {
-      const supabase = supabaseBrowser();
-      const { data: venues } = await supabase
-        .from("venues")
-        .select("venue_id")
-        .eq("owner_user_id", user.id)
-        .order("created_at", { ascending: false })
-        .limit(1);
+      setLoadingPlan(true);
+      try {
+        const supabase = supabaseBrowser();
+        const { data: venues } = await supabase
+          .from("venues")
+          .select("venue_id, organization_id")
+          .eq("owner_user_id", user.id)
+          .limit(1)
+          .single();
 
-      if (venues && venues.length > 0 && venues[0]) {
-        // Redirect to billing page for plan management
-        router.push(`/dashboard/${venues[0].venue_id}/billing`);
-      } else {
-        router.push("/select-plan");
+        if (venues?.organization_id && venues?.venue_id) {
+          // Open Stripe billing portal
+          const { apiClient } = await import("@/lib/api-client");
+          const response = await apiClient.post("/api/stripe/create-portal-session", {
+            organizationId: venues.organization_id,
+            venueId: venues.venue_id,
+          });
+
+          const data = await response.json();
+
+          if (data.error) {
+            alert(`Failed to open billing portal: ${data.error}`);
+            return;
+          }
+
+          if (data.url) {
+            window.location.href = data.url;
+          } else {
+            alert("Failed to open billing portal - no URL received");
+          }
+        } else {
+          router.push("/select-plan");
+        }
+      } catch (error) {
+        console.error("[PRICING] Error opening billing portal:", error);
+        alert("Failed to open billing portal. Please try again.");
+      } finally {
+        setLoadingPlan(false);
       }
     } else {
       router.push("/select-plan");
