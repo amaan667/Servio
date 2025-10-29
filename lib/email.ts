@@ -136,31 +136,77 @@ If you didn't expect this invitation, you can safely ignore this email.
 // Send email using multiple fallback methods
 export async function sendEmail(template: EmailTemplate): Promise<boolean> {
   try {
+    logger.debug("📧 [EMAIL] Starting email send process", {
+      to: template.to,
+      subject: template.subject,
+      timestamp: new Date().toISOString(),
+    });
+
     // Method 1: Try Resend (if API key is available)
-    logger.debug("🔍 Checking RESEND_API_KEY", { present: !!process.env.RESEND_API_KEY });
+    logger.debug("🔍 [EMAIL] Checking RESEND_API_KEY", {
+      present: !!process.env.RESEND_API_KEY,
+      keyLength: process.env.RESEND_API_KEY?.length || 0,
+    });
+
     if (process.env.RESEND_API_KEY) {
       try {
+        logger.debug("📦 [EMAIL] Importing Resend library...");
         const { Resend } = await import("resend");
         const resend = new Resend(process.env.RESEND_API_KEY);
+        logger.debug("✓ [EMAIL] Resend client initialized");
 
-        const result = await resend.emails.send({
-          from: "Servio Team <onboarding@resend.dev>",
+        const emailPayload = {
+          from: "Team Invitations <invite@servio.uk>",
           to: template.to,
           subject: template.subject,
           html: template.html,
           text: template.text,
+        };
+
+        logger.debug("📤 [EMAIL] Sending email via Resend", {
+          from: emailPayload.from,
+          to: emailPayload.to,
+          subject: emailPayload.subject,
+          htmlLength: emailPayload.html.length,
+          textLength: emailPayload.text?.length || 0,
+        });
+
+        const result = await resend.emails.send(emailPayload);
+
+        logger.debug("📨 [EMAIL] Resend API response received", {
+          hasData: !!result.data,
+          hasError: !!result.error,
+          data: result.data,
+          error: result.error,
         });
 
         if (result.data) {
-          logger.debug("✅ Email sent successfully via Resend", { id: result.data.id });
+          logger.debug("✅ [EMAIL] Email sent successfully via Resend", {
+            id: result.data.id,
+            to: template.to,
+          });
           return true;
+        } else if (result.error) {
+          logger.error("❌ [EMAIL] Resend API returned error", {
+            error: result.error,
+            statusCode: (result.error as any)?.statusCode,
+            message: (result.error as any)?.message,
+            name: (result.error as any)?.name,
+          });
         } else {
-          logger.error("❌ Resend returned no data:", result);
+          logger.error("❌ [EMAIL] Resend returned no data and no error", { result });
         }
       } catch (resendError) {
-        logger.error("❌ Resend failed with error:", resendError as Record<string, unknown>);
-        logger.warn("⚠️ Resend failed, trying fallback:", resendError as Record<string, unknown>);
+        logger.error("❌ [EMAIL] Resend failed with exception", {
+          error: resendError,
+          errorMessage: resendError instanceof Error ? resendError.message : String(resendError),
+          errorStack: resendError instanceof Error ? resendError.stack : undefined,
+          errorName: resendError instanceof Error ? resendError.name : undefined,
+        });
+        logger.warn("⚠️ [EMAIL] Resend failed, trying fallback methods");
       }
+    } else {
+      logger.warn("⚠️ [EMAIL] RESEND_API_KEY not found, skipping Resend");
     }
 
     // Method 2: Try SendGrid (if API key is available)

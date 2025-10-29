@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { createClient } from "@/lib/supabase";
 import { getUserSafe } from "@/utils/getUserSafe";
+import { logger } from "@/lib/logger";
 
 // GET /api/staff/invitations - List invitations for a venue
 export async function GET(_request: NextRequest) {
@@ -377,10 +378,32 @@ export async function POST(_request: NextRequest) {
       ? "Invitation refreshed successfully."
       : "Invitation created successfully.";
 
+    logger.debug("📧 [STAFF INVITATION] Preparing to send invitation email", {
+      invitationId: invitation.id,
+      email: invitation.email,
+      role: invitation.role,
+      isUpdate,
+      venueId: venue_id,
+      venueName: venue.venue_name,
+    });
+
     try {
       const { sendInvitationEmail, generateInvitationLink } = await import("@/lib/email");
 
       const invitationLink = generateInvitationLink(invitation.token);
+
+      logger.debug("📧 [STAFF INVITATION] Generated invitation link", {
+        invitationId: invitation.id,
+        linkLength: invitationLink.length,
+        token: invitation.token.substring(0, 10) + "...",
+      });
+
+      logger.debug("📧 [STAFF INVITATION] Calling sendInvitationEmail function", {
+        email: invitation.email,
+        venueName: venue.venue_name,
+        role: invitation.role,
+        invitedBy: user.user_metadata?.full_name || user.email || "Team Member",
+      });
 
       emailSent = await sendInvitationEmail({
         email: invitation.email,
@@ -391,19 +414,40 @@ export async function POST(_request: NextRequest) {
         expiresAt: invitation.expires_at,
       });
 
+      logger.debug("📧 [STAFF INVITATION] Email send attempt completed", {
+        invitationId: invitation.id,
+        emailSent,
+        email: invitation.email,
+      });
+
       if (emailSent) {
         emailMessage = isUpdate
           ? "Invitation refreshed and email sent successfully."
           : "Invitation created and email sent successfully.";
+        logger.debug("✅ [STAFF INVITATION] Email sent successfully", {
+          invitationId: invitation.id,
+          email: invitation.email,
+        });
       } else {
         emailMessage = isUpdate
           ? "Invitation refreshed successfully. Email service not configured."
           : "Invitation created successfully. Email service not configured.";
+        logger.warn("⚠️ [STAFF INVITATION] Email not sent (service not configured)", {
+          invitationId: invitation.id,
+          email: invitation.email,
+        });
       }
-    } catch {
+    } catch (emailError) {
       emailMessage = isUpdate
         ? "Invitation refreshed successfully. Email service error."
         : "Invitation created successfully. Email service error.";
+      logger.error("❌ [STAFF INVITATION] Email service error", {
+        invitationId: invitation.id,
+        email: invitation.email,
+        error: emailError,
+        errorMessage: emailError instanceof Error ? emailError.message : String(emailError),
+        errorStack: emailError instanceof Error ? emailError.stack : undefined,
+      });
     }
 
     return NextResponse.json({
