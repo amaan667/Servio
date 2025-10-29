@@ -5,6 +5,7 @@
 
 import { createClient } from '@/lib/supabase'
 import { hasServerAuthCookie } from '@/lib/server-utils'
+import { logger } from '@/lib/logger'
 
 /**
  * Safely retrieves the currently authenticated user
@@ -21,16 +22,35 @@ import { hasServerAuthCookie } from '@/lib/server-utils'
  * ```
  */
 export async function getUserSafe() {
-  if (!(await hasServerAuthCookie())) {
+  try {
+    const hasAuthCookie = await hasServerAuthCookie()
+    
+    if (!hasAuthCookie) {
+      logger.debug('[getUserSafe] No auth cookie found')
+      return null
+    }
+
+    const supabase = await createClient()
+    const { data, error } = await supabase.auth.getSession()
+
+    if (error) {
+      logger.warn('[getUserSafe] Session error:', {
+        error: error.message,
+        code: error.status
+      })
+      return null
+    }
+
+    if (!data.session?.user) {
+      logger.debug('[getUserSafe] No user in session')
+      return null
+    }
+
+    return data.session.user
+  } catch (err) {
+    logger.error('[getUserSafe] Unexpected error:', {
+      error: err instanceof Error ? err.message : String(err)
+    })
     return null
   }
-
-  const supabase = await createClient()
-  const { data, error } = await supabase.auth.getSession()
-
-  if (error) {
-    return null
-  }
-
-  return data.session?.user ?? null
 }

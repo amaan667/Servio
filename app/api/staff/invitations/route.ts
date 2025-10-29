@@ -83,7 +83,14 @@ export async function POST(_request: NextRequest) {
   try {
     const user = await getUserSafe();
     if (!user) {
-      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+      logger.warn("[STAFF INVITATION] No authenticated user found", {
+        headers: Object.fromEntries(_request.headers.entries()),
+        url: _request.url,
+      });
+      return NextResponse.json({ 
+        error: "Unauthorized - Please sign in again",
+        details: "Session may have expired. Try refreshing the page."
+      }, { status: 401 });
     }
 
     let body;
