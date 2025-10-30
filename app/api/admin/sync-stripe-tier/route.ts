@@ -72,7 +72,6 @@ export async function POST(_request: NextRequest) {
     const subscriptions = await stripe.subscriptions.list({
       customer: org.stripe_customer_id,
       limit: 10,
-      expand: ["data.items.data.price.product"],
     });
 
     logger.info("[SYNC STRIPE TIER] Stripe subscriptions found", {
@@ -103,20 +102,18 @@ export async function POST(_request: NextRequest) {
     const stripeTier = activeSubscription.metadata?.tier;
 
     if (!stripeTier) {
-      logger.warn("[SYNC STRIPE TIER] No tier in Stripe metadata, checking product name...");
-
-      // Fallback: check product name/description
-      const productName = activeSubscription.items.data[0]?.price?.product;
-      logger.info("[SYNC STRIPE TIER] Product info:", { productName });
+      logger.warn("[SYNC STRIPE TIER] No tier in Stripe metadata");
 
       return NextResponse.json(
         {
-          error: "Tier not found in Stripe metadata. Please contact support.",
+          error: "Tier not found in Stripe subscription metadata.",
+          hint: "Your Stripe subscription needs a 'tier' field in metadata (basic/standard/premium).",
           stripeData: {
             subscriptionId: activeSubscription.id,
             status: activeSubscription.status,
             metadata: activeSubscription.metadata,
           },
+          suggestion: "Use /api/admin/set-premium to manually set tier to premium",
         },
         { status: 400 }
       );
