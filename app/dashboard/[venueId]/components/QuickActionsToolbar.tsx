@@ -1,6 +1,6 @@
 "use client";
 
-import React from "react";
+import React, { useEffect } from "react";
 import Link from "next/link";
 import { LucideIcon, Clock, ShoppingBag, QrCode, BarChart, ChefHat } from "lucide-react";
 import { Button } from "@/components/ui/button";
@@ -30,6 +30,14 @@ export function QuickActionsToolbar({
   onVenueChange,
 }: QuickActionsToolbarProps) {
   console.log("[QUICK ACTIONS] 🔧 Rendering toolbar", { venueId, userRole, hasRole: !!userRole });
+
+  // Track role changes
+  useEffect(() => {
+    console.log("[QUICK ACTIONS] 👤 userRole prop changed:", {
+      userRole,
+      timestamp: new Date().toISOString(),
+    });
+  }, [userRole]);
 
   const actions: QuickAction[] = [
     {

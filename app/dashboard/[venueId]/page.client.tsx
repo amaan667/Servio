@@ -222,19 +222,43 @@ const DashboardClient = React.memo(function DashboardClient({
       try {
         const supabase = supabaseBrowser();
 
-        // Get current user
-        const {
-          data: { session },
-          error: sessionError,
-        } = await supabase.auth.getSession();
+        // Get current user - with retry logic for fresh sign-ins
+        let session = null;
+        let sessionError = null;
+        let retries = 0;
+        const maxRetries = 3;
+
+        while (retries < maxRetries) {
+          const result = await supabase.auth.getSession();
+          sessionError = result.error;
+          session = result.data.session;
+
+          if (session?.user) {
+            console.log("[DASHBOARD CLIENT] ✅ Session found", {
+              userId: session.user.id,
+              attempt: retries + 1,
+            });
+            break;
+          }
+
+          if (retries < maxRetries - 1) {
+            console.log("[DASHBOARD CLIENT] ⏳ No session yet, retrying...", {
+              attempt: retries + 1,
+              maxRetries,
+            });
+            // Wait longer between retries to allow cookies to fully propagate
+            await new Promise((resolve) => setTimeout(resolve, 500));
+          }
+          retries++;
+        }
 
         if (sessionError) {
-          // Authentication error - redirect handled by router
+          console.error("[DASHBOARD CLIENT] ❌ Session error:", sessionError);
           return;
         }
 
         if (!session?.user) {
-          // No loading state needed - prevents flicker
+          console.error("[DASHBOARD CLIENT] ❌ No session after", maxRetries, "attempts");
           return;
         }
 
@@ -245,24 +269,48 @@ const DashboardClient = React.memo(function DashboardClient({
         }
         const userId = session.user.id;
 
+        console.log("[DASHBOARD CLIENT] 🔍 Checking user access", {
+          userId,
+          venueId,
+        });
+
         // Check if user is the venue owner
-        const { data: venueData } = await supabase
+        const { data: venueData, error: venueError } = await supabase
           .from("venues")
           .select("*")
           .eq("venue_id", venueId)
           .eq("owner_user_id", userId)
           .maybeSingle();
 
+        console.log("[DASHBOARD CLIENT] 📋 Owner check result:", {
+          hasVenueData: !!venueData,
+          venueError: venueError?.message,
+          venueId: venueData?.venue_id,
+          venueName: venueData?.name,
+        });
+
         // Check if user has a staff role for this venue
-        const { data: roleData } = await supabase
+        const { data: roleData, error: roleError } = await supabase
           .from("user_venue_roles")
           .select("role")
           .eq("user_id", userId)
           .eq("venue_id", venueId)
           .maybeSingle();
 
+        console.log("[DASHBOARD CLIENT] 👥 Staff role check result:", {
+          hasRoleData: !!roleData,
+          role: roleData?.role,
+          roleError: roleError?.message,
+        });
+
         const isOwner = !!venueData;
         const isStaff = !!roleData;
+
+        console.log("[DASHBOARD CLIENT] 🎭 Access determination:", {
+          isOwner,
+          isStaff,
+          willSetRole: isOwner ? "owner" : isStaff ? roleData?.role : "none",
+        });
 
         // Auth check completed
 

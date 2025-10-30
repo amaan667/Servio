@@ -86,8 +86,12 @@ export default function SignInForm({
       }
 
       if (data.success && data.redirectTo) {
-        // Cookies are now set - redirect to dashboard
-        window.location.assign(data.redirectTo);
+        // Cookies are now set - wait to ensure they're fully propagated to browser
+        // This is critical for ensuring the dashboard can access the session immediately
+        await new Promise((resolve) => setTimeout(resolve, 500));
+
+        console.log("[SIGN-IN] ✅ Redirecting to dashboard after cookie propagation");
+        window.location.href = data.redirectTo;
       }
     } catch (_err) {
       const msg = _err instanceof Error ? _err.message : "Sign-in failed. Please try again.";

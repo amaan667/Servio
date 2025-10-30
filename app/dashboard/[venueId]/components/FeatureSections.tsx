@@ -1,6 +1,6 @@
 "use client";
 
-import React from "react";
+import React, { useEffect } from "react";
 import Link from "next/link";
 import { Card, CardContent } from "@/components/ui/card";
 import {
@@ -39,6 +39,14 @@ interface FeatureSectionsProps {
 
 export function FeatureSections({ venueId, userRole }: FeatureSectionsProps) {
   console.log("[FEATURE SECTIONS] 🎨 Rendering FeatureSections", { venueId, userRole });
+
+  // Track role changes
+  useEffect(() => {
+    console.log("[FEATURE SECTIONS] 👤 userRole prop changed:", {
+      userRole,
+      timestamp: new Date().toISOString(),
+    });
+  }, [userRole]);
 
   const handleFeatureClick = (feature: Feature, section: string) => {
     console.log("[FEATURE CLICK] 🖱️ Feature card clicked:", {
