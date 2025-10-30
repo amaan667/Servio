@@ -75,6 +75,7 @@ const DashboardClient = React.memo(function DashboardClient({
   const [user, setUser] = useState<{ id: string } | null>(getCachedUser());
   const [venue, setVenue] = useState<Record<string, unknown> | null>(getCachedVenue());
   const [userRole, setUserRole] = useState<string | null>(getCachedRole()); // Initialize with cached role
+  const [authCheckComplete, setAuthCheckComplete] = useState(false);
 
   console.log("[DASHBOARD CLIENT] 🎯 Component state", {
     venueId,
@@ -82,6 +83,7 @@ const DashboardClient = React.memo(function DashboardClient({
     hasVenue: !!venue,
     userRole,
     hasCachedRole: !!getCachedRole(),
+    authCheckComplete,
   });
 
   // Monitor connection status (must be at top before any returns)
@@ -184,32 +186,25 @@ const DashboardClient = React.memo(function DashboardClient({
       hasUser: !!user,
       hasVenue: !!venue,
       hasUserRole: !!userRole,
+      authCheckComplete,
     });
 
     async function checkAuth() {
       console.log("[DASHBOARD CLIENT] 🏁 checkAuth() STARTED");
 
-      // Skip auth check ONLY if we have ALL data AND it's valid
-      // Force refetch if userRole is missing to prevent stale cache issues
-      if (user && venue && userRole) {
+      // ALWAYS fetch role if we don't have it, regardless of cache
+      // This ensures fresh sign-ins get the correct role immediately
+      if (!userRole) {
+        console.log("[DASHBOARD CLIENT] ⚠️ No userRole - will fetch from database");
+      } else if (authCheckComplete) {
+        // Only skip if we have role AND auth check is already complete
         console.log("[DASHBOARD CLIENT] ✅ Using cached data - skipping auth check", {
           hasUser: !!user,
           hasVenue: !!venue,
           userRole,
+          authCheckComplete,
         });
         return;
-      }
-
-      // If we have user but no role, force refetch (clear stale cache)
-      if (user && !userRole) {
-        console.log(
-          "[DASHBOARD CLIENT] ⚠️ User exists but no role - clearing cache and refetching"
-        );
-        if (typeof window !== "undefined") {
-          sessionStorage.removeItem(`user_role_${venueId}`);
-          sessionStorage.removeItem(`dashboard_user_${venueId}`);
-          sessionStorage.removeItem(`dashboard_venue_${venueId}`);
-        }
       }
 
       console.log("[DASHBOARD CLIENT] 🔄 Fetching auth data...", {
@@ -380,9 +375,14 @@ const DashboardClient = React.memo(function DashboardClient({
           });
         }
 
+        // Mark auth check as complete
+        setAuthCheckComplete(true);
+        console.log("[DASHBOARD CLIENT] ✅ Auth check completed successfully");
+
         // No loading state needed - prevents flicker
       } catch (_error) {
         console.error("[DASHBOARD CLIENT] ❌ Auth check error:", _error);
+        setAuthCheckComplete(true); // Mark complete even on error
         // No loading state needed - prevents flicker
       }
     }
@@ -390,7 +390,7 @@ const DashboardClient = React.memo(function DashboardClient({
     console.log("[DASHBOARD CLIENT] 📞 About to call checkAuth()");
     checkAuth();
     console.log("[DASHBOARD CLIENT] 📞 checkAuth() call completed (async)");
-  }, [venueId]);
+  }, [venueId]); // Only re-run when venueId changes
 
   // Log whenever userRole changes
   useEffect(() => {
