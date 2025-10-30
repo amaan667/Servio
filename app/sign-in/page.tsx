@@ -24,17 +24,20 @@ function SignInPageContent() {
 
       // If we have refresh but no access tokens, session is broken - clear it
       if (hasRefreshToken && !hasAccessToken) {
-        console.log("[SIGN-IN] Detected broken session - clearing...");
+        console.log(
+          "[SIGN-IN] Detected broken session - clearing cookies only (preserving PKCE)..."
+        );
         try {
-          await supabaseBrowser().auth.signOut();
-          // Clear all auth cookies
+          // DON'T call signOut() - it clears PKCE verifier needed for OAuth!
+          // Just clear the broken auth cookies manually
           cookies.forEach((cookie) => {
             const name = cookie.split("=")[0].trim();
-            if (name.startsWith("sb-")) {
+            // Clear auth cookies but PRESERVE code-verifier for OAuth
+            if (name.startsWith("sb-") && !name.includes("code-verifier")) {
               document.cookie = `${name}=;expires=Thu, 01 Jan 1970 00:00:00 GMT;path=/`;
             }
           });
-          console.log("[SIGN-IN] Broken session cleared");
+          console.log("[SIGN-IN] Broken session cookies cleared (PKCE verifier preserved)");
         } catch (e) {
           console.error("[SIGN-IN] Error clearing broken session:", e);
         }
