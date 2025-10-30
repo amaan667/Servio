@@ -29,14 +29,11 @@ export function QuickActionsToolbar({
   userRole,
   onVenueChange,
 }: QuickActionsToolbarProps) {
-  console.log("[QUICK ACTIONS] 🔧 Rendering toolbar", { venueId, userRole, hasRole: !!userRole });
-
   // Track role changes
   useEffect(() => {
-    console.log("[QUICK ACTIONS] 👤 userRole prop changed:", {
-      userRole,
-      timestamp: new Date().toISOString(),
-    });
+    console.log("═══════════════════════════════════════════════════");
+    console.log("🔘 SHORTCUT MENU RENDERING - Role:", userRole || "NULL");
+    console.log("═══════════════════════════════════════════════════");
   }, [userRole]);
 
   const actions: QuickAction[] = [
@@ -64,7 +61,7 @@ export function QuickActionsToolbar({
   ];
 
   if (userRole === "owner" || userRole === "manager") {
-    console.log("[QUICK ACTIONS] ✅ Adding Analytics button for role:", userRole);
+    console.log("✅ Adding ANALYTICS shortcut (role: " + userRole + ")");
     actions.push({
       label: "Analytics",
       href: `/dashboard/${venueId}/analytics`,
@@ -73,11 +70,11 @@ export function QuickActionsToolbar({
       color: "bg-indigo-600 hover:bg-indigo-700",
     });
   } else {
-    console.log("[QUICK ACTIONS] ❌ NOT adding Analytics - userRole:", userRole);
+    console.log("❌ NOT adding Analytics (role: " + (userRole || "NULL") + ")");
   }
 
   if (userRole === "owner" || userRole === "manager" || userRole === "kitchen") {
-    console.log("[QUICK ACTIONS] ✅ Adding Kitchen button for role:", userRole);
+    console.log("✅ Adding KITCHEN shortcut (role: " + userRole + ")");
     actions.push({
       label: "Kitchen",
       href: `/dashboard/${venueId}/kds`,
@@ -86,10 +83,10 @@ export function QuickActionsToolbar({
       color: "bg-red-600 hover:bg-red-700",
     });
   } else {
-    console.log("[QUICK ACTIONS] ❌ NOT adding Kitchen - userRole:", userRole);
+    console.log("❌ NOT adding Kitchen (role: " + (userRole || "NULL") + ")");
   }
 
-  console.log("[QUICK ACTIONS] 📊 Total actions to render:", actions.length);
+  console.log("📊 TOTAL SHORTCUTS:", actions.length, "buttons");
 
   return (
     <TooltipProvider>

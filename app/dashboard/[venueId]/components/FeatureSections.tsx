@@ -38,24 +38,15 @@ interface FeatureSectionsProps {
 }
 
 export function FeatureSections({ venueId, userRole }: FeatureSectionsProps) {
-  console.log("[FEATURE SECTIONS] 🎨 Rendering FeatureSections", { venueId, userRole });
-
   // Track role changes
   useEffect(() => {
-    console.log("[FEATURE SECTIONS] 👤 userRole prop changed:", {
-      userRole,
-      timestamp: new Date().toISOString(),
-    });
+    console.log("═══════════════════════════════════════════════════");
+    console.log("📋 FEATURE CARDS RENDERING - Role:", userRole || "NULL");
+    console.log("═══════════════════════════════════════════════════");
   }, [userRole]);
 
   const handleFeatureClick = (feature: Feature, section: string) => {
-    console.log("[FEATURE CLICK] 🖱️ Feature card clicked:", {
-      feature: feature.title,
-      section,
-      href: feature.href,
-      venueId,
-      userRole,
-    });
+    // Feature click logging removed for cleaner logs
   };
 
   const sections: FeatureSection[] = [
@@ -131,7 +122,7 @@ export function FeatureSections({ venueId, userRole }: FeatureSectionsProps) {
 
   // Add Insights section for owners/managers
   if (userRole === "owner" || userRole === "manager") {
-    console.log("[FEATURE SECTIONS] ✨ Adding Insights section for", { userRole, venueId });
+    console.log("✅ Adding INSIGHTS SECTION (role: " + userRole + ")");
     sections.push({
       title: "Insights",
       description: "Analytics and customer feedback",
@@ -163,20 +154,14 @@ export function FeatureSections({ venueId, userRole }: FeatureSectionsProps) {
       ],
     });
   } else {
-    console.log("[FEATURE SECTIONS] ℹ️ Insights section NOT shown - user role:", {
-      userRole,
-      venueId,
-    });
+    console.log("❌ NOT adding Insights section (role: " + (userRole || "NULL") + ")");
   }
 
-  console.log("[FEATURE SECTIONS] 📊 Total sections to render:", sections.length);
-  sections.forEach((section, idx) => {
-    console.log(`[FEATURE SECTIONS] Section ${idx + 1}:`, {
-      title: section.title,
-      featuresCount: section.features.length,
-      features: section.features.map((f) => f.title),
-    });
-  });
+  console.log(
+    "📊 TOTAL SECTIONS:",
+    sections.length,
+    "(Operations, Management" + (sections.length > 2 ? ", Insights)" : ")")
+  );
 
   return (
     <div className="space-y-8">

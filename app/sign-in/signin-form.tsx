@@ -88,9 +88,13 @@ export default function SignInForm({
       if (data.success && data.redirectTo) {
         // Cookies are now set - wait to ensure they're fully propagated to browser
         // This is critical for ensuring the dashboard can access the session immediately
+        console.log("═══════════════════════════════════════════════════");
+        console.log("✅ EMAIL/PASSWORD SIGN-IN SUCCESS");
+        console.log("🔄 Waiting 500ms for cookie propagation...");
         await new Promise((resolve) => setTimeout(resolve, 500));
 
-        console.log("[SIGN-IN] ✅ Redirecting to dashboard after cookie propagation");
+        console.log("➡️  REDIRECTING to:", data.redirectTo);
+        console.log("═══════════════════════════════════════════════════");
         window.location.href = data.redirectTo;
       }
     } catch (_err) {
