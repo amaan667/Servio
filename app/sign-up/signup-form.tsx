@@ -24,6 +24,9 @@ export default function SignUpForm({ onGoogleSignIn, isSigningUp = false }: Sign
   const [error, setError] = useState<string | null>(null);
   const [step, setStep] = useState<"tier" | "form">("tier");
   const [selectedTier, setSelectedTier] = useState<string | null>(null);
+  const [invitationToken, setInvitationToken] = useState<string | null>(null);
+  const [invitationVenueId, setInvitationVenueId] = useState<string | null>(null);
+  const [invitationRole, setInvitationRole] = useState<string | null>(null);
   const [formData, setFormData] = useState({
     fullName: "",
     email: "",
@@ -33,12 +36,36 @@ export default function SignUpForm({ onGoogleSignIn, isSigningUp = false }: Sign
     serviceType: "table_service", // 'table_service' or 'counter_pickup'
   });
 
-  // Pre-fill email if coming from OAuth
+  // Pre-fill email and check for invitation params
   useEffect(() => {
     if (typeof window !== "undefined") {
-      const pendingEmail = sessionStorage.getItem("pending_signup_email");
-      if (pendingEmail) {
-        setFormData((prev) => ({ ...prev, email: pendingEmail }));
+      const urlParams = new URLSearchParams(window.location.search);
+      const emailParam = urlParams.get("email");
+      const invitationParam = urlParams.get("invitation");
+      const venueParam = urlParams.get("venue");
+      const roleParam = urlParams.get("role");
+
+      // If invitation signup, pre-populate email and skip tier selection
+      if (invitationParam && emailParam && venueParam && roleParam) {
+        console.log("[SIGNUP] Invitation signup detected", {
+          email: emailParam,
+          venue: venueParam,
+          role: roleParam,
+        });
+        setInvitationToken(invitationParam);
+        setInvitationVenueId(venueParam);
+        setInvitationRole(roleParam);
+        setFormData((prev) => ({ ...prev, email: emailParam }));
+        setStep("form"); // Skip tier selection for invited users
+        setSelectedTier("skip"); // Mark as invitation signup
+      } else {
+        // Regular signup - check for pre-filled email from OAuth
+        const pendingEmail = sessionStorage.getItem("pending_signup_email");
+        if (pendingEmail) {
+          setFormData((prev) => ({ ...prev, email: pendingEmail }));
+        } else if (emailParam) {
+          setFormData((prev) => ({ ...prev, email: emailParam }));
+        }
       }
     }
   }, []);
@@ -48,7 +75,70 @@ export default function SignUpForm({ onGoogleSignIn, isSigningUp = false }: Sign
     setLoading(true);
     setError(null);
 
-    // Validate all required fields
+    // For invitation signups, only validate name, email, and password
+    if (invitationToken) {
+      console.log("[SIGNUP] Processing invitation signup...");
+
+      // Basic validation for invitation signup
+      if (!formData.fullName.trim()) {
+        setError("Full name is required.");
+        setLoading(false);
+        return;
+      }
+      if (!formData.password.trim()) {
+        setError("Password is required.");
+        setLoading(false);
+        return;
+      }
+      if (formData.password.length < 6) {
+        setError("Password must be at least 6 characters long.");
+        setLoading(false);
+        return;
+      }
+
+      // Accept invitation (creates account and assigns role)
+      try {
+        const response = await fetch(`/api/staff/invitations/${invitationToken}`, {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            full_name: formData.fullName.trim(),
+            password: formData.password,
+          }),
+        });
+
+        const data = await response.json();
+
+        if (!response.ok) {
+          throw new Error(data.error || "Failed to accept invitation");
+        }
+
+        console.log("[SIGNUP] Invitation accepted, signing in...");
+
+        // Sign in with the new credentials
+        const supabase = supabaseBrowser();
+        const { error: signInError } = await supabase.auth.signInWithPassword({
+          email: formData.email,
+          password: formData.password,
+        });
+
+        if (signInError) {
+          throw new Error("Account created but failed to sign in. Please try signing in manually.");
+        }
+
+        console.log("[SIGNUP] Sign-in successful, redirecting to venue...");
+
+        // Redirect to the venue dashboard
+        router.push(`/dashboard/${invitationVenueId}`);
+        return;
+      } catch (err) {
+        setError(err instanceof Error ? err.message : "Failed to accept invitation");
+        setLoading(false);
+        return;
+      }
+    }
+
+    // Regular signup validation (requires venue name)
     if (!formData.fullName.trim()) {
       setError("Full name is required.");
       setLoading(false);
@@ -316,9 +406,13 @@ export default function SignUpForm({ onGoogleSignIn, isSigningUp = false }: Sign
     <div className="min-h-screen bg-gray-50 flex items-center justify-center p-4">
       <Card className="w-full max-w-md animate-in fade-in duration-300">
         <CardHeader className="text-center">
-          <CardTitle className="text-2xl font-bold">Create Account</CardTitle>
+          <CardTitle className="text-2xl font-bold">
+            {invitationToken ? "Accept Invitation" : "Create Account"}
+          </CardTitle>
           <CardDescription>
-            Sign up for {tiers.find((t) => t.id === selectedTier)?.name} plan • 14-day free trial
+            {invitationToken
+              ? `Create your account to join as a ${invitationRole}`
+              : `Sign up for ${tiers.find((t) => t.id === selectedTier)?.name} plan • 14-day free trial`}
           </CardDescription>
         </CardHeader>
         <CardContent className="space-y-4">
@@ -340,44 +434,48 @@ export default function SignUpForm({ onGoogleSignIn, isSigningUp = false }: Sign
             </Alert>
           )}
 
-          {/* Google Sign Up Button */}
-          <Button
-            onClick={handleGoogleSignUp}
-            disabled={loading || isSigningUp}
-            className="w-full bg-white border border-gray-300 text-white hover:bg-gray-50 flex items-center justify-center gap-2"
-          >
-            <svg className="w-5 h-5" viewBox="0 0 48 48">
-              <g>
-                <path
-                  fill="#4285F4"
-                  d="M24 9.5c3.54 0 6.7 1.22 9.19 3.22l6.85-6.85C35.64 2.09 30.18 0 24 0 14.82 0 6.44 5.48 2.69 13.44l7.98 6.2C12.13 13.09 17.62 9.5 24 9.5z"
-                />
-                <path
-                  fill="#34A853"
-                  d="M46.1 24.55c0-1.64-.15-3.22-.42-4.74H24v9.01h12.42c-.54 2.9-2.18 5.36-4.65 7.01l7.19 5.6C43.93 37.36 46.1 31.45 46.1 24.55z"
-                />
-                <path
-                  fill="#FBBC05"
-                  d="M10.67 28.09c-1.09-3.22-1.09-6.7 0-9.92l-7.98-6.2C.64 16.36 0 20.09 0 24s.64 7.64 2.69 11.03l7.98-6.2z"
-                />
-                <path
-                  fill="#EA4335"
-                  d="M24 48c6.18 0 11.36-2.05 15.14-5.59l-7.19-5.6c-2.01 1.35-4.59 2.15-7.95 2.15-6.38 0-11.87-3.59-14.33-8.75l-7.98 6.2C6.44 42.52 14.82 48 24 48z"
-                />
-                <path fill="none" d="M0 0h48v48H0z" />
-              </g>
-            </svg>
-            {loading || isSigningUp ? "Creating account..." : "Sign up with Google"}
-          </Button>
+          {/* Google Sign Up Button - Hide for invitation signups */}
+          {!invitationToken && (
+            <Button
+              onClick={handleGoogleSignUp}
+              disabled={loading || isSigningUp}
+              className="w-full bg-white border border-gray-300 text-white hover:bg-gray-50 flex items-center justify-center gap-2"
+            >
+              <svg className="w-5 h-5" viewBox="0 0 48 48">
+                <g>
+                  <path
+                    fill="#4285F4"
+                    d="M24 9.5c3.54 0 6.7 1.22 9.19 3.22l6.85-6.85C35.64 2.09 30.18 0 24 0 14.82 0 6.44 5.48 2.69 13.44l7.98 6.2C12.13 13.09 17.62 9.5 24 9.5z"
+                  />
+                  <path
+                    fill="#34A853"
+                    d="M46.1 24.55c0-1.64-.15-3.22-.42-4.74H24v9.01h12.42c-.54 2.9-2.18 5.36-4.65 7.01l7.19 5.6C43.93 37.36 46.1 31.45 46.1 24.55z"
+                  />
+                  <path
+                    fill="#FBBC05"
+                    d="M10.67 28.09c-1.09-3.22-1.09-6.7 0-9.92l-7.98-6.2C.64 16.36 0 20.09 0 24s.64 7.64 2.69 11.03l7.98-6.2z"
+                  />
+                  <path
+                    fill="#EA4335"
+                    d="M24 48c6.18 0 11.36-2.05 15.14-5.59l-7.19-5.6c-2.01 1.35-4.59 2.15-7.95 2.15-6.38 0-11.87-3.59-14.33-8.75l-7.98 6.2C6.44 42.52 14.82 48 24 48z"
+                  />
+                  <path fill="none" d="M0 0h48v48H0z" />
+                </g>
+              </svg>
+              {loading || isSigningUp ? "Creating account..." : "Sign up with Google"}
+            </Button>
+          )}
 
-          <div className="relative">
-            <div className="absolute inset-0 flex items-center">
-              <span className="w-full border-t" />
+          {!invitationToken && (
+            <div className="relative">
+              <div className="absolute inset-0 flex items-center">
+                <span className="w-full border-t" />
+              </div>
+              <div className="relative flex justify-center text-xs uppercase">
+                <span className="bg-white px-2 text-white">Or continue with email</span>
+              </div>
             </div>
-            <div className="relative flex justify-center text-xs uppercase">
-              <span className="bg-white px-2 text-white">Or continue with email</span>
-            </div>
-          </div>
+          )}
 
           {/* Email/Password Form */}
           <form onSubmit={handleEmailSignUp} className="space-y-4">
@@ -402,10 +500,16 @@ export default function SignUpForm({ onGoogleSignIn, isSigningUp = false }: Sign
                 value={formData.email}
                 onChange={(e) => setFormData({ ...formData, email: e.target.value })}
                 placeholder="Enter your email"
-                disabled={loading}
+                disabled={loading || !!invitationToken}
+                readOnly={!!invitationToken}
                 required
               />
-              {formData.email && (
+              {invitationToken && (
+                <p className="text-xs text-purple-600 font-medium">
+                  This email is from your invitation and cannot be changed
+                </p>
+              )}
+              {!invitationToken && formData.email && (
                 <p className="text-xs text-gray-500">
                   {typeof window !== "undefined" && sessionStorage.getItem("pending_signup_email")
                     ? "Pre-filled from your Google account • You can change this if needed"
@@ -427,73 +531,85 @@ export default function SignUpForm({ onGoogleSignIn, isSigningUp = false }: Sign
               />
             </div>
 
-            <div className="space-y-2">
-              <Label htmlFor="venueName">Business Name</Label>
-              <Input
-                id="venueName"
-                type="text"
-                value={formData.venueName}
-                onChange={(e) => setFormData({ ...formData, venueName: e.target.value })}
-                placeholder="Enter your business name"
-                disabled={loading}
-                required
-              />
-            </div>
+            {/* Hide venue name for invitation signups */}
+            {!invitationToken && (
+              <div className="space-y-2">
+                <Label htmlFor="venueName">Business Name</Label>
+                <Input
+                  id="venueName"
+                  type="text"
+                  value={formData.venueName}
+                  onChange={(e) => setFormData({ ...formData, venueName: e.target.value })}
+                  placeholder="Enter your business name"
+                  disabled={loading}
+                  required
+                />
+              </div>
+            )}
 
-            <div className="space-y-2">
-              <Label htmlFor="businessType">Business Type</Label>
-              <select
-                id="businessType"
-                value={formData.businessType}
-                onChange={(e) => setFormData({ ...formData, businessType: e.target.value })}
-                disabled={loading}
-                className="w-full px-3 py-2 border border-gray-300 rounded-md bg-white text-black focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-transparent"
-                required
-              >
-                <option value="Restaurant">Restaurant</option>
-                <option value="Cafe">Cafe</option>
-                <option value="Coffee Shop">Coffee Shop</option>
-                <option value="Bar">Bar</option>
-                <option value="Food Truck">Food Truck</option>
-                <option value="Takeaway">Takeaway</option>
-                <option value="Bakery">Bakery</option>
-                <option value="Fast Food">Fast Food</option>
-                <option value="Fine Dining">Fine Dining</option>
-                <option value="Casual Dining">Casual Dining</option>
-                <option value="Pizzeria">Pizzeria</option>
-                <option value="Bistro">Bistro</option>
-                <option value="Pub">Pub</option>
-                <option value="Brewery">Brewery</option>
-                <option value="Juice Bar">Juice Bar</option>
-                <option value="Ice Cream Shop">Ice Cream Shop</option>
-                <option value="Deli">Deli</option>
-                <option value="Catering">Catering</option>
-                <option value="Food Court">Food Court</option>
-                <option value="Other">Other</option>
-              </select>
-            </div>
+            {/* Hide business details for invitation signups */}
+            {!invitationToken && (
+              <>
+                <div className="space-y-2">
+                  <Label htmlFor="businessType">Business Type</Label>
+                  <select
+                    id="businessType"
+                    value={formData.businessType}
+                    onChange={(e) => setFormData({ ...formData, businessType: e.target.value })}
+                    disabled={loading}
+                    className="w-full px-3 py-2 border border-gray-300 rounded-md bg-white text-black focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-transparent"
+                    required
+                  >
+                    <option value="Restaurant">Restaurant</option>
+                    <option value="Cafe">Cafe</option>
+                    <option value="Coffee Shop">Coffee Shop</option>
+                    <option value="Bar">Bar</option>
+                    <option value="Food Truck">Food Truck</option>
+                    <option value="Takeaway">Takeaway</option>
+                    <option value="Bakery">Bakery</option>
+                    <option value="Fast Food">Fast Food</option>
+                    <option value="Fine Dining">Fine Dining</option>
+                    <option value="Casual Dining">Casual Dining</option>
+                    <option value="Pizzeria">Pizzeria</option>
+                    <option value="Bistro">Bistro</option>
+                    <option value="Pub">Pub</option>
+                    <option value="Brewery">Brewery</option>
+                    <option value="Juice Bar">Juice Bar</option>
+                    <option value="Ice Cream Shop">Ice Cream Shop</option>
+                    <option value="Deli">Deli</option>
+                    <option value="Catering">Catering</option>
+                    <option value="Food Court">Food Court</option>
+                    <option value="Other">Other</option>
+                  </select>
+                </div>
 
-            <div className="space-y-2">
-              <Label htmlFor="serviceType">Service Type</Label>
-              <select
-                id="serviceType"
-                value={formData.serviceType}
-                onChange={(e) => setFormData({ ...formData, serviceType: e.target.value })}
-                disabled={loading}
-                className="w-full px-3 py-2 border border-gray-300 rounded-md bg-white text-black focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-transparent"
-                required
-              >
-                <option value="table_service">Table Service (QR codes on tables)</option>
-                <option value="counter_pickup">Pickup/Counter Service (QR codes for orders)</option>
-              </select>
-            </div>
+                <div className="space-y-2">
+                  <Label htmlFor="serviceType">Service Type</Label>
+                  <select
+                    id="serviceType"
+                    value={formData.serviceType}
+                    onChange={(e) => setFormData({ ...formData, serviceType: e.target.value })}
+                    disabled={loading}
+                    className="w-full px-3 py-2 border border-gray-300 rounded-md bg-white text-black focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-transparent"
+                    required
+                  >
+                    <option value="table_service">Table Service (QR codes on tables)</option>
+                    <option value="counter_pickup">
+                      Pickup/Counter Service (QR codes for orders)
+                    </option>
+                  </select>
+                </div>
+              </>
+            )}
 
             <Button type="submit" disabled={loading} className="w-full">
               {loading ? (
                 <>
                   <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                  Redirecting to payment...
+                  {invitationToken ? "Creating account..." : "Redirecting to payment..."}
                 </>
+              ) : invitationToken ? (
+                "Create Account & Join Team"
               ) : (
                 "Continue to Payment & Start Trial"
               )}

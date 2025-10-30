@@ -273,16 +273,22 @@ export async function POST(_request: NextRequest) {
         emailId: emailData.id,
         to: email,
       });
+      // Email sent successfully
+      return NextResponse.json({
+        invitation,
+        message: "Invitation created and email sent successfully",
+        emailSent: true,
+      });
     } catch (emailError) {
       logger.error("[STAFF INVITATION] Failed to send email:", emailError);
       // Don't fail the whole request if email fails
       // The invitation is created, user can be notified manually
+      return NextResponse.json({
+        invitation,
+        message: "Invitation created but email failed to send",
+        emailSent: false,
+      });
     }
-
-    return NextResponse.json({
-      invitation,
-      message: "Invitation created and email sent successfully",
-    });
   } catch (error) {
     logger.error("[STAFF INVITATION POST] Unexpected error:", error);
     return NextResponse.json({ error: "Internal server error" }, { status: 500 });
