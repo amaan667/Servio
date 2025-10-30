@@ -25,10 +25,12 @@ export default function SettingsPageClient({ venueId }: { venueId: string }) {
     isManager: boolean;
     userRole: string;
   } | null>(getCachedData());
+  const [loading, setLoading] = useState(!getCachedData());
 
   useEffect(() => {
     const loadData = async () => {
       try {
+        setLoading(true);
         const supabase = supabaseBrowser();
 
         // Get session
@@ -38,6 +40,7 @@ export default function SettingsPageClient({ venueId }: { venueId: string }) {
         const user = session?.user;
 
         if (!user) {
+          setLoading(false);
           return;
         }
 
@@ -113,17 +116,46 @@ export default function SettingsPageClient({ venueId }: { venueId: string }) {
         if (typeof window !== "undefined") {
           sessionStorage.setItem(`settings_data_${venueId}`, JSON.stringify(settingsData));
         }
+        setLoading(false);
       } catch (_error) {
-        // Error handled silently
+        console.error("Error loading settings:", _error);
+        setLoading(false);
       }
     };
 
     loadData();
   }, [venueId, router]);
 
-  // If no data yet, return null (data will load instantly from cache or server)
+  // Show loading state while fetching data
+  if (loading && !data) {
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-background">
+        <div className="text-center">
+          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary mx-auto mb-4"></div>
+          <p className="text-muted-foreground">Loading settings...</p>
+        </div>
+      </div>
+    );
+  }
+
+  // If still no data after loading, show error
   if (!data) {
-    return null;
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-background">
+        <div className="max-w-md w-full p-6 text-center">
+          <h2 className="text-2xl font-bold mb-4">Unable to Load Settings</h2>
+          <p className="text-muted-foreground mb-6">
+            There was a problem loading your settings. Please try refreshing the page.
+          </p>
+          <button
+            onClick={() => window.location.reload()}
+            className="inline-block bg-primary text-primary-foreground py-2 px-6 rounded-md hover:bg-primary/90 transition"
+          >
+            Refresh Page
+          </button>
+        </div>
+      </div>
+    );
   }
 
   if (!data.user) {
