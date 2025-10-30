@@ -159,16 +159,38 @@ export async function createClient() {
 export async function createServerSupabase() {
   const { cookies } = await import("next/headers");
   const cookieStore = await cookies();
+  const { logger } = await import("@/lib/logger");
 
   return createSSRServerClient(getSupabaseUrl(), getSupabaseAnonKey(), {
     cookies: {
       getAll() {
-        return cookieStore.getAll();
+        const allCookies = cookieStore.getAll();
+        logger.info("[createServerSupabase] getAll() called", {
+          count: allCookies.length,
+          names: allCookies.map((c) => c.name).join(", "),
+        });
+        return allCookies;
       },
       setAll(cookiesToSet) {
+        logger.info("[createServerSupabase] setAll() called - Attempting to set cookies:", {
+          count: cookiesToSet.length,
+          names: cookiesToSet.map((c) => c.name).join(", "),
+        });
+
         try {
           cookiesToSet.forEach(({ name, value, options }) => {
-            // Ensure cookies are set with proper options for auth
+            logger.info("[createServerSupabase] Setting cookie:", {
+              name,
+              valueLength: value?.length || 0,
+              hasValue: !!value,
+              options: {
+                httpOnly: options?.httpOnly,
+                sameSite: options?.sameSite,
+                secure: options?.secure,
+                path: options?.path,
+              },
+            });
+
             cookieStore.set(name, value, {
               ...options,
               httpOnly: false, // Must be false for Supabase to read from client
@@ -176,10 +198,17 @@ export async function createServerSupabase() {
               secure: process.env.NODE_ENV === "production",
               path: "/",
             });
+
+            logger.info("[createServerSupabase] ✅ Cookie set:", { name });
+          });
+
+          logger.info("[createServerSupabase] ✅ All cookies set successfully", {
+            count: cookiesToSet.length,
           });
         } catch (error) {
-          // Log cookie setting errors
-          console.error("[createServerSupabase] Failed to set cookies:", error);
+          logger.error("[createServerSupabase] ❌ Failed to set cookies:", {
+            error: error instanceof Error ? error.message : String(error),
+          });
         }
       },
     },
