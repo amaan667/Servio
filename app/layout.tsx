@@ -7,7 +7,7 @@ import type { Metadata } from "next";
 import { Inter } from "next/font/google";
 import "./globals.css";
 import { cookies } from "next/headers";
-import { createServerSupabase } from "@/lib/supabase";
+import { createServerSupabaseReadOnly } from "@/lib/supabase";
 import { logger } from "@/lib/logger";
 import AuthProvider from "@/app/auth/AuthProvider";
 import Providers from "./providers";
@@ -151,46 +151,42 @@ export default async function RootLayout({ children }: { children: React.ReactNo
     logger.info("[ROOT LAYOUT] 🔐 Auth cookie check", { hasAuthCookies });
 
     if (hasAuthCookies) {
-      const supabase = await createServerSupabase();
+      // Use read-only client in layout to prevent cookie modification errors
+      const supabase = await createServerSupabaseReadOnly();
 
-      // Use getUser() instead of getSession() for better security and cookie support
+      // Use getSession() to get the full session with tokens
       try {
-        logger.info("[ROOT LAYOUT] 📡 Calling supabase.auth.getUser()...");
+        logger.info("[ROOT LAYOUT] 📡 Calling supabase.auth.getSession()...");
         const {
-          data: { user: authUser },
+          data: { session: authSession },
           error,
-        } = await supabase.auth.getUser();
+        } = await supabase.auth.getSession();
 
-        logger.info("[ROOT LAYOUT] 📋 getUser() result", {
-          hasUser: !!authUser,
-          userId: authUser?.id,
-          email: authUser?.email,
+        logger.info("[ROOT LAYOUT] 📋 getSession() result", {
+          hasSession: !!authSession,
+          hasUser: !!authSession?.user,
+          userId: authSession?.user?.id,
+          email: authSession?.user?.email,
+          hasAccessToken: !!authSession?.access_token,
           hasError: !!error,
           errorMsg: error?.message,
         });
 
-        if (!error && authUser) {
-          // Create a minimal session object from the user data
-          // IMPORTANT: access_token MUST be non-empty or GlobalNav won't show menu!
-          session = {
-            user: authUser,
-            access_token: "server-provided-token", // Non-empty so isAuthenticated check works
-            refresh_token: "server-provided-refresh",
-            expires_in: 3600,
-            expires_at: Math.floor(Date.now() / 1000) + 3600,
-            token_type: "bearer",
-          } as any;
-          logger.info("[ROOT LAYOUT] ✅ Session created from server user", {
-            userId: authUser.id,
+        if (!error && authSession) {
+          // Use the actual session from Supabase with real tokens
+          session = authSession;
+          logger.info("[ROOT LAYOUT] ✅ Session obtained from server", {
+            userId: authSession.user?.id,
             hasAccessToken: !!session.access_token,
+            accessTokenLength: session.access_token?.length,
           });
         } else {
-          logger.warn("[ROOT LAYOUT] ⚠️ No user or error from getUser()", {
+          logger.warn("[ROOT LAYOUT] ⚠️ No session or error from getSession()", {
             error: error?.message,
           });
         }
       } catch (err) {
-        logger.error("[ROOT LAYOUT] ❌ Error calling getUser()", {
+        logger.error("[ROOT LAYOUT] ❌ Error calling getSession()", {
           error: err instanceof Error ? err.message : String(err),
         });
       }

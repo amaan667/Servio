@@ -215,6 +215,24 @@ export async function createServerSupabase() {
   });
 }
 
+// Read-only server client for layouts/pages where cookie modification is not allowed
+export async function createServerSupabaseReadOnly() {
+  const { cookies } = await import("next/headers");
+  const cookieStore = await cookies();
+
+  return createSSRServerClient(getSupabaseUrl(), getSupabaseAnonKey(), {
+    cookies: {
+      getAll() {
+        return cookieStore.getAll();
+      },
+      setAll() {
+        // NO-OP: Don't try to set cookies in read-only mode
+        // This prevents "Cookies can only be modified in a Server Action or Route Handler" errors
+      },
+    },
+  });
+}
+
 // Alias for backward compatibility
 export async function createSupabaseClient() {
   return createServerSupabase();
