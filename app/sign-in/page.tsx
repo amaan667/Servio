@@ -74,7 +74,7 @@ function SignInPageContent() {
           .from("venues")
           .select("venue_id")
           .eq("owner_user_id", session.user.id)
-          .order("created_at", { ascending: false })
+          .order("created_at", { ascending: true }) // ✅ Get FIRST venue (oldest)
           .limit(1);
 
         if (nextParam) {
