@@ -177,6 +177,12 @@ const DashboardClient = React.memo(function DashboardClient({
 
   // Check authentication and venue access
   useEffect(() => {
+    console.log("═══════════════════════════════════════════════════");
+    console.log("🔄 CLIENT: useEffect STARTED - venueId:", venueId);
+    console.log("🔄 CLIENT: Current userRole:", userRole || "NULL");
+    console.log("🔄 CLIENT: authCheckComplete:", authCheckComplete);
+    console.log("═══════════════════════════════════════════════════");
+
     async function checkAuth() {
       // ALWAYS fetch role if we don't have it, regardless of cache
       // This ensures fresh sign-ins get the correct role immediately
@@ -184,11 +190,16 @@ const DashboardClient = React.memo(function DashboardClient({
         console.log("⚠️  NO USER ROLE - Fetching from database...");
       } else if (authCheckComplete) {
         // Only skip if we have role AND auth check is already complete
+        console.log("✅ SKIPPING: Already have role and auth complete");
         return;
+      } else {
+        console.log("🔄 Have role but auth not complete, will re-check");
       }
 
       try {
+        console.log("🔍 CLIENT: Getting supabase browser client...");
         const supabase = supabaseBrowser();
+        console.log("✅ CLIENT: Supabase client obtained");
 
         // Get current user - with retry logic for fresh sign-ins
         let session = null;
@@ -196,13 +207,21 @@ const DashboardClient = React.memo(function DashboardClient({
         let retries = 0;
         const maxRetries = 3;
 
+        console.log("🔄 CLIENT: Starting session detection loop...");
         while (retries < maxRetries) {
+          console.log(`🔄 CLIENT: Session check attempt ${retries + 1}/${maxRetries}`);
           const result = await supabase.auth.getSession();
           sessionError = result.error;
           session = result.data.session;
 
+          console.log(
+            `📊 CLIENT: Result - hasSession: ${!!session}, hasUser: ${!!session?.user}, error: ${sessionError?.message || "none"}`
+          );
+
           if (session?.user) {
-            console.log(`✅ Session found on attempt ${retries + 1}`);
+            console.log(
+              `✅ Session found on attempt ${retries + 1} - userId: ${session.user.id.substring(0, 8)}`
+            );
             break;
           }
 
@@ -308,7 +327,14 @@ const DashboardClient = React.memo(function DashboardClient({
       }
     }
 
-    checkAuth();
+    console.log("🚀 CLIENT: Calling checkAuth()...");
+    checkAuth()
+      .then(() => {
+        console.log("✅ CLIENT: checkAuth() completed");
+      })
+      .catch((err) => {
+        console.error("❌ CLIENT: checkAuth() failed:", err);
+      });
   }, [venueId]);
 
   // Log whenever userRole changes for dashboard rendering
