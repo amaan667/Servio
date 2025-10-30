@@ -40,6 +40,14 @@ function CallbackContent() {
         const verifierKey = allKeys.find((key) => key.includes("code-verifier"));
         const verifierValue = verifierKey ? localStorage.getItem(verifierKey) : null;
 
+        // Get ALL localStorage items for debugging
+        const allStorageItems: Record<string, string> = {};
+        allKeys.forEach((key) => {
+          const value = localStorage.getItem(key);
+          allStorageItems[key] = value ? `${value.substring(0, 30)}...` : "null";
+        });
+
+        console.log("[AUTH CALLBACK CLIENT] 🔍 FULL localStorage DUMP:", allStorageItems);
         console.log("[AUTH CALLBACK CLIENT] 🔍 PKCE verifier DEBUG:", {
           hasVerifier: !!verifierValue,
           verifierKey,

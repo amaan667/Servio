@@ -136,6 +136,15 @@ function SignInPageContent() {
         },
       });
 
+      // Log localStorage after OAuth initiation
+      const allKeys = Object.keys(localStorage);
+      const verifierKeys = allKeys.filter((k) => k.includes("verifier") || k.includes("code"));
+      console.log("[SIGN-IN] 🔍 localStorage after OAuth init:", {
+        allKeys: allKeys.length,
+        verifierKeys,
+        allSupabaseKeys: allKeys.filter((k) => k.includes("sb-") || k.includes("supabase")),
+      });
+
       if (error) {
         const msg = error?.message || "Sign in failed.";
         // If rate limited, display a friendlier message with longer wait time
