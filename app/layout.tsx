@@ -144,14 +144,26 @@ export default async function RootLayout({ children }: { children: React.ReactNo
     if (hasAuthCookies) {
       const supabase = await createServerSupabase();
 
-      // Wrap getSession in try-catch to handle refresh token errors gracefully
+      // Use getUser() instead of getSession() for better security and cookie support
       try {
         const {
-          data: { session: serverSession },
-        } = await supabase.auth.getSession();
-        session = serverSession;
+          data: { user: authUser },
+          error,
+        } = await supabase.auth.getUser();
+        if (!error && authUser) {
+          // Create a minimal session object from the user data
+          session = {
+            user: authUser,
+            access_token: "", // Not needed for client display
+            refresh_token: "", // Not needed for client display
+            expires_in: 3600,
+            expires_at: Math.floor(Date.now() / 1000) + 3600,
+            token_type: "bearer",
+          } as any;
+          logger.info("[ROOT LAYOUT] Session created from server user", { userId: authUser.id });
+        }
       } catch {
-        // Silently catch refresh token errors - no logging needed
+        // Silently catch errors
       }
     }
   } catch {
