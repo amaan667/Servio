@@ -15,38 +15,37 @@ export async function POST(request: NextRequest) {
 
     logger.info("[AUTH SYNC] Syncing session to server cookies");
 
-    // Create server-side Supabase client
-    const supabase = await createServerSupabase();
+    // Create response object first so we can set cookies on it
+    const response = NextResponse.json({ success: true });
 
-    // Set the session using the tokens from client
-    const { data, error } = await supabase.auth.setSession({
-      access_token,
-      refresh_token,
-    });
+    // Get Supabase project ID from URL for cookie names
+    const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL || "";
+    const projectRef = supabaseUrl.match(/https:\/\/([^.]+)\.supabase\.co/)?.[1] || "";
 
-    if (error) {
-      logger.error("[AUTH SYNC] Failed to set session:", { error: error.message });
-      return NextResponse.json({ error: error.message }, { status: 500 });
+    if (!projectRef) {
+      logger.error("[AUTH SYNC] Could not extract project ref from Supabase URL");
+      return NextResponse.json({ error: "Configuration error" }, { status: 500 });
     }
 
-    logger.info("[AUTH SYNC] ✅ Session synced successfully", {
-      userId: data.session?.user?.id,
-      email: data.session?.user?.email,
+    // Set cookies manually with correct names
+    const cookieOptions = {
+      path: "/",
+      sameSite: "lax" as const,
+      secure: process.env.NODE_ENV === "production",
+      httpOnly: false, // Must be false for Supabase client to read
+      maxAge: 60 * 60 * 24 * 7, // 7 days
+    };
+
+    // Set the auth token cookies
+    response.cookies.set(`sb-${projectRef}-auth-token`, access_token, cookieOptions);
+    response.cookies.set(`sb-${projectRef}-auth-token-refresh`, refresh_token, cookieOptions);
+
+    logger.info("[AUTH SYNC] ✅ Cookies set manually on response object", {
+      projectRef,
+      cookieNames: [`sb-${projectRef}-auth-token`, `sb-${projectRef}-auth-token-refresh`],
     });
 
-    // Verify cookies were set
-    const { cookies } = await import("next/headers");
-    const cookieStore = await cookies();
-    const allCookies = cookieStore.getAll();
-    const authCookies = allCookies.filter((c) => c.name.includes("sb-"));
-
-    logger.info("[AUTH SYNC] Cookies after sync:", {
-      totalCookies: allCookies.length,
-      authCookiesCount: authCookies.length,
-      authCookieNames: authCookies.map((c) => c.name).join(", "),
-    });
-
-    return NextResponse.json({ success: true });
+    return response;
   } catch (err) {
     logger.error("[AUTH SYNC] Unexpected error:", { error: err });
     return NextResponse.json({ error: "Internal server error" }, { status: 500 });

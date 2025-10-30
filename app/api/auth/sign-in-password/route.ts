@@ -36,18 +36,6 @@ export async function POST(request: NextRequest) {
       email: data.session.user.email,
     });
 
-    // Check cookies after sign-in
-    const { cookies } = await import("next/headers");
-    const cookieStore = await cookies();
-    const allCookies = cookieStore.getAll();
-    const authCookies = allCookies.filter((c) => c.name.includes("sb-"));
-
-    logger.info("[AUTH SIGN-IN] Cookies after sign-in:", {
-      totalCookies: allCookies.length,
-      authCookiesCount: authCookies.length,
-      authCookieNames: authCookies.map((c) => c.name).join(", "),
-    });
-
     // Check if user has a venue
     const { data: venues } = await supabase
       .from("venues")
@@ -56,18 +44,49 @@ export async function POST(request: NextRequest) {
       .order("created_at", { ascending: true })
       .limit(1);
 
-    // Return success with redirect URL
-    return NextResponse.json({
+    // Create response with cookies set manually
+    const redirectTo =
+      venues && venues.length > 0 && venues[0]
+        ? `/dashboard/${venues[0].venue_id}`
+        : "/select-plan";
+
+    const response = NextResponse.json({
       success: true,
       user: {
         id: data.session.user.id,
         email: data.session.user.email,
       },
-      redirectTo:
-        venues && venues.length > 0 && venues[0]
-          ? `/dashboard/${venues[0].venue_id}`
-          : "/select-plan",
+      redirectTo,
     });
+
+    // Get Supabase project ID from URL for cookie names
+    const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL || "";
+    const projectRef = supabaseUrl.match(/https:\/\/([^.]+)\.supabase\.co/)?.[1] || "";
+
+    if (projectRef && data.session.access_token && data.session.refresh_token) {
+      const cookieOptions = {
+        path: "/",
+        sameSite: "lax" as const,
+        secure: process.env.NODE_ENV === "production",
+        httpOnly: false, // Must be false for Supabase client to read
+        maxAge: 60 * 60 * 24 * 7, // 7 days
+      };
+
+      // Set the auth token cookies manually
+      response.cookies.set(`sb-${projectRef}-auth-token`, data.session.access_token, cookieOptions);
+      response.cookies.set(
+        `sb-${projectRef}-auth-token-refresh`,
+        data.session.refresh_token,
+        cookieOptions
+      );
+
+      logger.info("[AUTH SIGN-IN] ✅ Cookies set on response", {
+        projectRef,
+        cookieNames: [`sb-${projectRef}-auth-token`, `sb-${projectRef}-auth-token-refresh`],
+      });
+    }
+
+    return response;
   } catch (err) {
     logger.error("[AUTH SIGN-IN] Unexpected error:", { error: err });
     return NextResponse.json({ error: "An unexpected error occurred" }, { status: 500 });

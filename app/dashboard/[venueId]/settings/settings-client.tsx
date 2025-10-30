@@ -16,7 +16,6 @@ export default function SettingsPageClient({ venueId }: { venueId: string }) {
     return cached ? JSON.parse(cached) : null;
   };
 
-  const [loading, setLoading] = useState(false);
   const [data, setData] = useState<{
     user: { id: string; email?: string; user_metadata?: Record<string, unknown> };
     venue: Record<string, unknown>;
@@ -39,7 +38,6 @@ export default function SettingsPageClient({ venueId }: { venueId: string }) {
         const user = session?.user;
 
         if (!user) {
-          setLoading(false);
           return;
         }
 
@@ -115,19 +113,16 @@ export default function SettingsPageClient({ venueId }: { venueId: string }) {
         if (typeof window !== "undefined") {
           sessionStorage.setItem(`settings_data_${venueId}`, JSON.stringify(settingsData));
         }
-
-        setLoading(false);
       } catch (_error) {
-        setLoading(false);
+        // Error handled silently
       }
     };
 
     loadData();
   }, [venueId, router]);
 
-  // Don't show "sign in" if we have cached data or still loading
+  // If no data yet, return null (data will load instantly from cache or server)
   if (!data) {
-    // Show nothing while data loads (will be fast with cache)
     return null;
   }
 

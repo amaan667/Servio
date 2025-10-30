@@ -51,9 +51,9 @@ function CallbackContent() {
           email: data.session.user.email,
         });
 
-        // Now call server endpoint to SET COOKIES from the session
-        console.log("[AUTH CALLBACK CLIENT] Calling sync-session endpoint...");
-        const response = await fetch("/api/auth/sync-session", {
+        // Now call server endpoint to SET COOKIES from the session using setSession
+        console.log("[AUTH CALLBACK CLIENT] Calling set-session endpoint...");
+        const response = await fetch("/api/auth/set-session", {
           method: "POST",
           headers: {
             "Content-Type": "application/json",
