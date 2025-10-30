@@ -74,7 +74,8 @@ export async function POST(_request: NextRequest) {
       orgId: organizationId,
     });
 
-    return NextResponse.json({
+    // Also return cache clearing instruction
+    const response = NextResponse.json({
       success: true,
       message: "Subscription updated to premium",
       before: {
@@ -85,7 +86,10 @@ export async function POST(_request: NextRequest) {
         tier: "premium",
         status: "active",
       },
+      clearCache: true, // Signal to client to clear cache
     });
+
+    return response;
   } catch (err) {
     logger.error("[SET PREMIUM] Unexpected error", { error: err });
     return NextResponse.json(
