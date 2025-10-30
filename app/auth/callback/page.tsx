@@ -38,26 +38,59 @@ function CallbackContent() {
         // Search for any Supabase code verifier in localStorage
         const allKeys = Object.keys(localStorage);
         const verifierKey = allKeys.find((key) => key.includes("code-verifier"));
-        const hasVerifier = verifierKey ? localStorage.getItem(verifierKey) : null;
+        const verifierValue = verifierKey ? localStorage.getItem(verifierKey) : null;
 
-        logger.info("[AUTH CALLBACK CLIENT] PKCE verifier check:", {
-          hasVerifier: !!hasVerifier,
+        console.log("[AUTH CALLBACK CLIENT] 🔍 PKCE verifier DEBUG:", {
+          hasVerifier: !!verifierValue,
           verifierKey,
-          allStorageKeys: allKeys.filter((k) => k.includes("sb-") || k.includes("supabase")),
+          verifierLength: verifierValue?.length,
+          verifierPreview: verifierValue?.substring(0, 20),
+          verifierIsEmpty: verifierValue === "",
+          allAuthKeys: allKeys.filter((k) => k.includes("sb-") || k.includes("supabase")),
+          allKeyCount: allKeys.length,
         });
 
+        logger.info("[AUTH CALLBACK CLIENT] PKCE verifier check:", {
+          hasVerifier: !!verifierValue,
+          verifierKey,
+          verifierLength: verifierValue?.length,
+          isEmpty: verifierValue === "",
+        });
+
+        console.log(
+          "[AUTH CALLBACK CLIENT] 🚀 Calling exchangeCodeForSession with code:",
+          code?.substring(0, 20)
+        );
         const { data, error: exchangeError } = await supabase.auth.exchangeCodeForSession(code);
+        console.log("[AUTH CALLBACK CLIENT] 📝 Exchange result:", {
+          hasData: !!data,
+          hasSession: !!data?.session,
+          hasError: !!exchangeError,
+        });
 
         if (exchangeError) {
+          console.error("[AUTH CALLBACK CLIENT] ❌ Exchange error:", {
+            error: exchangeError,
+            errorMessage: exchangeError.message,
+            errorCode: exchangeError.code,
+            errorStatus: exchangeError.status,
+            hadVerifierInStorage: !!verifierValue,
+            verifierLength: verifierValue?.length,
+            verifierWasEmpty: verifierValue === "",
+          });
+
           logger.error("[AUTH CALLBACK CLIENT] Exchange error:", {
             error: exchangeError,
             errorMessage: exchangeError.message,
-            hadVerifier: !!hasVerifier,
+            hadVerifier: !!verifierValue,
+            verifierLength: verifierValue?.length,
           });
 
-          // If verifier was missing, give user a helpful error
-          if (!hasVerifier) {
-            setError(`Authentication failed: PKCE verifier missing. Please try signing in again.`);
+          // If verifier was missing or empty, give user a helpful error
+          if (!verifierValue || verifierValue === "") {
+            setError(
+              `Authentication failed: PKCE verifier missing or empty. Please try signing in again.`
+            );
           } else {
             setError(`Authentication failed: ${exchangeError.message}`);
           }
