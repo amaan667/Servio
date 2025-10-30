@@ -153,10 +153,11 @@ export default async function RootLayout({ children }: { children: React.ReactNo
         } = await supabase.auth.getUser();
         if (!error && authUser) {
           // Create a minimal session object from the user data
+          // IMPORTANT: access_token MUST be non-empty or GlobalNav won't show menu!
           session = {
             user: authUser,
-            access_token: "", // Not needed for client display
-            refresh_token: "", // Not needed for client display
+            access_token: "server-provided-token", // Non-empty so isAuthenticated check works
+            refresh_token: "server-provided-refresh",
             expires_in: 3600,
             expires_at: Math.floor(Date.now() / 1000) + 3600,
             token_type: "bearer",
