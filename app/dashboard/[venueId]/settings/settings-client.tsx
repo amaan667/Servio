@@ -197,29 +197,40 @@ export default function SettingsPageClient({ venueId, initialData }: SettingsPag
     );
   }
 
-  // If no data after loading, show error
+  // If no data after loading, wait for session or show minimal UI
   if (!data || !data.user || !data.venue) {
-    console.error("[SETTINGS] ❌ ERROR STATE - Missing required data", {
+    console.log("[SETTINGS] ⏳ Waiting for data...", {
       hasData: !!data,
       hasUser: !!data?.user,
       hasVenue: !!data?.venue,
       hasSession: !!session,
       hasSessionUser: !!session?.user,
       authLoading,
-      data,
+      loading,
     });
+
+    // If still loading or auth loading, show spinner
+    if (loading || authLoading) {
+      return (
+        <div className="min-h-screen flex items-center justify-center bg-background">
+          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary"></div>
+        </div>
+      );
+    }
+
+    // If not loading but no data, show error
     return (
       <div className="min-h-screen flex items-center justify-center bg-background">
         <div className="max-w-md w-full p-6 text-center">
-          <h2 className="text-2xl font-bold mb-4">Error Loading Settings</h2>
+          <h2 className="text-2xl font-bold mb-4">Unable to Load Settings</h2>
           <p className="text-muted-foreground mb-6">
-            A critical error occurred. Please try refreshing the page or contact support.
+            Please try signing in again or contact support if the problem persists.
           </p>
           <button
-            onClick={() => window.location.reload()}
+            onClick={() => router.push("/sign-in")}
             className="inline-block bg-primary text-primary-foreground py-2 px-6 rounded-md hover:bg-primary/90 transition"
           >
-            Refresh Page
+            Sign In
           </button>
         </div>
       </div>
