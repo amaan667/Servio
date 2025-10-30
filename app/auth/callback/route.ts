@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { createServerSupabase } from "@/lib/supabase";
+import { logger } from "@/lib/logger";
 
 export async function GET(request: NextRequest) {
   const requestUrl = new URL(request.url);
@@ -7,13 +8,12 @@ export async function GET(request: NextRequest) {
   const next = requestUrl.searchParams.get("next") || "/";
   const error = requestUrl.searchParams.get("error");
 
-  console.log("[AUTH CALLBACK] ========== CALLBACK START ==========");
-  console.log("[AUTH CALLBACK] URL:", request.url);
-  console.log("[AUTH CALLBACK] Has code:", !!code);
-  console.log("[AUTH CALLBACK] Has error:", !!error);
+  logger.info("[AUTH CALLBACK] ========== CALLBACK START ==========");
+  logger.info("[AUTH CALLBACK] URL:", { url: request.url });
+  logger.info("[AUTH CALLBACK] Parameters:", { hasCode: !!code, hasError: !!error });
 
   if (error) {
-    console.log("[AUTH CALLBACK] OAuth error received:", error);
+    logger.error("[AUTH CALLBACK] OAuth error received:", { error });
     // OAuth error - redirect to sign-in with error message
     return NextResponse.redirect(
       new URL(`/sign-in?error=${encodeURIComponent(error)}`, request.url)
@@ -22,22 +22,24 @@ export async function GET(request: NextRequest) {
 
   if (code) {
     try {
-      console.log("[AUTH CALLBACK] Creating server Supabase client...");
+      logger.info("[AUTH CALLBACK] Creating server Supabase client...");
       // Create server-side Supabase client that can set cookies
       const supabase = await createServerSupabase();
 
-      console.log("[AUTH CALLBACK] Exchanging code for session...");
+      logger.info("[AUTH CALLBACK] Exchanging code for session...");
       // Exchange code for session - THIS SETS THE COOKIES!
       const { data, error: exchangeError } = await supabase.auth.exchangeCodeForSession(code);
 
-      console.log("[AUTH CALLBACK] Exchange result:", {
+      logger.info("[AUTH CALLBACK] Exchange result:", {
         hasSession: !!data?.session,
         hasUser: !!data?.session?.user,
+        userId: data?.session?.user?.id,
+        email: data?.session?.user?.email,
         error: exchangeError?.message,
       });
 
       if (exchangeError) {
-        console.error("[AUTH CALLBACK] Exchange error:", exchangeError);
+        logger.error("[AUTH CALLBACK] Exchange error:", { error: exchangeError });
         return NextResponse.redirect(
           new URL(
             `/sign-in?error=${encodeURIComponent("Authentication failed. Please try again.")}`,
@@ -47,21 +49,24 @@ export async function GET(request: NextRequest) {
       }
 
       if (data?.session) {
-        console.log(
-          "[AUTH CALLBACK] ✅ Session created successfully for:",
-          data.session.user.email
-        );
+        logger.info("[AUTH CALLBACK] ✅ Session created successfully", {
+          userId: data.session.user.id,
+          email: data.session.user.email,
+        });
 
-        // Force a redirect response that will include the set-cookie headers
-        const response = NextResponse.redirect(new URL("/dashboard", request.url));
-
-        console.log("[AUTH CALLBACK] Checking cookies that were set...");
+        // Check cookies that were set
         const { cookies } = await import("next/headers");
         const cookieStore = await cookies();
         const allCookies = cookieStore.getAll();
-        console.log("[AUTH CALLBACK] Total cookies after exchange:", allCookies.length);
-        console.log("[AUTH CALLBACK] Cookie names:", allCookies.map((c) => c.name).join(", "));
-
+        const authCookies = allCookies.filter(c => c.name.includes('sb-') || c.name.includes('auth'));
+        
+        logger.info("[AUTH CALLBACK] Cookies after exchange:", {
+          totalCookies: allCookies.length,
+          authCookiesCount: authCookies.length,
+          authCookieNames: authCookies.map(c => c.name).join(", "),
+          allCookieNames: allCookies.map(c => c.name).join(", "),
+        });
+        
         // Check if user has a venue
         const { data: venues } = await supabase
           .from("venues")
@@ -72,7 +77,7 @@ export async function GET(request: NextRequest) {
 
         if (venues && venues.length > 0 && venues[0]) {
           // Redirect to their dashboard
-          console.log("[AUTH CALLBACK] Redirecting to dashboard:", venues[0].venue_id);
+          logger.info("[AUTH CALLBACK] Redirecting to dashboard:", { venueId: venues[0].venue_id });
           return NextResponse.redirect(new URL(`/dashboard/${venues[0].venue_id}`, request.url));
         }
 
@@ -91,10 +96,11 @@ export async function GET(request: NextRequest) {
         }
 
         // New user - redirect to select plan
+        logger.info("[AUTH CALLBACK] New user - redirecting to select plan");
         return NextResponse.redirect(new URL("/select-plan", request.url));
       }
     } catch (err) {
-      console.error("[AUTH CALLBACK] Unexpected error:", err);
+      logger.error("[AUTH CALLBACK] Unexpected error:", { error: err });
       return NextResponse.redirect(
         new URL(`/sign-in?error=${encodeURIComponent("An unexpected error occurred")}`, request.url)
       );
