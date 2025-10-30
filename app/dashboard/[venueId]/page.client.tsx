@@ -180,10 +180,22 @@ const DashboardClient = React.memo(function DashboardClient({
   // Check authentication and venue access
   useEffect(() => {
     async function checkAuth() {
-      // Skip auth check if we already have cached data
-      if (user && venue) {
+      // Skip auth check if we already have ALL cached data (including role!)
+      if (user && venue && userRole) {
+        console.log("[DASHBOARD CLIENT] ✅ Using cached data - skipping auth check", {
+          hasUser: !!user,
+          hasVenue: !!venue,
+          userRole,
+        });
         return;
       }
+
+      console.log("[DASHBOARD CLIENT] 🔄 Fetching auth data...", {
+        hasUser: !!user,
+        hasVenue: !!venue,
+        hasUserRole: !!userRole,
+        needsAuth: !user || !venue || !userRole,
+      });
 
       try {
         const supabase = supabaseBrowser();
