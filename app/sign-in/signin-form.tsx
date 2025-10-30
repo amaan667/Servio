@@ -86,12 +86,27 @@ export default function SignInForm({
       }
 
       if (data.success && data.redirectTo) {
-        // Cookies are now set - wait to ensure they're fully propagated to browser
-        // This is critical for ensuring the dashboard can access the session immediately
         console.log("═══════════════════════════════════════════════════");
         console.log("✅ EMAIL/PASSWORD SIGN-IN SUCCESS");
-        console.log("🔄 Waiting 1000ms for cookie propagation...");
-        await new Promise((resolve) => setTimeout(resolve, 1000)); // Increased to 1 second
+
+        // Set session in browser storage BEFORE redirecting
+        // This ensures the browser Supabase client can read it immediately
+        if (data.session) {
+          console.log("🔧 Setting session in browser storage...");
+          const { createClient } = await import("@/lib/supabase");
+          const supabase = await createClient();
+
+          const { error: setSessionError } = await supabase.auth.setSession({
+            access_token: data.session.access_token,
+            refresh_token: data.session.refresh_token,
+          });
+
+          if (setSessionError) {
+            console.error("❌ Failed to set session:", setSessionError);
+          } else {
+            console.log("✅ Session set in browser storage");
+          }
+        }
 
         console.log("➡️  REDIRECTING to:", data.redirectTo);
         console.log("═══════════════════════════════════════════════════");

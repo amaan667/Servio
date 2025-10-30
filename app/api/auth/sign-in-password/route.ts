@@ -70,6 +70,13 @@ export async function POST(request: NextRequest) {
         email: data.session.user.email,
       },
       redirectTo,
+      // Return session tokens so client can set them in browser storage
+      session: {
+        access_token: data.session.access_token,
+        refresh_token: data.session.refresh_token,
+        expires_at: data.session.expires_at,
+        expires_in: data.session.expires_in,
+      },
     });
 
     // Get Supabase project ID from URL for cookie names
