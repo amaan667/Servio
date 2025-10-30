@@ -31,6 +31,12 @@ export default function AuthProvider({
   initialSession: Session | null;
   children: React.ReactNode;
 }) {
+  console.log("[AUTH PROVIDER] 🎯 Initializing with session from server", {
+    hasInitialSession: !!initialSession,
+    hasUser: !!initialSession?.user,
+    hasAccessToken: !!initialSession?.access_token,
+    userId: initialSession?.user?.id,
+  });
   // Get initial session from server OR from stored auth
   const getInitialSession = () => {
     if (initialSession) return initialSession;

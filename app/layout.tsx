@@ -135,22 +135,40 @@ export default async function RootLayout({ children }: { children: React.ReactNo
   let session = null;
   try {
     const cookieStore = await cookies();
+    const allCookies = cookieStore.getAll();
+
+    logger.info("[ROOT LAYOUT] 🚀 Root layout rendering", {
+      totalCookies: allCookies.length,
+      cookieNames: allCookies.map((c) => c.name).join(", "),
+    });
 
     // Check if auth cookies exist before attempting to get session
     // This prevents unnecessary API calls for logged-out users
-    const hasAuthCookies = cookieStore
-      .getAll()
-      .some((cookie) => cookie.name.startsWith("sb-") && cookie.name.includes("-auth-token"));
+    const hasAuthCookies = allCookies.some(
+      (cookie) => cookie.name.startsWith("sb-") && cookie.name.includes("-auth-token")
+    );
+
+    logger.info("[ROOT LAYOUT] 🔐 Auth cookie check", { hasAuthCookies });
 
     if (hasAuthCookies) {
       const supabase = await createServerSupabase();
 
       // Use getUser() instead of getSession() for better security and cookie support
       try {
+        logger.info("[ROOT LAYOUT] 📡 Calling supabase.auth.getUser()...");
         const {
           data: { user: authUser },
           error,
         } = await supabase.auth.getUser();
+
+        logger.info("[ROOT LAYOUT] 📋 getUser() result", {
+          hasUser: !!authUser,
+          userId: authUser?.id,
+          email: authUser?.email,
+          hasError: !!error,
+          errorMsg: error?.message,
+        });
+
         if (!error && authUser) {
           // Create a minimal session object from the user data
           // IMPORTANT: access_token MUST be non-empty or GlobalNav won't show menu!
@@ -162,15 +180,35 @@ export default async function RootLayout({ children }: { children: React.ReactNo
             expires_at: Math.floor(Date.now() / 1000) + 3600,
             token_type: "bearer",
           } as any;
-          logger.info("[ROOT LAYOUT] Session created from server user", { userId: authUser.id });
+          logger.info("[ROOT LAYOUT] ✅ Session created from server user", {
+            userId: authUser.id,
+            hasAccessToken: !!session.access_token,
+          });
+        } else {
+          logger.warn("[ROOT LAYOUT] ⚠️ No user or error from getUser()", {
+            error: error?.message,
+          });
         }
-      } catch {
-        // Silently catch errors
+      } catch (err) {
+        logger.error("[ROOT LAYOUT] ❌ Error calling getUser()", {
+          error: err instanceof Error ? err.message : String(err),
+        });
       }
+    } else {
+      logger.info("[ROOT LAYOUT] ℹ️ No auth cookies found - user not authenticated");
     }
-  } catch {
-    // Silent error handling - session will remain null
+  } catch (err) {
+    logger.error("[ROOT LAYOUT] ❌ Error in root layout", {
+      error: err instanceof Error ? err.message : String(err),
+    });
   }
+
+  logger.info("[ROOT LAYOUT] 🎯 Final session state", {
+    hasSession: !!session,
+    hasUser: !!session?.user,
+    hasAccessToken: !!session?.access_token,
+    userId: session?.user?.id,
+  });
 
   return (
     <html lang="en" suppressHydrationWarning>

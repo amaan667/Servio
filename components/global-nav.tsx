@@ -22,6 +22,15 @@ export default function GlobalNav() {
   // This prevents ALL flicker by using session from context immediately
   const isAuthenticated = !!(session?.user && session?.access_token);
 
+  console.log("[GLOBAL NAV] 🎨 Rendering navigation", {
+    hasSession: !!session,
+    hasUser: !!session?.user,
+    hasAccessToken: !!session?.access_token,
+    accessTokenValue: session?.access_token?.substring(0, 20),
+    isAuthenticated,
+    pathname,
+  });
+
   // SYNCHRONOUS cached data extraction - happens during render, not in state
   const getCachedData = () => {
     if (typeof window === "undefined" || !session?.user?.id) {
