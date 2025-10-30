@@ -166,7 +166,7 @@ export async function POST(_request: NextRequest) {
       .insert({
         venue_id,
         email: email.toLowerCase(),
-        role,
+        role: role.toLowerCase(), // Database constraint requires lowercase
         permissions,
         token,
         expires_at: expiresAt.toISOString(),
