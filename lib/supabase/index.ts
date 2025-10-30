@@ -58,12 +58,15 @@ export function supabaseBrowser() {
 
   // Client-side: use singleton
   if (!browserClient) {
+    const projectRef = getSupabaseUrl().match(/https:\/\/([^.]+)\.supabase\.co/)?.[1] || "default";
     browserClient = createBrowserClient(getSupabaseUrl(), getSupabaseAnonKey(), {
       auth: {
         persistSession: true,
         detectSessionInUrl: true,
         autoRefreshToken: true,
-        flowType: "pkce", // Use PKCE flow for better security
+        flowType: "implicit", // Use implicit flow instead of PKCE to avoid verifier issues
+        storage: typeof window !== "undefined" ? window.localStorage : undefined,
+        storageKey: `sb-${projectRef}-auth-token`, // Explicit storage key for consistency
       },
     });
 

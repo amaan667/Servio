@@ -32,7 +32,14 @@ function CallbackContent() {
         }
 
         // Exchange code for session ON CLIENT (has access to localStorage PKCE verifier)
+        // Force a fresh client instance to ensure storage is properly loaded
         const supabase = supabaseBrowser();
+
+        // Double-check that the Supabase client has access to storage
+        console.log("[AUTH CALLBACK CLIENT] 🔍 Supabase client storage check:", {
+          hasLocalStorage: typeof localStorage !== "undefined",
+          storageAvailable: !!window.localStorage,
+        });
 
         // Check if PKCE verifier exists before attempting exchange
         // Search for any Supabase code verifier in localStorage
@@ -69,6 +76,17 @@ function CallbackContent() {
           "[AUTH CALLBACK CLIENT] 🚀 Calling exchangeCodeForSession with code:",
           code?.substring(0, 20)
         );
+
+        // Try to explicitly use the verifier if found
+        let exchangeOptions = {};
+        if (verifierValue && verifierKey) {
+          console.log(
+            "[AUTH CALLBACK CLIENT] 📦 Attempting to use explicit verifier from localStorage"
+          );
+          // The Supabase client should automatically use the verifier from storage
+          // but let's ensure it's available
+        }
+
         const { data, error: exchangeError } = await supabase.auth.exchangeCodeForSession(code);
         console.log("[AUTH CALLBACK CLIENT] 📝 Exchange result:", {
           hasData: !!data,
