@@ -259,12 +259,17 @@ async function hasValidAuthCookies(): Promise<boolean> {
     const cookieStore = await cookies();
     const allCookies = cookieStore.getAll();
 
-    // Check for access token cookie (the main auth cookie)
-    const accessTokenCookie = allCookies.find(
-      (c) => c.name.includes("sb-") && c.name.includes("access-token") && c.value && c.value !== ""
+    // Check for auth token cookies (chunked as .0, .1, etc or full token)
+    const hasAuthToken = allCookies.some(
+      (c) =>
+        c.name.includes("sb-") &&
+        c.name.includes("auth-token") &&
+        !c.name.includes("refresh") && // Not just the refresh token
+        c.value &&
+        c.value !== ""
     );
 
-    return !!accessTokenCookie;
+    return hasAuthToken;
   } catch {
     return false;
   }
