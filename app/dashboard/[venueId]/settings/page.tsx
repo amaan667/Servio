@@ -11,12 +11,18 @@ export default async function SettingsPage({ params }: { params: Promise<{ venue
   // Fetch ALL data on server-side where cookies work
   const supabase = await createServerSupabaseReadOnly();
   const {
-    data: { user },
-    error: userError,
-  } = await supabase.auth.getUser();
+    data: { session },
+    error: sessionError,
+  } = await supabase.auth.getSession();
 
-  if (userError || !user) {
-    logger.warn("[SETTINGS PAGE] No user session found, redirecting to sign-in");
+  const user = session?.user;
+
+  if (sessionError || !user) {
+    logger.warn("[SETTINGS PAGE] No user session found, redirecting to sign-in", {
+      hasSession: !!session,
+      hasError: !!sessionError,
+      errorMsg: sessionError?.message,
+    });
     redirect("/sign-in?next=" + encodeURIComponent(`/dashboard/${venueId}/settings`));
   }
 
