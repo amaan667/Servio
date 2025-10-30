@@ -48,14 +48,32 @@ export default function SettingsPageClient({ venueId, initialData }: SettingsPag
 
     // Otherwise, fetch data on client
     const fetchData = async () => {
+      console.log("[SETTINGS] 🚀 fetchData() STARTED", {
+        hasWindow: typeof window !== "undefined",
+        venueId,
+      });
+
       try {
         // Check cache first
         const cached = sessionStorage.getItem(`settings_data_${venueId}`);
+        console.log("[SETTINGS] 💾 Cache check result:", {
+          hasCached: !!cached,
+          cachedLength: cached?.length,
+        });
+
         if (cached) {
           console.log("[SETTINGS] 📦 Using cached data");
-          setData(JSON.parse(cached));
-          setLoading(false);
-          return;
+          try {
+            const parsedData = JSON.parse(cached);
+            setData(parsedData);
+            setLoading(false);
+            console.log("[SETTINGS] ✅ Cached data loaded successfully");
+            return;
+          } catch (parseError) {
+            console.error("[SETTINGS] ❌ Error parsing cached data, will fetch fresh:", parseError);
+            sessionStorage.removeItem(`settings_data_${venueId}`);
+            // Continue to fetch fresh data
+          }
         }
 
         console.log("[SETTINGS] 🔄 Fetching data on client...", {
