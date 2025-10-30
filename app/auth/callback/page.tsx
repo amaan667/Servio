@@ -35,10 +35,16 @@ function CallbackContent() {
         const supabase = supabaseBrowser();
 
         // Check if PKCE verifier exists before attempting exchange
-        const hasVerifier = localStorage.getItem(
-          "sb-cpwemmofzjfzbmqcgjrq-auth-token-code-verifier"
-        );
-        logger.info("[AUTH CALLBACK CLIENT] PKCE verifier check:", { hasVerifier: !!hasVerifier });
+        // Search for any Supabase code verifier in localStorage
+        const allKeys = Object.keys(localStorage);
+        const verifierKey = allKeys.find((key) => key.includes("code-verifier"));
+        const hasVerifier = verifierKey ? localStorage.getItem(verifierKey) : null;
+
+        logger.info("[AUTH CALLBACK CLIENT] PKCE verifier check:", {
+          hasVerifier: !!hasVerifier,
+          verifierKey,
+          allStorageKeys: allKeys.filter((k) => k.includes("sb-") || k.includes("supabase")),
+        });
 
         const { data, error: exchangeError } = await supabase.auth.exchangeCodeForSession(code);
 
@@ -107,32 +113,52 @@ function CallbackContent() {
         const cookieCheck = await checkResponse.json();
         console.log("[AUTH CALLBACK CLIENT] Cookie check after sync:", cookieCheck);
 
-        // Check if user has a venue
-        const { data: venues } = await supabase
+        // Check if user has a venue (get FIRST venue - oldest)
+        console.log("[AUTH CALLBACK CLIENT] Checking user venues...");
+        const { data: venues, error: venuesError } = await supabase
           .from("venues")
-          .select("venue_id")
+          .select("venue_id, created_at")
           .eq("owner_user_id", data.session.user.id)
           .order("created_at", { ascending: true })
-          .limit(1);
+          .limit(5); // Get first 5 to debug
+
+        console.log("[AUTH CALLBACK CLIENT] Venues query result:", {
+          venueCount: venues?.length,
+          venues: venues?.map((v) => ({ id: v.venue_id, created: v.created_at })),
+          error: venuesError?.message,
+        });
 
         if (venues && venues.length > 0 && venues[0]) {
-          router.push(`/dashboard/${venues[0].venue_id}`);
+          const targetVenue = venues[0].venue_id;
+          console.log("[AUTH CALLBACK CLIENT] ✅ Redirecting to FIRST venue:", targetVenue);
+          router.push(`/dashboard/${targetVenue}`);
           return;
         }
 
         // Check if staff member
+        console.log("[AUTH CALLBACK CLIENT] Checking staff roles...");
         const { data: staffRoles } = await supabase
           .from("user_venue_roles")
           .select("venue_id")
           .eq("user_id", data.session.user.id)
           .limit(1);
 
+        console.log("[AUTH CALLBACK CLIENT] Staff roles result:", {
+          roleCount: staffRoles?.length,
+          firstVenue: staffRoles?.[0]?.venue_id,
+        });
+
         if (staffRoles && staffRoles.length > 0 && staffRoles[0]?.venue_id) {
+          console.log(
+            "[AUTH CALLBACK CLIENT] ✅ Redirecting to staff venue:",
+            staffRoles[0].venue_id
+          );
           router.push(`/dashboard/${staffRoles[0].venue_id}`);
           return;
         }
 
         // New user - redirect to select plan
+        console.log("[AUTH CALLBACK CLIENT] No venues found - redirecting to select-plan");
         router.push("/select-plan");
       } catch (err) {
         logger.error("[AUTH CALLBACK CLIENT] Unexpected error:", { error: err });
