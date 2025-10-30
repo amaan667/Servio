@@ -6,29 +6,8 @@ import { authLogger as logger } from "@/lib/logger";
 export async function signInWithGoogle() {
   const sb = await createClient();
 
+  // Clear OAuth progress flags from previous attempts
   try {
-    // Save the current PKCE verifier value if it exists
-    const pkceVerifier = localStorage.getItem("supabase.auth.token-code-verifier");
-    if (pkceVerifier) {
-      // Temporarily store it
-      sessionStorage.setItem("_temp_pkce_verifier", pkceVerifier);
-    } else {
-      // Intentionally empty
-    }
-
-    // Clear all Supabase-related localStorage EXCEPT code verifier
-    Object.keys(localStorage).forEach((k) => {
-      if (k.startsWith("sb-") && !k.includes("token-code-verifier")) {
-        localStorage.removeItem(k);
-      }
-    });
-
-    // Restore the PKCE verifier if we saved it
-    if (pkceVerifier) {
-      localStorage.setItem("supabase.auth.token-code-verifier", pkceVerifier);
-    }
-
-    // Clear OAuth progress flags from previous attempts
     sessionStorage.removeItem("sb_oauth_retry");
     sessionStorage.removeItem("sb_oauth_in_progress");
   } catch (_error) {
