@@ -90,8 +90,8 @@ export default function SignInForm({
         // This is critical for ensuring the dashboard can access the session immediately
         console.log("═══════════════════════════════════════════════════");
         console.log("✅ EMAIL/PASSWORD SIGN-IN SUCCESS");
-        console.log("🔄 Waiting 500ms for cookie propagation...");
-        await new Promise((resolve) => setTimeout(resolve, 500));
+        console.log("🔄 Waiting 1000ms for cookie propagation...");
+        await new Promise((resolve) => setTimeout(resolve, 1000)); // Increased to 1 second
 
         console.log("➡️  REDIRECTING to:", data.redirectTo);
         console.log("═══════════════════════════════════════════════════");

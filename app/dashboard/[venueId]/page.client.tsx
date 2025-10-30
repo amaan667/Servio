@@ -201,7 +201,7 @@ const DashboardClient = React.memo(function DashboardClient({
         const supabase = supabaseBrowser();
         console.log("✅ CLIENT: Supabase client obtained");
 
-        // Get current user - with retry logic for fresh sign-ins
+        // Try BOTH getSession() and getUser() to ensure we have valid auth
         let session = null;
         let sessionError = null;
         let retries = 0;
@@ -210,13 +210,35 @@ const DashboardClient = React.memo(function DashboardClient({
         console.log("🔄 CLIENT: Starting session detection loop...");
         while (retries < maxRetries) {
           console.log(`🔄 CLIENT: Session check attempt ${retries + 1}/${maxRetries}`);
-          const result = await supabase.auth.getSession();
-          sessionError = result.error;
-          session = result.data.session;
+
+          // Try getSession first
+          const sessionResult = await supabase.auth.getSession();
+          sessionError = sessionResult.error;
+          session = sessionResult.data.session;
 
           console.log(
-            `📊 CLIENT: Result - hasSession: ${!!session}, hasUser: ${!!session?.user}, error: ${sessionError?.message || "none"}`
+            `📊 CLIENT: getSession() - hasSession: ${!!session}, hasUser: ${!!session?.user}, error: ${sessionError?.message || "none"}`
           );
+
+          // If getSession fails, try getUser() which makes a server request
+          if (!session?.user) {
+            console.log("🔄 CLIENT: getSession() failed, trying getUser()...");
+            const userResult = await supabase.auth.getUser();
+
+            console.log(
+              `📊 CLIENT: getUser() - hasUser: ${!!userResult.data?.user}, error: ${userResult.error?.message || "none"}`
+            );
+
+            if (userResult.data?.user && !userResult.error) {
+              console.log("✅ CLIENT: getUser() succeeded, session should be available now");
+              // After getUser(), try getSession again
+              const retrySession = await supabase.auth.getSession();
+              session = retrySession.data.session;
+              sessionError = retrySession.error;
+
+              console.log(`📊 CLIENT: Retry getSession() - hasSession: ${!!session}`);
+            }
+          }
 
           if (session?.user) {
             console.log(
@@ -227,7 +249,7 @@ const DashboardClient = React.memo(function DashboardClient({
 
           if (retries < maxRetries - 1) {
             console.log(`⏳ Retrying session check (attempt ${retries + 1}/${maxRetries})...`);
-            await new Promise((resolve) => setTimeout(resolve, 500));
+            await new Promise((resolve) => setTimeout(resolve, 1000)); // Increased to 1 second
           }
           retries++;
         }
@@ -239,6 +261,7 @@ const DashboardClient = React.memo(function DashboardClient({
 
         if (!session?.user) {
           console.error("❌ NO SESSION after", maxRetries, "attempts");
+          console.error("💡 This means cookies are not accessible to browser client");
           return;
         }
 
