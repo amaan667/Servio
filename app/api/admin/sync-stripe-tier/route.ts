@@ -8,7 +8,7 @@ import { logger } from "@/lib/logger";
  * POST /api/admin/sync-stripe-tier
  * Fetches actual subscription from Stripe and updates database
  */
-export async function POST(request: NextRequest) {
+export async function POST(_request: NextRequest) {
   try {
     const supabase = await createClient();
 
