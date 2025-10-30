@@ -55,13 +55,30 @@ export default async function SettingsPage({ params }: { params: Promise<{ venue
       .eq("venue_id", venueId)
       .single()
       .then(async (result) => {
+        logger.info("[SETTINGS PAGE] Venue organization_id lookup", {
+          venueId,
+          hasData: !!result.data,
+          organizationId: result.data?.organization_id,
+          error: result.error?.message,
+        });
+
         if (result.data?.organization_id) {
-          return supabase
+          const orgResult = await supabase
             .from("organizations")
             .select("id, subscription_tier, stripe_customer_id, subscription_status, trial_ends_at")
             .eq("id", result.data.organization_id)
             .single();
+
+          logger.info("[SETTINGS PAGE] Organization fetch result", {
+            organizationId: result.data.organization_id,
+            hasOrgData: !!orgResult.data,
+            orgData: orgResult.data,
+            error: orgResult.error?.message,
+          });
+
+          return orgResult;
         }
+        logger.warn("[SETTINGS PAGE] No organization_id on venue", { venueId });
         return { data: null };
       }),
   ]);
@@ -70,6 +87,14 @@ export default async function SettingsPage({ params }: { params: Promise<{ venue
   const userRole = userRoleResult.data;
   const allVenues = allVenuesResult.data || [];
   const organization = "error" in orgResult ? null : orgResult.data;
+
+  // Log organization fetch result
+  logger.info("[SETTINGS PAGE] Organization fetch result", {
+    hasOrganization: !!organization,
+    orgData: organization,
+    hasError: "error" in orgResult,
+    orgResultType: typeof orgResult,
+  });
 
   const isOwner = !!venue;
   const isManager = userRole?.role === "manager";
