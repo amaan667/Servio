@@ -4,7 +4,7 @@ import SettingsPageClient from "./settings-client";
 
 interface SettingsClientPageProps {
   venueId: string;
-  initialData: {
+  initialData?: {
     user: { id: string; email?: string; user_metadata?: Record<string, unknown> };
     venue: Record<string, unknown>;
     venues: Record<string, unknown>[];
@@ -20,5 +20,6 @@ export default function SettingsClientPage({ venueId, initialData }: SettingsCli
     venueId,
     hasInitialData: !!initialData,
   });
+  // Client will fetch data if initialData not provided
   return <SettingsPageClient venueId={venueId} initialData={initialData} />;
 }
