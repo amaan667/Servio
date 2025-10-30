@@ -49,6 +49,16 @@ export default function VenueSettingsClient({
   organization,
   isOwner = true,
 }: VenueSettingsClientProps) {
+  console.log("[VENUE SETTINGS CLIENT] 🎯 Rendering with props", {
+    hasUser: !!user,
+    hasVenue: !!venue,
+    venueCount: venues?.length,
+    hasOrganization: !!organization,
+    organizationId: organization?.id,
+    subscriptionTier: organization?.subscription_tier,
+    isOwner,
+  });
+
   const [twoFactorEnabled, setTwoFactorEnabled] = useState(false);
 
   // Custom hooks for different sections
