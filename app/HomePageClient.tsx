@@ -304,12 +304,22 @@ export function HomePageClient({ initialAuthState }: { initialAuthState: boolean
 
   // Get CTA text and variant based on user's current plan
   const getPlanCTA = (planName: string) => {
+    // Debug logging
+    console.log("[PRICING CTA] State:", {
+      planName,
+      isSignedIn,
+      userPlan,
+      loadingPlan,
+      hasUser: !!user,
+    });
+
     // Show loading state while fetching plan
     if (isSignedIn && loadingPlan) {
       return "Loading...";
     }
 
     if (!isSignedIn || !userPlan) {
+      console.log("[PRICING CTA] Showing default CTA - not signed in or no plan");
       return planName === "Premium" ? "Contact Sales" : "Start Free Trial";
     }
 
