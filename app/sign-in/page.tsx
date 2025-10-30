@@ -14,6 +14,35 @@ function SignInPageContent() {
   const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
+    // Check for broken session (has refresh token but no access token)
+    const checkForBrokenSession = async () => {
+      const cookies = document.cookie.split(";");
+      const hasRefreshToken = cookies.some((c) => c.trim().includes("auth-token-refresh"));
+      const hasAccessToken = cookies.some(
+        (c) => c.trim().includes("auth-token.0") || c.trim().includes("auth-token.1")
+      );
+
+      // If we have refresh but no access tokens, session is broken - clear it
+      if (hasRefreshToken && !hasAccessToken) {
+        console.log("[SIGN-IN] Detected broken session - clearing...");
+        try {
+          await supabaseBrowser().auth.signOut();
+          // Clear all auth cookies
+          cookies.forEach((cookie) => {
+            const name = cookie.split("=")[0].trim();
+            if (name.startsWith("sb-")) {
+              document.cookie = `${name}=;expires=Thu, 01 Jan 1970 00:00:00 GMT;path=/`;
+            }
+          });
+          console.log("[SIGN-IN] Broken session cleared");
+        } catch (e) {
+          console.error("[SIGN-IN] Error clearing broken session:", e);
+        }
+      }
+    };
+
+    checkForBrokenSession();
+
     // Check for error and message parameters in URL
     const urlParams = new URLSearchParams(window.location.search);
     const errorParam = urlParams.get("error");
