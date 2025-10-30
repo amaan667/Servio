@@ -60,10 +60,10 @@ export function SecuritySettingsCard({
       <CardContent className="pt-6">
         <Accordion type="single" collapsible className="w-full space-y-3">
           <AccordionItem value="password" className="border-none">
-            <AccordionTrigger className="hover:no-underline bg-purple-600 hover:bg-purple-700 text-white rounded-lg px-4 py-3 [&[data-state=open]>svg]:text-white">
-              <div className="flex items-center gap-2 text-white">
-                <Lock className="h-4 w-4 text-white" />
-                <span className="text-white">
+            <AccordionTrigger className="hover:no-underline bg-gray-100 hover:bg-gray-200 rounded-lg px-4 py-3">
+              <div className="flex items-center gap-2 text-gray-900">
+                <Lock className="h-4 w-4 text-gray-700" />
+                <span className="text-gray-900 font-medium">
                   {shouldShowSetPassword ? "Set Password" : "Change Password"}
                 </span>
               </div>
@@ -158,10 +158,10 @@ export function SecuritySettingsCard({
           </AccordionItem>
 
           <AccordionItem value="2fa" className="mt-4 border-none">
-            <AccordionTrigger className="hover:no-underline bg-purple-600 hover:bg-purple-700 text-white rounded-lg px-4 py-3 [&[data-state=open]>svg]:text-white">
-              <div className="flex items-center gap-2 text-white">
-                <Shield className="h-4 w-4 text-white" />
-                <span className="text-white">Two-Factor Authentication</span>
+            <AccordionTrigger className="hover:no-underline bg-gray-100 hover:bg-gray-200 rounded-lg px-4 py-3">
+              <div className="flex items-center gap-2 text-gray-900">
+                <Shield className="h-4 w-4 text-gray-700" />
+                <span className="text-gray-900 font-medium">Two-Factor Authentication</span>
               </div>
             </AccordionTrigger>
             <AccordionContent>

@@ -150,7 +150,7 @@ export default function SignInForm({
       <Button
         onClick={onGoogleSignIn}
         disabled={isLoading || loading}
-        className="w-full flex items-center justify-center gap-2 mb-4 sm:mb-6 h-10 sm:h-11 font-medium"
+        className="w-full flex items-center justify-center gap-2 mb-4 sm:mb-6 h-10 sm:h-11 font-medium text-white"
       >
         <svg className="w-4 h-4 sm:w-5 sm:h-5" viewBox="0 0 24 24">
           <path

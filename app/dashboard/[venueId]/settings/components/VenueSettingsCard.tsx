@@ -126,8 +126,8 @@ export function VenueSettingsCard({
             Timezone
           </Label>
           <Select value={timezone} onValueChange={setTimezone}>
-            <SelectTrigger className="rounded-lg mt-1 bg-purple-600 text-white border-none hover:bg-purple-700 [&>span]:text-white hover:[&>span]:text-white [&_svg]:text-white">
-              <SelectValue placeholder="Select timezone" className="text-white !text-white" />
+            <SelectTrigger className="rounded-lg mt-1">
+              <SelectValue placeholder="Select timezone" />
             </SelectTrigger>
             <SelectContent>
               {TIMEZONES.map((tz) => (
@@ -146,11 +146,8 @@ export function VenueSettingsCard({
               Business Type
             </Label>
             <Select value={venueType} onValueChange={setVenueType}>
-              <SelectTrigger className="rounded-lg mt-1 bg-purple-600 text-white border-none hover:bg-purple-700 [&>span]:text-white hover:[&>span]:text-white [&_svg]:text-white">
-                <SelectValue
-                  placeholder="Select business type"
-                  className="text-white !text-white"
-                />
+              <SelectTrigger className="rounded-lg mt-1">
+                <SelectValue placeholder="Select business type" />
               </SelectTrigger>
               <SelectContent>
                 {VENUE_TYPES.map((type) => (
@@ -163,10 +160,13 @@ export function VenueSettingsCard({
           </div>
 
           <div>
-            <Label htmlFor="serviceType">Service Type</Label>
+            <Label htmlFor="serviceType" className="flex items-center gap-2">
+              <Utensils className="h-4 w-4" />
+              Service Type
+            </Label>
             <Select value={serviceType} onValueChange={setServiceType}>
-              <SelectTrigger className="rounded-lg mt-1 bg-purple-600 text-white border-none hover:bg-purple-700 [&>span]:text-white hover:[&>span]:text-white [&_svg]:text-white">
-                <SelectValue placeholder="Select service type" className="text-white !text-white" />
+              <SelectTrigger className="rounded-lg mt-1">
+                <SelectValue placeholder="Select service type" />
               </SelectTrigger>
               <SelectContent>
                 {SERVICE_TYPES.map((type) => (
