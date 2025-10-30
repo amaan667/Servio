@@ -159,6 +159,8 @@ export async function POST(_request: NextRequest) {
     expiresAt.setDate(expiresAt.getDate() + 7); // 7 days
 
     // Create invitation using authenticated user's info
+    // Note: invited_by_email and invited_by_name are computed by get_invitation_by_token function
+    // They are NOT actual table columns - only invited_by (UUID) is stored
     const { data: invitation, error: invitationError } = await supabase
       .from("staff_invitations")
       .insert({
@@ -168,9 +170,7 @@ export async function POST(_request: NextRequest) {
         permissions,
         token,
         expires_at: expiresAt.toISOString(),
-        invited_by: user.id,
-        invited_by_email: user.email,
-        invited_by_name: user.user_metadata?.full_name || user.email,
+        invited_by: user.id, // Only store UUID - email/name are fetched via JOIN
         status: "pending",
       })
       .select()
@@ -204,7 +204,7 @@ export async function POST(_request: NextRequest) {
           html: `
             <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
               <h2>You've been invited!</h2>
-              <p>You've been invited by ${user.user_metadata?.full_name || user.email} to join <strong>${venue.venue_name}</strong> as a <strong>${role}</strong>.</p>
+              <p>You've been invited to join <strong>${venue.venue_name}</strong> as a <strong>${role}</strong>.</p>
               <p>Click the button below to accept your invitation:</p>
               <a href="${inviteLink}" style="display: inline-block; padding: 12px 24px; background-color: #7C3AED; color: white; text-decoration: none; border-radius: 6px; margin: 16px 0;">Accept Invitation</a>
               <p style="color: #666; font-size: 14px;">This invitation expires in 7 days.</p>
