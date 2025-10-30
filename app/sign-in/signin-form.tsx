@@ -42,23 +42,27 @@ export default function SignInForm({
     setError(null);
 
     try {
-      const sb = supabaseBrowser();
-      const { data, error } = await sb.auth.signInWithPassword({
-        email,
-        password,
+      // Use server-side API route to properly set cookies
+      const response = await fetch("/api/auth/sign-in-password", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ email, password }),
+        credentials: "include", // Ensure cookies are sent/received
       });
 
-      if (error) {
-        const msg = error.message || "Sign-in failed. Please try again.";
+      const data = await response.json();
+
+      if (!response.ok) {
+        const msg = data.error || "Sign-in failed. Please try again.";
         // If we hit rate limits, place a longer cooldown for mobile
         if (/rate limit/i.test(msg)) {
-          const waitMs = 60_000; // 60s cooldown for mobile
+          const waitMs = 60_000; // 60s cooldown
           setCooldownUntil(Date.now() + waitMs);
           setTimeout(() => setCooldownUntil(null), waitMs);
           setError("Too many sign-in attempts. Please wait 1 minute and try again.");
         } else if (/network|connection|timeout/i.test(msg)) {
           setError("Connection issue. Please check your internet and try again.");
-        } else if (/invalid.*credentials/i.test(msg)) {
+        } else if (/invalid.*credentials/i.test(msg) || /invalid login/i.test(msg)) {
           setError("Invalid email or password. Please check and try again.");
         } else {
           setError(msg);
@@ -67,26 +71,9 @@ export default function SignInForm({
         return;
       }
 
-      if (data.user) {
-        // Ensure session cookie is set and immediately available
-        await sb.auth.getSession();
-
-        // Fetch primary venue to redirect to venue-specific dashboard
-        const { data: venues, error: venueError } = await sb
-          .from("venues")
-          .select("venue_id")
-          .eq("owner_user_id", data.user.id)
-          .order("created_at", { ascending: true })
-          .limit(1);
-
-        if (venueError || !venues || venues.length === 0) {
-          // No venue found, redirect to home
-          window.location.assign("/");
-          return;
-        }
-
-        // Use full reload to hydrate header with authenticated state
-        window.location.assign(`/dashboard/${venues[0]?.venue_id}`);
+      if (data.success && data.redirectTo) {
+        // Cookies are now set - redirect to dashboard
+        window.location.assign(data.redirectTo);
       }
     } catch (_err) {
       const msg = _err instanceof Error ? _err.message : "Sign-in failed. Please try again.";
