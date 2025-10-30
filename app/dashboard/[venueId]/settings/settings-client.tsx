@@ -5,9 +5,18 @@ import { useRouter } from "next/navigation";
 import { supabaseBrowser } from "@/lib/supabase";
 import VenueSettingsClient from "./VenueSettingsClient";
 import RoleBasedNavigation from "@/components/RoleBasedNavigation";
+import type { User } from "@supabase/supabase-js";
 
-export default function SettingsPageClient({ venueId }: { venueId: string }) {
-  console.log("[SETTINGS PAGE] 🚀 Settings page component mounted", { venueId });
+interface SettingsPageClientProps {
+  venueId: string;
+  initialUser?: User;
+}
+
+export default function SettingsPageClient({ venueId, initialUser }: SettingsPageClientProps) {
+  console.log("[SETTINGS PAGE] 🚀 Settings page component mounted", {
+    venueId,
+    hasInitialUser: !!initialUser,
+  });
   const router = useRouter();
 
   console.log("[SETTINGS CLIENT] 🎨 Component mounted/rendered", { venueId });
@@ -37,25 +46,32 @@ export default function SettingsPageClient({ venueId }: { venueId: string }) {
       try {
         console.log("[SETTINGS] 🚀 Starting to load settings data for venue:", venueId);
         setLoading(true);
-        const supabase = supabaseBrowser();
 
-        // Get user (authenticates with server using cookies)
-        console.log("[SETTINGS] 📡 Fetching user from server (using cookies)...");
-        const { data: userData, error: userError } = await supabase.auth.getUser();
+        // Use initialUser from server if available
+        let user = initialUser;
 
-        if (userError || !userData.user) {
-          console.error("[SETTINGS] ❌ No user session found - user not authenticated", {
-            error: userError?.message,
-          });
-          setLoading(false);
-          return;
+        if (!user) {
+          console.log("[SETTINGS] No initialUser, fetching from client...");
+          const supabase = supabaseBrowser();
+          const { data: userData, error: userError } = await supabase.auth.getUser();
+
+          if (userError || !userData.user) {
+            console.error("[SETTINGS] ❌ No user session found - user not authenticated", {
+              error: userError?.message,
+            });
+            setLoading(false);
+            return;
+          }
+          user = userData.user;
         }
 
-        const user = userData.user;
-        console.log("[SETTINGS] ✅ User authenticated:", {
+        console.log("[SETTINGS] ✅ User available:", {
           userId: user.id,
           email: user.email,
+          source: initialUser ? "server" : "client",
         });
+
+        const supabase = supabaseBrowser();
 
         // Load all data
         console.log("[SETTINGS] 📊 Fetching venue data, roles, and organization...");
