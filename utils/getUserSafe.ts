@@ -23,10 +23,21 @@ import { logger } from "@/lib/logger";
  */
 export async function getUserSafe() {
   try {
+    // Check for cookies first
+    const { cookies } = await import("next/headers");
+    const cookieStore = await cookies();
+    const allCookies = cookieStore.getAll();
+
+    logger.debug("[getUserSafe] Checking cookies:", {
+      totalCookies: allCookies.length,
+      cookieNames: allCookies.map((c) => c.name).join(", "),
+      hasAuthToken: allCookies.some((c) => c.name.includes("-auth-token")),
+    });
+
     const hasAuthCookie = await hasServerAuthCookie();
 
     if (!hasAuthCookie) {
-      logger.debug("[getUserSafe] No auth cookie found");
+      logger.warn("[getUserSafe] No auth cookie found - user may not be logged in");
       return null;
     }
 
@@ -42,9 +53,14 @@ export async function getUserSafe() {
     }
 
     if (!data.session?.user) {
-      logger.debug("[getUserSafe] No user in session");
+      logger.warn("[getUserSafe] No user in session - session may be expired");
       return null;
     }
+
+    logger.info("[getUserSafe] ✅ User authenticated successfully:", {
+      userId: data.session.user.id,
+      email: data.session.user.email,
+    });
 
     return data.session.user;
   } catch (err) {
