@@ -8,9 +8,23 @@ export async function GET(request: NextRequest) {
   const next = requestUrl.searchParams.get("next") || "/";
   const error = requestUrl.searchParams.get("error");
 
+  // Log incoming cookies
+  const { cookies: incomingCookies } = await import("next/headers");
+  const incomingCookieStore = await incomingCookies();
+  const incomingCookiesList = incomingCookieStore.getAll();
+
   logger.info("[AUTH CALLBACK] ========== CALLBACK START ==========");
   logger.info("[AUTH CALLBACK] URL:", { url: request.url });
   logger.info("[AUTH CALLBACK] Parameters:", { hasCode: !!code, hasError: !!error });
+  logger.info("[AUTH CALLBACK] Incoming cookies:", {
+    count: incomingCookiesList.length,
+    names: incomingCookiesList.map((c) => c.name).join(", "),
+    authCookies:
+      incomingCookiesList
+        .filter((c) => c.name.includes("sb-"))
+        .map((c) => c.name)
+        .join(", ") || "NONE",
+  });
 
   if (error) {
     logger.error("[AUTH CALLBACK] OAuth error received:", { error });
@@ -58,15 +72,17 @@ export async function GET(request: NextRequest) {
         const { cookies } = await import("next/headers");
         const cookieStore = await cookies();
         const allCookies = cookieStore.getAll();
-        const authCookies = allCookies.filter(c => c.name.includes('sb-') || c.name.includes('auth'));
-        
+        const authCookies = allCookies.filter(
+          (c) => c.name.includes("sb-") || c.name.includes("auth")
+        );
+
         logger.info("[AUTH CALLBACK] Cookies after exchange:", {
           totalCookies: allCookies.length,
           authCookiesCount: authCookies.length,
-          authCookieNames: authCookies.map(c => c.name).join(", "),
-          allCookieNames: allCookies.map(c => c.name).join(", "),
+          authCookieNames: authCookies.map((c) => c.name).join(", "),
+          allCookieNames: allCookies.map((c) => c.name).join(", "),
         });
-        
+
         // Check if user has a venue
         const { data: venues } = await supabase
           .from("venues")
