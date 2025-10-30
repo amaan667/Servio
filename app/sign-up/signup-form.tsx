@@ -631,10 +631,13 @@ export default function SignUpForm({ onGoogleSignIn, isSigningUp = false }: Sign
             </Link>
           </div>
 
-          <p className="text-xs text-center text-gray-500">
-            You'll enter payment details first. Your card won't be charged for 14 days. Your account
-            will be created after payment setup.
-          </p>
+          {/* Hide payment message for invitation signups */}
+          {!invitationToken && (
+            <p className="text-xs text-center text-gray-500">
+              You'll enter payment details first. Your card won't be charged for 14 days. Your
+              account will be created after payment setup.
+            </p>
+          )}
         </CardContent>
       </Card>
     </div>
