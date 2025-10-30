@@ -83,10 +83,11 @@ export function HomePageClient({ initialAuthState }: { initialAuthState: boolean
       try {
         const supabase = supabaseBrowser();
 
-        // First get user's venue to find organization
+        // Get user's venue to find organization
+        // Only select organization_id (subscription_tier column doesn't exist on venues in production)
         const { data: venues, error: venueError } = await supabase
           .from("venues")
-          .select("organization_id, subscription_tier")
+          .select("organization_id")
           .eq("owner_user_id", user.id)
           .limit(1);
 
@@ -106,24 +107,18 @@ export function HomePageClient({ initialAuthState }: { initialAuthState: boolean
 
         const firstVenue = venues[0];
 
-        // Check if subscription_tier is directly on venue (new schema)
-        if (firstVenue?.subscription_tier) {
-          const tier = firstVenue.subscription_tier.toLowerCase();
-          setUserPlan(tier as "basic" | "standard" | "premium");
-          console.log("[PRICING] User plan detected from venue:", tier);
-          setLoadingPlan(false);
-          return;
-        }
-
-        // Fallback: Check organization table (old schema)
+        // Get subscription tier from organization table
         if (firstVenue?.organization_id) {
-          const { data: org } = await supabase
+          const { data: org, error: orgError } = await supabase
             .from("organizations")
             .select("subscription_tier")
             .eq("id", firstVenue.organization_id)
-            .single();
+            .maybeSingle();
 
-          if (org?.subscription_tier) {
+          if (orgError) {
+            console.error("[PRICING] Error fetching organization:", orgError);
+            setUserPlan("basic");
+          } else if (org?.subscription_tier) {
             const tier = org.subscription_tier.toLowerCase();
             setUserPlan(tier as "basic" | "standard" | "premium");
             console.log("[PRICING] User plan detected from org:", tier);
