@@ -45,7 +45,7 @@ export function FeatureSections({ venueId, userRole }: FeatureSectionsProps) {
     console.log("═══════════════════════════════════════════════════");
   }, [userRole]);
 
-  const handleFeatureClick = (feature: Feature, section: string) => {
+  const handleFeatureClick = (_feature: Feature, _section: string) => {
     // Feature click logging removed for cleaner logs
   };
 
