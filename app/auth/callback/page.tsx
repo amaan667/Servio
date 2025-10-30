@@ -33,11 +33,28 @@ function CallbackContent() {
 
         // Exchange code for session ON CLIENT (has access to localStorage PKCE verifier)
         const supabase = supabaseBrowser();
+
+        // Check if PKCE verifier exists before attempting exchange
+        const hasVerifier = localStorage.getItem(
+          "sb-cpwemmofzjfzbmqcgjrq-auth-token-code-verifier"
+        );
+        logger.info("[AUTH CALLBACK CLIENT] PKCE verifier check:", { hasVerifier: !!hasVerifier });
+
         const { data, error: exchangeError } = await supabase.auth.exchangeCodeForSession(code);
 
         if (exchangeError) {
-          logger.error("[AUTH CALLBACK CLIENT] Exchange error:", { error: exchangeError });
-          setError(`Authentication failed: ${exchangeError.message}`);
+          logger.error("[AUTH CALLBACK CLIENT] Exchange error:", {
+            error: exchangeError,
+            errorMessage: exchangeError.message,
+            hadVerifier: !!hasVerifier,
+          });
+
+          // If verifier was missing, give user a helpful error
+          if (!hasVerifier) {
+            setError(`Authentication failed: PKCE verifier missing. Please try signing in again.`);
+          } else {
+            setError(`Authentication failed: ${exchangeError.message}`);
+          }
           return;
         }
 
