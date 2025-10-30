@@ -24,10 +24,9 @@ const nextConfig = {
     serverComponentsExternalPackages: ['playwright-core', 'playwright'],
   },
   compiler: {
-    // Remove console.logs in production but keep errors and warnings
-    removeConsole: process.env.NODE_ENV === 'production' ? {
-      exclude: ['error', 'warn'],
-    } : false,
+    // Keep ALL console logs in production for debugging (including .log, .info)
+    // Only remove console in production build if explicitly needed later
+    removeConsole: false,
   },
   // Production optimizations
   poweredByHeader: false,

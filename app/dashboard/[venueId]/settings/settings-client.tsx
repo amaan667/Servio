@@ -7,6 +7,7 @@ import VenueSettingsClient from "./VenueSettingsClient";
 import RoleBasedNavigation from "@/components/RoleBasedNavigation";
 
 export default function SettingsPageClient({ venueId }: { venueId: string }) {
+  console.log("[SETTINGS PAGE] 🚀 Settings page component mounted", { venueId });
   const router = useRouter();
 
   console.log("[SETTINGS CLIENT] 🎨 Component mounted/rendered", { venueId });

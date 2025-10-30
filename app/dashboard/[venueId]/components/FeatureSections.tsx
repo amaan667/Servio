@@ -38,6 +38,8 @@ interface FeatureSectionsProps {
 }
 
 export function FeatureSections({ venueId, userRole }: FeatureSectionsProps) {
+  console.log("[FEATURE SECTIONS] 🎨 Rendering FeatureSections", { venueId, userRole });
+
   const handleFeatureClick = (feature: Feature, section: string) => {
     console.log("[FEATURE CLICK] 🖱️ Feature card clicked:", {
       feature: feature.title,
@@ -121,6 +123,7 @@ export function FeatureSections({ venueId, userRole }: FeatureSectionsProps) {
 
   // Add Insights section for owners/managers
   if (userRole === "owner" || userRole === "manager") {
+    console.log("[FEATURE SECTIONS] ✨ Adding Insights section for", { userRole, venueId });
     sections.push({
       title: "Insights",
       description: "Analytics and customer feedback",
@@ -151,7 +154,21 @@ export function FeatureSections({ venueId, userRole }: FeatureSectionsProps) {
         },
       ],
     });
+  } else {
+    console.log("[FEATURE SECTIONS] ℹ️ Insights section NOT shown - user role:", {
+      userRole,
+      venueId,
+    });
   }
+
+  console.log("[FEATURE SECTIONS] 📊 Total sections to render:", sections.length);
+  sections.forEach((section, idx) => {
+    console.log(`[FEATURE SECTIONS] Section ${idx + 1}:`, {
+      title: section.title,
+      featuresCount: section.features.length,
+      features: section.features.map((f) => f.title),
+    });
+  });
 
   return (
     <div className="space-y-8">
