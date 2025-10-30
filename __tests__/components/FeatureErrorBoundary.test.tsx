@@ -1,5 +1,6 @@
 import React from "react";
 import { render, screen } from "@testing-library/react";
+import { vi, beforeAll, afterAll } from "vitest";
 import { FeatureErrorBoundary } from "@/components/error-boundaries/FeatureErrorBoundary";
 
 function ThrowError() {
@@ -9,11 +10,13 @@ function ThrowError() {
 describe("FeatureErrorBoundary", () => {
   // Suppress console.error for these tests
   beforeAll(() => {
-    jest.spyOn(console, "error").mockImplementation(() => { /* Empty */ });
+    vi.spyOn(console, "error").mockImplementation(() => {
+      /* Empty */
+    });
   });
 
   afterAll(() => {
-    (console.error as jest.Mock).mockRestore();
+    vi.restoreAllMocks();
   });
 
   it("should render children when there is no error", () => {

@@ -1,13 +1,23 @@
 /**
- * API Type Definitions
- * Comprehensive types for all API routes
+ * API Types - Type-safe API request/response definitions
  */
 
-import { z } from 'zod';
+import type {
+  OrderRow,
+  TableRow,
+  MenuItemRow,
+  ReservationRow,
+  VenueRow,
+  UserVenueRoleRow,
+  StaffInvitationRow,
+  KDSTicketRow,
+  PaymentRow,
+  FeedbackRow,
+} from "./database";
 
-// ============================================================================
-// Common Types
-// ============================================================================
+// ========================================
+// GENERIC API TYPES
+// ========================================
 
 export interface ApiResponse<T = unknown> {
   ok: boolean;
@@ -16,385 +26,340 @@ export interface ApiResponse<T = unknown> {
   message?: string;
 }
 
+export interface ApiError {
+  ok: false;
+  error: string;
+  code?: string;
+  details?: Record<string, unknown>;
+}
+
 export interface PaginatedResponse<T> {
+  ok: true;
   data: T[];
-  total: number;
-  page: number;
-  limit: number;
-  hasMore: boolean;
+  pagination: {
+    page: number;
+    limit: number;
+    total: number;
+    totalPages: number;
+    hasMore: boolean;
+  };
 }
 
-// ============================================================================
-// Order Types
-// ============================================================================
-
-export interface OrderItem {
-  menu_item_id: string;
-  item_name: string;
-  quantity: number;
-  price: number;
-  specialInstructions?: string;
-  station?: string;
-}
+// ========================================
+// ORDER API
+// ========================================
 
 export interface CreateOrderRequest {
-  customer_name: string;
-  customer_email?: string;
-  customer_phone?: string;
-  table_id?: string;
-  items: OrderItem[];
-  total_amount: number;
-  payment_method: 'stripe' | 'till' | 'demo' | 'pay_later';
-  notes?: string;
-  prep_lead_minutes?: number;
+  venueId: string;
+  tableId?: string;
+  counterId?: string;
+  orderType: "dine_in" | "takeaway" | "delivery";
+  items: Array<{
+    menuItemId: string;
+    quantity: number;
+    specialInstructions?: string;
+    modifiers?: Array<{
+      id: string;
+      name: string;
+      price: number;
+    }>;
+  }>;
+  customerName?: string;
+  customerPhone?: string;
+  customerEmail?: string;
+  specialInstructions?: string;
 }
 
-export interface OrderResponse {
-  id: string;
-  venue_id: string;
-  order_status: string;
-  payment_status: string;
-  total_amount: number;
-  created_at: string;
-  updated_at: string;
+export interface CreateOrderResponse extends ApiResponse<OrderRow> {}
+
+export interface GetOrdersRequest {
+  venueId: string;
+  status?: string;
+  tableId?: string;
+  startDate?: string;
+  endDate?: string;
+  page?: number;
+  limit?: number;
 }
+
+export interface GetOrdersResponse extends ApiResponse<OrderRow[]> {}
 
 export interface UpdateOrderStatusRequest {
-  order_status: 'PLACED' | 'IN_PREP' | 'READY' | 'SERVING' | 'COMPLETED' | 'CANCELLED';
+  orderId: string;
+  status: "pending" | "in_prep" | "ready" | "served" | "completed" | "cancelled";
 }
 
-// ============================================================================
-// Menu Types
-// ============================================================================
+export interface UpdateOrderStatusResponse extends ApiResponse<OrderRow> {}
 
-export interface MenuItem {
-  id: string;
-  venue_id: string;
-  name: string;
-  description: string | null;
-  price: number;
-  category: string;
-  is_available: boolean;
-  position?: number;
-  image_url?: string;
-  created_at: string;
-  updated_at: string;
+// ========================================
+// TABLE API
+// ========================================
+
+export interface GetTablesRequest {
+  venueId: string;
 }
+
+export interface GetTablesResponse extends ApiResponse<TableRow[]> {}
+
+export interface CreateTableRequest {
+  venueId: string;
+  label: string;
+  seats: number;
+  section?: string;
+}
+
+export interface CreateTableResponse extends ApiResponse<TableRow> {}
+
+export interface UpdateTableRequest {
+  tableId: string;
+  label?: string;
+  seats?: number;
+  section?: string;
+  status?: "available" | "occupied" | "reserved" | "inactive";
+}
+
+export interface UpdateTableResponse extends ApiResponse<TableRow> {}
+
+// ========================================
+// MENU API
+// ========================================
+
+export interface GetMenuItemsRequest {
+  venueId: string;
+  categoryId?: string;
+  isAvailable?: boolean;
+}
+
+export interface GetMenuItemsResponse extends ApiResponse<MenuItemRow[]> {}
 
 export interface CreateMenuItemRequest {
+  venueId: string;
+  categoryId?: string;
   name: string;
   description?: string;
   price: number;
-  category: string;
-  is_available?: boolean;
-  position?: number;
-  image_url?: string;
+  imageUrl?: string;
+  preparationTime?: number;
+  tags?: string[];
+  allergens?: string[];
 }
 
+export interface CreateMenuItemResponse extends ApiResponse<MenuItemRow> {}
+
 export interface UpdateMenuItemRequest {
+  menuItemId: string;
   name?: string;
   description?: string;
   price?: number;
-  category?: string;
-  is_available?: boolean;
-  position?: number;
-  image_url?: string;
+  imageUrl?: string;
+  isAvailable?: boolean;
+  preparationTime?: number;
 }
 
-export interface MenuCategory {
-  id: string;
-  venue_id: string;
-  name: string;
-  position: number;
-  description?: string;
-}
+export interface UpdateMenuItemResponse extends ApiResponse<MenuItemRow> {}
 
-// ============================================================================
-// Venue Types
-// ============================================================================
-
-export interface Venue {
-  venue_id: string;
-  owner_user_id: string;
-  venue_name: string;
-  address?: string;
-  city?: string;
-  state?: string;
-  zip?: string;
-  country?: string;
-  phone?: string;
-  email?: string;
-  website?: string;
-  created_at: string;
-  updated_at: string;
-}
-
-export interface CreateVenueRequest {
-  name: string;
-  address?: string;
-  city?: string;
-  state?: string;
-  zip?: string;
-  country?: string;
-  phone?: string;
-  email?: string;
-  website?: string;
-}
-
-export interface UpdateVenueRequest {
-  name?: string;
-  address?: string;
-  city?: string;
-  state?: string;
-  zip?: string;
-  country?: string;
-  phone?: string;
-  email?: string;
-  website?: string;
-}
-
-// ============================================================================
-// Table Types
-// ============================================================================
-
-export interface Table {
-  id: string;
-  venue_id: string;
-  label: string;
-  area?: string;
-  capacity: number;
-  status: 'FREE' | 'OCCUPIED' | 'RESERVED' | 'CLEANING';
-  qr_code_url?: string;
-  created_at: string;
-  updated_at: string;
-}
-
-export interface CreateTableRequest {
-  label: string;
-  area?: string;
-  capacity: number;
-  status?: 'FREE' | 'OCCUPIED' | 'RESERVED' | 'CLEANING';
-}
-
-export interface UpdateTableRequest {
-  label?: string;
-  area?: string;
-  capacity?: number;
-  status?: 'FREE' | 'OCCUPIED' | 'RESERVED' | 'CLEANING';
-}
-
-// ============================================================================
-// Staff Types
-// ============================================================================
-
-export interface StaffMember {
-  id: string;
-  venue_id: string;
-  user_id: string;
-  role: 'owner' | 'manager' | 'staff';
-  name: string;
-  email: string;
-  phone?: string;
-  is_active: boolean;
-  created_at: string;
-  updated_at: string;
-}
-
-export interface CreateStaffRequest {
-  email: string;
-  role: 'manager' | 'staff';
-  name?: string;
-}
-
-export interface UpdateStaffRequest {
-  role?: 'manager' | 'staff';
-  name?: string;
-  phone?: string;
-  is_active?: boolean;
-}
-
-// ============================================================================
-// Reservation Types
-// ============================================================================
-
-export interface Reservation {
-  id: string;
-  venue_id: string;
-  table_id?: string;
-  customer_name: string;
-  customer_email?: string;
-  customer_phone: string;
-  party_size: number;
-  reservation_date: string;
-  reservation_time: string;
-  status: 'PENDING' | 'CONFIRMED' | 'SEATED' | 'COMPLETED' | 'CANCELLED' | 'NO_SHOW';
-  notes?: string;
-  created_at: string;
-  updated_at: string;
-}
+// ========================================
+// RESERVATION API
+// ========================================
 
 export interface CreateReservationRequest {
-  customer_name: string;
-  customer_email?: string;
-  customer_phone: string;
-  party_size: number;
-  reservation_date: string;
-  reservation_time: string;
-  table_id?: string;
+  venueId: string;
+  tableId?: string;
+  customerName: string;
+  customerPhone: string;
+  customerEmail?: string;
+  startAt: string;
+  endAt: string;
+  partySize: number;
   notes?: string;
+  specialRequests?: string;
 }
 
-export interface UpdateReservationRequest {
-  customer_name?: string;
-  customer_email?: string;
-  customer_phone?: string;
-  party_size?: number;
-  reservation_date?: string;
-  reservation_time?: string;
-  table_id?: string;
-  status?: 'PENDING' | 'CONFIRMED' | 'SEATED' | 'COMPLETED' | 'CANCELLED' | 'NO_SHOW';
-  notes?: string;
+export interface CreateReservationResponse extends ApiResponse<ReservationRow> {}
+
+export interface GetReservationsRequest {
+  venueId: string;
+  status?: string;
+  startDate?: string;
+  endDate?: string;
 }
 
-// ============================================================================
-// Payment Types
-// ============================================================================
+export interface GetReservationsResponse extends ApiResponse<ReservationRow[]> {}
 
-export interface PaymentIntent {
-  id: string;
-  venue_id: string;
-  order_id?: string;
+// ========================================
+// STAFF API
+// ========================================
+
+export interface InviteStaffRequest {
+  venueId: string;
+  email: string;
+  role: "manager" | "staff" | "server" | "kitchen";
+  permissions?: Record<string, boolean>;
+  userId: string; // Inviter's user ID
+  userEmail?: string;
+  userName?: string;
+}
+
+export interface InviteStaffResponse extends ApiResponse<StaffInvitationRow> {}
+
+export interface GetStaffRequest {
+  venueId: string;
+}
+
+export interface GetStaffResponse extends ApiResponse<UserVenueRoleRow[]> {}
+
+export interface UpdateStaffRoleRequest {
+  userId: string;
+  venueId: string;
+  role: "manager" | "staff" | "server" | "kitchen";
+  permissions?: Record<string, boolean>;
+}
+
+export interface UpdateStaffRoleResponse extends ApiResponse<UserVenueRoleRow> {}
+
+// ========================================
+// VENUE API
+// ========================================
+
+export interface GetVenueRequest {
+  venueId: string;
+}
+
+export interface GetVenueResponse extends ApiResponse<VenueRow> {}
+
+export interface UpdateVenueRequest {
+  venueId: string;
+  venueName?: string;
+  businessType?: string;
+  address?: string;
+  phone?: string;
+  email?: string;
+  timezone?: string;
+  dailyResetTime?: string;
+}
+
+export interface UpdateVenueResponse extends ApiResponse<VenueRow> {}
+
+// ========================================
+// PAYMENT API
+// ========================================
+
+export interface CreatePaymentRequest {
+  orderId: string;
   amount: number;
-  currency: string;
-  status: 'pending' | 'succeeded' | 'failed' | 'canceled';
-  payment_method: string;
-  created_at: string;
+  paymentMethod: "card" | "cash" | "bank_transfer" | "other";
+  stripePaymentIntentId?: string;
 }
 
-export interface CreatePaymentIntentRequest {
-  amount: number;
-  currency?: string;
-  order_id?: string;
-  payment_method: string;
+export interface CreatePaymentResponse extends ApiResponse<PaymentRow> {}
+
+export interface CreateStripeCheckoutRequest {
+  orderId: string;
+  successUrl: string;
+  cancelUrl: string;
 }
 
-// ============================================================================
-// Analytics Types
-// ============================================================================
+export interface CreateStripeCheckoutResponse
+  extends ApiResponse<{
+    sessionId: string;
+    url: string;
+  }> {}
 
-export interface AnalyticsStats {
-  total_orders: number;
-  total_revenue: number;
-  average_order_value: number;
-  orders_today: number;
-  revenue_today: number;
-  orders_this_week: number;
-  revenue_this_week: number;
-  orders_this_month: number;
-  revenue_this_month: number;
+// ========================================
+// KDS API
+// ========================================
+
+export interface GetKDSTicketsRequest {
+  venueId: string;
+  stationId?: string;
+  status?: string;
 }
 
-export interface AnalyticsInsight {
-  type: 'trend' | 'anomaly' | 'recommendation';
-  title: string;
-  description: string;
-  value?: number;
-  change?: number;
+export interface GetKDSTicketsResponse extends ApiResponse<KDSTicketRow[]> {}
+
+export interface UpdateKDSTicketRequest {
+  ticketId: string;
+  status: "pending" | "in_progress" | "ready" | "completed" | "cancelled";
 }
 
-// ============================================================================
-// Zod Schemas for Validation
-// ============================================================================
+export interface UpdateKDSTicketResponse extends ApiResponse<KDSTicketRow> {}
 
-export const CreateOrderSchema = z.object({
-  customer_name: z.string().min(1),
-  customer_email: z.string().email().optional(),
-  customer_phone: z.string().optional(),
-  table_id: z.string().uuid().optional(),
-  items: z.array(z.object({
-    menu_item_id: z.string().uuid(),
-    item_name: z.string(),
-    quantity: z.number().positive(),
-    price: z.number().positive(),
-    specialInstructions: z.string().optional(),
-    station: z.string().optional(),
-  })),
-  total_amount: z.number().positive(),
-  payment_method: z.enum(['stripe', 'till', 'demo', 'pay_later']),
-  notes: z.string().optional(),
-  prep_lead_minutes: z.number().positive().optional(),
-});
+// ========================================
+// FEEDBACK API
+// ========================================
 
-export const CreateMenuItemSchema = z.object({
-  name: z.string().min(1),
-  description: z.string().optional(),
-  price: z.number().positive(),
-  category: z.string().min(1),
-  is_available: z.boolean().optional(),
-  position: z.number().optional(),
-  image_url: z.string().url().optional(),
-});
+export interface SubmitFeedbackRequest {
+  venueId: string;
+  orderId?: string;
+  rating: number;
+  comment?: string;
+  category: "food" | "service" | "ambiance" | "value" | "overall";
+  customerName?: string;
+  customerEmail?: string;
+}
 
-export const UpdateMenuItemSchema = z.object({
-  name: z.string().min(1).optional(),
-  description: z.string().optional(),
-  price: z.number().positive().optional(),
-  category: z.string().min(1).optional(),
-  is_available: z.boolean().optional(),
-  position: z.number().optional(),
-  image_url: z.string().url().optional(),
-});
+export interface SubmitFeedbackResponse extends ApiResponse<FeedbackRow> {}
 
-export const CreateVenueSchema = z.object({
-  name: z.string().min(1),
-  address: z.string().optional(),
-  city: z.string().optional(),
-  state: z.string().optional(),
-  zip: z.string().optional(),
-  country: z.string().optional(),
-  phone: z.string().optional(),
-  email: z.string().email().optional(),
-  website: z.string().url().optional(),
-});
+export interface GetFeedbackRequest {
+  venueId: string;
+  startDate?: string;
+  endDate?: string;
+  category?: string;
+  minRating?: number;
+}
 
-export const CreateTableSchema = z.object({
-  label: z.string().min(1),
-  area: z.string().optional(),
-  capacity: z.number().positive(),
-  status: z.enum(['FREE', 'OCCUPIED', 'RESERVED', 'CLEANING']).optional(),
-});
+export interface GetFeedbackResponse extends ApiResponse<FeedbackRow[]> {}
 
-export const CreateReservationSchema = z.object({
-  customer_name: z.string().min(1),
-  customer_email: z.string().email().optional(),
-  customer_phone: z.string().min(1),
-  party_size: z.number().positive(),
-  reservation_date: z.string(),
-  reservation_time: z.string(),
-  table_id: z.string().uuid().optional(),
-  notes: z.string().optional(),
-});
+// ========================================
+// ANALYTICS API
+// ========================================
 
-// ============================================================================
-// Type Guards
-// ============================================================================
+export interface GetAnalyticsRequest {
+  venueId: string;
+  startDate: string;
+  endDate: string;
+  metrics?: string[];
+}
 
-export function isApiResponse<T>(value: unknown): value is ApiResponse<T> {
+export interface AnalyticsMetrics {
+  totalRevenue: number;
+  totalOrders: number;
+  averageOrderValue: number;
+  topSellingItems: Array<{
+    itemId: string;
+    itemName: string;
+    quantity: number;
+    revenue: number;
+  }>;
+  ordersByStatus: Record<string, number>;
+  ordersByHour: Array<{
+    hour: number;
+    count: number;
+  }>;
+  customerSatisfaction: {
+    averageRating: number;
+    totalFeedback: number;
+  };
+}
+
+export interface GetAnalyticsResponse extends ApiResponse<AnalyticsMetrics> {}
+
+// ========================================
+// TYPE GUARDS
+// ========================================
+
+export function isApiError(response: unknown): response is ApiError {
   return (
-    typeof value === 'object' &&
-    value !== null &&
-    'ok' in value &&
-    typeof (value as ApiResponse).ok === 'boolean'
+    typeof response === "object" &&
+    response !== null &&
+    "ok" in response &&
+    response.ok === false &&
+    "error" in response
   );
 }
 
-export function isPaginatedResponse<T>(value: unknown): value is PaginatedResponse<T> {
+export function isApiSuccess<T>(response: unknown): response is ApiResponse<T> {
   return (
-    typeof value === 'object' &&
-    value !== null &&
-    'data' in value &&
-    'total' in value &&
-    Array.isArray((value as PaginatedResponse<T>).data)
+    typeof response === "object" && response !== null && "ok" in response && response.ok === true
   );
 }
-

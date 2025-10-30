@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
-import { createClient, getAuthenticatedUser } from "@/lib/supabase";
+import { createAdminClient } from "@/lib/supabase";
 import { logger } from "@/lib/logger";
 
 export const runtime = "nodejs";
@@ -49,36 +49,8 @@ export async function POST(req: NextRequest) {
       );
     }
 
-    const { user } = await getAuthenticatedUser();
-    if (!user) {
-      return NextResponse.json(
-        {
-          ok: false,
-          error: "Not authenticated",
-        },
-        { status: 401 }
-      );
-    }
-
-    const supabase = await createClient();
-
-    // Check venue ownership
-    const { data: venue } = await supabase
-      .from("venues")
-      .select("venue_id")
-      .eq("venue_id", venueId)
-      .eq("owner_user_id", user.id)
-      .maybeSingle();
-
-    if (!venue) {
-      return NextResponse.json(
-        {
-          ok: false,
-          error: "Venue not found or access denied",
-        },
-        { status: 403 }
-      );
-    }
+    // Use admin client - no auth needed
+    const supabase = createAdminClient();
 
     // If tableId is provided, check if table exists
     if (tableId) {

@@ -2,12 +2,20 @@ import { NextRequest, NextResponse } from "next/server";
 import { createAdminClient } from "@/lib/supabase";
 import { logger } from "@/lib/logger";
 
-// GET /api/staff/invitations - List invitations for a venue (Cookie-free)
+// GET /api/staff/invitations - List invitations for a venue (Requires auth)
 export async function GET(_request: NextRequest) {
   try {
+    // Get authenticated user from cookies
+    const { getUserSafe } = await import("@/utils/getUserSafe");
+    const user = await getUserSafe();
+
+    if (!user) {
+      logger.warn("[STAFF INVITATIONS GET] Unauthorized - no user session");
+      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+    }
+
     const { searchParams } = new URL(_request.url);
     const venueId = searchParams.get("venue_id");
-    const userId = searchParams.get("userId");
 
     if (!venueId) {
       return NextResponse.json({ error: "venue_id is required" }, { status: 400 });
@@ -15,23 +23,29 @@ export async function GET(_request: NextRequest) {
 
     const supabase = createAdminClient();
 
-    // Optional: Log user context if provided (for audit trail)
-    if (userId) {
+    // Check if user has permission to view invitations (owner or manager)
+    const { data: venue } = await supabase
+      .from("venues")
+      .select("owner_user_id")
+      .eq("venue_id", venueId)
+      .single();
+
+    const isVenueOwner = venue?.owner_user_id === user.id;
+
+    let hasPermission = false;
+    if (!isVenueOwner) {
       const { data: userRole } = await supabase
         .from("user_venue_roles")
         .select("role")
-        .eq("user_id", userId)
+        .eq("user_id", user.id)
         .eq("venue_id", venueId)
         .single();
 
-      if (userRole) {
-        logger.info("✅ [STAFF INVITATION GET] User identified", {
-          userId: userId,
-          role: userRole.role,
-        });
-      }
-    } else {
-      logger.info("ℹ️ [STAFF INVITATION GET] No user context provided (cookie-free operation)");
+      hasPermission = userRole?.role === "owner" || userRole?.role === "manager";
+    }
+
+    if (!isVenueOwner && !hasPermission) {
+      return NextResponse.json({ error: "Forbidden" }, { status: 403 });
     }
 
     // Get all invitations for the venue
@@ -53,9 +67,18 @@ export async function GET(_request: NextRequest) {
   }
 }
 
-// POST /api/staff/invitations - Create invitation (Cookie-free)
+// POST /api/staff/invitations - Create invitation (Requires auth)
 export async function POST(_request: NextRequest) {
   try {
+    // Get authenticated user from cookies using getUserSafe
+    const { getUserSafe } = await import("@/utils/getUserSafe");
+    const user = await getUserSafe();
+
+    if (!user) {
+      logger.warn("[STAFF INVITATION POST] Unauthorized - no user session");
+      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+    }
+
     const body = await _request.json();
 
     // Log the received body for debugging
@@ -63,20 +86,17 @@ export async function POST(_request: NextRequest) {
       email: body.email,
       role: body.role,
       venue_id: body.venue_id,
-      user_id: body.user_id,
-      user_email: body.user_email,
+      userId: user.id,
       hasAllFields: !!(body.email && body.role && body.venue_id),
     });
 
-    const { email, role, venue_id, user_id, user_email, user_name, permissions = {} } = body;
+    const { email, role, venue_id, permissions = {} } = body;
 
-    // Only email, role, and venue_id are required (cookie-free operation)
     if (!email || !role || !venue_id) {
       logger.error("[STAFF INVITATION POST] Missing required fields:", {
         hasEmail: !!email,
         hasRole: !!role,
         hasVenueId: !!venue_id,
-        body,
       });
       return NextResponse.json(
         { error: "email, role, and venue_id are required" },
@@ -86,44 +106,11 @@ export async function POST(_request: NextRequest) {
 
     const supabase = createAdminClient();
 
-    // Optional: Check if user has permission (if user_id provided, for audit trail)
-    if (user_id) {
-      const { data: userRole } = await supabase
-        .from("user_venue_roles")
-        .select("role")
-        .eq("user_id", user_id)
-        .eq("venue_id", venue_id)
-        .single();
-
-      if (userRole) {
-        logger.info("✅ [STAFF INVITATION POST] User identified", {
-          userId: user_id,
-          role: userRole.role,
-        });
-      } else {
-        logger.info("ℹ️ [STAFF INVITATION POST] User not found in venue roles, checking if owner", {
-          userId: user_id,
-        });
-
-        // Check if user is venue owner
-        const { data: venue } = await supabase
-          .from("venues")
-          .select("owner_user_id")
-          .eq("venue_id", venue_id)
-          .single();
-
-        if (venue?.owner_user_id === user_id) {
-          logger.info("✅ [STAFF INVITATION POST] User is venue owner");
-        }
-      }
-    } else {
-      logger.info("ℹ️ [STAFF INVITATION POST] No user context provided (cookie-free operation)");
-    }
-
-    // Get venue details
+    // Check if authenticated user has permission (either venue owner or has owner/manager role)
+    // First check if user is the venue owner and get venue details
     const { data: venue, error: venueError } = await supabase
       .from("venues")
-      .select("venue_name")
+      .select("owner_user_id, venue_name")
       .eq("venue_id", venue_id)
       .single();
 
@@ -132,12 +119,46 @@ export async function POST(_request: NextRequest) {
       return NextResponse.json({ error: "Venue not found" }, { status: 404 });
     }
 
+    const isVenueOwner = venue.owner_user_id === user.id;
+
+    // If not venue owner, check if they have owner or manager role in user_venue_roles
+    let hasPermission = false;
+    if (!isVenueOwner) {
+      const { data: userRole } = await supabase
+        .from("user_venue_roles")
+        .select("role")
+        .eq("user_id", user.id)
+        .eq("venue_id", venue_id)
+        .single();
+
+      hasPermission = userRole?.role === "owner" || userRole?.role === "manager";
+    }
+
+    if (!isVenueOwner && !hasPermission) {
+      logger.warn("[STAFF INVITATION POST] User doesn't have permission", {
+        userId: user.id,
+        venueId: venue_id,
+        isVenueOwner,
+        hasPermission,
+      });
+      return NextResponse.json(
+        { error: "Forbidden - Only owners and managers can send invitations" },
+        { status: 403 }
+      );
+    }
+
+    logger.info("✅ [STAFF INVITATION POST] User has permission", {
+      userId: user.id,
+      isVenueOwner,
+      hasPermission,
+    });
+
     // Generate token
     const token = crypto.randomUUID();
     const expiresAt = new Date();
     expiresAt.setDate(expiresAt.getDate() + 7); // 7 days
 
-    // Create invitation
+    // Create invitation using authenticated user's info
     const { data: invitation, error: invitationError } = await supabase
       .from("staff_invitations")
       .insert({
@@ -147,9 +168,9 @@ export async function POST(_request: NextRequest) {
         permissions,
         token,
         expires_at: expiresAt.toISOString(),
-        invited_by: user_id,
-        invited_by_email: user_email,
-        invited_by_name: user_name,
+        invited_by: user.id,
+        invited_by_email: user.email,
+        invited_by_name: user.user_metadata?.full_name || user.email,
         status: "pending",
       })
       .select()
@@ -183,7 +204,7 @@ export async function POST(_request: NextRequest) {
           html: `
             <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
               <h2>You've been invited!</h2>
-              <p>You've been invited by ${user_name || user_email} to join <strong>${venue.venue_name}</strong> as a <strong>${role}</strong>.</p>
+              <p>You've been invited by ${user.user_metadata?.full_name || user.email} to join <strong>${venue.venue_name}</strong> as a <strong>${role}</strong>.</p>
               <p>Click the button below to accept your invitation:</p>
               <a href="${inviteLink}" style="display: inline-block; padding: 12px 24px; background-color: #7C3AED; color: white; text-decoration: none; border-radius: 6px; margin: 16px 0;">Accept Invitation</a>
               <p style="color: #666; font-size: 14px;">This invitation expires in 7 days.</p>
@@ -223,13 +244,21 @@ export async function POST(_request: NextRequest) {
   }
 }
 
-// DELETE /api/staff/invitations - Delete/cancel invitation (Cookie-free)
+// DELETE /api/staff/invitations - Delete/cancel invitation (Requires auth)
 export async function DELETE(_request: NextRequest) {
   try {
-    const body = await _request.json();
-    const { invitation_id, user_id, venue_id } = body;
+    // Get authenticated user from cookies
+    const { getUserSafe } = await import("@/utils/getUserSafe");
+    const user = await getUserSafe();
 
-    // Only invitation_id and venue_id are required (cookie-free operation)
+    if (!user) {
+      logger.warn("[STAFF INVITATIONS DELETE] Unauthorized - no user session");
+      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+    }
+
+    const body = await _request.json();
+    const { invitation_id, venue_id } = body;
+
     if (!invitation_id || !venue_id) {
       return NextResponse.json(
         { error: "invitation_id and venue_id are required" },
@@ -239,23 +268,29 @@ export async function DELETE(_request: NextRequest) {
 
     const supabase = createAdminClient();
 
-    // Optional: Check if user has permission (if user_id provided, for audit trail)
-    if (user_id) {
+    // Check if user has permission (owner or manager)
+    const { data: venue } = await supabase
+      .from("venues")
+      .select("owner_user_id")
+      .eq("venue_id", venue_id)
+      .single();
+
+    const isVenueOwner = venue?.owner_user_id === user.id;
+
+    let hasPermission = false;
+    if (!isVenueOwner) {
       const { data: userRole } = await supabase
         .from("user_venue_roles")
         .select("role")
-        .eq("user_id", user_id)
+        .eq("user_id", user.id)
         .eq("venue_id", venue_id)
         .single();
 
-      if (userRole) {
-        logger.info("✅ [STAFF INVITATION DELETE] User identified", {
-          userId: user_id,
-          role: userRole.role,
-        });
-      }
-    } else {
-      logger.info("ℹ️ [STAFF INVITATION DELETE] No user context provided (cookie-free operation)");
+      hasPermission = userRole?.role === "owner" || userRole?.role === "manager";
+    }
+
+    if (!isVenueOwner && !hasPermission) {
+      return NextResponse.json({ error: "Forbidden" }, { status: 403 });
     }
 
     // Delete the invitation

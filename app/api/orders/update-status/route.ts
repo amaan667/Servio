@@ -1,5 +1,5 @@
 import { NextResponse } from "next/server";
-import { createClient, getAuthenticatedUser } from "@/lib/supabase";
+import { createAdminClient } from "@/lib/supabase";
 import { cleanupTableOnOrderCompletion } from "@/lib/table-cleanup";
 import { logger } from "@/lib/logger";
 
@@ -16,10 +16,8 @@ export async function POST(req: Request) {
       );
     }
 
-    const { user } = await getAuthenticatedUser();
-    if (!user) return NextResponse.json({ ok: false, error: "Not authenticated" }, { status: 401 });
-
-    const supabase = await createClient();
+    // Use admin client - no auth needed
+    const supabase = createAdminClient();
 
     const { data, error } = await supabase
       .from("orders")

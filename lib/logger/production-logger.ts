@@ -43,14 +43,22 @@ class ProductionLogger {
   private log(level: LogLevel, levelName: string, message: string, context?: FlexibleLogContext) {
     if (!this.shouldLog(level)) return;
 
-    // No console output in production
-    if (process.env.NODE_ENV === "production") {
-      return;
+    const formattedMessage = this.formatMessage(levelName, message, context);
+
+    // ALWAYS output to console for Railway logs
+    // Railway captures stdout/stderr for log viewing
+    if (level === LogLevel.ERROR) {
+      console.error(formattedMessage);
+    } else if (level === LogLevel.WARN) {
+      console.warn(formattedMessage);
+    } else if (level === LogLevel.INFO) {
+      console.info(formattedMessage);
+    } else {
+      console.log(formattedMessage);
     }
 
-    // Sentry integration for errors and warnings
-    const nodeEnv = process.env.NODE_ENV as string | undefined;
-    const isProduction = nodeEnv === "production";
+    // Sentry integration for errors and warnings in production
+    const isProduction = process.env.NODE_ENV === "production";
     if (level >= LogLevel.WARN && isProduction) {
       if (level === LogLevel.ERROR) {
         Sentry.captureException(new Error(message), {

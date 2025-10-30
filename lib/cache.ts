@@ -13,9 +13,18 @@ interface CacheEntry<T> {
   expires: number;
 }
 
+// Redis client interface (compatible with ioredis)
+interface RedisClient {
+  get(key: string): Promise<string | null>;
+  setex(key: string, seconds: number, value: string): Promise<"OK">;
+  del(...keys: string[]): Promise<number>;
+  keys(pattern: string): Promise<string[]>;
+  flushdb(): Promise<"OK">;
+}
+
 class CacheService {
   private memoryCache = new Map<string, CacheEntry<unknown>>();
-  private redisClient: unknown = null;
+  private redisClient: RedisClient | null = null;
 
   constructor() {
     // Future: Initialize Redis client for production caching
@@ -29,9 +38,9 @@ class CacheService {
     try {
       // Try Redis first (if available)
       if (this.redisClient) {
-        const cached = await (this.redisClient as any).get(key);
+        const cached = await this.redisClient.get(key);
         if (cached) {
-          return JSON.parse(cached);
+          return JSON.parse(cached) as T;
         }
       }
 
@@ -68,7 +77,7 @@ class CacheService {
 
       // Try Redis first (if available)
       if (this.redisClient) {
-        await (this.redisClient as any).setex(key, ttl, JSON.stringify(value));
+        await this.redisClient.setex(key, ttl, JSON.stringify(value));
         return;
       }
 
@@ -85,7 +94,7 @@ class CacheService {
   async delete(key: string): Promise<void> {
     try {
       if (this.redisClient) {
-        await (this.redisClient as any).del(key);
+        await this.redisClient.del(key);
       } else {
         this.memoryCache.delete(key);
       }
@@ -100,9 +109,9 @@ class CacheService {
   async invalidatePattern(pattern: string): Promise<void> {
     try {
       if (this.redisClient) {
-        const keys = await (this.redisClient as any).keys(pattern);
+        const keys = await this.redisClient.keys(pattern);
         if (keys.length > 0) {
-          await (this.redisClient as any).del(...keys);
+          await this.redisClient.del(...keys);
         }
       } else {
         // Memory cache pattern matching
@@ -124,7 +133,7 @@ class CacheService {
   async clear(): Promise<void> {
     try {
       if (this.redisClient) {
-        await (this.redisClient as any).flushdb();
+        await this.redisClient.flushdb();
       } else {
         this.memoryCache.clear();
       }

@@ -4,13 +4,12 @@
  */
 
 import { NextResponse } from "next/server";
-import swaggerSpec from "@/docs/swagger.config.js";
+import swaggerSpec from "@/swagger.config.js";
 
 export async function GET() {
   try {
-    // Generate spec from config
-    const spec = await import("@/docs/swagger.config.js");
-    return NextResponse.json(spec.default || swaggerSpec, {
+    // Return swagger spec
+    return NextResponse.json(swaggerSpec, {
       headers: {
         "Content-Type": "application/json",
         "Access-Control-Allow-Origin": "*",

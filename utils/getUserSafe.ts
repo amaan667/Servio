@@ -3,8 +3,9 @@
  * @module utils/getUserSafe
  */
 
-import { createServerSupabase } from "@/lib/supabase";
-import { cookies } from "next/headers";
+import { createClient } from "@/lib/supabase";
+import { hasServerAuthCookie } from "@/lib/server-utils";
+import { logger } from "@/lib/logger";
 
 /**
  * Safely retrieves the currently authenticated user
@@ -22,32 +23,34 @@ import { cookies } from "next/headers";
  */
 export async function getUserSafe() {
   try {
-    // Get cookies from the request
-    const cookieStore = await cookies();
+    const hasAuthCookie = await hasServerAuthCookie();
 
-    // Create a server client with proper cookie handling
-    const supabase = await createServerSupabase();
+    if (!hasAuthCookie) {
+      logger.debug("[getUserSafe] No auth cookie found");
+      return null;
+    }
 
+    const supabase = await createClient();
     const { data, error } = await supabase.auth.getSession();
 
     if (error) {
-      console.log("[AUTH DEBUG] getSession error:", error.message);
+      logger.warn("[getUserSafe] Session error:", {
+        error: error.message,
+        code: error.status,
+      });
       return null;
     }
 
     if (!data.session?.user) {
-      console.log("[AUTH DEBUG] No session or user found");
+      logger.debug("[getUserSafe] No user in session");
       return null;
     }
 
-    console.log("[AUTH DEBUG] User authenticated:", data.session.user.id);
     return data.session.user;
-  } catch (error) {
-    // If anything goes wrong, return null instead of throwing
-    console.log(
-      "[AUTH DEBUG] getUserSafe exception:",
-      error instanceof Error ? error.message : String(error)
-    );
+  } catch (err) {
+    logger.error("[getUserSafe] Unexpected error:", {
+      error: err instanceof Error ? err.message : String(err),
+    });
     return null;
   }
 }
