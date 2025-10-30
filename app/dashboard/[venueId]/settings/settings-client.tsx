@@ -3,6 +3,7 @@
 import React, { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import { supabaseBrowser } from "@/lib/supabase";
+import { useAuth } from "@/app/auth/AuthProvider";
 import VenueSettingsClient from "./VenueSettingsClient";
 import RoleBasedNavigation from "@/components/RoleBasedNavigation";
 import type { User } from "@supabase/supabase-js";
@@ -26,6 +27,7 @@ export default function SettingsPageClient({ venueId, initialData }: SettingsPag
     hasInitialData: !!initialData,
   });
   const router = useRouter();
+  const { session } = useAuth(); // Get session from AuthProvider
 
   // Fetch data on client if not provided by server
   const [data, setData] = useState(initialData || null);
@@ -52,18 +54,18 @@ export default function SettingsPageClient({ venueId, initialData }: SettingsPag
         }
 
         console.log("[SETTINGS] 🔄 Fetching data on client...");
-        const supabase = supabaseBrowser();
-        const {
-          data: { user },
-        } = await supabase.auth.getUser();
+
+        // Use session from AuthProvider (already authenticated)
+        const user = session?.user;
 
         if (!user) {
-          console.log(
-            "[SETTINGS] ℹ️ No user session - page will render with limited functionality"
-          );
+          console.log("[SETTINGS] ℹ️ No user session from AuthProvider - waiting...");
           setLoading(false);
           return;
         }
+
+        console.log("[SETTINGS] ✅ Using user from AuthProvider:", user.id);
+        const supabase = supabaseBrowser();
 
         // Fetch all required data
         const [venueResult, userRoleResult, allVenuesResult, orgResult] = await Promise.all([
@@ -142,7 +144,7 @@ export default function SettingsPageClient({ venueId, initialData }: SettingsPag
     };
 
     fetchData();
-  }, [venueId, initialData]);
+  }, [venueId, initialData, session]);
 
   // Show loading state while fetching
   if (loading) {
