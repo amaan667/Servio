@@ -53,13 +53,20 @@ function FAQItem({ question, answer }: { question: string; answer: string }) {
   );
 }
 
-export function HomePageClient({ initialAuthState }: { initialAuthState: boolean }) {
+interface HomePageClientProps {
+  initialAuthState: boolean;
+  initialUserPlan?: "basic" | "standard" | "premium" | null;
+}
+
+export function HomePageClient({ initialAuthState, initialUserPlan = null }: HomePageClientProps) {
   const router = useRouter();
   const { user } = useAuth();
 
-  // Use server-provided auth state as initial value - prevents flicker
+  // Use server-provided auth state and plan - prevents flicker
   const [isSignedIn, setIsSignedIn] = useState(initialAuthState);
-  const [userPlan, setUserPlan] = useState<"basic" | "standard" | "premium" | null>(null);
+  const [userPlan, setUserPlan] = useState<"basic" | "standard" | "premium" | null>(
+    initialUserPlan
+  );
   const [loadingPlan, setLoadingPlan] = useState(false);
 
   // Sync with auth context when it updates (but only if different)
@@ -70,76 +77,22 @@ export function HomePageClient({ initialAuthState }: { initialAuthState: boolean
     }
   }, [user, isSignedIn]);
 
-  // Fetch user's current subscription plan from organizations table
+  // Sync plan from server-side initial data
   useEffect(() => {
-    const fetchUserPlan = async () => {
-      if (!isSignedIn || !user) {
-        setUserPlan(null);
-        setLoadingPlan(false);
-        return;
-      }
+    // If we have initialUserPlan from server, use it
+    if (initialUserPlan !== null && userPlan !== initialUserPlan) {
+      console.log("[PRICING] Using server-provided plan:", initialUserPlan);
+      setUserPlan(initialUserPlan);
+    }
+  }, [initialUserPlan]);
 
-      setLoadingPlan(true);
-      try {
-        const supabase = supabaseBrowser();
-
-        // Get user's venue to find organization
-        // Only select organization_id (subscription_tier column doesn't exist on venues in production)
-        const { data: venues, error: venueError } = await supabase
-          .from("venues")
-          .select("organization_id")
-          .eq("owner_user_id", user.id)
-          .limit(1);
-
-        if (venueError) {
-          console.error("[PRICING] Error fetching venue:", venueError);
-          setUserPlan("basic"); // Default to basic on error
-          setLoadingPlan(false);
-          return;
-        }
-
-        if (!venues || venues.length === 0) {
-          console.log("[PRICING] No venues found - user may be new");
-          setUserPlan(null); // No plan if no venue
-          setLoadingPlan(false);
-          return;
-        }
-
-        const firstVenue = venues[0];
-
-        // Get subscription tier from organization table
-        if (firstVenue?.organization_id) {
-          const { data: org, error: orgError } = await supabase
-            .from("organizations")
-            .select("subscription_tier")
-            .eq("id", firstVenue.organization_id)
-            .maybeSingle();
-
-          if (orgError) {
-            console.error("[PRICING] Error fetching organization:", orgError);
-            setUserPlan("basic");
-          } else if (org?.subscription_tier) {
-            const tier = org.subscription_tier.toLowerCase();
-            setUserPlan(tier as "basic" | "standard" | "premium");
-            console.log("[PRICING] User plan detected from org:", tier);
-          } else {
-            console.log("[PRICING] No subscription tier in organization - defaulting to basic");
-            setUserPlan("basic");
-          }
-        } else {
-          console.log("[PRICING] No organization found - defaulting to basic");
-          setUserPlan("basic"); // Default to basic if no org
-        }
-      } catch (error) {
-        console.error("[PRICING] Error fetching plan:", error);
-        setUserPlan("basic"); // Default to basic on error
-      } finally {
-        setLoadingPlan(false);
-      }
-    };
-
-    fetchUserPlan();
-  }, [isSignedIn, user]);
+  // Sync auth state with client-side auth context
+  useEffect(() => {
+    const currentAuthState = !!user;
+    if (currentAuthState !== isSignedIn) {
+      setIsSignedIn(currentAuthState);
+    }
+  }, [user, isSignedIn]);
 
   // Clean up URL params on mount
   useEffect(() => {
