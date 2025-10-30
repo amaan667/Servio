@@ -1,15 +1,9 @@
 import { NextRequest, NextResponse } from "next/server";
-import { getUserSafe } from "@/utils/getUserSafe";
 import { logger } from "@/lib/logger";
 
-// POST /api/send-invitation-dev - Send invitation email in development mode
+// POST /api/send-invitation-dev - Send invitation email in development mode (Cookie-free)
 export async function POST(_request: NextRequest) {
   try {
-    const user = await getUserSafe();
-    if (!user) {
-      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
-    }
-
     const body = await _request.json();
     const { email, venueName, role, invitationLink } = body;
 

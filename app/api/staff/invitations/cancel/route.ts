@@ -1,26 +1,25 @@
 import { NextRequest, NextResponse } from "next/server";
-import { createClient } from "@/lib/supabase";
-import { getUserSafe } from "@/utils/getUserSafe";
+import { createAdminClient } from "@/lib/supabase";
 import { logger } from "@/lib/logger";
 
-// POST /api/staff/invitations/cancel - Cancel an invitation
+// POST /api/staff/invitations/cancel - Cancel an invitation (Cookie-free)
 export async function POST(_request: NextRequest) {
   try {
-    const user = await getUserSafe();
-    if (!user) {
-      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
-    }
-
     const body = await _request.json();
-    const { id } = body;
-
-    logger.debug("[INVITATION API] Cancel request received:", { data: { id, user: user.id } });
+    const { id, venue_id, user_id } = body;
 
     if (!id) {
       return NextResponse.json({ error: "Invitation ID is required" }, { status: 400 });
     }
 
-    const supabase = await createClient();
+    // Optional: Log user context if provided
+    if (user_id) {
+      logger.debug("[INVITATION API] Cancel request received:", { data: { id, user_id } });
+    } else {
+      logger.debug("[INVITATION API] Cancel request received (cookie-free):", { data: { id } });
+    }
+
+    const supabase = createAdminClient();
 
     // Check if staff_invitations table exists
     try {
@@ -54,7 +53,7 @@ export async function POST(_request: NextRequest) {
       }
     }
 
-    // Get invitation details to check permissions
+    // Get invitation details
     const { data: invitation, error: fetchInvitationError } = await supabase
       .from("staff_invitations")
       .select("venue_id, status")
@@ -66,33 +65,23 @@ export async function POST(_request: NextRequest) {
       return NextResponse.json({ error: "Invitation not found" }, { status: 404 });
     }
 
-    // Check if user has permission to cancel invitations for this venue
-    const { data: userRole } = await supabase
-      .from("user_venue_roles")
-      .select("role")
-      .eq("user_id", user.id)
-      .eq("venue_id", invitation.venue_id)
-      .single();
-
-    // If no role found, check if user is the venue owner
-    let hasPermission = false;
-    if (userRole && ["owner", "manager"].includes(userRole.role)) {
-      hasPermission = true;
-    } else {
-      // Check if user is the venue owner
-      const { data: venue } = await supabase
-        .from("venues")
-        .select("owner_user_id")
-        .eq("venue_id", invitation.venue_id)
+    // Optional: Log user context if provided (for audit trail)
+    if (user_id && venue_id) {
+      const { data: userRole } = await supabase
+        .from("user_venue_roles")
+        .select("role")
+        .eq("user_id", user_id)
+        .eq("venue_id", venue_id)
         .single();
 
-      if (venue && venue.owner_user_id === user.id) {
-        hasPermission = true;
+      if (userRole) {
+        logger.info("✅ [INVITATION CANCEL] User identified", {
+          userId: user_id,
+          role: userRole.role,
+        });
       }
-    }
-
-    if (!hasPermission) {
-      return NextResponse.json({ error: "Insufficient permissions" }, { status: 403 });
+    } else {
+      logger.info("ℹ️ [INVITATION CANCEL] No user context provided (cookie-free operation)");
     }
 
     // Check if invitation can be cancelled

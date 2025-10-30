@@ -1,17 +1,11 @@
 import { NextResponse } from "next/server";
-import { createClient } from "@/lib/supabase";
-import { getUserSafe } from "@/utils/getUserSafe";
+import { createAdminClient } from "@/lib/supabase";
 import { logger } from "@/lib/logger";
 
-// POST /api/fix-invitation-constraint - Direct fix for invitation constraint
+// POST /api/fix-invitation-constraint - Direct fix for invitation constraint (Cookie-free)
 export async function POST() {
   try {
-    const user = await getUserSafe();
-    if (!user) {
-      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
-    }
-
-    const supabase = await createClient();
+    const supabase = createAdminClient();
 
     logger.debug("[CONSTRAINT FIX] Starting direct constraint fix...");
 
