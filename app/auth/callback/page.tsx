@@ -52,6 +52,7 @@ function CallbackContent() {
         });
 
         // Now call server endpoint to SET COOKIES from the session
+        console.log("[AUTH CALLBACK CLIENT] Calling sync-session endpoint...");
         const response = await fetch("/api/auth/sync-session", {
           method: "POST",
           headers: {
@@ -65,13 +66,29 @@ function CallbackContent() {
           credentials: "include",
         });
 
+        console.log("[AUTH CALLBACK CLIENT] Sync response:", {
+          status: response.status,
+          ok: response.ok,
+        });
+
         if (!response.ok) {
+          const errorData = await response.json();
+          console.error("[AUTH CALLBACK CLIENT] Sync failed:", errorData);
           logger.error("[AUTH CALLBACK CLIENT] Failed to sync session to server");
           setError("Failed to sync session. Please try again.");
           return;
         }
 
+        const syncData = await response.json();
+        console.log("[AUTH CALLBACK CLIENT] Sync successful:", syncData);
         logger.info("[AUTH CALLBACK CLIENT] ✅ Session synced to server cookies");
+
+        // Verify cookies were set by making a test request
+        const checkResponse = await fetch("/api/auth/check-cookies", {
+          credentials: "include",
+        });
+        const cookieCheck = await checkResponse.json();
+        console.log("[AUTH CALLBACK CLIENT] Cookie check after sync:", cookieCheck);
 
         // Check if user has a venue
         const { data: venues } = await supabase
