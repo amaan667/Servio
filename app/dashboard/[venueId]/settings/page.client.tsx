@@ -1,17 +1,24 @@
 "use client";
 
 import SettingsPageClient from "./settings-client";
-import type { User } from "@supabase/supabase-js";
 
 interface SettingsClientPageProps {
   venueId: string;
-  initialUser?: User;
+  initialData: {
+    user: { id: string; email?: string; user_metadata?: Record<string, unknown> };
+    venue: Record<string, unknown>;
+    venues: Record<string, unknown>[];
+    organization: Record<string, unknown> | null;
+    isOwner: boolean;
+    isManager: boolean;
+    userRole: string;
+  };
 }
 
-export default function SettingsClientPage({ venueId, initialUser }: SettingsClientPageProps) {
+export default function SettingsClientPage({ venueId, initialData }: SettingsClientPageProps) {
   console.log("[SETTINGS PAGE CLIENT] 🔧 Rendering settings page client wrapper", {
     venueId,
-    hasInitialUser: !!initialUser,
+    hasInitialData: !!initialData,
   });
-  return <SettingsPageClient venueId={venueId} initialUser={initialUser} />;
+  return <SettingsPageClient venueId={venueId} initialData={initialData} />;
 }
