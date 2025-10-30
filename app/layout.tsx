@@ -8,6 +8,7 @@ import { Inter } from "next/font/google";
 import "./globals.css";
 import { cookies } from "next/headers";
 import { createServerSupabase } from "@/lib/supabase";
+import { logger } from "@/lib/logger";
 import AuthProvider from "@/app/auth/AuthProvider";
 import Providers from "./providers";
 import ConditionalHeader from "@/components/ConditionalHeader";
