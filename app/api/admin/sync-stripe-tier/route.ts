@@ -1,0 +1,183 @@
+import { NextRequest, NextResponse } from "next/server";
+import { createClient } from "@/lib/supabase";
+import { stripe } from "@/lib/stripe-client";
+import { logger } from "@/lib/logger";
+
+/**
+ * Sync subscription tier from Stripe to database
+ * POST /api/admin/sync-stripe-tier
+ * Fetches actual subscription from Stripe and updates database
+ */
+export async function POST(request: NextRequest) {
+  try {
+    const supabase = await createClient();
+
+    // Get current user
+    const {
+      data: { user },
+    } = await supabase.auth.getUser();
+
+    if (!user) {
+      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+    }
+
+    logger.info("[SYNC STRIPE TIER] Request to sync tier from Stripe", {
+      userId: user.id,
+      email: user.email,
+    });
+
+    // Find organization for this user
+    const { data: venues } = await supabase
+      .from("venues")
+      .select("organization_id")
+      .eq("owner_user_id", user.id)
+      .limit(1);
+
+    if (!venues || venues.length === 0) {
+      return NextResponse.json({ error: "No organization found" }, { status: 404 });
+    }
+
+    const organizationId = venues[0].organization_id;
+
+    // Get current org data
+    const { data: org } = await supabase
+      .from("organizations")
+      .select("*")
+      .eq("id", organizationId)
+      .single();
+
+    if (!org) {
+      return NextResponse.json({ error: "Organization not found" }, { status: 404 });
+    }
+
+    logger.info("[SYNC STRIPE TIER] Current database state", {
+      orgId: organizationId,
+      currentTier: org.subscription_tier,
+      currentStatus: org.subscription_status,
+      stripeCustomerId: org.stripe_customer_id,
+    });
+
+    if (!org.stripe_customer_id) {
+      return NextResponse.json(
+        { error: "No Stripe customer ID found. Please set up billing first." },
+        { status: 400 }
+      );
+    }
+
+    // Fetch subscription from Stripe
+    logger.info("[SYNC STRIPE TIER] Fetching subscriptions from Stripe...", {
+      customerId: org.stripe_customer_id,
+    });
+
+    const subscriptions = await stripe.subscriptions.list({
+      customer: org.stripe_customer_id,
+      limit: 10,
+      expand: ["data.items.data.price.product"],
+    });
+
+    logger.info("[SYNC STRIPE TIER] Stripe subscriptions found", {
+      count: subscriptions.data.length,
+      subscriptions: subscriptions.data.map((s) => ({
+        id: s.id,
+        status: s.status,
+        metadata: s.metadata,
+      })),
+    });
+
+    if (subscriptions.data.length === 0) {
+      return NextResponse.json({ error: "No Stripe subscription found" }, { status: 404 });
+    }
+
+    // Get the active subscription (or most recent one)
+    const activeSubscription =
+      subscriptions.data.find((s) => s.status === "active" || s.status === "trialing") ||
+      subscriptions.data[0];
+
+    logger.info("[SYNC STRIPE TIER] Using subscription", {
+      id: activeSubscription.id,
+      status: activeSubscription.status,
+      metadata: activeSubscription.metadata,
+    });
+
+    // Get tier from Stripe metadata
+    const stripeTier = activeSubscription.metadata?.tier;
+
+    if (!stripeTier) {
+      logger.warn("[SYNC STRIPE TIER] No tier in Stripe metadata, checking product name...");
+
+      // Fallback: check product name/description
+      const productName = activeSubscription.items.data[0]?.price?.product;
+      logger.info("[SYNC STRIPE TIER] Product info:", { productName });
+
+      return NextResponse.json(
+        {
+          error: "Tier not found in Stripe metadata. Please contact support.",
+          stripeData: {
+            subscriptionId: activeSubscription.id,
+            status: activeSubscription.status,
+            metadata: activeSubscription.metadata,
+          },
+        },
+        { status: 400 }
+      );
+    }
+
+    // Calculate trial end date
+    let trialEndsAt = null;
+    if (activeSubscription.trial_end) {
+      trialEndsAt = new Date(activeSubscription.trial_end * 1000).toISOString();
+    }
+
+    // Update database to match Stripe
+    const updateData = {
+      subscription_tier: stripeTier,
+      subscription_status: activeSubscription.status,
+      stripe_subscription_id: activeSubscription.id,
+      trial_ends_at: trialEndsAt,
+      updated_at: new Date().toISOString(),
+    };
+
+    logger.info("[SYNC STRIPE TIER] Updating database with Stripe data", updateData);
+
+    const { error } = await supabase
+      .from("organizations")
+      .update(updateData)
+      .eq("id", organizationId);
+
+    if (error) {
+      logger.error("[SYNC STRIPE TIER] Database update failed", { error });
+      return NextResponse.json({ error: "Failed to update database" }, { status: 500 });
+    }
+
+    logger.info("[SYNC STRIPE TIER] ✅ Successfully synced tier from Stripe", {
+      orgId: organizationId,
+      newTier: stripeTier,
+      newStatus: activeSubscription.status,
+    });
+
+    return NextResponse.json({
+      success: true,
+      message: `Subscription synced from Stripe`,
+      before: {
+        tier: org.subscription_tier,
+        status: org.subscription_status,
+      },
+      after: {
+        tier: stripeTier,
+        status: activeSubscription.status,
+      },
+      stripe: {
+        subscriptionId: activeSubscription.id,
+        status: activeSubscription.status,
+      },
+    });
+  } catch (err) {
+    logger.error("[SYNC STRIPE TIER] Unexpected error", { error: err });
+    return NextResponse.json(
+      {
+        error: err instanceof Error ? err.message : "Internal server error",
+      },
+      { status: 500 }
+    );
+  }
+}
