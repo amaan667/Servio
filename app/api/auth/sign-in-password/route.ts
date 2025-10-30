@@ -57,7 +57,8 @@ export async function POST(request: NextRequest) {
         ? `/dashboard/${venues[0].venue_id}`
         : "/select-plan";
 
-    logger.info("[AUTH SIGN-IN] ✅ EMAIL/PASSWORD - Redirecting to:", redirectTo, {
+    logger.info("[AUTH SIGN-IN] ✅ EMAIL/PASSWORD - Redirecting to:", {
+      redirectTo,
       selectedVenue: venues?.[0]?.venue_id,
       createdAt: venues?.[0]?.created_at,
     });
