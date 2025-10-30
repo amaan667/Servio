@@ -617,10 +617,16 @@ export default function SignUpForm({ onGoogleSignIn, isSigningUp = false }: Sign
           </form>
 
           <div className="flex justify-between items-center text-sm">
-            <Button variant="ghost" size="sm" onClick={() => setStep("tier")} disabled={loading}>
-              ← Change Plan
-            </Button>
-            <Link href="/sign-in" className="text-purple-600 hover:underline">
+            {/* Hide "Change Plan" button for invitation signups */}
+            {!invitationToken && (
+              <Button variant="ghost" size="sm" onClick={() => setStep("tier")} disabled={loading}>
+                ← Change Plan
+              </Button>
+            )}
+            <Link
+              href="/sign-in"
+              className={`text-purple-600 hover:underline ${invitationToken ? "w-full text-center" : ""}`}
+            >
               Sign in
             </Link>
           </div>
