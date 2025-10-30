@@ -84,35 +84,50 @@ export function HomePageClient({ initialAuthState }: { initialAuthState: boolean
         const supabase = supabaseBrowser();
 
         // First get user's venue to find organization
-        const { data: venues } = await supabase
+        const { data: venues, error: venueError } = await supabase
           .from("venues")
-          .select("organization_id")
+          .select("organization_id, subscription_tier")
           .eq("owner_user_id", user.id)
           .limit(1)
           .single();
 
-        if (!venues?.organization_id) {
-          console.log("[PRICING] No organization found");
+        if (venueError) {
+          console.error("[PRICING] Error fetching venue:", venueError);
           setLoadingPlan(false);
           return;
         }
 
-        // Then get the organization's subscription tier
-        const { data: org } = await supabase
-          .from("organizations")
-          .select("subscription_tier")
-          .eq("id", venues.organization_id)
-          .single();
-
-        if (org?.subscription_tier) {
-          const tier = org.subscription_tier.toLowerCase();
+        // Check if subscription_tier is directly on venue (new schema)
+        if (venues?.subscription_tier) {
+          const tier = venues.subscription_tier.toLowerCase();
           setUserPlan(tier as "basic" | "standard" | "premium");
-          console.log("[PRICING] User plan detected:", tier);
+          console.log("[PRICING] User plan detected from venue:", tier);
+          setLoadingPlan(false);
+          return;
+        }
+
+        // Fallback: Check organization table (old schema)
+        if (venues?.organization_id) {
+          const { data: org } = await supabase
+            .from("organizations")
+            .select("subscription_tier")
+            .eq("id", venues.organization_id)
+            .single();
+
+          if (org?.subscription_tier) {
+            const tier = org.subscription_tier.toLowerCase();
+            setUserPlan(tier as "basic" | "standard" | "premium");
+            console.log("[PRICING] User plan detected from org:", tier);
+          } else {
+            console.log("[PRICING] No subscription tier in organization");
+          }
         } else {
-          console.log("[PRICING] No subscription tier in organization");
+          console.log("[PRICING] No organization found - setting to basic");
+          setUserPlan("basic"); // Default to basic if no org
         }
       } catch (error) {
         console.error("[PRICING] Error fetching plan:", error);
+        setUserPlan("basic"); // Default to basic on error
       } finally {
         setLoadingPlan(false);
       }

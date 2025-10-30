@@ -75,7 +75,7 @@ export function QuickActionsToolbar({
 
   return (
     <TooltipProvider>
-      <div className="sticky top-0 z-40 bg-gray-50/50 hidden md:block">
+      <div className="sticky top-0 z-40 bg-gray-50/50 block">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="flex items-center justify-between gap-2 py-5">
             {/* Left: Quick Actions */}
