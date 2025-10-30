@@ -153,6 +153,36 @@ export async function POST(_request: NextRequest) {
       hasPermission,
     });
 
+    // Check if a pending invitation already exists for this email/venue
+    const { data: existingInvitation } = await supabase
+      .from("staff_invitations")
+      .select("id, status, email")
+      .eq("venue_id", venue_id)
+      .eq("email", email.toLowerCase())
+      .eq("status", "pending")
+      .maybeSingle();
+
+    // If a pending invitation exists, delete it first (to allow resending)
+    if (existingInvitation) {
+      logger.info("[STAFF INVITATION POST] Deleting existing pending invitation", {
+        invitationId: existingInvitation.id,
+        email: existingInvitation.email,
+      });
+
+      const { error: deleteError } = await supabase
+        .from("staff_invitations")
+        .delete()
+        .eq("id", existingInvitation.id);
+
+      if (deleteError) {
+        logger.error("[STAFF INVITATION POST] Error deleting old invitation:", deleteError);
+        return NextResponse.json(
+          { error: "Failed to resend invitation. Please try again." },
+          { status: 500 }
+        );
+      }
+    }
+
     // Generate token
     const token = crypto.randomUUID();
     const expiresAt = new Date();
@@ -178,6 +208,21 @@ export async function POST(_request: NextRequest) {
 
     if (invitationError) {
       logger.error("[STAFF INVITATION POST] Error creating invitation:", invitationError);
+
+      // Handle duplicate key error with a friendly message
+      if (
+        invitationError.message?.includes("duplicate key") ||
+        invitationError.message?.includes("unique constraint")
+      ) {
+        return NextResponse.json(
+          {
+            error:
+              "An invitation for this email already exists. Please wait a moment and try again.",
+          },
+          { status: 409 }
+        );
+      }
+
       return NextResponse.json({ error: invitationError.message }, { status: 500 });
     }
 
