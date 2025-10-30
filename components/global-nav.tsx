@@ -177,7 +177,7 @@ export default function GlobalNav() {
               // Signed in navigation - modern SaaS style
               <div className="flex items-center space-x-2">
                 {isDashboardRoot ? (
-                  // On dashboard root page: Dashboard, Settings (no border), Sign Out (purple border)
+                  // On dashboard root page: Home, Settings, Dark Mode (no border), Sign Out (purple border)
                   <>
                     <Link
                       href="/"
@@ -199,7 +199,17 @@ export default function GlobalNav() {
                         Settings
                       </Link>
                     )}
-                    {/* NO DARK MODE BUTTON ON DASHBOARD ROOT - hidden on home page */}
+                    <button
+                      onClick={() => setTheme(theme === "dark" ? "light" : "dark")}
+                      className="flex items-center px-4 py-3 text-base font-medium text-gray-900 hover:text-purple-600 transition-all duration-200"
+                      aria-label="Toggle theme"
+                    >
+                      {theme === "dark" ? (
+                        <Sun className="h-5 w-5" />
+                      ) : (
+                        <Moon className="h-5 w-5" />
+                      )}
+                    </button>
                     <div className="w-px h-8 bg-gray-200 mx-2"></div>
                     <Button
                       variant="outline"
@@ -214,7 +224,7 @@ export default function GlobalNav() {
                     </Button>
                   </>
                 ) : isOnFeaturePage || isOnQRPage ? (
-                  // On feature pages: Dashboard, Settings (no border), Sign Out (purple border)
+                  // On feature pages: Dashboard, Settings, Dark Mode (no border), Sign Out (purple border)
                   <>
                     <Link
                       href={
@@ -238,7 +248,17 @@ export default function GlobalNav() {
                         Settings
                       </Link>
                     )}
-                    {/* NO DARK MODE BUTTON ON FEATURE PAGES - hidden on home page */}
+                    <button
+                      onClick={() => setTheme(theme === "dark" ? "light" : "dark")}
+                      className="flex items-center px-4 py-3 text-base font-medium text-gray-900 hover:text-purple-600 transition-all duration-200"
+                      aria-label="Toggle theme"
+                    >
+                      {theme === "dark" ? (
+                        <Sun className="h-5 w-5" />
+                      ) : (
+                        <Moon className="h-5 w-5" />
+                      )}
+                    </button>
                     <div className="w-px h-8 bg-gray-200 mx-2"></div>
                     <Button
                       variant="outline"
