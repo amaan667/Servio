@@ -105,7 +105,7 @@ export default function SettingsPageClient({ venueId }: { venueId: string }) {
           allVenuesCount: allVenuesResult.data?.length || 0,
           allVenuesError: allVenuesResult.error?.message,
           hasOrganization: !!orgResult.data,
-          organizationError: orgResult.error?.message,
+          organizationError: "error" in orgResult ? orgResult.error?.message : undefined,
         });
 
         const venue = venueResult.data;
