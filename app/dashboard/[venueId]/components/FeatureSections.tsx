@@ -38,8 +38,14 @@ interface FeatureSectionsProps {
 }
 
 export function FeatureSections({ venueId, userRole }: FeatureSectionsProps) {
-  const handleFeatureClick = (_feature: Feature, _section: string) => {
-    // Feature click tracking removed - add analytics if needed
+  const handleFeatureClick = (feature: Feature, section: string) => {
+    console.log("[FEATURE CLICK] 🖱️ Feature card clicked:", {
+      feature: feature.title,
+      section,
+      href: feature.href,
+      venueId,
+      userRole,
+    });
   };
 
   const sections: FeatureSection[] = [

@@ -9,10 +9,14 @@ import RoleBasedNavigation from "@/components/RoleBasedNavigation";
 export default function SettingsPageClient({ venueId }: { venueId: string }) {
   const router = useRouter();
 
+  console.log("[SETTINGS CLIENT] 🎨 Component mounted/rendered", { venueId });
+
   // Check cache to prevent flicker
   const getCachedData = () => {
     if (typeof window === "undefined") return null;
     const cached = sessionStorage.getItem(`settings_data_${venueId}`);
+    const hasCached = !!cached;
+    console.log("[SETTINGS CLIENT] 💾 Checking cache:", { hasCached });
     return cached ? JSON.parse(cached) : null;
   };
 
@@ -30,21 +34,30 @@ export default function SettingsPageClient({ venueId }: { venueId: string }) {
   useEffect(() => {
     const loadData = async () => {
       try {
+        console.log("[SETTINGS] 🚀 Starting to load settings data for venue:", venueId);
         setLoading(true);
         const supabase = supabaseBrowser();
 
         // Get session
+        console.log("[SETTINGS] 📡 Fetching user session...");
         const {
           data: { session },
         } = await supabase.auth.getSession();
         const user = session?.user;
 
         if (!user) {
+          console.error("[SETTINGS] ❌ No user session found - user not authenticated");
           setLoading(false);
           return;
         }
 
+        console.log("[SETTINGS] ✅ User authenticated:", {
+          userId: user.id,
+          email: user.email,
+        });
+
         // Load all data
+        console.log("[SETTINGS] 📊 Fetching venue data, roles, and organization...");
         const [venueResult, userRoleResult, allVenuesResult, orgResult] = await Promise.all([
           supabase
             .from("venues")
@@ -82,6 +95,18 @@ export default function SettingsPageClient({ venueId }: { venueId: string }) {
             }),
         ]);
 
+        console.log("[SETTINGS] 📋 Query results:", {
+          hasVenue: !!venueResult.data,
+          venueError: venueResult.error?.message,
+          hasUserRole: !!userRoleResult.data,
+          userRole: userRoleResult.data?.role,
+          userRoleError: userRoleResult.error?.message,
+          allVenuesCount: allVenuesResult.data?.length || 0,
+          allVenuesError: allVenuesResult.error?.message,
+          hasOrganization: !!orgResult.data,
+          organizationError: orgResult.error?.message,
+        });
+
         const venue = venueResult.data;
         const userRole = userRoleResult.data;
         const allVenues = allVenuesResult.data || [];
@@ -90,14 +115,22 @@ export default function SettingsPageClient({ venueId }: { venueId: string }) {
         const isOwner = !!venue;
         const isManager = userRole?.role === "manager";
 
+        console.log("[SETTINGS] 🔐 Permission check:", {
+          isOwner,
+          isManager,
+          userRole: userRole?.role,
+        });
+
         let finalVenue = venue;
         if (!venue && isManager) {
+          console.log("[SETTINGS] 👤 User is manager but not owner, fetching venue data...");
           const { data: managerVenue } = await supabase
             .from("venues")
             .select("*")
             .eq("venue_id", venueId)
             .single();
           finalVenue = managerVenue;
+          console.log("[SETTINGS] ✅ Manager venue fetched:", !!managerVenue);
         }
 
         const settingsData = {
@@ -110,15 +143,32 @@ export default function SettingsPageClient({ venueId }: { venueId: string }) {
           userRole: userRole?.role || (isOwner ? "owner" : "staff"),
         };
 
+        console.log("[SETTINGS] 💾 Setting data state:", {
+          hasVenue: !!finalVenue,
+          venueName: finalVenue?.name,
+          hasOrganization: !!organization,
+          organizationId: organization?.id,
+          subscriptionTier: organization?.subscription_tier,
+          userRole: settingsData.userRole,
+          venuesCount: allVenues.length,
+        });
+
         setData(settingsData);
 
         // Cache settings data to prevent flicker
         if (typeof window !== "undefined") {
           sessionStorage.setItem(`settings_data_${venueId}`, JSON.stringify(settingsData));
+          console.log("[SETTINGS] ✅ Data cached to sessionStorage");
         }
+
+        console.log("[SETTINGS] ✅ Settings loaded successfully!");
         setLoading(false);
       } catch (_error) {
-        console.error("Error loading settings:", _error);
+        console.error("[SETTINGS] ❌ Error loading settings:", _error);
+        console.error("[SETTINGS] Error details:", {
+          message: _error instanceof Error ? _error.message : String(_error),
+          stack: _error instanceof Error ? _error.stack : undefined,
+        });
         setLoading(false);
       }
     };
