@@ -31,15 +31,43 @@ function CallbackContent() {
           return;
         }
 
-        // Exchange code for session ON CLIENT (has access to localStorage PKCE verifier)
-        // Force a fresh client instance to ensure storage is properly loaded
+        // Get Supabase client - it will auto-detect session from URL with detectSessionInUrl: true
         const supabase = supabaseBrowser();
 
-        // Double-check that the Supabase client has access to storage
-        console.log("[AUTH CALLBACK CLIENT] 🔍 Supabase client storage check:", {
-          hasLocalStorage: typeof localStorage !== "undefined",
-          storageAvailable: !!window.localStorage,
-        });
+        // Give Supabase a moment to process the URL params automatically
+        await new Promise((resolve) => setTimeout(resolve, 100));
+
+        // Check if session was auto-detected
+        const {
+          data: { session: autoSession },
+        } = await supabase.auth.getSession();
+        if (autoSession) {
+          console.log("[AUTH CALLBACK CLIENT] ✅ Session auto-detected from URL!");
+          logger.info("[AUTH CALLBACK CLIENT] Session auto-detected", {
+            userId: autoSession.user.id,
+            email: autoSession.user.email,
+          });
+
+          // Session is already set - proceed to redirect
+          const { data: venues } = await supabase
+            .from("venues")
+            .select("venue_id, created_at")
+            .eq("owner_user_id", autoSession.user.id)
+            .order("created_at", { ascending: true })
+            .limit(1);
+
+          if (venues && venues.length > 0) {
+            router.push(`/dashboard/${venues[0].venue_id}`);
+            return;
+          }
+
+          router.push("/select-plan");
+          return;
+        }
+
+        console.log(
+          "[AUTH CALLBACK CLIENT] ⚠️ Session NOT auto-detected, trying manual exchange..."
+        );
 
         // Check if PKCE verifier exists before attempting exchange
         // Search for any Supabase code verifier in localStorage

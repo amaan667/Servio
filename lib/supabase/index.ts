@@ -64,9 +64,9 @@ export function supabaseBrowser() {
         persistSession: true,
         detectSessionInUrl: true,
         autoRefreshToken: true,
-        flowType: "implicit", // Use implicit flow instead of PKCE to avoid verifier issues
-        storage: typeof window !== "undefined" ? window.localStorage : undefined,
-        storageKey: `sb-${projectRef}-auth-token`, // Explicit storage key for consistency
+        flowType: "pkce", // PKCE is required for Supabase OAuth
+        // DON'T set custom storage or storageKey - let Supabase use defaults
+        // This ensures the PKCE verifier is stored and retrieved from the same location
       },
     });
 

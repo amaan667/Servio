@@ -23,13 +23,17 @@ function SignInPageContent() {
       );
 
       // If we have refresh but no access tokens, session is broken - clear it
-      if (hasRefreshToken && !hasAccessToken) {
+      // BUT: Only if we're not in the middle of an OAuth flow
+      const urlParams = new URLSearchParams(window.location.search);
+      const isOAuthCallback = window.location.pathname.includes("/auth/callback");
+
+      if (hasRefreshToken && !hasAccessToken && !isOAuthCallback) {
         console.log(
           "[SIGN-IN] Detected broken session - clearing cookies only (preserving PKCE)..."
         );
         try {
           // DON'T call signOut() - it clears PKCE verifier needed for OAuth!
-          // Just clear the broken auth cookies manually
+          // Clear broken auth cookies AND localStorage items manually
           cookies.forEach((cookie) => {
             const name = cookie.split("=")[0].trim();
             // Clear auth cookies but PRESERVE code-verifier for OAuth
@@ -37,10 +41,23 @@ function SignInPageContent() {
               document.cookie = `${name}=;expires=Thu, 01 Jan 1970 00:00:00 GMT;path=/`;
             }
           });
-          console.log("[SIGN-IN] Broken session cookies cleared (PKCE verifier preserved)");
+
+          // Also clear localStorage auth items (except PKCE verifier)
+          const allKeys = Object.keys(localStorage);
+          allKeys.forEach((key) => {
+            if (key.startsWith("sb-") && !key.includes("code-verifier")) {
+              localStorage.removeItem(key);
+            }
+          });
+
+          console.log(
+            "[SIGN-IN] Broken session cookies and localStorage cleared (PKCE verifier preserved)"
+          );
         } catch (e) {
           console.error("[SIGN-IN] Error clearing broken session:", e);
         }
+      } else if (hasRefreshToken && !hasAccessToken && isOAuthCallback) {
+        console.log("[SIGN-IN] Skipping broken session cleanup - OAuth callback in progress");
       }
     };
 
