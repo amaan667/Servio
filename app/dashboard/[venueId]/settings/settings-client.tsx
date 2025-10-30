@@ -39,19 +39,19 @@ export default function SettingsPageClient({ venueId }: { venueId: string }) {
         setLoading(true);
         const supabase = supabaseBrowser();
 
-        // Get session
-        console.log("[SETTINGS] 📡 Fetching user session...");
-        const {
-          data: { session },
-        } = await supabase.auth.getSession();
-        const user = session?.user;
+        // Get user (authenticates with server using cookies)
+        console.log("[SETTINGS] 📡 Fetching user from server (using cookies)...");
+        const { data: userData, error: userError } = await supabase.auth.getUser();
 
-        if (!user) {
-          console.error("[SETTINGS] ❌ No user session found - user not authenticated");
+        if (userError || !userData.user) {
+          console.error("[SETTINGS] ❌ No user session found - user not authenticated", {
+            error: userError?.message,
+          });
           setLoading(false);
           return;
         }
 
+        const user = userData.user;
         console.log("[SETTINGS] ✅ User authenticated:", {
           userId: user.id,
           email: user.email,
