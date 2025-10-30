@@ -42,27 +42,29 @@ export async function getUserSafe() {
     }
 
     const supabase = await createClient();
-    const { data, error } = await supabase.auth.getSession();
+
+    // Use getUser() instead of getSession() for better security
+    // This authenticates with Supabase Auth server instead of just reading cookies
+    const { data, error } = await supabase.auth.getUser();
 
     if (error) {
-      logger.warn("[getUserSafe] Session error:", {
+      logger.warn("[getUserSafe] Auth error:", {
         error: error.message,
-        code: error.status,
       });
       return null;
     }
 
-    if (!data.session?.user) {
-      logger.warn("[getUserSafe] No user in session - session may be expired");
+    if (!data.user) {
+      logger.warn("[getUserSafe] No user authenticated");
       return null;
     }
 
-    logger.info("[getUserSafe] ✅ User authenticated successfully:", {
-      userId: data.session.user.id,
-      email: data.session.user.email,
+    logger.debug("[getUserSafe] User authenticated successfully:", {
+      userId: data.user.id,
+      email: data.user.email,
     });
 
-    return data.session.user;
+    return data.user;
   } catch (err) {
     logger.error("[getUserSafe] Unexpected error:", {
       error: err instanceof Error ? err.message : String(err),
