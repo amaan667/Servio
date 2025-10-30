@@ -1,4 +1,4 @@
-import { createServerSupabase } from "@/lib/supabase";
+import { createServerSupabaseReadOnly } from "@/lib/supabase";
 import { HomePageClient } from "./HomePageClient";
 import { logger } from "@/lib/logger";
 
@@ -9,7 +9,7 @@ export default async function HomePage() {
   let user = null;
 
   try {
-    const supabase = await createServerSupabase();
+    const supabase = await createServerSupabaseReadOnly();
     const {
       data: { user: authUser },
       error: userError,

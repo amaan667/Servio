@@ -1,6 +1,6 @@
 import SettingsClientPage from "./page.client";
 import { logger } from "@/lib/logger";
-import { createServerSupabase } from "@/lib/supabase";
+import { createServerSupabaseReadOnly } from "@/lib/supabase";
 import { redirect } from "next/navigation";
 
 export default async function SettingsPage({ params }: { params: Promise<{ venueId: string }> }) {
@@ -9,7 +9,7 @@ export default async function SettingsPage({ params }: { params: Promise<{ venue
   logger.info("[SETTINGS PAGE] 🔧 Settings page accessed", { venueId });
 
   // Fetch ALL data on server-side where cookies work
-  const supabase = await createServerSupabase();
+  const supabase = await createServerSupabaseReadOnly();
   const {
     data: { user },
     error: userError,
