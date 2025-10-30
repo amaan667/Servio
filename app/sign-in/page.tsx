@@ -80,20 +80,27 @@ function SignInPageContent() {
           .order("created_at", { ascending: true }) // ✅ Get FIRST venue (oldest)
           .limit(5); // Get first 5 to debug
 
-        console.log("[SIGN-IN PAGE] Already signed in - user venues:", {
+        console.log("[SIGN-IN PAGE] 📊 ALREADY SIGNED IN - User venues:", {
           venueCount: venues?.length,
           venues: venues?.map((v) => ({ id: v.venue_id, created: v.created_at })),
           firstVenue: venues?.[0]?.venue_id,
+          allVenueIds: venues?.map((v) => v.venue_id),
           willRedirectTo:
             nextParam ||
             (venues?.[0]?.venue_id ? `/dashboard/${venues[0].venue_id}` : "/select-plan"),
         });
 
         if (nextParam) {
-          console.log("[SIGN-IN PAGE] Redirecting to next param:", nextParam);
+          console.log(
+            "[SIGN-IN PAGE] ✅ ALREADY SIGNED IN - Redirecting to next param:",
+            nextParam
+          );
           router.push(nextParam);
         } else if (venues && venues.length > 0) {
-          console.log("[SIGN-IN PAGE] Redirecting to FIRST venue:", venues[0]?.venue_id);
+          console.log("[SIGN-IN PAGE] ✅ ALREADY SIGNED IN - Redirecting to FIRST venue:", {
+            venueId: venues[0]?.venue_id,
+            createdAt: venues[0]?.created_at,
+          });
           router.push(`/dashboard/${venues[0]?.venue_id}`);
         } else {
           console.log("[SIGN-IN PAGE] No venues - redirecting to select-plan");

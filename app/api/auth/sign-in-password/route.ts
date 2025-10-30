@@ -44,10 +44,11 @@ export async function POST(request: NextRequest) {
       .order("created_at", { ascending: true })
       .limit(5); // Get first 5 to debug
 
-    logger.info("[AUTH SIGN-IN] User venues:", {
+    logger.info("[AUTH SIGN-IN] 📊 EMAIL/PASSWORD - User venues:", {
       venueCount: venues?.length,
       venues: venues?.map((v) => ({ id: v.venue_id, created: v.created_at })),
       firstVenue: venues?.[0]?.venue_id,
+      allVenueIds: venues?.map((v) => v.venue_id),
     });
 
     // Create response with cookies set manually
@@ -56,7 +57,10 @@ export async function POST(request: NextRequest) {
         ? `/dashboard/${venues[0].venue_id}`
         : "/select-plan";
 
-    logger.info("[AUTH SIGN-IN] ✅ Redirecting to:", redirectTo);
+    logger.info("[AUTH SIGN-IN] ✅ EMAIL/PASSWORD - Redirecting to:", redirectTo, {
+      selectedVenue: venues?.[0]?.venue_id,
+      createdAt: venues?.[0]?.created_at,
+    });
 
     const response = NextResponse.json({
       success: true,

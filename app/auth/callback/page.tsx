@@ -155,15 +155,20 @@ function CallbackContent() {
           .order("created_at", { ascending: true })
           .limit(5); // Get first 5 to debug
 
-        console.log("[AUTH CALLBACK CLIENT] Venues query result:", {
+        console.log("[AUTH CALLBACK CLIENT] 📊 GOOGLE OAUTH - Venues query result:", {
           venueCount: venues?.length,
           venues: venues?.map((v) => ({ id: v.venue_id, created: v.created_at })),
+          firstVenue: venues?.[0]?.venue_id,
+          allVenueIds: venues?.map((v) => v.venue_id),
           error: venuesError?.message,
         });
 
         if (venues && venues.length > 0 && venues[0]) {
           const targetVenue = venues[0].venue_id;
-          console.log("[AUTH CALLBACK CLIENT] ✅ Redirecting to FIRST venue:", targetVenue);
+          console.log("[AUTH CALLBACK CLIENT] ✅ GOOGLE OAUTH - Redirecting to FIRST venue:", {
+            venueId: targetVenue,
+            createdAt: venues[0].created_at,
+          });
           router.push(`/dashboard/${targetVenue}`);
           return;
         }
