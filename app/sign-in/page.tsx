@@ -75,16 +75,28 @@ function SignInPageContent() {
         const supabase = supabaseBrowser();
         const { data: venues } = await supabase
           .from("venues")
-          .select("venue_id")
+          .select("venue_id, created_at")
           .eq("owner_user_id", session.user.id)
           .order("created_at", { ascending: true }) // ✅ Get FIRST venue (oldest)
-          .limit(1);
+          .limit(5); // Get first 5 to debug
+
+        console.log("[SIGN-IN PAGE] Already signed in - user venues:", {
+          venueCount: venues?.length,
+          venues: venues?.map((v) => ({ id: v.venue_id, created: v.created_at })),
+          firstVenue: venues?.[0]?.venue_id,
+          willRedirectTo:
+            nextParam ||
+            (venues?.[0]?.venue_id ? `/dashboard/${venues[0].venue_id}` : "/select-plan"),
+        });
 
         if (nextParam) {
+          console.log("[SIGN-IN PAGE] Redirecting to next param:", nextParam);
           router.push(nextParam);
         } else if (venues && venues.length > 0) {
+          console.log("[SIGN-IN PAGE] Redirecting to FIRST venue:", venues[0]?.venue_id);
           router.push(`/dashboard/${venues[0]?.venue_id}`);
         } else {
+          console.log("[SIGN-IN PAGE] No venues - redirecting to select-plan");
           router.push("/select-plan");
         }
       };

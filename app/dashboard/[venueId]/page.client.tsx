@@ -309,8 +309,18 @@ const DashboardClient = React.memo(function DashboardClient({
       }
     }
 
+    console.log("[DASHBOARD CLIENT] 📞 About to call checkAuth()");
     checkAuth();
+    console.log("[DASHBOARD CLIENT] 📞 checkAuth() call completed (async)");
   }, [venueId]);
+
+  // Log whenever userRole changes
+  useEffect(() => {
+    console.log("[DASHBOARD CLIENT] 👤 userRole changed:", {
+      userRole,
+      timestamp: new Date().toISOString(),
+    });
+  }, [userRole]);
 
   // NO AUTH REDIRECTS - User requested ZERO sign-in redirects
   // If there's truly no user data (after trying cache), just render anyway

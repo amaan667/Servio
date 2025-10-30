@@ -36,19 +36,27 @@ export async function POST(request: NextRequest) {
       email: data.session.user.email,
     });
 
-    // Check if user has a venue
+    // Check if user has a venue - get FIRST (oldest)
     const { data: venues } = await supabase
       .from("venues")
-      .select("venue_id")
+      .select("venue_id, created_at")
       .eq("owner_user_id", data.session.user.id)
       .order("created_at", { ascending: true })
-      .limit(1);
+      .limit(5); // Get first 5 to debug
+
+    logger.info("[AUTH SIGN-IN] User venues:", {
+      venueCount: venues?.length,
+      venues: venues?.map((v) => ({ id: v.venue_id, created: v.created_at })),
+      firstVenue: venues?.[0]?.venue_id,
+    });
 
     // Create response with cookies set manually
     const redirectTo =
       venues && venues.length > 0 && venues[0]
         ? `/dashboard/${venues[0].venue_id}`
         : "/select-plan";
+
+    logger.info("[AUTH SIGN-IN] ✅ Redirecting to:", redirectTo);
 
     const response = NextResponse.json({
       success: true,
