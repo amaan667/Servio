@@ -7,7 +7,13 @@ export async function GET(request: NextRequest) {
   const next = requestUrl.searchParams.get("next") || "/";
   const error = requestUrl.searchParams.get("error");
 
+  console.log("[AUTH CALLBACK] ========== CALLBACK START ==========");
+  console.log("[AUTH CALLBACK] URL:", request.url);
+  console.log("[AUTH CALLBACK] Has code:", !!code);
+  console.log("[AUTH CALLBACK] Has error:", !!error);
+
   if (error) {
+    console.log("[AUTH CALLBACK] OAuth error received:", error);
     // OAuth error - redirect to sign-in with error message
     return NextResponse.redirect(
       new URL(`/sign-in?error=${encodeURIComponent(error)}`, request.url)
@@ -16,11 +22,19 @@ export async function GET(request: NextRequest) {
 
   if (code) {
     try {
+      console.log("[AUTH CALLBACK] Creating server Supabase client...");
       // Create server-side Supabase client that can set cookies
       const supabase = await createServerSupabase();
 
+      console.log("[AUTH CALLBACK] Exchanging code for session...");
       // Exchange code for session - THIS SETS THE COOKIES!
       const { data, error: exchangeError } = await supabase.auth.exchangeCodeForSession(code);
+
+      console.log("[AUTH CALLBACK] Exchange result:", {
+        hasSession: !!data?.session,
+        hasUser: !!data?.session?.user,
+        error: exchangeError?.message,
+      });
 
       if (exchangeError) {
         console.error("[AUTH CALLBACK] Exchange error:", exchangeError);
@@ -38,6 +52,16 @@ export async function GET(request: NextRequest) {
           data.session.user.email
         );
 
+        // Force a redirect response that will include the set-cookie headers
+        const response = NextResponse.redirect(new URL("/dashboard", request.url));
+
+        console.log("[AUTH CALLBACK] Checking cookies that were set...");
+        const { cookies } = await import("next/headers");
+        const cookieStore = await cookies();
+        const allCookies = cookieStore.getAll();
+        console.log("[AUTH CALLBACK] Total cookies after exchange:", allCookies.length);
+        console.log("[AUTH CALLBACK] Cookie names:", allCookies.map((c) => c.name).join(", "));
+
         // Check if user has a venue
         const { data: venues } = await supabase
           .from("venues")
@@ -48,6 +72,7 @@ export async function GET(request: NextRequest) {
 
         if (venues && venues.length > 0 && venues[0]) {
           // Redirect to their dashboard
+          console.log("[AUTH CALLBACK] Redirecting to dashboard:", venues[0].venue_id);
           return NextResponse.redirect(new URL(`/dashboard/${venues[0].venue_id}`, request.url));
         }
 

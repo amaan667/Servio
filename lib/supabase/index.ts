@@ -168,10 +168,18 @@ export async function createServerSupabase() {
       setAll(cookiesToSet) {
         try {
           cookiesToSet.forEach(({ name, value, options }) => {
-            cookieStore.set(name, value, options);
+            // Ensure cookies are set with proper options for auth
+            cookieStore.set(name, value, {
+              ...options,
+              httpOnly: false, // Must be false for Supabase to read from client
+              sameSite: "lax",
+              secure: process.env.NODE_ENV === "production",
+              path: "/",
+            });
           });
-        } catch {
-          // Silent error handling for cookie context (e.g., in Server Components)
+        } catch (error) {
+          // Log cookie setting errors
+          console.error("[createServerSupabase] Failed to set cookies:", error);
         }
       },
     },
