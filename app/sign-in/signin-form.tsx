@@ -42,6 +42,20 @@ export default function SignInForm({
     setError(null);
 
     try {
+      // Clear all dashboard caches before signing in to prevent stale data
+      if (typeof window !== "undefined") {
+        Object.keys(sessionStorage).forEach((key) => {
+          if (
+            key.startsWith("dashboard_user_") ||
+            key.startsWith("dashboard_venue_") ||
+            key.startsWith("user_role_") ||
+            key.startsWith("venue_id_")
+          ) {
+            sessionStorage.removeItem(key);
+          }
+        });
+      }
+
       // Use server-side API route to properly set cookies
       const response = await fetch("/api/auth/sign-in-password", {
         method: "POST",

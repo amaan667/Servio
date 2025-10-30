@@ -435,10 +435,23 @@ export function clearAuthStorage() {
   // Clear localStorage
   localStorage.removeItem("supabase.auth.token");
   localStorage.removeItem("sb-auth-token");
+  localStorage.removeItem("sb-auth-session");
 
-  // Clear sessionStorage
+  // Clear sessionStorage - including all dashboard caches
   sessionStorage.removeItem("supabase.auth.token");
   sessionStorage.removeItem("sb-auth-token");
+
+  // Clear all dashboard-related caches
+  Object.keys(sessionStorage).forEach((key) => {
+    if (
+      key.startsWith("dashboard_user_") ||
+      key.startsWith("dashboard_venue_") ||
+      key.startsWith("user_role_") ||
+      key.startsWith("venue_id_")
+    ) {
+      sessionStorage.removeItem(key);
+    }
+  });
 
   // Clear cookies
   document.cookie.split(";").forEach((c) => {

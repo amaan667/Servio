@@ -137,6 +137,20 @@ function SignInPageContent() {
     try {
       setIsSigningIn(true);
 
+      // Clear all dashboard caches before signing in to prevent stale data
+      if (typeof window !== "undefined") {
+        Object.keys(sessionStorage).forEach((key) => {
+          if (
+            key.startsWith("dashboard_user_") ||
+            key.startsWith("dashboard_venue_") ||
+            key.startsWith("user_role_") ||
+            key.startsWith("venue_id_")
+          ) {
+            sessionStorage.removeItem(key);
+          }
+        });
+      }
+
       // Use stable redirect URL helper
       const redirectTo = getAuthRedirectUrl("/auth/callback");
 

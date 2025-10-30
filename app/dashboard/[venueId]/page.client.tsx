@@ -189,7 +189,8 @@ const DashboardClient = React.memo(function DashboardClient({
     async function checkAuth() {
       console.log("[DASHBOARD CLIENT] 🏁 checkAuth() STARTED");
 
-      // Skip auth check if we already have ALL cached data (including role!)
+      // Skip auth check ONLY if we have ALL data AND it's valid
+      // Force refetch if userRole is missing to prevent stale cache issues
       if (user && venue && userRole) {
         console.log("[DASHBOARD CLIENT] ✅ Using cached data - skipping auth check", {
           hasUser: !!user,
@@ -197,6 +198,18 @@ const DashboardClient = React.memo(function DashboardClient({
           userRole,
         });
         return;
+      }
+
+      // If we have user but no role, force refetch (clear stale cache)
+      if (user && !userRole) {
+        console.log(
+          "[DASHBOARD CLIENT] ⚠️ User exists but no role - clearing cache and refetching"
+        );
+        if (typeof window !== "undefined") {
+          sessionStorage.removeItem(`user_role_${venueId}`);
+          sessionStorage.removeItem(`dashboard_user_${venueId}`);
+          sessionStorage.removeItem(`dashboard_venue_${venueId}`);
+        }
       }
 
       console.log("[DASHBOARD CLIENT] 🔄 Fetching auth data...", {
@@ -259,7 +272,9 @@ const DashboardClient = React.memo(function DashboardClient({
           return;
         }
 
-        // Set venue data
+        // Set venue data and track the role that was set
+        let finalRole: string | null = null;
+
         if (venueData) {
           setVenue(venueData);
           dashboardData.setVenue(venueData);
@@ -268,6 +283,7 @@ const DashboardClient = React.memo(function DashboardClient({
             sessionStorage.setItem(`dashboard_venue_${venueId}`, JSON.stringify(venueData));
           }
           setUserRole("owner");
+          finalRole = "owner";
           console.log("[DASHBOARD CLIENT] ✅ User role set to: owner", { userId });
           // Cache role to prevent flicker
           if (typeof window !== "undefined") {
@@ -286,6 +302,7 @@ const DashboardClient = React.memo(function DashboardClient({
             dashboardData.setVenue(staffVenue);
             const role = roleData?.role || "staff";
             setUserRole(role);
+            finalRole = role;
             console.log("[DASHBOARD CLIENT] ✅ User role set to:", role, { userId });
             // Cache role to prevent flicker
             if (typeof window !== "undefined") {
@@ -298,13 +315,26 @@ const DashboardClient = React.memo(function DashboardClient({
           hasUser: !!session?.user,
           hasVenue: !!venue || !!venueData,
           userRole,
+          finalRole,
           isOwner,
           isStaff,
         });
 
+        // If role was not set after all checks, log an error
+        if (!finalRole) {
+          console.error("[DASHBOARD CLIENT] ❌ Role not set after auth check", {
+            userId: session?.user?.id,
+            venueId,
+            isOwner,
+            isStaff,
+            hasVenueData: !!venueData,
+            hasRoleData: !!roleData,
+          });
+        }
+
         // No loading state needed - prevents flicker
       } catch (_error) {
-        // No auth error display needed("Authentication failed");
+        console.error("[DASHBOARD CLIENT] ❌ Auth check error:", _error);
         // No loading state needed - prevents flicker
       }
     }
