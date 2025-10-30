@@ -76,6 +76,14 @@ const DashboardClient = React.memo(function DashboardClient({
   const [venue, setVenue] = useState<Record<string, unknown> | null>(getCachedVenue());
   const [userRole, setUserRole] = useState<string | null>(getCachedRole()); // Initialize with cached role
 
+  console.log("[DASHBOARD CLIENT] 🎯 Component state", {
+    venueId,
+    hasUser: !!user,
+    hasVenue: !!venue,
+    userRole,
+    hasCachedRole: !!getCachedRole(),
+  });
+
   // Monitor connection status (must be at top before any returns)
   useConnectionMonitor();
 
@@ -239,6 +247,7 @@ const DashboardClient = React.memo(function DashboardClient({
             sessionStorage.setItem(`dashboard_venue_${venueId}`, JSON.stringify(venueData));
           }
           setUserRole("owner");
+          console.log("[DASHBOARD CLIENT] ✅ User role set to: owner", { userId });
           // Cache role to prevent flicker
           if (typeof window !== "undefined") {
             sessionStorage.setItem(`user_role_${venueId}`, "owner");
@@ -256,12 +265,21 @@ const DashboardClient = React.memo(function DashboardClient({
             dashboardData.setVenue(staffVenue);
             const role = roleData?.role || "staff";
             setUserRole(role);
+            console.log("[DASHBOARD CLIENT] ✅ User role set to:", role, { userId });
             // Cache role to prevent flicker
             if (typeof window !== "undefined") {
               sessionStorage.setItem(`user_role_${venueId}`, role);
             }
           }
         }
+
+        console.log("[DASHBOARD CLIENT] 🎯 Auth check complete", {
+          hasUser: !!session?.user,
+          hasVenue: !!venue || !!venueData,
+          userRole,
+          isOwner,
+          isStaff,
+        });
 
         // No loading state needed - prevents flicker
       } catch (_error) {

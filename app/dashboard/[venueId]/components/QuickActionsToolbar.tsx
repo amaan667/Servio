@@ -29,6 +29,8 @@ export function QuickActionsToolbar({
   userRole,
   onVenueChange,
 }: QuickActionsToolbarProps) {
+  console.log("[QUICK ACTIONS] 🔧 Rendering toolbar", { venueId, userRole, hasRole: !!userRole });
+
   const actions: QuickAction[] = [
     {
       label: "Live Orders",
@@ -54,6 +56,7 @@ export function QuickActionsToolbar({
   ];
 
   if (userRole === "owner" || userRole === "manager") {
+    console.log("[QUICK ACTIONS] ✅ Adding Analytics button for role:", userRole);
     actions.push({
       label: "Analytics",
       href: `/dashboard/${venueId}/analytics`,
@@ -61,9 +64,12 @@ export function QuickActionsToolbar({
       description: "View insights",
       color: "bg-indigo-600 hover:bg-indigo-700",
     });
+  } else {
+    console.log("[QUICK ACTIONS] ❌ NOT adding Analytics - userRole:", userRole);
   }
 
   if (userRole === "owner" || userRole === "manager" || userRole === "kitchen") {
+    console.log("[QUICK ACTIONS] ✅ Adding Kitchen button for role:", userRole);
     actions.push({
       label: "Kitchen",
       href: `/dashboard/${venueId}/kds`,
@@ -71,7 +77,11 @@ export function QuickActionsToolbar({
       description: "Kitchen display",
       color: "bg-red-600 hover:bg-red-700",
     });
+  } else {
+    console.log("[QUICK ACTIONS] ❌ NOT adding Kitchen - userRole:", userRole);
   }
+
+  console.log("[QUICK ACTIONS] 📊 Total actions to render:", actions.length);
 
   return (
     <TooltipProvider>
