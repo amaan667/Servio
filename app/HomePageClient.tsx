@@ -115,7 +115,7 @@ export function HomePageClient({ initialAuthState, initialUserPlan = null }: Hom
         .from("venues")
         .select("venue_id")
         .eq("owner_user_id", user.id)
-        .order("created_at", { ascending: false })
+        .order("created_at", { ascending: true }) // ✅ Get FIRST venue (oldest)
         .limit(1);
 
       if (venues && venues.length > 0 && venues[0]) {
