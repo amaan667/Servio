@@ -179,7 +179,16 @@ const DashboardClient = React.memo(function DashboardClient({
 
   // Check authentication and venue access
   useEffect(() => {
+    console.log("[DASHBOARD CLIENT] ⚡ useEffect TRIGGERED", {
+      venueId,
+      hasUser: !!user,
+      hasVenue: !!venue,
+      hasUserRole: !!userRole,
+    });
+
     async function checkAuth() {
+      console.log("[DASHBOARD CLIENT] 🏁 checkAuth() STARTED");
+
       // Skip auth check if we already have ALL cached data (including role!)
       if (user && venue && userRole) {
         console.log("[DASHBOARD CLIENT] ✅ Using cached data - skipping auth check", {
