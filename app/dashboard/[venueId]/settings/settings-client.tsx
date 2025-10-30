@@ -22,12 +22,17 @@ interface SettingsPageClientProps {
 }
 
 export default function SettingsPageClient({ venueId, initialData }: SettingsPageClientProps) {
+  const router = useRouter();
+  const { session, loading: authLoading } = useAuth(); // Get session from AuthProvider
+
   console.log("[SETTINGS PAGE] 🚀 Settings page component mounted", {
     venueId,
     hasInitialData: !!initialData,
+    hasSession: !!session,
+    hasUser: !!session?.user,
+    userId: session?.user?.id,
+    authLoading,
   });
-  const router = useRouter();
-  const { session } = useAuth(); // Get session from AuthProvider
 
   // Fetch data on client if not provided by server
   const [data, setData] = useState(initialData || null);
@@ -53,13 +58,27 @@ export default function SettingsPageClient({ venueId, initialData }: SettingsPag
           return;
         }
 
-        console.log("[SETTINGS] 🔄 Fetching data on client...");
+        console.log("[SETTINGS] 🔄 Fetching data on client...", {
+          hasSession: !!session,
+          hasUser: !!session?.user,
+          userId: session?.user?.id,
+          authLoading,
+        });
+
+        // Wait for auth to finish loading
+        if (authLoading) {
+          console.log("[SETTINGS] ⏳ Auth still loading, waiting...");
+          return;
+        }
 
         // Use session from AuthProvider (already authenticated)
         const user = session?.user;
 
         if (!user) {
-          console.log("[SETTINGS] ℹ️ No user session from AuthProvider - waiting...");
+          console.error("[SETTINGS] ❌ No user from AuthProvider after loading!", {
+            hasSession: !!session,
+            authLoading,
+          });
           setLoading(false);
           return;
         }
@@ -135,7 +154,11 @@ export default function SettingsPageClient({ venueId, initialData }: SettingsPag
 
         setData(fetchedData);
         sessionStorage.setItem(`settings_data_${venueId}`, JSON.stringify(fetchedData));
-        console.log("[SETTINGS] ✅ Data fetched and cached");
+        console.log("[SETTINGS] ✅ Data fetched and cached", {
+          hasUser: !!fetchedData.user,
+          hasVenue: !!fetchedData.venue,
+          userRole: fetchedData.userRole,
+        });
       } catch (error) {
         console.error("[SETTINGS] ❌ Error fetching data:", error);
       } finally {
@@ -144,10 +167,11 @@ export default function SettingsPageClient({ venueId, initialData }: SettingsPag
     };
 
     fetchData();
-  }, [venueId, initialData, session]);
+  }, [venueId, initialData, session, authLoading]);
 
   // Show loading state while fetching
-  if (loading) {
+  if (loading || authLoading) {
+    console.log("[SETTINGS] 🔄 Showing loading state", { loading, authLoading });
     return (
       <div className="min-h-screen flex items-center justify-center bg-background">
         <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary"></div>
@@ -157,7 +181,15 @@ export default function SettingsPageClient({ venueId, initialData }: SettingsPag
 
   // If no data after loading, show error
   if (!data || !data.user || !data.venue) {
-    console.error("[SETTINGS] ❌ Missing required data", { data });
+    console.error("[SETTINGS] ❌ ERROR STATE - Missing required data", {
+      hasData: !!data,
+      hasUser: !!data?.user,
+      hasVenue: !!data?.venue,
+      hasSession: !!session,
+      hasSessionUser: !!session?.user,
+      authLoading,
+      data,
+    });
     return (
       <div className="min-h-screen flex items-center justify-center bg-background">
         <div className="max-w-md w-full p-6 text-center">
