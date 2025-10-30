@@ -157,6 +157,14 @@ export default async function RootLayout({ children }: { children: React.ReactNo
       // Use getSession() to get the full session with tokens
       try {
         logger.info("[ROOT LAYOUT] 📡 Calling supabase.auth.getSession()...");
+
+        // Log all cookies for debugging
+        logger.info("[ROOT LAYOUT] 🍪 Auth cookies details", {
+          authCookies: allCookies
+            .filter((c) => c.name.includes("auth-token"))
+            .map((c) => ({ name: c.name, hasValue: !!c.value, valueLength: c.value?.length || 0 })),
+        });
+
         const {
           data: { session: authSession },
           error,
@@ -168,6 +176,7 @@ export default async function RootLayout({ children }: { children: React.ReactNo
           userId: authSession?.user?.id,
           email: authSession?.user?.email,
           hasAccessToken: !!authSession?.access_token,
+          accessTokenPreview: authSession?.access_token?.substring(0, 20),
           hasError: !!error,
           errorMsg: error?.message,
         });
@@ -183,6 +192,8 @@ export default async function RootLayout({ children }: { children: React.ReactNo
         } else {
           logger.warn("[ROOT LAYOUT] ⚠️ No session or error from getSession()", {
             error: error?.message,
+            hadCookies: hasAuthCookies,
+            cookieCount: allCookies.filter((c) => c.name.includes("auth-token")).length,
           });
         }
       } catch (err) {

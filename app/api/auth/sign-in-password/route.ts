@@ -63,28 +63,9 @@ export async function POST(request: NextRequest) {
     const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL || "";
     const projectRef = supabaseUrl.match(/https:\/\/([^.]+)\.supabase\.co/)?.[1] || "";
 
-    if (projectRef && data.session.access_token && data.session.refresh_token) {
-      const cookieOptions = {
-        path: "/",
-        sameSite: "lax" as const,
-        secure: process.env.NODE_ENV === "production",
-        httpOnly: false, // Must be false for Supabase client to read
-        maxAge: 60 * 60 * 24 * 7, // 7 days
-      };
-
-      // Set the auth token cookies manually
-      response.cookies.set(`sb-${projectRef}-auth-token`, data.session.access_token, cookieOptions);
-      response.cookies.set(
-        `sb-${projectRef}-auth-token-refresh`,
-        data.session.refresh_token,
-        cookieOptions
-      );
-
-      logger.info("[AUTH SIGN-IN] ✅ Cookies set on response", {
-        projectRef,
-        cookieNames: [`sb-${projectRef}-auth-token`, `sb-${projectRef}-auth-token-refresh`],
-      });
-    }
+    // DON'T manually set cookies - let Supabase SSR handle it!
+    // The createServerSupabase() client already sets cookies via the signInWithPassword call
+    logger.info("[AUTH SIGN-IN] ✅ Cookies automatically set by Supabase SSR client");
 
     return response;
   } catch (err) {
