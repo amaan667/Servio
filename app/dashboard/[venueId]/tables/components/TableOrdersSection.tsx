@@ -21,11 +21,11 @@ export function TableOrdersSection({ groupedTableOrders, venueId }: TableOrdersS
       </div>
 
       <div className="overflow-x-auto pb-4">
-        <div className="flex gap-4 min-w-max">
+        <div className="flex gap-6 min-w-max">
           {Object.entries(groupedTableOrders)
             .sort((a, b) => a[0].localeCompare(b[0]))
             .map(([tableKey, orders]) => (
-              <div key={tableKey} className="flex-shrink-0 w-80">
+              <div key={tableKey} className="flex-shrink-0 w-96">
                 <TableOrderGroupCard
                   tableLabel={tableKey}
                   orders={orders as any}
