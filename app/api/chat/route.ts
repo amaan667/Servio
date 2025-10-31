@@ -136,7 +136,7 @@ export async function POST(req: Request) {
         if (toolCall.function.name === "navigate") {
           const args = JSON.parse(toolCall.function.arguments);
           navigationInfo = {
-            route: getNavigationRoute(args.page, venueId),
+            route: getNavigationRoute(args.page, venueId, args.tableNumber),
             tableNumber: args.tableNumber,
           };
         }
@@ -291,7 +291,7 @@ async function getFullVenueContext(venueId: string) {
   };
 }
 
-function getNavigationRoute(page: string, venueId: string): string {
+function getNavigationRoute(page: string, venueId: string, tableNumber?: string): string {
   const routeMap: Record<string, string> = {
     dashboard: `/dashboard/${venueId}`,
     menu: `/dashboard/${venueId}/menu-management`,
@@ -306,7 +306,15 @@ function getNavigationRoute(page: string, venueId: string): string {
     tables: `/dashboard/${venueId}/tables`,
     feedback: `/dashboard/${venueId}/feedback`,
   };
-  return routeMap[page] || `/dashboard/${venueId}`;
+
+  let route = routeMap[page] || `/dashboard/${venueId}`;
+
+  // Add table parameter for QR codes
+  if (page === "qr-codes" && tableNumber) {
+    route += `?table=${encodeURIComponent(tableNumber)}`;
+  }
+
+  return route;
 }
 
 async function executeToolCall(toolName: string, args: string, venueId: string, userId: string) {
