@@ -87,6 +87,110 @@ const CATEGORY_MAPPINGS: Record<string, Record<string, string>> = {
     VEGANO: "VEGAN",
     "SIN GLUTEN": "GLUTEN FREE",
   },
+  "en-ar": {
+    STARTERS: "المقبلات",
+    APPETIZERS: "المقبلات",
+    "MAIN COURSES": "الأطباق الرئيسية",
+    ENTREES: "الأطباق الرئيسية",
+    MAINS: "الأطباق الرئيسية",
+    DESSERTS: "الحلويات",
+    SWEETS: "الحلويات",
+    SALADS: "السلطات",
+    SALAD: "السلطات",
+    KIDS: "الأطفال",
+    CHILDREN: "الأطفال",
+    DRINKS: "المشروبات",
+    BEVERAGES: "المشروبات",
+    COFFEE: "القهوة",
+    "SPECIAL COFFEE": "القهوة الخاصة",
+    TEA: "الشاي",
+    SPECIALS: "العروض الخاصة",
+    SPECIAL: "خاص",
+    WRAPS: "السندويشات الملفوفة",
+    SANDWICHES: "السندويشات",
+    MILKSHAKES: "ميلك شيك",
+    SHAKES: "المخفوقات",
+    SMOOTHIES: "السموذي",
+    BRUNCH: "فطور وغداء",
+    "ALL DAY BRUNCH": "فطور وغداء طوال اليوم",
+    BREAKFAST: "فطور",
+    "ALL DAY BREAKFAST": "فطور طوال اليوم",
+    "LATE BREAKFAST": "فطور متأخر",
+    "LATE BREAKFAST ALL DAY": "فطور متأخر طوال اليوم",
+    LUNCH: "غداء",
+    DINNER: "عشاء",
+    SOUP: "الحساء",
+    SOUPS: "الحساء",
+    PASTA: "المعكرونة",
+    PIZZA: "البيتزا",
+    SEAFOOD: "المأكولات البحرية",
+    CHICKEN: "الدجاج",
+    BEEF: "لحم البقر",
+    LAMB: "لحم الغنم",
+    PORK: "لحم الخنزير",
+    VEGETARIAN: "نباتي",
+    VEGAN: "نباتي صرف",
+    "GLUTEN FREE": "خالي من الغلوتين",
+    SIDES: "الأطباق الجانبية",
+    PLATTERS: "الأطباق الكبيرة",
+    GRILLS: "المشاوي",
+    GRILLED: "مشوي",
+    FRIED: "مقلي",
+    BAKED: "مخبوز",
+    FRESH: "طازج",
+    HOT: "ساخن",
+    COLD: "بارد",
+    SNACKS: "الوجبات الخفيفة",
+    "LIGHT BITES": "وجبات خفيفة",
+  },
+  "ar-en": {
+    المقبلات: "STARTERS",
+    "الأطباق الرئيسية": "MAIN COURSES",
+    الحلويات: "DESSERTS",
+    السلطات: "SALADS",
+    الأطفال: "KIDS",
+    المشروبات: "DRINKS",
+    القهوة: "COFFEE",
+    "القهوة الخاصة": "SPECIAL COFFEE",
+    الشاي: "TEA",
+    "العروض الخاصة": "SPECIALS",
+    خاص: "SPECIAL",
+    "السندويشات الملفوفة": "WRAPS",
+    السندويشات: "SANDWICHES",
+    "ميلك شيك": "MILKSHAKES",
+    المخفوقات: "SHAKES",
+    السموذي: "SMOOTHIES",
+    "فطور وغداء": "BRUNCH",
+    "فطور وغداء طوال اليوم": "ALL DAY BRUNCH",
+    فطور: "BREAKFAST",
+    "فطور طوال اليوم": "ALL DAY BREAKFAST",
+    "فطور متأخر": "LATE BREAKFAST",
+    "فطور متأخر طوال اليوم": "LATE BREAKFAST ALL DAY",
+    غداء: "LUNCH",
+    عشاء: "DINNER",
+    الحساء: "SOUPS",
+    المعكرونة: "PASTA",
+    البيتزا: "PIZZA",
+    "المأكولات البحرية": "SEAFOOD",
+    الدجاج: "CHICKEN",
+    "لحم البقر": "BEEF",
+    "لحم الغنم": "LAMB",
+    "لحم الخنزير": "PORK",
+    نباتي: "VEGETARIAN",
+    "نباتي صرف": "VEGAN",
+    "خالي من الغلوتين": "GLUTEN FREE",
+    "الأطباق الجانبية": "SIDES",
+    "الأطباق الكبيرة": "PLATTERS",
+    المشاوي: "GRILLS",
+    مشوي: "GRILLED",
+    مقلي: "FRIED",
+    مخبوز: "BAKED",
+    طازج: "FRESH",
+    ساخن: "HOT",
+    بارد: "COLD",
+    "الوجبات الخفيفة": "SNACKS",
+    "وجبات خفيفة": "LIGHT BITES",
+  },
 };
 
 function detectSourceLanguage(
@@ -153,8 +257,10 @@ function detectSourceLanguage(
     "APPETIZERS",
     "MAIN COURSES",
     "ENTREES",
+    "MAINS",
     "DESSERTS",
     "SALADS",
+    "SALAD",
     "KIDS",
     "CHILDREN",
     "DRINKS",
@@ -169,6 +275,9 @@ function detectSourceLanguage(
     "SMOOTHIES",
     "BRUNCH",
     "BREAKFAST",
+    "ALL DAY BREAKFAST",
+    "ALL DAY BRUNCH",
+    "LATE BREAKFAST",
     "LUNCH",
     "DINNER",
     "SOUP",
@@ -178,6 +287,7 @@ function detectSourceLanguage(
     "SEAFOOD",
     "CHICKEN",
     "BEEF",
+    "LAMB",
     "PORK",
     "VEGETARIAN",
     "VEGAN",
@@ -205,26 +315,136 @@ function detectSourceLanguage(
     "GRILLED",
     "FRIED",
     "BAKED",
+    "FRESH",
+    "HOT",
+    "COLD",
+    "SIDES",
+    "PLATTERS",
+  ];
+
+  const arabicIndicators = [
+    "المقبلات",
+    "الأطباق الرئيسية",
+    "الأطباق",
+    "الرئيسية",
+    "الحلويات",
+    "السلطات",
+    "الأطفال",
+    "المشروبات",
+    "القهوة",
+    "الشاي",
+    "العروض",
+    "الخاصة",
+    "السندويشات",
+    "المخفوقات",
+    "السموذي",
+    "فطور",
+    "وغداء",
+    "طوال",
+    "اليوم",
+    "متأخر",
+    "غداء",
+    "عشاء",
+    "الحساء",
+    "المعكرونة",
+    "البيتزا",
+    "المأكولات",
+    "البحرية",
+    "الدجاج",
+    "لحم",
+    "البقر",
+    "الغنم",
+    "الخنزير",
+    "نباتي",
+    "صرف",
+    "خالي",
+    "من",
+    "الغلوتين",
+    "الجانبية",
+    "الكبيرة",
+    "المشاوي",
+    "مشوي",
+    "مقلي",
+    "مخبوز",
+    "طازج",
+    "ساخن",
+    "بارد",
+    "الوجبات",
+    "الخفيفة",
+    "وجبات",
+    "خفيفة",
+    "مع",
+    "و",
+    "أو",
+    "في",
+    "على",
+    "إلى",
+    "بيض",
+    "جبن",
+    "حليب",
+    "خبز",
+    "أرز",
+    "فول",
+    "صلصة",
+    "برجر",
+    "سندويش",
+    "ستيك",
   ];
 
   let spanishCount = 0;
   let englishCount = 0;
+  let arabicCount = 0;
 
   items.forEach((item) => {
-    const text = `${item.name} ${item.category}`.toUpperCase();
+    const text = `${item.name} ${item.category}`;
+    const textUpper = text.toUpperCase();
 
     spanishIndicators.forEach((indicator) => {
-      if (text.includes(indicator)) spanishCount++;
+      if (textUpper.includes(indicator)) spanishCount++;
     });
 
     englishIndicators.forEach((indicator) => {
-      if (text.includes(indicator)) englishCount++;
+      if (textUpper.includes(indicator)) englishCount++;
+    });
+
+    arabicIndicators.forEach((indicator) => {
+      if (text.includes(indicator)) arabicCount++;
     });
   });
 
-  if (spanishCount > englishCount) return "es";
-  if (englishCount > spanishCount) return "en";
-  return targetLanguage === "es" ? "en" : "es";
+  logger.debug("[TRANSLATION] Language detection counts:", {
+    spanishCount,
+    englishCount,
+    arabicCount,
+    targetLanguage,
+  });
+
+  // Return the language with the highest count
+  const counts = [
+    { lang: "es", count: spanishCount },
+    { lang: "en", count: englishCount },
+    { lang: "ar", count: arabicCount },
+  ];
+
+  counts.sort((a, b) => b.count - a.count);
+
+  // If we have a clear winner (more than 3 matches), use it
+  if (counts[0].count > 3) {
+    logger.debug("[TRANSLATION] Detected source language:", counts[0].lang);
+    return counts[0].lang;
+  }
+
+  // Otherwise, assume the opposite of target language
+  // If translating to Arabic, assume English source
+  // If translating to English, check if we have Arabic or Spanish indicators
+  if (targetLanguage === "ar") return "en";
+  if (targetLanguage === "en") {
+    return arabicCount > spanishCount ? "ar" : "es";
+  }
+  if (targetLanguage === "es") return "en";
+
+  // Default fallback
+  return "en";
 }
 
 export async function executeMenuTranslate(
@@ -546,6 +766,16 @@ OUTPUT FORMAT:
         `Translation failed: Could not update unknown items (${failedCount} failed)`,
         "EXECUTION_FAILED"
       );
+    }
+
+    // Revalidate the menu management page to show updated translations
+    try {
+      const { revalidatePath } = await import("next/cache");
+      revalidatePath(`/dashboard/${venueId}/menu-management`, "page");
+      logger.debug("[AI ASSISTANT] Revalidated menu management page after translation");
+    } catch (revalidateError) {
+      logger.warn("[AI ASSISTANT] Failed to revalidate path:", revalidateError);
+      // Don't fail the whole operation if revalidation fails
     }
 
     return {

@@ -758,6 +758,14 @@ async function executeToolCall(toolName: string, args: string, venueId: string, 
       };
     }
 
+    // Revalidate the menu management page to show new item
+    try {
+      const { revalidatePath } = await import("next/cache");
+      revalidatePath(`/dashboard/${venueId}/menu-management`, "page");
+    } catch (_revalidateError) {
+      // Don't fail if revalidation fails
+    }
+
     return {
       success: true,
       message: `Successfully added "${name}" to the menu under ${category} for $${price}`,
@@ -810,6 +818,14 @@ async function executeToolCall(toolName: string, args: string, venueId: string, 
         success: false,
         error: `Failed to delete item: ${deleteError.message}`,
       };
+    }
+
+    // Revalidate the menu management page to show item removed
+    try {
+      const { revalidatePath } = await import("next/cache");
+      revalidatePath(`/dashboard/${venueId}/menu-management`, "page");
+    } catch (_revalidateError) {
+      // Don't fail if revalidation fails
     }
 
     return {
