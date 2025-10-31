@@ -14,6 +14,9 @@ interface PlanPreviewProps {
 export function PlanPreview({ plan, previews, executing, onExecute }: PlanPreviewProps) {
   if (!plan) return null;
 
+  // Only show preview if there are tools to execute
+  if (!plan.tools || plan.tools.length === 0) return null;
+
   return (
     <Card className="m-4">
       <CardHeader>
@@ -21,11 +24,11 @@ export function PlanPreview({ plan, previews, executing, onExecute }: PlanPrevie
       </CardHeader>
       <CardContent className="space-y-4">
         <div>
-          <h4 className="font-semibold mb-2">Steps:</h4>
+          <h4 className="font-semibold mb-2">Actions:</h4>
           <ol className="list-decimal list-inside space-y-1">
-            {(plan as any).steps.map((step: string, idx: number) => (
+            {plan.tools.map((tool, idx: number) => (
               <li key={idx} className="text-sm">
-                {step}
+                {tool.name.replace(/\./g, " › ")}
               </li>
             ))}
           </ol>
