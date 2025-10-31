@@ -118,55 +118,99 @@ export function usePaymentProcessing() {
         }
       } else if (action === "till") {
         // Till payment - create order immediately, show "Order Confirmed!"
+        console.log("[PAYMENT] 💳 Processing TILL payment...");
         const orderResult = await createOrder();
         const orderId = orderResult.order?.id;
+
+        console.log("[PAYMENT] 📝 Order created:", { orderId, orderResult });
+
+        const tillPayload = {
+          order_id: orderId,
+          venueId: checkoutData.venueId,
+          tableNumber: checkoutData.tableNumber,
+          customerName: checkoutData.customerName,
+          customerPhone: checkoutData.customerPhone,
+        };
+
+        console.log("[PAYMENT] 📤 Calling /api/pay/till with payload:", tillPayload);
 
         const response = await fetch("/api/pay/till", {
           method: "POST",
           headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({
-            order_id: orderId,
-            venueId: checkoutData.venueId,
-            tableNumber: checkoutData.tableNumber,
-            customerName: checkoutData.customerName,
-            customerPhone: checkoutData.customerPhone,
-          }),
+          body: JSON.stringify(tillPayload),
+        });
+
+        console.log("[PAYMENT] 📥 Response from /api/pay/till:", {
+          ok: response.ok,
+          status: response.status,
+          statusText: response.statusText,
         });
 
         if (!response.ok) {
-          throw new Error("Failed to confirm order for till payment");
+          const errorText = await response.text();
+          console.error("[PAYMENT] ❌ Pay till failed:", {
+            status: response.status,
+            statusText: response.statusText,
+            errorText,
+          });
+          throw new Error(
+            `Failed to confirm order for till payment: ${response.status} - ${errorText}`
+          );
         }
 
-        await response.json();
+        const result = await response.json();
+        console.log("[PAYMENT] ✅ Pay till successful:", result);
 
         // Redirect to order summary page
+        console.log("[PAYMENT] 🔀 Redirecting to order summary...");
         window.location.href = `/order-summary?orderId=${orderId}`;
       } else if (action === "later") {
         // Pay later - create order immediately, show "Order Confirmed!"
+        console.log("[PAYMENT] ⏰ Processing PAY LATER...");
         const orderResult = await createOrder();
         const orderId = orderResult.order?.id;
+
+        console.log("[PAYMENT] 📝 Order created:", { orderId, orderResult });
+
+        const laterPayload = {
+          order_id: orderId,
+          venueId: checkoutData.venueId,
+          tableNumber: checkoutData.tableNumber,
+          customerName: checkoutData.customerName,
+          customerPhone: checkoutData.customerPhone,
+          sessionId: checkoutData.sessionId || `session_${Date.now()}`,
+        };
+
+        console.log("[PAYMENT] 📤 Calling /api/pay/later with payload:", laterPayload);
 
         const response = await fetch("/api/pay/later", {
           method: "POST",
           headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({
-            order_id: orderId,
-            venueId: checkoutData.venueId,
-            tableNumber: checkoutData.tableNumber,
-            customerName: checkoutData.customerName,
-            customerPhone: checkoutData.customerPhone,
-            sessionId: checkoutData.sessionId || `session_${Date.now()}`,
-          }),
+          body: JSON.stringify(laterPayload),
+        });
+
+        console.log("[PAYMENT] 📥 Response from /api/pay/later:", {
+          ok: response.ok,
+          status: response.status,
+          statusText: response.statusText,
         });
 
         if (!response.ok) {
-          throw new Error("Failed to confirm order");
+          const errorText = await response.text();
+          console.error("[PAYMENT] ❌ Pay later failed:", {
+            status: response.status,
+            statusText: response.statusText,
+            errorText,
+          });
+          throw new Error(`Failed to confirm order: ${response.status} - ${errorText}`);
         }
 
         const result = await response.json();
+        console.log("[PAYMENT] ✅ Pay later successful:", result);
 
         // Store session for re-scanning
         const sessionId = checkoutData.sessionId || `session_${Date.now()}`;
+        console.log("[PAYMENT] 💾 Storing session data:", { sessionId });
         localStorage.setItem("servio-current-session", sessionId);
         localStorage.setItem(
           `servio-order-${sessionId}`,
@@ -183,6 +227,7 @@ export function usePaymentProcessing() {
         );
 
         // Redirect to order summary page
+        console.log("[PAYMENT] 🔀 Redirecting to order summary...");
         window.location.href = `/order-summary?orderId=${orderId}`;
       }
     } catch (_err) {
