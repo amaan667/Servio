@@ -99,6 +99,36 @@ export async function POST(req: Request) {
           },
         },
       },
+      {
+        type: "function",
+        function: {
+          name: "add_menu_item",
+          description:
+            "Add a new item to the menu. If user doesn't provide all details, ask for them conversationally.",
+          parameters: {
+            type: "object",
+            properties: {
+              name: {
+                type: "string",
+                description: "The name of the menu item",
+              },
+              category: {
+                type: "string",
+                description: "Category like 'Coffee', 'Food', 'Pastries', etc.",
+              },
+              price: {
+                type: "number",
+                description: "Price in dollars/pounds",
+              },
+              description: {
+                type: "string",
+                description: "Optional description of the item",
+              },
+            },
+            required: ["name", "category", "price"],
+          },
+        },
+      },
     ];
 
     // First API call
