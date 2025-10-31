@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { supabase } from "@/lib/supabase";
 import { retrySupabaseQuery } from "@/lib/supabase-retry";
@@ -14,6 +14,11 @@ export function useOrderSession(orderParams: OrderParams) {
     phone: "",
   });
   const [showCheckout, setShowCheckout] = useState(false);
+
+  // Prevent infinite API spam with ref-based tracking
+  const isCheckingRef = useRef(false);
+  const lastCheckTimeRef = useRef<number>(0);
+  const COOLDOWN_MS = 2000; // 2 second cooldown between checks
 
   const updateCustomerInfo = (field: "name" | "phone", value: string) => {
     setCustomerInfo((prev) => ({ ...prev, [field]: value }));
@@ -201,6 +206,30 @@ export function useOrderSession(orderParams: OrderParams) {
 
     const checkUnpaidOrders = async () => {
       try {
+        // Prevent concurrent checks and enforce cooldown
+        const now = Date.now();
+        const timeSinceLastCheck = now - lastCheckTimeRef.current;
+
+        if (isCheckingRef.current) {
+          logger.info("⏭️ [ORDER SESSION] Check already in progress, skipping", {
+            venueSlug: orderParams.venueSlug,
+            tableNumber: orderParams.tableNumber,
+          });
+          return;
+        }
+
+        if (timeSinceLastCheck < COOLDOWN_MS) {
+          logger.info("⏳ [ORDER SESSION] Cooldown active, skipping check", {
+            venueSlug: orderParams.venueSlug,
+            tableNumber: orderParams.tableNumber,
+            cooldownRemaining: COOLDOWN_MS - timeSinceLastCheck,
+          });
+          return;
+        }
+
+        isCheckingRef.current = true;
+        lastCheckTimeRef.current = now;
+
         logger.info("🔍 [ORDER SESSION] Checking for active unpaid orders via API", {
           venueSlug: orderParams.venueSlug,
           tableNumber: orderParams.tableNumber,
@@ -217,6 +246,7 @@ export function useOrderSession(orderParams: OrderParams) {
             status: response.status,
             statusText: response.statusText,
           });
+          isCheckingRef.current = false;
           return;
         }
 
@@ -250,6 +280,7 @@ export function useOrderSession(orderParams: OrderParams) {
                 router.push(
                   `/order-summary?${orderParams.isCounterOrder ? "counter" : "table"}=${orderParams.orderLocation}&session=${session.orderId}`
                 );
+                isCheckingRef.current = false;
                 return;
               }
 
@@ -274,6 +305,8 @@ export function useOrderSession(orderParams: OrderParams) {
         }
       } catch (_error) {
         // Error silently handled
+      } finally {
+        isCheckingRef.current = false;
       }
     };
 
@@ -301,7 +334,14 @@ export function useOrderSession(orderParams: OrderParams) {
     return () => {
       /* Empty */
     };
-  }, [orderParams, router, searchParams]);
+  }, [
+    orderParams.venueSlug,
+    orderParams.tableNumber,
+    orderParams.isCounterOrder,
+    orderParams.orderLocation,
+    router,
+    searchParams,
+  ]);
 
   return {
     session,
