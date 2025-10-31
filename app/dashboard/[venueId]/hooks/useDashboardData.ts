@@ -53,28 +53,47 @@ export function useDashboardData(
   const [loading, setLoading] = useState(false); // Start with false - we have initial data
 
   // Priority: initialCounts from server → cached → default 0
-  const [counts, setCounts] = useState<DashboardCounts>(
-    initialCounts ||
-      getCachedCounts() || {
-        live_count: 0,
-        earlier_today_count: 0,
-        history_count: 0,
-        today_orders_count: 0,
-        active_tables_count: 0,
-        tables_set_up: 0,
-        tables_in_use: 0,
-        tables_reserved_now: 0,
-      }
-  );
+  // NEVER show 0 if we have cached data - this prevents flicker
+  const [counts, setCounts] = useState<DashboardCounts>(() => {
+    const cached = getCachedCounts();
+    if (cached) return cached;
+    if (initialCounts) return initialCounts;
+    return {
+      live_count: 0,
+      earlier_today_count: 0,
+      history_count: 0,
+      today_orders_count: 0,
+      active_tables_count: 0,
+      tables_set_up: 0,
+      tables_in_use: 0,
+      tables_reserved_now: 0,
+    };
+  });
 
   // Priority: initialStats from server → cached → default 0
-  const [stats, setStats] = useState<DashboardStats>(
-    initialStats || getCachedStats() || { revenue: 0, menuItems: 0, unpaid: 0 }
-  );
+  const [stats, setStats] = useState<DashboardStats>(() => {
+    const cached = getCachedStats();
+    if (cached) return cached;
+    if (initialStats) return initialStats;
+    return { revenue: 0, menuItems: 0, unpaid: 0 };
+  });
   const [todayWindow, setTodayWindow] = useState<{ startUtcISO: string; endUtcISO: string } | null>(
     null
   );
   const [error, setError] = useState<string | null>(null);
+
+  // Cache initial data immediately on mount to prevent future flicker
+  useEffect(() => {
+    if (typeof window !== "undefined") {
+      if (initialCounts) {
+        sessionStorage.setItem(`dashboard_counts_${venueId}`, JSON.stringify(initialCounts));
+        sessionStorage.setItem(`dashboard_counts_time_${venueId}`, Date.now().toString());
+      }
+      if (initialStats) {
+        sessionStorage.setItem(`dashboard_stats_${venueId}`, JSON.stringify(initialStats));
+      }
+    }
+  }, []); // Run once on mount
 
   const loadStats = useCallback(
     async (venueId: string, window: { startUtcISO: string; endUtcISO: string }) => {
@@ -191,6 +210,7 @@ export function useDashboardData(
         // Cache the counts to prevent flicker (but allow refresh)
         if (typeof window !== "undefined") {
           sessionStorage.setItem(`dashboard_counts_${venueId}`, JSON.stringify(finalCounts));
+          sessionStorage.setItem(`dashboard_counts_time_${venueId}`, Date.now().toString());
         }
       } else {
         console.warn("[Dashboard] No counts data received from RPC");
@@ -204,7 +224,23 @@ export function useDashboardData(
   // Force refresh on mount AND when venueId changes
   useEffect(() => {
     if (venueId) {
+      // Check if we have fresh cached data (less than 30 seconds old)
+      const hasFreshCache = (() => {
+        if (typeof window === "undefined") return false;
+        const cached = sessionStorage.getItem(`dashboard_counts_${venueId}`);
+        const cacheTime = sessionStorage.getItem(`dashboard_counts_time_${venueId}`);
+        if (!cached || !cacheTime) return false;
+        const age = Date.now() - parseInt(cacheTime);
+        return age < 30000; // 30 seconds
+      })();
+
+      if (hasFreshCache) {
+        console.log("[Dashboard] Using fresh cached data, skipping refresh");
+        return;
+      }
+
       console.log("[Dashboard] Mount/VenueChange: refreshing counts for venue:", venueId);
+
       // Clear old venue's cache when switching to ensure fresh data
       if (typeof window !== "undefined") {
         const allKeys = Object.keys(sessionStorage);
