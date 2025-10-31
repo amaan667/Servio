@@ -55,6 +55,302 @@ export const MenuTranslateSchema = z
   })
   .strict();
 
+// ============================================================================
+// Revenue Optimization Tools
+// ============================================================================
+
+export const RevenueAnalyzeMenuPerformanceSchema = z
+  .object({
+    timeRange: z.enum(["today", "week", "month", "quarter"]).default("week"),
+    sortBy: z.enum(["revenue", "profit", "popularity", "margin"]).default("revenue"),
+    limit: z.number().positive().default(10),
+  })
+  .strict();
+
+export const RevenueSuggestPriceOptimizationSchema = z
+  .object({
+    itemId: z.string().uuid().nullable().default(null),
+    strategy: z.enum(["demand_based", "competitor_based", "margin_based", "all"]).default("all"),
+    targetMargin: z.number().min(0).max(100).nullable().default(null),
+  })
+  .strict();
+
+export const RevenueIdentifyUpsellSchema = z
+  .object({
+    minConfidence: z.number().min(0).max(100).default(70),
+    timeRange: z.enum(["week", "month", "quarter"]).default("month"),
+  })
+  .strict();
+
+export const RevenueCalculateMarginsSchema = z
+  .object({
+    itemIds: z.array(z.string().uuid()).nullable().default(null), // null = all items
+    includeWaste: z.boolean().default(true),
+  })
+  .strict();
+
+export const RevenueForecastSchema = z
+  .object({
+    horizon: z.enum(["day", "week", "month"]).default("week"),
+    confidence: z.enum(["low", "medium", "high"]).default("medium"),
+  })
+  .strict();
+
+export const RevenueIdentifyUnderperformersSchema = z
+  .object({
+    threshold: z.number().min(0).max(100).default(20), // Items below 20th percentile
+    timeRange: z.enum(["week", "month", "quarter"]).default("month"),
+    minSampleSize: z.number().positive().default(10),
+  })
+  .strict();
+
+// ============================================================================
+// Operational Efficiency Tools
+// ============================================================================
+
+export const OpsAnalyzeKitchenBottlenecksSchema = z
+  .object({
+    timeRange: z.enum(["today", "week", "month"]).default("week"),
+    station: z.string().nullable().default(null),
+  })
+  .strict();
+
+export const OpsOptimizeStaffScheduleSchema = z
+  .object({
+    targetDate: z.string(), // ISO date
+    considerPeakHours: z.boolean().default(true),
+    laborBudget: z.number().positive().nullable().default(null),
+  })
+  .strict();
+
+export const OpsReduceWasteSchema = z
+  .object({
+    timeRange: z.enum(["week", "month", "quarter"]).default("month"),
+    category: z.string().nullable().default(null),
+  })
+  .strict();
+
+export const OpsImproveTurnoverSchema = z
+  .object({
+    timeRange: z.enum(["today", "week", "month"]).default("week"),
+    targetTurnover: z.number().positive().nullable().default(null),
+  })
+  .strict();
+
+export const OpsTrackAccuracySchema = z
+  .object({
+    timeRange: z.enum(["today", "week", "month"]).default("week"),
+    errorType: z.enum(["wrong_item", "missing_item", "wrong_quantity", "all"]).default("all"),
+  })
+  .strict();
+
+// ============================================================================
+// Customer Insights Tools
+// ============================================================================
+
+export const CustomerAnalyzeFeedbackSchema = z
+  .object({
+    timeRange: z.enum(["week", "month", "quarter", "year"]).default("month"),
+    sentiment: z.enum(["positive", "negative", "neutral", "all"]).default("all"),
+    minRating: z.number().min(1).max(5).nullable().default(null),
+  })
+  .strict();
+
+export const CustomerPopularCombosSchema = z
+  .object({
+    timeRange: z.enum(["week", "month", "quarter"]).default("month"),
+    minSupport: z.number().min(0).max(100).default(10), // % of orders
+  })
+  .strict();
+
+export const CustomerRepeatAnalysisSchema = z
+  .object({
+    timeRange: z.enum(["month", "quarter", "year"]).default("quarter"),
+    identifyBy: z.enum(["phone", "email", "both"]).default("phone"),
+  })
+  .strict();
+
+export const CustomerDemandForecastSchema = z
+  .object({
+    itemId: z.string().uuid().nullable().default(null),
+    horizon: z.enum(["day", "week", "month"]).default("day"),
+    includeWeather: z.boolean().default(false),
+  })
+  .strict();
+
+export const CustomerWaitTimesSchema = z
+  .object({
+    timeRange: z.enum(["today", "week", "month"]).default("week"),
+    serviceType: z.enum(["table", "counter", "delivery", "all"]).default("all"),
+  })
+  .strict();
+
+// ============================================================================
+// Inventory & Cost Control Tools
+// ============================================================================
+
+export const InventoryPredictNeedsSchema = z
+  .object({
+    horizon: z.enum(["day", "week", "month"]).default("week"),
+    considerSeasonality: z.boolean().default(true),
+    safetyStock: z.number().min(0).max(100).default(20), // %
+  })
+  .strict();
+
+export const InventoryWastePatternsSchema = z
+  .object({
+    timeRange: z.enum(["week", "month", "quarter"]).default("month"),
+    category: z.string().nullable().default(null),
+    minValue: z.number().min(0).nullable().default(null), // Min waste value to report
+  })
+  .strict();
+
+export const InventorySuggestParLevelsSchema = z
+  .object({
+    strategy: z.enum(["historical", "forecast", "hybrid"]).default("hybrid"),
+    confidenceLevel: z.number().min(0).max(100).default(95),
+  })
+  .strict();
+
+export const InventoryCostPerDishSchema = z
+  .object({
+    itemIds: z.array(z.string().uuid()).nullable().default(null),
+    includeLabor: z.boolean().default(false),
+    includeOverhead: z.boolean().default(false),
+  })
+  .strict();
+
+export const InventorySupplierTrackingSchema = z
+  .object({
+    supplierId: z.string().uuid().nullable().default(null),
+    timeRange: z.enum(["month", "quarter", "year"]).default("quarter"),
+    alertOnIncrease: z.number().min(0).max(100).default(10), // Alert if >10% increase
+  })
+  .strict();
+
+// ============================================================================
+// Marketing & Growth Tools
+// ============================================================================
+
+export const MarketingSuggestPromotionsSchema = z
+  .object({
+    goal: z.enum(["increase_revenue", "reduce_waste", "boost_slow_items", "acquire_customers"]),
+    budget: z.number().positive().nullable().default(null),
+    duration: z.enum(["day", "week", "month"]).default("week"),
+  })
+  .strict();
+
+export const MarketingRecommendItemsSchema = z
+  .object({
+    basedOn: z.enum(["trends", "gaps", "seasonality", "customer_requests", "all"]).default("all"),
+    category: z.string().nullable().default(null),
+    targetMargin: z.number().min(0).max(100).nullable().default(null),
+  })
+  .strict();
+
+export const MarketingSeasonalIdeasSchema = z
+  .object({
+    season: z.enum(["spring", "summer", "autumn", "winter", "current"]).default("current"),
+    includeLocalEvents: z.boolean().default(true),
+  })
+  .strict();
+
+export const MarketingCompetitorInsightsSchema = z
+  .object({
+    location: z.string().nullable().default(null), // lat,lng or address
+    radius: z.number().positive().default(1), // miles/km
+    focus: z.enum(["pricing", "menu", "reviews", "all"]).default("all"),
+  })
+  .strict();
+
+export const MarketingLoyaltyAnalysisSchema = z
+  .object({
+    timeRange: z.enum(["month", "quarter", "year"]).default("quarter"),
+    segmentBy: z.enum(["frequency", "value", "recency", "all"]).default("all"),
+  })
+  .strict();
+
+// ============================================================================
+// Smart Automation Tools
+// ============================================================================
+
+export const AutoBulkMenuUpdateSchema = z
+  .object({
+    operation: z.enum([
+      "price_increase",
+      "price_decrease",
+      "toggle_availability",
+      "update_category",
+    ]),
+    filter: z
+      .object({
+        category: z.string().nullable().default(null),
+        priceRange: z
+          .object({
+            min: z.number().nullable().default(null),
+            max: z.number().nullable().default(null),
+          })
+          .nullable()
+          .default(null),
+      })
+      .strict(),
+    value: z.union([z.number(), z.string(), z.boolean()]), // Depends on operation
+    preview: z.boolean().default(true),
+  })
+  .strict();
+
+export const AutoReorderInventorySchema = z
+  .object({
+    mode: z.enum(["auto", "suggest"]).default("suggest"),
+    threshold: z.enum(["par_level", "reorder_point"]).default("reorder_point"),
+    autoApprove: z.boolean().default(false),
+  })
+  .strict();
+
+export const AutoGenerateReportSchema = z
+  .object({
+    reportType: z.enum(["daily_summary", "weekly_performance", "monthly_financials", "custom"]),
+    sections: z
+      .array(z.enum(["revenue", "costs", "inventory", "customer", "operations"]))
+      .default(["revenue", "costs"]),
+    format: z.enum(["pdf", "excel", "email"]).default("pdf"),
+    schedule: z.enum(["now", "daily", "weekly", "monthly"]).default("now"),
+  })
+  .strict();
+
+export const AutoScheduleMenuChangesSchema = z
+  .object({
+    changes: z.array(
+      z
+        .object({
+          itemId: z.string().uuid(),
+          action: z.enum(["enable", "disable", "update_price"]),
+          value: z.union([z.boolean(), z.number()]).nullable().default(null),
+          startTime: z.string(), // ISO datetime
+          endTime: z.string().nullable().default(null),
+        })
+        .strict()
+    ),
+    recurring: z.enum(["once", "daily", "weekly", "weekdays", "weekends"]).default("once"),
+  })
+  .strict();
+
+export const AutoTranslateFeedbackSchema = z
+  .object({
+    feedbackIds: z.array(z.string().uuid()).nullable().default(null), // null = all untranslated
+    targetLanguage: z.string().default("en"),
+  })
+  .strict();
+
+export const AutoDynamicPricingSchema = z
+  .object({
+    enable: z.boolean(),
+    strategy: z.enum(["time_based", "demand_based", "inventory_based", "hybrid"]),
+    maxAdjustment: z.number().min(0).max(50).default(20), // Max % change
+    itemIds: z.array(z.string().uuid()).nullable().default(null),
+  })
+  .strict();
+
 // Inventory Tools
 export const InventoryAdjustStockSchema = z
   .object({
@@ -218,23 +514,78 @@ export const NavigationGoToPageSchema = z
 // ============================================================================
 
 export const TOOL_SCHEMAS = {
+  // Menu Tools
   "menu.update_prices": MenuUpdatePricesSchema,
   "menu.toggle_availability": MenuToggleAvailabilitySchema,
   "menu.create_item": MenuCreateItemSchema,
   "menu.delete_item": MenuDeleteItemSchema,
   "menu.translate": MenuTranslateSchema,
+
+  // Revenue Optimization Tools
+  "revenue.analyze_menu_performance": RevenueAnalyzeMenuPerformanceSchema,
+  "revenue.suggest_price_optimization": RevenueSuggestPriceOptimizationSchema,
+  "revenue.identify_upsell": RevenueIdentifyUpsellSchema,
+  "revenue.calculate_margins": RevenueCalculateMarginsSchema,
+  "revenue.forecast": RevenueForecastSchema,
+  "revenue.identify_underperformers": RevenueIdentifyUnderperformersSchema,
+
+  // Operational Efficiency Tools
+  "ops.analyze_kitchen_bottlenecks": OpsAnalyzeKitchenBottlenecksSchema,
+  "ops.optimize_staff_schedule": OpsOptimizeStaffScheduleSchema,
+  "ops.reduce_waste": OpsReduceWasteSchema,
+  "ops.improve_turnover": OpsImproveTurnoverSchema,
+  "ops.track_accuracy": OpsTrackAccuracySchema,
+
+  // Customer Insights Tools
+  "customer.analyze_feedback": CustomerAnalyzeFeedbackSchema,
+  "customer.popular_combos": CustomerPopularCombosSchema,
+  "customer.repeat_analysis": CustomerRepeatAnalysisSchema,
+  "customer.demand_forecast": CustomerDemandForecastSchema,
+  "customer.wait_times": CustomerWaitTimesSchema,
+
+  // Inventory & Cost Control Tools
   "inventory.adjust_stock": InventoryAdjustStockSchema,
   "inventory.set_par_levels": InventorySetParLevelsSchema,
   "inventory.generate_purchase_order": InventoryGeneratePurchaseOrderSchema,
+  "inventory.predict_needs": InventoryPredictNeedsSchema,
+  "inventory.waste_patterns": InventoryWastePatternsSchema,
+  "inventory.suggest_par_levels": InventorySuggestParLevelsSchema,
+  "inventory.cost_per_dish": InventoryCostPerDishSchema,
+  "inventory.supplier_tracking": InventorySupplierTrackingSchema,
+
+  // Marketing & Growth Tools
+  "marketing.suggest_promotions": MarketingSuggestPromotionsSchema,
+  "marketing.recommend_items": MarketingRecommendItemsSchema,
+  "marketing.seasonal_ideas": MarketingSeasonalIdeasSchema,
+  "marketing.competitor_insights": MarketingCompetitorInsightsSchema,
+  "marketing.loyalty_analysis": MarketingLoyaltyAnalysisSchema,
+
+  // Smart Automation Tools
+  "auto.bulk_menu_update": AutoBulkMenuUpdateSchema,
+  "auto.reorder_inventory": AutoReorderInventorySchema,
+  "auto.generate_report": AutoGenerateReportSchema,
+  "auto.schedule_menu_changes": AutoScheduleMenuChangesSchema,
+  "auto.translate_feedback": AutoTranslateFeedbackSchema,
+  "auto.dynamic_pricing": AutoDynamicPricingSchema,
+
+  // Orders Tools
   "orders.mark_served": OrdersMarkServedSchema,
   "orders.complete": OrdersCompleteSchema,
+
+  // Analytics Tools
   "analytics.get_insights": AnalyticsGetInsightsSchema,
   "analytics.get_stats": AnalyticsGetStatsSchema,
   "analytics.export": AnalyticsExportSchema,
   "analytics.create_report": AnalyticsCreateReportSchema,
+
+  // Discount Tools
   "discounts.create": DiscountsCreateSchema,
+
+  // KDS Tools
   "kds.get_overdue": KDSGetOverdueSchema,
   "kds.suggest_optimization": KDSSuggestOptimizationSchema,
+
+  // Navigation Tools
   "navigation.go_to_page": NavigationGoToPageSchema,
 } as const;
 
@@ -650,6 +1001,111 @@ export const DEFAULT_GUARDRAILS: Record<ToolName, ToolGuardrails> = {
   },
   "navigation.go_to_page": {
     /* Empty */
+  },
+  // REVENUE & ANALYTICS GUARDRAILS
+  "revenue.analyze_menu_performance": {
+    /* Empty */
+  },
+  "revenue.suggest_price_optimization": {
+    maxPriceChangePercent: 20,
+  },
+  "revenue.identify_upsell": {
+    /* Empty */
+  },
+  "revenue.calculate_margins": {
+    /* Empty */
+  },
+  "revenue.identify_underperformers": {
+    /* Empty */
+  },
+  // REVENUE GUARDRAILS (continued)
+  "revenue.forecast": {
+    /* Empty */
+  },
+  // OPERATIONS GUARDRAILS
+  "ops.analyze_kitchen_bottlenecks": {
+    /* Empty */
+  },
+  "ops.optimize_staff_schedule": {
+    /* Empty */
+  },
+  "ops.reduce_waste": {
+    /* Empty */
+  },
+  "ops.improve_turnover": {
+    /* Empty */
+  },
+  "ops.track_accuracy": {
+    /* Empty */
+  },
+  // CUSTOMER INSIGHTS GUARDRAILS
+  "customer.analyze_feedback": {
+    /* Empty */
+  },
+  "customer.popular_combos": {
+    /* Empty */
+  },
+  "customer.repeat_analysis": {
+    /* Empty */
+  },
+  "customer.demand_forecast": {
+    /* Empty */
+  },
+  "customer.wait_times": {
+    /* Empty */
+  },
+  // INVENTORY GUARDRAILS (continued for new tools)
+  "inventory.predict_needs": {
+    /* Empty */
+  },
+  "inventory.waste_patterns": {
+    /* Empty */
+  },
+  "inventory.suggest_par_levels": {
+    /* Empty */
+  },
+  "inventory.cost_per_dish": {
+    /* Empty */
+  },
+  "inventory.supplier_tracking": {
+    /* Empty */
+  },
+  // MARKETING GUARDRAILS
+  "marketing.suggest_promotions": {
+    maxDiscountPercent: 30,
+  },
+  "marketing.recommend_items": {
+    /* Empty */
+  },
+  "marketing.seasonal_ideas": {
+    /* Empty */
+  },
+  "marketing.competitor_insights": {
+    /* Empty */
+  },
+  "marketing.loyalty_analysis": {
+    /* Empty */
+  },
+  // AUTOMATION GUARDRAILS
+  "auto.bulk_menu_update": {
+    maxBulkOperationSize: 100,
+    requiresManagerApproval: true,
+  },
+  "auto.reorder_inventory": {
+    requiresManagerApproval: true,
+  },
+  "auto.generate_report": {
+    /* Empty */
+  },
+  "auto.schedule_menu_changes": {
+    requiresManagerApproval: true,
+  },
+  "auto.translate_feedback": {
+    /* Empty */
+  },
+  "auto.dynamic_pricing": {
+    maxPriceChangePercent: 15,
+    requiresManagerApproval: true,
   },
 };
 

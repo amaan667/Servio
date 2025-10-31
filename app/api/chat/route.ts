@@ -44,7 +44,7 @@ export async function POST(req: Request) {
       currentPage
     );
 
-    // Define tools with QR code generation
+    // Define tools with comprehensive capabilities
     const tools: OpenAI.Chat.ChatCompletionTool[] = [
       {
         type: "function",
@@ -60,6 +60,7 @@ export async function POST(req: Request) {
                 enum: [
                   "dashboard",
                   "menu",
+                  "menu-management",
                   "inventory",
                   "orders",
                   "live-orders",
@@ -85,7 +86,8 @@ export async function POST(req: Request) {
         type: "function",
         function: {
           name: "get_analytics",
-          description: "Get real business analytics and stats",
+          description:
+            "Get real business analytics and stats. Use 'top_items' for best-selling items.",
           parameters: {
             type: "object",
             properties: {
@@ -95,7 +97,7 @@ export async function POST(req: Request) {
               },
               timeRange: {
                 type: "string",
-                enum: ["today", "week", "month"],
+                enum: ["today", "week", "month", "hour"],
               },
             },
             required: ["metric", "timeRange"],
@@ -121,7 +123,7 @@ export async function POST(req: Request) {
               },
               price: {
                 type: "number",
-                description: "Price in dollars/pounds",
+                description: "Price in the venue's currency",
               },
               description: {
                 type: "string",
@@ -129,6 +131,318 @@ export async function POST(req: Request) {
               },
             },
             required: ["name", "category", "price"],
+          },
+        },
+      },
+      {
+        type: "function",
+        function: {
+          name: "delete_menu_item",
+          description: "Delete/remove a menu item. If multiple items match, ask for clarification.",
+          parameters: {
+            type: "object",
+            properties: {
+              itemName: {
+                type: "string",
+                description: "The name of the menu item to delete",
+              },
+              itemId: {
+                type: "string",
+                description: "Optional: exact item ID if known",
+              },
+            },
+            required: ["itemName"],
+          },
+        },
+      },
+      {
+        type: "function",
+        function: {
+          name: "translate_menu",
+          description:
+            "Translate all menu items to a different language. Supports English, Spanish, French, German, Italian, Portuguese, Arabic, Chinese, Japanese.",
+          parameters: {
+            type: "object",
+            properties: {
+              targetLanguage: {
+                type: "string",
+                enum: ["en", "es", "fr", "de", "it", "pt", "ar", "zh", "ja"],
+                description: "Target language code (en=English, es=Spanish, fr=French, etc.)",
+              },
+              includeDescriptions: {
+                type: "boolean",
+                description: "Whether to translate descriptions too (default: true)",
+              },
+            },
+            required: ["targetLanguage"],
+          },
+        },
+      },
+      // ANALYTICS & INTELLIGENCE TOOLS
+      {
+        type: "function",
+        function: {
+          name: "analyze_menu_performance",
+          description:
+            "Analyze which menu items are performing well and which are underperforming. Shows top sellers and items that should be removed.",
+          parameters: {
+            type: "object",
+            properties: {
+              timeRange: {
+                type: "string",
+                enum: ["week", "month", "quarter"],
+                description: "Time period to analyze",
+              },
+            },
+            required: ["timeRange"],
+          },
+        },
+      },
+      {
+        type: "function",
+        function: {
+          name: "optimize_prices",
+          description:
+            "Suggest optimal pricing for menu items based on demand and sales data. Shows which items can support price increases and which need discounts.",
+          parameters: {
+            type: "object",
+            properties: {},
+            required: [],
+          },
+        },
+      },
+      {
+        type: "function",
+        function: {
+          name: "forecast_revenue",
+          description:
+            "Predict future revenue based on historical trends. Provides next week and next month forecasts with confidence levels.",
+          parameters: {
+            type: "object",
+            properties: {},
+            required: [],
+          },
+        },
+      },
+      {
+        type: "function",
+        function: {
+          name: "calculate_margins",
+          description:
+            "Calculate profit margins for each menu item. Shows which items are most profitable and should be promoted.",
+          parameters: {
+            type: "object",
+            properties: {},
+            required: [],
+          },
+        },
+      },
+      // OPERATIONAL TOOLS
+      {
+        type: "function",
+        function: {
+          name: "analyze_kitchen",
+          description:
+            "Identify kitchen bottlenecks and slow stations. Shows average prep times and suggests improvements.",
+          parameters: {
+            type: "object",
+            properties: {},
+            required: [],
+          },
+        },
+      },
+      {
+        type: "function",
+        function: {
+          name: "optimize_staff",
+          description:
+            "Suggest optimal staff scheduling based on demand patterns. Identifies peak periods that need more staff.",
+          parameters: {
+            type: "object",
+            properties: {},
+            required: [],
+          },
+        },
+      },
+      {
+        type: "function",
+        function: {
+          name: "reduce_waste",
+          description:
+            "Analyze waste patterns and identify items with low sales that may be wasted. Suggests which items to prep less or remove.",
+          parameters: {
+            type: "object",
+            properties: {},
+            required: [],
+          },
+        },
+      },
+      {
+        type: "function",
+        function: {
+          name: "improve_turnover",
+          description:
+            "Analyze table turnover times and identify slow tables or service bottlenecks.",
+          parameters: {
+            type: "object",
+            properties: {},
+            required: [],
+          },
+        },
+      },
+      // CUSTOMER INSIGHTS
+      {
+        type: "function",
+        function: {
+          name: "analyze_feedback",
+          description:
+            "Analyze customer feedback for sentiment, common themes, and improvement areas. Shows what customers love and what needs work.",
+          parameters: {
+            type: "object",
+            properties: {},
+            required: [],
+          },
+        },
+      },
+      {
+        type: "function",
+        function: {
+          name: "find_popular_combos",
+          description:
+            "Identify popular item combinations that customers order together. Suggests combo deals for upselling.",
+          parameters: {
+            type: "object",
+            properties: {},
+            required: [],
+          },
+        },
+      },
+      {
+        type: "function",
+        function: {
+          name: "analyze_loyalty",
+          description:
+            "Track repeat customers and loyalty metrics. Shows top customers and repeat purchase rates.",
+          parameters: {
+            type: "object",
+            properties: {},
+            required: [],
+          },
+        },
+      },
+      {
+        type: "function",
+        function: {
+          name: "forecast_demand",
+          description:
+            "Forecast demand by hour and day of week. Helps with inventory planning and staffing.",
+          parameters: {
+            type: "object",
+            properties: {},
+            required: [],
+          },
+        },
+      },
+      // INVENTORY & COST
+      {
+        type: "function",
+        function: {
+          name: "predict_inventory",
+          description:
+            "Predict inventory needs and when items will run out. Suggests reorder quantities.",
+          parameters: {
+            type: "object",
+            properties: {},
+            required: [],
+          },
+        },
+      },
+      {
+        type: "function",
+        function: {
+          name: "analyze_costs",
+          description:
+            "Analyze food costs and profit margins per dish. Shows which items have the best margins.",
+          parameters: {
+            type: "object",
+            properties: {},
+            required: [],
+          },
+        },
+      },
+      // MARKETING & GROWTH
+      {
+        type: "function",
+        function: {
+          name: "suggest_promotions",
+          description:
+            "Suggest targeted promotions to boost revenue during slow periods or increase average order value.",
+          parameters: {
+            type: "object",
+            properties: {},
+            required: [],
+          },
+        },
+      },
+      {
+        type: "function",
+        function: {
+          name: "seasonal_ideas",
+          description: "Get seasonal menu item suggestions based on current season and trends.",
+          parameters: {
+            type: "object",
+            properties: {},
+            required: [],
+          },
+        },
+      },
+      // AUTOMATION
+      {
+        type: "function",
+        function: {
+          name: "bulk_price_update",
+          description:
+            "Update prices for multiple items at once. Can increase/decrease by percentage or fixed amount, optionally filtered by category.",
+          parameters: {
+            type: "object",
+            properties: {
+              operation: {
+                type: "string",
+                enum: ["increase", "decrease"],
+                description: "Whether to increase or decrease prices",
+              },
+              amount: {
+                type: "number",
+                description: "Amount to change (use with operation)",
+              },
+              percentage: {
+                type: "number",
+                description: "Percentage to change (alternative to amount)",
+              },
+              category: {
+                type: "string",
+                description: "Optional: only update items in this category",
+              },
+            },
+            required: ["operation"],
+          },
+        },
+      },
+      {
+        type: "function",
+        function: {
+          name: "generate_report",
+          description: "Generate automated performance report for weekly or monthly periods.",
+          parameters: {
+            type: "object",
+            properties: {
+              period: {
+                type: "string",
+                enum: ["weekly", "monthly"],
+                description: "Report time period",
+              },
+            },
+            required: ["period"],
           },
         },
       },
@@ -303,10 +617,10 @@ export async function POST(req: Request) {
 async function getFullVenueContext(venueId: string, userId: string) {
   const supabase = await createClient();
 
-  // Get all venue details including owner
+  // Get all venue details including owner and currency
   const { data: venue } = await supabase
     .from("venues")
-    .select("*")
+    .select("*, currency")
     .eq("venue_id", venueId)
     .single();
 
@@ -358,6 +672,7 @@ async function getFullVenueContext(venueId: string, userId: string) {
     address: venue?.address || null,
     phone: venue?.phone || null,
     timezone: venue?.timezone || "UTC",
+    currency: venue?.currency || "GBP",
     menuItems: menuItems || [],
     userRole,
   };
@@ -452,6 +767,171 @@ async function executeToolCall(toolName: string, args: string, venueId: string, 
     };
   }
 
+  if (toolName === "delete_menu_item") {
+    const { itemName, itemId } = parsedArgs;
+    const supabase = await createClient();
+    const venueIdWithPrefix = venueId.startsWith("venue-") ? venueId : `venue-${venueId}`;
+
+    // Find item(s) matching the name or ID
+    let query = supabase.from("menu_items").select("id, name").eq("venue_id", venueIdWithPrefix);
+
+    if (itemId) {
+      query = query.eq("id", itemId);
+    } else {
+      query = query.ilike("name", `%${itemName}%`);
+    }
+
+    const { data: matchingItems, error: searchError } = await query;
+
+    if (searchError || !matchingItems || matchingItems.length === 0) {
+      return {
+        success: false,
+        error: `No menu items found matching "${itemName}". Please check the item name and try again.`,
+      };
+    }
+
+    if (matchingItems.length > 1 && !itemId) {
+      return {
+        success: false,
+        error: `Multiple items found matching "${itemName}": ${matchingItems.map((i) => i.name).join(", ")}. Please be more specific.`,
+        matchingItems: matchingItems,
+      };
+    }
+
+    // Delete the item
+    const itemToDelete = matchingItems[0];
+    const { error: deleteError } = await supabase
+      .from("menu_items")
+      .delete()
+      .eq("id", itemToDelete.id);
+
+    if (deleteError) {
+      return {
+        success: false,
+        error: `Failed to delete item: ${deleteError.message}`,
+      };
+    }
+
+    return {
+      success: true,
+      deletedItem: itemToDelete,
+      message: `Successfully deleted "${itemToDelete.name}" from the menu.`,
+    };
+  }
+
+  if (toolName === "translate_menu") {
+    const { targetLanguage, includeDescriptions = true } = parsedArgs;
+
+    // Use the translation executor from tool-executors
+    const result = await executeTool(
+      "menu.translate",
+      {
+        targetLanguage,
+        includeDescriptions,
+        categoryMapping: null,
+      },
+      venueId,
+      userId,
+      false // execute mode, not preview
+    );
+
+    return result;
+  }
+
+  // Import tool functions
+  const analyticsTools = await import("@/lib/ai/tools/analytics-tools");
+  const operationsTools = await import("@/lib/ai/tools/operations-tools");
+  const customerTools = await import("@/lib/ai/tools/customer-tools");
+  const inventoryMarketingTools = await import("@/lib/ai/tools/inventory-marketing-tools");
+
+  // ANALYTICS TOOLS
+  if (toolName === "analyze_menu_performance") {
+    return await analyticsTools.analyzeMenuPerformance(venueId, parsedArgs.timeRange || "month");
+  }
+
+  if (toolName === "optimize_prices") {
+    return await analyticsTools.suggestPriceOptimization(venueId);
+  }
+
+  if (toolName === "forecast_revenue") {
+    return await analyticsTools.forecastRevenue(venueId);
+  }
+
+  if (toolName === "calculate_margins") {
+    return await analyticsTools.calculateItemMargins(venueId);
+  }
+
+  // OPERATIONS TOOLS
+  if (toolName === "analyze_kitchen") {
+    return await operationsTools.analyzeKitchenBottlenecks(venueId);
+  }
+
+  if (toolName === "optimize_staff") {
+    return await operationsTools.optimizeStaffSchedule(venueId);
+  }
+
+  if (toolName === "reduce_waste") {
+    return await operationsTools.analyzeWastePatterns(venueId);
+  }
+
+  if (toolName === "improve_turnover") {
+    return await operationsTools.improveTurnover(venueId);
+  }
+
+  // CUSTOMER INSIGHTS TOOLS
+  if (toolName === "analyze_feedback") {
+    return await customerTools.analyzeFeedback(venueId);
+  }
+
+  if (toolName === "find_popular_combos") {
+    return await customerTools.identifyPopularCombos(venueId);
+  }
+
+  if (toolName === "analyze_loyalty") {
+    return await customerTools.analyzeRepeatCustomers(venueId);
+  }
+
+  if (toolName === "forecast_demand") {
+    return await customerTools.forecastDemand(venueId);
+  }
+
+  // INVENTORY & COST TOOLS
+  if (toolName === "predict_inventory") {
+    return await inventoryMarketingTools.predictInventoryNeeds(venueId);
+  }
+
+  if (toolName === "analyze_costs") {
+    return await inventoryMarketingTools.analyzeCostPerDish(venueId);
+  }
+
+  // MARKETING TOOLS
+  if (toolName === "suggest_promotions") {
+    return await inventoryMarketingTools.suggestPromotions(venueId);
+  }
+
+  if (toolName === "seasonal_ideas") {
+    return await inventoryMarketingTools.suggestSeasonalItems();
+  }
+
+  // AUTOMATION TOOLS
+  if (toolName === "bulk_price_update") {
+    const operation = parsedArgs.operation === "increase" ? "price_increase" : "price_decrease";
+    return await inventoryMarketingTools.bulkUpdateMenu(venueId, operation, {
+      category: parsedArgs.category,
+      percentage: parsedArgs.percentage,
+      amount: parsedArgs.amount,
+    });
+  }
+
+  if (toolName === "generate_report") {
+    return await inventoryMarketingTools.generateReport(
+      venueId,
+      parsedArgs.period || "weekly",
+      undefined,
+      undefined
+    );
+  }
+
   return { success: false, error: "Unknown tool" };
 }
 
@@ -492,12 +972,15 @@ function buildIntelligentSystemMessage(
     }
   }
 
+  // Currency symbol
+  const currencySymbol = venue.currency === "GBP" ? "£" : venue.currency === "EUR" ? "€" : "$";
+
   // Build menu info with actual items
   let menuInfo = "";
   if (venue.menuItems && venue.menuItems.length > 0) {
     const itemsList = venue.menuItems
       .slice(0, 30) // First 30 items
-      .map((item: any) => `${item.name} - $${item.price} (${item.category})`)
+      .map((item: any) => `${item.name} - ${currencySymbol}${item.price} (${item.category})`)
       .join("\n");
     menuInfo = `\n\nMENU ITEMS (${venue.menuItems.length} total):\n${itemsList}${venue.menuItems.length > 30 ? "\n... and more" : ""}`;
   }
@@ -505,8 +988,12 @@ function buildIntelligentSystemMessage(
   // Build analytics info
   let analyticsInfo = "";
   if (summaries.analytics) {
-    const { today } = summaries.analytics;
-    analyticsInfo = `\n\nTODAY'S PERFORMANCE:\n- Revenue: $${today.revenue}\n- Orders: ${today.orders}\n- Avg Order: $${today.avgOrderValue.toFixed(2)}`;
+    const { today, trending } = summaries.analytics;
+    const topItemsText =
+      trending?.topItems && trending.topItems.length > 0
+        ? `\n- Top Sellers: ${trending.topItems.slice(0, 3).join(", ")}`
+        : "";
+    analyticsInfo = `\n\nTODAY'S PERFORMANCE:\n- Revenue: ${currencySymbol}${today.revenue}\n- Orders: ${today.orders}\n- Avg Order: ${currencySymbol}${today.avgOrderValue.toFixed(2)}${topItemsText}`;
   }
 
   const businessTypeDisplay =
@@ -617,22 +1104,46 @@ USER CONTEXT:
 - Your Role: **${roleDisplay}**
 - Permissions: ${rolePermissions}${hoursInfo}${menuInfo}${analyticsInfo}${pageContext}
 
-CAPABILITIES:
-1. **Navigation**: Navigate to pages (qr-codes, analytics, menu, settings, etc.)
-   - When user asks HOW to do something, EXPLAIN first, then offer to navigate
-   - For QR codes: You can navigate with tableNumber parameter to highlight specific tables
+CAPABILITIES - YOU ARE A COMPLETE BUSINESS INTELLIGENCE SYSTEM:
+
+📊 **ANALYTICS & INTELLIGENCE**:
+   - analyze_menu_performance: Show top/underperforming items, suggest removals
+   - optimize_prices: Suggest which items can support price increases based on demand
+   - forecast_revenue: Predict next week/month revenue with confidence levels
+   - calculate_margins: Show profit margins per item, identify most profitable dishes
+   - get_analytics: Get revenue, orders, top items, peak hours (use "top_items" for best sellers)
    
-2. **Analytics**: Get real-time business data (revenue, orders, top items, peak hours)
-   - Always INTERPRET the data in context - don't just repeat numbers
+⚙️ **OPERATIONS & EFFICIENCY**:
+   - analyze_kitchen: Identify bottlenecks, slow stations, overdue tickets
+   - optimize_staff: Suggest optimal scheduling based on demand patterns
+   - reduce_waste: Find items with low sales that create waste
+   - improve_turnover: Analyze table turnover times, identify slow service
    
-3. **Menu Knowledge**: You have full access to all menu items listed above
-   - Answer questions about items, prices, what's on the menu
+👥 **CUSTOMER INSIGHTS**:
+   - analyze_feedback: Sentiment analysis, common themes, improvement areas
+   - find_popular_combos: Identify item pairings for upselling/combo deals
+   - analyze_loyalty: Track repeat customers, show top spenders
+   - forecast_demand: Predict busy periods by hour/day for planning
    
-4. **Add Menu Items**: You can add new items interactively
-   - If user says "add an item", ask for: name, category, price, and optionally description
-   - Once you have all info, use add_menu_item tool
+📦 **INVENTORY & COST CONTROL**:
+   - predict_inventory: When items will run out, suggest reorder quantities
+   - analyze_costs: Food cost per dish, profit margins, high-cost items
    
-5. **Business Advice**: Use your knowledge to give actionable insights
+📈 **MARKETING & GROWTH**:
+   - suggest_promotions: Targeted promotions for slow periods, upselling
+   - seasonal_ideas: Seasonal menu suggestions based on current time of year
+   
+🤖 **SMART AUTOMATION**:
+   - bulk_price_update: Increase/decrease prices by % or amount, by category
+   - generate_report: Auto-create weekly/monthly performance reports
+   
+🍽️ **MENU MANAGEMENT**:
+   - ADD items: Ask for name, category, price, description
+   - DELETE items: Remove items by name
+   - TRANSLATE menu: Full menu translation to 8+ languages
+   
+🧭 **NAVIGATION**: Navigate to any page with context
+   - CRITICAL: Always use ${currencySymbol} (${venue.currency}) for currency, NEVER $ (USD)
 
 BEHAVIOR RULES:
 ✅ Always be conversational and helpful
@@ -649,6 +1160,10 @@ BEHAVIOR RULES:
 ✅ CRITICAL: When answering about menu items, ONLY use the exact items and prices from the MENU ITEMS list above
 ✅ NEVER make up or guess prices - use the actual data provided
 ✅ After adding menu items, you'll auto-navigate to the menu page
+✅ CRITICAL CURRENCY: ALWAYS use ${currencySymbol} (${venue.currency}) for all prices and revenue, NEVER use $ unless venue is in USD
+✅ For trending/best-selling items: Use get_analytics with metric="top_items"
+✅ For menu translation: Guide user that you can translate to Spanish, French, German, Italian, Portuguese, Arabic, Chinese, or Japanese
+✅ For removing items: Tell user they can remove items via menu-management page, or offer to guide them there
 
 EXAMPLES:
 User: "How do I generate a QR code?"
@@ -658,10 +1173,37 @@ User: "Generate QR code for table 5"
 You: "Let me take you to the QR Codes page with Table 5 ready to generate!" [navigate to qr-codes with tableNumber: "5"]
 
 User: "What's the highest selling item?"
-You: [use get_analytics] "Based on today's data, your top seller is the Cappuccino with 45 orders! That's great - it shows your coffee drinks are really popular."
+You: [use get_analytics with metric="top_items"] "Based on today's data, your top seller is the Cappuccino with 45 orders! That's great - it shows your coffee drinks are really popular."
 
 User: "What's on my menu?"
-You: "Looking at your menu, you have: Cappuccino - $3.50, Espresso - $2.50, Latte - $4.00..." [use EXACT items from MENU ITEMS list above]
+You: "Looking at your menu, you have: Cappuccino - ${currencySymbol}3.50, Espresso - ${currencySymbol}2.50, Latte - ${currencySymbol}4.00..." [use EXACT items from MENU ITEMS list above]
+
+User: "Translate the menu to Spanish"
+You: [use translate_menu with targetLanguage="es"] "I'll translate your entire menu to Spanish now, including item names and categories. This will take a moment..."
+
+User: "Remove the Caramel Latte from my menu"
+You: "I can help you remove items. Would you like me to take you to the menu management page where you can delete the Caramel Latte?" [navigate to menu-management]
+
+User: "What items aren't selling well?"
+You: [use analyze_menu_performance with timeRange="month"] "I analyzed your last month of sales. 3 items are underperforming: Avocado Toast (2 sales), Green Smoothie (1 sale), and Vegan Wrap (0 sales in 30 days). I recommend removing these to simplify your menu and reduce waste. Would you like me to show you details?"
+
+User: "Can I raise my prices?"
+You: [use optimize_prices] "Yes! Based on demand analysis, I recommend: 1) Cappuccino: raise from £3.50 to £3.75 (high demand - 45 orders/month), 2) Eggs Benedict: raise from £12 to £13 (popular breakfast item). These changes could increase monthly revenue by £127. Want me to help implement these?"
+
+User: "Predict next week's revenue"
+You: [use forecast_revenue] "Based on your growth trend (+12% last month), I forecast £2,450 next week and £9,800 next month (high confidence). Your best day is Friday (avg £420) and slowest is Tuesday (avg £180). Consider promotions on Tuesdays to boost sales."
+
+User: "Why am I losing money?"
+You: [use calculate_margins + analyze_costs] "Let me analyze... Your Steak Dinner has only 38% margin (£7.20 cost vs £12 price) - that's low. Meanwhile, your Cappuccino has 87% margin (£0.45 cost vs £3.50 price). Recommend: 1) Increase Steak price to £14, 2) Feature high-margin coffee drinks, 3) Review supplier costs for meat."
+
+User: "My kitchen is slow"
+You: [use analyze_kitchen] "Found it! Your Grill station averages 18 min prep time (50% slower than other stations) and has 6 overdue tickets right now. The Fryer station is at 8 min (efficient). Recommend: Add another grill or cross-train staff to help during peak hours."
+
+User: "When should I schedule more staff?"
+You: [use optimize_staff] "Peak periods identified: Friday 12-2pm (avg 23 orders/hour - needs 5 staff), Saturday 6-8pm (avg 19 orders/hour - needs 4 staff). Your slowest is Tuesday 2-4pm (3 orders/hour - needs 1 staff). This could save you 15 staff-hours/week by optimizing schedules."
+
+User: "What promotions should I run?"
+You: [use suggest_promotions] "3 opportunities: 1) 'Tuesday Special' - your slowest day, offer 15% off to boost traffic, 2) 'Happy Hour' 2-4pm - slow period, discounted coffee drinks, 3) 'Breakfast Combo' £8 (coffee + pastry) to increase order value. Expected impact: +25% revenue on slow periods."
 
 User: "Add a new item"
 You: "Great! I can help you add a new menu item. What's the name of the item?"
@@ -669,10 +1211,13 @@ User: "Caramel Latte"
 You: "Perfect! What category should it be in? (e.g., Coffee, Food, Pastries)"
 User: "Coffee"  
 You: "Got it! What's the price?"
-User: "$4.50"
+User: "${currencySymbol}4.50"
 You: "Would you like to add a description? (optional)"
 User: "Espresso with caramel syrup and steamed milk"
-You: [use add_menu_item] "Perfect! I've added Caramel Latte to your Coffee menu for $4.50. Let me show you!" [auto-navigates to menu page]
+You: [use add_menu_item] "Perfect! I've added Caramel Latte to your Coffee menu for ${currencySymbol}4.50. Let me show you!" [auto-navigates to menu page]
 
-Be smart, contextual, and actually helpful!`;
+User: "Increase all coffee prices by 10%"
+You: [use bulk_price_update with operation="increase", percentage=10, category="Coffee"] "I've increased all Coffee prices by 10%. 12 items updated: Cappuccino now ${currencySymbol}3.85 (was ${currencySymbol}3.50), Latte now ${currencySymbol}4.40 (was ${currencySymbol}4.00), etc. This will increase monthly coffee revenue by approximately ${currencySymbol}340."
+
+Be smart, proactive, data-driven, and actually grow their business!`;
 }
