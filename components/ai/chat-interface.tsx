@@ -118,7 +118,7 @@ export function ChatInterface({ venueId, isOpen, onClose, initialPrompt }: ChatI
 
     // Add user message
     const userMessage = {
-      id: `temp-${Date.now()}`,
+      id: `temp-user-${Date.now()}`,
       role: "user" as const,
       content: messageText,
       createdAt: new Date().toISOString(),
@@ -126,12 +126,34 @@ export function ChatInterface({ venueId, isOpen, onClose, initialPrompt }: ChatI
     };
     addMessage(userMessage);
 
-    // Send to AI
+    // Send to AI and get response
     try {
       if (!conv) return;
-      await sendMessage(conv.id, messageText);
+      const aiPlan = await sendMessage(conv.id, messageText);
+
+      // Add AI response message
+      // The plan response contains the AI's answer
+      if (aiPlan) {
+        const aiMessage = {
+          id: `temp-ai-${Date.now()}`,
+          role: "assistant" as const,
+          content:
+            aiPlan.reasoning || aiPlan.description || "I understand. How can I help you with that?",
+          createdAt: new Date().toISOString(),
+          canUndo: false,
+        };
+        addMessage(aiMessage);
+      }
     } catch (_error) {
       setError((error as any).message);
+      // Add error message
+      addMessage({
+        id: `temp-error-${Date.now()}`,
+        role: "assistant" as const,
+        content: "Sorry, I encountered an error. Please try again.",
+        createdAt: new Date().toISOString(),
+        canUndo: false,
+      });
     }
   };
 

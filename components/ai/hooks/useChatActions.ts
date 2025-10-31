@@ -39,8 +39,12 @@ export function useChatActions(venueId: string) {
       setPlan(data.plan);
       setPreviews(data.previews || []);
       setSuccess(true);
+
+      // Return the plan data so it can be used immediately
+      return data.plan;
     } catch (error: unknown) {
       setError((error as any).message || "Failed to send message");
+      throw error;
     } finally {
       setLoading(false);
     }
