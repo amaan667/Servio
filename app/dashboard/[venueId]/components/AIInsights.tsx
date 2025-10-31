@@ -155,8 +155,18 @@ export function AIInsights({
     });
   }
 
+  // Always show at least a default helpful card
   if (insights.length === 0) {
-    return null;
+    insights.push({
+      type: "info",
+      title: "Welcome to Your Dashboard",
+      message:
+        "Your AI-powered insights will appear here as you start receiving orders and grow your business.",
+      action: {
+        label: "Get Started",
+        href: `/dashboard/${venueId}/qr-codes`,
+      },
+    });
   }
 
   return (
