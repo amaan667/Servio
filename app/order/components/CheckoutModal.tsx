@@ -1,8 +1,9 @@
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { Loader2, X } from "lucide-react";
-import { CustomerInfo } from '../types';
+import { Loader2, X, AlertCircle } from "lucide-react";
+import { CustomerInfo } from "../types";
+import { useState } from "react";
 
 interface CheckoutModalProps {
   show: boolean;
@@ -10,7 +11,7 @@ interface CheckoutModalProps {
   totalPrice: number;
   isSubmitting: boolean;
   onClose: () => void;
-  onUpdateCustomerInfo: (field: 'name' | 'phone', value: string) => void;
+  onUpdateCustomerInfo: (field: "name" | "phone", value: string) => void;
   onSubmit: () => void;
 }
 
@@ -23,6 +24,90 @@ export function CheckoutModal({
   onUpdateCustomerInfo,
   onSubmit,
 }: CheckoutModalProps) {
+  const [nameError, setNameError] = useState<string>("");
+  const [phoneError, setPhoneError] = useState<string>("");
+
+  const validateName = (value: string): boolean => {
+    // Allow letters, spaces, hyphens, and apostrophes only
+    const nameRegex = /^[a-zA-Z\s'-]+$/;
+    if (!value.trim()) {
+      setNameError("Name is required");
+      return false;
+    }
+    if (!nameRegex.test(value)) {
+      setNameError("Name should only contain letters");
+      return false;
+    }
+    setNameError("");
+    return true;
+  };
+
+  const validatePhone = (value: string): boolean => {
+    // Remove spaces and check if it's a valid phone number
+    const cleanPhone = value.replace(/\s/g, "");
+
+    if (!value.trim()) {
+      setPhoneError("Phone number is required");
+      return false;
+    }
+
+    // Check if it starts with + (international format)
+    if (cleanPhone.startsWith("+")) {
+      // International format: +44 followed by digits
+      const phoneRegex = /^\+\d{1,4}\d{7,15}$/;
+      if (!phoneRegex.test(cleanPhone)) {
+        setPhoneError("Please enter a valid phone number (e.g., +44 7123 456789)");
+        return false;
+      }
+    } else {
+      // Local format: just digits
+      const phoneRegex = /^\d{7,15}$/;
+      if (!phoneRegex.test(cleanPhone)) {
+        setPhoneError("Phone number should only contain numbers (or use +44 format)");
+        return false;
+      }
+    }
+
+    setPhoneError("");
+    return true;
+  };
+
+  const handleNameChange = (value: string) => {
+    // Only allow letters, spaces, hyphens, and apostrophes
+    const filteredValue = value.replace(/[^a-zA-Z\s'-]/g, "");
+    onUpdateCustomerInfo("name", filteredValue);
+    if (filteredValue !== value) {
+      setNameError("Name should only contain letters");
+    } else if (nameError) {
+      validateName(filteredValue);
+    }
+  };
+
+  const handlePhoneChange = (value: string) => {
+    // Allow only numbers, spaces, and + at the start
+    const filteredValue = value.replace(/[^\d\s+]/g, "");
+    // Ensure + can only be at the start
+    const cleanValue = filteredValue.startsWith("+")
+      ? "+" + filteredValue.slice(1).replace(/\+/g, "")
+      : filteredValue.replace(/\+/g, "");
+
+    onUpdateCustomerInfo("phone", cleanValue);
+    if (cleanValue !== value) {
+      setPhoneError("Phone number should only contain numbers");
+    } else if (phoneError) {
+      validatePhone(cleanValue);
+    }
+  };
+
+  const handleSubmit = () => {
+    const isNameValid = validateName(customerInfo.name);
+    const isPhoneValid = validatePhone(customerInfo.phone);
+
+    if (isNameValid && isPhoneValid) {
+      onSubmit();
+    }
+  };
+
   if (!show) return null;
 
   return (
@@ -54,11 +139,17 @@ export function CheckoutModal({
               </label>
               <Input
                 value={customerInfo.name}
-                onChange={(e) => onUpdateCustomerInfo('name', e.target.value)}
+                onChange={(e) => handleNameChange(e.target.value)}
                 placeholder="Enter your name"
                 required
-                className="min-h-[48px] text-base"
+                className={`min-h-[48px] text-base ${nameError ? "border-red-500 focus:border-red-500" : ""}`}
               />
+              {nameError && (
+                <div className="flex items-center gap-1 mt-1 text-red-600 text-sm">
+                  <AlertCircle className="h-4 w-4" />
+                  <span>{nameError}</span>
+                </div>
+              )}
             </div>
 
             <div>
@@ -67,11 +158,20 @@ export function CheckoutModal({
               </label>
               <Input
                 value={customerInfo.phone}
-                onChange={(e) => onUpdateCustomerInfo('phone', e.target.value)}
-                placeholder="Enter your phone number"
+                onChange={(e) => handlePhoneChange(e.target.value)}
+                placeholder="+44 7123 456789"
                 type="tel"
-                className="min-h-[48px] text-base"
+                className={`min-h-[48px] text-base ${phoneError ? "border-red-500 focus:border-red-500" : ""}`}
               />
+              {phoneError && (
+                <div className="flex items-center gap-1 mt-1 text-red-600 text-sm">
+                  <AlertCircle className="h-4 w-4" />
+                  <span>{phoneError}</span>
+                </div>
+              )}
+              <p className="text-xs text-gray-500 mt-1">
+                Use international format (e.g., +44 for UK) or local number
+              </p>
             </div>
           </div>
 
@@ -92,7 +192,7 @@ export function CheckoutModal({
                 Cancel
               </Button>
               <Button
-                onClick={onSubmit}
+                onClick={handleSubmit}
                 className="flex-1 min-h-[48px] text-base font-medium order-1 sm:order-2"
                 disabled={isSubmitting || !customerInfo.name.trim() || !customerInfo.phone.trim()}
               >
@@ -112,4 +212,3 @@ export function CheckoutModal({
     </div>
   );
 }
-

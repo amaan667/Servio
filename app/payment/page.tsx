@@ -6,29 +6,29 @@ import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Separator } from "@/components/ui/separator";
-import { 
-  Check, 
-  ArrowLeft, 
-  CreditCard, 
-  Clock, 
+import {
+  Check,
+  ArrowLeft,
+  CreditCard,
+  Clock,
   Shield,
   Receipt,
   Star,
   Loader2,
   User,
-  Phone
+  Phone,
 } from "lucide-react";
 import { CustomerFeedbackForm } from "@/components/customer-feedback-form";
 import { OrderTimeline } from "@/components/order-timeline";
 
 // Hooks
-import { usePaymentState } from './hooks/usePaymentState';
-import { usePaymentProcessing } from './hooks/usePaymentProcessing';
+import { usePaymentState } from "./hooks/usePaymentState";
+import { usePaymentProcessing } from "./hooks/usePaymentProcessing";
 
 /**
  * Payment Page
  * Handles order payment and confirmation
- * 
+ *
  * Refactored: Extracted hooks for better organization
  * Original: 528 lines → Now: ~200 lines
  */
@@ -37,7 +37,7 @@ export default function PaymentPage() {
   const paymentState = usePaymentState();
   const { processPayment } = usePaymentProcessing();
 
-  const handlePayment = async (action: 'demo' | 'stripe' | 'till' | 'later') => {
+  const handlePayment = async (action: "demo" | "stripe" | "till" | "later") => {
     if (!paymentState.checkoutData) return;
 
     paymentState.setPaymentAction(action);
@@ -130,9 +130,7 @@ export default function PaymentPage() {
                   <div className="flex-1">
                     <p className="font-medium">{item.name}</p>
                     {item.specialInstructions && (
-                      <p className="text-sm text-gray-600 mt-1">
-                        Note: {item.specialInstructions}
-                      </p>
+                      <p className="text-sm text-gray-600 mt-1">Note: {item.specialInstructions}</p>
                     )}
                   </div>
                   <div className="text-right ml-4">
@@ -140,7 +138,9 @@ export default function PaymentPage() {
                     <p className="text-sm text-gray-600">Qty: {item.quantity}</p>
                   </div>
                 </div>
-                {index < paymentState.checkoutData!.cart.length - 1 && <Separator className="mt-4" />}
+                {index < paymentState.checkoutData!.cart.length - 1 && (
+                  <Separator className="mt-4" />
+                )}
               </div>
             ))}
 
@@ -148,7 +148,9 @@ export default function PaymentPage() {
 
             <div className="flex justify-between items-center">
               <p className="text-lg font-semibold">Total</p>
-              <p className="text-xl font-bold text-purple-600">£{paymentState.checkoutData.total.toFixed(2)}</p>
+              <p className="text-xl font-bold text-purple-600">
+                £{paymentState.checkoutData.total.toFixed(2)}
+              </p>
             </div>
           </CardContent>
         </Card>
@@ -166,7 +168,7 @@ export default function PaymentPage() {
               {/* Demo Payment (if applicable) */}
               {paymentState.isDemo && (
                 <Button
-                  onClick={() => handlePayment('demo')}
+                  onClick={() => handlePayment("demo")}
                   disabled={paymentState.isProcessing}
                   className="w-full bg-gradient-to-r from-purple-600 to-pink-600 hover:from-purple-700 hover:to-pink-700"
                 >
@@ -190,13 +192,13 @@ export default function PaymentPage() {
                 {!paymentState.isDemo && (
                   <Button
                     onClick={() => {
-                      handlePayment('stripe');
+                      handlePayment("stripe");
                     }}
                     disabled={paymentState.isProcessing}
                     variant="default"
                     className="w-full h-12 text-base"
                   >
-                    {paymentState.isProcessing && paymentState.paymentAction === 'stripe' ? (
+                    {paymentState.isProcessing && paymentState.paymentAction === "stripe" ? (
                       <>
                         <Loader2 className="h-5 w-5 mr-2 animate-spin" />
                         Processing...
@@ -214,12 +216,12 @@ export default function PaymentPage() {
                 <Button
                   variant="default"
                   onClick={() => {
-                    handlePayment('till');
+                    handlePayment("till");
                   }}
                   disabled={paymentState.isProcessing}
                   className="w-full h-12 text-base"
                 >
-                  {paymentState.isProcessing && paymentState.paymentAction === 'till' ? (
+                  {paymentState.isProcessing && paymentState.paymentAction === "till" ? (
                     <>
                       <Loader2 className="h-5 w-5 mr-2 animate-spin" />
                       Processing...
@@ -236,12 +238,12 @@ export default function PaymentPage() {
                 <Button
                   variant="default"
                   onClick={() => {
-                    handlePayment('later');
+                    handlePayment("later");
                   }}
                   disabled={paymentState.isProcessing}
                   className="w-full h-12 text-base"
                 >
-                  {paymentState.isProcessing && paymentState.paymentAction === 'later' ? (
+                  {paymentState.isProcessing && paymentState.paymentAction === "later" ? (
                     <>
                       <Loader2 className="h-5 w-5 mr-2 animate-spin" />
                       Processing...
@@ -276,11 +278,11 @@ export default function PaymentPage() {
             <CardContent className="p-6">
               <div className="text-center">
                 <Star className="h-12 w-12 text-yellow-400 mx-auto mb-4" />
-                <h3 className="text-lg font-semibold text-gray-900 mb-2">How was your experience?</h3>
+                <h3 className="text-lg font-semibold text-gray-900 mb-2">
+                  How was your experience?
+                </h3>
                 <p className="text-gray-600 mb-4">We'd love to hear your feedback!</p>
-                <Button onClick={() => paymentState.setShowFeedback(true)}>
-                  Leave Feedback
-                </Button>
+                <Button onClick={() => paymentState.setShowFeedback(true)}>Leave Feedback</Button>
               </div>
             </CardContent>
           </Card>
@@ -290,7 +292,7 @@ export default function PaymentPage() {
           <CustomerFeedbackForm
             venueId={paymentState.checkoutData.venueId}
             orderId={paymentState.orderNumber}
-            customerName={paymentState.checkoutData.customerName || 'Customer'}
+            customerName={paymentState.checkoutData.customerName || "Customer"}
             onFeedbackSubmitted={() => {
               paymentState.setFeedbackSubmitted(true);
               paymentState.setShowFeedback(false);
@@ -302,7 +304,13 @@ export default function PaymentPage() {
         <div className="flex gap-4">
           <Button
             variant="outline"
-            onClick={() => window.history.back()}
+            onClick={() => {
+              // Go back to order page with venueId and preserve cart
+              const venueSlug = paymentState.checkoutData?.venueId || "";
+              const tableNumber = paymentState.checkoutData?.tableNumber || "";
+              // Add skipGroupSize flag to prevent group size modal from showing
+              window.location.href = `/order?venue=${venueSlug}&table=${tableNumber}&skipGroupSize=true`;
+            }}
             disabled={paymentState.isProcessing}
             className="flex-1"
           >
@@ -311,7 +319,7 @@ export default function PaymentPage() {
           </Button>
           {paymentState.paymentComplete && (
             <Button
-              onClick={() => window.location.href = `/order-summary/${paymentState.orderNumber}`}
+              onClick={() => (window.location.href = `/order-summary/${paymentState.orderNumber}`)}
               className="flex-1 bg-gradient-to-r from-purple-600 to-pink-600"
             >
               View Order

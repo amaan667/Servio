@@ -30,6 +30,7 @@ export default function CustomerOrderPage() {
   const tableNumber = searchParams?.get("table") || "1";
   const counterNumber = searchParams?.get("counter") || "";
   const isDemo = searchParams?.get("demo") === "1";
+  const skipGroupSize = searchParams?.get("skipGroupSize") === "true";
 
   const isCounterOrder = !!counterNumber;
   const orderLocation = isCounterOrder ? counterNumber : tableNumber;
@@ -143,6 +144,13 @@ export default function CustomerOrderPage() {
     "basic"
   );
   const [loadingTier, setLoadingTier] = useState(true);
+
+  // Skip group size modal if returning from payment page
+  useEffect(() => {
+    if (skipGroupSize && showGroupSizeModal) {
+      setShowGroupSizeModal(false);
+    }
+  }, [skipGroupSize, showGroupSizeModal, setShowGroupSizeModal]);
 
   // Log menu loading for debugging
   useEffect(() => {
