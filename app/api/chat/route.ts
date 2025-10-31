@@ -48,7 +48,8 @@ export async function POST(req: Request) {
         type: "function",
         function: {
           name: "navigate",
-          description: "Navigate to a page. Use AFTER explaining what the user will find there.",
+          description:
+            "Navigate to a page. ALWAYS use when user asks to go somewhere or generate QR codes.",
           parameters: {
             type: "object",
             properties: {
@@ -71,7 +72,7 @@ export async function POST(req: Request) {
               },
               tableNumber: {
                 type: "string",
-                description: "Optional: For QR codes page, specify table number to highlight",
+                description: "For QR codes page, specify table number (e.g., '5', 'Table 5')",
               },
             },
             required: ["page"],
@@ -168,6 +169,13 @@ export async function POST(req: Request) {
           navigationInfo = {
             route: getNavigationRoute(args.page, venueId, args.tableNumber),
             tableNumber: args.tableNumber,
+          };
+        }
+
+        // Auto-navigate after menu item creation
+        if (toolCall.function.name === "add_menu_item" && (result as any).shouldNavigate) {
+          navigationInfo = {
+            route: getNavigationRoute((result as any).navigateTo, venueId),
           };
         }
       }
@@ -405,6 +413,8 @@ async function executeToolCall(toolName: string, args: string, venueId: string, 
       success: true,
       message: `Successfully added "${name}" to the menu under ${category} for $${price}`,
       item: data,
+      shouldNavigate: true,
+      navigateTo: "menu",
     };
   }
 
@@ -436,10 +446,10 @@ function buildIntelligentSystemMessage(
   let menuInfo = "";
   if (venue.menuItems && venue.menuItems.length > 0) {
     const itemsList = venue.menuItems
-      .slice(0, 20) // First 20 items
-      .map((item: any) => `${item.name} ($${item.price})`)
-      .join(", ");
-    menuInfo = `\n\nMENU ITEMS (${venue.menuItems.length} total):\n${itemsList}${venue.menuItems.length > 20 ? "..." : ""}`;
+      .slice(0, 30) // First 30 items
+      .map((item: any) => `${item.name} - $${item.price} (${item.category})`)
+      .join("\n");
+    menuInfo = `\n\nMENU ITEMS (${venue.menuItems.length} total):\n${itemsList}${venue.menuItems.length > 30 ? "\n... and more" : ""}`;
   }
 
   // Build analytics info
@@ -484,33 +494,40 @@ CAPABILITIES:
 BEHAVIOR RULES:
 ✅ Always be conversational and helpful
 ✅ When asked "how to" do something, explain FIRST, then navigate
-✅ For QR code requests: Explain the QR system, then navigate to qr-codes page
+✅ For QR code generation requests: IMMEDIATELY navigate to qr-codes page with tableNumber
+✅ DO NOT say "I've generated" - you can't generate, only navigate to the page where THEY generate
 ✅ If table number is mentioned for QR codes, include tableNumber in navigate tool
 ✅ Interpret data - turn numbers into insights
 ✅ Remember this is a ${businessTypeDisplay}, not a different business type
 ✅ When asked about hours/plan/details, use the info above
 ✅ For analytics questions, use get_analytics tool then explain what it means
+✅ CRITICAL: When answering about menu items, ONLY use the exact items and prices from the MENU ITEMS list above
+✅ NEVER make up or guess prices - use the actual data provided
+✅ After adding menu items, you'll auto-navigate to the menu page
 
 EXAMPLES:
 User: "How do I generate a QR code?"
-You: "To generate QR codes, go to the QR Codes page where you can create codes for each table. These codes let customers scan and order directly. Let me take you there!"
+You: "To generate QR codes, go to the QR Codes page where you can create codes for each table. These codes let customers scan and order directly. Let me take you there!" [navigate to qr-codes]
 
-User: "Generate QR code for table 6"
-You: "I'll take you to the QR Codes page and highlight Table 6. From there you can generate or download the QR code for that table." [navigate with tableNumber: "6"]
+User: "Generate QR code for table 5"
+You: "Let me take you to the QR Codes page with Table 5 ready to generate!" [navigate to qr-codes with tableNumber: "5"]
 
 User: "What's the highest selling item?"
 You: [use get_analytics] "Based on today's data, your top seller is the Cappuccino with 45 orders! That's great - it shows your coffee drinks are really popular."
+
+User: "What's on my menu?"
+You: "Looking at your menu, you have: Cappuccino - $3.50, Espresso - $2.50, Latte - $4.00..." [use EXACT items from MENU ITEMS list above]
 
 User: "Add a new item"
 You: "Great! I can help you add a new menu item. What's the name of the item?"
 User: "Caramel Latte"
 You: "Perfect! What category should it be in? (e.g., Coffee, Food, Pastries)"
-User: "Coffee"
+User: "Coffee"  
 You: "Got it! What's the price?"
 User: "$4.50"
 You: "Would you like to add a description? (optional)"
 User: "Espresso with caramel syrup and steamed milk"
-You: [use add_menu_item] "Done! I've added Caramel Latte to your Coffee menu for $4.50."
+You: [use add_menu_item] "Perfect! I've added Caramel Latte to your Coffee menu for $4.50. Let me show you!" [auto-navigates to menu page]
 
 Be smart, contextual, and actually helpful!`;
 }
