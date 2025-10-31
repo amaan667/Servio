@@ -61,10 +61,10 @@ export function GroupSizeModal({
                       onSetGroupSize(size);
                       onHideCustomGroupSize();
                     }}
-                    className={`h-10 sm:h-12 text-sm sm:text-base transition-all duration-200 ${
+                    className={`h-10 sm:h-12 text-sm sm:text-base transition-all duration-200 !text-white ${
                       groupSize === size
-                        ? "bg-servio-purple hover:bg-servio-purple-dark text-white border-servio-purple shadow-lg ring-2 ring-servio-purple ring-opacity-50"
-                        : "hover:bg-gray-50 border-gray-300 text-white hover:text-white"
+                        ? "bg-servio-purple hover:bg-servio-purple-dark border-servio-purple shadow-lg ring-2 ring-servio-purple ring-opacity-50"
+                        : "hover:bg-gray-50 border-gray-300"
                     }`}
                   >
                     <div className="flex items-center justify-center gap-2">
@@ -79,9 +79,9 @@ export function GroupSizeModal({
                 <Button
                   variant={showCustomGroupSize ? "default" : "outline"}
                   onClick={onShowCustomGroupSize}
-                  className={`w-full h-10 sm:h-12 text-sm sm:text-base border-dashed transition-all duration-200 ${
+                  className={`w-full h-10 sm:h-12 text-sm sm:text-base border-dashed transition-all duration-200 !text-white ${
                     showCustomGroupSize
-                      ? "bg-servio-purple hover:bg-servio-purple-dark text-white border-servio-purple shadow-lg ring-2 ring-servio-purple ring-opacity-50"
+                      ? "bg-servio-purple hover:bg-servio-purple-dark border-servio-purple shadow-lg ring-2 ring-servio-purple ring-opacity-50"
                       : "hover:bg-gray-50 border-gray-300"
                   }`}
                 >

@@ -184,8 +184,8 @@ export default function CustomerOrderPage() {
         venueSlug={venueSlug}
       />
 
-      <div className="max-w-7xl mx-auto px-3 sm:px-4 lg:px-6 py-4 sm:py-6 lg:py-8 bg-gray-50 dark:bg-gray-900 min-h-screen">
-        <div className="grid grid-cols-1 lg:grid-cols-[1fr_360px] gap-6 lg:gap-4">
+      <div className="max-w-7xl mx-auto px-3 sm:px-4 lg:px-2 py-4 sm:py-6 lg:py-8 bg-gray-50 dark:bg-gray-900 min-h-screen">
+        <div className="grid grid-cols-1 lg:grid-cols-[1fr_420px] gap-6 lg:gap-2">
           {/* Menu Section */}
           <div className="lg:col-span-1">
             {menuError ? (

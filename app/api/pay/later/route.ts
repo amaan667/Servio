@@ -1,6 +1,5 @@
 import { NextResponse } from "next/server";
-import { createServerClient } from "@supabase/ssr";
-import { cookies } from "next/headers";
+import { createAdminClient } from "@/lib/supabase";
 import { logger } from "@/lib/logger";
 
 export const runtime = "nodejs";
@@ -27,24 +26,7 @@ export async function POST(req: Request) {
       );
     }
 
-    const cookieStore = await cookies();
-    const supabase = createServerClient(
-      process.env.NEXT_PUBLIC_SUPABASE_URL!,
-      process.env.SUPABASE_SERVICE_ROLE_KEY!,
-      {
-        cookies: {
-          get(name: string) {
-            return cookieStore.get(name)?.value;
-          },
-          set(_name: string, _value: string, _options: unknown) {
-            /* Empty */
-          },
-          remove(_name: string, _options: unknown) {
-            /* Empty */
-          },
-        },
-      }
-    );
+    const supabase = createAdminClient();
 
     // Update order to PAY_LATER status (so it can be found on re-scan)
     const { data: order, error: updateError } = await supabase
