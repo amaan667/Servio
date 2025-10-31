@@ -98,9 +98,10 @@ export default async function SettingsPage({ params }: { params: Promise<{ venue
     trial_ends_at?: string;
   } | null;
 
-  logger.info("[SETTINGS PAGE] Final data state", {
+  logger.info("[SETTINGS PAGE] ⭐ Final data state", {
     hasOrganization: !!organization,
     tier: organization?.subscription_tier,
+    orgId: organization?.id,
     hasError: "error" in orgResult,
   });
 
