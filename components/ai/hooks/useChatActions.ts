@@ -86,6 +86,9 @@ export function useChatActions(venueId: string) {
 
       // Clear the plan after successful execution
       setPlan(null);
+
+      // Return results so caller can use them immediately
+      return results;
     } catch (error: unknown) {
       setError((error as any).message || "Failed to execute plan");
       throw error;

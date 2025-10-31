@@ -224,14 +224,15 @@ export function ChatInterface({ venueId, isOpen, onClose, initialPrompt }: ChatI
     if (!currentConversation || !plan) return;
 
     try {
-      await executePlan(currentConversation.id);
+      // Execute and get results directly
+      const results = await executePlan(currentConversation.id);
 
       // Add assistant message with execution result
       const assistantMessage = {
         id: `temp-${Date.now()}`,
         role: "assistant" as const,
         content: "✅ Plan executed successfully!",
-        executionResult: executionResults,
+        executionResult: results,
         createdAt: new Date().toISOString(),
         canUndo: false,
       };
@@ -239,13 +240,16 @@ export function ChatInterface({ venueId, isOpen, onClose, initialPrompt }: ChatI
 
       // Handle navigation if it was a navigation action
       if (plan.tools.some((tool) => tool.name === "navigation.go_to_page")) {
-        // Find the navigation result
-        const navResult = executionResults.find((r: any) => r.tool === "navigation.go_to_page");
-        if (navResult && (navResult as any).result?.route) {
+        // Find the navigation result from the results we just got
+        const navResult = results?.find((r: any) => r.tool === "navigation.go_to_page");
+        console.log("[AI CHAT] Navigation result:", navResult);
+        if (navResult && (navResult as any).result?.result?.route) {
+          const route = (navResult as any).result.result.route;
+          console.log("[AI CHAT] Navigating to:", route);
           setTimeout(() => {
-            router.push((navResult as any).result.route);
+            router.push(route);
             onClose(); // Close the chat after navigating
-          }, 1000);
+          }, 800);
         }
       }
     } catch (_error) {
