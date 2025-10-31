@@ -52,11 +52,8 @@ export default function OrderSummaryPage() {
     return (
       <div className="min-h-screen flex items-center justify-center bg-gray-50">
         <div className="text-center">
-          <p className="text-gray-600 mb-4">No order data found</p>
-          <Button onClick={() => (window.location.href = "/order")}>
-            <ArrowLeft className="h-4 w-4 mr-2" />
-            Back to Order
-          </Button>
+          <p className="text-2xl font-bold text-gray-900 mb-2">No Order Data Found</p>
+          <p className="text-gray-600">This order could not be loaded.</p>
         </div>
       </div>
     );

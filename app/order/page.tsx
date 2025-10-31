@@ -145,13 +145,6 @@ export default function CustomerOrderPage() {
   );
   const [loadingTier, setLoadingTier] = useState(true);
 
-  // Redirect to home if no venue or table parameters
-  useEffect(() => {
-    if (!venueSlug || !tableNumber) {
-      window.location.href = "/";
-    }
-  }, [venueSlug, tableNumber]);
-
   // Log menu loading for debugging
   useEffect(() => {
     if (!loadingMenu) {
@@ -174,13 +167,13 @@ export default function CustomerOrderPage() {
     });
   };
 
-  // Redirect to home if no venue or table parameter
+  // Show error if no venue or table parameter - no automatic redirect
   if (!venueSlug || !tableNumber) {
     return (
       <div className="min-h-screen flex items-center justify-center bg-gray-50">
         <div className="text-center">
-          <Loader2 className="h-8 w-8 animate-spin text-purple-600 mx-auto mb-4" />
-          <p className="text-gray-600">Invalid QR code. Redirecting...</p>
+          <p className="text-2xl font-bold text-gray-900 mb-2">Invalid QR Code</p>
+          <p className="text-gray-600">Please scan a valid QR code to access the menu.</p>
         </div>
       </div>
     );

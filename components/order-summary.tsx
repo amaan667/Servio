@@ -253,10 +253,7 @@ export default function OrderSummary({ orderId, sessionId, orderData }: OrderSum
               <span className="text-red-600 text-xl">⚠️</span>
             </div>
             <h2 className="text-xl font-semibold text-gray-900 mb-2">Order Not Found</h2>
-            <p className="text-gray-900 mb-4">{error || "We couldn't find your order details."}</p>
-            <Button onClick={() => (window.location.href = "/order")} className="w-full">
-              Return to Order
-            </Button>
+            <p className="text-gray-900">{error || "We couldn't find your order details."}</p>
           </CardContent>
         </Card>
       </div>

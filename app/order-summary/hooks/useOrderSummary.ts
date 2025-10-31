@@ -35,14 +35,13 @@ export function useOrderSummary() {
     if (storedData) {
       try {
         const data = JSON.parse(storedData);
-
         setOrderData(data);
       } catch (_error) {
-        router.push("/order");
+        // Don't redirect - let the parent component handle it
+        console.error("[ORDER SUMMARY] Failed to parse pending order data", _error);
       }
-    } else {
-      router.push("/order");
     }
+    // Don't redirect if no data - the page will show "No order data found" message
     setLoading(false);
   }, [router]);
 
