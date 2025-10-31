@@ -1,5 +1,5 @@
 // AI Chat API - Direct OpenAI Implementation
-// Streams responses with function calling (most reliable approach)
+// Proper function calling with multi-turn conversation
 
 import OpenAI from "openai";
 import { createClient } from "@/lib/supabase";
@@ -97,16 +97,113 @@ export async function POST(req: Request) {
       },
     ];
 
-    // Call OpenAI with streaming
-    const stream = await openai.chat.completions.create({
+    // First API call - let AI decide if it needs tools
+    const initialResponse = await openai.chat.completions.create({
       model: "gpt-4o-mini",
       messages: [{ role: "system", content: systemMessage }, ...messages],
       tools,
       tool_choice: "auto",
+    });
+
+    const responseMessage = initialResponse.choices[0].message;
+
+    // If AI wants to use tools, execute them and get final response
+    if (responseMessage.tool_calls && responseMessage.tool_calls.length > 0) {
+      const toolResults = [];
+
+      for (const toolCall of responseMessage.tool_calls) {
+        if (toolCall.type !== "function") continue;
+
+        const result = await executeToolCall(
+          toolCall.function.name,
+          toolCall.function.arguments,
+          venueId,
+          user.id
+        );
+
+        toolResults.push({
+          tool_call_id: toolCall.id,
+          role: "tool" as const,
+          content: JSON.stringify(result),
+        });
+      }
+
+      // Get final response with tool results
+      const finalResponse = await openai.chat.completions.create({
+        model: "gpt-4o-mini",
+        messages: [
+          { role: "system", content: systemMessage },
+          ...messages,
+          responseMessage,
+          ...toolResults,
+        ],
+        stream: true,
+      });
+
+      // Stream the final response
+      const encoder = new TextEncoder();
+      const readable = new ReadableStream({
+        async start(controller) {
+          try {
+            for await (const chunk of finalResponse) {
+              const delta = chunk.choices[0]?.delta;
+
+              if (delta?.content) {
+                controller.enqueue(
+                  encoder.encode(
+                    `data: ${JSON.stringify({
+                      type: "text",
+                      content: delta.content,
+                    })}\n\n`
+                  )
+                );
+              }
+
+              if (chunk.choices[0]?.finish_reason === "stop") {
+                // Send navigation if it was a navigate tool
+                const navTool = responseMessage.tool_calls?.find(
+                  (tc) => tc.type === "function" && tc.function.name === "navigate"
+                );
+                if (navTool && navTool.type === "function") {
+                  const args = JSON.parse(navTool.function.arguments);
+                  const route = getNavigationRoute(args.page, venueId);
+                  controller.enqueue(
+                    encoder.encode(
+                      `data: ${JSON.stringify({
+                        type: "navigate",
+                        route,
+                      })}\n\n`
+                    )
+                  );
+                }
+
+                controller.enqueue(encoder.encode("data: [DONE]\n\n"));
+                controller.close();
+              }
+            }
+          } catch (error) {
+            console.error("[AI CHAT] Stream error:", error);
+            controller.error(error);
+          }
+        },
+      });
+
+      return new Response(readable, {
+        headers: {
+          "Content-Type": "text/event-stream",
+          "Cache-Control": "no-cache",
+          Connection: "keep-alive",
+        },
+      });
+    }
+
+    // No tools needed - just stream the response
+    const stream = await openai.chat.completions.create({
+      model: "gpt-4o-mini",
+      messages: [{ role: "system", content: systemMessage }, ...messages],
       stream: true,
     });
 
-    // Create a ReadableStream for SSE
     const encoder = new TextEncoder();
     const readable = new ReadableStream({
       async start(controller) {
@@ -115,48 +212,14 @@ export async function POST(req: Request) {
             const delta = chunk.choices[0]?.delta;
 
             if (delta?.content) {
-              // Send text content
               controller.enqueue(
                 encoder.encode(
-                  `data: ${JSON.stringify({ type: "text", content: delta.content })}\n\n`
+                  `data: ${JSON.stringify({
+                    type: "text",
+                    content: delta.content,
+                  })}\n\n`
                 )
               );
-            }
-
-            if (delta?.tool_calls) {
-              // Send tool call
-              for (const toolCall of delta.tool_calls) {
-                if (toolCall.function?.name) {
-                  controller.enqueue(
-                    encoder.encode(
-                      `data: ${JSON.stringify({
-                        type: "tool_call",
-                        toolName: toolCall.function.name,
-                        args: toolCall.function.arguments
-                          ? JSON.parse(toolCall.function.arguments)
-                          : {},
-                      })}\n\n`
-                    )
-                  );
-
-                  // Execute tool
-                  const result = await executeToolCall(
-                    toolCall.function.name,
-                    toolCall.function.arguments || "{}",
-                    venueId,
-                    user.id
-                  );
-                  controller.enqueue(
-                    encoder.encode(
-                      `data: ${JSON.stringify({
-                        type: "tool_result",
-                        toolName: toolCall.function.name,
-                        result,
-                      })}\n\n`
-                    )
-                  );
-                }
-              }
             }
 
             if (chunk.choices[0]?.finish_reason === "stop") {
@@ -187,42 +250,46 @@ export async function POST(req: Request) {
   }
 }
 
+function getNavigationRoute(page: string, venueId: string): string {
+  const routeMap: Record<string, string> = {
+    dashboard: `/dashboard/${venueId}`,
+    menu: `/dashboard/${venueId}/menu-management`,
+    inventory: `/dashboard/${venueId}/inventory`,
+    orders: `/dashboard/${venueId}/orders`,
+    "live-orders": `/dashboard/${venueId}/live-orders`,
+    kds: `/dashboard/${venueId}/kds`,
+    "qr-codes": `/dashboard/${venueId}/qr-codes`,
+    analytics: `/dashboard/${venueId}/analytics`,
+    settings: `/dashboard/${venueId}/settings`,
+    staff: `/dashboard/${venueId}/staff`,
+    tables: `/dashboard/${venueId}/tables`,
+    feedback: `/dashboard/${venueId}/feedback`,
+  };
+  return routeMap[page] || `/dashboard/${venueId}`;
+}
+
 async function executeToolCall(toolName: string, args: string, venueId: string, userId: string) {
-  const parsedArgs = args ? JSON.parse(args) : {};
+  const parsedArgs = JSON.parse(args || "{}");
 
   if (toolName === "navigate") {
     const { page } = parsedArgs;
-    const routeMap: Record<string, string> = {
-      dashboard: `/dashboard/${venueId}`,
-      menu: `/dashboard/${venueId}/menu-management`,
-      inventory: `/dashboard/${venueId}/inventory`,
-      orders: `/dashboard/${venueId}/orders`,
-      "live-orders": `/dashboard/${venueId}/live-orders`,
-      kds: `/dashboard/${venueId}/kds`,
-      "qr-codes": `/dashboard/${venueId}/qr-codes`,
-      analytics: `/dashboard/${venueId}/analytics`,
-      settings: `/dashboard/${venueId}/settings`,
-      staff: `/dashboard/${venueId}/staff`,
-      tables: `/dashboard/${venueId}/tables`,
-      feedback: `/dashboard/${venueId}/feedback`,
-    };
-
     return {
       success: true,
-      route: routeMap[page],
+      page,
       message: `Navigating to ${page}`,
     };
   }
 
   if (toolName === "get_analytics") {
     const { metric, timeRange } = parsedArgs;
-    return await executeTool(
+    const result = await executeTool(
       "analytics.get_stats",
       { metric, timeRange, groupBy: null, itemId: null, itemName: null },
       venueId,
       userId,
       false
     );
+    return result;
   }
 
   return { success: false, error: "Unknown tool" };
@@ -236,7 +303,7 @@ function buildSystemMessage(
   }
 ): string {
   const menuInfo = summaries.menu
-    ? `\n\nMENU: ${summaries.menu.totalItems} items in ${summaries.menu.categories.length} categories`
+    ? `\n\nMENU: ${summaries.menu.totalItems} items, Top seller: ${summaries.menu.topSellers[0]?.name || "N/A"}`
     : "";
 
   const analyticsInfo = summaries.analytics
@@ -251,13 +318,13 @@ CONTEXT:
 ${menuInfo}${analyticsInfo}
 
 TOOLS AVAILABLE:
-- navigate(page): Navigate to pages (feedback, analytics, menu, etc.)
-- get_analytics(metric, timeRange): Get business insights
+- navigate(page): Navigate to pages
+- get_analytics(metric, timeRange): Get business stats. Metrics: revenue, orders, top_items, peak_hours. TimeRange: today, week, month
 
 INSTRUCTIONS:
 - Be friendly and conversational
 - For greetings, just respond naturally
-- When asked to navigate, use the navigate tool
-- When asked about stats, use get_analytics
-- Keep responses concise`;
+- When users ask about sales/analytics, use get_analytics tool and interpret the results in a friendly way
+- When asked to navigate, use navigate tool
+- Always interpret tool results - don't just say you executed them, explain what the data means`;
 }

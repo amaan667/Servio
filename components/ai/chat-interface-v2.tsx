@@ -136,31 +136,8 @@ export function ChatInterfaceV2({ venueId, isOpen, onClose }: ChatInterfaceProps
                   }
                   return updated;
                 });
-              } else if (parsed.type === "tool_call") {
-                setMessages((prev) => {
-                  const updated = [...prev];
-                  const lastMsg = updated[updated.length - 1];
-                  if (lastMsg.role === "assistant") {
-                    lastMsg.toolCalls = lastMsg.toolCalls || [];
-                    lastMsg.toolCalls.push({ name: parsed.toolName });
-                  }
-                  return updated;
-                });
-              } else if (parsed.type === "tool_result") {
-                setMessages((prev) => {
-                  const updated = [...prev];
-                  const lastMsg = updated[updated.length - 1];
-                  if (lastMsg.role === "assistant" && lastMsg.toolCalls) {
-                    const tool = lastMsg.toolCalls.find((t) => t.name === parsed.toolName);
-                    if (tool) {
-                      tool.result = parsed.result;
-                      if (parsed.toolName === "navigate" && parsed.result?.route) {
-                        navigationRoute = parsed.result.route;
-                      }
-                    }
-                  }
-                  return updated;
-                });
+              } else if (parsed.type === "navigate") {
+                navigationRoute = parsed.route;
               }
             } catch (e) {
               console.error("Failed to parse SSE data:", e);
@@ -225,20 +202,6 @@ export function ChatInterfaceV2({ venueId, isOpen, onClose }: ChatInterfaceProps
                     {message.role === "user" ? "You" : "AI Assistant"}
                   </Badge>
                   <div className="text-sm whitespace-pre-wrap">{message.content}</div>
-
-                  {message.toolCalls && message.toolCalls.length > 0 && (
-                    <div className="mt-3 space-y-1">
-                      {message.toolCalls.map((tool, idx) => (
-                        <div
-                          key={idx}
-                          className="flex items-center space-x-2 text-xs text-green-600"
-                        >
-                          <CheckCircle className="h-3 w-3" />
-                          <span>✓ Executed: {tool.name}</span>
-                        </div>
-                      ))}
-                    </div>
-                  )}
                 </CardContent>
               </Card>
             ))}
