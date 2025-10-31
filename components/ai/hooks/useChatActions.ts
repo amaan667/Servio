@@ -12,7 +12,7 @@ export function useChatActions(venueId: string) {
   const [executionResults, setExecutionResults] = useState<unknown[]>([]);
   const [undoing, setUndoing] = useState<string | null>(null);
 
-  const sendMessage = async (conversationId: string, message: string) => {
+  const sendMessage = async (_conversationId: string, message: string) => {
     setLoading(true);
     setError(null);
     setSuccess(false);
@@ -25,8 +25,7 @@ export function useChatActions(venueId: string) {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
-          conversationId,
-          message,
+          prompt: message,
           venueId,
         }),
       });
