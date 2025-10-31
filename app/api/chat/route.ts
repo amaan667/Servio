@@ -301,12 +301,26 @@ export async function POST(req: Request) {
 async function getFullVenueContext(venueId: string) {
   const supabase = await createClient();
 
-  // Get all venue details
+  // Get all venue details including owner
   const { data: venue } = await supabase
     .from("venues")
     .select("*")
     .eq("venue_id", venueId)
     .single();
+
+  // Get subscription tier from organizations table
+  let subscriptionTier = "basic";
+  if (venue?.owner_user_id) {
+    const { data: org } = await supabase
+      .from("organizations")
+      .select("subscription_tier, subscription_status")
+      .eq("owner_user_id", venue.owner_user_id)
+      .maybeSingle();
+
+    if (org?.subscription_status === "active" || org?.subscription_status === "trialing") {
+      subscriptionTier = org.subscription_tier || "basic";
+    }
+  }
 
   // Get menu items (all of them!)
   const { data: menuItems } = await supabase
@@ -320,7 +334,7 @@ async function getFullVenueContext(venueId: string) {
     name: venue?.venue_name || "your business",
     businessType: venue?.business_type || venue?.venue_type || "restaurant",
     serviceType: venue?.service_type || "table_service",
-    tier: venue?.tier || "starter",
+    subscriptionTier,
     operatingHours: venue?.operating_hours || null,
     address: venue?.address || null,
     phone: venue?.phone || null,
@@ -431,15 +445,29 @@ function buildIntelligentSystemMessage(
   // Build operating hours string
   let hoursInfo = "";
   if (venue.operatingHours && typeof venue.operatingHours === "object") {
-    const hours = Object.entries(venue.operatingHours as Record<string, any>)
-      .map(([day, h]) => {
-        if (h?.closed) return `${day}: Closed`;
-        if (h?.open && h?.close) return `${day}: ${h.open}-${h.close}`;
+    const daysOfWeek = [
+      "monday",
+      "tuesday",
+      "wednesday",
+      "thursday",
+      "friday",
+      "saturday",
+      "sunday",
+    ];
+    const hoursArray = daysOfWeek
+      .map((day) => {
+        const h = (venue.operatingHours as Record<string, any>)[day];
+        if (!h) return null;
+        const dayName = day.charAt(0).toUpperCase() + day.slice(1);
+        if (h.closed === true) return `${dayName}: Closed`;
+        if (h.open && h.close) return `${dayName}: ${h.open} - ${h.close}`;
         return null;
       })
-      .filter(Boolean)
-      .join(", ");
-    if (hours) hoursInfo = `\nOperating Hours: ${hours}`;
+      .filter(Boolean);
+
+    if (hoursArray.length > 0) {
+      hoursInfo = `\n\nOPERATING HOURS:\n${hoursArray.join("\n")}`;
+    }
   }
 
   // Build menu info with actual items
@@ -466,13 +494,25 @@ function buildIntelligentSystemMessage(
         ? "restaurant"
         : venue.businessType;
 
+  // Subscription tier display
+  const tierDisplay =
+    venue.subscriptionTier.charAt(0).toUpperCase() + venue.subscriptionTier.slice(1);
+  const tierFeatures =
+    venue.subscriptionTier === "basic"
+      ? "QR ordering, Basic analytics"
+      : venue.subscriptionTier === "standard"
+        ? "KDS, Inventory, Full analytics, Priority support"
+        : venue.subscriptionTier === "premium"
+          ? "Everything + AI Assistant, Multi-venue, Unlimited tables"
+          : "";
+
   return `You are an intelligent AI assistant for ${venue.name}, a ${businessTypeDisplay}.
 
 BUSINESS DETAILS:
 - Name: ${venue.name}
 - Type: ${businessTypeDisplay}
 - Service: ${venue.serviceType.replace("_", " ")}
-- Plan: ${venue.tier}${venue.address ? `\n- Address: ${venue.address}` : ""}${venue.phone ? `\n- Phone: ${venue.phone}` : ""}${hoursInfo}${menuInfo}${analyticsInfo}
+- Servio Subscription: **${tierDisplay} Plan** (${tierFeatures})${venue.address ? `\n- Address: ${venue.address}` : ""}${venue.phone ? `\n- Phone: ${venue.phone}` : ""}${hoursInfo}${menuInfo}${analyticsInfo}
 
 CAPABILITIES:
 1. **Navigation**: Navigate to pages (qr-codes, analytics, menu, settings, etc.)
@@ -499,7 +539,8 @@ BEHAVIOR RULES:
 ✅ If table number is mentioned for QR codes, include tableNumber in navigate tool
 ✅ Interpret data - turn numbers into insights
 ✅ Remember this is a ${businessTypeDisplay}, not a different business type
-✅ When asked about hours/plan/details, use the info above
+✅ When asked about opening hours, use the OPERATING HOURS from above
+✅ When asked about "plan" or "tier", refer to the **Servio Subscription** (${tierDisplay} Plan)
 ✅ For analytics questions, use get_analytics tool then explain what it means
 ✅ CRITICAL: When answering about menu items, ONLY use the exact items and prices from the MENU ITEMS list above
 ✅ NEVER make up or guess prices - use the actual data provided
