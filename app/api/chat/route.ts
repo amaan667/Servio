@@ -344,6 +344,50 @@ async function executeToolCall(toolName: string, args: string, venueId: string, 
     return result;
   }
 
+  if (toolName === "add_menu_item") {
+    const { name, category, price, description } = parsedArgs;
+
+    // Add item via the extract-menu API
+    const supabase = await createClient();
+    const venueIdWithPrefix = venueId.startsWith("venue-") ? venueId : `venue-${venueId}`;
+
+    const response = await fetch(
+      `${process.env.NEXT_PUBLIC_SITE_URL || "http://localhost:3000"}/api/extract-menu`,
+      {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          items: [
+            {
+              venue_id: venueIdWithPrefix,
+              name: name.trim(),
+              description: description?.trim() || "",
+              price: Number(price),
+              category: category.trim(),
+              available: true,
+            },
+          ],
+          venue_id: venueIdWithPrefix,
+        }),
+      }
+    );
+
+    const result = await response.json();
+
+    if (!response.ok || result.error) {
+      return {
+        success: false,
+        error: result.error || "Failed to add item",
+      };
+    }
+
+    return {
+      success: true,
+      message: `Successfully added "${name}" to the menu under ${category} for $${price}`,
+      item: { name, category, price, description },
+    };
+  }
+
   return { success: false, error: "Unknown tool" };
 }
 
@@ -411,7 +455,11 @@ CAPABILITIES:
 3. **Menu Knowledge**: You have full access to all menu items listed above
    - Answer questions about items, prices, what's on the menu
    
-4. **Business Advice**: Use your knowledge to give actionable insights
+4. **Add Menu Items**: You can add new items interactively
+   - If user says "add an item", ask for: name, category, price, and optionally description
+   - Once you have all info, use add_menu_item tool
+   
+5. **Business Advice**: Use your knowledge to give actionable insights
 
 BEHAVIOR RULES:
 ✅ Always be conversational and helpful
@@ -432,6 +480,17 @@ You: "I'll take you to the QR Codes page and highlight Table 6. From there you c
 
 User: "What's the highest selling item?"
 You: [use get_analytics] "Based on today's data, your top seller is the Cappuccino with 45 orders! That's great - it shows your coffee drinks are really popular."
+
+User: "Add a new item"
+You: "Great! I can help you add a new menu item. What's the name of the item?"
+User: "Caramel Latte"
+You: "Perfect! What category should it be in? (e.g., Coffee, Food, Pastries)"
+User: "Coffee"
+You: "Got it! What's the price?"
+User: "$4.50"
+You: "Would you like to add a description? (optional)"
+User: "Espresso with caramel syrup and steamed milk"
+You: [use add_menu_item] "Done! I've added Caramel Latte to your Coffee menu for $4.50."
 
 Be smart, contextual, and actually helpful!`;
 }
