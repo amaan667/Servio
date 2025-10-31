@@ -28,6 +28,7 @@ export function ChatInterface({ venueId, isOpen, onClose, initialPrompt }: ChatI
   const [input, setInput] = useState("");
   const [error, setError] = useState<string | null>(null);
   const [success, setSuccess] = useState(false);
+  const [welcomeShown, setWelcomeShown] = useState(false);
 
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLInputElement>(null);
@@ -71,12 +72,26 @@ export function ChatInterface({ venueId, isOpen, onClose, initialPrompt }: ChatI
     messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
   }, [messages]);
 
-  // Focus input on open
+  // Focus input on open and show welcome message
   useEffect(() => {
     if (isOpen) {
       setTimeout(() => inputRef.current?.focus(), 100);
+
+      // Show welcome message on first open
+      if (!welcomeShown && messages.length === 0) {
+        const welcomeMessage = {
+          id: `welcome-${Date.now()}`,
+          role: "assistant" as const,
+          content:
+            "Hi! 👋 I'm your AI assistant. I can help you with:\n\n• Menu translations\n• Analytics and sales data\n• Navigation\n• Business insights\n\nWhat would you like to know?",
+          createdAt: new Date().toISOString(),
+          canUndo: false,
+        };
+        addMessage(welcomeMessage);
+        setWelcomeShown(true);
+      }
     }
-  }, [isOpen]);
+  }, [isOpen, welcomeShown, messages.length]);
 
   // Load messages when conversation changes
   useEffect(() => {
@@ -93,8 +108,18 @@ export function ChatInterface({ venueId, isOpen, onClose, initialPrompt }: ChatI
       const newConv = await createNewConversation();
       await loadMessages(newConv.id);
       setInput("");
-    } catch (_error) {
-      setError((error as any).message);
+      return newConv;
+    } catch (error) {
+      // If database tables don't exist, work in memory-only mode
+      console.warn("[AI CHAT] Failed to create conversation, using memory-only mode:", error);
+      return {
+        id: `temp-conv-${Date.now()}`,
+        venueId,
+        userId: "anonymous",
+        title: "New Chat",
+        createdAt: new Date().toISOString(),
+        updatedAt: new Date().toISOString(),
+      };
     }
   };
 
@@ -104,19 +129,16 @@ export function ChatInterface({ venueId, isOpen, onClose, initialPrompt }: ChatI
 
     const messageText = input.trim();
     setInput("");
+    setError(null);
 
     // Ensure we have a conversation
     let conv = currentConversation;
     if (!conv) {
-      try {
-        conv = await createNewConversation();
-      } catch (_error) {
-        setError((error as any).message);
-        return;
-      }
+      conv = await handleCreateNewConversation();
+      setCurrentConversation(conv);
     }
 
-    // Add user message
+    // Add user message immediately so it appears in chat
     const userMessage = {
       id: `temp-user-${Date.now()}`,
       role: "user" as const,
@@ -125,11 +147,15 @@ export function ChatInterface({ venueId, isOpen, onClose, initialPrompt }: ChatI
       canUndo: false,
     };
     addMessage(userMessage);
+    console.log("[AI CHAT] Added user message:", messageText);
 
     // Send to AI and get response
     try {
       if (!conv) return;
+
+      console.log("[AI CHAT] Sending to AI...");
       const aiPlan = await sendMessage(conv.id, messageText);
+      console.log("[AI CHAT] Got AI response:", aiPlan);
 
       // Add AI response message with explanation
       if (aiPlan) {
@@ -158,16 +184,29 @@ export function ChatInterface({ venueId, isOpen, onClose, initialPrompt }: ChatI
           canUndo: false,
         };
         addMessage(aiMessage);
+        console.log("[AI CHAT] Added AI message");
+      } else {
+        console.warn("[AI CHAT] No AI response received");
+        addMessage({
+          id: `temp-no-response-${Date.now()}`,
+          role: "assistant" as const,
+          content: "I didn't quite understand that. Could you rephrase your question?",
+          createdAt: new Date().toISOString(),
+          canUndo: false,
+        });
       }
 
       // The PlanPreview component will show action preview if there are actions to execute
-    } catch (_error) {
-      setError((error as any).message);
+    } catch (error) {
+      console.error("[AI CHAT] Error:", error);
+      const errorMsg = (error as any)?.message || "Unknown error";
+      setError(errorMsg);
+
       // Add error message
       addMessage({
         id: `temp-error-${Date.now()}`,
         role: "assistant" as const,
-        content: "Sorry, I encountered an error. Please try again.",
+        content: `Sorry, I encountered an error: ${errorMsg}`,
         createdAt: new Date().toISOString(),
         canUndo: false,
       });
