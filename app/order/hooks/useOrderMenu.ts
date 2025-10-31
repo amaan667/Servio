@@ -44,7 +44,7 @@ export function useOrderMenu(venueSlug: string, isDemo: boolean) {
     setMenuError(null);
 
     // Check if this is demo mode
-    if (isDemo || venueSlug === "demo-cafe") {
+    if (isDemo) {
       const mappedItems = demoMenuItems.map((item, idx) => ({
         ...item,
         id: `demo-${idx}`,

@@ -1,6 +1,11 @@
 import { useState, useEffect } from "react";
 
-export function useGroupSession(venueSlug: string, tableNumber: string, isCounterOrder: boolean) {
+export function useGroupSession(
+  venueSlug: string,
+  tableNumber: string,
+  isCounterOrder: boolean,
+  skipModal: boolean = false
+) {
   const [showGroupSizeModal, setShowGroupSizeModal] = useState(false);
   const [showGroupSizePopup, setShowGroupSizePopup] = useState(false);
   const [groupSize, setGroupSize] = useState<number | null>(null);
@@ -9,6 +14,18 @@ export function useGroupSession(venueSlug: string, tableNumber: string, isCounte
   const [groupSessionId, setGroupSessionId] = useState<string | null>(null);
 
   useEffect(() => {
+    // If skipModal is true, don't show the modal at all
+    if (skipModal) {
+      // Still load cached group size if available
+      if (typeof window !== "undefined") {
+        const cached = sessionStorage.getItem(`group_size_${venueSlug}_${tableNumber}`);
+        if (cached) {
+          setGroupSize(parseInt(cached));
+        }
+      }
+      return;
+    }
+
     // Check cache first for instant modal display
     const getCachedGroupSize = () => {
       if (typeof window === "undefined") return null;
@@ -62,7 +79,7 @@ export function useGroupSession(venueSlug: string, tableNumber: string, isCounte
       setGroupSize(null);
       setShowGroupSizeModal(true);
     }
-  }, [venueSlug, tableNumber, isCounterOrder]);
+  }, [venueSlug, tableNumber, isCounterOrder, skipModal]);
 
   const handleGroupSizeSubmit = async (selectedGroupSize: number) => {
     setGroupSize(selectedGroupSize);

@@ -1,5 +1,5 @@
-import { useState, useEffect } from 'react';
-import { useRouter } from 'next/navigation';
+import { useState, useEffect } from "react";
+import { useRouter } from "next/navigation";
 
 export interface PendingOrderData {
   venueId: string;
@@ -30,7 +30,7 @@ export function useOrderSummary() {
   const [orderPlaced, setOrderPlaced] = useState(false);
 
   useEffect(() => {
-    const storedData = localStorage.getItem('servio-pending-order');
+    const storedData = localStorage.getItem("servio-pending-order");
 
     if (storedData) {
       try {
@@ -38,34 +38,31 @@ export function useOrderSummary() {
 
         setOrderData(data);
       } catch (_error) {
-
-        router.push('/order');
+        router.push("/order");
       }
     } else {
-
-      router.push('/order');
+      router.push("/order");
     }
     setLoading(false);
   }, [router]);
 
   const handlePayNow = async () => {
     if (!orderData) {
-      alert('Error: No order data available. Please try placing your order again.');
+      alert("Error: No order data available. Please try placing your order again.");
       return;
     }
-    
-    const isDemo = orderData.isDemo || orderData.venueId === 'demo-cafe';
+
+    const isDemo = orderData.isDemo;
 
     if (isDemo) {
-
       const demoOrderId = `demo-${Date.now()}`;
 
       setIsCreatingOrder(true);
-      
+
       try {
-        const response = await fetch('/api/orders/create-demo', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
+        const response = await fetch("/api/orders/create-demo", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
           body: JSON.stringify({
             venueId: orderData.venueId,
             venueName: orderData.venueName,
@@ -77,40 +74,39 @@ export function useOrderSummary() {
             total: orderData.total,
             customerName: orderData.customerName,
             customerPhone: orderData.customerPhone,
-            orderId: demoOrderId
+            orderId: demoOrderId,
           }),
         });
-        
+
         const result = await response.json();
-        
+
         if (!response.ok) {
-          throw new Error(result.error || 'Failed to create demo order');
+          throw new Error(result.error || "Failed to create demo order");
         }
 
-        localStorage.removeItem('servio-pending-order');
-        localStorage.setItem('servio-last-order-id', demoOrderId);
-        
+        localStorage.removeItem("servio-pending-order");
+        localStorage.setItem("servio-last-order-id", demoOrderId);
+
         setOrderPlaced(true);
-        
+
         setTimeout(() => {
           router.push(`/order-summary/${demoOrderId}`);
         }, 1500);
       } catch (_error) {
-
-        alert('Error creating order. Please try again.');
+        alert("Error creating order. Please try again.");
       } finally {
         setIsCreatingOrder(false);
       }
-      
+
       return;
     }
-    
+
     setIsCreatingOrder(true);
-    
+
     try {
-      const response = await fetch('/api/orders/create', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+      const response = await fetch("/api/orders/create", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           venueId: orderData.venueId,
           venueName: orderData.venueName,
@@ -121,27 +117,26 @@ export function useOrderSummary() {
           cart: orderData.cart,
           total: orderData.total,
           customerName: orderData.customerName,
-          customerPhone: orderData.customerPhone
+          customerPhone: orderData.customerPhone,
         }),
       });
-      
+
       const result = await response.json();
-      
+
       if (!response.ok) {
-        throw new Error(result.error || 'Failed to create order');
+        throw new Error(result.error || "Failed to create order");
       }
 
-      localStorage.removeItem('servio-pending-order');
-      localStorage.setItem('servio-last-order-id', result.orderId);
-      
+      localStorage.removeItem("servio-pending-order");
+      localStorage.setItem("servio-last-order-id", result.orderId);
+
       setOrderPlaced(true);
-      
+
       setTimeout(() => {
         router.push(`/payment?orderId=${result.orderId}&amount=${orderData.total}`);
       }, 1500);
     } catch (_error) {
-
-      alert('Error creating order. Please try again.');
+      alert("Error creating order. Please try again.");
     } finally {
       setIsCreatingOrder(false);
     }
@@ -152,7 +147,6 @@ export function useOrderSummary() {
     loading,
     isCreatingOrder,
     orderPlaced,
-    handlePayNow
+    handlePayNow,
   };
 }
-

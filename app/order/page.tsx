@@ -26,8 +26,8 @@ import { GroupSizeModal } from "./components/GroupSizeModal";
 
 export default function CustomerOrderPage() {
   const searchParams = useSearchParams();
-  const venueSlug = searchParams?.get("venue") || "demo-cafe";
-  const tableNumber = searchParams?.get("table") || "1";
+  const venueSlug = searchParams?.get("venue") || "";
+  const tableNumber = searchParams?.get("table") || "";
   const counterNumber = searchParams?.get("counter") || "";
   const isDemo = searchParams?.get("demo") === "1";
   const skipGroupSize = searchParams?.get("skipGroupSize") === "true";
@@ -137,7 +137,7 @@ export default function CustomerOrderPage() {
     groupSessionId,
     handleGroupSizeSubmit,
     handleGroupSizeUpdate,
-  } = useGroupSession(venueSlug, tableNumber, isCounterOrder);
+  } = useGroupSession(venueSlug, tableNumber, isCounterOrder, skipGroupSize);
 
   const [showMobileCart, setShowMobileCart] = useState(false);
   const [subscriptionTier, setSubscriptionTier] = useState<"basic" | "standard" | "premium">(
@@ -145,12 +145,12 @@ export default function CustomerOrderPage() {
   );
   const [loadingTier, setLoadingTier] = useState(true);
 
-  // Skip group size modal if returning from payment page
+  // Redirect to home if no venue or table parameters
   useEffect(() => {
-    if (skipGroupSize && showGroupSizeModal) {
-      setShowGroupSizeModal(false);
+    if (!venueSlug || !tableNumber) {
+      window.location.href = "/";
     }
-  }, [skipGroupSize, showGroupSizeModal, setShowGroupSizeModal]);
+  }, [venueSlug, tableNumber]);
 
   // Log menu loading for debugging
   useEffect(() => {
@@ -173,6 +173,18 @@ export default function CustomerOrderPage() {
       isDemoFallback: false,
     });
   };
+
+  // Redirect to home if no venue or table parameter
+  if (!venueSlug || !tableNumber) {
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-gray-50">
+        <div className="text-center">
+          <Loader2 className="h-8 w-8 animate-spin text-purple-600 mx-auto mb-4" />
+          <p className="text-gray-600">Invalid QR code. Redirecting...</p>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="min-h-screen bg-gray-50 dark:bg-gray-900">

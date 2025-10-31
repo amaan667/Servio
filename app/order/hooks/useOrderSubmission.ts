@@ -60,9 +60,9 @@ export function useOrderSubmission() {
       const paymentMode = isCounterOrder ? "pay_at_till" : "online";
 
       // For demo orders
-      if (isDemo || isDemoFallback || venueSlug === "demo-cafe") {
+      if (isDemo || isDemoFallback) {
         const orderData = {
-          venueId: "demo-cafe",
+          venueId: venueSlug,
           venueName: "Demo Café",
           tableNumber: parseInt(orderLocation) || 1,
           counterNumber: counterNumber,

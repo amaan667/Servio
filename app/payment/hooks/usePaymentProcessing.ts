@@ -78,9 +78,8 @@ export function usePaymentProcessing() {
           throw new Error("Failed to update payment status");
         }
 
-        // Clear cart and checkout data after successful order
+        // Clear cart after successful order (keep checkout-data for order summary page)
         localStorage.removeItem("servio-order-cart");
-        localStorage.removeItem("servio-checkout-data");
 
         // Redirect to order summary page
         window.location.href = `/order-summary?orderId=${orderId}&demo=1`;
@@ -165,9 +164,8 @@ export function usePaymentProcessing() {
         const result = await response.json();
         console.log("[PAYMENT] ✅ Pay till successful:", result);
 
-        // Clear cart and checkout data after successful order
+        // Clear cart after successful order (keep checkout-data for order summary page)
         localStorage.removeItem("servio-order-cart");
-        localStorage.removeItem("servio-checkout-data");
 
         // Redirect to order summary page
         console.log("[PAYMENT] 🔀 Redirecting to order summary...");
@@ -234,9 +232,8 @@ export function usePaymentProcessing() {
           })
         );
 
-        // Clear cart and checkout data after successful order
+        // Clear cart after successful order (keep checkout-data for order summary page)
         localStorage.removeItem("servio-order-cart");
-        localStorage.removeItem("servio-checkout-data");
 
         // Redirect to order summary page
         console.log("[PAYMENT] 🔀 Redirecting to order summary...");
