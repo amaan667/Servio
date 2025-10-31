@@ -1,9 +1,7 @@
 "use client";
 
-import { useChat } from "@ai-sdk/react";
-import type { Message } from "ai";
+import { useState, useEffect, useRef } from "react";
 import { useRouter } from "next/navigation";
-import { useEffect, useRef } from "react";
 import {
   Dialog,
   DialogContent,
@@ -18,6 +16,13 @@ import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Sparkles, Send, Loader2, CheckCircle } from "lucide-react";
 
+interface Message {
+  id: string;
+  role: "user" | "assistant";
+  content: string;
+  toolCalls?: Array<{ name: string; result?: unknown }>;
+}
+
 interface ChatInterfaceProps {
   venueId: string;
   isOpen: boolean;
@@ -26,59 +31,25 @@ interface ChatInterfaceProps {
 
 export function ChatInterfaceV2({ venueId, isOpen, onClose }: ChatInterfaceProps) {
   const router = useRouter();
+  const [messages, setMessages] = useState<Message[]>([]);
+  const [input, setInput] = useState("");
+  const [isLoading, setIsLoading] = useState(false);
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLInputElement>(null);
 
-  const { messages, input, handleInputChange, handleSubmit, isLoading } = useChat({
-    api: "/api/chat",
-    body: {
-      venueId,
-    },
-    onFinish: (message: Message) => {
-      // Check if the AI used the navigate tool
-      if (message.toolInvocations) {
-        const navTool = message.toolInvocations.find((t: any) => t.toolName === "navigate");
-        if (navTool && navTool.state === "result") {
-          // Navigate based on the page parameter
-          const page = navTool.args?.page;
-          if (page) {
-            const routes: Record<string, string> = {
-              dashboard: `/dashboard/${venueId}`,
-              menu: `/dashboard/${venueId}/menu-management`,
-              inventory: `/dashboard/${venueId}/inventory`,
-              orders: `/dashboard/${venueId}/orders`,
-              "live-orders": `/dashboard/${venueId}/live-orders`,
-              kds: `/dashboard/${venueId}/kds`,
-              "qr-codes": `/dashboard/${venueId}/qr-codes`,
-              analytics: `/dashboard/${venueId}/analytics`,
-              settings: `/dashboard/${venueId}/settings`,
-              staff: `/dashboard/${venueId}/staff`,
-              tables: `/dashboard/${venueId}/tables`,
-              feedback: `/dashboard/${venueId}/feedback`,
-            };
-            setTimeout(() => {
-              router.push(routes[page] || `/dashboard/${venueId}`);
-              onClose();
-            }, 800);
-          }
-        }
-      }
-    },
-  });
-
-  // Auto-scroll to bottom
+  // Auto-scroll
   useEffect(() => {
     messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
   }, [messages]);
 
-  // Focus input when opened
+  // Focus input
   useEffect(() => {
     if (isOpen) {
       setTimeout(() => inputRef.current?.focus(), 100);
     }
   }, [isOpen]);
 
-  // Add welcome message if empty
+  // Welcome message
   const displayMessages =
     messages.length === 0
       ? [
@@ -86,30 +57,158 @@ export function ChatInterfaceV2({ venueId, isOpen, onClose }: ChatInterfaceProps
             id: "welcome",
             role: "assistant" as const,
             content:
-              "Hi! 👋 I'm your AI assistant. I can help you with:\n\n• Menu translations\n• Analytics and sales data\n• Navigation\n• Business insights\n\nWhat would you like to know?",
+              "Hi! 👋 I'm your AI assistant. I can help you with:\n\n• Navigation\n• Analytics and sales data\n• Business insights\n\nWhat would you like to know?",
           },
         ]
       : messages;
+
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!input.trim() || isLoading) return;
+
+    const userMessage = input.trim();
+    setInput("");
+    setIsLoading(true);
+
+    // Add user message
+    const newUserMsg: Message = {
+      id: `user-${Date.now()}`,
+      role: "user",
+      content: userMessage,
+    };
+    setMessages((prev) => [...prev, newUserMsg]);
+
+    // Prepare assistant message
+    const assistantMsg: Message = {
+      id: `assistant-${Date.now()}`,
+      role: "assistant",
+      content: "",
+      toolCalls: [],
+    };
+    setMessages((prev) => [...prev, assistantMsg]);
+
+    try {
+      const response = await fetch("/api/chat", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          messages: [
+            ...messages.map((m) => ({
+              role: m.role,
+              content: m.content,
+            })),
+            { role: "user", content: userMessage },
+          ],
+          venueId,
+        }),
+      });
+
+      if (!response.ok) throw new Error("Failed to get response");
+      if (!response.body) throw new Error("No response body");
+
+      const reader = response.body.getReader();
+      const decoder = new TextDecoder();
+      let buffer = "";
+      let navigationRoute: string | null = null;
+
+      while (true) {
+        const { done, value } = await reader.read();
+        if (done) break;
+
+        buffer += decoder.decode(value, { stream: true });
+        const lines = buffer.split("\n");
+        buffer = lines.pop() || "";
+
+        for (const line of lines) {
+          if (line.startsWith("data: ")) {
+            const data = line.slice(6);
+            if (data === "[DONE]") continue;
+
+            try {
+              const parsed = JSON.parse(data);
+
+              if (parsed.type === "text") {
+                setMessages((prev) => {
+                  const updated = [...prev];
+                  const lastMsg = updated[updated.length - 1];
+                  if (lastMsg.role === "assistant") {
+                    lastMsg.content += parsed.content;
+                  }
+                  return updated;
+                });
+              } else if (parsed.type === "tool_call") {
+                setMessages((prev) => {
+                  const updated = [...prev];
+                  const lastMsg = updated[updated.length - 1];
+                  if (lastMsg.role === "assistant") {
+                    lastMsg.toolCalls = lastMsg.toolCalls || [];
+                    lastMsg.toolCalls.push({ name: parsed.toolName });
+                  }
+                  return updated;
+                });
+              } else if (parsed.type === "tool_result") {
+                setMessages((prev) => {
+                  const updated = [...prev];
+                  const lastMsg = updated[updated.length - 1];
+                  if (lastMsg.role === "assistant" && lastMsg.toolCalls) {
+                    const tool = lastMsg.toolCalls.find((t) => t.name === parsed.toolName);
+                    if (tool) {
+                      tool.result = parsed.result;
+                      if (parsed.toolName === "navigate" && parsed.result?.route) {
+                        navigationRoute = parsed.result.route;
+                      }
+                    }
+                  }
+                  return updated;
+                });
+              }
+            } catch (e) {
+              console.error("Failed to parse SSE data:", e);
+            }
+          }
+        }
+      }
+
+      // Navigate if needed
+      if (navigationRoute) {
+        setTimeout(() => {
+          router.push(navigationRoute!);
+          onClose();
+        }, 800);
+      }
+    } catch (error) {
+      console.error("[AI CHAT] Error:", error);
+      setMessages((prev) => {
+        const updated = [...prev];
+        const lastMsg = updated[updated.length - 1];
+        if (lastMsg.role === "assistant") {
+          lastMsg.content = `Sorry, I encountered an error: ${
+            error instanceof Error ? error.message : "Unknown error"
+          }`;
+        }
+        return updated;
+      });
+    } finally {
+      setIsLoading(false);
+    }
+  };
 
   return (
     <Dialog open={isOpen} onOpenChange={onClose}>
       <DialogContent className="max-w-4xl h-[80vh] flex flex-col p-0">
         <DialogHeader className="p-6 border-b">
-          <div className="flex items-center justify-between">
-            <div className="flex items-center space-x-2">
-              <Sparkles className="h-5 w-5 text-purple-600" />
-              <DialogTitle>AI Assistant</DialogTitle>
-            </div>
+          <div className="flex items-center space-x-2">
+            <Sparkles className="h-5 w-5 text-purple-600" />
+            <DialogTitle>AI Assistant</DialogTitle>
           </div>
           <DialogDescription>
-            Ask me anything about your menu, orders, analytics, or business. I can help with
-            translations, navigation, sales data, and more.
+            Ask me anything about your business. I can help with navigation, analytics, and more.
           </DialogDescription>
         </DialogHeader>
 
         <ScrollArea className="flex-1 p-4">
           <div className="space-y-4">
-            {displayMessages.map((message: Message) => (
+            {displayMessages.map((message) => (
               <Card
                 key={message.id}
                 className={`${
@@ -119,41 +218,23 @@ export function ChatInterfaceV2({ venueId, isOpen, onClose }: ChatInterfaceProps
                 }`}
               >
                 <CardContent className="p-4">
-                  <div className="flex items-start justify-between mb-2">
-                    <Badge variant={message.role === "user" ? "default" : "secondary"}>
-                      {message.role === "user" ? "You" : "AI Assistant"}
-                    </Badge>
-                  </div>
+                  <Badge
+                    variant={message.role === "user" ? "default" : "secondary"}
+                    className="mb-2"
+                  >
+                    {message.role === "user" ? "You" : "AI Assistant"}
+                  </Badge>
                   <div className="text-sm whitespace-pre-wrap">{message.content}</div>
 
-                  {/* Show tool invocations */}
-                  {message.toolInvocations && message.toolInvocations.length > 0 && (
-                    <div className="mt-3 space-y-2">
-                      {message.toolInvocations.map((tool: any) => (
+                  {message.toolCalls && message.toolCalls.length > 0 && (
+                    <div className="mt-3 space-y-1">
+                      {message.toolCalls.map((tool, idx) => (
                         <div
-                          key={tool.toolCallId}
-                          className="flex items-center space-x-2 text-xs bg-purple-50 dark:bg-purple-900/20 p-2 rounded"
+                          key={idx}
+                          className="flex items-center space-x-2 text-xs text-green-600"
                         >
-                          {tool.state === "result" ? (
-                            <>
-                              <CheckCircle className="h-3 w-3 text-green-600" />
-                              <span className="text-green-700 dark:text-green-400">
-                                {tool.toolName === "navigate" &&
-                                  `✓ Navigating to ${tool.args?.page}`}
-                                {tool.toolName === "getAnalytics" && "✓ Retrieved analytics"}
-                                {tool.toolName === "translateMenu" && "✓ Translation complete"}
-                                {tool.toolName === "updatePrices" && "✓ Prices updated"}
-                                {tool.toolName === "toggleAvailability" && "✓ Availability updated"}
-                              </span>
-                            </>
-                          ) : (
-                            <>
-                              <Loader2 className="h-3 w-3 animate-spin text-purple-600" />
-                              <span className="text-purple-700 dark:text-purple-400">
-                                Executing {tool.toolName}...
-                              </span>
-                            </>
-                          )}
+                          <CheckCircle className="h-3 w-3" />
+                          <span>✓ Executed: {tool.name}</span>
                         </div>
                       ))}
                     </div>
@@ -170,7 +251,7 @@ export function ChatInterfaceV2({ venueId, isOpen, onClose }: ChatInterfaceProps
             <Input
               ref={inputRef}
               value={input}
-              onChange={handleInputChange}
+              onChange={(e) => setInput(e.target.value)}
               placeholder="Ask me anything..."
               disabled={isLoading}
               className="flex-1"

@@ -1,13 +1,15 @@
-// AI Chat API - Vercel AI SDK Implementation with Tools
-// Streams responses with tool calling support
+// AI Chat API - Direct OpenAI Implementation
+// Streams responses with function calling (most reliable approach)
 
-import { openai } from "@ai-sdk/openai";
-import { streamText, tool as aiTool, CoreMessage } from "ai";
-import { z } from "zod";
+import OpenAI from "openai";
 import { createClient } from "@/lib/supabase";
 import { getAssistantContext, getAllSummaries } from "@/lib/ai/context-builders";
 import { executeTool } from "@/lib/ai/tool-executors";
 import type { MenuSummary, AnalyticsSummary } from "@/types/ai-assistant";
+
+const openai = new OpenAI({
+  apiKey: process.env.OPENAI_API_KEY,
+});
 
 export const maxDuration = 30;
 
@@ -30,7 +32,7 @@ export async function POST(req: Request) {
     const context = await getAssistantContext(venueId, user.id, "owner");
     const summaries = await getAllSummaries(venueId, context.features);
 
-    // Build system message with context
+    // Build system message
     const systemMessage = buildSystemMessage(
       context,
       summaries as {
@@ -39,141 +41,143 @@ export async function POST(req: Request) {
       }
     );
 
-    // Stream response with tools
-    const result = await streamText({
-      model: openai("gpt-4o-mini"),
-      messages: [
-        { role: "system", content: systemMessage } as CoreMessage,
-        ...(messages as CoreMessage[]),
-      ],
-      tools: {
-        navigate: aiTool({
+    // Define tools
+    const tools: OpenAI.Chat.ChatCompletionTool[] = [
+      {
+        type: "function",
+        function: {
+          name: "navigate",
           description: "Navigate to a different page in the application",
-          parameters: z.object({
-            page: z
-              .enum([
-                "dashboard",
-                "menu",
-                "inventory",
-                "orders",
-                "live-orders",
-                "kds",
-                "kitchen-display",
-                "qr-codes",
-                "analytics",
-                "settings",
-                "staff",
-                "tables",
-                "feedback",
-              ])
-              .describe("The page to navigate to"),
-          }),
-          // @ts-expect-error - AI SDK tool types are complex
-          execute: async ({ page }) => {
-            const routeMap: Record<string, string> = {
-              dashboard: `/dashboard/${venueId}`,
-              menu: `/dashboard/${venueId}/menu-management`,
-              inventory: `/dashboard/${venueId}/inventory`,
-              orders: `/dashboard/${venueId}/orders`,
-              "live-orders": `/dashboard/${venueId}/live-orders`,
-              kds: `/dashboard/${venueId}/kds`,
-              "kitchen-display": `/dashboard/${venueId}/kds`,
-              "qr-codes": `/dashboard/${venueId}/qr-codes`,
-              analytics: `/dashboard/${venueId}/analytics`,
-              settings: `/dashboard/${venueId}/settings`,
-              staff: `/dashboard/${venueId}/staff`,
-              tables: `/dashboard/${venueId}/tables`,
-              feedback: `/dashboard/${venueId}/feedback`,
-            };
-
-            return {
-              success: true,
-              route: routeMap[page],
-              message: `Navigating to ${page}`,
-            };
+          parameters: {
+            type: "object",
+            properties: {
+              page: {
+                type: "string",
+                enum: [
+                  "dashboard",
+                  "menu",
+                  "inventory",
+                  "orders",
+                  "live-orders",
+                  "kds",
+                  "qr-codes",
+                  "analytics",
+                  "settings",
+                  "staff",
+                  "tables",
+                  "feedback",
+                ],
+                description: "The page to navigate to",
+              },
+            },
+            required: ["page"],
           },
-        }),
-        getAnalytics: aiTool({
+        },
+      },
+      {
+        type: "function",
+        function: {
+          name: "get_analytics",
           description: "Get analytics and insights about orders, revenue, and performance",
-          parameters: z.object({
-            metric: z.enum(["revenue", "orders", "top_items", "peak_hours"]),
-            timeRange: z.enum(["today", "week", "month"]),
-          }),
-          // @ts-expect-error - AI SDK tool types
-          execute: async ({ metric, timeRange }) => {
-            const result = await executeTool(
-              "analytics.get_stats",
-              { metric, timeRange, groupBy: null, itemId: null, itemName: null },
-              venueId,
-              user.id,
-              false
-            );
-            return result;
+          parameters: {
+            type: "object",
+            properties: {
+              metric: {
+                type: "string",
+                enum: ["revenue", "orders", "top_items", "peak_hours"],
+              },
+              timeRange: {
+                type: "string",
+                enum: ["today", "week", "month"],
+              },
+            },
+            required: ["metric", "timeRange"],
           },
-        }),
-        translateMenu: aiTool({
-          description: "Translate the entire menu to a target language",
-          parameters: z.object({
-            targetLanguage: z.enum(["es", "ar", "fr", "de", "it", "pt", "zh", "ja"]),
-            includeDescriptions: z.boolean().default(true),
-          }),
-          // @ts-expect-error - AI SDK tool types
-          execute: async ({ targetLanguage, includeDescriptions }) => {
-            const result = await executeTool(
-              "menu.translate",
-              { targetLanguage, includeDescriptions },
-              venueId,
-              user.id,
-              false
-            );
-            return result;
-          },
-        }),
-        updatePrices: aiTool({
-          description: "Update prices for menu items",
-          parameters: z.object({
-            items: z.array(
-              z.object({
-                id: z.string(),
-                newPrice: z.number(),
-              })
-            ),
-          }),
-          // @ts-expect-error - AI SDK tool types
-          execute: async ({ items }) => {
-            const result = await executeTool(
-              "menu.update_prices",
-              { items, preview: false },
-              venueId,
-              user.id,
-              false
-            );
-            return result;
-          },
-        }),
-        toggleAvailability: aiTool({
-          description: "Toggle availability of menu items",
-          parameters: z.object({
-            itemIds: z.array(z.string()),
-            available: z.boolean(),
-            reason: z.string().nullable().optional(),
-          }),
-          // @ts-expect-error - AI SDK tool types
-          execute: async ({ itemIds, available, reason }) => {
-            const result = await executeTool(
-              "menu.toggle_availability",
-              { itemIds, available, reason: reason || null },
-              venueId,
-              user.id,
-              false
-            );
-            return result;
-          },
-        }),
+        },
+      },
+    ];
+
+    // Call OpenAI with streaming
+    const stream = await openai.chat.completions.create({
+      model: "gpt-4o-mini",
+      messages: [{ role: "system", content: systemMessage }, ...messages],
+      tools,
+      tool_choice: "auto",
+      stream: true,
+    });
+
+    // Create a ReadableStream for SSE
+    const encoder = new TextEncoder();
+    const readable = new ReadableStream({
+      async start(controller) {
+        try {
+          for await (const chunk of stream) {
+            const delta = chunk.choices[0]?.delta;
+
+            if (delta?.content) {
+              // Send text content
+              controller.enqueue(
+                encoder.encode(
+                  `data: ${JSON.stringify({ type: "text", content: delta.content })}\n\n`
+                )
+              );
+            }
+
+            if (delta?.tool_calls) {
+              // Send tool call
+              for (const toolCall of delta.tool_calls) {
+                if (toolCall.function?.name) {
+                  controller.enqueue(
+                    encoder.encode(
+                      `data: ${JSON.stringify({
+                        type: "tool_call",
+                        toolName: toolCall.function.name,
+                        args: toolCall.function.arguments
+                          ? JSON.parse(toolCall.function.arguments)
+                          : {},
+                      })}\n\n`
+                    )
+                  );
+
+                  // Execute tool
+                  const result = await executeToolCall(
+                    toolCall.function.name,
+                    toolCall.function.arguments || "{}",
+                    venueId,
+                    user.id
+                  );
+                  controller.enqueue(
+                    encoder.encode(
+                      `data: ${JSON.stringify({
+                        type: "tool_result",
+                        toolName: toolCall.function.name,
+                        result,
+                      })}\n\n`
+                    )
+                  );
+                }
+              }
+            }
+
+            if (chunk.choices[0]?.finish_reason === "stop") {
+              controller.enqueue(encoder.encode("data: [DONE]\n\n"));
+              controller.close();
+            }
+          }
+        } catch (error) {
+          console.error("[AI CHAT] Stream error:", error);
+          controller.error(error);
+        }
       },
     });
 
-    return result.toTextStreamResponse();
+    return new Response(readable, {
+      headers: {
+        "Content-Type": "text/event-stream",
+        "Cache-Control": "no-cache",
+        Connection: "keep-alive",
+      },
+    });
   } catch (error) {
     console.error("[AI CHAT] Error:", error);
     return Response.json(
@@ -181,6 +185,47 @@ export async function POST(req: Request) {
       { status: 500 }
     );
   }
+}
+
+async function executeToolCall(toolName: string, args: string, venueId: string, userId: string) {
+  const parsedArgs = args ? JSON.parse(args) : {};
+
+  if (toolName === "navigate") {
+    const { page } = parsedArgs;
+    const routeMap: Record<string, string> = {
+      dashboard: `/dashboard/${venueId}`,
+      menu: `/dashboard/${venueId}/menu-management`,
+      inventory: `/dashboard/${venueId}/inventory`,
+      orders: `/dashboard/${venueId}/orders`,
+      "live-orders": `/dashboard/${venueId}/live-orders`,
+      kds: `/dashboard/${venueId}/kds`,
+      "qr-codes": `/dashboard/${venueId}/qr-codes`,
+      analytics: `/dashboard/${venueId}/analytics`,
+      settings: `/dashboard/${venueId}/settings`,
+      staff: `/dashboard/${venueId}/staff`,
+      tables: `/dashboard/${venueId}/tables`,
+      feedback: `/dashboard/${venueId}/feedback`,
+    };
+
+    return {
+      success: true,
+      route: routeMap[page],
+      message: `Navigating to ${page}`,
+    };
+  }
+
+  if (toolName === "get_analytics") {
+    const { metric, timeRange } = parsedArgs;
+    return await executeTool(
+      "analytics.get_stats",
+      { metric, timeRange, groupBy: null, itemId: null, itemName: null },
+      venueId,
+      userId,
+      false
+    );
+  }
+
+  return { success: false, error: "Unknown tool" };
 }
 
 function buildSystemMessage(
@@ -191,37 +236,28 @@ function buildSystemMessage(
   }
 ): string {
   const menuInfo = summaries.menu
-    ? `\n\nMENU OVERVIEW:\n- Total items: ${summaries.menu.totalItems}\n- Categories: ${summaries.menu.categories.map((c: { name: string }) => c.name).join(", ")}\n- Top sellers: ${summaries.menu.topSellers.map((i: { name: string; price: number }) => `${i.name} ($${i.price})`).join(", ")}`
+    ? `\n\nMENU: ${summaries.menu.totalItems} items in ${summaries.menu.categories.length} categories`
     : "";
 
   const analyticsInfo = summaries.analytics
-    ? `\n\nTODAY'S STATS:\n- Revenue: $${summaries.analytics.today.revenue}\n- Orders: ${summaries.analytics.today.orders}\n- Avg order: $${summaries.analytics.today.avgOrderValue}`
+    ? `\n\nTODAY: $${summaries.analytics.today.revenue} revenue, ${summaries.analytics.today.orders} orders`
     : "";
 
-  return `You are an AI assistant for Servio, a restaurant management platform.
+  return `You are an AI assistant for Servio restaurant management.
 
 CONTEXT:
 - Venue: ${context.venueId}
-- User role: ${context.userRole}
-- Timezone: ${context.timezone}
-
-CAPABILITIES:
-You have access to the following tools:
-- navigate: Navigate to different pages (feedback, analytics, menu, orders, etc.)
-- getAnalytics: Get business insights and statistics
-- translateMenu: Translate menu to different languages
-- updatePrices: Update menu item prices
-- toggleAvailability: Make items available or unavailable
+- Role: ${context.userRole}
 ${menuInfo}${analyticsInfo}
+
+TOOLS AVAILABLE:
+- navigate(page): Navigate to pages (feedback, analytics, menu, etc.)
+- get_analytics(metric, timeRange): Get business insights
 
 INSTRUCTIONS:
 - Be friendly and conversational
-- For greetings, respond naturally without calling tools
+- For greetings, just respond naturally
 - When asked to navigate, use the navigate tool
-- When asked about analytics/stats, use getAnalytics
-- When asked to translate, use translateMenu
-- For menu updates, use the appropriate tools
-- Keep responses concise and actionable
-
-Remember: You can execute actions for the user automatically using tools!`;
+- When asked about stats, use get_analytics
+- Keep responses concise`;
 }
