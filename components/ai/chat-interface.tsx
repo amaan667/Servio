@@ -10,8 +10,7 @@ import {
   DialogTitle,
 } from "@/components/ui/dialog";
 import { Alert, AlertDescription } from "@/components/ui/alert";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { AlertTriangle, Sparkles, History } from "lucide-react";
+import { AlertTriangle, Sparkles } from "lucide-react";
 import { ChatInterfaceProps, ChatConversation } from "./types";
 
 // Hooks
@@ -20,7 +19,6 @@ import { useChatMessages } from "./hooks/useChatMessages";
 import { useChatActions } from "./hooks/useChatActions";
 
 // Components
-import { ConversationList } from "./components/ConversationList";
 import { MessageList } from "./components/MessageList";
 import { PlanPreview } from "./components/PlanPreview";
 import { ChatInput } from "./components/ChatInput";
@@ -28,7 +26,6 @@ import { ChatInput } from "./components/ChatInput";
 export function ChatInterface({ venueId, isOpen, onClose, initialPrompt }: ChatInterfaceProps) {
   const router = useRouter();
   const [input, setInput] = useState("");
-  const [activeTab, setActiveTab] = useState<"chat" | "history">("chat");
   const [error, setError] = useState<string | null>(null);
   const [success, setSuccess] = useState(false);
 
@@ -90,34 +87,12 @@ export function ChatInterface({ venueId, isOpen, onClose, initialPrompt }: ChatI
     }
   }, [currentConversation]);
 
-  // Handle conversation selection
-  const handleSelectConversation = async (conversation: unknown) => {
-    setCurrentConversation(conversation as ChatConversation | null);
-    await loadMessages((conversation as any).id);
-    setActiveTab("chat");
-  };
-
   // Handle new conversation
   const handleCreateNewConversation = async () => {
     try {
       const newConv = await createNewConversation();
       await loadMessages(newConv.id);
-      setActiveTab("chat");
       setInput("");
-    } catch (_error) {
-      setError((error as any).message);
-    }
-  };
-
-  // Handle delete conversation
-  const handleDeleteConversation = async (conversationId: string) => {
-    if (!window.confirm("Are you sure you want to delete this conversation?")) {
-      return;
-    }
-
-    try {
-      await deleteConversation(conversationId);
-      setActiveTab("chat");
     } catch (_error) {
       setError((error as any).message);
     }
@@ -200,7 +175,6 @@ export function ChatInterface({ venueId, isOpen, onClose, initialPrompt }: ChatI
   // Handle close
   const handleClose = () => {
     setInput("");
-    setActiveTab("chat");
     setError(null);
     setSuccess(false);
     onClose();
@@ -217,64 +191,38 @@ export function ChatInterface({ venueId, isOpen, onClose, initialPrompt }: ChatI
             </div>
           </div>
           <DialogDescription>
-            Ask me anything about your menu, orders, or business. I can help you manage your venue.
+            Ask me anything about your menu, orders, analytics, or business. I can help with
+            translations, navigation, sales data, and more.
           </DialogDescription>
         </DialogHeader>
 
-        <Tabs
-          value={activeTab}
-          onValueChange={(v) => setActiveTab(v as "history" | "chat")}
-          className="flex-1 flex flex-col overflow-hidden"
-        >
-          <TabsList className="mx-6 mt-4">
-            <TabsTrigger value="chat" className="flex items-center space-x-2">
-              <Sparkles className="h-4 w-4" />
-              <span>Chat</span>
-            </TabsTrigger>
-            <TabsTrigger value="history" className="flex items-center space-x-2">
-              <History className="h-4 w-4" />
-              <span>History</span>
-            </TabsTrigger>
-          </TabsList>
+        <div className="flex-1 flex flex-col overflow-hidden">
+          {(error || actionError) && (
+            <Alert variant="destructive" className="m-4">
+              <AlertTriangle className="h-4 w-4" />
+              <AlertDescription>{error || actionError}</AlertDescription>
+            </Alert>
+          )}
 
-          <TabsContent value="chat" className="flex-1 flex flex-col overflow-hidden m-0 p-0">
-            {(error || actionError) && (
-              <Alert variant="destructive" className="m-4">
-                <AlertTriangle className="h-4 w-4" />
-                <AlertDescription>{error || actionError}</AlertDescription>
-              </Alert>
-            )}
+          <MessageList messages={messages} undoing={undoing || ""} onUndo={handleUndo} />
 
-            <MessageList messages={messages} undoing={undoing || ""} onUndo={handleUndo} />
+          <div ref={messagesEndRef} />
 
-            <div ref={messagesEndRef} />
+          <PlanPreview
+            plan={plan}
+            previews={previews}
+            executing={executing}
+            onExecute={handleExecutePlan}
+          />
 
-            <PlanPreview
-              plan={plan}
-              previews={previews}
-              executing={executing}
-              onExecute={handleExecutePlan}
-            />
-
-            <ChatInput
-              input={input}
-              loading={loading}
-              disabled={executing}
-              onInputChange={setInput}
-              onSend={handleSendMessage}
-            />
-          </TabsContent>
-
-          <TabsContent value="history" className="flex-1 overflow-hidden m-0 p-0">
-            <ConversationList
-              conversations={conversations}
-              currentConversation={currentConversation}
-              onSelectConversation={handleSelectConversation}
-              onCreateNew={handleCreateNewConversation}
-              onDelete={handleDeleteConversation}
-            />
-          </TabsContent>
-        </Tabs>
+          <ChatInput
+            input={input}
+            loading={loading}
+            disabled={executing}
+            onInputChange={setInput}
+            onSend={handleSendMessage}
+          />
+        </div>
       </DialogContent>
     </Dialog>
   );
