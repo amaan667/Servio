@@ -40,6 +40,7 @@
     ]
   },
   "dependencies": {
+    "@ai-sdk/openai": "^2.0.58",
     "@google-cloud/storage": "^7.7.0",
     "@google-cloud/vision": "^4.0.2",
     "@hello-pangea/dnd": "^18.0.1",
@@ -93,6 +94,7 @@
     "@types/qrcode": "^1.5.5",
     "@types/swagger-jsdoc": "^6.0.4",
     "@types/swagger-ui-react": "^5.18.0",
+    "ai": "^5.0.84",
     "bullmq": "^5.61.0",
     "canvas": "^3.2.0",
     "cheerio": "^1.1.2",

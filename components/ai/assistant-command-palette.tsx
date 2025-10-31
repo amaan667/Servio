@@ -28,7 +28,7 @@ import {
 } from "lucide-react";
 import { AIPlanResponse, AIPreviewDiff } from "@/types/ai-assistant";
 import { AIAssistantFloat } from "./ai-assistant-float";
-import { ChatInterface } from "./chat-interface";
+import { ChatInterfaceV2 } from "./chat-interface-v2";
 import { aiLogger } from "@/lib/logger";
 
 interface AssistantCommandPaletteProps {
@@ -319,11 +319,10 @@ export function AssistantCommandPalette({
 
       {/* Chat Interface */}
       {showChatHistory && (
-        <ChatInterface
+        <ChatInterfaceV2
           venueId={venueId}
           isOpen={showChatInterface}
           onClose={() => setShowChatInterface(false)}
-          initialPrompt={prompt}
         />
       )}
 
