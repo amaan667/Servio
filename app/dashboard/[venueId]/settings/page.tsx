@@ -31,7 +31,7 @@ export default async function SettingsPage({ params }: { params: Promise<{ venue
   logger.info("[SETTINGS PAGE] User authenticated on server", { userId: user.id });
 
   // Fetch all settings data on server using admin client (bypasses RLS)
-  const [venueResult, userRoleResult, allVenuesResult, orgResult] = await Promise.all([
+  const [venueResult, userRoleResult, allVenuesResult, firstVenueResult] = await Promise.all([
     supabase
       .from("venues")
       .select("*")
@@ -49,60 +49,59 @@ export default async function SettingsPage({ params }: { params: Promise<{ venue
       .select("*")
       .eq("owner_user_id", user.id)
       .order("created_at", { ascending: true }),
-    // FIXED: Use same logic as home page - fetch organization by owner_user_id, not by specific venueId
-    // This ensures all venues for the same owner show the same plan (organization is per-owner, not per-venue)
+    // FIXED: Fetch first venue with organization_id by owner (same as home page and debug endpoint)
     supabase
       .from("venues")
       .select("organization_id")
       .eq("owner_user_id", user.id)
+      .order("created_at", { ascending: true })
       .limit(1)
-      .then(async (result) => {
-        logger.info("[SETTINGS PAGE] Venue organization_id lookup (by owner)", {
-          userId: user.id,
-          hasData: !!result.data,
-          venueCount: result.data?.length,
-          organizationId: result.data?.[0]?.organization_id,
-          error: result.error?.message,
-        });
-
-        const firstVenue = result.data?.[0];
-        if (firstVenue?.organization_id) {
-          const orgResult = await supabase
-            .from("organizations")
-            .select("id, subscription_tier, stripe_customer_id, subscription_status, trial_ends_at")
-            .eq("id", firstVenue.organization_id)
-            .single();
-
-          logger.info("[SETTINGS PAGE] Organization fetch result", {
-            organizationId: firstVenue.organization_id,
-            hasOrgData: !!orgResult.data,
-            orgData: orgResult.data,
-            error: orgResult.error?.message,
-          });
-
-          return orgResult;
-        }
-        logger.warn("[SETTINGS PAGE] No organization_id found for user", { userId: user.id });
-        return { data: null };
-      }),
+      .maybeSingle(),
   ]);
 
-  const venue = venueResult.data;
-  const userRole = userRoleResult.data;
-  const allVenues = allVenuesResult.data || [];
-  const organization = ("error" in orgResult ? null : orgResult.data) as {
+  logger.info("[SETTINGS PAGE] First venue fetch result", {
+    userId: user.id,
+    hasData: !!firstVenueResult.data,
+    organizationId: firstVenueResult.data?.organization_id,
+    error: firstVenueResult.error?.message,
+  });
+
+  // Fetch organization if we have an organization_id
+  let organization: {
     id: string;
     subscription_tier?: string;
     stripe_customer_id?: string;
     subscription_status?: string;
     trial_ends_at?: string;
-  } | null;
+  } | null = null;
+
+  if (firstVenueResult.data?.organization_id) {
+    const { data: orgData, error: orgError } = await supabase
+      .from("organizations")
+      .select("id, subscription_tier, stripe_customer_id, subscription_status, trial_ends_at")
+      .eq("id", firstVenueResult.data.organization_id)
+      .single();
+
+    logger.info("[SETTINGS PAGE] Organization fetch result", {
+      organizationId: firstVenueResult.data.organization_id,
+      hasOrgData: !!orgData,
+      orgData,
+      error: orgError?.message,
+    });
+
+    organization = orgData;
+  } else {
+    logger.warn("[SETTINGS PAGE] No organization_id found for user", { userId: user.id });
+  }
+
+  const venue = venueResult.data;
+  const userRole = userRoleResult.data;
+  const allVenues = allVenuesResult.data || [];
 
   logger.info("[SETTINGS PAGE] ⭐ Final data state", {
     hasOrganization: !!organization,
     tier: organization?.subscription_tier,
     orgId: organization?.id,
-    hasError: "error" in orgResult,
   });
 
   const isOwner = !!venue;

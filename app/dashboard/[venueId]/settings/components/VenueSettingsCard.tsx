@@ -126,7 +126,7 @@ export function VenueSettingsCard({
             Timezone
           </Label>
           <Select value={timezone} onValueChange={setTimezone}>
-            <SelectTrigger className="rounded-lg mt-1">
+            <SelectTrigger className="rounded-lg mt-1 border-gray-200 focus:ring-2 focus:ring-blue-500 focus:border-blue-500">
               <SelectValue placeholder="Select timezone" />
             </SelectTrigger>
             <SelectContent>
@@ -146,7 +146,7 @@ export function VenueSettingsCard({
               Business Type
             </Label>
             <Select value={venueType} onValueChange={setVenueType}>
-              <SelectTrigger className="rounded-lg mt-1">
+              <SelectTrigger className="rounded-lg mt-1 border-gray-200 focus:ring-2 focus:ring-blue-500 focus:border-blue-500">
                 <SelectValue placeholder="Select business type" />
               </SelectTrigger>
               <SelectContent>
@@ -165,7 +165,7 @@ export function VenueSettingsCard({
               Service Type
             </Label>
             <Select value={serviceType} onValueChange={setServiceType}>
-              <SelectTrigger className="rounded-lg mt-1">
+              <SelectTrigger className="rounded-lg mt-1 border-gray-200 focus:ring-2 focus:ring-blue-500 focus:border-blue-500">
                 <SelectValue placeholder="Select service type" />
               </SelectTrigger>
               <SelectContent>

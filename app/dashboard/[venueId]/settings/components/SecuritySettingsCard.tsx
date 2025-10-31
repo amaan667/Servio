@@ -60,7 +60,7 @@ export function SecuritySettingsCard({
       <CardContent className="pt-6">
         <Accordion type="single" collapsible className="w-full space-y-3">
           <AccordionItem value="password" className="border-none">
-            <AccordionTrigger className="hover:no-underline bg-gray-100 hover:bg-gray-200 rounded-lg px-4 py-3">
+            <AccordionTrigger className="hover:no-underline bg-gray-100 hover:bg-gray-200 rounded-lg px-4 py-3 border-gray-200 focus:ring-2 focus:ring-blue-500 focus:border-blue-500">
               <div className="flex items-center gap-2 text-gray-900">
                 <Lock className="h-4 w-4 text-gray-700" />
                 <span className="text-gray-900 font-medium">
@@ -158,7 +158,7 @@ export function SecuritySettingsCard({
           </AccordionItem>
 
           <AccordionItem value="2fa" className="mt-4 border-none">
-            <AccordionTrigger className="hover:no-underline bg-gray-100 hover:bg-gray-200 rounded-lg px-4 py-3">
+            <AccordionTrigger className="hover:no-underline bg-gray-100 hover:bg-gray-200 rounded-lg px-4 py-3 border-gray-200 focus:ring-2 focus:ring-blue-500 focus:border-blue-500">
               <div className="flex items-center gap-2 text-gray-900">
                 <Shield className="h-4 w-4 text-gray-700" />
                 <span className="text-gray-900 font-medium">Two-Factor Authentication</span>
