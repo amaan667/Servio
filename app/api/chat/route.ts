@@ -29,13 +29,14 @@ export async function POST(req: Request) {
     }
 
     // Get FULL venue context
-    const venueDetails = await getFullVenueContext(venueId);
+    const venueDetails = await getFullVenueContext(venueId, user.id);
     const context = await getAssistantContext(venueId, user.id, "owner");
     const summaries = await getAllSummaries(venueId, context.features);
 
     // Build intelligent system message
     const systemMessage = buildIntelligentSystemMessage(
       venueDetails,
+      venueDetails.userRole,
       summaries as {
         menu?: MenuSummary;
         analytics?: AnalyticsSummary;
@@ -298,7 +299,7 @@ export async function POST(req: Request) {
   }
 }
 
-async function getFullVenueContext(venueId: string) {
+async function getFullVenueContext(venueId: string, userId: string) {
   const supabase = await createClient();
 
   // Get all venue details including owner
@@ -322,6 +323,23 @@ async function getFullVenueContext(venueId: string) {
     }
   }
 
+  // Get user's role
+  let userRole = "staff";
+  if (venue?.owner_user_id === userId) {
+    userRole = "owner";
+  } else {
+    const { data: roleData } = await supabase
+      .from("user_venue_roles")
+      .select("role")
+      .eq("venue_id", venueId)
+      .eq("user_id", userId)
+      .maybeSingle();
+
+    if (roleData?.role) {
+      userRole = roleData.role;
+    }
+  }
+
   // Get menu items (all of them!)
   const { data: menuItems } = await supabase
     .from("menu_items")
@@ -340,6 +358,7 @@ async function getFullVenueContext(venueId: string) {
     phone: venue?.phone || null,
     timezone: venue?.timezone || "UTC",
     menuItems: menuItems || [],
+    userRole,
   };
 }
 
@@ -437,6 +456,7 @@ async function executeToolCall(toolName: string, args: string, venueId: string, 
 
 function buildIntelligentSystemMessage(
   venue: Awaited<ReturnType<typeof getFullVenueContext>>,
+  userRole: string,
   summaries: {
     menu?: MenuSummary;
     analytics?: AnalyticsSummary;
@@ -506,13 +526,28 @@ function buildIntelligentSystemMessage(
           ? "Everything + AI Assistant, Multi-venue, Unlimited tables"
           : "";
 
+  // User role display
+  const roleDisplay = userRole.charAt(0).toUpperCase() + userRole.slice(1);
+  const rolePermissions =
+    userRole === "owner"
+      ? "Full access to all features and settings"
+      : userRole === "manager"
+        ? "Can manage menu, orders, and staff"
+        : userRole === "staff"
+          ? "Can view orders and process them"
+          : "Limited access";
+
   return `You are an intelligent AI assistant for ${venue.name}, a ${businessTypeDisplay}.
 
 BUSINESS DETAILS:
 - Name: ${venue.name}
 - Type: ${businessTypeDisplay}
 - Service: ${venue.serviceType.replace("_", " ")}
-- Servio Subscription: **${tierDisplay} Plan** (${tierFeatures})${venue.address ? `\n- Address: ${venue.address}` : ""}${venue.phone ? `\n- Phone: ${venue.phone}` : ""}${hoursInfo}${menuInfo}${analyticsInfo}
+- Servio Subscription: **${tierDisplay} Plan** (${tierFeatures})${venue.address ? `\n- Address: ${venue.address}` : ""}${venue.phone ? `\n- Phone: ${venue.phone}` : ""}
+
+USER CONTEXT:
+- Your Role: **${roleDisplay}**
+- Permissions: ${rolePermissions}${hoursInfo}${menuInfo}${analyticsInfo}
 
 CAPABILITIES:
 1. **Navigation**: Navigate to pages (qr-codes, analytics, menu, settings, etc.)
@@ -541,6 +576,7 @@ BEHAVIOR RULES:
 ✅ Remember this is a ${businessTypeDisplay}, not a different business type
 ✅ When asked about opening hours, use the OPERATING HOURS from above
 ✅ When asked about "plan" or "tier", refer to the **Servio Subscription** (${tierDisplay} Plan)
+✅ When asked about "role", refer to the **USER CONTEXT** section (${roleDisplay} role)
 ✅ For analytics questions, use get_analytics tool then explain what it means
 ✅ CRITICAL: When answering about menu items, ONLY use the exact items and prices from the MENU ITEMS list above
 ✅ NEVER make up or guess prices - use the actual data provided
