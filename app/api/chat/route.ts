@@ -377,44 +377,34 @@ async function executeToolCall(toolName: string, args: string, venueId: string, 
   if (toolName === "add_menu_item") {
     const { name, category, price, description } = parsedArgs;
 
-    // Add item via the extract-menu API
+    // Add item directly via Supabase
     const supabase = await createClient();
     const venueIdWithPrefix = venueId.startsWith("venue-") ? venueId : `venue-${venueId}`;
 
-    const response = await fetch(
-      `${process.env.NEXT_PUBLIC_SITE_URL || "http://localhost:3000"}/api/extract-menu`,
-      {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          items: [
-            {
-              venue_id: venueIdWithPrefix,
-              name: name.trim(),
-              description: description?.trim() || "",
-              price: Number(price),
-              category: category.trim(),
-              available: true,
-            },
-          ],
-          venue_id: venueIdWithPrefix,
-        }),
-      }
-    );
+    const { data, error } = await supabase
+      .from("menu_items")
+      .insert({
+        venue_id: venueIdWithPrefix,
+        name: name.trim(),
+        description: description?.trim() || "",
+        price: Number(price),
+        category: category.trim(),
+        is_available: true,
+      })
+      .select("id, name, price, category")
+      .single();
 
-    const result = await response.json();
-
-    if (!response.ok || result.error) {
+    if (error) {
       return {
         success: false,
-        error: result.error || "Failed to add item",
+        error: error.message || "Failed to add item",
       };
     }
 
     return {
       success: true,
       message: `Successfully added "${name}" to the menu under ${category} for $${price}`,
-      item: { name, category, price, description },
+      item: data,
     };
   }
 
