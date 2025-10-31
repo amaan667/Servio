@@ -406,7 +406,7 @@ export function EnhancedPDFMenuDisplay({
                   setSelectedCategory(null);
                   window.scrollTo({ top: 0, behavior: "smooth" });
                 }}
-                className="whitespace-nowrap"
+                className="whitespace-nowrap text-white hover:text-white dark:text-white dark:hover:text-white"
               >
                 All
               </Button>
@@ -416,7 +416,7 @@ export function EnhancedPDFMenuDisplay({
                   variant={selectedCategory === category ? "default" : "outline"}
                   size="sm"
                   onClick={() => scrollToCategory(category)}
-                  className="shrink-0 min-w-fit"
+                  className="shrink-0 min-w-fit text-white hover:text-white dark:text-white dark:hover:text-white"
                 >
                   <span className="truncate max-w-[120px] px-1">{category}</span>
                 </Button>

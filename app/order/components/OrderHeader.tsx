@@ -37,15 +37,15 @@ export function OrderHeader({
         {/* Breadcrumb Navigation for Demo */}
         {isDemo && (
           <div className="mb-3 sm:mb-4">
-            <NavigationBreadcrumb 
-              customBackPath={venueSlug ? `/dashboard/${venueSlug}` : '/'} 
+            <NavigationBreadcrumb
+              customBackPath={venueSlug ? `/dashboard/${venueSlug}` : "/"}
               customBackLabel="Dashboard"
               showBackButton={true}
               isDemo={true}
             />
           </div>
         )}
-        
+
         <div className="flex items-center justify-between">
           <div className="flex items-center space-x-2 sm:space-x-4 flex-1 min-w-0">
             {/* Servio Logo */}
@@ -59,7 +59,7 @@ export function OrderHeader({
                 priority
               />
             </div>
-            
+
             {/* Business Name and Location */}
             <div className="min-w-0 flex-1">
               <h1 className="text-lg sm:text-xl md:text-2xl font-bold text-gray-900 dark:text-white truncate">
@@ -73,7 +73,10 @@ export function OrderHeader({
                       <span className="text-sm sm:text-base text-orange-600 dark:text-orange-400 font-medium">
                         Counter {counterNumber}
                       </span>
-                      <Badge variant="secondary" className="bg-orange-50 dark:bg-orange-900/20 text-orange-700 dark:text-orange-300 text-xs">
+                      <Badge
+                        variant="secondary"
+                        className="bg-orange-50 dark:bg-orange-900/20 text-orange-700 dark:text-orange-300 text-xs"
+                      >
                         Counter Order
                       </Badge>
                     </>
@@ -83,24 +86,21 @@ export function OrderHeader({
                       <span className="text-sm sm:text-base text-blue-600 dark:text-blue-400 font-medium">
                         Table {tableNumber}
                       </span>
-                      <Badge variant="secondary" className="bg-blue-50 dark:bg-blue-900/20 text-blue-700 dark:text-blue-300 text-xs">
-                        Table Order
-                      </Badge>
                     </>
                   )}
                 </div>
                 {!isCounterOrder && groupSessionId && groupSize && (
                   <button
                     onClick={onShowGroupSizePopup}
-                    className="px-3 py-1 bg-purple-100 dark:bg-purple-900/30 text-purple-700 dark:text-purple-300 rounded-full text-xs font-medium hover:bg-purple-200 dark:hover:bg-purple-900/50 transition-colors self-start sm:self-auto"
+                    className="px-3 py-1 bg-purple-600 dark:bg-purple-700 text-white rounded-full text-xs font-medium hover:bg-purple-700 dark:hover:bg-purple-600 transition-colors self-start sm:self-auto"
                   >
-                    {groupSize} {groupSize === 1 ? 'person' : 'people'}
+                    {groupSize} {groupSize === 1 ? "person" : "people"}
                   </button>
                 )}
               </div>
             </div>
           </div>
-          
+
           {/* Mobile Cart Button */}
           <Button
             onClick={onShowMobileCart}
@@ -116,4 +116,3 @@ export function OrderHeader({
     </div>
   );
 }
-

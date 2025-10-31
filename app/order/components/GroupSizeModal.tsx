@@ -64,7 +64,7 @@ export function GroupSizeModal({
                     className={`h-10 sm:h-12 text-sm sm:text-base transition-all duration-200 ${
                       groupSize === size
                         ? "bg-servio-purple hover:bg-servio-purple-dark text-white border-servio-purple shadow-lg ring-2 ring-servio-purple ring-opacity-50"
-                        : "hover:bg-gray-50 border-gray-300"
+                        : "hover:bg-gray-50 border-gray-300 text-white hover:text-white"
                     }`}
                   >
                     <div className="flex items-center justify-center gap-2">

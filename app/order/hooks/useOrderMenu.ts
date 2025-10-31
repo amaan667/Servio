@@ -11,8 +11,8 @@ export function useOrderMenu(venueSlug: string, isDemo: boolean) {
   };
 
   const getCachedVenueName = () => {
-    if (typeof window === "undefined") return "Our Venue";
-    return sessionStorage.getItem(`venue_name_${venueSlug}`) || "Our Venue";
+    if (typeof window === "undefined") return "";
+    return sessionStorage.getItem(`venue_name_${venueSlug}`) || "";
   };
 
   const getCachedCategories = () => {
@@ -71,8 +71,6 @@ export function useOrderMenu(venueSlug: string, isDemo: boolean) {
         return;
       }
 
-      setVenueName("Cafe Nur");
-
       const apiUrl = `${window.location.origin}/api/menu/${venueSlug}`;
       const response = await fetch(apiUrl);
 
@@ -94,11 +92,11 @@ export function useOrderMenu(venueSlug: string, isDemo: boolean) {
 
       const normalized = (data.menuItems || []).map((mi: Record<string, unknown>) => ({
         ...mi,
-        venue_name: data.venue?.venue_name || "Our Venue",
+        venue_name: data.venue?.venue_name || "",
       }));
 
       setMenuItems(normalized);
-      const venueNameValue = data.venue?.venue_name || "Our Venue";
+      const venueNameValue = data.venue?.venue_name || data.venueName || "";
       setVenueName(venueNameValue);
 
       // Cache menu data
