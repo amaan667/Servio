@@ -90,7 +90,13 @@ export default async function SettingsPage({ params }: { params: Promise<{ venue
   const venue = venueResult.data;
   const userRole = userRoleResult.data;
   const allVenues = allVenuesResult.data || [];
-  const organization = "error" in orgResult ? null : orgResult.data;
+  const organization = ("error" in orgResult ? null : orgResult.data) as {
+    id: string;
+    subscription_tier?: string;
+    stripe_customer_id?: string;
+    subscription_status?: string;
+    trial_ends_at?: string;
+  } | null;
 
   logger.info("[SETTINGS PAGE] Final data state", {
     hasOrganization: !!organization,
