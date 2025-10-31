@@ -49,33 +49,46 @@ export function useChatActions(venueId: string) {
     }
   };
 
-  const executePlan = async (conversationId: string) => {
-    if (!plan) return;
+  const executePlan = async (_conversationId: string) => {
+    if (!plan || !plan.tools || plan.tools.length === 0) return;
 
     setExecuting(true);
     setError(null);
     setSuccess(false);
 
     try {
-      const response = await fetch("/api/ai-assistant/execute", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          conversationId,
-          plan,
-          venueId,
-        }),
-      });
+      // Execute each tool in the plan sequentially
+      const results: unknown[] = [];
 
-      if (!response.ok) {
-        throw new Error("Failed to execute plan");
+      for (const tool of plan.tools) {
+        const response = await fetch("/api/ai-assistant/execute", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            venueId,
+            toolName: tool.name,
+            params: tool.params,
+            preview: false,
+          }),
+        });
+
+        if (!response.ok) {
+          const errorData = await response.json();
+          throw new Error(errorData.error || "Failed to execute tool");
+        }
+
+        const data = await response.json();
+        results.push({ tool: tool.name, result: data.result });
       }
 
-      const data = await response.json();
-      setExecutionResults(data.results || []);
+      setExecutionResults(results);
       setSuccess(true);
+
+      // Clear the plan after successful execution
+      setPlan(null);
     } catch (error: unknown) {
       setError((error as any).message || "Failed to execute plan");
+      throw error;
     } finally {
       setExecuting(false);
     }

@@ -159,21 +159,27 @@ export function ChatInterface({ venueId, isOpen, onClose, initialPrompt }: ChatI
 
       // Add AI response message with explanation
       if (aiPlan) {
-        // Build response content from reasoning and description
+        // Build response content - show direct answer or friendly message
         let responseContent = "";
 
-        if (aiPlan.reasoning) {
-          responseContent = aiPlan.reasoning;
-        } else if (aiPlan.description) {
-          responseContent = aiPlan.description;
-        } else {
-          responseContent = "I understand. How can I help you with that?";
-        }
+        // Check if there are tools to execute
+        const hasTools = aiPlan.tools && aiPlan.tools.length > 0;
 
-        // If there are actions to execute, mention them
-        if (aiPlan.actions && aiPlan.actions.length > 0) {
-          responseContent +=
-            "\n\nI can execute this for you. See the preview below and click 'Execute' when ready.";
+        if (hasTools) {
+          // If there are actions, show the reasoning as context
+          responseContent = aiPlan.reasoning || "I can help you with that.";
+          responseContent += "\n\nSee the preview below and click 'Execute' when ready.";
+        } else {
+          // For conversational responses (no actions), give a friendly reply
+          // Check if there's a direct answer provided
+          if (aiPlan.directAnswer) {
+            responseContent = aiPlan.directAnswer;
+          } else if (aiPlan.intent?.toLowerCase().includes("greet")) {
+            responseContent =
+              "Hello! 👋 How can I help you today? I can assist with menu management, analytics, navigation, and more.";
+          } else {
+            responseContent = "I understand. How can I help you with that?";
+          }
         }
 
         const aiMessage = {
@@ -224,14 +230,26 @@ export function ChatInterface({ venueId, isOpen, onClose, initialPrompt }: ChatI
       const assistantMessage = {
         id: `temp-${Date.now()}`,
         role: "assistant" as const,
-        content: "Plan executed successfully!",
+        content: "✅ Plan executed successfully!",
         executionResult: executionResults,
         createdAt: new Date().toISOString(),
         canUndo: false,
       };
       addMessage(assistantMessage);
+
+      // Handle navigation if it was a navigation action
+      if (plan.tools.some((tool) => tool.name === "navigation.go_to_page")) {
+        // Find the navigation result
+        const navResult = executionResults.find((r: any) => r.tool === "navigation.go_to_page");
+        if (navResult && (navResult as any).result?.route) {
+          setTimeout(() => {
+            router.push((navResult as any).result.route);
+            onClose(); // Close the chat after navigating
+          }, 1000);
+        }
+      }
     } catch (_error) {
-      setError((error as any).message);
+      setError((_error as any).message);
     }
   };
 
