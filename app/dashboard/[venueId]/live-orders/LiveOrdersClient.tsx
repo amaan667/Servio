@@ -224,7 +224,11 @@ export default function LiveOrdersClient({
         variant="auto"
         venueId={venueId}
         showActions={showActions}
-        onActionComplete={() => refetchCounts()}
+        onActionComplete={() => {
+          refetchCounts();
+          // Force page reload to refresh orders with updated payment status
+          window.location.reload();
+        }}
       />
     );
   };
