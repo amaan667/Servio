@@ -1,4 +1,4 @@
-// AI Chat API - Vercel AI SDK Implementation
+// AI Chat API - Vercel AI SDK v4 Implementation with Tools
 // Streams responses with tool calling support
 
 import { openai } from "@ai-sdk/openai";
@@ -6,7 +6,6 @@ import { streamText, tool } from "ai";
 import { z } from "zod";
 import { createClient } from "@/lib/supabase";
 import { getAssistantContext, getAllSummaries } from "@/lib/ai/context-builders";
-import { executeTool } from "@/lib/ai/tool-executors";
 import type { MenuSummary, AnalyticsSummary } from "@/types/ai-assistant";
 
 export const maxDuration = 30;
@@ -31,57 +30,38 @@ export async function POST(req: Request) {
     const summaries = await getAllSummaries(venueId, context.features);
 
     // Build system message with context
-    const systemMessage = buildSystemMessage(context, summaries);
+    const systemMessage = buildSystemMessage(
+      context,
+      summaries as {
+        menu?: MenuSummary;
+        analytics?: AnalyticsSummary;
+      }
+    );
 
     // Stream response with tools
     const result = await streamText({
-      model: openai("gpt-4o-mini"),
-      messages: [{ role: "system", content: systemMessage }, ...messages],
+      model: openai.chat("gpt-4o-mini") as any,
+      system: systemMessage,
+      messages,
       tools: {
         navigate: tool({
-          description: "Navigate to a different page in the application",
+          description: "Navigate to a different page in the Servio application",
           parameters: z.object({
-            page: z
-              .enum([
-                "dashboard",
-                "menu",
-                "inventory",
-                "orders",
-                "live-orders",
-                "kds",
-                "kitchen-display",
-                "qr-codes",
-                "analytics",
-                "settings",
-                "staff",
-                "tables",
-                "feedback",
-              ])
-              .describe("The page to navigate to"),
+            page: z.enum([
+              "dashboard",
+              "menu",
+              "inventory",
+              "orders",
+              "live-orders",
+              "kds",
+              "qr-codes",
+              "analytics",
+              "settings",
+              "staff",
+              "tables",
+              "feedback",
+            ]),
           }),
-          execute: async ({ page }: { page: string }) => {
-            const routeMap: Record<string, string> = {
-              dashboard: `/dashboard/${venueId}`,
-              menu: `/dashboard/${venueId}/menu-management`,
-              inventory: `/dashboard/${venueId}/inventory`,
-              orders: `/dashboard/${venueId}/orders`,
-              "live-orders": `/dashboard/${venueId}/live-orders`,
-              kds: `/dashboard/${venueId}/kds`,
-              "kitchen-display": `/dashboard/${venueId}/kds`,
-              "qr-codes": `/dashboard/${venueId}/qr-codes`,
-              analytics: `/dashboard/${venueId}/analytics`,
-              settings: `/dashboard/${venueId}/settings`,
-              staff: `/dashboard/${venueId}/staff`,
-              tables: `/dashboard/${venueId}/tables`,
-              feedback: `/dashboard/${venueId}/feedback`,
-            };
-
-            return {
-              success: true,
-              route: routeMap[page],
-              message: `Navigating to ${page}`,
-            };
-          },
         }),
         getAnalytics: tool({
           description: "Get analytics and insights about orders, revenue, and performance",
@@ -89,16 +69,6 @@ export async function POST(req: Request) {
             metric: z.enum(["revenue", "orders", "top_items", "peak_hours"]),
             timeRange: z.enum(["today", "week", "month"]),
           }),
-          execute: async ({ metric, timeRange }: { metric: string; timeRange: string }) => {
-            const result = await executeTool(
-              "analytics.get_stats",
-              { metric, timeRange, groupBy: null, itemId: null, itemName: null },
-              venueId,
-              user.id,
-              false
-            );
-            return result;
-          },
         }),
         translateMenu: tool({
           description: "Translate the entire menu to a target language",
@@ -106,74 +76,12 @@ export async function POST(req: Request) {
             targetLanguage: z.enum(["es", "ar", "fr", "de", "it", "pt", "zh", "ja"]),
             includeDescriptions: z.boolean().default(true),
           }),
-          execute: async ({
-            targetLanguage,
-            includeDescriptions,
-          }: {
-            targetLanguage: string;
-            includeDescriptions: boolean;
-          }) => {
-            const result = await executeTool(
-              "menu.translate",
-              { targetLanguage, includeDescriptions },
-              venueId,
-              user.id,
-              false
-            );
-            return result;
-          },
-        }),
-        updatePrices: tool({
-          description: "Update prices for menu items",
-          parameters: z.object({
-            items: z.array(
-              z.object({
-                id: z.string(),
-                newPrice: z.number(),
-              })
-            ),
-          }),
-          execute: async ({ items }: { items: Array<{ id: string; newPrice: number }> }) => {
-            const result = await executeTool(
-              "menu.update_prices",
-              { items, preview: false },
-              venueId,
-              user.id,
-              false
-            );
-            return result;
-          },
-        }),
-        toggleAvailability: tool({
-          description: "Toggle availability of menu items (make available or unavailable)",
-          parameters: z.object({
-            itemIds: z.array(z.string()),
-            available: z.boolean(),
-            reason: z.string().nullable().optional(),
-          }),
-          execute: async ({
-            itemIds,
-            available,
-            reason,
-          }: {
-            itemIds: string[];
-            available: boolean;
-            reason?: string | null;
-          }) => {
-            const result = await executeTool(
-              "menu.toggle_availability",
-              { itemIds, available, reason: reason || null },
-              venueId,
-              user.id,
-              false
-            );
-            return result;
-          },
         }),
       },
+      toolChoice: "auto",
     });
 
-    return result.toTextStreamResponse();
+    return result.toDataStreamResponse();
   } catch (error) {
     console.error("[AI CHAT] Error:", error);
     return Response.json(
@@ -205,20 +113,20 @@ CONTEXT:
 - User role: ${context.userRole}
 - Timezone: ${context.timezone}
 
-CAPABILITIES:
-- Navigate to different pages
-- Get analytics and insights
-- Translate menus
-- Update menu prices
-- Toggle item availability
+AVAILABLE TOOLS:
+You have access to several tools to help users:
+1. **navigate** - Navigate to different pages (feedback, menu, analytics, etc.)
+2. **getAnalytics** - Retrieve analytics data  
+3. **translateMenu** - Translate the menu
 ${menuInfo}${analyticsInfo}
 
-PERSONALITY:
-- Be friendly, helpful, and conversational
-- For greetings, respond naturally without trying to use tools
-- When asked to perform actions, use the appropriate tools
-- Keep responses concise and actionable
-- If you need more information, ask clarifying questions
+INSTRUCTIONS:
+- For greetings ("hi", "hello"), respond warmly WITHOUT using tools
+- When users ask to go somewhere (e.g., "take me to feedback"), use the **navigate** tool
+- When users ask about sales/revenue/data, use the **getAnalytics** tool
+- When users want to translate, use the **translateMenu** tool
+- Be conversational and helpful
+- Use tools when appropriate, but chat naturally when tools aren't needed
 
-Remember: You can use tools when needed, but don't force them. Natural conversation is important.`;
+Remember: Use tools for actions, chat naturally for conversation.`;
 }

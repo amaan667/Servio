@@ -94,7 +94,7 @@
     "@types/qrcode": "^1.5.5",
     "@types/swagger-jsdoc": "^6.0.4",
     "@types/swagger-ui-react": "^5.18.0",
-    "ai": "^5.0.84",
+    "ai": "^4.0.16",
     "bullmq": "^5.61.0",
     "canvas": "^3.2.0",
     "cheerio": "^1.1.2",

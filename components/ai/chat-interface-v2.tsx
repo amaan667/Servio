@@ -36,14 +36,30 @@ export function ChatInterfaceV2({ venueId, isOpen, onClose }: ChatInterfaceProps
     onFinish: (message: Message) => {
       // Check if the AI used the navigate tool
       if (message.toolInvocations) {
-        const navTool = message.toolInvocations.find(
-          (t: any) => t.toolName === "navigate" && t.state === "result"
-        );
-        if (navTool?.result?.route) {
-          setTimeout(() => {
-            router.push(navTool.result.route);
-            onClose();
-          }, 800);
+        const navTool = message.toolInvocations.find((t: any) => t.toolName === "navigate");
+        if (navTool && navTool.state === "result") {
+          // Navigate based on the page parameter
+          const page = navTool.args?.page;
+          if (page) {
+            const routes: Record<string, string> = {
+              dashboard: `/dashboard/${venueId}`,
+              menu: `/dashboard/${venueId}/menu-management`,
+              inventory: `/dashboard/${venueId}/inventory`,
+              orders: `/dashboard/${venueId}/orders`,
+              "live-orders": `/dashboard/${venueId}/live-orders`,
+              kds: `/dashboard/${venueId}/kds`,
+              "qr-codes": `/dashboard/${venueId}/qr-codes`,
+              analytics: `/dashboard/${venueId}/analytics`,
+              settings: `/dashboard/${venueId}/settings`,
+              staff: `/dashboard/${venueId}/staff`,
+              tables: `/dashboard/${venueId}/tables`,
+              feedback: `/dashboard/${venueId}/feedback`,
+            };
+            setTimeout(() => {
+              router.push(routes[page] || `/dashboard/${venueId}`);
+              onClose();
+            }, 800);
+          }
         }
       }
     },
@@ -115,24 +131,26 @@ export function ChatInterfaceV2({ venueId, isOpen, onClose }: ChatInterfaceProps
                       {message.toolInvocations.map((tool: any) => (
                         <div
                           key={tool.toolCallId}
-                          className="flex items-center space-x-2 text-xs text-green-600 dark:text-green-400"
+                          className="flex items-center space-x-2 text-xs bg-purple-50 dark:bg-purple-900/20 p-2 rounded"
                         >
                           {tool.state === "result" ? (
                             <>
-                              <CheckCircle className="h-3 w-3" />
-                              <span>
+                              <CheckCircle className="h-3 w-3 text-green-600" />
+                              <span className="text-green-700 dark:text-green-400">
                                 {tool.toolName === "navigate" &&
-                                  `Navigating to ${tool.result?.message}`}
-                                {tool.toolName === "getAnalytics" && "Retrieved analytics"}
-                                {tool.toolName === "translateMenu" && "Translation complete"}
-                                {tool.toolName === "updatePrices" && "Prices updated"}
-                                {tool.toolName === "toggleAvailability" && "Availability updated"}
+                                  `✓ Navigating to ${tool.args?.page}`}
+                                {tool.toolName === "getAnalytics" && "✓ Retrieved analytics"}
+                                {tool.toolName === "translateMenu" && "✓ Translation complete"}
+                                {tool.toolName === "updatePrices" && "✓ Prices updated"}
+                                {tool.toolName === "toggleAvailability" && "✓ Availability updated"}
                               </span>
                             </>
                           ) : (
                             <>
-                              <Loader2 className="h-3 w-3 animate-spin" />
-                              <span>Executing {tool.toolName}...</span>
+                              <Loader2 className="h-3 w-3 animate-spin text-purple-600" />
+                              <span className="text-purple-700 dark:text-purple-400">
+                                Executing {tool.toolName}...
+                              </span>
                             </>
                           )}
                         </div>
