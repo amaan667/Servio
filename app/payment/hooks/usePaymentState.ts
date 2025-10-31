@@ -1,5 +1,5 @@
-import { useState, useEffect } from 'react';
-import { useRouter, useSearchParams } from 'next/navigation';
+import { useState, useEffect } from "react";
+import { useRouter, useSearchParams } from "next/navigation";
 
 export interface CheckoutData {
   venueId: string;
@@ -24,7 +24,7 @@ export interface CheckoutData {
   isDemo?: boolean;
 }
 
-export type PaymentAction = 'demo' | 'stripe' | 'till' | 'later';
+export type PaymentAction = "demo" | "stripe" | "till" | "later";
 
 export function usePaymentState() {
   const router = useRouter();
@@ -38,9 +38,9 @@ export function usePaymentState() {
   const [error, setError] = useState<string | null>(null);
   const [paymentAction, setPaymentAction] = useState<PaymentAction | null>(null);
   const [isDemo, setIsDemo] = useState(false);
-  const [receiptEmail, setReceiptEmail] = useState('');
-  
-  const isDemoFromUrl = searchParams?.get('demo') === '1';
+  const [receiptEmail, setReceiptEmail] = useState("");
+
+  const isDemoFromUrl = searchParams?.get("demo") === "1";
 
   useEffect(() => {
     const storedData = localStorage.getItem("servio-checkout-data");
@@ -51,17 +51,19 @@ export function usePaymentState() {
 
         setCheckoutData(data);
         setIsDemo(data.isDemo || false);
-        setReceiptEmail(data.customerEmail || '');
+        setReceiptEmail(data.customerEmail || "");
 
         if (data.isDemo || isDemoFromUrl) {
-      // Empty block
-    }
+          // Empty block
+        }
       } catch (_error) {
-
-        router.push("/order");
+        // Don't redirect - payment processing will handle redirect to order summary
+        console.error("[PAYMENT STATE] Failed to parse checkout data", _error);
       }
     } else {
-      router.push("/order");
+      // Don't redirect if no checkout data - payment flow will handle it
+      // This prevents race condition where redirect to order summary is interrupted
+      console.warn("[PAYMENT STATE] No checkout data found - waiting for payment flow");
     }
   }, [router, isDemoFromUrl]);
 
@@ -86,7 +88,6 @@ export function usePaymentState() {
     setIsDemo,
     receiptEmail,
     setReceiptEmail,
-    isDemoFromUrl
+    isDemoFromUrl,
   };
 }
-
