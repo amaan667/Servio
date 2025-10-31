@@ -109,12 +109,9 @@ export const metadata: Metadata = {
     },
   },
   icons: {
-    icon: [
-      { url: "/placeholder-logo.png", sizes: "any", type: "image/png" },
-      { url: "/assets/servio-logo-updated.png", sizes: "any", type: "image/png" },
-    ],
-    shortcut: "/placeholder-logo.png",
-    apple: "/placeholder-logo.png",
+    icon: [{ url: "/assets/servio-s-logo.png", sizes: "any", type: "image/png" }],
+    shortcut: "/assets/servio-s-logo.png",
+    apple: "/assets/servio-s-logo.png",
   },
 };
 

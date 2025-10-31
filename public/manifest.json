@@ -13,13 +13,13 @@
   "scope": "/",
   "icons": [
     {
-      "src": "/placeholder-logo.png",
+      "src": "/assets/servio-s-logo.png",
       "sizes": "512x512",
       "type": "image/png",
       "purpose": "any maskable"
     },
     {
-      "src": "/assets/servio-logo-updated.png",
+      "src": "/assets/servio-s-logo.png",
       "sizes": "any",
       "type": "image/png",
       "purpose": "any"
