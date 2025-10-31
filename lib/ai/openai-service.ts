@@ -9,12 +9,81 @@ const client = new OpenAI({
   apiKey: process.env.OPENAI_API_KEY,
 });
 
-const SYSTEM_PROMPT = `
-You are Servio's venue assistant. Be concise, reliable, and action-oriented.
+function getSystemPrompt(currentPage?: string): string {
+  const basePrompt = `You are Servio's venue assistant. Be concise, reliable, and action-oriented.
 - If a tool is relevant, call it. If info is uncertain, ask a brief follow-up.
 - Never invent data. For totals/revenue/menu items, always use tools.
-- Keep replies < 200 words unless asked for more.
-`;
+- Keep replies < 200 words unless asked for more.`;
+
+  const pageSpecificPrompts: Record<string, string> = {
+    "qr-codes": `\n\nCURRENT PAGE: QR Codes Management
+You're helping manage QR codes for tables. Proactively offer to:
+- Generate QR codes for tables
+- Help configure QR code settings
+- Explain how customers use QR codes
+- Navigate to related pages (menu, tables, settings)`,
+
+    "menu-management": `\n\nCURRENT PAGE: Menu Builder
+You're helping manage the menu. Proactively offer to:
+- Add or remove menu items
+- Update prices or descriptions
+- Suggest popular menu items based on data
+- Organize items into categories
+- Toggle item availability`,
+
+    settings: `\n\nCURRENT PAGE: Venue Settings
+You're helping configure venue settings. Proactively offer to:
+- Show subscription plans and features
+- Explain setting options
+- Help update operating hours
+- Configure venue details (timezone, contact info, address)`,
+
+    analytics: `\n\nCURRENT PAGE: Analytics Dashboard
+You're helping analyze venue performance. Proactively offer to:
+- Show revenue trends and insights
+- Identify top-selling items
+- Suggest menu optimizations based on data
+- Generate reports`,
+
+    inventory: `\n\nCURRENT PAGE: Inventory Management
+You're helping manage inventory. Proactively offer to:
+- Check stock levels
+- Alert about low stock items
+- Generate purchase orders
+- Adjust stock quantities`,
+
+    "live-orders": `\n\nCURRENT PAGE: Live Orders
+You're helping manage active orders. Proactively offer to:
+- Check order status
+- Mark orders as complete
+- Find overdue orders
+- View order details`,
+
+    kds: `\n\nCURRENT PAGE: Kitchen Display System
+You're helping with kitchen operations. Proactively offer to:
+- Check ticket status
+- Find overdue tickets
+- Suggest station optimizations
+- View prep times`,
+
+    tables: `\n\nCURRENT PAGE: Table Management
+You're helping manage tables. Proactively offer to:
+- View table status
+- Manage reservations
+- Configure table layout`,
+
+    staff: `\n\nCURRENT PAGE: Staff Management
+You're helping manage staff. Proactively offer to:
+- View staff roles
+- Help with permissions
+- Navigate to related settings`,
+  };
+
+  const pagePrompt =
+    currentPage && pageSpecificPrompts[currentPage] ? pageSpecificPrompts[currentPage] : "";
+
+  return basePrompt + pagePrompt;
+}
 
 const TOOLS: OpenAI.Chat.Completions.ChatCompletionTool[] = [
   {
@@ -122,11 +191,13 @@ export async function handleUserMessage({
   conversationId,
   userText,
   userId: _userId,
+  currentPage,
 }: {
   venueId: string;
   conversationId: string;
   userText: string;
   userId: string;
+  currentPage?: string;
 }): Promise<{ response: string; toolResults?: unknown[] }> {
   const supabase = await createClient();
 
@@ -145,8 +216,11 @@ export async function handleUserMessage({
       content: msg.text || "",
     }));
 
+    // Get dynamic system prompt based on current page
+    const systemPrompt = getSystemPrompt(currentPage);
+
     const openaiMessages = [
-      { role: "system" as const, content: SYSTEM_PROMPT },
+      { role: "system" as const, content: systemPrompt },
       ...history,
       { role: "user" as const, content: userText },
     ];

@@ -46,10 +46,12 @@ export async function getAssistantContext(
     }
   }
 
-  // Get venue details
+  // Get venue details including opening hours
   const { data: venueData } = await supabase
     .from("venues")
-    .select("tier, timezone, kds_enabled, inventory_enabled")
+    .select(
+      "tier, timezone, kds_enabled, inventory_enabled, operating_hours, venue_name, address, phone, email"
+    )
     .eq("venue_id", venueId)
     .single();
 
@@ -59,6 +61,11 @@ export async function getAssistantContext(
     userRole,
     venueTier: venueData?.tier || "starter",
     timezone: venueData?.timezone || "UTC",
+    venueName: venueData?.venue_name || "Unknown Venue",
+    address: venueData?.address || null,
+    phone: venueData?.phone || null,
+    email: venueData?.email || null,
+    operatingHours: venueData?.operating_hours || null,
     features: {
       kdsEnabled: venueData?.kds_enabled || false,
       inventoryEnabled: venueData?.inventory_enabled || false,

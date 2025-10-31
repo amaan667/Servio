@@ -27,9 +27,10 @@ interface ChatInterfaceProps {
   venueId: string;
   isOpen: boolean;
   onClose: () => void;
+  currentPage?: string;
 }
 
-export function ChatInterfaceV2({ venueId, isOpen, onClose }: ChatInterfaceProps) {
+export function ChatInterfaceV2({ venueId, isOpen, onClose, currentPage }: ChatInterfaceProps) {
   const router = useRouter();
   const [messages, setMessages] = useState<Message[]>([]);
   const [input, setInput] = useState("");
@@ -100,6 +101,7 @@ export function ChatInterfaceV2({ venueId, isOpen, onClose }: ChatInterfaceProps
             { role: "user", content: userMessage },
           ],
           venueId,
+          currentPage,
         }),
       });
 

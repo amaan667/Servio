@@ -4,7 +4,7 @@
 // Global ⌘K / Ctrl-K command palette for AI assistance
 
 import { useState, useEffect, useCallback } from "react";
-import { useRouter } from "next/navigation";
+import { useRouter, usePathname } from "next/navigation";
 import {
   Dialog,
   DialogContent,
@@ -45,7 +45,11 @@ export function AssistantCommandPalette({
   showChatHistory = false,
 }: AssistantCommandPaletteProps) {
   const router = useRouter();
+  const pathname = usePathname();
   const [open, setOpen] = useState(false);
+
+  // Detect current page from pathname
+  const currentPage = pathname?.split("/").pop() || page;
   const [prompt, setPrompt] = useState("");
   const [loading, setLoading] = useState(false);
   const [plan, setPlan] = useState<AIPlanResponse | null>(null);
@@ -323,6 +327,7 @@ export function AssistantCommandPalette({
           venueId={venueId}
           isOpen={showChatInterface}
           onClose={() => setShowChatInterface(false)}
+          currentPage={currentPage}
         />
       )}
 

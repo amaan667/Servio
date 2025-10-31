@@ -42,18 +42,20 @@ export function EnhancedStatCard({
 
   const content = (
     <Card
-      className={`group relative overflow-hidden transition-all duration-300 cursor-pointer border-2 ${
-        onClick || href
-          ? "hover:shadow-xl hover:-translate-y-1 hover:border-gray-300"
-          : "border-transparent"
-      }`}
+      className={`group relative overflow-hidden transition-all duration-300 cursor-pointer border-2 
+        bg-white dark:bg-gray-800 dark:border-gray-700
+        ${
+          onClick || href
+            ? "hover:shadow-xl hover:-translate-y-1 hover:border-gray-300 dark:hover:border-purple-500"
+            : "border-transparent dark:border-gray-700"
+        }`}
       onMouseEnter={() => setIsHovered(true)}
       onMouseLeave={() => setIsHovered(false)}
       onClick={onClick}
     >
       {/* Gradient overlay on hover */}
       <div
-        className={`absolute inset-0 bg-gradient-to-br from-white to-gray-50/50 transition-opacity duration-300 ${
+        className={`absolute inset-0 bg-gradient-to-br from-white to-gray-50/50 dark:from-purple-900/20 dark:to-purple-950/20 transition-opacity duration-300 ${
           isHovered ? "opacity-100" : "opacity-0"
         }`}
       />
@@ -61,17 +63,19 @@ export function EnhancedStatCard({
       <CardContent className="p-6 relative">
         <div className="flex items-start justify-between mb-4">
           <div
-            className={`${iconBgColor} p-3 rounded-xl transition-transform duration-300 ${
+            className={`${iconBgColor} dark:bg-opacity-20 p-3 rounded-xl transition-transform duration-300 ${
               onClick || href ? "group-hover:scale-110" : ""
             }`}
           >
-            <Icon className={`h-6 w-6 ${iconColor}`} />
+            <Icon className={`h-6 w-6 ${iconColor} dark:brightness-150`} />
           </div>
 
           {trend && (
             <div
               className={`flex items-center gap-1 text-xs font-medium ${
-                trend.value >= 0 ? "text-green-600" : "text-red-600"
+                trend.value >= 0
+                  ? "text-green-600 dark:text-green-400"
+                  : "text-red-600 dark:text-red-400"
               }`}
             >
               {trend.value >= 0 ? (
@@ -86,20 +90,22 @@ export function EnhancedStatCard({
 
         <div className="space-y-1">
           <p
-            className={`text-sm font-medium text-gray-600 transition-colors duration-300 ${
-              onClick || href ? "group-hover:text-blue-600" : ""
+            className={`text-sm font-medium text-gray-600 dark:text-gray-300 transition-colors duration-300 ${
+              onClick || href ? "group-hover:text-blue-600 dark:group-hover:text-purple-400" : ""
             }`}
           >
             {title}
           </p>
-          <p className="text-3xl font-bold text-gray-900">{displayValue}</p>
-          {trend && <p className="text-xs text-gray-500">{trend.label}</p>}
-          {!trend && subtitle && <p className="text-xs text-gray-500">{subtitle}</p>}
+          <p className="text-3xl font-bold text-gray-900 dark:text-white">{displayValue}</p>
+          {trend && <p className="text-xs text-gray-500 dark:text-gray-400">{trend.label}</p>}
+          {!trend && subtitle && (
+            <p className="text-xs text-gray-500 dark:text-gray-400">{subtitle}</p>
+          )}
         </div>
 
         {/* Decorative accent bar */}
         <div
-          className={`absolute bottom-0 left-0 right-0 h-1 bg-gradient-to-r ${iconColor} opacity-20`}
+          className={`absolute bottom-0 left-0 right-0 h-1 bg-gradient-to-r ${iconColor} opacity-20 dark:opacity-40`}
         />
       </CardContent>
     </Card>

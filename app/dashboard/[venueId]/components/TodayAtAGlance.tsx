@@ -46,9 +46,11 @@ export function TodayAtAGlance({
   }) => {
     if (active && payload && payload.length) {
       return (
-        <div className="bg-white p-3 rounded-lg shadow-lg border border-gray-200">
-          <p className="text-sm font-semibold text-gray-900">{payload[0].payload.hour}</p>
-          <p className="text-sm text-blue-600">
+        <div className="bg-white dark:bg-gray-800 p-3 rounded-lg shadow-lg border border-gray-200 dark:border-gray-700">
+          <p className="text-sm font-semibold text-gray-900 dark:text-white">
+            {payload[0].payload.hour}
+          </p>
+          <p className="text-sm text-blue-600 dark:text-blue-400">
             {payload[0].value} {payload[0].value === 1 ? "order" : "orders"}
           </p>
         </div>
@@ -67,9 +69,11 @@ export function TodayAtAGlance({
   }) => {
     if (active && payload && payload.length) {
       return (
-        <div className="bg-white p-3 rounded-lg shadow-lg border border-gray-200">
-          <p className="text-sm font-semibold text-gray-900">{payload[0].name}</p>
-          <p className="text-sm text-green-600 font-medium">£{payload[0].value.toFixed(2)}</p>
+        <div className="bg-white dark:bg-gray-800 p-3 rounded-lg shadow-lg border border-gray-200 dark:border-gray-700">
+          <p className="text-sm font-semibold text-gray-900 dark:text-white">{payload[0].name}</p>
+          <p className="text-sm text-green-600 dark:text-green-400 font-medium">
+            £{payload[0].value.toFixed(2)}
+          </p>
         </div>
       );
     }
@@ -79,16 +83,16 @@ export function TodayAtAGlance({
   return (
     <div className="space-y-3">
       <div className="flex items-center gap-2 mb-2">
-        <TrendingUp className="h-5 w-5 text-blue-600" />
-        <h2 className="text-xl font-bold text-gray-900">Today at a Glance</h2>
+        <TrendingUp className="h-5 w-5 text-blue-600 dark:text-blue-400" />
+        <h2 className="text-xl font-bold text-gray-900 dark:text-white">Today at a Glance</h2>
       </div>
 
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
         {/* Orders by Hour */}
-        <Card className="border-2 hover:shadow-lg transition-all duration-300 bg-gradient-to-br from-white to-blue-50/30">
+        <Card className="border-2 hover:shadow-lg transition-all duration-300 bg-gradient-to-br from-white to-blue-50/30 dark:from-gray-800 dark:to-blue-950/20 dark:bg-gray-800 dark:border-gray-700">
           <CardHeader className="pb-3">
-            <CardTitle className="text-sm font-medium text-gray-600 flex items-center gap-2">
-              <TrendingUp className="h-4 w-4 text-blue-600" />
+            <CardTitle className="text-sm font-medium text-gray-600 dark:text-gray-300 flex items-center gap-2">
+              <TrendingUp className="h-4 w-4 text-blue-600 dark:text-blue-400" />
               Orders by Hour
             </CardTitle>
           </CardHeader>
@@ -96,7 +100,9 @@ export function TodayAtAGlance({
             <div className="h-[200px]">
               {loading ? (
                 <div className="h-full flex items-center justify-center">
-                  <div className="animate-pulse text-sm text-gray-500">Loading...</div>
+                  <div className="animate-pulse text-sm text-gray-500 dark:text-gray-400">
+                    Loading...
+                  </div>
                 </div>
               ) : (
                 <ResponsiveContainer width="100%" height="100%">
@@ -135,10 +141,10 @@ export function TodayAtAGlance({
         {/* Table Utilization - Removed (can't calculate without max capacity) */}
 
         {/* Revenue by Category */}
-        <Card className="border-2 hover:shadow-lg transition-all duration-300 bg-gradient-to-br from-white to-green-50/30">
+        <Card className="border-2 hover:shadow-lg transition-all duration-300 bg-gradient-to-br from-white to-green-50/30 dark:from-gray-800 dark:to-green-950/20 dark:bg-gray-800 dark:border-gray-700">
           <CardHeader className="pb-3">
-            <CardTitle className="text-sm font-medium text-gray-600 flex items-center gap-2">
-              <DollarSign className="h-4 w-4 text-green-600" />
+            <CardTitle className="text-sm font-medium text-gray-600 dark:text-gray-300 flex items-center gap-2">
+              <DollarSign className="h-4 w-4 text-green-600 dark:text-green-400" />
               Revenue by Category
             </CardTitle>
           </CardHeader>
@@ -146,11 +152,13 @@ export function TodayAtAGlance({
             <div className="h-[200px]">
               {loading ? (
                 <div className="h-full flex items-center justify-center">
-                  <div className="animate-pulse text-sm text-gray-500">Loading...</div>
+                  <div className="animate-pulse text-sm text-gray-500 dark:text-gray-400">
+                    Loading...
+                  </div>
                 </div>
               ) : revenueByCategory.length === 0 ? (
                 <div className="h-full flex items-center justify-center">
-                  <p className="text-sm text-gray-500">No revenue data yet</p>
+                  <p className="text-sm text-gray-500 dark:text-gray-400">No revenue data yet</p>
                 </div>
               ) : (
                 <ResponsiveContainer width="100%" height="100%">

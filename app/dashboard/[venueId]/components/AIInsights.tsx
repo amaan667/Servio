@@ -172,13 +172,13 @@ export function AIInsights({
   return (
     <div className="space-y-3">
       <div className="flex items-center gap-2 mb-2">
-        <Brain className="h-5 w-5 text-purple-600" />
-        <h3 className="text-lg font-bold text-gray-900">AI Insights</h3>
+        <Brain className="h-5 w-5 text-purple-600 dark:text-purple-400" />
+        <h3 className="text-lg font-bold text-gray-900 dark:text-white">AI Insights</h3>
       </div>
       {insights.slice(0, 3).map((insight, index) => (
         <Card
           key={index}
-          className="border-l-4 border-l-blue-500 shadow-sm hover:shadow-md transition-all duration-200 animate-in fade-in"
+          className="border-l-4 border-l-blue-500 dark:border-l-blue-400 shadow-sm hover:shadow-md transition-all duration-200 animate-in fade-in bg-white dark:bg-gray-800 dark:border-gray-700"
           style={{ animationDelay: `${index * 100}ms` }}
         >
           <CardContent className="p-4">
@@ -186,43 +186,48 @@ export function AIInsights({
               <div
                 className={`p-2 rounded-lg flex-shrink-0 ${
                   insight.type === "success"
-                    ? "bg-green-100"
+                    ? "bg-green-100 dark:bg-green-900/30"
                     : insight.type === "warning"
-                      ? "bg-orange-100"
-                      : "bg-blue-100"
+                      ? "bg-orange-100 dark:bg-orange-900/30"
+                      : "bg-blue-100 dark:bg-blue-900/30"
                 }`}
               >
                 {insight.type === "success" ? (
                   <TrendingUp
                     className={`h-4 w-4 ${
                       insight.type === "success"
-                        ? "text-green-600"
+                        ? "text-green-600 dark:text-green-400"
                         : insight.type === "warning"
-                          ? "text-orange-600"
-                          : "text-blue-600"
+                          ? "text-orange-600 dark:text-orange-400"
+                          : "text-blue-600 dark:text-blue-400"
                     }`}
                   />
                 ) : insight.type === "warning" ? (
-                  <AlertCircle className="h-4 w-4 text-orange-600" />
+                  <AlertCircle className="h-4 w-4 text-orange-600 dark:text-orange-400" />
                 ) : (
-                  <Sparkles className="h-4 w-4 text-blue-600" />
+                  <Sparkles className="h-4 w-4 text-blue-600 dark:text-blue-400" />
                 )}
               </div>
 
               <div className="flex-1 min-w-0">
                 <div className="flex items-center gap-2 mb-1 flex-wrap">
-                  <h4 className="font-semibold text-sm text-gray-900">{insight.title}</h4>
-                  <Badge variant="outline" className="text-xs flex items-center gap-1">
+                  <h4 className="font-semibold text-sm text-gray-900 dark:text-white">
+                    {insight.title}
+                  </h4>
+                  <Badge
+                    variant="outline"
+                    className="text-xs flex items-center gap-1 dark:border-gray-600 dark:text-gray-300"
+                  >
                     <Brain className="h-3 w-3" />
                     AI Insight
                   </Badge>
                 </div>
-                <p className="text-sm text-gray-600">{insight.message}</p>
+                <p className="text-sm text-gray-600 dark:text-gray-300">{insight.message}</p>
 
                 {insight.action && (
                   <Link
                     href={insight.action.href}
-                    className="inline-flex items-center gap-1 text-sm font-medium text-blue-600 hover:text-blue-700 mt-2 transition-colors"
+                    className="inline-flex items-center gap-1 text-sm font-medium text-blue-600 dark:text-blue-400 hover:text-blue-700 dark:hover:text-blue-300 mt-2 transition-colors"
                   >
                     {insight.action.label}
                     <span>→</span>
@@ -238,7 +243,7 @@ export function AIInsights({
         <div className="text-center pt-2">
           <Link
             href={`/dashboard/${venueId}/analytics`}
-            className="inline-flex items-center gap-2 text-sm font-medium text-blue-600 hover:text-blue-700 transition-colors"
+            className="inline-flex items-center gap-2 text-sm font-medium text-blue-600 dark:text-blue-400 hover:text-blue-700 dark:hover:text-blue-300 transition-colors"
           >
             View More Insights
             <span>→</span>

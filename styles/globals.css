@@ -45,12 +45,12 @@ body {
     --background: 262 50% 6%;
     --foreground: 262 15% 96%;
 
-    /* Cards with subtle purple tint */
-    --card: 262 40% 9%;
+    /* Cards with better contrast - lighter for visibility */
+    --card: 262 25% 14%;
     --card-foreground: 262 15% 96%;
 
     /* Popovers with purple tint */
-    --popover: 262 40% 9%;
+    --popover: 262 25% 14%;
     --popover-foreground: 262 15% 96%;
 
     /* Primary uses brand purple */
@@ -58,23 +58,23 @@ body {
     --primary-foreground: 0 0% 100%;
 
     /* Secondary with purple tint */
-    --secondary: 262 30% 15%;
+    --secondary: 262 30% 18%;
     --secondary-foreground: 262 15% 96%;
 
     /* Muted with purple undertones */
-    --muted: 262 25% 18%;
+    --muted: 262 25% 20%;
     --muted-foreground: 262 15% 70%;
 
     /* Accent with purple */
-    --accent: 262 30% 20%;
+    --accent: 262 30% 22%;
     --accent-foreground: 262 83% 68%;
 
     /* Destructive stays red */
     --destructive: 0 72% 51%;
     --destructive-foreground: 0 0% 98%;
 
-    /* Borders with purple tint */
-    --border: 262 25% 22%;
+    /* Borders with purple tint - more visible */
+    --border: 262 25% 28%;
     --input: 262 25% 22%;
 
     /* Ring uses brand purple */
@@ -164,27 +164,44 @@ body {
     color: hsl(262 15% 70%);
   }
 
-  /* Cards in dark mode with purple tint */
+  /* Cards in dark mode with purple tint - better contrast */
   .dark .bg-white {
-    background-color: hsl(262 40% 9%);
+    background-color: hsl(262 25% 14%);
     color: hsl(262 15% 96%);
   }
 
   .dark .bg-gray-50 {
-    background-color: hsl(262 30% 12%);
+    background-color: hsl(262 20% 16%);
   }
 
   .dark .bg-gray-100 {
-    background-color: hsl(262 25% 15%);
+    background-color: hsl(262 20% 18%);
   }
 
-  /* Borders with purple tint */
+  .dark .bg-gray-200 {
+    background-color: hsl(262 20% 22%);
+  }
+
+  .dark .bg-gray-800 {
+    background-color: hsl(262 25% 14%);
+  }
+
+  /* Borders with purple tint - more visible */
   .dark .border-gray-200 {
-    border-color: hsl(262 25% 22%);
+    border-color: hsl(262 25% 28%);
   }
 
   .dark .border-gray-300 {
+    border-color: hsl(262 25% 35%);
+  }
+
+  .dark .border-gray-700 {
     border-color: hsl(262 25% 28%);
+  }
+
+  /* Better hover states for cards */
+  .dark .hover\:border-gray-300:hover {
+    border-color: hsl(262 25% 35%);
   }
 
   /* Purple accents for interactive elements */

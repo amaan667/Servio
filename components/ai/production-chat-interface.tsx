@@ -42,9 +42,15 @@ interface ChatInterfaceProps {
   isOpen: boolean;
   onClose: () => void;
   venueId: string;
+  currentPage?: string;
 }
 
-export function ProductionChatInterface({ isOpen, onClose, venueId }: ChatInterfaceProps) {
+export function ProductionChatInterface({
+  isOpen,
+  onClose,
+  venueId,
+  currentPage,
+}: ChatInterfaceProps) {
   const [conversations, setConversations] = useState<Conversation[]>([]);
   const [currentConversation, setCurrentConversation] = useState<Conversation | null>(null);
   const [messages, setMessages] = useState<Message[]>([]);
@@ -134,6 +140,7 @@ export function ProductionChatInterface({ isOpen, onClose, venueId }: ChatInterf
           venueId,
           conversationId: currentConversation?.id,
           text: userMessage,
+          currentPage,
         }),
       });
 

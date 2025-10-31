@@ -11,6 +11,7 @@ const CreateMessageSchema = z.object({
   venueId: z.string().min(1),
   conversationId: z.string().uuid().optional(),
   text: z.string().min(1),
+  currentPage: z.string().optional(),
 });
 
 export async function GET(_request: NextRequest) {
@@ -113,7 +114,7 @@ export async function POST(_request: NextRequest) {
 
     // Parse request body
     const body = await _request.json();
-    const { venueId, conversationId, text } = CreateMessageSchema.parse(body);
+    const { venueId, conversationId, text, currentPage } = CreateMessageSchema.parse(body);
 
     // Verify user has access to venue (role-based first, then owner fallback)
     let roleName: string | null = null;
@@ -208,6 +209,7 @@ export async function POST(_request: NextRequest) {
         conversationId: currentConversationId!,
         userText: text,
         userId: user.id,
+        currentPage,
       });
 
       // Get the latest messages including the AI response

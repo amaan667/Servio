@@ -15,7 +15,7 @@ export const maxDuration = 30;
 
 export async function POST(req: Request) {
   try {
-    const { messages, venueId } = await req.json();
+    const { messages, venueId, currentPage } = await req.json();
 
     // Auth check
     const supabase = await createClient();
@@ -40,7 +40,8 @@ export async function POST(req: Request) {
       summaries as {
         menu?: MenuSummary;
         analytics?: AnalyticsSummary;
-      }
+      },
+      currentPage
     );
 
     // Define tools with QR code generation
@@ -460,7 +461,8 @@ function buildIntelligentSystemMessage(
   summaries: {
     menu?: MenuSummary;
     analytics?: AnalyticsSummary;
-  }
+  },
+  currentPage?: string
 ): string {
   // Build operating hours string
   let hoursInfo = "";
@@ -514,6 +516,72 @@ function buildIntelligentSystemMessage(
         ? "restaurant"
         : venue.businessType;
 
+  // Page-specific context
+  const pageContextMap: Record<string, string> = {
+    "qr-codes": `\n\nCURRENT PAGE CONTEXT: You're on the QR Codes page. The user is likely here to generate or manage QR codes. Proactively offer to:
+- Generate QR codes for specific tables
+- Explain how QR codes work
+- Help configure QR code settings`,
+
+    menu: `\n\nCURRENT PAGE CONTEXT: You're on the Menu Builder page. The user is managing their menu. Proactively offer to:
+- Add new menu items
+- Suggest popular items based on analytics
+- Help organize items by category
+- Update prices or descriptions`,
+
+    "menu-management": `\n\nCURRENT PAGE CONTEXT: You're on the Menu Builder page. The user is managing their menu. Proactively offer to:
+- Add new menu items
+- Suggest popular items based on analytics
+- Help organize items by category
+- Update prices or descriptions`,
+
+    settings: `\n\nCURRENT PAGE CONTEXT: You're on the Settings page. The user is configuring their venue. Proactively offer to:
+- Explain subscription plans and features
+- Help update operating hours
+- Configure venue details (timezone, contact info, address)
+- Guide them through settings options`,
+
+    analytics: `\n\nCURRENT PAGE CONTEXT: You're on the Analytics page. The user wants to analyze performance. Proactively offer to:
+- Show revenue trends and insights
+- Identify top-selling items
+- Suggest menu optimizations based on data
+- Generate reports`,
+
+    inventory: `\n\nCURRENT PAGE CONTEXT: You're on the Inventory page. The user is managing stock. Proactively offer to:
+- Check stock levels
+- Alert about low stock items
+- Generate purchase orders
+- Help adjust quantities`,
+
+    "live-orders": `\n\nCURRENT PAGE CONTEXT: You're on the Live Orders page. The user is managing active orders. Proactively offer to:
+- Check specific order status
+- Help find overdue orders
+- Explain order workflow`,
+
+    orders: `\n\nCURRENT PAGE CONTEXT: You're on the Orders page. The user is viewing order history. Proactively offer to:
+- Find specific orders
+- Show order statistics
+- Explain order details`,
+
+    kds: `\n\nCURRENT PAGE CONTEXT: You're on the Kitchen Display System page. The user is managing kitchen operations. Proactively offer to:
+- Check ticket status
+- Find overdue tickets
+- Suggest station optimizations
+- Show prep time statistics`,
+
+    tables: `\n\nCURRENT PAGE CONTEXT: You're on the Table Management page. Proactively offer to:
+- Help configure tables
+- Show table status
+- Explain table management features`,
+
+    staff: `\n\nCURRENT PAGE CONTEXT: You're on the Staff Management page. Proactively offer to:
+- Explain user roles and permissions
+- Help manage staff access
+- Guide through staff settings`,
+  };
+
+  const pageContext = currentPage && pageContextMap[currentPage] ? pageContextMap[currentPage] : "";
+
   // Subscription tier display
   const tierDisplay =
     venue.subscriptionTier.charAt(0).toUpperCase() + venue.subscriptionTier.slice(1);
@@ -547,7 +615,7 @@ BUSINESS DETAILS:
 
 USER CONTEXT:
 - Your Role: **${roleDisplay}**
-- Permissions: ${rolePermissions}${hoursInfo}${menuInfo}${analyticsInfo}
+- Permissions: ${rolePermissions}${hoursInfo}${menuInfo}${analyticsInfo}${pageContext}
 
 CAPABILITIES:
 1. **Navigation**: Navigate to pages (qr-codes, analytics, menu, settings, etc.)
