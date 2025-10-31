@@ -131,19 +131,36 @@ export function ChatInterface({ venueId, isOpen, onClose, initialPrompt }: ChatI
       if (!conv) return;
       const aiPlan = await sendMessage(conv.id, messageText);
 
-      // Add AI response message
-      // The plan response contains the AI's answer
+      // Add AI response message with explanation
       if (aiPlan) {
+        // Build response content from reasoning and description
+        let responseContent = "";
+
+        if (aiPlan.reasoning) {
+          responseContent = aiPlan.reasoning;
+        } else if (aiPlan.description) {
+          responseContent = aiPlan.description;
+        } else {
+          responseContent = "I understand. How can I help you with that?";
+        }
+
+        // If there are actions to execute, mention them
+        if (aiPlan.actions && aiPlan.actions.length > 0) {
+          responseContent +=
+            "\n\nI can execute this for you. See the preview below and click 'Execute' when ready.";
+        }
+
         const aiMessage = {
           id: `temp-ai-${Date.now()}`,
           role: "assistant" as const,
-          content:
-            aiPlan.reasoning || aiPlan.description || "I understand. How can I help you with that?",
+          content: responseContent,
           createdAt: new Date().toISOString(),
           canUndo: false,
         };
         addMessage(aiMessage);
       }
+
+      // The PlanPreview component will show action preview if there are actions to execute
     } catch (_error) {
       setError((error as any).message);
       // Add error message
