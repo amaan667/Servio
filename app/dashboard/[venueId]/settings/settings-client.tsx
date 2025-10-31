@@ -39,43 +39,22 @@ export default function SettingsPageClient({ venueId, initialData }: SettingsPag
   const [loading, setLoading] = useState(!initialData);
 
   useEffect(() => {
-    // If we have initial data, cache it
+    // If we have initial data, cache it (overwriting any stale cache)
     if (initialData && typeof window !== "undefined") {
+      console.log("[SETTINGS] 💾 Caching fresh server data (overwriting any stale cache)");
       sessionStorage.setItem(`settings_data_${venueId}`, JSON.stringify(initialData));
-      console.log("[SETTINGS] 💾 Server data cached to sessionStorage");
+      console.log("[SETTINGS] ✅ Server data cached, organization tier:", initialData.organization);
       return;
     }
 
-    // Otherwise, fetch data on client
+    // Otherwise, fetch data on client (and skip cache since we fixed the query)
     const fetchData = async () => {
-      console.log("[SETTINGS] 🚀 fetchData() STARTED", {
+      console.log("[SETTINGS] 🚀 fetchData() STARTED - will fetch fresh (no cache)", {
         hasWindow: typeof window !== "undefined",
         venueId,
       });
 
       try {
-        // Check cache first
-        const cached = sessionStorage.getItem(`settings_data_${venueId}`);
-        console.log("[SETTINGS] 💾 Cache check result:", {
-          hasCached: !!cached,
-          cachedLength: cached?.length,
-        });
-
-        if (cached) {
-          console.log("[SETTINGS] 📦 Using cached data");
-          try {
-            const parsedData = JSON.parse(cached);
-            setData(parsedData);
-            setLoading(false);
-            console.log("[SETTINGS] ✅ Cached data loaded successfully");
-            return;
-          } catch (parseError) {
-            console.error("[SETTINGS] ❌ Error parsing cached data, will fetch fresh:", parseError);
-            sessionStorage.removeItem(`settings_data_${venueId}`);
-            // Continue to fetch fresh data
-          }
-        }
-
         console.log("[SETTINGS] 🔄 Fetching data on client...", {
           hasSession: !!session,
           hasUser: !!session?.user,
@@ -123,19 +102,21 @@ export default function SettingsPageClient({ venueId, initialData }: SettingsPag
             .select("*")
             .eq("owner_user_id", user.id)
             .order("created_at", { ascending: true }),
+          // FIXED: Use same logic as server and home page - fetch by owner, not by specific venue
           supabase
             .from("venues")
             .select("organization_id")
-            .eq("venue_id", venueId)
-            .single()
+            .eq("owner_user_id", user.id)
+            .limit(1)
             .then(async (result) => {
-              if (result.data?.organization_id) {
+              const firstVenue = result.data?.[0];
+              if (firstVenue?.organization_id) {
                 return supabase
                   .from("organizations")
                   .select(
                     "id, subscription_tier, stripe_customer_id, subscription_status, trial_ends_at"
                   )
-                  .eq("id", result.data.organization_id)
+                  .eq("id", firstVenue.organization_id)
                   .single();
               }
               return { data: null };
