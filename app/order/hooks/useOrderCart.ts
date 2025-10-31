@@ -1,17 +1,33 @@
-import { useState, useCallback } from 'react';
-import { CartItem, MenuItem } from '../types';
+import { useState, useCallback, useEffect } from "react";
+import { CartItem, MenuItem } from "../types";
+
+const CART_STORAGE_KEY = "servio-order-cart";
 
 export function useOrderCart() {
-  const [cart, setCart] = useState<CartItem[]>([]);
+  // Initialize cart from localStorage
+  const [cart, setCart] = useState<CartItem[]>(() => {
+    if (typeof window === "undefined") return [];
+    try {
+      const stored = localStorage.getItem(CART_STORAGE_KEY);
+      return stored ? JSON.parse(stored) : [];
+    } catch {
+      return [];
+    }
+  });
+
+  // Persist cart to localStorage whenever it changes
+  useEffect(() => {
+    if (typeof window !== "undefined") {
+      localStorage.setItem(CART_STORAGE_KEY, JSON.stringify(cart));
+    }
+  }, [cart]);
 
   const addToCart = useCallback((item: MenuItem) => {
     setCart((prev) => {
       const existing = prev.find((cartItem) => cartItem.id === item.id);
       if (existing) {
         return prev.map((cartItem) =>
-          cartItem.id === item.id
-            ? { ...cartItem, quantity: cartItem.quantity + 1 }
-            : cartItem
+          cartItem.id === item.id ? { ...cartItem, quantity: cartItem.quantity + 1 } : cartItem
         );
       }
       return [...prev, { ...item, quantity: 1 }];
@@ -22,18 +38,17 @@ export function useOrderCart() {
     setCart((prev) => prev.filter((item) => item.id !== itemId));
   }, []);
 
-  const updateQuantity = useCallback((itemId: string, quantity: number) => {
-    if (quantity <= 0) {
-      removeFromCart(itemId);
-      return;
-    }
-    
-    setCart((prev) =>
-      prev.map((item) =>
-        item.id === itemId ? { ...item, quantity } : item
-      )
-    );
-  }, [removeFromCart]);
+  const updateQuantity = useCallback(
+    (itemId: string, quantity: number) => {
+      if (quantity <= 0) {
+        removeFromCart(itemId);
+        return;
+      }
+
+      setCart((prev) => prev.map((item) => (item.id === itemId ? { ...item, quantity } : item)));
+    },
+    [removeFromCart]
+  );
 
   const updateSpecialInstructions = useCallback((itemId: string, instructions: string) => {
     setCart((prev) =>
@@ -53,6 +68,9 @@ export function useOrderCart() {
 
   const resetCart = useCallback(() => {
     setCart([]);
+    if (typeof window !== "undefined") {
+      localStorage.removeItem(CART_STORAGE_KEY);
+    }
   }, []);
 
   return {
@@ -66,4 +84,3 @@ export function useOrderCart() {
     resetCart,
   };
 }
-
