@@ -49,28 +49,32 @@ export default async function SettingsPage({ params }: { params: Promise<{ venue
       .select("*")
       .eq("owner_user_id", user.id)
       .order("created_at", { ascending: true }),
+    // FIXED: Use same logic as home page - fetch organization by owner_user_id, not by specific venueId
+    // This ensures all venues for the same owner show the same plan (organization is per-owner, not per-venue)
     supabase
       .from("venues")
       .select("organization_id")
-      .eq("venue_id", venueId)
-      .single()
+      .eq("owner_user_id", user.id)
+      .limit(1)
       .then(async (result) => {
-        logger.info("[SETTINGS PAGE] Venue organization_id lookup", {
-          venueId,
+        logger.info("[SETTINGS PAGE] Venue organization_id lookup (by owner)", {
+          userId: user.id,
           hasData: !!result.data,
-          organizationId: result.data?.organization_id,
+          venueCount: result.data?.length,
+          organizationId: result.data?.[0]?.organization_id,
           error: result.error?.message,
         });
 
-        if (result.data?.organization_id) {
+        const firstVenue = result.data?.[0];
+        if (firstVenue?.organization_id) {
           const orgResult = await supabase
             .from("organizations")
             .select("id, subscription_tier, stripe_customer_id, subscription_status, trial_ends_at")
-            .eq("id", result.data.organization_id)
+            .eq("id", firstVenue.organization_id)
             .single();
 
           logger.info("[SETTINGS PAGE] Organization fetch result", {
-            organizationId: result.data.organization_id,
+            organizationId: firstVenue.organization_id,
             hasOrgData: !!orgResult.data,
             orgData: orgResult.data,
             error: orgResult.error?.message,
@@ -78,7 +82,7 @@ export default async function SettingsPage({ params }: { params: Promise<{ venue
 
           return orgResult;
         }
-        logger.warn("[SETTINGS PAGE] No organization_id on venue", { venueId });
+        logger.warn("[SETTINGS PAGE] No organization_id found for user", { userId: user.id });
         return { data: null };
       }),
   ]);
@@ -88,12 +92,10 @@ export default async function SettingsPage({ params }: { params: Promise<{ venue
   const allVenues = allVenuesResult.data || [];
   const organization = "error" in orgResult ? null : orgResult.data;
 
-  // Log organization fetch result
-  logger.info("[SETTINGS PAGE] Organization fetch result", {
+  logger.info("[SETTINGS PAGE] Final data state", {
     hasOrganization: !!organization,
-    orgData: organization,
+    tier: organization?.subscription_tier,
     hasError: "error" in orgResult,
-    orgResultType: typeof orgResult,
   });
 
   const isOwner = !!venue;
