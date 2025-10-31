@@ -1,5 +1,5 @@
-// AI Chat API - Direct OpenAI Implementation
-// Proper function calling with multi-turn conversation
+// AI Chat API - Intelligent Business Assistant
+// Full context with menu, hours, plan, and smart multi-step responses
 
 import OpenAI from "openai";
 import { createClient } from "@/lib/supabase";
@@ -28,26 +28,27 @@ export async function POST(req: Request) {
       return Response.json({ error: "Unauthorized" }, { status: 401 });
     }
 
-    // Get context
+    // Get FULL venue context
+    const venueDetails = await getFullVenueContext(venueId);
     const context = await getAssistantContext(venueId, user.id, "owner");
     const summaries = await getAllSummaries(venueId, context.features);
 
-    // Build system message
-    const systemMessage = buildSystemMessage(
-      context,
+    // Build intelligent system message
+    const systemMessage = buildIntelligentSystemMessage(
+      venueDetails,
       summaries as {
         menu?: MenuSummary;
         analytics?: AnalyticsSummary;
       }
     );
 
-    // Define tools
+    // Define tools with QR code generation
     const tools: OpenAI.Chat.ChatCompletionTool[] = [
       {
         type: "function",
         function: {
           name: "navigate",
-          description: "Navigate to a different page in the application",
+          description: "Navigate to a page. Use AFTER explaining what the user will find there.",
           parameters: {
             type: "object",
             properties: {
@@ -67,7 +68,10 @@ export async function POST(req: Request) {
                   "tables",
                   "feedback",
                 ],
-                description: "The page to navigate to",
+              },
+              tableNumber: {
+                type: "string",
+                description: "Optional: For QR codes page, specify table number to highlight",
               },
             },
             required: ["page"],
@@ -78,7 +82,7 @@ export async function POST(req: Request) {
         type: "function",
         function: {
           name: "get_analytics",
-          description: "Get analytics and insights about orders, revenue, and performance",
+          description: "Get real business analytics and stats",
           parameters: {
             type: "object",
             properties: {
@@ -97,7 +101,7 @@ export async function POST(req: Request) {
       },
     ];
 
-    // First API call - let AI decide if it needs tools
+    // First API call
     const initialResponse = await openai.chat.completions.create({
       model: "gpt-4o-mini",
       messages: [{ role: "system", content: systemMessage }, ...messages],
@@ -110,6 +114,7 @@ export async function POST(req: Request) {
     // If AI wants to use tools, execute them and get final response
     if (responseMessage.tool_calls && responseMessage.tool_calls.length > 0) {
       const toolResults = [];
+      let navigationInfo: { route: string; tableNumber?: string } | null = null;
 
       for (const toolCall of responseMessage.tool_calls) {
         if (toolCall.type !== "function") continue;
@@ -126,6 +131,15 @@ export async function POST(req: Request) {
           role: "tool" as const,
           content: JSON.stringify(result),
         });
+
+        // Track navigation for later
+        if (toolCall.function.name === "navigate") {
+          const args = JSON.parse(toolCall.function.arguments);
+          navigationInfo = {
+            route: getNavigationRoute(args.page, venueId),
+            tableNumber: args.tableNumber,
+          };
+        }
       }
 
       // Get final response with tool results
@@ -160,18 +174,14 @@ export async function POST(req: Request) {
               }
 
               if (chunk.choices[0]?.finish_reason === "stop") {
-                // Send navigation if it was a navigate tool
-                const navTool = responseMessage.tool_calls?.find(
-                  (tc) => tc.type === "function" && tc.function.name === "navigate"
-                );
-                if (navTool && navTool.type === "function") {
-                  const args = JSON.parse(navTool.function.arguments);
-                  const route = getNavigationRoute(args.page, venueId);
+                // Send navigation AFTER AI explains
+                if (navigationInfo) {
                   controller.enqueue(
                     encoder.encode(
                       `data: ${JSON.stringify({
                         type: "navigate",
-                        route,
+                        route: navigationInfo.route,
+                        tableNumber: navigationInfo.tableNumber,
                       })}\n\n`
                     )
                   );
@@ -197,7 +207,7 @@ export async function POST(req: Request) {
       });
     }
 
-    // No tools needed - just stream the response
+    // No tools needed - just stream
     const stream = await openai.chat.completions.create({
       model: "gpt-4o-mini",
       messages: [{ role: "system", content: systemMessage }, ...messages],
@@ -250,6 +260,37 @@ export async function POST(req: Request) {
   }
 }
 
+async function getFullVenueContext(venueId: string) {
+  const supabase = await createClient();
+
+  // Get all venue details
+  const { data: venue } = await supabase
+    .from("venues")
+    .select("*")
+    .eq("venue_id", venueId)
+    .single();
+
+  // Get menu items (all of them!)
+  const { data: menuItems } = await supabase
+    .from("menu_items")
+    .select("id, name, price, category, description, is_available")
+    .eq("venue_id", venueId)
+    .eq("is_available", true)
+    .order("name");
+
+  return {
+    name: venue?.venue_name || "your business",
+    businessType: venue?.business_type || venue?.venue_type || "restaurant",
+    serviceType: venue?.service_type || "table_service",
+    tier: venue?.tier || "starter",
+    operatingHours: venue?.operating_hours || null,
+    address: venue?.address || null,
+    phone: venue?.phone || null,
+    timezone: venue?.timezone || "UTC",
+    menuItems: menuItems || [],
+  };
+}
+
 function getNavigationRoute(page: string, venueId: string): string {
   const routeMap: Record<string, string> = {
     dashboard: `/dashboard/${venueId}`,
@@ -272,11 +313,14 @@ async function executeToolCall(toolName: string, args: string, venueId: string, 
   const parsedArgs = JSON.parse(args || "{}");
 
   if (toolName === "navigate") {
-    const { page } = parsedArgs;
+    const { page, tableNumber } = parsedArgs;
     return {
       success: true,
       page,
-      message: `Navigating to ${page}`,
+      tableNumber: tableNumber || null,
+      message: tableNumber
+        ? `Navigating to ${page} for table ${tableNumber}`
+        : `Navigating to ${page}`,
     };
   }
 
@@ -295,36 +339,91 @@ async function executeToolCall(toolName: string, args: string, venueId: string, 
   return { success: false, error: "Unknown tool" };
 }
 
-function buildSystemMessage(
-  context: Awaited<ReturnType<typeof getAssistantContext>>,
+function buildIntelligentSystemMessage(
+  venue: Awaited<ReturnType<typeof getFullVenueContext>>,
   summaries: {
     menu?: MenuSummary;
     analytics?: AnalyticsSummary;
   }
 ): string {
-  const menuInfo = summaries.menu
-    ? `\n\nMENU: ${summaries.menu.totalItems} items, Top seller: ${summaries.menu.topSellers[0]?.name || "N/A"}`
-    : "";
+  // Build operating hours string
+  let hoursInfo = "";
+  if (venue.operatingHours && typeof venue.operatingHours === "object") {
+    const hours = Object.entries(venue.operatingHours as Record<string, any>)
+      .map(([day, h]) => {
+        if (h?.closed) return `${day}: Closed`;
+        if (h?.open && h?.close) return `${day}: ${h.open}-${h.close}`;
+        return null;
+      })
+      .filter(Boolean)
+      .join(", ");
+    if (hours) hoursInfo = `\nOperating Hours: ${hours}`;
+  }
 
-  const analyticsInfo = summaries.analytics
-    ? `\n\nTODAY: $${summaries.analytics.today.revenue} revenue, ${summaries.analytics.today.orders} orders`
-    : "";
+  // Build menu info with actual items
+  let menuInfo = "";
+  if (venue.menuItems && venue.menuItems.length > 0) {
+    const itemsList = venue.menuItems
+      .slice(0, 20) // First 20 items
+      .map((item: any) => `${item.name} ($${item.price})`)
+      .join(", ");
+    menuInfo = `\n\nMENU ITEMS (${venue.menuItems.length} total):\n${itemsList}${venue.menuItems.length > 20 ? "..." : ""}`;
+  }
 
-  return `You are an AI assistant for Servio restaurant management.
+  // Build analytics info
+  let analyticsInfo = "";
+  if (summaries.analytics) {
+    const { today } = summaries.analytics;
+    analyticsInfo = `\n\nTODAY'S PERFORMANCE:\n- Revenue: $${today.revenue}\n- Orders: ${today.orders}\n- Avg Order: $${today.avgOrderValue.toFixed(2)}`;
+  }
 
-CONTEXT:
-- Venue: ${context.venueId}
-- Role: ${context.userRole}
-${menuInfo}${analyticsInfo}
+  const businessTypeDisplay =
+    venue.businessType === "cafe"
+      ? "cafe"
+      : venue.businessType === "restaurant"
+        ? "restaurant"
+        : venue.businessType;
 
-TOOLS AVAILABLE:
-- navigate(page): Navigate to pages
-- get_analytics(metric, timeRange): Get business stats. Metrics: revenue, orders, top_items, peak_hours. TimeRange: today, week, month
+  return `You are an intelligent AI assistant for ${venue.name}, a ${businessTypeDisplay}.
 
-INSTRUCTIONS:
-- Be friendly and conversational
-- For greetings, just respond naturally
-- When users ask about sales/analytics, use get_analytics tool and interpret the results in a friendly way
-- When asked to navigate, use navigate tool
-- Always interpret tool results - don't just say you executed them, explain what the data means`;
+BUSINESS DETAILS:
+- Name: ${venue.name}
+- Type: ${businessTypeDisplay}
+- Service: ${venue.serviceType.replace("_", " ")}
+- Plan: ${venue.tier}${venue.address ? `\n- Address: ${venue.address}` : ""}${venue.phone ? `\n- Phone: ${venue.phone}` : ""}${hoursInfo}${menuInfo}${analyticsInfo}
+
+CAPABILITIES:
+1. **Navigation**: Navigate to pages (qr-codes, analytics, menu, settings, etc.)
+   - When user asks HOW to do something, EXPLAIN first, then offer to navigate
+   - For QR codes: You can navigate with tableNumber parameter to highlight specific tables
+   
+2. **Analytics**: Get real-time business data (revenue, orders, top items, peak hours)
+   - Always INTERPRET the data in context - don't just repeat numbers
+   
+3. **Menu Knowledge**: You have full access to all menu items listed above
+   - Answer questions about items, prices, what's on the menu
+   
+4. **Business Advice**: Use your knowledge to give actionable insights
+
+BEHAVIOR RULES:
+✅ Always be conversational and helpful
+✅ When asked "how to" do something, explain FIRST, then navigate
+✅ For QR code requests: Explain the QR system, then navigate to qr-codes page
+✅ If table number is mentioned for QR codes, include tableNumber in navigate tool
+✅ Interpret data - turn numbers into insights
+✅ Remember this is a ${businessTypeDisplay}, not a different business type
+✅ When asked about hours/plan/details, use the info above
+✅ For analytics questions, use get_analytics tool then explain what it means
+
+EXAMPLES:
+User: "How do I generate a QR code?"
+You: "To generate QR codes, go to the QR Codes page where you can create codes for each table. These codes let customers scan and order directly. Let me take you there!"
+
+User: "Generate QR code for table 6"
+You: "I'll take you to the QR Codes page and highlight Table 6. From there you can generate or download the QR code for that table." [navigate with tableNumber: "6"]
+
+User: "What's the highest selling item?"
+You: [use get_analytics] "Based on today's data, your top seller is the Cappuccino with 45 orders! That's great - it shows your coffee drinks are really popular."
+
+Be smart, contextual, and actually helpful!`;
 }
