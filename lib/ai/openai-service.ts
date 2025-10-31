@@ -13,7 +13,8 @@ function getSystemPrompt(currentPage?: string): string {
   const basePrompt = `You are Servio's venue assistant. Be concise, reliable, and action-oriented.
 - If a tool is relevant, call it. If info is uncertain, ask a brief follow-up.
 - Never invent data. For totals/revenue/menu items, always use tools.
-- Keep replies < 200 words unless asked for more.`;
+- Keep replies < 200 words unless asked for more.
+- IMPORTANT: Always use £ (GBP) for currency, never $ (USD). Format as £XX.XX.`;
 
   const pageSpecificPrompts: Record<string, string> = {
     "qr-codes": `\n\nCURRENT PAGE: QR Codes Management
@@ -375,19 +376,25 @@ export async function handleUserMessage({
 async function executeGetTodaysRevenue(venueId: string) {
   const supabase = await createClient();
 
+  const todayStart = new Date();
+  todayStart.setHours(0, 0, 0, 0);
+
   const { data: orders } = await supabase
     .from("orders")
-    .select("total_amount")
+    .select("total_amount, currency")
     .eq("venue_id", venueId)
-    .gte("created_at", new Date().toISOString().split("T")[0]);
+    .gte("created_at", todayStart.toISOString())
+    .not("order_status", "in", '("CANCELLED","REFUNDED")');
 
   const totalRevenue = orders?.reduce((sum, order) => sum + (order.total_amount || 0), 0) || 0;
+  const currency = orders?.[0]?.currency || "GBP";
 
   return {
     venue_id: venueId,
     date: new Date().toISOString().split("T")[0],
     total_revenue: totalRevenue,
-    currency: "GBP",
+    currency: currency,
+    order_count: orders?.length || 0,
   };
 }
 

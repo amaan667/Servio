@@ -286,9 +286,9 @@ export async function getOrdersSummary(venueId: string, useCache = true): Promis
   // Get live orders (not completed or cancelled)
   const { data: liveOrders } = await supabase
     .from("orders")
-    .select("id, status, created_at")
+    .select("id, order_status, created_at")
     .eq("venue_id", venueId)
-    .in("status", ["pending", "preparing", "ready"]);
+    .in("order_status", ["PLACED", "ACCEPTED", "IN_PREP", "READY", "SERVING"]);
 
   // Get KDS tickets if enabled
   const { data: kdsTickets } = await supabase
@@ -409,48 +409,52 @@ export async function getAnalyticsSummary(
 
   const { data: todayOrders } = await supabase
     .from("orders")
-    .select("id, total_amount, order_items(quantity, price, menu_items(name, category))")
+    .select("id, total_amount, currency")
     .eq("venue_id", venueId)
     .gte("created_at", todayStart.toISOString())
-    .in("status", ["completed", "preparing", "ready"]);
+    .not("order_status", "in", '("CANCELLED","REFUNDED")');
 
   const todayRevenue = todayOrders?.reduce((sum, o) => sum + (o.total_amount || 0), 0) || 0;
   const todayOrderCount = todayOrders?.length || 0;
   const avgOrderValue = todayOrderCount > 0 ? todayRevenue / todayOrderCount : 0;
 
-  // Get trending items (last 7 days)
+  // Get trending items (last 7 days) - query through orders first
   const sevenDaysAgo = new Date();
   sevenDaysAgo.setDate(sevenDaysAgo.getDate() - 7);
 
-  const { data: recentItems } = await supabase
-    .from("order_items")
-    .select("menu_item_id, quantity, menu_items(name, category)")
-    .eq("orders.venue_id", venueId)
-    .gte("orders.created_at", sevenDaysAgo.toISOString());
+  const { data: recentOrders } = await supabase
+    .from("orders")
+    .select("items")
+    .eq("venue_id", venueId)
+    .gte("created_at", sevenDaysAgo.toISOString())
+    .not("order_status", "in", '("CANCELLED","REFUNDED")');
 
-  // Count by item
+  // Count by item from orders.items JSONB array
   const itemCounts = new Map<string, { name: string; count: number }>();
-  recentItems?.forEach((item: Record<string, unknown>) => {
-    const name = (item.menu_items as { name?: string })?.name || "Unknown";
-    const existing = itemCounts.get(name) || { name, count: 0 };
-    const quantity = typeof item.quantity === "number" ? item.quantity : 0;
-    itemCounts.set(name, { name, count: existing.count + quantity });
+  const categoryPerformance: Record<string, number> = {};
+
+  recentOrders?.forEach((order: Record<string, unknown>) => {
+    const items = order.items as Array<{
+      item_name?: string;
+      quantity?: number;
+      menu_item_id?: string;
+    }>;
+    if (Array.isArray(items)) {
+      items.forEach((item) => {
+        const name = item.item_name || "Unknown";
+        const quantity = item.quantity || 0;
+
+        // Count items
+        const existing = itemCounts.get(name) || { name, count: 0 };
+        itemCounts.set(name, { name, count: existing.count + quantity });
+      });
+    }
   });
 
   const topItems = Array.from(itemCounts.values())
     .sort((a, b) => b.count - a.count)
     .slice(0, 5)
     .map((i) => i.name);
-
-  // Count by category
-  const categoryPerformance: Record<string, number> = {
-    /* Empty */
-  };
-  recentItems?.forEach((item: Record<string, unknown>) => {
-    const categoryName = (item.menu_items as { category?: string })?.category || "Uncategorized";
-    const quantity = typeof item.quantity === "number" ? item.quantity : 0;
-    categoryPerformance[categoryName] = (categoryPerformance[categoryName] || 0) + quantity;
-  });
 
   const summary: AnalyticsSummary = {
     today: {
@@ -460,7 +464,7 @@ export async function getAnalyticsSummary(
     },
     trending: {
       topItems,
-      categoryPerformance,
+      categoryPerformance: categoryPerformance || {},
     },
   };
 
