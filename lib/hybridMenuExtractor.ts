@@ -35,21 +35,25 @@ export async function extractMenuHybrid(
 ): Promise<HybridMenuResult> {
   const { pdfImages, websiteUrl, venueId } = options;
 
+  logger.info("[HYBRID] ===== STARTING HYBRID EXTRACTION =====");
+
   // Validation
   if (!pdfImages && !websiteUrl) {
+    logger.error("[HYBRID] No sources provided");
     throw new Error("At least one source (PDF or URL) is required");
   }
 
-  logger.info("[HYBRID] Starting extraction", {
+  logger.info("[HYBRID] Step 1: Validated input sources", {
     venueId,
     hasPdf: !!pdfImages,
     hasUrl: !!websiteUrl,
     pdfPageCount: pdfImages?.length || 0,
+    url: websiteUrl || "N/A",
   });
 
   // Determine extraction mode
   const mode = getExtractionMode(!!pdfImages, !!websiteUrl);
-  logger.info("[HYBRID] Extraction mode:", { mode });
+  logger.info("[HYBRID] Step 2: Determined extraction mode", { mode });
 
   // MODE 1: URL Only
   if (mode === "url-only" && websiteUrl) {

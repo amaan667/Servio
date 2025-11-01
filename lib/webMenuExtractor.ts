@@ -59,16 +59,17 @@ async function getChromiumPath() {
  * Uses Puppeteer + Vision AI hybrid approach
  */
 export async function extractMenuFromWebsite(url: string): Promise<WebMenuItem[]> {
-  logger.info("[WEB EXTRACT] Starting extraction", { url });
+  logger.info("[WEB EXTRACT] ===== STARTING EXTRACTION =====", { url });
 
   const executablePath = await getChromiumPath();
-  logger.info("[WEB EXTRACT] Chrome path:", { executablePath });
-  logger.info("[WEB EXTRACT] Environment:", {
+  logger.info("[WEB EXTRACT] Step 1: Resolved Chrome path", { executablePath });
+  logger.info("[WEB EXTRACT] Step 2: Environment details", {
     nodeEnv: process.env.NODE_ENV,
     isRailway: !!process.env.RAILWAY_ENVIRONMENT,
     platform: process.platform,
   });
 
+  logger.info("[WEB EXTRACT] Step 3: Launching Puppeteer browser...");
   const browser = await puppeteer.launch({
     args: [
       ...chromium.args,
@@ -106,22 +107,31 @@ export async function extractMenuFromWebsite(url: string): Promise<WebMenuItem[]
     headless: true,
     ignoreDefaultArgs: ["--disable-extensions"],
   });
+  logger.info("[WEB EXTRACT] Step 4: Browser launched successfully", {
+    isConnected: browser.isConnected(),
+    wsEndpoint: browser.wsEndpoint().substring(0, 50) + "...",
+  });
 
   try {
+    logger.info("[WEB EXTRACT] Step 5: Creating new page...");
     const page = await browser.newPage();
+    logger.info("[WEB EXTRACT] Step 6: Page created successfully");
 
     // Set viewport for consistent rendering
+    logger.info("[WEB EXTRACT] Step 7: Setting viewport to 1920x1080...");
     await page.setViewport({ width: 1920, height: 1080 });
+    logger.info("[WEB EXTRACT] Step 8: Viewport set successfully");
 
     // Navigate with simple, reliable wait strategy (NO networkidle!)
-    logger.info("[WEB EXTRACT] Navigating to URL...");
+    logger.info("[WEB EXTRACT] Step 9: Navigating to URL...", { url });
     await page.goto(url, {
       waitUntil: "domcontentloaded", // Fast and reliable
       timeout: 20000,
     });
+    logger.info("[WEB EXTRACT] Step 10: Navigation completed, DOM loaded");
 
     // Wait for menu content to appear with fallback
-    logger.info("[WEB EXTRACT] Waiting for content...");
+    logger.info("[WEB EXTRACT] Step 11: Waiting for menu content...");
     await Promise.race([
       // Try to find menu-related elements
       page
@@ -132,45 +142,68 @@ export async function extractMenuFromWebsite(url: string): Promise<WebMenuItem[]
       // Fallback: just wait 3 seconds
       new Promise((resolve) => setTimeout(resolve, 3000)),
     ]).catch(() => {
-      logger.warn("[WEB EXTRACT] No specific menu selectors found, continuing anyway");
+      logger.warn("[WEB EXTRACT] Step 11a: No specific menu selectors found, continuing anyway");
     });
+    logger.info("[WEB EXTRACT] Step 12: Content wait completed");
 
     // Additional wait for dynamic content
+    logger.info("[WEB EXTRACT] Step 13: Waiting 2s for dynamic content...");
     await new Promise((resolve) => setTimeout(resolve, 2000));
+    logger.info("[WEB EXTRACT] Step 14: Dynamic content wait completed");
 
-    logger.info("[WEB EXTRACT] Page loaded, extracting data...");
-
+    logger.info("[WEB EXTRACT] Step 15: Starting DOM extraction...");
     // Strategy 1: DOM Scraping (fast, gets images/URLs)
     const domItems = await extractFromDOM(page);
-    logger.info("[WEB EXTRACT] DOM extraction complete", { count: domItems.length });
+    logger.info("[WEB EXTRACT] Step 16: DOM extraction complete", {
+      count: domItems.length,
+      sample: domItems
+        .slice(0, 2)
+        .map((i) => ({ name: i.name, price: i.price, hasImage: !!i.image_url })),
+    });
 
     // Strategy 2: Screenshot + Vision AI (accurate, handles any layout)
-    logger.info("[WEB EXTRACT] Taking screenshot for Vision AI...");
+    logger.info("[WEB EXTRACT] Step 17: Taking full-page screenshot...");
     const screenshot = (await page.screenshot({
       fullPage: true, // Captures entire page without manual scrolling
       type: "png",
       encoding: "base64",
     })) as string;
-
-    const screenshotDataUrl = `data:image/png;base64,${screenshot}`;
-    logger.info("[WEB EXTRACT] Screenshot captured, sending to Vision AI...");
-
-    const visionItems = await extractMenuFromImage(screenshotDataUrl);
-    logger.info("[WEB EXTRACT] Vision AI extraction complete", { count: visionItems.length });
-
-    // Strategy 3: Intelligent merge
-    const mergedItems = mergeExtractedData(domItems, visionItems);
-    logger.info("[WEB EXTRACT] Merge complete", {
-      total: mergedItems.length,
-      withImages: mergedItems.filter((i) => i.image_url).length,
+    logger.info("[WEB EXTRACT] Step 18: Screenshot captured", {
+      sizeKB: Math.round(screenshot.length / 1024),
     });
 
+    const screenshotDataUrl = `data:image/png;base64,${screenshot}`;
+    logger.info("[WEB EXTRACT] Step 19: Sending screenshot to GPT-4o Vision AI...");
+
+    const visionItems = await extractMenuFromImage(screenshotDataUrl);
+    logger.info("[WEB EXTRACT] Step 20: Vision AI extraction complete", {
+      count: visionItems.length,
+      sample: visionItems.slice(0, 2).map((i) => ({ name: i.name, price: i.price })),
+    });
+
+    // Strategy 3: Intelligent merge
+    logger.info("[WEB EXTRACT] Step 21: Merging DOM and Vision AI data...");
+    const mergedItems = mergeExtractedData(domItems, visionItems);
+    logger.info("[WEB EXTRACT] Step 22: Merge complete", {
+      total: mergedItems.length,
+      withImages: mergedItems.filter((i) => i.image_url).length,
+      sources: {
+        merged: mergedItems.filter((i) => i.source === "merged").length,
+        visionOnly: mergedItems.filter((i) => i.source === "vision").length,
+        domOnly: mergedItems.filter((i) => i.source === "dom").length,
+      },
+    });
+
+    logger.info("[WEB EXTRACT] ===== EXTRACTION SUCCESSFUL =====", {
+      totalItems: mergedItems.length,
+    });
     return mergedItems;
   } catch (error) {
-    logger.error("[WEB EXTRACT] Extraction failed", {
+    logger.error("[WEB EXTRACT] ===== EXTRACTION FAILED =====", {
       error,
       errorMessage: error instanceof Error ? error.message : String(error),
       errorStack: error instanceof Error ? error.stack : undefined,
+      browserConnected: browser.isConnected(),
     });
     throw new Error(
       `Failed to scrape menu from URL: ${error instanceof Error ? error.message : "Unknown error"}. ` +
@@ -178,9 +211,16 @@ export async function extractMenuFromWebsite(url: string): Promise<WebMenuItem[]
     );
   } finally {
     try {
+      logger.info("[WEB EXTRACT] Step 23: Closing browser...", {
+        isConnected: browser.isConnected(),
+      });
       await browser.close();
+      logger.info("[WEB EXTRACT] Step 24: Browser closed successfully");
     } catch (closeError) {
-      logger.warn("[WEB EXTRACT] Failed to close browser", { closeError });
+      logger.warn("[WEB EXTRACT] Failed to close browser", {
+        closeError,
+        browserConnected: browser.isConnected(),
+      });
     }
   }
 }
