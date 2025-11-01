@@ -246,6 +246,11 @@ export async function POST(req: NextRequest) {
       }
     }
 
+    // Extract existing categories from PDF items for intelligent categorization
+    const existingCategories = Array.from(
+      new Set(existingItems.map((item: any) => item.category).filter(Boolean))
+    );
+
     // Add unmatched URL items as new items (with strict duplicate checking)
     urlItems.forEach((urlItem: any, index: number) => {
       if (!matchedUrlItems.has(index)) {
@@ -260,12 +265,19 @@ export async function POST(req: NextRequest) {
         });
 
         if (!isDuplicate) {
+          // Intelligently categorize new item based on existing PDF categories
+          const intelligentCategory = intelligentlyCategorizeItem(
+            urlItem.name,
+            urlItem.description,
+            existingCategories
+          );
+
           inserts.push({
             venue_id: venueId,
             name: urlItem.name,
             description: urlItem.description || null,
             price: urlItem.price || 0,
-            category: "Uncategorized", // URL items can't reliably determine category
+            category: intelligentCategory,
             image_url: urlItem.image_url || null,
             is_available: true,
             position: existingItems.length + inserts.length,
@@ -273,8 +285,9 @@ export async function POST(req: NextRequest) {
           });
           stats.new++;
 
-          logger.info("[HYBRID MERGE] New item from URL (requires manual categorization)", {
+          logger.info("[HYBRID MERGE] New item from URL (auto-categorized)", {
             name: urlItem.name,
+            category: intelligentCategory,
             hasImage: !!urlItem.image_url,
           });
         } else {
@@ -379,6 +392,73 @@ export async function POST(req: NextRequest) {
       { status: 500 }
     );
   }
+}
+
+/**
+ * Intelligently categorize a new menu item based on existing categories
+ * Uses keyword matching and semantic analysis
+ */
+function intelligentlyCategorizeItem(
+  itemName: string,
+  itemDescription: string | undefined,
+  existingCategories: string[]
+): string {
+  const name = itemName.toLowerCase();
+  const desc = (itemDescription || "").toLowerCase();
+  const text = `${name} ${desc}`;
+
+  // First, try to match to existing PDF categories using keywords
+  const categoryKeywords: { [key: string]: string[] } = {
+    // Common category patterns
+    coffee: ["coffee", "espresso", "latte", "cappuccino", "americano", "mocha", "flat white"],
+    tea: ["tea", "chai", "matcha", "oolong", "green tea", "black tea"],
+    breakfast: ["breakfast", "eggs", "pancake", "waffle", "french toast", "shakshuka", "omelette"],
+    lunch: ["lunch", "sandwich", "burger", "wrap", "salad", "bowl"],
+    dessert: ["dessert", "cake", "cheesecake", "tiramisu", "mousse", "pastry", "sweet"],
+    pastries: ["croissant", "brioche", "pain au", "danish", "muffin", "scone"],
+    drinks: ["juice", "smoothie", "water", "soda", "drink", "beverage"],
+    food: ["rice", "pasta", "pizza", "taco", "burrito", "kebab", "curry"],
+    sides: ["fries", "chips", "side", "extra", "add-on"],
+  };
+
+  // Try to match item to existing categories
+  for (const existingCat of existingCategories) {
+    const catLower = existingCat.toLowerCase();
+
+    // Direct keyword match in item name
+    if (text.includes(catLower) || catLower.includes(name.split(" ")[0])) {
+      return existingCat;
+    }
+
+    // Check if category has known keywords
+    for (const [genericCat, keywords] of Object.entries(categoryKeywords)) {
+      if (catLower.includes(genericCat)) {
+        // This existing category matches a known type
+        for (const keyword of keywords) {
+          if (text.includes(keyword)) {
+            return existingCat; // Match to existing category
+          }
+        }
+      }
+    }
+  }
+
+  // No existing category match - infer a new category from item characteristics
+  if (text.match(/coffee|espresso|latte|cappuccino|americano|mocha/)) return "Coffee";
+  if (text.match(/tea|chai|matcha/)) return "Tea";
+  if (text.match(/breakfast|eggs|pancake|waffle|french toast|shakshuka/)) return "Breakfast";
+  if (text.match(/burger|sandwich|wrap/)) return "Sandwiches & Burgers";
+  if (text.match(/salad|bowl|quinoa/)) return "Salads";
+  if (text.match(/pizza|pasta|rice|taco/)) return "Mains";
+  if (text.match(/cake|cheesecake|tiramisu|dessert|mousse|sweet/)) return "Desserts";
+  if (text.match(/croissant|brioche|pastry|pain au/)) return "Pastries";
+  if (text.match(/juice|smoothie|water|drink/)) return "Beverages";
+  if (text.match(/fries|chips|side/)) return "Sides";
+
+  // Fallback: create category based on price
+  // Cheap items (< £3) are likely drinks/sides, expensive (> £8) are mains
+  // This is a last resort
+  return "Other Items";
 }
 
 /**
