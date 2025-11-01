@@ -3,6 +3,10 @@ import DashboardClient from "./page.client";
 import { createAdminClient } from "@/lib/supabase";
 import { todayWindowForTZ } from "@/lib/time";
 
+// Force dynamic rendering to prevent stale cached menu counts
+export const dynamic = "force-dynamic";
+export const revalidate = 0;
+
 export default async function VenuePage({ params }: { params: Promise<{ venueId: string }> }) {
   const { venueId } = await params;
 
