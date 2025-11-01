@@ -69,8 +69,17 @@ Rules:
 
     logger.info("[VISION] Item extraction response length:", { length: text.length });
 
-    // Extract JSON from response (might be wrapped in markdown)
-    const jsonMatch = text.match(/\[[\s\S]*\]/);
+    // Extract JSON from response (might be wrapped in markdown like ```json [...] ```)
+    let jsonText = text;
+
+    // Remove markdown code blocks if present
+    if (text.includes("```json")) {
+      jsonText = text.replace(/```json\s*/g, "").replace(/```\s*/g, "");
+    } else if (text.includes("```")) {
+      jsonText = text.replace(/```\s*/g, "");
+    }
+
+    const jsonMatch = jsonText.match(/\[[\s\S]*\]/);
     if (!jsonMatch) {
       logger.error("[VISION] No JSON array found in item extraction response:", text);
       return [];
@@ -169,8 +178,17 @@ Return ONLY a JSON array, no markdown, no explanation.
     logger.info("[VISION] Raw response length:", { length: text.length });
     logger.info("[VISION] First 200 chars:", text.substring(0, 200));
 
-    // Extract JSON from response (might be wrapped in markdown or have explanation text)
-    const jsonMatch = text.match(/\[[\s\S]*\]/);
+    // Extract JSON from response (might be wrapped in markdown like ```json [...] ```)
+    let jsonText = text;
+
+    // Remove markdown code blocks if present
+    if (text.includes("```json")) {
+      jsonText = text.replace(/```json\s*/g, "").replace(/```\s*/g, "");
+    } else if (text.includes("```")) {
+      jsonText = text.replace(/```\s*/g, "");
+    }
+
+    const jsonMatch = jsonText.match(/\[[\s\S]*\]/);
     if (!jsonMatch) {
       logger.error("[VISION] No JSON array found in response:", text);
       // Return empty array instead of crashing
