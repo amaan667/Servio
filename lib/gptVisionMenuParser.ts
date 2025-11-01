@@ -33,10 +33,18 @@ From the image, extract structured JSON in the following format:
   ...
 ]
 
-Rules:
+CRITICAL RULES FOR CATEGORIES:
+- A CATEGORY is a SECTION HEADER on the menu (like "Starters", "Mains", "Desserts", "Hot Drinks", "Coffee")
+- A CATEGORY is NOT an item name - it's the heading ABOVE a group of items
+- Look for larger text, headers, or section dividers that group multiple items together
+- If you see "BREAKFAST" heading with items below it, those items belong to category "Breakfast"
+- If you see "COFFEE" heading with "Espresso", "Latte", etc. below, they all belong to category "Coffee"
+- DO NOT use item names like "Croissant" or "Latte" as categories
+- If no clear category header exists, use a generic category like "Menu Items"
+
+OTHER RULES:
 - Include all items that have names and prices.
 - Use the English translation if bilingual.
-- Group items under reasonable categories.
 - Add-ons should be included with "Add-on" in the name.
   `;
 
@@ -92,6 +100,19 @@ Rules:
     }
 
     logger.info("[VISION] Extracted items:", { count: json.length });
+
+    // Log categories for debugging
+    const categories = Array.from(new Set(json.map((item: any) => item.category).filter(Boolean)));
+    logger.info("[VISION PDF] Categories extracted:", {
+      count: categories.length,
+      categories: categories,
+      sampleItems: json.slice(0, 3).map((item: any) => ({
+        name: item.name,
+        category: item.category,
+        price: item.price,
+      })),
+    });
+
     return json;
   } catch (_err) {
     logger.error("Failed to parse item extraction JSON:", text);

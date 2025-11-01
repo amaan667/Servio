@@ -418,21 +418,47 @@ async function extractFromDOM(page: any): Promise<WebMenuItem[]> {
           }
         }
 
-        // Find category (from parent sections)
+        // Find category (look BEFORE this item for section headers, not inside parents)
         let category = "";
-        let parentEl = el.parentElement;
-        let depth = 0;
 
-        while (parentEl && depth < 5) {
-          const categoryEl = parentEl.querySelector('h2, h3, [data-category], [class*="category"]');
-          if (categoryEl) {
-            category = categoryEl.textContent?.trim() || "";
-            if (category && category !== name) {
+        // Strategy 1: Look for preceding heading (h1, h2, h3) that's NOT an item name
+        let currentEl: Element | null = el;
+        for (let i = 0; i < 10; i++) {
+          const prevSibling = currentEl?.previousElementSibling;
+          if (!prevSibling) break;
+
+          // Check if it's a heading
+          if (prevSibling.tagName && ["H1", "H2", "H3", "H4"].includes(prevSibling.tagName)) {
+            const headerText = prevSibling.textContent?.trim() || "";
+            // Make sure it's not an item name (no price in it)
+            if (headerText && headerText.length < 50 && !/[£$€]\s*\d+/.test(headerText)) {
+              category = headerText;
               break;
             }
           }
-          parentEl = parentEl.parentElement;
-          depth++;
+
+          currentEl = prevSibling;
+        }
+
+        // Strategy 2: Check parent for section container
+        if (!category) {
+          let parentEl = el.parentElement;
+          let depth = 0;
+          while (parentEl && depth < 3) {
+            // Look for heading BEFORE parent section
+            const precedingHeading = parentEl.querySelector(
+              'h2, h3, [class*="section-title"], [class*="category-title"]'
+            );
+            if (precedingHeading) {
+              const headerText = precedingHeading.textContent?.trim() || "";
+              if (headerText && headerText !== name && headerText.length < 50) {
+                category = headerText;
+                break;
+              }
+            }
+            parentEl = parentEl.parentElement;
+            depth++;
+          }
         }
 
         // Only add items with at least a name
@@ -454,6 +480,19 @@ async function extractFromDOM(page: any): Promise<WebMenuItem[]> {
     });
 
     console.log(`[DOM] Successfully extracted ${items.length} items`);
+
+    // Log categories for debugging
+    const categories = Array.from(new Set(items.map((item: any) => item.category).filter(Boolean)));
+    console.log(`[DOM URL] Categories extracted:`, {
+      count: categories.length,
+      categories: categories,
+      sampleItems: items.slice(0, 3).map((item: any) => ({
+        name: item.name,
+        category: item.category,
+        price: item.price,
+      })),
+    });
+
     return items;
   });
 }
