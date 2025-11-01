@@ -92,6 +92,7 @@ export async function POST(req: NextRequest) {
 
     logger.info("[HYBRID MERGE] URL items processed", {
       count: urlItems.length,
+      withImages: urlItems.filter((i: any) => i.image_url).length,
       existingPdfItems: existingItems.length,
     });
 
@@ -109,187 +110,151 @@ export async function POST(req: NextRequest) {
       );
     }
 
-    // Step 3: Use AI to intelligently match and merge items
-    logger.info("[HYBRID MERGE] Starting AI merge", {
+    // Step 3: Smart merge - combine PDF and URL data to get the best menu
+    // PDF: Complete menu structure, item IDs
+    // URL: Images, current prices, better descriptions
+    logger.info("[HYBRID MERGE] Starting smart merge", {
       pdfItems: existingItems.length,
       urlItems: urlItems.length,
+      urlImagesAvailable: urlItems.filter((i: any) => i.image_url).length,
     });
 
-    const aiPrompt = `You are a menu data expert. Compare these two menus and intelligently merge them.
-
-PDF Menu Items (${existingItems.length} items):
-${JSON.stringify(
-  existingItems.map((item) => ({
-    name: item.name,
-    description: item.description,
-    price: item.price,
-    category: item.category,
-  })),
-  null,
-  2
-)}
-
-URL Menu Items (${urlItems.length} items):
-${JSON.stringify(
-  urlItems.map(
-    (item: {
-      name: string;
-      description?: string;
-      price: number;
-      category: string;
-      image?: string;
-    }) => ({
-      name: item.name,
-      description: item.description,
-      price: item.price,
-      category: item.category,
-      image: item.image,
-    })
-  ),
-  null,
-  2
-)}
-
-Instructions:
-1. Match items from URL to PDF items by name similarity (fuzzy matching)
-2. For matched items:
-   - Keep PDF item structure (id, position, etc.)
-   - UPDATE price if URL has different price (URL is more current)
-   - UPDATE description if URL has better/longer description
-   - ADD image from URL if PDF doesn't have one
-   - MERGE categories intelligently
-3. For unmatched URL items:
-   - Mark as "new_from_url": true
-4. For unmatched PDF items:
-   - Keep as-is (they exist in PDF but not online)
-
-Return a JSON array of merged items with this structure:
-[{
-  "pdf_item_id": "uuid or null if new",
-  "name": "Item Name",
-  "description": "Description (from URL if better, else PDF)",
-  "price": number (from URL if different, else PDF),
-  "category": "Category",
-  "image": "URL or null",
-  "action": "update" | "keep" | "new",
-  "changes": ["price_updated", "description_added", "image_added"] or []
-}]
-
-Be smart about matching:
-- "Eggs Benedict" matches "Eggs Benedict Add-on"
-- "Chicken Waffles" matches "Chicken & Waffles"
-- Use fuzzy string matching
-- Consider price similarity as secondary indicator`;
-
-    logger.info("[HYBRID MERGE] Calling OpenAI for merge analysis...");
-    const aiResponse = await openai.chat.completions.create({
-      model: "gpt-4o",
-      messages: [
-        {
-          role: "system",
-          content:
-            "You are a menu data expert. Return ONLY valid JSON, no markdown, no explanation.",
-        },
-        {
-          role: "user",
-          content: aiPrompt,
-        },
-      ],
-      temperature: 0.3,
-      response_format: { type: "json_object" },
-    });
-
-    logger.info("[HYBRID MERGE] OpenAI response received");
-
-    const aiContent = aiResponse.choices[0]?.message?.content;
-    if (!aiContent) {
-      throw new Error("AI response was empty");
-    }
-
-    let mergedItems;
-    try {
-      const parsed = JSON.parse(aiContent);
-      mergedItems = parsed.items || parsed.mergedItems || parsed;
-      if (!Array.isArray(mergedItems)) {
-        mergedItems = [mergedItems];
-      }
-      logger.info("[HYBRID MERGE] AI merge parsed successfully", {
-        mergedCount: mergedItems.length,
-      });
-    } catch (_parseError) {
-      logger.error("[HYBRID MERGE] Failed to parse AI response", { error: _parseError });
-      throw new Error("AI returned invalid JSON");
-    }
-
-    // Step 4: Apply updates to database
-    logger.info("[HYBRID MERGE] Processing merge results for database updates...");
-
-    const updates = [];
-    const inserts = [];
+    const updates: any[] = [];
+    const inserts: any[] = [];
+    const matchedUrlItems = new Set<number>();
     const stats = {
       updated: 0,
       new: 0,
       unchanged: 0,
-      prices_updated: 0,
-      descriptions_added: 0,
-      images_added: 0,
+      imagesAdded: 0,
+      pricesUpdated: 0,
+      descriptionsUpdated: 0,
     };
 
-    for (const mergedItem of mergedItems) {
-      if (mergedItem.action === "update" && mergedItem.pdf_item_id) {
-        // Update existing item
-        const updateData: Record<string, string | number> = {
-          /* Empty */
-        };
+    // Match PDF items with URL items
+    for (const pdfItem of existingItems) {
+      let bestMatch: any = null;
+      let bestSimilarity = 0;
 
-        if (mergedItem.changes.includes("price_updated")) {
-          updateData.price = mergedItem.price;
-          stats.prices_updated++;
+      // Find best matching URL item by name
+      urlItems.forEach((urlItem: any, index: number) => {
+        const similarity = calculateStringSimilarity(
+          pdfItem.name.toLowerCase().trim(),
+          urlItem.name.toLowerCase().trim()
+        );
+
+        if (similarity > bestSimilarity && similarity > 0.7) {
+          // 70% similarity threshold
+          bestSimilarity = similarity;
+          bestMatch = { ...urlItem, index };
+        }
+      });
+
+      if (bestMatch) {
+        matchedUrlItems.add(bestMatch.index);
+
+        // Found a match - compare ALL fields and choose the best data
+        const updateData: any = {};
+        let hasChanges = false;
+        const changes: string[] = [];
+
+        // IMAGE: URL always wins (PDF doesn't have images)
+        if (bestMatch.image_url && bestMatch.image_url !== pdfItem.image_url) {
+          updateData.image_url = bestMatch.image_url;
+          stats.imagesAdded++;
+          hasChanges = true;
+          changes.push("image");
         }
 
+        // PRICE: URL wins (more current/accurate)
+        if (bestMatch.price && bestMatch.price > 0 && bestMatch.price !== pdfItem.price) {
+          updateData.price = bestMatch.price;
+          stats.pricesUpdated++;
+          hasChanges = true;
+          changes.push(`price: ${pdfItem.price} → ${bestMatch.price}`);
+        }
+
+        // DESCRIPTION: Choose longer/better description
+        const pdfDescLength = pdfItem.description?.length || 0;
+        const urlDescLength = bestMatch.description?.length || 0;
+        if (urlDescLength > pdfDescLength && bestMatch.description) {
+          updateData.description = bestMatch.description;
+          stats.descriptionsUpdated++;
+          hasChanges = true;
+          changes.push(`description: ${pdfDescLength} → ${urlDescLength} chars`);
+        }
+
+        // CATEGORY: Use URL category if different and valid
         if (
-          mergedItem.changes.includes("description_added") ||
-          mergedItem.changes.includes("description_updated")
+          bestMatch.category &&
+          bestMatch.category !== "Menu Items" &&
+          bestMatch.category !== pdfItem.category
         ) {
-          updateData.description = mergedItem.description;
-          stats.descriptions_added++;
+          updateData.category = bestMatch.category;
+          hasChanges = true;
+          changes.push(`category: ${pdfItem.category} → ${bestMatch.category}`);
         }
 
-        if (mergedItem.changes.includes("image_added") && mergedItem.image) {
-          updateData.image_url = mergedItem.image;
-          stats.images_added++;
+        // NAME: Use URL name if it's longer/more detailed
+        if (bestMatch.name.length > pdfItem.name.length) {
+          updateData.name = bestMatch.name;
+          hasChanges = true;
+          changes.push(`name: ${pdfItem.name} → ${bestMatch.name}`);
         }
 
-        if (Object.keys(updateData).length > 0) {
+        if (hasChanges) {
           updateData.updated_at = new Date().toISOString();
           updates.push({
-            id: mergedItem.pdf_item_id,
+            id: pdfItem.id,
             ...updateData,
           });
           stats.updated++;
+
+          logger.info("[HYBRID MERGE] Enhanced item", {
+            originalName: pdfItem.name,
+            matchedName: bestMatch.name,
+            similarity: Math.round(bestSimilarity * 100) + "%",
+            improvements: changes,
+          });
         } else {
           stats.unchanged++;
+          logger.info("[HYBRID MERGE] Item unchanged (already optimal)", {
+            name: pdfItem.name,
+          });
         }
-      } else if (mergedItem.action === "new") {
-        // New item from URL
+      } else {
+        // No match found - keep PDF item as-is
+        stats.unchanged++;
+        logger.info("[HYBRID MERGE] No URL match for PDF item", {
+          name: pdfItem.name,
+        });
+      }
+    }
+
+    // Add unmatched URL items as new items
+    urlItems.forEach((urlItem: any, index: number) => {
+      if (!matchedUrlItems.has(index)) {
         inserts.push({
           venue_id: venueId,
-          name: mergedItem.name,
-          description: mergedItem.description || null,
-          price: mergedItem.price,
-          category: mergedItem.category || "Other",
-          image_url: mergedItem.image || null,
+          name: urlItem.name,
+          description: urlItem.description || null,
+          price: urlItem.price || 0,
+          category: urlItem.category || "Menu Items",
+          image_url: urlItem.image_url || null,
           is_available: true,
           position: existingItems.length + inserts.length,
           created_at: new Date().toISOString(),
         });
         stats.new++;
-      } else {
-        stats.unchanged++;
-      }
-    }
 
-    // Execute database updates
+        logger.info("[HYBRID MERGE] New item from URL", {
+          name: urlItem.name,
+          hasImage: !!urlItem.image_url,
+        });
+      }
+    });
+
+    // Apply updates to database
     logger.info("[HYBRID MERGE] Applying database changes", {
       updates: updates.length,
       inserts: inserts.length,
@@ -305,21 +270,23 @@ Be smart about matching:
           .eq("venue_id", venueId);
 
         if (error) {
-          logger.error("[HYBRID MERGE] Update failed for item", { id, error: error.message });
+          logger.error("[HYBRID MERGE] Update failed for item", {
+            id,
+            error: error.message,
+          });
         }
       }
-      logger.info("[HYBRID MERGE] Database updates completed", { count: updates.length });
     }
 
-    // Execute database inserts
     if (inserts.length > 0) {
       const { error: insertError } = await supabase.from("menu_items").insert(inserts);
 
       if (insertError) {
-        logger.error("[HYBRID MERGE] Insert failed", { error: insertError.message });
+        logger.error("[HYBRID MERGE] Insert failed", {
+          error: insertError.message,
+        });
         throw new Error(`Failed to insert new items: ${insertError.message}`);
       }
-      logger.info("[HYBRID MERGE] Database inserts completed", { count: inserts.length });
     }
 
     logger.info("[HYBRID MERGE] ===== MERGE COMPLETED SUCCESSFULLY =====", {
@@ -329,11 +296,14 @@ Be smart about matching:
     return NextResponse.json({
       ok: true,
       stats,
-      message: `Merged successfully: ${stats.updated} updated, ${stats.new} new items added`,
+      message: `Merge successful: ${stats.updated} items enhanced, ${stats.new} new items added, ${stats.unchanged} unchanged`,
       details: {
-        pricesUpdated: stats.prices_updated,
-        descriptionsAdded: stats.descriptions_added,
-        imagesAdded: stats.images_added,
+        itemsEnhanced: stats.updated,
+        newItems: stats.new,
+        unchangedItems: stats.unchanged,
+        imagesAdded: stats.imagesAdded,
+        pricesUpdated: stats.pricesUpdated,
+        descriptionsUpdated: stats.descriptionsUpdated,
       },
     });
   } catch (_error) {
@@ -350,4 +320,57 @@ Be smart about matching:
       { status: 500 }
     );
   }
+}
+
+/**
+ * Calculate string similarity using Levenshtein distance
+ * Returns a value between 0 (no similarity) and 1 (identical)
+ */
+function calculateStringSimilarity(str1: string, str2: string): number {
+  // Quick exact match check
+  if (str1 === str2) return 1.0;
+
+  // If one contains the other, high similarity
+  if (str1.includes(str2) || str2.includes(str1)) {
+    return 0.9;
+  }
+
+  const longer = str1.length > str2.length ? str1 : str2;
+  const shorter = str1.length > str2.length ? str2 : str1;
+
+  if (longer.length === 0) return 1.0;
+
+  const editDistance = levenshteinDistance(longer, shorter);
+  return (longer.length - editDistance) / longer.length;
+}
+
+/**
+ * Calculate Levenshtein distance between two strings
+ */
+function levenshteinDistance(str1: string, str2: string): number {
+  const matrix: number[][] = [];
+
+  for (let i = 0; i <= str2.length; i++) {
+    matrix[i] = [i];
+  }
+
+  for (let j = 0; j <= str1.length; j++) {
+    matrix[0][j] = j;
+  }
+
+  for (let i = 1; i <= str2.length; i++) {
+    for (let j = 1; j <= str1.length; j++) {
+      if (str2.charAt(i - 1) === str1.charAt(j - 1)) {
+        matrix[i][j] = matrix[i - 1][j - 1];
+      } else {
+        matrix[i][j] = Math.min(
+          matrix[i - 1][j - 1] + 1, // substitution
+          matrix[i][j - 1] + 1, // insertion
+          matrix[i - 1][j] + 1 // deletion
+        );
+      }
+    }
+  }
+
+  return matrix[str2.length][str1.length];
 }
