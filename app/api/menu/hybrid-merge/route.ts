@@ -1104,40 +1104,105 @@ function assignToPdfCategory(
     }
   }
 
-  // Step 2: No PDF category match - create new category based on item type
-  // Try to match the most specific category first
+  // Step 2: No PDF category match - try to intelligently assign based on item characteristics
+
+  // Build a map of item type → best PDF category
+  const itemTypeMap: { [key: string]: string | null } = {
+    coffee: null,
+    tea: null,
+    breakfast: null,
+    mains: null,
+    dessert: null,
+    starter: null,
+  };
+
+  // Find best PDF category for each item type
+  for (const pdfCat of pdfCategories) {
+    const normalized = normalizeText(pdfCat);
+    if (normalized.includes("coffee") || normalized.includes("espresso"))
+      itemTypeMap.coffee = pdfCat;
+    if (normalized.includes("tea")) itemTypeMap.tea = pdfCat;
+    if (normalized.includes("breakfast") || normalized.includes("brunch"))
+      itemTypeMap.breakfast = pdfCat;
+    if (normalized.includes("main") || normalized.includes("entree")) itemTypeMap.mains = pdfCat;
+    if (normalized.includes("dessert") || normalized.includes("sweet"))
+      itemTypeMap.dessert = pdfCat;
+    if (normalized.includes("starter") || normalized.includes("appetizer"))
+      itemTypeMap.starter = pdfCat;
+  }
+
+  // Try to assign to appropriate PDF category based on keywords
   if (text.match(/coffee|espresso|latte|cappuccino|americano|mocha|cortado|flat white/)) {
-    logger.info("[CATEGORY ASSIGNMENT] Creating new category", {
+    const category = itemTypeMap.coffee || "Coffee";
+    logger.info("[CATEGORY ASSIGNMENT] Matched to category", {
       item: itemName,
-      category: "Coffee",
-      reason: "no_pdf_category_match",
+      category,
+      type: "coffee",
+      isPdfCategory: !!itemTypeMap.coffee,
     });
-    return "Coffee";
+    return category;
   }
-  if (text.match(/tea|chai|matcha|earl grey|chamomile|green tea|black tea/)) return "Tea";
-  if (text.match(/breakfast|eggs|pancake|waffle|french toast|shakshuka|benedict|omelette/))
-    return "Breakfast";
-  if (text.match(/burger|sandwich|wrap|panini|shawarma/)) return "Sandwiches & Burgers";
-  if (text.match(/salad|bowl|quinoa|tabbouleh/)) return "Salads";
-  if (text.match(/pasta|pizza|rice|chicken|beef|lamb|fish|steak|curry|grilled/)) return "Mains";
-  if (text.match(/cake|cheesecake|tiramisu|dessert|mousse|sweet|tart|pudding/)) return "Desserts";
-  if (text.match(/croissant|brioche|pastry|pain au|danish|muffin|scone|baklava/)) return "Pastries";
-  if (text.match(/juice|smoothie|water|drink|lemonade|beverage/)) return "Beverages";
-  if (text.match(/starter|appetizer|houmous|hummus|dip|mezze/)) return "Starters";
-  if (text.match(/fries|chips|side|bread/)) return "Sides";
+  if (text.match(/tea|chai|matcha|earl grey|chamomile|green tea|black tea/)) {
+    return itemTypeMap.tea || "Tea";
+  }
+  if (text.match(/breakfast|eggs|pancake|waffle|french toast|shakshuka|benedict|omelette|brunch/)) {
+    return itemTypeMap.breakfast || "Breakfast";
+  }
+  if (text.match(/burger|sandwich|wrap|panini|shawarma/)) {
+    return itemTypeMap.mains || "Sandwiches & Burgers";
+  }
+  if (text.match(/salad|bowl|quinoa|tabbouleh/)) {
+    return itemTypeMap.mains || "Salads";
+  }
+  if (text.match(/pasta|pizza|rice|chicken|beef|lamb|fish|steak|curry|grilled|fried|taco/)) {
+    return itemTypeMap.mains || "Mains";
+  }
+  if (text.match(/cake|cheesecake|tiramisu|dessert|mousse|sweet|tart|pudding/)) {
+    return itemTypeMap.dessert || "Desserts";
+  }
+  if (text.match(/croissant|brioche|pastry|pain au|danish|muffin|scone|baklava/)) {
+    return itemTypeMap.dessert || "Pastries";
+  }
+  if (text.match(/juice|smoothie|water|drink|lemonade|beverage/)) {
+    return "Beverages";
+  }
+  if (text.match(/starter|appetizer|houmous|hummus|dip|mezze/)) {
+    return itemTypeMap.starter || "Starters";
+  }
+  if (text.match(/fries|chips|side|bread/)) {
+    return "Sides";
+  }
 
-  // Fallback: assign to most generic PDF category if it exists
-  const genericCategories = ["Menu Items", "Other Items", "Other", "Mains", "Food"];
-  for (const generic of genericCategories) {
-    if (pdfCategories.some((cat) => normalizeText(cat) === normalizeText(generic))) {
-      return pdfCategories.find((cat) => normalizeText(cat) === normalizeText(generic))!;
+  // Fallback: If we have limited PDF categories, assign to the most general one
+  // This is better than creating a "Menu Items" catch-all
+  if (pdfCategories.length > 0) {
+    // Prefer the largest or most general category
+    const preferredOrder = ["mains", "main", "food", "entree", "all day", "menu"];
+    for (const preferred of preferredOrder) {
+      const match = pdfCategories.find((cat) => normalizeText(cat).includes(preferred));
+      if (match) {
+        logger.info("[CATEGORY ASSIGNMENT] Fallback to general PDF category", {
+          item: itemName,
+          category: match,
+          reason: "no_specific_match",
+        });
+        return match;
+      }
     }
+
+    // Last resort: use first PDF category (likely the most used one)
+    logger.info("[CATEGORY ASSIGNMENT] Fallback to first PDF category", {
+      item: itemName,
+      category: pdfCategories[0],
+      reason: "no_match_found",
+    });
+    return pdfCategories[0];
   }
 
-  logger.info("[CATEGORY ASSIGNMENT] Creating fallback category", {
+  // Only create "Menu Items" if there are NO PDF categories at all
+  logger.warn("[CATEGORY ASSIGNMENT] No PDF categories exist - creating fallback", {
     item: itemName,
     category: "Menu Items",
-    reason: "no_match_found",
   });
 
   return "Menu Items";
