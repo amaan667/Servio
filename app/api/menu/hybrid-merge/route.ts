@@ -30,7 +30,7 @@ const CONFIG = {
   LOW_CONFIDENCE: 0.7,
 
   // Image handling
-  DEDUPE_IMAGES: true,
+  DEDUPE_IMAGES: false, // Track duplicates but don't remove them - each item should keep its image
   PLACEHOLDER_IMAGE: "https://cdn.servio.ai/images/placeholder.png",
 } as const;
 
@@ -348,16 +348,14 @@ function deduplicateItems(items: any[]): DedupedData {
 
     seen.add(key);
 
-    // Handle image deduplication
-    if (CONFIG.DEDUPE_IMAGES && item.image_url) {
+    // Track image duplicates for stats but DON'T remove them
+    // Each item should keep its image even if multiple items share the same image
+    if (item.image_url) {
       const hash = hashImageUrl(item.image_url);
       if (hash && imageHashes.has(hash)) {
         duplicateImages++;
-        logger.info("[DEDUPE] Duplicate image detected", {
-          name: item.name,
-          url: item.image_url.substring(0, 50),
-        });
-        item.image_url = null; // Remove duplicate
+        // Don't log every duplicate - too verbose
+        // logger.info("[DEDUPE] Duplicate image URL detected (keeping it)", { name: item.name });
       } else if (hash) {
         imageHashes.add(hash);
       }
@@ -708,10 +706,15 @@ export async function POST(req: NextRequest) {
       }
     }
 
-    // Extract existing categories from PDF items for intelligent categorization
-    const existingCategories = Array.from(
-      new Set(existingItems.map((item: any) => normalizeCategory(item.category)).filter(Boolean))
+    // Extract existing PDF categories as source of truth
+    const pdfCategories = Array.from(
+      new Set(existingItems.map((item: any) => item.category).filter(Boolean))
     );
+
+    logger.info("[HYBRID MERGE v2.0] PDF categories (source of truth)", {
+      count: pdfCategories.length,
+      categories: pdfCategories,
+    });
 
     // Add unmatched URL items as new items (with strict duplicate checking)
     logger.info("[HYBRID MERGE v2.0] Step 4: Processing unmatched URL items", {
@@ -737,11 +740,11 @@ export async function POST(req: NextRequest) {
         }
 
         if (!isDuplicate) {
-          // Intelligently categorize new item based on existing PDF categories
-          const intelligentCategory = intelligentlyCategorizeItem(
+          // Intelligently assign to PDF category or create new one
+          const assignedCategory = assignToPdfCategory(
             urlItem.name,
             urlItem.description,
-            existingCategories
+            pdfCategories
           );
 
           inserts.push({
@@ -749,7 +752,7 @@ export async function POST(req: NextRequest) {
             name: urlItem.name,
             description: urlItem.description || null,
             price: urlItem.price || 0,
-            category: normalizeCategory(intelligentCategory),
+            category: assignedCategory,
             image_url: urlItem.image_url || null,
             is_available: true,
             position: existingItems.length + inserts.length,
@@ -759,7 +762,7 @@ export async function POST(req: NextRequest) {
 
           logger.info("[HYBRID MERGE v2.0] New item from URL", {
             name: urlItem.name,
-            category: intelligentCategory,
+            category: assignedCategory,
             hasImage: !!urlItem.image_url,
             price: urlItem.price,
           });
@@ -976,70 +979,168 @@ export async function POST(req: NextRequest) {
 }
 
 /**
- * Intelligently categorize a new menu item based on existing categories
- * Uses keyword matching and semantic analysis
+ * Assign URL item to existing PDF category or create new category
+ * PDF categories are the source of truth - try to fit items into them first
  */
-function intelligentlyCategorizeItem(
+function assignToPdfCategory(
   itemName: string,
   itemDescription: string | undefined,
-  existingCategories: string[]
+  pdfCategories: string[]
 ): string {
   const name = itemName.toLowerCase();
   const desc = (itemDescription || "").toLowerCase();
   const text = `${name} ${desc}`;
 
-  // First, try to match to existing PDF categories using keywords
+  // Enhanced category keywords - more comprehensive
   const categoryKeywords: { [key: string]: string[] } = {
-    // Common category patterns
-    coffee: ["coffee", "espresso", "latte", "cappuccino", "americano", "mocha", "flat white"],
-    tea: ["tea", "chai", "matcha", "oolong", "green tea", "black tea"],
-    breakfast: ["breakfast", "eggs", "pancake", "waffle", "french toast", "shakshuka", "omelette"],
-    lunch: ["lunch", "sandwich", "burger", "wrap", "salad", "bowl"],
-    dessert: ["dessert", "cake", "cheesecake", "tiramisu", "mousse", "pastry", "sweet"],
-    pastries: ["croissant", "brioche", "pain au", "danish", "muffin", "scone"],
-    drinks: ["juice", "smoothie", "water", "soda", "drink", "beverage"],
-    food: ["rice", "pasta", "pizza", "taco", "burrito", "kebab", "curry"],
-    sides: ["fries", "chips", "side", "extra", "add-on"],
+    // Beverages
+    coffee: [
+      "coffee",
+      "espresso",
+      "latte",
+      "cappuccino",
+      "americano",
+      "mocha",
+      "flat white",
+      "cortado",
+      "macchiato",
+    ],
+    tea: [
+      "tea",
+      "chai",
+      "matcha",
+      "oolong",
+      "green tea",
+      "black tea",
+      "earl grey",
+      "chamomile",
+      "moroccan mint",
+    ],
+    drinks: ["juice", "smoothie", "water", "soda", "drink", "beverage", "lemonade", "milkshake"],
+
+    // Meals
+    breakfast: [
+      "breakfast",
+      "eggs",
+      "pancake",
+      "waffle",
+      "french toast",
+      "shakshuka",
+      "omelette",
+      "benedict",
+      "brunch",
+      "granola",
+      "yogurt",
+      "porridge",
+    ],
+    mains: [
+      "burger",
+      "pasta",
+      "pizza",
+      "rice",
+      "chicken",
+      "beef",
+      "lamb",
+      "fish",
+      "steak",
+      "curry",
+      "stir fry",
+      "grilled",
+      "fried",
+    ],
+    salads: ["salad", "bowl", "quinoa", "tabbouleh", "caesar", "greek", "nicoise"],
+    sandwiches: ["sandwich", "wrap", "panini", "ciabatta", "baguette", "sub", "hoagie", "shawarma"],
+
+    // Sweet
+    desserts: [
+      "dessert",
+      "cake",
+      "cheesecake",
+      "tiramisu",
+      "mousse",
+      "pudding",
+      "sweet",
+      "tart",
+      "pie",
+    ],
+    pastries: ["croissant", "brioche", "pain au", "danish", "muffin", "scone", "donut", "baklava"],
+
+    // Other
+    starters: ["starter", "appetizer", "houmous", "hummus", "dip", "mezze", "tapas", "antipasti"],
+    sides: ["fries", "chips", "side", "extra", "add-on", "bread", "olives"],
   };
 
-  // Try to match item to existing categories
-  for (const existingCat of existingCategories) {
-    const catLower = existingCat.toLowerCase();
+  // Step 1: Try to match to existing PDF categories using keywords
+  for (const pdfCategory of pdfCategories) {
+    const catLower = pdfCategory.toLowerCase();
+    const catNormalized = normalizeText(pdfCategory);
 
-    // Direct keyword match in item name
-    if (text.includes(catLower) || catLower.includes(name.split(" ")[0])) {
-      return existingCat;
+    // Direct keyword match in item name (e.g., "Espresso" → "Coffee" category)
+    if (text.includes(catNormalized) || catNormalized.includes(name.split(" ")[0])) {
+      logger.info("[CATEGORY ASSIGNMENT] Direct match to PDF category", {
+        item: itemName,
+        category: pdfCategory,
+        reason: "keyword_in_item_or_category",
+      });
+      return pdfCategory;
     }
 
-    // Check if category has known keywords
+    // Check if PDF category matches any known type and item has those keywords
     for (const [genericCat, keywords] of Object.entries(categoryKeywords)) {
-      if (catLower.includes(genericCat)) {
-        // This existing category matches a known type
+      if (catNormalized.includes(genericCat)) {
+        // This PDF category is about coffee, tea, breakfast, etc.
         for (const keyword of keywords) {
           if (text.includes(keyword)) {
-            return existingCat; // Match to existing category
+            logger.info("[CATEGORY ASSIGNMENT] Keyword match to PDF category", {
+              item: itemName,
+              category: pdfCategory,
+              keyword: keyword,
+              reason: "keyword_match",
+            });
+            return pdfCategory; // Assign to this PDF category
           }
         }
       }
     }
   }
 
-  // No existing category match - infer a new category from item characteristics
-  if (text.match(/coffee|espresso|latte|cappuccino|americano|mocha/)) return "Coffee";
-  if (text.match(/tea|chai|matcha/)) return "Tea";
-  if (text.match(/breakfast|eggs|pancake|waffle|french toast|shakshuka/)) return "Breakfast";
-  if (text.match(/burger|sandwich|wrap/)) return "Sandwiches & Burgers";
-  if (text.match(/salad|bowl|quinoa/)) return "Salads";
-  if (text.match(/pizza|pasta|rice|taco/)) return "Mains";
-  if (text.match(/cake|cheesecake|tiramisu|dessert|mousse|sweet/)) return "Desserts";
-  if (text.match(/croissant|brioche|pastry|pain au/)) return "Pastries";
-  if (text.match(/juice|smoothie|water|drink/)) return "Beverages";
-  if (text.match(/fries|chips|side/)) return "Sides";
+  // Step 2: No PDF category match - create new category based on item type
+  // Try to match the most specific category first
+  if (text.match(/coffee|espresso|latte|cappuccino|americano|mocha|cortado|flat white/)) {
+    logger.info("[CATEGORY ASSIGNMENT] Creating new category", {
+      item: itemName,
+      category: "Coffee",
+      reason: "no_pdf_category_match",
+    });
+    return "Coffee";
+  }
+  if (text.match(/tea|chai|matcha|earl grey|chamomile|green tea|black tea/)) return "Tea";
+  if (text.match(/breakfast|eggs|pancake|waffle|french toast|shakshuka|benedict|omelette/))
+    return "Breakfast";
+  if (text.match(/burger|sandwich|wrap|panini|shawarma/)) return "Sandwiches & Burgers";
+  if (text.match(/salad|bowl|quinoa|tabbouleh/)) return "Salads";
+  if (text.match(/pasta|pizza|rice|chicken|beef|lamb|fish|steak|curry|grilled/)) return "Mains";
+  if (text.match(/cake|cheesecake|tiramisu|dessert|mousse|sweet|tart|pudding/)) return "Desserts";
+  if (text.match(/croissant|brioche|pastry|pain au|danish|muffin|scone|baklava/)) return "Pastries";
+  if (text.match(/juice|smoothie|water|drink|lemonade|beverage/)) return "Beverages";
+  if (text.match(/starter|appetizer|houmous|hummus|dip|mezze/)) return "Starters";
+  if (text.match(/fries|chips|side|bread/)) return "Sides";
 
-  // Fallback: create category based on price
-  // Cheap items (< £3) are likely drinks/sides, expensive (> £8) are mains
-  // This is a last resort
-  return "Other Items";
+  // Fallback: assign to most generic PDF category if it exists
+  const genericCategories = ["Menu Items", "Other Items", "Other", "Mains", "Food"];
+  for (const generic of genericCategories) {
+    if (pdfCategories.some((cat) => normalizeText(cat) === normalizeText(generic))) {
+      return pdfCategories.find((cat) => normalizeText(cat) === normalizeText(generic))!;
+    }
+  }
+
+  logger.info("[CATEGORY ASSIGNMENT] Creating fallback category", {
+    item: itemName,
+    category: "Menu Items",
+    reason: "no_match_found",
+  });
+
+  return "Menu Items";
 }
 
 /**
