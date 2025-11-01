@@ -153,28 +153,47 @@ export async function POST(req: NextRequest) {
       if (bestMatch) {
         matchedUrlItems.add(bestMatch.index);
 
-        // Found a match - compare ALL fields and choose the best data
+        // Found a match - intelligently compare BOTH sources field by field
         const updateData: any = {};
         let hasChanges = false;
         const changes: string[] = [];
 
-        // IMAGE: URL always wins (PDF doesn't have images)
-        if (bestMatch.image_url && bestMatch.image_url !== pdfItem.image_url) {
-          updateData.image_url = bestMatch.image_url;
-          stats.imagesAdded++;
-          hasChanges = true;
-          changes.push("image");
+        // Log comparison for debugging
+        logger.info("[HYBRID MERGE] Comparing matched item", {
+          pdfName: pdfItem.name,
+          urlName: bestMatch.name,
+          pdfPrice: pdfItem.price,
+          urlPrice: bestMatch.price,
+          pdfCategory: pdfItem.category,
+          urlCategory: bestMatch.category,
+          pdfHasDesc: !!pdfItem.description,
+          urlHasDesc: !!bestMatch.description,
+          urlHasImage: !!bestMatch.image_url,
+        });
+
+        // 1. NAME: Choose most complete/descriptive name
+        if (bestMatch.name && bestMatch.name.length > pdfItem.name.length) {
+          if (
+            bestMatch.name.toLowerCase().includes(pdfItem.name.toLowerCase()) ||
+            bestMatch.name.split(" ").length > pdfItem.name.split(" ").length + 1
+          ) {
+            updateData.name = bestMatch.name;
+            hasChanges = true;
+            changes.push(`name: "${pdfItem.name}" → "${bestMatch.name}"`);
+          }
         }
 
-        // PRICE: URL wins (more current/accurate)
-        if (bestMatch.price && bestMatch.price > 0 && bestMatch.price !== pdfItem.price) {
-          updateData.price = bestMatch.price;
-          stats.pricesUpdated++;
-          hasChanges = true;
-          changes.push(`price: ${pdfItem.price} → ${bestMatch.price}`);
+        // 2. PRICE: Use URL (more current) if available and sensible
+        if (bestMatch.price && bestMatch.price > 0) {
+          if (bestMatch.price !== pdfItem.price) {
+            updateData.price = bestMatch.price;
+            stats.pricesUpdated++;
+            hasChanges = true;
+            changes.push(`price: £${pdfItem.price || 0} → £${bestMatch.price}`);
+          }
         }
 
-        // DESCRIPTION: Choose longer/better description
+        // 3. DESCRIPTION: Choose longest/most detailed
         const pdfDescLength = pdfItem.description?.length || 0;
         const urlDescLength = bestMatch.description?.length || 0;
         if (urlDescLength > pdfDescLength && bestMatch.description) {
@@ -184,22 +203,31 @@ export async function POST(req: NextRequest) {
           changes.push(`description: ${pdfDescLength} → ${urlDescLength} chars`);
         }
 
-        // CATEGORY: Keep PDF category (more reliable) - only update if PDF has none
-        if (!pdfItem.category && bestMatch.category && bestMatch.category !== "Menu Items") {
-          updateData.category = bestMatch.category;
-          hasChanges = true;
-          changes.push(`category: added ${bestMatch.category}`);
+        // 4. CATEGORY: Choose most specific (avoid generic "Menu Items")
+        if (bestMatch.category && bestMatch.category !== "Menu Items") {
+          // Check if URL category is actually an item name (common scraping error)
+          const isCategoryAnItemName = urlItems.some(
+            (item: any) => item.name.toLowerCase() === bestMatch.category.toLowerCase()
+          );
+
+          if (!isCategoryAnItemName) {
+            if (!pdfItem.category || pdfItem.category === "Menu Items") {
+              // PDF has no/generic category - use URL
+              updateData.category = bestMatch.category;
+              hasChanges = true;
+              changes.push(`category: "${pdfItem.category || "none"}" → "${bestMatch.category}"`);
+            } else {
+              // Both have categories - keep PDF (usually more reliable from menu structure)
+            }
+          }
         }
 
-        // NAME: Keep PDF name (OCR from official menu) - it's more authoritative
-        // Only update if PDF name is clearly truncated or missing details
-        if (
-          bestMatch.name.length > pdfItem.name.length + 10 &&
-          bestMatch.name.toLowerCase().includes(pdfItem.name.toLowerCase())
-        ) {
-          updateData.name = bestMatch.name;
+        // 5. IMAGE: URL only (PDF never has images)
+        if (bestMatch.image_url && bestMatch.image_url.startsWith("http")) {
+          updateData.image_url = bestMatch.image_url;
+          stats.imagesAdded++;
           hasChanges = true;
-          changes.push(`name: ${pdfItem.name} → ${bestMatch.name}`);
+          changes.push(`image: ${bestMatch.image_url.substring(0, 50)}...`);
         }
 
         if (hasChanges) {
@@ -210,10 +238,12 @@ export async function POST(req: NextRequest) {
           });
           stats.updated++;
 
-          logger.info("[HYBRID MERGE] Enhanced item", {
-            originalName: pdfItem.name,
-            matchedName: bestMatch.name,
+          logger.info("[HYBRID MERGE] Enhanced item - FINAL RESULT", {
             similarity: Math.round(bestSimilarity * 100) + "%",
+            finalName: updateData.name || pdfItem.name,
+            finalPrice: updateData.price || pdfItem.price,
+            finalCategory: updateData.category || pdfItem.category,
+            hasImage: !!updateData.image_url,
             improvements: changes,
           });
         } else {
