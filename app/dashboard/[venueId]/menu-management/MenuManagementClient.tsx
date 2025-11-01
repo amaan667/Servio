@@ -1,6 +1,7 @@
 "use client";
 
 import React, { useState, useEffect } from "react";
+import { useRouter } from "next/navigation";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -83,6 +84,7 @@ export default function MenuManagementClient({
   const [previewMode, setPreviewMode] = useState<PreviewMode>("pdf");
   const [designRefreshKey, setDesignRefreshKey] = useState(0); // Triggers preview refresh
   const { toast } = useToast();
+  const router = useRouter();
 
   const { menuItems, loading, categoryOrder, setMenuItems, loadMenuItems } = useMenuItems(venueId);
   const { designSettings, setDesignSettings, isSavingDesign, saveDesignSettings } =
@@ -311,7 +313,17 @@ export default function MenuManagementClient({
         <TabsContent value="manage" className="space-y-6 mt-6">
           <div className="space-y-6">
             {/* Unified Menu Upload - Handles PDF + Optional URL */}
-            <MenuUploadCard venueId={venueId} onSuccess={() => loadMenuItems()} />
+            <MenuUploadCard
+              venueId={venueId}
+              onSuccess={() => {
+                console.log("[MENU MANAGEMENT] Upload successful - refreshing data");
+                // Refresh menu items list (client-side)
+                loadMenuItems();
+                // Force router refresh to update server-rendered dashboard stats
+                router.refresh();
+                console.log("[MENU MANAGEMENT] Router refreshed - dashboard stats should update");
+              }}
+            />
 
             {menuItems.length > 0 && (
               <Card>

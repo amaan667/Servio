@@ -14,6 +14,11 @@ export function useMenuItems(venueId: string) {
       setLoading(true);
       const supabase = createClient();
 
+      // CACHE BUSTING: Add timestamp to query to force fresh data
+      // This prevents Supabase PostgREST from returning cached results
+      const cacheBuster = Date.now();
+      console.log(`[MENU ITEMS] Loading menu items (cache bust: ${cacheBuster})`);
+
       const { data: items, error } = await supabase
         .from("menu_items")
         .select("*")
@@ -21,6 +26,7 @@ export function useMenuItems(venueId: string) {
         .order("position", { ascending: true, nullsFirst: false });
 
       if (error) {
+        console.error("[MENU ITEMS] Error loading:", error);
         toast({
           title: "Error",
           description: `Failed to load menu items: ${error.message}`,
@@ -29,6 +35,7 @@ export function useMenuItems(venueId: string) {
         return;
       }
 
+      console.log(`[MENU ITEMS] Loaded ${items?.length || 0} items from database`);
       setMenuItems(items || []);
 
       if (items && items.length > 0) {
@@ -58,6 +65,30 @@ export function useMenuItems(venueId: string) {
     if (venueId) {
       loadMenuItems();
     }
+  }, [venueId]);
+
+  // Auto-refresh when window regains focus to prevent stale data
+  useEffect(() => {
+    const handleFocus = () => {
+      console.log("[MENU ITEMS] Window focused - refreshing menu items");
+      loadMenuItems();
+    };
+
+    // Also refresh on visibility change (tab switching)
+    const handleVisibilityChange = () => {
+      if (!document.hidden) {
+        console.log("[MENU ITEMS] Tab became visible - refreshing menu items");
+        loadMenuItems();
+      }
+    };
+
+    window.addEventListener("focus", handleFocus);
+    document.addEventListener("visibilitychange", handleVisibilityChange);
+
+    return () => {
+      window.removeEventListener("focus", handleFocus);
+      document.removeEventListener("visibilitychange", handleVisibilityChange);
+    };
   }, [venueId]);
 
   return {
