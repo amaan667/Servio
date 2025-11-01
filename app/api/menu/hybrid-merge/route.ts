@@ -122,6 +122,90 @@ function hashImageUrl(url: string | null | undefined): string | null {
 }
 
 // ============================================================================
+// CATEGORY CONSOLIDATION
+// ============================================================================
+
+/**
+ * Find best matching category from existing categories using fuzzy matching
+ */
+function findBestCategoryMatch(
+  newCategory: string,
+  existingCategories: string[]
+): { category: string; confidence: number } | null {
+  if (!newCategory || existingCategories.length === 0) return null;
+
+  const normalized = normalizeCategory(newCategory);
+  let bestMatch: string | null = null;
+  let bestScore = 0;
+
+  for (const existing of existingCategories) {
+    const existingNormalized = normalizeCategory(existing);
+
+    // Exact match
+    if (normalized === existingNormalized) {
+      return { category: existing, confidence: 1.0 };
+    }
+
+    // Calculate similarity
+    const similarity = stringSimilarity.compareTwoStrings(normalized, existingNormalized);
+
+    // High similarity threshold for categories (90%+)
+    if (similarity >= 0.9 && similarity > bestScore) {
+      bestScore = similarity;
+      bestMatch = existing;
+    }
+
+    // Check if one contains the other (e.g., "Brunch" in "All Day Brunch")
+    if (existingNormalized.includes(normalized) || normalized.includes(existingNormalized)) {
+      if (similarity > bestScore) {
+        bestScore = Math.max(similarity, 0.85);
+        bestMatch = existing;
+      }
+    }
+  }
+
+  return bestMatch ? { category: bestMatch, confidence: bestScore } : null;
+}
+
+/**
+ * Consolidate categories across all items
+ */
+function consolidateCategories(
+  items: any[],
+  existingDbCategories: string[]
+): { items: any[]; categoryMap: Map<string, string> } {
+  const categoryMap = new Map<string, string>();
+  const consolidatedItems = items.map((item) => {
+    if (!item.category) return item;
+
+    // Check if we already mapped this category
+    if (categoryMap.has(item.category)) {
+      return { ...item, category: categoryMap.get(item.category) };
+    }
+
+    // Try to find existing category match
+    const match = findBestCategoryMatch(item.category, existingDbCategories);
+
+    if (match && match.confidence >= 0.85) {
+      logger.info("[CATEGORY CONSOLIDATION] Mapping category", {
+        from: item.category,
+        to: match.category,
+        confidence: Math.round(match.confidence * 100) + "%",
+      });
+      categoryMap.set(item.category, match.category);
+      return { ...item, category: match.category };
+    }
+
+    // No good match - keep normalized version
+    const normalized = normalizeCategory(item.category);
+    categoryMap.set(item.category, normalized);
+    return { ...item, category: normalized };
+  });
+
+  return { items: consolidatedItems, categoryMap };
+}
+
+// ============================================================================
 // MATCHING LOGIC
 // ============================================================================
 
@@ -351,8 +435,23 @@ export async function POST(req: NextRequest) {
       categories: Array.from(new Set(existingItems.map((i: any) => i.category))).length,
     });
 
+    // Step 1b: Fetch ALL existing categories from database for consolidation
+    const { data: allExistingItems } = await supabase
+      .from("menu_items")
+      .select("category")
+      .eq("venue_id", venueId);
+
+    const existingDbCategories = Array.from(
+      new Set((allExistingItems || []).map((item: any) => item.category).filter(Boolean))
+    );
+
+    logger.info("[HYBRID MERGE v2.0] Step 1b: Existing categories loaded", {
+      categoriesInDb: existingDbCategories.length,
+      categories: existingDbCategories,
+    });
+
     // Step 2: Scrape menu from URL using new Puppeteer + Vision AI
-    logger.info("[HYBRID MERGE] Starting web extraction with Puppeteer + Vision AI", {
+    logger.info("[HYBRID MERGE v2.0] Starting web extraction with Puppeteer + Vision AI", {
       url: menuUrl,
       venueId,
     });
@@ -716,14 +815,45 @@ export async function POST(req: NextRequest) {
       },
     });
 
-    // Step 6: Apply updates to database (using deduplicated data)
+    // Step 5b: CATEGORY CONSOLIDATION (map to existing categories)
+    logger.info("[HYBRID MERGE v2.0] Step 5b: Category consolidation", {
+      existingCategories: existingDbCategories.length,
+      itemsToProcess: dedupedUpdates.length + dedupedInserts.length,
+    });
+
+    const { items: consolidatedUpdates, categoryMap: updateCategoryMap } = consolidateCategories(
+      dedupedUpdates,
+      existingDbCategories
+    );
+
+    const { items: consolidatedInserts, categoryMap: insertCategoryMap } = consolidateCategories(
+      dedupedInserts,
+      existingDbCategories
+    );
+
+    const totalCategoryMappings = updateCategoryMap.size + insertCategoryMap.size;
+
+    logger.info("[HYBRID MERGE v2.0] Category consolidation complete", {
+      categoriesMapped: totalCategoryMappings,
+      mappings: Array.from(
+        new Set([...updateCategoryMap.entries(), ...insertCategoryMap.entries()])
+      ),
+      finalCategories: Array.from(
+        new Set([
+          ...consolidatedUpdates.map((i: any) => i.category),
+          ...consolidatedInserts.map((i: any) => i.category),
+        ])
+      ),
+    });
+
+    // Step 6: Apply updates to database (using consolidated categories)
     logger.info("[HYBRID MERGE v2.0] Step 6: Applying database changes", {
-      updates: dedupedUpdates.length,
-      inserts: dedupedInserts.length,
+      updates: consolidatedUpdates.length,
+      inserts: consolidatedInserts.length,
     });
 
     // Remove confidence metadata before saving to DB
-    const cleanUpdates = dedupedUpdates.map((u: any) => {
+    const cleanUpdates = consolidatedUpdates.map((u: any) => {
       const { _confidence, _match_reason, ...cleanData } = u;
       return cleanData;
     });
@@ -746,8 +876,8 @@ export async function POST(req: NextRequest) {
       }
     }
 
-    if (dedupedInserts.length > 0) {
-      const { error: insertError } = await supabase.from("menu_items").insert(dedupedInserts);
+    if (consolidatedInserts.length > 0) {
+      const { error: insertError } = await supabase.from("menu_items").insert(consolidatedInserts);
 
       if (insertError) {
         logger.error("[HYBRID MERGE v2.0] Insert failed", {
@@ -785,8 +915,11 @@ export async function POST(req: NextRequest) {
 
     logger.info("[HYBRID MERGE v2.0] ===== MERGE COMPLETED SUCCESSFULLY =====", {
       duration: `${(duration / 1000).toFixed(2)}s`,
-      stats,
-      finalCount: existingItems.length + dedupedInserts.length,
+      stats: {
+        ...stats,
+        categoriesConsolidated: totalCategoryMappings,
+      },
+      finalCount: existingItems.length + consolidatedInserts.length,
       reviewQueueCount: reviewQueue.length,
     });
 
@@ -810,7 +943,7 @@ export async function POST(req: NextRequest) {
         low: stats.lowConfidence,
       },
       reviewQueue: reviewQueue.length > 0 ? reviewQueue : undefined,
-      message: `Merge successful: ${stats.updated} items enhanced, ${stats.new} new items added, ${stats.unchanged} unchanged, ${stats.duplicatesRemoved} duplicates removed`,
+      message: `Merge successful: ${stats.updated} items enhanced, ${stats.new} new items added, ${stats.unchanged} unchanged, ${stats.duplicatesRemoved} duplicates removed, ${totalCategoryMappings} categories consolidated`,
       details: {
         itemsEnhanced: stats.updated,
         newItems: stats.new,
@@ -820,7 +953,8 @@ export async function POST(req: NextRequest) {
         descriptionsUpdated: stats.descriptionsUpdated,
         duplicatesRemoved: stats.duplicatesRemoved,
         duplicateImagesRemoved: stats.duplicateImages,
-        totalItems: existingItems.length + dedupedInserts.length,
+        categoriesConsolidated: totalCategoryMappings,
+        totalItems: existingItems.length + consolidatedInserts.length,
         processingTimeMs: duration,
         needsReview: reviewQueue.length,
       },
